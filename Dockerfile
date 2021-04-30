@@ -18,5 +18,8 @@ COPY . /app
 # change to the /app directory
 WORKDIR /app
 
+# exporting binary installation folder for deno
+RUN export PATH=$PATH:/root/.deno/bin
+
 # command that executes deno
-CMD ["~/.deno/bin/deno", "run", "--allow-net", "main.ts"]
+CMD ["deno", "run", "--allow-net", "main.ts"]
