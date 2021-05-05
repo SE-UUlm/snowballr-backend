@@ -53,9 +53,7 @@ deploy-dev:
       fi
     - ssh $DESTINATOIN_SSH_URL "docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY"
     - ssh $DESTINATOIN_SSH_URL "docker pull $CI_REGISTRY_IMAGE${tag}"
-    - ssh $DESTINATOIN_SSH_URL "docker stop backend-develop || true"
-    - ssh $DESTINATOIN_SSH_URL "docker rm backend-develop || true"
-    - ssh $DESTINATOIN_SSH_URL "docker run --name backend-develop -d $CI_REGISTRY_IMAGE${tag}"
+    - ssh $DESTINATION_SSH_URL "docker-compose -p snowballr -f project/docker-compose.yml up -d --force-recreate backend-develop"
   rules:
     - if: $CI_COMMIT_BRANCH == "develop"
 
@@ -85,8 +83,6 @@ deploy-prod:
     # login to the gitlab container repository
     - ssh $DESTINATOIN_SSH_URL "docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY"
     - ssh $DESTINATOIN_SSH_URL "docker pull $CI_REGISTRY_IMAGE${tag}"
-    - ssh $DESTINATOIN_SSH_URL "docker stop backend-master || true"
-    - ssh $DESTINATOIN_SSH_URL "docker rm backend-master || true"
-    - ssh $DESTINATOIN_SSH_URL "docker run --name backend-master -d $CI_REGISTRY_IMAGE${tag}"
+    - ssh $DESTINATION_SSH_URL "docker-compose -p snowballr -f project/docker-compose.yml up -d --force-recreate backend-master"
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
