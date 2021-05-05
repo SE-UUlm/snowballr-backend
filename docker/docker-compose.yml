@@ -1,0 +1,37 @@
+version: "3.7"
+services:
+  postgresdb:
+    image: postgres:latest
+    ports:
+      - "5432:5432"
+    volumes:
+      - ${POSTGRES_PATH}:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    #logging:
+    #  driver: ${POSTGRES_LOGGING}
+  couchdb:
+    image: couchdb:latest
+    ports:
+      - "5984:5984"
+    volumes:
+      - ${COUCHDB_PATH}/data:/opt/couchdb/data
+      - ${COUCHDB_PATH}/etc:/opt/couchdb/etc/local.d
+    environment:
+      - COUCHDB_USER=${COUCHDB_USER}
+      - COUCHDB_PASSWORD=${COUCHDB_PASSWORD}
+    #logging:
+    #  driver: ${COUCHDB_LOGGING}
+  backend:
+    image: hayd/ubuntu-deno:latest
+    command: run --allow-net --allow-env /app/main.ts
+    network_mode: host
+    volumes:
+      - ${BACKEND_PATH}:/app
+    environment: 
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    depends_on:
+      - postgresdb
+      - couchdb

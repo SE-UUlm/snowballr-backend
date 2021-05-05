@@ -1,0 +1,3 @@
+data/couchdb
+!*/data/couchdb/etc/local.ini
+data/postgresdb
