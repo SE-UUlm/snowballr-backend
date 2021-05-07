@@ -1,12 +1,17 @@
 import { DataTypes, Database, Model } from 'https://deno.land/x/denodb/mod.ts';
+import { sleep } from "https://deno.land/x/sleep/mod.ts";
 
-const PORT = Deno.env.get("POSTGRES_PASSWORD");
+const PostgresDB = Deno.env.get("POSTGRES_DB");
+const PostgresUser = Deno.env.get("POSTGRES_USER");
+const PostgresPassword = Deno.env.get("POSTGRES_PASSWORD");
+
+// await sleep(60)
 
 const db = new Database('postgres', {
-  host: '127.0.0.1',
-  username: 'snowballR-admin',
-  password: PORT,
-  database: 'snowballR',
+  host: 'postgresdb',
+  username: PostgresUser,
+  password: PostgresPassword,
+  database: PostgresDB,
 });
 
 class Flight extends Model {
@@ -27,17 +32,17 @@ class Flight extends Model {
 
 db.link([Flight]);
 
-await db.sync({ drop: true });
+await db.sync({ drop: false });
 
 await Flight.create({
-  departure: 'Paris',
+  departure: 'Meersburg',
   destination: 'Tokyo',
 });
 
 // or
 
 const flight = new Flight();
-flight.departure = 'London';
+flight.departure = 'Ravensburg';
 flight.destination = 'San Francisco';
 await flight.save();
 
@@ -45,7 +50,7 @@ await console.log(Flight.select('destination').all());
 // [ { destination: "Tokyo" }, { destination: "San Francisco" } ]
 
 
-await Flight.where('destination', 'Tokyo').delete();
+// await Flight.where('destination', 'Tokyo').delete();
 
 const sfFlight = await Flight.find(2);
 // { destination: "San Francisco" }
@@ -58,6 +63,6 @@ await Flight.count();
 await Flight.select('id', 'destination').orderBy('id').get();
 // [ { id: "2", destination: "San Francisco" } ]
 
-await sfFlight.delete();
+// await sfFlight.delete();
 
 await db.close();
