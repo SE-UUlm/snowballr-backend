@@ -1,5 +1,2 @@
-db/couchdb/*
-!db/couchdb/etc
-db/couchdb/etc/*
-!db/couchdb/etc/local.ini
+db/couchdb
 db/postgresdb
