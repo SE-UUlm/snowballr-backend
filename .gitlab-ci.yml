@@ -33,7 +33,7 @@ deploy-dev:
   stage: deploy
   image: ubuntu
   variables:
-    DESTINATOIN_SSH_URL: ssh://ubuntu@$DESTINATION_HOST
+    DESTINATION_SSH_URL: ssh://ubuntu@$DESTINATION_HOST
   before_script:
     # Prepare ssh to destination host
     - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
@@ -51,8 +51,8 @@ deploy-dev:
         tag=":$CI_COMMIT_REF_SLUG"
         echo "Running on branch '$CI_COMMIT_BRANCH': tag = $tag"
       fi
-    - ssh $DESTINATOIN_SSH_URL "docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY"
-    - ssh $DESTINATOIN_SSH_URL "docker pull $CI_REGISTRY_IMAGE${tag}"
+    - ssh $DESTINATION_SSH_URL "docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY"
+    - ssh $DESTINATION_SSH_URL "docker pull $CI_REGISTRY_IMAGE${tag}"
     - ssh $DESTINATION_SSH_URL "docker-compose -p snowballr -f project/develop/docker-compose.yml up -d --force-recreate backend"
   rules:
     - if: $CI_COMMIT_BRANCH == "develop"
@@ -62,7 +62,7 @@ deploy-prod:
   stage: deploy
   image: ubuntu
   variables:
-    DESTINATOIN_SSH_URL: ssh://ubuntu@$DESTINATION_HOST
+    DESTINATION_SSH_URL: ssh://ubuntu@$DESTINATION_HOST
   before_script:
     # Prepare ssh to destination host
     - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
@@ -81,8 +81,8 @@ deploy-prod:
         echo "Running on branch '$CI_COMMIT_BRANCH': tag = $tag"
       fi
     # login to the gitlab container repository
-    - ssh $DESTINATOIN_SSH_URL "docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY"
-    - ssh $DESTINATOIN_SSH_URL "docker pull $CI_REGISTRY_IMAGE${tag}"
+    - ssh $DESTINATION_SSH_URL "docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY"
+    - ssh $DESTINATION_SSH_URL "docker pull $CI_REGISTRY_IMAGE${tag}"
     - ssh $DESTINATION_SSH_URL "docker-compose -p snowballr -f project/master/docker-compose.yml up -d --force-recreate backend"
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
