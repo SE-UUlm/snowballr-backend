@@ -1,21 +1,17 @@
 import { DataTypes, Model } from "https://deno.land/x/denodb/mod.ts";
-import {db} from "../controller/database.ts"
 
 export class User extends Model {
     static table = 'user';
     static timestamps = true;
 
     static fields = {
-        fullyRegistered: DataTypes.BOOLEAN,
-        isAdmin: DataTypes.BOOLEAN,
-        password: DataTypes.STRING,
+        id:{primaryKey: true, autoIncrement: true},
+        fullyRegistered: {type:DataTypes.BOOLEAN,allowNull: false},
+        isAdmin: {type: DataTypes.BOOLEAN, allowNull: false},
+        password: {type: DataTypes.STRING, allowNull: false},
         lastName: DataTypes.STRING,
         firstName: DataTypes.STRING,
-        eMail:
-            {type: DataTypes.STRING,
-                primaryKey: true,
-            }
-
+        eMail: {type: DataTypes.STRING, allowNull: false}
     };
 
     static defaults = {
@@ -23,5 +19,3 @@ export class User extends Model {
         fullyRegistered: false
     }
 }
-
-db.link([User]);

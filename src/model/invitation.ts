@@ -10,7 +10,7 @@ export class Invitation extends Model {
 
     static fields = {
         token: { primaryKey: true, type: DataTypes.STRING},
-        validUntil: {type: DataTypes.DATE },
+        validUntil: {type: DataTypes.DATE, allowNull: false},
     }
 
     static user() {
@@ -22,7 +22,4 @@ export class Invitation extends Model {
     }
 }
 Relationships.belongsTo(Invitation, User);
-db.link([Invitation]);
-
-await db.sync({ drop: false });
 

@@ -41,7 +41,7 @@ services:
   # Environment container for hosting backend deno typescript application
   backend:
     image: hayd/ubuntu-deno
-    command: run --allow-net --allow-env --allow-read /app/main.ts
+    command: run --allow-env --allow-read --allow-net /app/main.ts
     ports:
       - "8000:8000"
     volumes:
