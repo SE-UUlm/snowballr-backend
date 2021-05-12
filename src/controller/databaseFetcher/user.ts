@@ -26,11 +26,16 @@ export const returnUserByEmail = async (eMail: string): Promise<User | undefined
 
 
 export const insertUser = async (eMail: string, password: string, isAdmin: boolean, fullyRegistered: boolean, firstName: string, lastName: string): Promise<User> => {
-    let user: User = await User.create({eMail: eMail, password: hashPassword(password), isAdmin: isAdmin, fullyRegistered: fullyRegistered, firstName: firstName, lastName: lastName});
-    return user;
+    return await User.create({
+        eMail: eMail,
+        password: hashPassword(password),
+        isAdmin: isAdmin,
+        fullyRegistered: fullyRegistered,
+        firstName: firstName,
+        lastName: lastName
+    });
 }
 
 export const insertUserForRegistration = async (eMail: string, password: string): Promise<User> => {
-    let user: User = await User.create({eMail: eMail, password: hashPassword(password)});
-    return user;
+    return await User.create({eMail: eMail, password: hashPassword(password)});
 }

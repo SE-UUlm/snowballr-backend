@@ -5,7 +5,7 @@ export class User extends Model {
     static timestamps = true;
 
     static fields = {
-        id:{primaryKey: true, autoIncrement: true},
+        id:{primaryKey: true, autoIncrement: true, type: DataTypes.INTEGER},
         fullyRegistered: {type:DataTypes.BOOLEAN,allowNull: false},
         isAdmin: {type: DataTypes.BOOLEAN, allowNull: false},
         password: {type: DataTypes.STRING, allowNull: false},
