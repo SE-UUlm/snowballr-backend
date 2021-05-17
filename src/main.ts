@@ -18,8 +18,8 @@ router
 
 const app = new Application();
 app.use(await validateContentType)
-app.use(await validateTokenIfExists)
+//app.use(await validateTokenIfExists)
 app.use(router.routes());
 app.use(router.allowedMethods());
 
-//await app.listen({port: 8000});
+await app.listen({port: 8000});

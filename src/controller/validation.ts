@@ -6,13 +6,13 @@ import {createNumericTerminationDate} from "../helper/dateHelper.ts";
 const SECRET = String(Deno.env.get('SECRET'));
 
 export const validateContentType = async (ctx: Context, next: () => Promise<unknown>) => {
-    if (ctx.request.headers.get("Content-type") != null && ctx.request.headers.get("Content-type") === "application-json") {
-        ctx.response.type = "application-json";
+    if (ctx.request.headers.get("Content-Type") === "application/json") {
+        ctx.response.type = "application/json";
         await next();
+    }else {
+        ctx.response.status = 415;
+        ctx.response.body = {error: "Only application/json is allowed"}
     }
-
-    ctx.response.status = 415;
-    ctx.response.body = { error: "Only application-json is allowed" }
 
 }
 
