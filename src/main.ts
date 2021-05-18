@@ -1,4 +1,4 @@
-import { config } from "https://deno.land/x/dotenv/mod.ts";
+import {config} from "https://deno.land/x/dotenv/mod.ts";
 import {Application, Router} from 'https://deno.land/x/oak/mod.ts';
 import {validateContentType, validateTokenIfExists} from "./controller/validation.ts";
 import {login} from "./controller/login.ts";
@@ -10,15 +10,13 @@ await setup();
 const router = new Router();
 router
     .get("/", (context) => {
-        context.response.body = { message: "hello there" }
+        context.response.body = {message: "hello there"}
     })
-    .post("/login",async (context) =>{
-        await login(context);
-    })
+    .post("/login", login)
 
 const app = new Application();
 app.use(await validateContentType)
-//app.use(await validateTokenIfExists)
+app.use(await validateTokenIfExists)
 app.use(router.routes());
 app.use(router.allowedMethods());
 
