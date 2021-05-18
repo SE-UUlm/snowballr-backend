@@ -2,7 +2,7 @@ import {insertUser, returnUserByEmail} from "../controller/databaseFetcher/user.
 import {db} from "../controller/database.ts";
 import {User} from "../model/user.ts";
 import {Invitation} from "../model/invitation.ts";
-import { Relationships } from 'https://deno.land/x/denodb/mod.ts';
+import {Relationships} from 'https://deno.land/x/denodb/mod.ts';
 
 export const setup = async () => {
 
@@ -11,6 +11,6 @@ export const setup = async () => {
     await db.sync({drop: true});
     let admin = await returnUserByEmail(String(Deno.env.get("ADMIN_EMAIL")));
     if (!admin) {
-       await insertUser(String(Deno.env.get("ADMIN_EMAIL")), String(Deno.env.get("ADMIN_PASSWORD")), true, true, "admin", "admin");
+        await insertUser(String(Deno.env.get("ADMIN_EMAIL")), String(Deno.env.get("ADMIN_PASSWORD")), true, "admin", "admin", "fully registered");
     }
 }

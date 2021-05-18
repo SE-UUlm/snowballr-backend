@@ -1,4 +1,4 @@
-import { Database } from "https://deno.land/x/denodb/mod.ts";
+import {Database} from "https://deno.land/x/denodb/mod.ts";
 
 const PostgresDB = Deno.env.get("POSTGRES_DB");
 const PostgresUser = Deno.env.get("POSTGRES_USER");
@@ -11,7 +11,3 @@ export const db = new Database('postgres', {
     password: PostgresPassword,
     database: PostgresDB,
 });
-
-export const closeDB = async () => {
-    await db.close;
-}
