@@ -1,10 +1,9 @@
 import {insertUser, returnUserByEmail} from "../controller/databaseFetcher/user.ts";
-import {db} from "../controller/database.ts";
 import {User} from "../model/user.ts";
 import {Invitation} from "../model/invitation.ts";
-import {Relationships} from 'https://deno.land/x/denodb/mod.ts';
+import {Relationships, Database} from 'https://deno.land/x/denodb/mod.ts';
 
-export const setup = async () => {
+export const setup = async (db: Database) => {
 
     Relationships.belongsTo(Invitation, User);
     db.link([User, Invitation]);

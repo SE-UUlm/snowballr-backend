@@ -17,6 +17,7 @@ export class User extends Model {
 
     static defaults = {
         isAdmin: false,
-        loginBlock: false
+        loginBlock: false,
+        status: "unregistered"
     }
 }
