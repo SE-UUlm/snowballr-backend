@@ -1,0 +1,82 @@
+# snowballR - Intermediate / Sprint Planning Meeting 07.05.2021
+
+**Time:** 13:00 - 15:00
+
+**Next Meeting: 14.05.2021 13:00**
+
+**Present:** 
+* Lukas
+* Andreas
+* Jonas
+* Jakob
+* Alex
+
+**Missing (with prior notice):**
+
+**Missing (without prior notice):**
+
+## Agenda
+* Present / Accept tasks of the ending iteration
+* Determine tasks for next iteration
+* *Additional topics here*
+
+## Org/General
+### Done
+* Search APIs sichten: Microsoft free account. Crossref api (Doko nicht 100% konsistent). WebOfCitation...
+* StateCharts: Login, Review, Project
+* Sphinx Documentation Features
+### Decisions
+* Lizenz: GPLv3 (Copy-Left License). Code der zusätzlich extern entwickelt wird muss auch freigegeben werden. MIT Libraries können eingebunden werden.
+* Wenn drei leute beim Bewerten des Paper nicht zu einer Entscheidung kommen, "dann lass ein einfach". GUI muss bis n=5 gut ausschauen. Zahl k regulärer Reviewer und Zahl j von Decidern. k + j = n. j darf 0 sein.
+  User ist pro Projekt Menge von k und/oder j.
+* Dokumentation-Repository: Nur dev und master.... keine feature branches. Nutze merge von dev in master um verbesserungen anzubringen. dev auf anderen port deployen.
+* Rolle Admin oder Projektmanager darf sich beliebig viele Projekte anlegen
+* Exclusion and Inclusion Criteria brauchen ID, KurzBeschreibung, Beschreibung ( via :hover ). Reihenfolge der ID soll veränderbar sein!
+* Sphinx: Solution idea line for each feature.
+### To be done in this iteration 
+* Refine StateCharts: Registration
+* StateCharts in Dokumentation einfügen und grob beschreiben.
+* ER-Diagramm ( wie soll die Datenbank aussehen? )
+* Feature/Requirements verfeinern
+* documentation dev deployen
+### Future tasks / requirements
+* Recapture: Wie umgehen mit vielen Requests an Google Scholar API?
+* Optimization: Reference Parser ( Microsoft Academic Matcher, Java framework )
+* Config file für Mail um Einladungen zu senden. snowballr@uni-ulm.de
+* Alle Zahlen in die Config einfügen.
+* Resend invitation option für Admin, wenn invite link nicht genutzt wurde.
+* MetaDaten für Projekt in Dashboard: Wann haben die queries stattgefunden. 
+
+## Frontend
+### Done
+    
+### Progress
+
+### Decisions
+
+### To be done in this iteration 
+* login-system frontend-mask
+* Design für gui/website, standard gui framework ( Projekt, Login, Dashboard)
+
+### Future tasks / requirements
+* Als nichtadmin muss ich ich User zum Projekt hinzufügen. In einer Aktion muss es mgölich sein mehere Benutzer hinzuzufügen.
+* Wenn User bereits vorhanden, dann added zum einem Projekt. Sonst adde User zu auswählbaren Projekten, sobald der User die Registierung abgeschlossen hat.
+* Importieren von neuem Paper: Ähnliche Paper bei Vergleich von Datenbank und API - Frage User ob Paper gleich sind? --> Dublikate sind störend
+* Login vergesse: Neuen Link anfordern soll über WebUI möglich sein.
+* Ich muss mich nie neu einlogen wenn ich tool innerhalb von 2 Wochen benutze.
+* Nach x failed login-attempts: warte immer 5 minuten
+
+## Backend
+### Done
+
+### Progress
+* docker-compose: dbs
+
+### Decisions
+
+### To be done in this iteration
+* login-system backend logic 
+* restapi für backend logic
+
+### Future tasks / requirements
+* SeachAPIs: Über Interfaces implementieren, dass das Ganze schön erweiterbar ist.
