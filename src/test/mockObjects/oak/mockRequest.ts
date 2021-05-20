@@ -1,10 +1,10 @@
 import {Request, ServerResponse, BodyOptions, Body, BodyReader, BodyStream} from 'https://deno.land/x/oak/mod.ts';
-import {RequestBodyMock1} from './mockBody.ts'
+import {RequestBodyMock} from './mockBody.ts'
 
 let requestResponseStack: ServerResponse[] = [];
 
 export function createMockRequest(
-    requestBody: any,
+    requestBodyJsonString: string,
     url = "/index.html",
     proto = "HTTP/1.1",
     headersInit: string[][] = [["host", "example.com"]],
@@ -18,11 +18,11 @@ export function createMockRequest(
             return Promise.resolve();
         },
         proto,
-        body: requestBody.get,
+        body: new RequestBodyMock(requestBodyJsonString).json,
         method: "GET",
         accepts: (_contentType: string) => {
             return true;
-        },
+        }
 
     }
     return request as any;

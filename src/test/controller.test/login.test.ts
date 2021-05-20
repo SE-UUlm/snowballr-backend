@@ -5,7 +5,8 @@ import {createMockContext} from "../mockObjects/oak/mockContext.ts";
 import {createMockApp} from "../mockObjects/oak/mockApp.ts";
 import { assertEquals, assertNotEquals } from "https://deno.land/std@0.97.0/testing/asserts.ts"
 import {db} from "../../controller/database.ts";
-import {RequestBodyMock1, RequestBodyMock2, RequestBodyMock3} from "../mockObjects/oak/mockBody.ts";
+import {RequestBodyMock} from "../mockObjects/oak/mockBody.ts";
+
 
 Deno.test({
     name: "testLoginAllowed",
@@ -14,7 +15,7 @@ Deno.test({
         await insertUser("test@test", "ash", true, "Test", "Tester", "registered");
 
         let app = await createMockApp();
-        let ctx = await createMockContext(app, new RequestBodyMock2());
+        let ctx = await createMockContext(app,`{"email": "test@test", "password":"ash"}`);
 
         let loginWorked: boolean = await login(ctx);
 
@@ -25,6 +26,7 @@ Deno.test({
 
 })
 
+
 Deno.test({
     name: "testLoginDenied",
     async fn(): Promise<void> {
@@ -32,7 +34,7 @@ Deno.test({
         await insertUser("test@test", "ash", true, "Test", "Tester", "registered");
 
         let app = await createMockApp();
-        let ctx = await createMockContext(app, new RequestBodyMock3());
+        let ctx = await createMockContext(app, `{"email": "test@test12", "password":"ash"}`);
 
         let loginWorked: boolean = await login(ctx);
 
@@ -43,6 +45,7 @@ Deno.test({
 
 })
 
+
 Deno.test({
     name: "testLoginOnlyEmail",
     async fn(): Promise<void> {
@@ -50,7 +53,7 @@ Deno.test({
         await insertUser("test@test", "ash", true, "Test", "Tester", "registered");
 
         let app = await createMockApp();
-        let ctx = await createMockContext(app,new RequestBodyMock1());
+        let ctx = await createMockContext(app,`{"email": "test@test"}`);
 
         let loginWorked: boolean = await login(ctx);
 
