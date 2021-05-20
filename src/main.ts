@@ -1,5 +1,7 @@
 import { DataTypes, Database, Model } from 'https://deno.land/x/denodb/mod.ts';
 import { sleep } from "https://deno.land/x/sleep/mod.ts";
+
+// Block
 import { config } from "https://deno.land/x/dotenv/mod.ts";
 
 var PostgresHost;
@@ -24,6 +26,8 @@ if (PostgresDB == undefined || PostgresUser == undefined || PostgresPassword == 
   console.log(Deno.env.get("POSTGRES_DB"));
   getEnv();
 }
+
+// Endblock
 
 const db = new Database('postgres', {
   host: PostgresHost,
