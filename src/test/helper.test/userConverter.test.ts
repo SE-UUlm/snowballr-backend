@@ -1,5 +1,5 @@
-import {User} from "../../src/model/user.ts";
-import {convertUserToUserProfile} from "../../src/helper/userConverter.ts";
+import {User} from "../../model/user.ts";
+import {convertUserToUserProfile} from "../../helper/userConverter.ts";
 import { assertEquals } from "https://deno.land/std@0.97.0/testing/asserts.ts";
 
 Deno.test({

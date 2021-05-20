@@ -1,5 +1,5 @@
 import { assertNotEquals } from "https://deno.land/std@0.97.0/testing/asserts.ts";
-import {hashPassword} from "../../src/helper/passwordHasher.ts";
+import {hashPassword} from "../../helper/passwordHasher.ts";
 import {createHash} from "https://deno.land/std@0.95.0/hash/mod.ts"
 
 Deno.test({
