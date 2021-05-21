@@ -23,7 +23,7 @@ const validateContent = async (ctx:Context): Promise<boolean> =>{
         await ctx.request.body({type: "json"}).value
     } catch (error){
         ctx.response.status = 415;
-        ctx.response.body = {error: "The request is not in a correct JSON format"}
+        ctx.response.body = {error: "The requestBody is not in a correct JSON format"}
         return false;
     }
     return true;
