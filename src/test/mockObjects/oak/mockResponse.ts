@@ -4,7 +4,7 @@ export function createMockResponse(): Response {
     const headers = new Headers();
     return {
         headers: headers,
-        status: undefined,
+        status: 200,
         body: undefined,
         redirect(url: string | URL) {
             headers.set("Location", encodeURI(String(url)));

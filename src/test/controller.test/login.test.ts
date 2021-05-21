@@ -5,7 +5,6 @@ import {createMockContext} from "../mockObjects/oak/mockContext.ts";
 import {createMockApp} from "../mockObjects/oak/mockApp.ts";
 import { assertEquals, assertNotEquals } from "https://deno.land/std@0.97.0/testing/asserts.ts"
 import {db} from "../../controller/database.ts";
-import {RequestBodyMock} from "../mockObjects/oak/mockBody.ts";
 
 
 Deno.test({

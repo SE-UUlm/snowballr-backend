@@ -8,12 +8,25 @@ const SECRET = String(Deno.env.get('SECRET'));
 export const validateContentType = async (ctx: Context, next: () => Promise<unknown>) => {
     if (ctx.request.headers.get("Content-Type") === "application/json") {
         ctx.response.type = "application/json";
-        await next();
+        if(await validateContent(ctx)){
+            await next();
+        }
     } else {
         ctx.response.status = 415;
         ctx.response.body = {error: "Only application/json is allowed"}
     }
 
+}
+
+const validateContent = async (ctx:Context): Promise<boolean> =>{
+    try{
+        await ctx.request.body({type: "json"}).value
+    } catch (error){
+        ctx.response.status = 415;
+        ctx.response.body = {error: "The request is not in a correct JSON format"}
+        return false;
+    }
+    return true;
 }
 
 export const validateTokenIfExists = async (ctx: Context, next: () => Promise<unknown>) => {

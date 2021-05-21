@@ -5,9 +5,9 @@ let requestResponseStack: ServerResponse[] = [];
 
 export function createMockRequest(
     requestBodyJsonString: string,
+    headersInit: string[][],
     url = "/index.html",
     proto = "HTTP/1.1",
-    headersInit: string[][] = [["host", "example.com"]],
     host = "localhost",
 ): Promise<Request> {
     let request = {

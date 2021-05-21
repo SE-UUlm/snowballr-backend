@@ -6,8 +6,6 @@ import {User} from "../model/user.ts";
 import {convertUserToUserProfile} from "../helper/userConverter.ts";
 
 export const login = async (ctx: Context): Promise<boolean> => {
-  //  const requestParameter = JSON.parse(ctx.request.body.toString());
-
     const requestParameter = await ctx.request.body({type: "json"}).value;
 
     if (!requestParameter.email || !requestParameter.password) {

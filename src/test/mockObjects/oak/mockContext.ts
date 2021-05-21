@@ -7,10 +7,11 @@ export async function createMockContext<S extends Record<string | number | symbo
     >(
     app: Application<S>,
     requestBodyJsonString: string,
+    requestHeader: string[][] = [["Content-Type", "application/json"]],
     path = "/",
     method = "GET",
 ) {
-    const request = await createMockRequest(requestBodyJsonString);
+    const request = await createMockRequest(requestBodyJsonString, requestHeader);
     const response = await createMockResponse();
     const cookies = new Cookies(request, response);
     return ({
