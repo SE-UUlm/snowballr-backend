@@ -3,16 +3,20 @@ services:
   # Postgres sql database server only visible by pgadmin and backend services
   postgresdb:
     image: postgres
-    expose:
-      - "5432"
+    ports:
+      - "5432:5432"
     volumes:
       - ${POSTGRES_PATH}:/var/lib/postgresql/
     environment:
+      - POSTGRES_DN=${POSTGRES_DN}
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     logging:
       driver: ${POSTGRES_LOGGING}
+    profiles:
+      - "all"
+      - "min"
   # Webservice to administrate postgres db
   pgadmin:
     image: dpage/pgadmin4
@@ -25,6 +29,8 @@ services:
       - postgresdb
     logging:
       driver: ${PGADMIN_LOGGING}
+    profiles:
+      - "all"
   # CouchDB database server only visible by backend
   couchdb:
     image: couchdb
@@ -38,12 +44,12 @@ services:
       - COUCHDB_PASSWORD=${COUCHDB_PASSWORD}
     logging:
       driver: ${COUCHDB_LOGGING}
+    profiles:
+      - "all"
   # Environment container for hosting backend deno typescript application
   backend:
     image: hayd/ubuntu-deno
-    command: run --allow-env --allow-read --allow-net /app/main.ts
-    ports:
-      - "8000:8000"
+    command: run --allow-net --allow-env --allow-read /app/main.ts
     volumes:
       - ${BACKEND_PATH}:/app
     environment: 
@@ -54,3 +60,5 @@ services:
       - postgresdb
       - couchdb
       - pgadmin
+    profiles:
+      - "all"

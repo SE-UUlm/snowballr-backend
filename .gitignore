@@ -1,3 +1,4 @@
 db/couchdb
 db/postgresdb
 docker/.env
+.idea
