@@ -1,6 +1,6 @@
 import {createMockApp} from "../mockObjects/oak/mockApp.ts";
 import {createMockContext} from "../mockObjects/oak/mockContext.ts";
-import {validateContentType} from "../../controller/validation.ts";
+import {validateContentType} from "../../src/controller/validation.ts";
 import { assertEquals } from "https://deno.land/std@0.97.0/testing/asserts.ts"
 import {emptyAsyncFunction} from "../mockObjects/emptyAsyncFunction.ts";
 Deno.test({
