@@ -34,7 +34,7 @@ export const validateTokenIfExists = async (ctx: Context, next: () => Promise<un
     if (token) {
         return verifyToken(ctx, next, token)
     } else {
-        return allowLogin(ctx, next)
+       return allowLogin(ctx, next)
     }
 }
 

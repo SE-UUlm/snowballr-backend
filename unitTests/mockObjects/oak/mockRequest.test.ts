@@ -1,5 +1,5 @@
-import {Request, ServerResponse, BodyOptions, Body, BodyReader, BodyStream} from 'https://deno.land/x/oak/mod.ts';
-import {RequestBodyMock} from './mockBody.ts'
+import {Request, ServerResponse, BodyOptions, Body, BodyReader, BodyStream, ServerRequest} from 'https://deno.land/x/oak/mod.ts';
+import {RequestBodyMock} from './mockBody.test.ts'
 
 let requestResponseStack: ServerResponse[] = [];
 
@@ -22,6 +22,9 @@ export function createMockRequest(
         method: "GET",
         accepts: (_contentType: string) => {
             return true;
+        },
+        serverRequest: {
+            headers: [["token", "blaaaaaa"]]
         }
 
     }

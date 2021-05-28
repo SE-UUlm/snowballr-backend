@@ -2,7 +2,7 @@ import {insertUser, returnUserByEmail} from "../controller/databaseFetcher/user.
 import {User} from "../model/user.ts";
 import {Invitation} from "../model/invitation.ts";
 import {Relationships, Database} from 'https://deno.land/x/denodb/mod.ts';
-import {db} from "../controller/databaseFetcher/database.ts";
+import {db} from "../controller/database.ts";
 
 export const setup = async (dropDatabase: boolean) => {
 
