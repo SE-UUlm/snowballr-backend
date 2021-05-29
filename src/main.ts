@@ -3,7 +3,7 @@ import {validateContentType, validateTokenIfExists} from "./controller/validatio
 import {login} from "./controller/login.ts";
 import {setup} from "./helper/setup.ts";
 
-await setup(true);
+await setup(false);
 const router = new Router();
 router
     .get("/", (context) => {
