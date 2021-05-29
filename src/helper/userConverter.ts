@@ -1,4 +1,4 @@
-import {User} from "../model/user.ts";
+import {User} from "../model/db/user.ts";
 import {UserProfile} from "../model/userProfile.ts";
 
 export const convertUserToUserProfile = (user: User) => {

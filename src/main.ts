@@ -1,19 +1,24 @@
 import {Application, Router} from 'https://deno.land/x/oak/mod.ts';
-import {validateContentType, validateTokenIfExists} from "./controller/validation.ts";
+import {validateContentType, validateJWTIfExists} from "./controller/validation.ts";
 import {login} from "./controller/login.ts";
 import {setup} from "./helper/setup.ts";
+import {createUser, getUsers} from "./controller/user.ts";
+import {logout} from "./controller/logout.ts";
 
-await setup(false);
+await setup(true);
 const router = new Router();
 router
     .get("/", (context) => {
         context.response.body = {message: "hello there"}
     })
-    .post("/login",async (context) =>{ await login(context)})
+    .get("/login",async (context) =>{ await login(context)})
+    .get("/logout",async (context) => {await logout(context)})
+    .post("/users", async (context) =>{await createUser(context)})
+    .get("/users", async (context) => {await getUsers(context)})
 
 const app = new Application();
 app.use(await validateContentType)
-app.use(await validateTokenIfExists)
+app.use(await validateJWTIfExists)
 app.use(router.routes());
 app.use(router.allowedMethods());
 

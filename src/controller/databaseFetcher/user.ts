@@ -1,4 +1,4 @@
-import {User} from "../../model/user.ts";
+import {User} from "../../model/db/user.ts";
 import {hashPassword} from '../../helper/passwordHasher.ts';
 
 
@@ -35,6 +35,6 @@ export const insertUser = async (eMail: string, password: string, isAdmin: boole
     });
 }
 
-export const insertUserForRegistration = async (eMail: string, password: string): Promise<User> => {
-    return await User.create({eMail: eMail, password: hashPassword(password)});
+export const insertUserForRegistration = async (eMail: string): Promise<User> => {
+    return await User.create({eMail: eMail});
 }

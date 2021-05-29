@@ -1,4 +1,5 @@
 import {DataTypes, Model} from "https://deno.land/x/denodb/mod.ts";
+import {Token} from "./token.ts";
 
 export class User extends Model {
     static table = 'user';
@@ -7,7 +8,7 @@ export class User extends Model {
     static fields = {
         id: {primaryKey: true, autoIncrement: true, type: DataTypes.INTEGER},
         isAdmin: {type: DataTypes.BOOLEAN, allowNull: false},
-        password: {type: DataTypes.STRING, allowNull: false},
+        password: {type: DataTypes.STRING},
         lastName: DataTypes.STRING,
         firstName: DataTypes.STRING,
         eMail: {type: DataTypes.STRING, allowNull: false},
@@ -19,5 +20,9 @@ export class User extends Model {
         isAdmin: false,
         loginBlock: false,
         status: "unregistered"
+    }
+
+    static token() {
+        return this.hasMany(Token);
     }
 }

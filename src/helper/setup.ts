@@ -1,13 +1,15 @@
 import {insertUser, returnUserByEmail} from "../controller/databaseFetcher/user.ts";
-import {User} from "../model/user.ts";
-import {Invitation} from "../model/invitation.ts";
+import {User} from "../model/db/user.ts";
+import {Invitation} from "../model/db/invitation.ts";
 import {Relationships} from 'https://deno.land/x/denodb/mod.ts';
 import {db} from "../controller/database.ts";
+import {Token} from "../model/db/token.ts";
 
 export const setup = async (dropDatabase: boolean) => {
 
     Relationships.belongsTo(Invitation, User);
-    db.link([User, Invitation]);
+    Relationships.belongsTo(Token, User);
+    db.link([User, Invitation, Token]);
     await db.sync({drop: dropDatabase}).catch(err => {
         //TODO fix for https://github.com/eveningkid/denodb/issues/258
         console.log("Entering workaround for: https://github.com/eveningkid/denodb/issues/258")

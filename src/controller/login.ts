@@ -2,15 +2,16 @@ import {returnUserByEmailAndPassword} from "./databaseFetcher/user.ts";
 import {Context} from 'https://deno.land/x/oak/mod.ts';
 import {createJWT} from "./validation.ts";
 import {createTerminationDate} from "../helper/dateHelper.ts";
-import {User} from "../model/user.ts";
+import {User} from "../model/db/user.ts";
 import {convertUserToUserProfile} from "../helper/userConverter.ts";
+import {insertToken} from "./databaseFetcher/token.ts";
 
 export const login = async (ctx: Context): Promise<boolean> => {
     const requestParameter = await ctx.request.body({type: "json"}).value;
 
     if (!requestParameter.email || !requestParameter.password) {
         ctx.response.status = 401;
-        ctx.response.body = {error: "no username or password provided"}
+        ctx.response.body = {error: "no email or password provided"}
         return false;
     }
 
@@ -18,6 +19,7 @@ export const login = async (ctx: Context): Promise<boolean> => {
     if (user instanceof User) {
         ctx.response.body = JSON.stringify(convertUserToUserProfile(user));
         let jwt = await createJWT(user);
+        await insertToken(user, jwt);
         ctx.cookies.set("token", jwt, {expires: createTerminationDate(), httpOnly: true});
         return true;
     } else {
