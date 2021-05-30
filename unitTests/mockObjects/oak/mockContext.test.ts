@@ -6,14 +6,15 @@ import {RequestBodyMock} from "./mockBody.test.ts";
 export async function createMockContext<S extends Record<string | number | symbol, any> = Record<string, any>,
     >(
     app: Application<S>,
-    requestBodyJsonString: string,
+    requestBodyJsonString?: string,
     standardHeader: string[][] = [["Content-Type", "application/json"]],
     path = "/",
+    token?: string,
     method = "GET",
 ) {
-    const request = await createMockRequest(requestBodyJsonString, standardHeader);
+    const request = await createMockRequest(standardHeader,requestBodyJsonString, path);
     const response = await createMockResponse(standardHeader);
-    const cookies = new Cookies(request, response);
+    const cookies = token? {get(bla:string): string{return token}}: new Cookies(request, response);
     return ({
         app,
         request: request,

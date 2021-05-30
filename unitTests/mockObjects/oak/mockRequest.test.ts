@@ -4,14 +4,16 @@ import {RequestBodyMock} from './mockBody.test.ts'
 let requestResponseStack: ServerResponse[] = [];
 
 export function createMockRequest(
-    requestBodyJsonString: string,
     headersInit: string[][],
-    url = "/index.html",
+    requestBodyJsonString?: string,
+    pathname = "/index.html",
     proto = "HTTP/1.1",
     host = "localhost",
 ): Promise<Request> {
     let request = {
-        url,
+        url: {
+            pathname: pathname
+        },
         headers: new Headers(headersInit),
         respond(response: ServerResponse) {
             requestResponseStack.push(response);
