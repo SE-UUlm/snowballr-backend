@@ -37,7 +37,7 @@ Deno.test({
 
         let loginWorked: boolean = await login(ctx);
 
-        assertNotEquals(true, loginWorked);
+        assertNotEquals(loginWorked, true);
         db.close();
 
     }
@@ -56,7 +56,7 @@ Deno.test({
 
         let loginWorked: boolean = await login(ctx);
 
-        assertNotEquals(true, loginWorked);
+        assertNotEquals(loginWorked, true);
         db.close();
     }
 

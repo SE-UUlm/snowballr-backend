@@ -13,20 +13,28 @@ export class RequestBodyMock {
         bla: string
     ): Body | BodyReader | BodyStream {
 
-        const body: Body = Object.create(null);
-        Object.defineProperties(body, {
-            type: {
-                value: "json",
-                configurable: true,
-                enumerable: true,
-            },
-            value: {
-                get: () => JSON.parse(this.bodyJsonString),
-                configurable: true,
-                enumerable: true,
-            },
-        });
-        return body;
+        if(type === "json") {
+            const body: Body = Object.create(null);
+            Object.defineProperties(body, {
+                type: {
+                    value: "json",
+                    configurable: true,
+                    enumerable: true,
+                },
+                value: {
+                    get: () => JSON.parse(this.bodyJsonString),
+                    configurable: true,
+                    enumerable: true,
+                },
+            });
+            return body;
+        } else{
+            if(this.bodyJsonString.length > 0){
+                throw "filled body"
+            } else{
+                return Object.create(null);;
+            }
+        }
     }
 }
 

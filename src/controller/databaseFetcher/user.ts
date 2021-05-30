@@ -6,8 +6,6 @@ export const returnUserByEmailAndPassword = async (eMail: string, password: stri
     let user = await User.where({eMail: eMail, password: hashPassword(password)}).get();
     if (Array.isArray(user)) {
         return user[0];
-    } else if (user instanceof User) {
-        return user;
     }
     return undefined;
 }
@@ -17,8 +15,6 @@ export const returnUserByEmail = async (eMail: string): Promise<User | undefined
 
     if (Array.isArray(user)) {
         return user[0];
-    } else if (user instanceof User) {
-        return user;
     }
     return undefined;
 }

@@ -2,7 +2,7 @@ import {Application, Router} from 'https://deno.land/x/oak/mod.ts';
 import {validateContentType, validateJWTIfExists} from "./controller/validation.ts";
 import {login} from "./controller/login.ts";
 import {setup} from "./helper/setup.ts";
-import {createUser, getUsers} from "./controller/user.ts";
+import {createUser, getUser, getUsers, patchUser} from "./controller/user.ts";
 import {logout} from "./controller/logout.ts";
 
 await setup(true);
@@ -15,6 +15,8 @@ router
     .get("/logout",async (context) => {await logout(context)})
     .post("/users", async (context) =>{await createUser(context)})
     .get("/users", async (context) => {await getUsers(context)})
+    .get("/users/:id", async (context) => {await getUser(context,context.params.id)})
+    .patch("/users/:id", async (context) => {await patchUser(context,context.params.id)})
 
 const app = new Application();
 app.use(await validateContentType)

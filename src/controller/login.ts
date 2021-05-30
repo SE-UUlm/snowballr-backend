@@ -1,10 +1,7 @@
 import {returnUserByEmailAndPassword} from "./databaseFetcher/user.ts";
 import {Context} from 'https://deno.land/x/oak/mod.ts';
-import {createJWT} from "./validation.ts";
-import {createTerminationDate} from "../helper/dateHelper.ts";
-import {User} from "../model/db/user.ts";
 import {convertUserToUserProfile} from "../helper/userConverter.ts";
-import {insertToken} from "./databaseFetcher/token.ts";
+import {startSession} from "./session.ts";
 
 export const login = async (ctx: Context): Promise<boolean> => {
     const requestParameter = await ctx.request.body({type: "json"}).value;
@@ -15,12 +12,10 @@ export const login = async (ctx: Context): Promise<boolean> => {
         return false;
     }
 
-    let user = await returnUserByEmailAndPassword(requestParameter.email, requestParameter.password);
-    if (user instanceof User) {
+    let user = await loginFromDatabase(requestParameter.email, requestParameter.password)
+    if (user) {
         ctx.response.body = JSON.stringify(convertUserToUserProfile(user));
-        let jwt = await createJWT(user);
-        await insertToken(user, jwt);
-        ctx.cookies.set("token", jwt, {expires: createTerminationDate(), httpOnly: true});
+        await startSession(user, ctx);
         return true;
     } else {
         ctx.response.status = 401;
@@ -28,4 +23,8 @@ export const login = async (ctx: Context): Promise<boolean> => {
         return false;
     }
 
+}
+
+const loginFromDatabase = async (email: string, password: string) => {
+    return await returnUserByEmailAndPassword(email, password);
 }

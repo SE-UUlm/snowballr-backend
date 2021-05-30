@@ -14,7 +14,7 @@ Deno.test({
         let ctx = await createMockContext(app,`{"email": "test@test", "password":"ash"}`);
         await validateContentType(ctx, emptyAsyncFunctionTest)
 
-        assertEquals(200, ctx.response.status)
+        assertEquals(ctx.response.status,200)
     }
 
 })
@@ -26,7 +26,7 @@ Deno.test({
         let ctx = await createMockContext(app,`{"email": "test@test", "password":"ash"`);
         await validateContentType(ctx, emptyAsyncFunctionTest)
 
-        assertEquals(415, ctx.response.status)
+        assertEquals(ctx.response.status, 415)
     }
 
 })
@@ -38,7 +38,7 @@ Deno.test({
         let ctx = await createMockContext(app,`{"email": "test@test", "password":"ash"}`,[["Content-Type", "text"]]);
         await validateContentType(ctx,emptyAsyncFunctionTest)
 
-        assertEquals(415, ctx.response.status)
+        assertEquals(ctx.response.status,415)
     }
 
 })

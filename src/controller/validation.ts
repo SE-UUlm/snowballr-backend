@@ -6,11 +6,11 @@ import {createNumericTerminationDate} from "../helper/dateHelper.ts";
 const SECRET = String(Deno.env.get('SECRET'));
 
 export const validateContentType = async (ctx: Context, next: () => Promise<unknown>) => {
+    ctx.response.type = "application/json";
     if(await emptyContent(ctx)){
         await next();
     }
     else if (ctx.request.headers.get("Content-Type") === "application/json") {
-        ctx.response.type = "application/json";
         if(await validateContent(ctx)){
             await next();
         }
@@ -65,6 +65,14 @@ export const checkAdmin = async (ctx: Context) => {
         }
 
     return false;
+}
+
+export const getUserID = async (ctx: Context) =>{
+    const payloadJson = await getPayloadFromJWT(ctx);
+    if(payloadJson.id){
+        return payloadJson.id
+    }
+    return undefined;
 }
 
 export const getPayloadFromJWT = async (ctx: Context) => {

@@ -9,8 +9,6 @@ export const getToken = async(userId: number, token: string) => {
     let foundToken = await Token.where({userId: userId, token: token}).get()
     if (Array.isArray(foundToken)) {
         return foundToken[0];
-    } else if (foundToken instanceof Token) {
-        return foundToken;
     }
     return undefined;
 }
