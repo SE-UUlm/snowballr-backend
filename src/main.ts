@@ -5,6 +5,7 @@ import {setup} from "./helper/setup.ts";
 import {createUser, getUser, getUsers, patchUser} from "./controller/user.ts";
 import {logout} from "./controller/logout.ts";
 
+//TODO user authentication header patch
 await setup(true);
 const router = new Router();
 router
