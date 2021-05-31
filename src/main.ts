@@ -11,12 +11,24 @@ router
     .get("/", (context) => {
         context.response.body = {message: "hello there"}
     })
-    .get("/login",async (context) =>{ await login(context)})
-    .get("/logout",async (context) => {await logout(context)})
-    .post("/users", async (context) =>{await createUser(context)})
-    .get("/users", async (context) => {await getUsers(context)})
-    .get("/users/:id", async (context) => {await getUser(context,context.params.id)})
-    .patch("/users/:id", async (context) => {await patchUser(context,context.params.id)})
+    .get("/login", async (context) => {
+        await login(context)
+    })
+    .get("/logout", async (context) => {
+        await logout(context)
+    })
+    .post("/users", async (context) => {
+        await createUser(context)
+    })
+    .get("/users", async (context) => {
+        await getUsers(context)
+    })
+    .get("/users/:id", async (context) => {
+        await getUser(context, context.params.id)
+    })
+    .patch("/users/:id", async (context) => {
+        await patchUser(context, Number(context.params.id))
+    })
 
 const app = new Application();
 app.use(await validateContentType)

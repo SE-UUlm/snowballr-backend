@@ -8,7 +8,7 @@ export class User extends Model {
     static fields = {
         id: {primaryKey: true, autoIncrement: true, type: DataTypes.INTEGER},
         isAdmin: {type: DataTypes.BOOLEAN, allowNull: false},
-        password: {type: DataTypes.STRING},
+        password: {type: DataTypes.STRING, allowNull: true},
         lastName: DataTypes.STRING,
         firstName: DataTypes.STRING,
         eMail: {type: DataTypes.STRING, allowNull: false},

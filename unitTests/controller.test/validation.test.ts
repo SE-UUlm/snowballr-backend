@@ -66,7 +66,7 @@ Deno.test({
 })
 
 Deno.test({
-    name: "UnautorizedRequest",
+    name: "UnauthorizedRequest",
     async fn(): Promise<void> {
         let app = await createMockApp();
         let ctx = await createMockContext(app,`{"email": "test@test", "password":"ash"}`,[["Content-Type", "text"]]);
@@ -78,7 +78,7 @@ Deno.test({
 })
 
 Deno.test({
-    name: "autorizedRequest",
+    name: "authorizedRequest",
     async fn(): Promise<void> {
         await setup(true);
         let user = await insertUser("test@test", "ash", true, "Test", "Tester", "registered");
@@ -91,4 +91,19 @@ Deno.test({
         assertEquals(ctx.response.status,200)
     },
     sanitizeResources: false,
+})
+
+Deno.test({
+    name: "unAuthorizedRequestWithWrongToken",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "registered");
+
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app,undefined,[["Content-Type", "text"]], "/", token+"a");
+        await validateJWTIfExists(ctx,emptyAsyncFunctionTest)
+
+        assertEquals(ctx.response.status,401)
+    },
 })
