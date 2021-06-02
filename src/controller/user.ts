@@ -1,11 +1,15 @@
 import {Context} from 'https://deno.land/x/oak/mod.ts';
-import {checkAdmin, getUserID} from "./validation.ts";
+import {checkAdmin, createJWT, getUserID} from "./validation.ts";
 import {insertUserForRegistration} from "./databaseFetcher/user.ts";
 import {User} from "../model/db/user.ts";
 import {convertCtxBodyToUser, convertUserToUserProfile} from "../helper/userConverter.ts";
 import {hashPassword} from "../helper/passwordHasher.ts";
+import {getToken, insertToken} from "./databaseFetcher/token.ts";
+import {EMailClient} from "../model/eMailClient.ts";
+import {Token} from "../model/db/token.ts";
 
-export const createUser = async (ctx: Context) => {
+
+export const createUser = async (ctx: Context, client: EMailClient) => {
     if (await checkAdmin(ctx)) { //TODO add check for projectowner
         const requestParameter = await ctx.request.body({type: "json"}).value;
 
@@ -15,8 +19,21 @@ export const createUser = async (ctx: Context) => {
             return;
         }
 
-        await insertUserForRegistration(requestParameter.email);
-        ctx.response.status = 201;
+        let user = await insertUserForRegistration(requestParameter.email);
+        let jwt = await createJWT(user)
+        await insertToken(user, jwt);
+        let linkText = "snowballR"
+        let url = Deno.env.get("URL");
+        let adminMail = Deno.env.get("ADMIN_EMAIL");
+        if (url && adminMail) {
+            await sendInvitationMail(jwt, linkText, url, adminMail, requestParameter, client);
+            ctx.response.status = 201;
+        } else {
+            console.error("no url and/or no email in env!")
+            ctx.response.status = 401;
+        }
+
+
     } else {
         ctx.response.status = 401;
     }
@@ -48,8 +65,26 @@ export const getUser = async (ctx: Context, id: string | undefined) => {
 export const patchUser = async (ctx: Context, id: number | undefined) => {
     let isSameUser = (await getUserID(ctx)) === id;
     let isAdmin = await checkAdmin(ctx);
-    if (id && (isSameUser || isAdmin)) {
-        let userData = await convertCtxBodyToUser(ctx);
+    let invitationToken = ctx.request.headers.get("invitationToken");
+    let hasInvitationToken = false;
+    let token: Token | undefined;
+    let userData = await convertCtxBodyToUser(ctx);
+    if (invitationToken && id) {
+        token = await getToken(id, invitationToken)
+        if (token) {
+            if (userData.password && userData.firstName) {
+                hasInvitationToken = true;
+                token.delete();
+            } else {
+                ctx.response.body = '{"error": "no password and/or firstName provided"}'
+                ctx.response.status = 400;
+            }
+        } else {
+            ctx.response.status = 401;
+        }
+    }
+    if (id && (isSameUser || isAdmin || hasInvitationToken)) {
+
         let user = await User.find(id);
         if (isSameUser) {
             if (userData.password) {
@@ -83,3 +118,29 @@ export const patchUser = async (ctx: Context, id: number | undefined) => {
     }
 }
 
+const sendInvitationMail = async (jwt: string, linkText: string, url: string, adminMail: string, requestParameter: { email: string }, client: EMailClient) => {
+    if (url.startsWith("http://")) {
+        url.replace("http://", "https://");
+    }
+    if (!url.startsWith("https://")) {
+        url = "https://" + url;
+    }
+    url += "/" + jwt;
+    let finalText = linkText.link(url);
+    await client.connect({
+        hostname: "mail.uni-ulm.de",
+        port: 25,
+    });
+    await client.send({
+        from: adminMail,
+        to: requestParameter.email,
+        subject: "Invitation to join SnowballR",
+        content: `Welcome, </br>
+                to finalize your registration for snowballR, please visit: ${finalText}. </br>
+                Best Regards, </br>
+                Your SnowballR Team`,
+        html: `<h3>Welcome, </h3> <p>to finalize your registration for snowballR, please visit <a href="${url}">snowballR</a></p><p>Best Regards,</p><p>your snowballR Team</p>`
+    })
+
+    await client.close();
+}

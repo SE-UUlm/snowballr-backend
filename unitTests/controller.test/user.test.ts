@@ -6,6 +6,7 @@ import {createMockContext} from "../mockObjects/oak/mockContext.test.ts";
 import {assertEquals, assertNotEquals} from "https://deno.land/std@0.97.0/testing/asserts.ts"
 import {createUser, getUsers, patchUser} from "../../src/controller/user.ts";
 import {User} from "../../src/model/db/user.ts";
+import {MockEmailClient} from "../mockObjects/mockEmailClient.test.ts";
 
 Deno.test({
     name: "insertUserForCreation",
@@ -15,8 +16,8 @@ Deno.test({
 
         let app = await createMockApp();
         let token = await createJWT(user)
-        let ctx = await createMockContext(app, `{"email": "neue@mail.de"}`, [["Content-Type", "application/json"]], "/", token);
-        await createUser(ctx)
+        let ctx = await createMockContext(app, `{"email": "andreas.decker@uni-ulm.de"}`, [["Content-Type", "application/json"]], "/", token);
+        await createUser(ctx, new MockEmailClient())
 
         assertEquals(ctx.response.status, 201)
     },
@@ -32,7 +33,7 @@ Deno.test({
         let app = await createMockApp();
         let token = await createJWT(user)
         let ctx = await createMockContext(app, `{}`, [["Content-Type", "application/json"]], "/", token);
-        await createUser(ctx)
+        await createUser(ctx, new MockEmailClient())
 
         assertEquals(ctx.response.status, 422)
     },
