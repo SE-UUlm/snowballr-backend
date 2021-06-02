@@ -54,13 +54,17 @@ export const createJWT = async (user: User) => {
         isAdmin: user.isAdmin,
         lastName: user.lastName,
         firstName: user.firstName,
+        status: user.status,
         exp: createNumericTerminationDate()
     }, SECRET);
 }
 
 export const checkAdmin = async (ctx: Context) => {
     const payloadJson = await getPayloadFromJWT(ctx);
-    if (payloadJson.isAdmin) {
+    if (payloadJson.isAdmin && payloadJson.status) {
+        if (payloadJson.status === "unregistered" || payloadJson.status === "deleted") {
+            return false;
+        }
         return payloadJson.isAdmin;
     }
 
