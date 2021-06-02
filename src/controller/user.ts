@@ -6,8 +6,9 @@ import {convertCtxBodyToUser, convertUserToUserProfile} from "../helper/userConv
 import {hashPassword} from "../helper/passwordHasher.ts";
 import {getToken, insertToken} from "./databaseFetcher/token.ts";
 import {EMailClient} from "../model/eMailClient.ts";
-import {Token} from "../model/db/token.ts";
 import {makeErrorMessage} from "../helper/error.ts";
+import {urlSanitizer} from "../helper/url.ts";
+import {UserParameters} from "../model/userProfile.ts";
 
 
 export const createUser = async (ctx: Context, client: EMailClient) => {
@@ -50,13 +51,12 @@ export const getUsers = async (ctx: Context) => {
 
 //TODO user himself && PO && others
 export const getUser = async (ctx: Context, id: string | undefined) => {
-    if (id) {
-        if (await checkAdmin(ctx)) {
-            let user = await User.find(id);
-            let userProfile = convertUserToUserProfile(user);
-            ctx.response.body = JSON.stringify(userProfile);
-            ctx.response.status = 200;
-        }
+    if (id && await checkAdmin(ctx)) {
+        let user = await User.find(id);
+        let userProfile = convertUserToUserProfile(user);
+        ctx.response.body = JSON.stringify(userProfile);
+        ctx.response.status = 200;
+
     }
 }
 
@@ -64,25 +64,15 @@ export const patchUser = async (ctx: Context, id: number | undefined) => {
     let isSameUser = (await getUserID(ctx)) === id;
     let isAdmin = await checkAdmin(ctx);
     let invitationToken = ctx.request.headers.get("invitationToken");
-    let hasInvitationToken = false;
-    let token: Token | undefined;
+    let invitationTokenValid = false;
     let userData = await convertCtxBodyToUser(ctx);
     if (invitationToken && id) {
-        token = await getToken(id, invitationToken)
-        if (token) {
-            if (userData.password && userData.firstName) {
-                hasInvitationToken = true;
-                token.delete();
-            } else {
-                makeErrorMessage(ctx, 400, "no password and/or firstName provided")
-            }
-        } else {
-            makeErrorMessage(ctx, 401, "not authorized")
-        }
+        invitationTokenValid = await checkToken(id, invitationToken, userData, ctx);
     }
-    if (id && (isSameUser || isAdmin || hasInvitationToken)) {
+    if (id && (isSameUser || isAdmin || invitationTokenValid)) {
 
         let user = await User.find(id);
+
         if (isSameUser) {
             if (userData.password) {
                 user.password = hashPassword(userData.password)
@@ -115,13 +105,24 @@ export const patchUser = async (ctx: Context, id: number | undefined) => {
     }
 }
 
+const checkToken = async (id: number, invitationToken: string, userData: UserParameters, ctx: Context) => {
+    let token = await getToken(id, invitationToken)
+    if (token) {
+        if (userData.password && userData.firstName) {
+            token.delete()
+            return true;
+        } else {
+            makeErrorMessage(ctx, 400, "no password and/or firstName provided")
+            return false;
+        }
+    } else {
+        makeErrorMessage(ctx, 401, "not authorized")
+        return false;
+    }
+}
+
 const sendInvitationMail = async (jwt: string, linkText: string, url: string, adminMail: string, requestParameter: { email: string }, client: EMailClient) => {
-    if (url.startsWith("http://")) {
-        url.replace("http://", "https://");
-    }
-    if (!url.startsWith("https://")) {
-        url = "https://" + url;
-    }
+    url = urlSanitizer(url);
     url += "/register/" + jwt;
     let finalText = linkText.link(url);
     await client.connect({
@@ -136,7 +137,10 @@ const sendInvitationMail = async (jwt: string, linkText: string, url: string, ad
                 to finalize your registration for snowballR, please visit: ${finalText}. </br>
                 Best Regards, </br>
                 Your SnowballR Team`,
-        html: `<h3>Welcome, </h3> <p>to finalize your registration for snowballR, please visit <a href="${url}">snowballR</a></p><p>Best Regards,</p><p>your snowballR Team</p>`
+        html: `<h3>Welcome, </h3>
+        <p>to finalize your registration for snowballR, please visit <a href="${url}">snowballR</a></p>
+        <p>Best Regards,</p>
+        <p>your snowballR Team</p>`
     })
 
     await client.close();

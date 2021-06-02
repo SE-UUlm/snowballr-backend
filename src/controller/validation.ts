@@ -11,8 +11,10 @@ export const validateContentType = async (ctx: Context, next: () => Promise<unkn
     if (await emptyContent(ctx)) {
         await next();
     } else if (ctx.request.headers.get("Content-Type") === "application/json") {
-        if (await validateContent(ctx)) {
+        if (await validateContent(ctx, next)) {
             await next();
+        } else {
+            makeErrorMessage(ctx, 415, "The requestBody is not in a correct JSON format")
         }
     } else {
         makeErrorMessage(ctx, 415, "Only application/json is allowed")
@@ -27,11 +29,10 @@ const emptyContent = async (ctx: Context): Promise<boolean> => {
         return false;
     }
 }
-const validateContent = async (ctx: Context): Promise<boolean> => {
+const validateContent = async (ctx: Context, next: () => Promise<unknown>): Promise<boolean> => {
     try {
         await ctx.request.body({type: "json"}).value
     } catch (error) {
-        makeErrorMessage(ctx, 415, "The requestBody is not in a correct JSON format")
         return false;
     }
     return true;

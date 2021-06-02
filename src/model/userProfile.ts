@@ -6,11 +6,11 @@ export interface UserBasic {
 
 }
 
-export interface UserProfile extends UserBasic{
+export interface UserProfile extends UserBasic {
     status?: string,
     isAdmin?: boolean
 }
 
-export interface UserFields extends UserProfile{
+export interface UserParameters extends UserProfile {
     password?: string
 }
