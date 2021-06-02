@@ -2,13 +2,13 @@ import {returnUserByEmailAndPassword} from "./databaseFetcher/user.ts";
 import {Context} from 'https://deno.land/x/oak/mod.ts';
 import {convertUserToUserProfile} from "../helper/userConverter.ts";
 import {startSession} from "./session.ts";
+import {makeErrorMessage} from "../helper/error.ts";
 
 export const login = async (ctx: Context): Promise<boolean> => {
     const requestParameter = await ctx.request.body({type: "json"}).value;
 
     if (!requestParameter.email || !requestParameter.password) {
-        ctx.response.status = 401;
-        ctx.response.body = {error: "no email or password provided"}
+        makeErrorMessage(ctx, 401, "no email or password provided")
         return false;
     }
 
@@ -18,8 +18,7 @@ export const login = async (ctx: Context): Promise<boolean> => {
         await startSession(user, ctx);
         return true;
     } else {
-        ctx.response.status = 401;
-        ctx.response.body = {error: "wrong username or password provided"}
+        makeErrorMessage(ctx, 401, "wrong username or password provided")
         return false;
     }
 

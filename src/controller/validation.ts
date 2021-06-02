@@ -2,6 +2,7 @@ import {Context} from 'https://deno.land/x/oak/mod.ts';
 import {create, decode, verify} from "https://deno.land/x/djwt@/mod.ts"
 import {User} from "../model/db/user.ts";
 import {createNumericTerminationDate} from "../helper/dateHelper.ts";
+import {makeErrorMessage} from "../helper/error.ts";
 
 const SECRET = String(Deno.env.get('SECRET'));
 
@@ -14,8 +15,7 @@ export const validateContentType = async (ctx: Context, next: () => Promise<unkn
             await next();
         }
     } else {
-        ctx.response.status = 415;
-        ctx.response.body = {error: "Only application/json is allowed"}
+        makeErrorMessage(ctx, 415, "Only application/json is allowed")
     }
 
 }
@@ -31,8 +31,7 @@ const validateContent = async (ctx: Context): Promise<boolean> => {
     try {
         await ctx.request.body({type: "json"}).value
     } catch (error) {
-        ctx.response.status = 415;
-        ctx.response.body = {error: "The requestBody is not in a correct JSON format"}
+        makeErrorMessage(ctx, 415, "The requestBody is not in a correct JSON format")
         return false;
     }
     return true;
@@ -90,8 +89,7 @@ const verifyJWT = async (ctx: Context, next: () => Promise<unknown>, token: stri
         await next();
     }).catch(() => {
         ctx.cookies.delete("token");
-        ctx.response.status = 401
-        ctx.response.body = `{"error":"token expired"}`
+        makeErrorMessage(ctx, 401, "token expired")
     });
 }
 
@@ -99,6 +97,6 @@ const allowLogin = async (ctx: Context, next: () => Promise<unknown>) => {
     if (ctx.request.url.pathname === "/login" || (ctx.request.url.pathname.match(/\/users\/[0-9]+/g) && ctx.request.method.toString() === "PATCH")) {
         await next();
     } else {
-        ctx.response.status = 401
+        makeErrorMessage(ctx, 401, "not authorized")
     }
 }

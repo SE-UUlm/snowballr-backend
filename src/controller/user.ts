@@ -7,6 +7,7 @@ import {hashPassword} from "../helper/passwordHasher.ts";
 import {getToken, insertToken} from "./databaseFetcher/token.ts";
 import {EMailClient} from "../model/eMailClient.ts";
 import {Token} from "../model/db/token.ts";
+import {makeErrorMessage} from "../helper/error.ts";
 
 
 export const createUser = async (ctx: Context, client: EMailClient) => {
@@ -14,8 +15,7 @@ export const createUser = async (ctx: Context, client: EMailClient) => {
         const requestParameter = await ctx.request.body({type: "json"}).value;
 
         if (!requestParameter.email) {
-            ctx.response.status = 422;
-            ctx.response.body = {error: "no email provided"}
+            makeErrorMessage(ctx, 422, "no email provided")
             return;
         }
 
@@ -30,12 +30,10 @@ export const createUser = async (ctx: Context, client: EMailClient) => {
             ctx.response.status = 201;
         } else {
             console.error("no url and/or no email in env!")
-            ctx.response.status = 401;
+            makeErrorMessage(ctx, 401, "not authorized")
         }
-
-
     } else {
-        ctx.response.status = 401;
+        makeErrorMessage(ctx, 401, "not authorized")
     }
 }
 
@@ -76,11 +74,10 @@ export const patchUser = async (ctx: Context, id: number | undefined) => {
                 hasInvitationToken = true;
                 token.delete();
             } else {
-                ctx.response.body = '{"error": "no password and/or firstName provided"}'
-                ctx.response.status = 400;
+                makeErrorMessage(ctx, 400, "no password and/or firstName provided")
             }
         } else {
-            ctx.response.status = 401;
+            makeErrorMessage(ctx, 401, "not authorized")
         }
     }
     if (id && (isSameUser || isAdmin || hasInvitationToken)) {
@@ -114,7 +111,7 @@ export const patchUser = async (ctx: Context, id: number | undefined) => {
         ctx.response.body = JSON.stringify(userProfile);
         ctx.response.status = 200;
     } else {
-        ctx.response.status = 401;
+        makeErrorMessage(ctx, 401, "not authorized");
     }
 }
 
@@ -125,7 +122,7 @@ const sendInvitationMail = async (jwt: string, linkText: string, url: string, ad
     if (!url.startsWith("https://")) {
         url = "https://" + url;
     }
-    url += "/" + jwt;
+    url += "/register/" + jwt;
     let finalText = linkText.link(url);
     await client.connect({
         hostname: "mail.uni-ulm.de",
