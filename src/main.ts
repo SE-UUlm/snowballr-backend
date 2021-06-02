@@ -31,7 +31,7 @@ router
         await getUser(context, context.params.id)
     })
     .patch("/users/:id", async (context, Methods) => {
-        patchUser(context, Number(context.params.id))
+        await patchUser(context, Number(context.params.id))
     })
 
 const app = new Application();
