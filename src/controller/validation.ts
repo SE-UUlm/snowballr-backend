@@ -61,7 +61,7 @@ export const createJWT = async (user: User) => {
 
 export const checkAdmin = async (ctx: Context) => {
     const payloadJson = await getPayloadFromJWT(ctx);
-    if (payloadJson.isAdmin && payloadJson.status) {
+    if (payloadJson && payloadJson.isAdmin && payloadJson.status) {
         if (payloadJson.status === "unregistered" || payloadJson.status === "deleted") {
             return false;
         }
@@ -73,7 +73,7 @@ export const checkAdmin = async (ctx: Context) => {
 
 export const getUserID = async (ctx: Context) => {
     const payloadJson = await getPayloadFromJWT(ctx);
-    if (payloadJson.id) {
+    if (payloadJson && payloadJson.id) {
         return payloadJson.id
     }
     return undefined;

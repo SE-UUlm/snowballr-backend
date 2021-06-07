@@ -27,8 +27,9 @@ export const createUser = async (ctx: Context, client: EMailClient) => {
         let url = Deno.env.get("URL");
         let adminMail = Deno.env.get("ADMIN_EMAIL");
         if (url && adminMail) {
-            await sendInvitationMail(jwt, linkText, url, adminMail, requestParameter, client);
+            await sendInvitationMail(jwt, linkText, url, adminMail, requestParameter, Number(user.id), client);
             ctx.response.status = 201;
+            return user;
         } else {
             console.error("no url and/or no email in env!")
             makeErrorMessage(ctx, 401, "not authorized")
@@ -36,6 +37,7 @@ export const createUser = async (ctx: Context, client: EMailClient) => {
     } else {
         makeErrorMessage(ctx, 401, "not authorized")
     }
+    return undefined;
 }
 
 export const getUsers = async (ctx: Context) => {
@@ -70,10 +72,9 @@ export const patchUser = async (ctx: Context, id: number | undefined) => {
         invitationTokenValid = await checkToken(id, invitationToken, userData, ctx);
     }
     if (id && (isSameUser || isAdmin || invitationTokenValid)) {
-
         let user = await User.find(id);
 
-        if (isSameUser) {
+        if (isSameUser || invitationTokenValid) {
             if (userData.password) {
                 user.password = hashPassword(userData.password)
             }
@@ -121,9 +122,9 @@ const checkToken = async (id: number, invitationToken: string, userData: UserPar
     }
 }
 
-const sendInvitationMail = async (jwt: string, linkText: string, url: string, adminMail: string, requestParameter: { email: string }, client: EMailClient) => {
+const sendInvitationMail = async (jwt: string, linkText: string, url: string, adminMail: string, requestParameter: { email: string }, userId: number, client: EMailClient) => {
     url = urlSanitizer(url);
-    url += "/register/" + jwt;
+    url += "/register/?id=" + userId + "&token=" + jwt;
     let finalText = linkText.link(url);
     await client.connect({
         hostname: "mail.uni-ulm.de",

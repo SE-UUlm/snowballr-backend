@@ -7,6 +7,7 @@ import {assertEquals, assertNotEquals} from "https://deno.land/std@0.97.0/testin
 import {createUser, getUsers, patchUser} from "../../src/controller/user.ts";
 import {User} from "../../src/model/db/user.ts";
 import {MockEmailClient} from "../mockObjects/mockEmailClient.test.ts";
+import {getTokens} from "../../src/controller/databaseFetcher/token.ts";
 
 Deno.test({
     name: "insertUserForCreation",
@@ -117,6 +118,69 @@ Deno.test({
         assertNotEquals(lastName, String(user.lastName));
         assertEquals(isAdmin, Boolean(user.isAdmin));
         assertEquals(status, String(user.status));
+    },
+    sanitizeResources: false,
+})
+
+Deno.test({
+    name: "PatchUserInvitation",
+    async fn(): Promise<void> {
+        await setup(true);
+        let app = await createMockApp();
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "registered");
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, `{"email": "testing@test"}`, [["Content-Type", "application/json"]], "/", token);
+        let userToChange = await createUser(ctx, new MockEmailClient())
+        if (userToChange) {
+            let email = String(userToChange.eMail);
+            let password = String(userToChange.password);
+            let firstName = String(userToChange.firstName);
+            let lastName = String(userToChange.lastName)
+            let isAdmin = Boolean(userToChange.isAdmin)
+            let status = String(userToChange.status)
+
+            let testToken = await getTokens(Number(userToChange.id));
+            assertNotEquals(testToken, undefined)
+            if (testToken) {
+                ctx = await createMockContext(app, `{"email":"hey@hey.to", "password":"meow","firstName":"Thomas","lastName":"Schmiddy","isAdmin":false,"status":"registered"}`, [["Content-Type", "application/json"], ["invitationToken", String(testToken[0].token)]], "/");
+                await patchUser(ctx, Number(userToChange.id));
+                userToChange = await User.find(Number(userToChange.id));
+                assertNotEquals("undefined", String(userToChange.eMail));
+                assertNotEquals("undefined", String(userToChange.password));
+                assertNotEquals("undefined", String(userToChange.firstName));
+                assertNotEquals("undefined", String(userToChange.lastName));
+                assertNotEquals(undefined, Boolean(userToChange.isAdmin));
+                assertNotEquals("undefined", String(userToChange.status));
+                assertNotEquals(email, String(userToChange.eMail));
+                assertNotEquals(password, String(userToChange.password));
+                assertNotEquals(firstName, String(userToChange.fistName));
+                assertNotEquals(lastName, String(userToChange.lastName));
+                assertEquals(isAdmin, Boolean(userToChange.isAdmin));
+                assertEquals(status, String(userToChange.status));
+            }
+        }
+    },
+    sanitizeResources: false,
+})
+
+Deno.test({
+    name: "PatchUserFakeInvitation",
+    async fn(): Promise<void> {
+        await setup(true);
+        let app = await createMockApp();
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "registered");
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, `{"email": "testing@test"}`, [["Content-Type", "application/json"]], "/", token);
+        let userToChange = await createUser(ctx, new MockEmailClient())
+        if (userToChange) {
+            let testToken = await getTokens(Number(userToChange.id));
+            assertNotEquals(testToken, undefined)
+            if (testToken) {
+                ctx = await createMockContext(app, `{"email":"hey@hey.to", "password":"meow","firstName":"Thomas","lastName":"Schmiddy","isAdmin":false,"status":"registered"}`, [["Content-Type", "application/json"], ["invitationToken", "1234rtg"]], "/");
+                await patchUser(ctx, Number(userToChange.id));
+                assertEquals(ctx.response.status, 401)
+            }
+        }
     },
     sanitizeResources: false,
 })

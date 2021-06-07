@@ -7,7 +7,7 @@ export class Token extends Model {
 
     static fields = {
         id: {primaryKey: true, autoIncrement: true, type: DataTypes.INTEGER},
-        token: DataTypes.STRING
+        token: {type: DataTypes.STRING, length: 512}
     }
 
     static user() {

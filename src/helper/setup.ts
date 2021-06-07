@@ -4,12 +4,16 @@ import {Invitation} from "../model/db/invitation.ts";
 import {Relationships} from 'https://deno.land/x/denodb/mod.ts';
 import {db} from "../controller/database.ts";
 import {Token} from "../model/db/token.ts";
+import {Project} from "../model/db/project.ts";
+import {UserIsPartOfProject} from "../model/db/userIsPartOfProject.ts";
 
 export const setup = async (dropDatabase: boolean) => {
 
     Relationships.belongsTo(Invitation, User);
     Relationships.belongsTo(Token, User);
-    db.link([User, Invitation, Token]);
+    Relationships.manyToMany(UserIsPartOfProject, User)
+    Relationships.manyToMany(UserIsPartOfProject, Project)
+    db.link([User, Invitation, Token, Project, UserIsPartOfProject]);
     await db.sync({drop: dropDatabase}).catch(err => {
         //TODO fix for https://github.com/eveningkid/denodb/issues/258
         console.log("Entering workaround for: https://github.com/eveningkid/denodb/issues/258")

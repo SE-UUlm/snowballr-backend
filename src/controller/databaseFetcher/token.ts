@@ -12,3 +12,11 @@ export const getToken = async (userId: number, token: string) => {
     }
     return undefined;
 }
+
+export const getTokens = async (userId: number) => {
+    let foundToken = await Token.where({userId: userId}).get()
+    if (Array.isArray(foundToken)) {
+        return foundToken;
+    }
+    return undefined;
+}

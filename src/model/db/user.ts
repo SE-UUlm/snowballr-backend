@@ -1,5 +1,6 @@
 import {DataTypes, Model} from "https://deno.land/x/denodb/mod.ts";
 import {Token} from "./token.ts";
+import {UserIsPartOfProject} from "./userIsPartOfProject.ts";
 
 export class User extends Model {
     static table = 'user';
@@ -7,13 +8,13 @@ export class User extends Model {
 
     static fields = {
         id: {primaryKey: true, autoIncrement: true, type: DataTypes.INTEGER},
-        isAdmin: {type: DataTypes.BOOLEAN, allowNull: false},
+        isAdmin: {type: DataTypes.BOOLEAN},
         password: {type: DataTypes.STRING, allowNull: true},
-        lastName: DataTypes.STRING,
+        lastName: {type: DataTypes.STRING, allowNull: true},
         firstName: DataTypes.STRING,
-        eMail: {type: DataTypes.STRING, allowNull: false},
-        status: {type: DataTypes.STRING, allowNull: false},
-        loginBlock: {type: DataTypes.BOOLEAN, allowNull: false}
+        eMail: {type: DataTypes.STRING},
+        status: {type: DataTypes.STRING},
+        loginBlock: {type: DataTypes.BOOLEAN}
     };
 
     static defaults = {
@@ -24,5 +25,9 @@ export class User extends Model {
 
     static token() {
         return this.hasMany(Token);
+    }
+
+    static project() {
+        return this.hasMany(UserIsPartOfProject);
     }
 }
