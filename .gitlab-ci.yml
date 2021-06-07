@@ -28,6 +28,32 @@ build:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
     - if: $CI_COMMIT_BRANCH == "develop"
 
+
+test:
+  stage: test
+  image: docker/compose:debian-1.29.2
+  services:
+    - docker:dind
+  variables:
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - apt-get -qq update && apt-get -qq install -y ca-certificates curl unzip --no-install-recommends
+    - curl -fsSL https://deno.land/x/install/install.sh | sh
+    - cp ~/.deno/bin/deno /bin
+    - docker-compose -f docker/docker-compose.yml --profile min up -d
+    - sleep 1s
+    - mkdir -p cov_profile
+    - /bin/deno test --allow-env --allow-read --allow-net --coverage=cov_profile --unstable
+    - /bin/deno --unstable coverage cov_profile --lcov > cov_profile.lcov
+    - docker-compose -f docker/docker-compose.yml --profile min down
+  artifacts:
+    paths:
+      - cov_profile.lcov
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_BRANCH == "develop"
+
+
 sonarqube:
   stage: test
   image:
@@ -41,8 +67,10 @@ sonarqube:
     paths:
       - .sonar/cache
   script:
-    - sonar-scanner -Dsonar.qualitygate.wait=true -Dsonar.projectKey=${SONAR_PROJECTKEY}
+    - sonar-scanner -Dsonar.qualitygate.wait=true -Dsonar.projectKey=${SONAR_PROJECTKEY} -Dsonar.javascript.lcov.reportPaths="cov_profile.lcov"
   allow_failure: true
+  needs:
+    - test
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
     - if: $CI_COMMIT_BRANCH == "develop"
@@ -72,7 +100,7 @@ deploy-dev:
       fi
     - ssh $DESTINATION_SSH_URL "docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY"
     - ssh $DESTINATION_SSH_URL "docker pull $CI_REGISTRY_IMAGE${tag}"
-    - ssh $DESTINATION_SSH_URL "docker-compose -p snowballr -f project/develop/docker-compose.yml up -d --force-recreate backend"
+    - ssh $DESTINATION_SSH_URL "docker-compose -p snowballr_dev -f project/develop/docker-compose.yml up -d --force-recreate backend"
   rules:
     - if: $CI_COMMIT_BRANCH == "develop"
 
