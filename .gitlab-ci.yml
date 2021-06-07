@@ -1,6 +1,7 @@
 stages:
   - build
   - test
+  - sonarqube
   - deploy
 
 
@@ -55,7 +56,7 @@ test:
 
 
 sonarqube:
-  stage: test
+  stage: sonarqube
   image:
     name: sonarsource/sonar-scanner-cli:latest
     entrypoint: [""]
@@ -101,6 +102,8 @@ deploy-dev:
     - ssh $DESTINATION_SSH_URL "docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY"
     - ssh $DESTINATION_SSH_URL "docker pull $CI_REGISTRY_IMAGE${tag}"
     - ssh $DESTINATION_SSH_URL "docker-compose -p snowballr_dev -f project/develop/docker-compose.yml up -d --force-recreate backend"
+  needs:
+    - build
   rules:
     - if: $CI_COMMIT_BRANCH == "develop"
 
@@ -131,5 +134,7 @@ deploy-prod:
     - ssh $DESTINATION_SSH_URL "docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY"
     - ssh $DESTINATION_SSH_URL "docker pull $CI_REGISTRY_IMAGE${tag}"
     - ssh $DESTINATION_SSH_URL "docker-compose -p snowballr -f project/master/docker-compose.yml up -d --force-recreate backend"
+  needs:
+    - build
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
