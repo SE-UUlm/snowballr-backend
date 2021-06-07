@@ -13,13 +13,13 @@ RUN apt-get -qq remove -y --purge ca-certificates curl unzip && apt-get clean
 EXPOSE 80
 
 # copying all files of the repository into the /app folder to execute deno there
-COPY . /app
+COPY ./src/ /app
 
 # change to the /app directory
-WORKDIR /app
+WORKDIR /app/
 
 # exporting binary installation folder for deno
 RUN cp /root/.deno/bin/deno /bin
 
 # command that executes deno
-CMD ["/bin/deno", "run", "--allow-net", "main.ts"]
+CMD ["/bin/deno", "run", "--allow-net", "--allow-env", "--allow-read", "main.ts"]
