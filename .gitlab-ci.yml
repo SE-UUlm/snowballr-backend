@@ -41,12 +41,13 @@ test:
     - apt-get -qq update && apt-get -qq install -y ca-certificates curl unzip --no-install-recommends
     - curl -fsSL https://deno.land/x/install/install.sh | sh
     - cp ~/.deno/bin/deno /bin
-    - docker-compose -f docker/docker-compose.yml --profile min up -d
+    - docker-compose -f docker/docker-compose.yml --env-file unitTests/.env --profile min up -d
     - sleep 1s
     - mkdir -p cov_profile
+    - source unitTests/.env
     - /bin/deno test --allow-env --allow-read --allow-net --coverage=cov_profile --unstable
     - /bin/deno --unstable coverage cov_profile --lcov > cov_profile.lcov
-    - docker-compose -f docker/docker-compose.yml --profile min down
+    - docker-compose -f docker/docker-compose.yml --env-file unitTests/.env --profile min down
   artifacts:
     paths:
       - cov_profile.lcov
