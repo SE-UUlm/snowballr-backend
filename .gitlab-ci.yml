@@ -102,7 +102,7 @@ deploy-dev:
       fi
     - ssh $DESTINATION_SSH_URL "docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY"
     - ssh $DESTINATION_SSH_URL "docker pull $CI_REGISTRY_IMAGE${tag}"
-    - ssh $DESTINATION_SSH_URL "docker-compose -p snowballr_dev -f project/develop/docker-compose.yml up -d --force-recreate backend"
+    - ssh $DESTINATION_SSH_URL "docker-compose -p snowballr_dev -f project/develop/docker-compose.yml --env-file project/develop/.env up -d --force-recreate backend"
   needs:
     - build
   rules:
@@ -134,7 +134,7 @@ deploy-prod:
     # login to the gitlab container repository
     - ssh $DESTINATION_SSH_URL "docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY"
     - ssh $DESTINATION_SSH_URL "docker pull $CI_REGISTRY_IMAGE${tag}"
-    - ssh $DESTINATION_SSH_URL "docker-compose -p snowballr -f project/master/docker-compose.yml up -d --force-recreate backend"
+    - ssh $DESTINATION_SSH_URL "docker-compose -p snowballr -f project/master/docker-compose.yml --env-file project/master/.env up -d --force-recreate backend"
   needs:
     - build
   rules:
