@@ -99,7 +99,7 @@ const verifyJWT = async (ctx: Context, next: () => Promise<unknown>, token: stri
 }
 
 const allowLogin = async (ctx: Context, next: () => Promise<unknown>) => {
-    if (ctx.request.url.pathname === "/login" || (ctx.request.url.pathname.match(/\/users\/[0-9]+/g) && ctx.request.method.toString() === "PATCH")) {
+    if (ctx.request.url.pathname === "/login/" || (ctx.request.url.pathname.match(/\/users\/[0-9]+\//g) && ctx.request.method.toString() === "PATCH")) {
         await next();
     } else {
         makeErrorMessage(ctx, 401, "not authorized")

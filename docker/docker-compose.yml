@@ -20,7 +20,7 @@ services:
   # Webservice to administrate postgres db
   pgadmin:
     image: dpage/pgadmin4
-    ports: 
+    ports:
       - "5555:80"
     environment:
       - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL}
@@ -51,10 +51,10 @@ services:
     image: hayd/ubuntu-deno
     command: run --allow-net --allow-env --allow-read /app/main.ts
     ports:
-      - "8000:8000"
+      - "80:80"
     volumes:
       - ${BACKEND_PATH}:/app
-    environment: 
+    environment:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
