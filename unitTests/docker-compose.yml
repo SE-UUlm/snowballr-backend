@@ -21,7 +21,7 @@ services:
     image: hayd/ubuntu-deno
     command: bash -c "ls -a -l && deno test --allow-env --allow-read --allow-net --coverage=cov_profile --unstable; 
              deno --unstable coverage cov_profile --lcov > cov_profile.lcov;
-             sed -i -e 's/\/app\/src/\/src/g' cov_profile.lcov"
+             sed -i -e 's/\/app\/src/src/g' cov_profile.lcov"
     working_dir: /app
     volumes:
       - ../:/app
