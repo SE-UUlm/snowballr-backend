@@ -1,0 +1,41 @@
+version: "3.7"
+services:
+  # Postgres sql database server only visible by pgadmin and backend services
+  postgresdb:
+    image: postgres
+    container_name: ${POSTGRES_HOST}
+    ports:
+      - "5432:5432"
+    volumes:
+      - ${POSTGRES_PATH}:/var/lib/postgresql/
+    environment:
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_DN=${POSTGRES_DN}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    logging:
+      driver: ${POSTGRES_LOGGING}
+
+  backend-test:
+    image: hayd/ubuntu-deno
+    command: bash -c "ls -a -l && deno test --allow-env --allow-read --allow-net --coverage=cov_profile --unstable; 
+             deno --unstable coverage cov_profile --lcov > cov_profile.lcov;
+             sed -i -e 's/\/app\/src/\/src/g' cov_profile.lcov"
+    working_dir: /app
+    volumes:
+      - ../:/app
+    environment:
+      - URL=${URL}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - ADMIN_EMAIL=${ADMIN_EMAIL}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}     
+      - SALT=${SALT}               
+      - DAYS_UNTIL_VALIDATION_GONE=${DAYS_UNTIL_VALIDATION_GONE}
+      - SECRET=${SECRET}
+    depends_on:
+      - postgresdb
+
