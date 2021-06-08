@@ -44,7 +44,7 @@ test:
     - docker-compose -f docker/docker-compose.yml --env-file unitTests/.env --profile min up -d
     - sleep 1s
     - mkdir -p cov_profile
-    - source unitTests/.env
+    - set -o allexport; source unitTests/.env; set +o allexport
     - /bin/deno test --allow-env --allow-read --allow-net --coverage=cov_profile --unstable
     - /bin/deno --unstable coverage cov_profile --lcov > cov_profile.lcov
     - docker-compose -f docker/docker-compose.yml --env-file unitTests/.env --profile min down
