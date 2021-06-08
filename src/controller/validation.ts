@@ -61,10 +61,7 @@ export const createJWT = async (user: User) => {
 
 export const checkAdmin = async (ctx: Context) => {
     const payloadJson = await getPayloadFromJWT(ctx);
-    if (payloadJson && payloadJson.isAdmin && payloadJson.status) {
-        if (payloadJson.status === "unregistered" || payloadJson.status === "deleted") {
-            return false;
-        }
+    if (payloadJson && payloadJson.isAdmin && checkActive(payloadJson)) {
         return payloadJson.isAdmin;
     }
 
@@ -73,7 +70,7 @@ export const checkAdmin = async (ctx: Context) => {
 export const checkPO = async (ctx: Context) => {
     let isPO = false;
     const payloadJson = await getPayloadFromJWT(ctx);
-    if (payloadJson && payloadJson.id) {
+    if (payloadJson && payloadJson.id && checkActive(payloadJson)) {
         let projects = await User.where('id', payloadJson.id).project();
         if (Array.isArray(projects)) {
             isPO = !(projects.every((userIsPartOfProject) => {
@@ -83,6 +80,15 @@ export const checkPO = async (ctx: Context) => {
 
     }
     return isPO;
+}
+
+const checkActive = (payloadJson: any) => {
+    if (payloadJson.status) {
+        if (payloadJson.status === "active") {
+            return true;
+        }
+    }
+    return false;
 }
 
 export const getUserID = async (ctx: Context) => {

@@ -1,5 +1,5 @@
 import {Context} from 'https://deno.land/x/oak/mod.ts';
-import {checkAdmin, createJWT, getUserID} from "./validation.ts";
+import {checkAdmin, checkPO, createJWT, getUserID} from "./validation.ts";
 import {insertUserForRegistration} from "./databaseFetcher/user.ts";
 import {User} from "../model/db/user.ts";
 import {convertCtxBodyToUser, convertUserToUserProfile} from "../helper/userConverter.ts";
@@ -12,7 +12,7 @@ import {UserParameters} from "../model/userProfile.ts";
 
 
 export const createUser = async (ctx: Context, client: EMailClient) => {
-    if (await checkAdmin(ctx)) { //TODO add check for projectowner
+    if (await checkAdmin(ctx) || await checkPO(ctx)) {
         const requestParameter = await ctx.request.body({type: "json"}).value;
 
         if (!requestParameter.email) {
@@ -65,13 +65,14 @@ export const getUser = async (ctx: Context, id: string | undefined) => {
 export const patchUser = async (ctx: Context, id: number | undefined) => {
     let isSameUser = (await getUserID(ctx)) === id;
     let isAdmin = await checkAdmin(ctx);
+    let isPO = await checkPO(ctx);
     let invitationToken = ctx.request.headers.get("invitationToken");
     let invitationTokenValid = false;
     let userData = await convertCtxBodyToUser(ctx);
     if (invitationToken && id) {
         invitationTokenValid = await checkToken(id, invitationToken, userData, ctx);
     }
-    if (id && (isSameUser || isAdmin || invitationTokenValid)) {
+    if (id && (isSameUser || isAdmin || invitationTokenValid || isPO)) {
         let user = await User.find(id);
 
         if (isSameUser || invitationTokenValid) {

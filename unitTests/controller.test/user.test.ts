@@ -13,7 +13,7 @@ Deno.test({
     name: "insertUserForCreation",
     async fn(): Promise<void> {
         await setup(true);
-        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "registered");
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
 
         let app = await createMockApp();
         let token = await createJWT(user)
@@ -29,7 +29,7 @@ Deno.test({
     name: "insertUserNoEmail",
     async fn(): Promise<void> {
         await setup(true);
-        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "registered");
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
 
         let app = await createMockApp();
         let token = await createJWT(user)
@@ -45,8 +45,8 @@ Deno.test({
     name: "getAllUsers",
     async fn(): Promise<void> {
         await setup(true);
-        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "registered");
-        let user2 = await insertUser("test@test", "ash", true, "Test", "Tester", "registered");
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+        let user2 = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
         let app = await createMockApp();
         let token = await createJWT(user)
         let ctx = await createMockContext(app, undefined, [["Content-Type", "application/json"]], "/", token);
@@ -61,7 +61,7 @@ Deno.test({
     name: "PatchUserAdmin",
     async fn(): Promise<void> {
         await setup(true);
-        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "registered");
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
         let userToChange = await insertUser("theo@eo", "leo", false, "Theo", "Eo", "unregistered");
         let email = String(userToChange.eMail);
         let password = String(userToChange.password);
@@ -71,7 +71,7 @@ Deno.test({
         let status = String(userToChange.status)
         let app = await createMockApp();
         let token = await createJWT(user)
-        let ctx = await createMockContext(app, `{"email":"hey@hey.to", "password":"meow","firstName":"Thomas","lastName":"Schmiddy","isAdmin":true,"status":"registered"}`, [["Content-Type", "application/json"]], "/", token);
+        let ctx = await createMockContext(app, `{"email":"hey@hey.to", "password":"meow","firstName":"Thomas","lastName":"Schmiddy","isAdmin":true,"status":"active"}`, [["Content-Type", "application/json"]], "/", token);
         await patchUser(ctx, 3);
         userToChange = await User.find("3");
         assertNotEquals("undefined", String(userToChange.eMail));

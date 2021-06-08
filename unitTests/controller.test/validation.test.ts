@@ -84,7 +84,7 @@ Deno.test({
     name: "authorizedRequest",
     async fn(): Promise<void> {
         await setup(true);
-        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "registered");
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
 
         let app = await createMockApp();
         let token = await createJWT(user)
@@ -100,7 +100,7 @@ Deno.test({
     name: "unAuthorizedRequestWithWrongToken",
     async fn(): Promise<void> {
         await setup(true);
-        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "registered");
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
 
         let app = await createMockApp();
         let token = await createJWT(user)
@@ -115,7 +115,7 @@ Deno.test({
     name: "isPO",
     async fn(): Promise<void> {
         await setup(true);
-        let user = await insertUser("test@test", "ash", false, "Test", "Tester", "registered");
+        let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
         let app = await createMockApp();
         let token = await createJWT(user)
         let project = await Project.create({name: "bla"})
@@ -135,7 +135,7 @@ Deno.test({
     name: "isNoPO",
     async fn(): Promise<void> {
         await setup(true);
-        let user = await insertUser("test@test", "ash", false, "Test", "Tester", "registered");
+        let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
         let app = await createMockApp();
         let token = await createJWT(user)
         let project = await Project.create({name: "bla"})
