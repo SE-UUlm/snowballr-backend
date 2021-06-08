@@ -38,7 +38,7 @@ test:
   variables:
     DOCKER_TLS_CERTDIR: ""
   script:
-    - docker-compose -f unitTests/docker-compose.yml --env-file unitTests/.env up
+    - docker-compose -f unitTests/docker-compose.yml --env-file unitTests/.env up --abort-on-container-exit
   artifacts:
     paths:
       - cov_profile.lcov
