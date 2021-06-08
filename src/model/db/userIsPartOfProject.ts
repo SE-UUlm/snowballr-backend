@@ -18,11 +18,11 @@ export class UserIsPartOfProject extends Model {
     }
 
     static user() {
-        return this.hasMany(User);
+        return this.hasOne(User);
     }
 
     static project() {
-        return this.hasMany(Project);
+        return this.hasOne(Project);
     }
 }
 

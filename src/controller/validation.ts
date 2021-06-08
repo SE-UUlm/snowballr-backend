@@ -70,6 +70,20 @@ export const checkAdmin = async (ctx: Context) => {
 
     return false;
 }
+export const checkPO = async (ctx: Context) => {
+    let isPO = false;
+    const payloadJson = await getPayloadFromJWT(ctx);
+    if (payloadJson && payloadJson.id) {
+        let projects = await User.where('id', payloadJson.id).project();
+        if (Array.isArray(projects)) {
+            isPO = !(projects.every((userIsPartOfProject) => {
+                return !userIsPartOfProject.isOwner;
+            }))
+        }
+
+    }
+    return isPO;
+}
 
 export const getUserID = async (ctx: Context) => {
     const payloadJson = await getPayloadFromJWT(ctx);

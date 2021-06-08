@@ -11,8 +11,8 @@ export const setup = async (dropDatabase: boolean) => {
 
     Relationships.belongsTo(Invitation, User);
     Relationships.belongsTo(Token, User);
-    Relationships.manyToMany(UserIsPartOfProject, User)
-    Relationships.manyToMany(UserIsPartOfProject, Project)
+    Relationships.belongsTo(UserIsPartOfProject, User)
+    Relationships.belongsTo(UserIsPartOfProject, Project)
     db.link([User, Invitation, Token, Project, UserIsPartOfProject]);
     await db.sync({drop: dropDatabase}).catch(err => {
         //TODO fix for https://github.com/eveningkid/denodb/issues/258
