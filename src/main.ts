@@ -40,4 +40,4 @@ app.use(await validateJWTIfExists)
 app.use(router.routes());
 app.use(router.allowedMethods());
 
-await app.listen({port: 8000});
+await app.listen({port: 80});
