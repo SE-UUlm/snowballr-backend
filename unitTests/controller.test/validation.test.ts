@@ -1,6 +1,6 @@
 import {createMockApp} from "../mockObjects/oak/mockApp.test.ts";
 import {createMockContext} from "../mockObjects/oak/mockContext.test.ts";
-import {createJWT, validateContentType, validateJWTIfExists} from "../../src/controller/validation.ts";
+import {checkPO, createJWT, validateContentType, validateJWTIfExists} from "../../src/controller/validation.ts";
 import {assertEquals} from "https://deno.land/std@0.97.0/testing/asserts.ts"
 import {emptyAsyncFunctionTest} from "../mockObjects/emptyAsyncFunction.test.ts";
 import {setup} from "../../src/helper/setup.ts";
