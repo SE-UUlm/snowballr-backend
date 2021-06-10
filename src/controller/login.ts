@@ -3,9 +3,13 @@ import {Context} from 'https://deno.land/x/oak/mod.ts';
 import {convertUserToUserProfile} from "../helper/userConverter.ts";
 import {startSession} from "./session.ts";
 import {makeErrorMessage} from "../helper/error.ts";
+import {jsonBodyToObject} from "../helper/body.ts";
 
 export const login = async (ctx: Context): Promise<boolean> => {
-    const requestParameter = await ctx.request.body({type: "json"}).value;
+    const requestParameter = await jsonBodyToObject(ctx)
+    if (!requestParameter) {
+        return false
+    }
 
     if (!requestParameter.email || !requestParameter.password) {
         makeErrorMessage(ctx, 401, "no email or password provided")
