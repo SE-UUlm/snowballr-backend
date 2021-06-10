@@ -3,6 +3,8 @@ import {Review} from "./review.ts";
 import {ReadingList} from "./readingList.ts";
 import {PaperScopeForStage} from "./paperScopeForStage.ts";
 import {Wrote} from "./wrote.ts";
+import {ReferencedBy} from "./referencedBy.ts";
+import {CitedBy} from "./citedBy.ts";
 
 
 export class Paper extends Model {
@@ -33,15 +35,15 @@ export class Paper extends Model {
         return this.hasMany(ReadingList)
     }
 
-    /*
-        static citedBy() {
-            return this.hasMany(CitedBy)
-        }
 
-        static referencedBy() {
-            return this.hasMany(ReferencedBy)
-        }
-    */
+    static citedBy() {
+        return this.hasMany(CitedBy)
+    }
+
+    static referencedBy() {
+        return this.hasMany(ReferencedBy)
+    }
+
     static inScopeFor() {
         return this.hasMany(PaperScopeForStage);
     }
