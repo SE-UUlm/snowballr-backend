@@ -1,6 +1,6 @@
 import {createMockApp} from "../mockObjects/oak/mockApp.test.ts";
 import {createMockContext} from "../mockObjects/oak/mockContext.test.ts";
-import {checkPO, createJWT, validateContentType, validateJWTIfExists} from "../../src/controller/validation.ts";
+import {createJWT, validateContentType, validateJWTIfExists} from "../../src/controller/validation.ts";
 import {assertEquals} from "https://deno.land/std@0.97.0/testing/asserts.ts"
 import {emptyAsyncFunctionTest} from "../mockObjects/emptyAsyncFunction.test.ts";
 import {setup} from "../../src/helper/setup.ts";
@@ -60,7 +60,7 @@ Deno.test({
     name: "loginPageUnauthorizedAllowed",
     async fn(): Promise<void> {
         let app = await createMockApp();
-        let ctx = await createMockContext(app, `{"email": "test@test", "password":"ash"}`, [["Content-Type", "text"]], "/login");
+        let ctx = await createMockContext(app, `{"email": "test@test", "password":"ash"}`, [["Content-Type", "text"]], "/login/");
         await validateJWTIfExists(ctx, emptyAsyncFunctionTest)
 
         assertEquals(ctx.response.status, 200)
