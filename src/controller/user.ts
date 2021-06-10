@@ -106,7 +106,7 @@ export const patchUser = async (ctx: Context, id: number | undefined) => {
     if (id && (isSameUser || isAdmin || isPO || invitationTokenValid || resetTokenValid)) {
         let user = await User.find(id);
 
-        if (isSameUser || invitationTokenValid) {
+        if (isSameUser || invitationTokenValid || resetTokenValid) {
             if (userData.password) {
                 user.password = hashPassword(userData.password)
             }
