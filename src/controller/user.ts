@@ -9,11 +9,15 @@ import {EMailClient} from "../model/eMailClient.ts";
 import {makeErrorMessage} from "../helper/error.ts";
 import {urlSanitizer} from "../helper/url.ts";
 import {UserParameters} from "../model/userProfile.ts";
+import {jsonBodyToObject} from "../helper/body.ts";
 
 
 export const createUser = async (ctx: Context, client: EMailClient) => {
     if (await checkAdmin(ctx)) { //TODO add check for projectowner
-        const requestParameter = await ctx.request.body({type: "json"}).value;
+        const requestParameter = await jsonBodyToObject(ctx)
+        if (!requestParameter) {
+            return
+        }
 
         if (!requestParameter.email) {
             makeErrorMessage(ctx, 422, "no email provided")
