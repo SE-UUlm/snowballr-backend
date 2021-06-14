@@ -5,6 +5,7 @@ import {PaperScopeForStage} from "./paperScopeForStage.ts";
 import {Wrote} from "./wrote.ts";
 import {ReferencedBy} from "./referencedBy.ts";
 import {CitedBy} from "./citedBy.ts";
+import {PaperHasID} from "./paperHasID.ts";
 
 
 export class Paper extends Model {
@@ -46,6 +47,10 @@ export class Paper extends Model {
 
     static inScopeFor() {
         return this.hasMany(PaperScopeForStage);
+    }
+
+    static paper() {
+        return this.hasMany(PaperHasID);
     }
 }
 

@@ -1,5 +1,6 @@
 import {DataTypes, Model} from "https://deno.land/x/denodb/mod.ts";
 import {Wrote} from "./wrote.ts";
+import {AuthorHasID} from "./authorHasID.ts";
 
 
 export class Author extends Model {
@@ -19,7 +20,9 @@ export class Author extends Model {
         return this.hasMany(Wrote);
     }
 
-
+    static id() {
+        return this.hasMany(AuthorHasID);
+    }
 }
 
 

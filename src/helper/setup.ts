@@ -19,6 +19,10 @@ import {Wrote} from "../model/db/wrote.ts";
 import {Author} from "../model/db/author.ts";
 import {CitedBy} from "../model/db/citedBy.ts";
 import {ReferencedBy} from "../model/db/referencedBy.ts";
+import {PaperHasID} from "../model/db/paperHasID.ts";
+import {PaperID} from "../model/db/paperID.ts";
+import {AuthorHasID} from "../model/db/authorHasID.ts";
+import {AuthorID} from "../model/db/authorID.ts";
 
 export const setup = async (dropDatabase: boolean) => {
 
@@ -43,7 +47,11 @@ export const setup = async (dropDatabase: boolean) => {
     Relationships.belongsTo(PaperScopeForStage, Paper)
     Relationships.belongsTo(Wrote, Paper)
     Relationships.belongsTo(Wrote, Author)
-    db.link([User, Invitation, Paper, Token, ReferencedBy, CitedBy, Author, Wrote, Project, Stage, PaperScopeForStage, SearchApi, ReadingList, Criteria, Review, CriteriaEvaluation, UserIsPartOfProject, ProjectUsesApi]);
+    Relationships.belongsTo(PaperHasID, Paper)
+    Relationships.belongsTo(PaperHasID, PaperID)
+    Relationships.belongsTo(AuthorHasID, Author)
+    Relationships.belongsTo(AuthorHasID, AuthorID)
+    db.link([User, Invitation, Paper, Token, ReferencedBy, CitedBy, Author, AuthorID, Wrote, Project, Stage, PaperScopeForStage, SearchApi, ReadingList, Criteria, Review, PaperID, CriteriaEvaluation, UserIsPartOfProject, ProjectUsesApi, PaperHasID, AuthorHasID]);
     await db.sync({drop: dropDatabase}).catch(err => {
         //TODO fix for https://github.com/eveningkid/denodb/issues/258
         console.log(err)

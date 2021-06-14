@@ -8,7 +8,6 @@ import {getToken, insertToken} from "./databaseFetcher/token.ts";
 import {EMailClient} from "../model/eMailClient.ts";
 import {makeErrorMessage} from "../helper/error.ts";
 import {urlSanitizer} from "../helper/url.ts";
-import {UserParameters} from "../model/userProfile.ts";
 import {jsonBodyToObject} from "../helper/body.ts";
 
 const adminMail = Deno.env.get("ADMIN_EMAIL");
@@ -60,6 +59,9 @@ export const resetPassword = async (ctx: Context, client: EMailClient) => {
         let linkText = "snowballR"
         await sendResetMail(jwt, linkText, url, requestParameter, Number(user.id), client);
         ctx.response.status = 201;
+    } else {
+        makeErrorMessage(ctx, 400, "wrong email provided")
+        return;
     }
 }
 
