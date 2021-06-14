@@ -110,12 +110,15 @@ export const getPayloadFromJWT = async (ctx: Context) => {
 }
 
 const verifyJWT = async (ctx: Context, next: () => Promise<unknown>, token: string) => {
-    await verify(token, SECRET, "HS512").then(async () => {
-        await next();
-    }).catch(() => {
+    let goingForward = true;
+    await verify(token, SECRET, "HS512").catch((err) => {
+        goingForward = false;
         ctx.cookies.delete("token");
         makeErrorMessage(ctx, 401, "token expired")
     });
+    if (goingForward) {
+        await next();
+    }
 }
 
 const allowedAddressesUnauthorized = async (ctx: Context, next: () => Promise<unknown>) => {
