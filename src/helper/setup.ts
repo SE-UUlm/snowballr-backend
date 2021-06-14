@@ -59,6 +59,6 @@ export const setup = async (dropDatabase: boolean) => {
     });
     let admin = await returnUserByEmail(String(Deno.env.get("ADMIN_EMAIL")));
     if (!admin) {
-        await insertUser(String(Deno.env.get("ADMIN_EMAIL")), String(Deno.env.get("ADMIN_PASSWORD")), true, "admin", "admin", "fully registered");
+        await insertUser(String(Deno.env.get("ADMIN_EMAIL")), String(Deno.env.get("ADMIN_PASSWORD")), true, "admin", "admin", "active");
     }
 }

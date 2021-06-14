@@ -16,8 +16,33 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     logging:
       driver: ${POSTGRES_LOGGING}
-
+    profiles:
+      - test
+      - run
   backend-test:
+    image: hayd/ubuntu-deno
+    command: bash -c "ls -a -l && deno test --allow-env --allow-read --allow-net --coverage=cov_profile --unstable;
+      deno --unstable coverage cov_profile --lcov > cov_profile.lcov;
+      sed -i -e 's/\/app\/src/src/g' cov_profile.lcov"
+    working_dir: /app
+    volumes:
+      - ../:/app
+    environment:
+      - URL=${URL}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - ADMIN_EMAIL=${ADMIN_EMAIL}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - SALT=${SALT}
+      - DAYS_UNTIL_VALIDATION_GONE=${DAYS_UNTIL_VALIDATION_GONE}
+      - SECRET=${SECRET}
+    depends_on:
+      - postgresdb
+    profiles:
+      - test
+  backend:
     image: hayd/ubuntu-deno
     command: bash -c "ls -a -l && deno run --allow-env --allow-read --allow-net ./src/main.ts;"
     working_dir: /app
@@ -38,3 +63,5 @@ services:
       - SECRET=${SECRET}
     depends_on:
       - postgresdb
+    profiles:
+      - run
