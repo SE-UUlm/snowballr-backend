@@ -7,12 +7,18 @@ import {PayloadJson} from "../model/payloadJson.ts";
 
 const SECRET = String(Deno.env.get('SECRET'));
 
+/**
+ * Validates, whether the provided request has either an empty content or a right set content type with valid json.
+ *
+ * @param ctx
+ * @param next function to start next, if the validation is successful
+ */
 export const validateContentType = async (ctx: Context, next: () => Promise<unknown>) => {
     ctx.response.type = "application/json";
     if (await emptyContent(ctx)) {
         await next();
     } else if (ctx.request.headers.get("Content-Type") === "application/json") {
-        if (await validateContent(ctx, next)) {
+        if (await validateContent(ctx)) {
             await next();
         } else {
             makeErrorMessage(ctx, 415, "The requestBody is not in a correct JSON format")
@@ -22,6 +28,11 @@ export const validateContentType = async (ctx: Context, next: () => Promise<unkn
     }
 
 }
+
+/**
+ * Checks whether the body of a function is empty or not
+ * @param ctx
+ */
 const emptyContent = async (ctx: Context): Promise<boolean> => {
     try {
         await ctx.request.body({type: "undefined"}).value
@@ -30,7 +41,13 @@ const emptyContent = async (ctx: Context): Promise<boolean> => {
         return false;
     }
 }
-const validateContent = async (ctx: Context, next: () => Promise<unknown>): Promise<boolean> => {
+
+/**
+ * Validates, if the content can be parsed to json
+ * @param ctx
+ * @param next
+ */
+const validateContent = async (ctx: Context): Promise<boolean> => {
     try {
         await ctx.request.body({type: "json"}).value
     } catch (error) {
@@ -39,6 +56,13 @@ const validateContent = async (ctx: Context, next: () => Promise<unknown>): Prom
     return true;
 }
 
+/**
+ * Checks whether a JWT has been set and if yes, forwards it to verify it's correctness.
+ * Otherwise it checks whether the provided url is allowed
+ *
+ * @param ctx
+ * @param next
+ */
 export const validateJWTIfExists = async (ctx: Context, next: () => Promise<unknown>) => {
     let token = ctx.cookies.get("token");
     if (token) {
@@ -48,6 +72,10 @@ export const validateJWTIfExists = async (ctx: Context, next: () => Promise<unkn
     }
 }
 
+/**
+ * Creates a JWT and adds the userprofile in it
+ * @param user
+ */
 export const createJWT = async (user: User) => {
     return create({alg: "HS512", typ: "JWT"}, {
         id: user.id,
@@ -60,6 +88,10 @@ export const createJWT = async (user: User) => {
     }, SECRET);
 }
 
+/**
+ * Extracts the userName from a JWT payload
+ * @param payloadJson
+ */
 export const getUserName = async (payloadJson?: PayloadJson) => {
     if (payloadJson) {
         let name = payloadJson.firstName;
@@ -72,6 +104,10 @@ export const getUserName = async (payloadJson?: PayloadJson) => {
     return undefined;
 }
 
+/**
+ * Checks the admin status from a JWT payload
+ * @param payloadJson
+ */
 export const checkAdmin = async (payloadJson?: PayloadJson) => {
     if (payloadJson) {
         return payloadJson.isAdmin;
@@ -79,6 +115,11 @@ export const checkAdmin = async (payloadJson?: PayloadJson) => {
 
     return false;
 }
+
+/**
+ * Checks the PO status from a JWT payload
+ * @param payloadJson
+ */
 export const checkPO = async (payloadJson?: PayloadJson) => {
     let isPO = false;
     if (payloadJson) {
@@ -93,6 +134,10 @@ export const checkPO = async (payloadJson?: PayloadJson) => {
     return isPO;
 }
 
+/**
+ * Checks whether a user is active.
+ * @param status
+ */
 export const checkActive = (status: string) => {
     if (status === "active") {
         return true;
@@ -101,6 +146,10 @@ export const checkActive = (status: string) => {
     return false;
 }
 
+/**
+ * Extracts the userID from a JWT payload
+ * @param payloadJson
+ */
 export const getUserID = async (payloadJson?: PayloadJson) => {
     if (payloadJson) {
         return payloadJson.id
@@ -108,6 +157,10 @@ export const getUserID = async (payloadJson?: PayloadJson) => {
     return undefined;
 }
 
+/**
+ * Returns the payload from a JWT, if it exists
+ * @param ctx
+ */
 export const getPayloadFromJWT = async (ctx: Context): Promise<PayloadJson | undefined> => {
     let token = await ctx.cookies.get("token");
     if (token) {
@@ -117,6 +170,12 @@ export const getPayloadFromJWT = async (ctx: Context): Promise<PayloadJson | und
     return undefined
 }
 
+/**
+ * Verifies a token if it exists and isn't expired yet
+ * @param ctx
+ * @param next function to trigger if the token is valid
+ * @param token
+ */
 const verifyJWT = async (ctx: Context, next: () => Promise<unknown>, token: string) => {
     let goingForward = true;
     await verify(token, SECRET, "HS512").catch((err) => {
@@ -129,6 +188,11 @@ const verifyJWT = async (ctx: Context, next: () => Promise<unknown>, token: stri
     }
 }
 
+/**
+ * Checks whether an unverified user is allowed to enter that path
+ * @param ctx
+ * @param next function to trigger if the path is allowed for unverified users
+ */
 const allowedAddressesUnauthorized = async (ctx: Context, next: () => Promise<unknown>) => {
     if (ctx.request.url.pathname === "/login/" || ctx.request.url.pathname === "/reset-password/" || (ctx.request.url.pathname.match(/\/users\/[0-9]+\//g) && ctx.request.method.toString() === "PATCH")) {
         await next();

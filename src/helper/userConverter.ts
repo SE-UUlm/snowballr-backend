@@ -2,6 +2,10 @@ import {User} from "../model/db/user.ts";
 import {UserParameters, UserProfile} from "../model/userProfile.ts";
 import {Context} from 'https://deno.land/x/oak/mod.ts';
 
+/**
+ * Makes sure the password isn't send while delivering a user object
+ * @param user
+ */
 export const convertUserToUserProfile = (user: User) => {
     let userProfile: UserProfile = {
         id: Number(user.id),

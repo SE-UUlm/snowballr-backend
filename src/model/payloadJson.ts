@@ -1,3 +1,6 @@
+/**
+ * Payload saved in an JWT
+ */
 export interface PayloadJson {
     id: number
     firstName: string,

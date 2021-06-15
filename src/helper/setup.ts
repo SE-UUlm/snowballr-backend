@@ -24,6 +24,10 @@ import {PaperID} from "../model/db/paperID.ts";
 import {AuthorHasID} from "../model/db/authorHasID.ts";
 import {AuthorID} from "../model/db/authorID.ts";
 
+/**
+ * Links all model files to the database and inserts the first admin, if he doesn't exist yet
+ * @param dropDatabase dropsDatabase during the setup
+ */
 export const setup = async (dropDatabase: boolean) => {
 
     Relationships.belongsTo(Invitation, User);

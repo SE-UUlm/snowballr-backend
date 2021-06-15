@@ -13,6 +13,12 @@ import {jsonBodyToObject} from "../helper/body.ts";
 const adminMail = Deno.env.get("ADMIN_EMAIL");
 const url = Deno.env.get("URL");
 
+/**
+ * Creates a user for registration
+ *
+ * @param ctx
+ * @param client Only necessary to throw in an empty mock to not send mails during tests
+ */
 export const createUser = async (ctx: Context, client: EMailClient) => {
     const payloadJson = await getPayloadFromJWT(ctx);
     if (await checkAdmin(payloadJson) || await checkPO(payloadJson)) {
@@ -32,7 +38,7 @@ export const createUser = async (ctx: Context, client: EMailClient) => {
         let linkText = "snowballR"
 
         if (url && adminMail) {
-            await sendInvitationMail(jwt, linkText, url, requestParameter, Number(user.id), client, await getUserName(payloadJson));
+            await sendInvitationMail(jwt, linkText, url, requestParameter.email, Number(user.id), client, await getUserName(payloadJson));
             ctx.response.status = 201;
             return user;
         } else {
@@ -45,6 +51,11 @@ export const createUser = async (ctx: Context, client: EMailClient) => {
     return undefined;
 }
 
+/**
+ * Allows emailreset, if email is correct and provided
+ * @param ctx
+ * @param client
+ */
 export const resetPassword = async (ctx: Context, client: EMailClient) => {
     const requestParameter = await ctx.request.body({type: "json"}).value;
 
@@ -58,7 +69,7 @@ export const resetPassword = async (ctx: Context, client: EMailClient) => {
         let jwt = await createJWT(user)
         await insertToken(user, jwt);
         let linkText = "snowballR"
-        await sendResetMail(jwt, linkText, url, requestParameter, Number(user.id), client);
+        await sendResetMail(jwt, linkText, url, requestParameter.email, Number(user.id), client);
         ctx.response.status = 201;
     } else {
         makeErrorMessage(ctx, 400, "wrong email provided")
@@ -67,6 +78,10 @@ export const resetPassword = async (ctx: Context, client: EMailClient) => {
 }
 
 //TODO: others
+/**
+ * Gets all user instances for admin and PO
+ * @param ctx
+ */
 export const getUsers = async (ctx: Context) => {
     const payloadJson = await getPayloadFromJWT(ctx);
     if (await checkAdmin(payloadJson) || await checkPO(payloadJson)) {
@@ -80,6 +95,11 @@ export const getUsers = async (ctx: Context) => {
 }
 
 //TODO: others
+/**
+ * Gets a single user profile for admin and PO
+ * @param ctx
+ * @param id
+ */
 export const getUser = async (ctx: Context, id: string | undefined) => {
     if (!Number(id)) {
         makeErrorMessage(ctx, 400, "no user id included")
@@ -95,6 +115,12 @@ export const getUser = async (ctx: Context, id: string | undefined) => {
     }
 }
 
+/**
+ * Allows user patch for admins, POs, the user himself, new registered users and reset password requests.
+ * Only allows to change values allowed by the project definition.
+ * @param ctx
+ * @param id
+ */
 export const patchUser = async (ctx: Context, id: number | undefined) => {
     if (!id) {
         return
@@ -157,8 +183,14 @@ export const patchUser = async (ctx: Context, id: number | undefined) => {
     }
 }
 
-const checkToken = async (id: number, invitationToken: string, ctx: Context) => {
-    let token = await getToken(id, invitationToken)
+/**
+ * Checks whether a token is valid for resetting password or registering.
+ * @param id id of the user belonging to the token
+ * @param providedToken Token provided by the user
+ * @param ctx
+ */
+const checkToken = async (id: number, providedToken: string, ctx: Context) => {
+    let token = await getToken(id, providedToken)
     if (token) {
         token.delete()
         return true;
@@ -168,7 +200,17 @@ const checkToken = async (id: number, invitationToken: string, ctx: Context) => 
     }
 }
 
-const sendInvitationMail = async (jwt: string, linkText: string, url: string, requestParameter: { email: string }, userId: number, client: EMailClient, name?: string) => {
+/**
+ * Forms the invitation mail
+ * @param jwt token the user has to have to be allowed to make a registering patch
+ * @param linkText text displayed instead of the url
+ * @param url
+ * @param email email of the invited user
+ * @param userId userID of the new user
+ * @param client email client to send the email with
+ * @param name name of the person who invited the new user
+ */
+const sendInvitationMail = async (jwt: string, linkText: string, url: string, email: string, userId: number, client: EMailClient, name?: string) => {
     url = urlSanitizer(url);
     url += "/register/?id=" + userId + "&token=" + jwt;
     let finalText = linkText.link(url);
@@ -181,10 +223,19 @@ const sendInvitationMail = async (jwt: string, linkText: string, url: string, re
         <p>Best Regards,</p>` +
         (name ? `<p>${name}</p>` : `<p>your snowballR Team</p>`)
 
-    await sendMail(requestParameter.email, client, html, content, "Invitation to join SnowballR", name)
+    await sendMail(email, client, html, content, "Invitation to join SnowballR", name)
 }
 
-const sendResetMail = async (jwt: string, linkText: string, url: string, requestParameter: { email: string }, userId: number, client: EMailClient) => {
+/**
+ * Formats the email for resetting a password
+ * @param jwt token needed to be allowed to patch a user object
+ * @param linkText text displayed instead of the url
+ * @param url
+ * @param email email of the person wanting to reset his password
+ * @param userId
+ * @param client email client to send the email with
+ */
+const sendResetMail = async (jwt: string, linkText: string, url: string, email: string, userId: number, client: EMailClient) => {
     url = urlSanitizer(url);
     url += "/resetpassword/?id=" + userId + "&token=" + jwt;
     let finalText = linkText.link(url);
@@ -197,9 +248,18 @@ const sendResetMail = async (jwt: string, linkText: string, url: string, request
         <p>Best Regards,</p>
         <p>your snowballR Team</p>`
 
-    await sendMail(requestParameter.email, client, html, content, "Password reset for SnowballR")
+    await sendMail(email, client, html, content, "Password reset for SnowballR")
 }
 
+/**
+ * Sends the email
+ * @param mailTo email that gets the send email
+ * @param client email client to send the email with
+ * @param html html body
+ * @param content alternative content if html not allowed
+ * @param header header of email
+ * @param name name of the person sending the mail
+ */
 const sendMail = async (mailTo: string, client: EMailClient, html: string, content: string, header: string, name?: string) => {
 
     await client.connect({
