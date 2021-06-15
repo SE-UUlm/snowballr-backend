@@ -1,6 +1,8 @@
 import {DataTypes, Model} from "https://deno.land/x/denodb/mod.ts";
 import {Token} from "./token.ts";
 import {UserIsPartOfProject} from "./userIsPartOfProject.ts";
+import {Review} from "./review.ts";
+import {ReadingList} from "./readingList.ts";
 
 export class User extends Model {
     static table = 'user';
@@ -20,7 +22,7 @@ export class User extends Model {
     static defaults = {
         isAdmin: false,
         loginBlock: false,
-        status: "unregistered"
+        status: "not fully registered"
     }
 
     static token() {
@@ -29,5 +31,13 @@ export class User extends Model {
 
     static project() {
         return this.hasMany(UserIsPartOfProject);
+    }
+
+    static reviews() {
+        return this.hasMany(Review)
+    }
+
+    static readingList() {
+        return this.hasMany(ReadingList)
     }
 }

@@ -1,7 +1,14 @@
 import {Context} from 'https://deno.land/x/oak/mod.ts';
 
-export const makeErrorMessage = (ctx: Context, httpStatus: number, message?: string) => {
-    ctx.response.status = httpStatus;
+/**
+ * Adds an error message to the oak context
+ *
+ * @param ctx
+ * @param httpStatusCode
+ * @param message
+ */
+export const makeErrorMessage = (ctx: Context, httpStatusCode: number, message?: string) => {
+    ctx.response.status = httpStatusCode;
     if (message) {
         ctx.response.body = `{"error": "${message}"}`
     }

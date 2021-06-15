@@ -21,7 +21,7 @@ export const returnUserByEmail = async (eMail: string): Promise<User | undefined
 
 
 export const insertUser = async (eMail: string, password: string, isAdmin: boolean, firstName: string, lastName: string, status: string): Promise<User> => {
-    return await User.create({
+    return User.create({
         eMail: eMail,
         password: hashPassword(password),
         isAdmin: isAdmin,
@@ -32,5 +32,5 @@ export const insertUser = async (eMail: string, password: string, isAdmin: boole
 }
 
 export const insertUserForRegistration = async (eMail: string): Promise<User> => {
-    return await User.create({eMail: eMail});
+    return User.create({eMail: eMail});
 }

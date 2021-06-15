@@ -1,5 +1,9 @@
 import {createHash} from "https://deno.land/std@0.95.0/hash/mod.ts";
 
+/**
+ * Adds a salt to a users password and hashes it afterwards
+ * @param password
+ */
 export const hashPassword = (password: string) => {
     let passwordWithSalt = Deno.env.get("SALT") + password;
     const hash = createHash("sha3-512");

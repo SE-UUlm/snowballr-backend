@@ -2,7 +2,7 @@ import {User} from "../../model/db/user.ts";
 import {Token} from "../../model/db/token.ts";
 
 export const insertToken = async (user: User, token: string) => {
-    return await Token.create({token: token, userId: Number(user.id)}).catch(error => console.log(error))
+    return Token.create({token: token, userId: Number(user.id)}).catch(error => console.log(error))
 }
 
 export const getToken = async (userId: number, token: string) => {

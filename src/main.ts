@@ -2,11 +2,10 @@ import {Application, Router} from 'https://deno.land/x/oak/mod.ts';
 import {validateContentType, validateJWTIfExists} from "./controller/validation.ts";
 import {login} from "./controller/login.ts";
 import {setup} from "./helper/setup.ts";
-import {createUser, getUser, getUsers, patchUser} from "./controller/user.ts";
+import {createUser, getUser, getUserProjects, getUsers, patchUser, resetPassword} from "./controller/user.ts";
 import {logout} from "./controller/logout.ts";
 import {SmtpClient} from "https://deno.land/x/smtp/mod.ts";
 
-//TODO user authentication header patch
 await setup(true);
 const client = new SmtpClient();
 
@@ -21,6 +20,9 @@ router
     .get("/logout", async (context) => {
         await logout(context)
     })
+    .get("/reset-password", async (context) => {
+        await resetPassword(context, client)
+    })
     .post("/users", async (context) => {
         await createUser(context, client)
     })
@@ -28,10 +30,13 @@ router
         await getUsers(context)
     })
     .get("/users/:id", async (context) => {
-        await getUser(context, context.params.id)
+        await getUser(context, Number(context.params.id))
     })
     .patch("/users/:id", async (context, Methods) => {
         await patchUser(context, Number(context.params.id))
+    })
+    .get("/users/:id/projects", async (context) => {
+        await getUserProjects(context, Number(context.params.id))
     })
 
 const app = new Application();

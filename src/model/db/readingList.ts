@@ -1,18 +1,25 @@
 import {DataTypes, Model} from "https://deno.land/x/denodb/mod.ts";
 import {User} from "./user.ts";
+import {Paper} from "./paper.ts";
 
 
-export class Invitation extends Model {
-    static table = 'invitation';
+export class ReadingList extends Model {
+    static table = 'readinglist';
     static timestamps = true;
 
     static fields = {
         id: {primaryKey: true, autoIncrement: true, type: DataTypes.INTEGER},
-        token: {type: DataTypes.STRING, length: 512},
     }
 
     static user() {
         return this.hasOne(User);
     }
+
+
+    static paper() {
+        return this.hasOne(Paper);
+    }
+
+
 }
 

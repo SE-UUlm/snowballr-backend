@@ -1,10 +1,18 @@
 import {createMockApp} from "../mockObjects/oak/mockApp.test.ts";
 import {createMockContext} from "../mockObjects/oak/mockContext.test.ts";
-import {createJWT, validateContentType, validateJWTIfExists} from "../../src/controller/validation.ts";
+import {
+    checkPO,
+    createJWT,
+    getPayloadFromJWT,
+    validateContentType,
+    validateJWTIfExists
+} from "../../src/controller/validation.ts";
 import {assertEquals} from "https://deno.land/std@0.97.0/testing/asserts.ts"
 import {emptyAsyncFunctionTest} from "../mockObjects/emptyAsyncFunction.test.ts";
 import {setup} from "../../src/helper/setup.ts";
 import {insertUser} from "../../src/controller/databaseFetcher/user.ts";
+import {Project} from "../../src/model/db/project.ts";
+import {UserIsPartOfProject} from "../../src/model/db/userIsPartOfProject.ts";
 
 Deno.test({
     name: "testCorrectContentTypeAndContent",
@@ -82,7 +90,7 @@ Deno.test({
     name: "authorizedRequest",
     async fn(): Promise<void> {
         await setup(true);
-        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "registered");
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
 
         let app = await createMockApp();
         let token = await createJWT(user)
@@ -98,7 +106,7 @@ Deno.test({
     name: "unAuthorizedRequestWithWrongToken",
     async fn(): Promise<void> {
         await setup(true);
-        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "registered");
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
 
         let app = await createMockApp();
         let token = await createJWT(user)
@@ -107,4 +115,46 @@ Deno.test({
 
         assertEquals(ctx.response.status, 401)
     },
+})
+
+Deno.test({
+    name: "isPO",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let project = await Project.create({name: "bla"})
+        let userIsPartOfProject = await UserIsPartOfProject.create({
+            isOwner: true,
+            userId: Number(user.id),
+            projectId: Number(project.id)
+        })
+        let ctx = await createMockContext(app, undefined, [["Content-Type", "text"]], "/", token);
+        let payLoad = await getPayloadFromJWT(ctx);
+        assertEquals(await checkPO(payLoad), true)
+
+    }
+
+})
+
+Deno.test({
+    name: "isNoPO",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let project = await Project.create({name: "bla"})
+        let userIsPartOfProject = await UserIsPartOfProject.create({
+            isOwner: false,
+            userId: Number(user.id),
+            projectId: Number(project.id)
+        })
+        let ctx = await createMockContext(app, undefined, [["Content-Type", "text"]], "/", token);
+        let payLoad = await getPayloadFromJWT(ctx);
+        assertEquals(await checkPO(payLoad), false)
+
+    }
+
 })

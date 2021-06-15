@@ -1,7 +1,6 @@
 import {Application, Context, Cookies} from 'https://deno.land/x/oak/mod.ts';
 import {createMockRequest} from "./mockRequest.test.ts";
 import {createMockResponse} from "./mockResponse.test.ts";
-import {RequestBodyMock} from "./mockBody.test.ts";
 
 export async function createMockContext<S extends Record<string | number | symbol, any> = Record<string, any>,
     >(
@@ -12,9 +11,9 @@ export async function createMockContext<S extends Record<string | number | symbo
     token?: string,
     method = "GET",
 ) {
-    const request = await createMockRequest(standardHeader,requestBodyJsonString, path);
+    const request = await createMockRequest(standardHeader, requestBodyJsonString, path);
     const response = await createMockResponse(standardHeader);
-    const cookies = token? new CookieMock(token): new Cookies(request, response);
+    const cookies = token ? new CookieMock(token) : new Cookies(request, response);
     return ({
         app,
         request: request,
@@ -24,17 +23,18 @@ export async function createMockContext<S extends Record<string | number | symbo
     } as unknown) as Context<S>;
 }
 
-class CookieMock{
+class CookieMock {
     token
 
-    constructor(token: string){
+    constructor(token: string) {
         this.token = token;
     }
 
-    get(bla: string){
+    get(bla: string) {
         return this.token;
     }
-    delete(bla: string){
+
+    delete(bla: string) {
         return;
     }
 }

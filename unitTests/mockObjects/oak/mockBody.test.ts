@@ -1,19 +1,20 @@
 import {Body, BodyOptions, BodyReader, BodyStream} from 'https://deno.land/x/oak/mod.ts';
 
 export class RequestBodyMock {
-    constructor(bodyJsonString?: string){
-        bodyJsonString?this.bodyJsonString = bodyJsonString: undefined ;
-}
     bodyJsonString
 
-    json = (bodyJsonString:any) => this.get(bodyJsonString, this.bodyJsonString);
+    constructor(bodyJsonString?: string) {
+        bodyJsonString ? this.bodyJsonString = bodyJsonString : undefined;
+    }
+
+    json = (bodyJsonString: any) => this.get(bodyJsonString, this.bodyJsonString);
 
     get(
-        { type, contentTypes = {} }: BodyOptions,
+        {type, contentTypes = {}}: BodyOptions,
         bla?: string
     ): Body | BodyReader | BodyStream {
 
-        if(type === "json") {
+        if (type === "json") {
             const body: Body = Object.create(null);
             Object.defineProperties(body, {
                 type: {
@@ -22,16 +23,16 @@ export class RequestBodyMock {
                     enumerable: true,
                 },
                 value: {
-                    get: () => this.bodyJsonString? JSON.parse(this.bodyJsonString): undefined,
+                    get: () => this.bodyJsonString ? JSON.parse(this.bodyJsonString) : undefined,
                     configurable: true,
                     enumerable: true,
                 },
             });
             return body;
-        } else{
-            if(this.bodyJsonString){
-                throw "filled body"
-            } else{
+        } else {
+            if (this.bodyJsonString) {
+                throw Error("filled body")
+            } else {
                 return Object.create(null);
             }
         }
