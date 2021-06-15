@@ -1,5 +1,5 @@
 import {Context} from 'https://deno.land/x/oak/mod.ts';
-import {checkAdmin, checkPO, createJWT, getUserID} from "./validation.ts";
+import {checkAdmin, checkPO, createJWT, getUserID, getUserName} from "./validation.ts";
 import {insertUserForRegistration, returnUserByEmail} from "./databaseFetcher/user.ts";
 import {User} from "../model/db/user.ts";
 import {convertCtxBodyToUser, convertUserToUserProfile} from "../helper/userConverter.ts";
@@ -31,7 +31,7 @@ export const createUser = async (ctx: Context, client: EMailClient) => {
         let linkText = "snowballR"
 
         if (url && adminMail) {
-            await sendInvitationMail(jwt, linkText, url, requestParameter, Number(user.id), client);
+            await sendInvitationMail(jwt, linkText, url, requestParameter, Number(user.id), client, await getUserName(ctx));
             ctx.response.status = 201;
             return user;
         } else {
@@ -157,7 +157,7 @@ const checkToken = async (id: number, invitationToken: string, ctx: Context) => 
     }
 }
 
-const sendInvitationMail = async (jwt: string, linkText: string, url: string, requestParameter: { email: string }, userId: number, client: EMailClient) => {
+const sendInvitationMail = async (jwt: string, linkText: string, url: string, requestParameter: { email: string }, userId: number, client: EMailClient, name?: string) => {
     url = urlSanitizer(url);
     url += "/register/?id=" + userId + "&token=" + jwt;
     let finalText = linkText.link(url);
@@ -167,10 +167,10 @@ const sendInvitationMail = async (jwt: string, linkText: string, url: string, re
                 Your SnowballR Team`
     const html = `<h3>Welcome, </h3>
         <p>to finalize your registration for snowballR, please visit <a href="${url}">snowballR</a></p>
-        <p>Best Regards,</p>
-        <p>your snowballR Team</p>`
+        <p>Best Regards,</p>` +
+        (name ? `<p>${name}</p>` : `<p>your snowballR Team</p>`)
 
-    await sendMail(requestParameter.email, client, html, content)
+    await sendMail(requestParameter.email, client, html, content, "Invitation to join SnowballR", name)
 }
 
 const sendResetMail = async (jwt: string, linkText: string, url: string, requestParameter: { email: string }, userId: number, client: EMailClient) => {
@@ -186,19 +186,19 @@ const sendResetMail = async (jwt: string, linkText: string, url: string, request
         <p>Best Regards,</p>
         <p>your snowballR Team</p>`
 
-    await sendMail(requestParameter.email, client, html, content)
+    await sendMail(requestParameter.email, client, html, content, "Password reset for SnowballR")
 }
 
-const sendMail = async (mailTo: string, client: EMailClient, html: string, content: string) => {
+const sendMail = async (mailTo: string, client: EMailClient, html: string, content: string, header: string, name?: string) => {
 
     await client.connect({
         hostname: "mail.uni-ulm.de",
         port: 25,
     });
     await client.send({
-        from: adminMail,
+        from: name ? `${name} <${adminMail}>` : adminMail,
         to: mailTo,
-        subject: "Invitation to join SnowballR",
+        subject: header,
         content: content,
         html: html
     })

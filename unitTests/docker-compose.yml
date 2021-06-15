@@ -64,4 +64,4 @@ services:
     depends_on:
       - postgresdb
     profiles:
-      - run-
+      - run

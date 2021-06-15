@@ -59,6 +59,19 @@ export const createJWT = async (user: User) => {
     }, SECRET);
 }
 
+export const getUserName = async (ctx: Context) => {
+    const payloadJson = await getPayloadFromJWT(ctx);
+    if (payloadJson && payloadJson.firstName) {
+        let name = payloadJson.firstName;
+        if (payloadJson.lastName) {
+            name += " " + payloadJson.lastName;
+        }
+        return name;
+    }
+
+    return undefined;
+}
+
 export const checkAdmin = async (ctx: Context) => {
     const payloadJson = await getPayloadFromJWT(ctx);
     if (payloadJson && payloadJson.isAdmin && checkActive(payloadJson)) {
