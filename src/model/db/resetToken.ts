@@ -2,8 +2,8 @@ import {DataTypes, Model} from "https://deno.land/x/denodb/mod.ts";
 import {User} from "./user.ts";
 
 
-export class Invitation extends Model {
-    static table = 'invitation';
+export class ResetToken extends Model {
+    static table = 'resettoken';
     static timestamps = true;
 
     static fields = {

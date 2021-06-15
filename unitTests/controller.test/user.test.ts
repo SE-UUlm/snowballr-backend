@@ -8,6 +8,7 @@ import {createUser, getUsers, patchUser} from "../../src/controller/user.ts";
 import {User} from "../../src/model/db/user.ts";
 import {MockEmailClient} from "../mockObjects/mockEmailClient.test.ts";
 import {getTokens} from "../../src/controller/databaseFetcher/token.ts";
+import {getInvitations} from "../../src/controller/databaseFetcher/invitation.ts";
 
 Deno.test({
     name: "insertUserForCreation",
@@ -139,7 +140,7 @@ Deno.test({
             let isAdmin = Boolean(userToChange.isAdmin)
             let status = String(userToChange.status)
 
-            let testToken = await getTokens(Number(userToChange.id));
+            let testToken = await getInvitations(Number(userToChange.id));
             assertNotEquals(testToken, undefined)
             if (testToken) {
                 ctx = await createMockContext(app, `{"email":"hey@hey.to", "password":"meow","firstName":"Thomas","lastName":"Schmiddy","isAdmin":false,"status":"registered"}`, [["Content-Type", "application/json"], ["invitationToken", String(testToken[0].token)]], "/");

@@ -4,11 +4,12 @@ import {insertUserForRegistration, returnUserByEmail} from "./databaseFetcher/us
 import {User} from "../model/db/user.ts";
 import {convertCtxBodyToUser, convertUserToUserProfile} from "../helper/userConverter.ts";
 import {hashPassword} from "../helper/passwordHasher.ts";
-import {getToken, insertToken} from "./databaseFetcher/token.ts";
 import {EMailClient} from "../model/eMailClient.ts";
 import {makeErrorMessage} from "../helper/error.ts";
 import {urlSanitizer} from "../helper/url.ts";
 import {jsonBodyToObject} from "../helper/body.ts";
+import {getInvitation, insertInvitation} from "./databaseFetcher/invitation.ts";
+import {getResetToken, insertResetToken} from "./databaseFetcher/resetToken.ts";
 
 const adminMail = Deno.env.get("ADMIN_EMAIL");
 const url = Deno.env.get("URL");
@@ -34,7 +35,7 @@ export const createUser = async (ctx: Context, client: EMailClient) => {
 
         let user = await insertUserForRegistration(requestParameter.email);
         let jwt = await createJWT(user)
-        await insertToken(user, jwt);
+        await insertInvitation(user, jwt);
         let linkText = "snowballR"
 
         if (url && adminMail) {
@@ -67,7 +68,7 @@ export const resetPassword = async (ctx: Context, client: EMailClient) => {
     let user = await returnUserByEmail(requestParameter.email)
     if (user && url) {
         let jwt = await createJWT(user)
-        await insertToken(user, jwt);
+        await insertResetToken(user, jwt);
         let linkText = "snowballR"
         await sendResetMail(jwt, linkText, url, requestParameter.email, Number(user.id), client);
         ctx.response.status = 201;
@@ -136,14 +137,14 @@ export const patchUser = async (ctx: Context, id: number | undefined) => {
     let userData = await convertCtxBodyToUser(ctx);
     if (invitationToken) {
         if (userData.password && userData.firstName) {
-            invitationTokenValid = await checkToken(id, invitationToken, ctx);
+            invitationTokenValid = await checkInvitationToken(id, invitationToken, ctx);
         } else {
             makeErrorMessage(ctx, 400, "no password and/or firstName provided")
         }
     }
     if (resetToken) {
         if (userData.password) {
-            resetTokenValid = await checkToken(id, resetToken, ctx);
+            resetTokenValid = await checkResetToken(id, resetToken, ctx);
         } else {
             makeErrorMessage(ctx, 400, "no password provided")
         }
@@ -184,13 +185,30 @@ export const patchUser = async (ctx: Context, id: number | undefined) => {
 }
 
 /**
- * Checks whether a token is valid for resetting password or registering.
+ * Checks whether a token is valid for registering.
  * @param id id of the user belonging to the token
  * @param providedToken Token provided by the user
  * @param ctx
  */
-const checkToken = async (id: number, providedToken: string, ctx: Context) => {
-    let token = await getToken(id, providedToken)
+const checkInvitationToken = async (id: number, providedToken: string, ctx: Context) => {
+    let token = await getInvitation(id, providedToken)
+    if (token) {
+        token.delete()
+        return true;
+    } else {
+        makeErrorMessage(ctx, 401, "not authorized")
+        return false;
+    }
+}
+
+/**
+ * Checks whether a token is valid for registering.
+ * @param id id of the user belonging to the token
+ * @param providedToken Token provided by the user
+ * @param ctx
+ */
+const checkResetToken = async (id: number, providedToken: string, ctx: Context) => {
+    let token = await getResetToken(id, providedToken)
     if (token) {
         token.delete()
         return true;

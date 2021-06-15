@@ -23,6 +23,7 @@ import {PaperHasID} from "../model/db/paperHasID.ts";
 import {PaperID} from "../model/db/paperID.ts";
 import {AuthorHasID} from "../model/db/authorHasID.ts";
 import {AuthorID} from "../model/db/authorID.ts";
+import {ResetToken} from "../model/db/resetToken.ts";
 
 /**
  * Links all model files to the database and inserts the first admin, if he doesn't exist yet
@@ -31,6 +32,7 @@ import {AuthorID} from "../model/db/authorID.ts";
 export const setup = async (dropDatabase: boolean) => {
 
     Relationships.belongsTo(Invitation, User);
+    Relationships.belongsTo(ResetToken, User);
     Relationships.belongsTo(Token, User);
     Relationships.belongsTo(UserIsPartOfProject, User)
     Relationships.belongsTo(UserIsPartOfProject, Project)
@@ -55,7 +57,7 @@ export const setup = async (dropDatabase: boolean) => {
     Relationships.belongsTo(PaperHasID, PaperID)
     Relationships.belongsTo(AuthorHasID, Author)
     Relationships.belongsTo(AuthorHasID, AuthorID)
-    db.link([User, Invitation, Paper, Token, ReferencedBy, CitedBy, Author, AuthorID, Wrote, Project, Stage, PaperScopeForStage, SearchApi, ReadingList, Criteria, Review, PaperID, CriteriaEvaluation, UserIsPartOfProject, ProjectUsesApi, PaperHasID, AuthorHasID]);
+    db.link([User, Invitation, ResetToken, Paper, Token, ReferencedBy, CitedBy, Author, AuthorID, Wrote, Project, Stage, PaperScopeForStage, SearchApi, ReadingList, Criteria, Review, PaperID, CriteriaEvaluation, UserIsPartOfProject, ProjectUsesApi, PaperHasID, AuthorHasID]);
     await db.sync({drop: dropDatabase}).catch(err => {
         //TODO fix for https://github.com/eveningkid/denodb/issues/258
         console.log(err)
