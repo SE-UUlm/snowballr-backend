@@ -1,6 +1,12 @@
 import {createMockApp} from "../mockObjects/oak/mockApp.test.ts";
 import {createMockContext} from "../mockObjects/oak/mockContext.test.ts";
-import {checkPO, createJWT, validateContentType, validateJWTIfExists} from "../../src/controller/validation.ts";
+import {
+    checkPO,
+    createJWT,
+    getPayloadFromJWT,
+    validateContentType,
+    validateJWTIfExists
+} from "../../src/controller/validation.ts";
 import {assertEquals} from "https://deno.land/std@0.97.0/testing/asserts.ts"
 import {emptyAsyncFunctionTest} from "../mockObjects/emptyAsyncFunction.test.ts";
 import {setup} from "../../src/helper/setup.ts";
@@ -125,7 +131,8 @@ Deno.test({
             projectId: Number(project.id)
         })
         let ctx = await createMockContext(app, undefined, [["Content-Type", "text"]], "/", token);
-        assertEquals(await checkPO(ctx), true)
+        let payLoad = await getPayloadFromJWT(ctx);
+        assertEquals(await checkPO(payLoad), true)
 
     }
 
@@ -145,7 +152,8 @@ Deno.test({
             projectId: Number(project.id)
         })
         let ctx = await createMockContext(app, undefined, [["Content-Type", "text"]], "/", token);
-        assertEquals(await checkPO(ctx), false)
+        let payLoad = await getPayloadFromJWT(ctx);
+        assertEquals(await checkPO(payLoad), false)
 
     }
 

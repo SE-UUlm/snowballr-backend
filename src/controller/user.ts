@@ -1,5 +1,5 @@
 import {Context} from 'https://deno.land/x/oak/mod.ts';
-import {checkAdmin, checkPO, createJWT, getUserID, getUserName} from "./validation.ts";
+import {checkAdmin, checkPO, createJWT, getPayloadFromJWT, getUserID, getUserName} from "./validation.ts";
 import {insertUserForRegistration, returnUserByEmail} from "./databaseFetcher/user.ts";
 import {User} from "../model/db/user.ts";
 import {convertCtxBodyToUser, convertUserToUserProfile} from "../helper/userConverter.ts";
@@ -14,7 +14,8 @@ const adminMail = Deno.env.get("ADMIN_EMAIL");
 const url = Deno.env.get("URL");
 
 export const createUser = async (ctx: Context, client: EMailClient) => {
-    if (await checkAdmin(ctx) || await checkPO(ctx)) {
+    const payloadJson = await getPayloadFromJWT(ctx);
+    if (await checkAdmin(payloadJson) || await checkPO(payloadJson)) {
         const requestParameter = await jsonBodyToObject(ctx)
         if (!requestParameter) {
             return
@@ -31,7 +32,7 @@ export const createUser = async (ctx: Context, client: EMailClient) => {
         let linkText = "snowballR"
 
         if (url && adminMail) {
-            await sendInvitationMail(jwt, linkText, url, requestParameter, Number(user.id), client, await getUserName(ctx));
+            await sendInvitationMail(jwt, linkText, url, requestParameter, Number(user.id), client, await getUserName(payloadJson));
             ctx.response.status = 201;
             return user;
         } else {
@@ -67,7 +68,8 @@ export const resetPassword = async (ctx: Context, client: EMailClient) => {
 
 //TODO: others
 export const getUsers = async (ctx: Context) => {
-    if (await checkAdmin(ctx) || await checkPO(ctx)) {
+    const payloadJson = await getPayloadFromJWT(ctx);
+    if (await checkAdmin(payloadJson) || await checkPO(payloadJson)) {
         let users = await User.all();
         let userProfile = users.map(user => convertUserToUserProfile(user));
         ctx.response.body = JSON.stringify(userProfile);
@@ -79,7 +81,12 @@ export const getUsers = async (ctx: Context) => {
 
 //TODO: others
 export const getUser = async (ctx: Context, id: string | undefined) => {
-    if (id && (await checkAdmin(ctx) || await getUserID(ctx) === id || await checkPO(ctx))) {
+    if (!Number(id)) {
+        makeErrorMessage(ctx, 400, "no user id included")
+        return
+    }
+    const payloadJson = await getPayloadFromJWT(ctx);
+    if (id && (await checkAdmin(payloadJson) || await getUserID(payloadJson) === Number(id) || await checkPO(payloadJson))) {
         let user = await User.find(id);
         let userProfile = convertUserToUserProfile(user);
         ctx.response.body = JSON.stringify(userProfile);
@@ -89,29 +96,33 @@ export const getUser = async (ctx: Context, id: string | undefined) => {
 }
 
 export const patchUser = async (ctx: Context, id: number | undefined) => {
-    let isSameUser = (await getUserID(ctx)) === id;
-    let isAdmin = await checkAdmin(ctx);
-    let isPO = await checkPO(ctx);
+    if (!id) {
+        return
+    }
+    const payloadJson = await getPayloadFromJWT(ctx);
+    let isSameUser = (await getUserID(payloadJson)) === id;
+    let isAdmin = await checkAdmin(payloadJson);
+    let isPO = await checkPO(payloadJson);
     let invitationToken = ctx.request.headers.get("invitationToken");
     let resetToken = ctx.request.headers.get("resetPasswordToken")
     let invitationTokenValid = false;
     let resetTokenValid = false;
     let userData = await convertCtxBodyToUser(ctx);
-    if (invitationToken && id) {
+    if (invitationToken) {
         if (userData.password && userData.firstName) {
             invitationTokenValid = await checkToken(id, invitationToken, ctx);
         } else {
             makeErrorMessage(ctx, 400, "no password and/or firstName provided")
         }
     }
-    if (resetToken && id) {
+    if (resetToken) {
         if (userData.password) {
             resetTokenValid = await checkToken(id, resetToken, ctx);
         } else {
             makeErrorMessage(ctx, 400, "no password provided")
         }
     }
-    if (id && (isSameUser || isAdmin || isPO || invitationTokenValid || resetTokenValid)) {
+    if (isSameUser || isAdmin || isPO || invitationTokenValid || resetTokenValid) {
         let user = await User.find(id);
 
         if (isSameUser || invitationTokenValid || resetTokenValid) {

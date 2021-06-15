@@ -46,7 +46,7 @@ Deno.test({
     async fn(): Promise<void> {
         await setup(true);
         let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
-        let user2 = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+        await insertUser("test@test", "ash", true, "Test", "Tester", "active");
         let app = await createMockApp();
         let token = await createJWT(user)
         let ctx = await createMockContext(app, undefined, [["Content-Type", "application/json"]], "/", token);

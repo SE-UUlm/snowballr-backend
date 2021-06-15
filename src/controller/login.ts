@@ -4,6 +4,7 @@ import {convertUserToUserProfile} from "../helper/userConverter.ts";
 import {startSession} from "./session.ts";
 import {makeErrorMessage} from "../helper/error.ts";
 import {jsonBodyToObject} from "../helper/body.ts";
+import {checkActive} from "./validation.ts";
 
 export const login = async (ctx: Context): Promise<boolean> => {
     const requestParameter = await jsonBodyToObject(ctx)
@@ -16,18 +17,19 @@ export const login = async (ctx: Context): Promise<boolean> => {
         return false;
     }
 
-    let user = await loginFromDatabase(requestParameter.email, requestParameter.password)
+    let user = await returnUserByEmailAndPassword(requestParameter.email, requestParameter.password);
     if (user) {
-        ctx.response.body = JSON.stringify(convertUserToUserProfile(user));
-        await startSession(user, ctx);
-        return true;
+        if (checkActive(String(user.status))) {
+            ctx.response.body = JSON.stringify(convertUserToUserProfile(user));
+            await startSession(user, ctx);
+            return true;
+        } else {
+            makeErrorMessage(ctx, 401, "not an active profile")
+            return false;
+        }
     } else {
         makeErrorMessage(ctx, 401, "wrong username or password provided")
         return false;
     }
 
-}
-
-const loginFromDatabase = async (email: string, password: string) => {
-    return await returnUserByEmailAndPassword(email, password);
 }

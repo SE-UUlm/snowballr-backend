@@ -6,7 +6,6 @@ import {createUser, getUser, getUsers, patchUser, resetPassword} from "./control
 import {logout} from "./controller/logout.ts";
 import {SmtpClient} from "https://deno.land/x/smtp/mod.ts";
 
-//TODO user authentication header patch
 await setup(true);
 const client = new SmtpClient();
 

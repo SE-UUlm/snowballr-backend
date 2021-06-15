@@ -3,6 +3,7 @@ import {create, decode, verify} from "https://deno.land/x/djwt@/mod.ts"
 import {User} from "../model/db/user.ts";
 import {createNumericTerminationDate} from "../helper/dateHelper.ts";
 import {makeErrorMessage} from "../helper/error.ts";
+import {PayloadJson} from "../model/payloadJson.ts";
 
 const SECRET = String(Deno.env.get('SECRET'));
 
@@ -48,7 +49,7 @@ export const validateJWTIfExists = async (ctx: Context, next: () => Promise<unkn
 }
 
 export const createJWT = async (user: User) => {
-    return await create({alg: "HS512", typ: "JWT"}, {
+    return create({alg: "HS512", typ: "JWT"}, {
         id: user.id,
         eMail: user.email,
         isAdmin: user.isAdmin,
@@ -59,9 +60,8 @@ export const createJWT = async (user: User) => {
     }, SECRET);
 }
 
-export const getUserName = async (ctx: Context) => {
-    const payloadJson = await getPayloadFromJWT(ctx);
-    if (payloadJson && payloadJson.firstName) {
+export const getUserName = async (payloadJson?: PayloadJson) => {
+    if (payloadJson) {
         let name = payloadJson.firstName;
         if (payloadJson.lastName) {
             name += " " + payloadJson.lastName;
@@ -72,18 +72,16 @@ export const getUserName = async (ctx: Context) => {
     return undefined;
 }
 
-export const checkAdmin = async (ctx: Context) => {
-    const payloadJson = await getPayloadFromJWT(ctx);
-    if (payloadJson && payloadJson.isAdmin && checkActive(payloadJson)) {
+export const checkAdmin = async (payloadJson?: PayloadJson) => {
+    if (payloadJson) {
         return payloadJson.isAdmin;
     }
 
     return false;
 }
-export const checkPO = async (ctx: Context) => {
+export const checkPO = async (payloadJson?: PayloadJson) => {
     let isPO = false;
-    const payloadJson = await getPayloadFromJWT(ctx);
-    if (payloadJson && payloadJson.id && checkActive(payloadJson)) {
+    if (payloadJson) {
         let projects = await User.where('id', payloadJson.id).project();
         if (Array.isArray(projects)) {
             isPO = !(projects.every((userIsPartOfProject) => {
@@ -95,31 +93,28 @@ export const checkPO = async (ctx: Context) => {
     return isPO;
 }
 
-const checkActive = (payloadJson: any) => {
-    if (payloadJson.status) {
-        if (payloadJson.status === "active") {
-            return true;
-        }
+export const checkActive = (status: string) => {
+    if (status === "active") {
+        return true;
     }
+
     return false;
 }
 
-export const getUserID = async (ctx: Context) => {
-    const payloadJson = await getPayloadFromJWT(ctx);
-    if (payloadJson && payloadJson.id) {
+export const getUserID = async (payloadJson?: PayloadJson) => {
+    if (payloadJson) {
         return payloadJson.id
     }
     return undefined;
 }
 
-export const getPayloadFromJWT = async (ctx: Context) => {
+export const getPayloadFromJWT = async (ctx: Context): Promise<PayloadJson | undefined> => {
     let token = await ctx.cookies.get("token");
     if (token) {
-        const [signature, payload, header] = await decode(token)
-        return payload as any;
+        let [, payload,] = await decode(token)
+        return <PayloadJson>payload;
     }
-
-    return undefined;
+    return undefined
 }
 
 const verifyJWT = async (ctx: Context, next: () => Promise<unknown>, token: string) => {
