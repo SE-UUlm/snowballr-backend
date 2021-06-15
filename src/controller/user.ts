@@ -14,7 +14,7 @@ const adminMail = Deno.env.get("ADMIN_EMAIL");
 const url = Deno.env.get("URL");
 
 export const createUser = async (ctx: Context, client: EMailClient) => {
-    if (await checkAdmin(ctx) || await checkPO(ctx)) { //TODO add check for projectowner
+    if (await checkAdmin(ctx) || await checkPO(ctx)) {
         const requestParameter = await jsonBodyToObject(ctx)
         if (!requestParameter) {
             return
@@ -65,8 +65,9 @@ export const resetPassword = async (ctx: Context, client: EMailClient) => {
     }
 }
 
+//TODO: others
 export const getUsers = async (ctx: Context) => {
-    if (await checkAdmin(ctx)) {
+    if (await checkAdmin(ctx) || await checkPO(ctx)) {
         let users = await User.all();
         let userProfile = users.map(user => convertUserToUserProfile(user));
         ctx.response.body = JSON.stringify(userProfile);
@@ -76,9 +77,9 @@ export const getUsers = async (ctx: Context) => {
     return false;
 }
 
-//TODO PO && others
+//TODO: others
 export const getUser = async (ctx: Context, id: string | undefined) => {
-    if (id && (await checkAdmin(ctx) || await getUserID(ctx) === id)) {
+    if (id && (await checkAdmin(ctx) || await getUserID(ctx) === id || await checkPO(ctx))) {
         let user = await User.find(id);
         let userProfile = convertUserToUserProfile(user);
         ctx.response.body = JSON.stringify(userProfile);
