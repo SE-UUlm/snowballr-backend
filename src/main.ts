@@ -2,7 +2,7 @@ import {Application, Router} from 'https://deno.land/x/oak/mod.ts';
 import {validateContentType, validateJWTIfExists} from "./controller/validation.ts";
 import {login} from "./controller/login.ts";
 import {setup} from "./helper/setup.ts";
-import {createUser, getUser, getUsers, patchUser, resetPassword} from "./controller/user.ts";
+import {createUser, getUser, getUserProjects, getUsers, patchUser, resetPassword} from "./controller/user.ts";
 import {logout} from "./controller/logout.ts";
 import {SmtpClient} from "https://deno.land/x/smtp/mod.ts";
 
@@ -30,10 +30,13 @@ router
         await getUsers(context)
     })
     .get("/users/:id", async (context) => {
-        await getUser(context, context.params.id)
+        await getUser(context, Number(context.params.id))
     })
     .patch("/users/:id", async (context, Methods) => {
         await patchUser(context, Number(context.params.id))
+    })
+    .get("/users/:id/projects", async (context) => {
+        await getUserProjects(context, Number(context.params.id))
     })
 
 const app = new Application();

@@ -65,6 +65,14 @@ export const setup = async (dropDatabase: boolean) => {
     });
     let admin = await returnUserByEmail(String(Deno.env.get("ADMIN_EMAIL")));
     if (!admin) {
-        await insertUser(String(Deno.env.get("ADMIN_EMAIL")), String(Deno.env.get("ADMIN_PASSWORD")), true, "admin", "admin", "active");
+        admin = await insertUser(String(Deno.env.get("ADMIN_EMAIL")), String(Deno.env.get("ADMIN_PASSWORD")), true, "admin", "admin", "active");
+        //TODO: only to showcase functionality, otherwise delete
+        let project = await Project.create({name: "Test"})
+        let userProject = await UserIsPartOfProject.create({
+            isOwner: true,
+            userId: Number(admin.id),
+            projectId: Number(project.id)
+        })
     }
+
 }

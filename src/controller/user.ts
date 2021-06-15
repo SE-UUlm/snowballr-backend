@@ -3,13 +3,14 @@ import {checkAdmin, checkPO, createJWT, getPayloadFromJWT, getUserID, getUserNam
 import {insertUserForRegistration, returnUserByEmail} from "./databaseFetcher/user.ts";
 import {User} from "../model/db/user.ts";
 import {convertCtxBodyToUser, convertUserToUserProfile} from "../helper/userConverter.ts";
-import {hashPassword} from "../helper/passwordHasher.ts";
 import {EMailClient} from "../model/eMailClient.ts";
 import {makeErrorMessage} from "../helper/error.ts";
 import {urlSanitizer} from "../helper/url.ts";
 import {jsonBodyToObject} from "../helper/body.ts";
 import {getInvitation, insertInvitation} from "./databaseFetcher/invitation.ts";
 import {getResetToken, insertResetToken} from "./databaseFetcher/resetToken.ts";
+import {getAllProjectsByUser} from "./databaseFetcher/userProject.ts";
+import {hashPassword} from "../helper/passwordHasher.ts";
 
 const adminMail = Deno.env.get("ADMIN_EMAIL");
 const url = Deno.env.get("URL");
@@ -101,16 +102,35 @@ export const getUsers = async (ctx: Context) => {
  * @param ctx
  * @param id
  */
-export const getUser = async (ctx: Context, id: string | undefined) => {
-    if (!Number(id)) {
+export const getUser = async (ctx: Context, id: number | undefined) => {
+    if (!id) {
         makeErrorMessage(ctx, 400, "no user id included")
         return
     }
     const payloadJson = await getPayloadFromJWT(ctx);
-    if (id && (await checkAdmin(payloadJson) || await getUserID(payloadJson) === Number(id) || await checkPO(payloadJson))) {
+    if (await checkAdmin(payloadJson) || await getUserID(payloadJson) === id || await checkPO(payloadJson)) {
         let user = await User.find(id);
         let userProfile = convertUserToUserProfile(user);
         ctx.response.body = JSON.stringify(userProfile);
+        ctx.response.status = 200;
+
+    }
+}
+
+/**
+ * Get all projects of a user
+ * @param ctx
+ * @param id
+ */
+export const getUserProjects = async (ctx: Context, id: number | undefined) => {
+    if (!id) {
+        makeErrorMessage(ctx, 400, "no user id included")
+        return
+    }
+    const payloadJson = await getPayloadFromJWT(ctx);
+    if (await checkAdmin(payloadJson) || await getUserID(payloadJson) === id) {
+        let userProjects = await getAllProjectsByUser(id)
+        ctx.response.body = `{projects: ${JSON.stringify(userProjects)}}`;
         ctx.response.status = 200;
 
     }
@@ -124,7 +144,8 @@ export const getUser = async (ctx: Context, id: string | undefined) => {
  */
 export const patchUser = async (ctx: Context, id: number | undefined) => {
     if (!id) {
-        return
+        makeErrorMessage(ctx, 400, "no user id included")
+        return;
     }
     const payloadJson = await getPayloadFromJWT(ctx);
     let isSameUser = (await getUserID(payloadJson)) === id;
@@ -232,13 +253,29 @@ const sendInvitationMail = async (jwt: string, linkText: string, url: string, em
     url = urlSanitizer(url);
     url += "/register/?id=" + userId + "&token=" + jwt;
     let finalText = linkText.link(url);
-    const content = `Welcome, </br>
-                to finalize your registration for snowballR, please visit: ${finalText}. </br>
-                Best Regards, </br>
-                Your SnowballR Team`
-    const html = `<h3>Welcome, </h3>
-        <p>to finalize your registration for snowballR, please visit <a href="${url}">snowballR</a></p>
-        <p>Best Regards,</p>` +
+    const content = `
+        Welcome, </br>
+        to
+        finalize
+        your
+        registration
+        for snowballR, please visit: ${finalText}.
+        </br>
+        Best
+        Regards, </br>
+        Your
+        SnowballR
+        Team`
+    const html = ` < h3 > Welcome, </h3>
+        < p > to
+        finalize
+        your
+        registration
+        for snowballR, please visit < a
+        href = "${url}" > snowballR < /a></
+        p >
+        <p>Best
+        Regards, </p>` +
         (name ? `<p>${name}</p>` : `<p>your snowballR Team</p>`)
 
     await sendMail(email, client, html, content, "Invitation to join SnowballR", name)
