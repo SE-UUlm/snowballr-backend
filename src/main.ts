@@ -14,13 +14,13 @@ router
     .get("/", (context) => {
         context.response.body = {message: "hello there"}
     })
-    .get("/login", async (context) => {
+    .post("/login", async (context) => {
         await login(context)
     })
     .get("/logout", async (context) => {
         await logout(context)
     })
-    .get("/reset-password", async (context) => {
+    .post("/reset-password", async (context) => {
         await resetPassword(context, client)
     })
     .post("/users", async (context) => {
