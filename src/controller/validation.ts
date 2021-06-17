@@ -18,8 +18,7 @@ export const validateContentType = async (ctx: Context, next: () => Promise<unkn
     let contentType = ctx.request.headers.get("Content-Type");
     if (await emptyContent(ctx)) {
         await next();
-    } else if (contentType && contentType.startsWith("application/json")
-    ) {
+    } else if (contentType && contentType.startsWith("application/json")) {
         if (await validateContent(ctx)) {
             await next();
         } else {
