@@ -9,7 +9,7 @@ import {Context} from 'https://deno.land/x/oak/mod.ts';
 export const convertUserToUserProfile = (user: User) => {
     let userProfile: UserProfile = {
         id: Number(user.id),
-        email: String(user.lastName),
+        email: String(user.email),
         isAdmin: Boolean(user.isAdmin),
         status: String(user.status)
     }

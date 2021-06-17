@@ -253,29 +253,13 @@ const sendInvitationMail = async (jwt: string, linkText: string, url: string, em
     url = urlSanitizer(url);
     url += "/register/?id=" + userId + "&token=" + jwt;
     let finalText = linkText.link(url);
-    const content = `
-        Welcome, </br>
-        to
-        finalize
-        your
-        registration
-        for snowballR, please visit: ${finalText}.
-        </br>
-        Best
-        Regards, </br>
-        Your
-        SnowballR
-        Team`
-    const html = ` < h3 > Welcome, </h3>
-        < p > to
-        finalize
-        your
-        registration
-        for snowballR, please visit < a
-        href = "${url}" > snowballR < /a></
-        p >
-        <p>Best
-        Regards, </p>` +
+    const content = `Welcome, </br>
+        to finalize your registration for snowballR, please visit: ${finalText}.</br>
+        Best Regards, </br>
+        Your SnowballR Team`
+    const html = ` <h3> Welcome, </h3>
+        <p> to finalize your registration for snowballR, please visit <a href = "${url}" > snowballR </a></p>
+        <p>Best Regards, </p>` +
         (name ? `<p>${name}</p>` : `<p>your snowballR Team</p>`)
 
     await sendMail(email, client, html, content, "Invitation to join SnowballR", name)
