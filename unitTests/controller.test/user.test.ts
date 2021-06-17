@@ -185,3 +185,18 @@ Deno.test({
     },
     sanitizeResources: false,
 })
+
+Deno.test({
+    name: "TryPatchWithoutContent",
+    async fn(): Promise<void> {
+        await setup(true);
+        let app = await createMockApp();
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "registered");
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, undefined, [["Content-Type", "application/json"]], "/", token);
+        await createUser(ctx, new MockEmailClient())
+
+        assertEquals(ctx.response.status, 401)
+    }
+
+})

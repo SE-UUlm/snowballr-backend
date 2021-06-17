@@ -23,7 +23,7 @@ export class RequestBodyMock {
                     enumerable: true,
                 },
                 value: {
-                    get: () => this.bodyJsonString ? JSON.parse(this.bodyJsonString) : undefined,
+                    get: () => JSON.parse(this.bodyJsonString as any),
                     configurable: true,
                     enumerable: true,
                 },

@@ -11,9 +11,10 @@ import {getInvitation, insertInvitation} from "./databaseFetcher/invitation.ts";
 import {getResetToken, insertResetToken} from "./databaseFetcher/resetToken.ts";
 import {getAllProjectsByUser} from "./databaseFetcher/userProject.ts";
 import {hashPassword} from "../helper/passwordHasher.ts";
+import {UserParameters} from "../model/userProfile.ts";
 
 const adminMail = Deno.env.get("ADMIN_EMAIL");
-const url = Deno.env.get("URL");
+const URL = Deno.env.get("URL");
 
 /**
  * Creates a user for registration
@@ -39,12 +40,12 @@ export const createUser = async (ctx: Context, client: EMailClient) => {
         await insertInvitation(user, jwt);
         let linkText = "snowballR"
 
-        if (url && adminMail) {
-            await sendInvitationMail(jwt, linkText, url, requestParameter.email, Number(user.id), client, await getUserName(payloadJson));
+        if (adminMail) {
+            await sendInvitationMail(jwt, linkText, requestParameter.email, Number(user.id), client, await getUserName(payloadJson));
             ctx.response.status = 201;
             return user;
         } else {
-            console.error("no url and/or no email in env!")
+            console.error("no email in env!")
             makeErrorMessage(ctx, 401, "not authorized")
         }
     } else {
@@ -67,15 +68,14 @@ export const resetPassword = async (ctx: Context, client: EMailClient) => {
     }
 
     let user = await returnUserByEmail(requestParameter.email)
-    if (user && url) {
+    if (user && URL) {
         let jwt = await createJWT(user)
         await insertResetToken(user, jwt);
         let linkText = "snowballR"
-        await sendResetMail(jwt, linkText, url, requestParameter.email, Number(user.id), client);
+        await sendResetMail(jwt, linkText, requestParameter.email, Number(user.id), client);
         ctx.response.status = 201;
     } else {
         makeErrorMessage(ctx, 400, "wrong email provided")
-        return;
     }
 }
 
@@ -148,32 +148,15 @@ export const patchUser = async (ctx: Context, id: number | undefined) => {
         return;
     }
     const payloadJson = await getPayloadFromJWT(ctx);
-    let isSameUser = (await getUserID(payloadJson)) === id;
+    let userData = await convertCtxBodyToUser(ctx);
     let isAdmin = await checkAdmin(payloadJson);
     let isPO = await checkPO(payloadJson);
-    let invitationToken = ctx.request.headers.get("invitationToken");
-    let resetToken = ctx.request.headers.get("resetPasswordToken")
-    let invitationTokenValid = false;
-    let resetTokenValid = false;
-    let userData = await convertCtxBodyToUser(ctx);
-    if (invitationToken) {
-        if (userData.password && userData.firstName) {
-            invitationTokenValid = await checkInvitationToken(id, invitationToken, ctx);
-        } else {
-            makeErrorMessage(ctx, 400, "no password and/or firstName provided")
-        }
-    }
-    if (resetToken) {
-        if (userData.password) {
-            resetTokenValid = await checkResetToken(id, resetToken, ctx);
-        } else {
-            makeErrorMessage(ctx, 400, "no password provided")
-        }
-    }
-    if (isSameUser || isAdmin || isPO || invitationTokenValid || resetTokenValid) {
+    let isSameUser = (await getUserID(payloadJson)) === id || await checkToken(id, ctx, userData);
+
+    if (isSameUser || isAdmin || isPO) {
         let user = await User.find(id);
 
-        if (isSameUser || invitationTokenValid || resetTokenValid) {
+        if (isSameUser) {
             if (userData.password) {
                 user.password = hashPassword(userData.password)
             }
@@ -203,6 +186,36 @@ export const patchUser = async (ctx: Context, id: number | undefined) => {
     } else {
         makeErrorMessage(ctx, 401, "not authorized");
     }
+}
+
+/**
+ * Checks whether a resetToken or an invitationToken is set in the header and if it is valid
+ *
+ * @param id id of the user
+ * @param ctx oak context
+ * @param userData the data sent to change the user data
+ */
+const checkToken = async (id: number, ctx: Context, userData: UserParameters) => {
+    let validToken = false;
+    let invitationToken = ctx.request.headers.get("invitationToken");
+    let resetToken = ctx.request.headers.get("resetPasswordToken")
+
+    if (invitationToken) {
+        if (userData.password && userData.firstName) {
+            validToken = await checkInvitationToken(id, invitationToken, ctx);
+        } else {
+            makeErrorMessage(ctx, 400, "no password and/or firstName provided")
+        }
+    }
+    if (resetToken) {
+        if (userData.password) {
+            validToken = await checkResetToken(id, resetToken, ctx);
+        } else {
+            makeErrorMessage(ctx, 400, "no password provided")
+        }
+    }
+
+    return validToken;
 }
 
 /**
@@ -249,20 +262,25 @@ const checkResetToken = async (id: number, providedToken: string, ctx: Context) 
  * @param client email client to send the email with
  * @param name name of the person who invited the new user
  */
-const sendInvitationMail = async (jwt: string, linkText: string, url: string, email: string, userId: number, client: EMailClient, name?: string) => {
-    url = urlSanitizer(url);
-    url += "/register/?id=" + userId + "&token=" + jwt;
-    let finalText = linkText.link(url);
-    const content = `Welcome, </br>
+const sendInvitationMail = async (jwt: string, linkText: string, email: string, userId: number, client: EMailClient, name?: string) => {
+    if (URL) {
+        let url = urlSanitizer(URL);
+        url += "/register/?id=" + userId + "&token=" + jwt;
+        let finalText = linkText.link(url);
+        const content = `Welcome, </br>
         to finalize your registration for snowballR, please visit: ${finalText}.</br>
         Best Regards, </br>
         Your SnowballR Team`
-    const html = ` <h3> Welcome, </h3>
+        const html = ` <h3> Welcome, </h3>
         <p> to finalize your registration for snowballR, please visit <a href = "${url}" > snowballR </a></p>
         <p>Best Regards, </p>` +
-        (name ? `<p>${name}</p>` : `<p>your snowballR Team</p>`)
+            (name ? `<p>${name}</p>` : `<p>your snowballR Team</p>`)
 
-    await sendMail(email, client, html, content, "Invitation to join SnowballR", name)
+        await sendMail(email, client, html, content, "Invitation to join SnowballR", name)
+    } else {
+        console.error("no URL in env!")
+    }
+
 }
 
 /**
@@ -274,20 +292,24 @@ const sendInvitationMail = async (jwt: string, linkText: string, url: string, em
  * @param userId
  * @param client email client to send the email with
  */
-const sendResetMail = async (jwt: string, linkText: string, url: string, email: string, userId: number, client: EMailClient) => {
-    url = urlSanitizer(url);
-    url += "/resetpassword/?id=" + userId + "&token=" + jwt;
-    let finalText = linkText.link(url);
-    const content = `Hello, </br>
+const sendResetMail = async (jwt: string, linkText: string, email: string, userId: number, client: EMailClient) => {
+    if (URL) {
+        let url = urlSanitizer(URL);
+        url += "/resetpassword/?id=" + userId + "&token=" + jwt;
+        let finalText = linkText.link(url);
+        const content = `Hello, </br>
                 to reset your password for snowballR, please visit: ${finalText}. </br>
                 Best Regards, </br>
                 Your SnowballR Team`
-    const html = `<h3>Welcome, </h3>
+        const html = `<h3>Welcome, </h3>
         <p> to reset your password for snowballR, please visit <a href="${url}">snowballR</a></p>
         <p>Best Regards,</p>
         <p>your snowballR Team</p>`
 
-    await sendMail(email, client, html, content, "Password reset for SnowballR")
+        await sendMail(email, client, html, content, "Password reset for SnowballR")
+    } else {
+        console.error("no URL in env!")
+    }
 }
 
 /**
