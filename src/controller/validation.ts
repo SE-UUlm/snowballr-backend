@@ -101,8 +101,6 @@ export const getUserName = async (payloadJson?: PayloadJson) => {
         }
         return name;
     }
-
-    return undefined;
 }
 
 /**
@@ -113,8 +111,6 @@ export const checkAdmin = async (payloadJson?: PayloadJson) => {
     if (payloadJson) {
         return payloadJson.isAdmin;
     }
-
-    return false;
 }
 
 /**
@@ -143,7 +139,6 @@ export const checkActive = (status: string) => {
     if (status === "active") {
         return true;
     }
-
     return false;
 }
 
@@ -155,7 +150,6 @@ export const getUserID = async (payloadJson?: PayloadJson) => {
     if (payloadJson) {
         return payloadJson.id
     }
-    return undefined;
 }
 
 /**
@@ -168,7 +162,6 @@ export const getPayloadFromJWT = async (ctx: Context): Promise<PayloadJson | und
         let [, payload,] = await decode(token)
         return <PayloadJson>payload;
     }
-    return undefined
 }
 
 /**

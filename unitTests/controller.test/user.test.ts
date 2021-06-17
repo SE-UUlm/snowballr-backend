@@ -4,7 +4,7 @@ import {createMockApp} from "../mockObjects/oak/mockApp.test.ts";
 import {createJWT} from "../../src/controller/validation.ts";
 import {createMockContext} from "../mockObjects/oak/mockContext.test.ts";
 import {assertEquals, assertNotEquals} from "https://deno.land/std@0.97.0/testing/asserts.ts"
-import {createUser, getUsers, patchUser} from "../../src/controller/user.ts";
+import {createUser, getUser, getUsers, patchUser, resetPassword} from "../../src/controller/user.ts";
 import {User} from "../../src/model/db/user.ts";
 import {MockEmailClient} from "../mockObjects/mockEmailClient.test.ts";
 import {getTokens} from "../../src/controller/databaseFetcher/token.ts";
@@ -43,7 +43,7 @@ Deno.test({
 })
 
 Deno.test({
-    name: "getAllUsers",
+    name: "getAllUsersAsAdmin",
     async fn(): Promise<void> {
         await setup(true);
         let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
@@ -53,6 +53,99 @@ Deno.test({
         let ctx = await createMockContext(app, undefined, [["Content-Type", "application/json"]], "/", token);
         assertEquals(true, await getUsers(ctx));
 
+
+    },
+    sanitizeResources: false,
+})
+
+Deno.test({
+    name: "getAllUsersUnauthorized",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
+        await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, undefined, [["Content-Type", "application/json"]], "/", token);
+        assertEquals(false, await getUsers(ctx));
+
+
+    },
+    sanitizeResources: false,
+})
+
+Deno.test({
+    name: "getOneUserAsAdmin",
+    fn: async function (): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+        await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, undefined, [["Content-Type", "application/json"]], "/users/1", token);
+        await getUser(ctx, 2);
+        assertEquals(ctx.response.status, 200)
+
+    },
+    sanitizeResources: false,
+})
+
+Deno.test({
+    name: "getOneUserUnAuthorized",
+    fn: async function (): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
+        await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, undefined, [["Content-Type", "application/json"]], "/users/1", token);
+        await getUser(ctx, 3);
+        assertEquals(ctx.response.status, 401)
+
+    },
+    sanitizeResources: false,
+})
+
+Deno.test({
+    name: "ResetPassword",
+    fn: async function (): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, '{"email":"test@test" }', [["Content-Type", "application/json"]], "/users/1", token);
+        await resetPassword(ctx, new MockEmailClient());
+        assertEquals(ctx.response.status, 200)
+
+    },
+    sanitizeResources: false,
+})
+
+Deno.test({
+    name: "ResetPasswordWrongMail",
+    fn: async function (): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, '{"email":"test@" }', [["Content-Type", "application/json"]], "/users/1", token);
+        await resetPassword(ctx, new MockEmailClient());
+        assertEquals(ctx.response.status, 400)
+
+    },
+    sanitizeResources: false,
+})
+
+Deno.test({
+    name: "ResetPasswordNoMail",
+    fn: async function (): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, "{}", [["Content-Type", "application/json"]], "/users/1", token);
+        await resetPassword(ctx, new MockEmailClient());
+        assertEquals(ctx.response.status, 422)
 
     },
     sanitizeResources: false,
@@ -184,4 +277,19 @@ Deno.test({
         }
     },
     sanitizeResources: false,
+})
+
+Deno.test({
+    name: "TryPatchWithoutContent",
+    async fn(): Promise<void> {
+        await setup(true);
+        let app = await createMockApp();
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "registered");
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, undefined, [["Content-Type", "application/json"]], "/", token);
+        await createUser(ctx, new MockEmailClient())
+
+        assertEquals(ctx.response.status, 401)
+    }
+
 })
