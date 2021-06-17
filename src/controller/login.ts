@@ -20,8 +20,13 @@ export const login = async (ctx: Context): Promise<boolean> => {
     let user = await returnUserByEmailAndPassword(requestParameter.email, requestParameter.password);
     if (user) {
         if (checkActive(String(user.status))) {
-            ctx.response.body = JSON.stringify(convertUserToUserProfile(user));
-            await startSession(user, ctx);
+            let token = await startSession(user);
+            let userprofile = JSON.stringify(convertUserToUserProfile(user))
+            ctx.response.body = `{
+                                    "token": ${token}, 
+                                    "user": ${userprofile}
+                                 }`
+
             return true;
         } else {
             makeErrorMessage(ctx, 401, "not an active profile")
