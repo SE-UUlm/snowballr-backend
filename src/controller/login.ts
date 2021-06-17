@@ -23,7 +23,7 @@ export const login = async (ctx: Context): Promise<boolean> => {
             let token = await startSession(user);
             let userprofile = JSON.stringify(convertUserToUserProfile(user))
             ctx.response.body = `{
-                                    "token": ${token}, 
+                                    "token": "${token}", 
                                     "user": ${userprofile}
                                  }`
 
