@@ -15,9 +15,10 @@ const SECRET = String(Deno.env.get('SECRET'));
  */
 export const validateContentType = async (ctx: Context, next: () => Promise<unknown>) => {
     ctx.response.type = "application/json";
+    let contentType = ctx.request.headers.get("Content-Type");
     if (await emptyContent(ctx)) {
         await next();
-    } else if (ctx.request.headers.get("Content-Type") === "application/json") {
+    } else if (contentType && contentType.startsWith("application/json")) {
         if (await validateContent(ctx)) {
             await next();
         } else {
