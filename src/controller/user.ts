@@ -51,7 +51,6 @@ export const createUser = async (ctx: Context, client: EMailClient) => {
     } else {
         makeErrorMessage(ctx, 401, "not authorized")
     }
-    return undefined;
 }
 
 /**
@@ -60,7 +59,10 @@ export const createUser = async (ctx: Context, client: EMailClient) => {
  * @param client
  */
 export const resetPassword = async (ctx: Context, client: EMailClient) => {
-    const requestParameter = await ctx.request.body({type: "json"}).value;
+    const requestParameter = await jsonBodyToObject(ctx)
+    if (!requestParameter) {
+        return
+    }
 
     if (!requestParameter.email) {
         makeErrorMessage(ctx, 422, "no email provided")
@@ -73,7 +75,7 @@ export const resetPassword = async (ctx: Context, client: EMailClient) => {
         await insertResetToken(user, jwt);
         let linkText = "snowballR"
         await sendResetMail(jwt, linkText, requestParameter.email, Number(user.id), client);
-        ctx.response.status = 201;
+        ctx.response.status = 200;
     } else {
         makeErrorMessage(ctx, 400, "wrong email provided")
     }
@@ -114,6 +116,8 @@ export const getUser = async (ctx: Context, id: number | undefined) => {
         ctx.response.body = JSON.stringify(userProfile);
         ctx.response.status = 200;
 
+    } else {
+        makeErrorMessage(ctx, 401, "not authorized");
     }
 }
 
@@ -133,6 +137,8 @@ export const getUserProjects = async (ctx: Context, id: number | undefined) => {
         ctx.response.body = `{"projects": ${JSON.stringify(userProjects)}}`;
         ctx.response.status = 200;
 
+    } else {
+        makeErrorMessage(ctx, 401, "not authorized");
     }
 }
 
