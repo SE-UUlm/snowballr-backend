@@ -130,7 +130,7 @@ export const getUserProjects = async (ctx: Context, id: number | undefined) => {
     const payloadJson = await getPayloadFromJWT(ctx);
     if (await checkAdmin(payloadJson) || await getUserID(payloadJson) === id) {
         let userProjects = await getAllProjectsByUser(id)
-        ctx.response.body = `{projects: ${JSON.stringify(userProjects)}}`;
+        ctx.response.body = `{"projects": ${JSON.stringify(userProjects)}}`;
         ctx.response.status = 200;
 
     }
