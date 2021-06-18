@@ -42,6 +42,7 @@ export class MicrosoftResearchApi implements IApiFetcher {
         var citations: IApiPaper[];
         var paper: IApiPaper;
         var RIds: number[];
+        var references: IApiPaper[];
 
         let response = fetch(this.url, {
             method: 'POST',
@@ -64,12 +65,21 @@ export class MicrosoftResearchApi implements IApiFetcher {
                 return this._getReferences(RIds);
             })
             .then(data => {
+                references = data;
                 let apiReturn: IApiResponse = {
                     "paper": paper,
                     "citations": citations,
-                    "references": data
+                    "references": references
                 }
                 return apiReturn;
+            })
+            .catch(data => {
+                logger.error("Error while fetching microsoftResearch: " + data);
+                return {
+                    "paper": paper ? paper : undefined,
+                    "citations": citations ? citations : undefined,
+                    "references": references ? references : undefined
+                } as IApiResponse;
             })
         return response;
     }

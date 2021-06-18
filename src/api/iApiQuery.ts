@@ -1,3 +1,7 @@
+/**
+ * Parameters which are queriable by most apis. TBI
+ */
+
 export interface IApiQuery {
     firstName?: string;
     lastName?: string;

@@ -3,7 +3,7 @@ import {IApiAuthor} from "./iApiAuthor.ts";
 
 /**
  * Maps database scheme to object to be returnable by the apis.
- * If a value is not parsable it should be set to type undefined
+ * If a value is not parsable it should be set to type undefined (default value for optionals)
  */
 export interface IApiPaper{
     id?: number;

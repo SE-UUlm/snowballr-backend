@@ -3,6 +3,8 @@
  */
 export enum idType{
     DOI = "DOI",
+    ISSN = "ISSN",
+    ISBN = "ISBN",
     MicrosoftAcademic = "MicrosoftAcademic",
     OpenCitationsIndex = "OpenCitationsIndex",
     GoogleScholar = "GoogleScholar",

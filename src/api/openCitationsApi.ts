@@ -27,6 +27,7 @@ export class OpenCitationsApi implements IApiFetcher {
         var citations: IApiPaper[];
         var paper: IApiPaper;
         var doiReference: string;
+        var references: IApiPaper[];
         //logger.debug(query);
 
         let response = fetch(`${this.url}/index/api/v1/metadata/${query.id}`)
@@ -44,24 +45,41 @@ export class OpenCitationsApi implements IApiFetcher {
                 return this._getLinkedDOIs(doiReference);
             })
             .then(data => {
+                references = data;
                 let apiReturn: IApiResponse = {
                     "paper": paper,
                     "citations": citations,
-                    "references": data
+                    "references": references
                 }
                 return apiReturn;
+            })
+            .catch(data => {
+                logger.error("Error while fetching openCitations: " + data);
+                return {
+                    "paper": paper ? paper : undefined,
+                    "citations": citations ? citations : undefined,
+                    "references": references ? references : undefined
+                } as IApiResponse;
             })
         return response;
     }
 
+    /**
+     * Make a single ORed http call to fetch all entries for a list of DOIs.
+     * Used to get citations and references.
+     * ORed http calls with multiple DOIs can be done by seperating dois with "__"
+     * @param dois - string of DOIs return by the original api called. Each doi separated by ";"
+     * @returns Object List of IApiPaper with all metadata for the references or citations. Promise.
+     */
     private _getLinkedDOIs(dois: string): Promise<IApiPaper[]> {
         let urlQuery: string = dois.replace(/; /g, '__');
-        //logger.debug(urlQuery)
-        let response = fetch(`${this.url}/api/v1/metadata/${urlQuery}`)
+        logger.debug(urlQuery)
+        let response = fetch(`${this.url}/index/api/v1/metadata/${urlQuery}`)
             .then(data => {
                 return data.json();
             })
             .then(data => {
+                //console.log(data);
                 var citations: Array<IApiPaper> = [];
                 for (let value in data) {
                     let cit = this._parseResponse(data[value]);
@@ -80,6 +98,12 @@ export class OpenCitationsApi implements IApiFetcher {
         return response;
     }
 
+    /**
+     * Cast returns from rest api to a single IApiPaper Object
+     * Tries to except missing parameters, keys and values filling them with undefined
+     * @param rescccponse - api metadata for a single paper
+     * @returns Object Single IApiPaper object which represents metadata of such
+     */
     private _parseResponse(response: any): IApiPaper {
         var refCount: any;
 
