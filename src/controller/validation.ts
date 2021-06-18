@@ -65,7 +65,7 @@ const validateContent = async (ctx: Context): Promise<boolean> => {
  * @param next
  */
 export const validateJWTIfExists = async (ctx: Context, next: () => Promise<unknown>) => {
-    let token = ctx.cookies.get("token");
+    let token = ctx.request.headers.get("authenticationToken");
     if (token) {
         return verifyJWT(ctx, next, token)
     } else {
