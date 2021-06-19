@@ -11,6 +11,7 @@ export async function createMockContext<S extends Record<string | number | symbo
     token?: string,
     method = "GET",
 ) {
+    if(token){ standardHeader.push(["authenticationToken", token])}
     const request = await createMockRequest(standardHeader, requestBodyJsonString, path);
     const response = await createMockResponse(standardHeader);
     const cookies = token ? new CookieMock(token) : new Cookies(request, response);

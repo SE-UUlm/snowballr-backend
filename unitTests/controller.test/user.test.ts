@@ -3,7 +3,7 @@ import {insertUser} from "../../src/controller/databaseFetcher/user.ts";
 import {createMockApp} from "../mockObjects/oak/mockApp.test.ts";
 import {createJWT} from "../../src/controller/validation.ts";
 import {createMockContext} from "../mockObjects/oak/mockContext.test.ts";
-import {assertEquals, assertNotEquals} from "https://deno.land/std@0.97.0/testing/asserts.ts"
+import {assertEquals, assertNotEquals} from "https://deno.land/std/testing/asserts.ts"
 import {createUser, getUser, getUsers, patchUser, resetPassword} from "../../src/controller/user.ts";
 import {User} from "../../src/model/db/user.ts";
 import {MockEmailClient} from "../mockObjects/mockEmailClient.test.ts";
