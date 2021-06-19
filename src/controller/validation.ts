@@ -157,7 +157,7 @@ export const getUserID = async (payloadJson?: PayloadJson) => {
  * @param ctx
  */
 export const getPayloadFromJWT = async (ctx: Context): Promise<PayloadJson | undefined> => {
-    let token = await ctx.cookies.get("token");
+    let token = await ctx.request.headers.get("authenticationToken");
     if (token) {
         let [, payload,] = await decode(token)
         return <PayloadJson>payload;
@@ -174,7 +174,6 @@ const verifyJWT = async (ctx: Context, next: () => Promise<unknown>, token: stri
     let goingForward = true;
     await verify(token, SECRET, "HS512").catch((err) => {
         goingForward = false;
-        ctx.cookies.delete("token");
         makeErrorMessage(ctx, 401, "token expired")
     });
     if (goingForward) {
