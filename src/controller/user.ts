@@ -91,7 +91,9 @@ export const getUsers = async (ctx: Context) => {
     if (await checkAdmin(payloadJson) || await checkPO(payloadJson)) {
         let users = await User.all();
         let userProfile = users.map(user => convertUserToUserProfile(user));
-        ctx.response.body = JSON.stringify(userProfile);
+        ctx.response.body = `{
+                                "users": ${JSON.stringify(userProfile)}
+                             }`
         ctx.response.status = 200;
         return true;
     }
