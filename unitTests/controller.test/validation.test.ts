@@ -21,7 +21,7 @@ Deno.test({
         let ctx = await createMockContext(app, `{"email": "test@test", "password":"ash"}`);
         await validateContentType(ctx, emptyAsyncFunctionTest)
 
-        assertEquals(ctx.response.status, 200)
+        assertEquals(ctx.response.status, 999)
     }
 
 })
@@ -33,7 +33,7 @@ Deno.test({
         let ctx = await createMockContext(app, undefined);
         await validateContentType(ctx, emptyAsyncFunctionTest)
 
-        assertEquals(ctx.response.status, 200)
+        assertEquals(ctx.response.status, 999)
     }
 
 })
@@ -97,7 +97,7 @@ Deno.test({
         let ctx = await createMockContext(app, undefined, [["Content-Type", "text"]], "/", token);
         await validateJWTIfExists(ctx, emptyAsyncFunctionTest)
 
-        assertEquals(ctx.response.status, 200)
+        assertEquals(ctx.response.status, 999)
     },
     sanitizeResources: false,
 })
