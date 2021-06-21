@@ -8,7 +8,8 @@ export interface UserBasic {
 
 export interface UserProfile extends UserBasic {
     status?: string,
-    isAdmin?: boolean
+    isAdmin?: boolean,
+    isProjectOwner?: boolean
 }
 
 export interface UserParameters extends UserProfile {
