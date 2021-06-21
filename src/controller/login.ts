@@ -1,10 +1,11 @@
 import {returnUserByEmailAndPassword} from "./databaseFetcher/user.ts";
 import {Context} from 'https://deno.land/x/oak/mod.ts';
-import {convertUserToUserProfile} from "../helper/userConverter.ts";
+import {convertUserToUserProfile} from "../helper/converter/userConverter.ts";
 import {startSession} from "./session.ts";
 import {makeErrorMessage} from "../helper/error.ts";
 import {jsonBodyToObject} from "../helper/body.ts";
 import {checkActive} from "./validation.ts";
+import {LoginMessage} from "../model/messages/login.message.ts";
 
 export const login = async (ctx: Context): Promise<boolean> => {
     const requestParameter = await jsonBodyToObject(ctx)
@@ -21,11 +22,8 @@ export const login = async (ctx: Context): Promise<boolean> => {
     if (user) {
         if (checkActive(String(user.status))) {
             let token = await startSession(user);
-            let userprofile = JSON.stringify(convertUserToUserProfile(user))
-            ctx.response.body = `{
-                                    "token": "${token}", 
-                                    "user": ${userprofile}
-                                 }`
+            let loginMessage: LoginMessage ={token: token, user: convertUserToUserProfile(user)}
+            ctx.response.body = JSON.stringify(loginMessage)
 
             return true;
         } else {

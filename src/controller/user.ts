@@ -2,7 +2,7 @@ import {Context} from 'https://deno.land/x/oak/mod.ts';
 import {checkAdmin, checkPO, createJWT, getPayloadFromJWT, getUserID, getUserName} from "./validation.ts";
 import {insertUserForRegistration, returnUserByEmail} from "./databaseFetcher/user.ts";
 import {User} from "../model/db/user.ts";
-import {convertCtxBodyToUser, convertUserToUserProfile} from "../helper/userConverter.ts";
+import {convertCtxBodyToUser, convertUserToUserProfile} from "../helper/converter/userConverter.ts";
 import {EMailClient} from "../model/eMailClient.ts";
 import {makeErrorMessage} from "../helper/error.ts";
 import {urlSanitizer} from "../helper/url.ts";
@@ -12,6 +12,8 @@ import {getResetToken, insertResetToken} from "./databaseFetcher/resetToken.ts";
 import {getAllProjectsByUser} from "./databaseFetcher/userProject.ts";
 import {hashPassword} from "../helper/passwordHasher.ts";
 import {UserParameters} from "../model/userProfile.ts";
+import {convertProjectToProjectMessage} from "../helper/converter/projectConverter.ts";
+import {UsersMessage} from "../model/messages/user.message.ts";
 
 const adminMail = Deno.env.get("ADMIN_EMAIL");
 const URL = Deno.env.get("URL");
@@ -91,13 +93,13 @@ export const getUsers = async (ctx: Context) => {
     if (await checkAdmin(payloadJson) || await checkPO(payloadJson)) {
         let users = await User.all();
         let userProfile = users.map(user => convertUserToUserProfile(user));
-        ctx.response.body = `{
-                                "users": ${JSON.stringify(userProfile)}
-                             }`
+        let userMessage: UsersMessage = {users: userProfile}
+        ctx.response.body = JSON.stringify(userMessage)
         ctx.response.status = 200;
-        return true;
+    }else {
+        makeErrorMessage(ctx, 401, "not authorized");
     }
-    return false;
+
 }
 
 //TODO: others
@@ -136,7 +138,7 @@ export const getUserProjects = async (ctx: Context, id: number | undefined) => {
     const payloadJson = await getPayloadFromJWT(ctx);
     if (await checkAdmin(payloadJson) || await getUserID(payloadJson) === id) {
         let userProjects = await getAllProjectsByUser(id)
-        ctx.response.body = `{"projects": ${JSON.stringify(userProjects)}}`;
+        ctx.response.body = JSON.stringify(await convertProjectToProjectMessage(userProjects))
         ctx.response.status = 200;
 
     } else {
