@@ -60,7 +60,7 @@ export class CrossRefApi implements IApiFetcher {
                 logger.error("Error while fetching crossRefApi: " + data);
                 return {
                     "paper": paper ? paper : undefined,
-                    "citations": [],
+                    "citations": citations ? citations : undefined,
                     "references": references ? references : undefined
                 } as IApiResponse;
             })
