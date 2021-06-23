@@ -1,5 +1,5 @@
 import {Context} from 'https://deno.land/x/oak/mod.ts';
-import {checkAdmin, checkPO, getPayloadFromJWT} from "./validation.ts";
+import {checkAdmin, checkMemberOfProject, checkPO, checkPOofProject, getPayloadFromJWT} from "./validation.ts";
 import {makeErrorMessage} from "../helper/error.ts";
 import {jsonBodyToObject} from "../helper/body.ts";
 import {Project} from "../model/db/project.ts";
@@ -44,12 +44,11 @@ export const createProject = async (ctx: Context) => {
 }
 
 
-//TODO isPO check
 /**
  * Adds a person to a project
  *
  * @param ctx
- * @id id of project
+ * @param id id of project
  */
 export const addPersonToProject = async (ctx: Context, id: number | undefined) => {
     if (!id) {
@@ -58,7 +57,7 @@ export const addPersonToProject = async (ctx: Context, id: number | undefined) =
     }
 
     const payloadJson = await getPayloadFromJWT(ctx);
-    if (await checkAdmin(payloadJson) || await checkPO(payloadJson)) {
+    if (await checkAdmin(payloadJson) || await checkPOofProject(id, payloadJson)) {
         const requestParameter = await jsonBodyToObject(ctx)
         if (!requestParameter) {
             return
@@ -80,7 +79,6 @@ export const addPersonToProject = async (ctx: Context, id: number | undefined) =
     }
 }
 
-//TODO same group && is Po raelly PO of project
 export const getMembersOfProject = async (ctx: Context, id: number | undefined) => {
     if (!id) {
         makeErrorMessage(ctx, 400, "no project id included")
@@ -88,7 +86,7 @@ export const getMembersOfProject = async (ctx: Context, id: number | undefined) 
     }
 
     const payloadJson = await getPayloadFromJWT(ctx);
-    if (await checkAdmin(payloadJson) || await checkPO(payloadJson)) {
+    if (await checkAdmin(payloadJson) || await checkMemberOfProject(id, payloadJson)) {
         ctx.response.status = 200;
         let message: ProjectMembersMessage = {members: await getAllMembersOfProject(id)}
         ctx.response.body = JSON.stringify(message)

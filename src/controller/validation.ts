@@ -4,6 +4,7 @@ import {User} from "../model/db/user.ts";
 import {createNumericTerminationDate} from "../helper/dateHelper.ts";
 import {makeErrorMessage} from "../helper/error.ts";
 import {PayloadJson} from "../model/payloadJson.ts";
+import {UserIsPartOfProject} from "../model/db/userIsPartOfProject.ts";
 
 const SECRET = String(Deno.env.get('SECRET'));
 
@@ -118,17 +119,38 @@ export const checkAdmin = async (payloadJson?: PayloadJson) => {
  * @param payloadJson
  */
 export const checkPO = async (payloadJson?: PayloadJson) => {
-    let isPO = false;
     if (payloadJson) {
         let projects = await User.where('id', payloadJson.id).project();
         if (Array.isArray(projects)) {
-            isPO = !(projects.every((userIsPartOfProject) => {
+            return !(projects.every((userIsPartOfProject) => {
                 return !userIsPartOfProject.isOwner;
             }))
         }
 
     }
-    return isPO;
+    return false;
+}
+
+export const checkPOofProject = async (projectID: number, payloadJson?: PayloadJson) => {
+    if (payloadJson) {
+        let userProject = await UserIsPartOfProject.where({userId: payloadJson.id, projectId: projectID}).get()
+        if (Array.isArray(userProject)) {
+            return Boolean(userProject[0].isOwner)
+        }
+
+    }
+    return false;
+}
+
+export const checkMemberOfProject = async (projectID: number, payloadJson?: PayloadJson) => {
+    if (payloadJson) {
+        let userProject = await UserIsPartOfProject.where({userId: payloadJson.id, projectId: projectID}).get()
+        if (Array.isArray(userProject) && userProject[0]) {
+            return true;
+        }
+
+    }
+    return false;
 }
 
 /**

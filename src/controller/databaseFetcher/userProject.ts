@@ -15,7 +15,7 @@ export const getAllProjectsByUser = async (id: number) => {
     return projects;
 }
 
-export const getAllMembersOfProject = async (id: number) =>{
+export const getAllMembersOfProject = async (id: number) => {
     let userProjects = await UserIsPartOfProject.where("projectId", id).get()
     let users: UserProfile[] = [];
     for (const element of <Model[]>userProjects) {
