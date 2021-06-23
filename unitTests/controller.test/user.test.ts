@@ -1,7 +1,7 @@
 import {setup} from "../../src/helper/setup.ts";
 import {insertUser} from "../../src/controller/databaseFetcher/user.ts";
 import {createMockApp} from "../mockObjects/oak/mockApp.test.ts";
-import {createJWT, getPayloadFromJWT} from "../../src/controller/validation.ts";
+import {createJWT} from "../../src/controller/validation.ts";
 import {createMockContext} from "../mockObjects/oak/mockContext.test.ts";
 import {assertEquals, assertNotEquals} from "https://deno.land/std/testing/asserts.ts"
 import {createUser, getUser, getUserProjects, getUsers, patchUser, resetPassword} from "../../src/controller/user.ts";
@@ -193,7 +193,7 @@ Deno.test({
     fn: async function (): Promise<void> {
         await setup(true);
         let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
-        let project = await Project.create({name: "Test", minCountReviewers: 0, countDecisiveReviewers: 0})
+        let project = await Project.create({name: "Test", minCountReviewers: 1, countDecisiveReviewers: 1})
         let userProject = await UserIsPartOfProject.create({
             isOwner: true,
             userId: Number(user.id),
@@ -237,7 +237,7 @@ Deno.test({
     fn: async function (): Promise<void> {
         await setup(true);
         let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
-        let project = await Project.create({name: "Test"})
+        let project = await Project.create({name: "Test", minCountReviewers: 1, countDecisiveReviewers: 1})
         let userProject = await UserIsPartOfProject.create({
             isOwner: true,
             userId: Number(user.id),
@@ -391,8 +391,8 @@ Deno.test({
         let token = await createJWT(user)
         let ctx = await createMockContext(app, `{"email": "testing@test"}`, [["Content-Type", "application/json"]], "/", token);
 
-                await patchUser(ctx, undefined);
-                assertEquals(ctx.response.status, 400)
+        await patchUser(ctx, undefined);
+        assertEquals(ctx.response.status, 400)
 
 
     },

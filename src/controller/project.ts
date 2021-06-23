@@ -62,12 +62,10 @@ export const addPersonToProject = async (ctx: Context, id: number | undefined) =
         if (!requestParameter) {
             return
         }
-
         if (!requestParameter.id) {
             makeErrorMessage(ctx, 422, "to add a member, a userid is needed")
             return;
         }
-
         await UserIsPartOfProject.create({
             isOwner: requestParameter.isOwner ? requestParameter.isOwner : false,
             userId: requestParameter.id,

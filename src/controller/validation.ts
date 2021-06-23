@@ -135,7 +135,8 @@ export const checkPOofProject = async (projectID: number, payloadJson?: PayloadJ
     if (payloadJson) {
         let userProject = await UserIsPartOfProject.where({userId: payloadJson.id, projectId: projectID}).get()
         if (Array.isArray(userProject)) {
-            return Boolean(userProject[0].isOwner)
+            let value: boolean = Boolean(userProject[0].isOwner)
+            return value
         }
 
     }
