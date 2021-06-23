@@ -83,7 +83,6 @@ export const resetPassword = async (ctx: Context, client: EMailClient) => {
     }
 }
 
-//TODO: others
 /**
  * Gets all user instances for admin and PO
  * @param ctx
@@ -96,13 +95,12 @@ export const getUsers = async (ctx: Context) => {
         let userMessage: UsersMessage = {users: userProfile}
         ctx.response.body = JSON.stringify(userMessage)
         ctx.response.status = 200;
-    }else {
+    } else {
         makeErrorMessage(ctx, 401, "not authorized");
     }
 
 }
 
-//TODO: others
 /**
  * Gets a single user profile for admin and PO
  * @param ctx

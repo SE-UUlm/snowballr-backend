@@ -5,6 +5,7 @@ import {setup} from "./helper/setup.ts";
 import {createUser, getUser, getUserProjects, getUsers, patchUser, resetPassword} from "./controller/user.ts";
 import {logout} from "./controller/logout.ts";
 import {SmtpClient} from "https://deno.land/x/smtp/mod.ts";
+import {addPersonToProject, createProject, getMembersOfProject, getProjects} from "./controller/project.ts";
 
 await setup(true);
 const client = new SmtpClient();
@@ -37,6 +38,18 @@ router
     })
     .get("/users/:id/projects", async (context) => {
         await getUserProjects(context, Number(context.params.id))
+    })
+    .get("/projects", async (context) => {
+        await getProjects(context)
+    })
+    .post("/projects", async (context) => {
+        await createProject(context)
+    })
+    .post("/projects/:id/members", async (context) => {
+        await addPersonToProject(context, Number(context.params.id))
+    })
+    .get("/projects/:id/members", async (context) => {
+        await getMembersOfProject(context, Number(context.params.id))
     })
 
 const app = new Application();
