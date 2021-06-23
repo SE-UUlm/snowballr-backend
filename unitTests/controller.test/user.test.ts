@@ -121,7 +121,7 @@ Deno.test({
         let token = await createJWT(user)
         let ctx = await createMockContext(app, undefined, [["Content-Type", "application/json"]], "/users/1", token);
         await getUser(ctx, undefined);
-        assertEquals(ctx.response.status, 400)
+        assertEquals(ctx.response.status, 422)
 
     },
     sanitizeResources: false,
@@ -227,7 +227,7 @@ Deno.test({
         let token = await createJWT(user)
         let ctx = await createMockContext(app, "{}", [["Content-Type", "application/json"]], "/users/1", token);
         await getUserProjects(ctx, undefined)
-        assertEquals(ctx.response.status, 400)
+        assertEquals(ctx.response.status, 422)
     },
     sanitizeResources: false,
 })
@@ -392,7 +392,7 @@ Deno.test({
         let ctx = await createMockContext(app, `{"email": "testing@test"}`, [["Content-Type", "application/json"]], "/", token);
 
         await patchUser(ctx, undefined);
-        assertEquals(ctx.response.status, 400)
+        assertEquals(ctx.response.status, 422)
 
 
     },
