@@ -52,7 +52,7 @@ export const createProject = async (ctx: Context) => {
  */
 export const addPersonToProject = async (ctx: Context, id: number | undefined) => {
     if (!id) {
-        makeErrorMessage(ctx, 400, "no project id included")
+        makeErrorMessage(ctx, 422, "no project id included")
         return
     }
 
@@ -79,7 +79,7 @@ export const addPersonToProject = async (ctx: Context, id: number | undefined) =
 
 export const getMembersOfProject = async (ctx: Context, id: number | undefined) => {
     if (!id) {
-        makeErrorMessage(ctx, 400, "no project id included")
+        makeErrorMessage(ctx, 422, "no project id included")
         return
     }
 

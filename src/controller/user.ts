@@ -45,7 +45,7 @@ export const createUser = async (ctx: Context, client: EMailClient) => {
         if (adminMail) {
             await sendInvitationMail(jwt, linkText, requestParameter.email, Number(user.id), client, await getUserName(payloadJson));
             ctx.response.status = 201;
-            return user;
+            ctx.response.body = JSON.stringify(convertUserToUserProfile(user))
         } else {
             console.error("no email in env!")
             makeErrorMessage(ctx, 401, "not authorized")
@@ -108,7 +108,7 @@ export const getUsers = async (ctx: Context) => {
  */
 export const getUser = async (ctx: Context, id: number | undefined) => {
     if (!id) {
-        makeErrorMessage(ctx, 400, "no user id included")
+        makeErrorMessage(ctx, 422, "no user id included")
         return
     }
     const payloadJson = await getPayloadFromJWT(ctx);
@@ -130,7 +130,7 @@ export const getUser = async (ctx: Context, id: number | undefined) => {
  */
 export const getUserProjects = async (ctx: Context, id: number | undefined) => {
     if (!id) {
-        makeErrorMessage(ctx, 400, "no user id included")
+        makeErrorMessage(ctx, 422, "no user id included")
         return
     }
     const payloadJson = await getPayloadFromJWT(ctx);
@@ -152,7 +152,7 @@ export const getUserProjects = async (ctx: Context, id: number | undefined) => {
  */
 export const patchUser = async (ctx: Context, id: number | undefined) => {
     if (!id) {
-        makeErrorMessage(ctx, 400, "no user id included")
+        makeErrorMessage(ctx, 422, "no user id included")
         return;
     }
     const payloadJson = await getPayloadFromJWT(ctx);
