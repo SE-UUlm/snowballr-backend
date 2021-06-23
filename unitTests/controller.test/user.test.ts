@@ -1,14 +1,17 @@
 import {setup} from "../../src/helper/setup.ts";
 import {insertUser} from "../../src/controller/databaseFetcher/user.ts";
 import {createMockApp} from "../mockObjects/oak/mockApp.test.ts";
-import {createJWT} from "../../src/controller/validation.ts";
+import {createJWT, getPayloadFromJWT} from "../../src/controller/validation.ts";
 import {createMockContext} from "../mockObjects/oak/mockContext.test.ts";
 import {assertEquals, assertNotEquals} from "https://deno.land/std/testing/asserts.ts"
-import {createUser, getUser, getUsers, patchUser, resetPassword} from "../../src/controller/user.ts";
+import {createUser, getUser, getUserProjects, getUsers, patchUser, resetPassword} from "../../src/controller/user.ts";
 import {User} from "../../src/model/db/user.ts";
 import {MockEmailClient} from "../mockObjects/mockEmailClient.test.ts";
 import {getTokens} from "../../src/controller/databaseFetcher/token.ts";
 import {getInvitations} from "../../src/controller/databaseFetcher/invitation.ts";
+import {Project} from "../../src/model/db/project.ts";
+import {UserIsPartOfProject} from "../../src/model/db/userIsPartOfProject.ts";
+import {Stage} from "../../src/model/db/stage.ts";
 
 Deno.test({
     name: "insertUserForCreation",
@@ -22,6 +25,22 @@ Deno.test({
         await createUser(ctx, new MockEmailClient())
 
         assertEquals(ctx.response.status, 201)
+    },
+    sanitizeResources: false,
+})
+
+Deno.test({
+    name: "insertUserForCreation",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
+
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, `{"email": "andreas.decker@uni-ulm.de"}`, [["Content-Type", "application/json"]], "/", token);
+        await createUser(ctx, new MockEmailClient())
+
+        assertEquals(ctx.response.status, 401)
     },
     sanitizeResources: false,
 })
@@ -51,7 +70,8 @@ Deno.test({
         let app = await createMockApp();
         let token = await createJWT(user)
         let ctx = await createMockContext(app, undefined, [["Content-Type", "application/json"]], "/", token);
-        assertEquals(true, await getUsers(ctx));
+        await getUsers(ctx)
+        assertEquals(ctx.response.status, 200);
 
 
     },
@@ -67,7 +87,8 @@ Deno.test({
         let app = await createMockApp();
         let token = await createJWT(user)
         let ctx = await createMockContext(app, undefined, [["Content-Type", "application/json"]], "/", token);
-        assertEquals(false, await getUsers(ctx));
+        await getUsers(ctx)
+        assertEquals(ctx.response.status, 401);
 
 
     },
@@ -85,6 +106,22 @@ Deno.test({
         let ctx = await createMockContext(app, undefined, [["Content-Type", "application/json"]], "/users/1", token);
         await getUser(ctx, 2);
         assertEquals(ctx.response.status, 200)
+
+    },
+    sanitizeResources: false,
+})
+
+Deno.test({
+    name: "getOneUserNoId",
+    fn: async function (): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+        await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, undefined, [["Content-Type", "application/json"]], "/users/1", token);
+        await getUser(ctx, undefined);
+        assertEquals(ctx.response.status, 400)
 
     },
     sanitizeResources: false,
@@ -152,6 +189,72 @@ Deno.test({
 })
 
 Deno.test({
+    name: "getUsersProjects",
+    fn: async function (): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+        let project = await Project.create({name: "Test"})
+        let userProject = await UserIsPartOfProject.create({
+            isOwner: true,
+            userId: Number(user.id),
+            projectId: Number(project.id)
+        })
+        await Stage.create({projectId: Number(project.id), name: "awesome Stage", number: 0})
+        await Stage.create({projectId: Number(project.id), name: "the next Stage", number: 1})
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, "{}", [["Content-Type", "application/json"]], "/users/1", token);
+        await getUserProjects(ctx, 1)
+        assertEquals(ctx.response.status, 200)
+    },
+    sanitizeResources: false,
+})
+
+Deno.test({
+    name: "getUsersProjectsNoId",
+    fn: async function (): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+        let project = await Project.create({name: "Test"})
+        let userProject = await UserIsPartOfProject.create({
+            isOwner: true,
+            userId: Number(user.id),
+            projectId: Number(project.id)
+        })
+        await Stage.create({projectId: Number(project.id), name: "awesome Stage", number: 0})
+        await Stage.create({projectId: Number(project.id), name: "the next Stage", number: 1})
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, "{}", [["Content-Type", "application/json"]], "/users/1", token);
+        await getUserProjects(ctx, undefined)
+        assertEquals(ctx.response.status, 400)
+    },
+    sanitizeResources: false,
+})
+
+Deno.test({
+    name: "getUsersProjectsUnAuthorized",
+    fn: async function (): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
+        let project = await Project.create({name: "Test"})
+        let userProject = await UserIsPartOfProject.create({
+            isOwner: true,
+            userId: Number(user.id),
+            projectId: Number(project.id)
+        })
+        await Stage.create({projectId: Number(project.id), name: "awesome Stage", number: 0})
+        await Stage.create({projectId: Number(project.id), name: "the next Stage", number: 1})
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, "{}", [["Content-Type", "application/json"]], "/users/1", token);
+        await getUserProjects(ctx, 1)
+        assertEquals(ctx.response.status, 401)
+    },
+    sanitizeResources: false,
+})
+
+Deno.test({
     name: "PatchUserAdmin",
     async fn(): Promise<void> {
         await setup(true);
@@ -185,7 +288,7 @@ Deno.test({
 })
 
 Deno.test({
-    name: "PatchUserUserHimself",
+    name: "PatchUserHimself",
     async fn(): Promise<void> {
         await setup(true);
         let user = await insertUser("test@test", "ash", false, "Test", "Tester", "registered");
@@ -275,6 +378,23 @@ Deno.test({
                 assertEquals(ctx.response.status, 401)
             }
         }
+    },
+    sanitizeResources: false,
+})
+
+Deno.test({
+    name: "PatchUserNoId",
+    async fn(): Promise<void> {
+        await setup(true);
+        let app = await createMockApp();
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "registered");
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, `{"email": "testing@test"}`, [["Content-Type", "application/json"]], "/", token);
+
+                await patchUser(ctx, undefined);
+                assertEquals(ctx.response.status, 400)
+
+
     },
     sanitizeResources: false,
 })

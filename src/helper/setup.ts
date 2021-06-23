@@ -73,6 +73,8 @@ export const setup = async (dropDatabase: boolean) => {
             userId: Number(admin.id),
             projectId: Number(project.id)
         })
+        await Stage.create({projectId: Number(project.id), name: "awesome Stage", number: 0})
+        await Stage.create({projectId: Number(project.id), name: "the next Stage", number: 1})
     }
 
 }

@@ -188,6 +188,7 @@ const verifyJWT = async (ctx: Context, next: () => Promise<unknown>, token: stri
  */
 const allowedAddressesUnauthorized = async (ctx: Context, next: () => Promise<unknown>) => {
     if (ctx.request.url.pathname === "/login/" || ctx.request.url.pathname === "/reset-password/" || (ctx.request.url.pathname.match(/\/users\/[0-9]+\//g) && ctx.request.method.toString() === "PATCH")) {
+        ctx.response.status = 200;
         await next();
     } else {
         makeErrorMessage(ctx, 401, "not authorized")
