@@ -71,7 +71,7 @@ export const addPersonToProject = async (ctx: Context, id: number | undefined) =
             userId: requestParameter.id,
             projectId: id
         })
-        ctx.response.status = 200;
+        ctx.response.status = 201;
     } else {
         makeErrorMessage(ctx, 401, "not authorized");
     }
