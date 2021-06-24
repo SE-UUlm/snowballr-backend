@@ -36,7 +36,7 @@ export const createProject = async (ctx: Context) => {
             await project.update();
         }
 
-        ctx.response.status = 200;
+        ctx.response.status = 201;
         ctx.response.body = JSON.stringify(project)
     } else {
         makeErrorMessage(ctx, 401, "not authorized")
