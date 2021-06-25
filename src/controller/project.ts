@@ -36,7 +36,7 @@ export const createProject = async (ctx: Context) => {
             await project.update();
         }
 
-        ctx.response.status = 200;
+        ctx.response.status = 201;
         ctx.response.body = JSON.stringify(project)
     } else {
         makeErrorMessage(ctx, 401, "not authorized")
@@ -52,7 +52,7 @@ export const createProject = async (ctx: Context) => {
  */
 export const addPersonToProject = async (ctx: Context, id: number | undefined) => {
     if (!id) {
-        makeErrorMessage(ctx, 400, "no project id included")
+        makeErrorMessage(ctx, 422, "no project id included")
         return
     }
 
@@ -71,7 +71,7 @@ export const addPersonToProject = async (ctx: Context, id: number | undefined) =
             userId: requestParameter.id,
             projectId: id
         })
-        ctx.response.status = 200;
+        ctx.response.status = 201;
     } else {
         makeErrorMessage(ctx, 401, "not authorized");
     }
@@ -79,7 +79,7 @@ export const addPersonToProject = async (ctx: Context, id: number | undefined) =
 
 export const getMembersOfProject = async (ctx: Context, id: number | undefined) => {
     if (!id) {
-        makeErrorMessage(ctx, 400, "no project id included")
+        makeErrorMessage(ctx, 422, "no project id included")
         return
     }
 

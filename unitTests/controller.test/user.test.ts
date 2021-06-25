@@ -121,7 +121,7 @@ Deno.test({
         let token = await createJWT(user)
         let ctx = await createMockContext(app, undefined, [["Content-Type", "application/json"]], "/users/1", token);
         await getUser(ctx, undefined);
-        assertEquals(ctx.response.status, 400)
+        assertEquals(ctx.response.status, 422)
 
     },
     sanitizeResources: false,
@@ -227,7 +227,7 @@ Deno.test({
         let token = await createJWT(user)
         let ctx = await createMockContext(app, "{}", [["Content-Type", "application/json"]], "/users/1", token);
         await getUserProjects(ctx, undefined)
-        assertEquals(ctx.response.status, 400)
+        assertEquals(ctx.response.status, 422)
     },
     sanitizeResources: false,
 })
@@ -327,7 +327,8 @@ Deno.test({
         let user = await insertUser("test@test", "ash", true, "Test", "Tester", "registered");
         let token = await createJWT(user)
         let ctx = await createMockContext(app, `{"email": "testing@test"}`, [["Content-Type", "application/json"]], "/", token);
-        let userToChange = await createUser(ctx, new MockEmailClient())
+        await createUser(ctx, new MockEmailClient())
+        let userToChange = JSON.parse(ctx.response.body as string)
         if (userToChange) {
             let email = String(userToChange.eMail);
             let password = String(userToChange.password);
@@ -350,7 +351,7 @@ Deno.test({
                 assertNotEquals("undefined", String(userToChange.status));
                 assertNotEquals(email, String(userToChange.eMail));
                 assertNotEquals(password, String(userToChange.password));
-                assertNotEquals(firstName, String(userToChange.fistName));
+                assertNotEquals(firstName, String(userToChange.firstName));
                 assertNotEquals(lastName, String(userToChange.lastName));
                 assertEquals(isAdmin, Boolean(userToChange.isAdmin));
                 assertEquals(status, String(userToChange.status));
@@ -368,7 +369,8 @@ Deno.test({
         let user = await insertUser("test@test", "ash", true, "Test", "Tester", "registered");
         let token = await createJWT(user)
         let ctx = await createMockContext(app, `{"email": "testing@test"}`, [["Content-Type", "application/json"]], "/", token);
-        let userToChange = await createUser(ctx, new MockEmailClient())
+        await createUser(ctx, new MockEmailClient())
+        let userToChange = JSON.parse(ctx.response.body as string)
         if (userToChange) {
             let testToken = await getTokens(Number(userToChange.id));
             assertNotEquals(testToken, undefined)
@@ -392,7 +394,7 @@ Deno.test({
         let ctx = await createMockContext(app, `{"email": "testing@test"}`, [["Content-Type", "application/json"]], "/", token);
 
         await patchUser(ctx, undefined);
-        assertEquals(ctx.response.status, 400)
+        assertEquals(ctx.response.status, 422)
 
 
     },

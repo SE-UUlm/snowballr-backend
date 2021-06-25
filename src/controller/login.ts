@@ -14,7 +14,7 @@ export const login = async (ctx: Context): Promise<boolean> => {
     }
 
     if (!requestParameter.email || !requestParameter.password) {
-        makeErrorMessage(ctx, 401, "no email or password provided")
+        makeErrorMessage(ctx, 422, "no email or password provided")
         return false;
     }
 
@@ -22,7 +22,7 @@ export const login = async (ctx: Context): Promise<boolean> => {
     if (user) {
         if (checkActive(String(user.status))) {
             let token = await startSession(user);
-            let loginMessage: LoginMessage ={token: token, user: convertUserToUserProfile(user)}
+            let loginMessage: LoginMessage = {token: token, user: convertUserToUserProfile(user)}
             ctx.response.body = JSON.stringify(loginMessage)
 
             return true;
@@ -31,7 +31,7 @@ export const login = async (ctx: Context): Promise<boolean> => {
             return false;
         }
     } else {
-        makeErrorMessage(ctx, 401, "wrong username or password provided")
+        makeErrorMessage(ctx, 400, "wrong username or password provided")
         return false;
     }
 
