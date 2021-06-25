@@ -73,7 +73,7 @@ export class OpenCitationsApi implements IApiFetcher {
      */
     private _getLinkedDOIs(dois: string): Promise<IApiPaper[]> {
         let urlQuery: string = dois.replace(/; /g, '__');
-        logger.debug(urlQuery)
+        //logger.debug(urlQuery)
         let response = fetch(`${this.url}/index/api/v1/metadata/${urlQuery}`)
             .then(data => {
                 return data.json();
@@ -107,7 +107,7 @@ export class OpenCitationsApi implements IApiFetcher {
     private _parseResponse(response: any): IApiPaper {
         var refCount: any;
 
-        logger.debug(response);
+        //logger.debug(response);
         try {
             if (response.reference && !(response.reference in ["", undefined])) {
                 refCount = response.reference.split(";").length;
@@ -116,13 +116,12 @@ export class OpenCitationsApi implements IApiFetcher {
             } else {
                 refCount = 0;
             }
-        }
-        catch (e) {
+        } catch (e) {
             refCount = 0;
         }
 
         let parsedAuthors: IApiAuthor[] = [];
-        for(let a of response.author.split(';')) {
+        for (let a of response.author.split(';')) {
             let parsedAuthor: IApiAuthor = {
                 id: undefined,
                 orcid: a.split(',').length > 2 ? a.split(',')[2] : undefined,
@@ -155,7 +154,7 @@ export class OpenCitationsApi implements IApiFetcher {
             type: undefined,
             scope: undefined,
             scopeName: undefined,
-            pdf: response.oa_link ? response.oa_link : undefined,
+            pdf: response.oa_link ? response.oa_link.split(",") : undefined,
             uniqueId: parsedUniqueIds
         };
         return parsedResponse;

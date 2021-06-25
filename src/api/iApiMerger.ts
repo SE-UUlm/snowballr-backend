@@ -9,5 +9,5 @@ import {IComparisonWeight} from "./iComparisonWeight.ts";
 export interface IApiMerger {
     comparisonWeight: IComparisonWeight;
     merge(firstResponse: IApiResponse, secondResponse: IApiResponse): IApiResponse;
-    compare(firstResponse: Promise<IApiResponse>[], secondResponse: Promise<IApiResponse>[]) : Promise<IApiResponse[]>;
+    compare(response: Promise<IApiResponse>[]) : Promise<IApiResponse[]>;
 }

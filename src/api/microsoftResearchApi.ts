@@ -32,6 +32,26 @@ export class MicrosoftResearchApi implements IApiFetcher {
     }
 
     /**
+     * Abstract is provided via dictionary. This function casts an IA-object to a single string.
+     *
+     * @param iA - invertedAbstract object provided by microsoft api
+     * @returns abstract of a paper in a single string.
+     */
+    private static _convertInvertedAbstract(iA: any): string {
+        let abstract: string = "";
+        try {
+            for (let key in iA.InvertedIndex) {
+            abstract
+                = `${abstract} ${key}`;
+            }
+            return abstract.trim();
+        } catch (error) {
+            logger.error("Couldn't convert InvertedAbstract from Microsoft API to a single string.");
+            return "";
+        }
+    }
+
+    /**
      * Checks for a paper at the microsoft research api via a query object.
      * Returns the papers gathered info and all papers citated or referenced.
      *
@@ -82,25 +102,6 @@ export class MicrosoftResearchApi implements IApiFetcher {
                 } as IApiResponse;
             })
         return response;
-    }
-
-    /**
-     * Abstract is provided via dictionary. This function casts an IA-object to a single string.
-     *
-     * @param iA - invertedAbstract object provided by microsoft api
-     * @returns abstract of a paper in a single string.
-     */
-    private static _convertInvertedAbstract(iA: any): string {
-        let abstract: string = "";
-        try {
-            for (let key in iA.InvertedIndex) {
-            abstract = `${abstract} ${key}`;
-            }
-            return abstract.trim();
-        } catch (error) {
-            logger.error("Couldn't convert InvertedAbstract from Microsoft API to a single string.");
-            return "";
-        }
     }
 
     /**
@@ -193,11 +194,11 @@ export class MicrosoftResearchApi implements IApiFetcher {
      * @returns normalized ApiPaper object.
      */
     private _parseResponse(response: any): IApiPaper {
-        logger.debug(response);
+        //logger.debug(response);
         let refLength: number = (response.RId === undefined ? 0 : response.RId.length);
 
         let parsedAuthors: IApiAuthor[] = [];
-        for(let a of response.AA) {
+        for (let a of response.AA) {
             let parsedAuthor: IApiAuthor = {
                 id: undefined,
                 orcid: undefined,
@@ -234,9 +235,9 @@ export class MicrosoftResearchApi implements IApiFetcher {
             year: response.Y ? response.Y : undefined,
             publisher: response.PB ? response.PB : undefined,
             type: response.Pt ? this._paperTypeMapper[response.Pt] : undefined,
-            scope: "",
-            scopeName: "",
-            pdf: response.S ? response.S : undefined,
+            scope: undefined,
+            scopeName: undefined,
+            pdf: response.S ? response.S.map((item: any) => item.U) : undefined,
             uniqueId: parsedUniqueIds
         };
         return parsedResponse;

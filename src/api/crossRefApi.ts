@@ -83,8 +83,7 @@ export class CrossRefApi implements IApiFetcher {
         for (let r of rawChildren) {
             if (r.DOI) {
                 fetchableByDoi.push(r.DOI);
-            }
-            else {
+            } else {
                 //console.log(r);
                 fetchableByBibliographic.push(r.unstructured);
             }
@@ -180,9 +179,9 @@ export class CrossRefApi implements IApiFetcher {
             year: response.Y ? response.Y : undefined,
             publisher: response.message.publisher ? response.message.publisher : undefined,
             type: response.message.type ? response.message.type : undefined,
-            scope: "",
-            scopeName: "",
-            pdf: response.message.link ? response.message.link : undefined,
+            scope: undefined,
+            scopeName: undefined,
+            pdf: response.message.link ? response.message.link.split(",") : undefined,
             uniqueId: parsedUniqueIds
         };
         return parsedResponse;

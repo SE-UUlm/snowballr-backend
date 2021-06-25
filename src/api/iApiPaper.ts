@@ -5,7 +5,7 @@ import {IApiAuthor} from "./iApiAuthor.ts";
  * Maps database scheme to object to be returnable by the apis.
  * If a value is not parsable it should be set to type undefined (default value for optionals)
  */
-export interface IApiPaper{
+export interface IApiPaper {
     id?: number;
     title?: string;
     sourceTitle?: string;
@@ -18,6 +18,6 @@ export interface IApiPaper{
     type?: string;
     scope?: string;
     scopeName?: string;
-    pdf?: string;
+    pdf?: string[];
     uniqueId?: IApiUniqueId[];
 }
