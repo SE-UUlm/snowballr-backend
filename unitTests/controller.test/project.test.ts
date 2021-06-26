@@ -3,7 +3,7 @@ import {insertUser} from "../../src/controller/databaseFetcher/user.ts";
 import {createMockApp} from "../mockObjects/oak/mockApp.test.ts";
 import {checkMemberOfProject, createJWT} from "../../src/controller/validation.ts";
 import {createMockContext} from "../mockObjects/oak/mockContext.test.ts";
-import {addPersonToProject, getMembersOfProject, getProjects} from "../../src/controller/project.ts";
+import {addMemberToProject, getMembersOfProject, getProjects} from "../../src/controller/project.ts";
 import {Project} from "../../src/model/db/project.ts";
 import {assertEquals, assertNotEquals} from "https://deno.land/std/testing/asserts.ts"
 import {UserIsPartOfProject} from "../../src/model/db/userIsPartOfProject.ts";
@@ -94,7 +94,7 @@ Deno.test({
         let app = await createMockApp();
         let token = await createJWT(user)
         let ctx = await createMockContext(app, `{ "id": "${Number(user2.id)}"}`, [["Content-Type", "application/json"]], "/", token);
-        await addPersonToProject(ctx, Number(project.id))
+        await addMemberToProject(ctx, Number(project.id))
         let worked = await checkMemberOfProject(Number(project.id), {
             id: Number(user2.id),
             isAdmin: false,
@@ -128,7 +128,7 @@ Deno.test({
         let app = await createMockApp();
         let token = await createJWT(user)
         let ctx = await createMockContext(app, `{ id: ${Number(user2.id)}`, [["Content-Type", "application/json"]], "/", token);
-        await addPersonToProject(ctx, Number(project.id))
+        await addMemberToProject(ctx, Number(project.id))
 
         assertEquals(ctx.response.status, 401)
     },

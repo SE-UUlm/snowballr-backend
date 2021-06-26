@@ -7,6 +7,8 @@ import {UserIsPartOfProject} from "../model/db/userIsPartOfProject.ts";
 import {ProjectMembersMessage} from "../model/messages/projectMembers.message.ts";
 import {getAllMembersOfProject} from "./databaseFetcher/userProject.ts";
 import {convertProjectToProjectMessage} from "../helper/converter/projectConverter.ts";
+import {Stage} from "../model/db/stage.ts";
+import {Paper} from "../model/db/paper.ts";
 
 /**
  * Creates a project
@@ -50,7 +52,7 @@ export const createProject = async (ctx: Context) => {
  * @param ctx
  * @param id id of project
  */
-export const addPersonToProject = async (ctx: Context, id: number | undefined) => {
+export const addMemberToProject = async (ctx: Context, id: number | undefined) => {
     if (!id) {
         makeErrorMessage(ctx, 422, "no project id included")
         return
@@ -100,6 +102,87 @@ export const getProjects = async (ctx: Context) => {
         let projectMessage = await convertProjectToProjectMessage(projects);
         ctx.response.status = 200;
         ctx.response.body = JSON.stringify(projectMessage)
+    } else {
+        makeErrorMessage(ctx, 401, "not authorized");
+    }
+}
+
+/**
+ * Adds a stage to a project
+ *
+ * @param ctx
+ * @param id id of project
+ */
+export const addStageToProject = async (ctx: Context, id: number | undefined) => {
+    if (!id) {
+        makeErrorMessage(ctx, 422, "no project id included")
+        return
+    }
+
+    const payloadJson = await getPayloadFromJWT(ctx);
+    if (await checkAdmin(payloadJson) || await checkPOofProject(id, payloadJson)) {
+        const requestParameter = await jsonBodyToObject(ctx)
+        if (!requestParameter) {
+            return
+        }
+        if (!requestParameter.name) {
+            makeErrorMessage(ctx, 422, "to add a stage, a name is needed")
+            return;
+        }
+        let stage = await Stage.create({
+            name: requestParameter.name,
+            projectId: id
+        })
+        ctx.response.status = 201;
+        ctx.response.body = JSON.stringify(stage)
+    } else {
+        makeErrorMessage(ctx, 401, "not authorized");
+    }
+}
+
+/**
+ * Adds a person to a project
+ *
+ * @param ctx
+ * @param projectId id of project
+ */
+export const addPaperToProjectStage = async (ctx: Context, projectId: number | undefined, stageID: number | undefined) => {
+    if (!projectId || !stageID) {
+        makeErrorMessage(ctx, 422, "no project and/or paper id included")
+        return
+    }
+    const payloadJson = await getPayloadFromJWT(ctx);
+    if (await checkAdmin(payloadJson) || await checkPOofProject(projectId, payloadJson)) {
+        const requestParameter = await jsonBodyToObject(ctx)
+        if (!requestParameter) {
+            return
+        }
+        if (!requestParameter.doi || !requestParameter.title) {
+            makeErrorMessage(ctx, 422, "to add a paper to a stage, at least a DOI or a title is needed")
+            return;
+        }
+        await Paper.create({
+            isOwner: requestParameter.isOwner ? requestParameter.isOwner : false,
+            userId: requestParameter.id,
+            projectId: projectId
+        })
+        ctx.response.status = 201;
+    } else {
+        makeErrorMessage(ctx, 401, "not authorized");
+    }
+}
+
+export const getPapersOfProjectStage = async (ctx: Context, projectID: number | undefined, stageID: number | undefined) => {
+    if (!projectID || !stageID) {
+        makeErrorMessage(ctx, 422, "no project and/or paper id included")
+        return
+    }
+
+    const payloadJson = await getPayloadFromJWT(ctx);
+    if (await checkAdmin(payloadJson) || await checkMemberOfProject(projectID, payloadJson)) {
+        ctx.response.status = 200;
+        let message: ProjectMembersMessage = {members: await getAllMembersOfProject(projectID)}
+        ctx.response.body = JSON.stringify(message)
     } else {
         makeErrorMessage(ctx, 401, "not authorized");
     }

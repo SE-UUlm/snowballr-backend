@@ -5,7 +5,15 @@ import {setup} from "./helper/setup.ts";
 import {createUser, getUser, getUserProjects, getUsers, patchUser, resetPassword} from "./controller/user.ts";
 import {logout} from "./controller/logout.ts";
 import {SmtpClient} from "https://deno.land/x/smtp/mod.ts";
-import {addPersonToProject, createProject, getMembersOfProject, getProjects} from "./controller/project.ts";
+import {
+    addMemberToProject,
+    addPaperToProjectStage,
+    addStageToProject,
+    createProject,
+    getMembersOfProject,
+    getPapersOfProjectStage,
+    getProjects
+} from "./controller/project.ts";
 
 await setup(true);
 const client = new SmtpClient();
@@ -46,12 +54,20 @@ router
         await createProject(context)
     })
     .post("/projects/:id/members", async (context) => {
-        await addPersonToProject(context, Number(context.params.id))
+        await addMemberToProject(context, Number(context.params.id))
     })
     .get("/projects/:id/members", async (context) => {
         await getMembersOfProject(context, Number(context.params.id))
     })
-
+    .post("/projects/:id/stages", async (context) => {
+        await addStageToProject(context, Number(context.params.id))
+    })
+    .post("/projects/:id/stages/:id2/papers", async (context) => {
+        await addPaperToProjectStage(context, Number(context.params.id), Number(context.params.id2))
+    })
+    .get("/projects/:id/stages/:id2/papers", async (context) => {
+        await getPapersOfProjectStage(context, Number(context.params.id), Number(context.params.id2))
+    })
 const app = new Application();
 app.use(await validateContentType)
 app.use(await validateJWTIfExists)
