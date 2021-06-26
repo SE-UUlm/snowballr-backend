@@ -12,6 +12,7 @@ import {getInvitations} from "../../src/controller/databaseFetcher/invitation.ts
 import {Project} from "../../src/model/db/project.ts";
 import {UserIsPartOfProject} from "../../src/model/db/userIsPartOfProject.ts";
 import {Stage} from "../../src/model/db/stage.ts";
+import {client, db} from "../../src/controller/database.ts";
 
 Deno.test({
     name: "insertUserForCreation",
@@ -25,8 +26,10 @@ Deno.test({
         await createUser(ctx, new MockEmailClient())
 
         assertEquals(ctx.response.status, 201)
+
+        await db.close();
+        await client.end();
     },
-    sanitizeResources: false,
 })
 
 Deno.test({
@@ -41,8 +44,10 @@ Deno.test({
         await createUser(ctx, new MockEmailClient())
 
         assertEquals(ctx.response.status, 401)
+
+        await db.close();
+        await client.end();
     },
-    sanitizeResources: false,
 })
 
 Deno.test({
@@ -57,8 +62,10 @@ Deno.test({
         await createUser(ctx, new MockEmailClient())
 
         assertEquals(ctx.response.status, 422)
+
+        await db.close();
+        await client.end();
     },
-    sanitizeResources: false,
 })
 
 Deno.test({
@@ -73,9 +80,9 @@ Deno.test({
         await getUsers(ctx)
         assertEquals(ctx.response.status, 200);
 
-
+        await db.close();
+        await client.end();
     },
-    sanitizeResources: false,
 })
 
 Deno.test({
@@ -90,9 +97,9 @@ Deno.test({
         await getUsers(ctx)
         assertEquals(ctx.response.status, 401);
 
-
+        await db.close();
+        await client.end();
     },
-    sanitizeResources: false,
 })
 
 Deno.test({
@@ -106,9 +113,9 @@ Deno.test({
         let ctx = await createMockContext(app, undefined, [["Content-Type", "application/json"]], "/users/1", token);
         await getUser(ctx, 2);
         assertEquals(ctx.response.status, 200)
-
+        await db.close();
+        await client.end();
     },
-    sanitizeResources: false,
 })
 
 Deno.test({
@@ -123,8 +130,9 @@ Deno.test({
         await getUser(ctx, undefined);
         assertEquals(ctx.response.status, 422)
 
+        await db.close();
+        await client.end();
     },
-    sanitizeResources: false,
 })
 
 Deno.test({
@@ -139,8 +147,9 @@ Deno.test({
         await getUser(ctx, 3);
         assertEquals(ctx.response.status, 401)
 
+        await db.close();
+        await client.end();
     },
-    sanitizeResources: false,
 })
 
 Deno.test({
@@ -154,8 +163,9 @@ Deno.test({
         await resetPassword(ctx, new MockEmailClient());
         assertEquals(ctx.response.status, 200)
 
+        await db.close();
+        await client.end();
     },
-    sanitizeResources: false,
 })
 
 Deno.test({
@@ -169,8 +179,9 @@ Deno.test({
         await resetPassword(ctx, new MockEmailClient());
         assertEquals(ctx.response.status, 400)
 
+        await db.close();
+        await client.end();
     },
-    sanitizeResources: false,
 })
 
 Deno.test({
@@ -184,8 +195,9 @@ Deno.test({
         await resetPassword(ctx, new MockEmailClient());
         assertEquals(ctx.response.status, 422)
 
+        await db.close();
+        await client.end();
     },
-    sanitizeResources: false,
 })
 
 Deno.test({
@@ -206,8 +218,10 @@ Deno.test({
         let ctx = await createMockContext(app, "{}", [["Content-Type", "application/json"]], "/users/1", token);
         await getUserProjects(ctx, 1)
         assertEquals(ctx.response.status, 200)
+
+        await db.close();
+        await client.end();
     },
-    sanitizeResources: false,
 })
 
 Deno.test({
@@ -228,8 +242,10 @@ Deno.test({
         let ctx = await createMockContext(app, "{}", [["Content-Type", "application/json"]], "/users/1", token);
         await getUserProjects(ctx, undefined)
         assertEquals(ctx.response.status, 422)
+
+        await db.close();
+        await client.end();
     },
-    sanitizeResources: false,
 })
 
 Deno.test({
@@ -250,8 +266,10 @@ Deno.test({
         let ctx = await createMockContext(app, "{}", [["Content-Type", "application/json"]], "/users/1", token);
         await getUserProjects(ctx, 1)
         assertEquals(ctx.response.status, 401)
+
+        await db.close();
+        await client.end();
     },
-    sanitizeResources: false,
 })
 
 Deno.test({
@@ -283,8 +301,10 @@ Deno.test({
         assertNotEquals(lastName, String(userToChange.lastName));
         assertNotEquals(isAdmin, Boolean(userToChange.isAdmin));
         assertNotEquals(status, String(userToChange.status));
+
+        await db.close();
+        await client.end();
     },
-    sanitizeResources: false,
 })
 
 Deno.test({
@@ -315,8 +335,9 @@ Deno.test({
         assertNotEquals(lastName, String(user.lastName));
         assertEquals(isAdmin, Boolean(user.isAdmin));
         assertEquals(status, String(user.status));
+        await db.close();
+        await client.end();
     },
-    sanitizeResources: false,
 })
 
 Deno.test({
@@ -357,8 +378,10 @@ Deno.test({
                 assertEquals(status, String(userToChange.status));
             }
         }
+
+        await db.close();
+        await client.end();
     },
-    sanitizeResources: false,
 })
 
 Deno.test({
@@ -380,8 +403,11 @@ Deno.test({
                 assertEquals(ctx.response.status, 401)
             }
         }
+
+        await db.close();
+        await client.end();
     },
-    sanitizeResources: false,
+
 })
 
 Deno.test({
@@ -395,10 +421,10 @@ Deno.test({
 
         await patchUser(ctx, undefined);
         assertEquals(ctx.response.status, 422)
-
+        await db.close();
+        await client.end();
 
     },
-    sanitizeResources: false,
 })
 
 Deno.test({
@@ -412,6 +438,9 @@ Deno.test({
         await createUser(ctx, new MockEmailClient())
 
         assertEquals(ctx.response.status, 401)
+
+        await db.close();
+        await client.end();
     }
 
 })

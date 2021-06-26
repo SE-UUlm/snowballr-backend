@@ -4,7 +4,7 @@ import {login} from "../../src/controller/login.ts";
 import {createMockContext} from "../mockObjects/oak/mockContext.test.ts";
 import {createMockApp} from "../mockObjects/oak/mockApp.test.ts";
 import {assertEquals, assertNotEquals} from "https://deno.land/std@0.97.0/testing/asserts.ts"
-import {db} from "../../src/controller/database.ts";
+import {client, db} from "../../src/controller/database.ts";
 
 
 Deno.test({
@@ -19,7 +19,8 @@ Deno.test({
         let loginWorked: boolean = await login(ctx);
 
         assertEquals(true, loginWorked);
-        db.close();
+        await db.close();
+        await client.end();
 
     }
 
@@ -38,8 +39,8 @@ Deno.test({
         let loginWorked: boolean = await login(ctx);
 
         assertNotEquals(loginWorked, true);
-        db.close();
-
+        await db.close();
+        await client.end();
     }
 
 })
@@ -57,7 +58,8 @@ Deno.test({
         let loginWorked: boolean = await login(ctx);
 
         assertNotEquals(loginWorked, true);
-        db.close();
+        await db.close();
+        await client.end();
     }
 
 })

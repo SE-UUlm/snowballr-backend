@@ -7,6 +7,7 @@ import {addMemberToProject, getMembersOfProject, getProjects} from "../../src/co
 import {Project} from "../../src/model/db/project.ts";
 import {assertEquals, assertNotEquals} from "https://deno.land/std/testing/asserts.ts"
 import {UserIsPartOfProject} from "../../src/model/db/userIsPartOfProject.ts";
+import {client, db} from "../../src/controller/database.ts";
 
 Deno.test({
     name: "getProject",
@@ -25,8 +26,10 @@ Deno.test({
 
         let answer = JSON.parse(ctx.response.body as string)
         assertNotEquals(answer.projects.length, 0)
+
+        await db.close();
+        await client.end();
     },
-    sanitizeResources: false,
 })
 
 Deno.test({
@@ -51,8 +54,10 @@ Deno.test({
 
         let answer = JSON.parse(ctx.response.body as string)
         assertNotEquals(answer.members.length, 0)
+
+        await db.close();
+        await client.end();
     },
-    sanitizeResources: false,
 })
 
 Deno.test({
@@ -71,8 +76,10 @@ Deno.test({
         await getMembersOfProject(ctx, Number(project.id))
 
         assertEquals(ctx.response.status, 401)
-    },
-    sanitizeResources: false,
+
+        await db.close();
+        await client.end();
+    }
 })
 
 Deno.test({
@@ -104,9 +111,10 @@ Deno.test({
             status: "active"
         })
         assertEquals(worked, true)
-    },
 
-    sanitizeResources: false,
+        await db.close();
+        await client.end();
+    }
 })
 
 Deno.test({
@@ -131,6 +139,8 @@ Deno.test({
         await addMemberToProject(ctx, Number(project.id))
 
         assertEquals(ctx.response.status, 401)
-    },
-    sanitizeResources: false,
+
+        await db.close();
+        await client.end();
+    }
 })

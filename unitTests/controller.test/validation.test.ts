@@ -13,6 +13,7 @@ import {setup} from "../../src/helper/setup.ts";
 import {insertUser} from "../../src/controller/databaseFetcher/user.ts";
 import {Project} from "../../src/model/db/project.ts";
 import {UserIsPartOfProject} from "../../src/model/db/userIsPartOfProject.ts";
+import {client, db} from "../../src/controller/database.ts";
 
 Deno.test({
     name: "testCorrectContentTypeAndContent",
@@ -22,6 +23,7 @@ Deno.test({
         await validateContentType(ctx, emptyAsyncFunctionTest)
 
         assertEquals(ctx.response.status, 999)
+
     }
 
 })
@@ -98,8 +100,10 @@ Deno.test({
         await validateJWTIfExists(ctx, emptyAsyncFunctionTest)
 
         assertEquals(ctx.response.status, 999)
-    },
-    sanitizeResources: false,
+
+        await db.close();
+        await client.end();
+    }
 })
 
 Deno.test({
@@ -114,6 +118,8 @@ Deno.test({
         await validateJWTIfExists(ctx, emptyAsyncFunctionTest)
 
         assertEquals(ctx.response.status, 401)
+        await db.close();
+        await client.end();
     },
 })
 
@@ -133,6 +139,8 @@ Deno.test({
         let ctx = await createMockContext(app, undefined, [["Content-Type", "text"]], "/", token);
         let payLoad = await getPayloadFromJWT(ctx);
         assertEquals(await checkPO(payLoad), true)
+        await db.close();
+        await client.end();
 
     }
 
@@ -154,6 +162,9 @@ Deno.test({
         let ctx = await createMockContext(app, undefined, [["Content-Type", "text"]], "/", token);
         let payLoad = await getPayloadFromJWT(ctx);
         assertEquals(await checkPO(payLoad), false)
+
+        await db.close();
+        await client.end();
 
     }
 
