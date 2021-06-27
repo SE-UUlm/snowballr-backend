@@ -12,6 +12,7 @@ export class Paper extends Model {
 
     static fields = {
         id: {primaryKey: true, autoIncrement: true, type: DataTypes.INTEGER},
+        doi: {type: DataTypes.STRING, allowNull: true},
         title: {type: DataTypes.STRING, allowNull: true},
         abstract: {type: DataTypes.STRING, allowNull: true},
         year: {type: DataTypes.DATE, allowNull: true},

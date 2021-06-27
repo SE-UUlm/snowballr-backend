@@ -9,6 +9,7 @@ import {getAllMembersOfProject} from "./databaseFetcher/userProject.ts";
 import {convertProjectToProjectMessage} from "../helper/converter/projectConverter.ts";
 import {Stage} from "../model/db/stage.ts";
 import {Paper} from "../model/db/paper.ts";
+import {getAllStagesFromProject} from "./databaseFetcher/stage.ts";
 
 /**
  * Creates a project
@@ -129,9 +130,11 @@ export const addStageToProject = async (ctx: Context, id: number | undefined) =>
             makeErrorMessage(ctx, 422, "to add a stage, a name is needed")
             return;
         }
+        let stages = getAllStagesFromProject(id);
         let stage = await Stage.create({
             name: requestParameter.name,
-            projectId: id
+            projectId: id,
+            number: requestParameter.number ? requestParameter.number : (await stages).length
         })
         ctx.response.status = 201;
         ctx.response.body = JSON.stringify(stage)
@@ -141,7 +144,7 @@ export const addStageToProject = async (ctx: Context, id: number | undefined) =>
 }
 
 /**
- * Adds a person to a project
+ * Adds a paper to a project stage
  *
  * @param ctx
  * @param projectId id of project
@@ -161,12 +164,35 @@ export const addPaperToProjectStage = async (ctx: Context, projectId: number | u
             makeErrorMessage(ctx, 422, "to add a paper to a stage, at least a DOI or a title is needed")
             return;
         }
-        await Paper.create({
-            isOwner: requestParameter.isOwner ? requestParameter.isOwner : false,
-            userId: requestParameter.id,
-            projectId: projectId
-        })
+        //TODO check paper already exists
+        let paper = await Paper.create({})
+        if (requestParameter.doi) {
+            paper.doi = requestParameter.doi
+        }
+        if (requestParameter.title) {
+            paper.title = requestParameter.title
+        }
+        if (requestParameter.abstract) {
+            paper.abstract = requestParameter.abstract
+        }
+        if (requestParameter.year) {
+            paper.year = requestParameter.year
+        }
+        if (requestParameter.publisher) {
+            paper.publisher = requestParameter.publisher
+        }
+        if (requestParameter.type) {
+            paper.type = requestParameter.type
+        }
+        if (requestParameter.scope) {
+            paper.scope = requestParameter.scope
+        }
+        if (requestParameter.scopeName) {
+            paper.scopeName = requestParameter.scopeName
+        }
+        paper.save()
         ctx.response.status = 201;
+        ctx.response.body = JSON.stringify(paper);
     } else {
         makeErrorMessage(ctx, 401, "not authorized");
     }
