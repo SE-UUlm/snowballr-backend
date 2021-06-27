@@ -87,14 +87,15 @@ export const setup = async (dropDatabase: boolean) => {
             userId: Number(admin.id),
             projectId: Number(project.id)
         })
-        await Stage.create({projectId: Number(project.id), name: "awesome Stage", number: 0})
+        let stage = await Stage.create({projectId: Number(project.id), name: "awesome Stage", number: 0})
         await Stage.create({projectId: Number(project.id), name: "the next Stage", number: 1})
         let paper01 = await Paper.create({title: "paper01"})
         let paper02 = await Paper.create({title: "paper02"})
         let paper03 = await Paper.create({title: "paper03"})
+        await PaperScopeForStage.create({paperId: Number(paper01.id), stageId: Number(stage.id)})
+        await PaperScopeForStage.create({paperId: Number(paper02.id), stageId: Number(stage.id)})
 
-
-        const query = await client.queryArray(`INSERT INTO citedby (papercitedid, papercitingid)
+        await client.queryArray(`INSERT INTO citedby (papercitedid, papercitingid)
                 VALUES (${Number(paper01.id)}, ${Number(paper02.id)}),
                         (${Number(paper01.id)}, ${Number(paper03.id)})`)
 

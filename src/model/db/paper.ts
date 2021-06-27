@@ -39,7 +39,7 @@ export class Paper extends Model {
         return this.hasMany(PaperScopeForStage);
     }
 
-    static paper() {
+    static paperid() {
         return this.hasMany(PaperHasID);
     }
 }

@@ -10,6 +10,8 @@ import {convertProjectToProjectMessage} from "../helper/converter/projectConvert
 import {Stage} from "../model/db/stage.ts";
 import {Paper} from "../model/db/paper.ts";
 import {getAllStagesFromProject} from "./databaseFetcher/stage.ts";
+import {getAllPapersFromStage} from "./databaseFetcher/paper.ts";
+import {PaperMessage} from "../model/messages/paper.Message.ts";
 
 /**
  * Creates a project
@@ -155,7 +157,7 @@ export const addPaperToProjectStage = async (ctx: Context, projectId: number | u
         return
     }
     const payloadJson = await getPayloadFromJWT(ctx);
-    if (await checkAdmin(payloadJson) || await checkPOofProject(projectId, payloadJson)) {
+    if (await checkAdmin(payloadJson) || await checkMemberOfProject(projectId, payloadJson)) {
         const requestParameter = await jsonBodyToObject(ctx)
         if (!requestParameter) {
             return
@@ -207,7 +209,8 @@ export const getPapersOfProjectStage = async (ctx: Context, projectID: number | 
     const payloadJson = await getPayloadFromJWT(ctx);
     if (await checkAdmin(payloadJson) || await checkMemberOfProject(projectID, payloadJson)) {
         ctx.response.status = 200;
-        let message: ProjectMembersMessage = {members: await getAllMembersOfProject(projectID)}
+        //let message: ProjectMembersMessage = {members: await getAllMembersOfProject(projectID)}
+        let message: PaperMessage = {papers: await getAllPapersFromStage(stageID)}
         ctx.response.body = JSON.stringify(message)
     } else {
         makeErrorMessage(ctx, 401, "not authorized");
