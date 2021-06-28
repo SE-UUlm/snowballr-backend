@@ -12,6 +12,7 @@ import {Paper} from "../model/db/paper.ts";
 import {getAllStagesFromProject} from "./databaseFetcher/stage.ts";
 import {getAllPapersFromStage} from "./databaseFetcher/paper.ts";
 import {PaperMessage} from "../model/messages/paper.Message.ts";
+import {PaperScopeForStage} from "../model/db/paperScopeForStage.ts";
 
 /**
  * Creates a project
@@ -193,6 +194,8 @@ export const addPaperToProjectStage = async (ctx: Context, projectId: number | u
             paper.scopeName = requestParameter.scopeName
         }
         paper.save()
+
+        PaperScopeForStage.create({paperId: Number(paper.id), stageId: stageID, date: Date.now()})
         ctx.response.status = 201;
         ctx.response.body = JSON.stringify(paper);
     } else {

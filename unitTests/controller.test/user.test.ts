@@ -69,11 +69,29 @@ Deno.test({
 })
 
 Deno.test({
+    name: "insertUserEmailAlreadyExists",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, `{"email": "test@test"}`, [["Content-Type", "application/json"]], "/", token);
+        await createUser(ctx, new MockEmailClient())
+
+        assertEquals(ctx.response.status, 422)
+
+        await db.close();
+        await client.end();
+    },
+})
+
+Deno.test({
     name: "getAllUsersAsAdmin",
     async fn(): Promise<void> {
         await setup(true);
         let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
-        await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+        await insertUser("tes2t@test", "ash", true, "Test", "Tester", "active");
         let app = await createMockApp();
         let token = await createJWT(user)
         let ctx = await createMockContext(app, undefined, [["Content-Type", "application/json"]], "/", token);
@@ -90,7 +108,7 @@ Deno.test({
     async fn(): Promise<void> {
         await setup(true);
         let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
-        await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+        await insertUser("test2@test", "ash", true, "Test", "Tester", "active");
         let app = await createMockApp();
         let token = await createJWT(user)
         let ctx = await createMockContext(app, undefined, [["Content-Type", "application/json"]], "/", token);
@@ -107,7 +125,7 @@ Deno.test({
     fn: async function (): Promise<void> {
         await setup(true);
         let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
-        await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+        await insertUser("test2@test", "ash", true, "Test", "Tester", "active");
         let app = await createMockApp();
         let token = await createJWT(user)
         let ctx = await createMockContext(app, undefined, [["Content-Type", "application/json"]], "/users/1", token);
@@ -123,7 +141,7 @@ Deno.test({
     fn: async function (): Promise<void> {
         await setup(true);
         let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
-        await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+        await insertUser("test2@test", "ash", true, "Test", "Tester", "active");
         let app = await createMockApp();
         let token = await createJWT(user)
         let ctx = await createMockContext(app, undefined, [["Content-Type", "application/json"]], "/users/1", token);
@@ -139,7 +157,7 @@ Deno.test({
     name: "getOneUserUnAuthorized",
     fn: async function (): Promise<void> {
         await setup(true);
-        let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
+        let user = await insertUser("test2@test", "ash", false, "Test", "Tester", "active");
         await insertUser("test@test", "ash", true, "Test", "Tester", "active");
         let app = await createMockApp();
         let token = await createJWT(user)
