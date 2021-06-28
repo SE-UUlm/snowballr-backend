@@ -13,3 +13,14 @@ export const getAllPapersFromStage = async (id: number) => {
     }
     return new Array<Paper>();
 }
+
+export const getProjectPaperID = async (stageId: number, paperId: number) => {
+    let paperScope = await PaperScopeForStage.where({
+        stageId: stageId,
+        paperId: paperId
+    }).get()
+    if (Array.isArray(paperScope)) {
+        return Number(paperScope[0].id)
+    }
+    return -1;
+}

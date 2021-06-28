@@ -11,6 +11,7 @@ import {
     addStageToProject,
     createProject,
     getMembersOfProject,
+    getPaperOfProjectStage,
     getPapersOfProjectStage,
     getProjects
 } from "./controller/project.ts";
@@ -67,6 +68,9 @@ router
     })
     .get("/projects/:id/stages/:id2/papers", async (context) => {
         await getPapersOfProjectStage(context, Number(context.params.id), Number(context.params.id2))
+    })
+    .get("/projects/:id/stages/:id2/papers/:ppid", async (context) => {
+        await getPaperOfProjectStage(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))
     })
 const app = new Application();
 app.use(await validateContentType)

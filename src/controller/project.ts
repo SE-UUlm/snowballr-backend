@@ -11,8 +11,10 @@ import {Stage} from "../model/db/stage.ts";
 import {Paper} from "../model/db/paper.ts";
 import {getAllStagesFromProject} from "./databaseFetcher/stage.ts";
 import {getAllPapersFromStage} from "./databaseFetcher/paper.ts";
-import {PaperMessage} from "../model/messages/paper.Message.ts";
+import {PapersMessage} from "../model/messages/papersMessage.ts";
 import {PaperScopeForStage} from "../model/db/paperScopeForStage.ts";
+import {convertPaperToPaperMessage} from "../helper/converter/paperConverter.ts";
+
 
 /**
  * Creates a project
@@ -133,12 +135,23 @@ export const addStageToProject = async (ctx: Context, id: number | undefined) =>
             makeErrorMessage(ctx, 422, "to add a stage, a name is needed")
             return;
         }
-        let stages = getAllStagesFromProject(id);
+
+
+        const stages = await getAllStagesFromProject(id);
+        let number = requestParameter.number ? requestParameter.number : 1
+        if (!requestParameter.number) {
+            for (const item of stages) {
+                if (Number(item.number) >= number) {
+                    number = Number(item.number) + 1;
+                }
+            }
+        }
         let stage = await Stage.create({
             name: requestParameter.name,
             projectId: id,
-            number: requestParameter.number ? requestParameter.number : (await stages).length
+            number: number
         })
+
         ctx.response.status = 201;
         ctx.response.body = JSON.stringify(stage)
     } else {
@@ -151,10 +164,11 @@ export const addStageToProject = async (ctx: Context, id: number | undefined) =>
  *
  * @param ctx
  * @param projectId id of project
+ * @param stageID id of stage
  */
 export const addPaperToProjectStage = async (ctx: Context, projectId: number | undefined, stageID: number | undefined) => {
     if (!projectId || !stageID) {
-        makeErrorMessage(ctx, 422, "no project and/or paper id included")
+        makeErrorMessage(ctx, 422, "no project and/or stage id included")
         return
     }
     const payloadJson = await getPayloadFromJWT(ctx);
@@ -194,8 +208,7 @@ export const addPaperToProjectStage = async (ctx: Context, projectId: number | u
             paper.scopeName = requestParameter.scopeName
         }
         paper.save()
-
-        PaperScopeForStage.create({paperId: Number(paper.id), stageId: stageID, date: Date.now()})
+        PaperScopeForStage.create({paperId: Number(paper.id), stageId: stageID})
         ctx.response.status = 201;
         ctx.response.body = JSON.stringify(paper);
     } else {
@@ -203,18 +216,61 @@ export const addPaperToProjectStage = async (ctx: Context, projectId: number | u
     }
 }
 
+/**
+ *
+ * @param ctx
+ * @param projectID
+ * @param stageID
+ */
 export const getPapersOfProjectStage = async (ctx: Context, projectID: number | undefined, stageID: number | undefined) => {
     if (!projectID || !stageID) {
-        makeErrorMessage(ctx, 422, "no project and/or paper id included")
+        makeErrorMessage(ctx, 422, "no project and/or stage id included")
         return
     }
 
     const payloadJson = await getPayloadFromJWT(ctx);
     if (await checkAdmin(payloadJson) || await checkMemberOfProject(projectID, payloadJson)) {
         ctx.response.status = 200;
-        //let message: ProjectMembersMessage = {members: await getAllMembersOfProject(projectID)}
-        let message: PaperMessage = {papers: await getAllPapersFromStage(stageID)}
+        let message: PapersMessage = {papers: await convertPaperToPaperMessage(await getAllPapersFromStage(stageID), stageID)}
         ctx.response.body = JSON.stringify(message)
+    } else {
+        makeErrorMessage(ctx, 401, "not authorized");
+    }
+}
+
+/**
+ * Gets a single paper by using the project specific paper id (not the normal id of a paper!)
+ *
+ * @param ctx
+ * @param projectID
+ * @param stageID
+ * @param ppID project specific paper id
+ */
+export const getPaperOfProjectStage = async (ctx: Context, projectID: number | undefined, stageID: number | undefined, ppID: number | undefined) => {
+    if (!projectID || !stageID || !ppID) {
+        makeErrorMessage(ctx, 422, "no project and/or stage and/or no project paper id included")
+        return
+    }
+
+    const payloadJson = await getPayloadFromJWT(ctx);
+    if (await checkAdmin(payloadJson) || await checkMemberOfProject(projectID, payloadJson)) {
+        ctx.response.status = 200;
+
+    } else {
+        makeErrorMessage(ctx, 401, "not authorized");
+    }
+}
+
+export const patchPaperOfProjectStage = async (ctx: Context, projectID: number | undefined, stageID: number | undefined, ppID: number | undefined) => {
+    if (!projectID || !stageID || !ppID) {
+        makeErrorMessage(ctx, 422, "no project and/or stage and/or no project paper id included")
+        return
+    }
+
+    const payloadJson = await getPayloadFromJWT(ctx);
+    if (await checkAdmin(payloadJson) || await checkMemberOfProject(projectID, payloadJson)) {
+        ctx.response.status = 200;
+
     } else {
         makeErrorMessage(ctx, 401, "not authorized");
     }

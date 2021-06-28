@@ -335,11 +335,11 @@ Deno.test({
         let ctx = await createMockContext(app, `{ "name": "namee"}`, [["Content-Type", "application/json"]], "/", token);
         await addStageToProject(ctx, Number(project.id))
         let answer = JSON.parse(ctx.response.body as string)
-        assertEquals(answer.number, 0)
+        assertEquals(answer.number, 1)
         ctx = await createMockContext(app, `{ "name": "namee2"}`, [["Content-Type", "application/json"]], "/", token);
         await addStageToProject(ctx, Number(project.id))
         answer = JSON.parse(ctx.response.body as string)
-        assertEquals(answer.number, 1)
+        assertEquals(answer.number, 2)
         assertEquals(ctx.response.status, 201)
 
         await db.close();

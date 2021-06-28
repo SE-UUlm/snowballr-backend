@@ -32,6 +32,7 @@ export const setup = async (dropDatabase: boolean) => {
     if (dropDatabase) {
         await client.queryArray("DROP TABLE IF EXISTS citedby")
         await client.queryArray("DROP TABLE IF EXISTS referencedby")
+
     }
     Relationships.belongsTo(Invitation, User);
     Relationships.belongsTo(ResetToken, User);
@@ -92,8 +93,11 @@ export const setup = async (dropDatabase: boolean) => {
         let paper01 = await Paper.create({title: "paper01"})
         let paper02 = await Paper.create({title: "paper02"})
         let paper03 = await Paper.create({title: "paper03"})
+        let paper04 = await Paper.create({title: "paper04"})
+        let paper05 = await Paper.create({title: "paper05"})
         await PaperScopeForStage.create({paperId: Number(paper01.id), stageId: Number(stage.id)})
         await PaperScopeForStage.create({paperId: Number(paper02.id), stageId: Number(stage.id)})
+        await PaperScopeForStage.create({paperId: Number(paper05.id), stageId: Number(stage.id)})
 
         await client.queryArray(`INSERT INTO citedby (papercitedid, papercitingid)
                 VALUES (${Number(paper01.id)}, ${Number(paper02.id)}),
