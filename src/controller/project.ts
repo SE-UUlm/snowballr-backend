@@ -13,8 +13,8 @@ import {getAllStagesFromProject} from "./databaseFetcher/stage.ts";
 import {getAllPapersFromStage} from "./databaseFetcher/paper.ts";
 import {PapersMessage} from "../model/messages/papersMessage.ts";
 import {PaperScopeForStage} from "../model/db/paperScopeForStage.ts";
-import {convertPaperToPaperMessage} from "../helper/converter/paperConverter.ts";
-
+import {convertPapersToPaperMessage, convertPaperToPaperMessage} from "../helper/converter/paperConverter.ts";
+import {assign} from "../helper/assign.ts"
 
 /**
  * Creates a project
@@ -231,7 +231,7 @@ export const getPapersOfProjectStage = async (ctx: Context, projectID: number | 
     const payloadJson = await getPayloadFromJWT(ctx);
     if (await checkAdmin(payloadJson) || await checkMemberOfProject(projectID, payloadJson)) {
         ctx.response.status = 200;
-        let message: PapersMessage = {papers: await convertPaperToPaperMessage(await getAllPapersFromStage(stageID), stageID)}
+        let message: PapersMessage = {papers: await convertPapersToPaperMessage(await getAllPapersFromStage(stageID), stageID)}
         ctx.response.body = JSON.stringify(message)
     } else {
         makeErrorMessage(ctx, 401, "not authorized");
@@ -254,8 +254,13 @@ export const getPaperOfProjectStage = async (ctx: Context, projectID: number | u
 
     const payloadJson = await getPayloadFromJWT(ctx);
     if (await checkAdmin(payloadJson) || await checkMemberOfProject(projectID, payloadJson)) {
-        ctx.response.status = 200;
-
+        let paper = await PaperScopeForStage.where("id", ppID).paper();
+        if (paper) {
+            ctx.response.status = 200;
+            ctx.response.body = JSON.stringify(await convertPaperToPaperMessage(paper, stageID));
+        } else {
+            makeErrorMessage(ctx, 404, "paper does not exist")
+        }
     } else {
         makeErrorMessage(ctx, 401, "not authorized");
     }
@@ -269,7 +274,16 @@ export const patchPaperOfProjectStage = async (ctx: Context, projectID: number |
 
     const payloadJson = await getPayloadFromJWT(ctx);
     if (await checkAdmin(payloadJson) || await checkMemberOfProject(projectID, payloadJson)) {
-        ctx.response.status = 200;
+        let paper = await PaperScopeForStage.where("id", ppID).paper();
+        if (paper) {
+            const bodyJson = await ctx.request.body({type: "json"}).value;
+            assign(paper, bodyJson);
+            await paper.update()
+            ctx.response.status = 200;
+            ctx.response.body = JSON.stringify(await convertPaperToPaperMessage(paper, stageID))
+        } else {
+            makeErrorMessage(ctx, 404, "paper does not exist")
+        }
 
     } else {
         makeErrorMessage(ctx, 401, "not authorized");

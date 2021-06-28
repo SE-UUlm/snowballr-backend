@@ -13,7 +13,8 @@ import {
     getMembersOfProject,
     getPaperOfProjectStage,
     getPapersOfProjectStage,
-    getProjects
+    getProjects,
+    patchPaperOfProjectStage
 } from "./controller/project.ts";
 
 await setup(true);
@@ -71,6 +72,9 @@ router
     })
     .get("/projects/:id/stages/:id2/papers/:ppid", async (context) => {
         await getPaperOfProjectStage(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))
+    })
+    .patch("/projects/:id/stages/:id2/papers/:ppid", async (context) => {
+        await patchPaperOfProjectStage(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))
     })
 const app = new Application();
 app.use(await validateContentType)
