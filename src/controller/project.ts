@@ -183,30 +183,7 @@ export const addPaperToProjectStage = async (ctx: Context, projectId: number | u
         }
         //TODO check paper already exists
         let paper = await Paper.create({})
-        if (requestParameter.doi) {
-            paper.doi = requestParameter.doi
-        }
-        if (requestParameter.title) {
-            paper.title = requestParameter.title
-        }
-        if (requestParameter.abstract) {
-            paper.abstract = requestParameter.abstract
-        }
-        if (requestParameter.year) {
-            paper.year = requestParameter.year
-        }
-        if (requestParameter.publisher) {
-            paper.publisher = requestParameter.publisher
-        }
-        if (requestParameter.type) {
-            paper.type = requestParameter.type
-        }
-        if (requestParameter.scope) {
-            paper.scope = requestParameter.scope
-        }
-        if (requestParameter.scopeName) {
-            paper.scopeName = requestParameter.scopeName
-        }
+        assign(paper, requestParameter)
         paper.save()
         PaperScopeForStage.create({paperId: Number(paper.id), stageId: stageID})
         ctx.response.status = 201;
@@ -276,7 +253,10 @@ export const patchPaperOfProjectStage = async (ctx: Context, projectID: number |
     if (await checkAdmin(payloadJson) || await checkMemberOfProject(projectID, payloadJson)) {
         let paper = await PaperScopeForStage.where("id", ppID).paper();
         if (paper) {
-            const bodyJson = await ctx.request.body({type: "json"}).value;
+            let bodyJson = jsonBodyToObject(ctx);
+            if (!bodyJson) {
+                return
+            }
             assign(paper, bodyJson);
             await paper.update()
             ctx.response.status = 200;
