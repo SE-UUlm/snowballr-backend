@@ -113,7 +113,7 @@ export class ApiMerger implements IApiMerger {
      * Compare two papers for equality
      * Papers are equal if:
      * - the DOI of each paper is equal
-     * - or the weighted levinshtein distance of title, abstract and a similarity of the author are greater than a defined threshold
+     * - or the weighted levenshtein distance of title, abstract and a similarity of the author are greater than a defined threshold
      *    - these parameters are settable by an IComparisonWeight object
      *
      * @param firstResponse - paper similar to secondResponse. Most likely provided by another api
@@ -143,9 +143,13 @@ export class ApiMerger implements IApiMerger {
             comparison.abstractWeight = 0;
         }
         //TODO: compare rawstring by splitting them and check that all parts without special signs are equal at some position
+
         if (firstResponse.paper.author && secondResponse.paper.author) { // 0.7 ->
             sameAuthor = this._isEqualAuthors(firstResponse.paper.author, secondResponse.paper.author) * comparison.authorWeight;
             logger.info("SameAuthor Equality: " + sameAuthor);
+
+            //TODO: if title and year are equal likely to be equal --> year might be shifted by one year
+            //TODO: Take Publisher into Account.
         } else {
             comparison.authorWeight = 0;
         }
@@ -221,13 +225,13 @@ export class ApiMerger implements IApiMerger {
         //return 0.7
     }
 
+    // TODO: first name might be shortened while last name is most likely not shortened. handle this via a heuristic
     private _isEqualAuthor(firstAuthor: IApiAuthor, secondAuthor: IApiAuthor) {
         if (firstAuthor.firstName && secondAuthor.firstName && firstAuthor.lastName && secondAuthor.lastName) {
             if ((firstAuthor.firstName === secondAuthor.firstName) && (firstAuthor.lastName === secondAuthor.lastName)) {
                 return 1;
             }
         }
-        // ugly due to compiler error in ts
         let s1 = firstAuthor.rawString;
         let s2 = secondAuthor.rawString;
         if (s1 && s2) {
