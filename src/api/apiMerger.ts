@@ -384,6 +384,10 @@ export class ApiMerger implements IApiMerger {
                     resultingPaper[key] = first[key];
                 }
             } else if (ApiMerger.normalizeString(first[key]) != ApiMerger.normalizeString(second[key])) {
+                if (Array.isArray(first[key])) {
+                    resultingPaper[key] = first[key].concat(second[key]);
+                    continue;
+                }
                 resultingPaper[key] = [first[key], second[key]];
             }
 
