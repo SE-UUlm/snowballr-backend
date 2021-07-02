@@ -76,13 +76,14 @@ export class MicrosoftResearchApi implements IApiFetcher {
                 return data.json();
             })
             .then(data => {
+                logger.debug(data);
                 paper = this._parseResponse(data.entities[0]);
-                RIds = data.entities[0].RId;
-                return this._getCitations(data.entities[0].Id);
+                RIds = data.entities[0] ? data.entities[0].RId : [];
+                return data.entities[0] ? this._getCitations(data.entities[0].Id) : [];
             })
             .then(data => {
                 citations = data
-                return this._getReferences(RIds);
+                return RIds.length > 0 ? this._getReferences(RIds) : [];
             })
             .then(data => {
                 references = data;
@@ -120,6 +121,7 @@ export class MicrosoftResearchApi implements IApiFetcher {
             headers: this._headers,
             body: JSON.stringify({
                 expr: `Or(${queryPattern})`,
+                count: convertedIds.length,
                 attributes: this._attributes
             })
         })
@@ -149,6 +151,7 @@ export class MicrosoftResearchApi implements IApiFetcher {
             headers: this._headers,
             body: JSON.stringify({
                 expr: `RId=${microsoftId}`,
+                count: 1000,
                 attributes: this._attributes
             })
         })

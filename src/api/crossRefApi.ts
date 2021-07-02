@@ -35,12 +35,13 @@ export class CrossRefApi implements IApiFetcher {
                 return data.json();
             })
             .then(data => {
+                logger.debug(data);
                 paper = this._parseResponse(data);
                 //logger.debug(JSON.stringify(paper, null, 2));
                 //doiReference = data[0].reference;
                 //console.log(data.message);
                 rawReferences = data.message.reference;
-                return this._getChildObjects(data.message.relation.cites);
+                return data.message.relation ? this._getChildObjects(data.message.relation.cites) : [];
                 //return this._getLinkedDOIs(data[0].citation);
             })
             .then(data => {
@@ -175,7 +176,7 @@ export class CrossRefApi implements IApiFetcher {
             author: parsedAuthors,
             abstract: undefined,
             numberOfReferences: response.message['reference-count'] ? response.message['reference-count'] : undefined,
-            numberOfCitations: response.message.relation.cites ? response.message.relation.cites.length : undefined,
+            numberOfCitations: response.message.relation && response.message.relation.cites ? response.message.relation.cites.length : undefined,
             year: response.Y ? response.Y : undefined,
             publisher: response.message.publisher ? response.message.publisher : undefined,
             type: response.message.type ? response.message.type : undefined,

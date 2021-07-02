@@ -16,7 +16,7 @@ await log.setup({
         }),
         file: new log.handlers.RotatingFileHandler('INFO', {
             filename: './a.log',
-            maxBytes: 65000,
+            maxBytes: 65000000,
             maxBackupCount: 5,
             mode: 'w',
             formatter: rec => rec.msg

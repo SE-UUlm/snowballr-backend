@@ -31,7 +31,7 @@ export class ApiMerger implements IApiMerger {
      */
     static normalizeString(pattern: any): any {
         if (typeof pattern === "string") {
-            return pattern.toLowerCase().replace(/[äüö,\\\-/]/g, " ").trim();
+            return pattern.toLowerCase().replace(/[äüö,\\\-:/]/g, " ").replace(/  /g, " ").trim();
         }
         return pattern;
     }
