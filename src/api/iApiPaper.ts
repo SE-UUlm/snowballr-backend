@@ -13,7 +13,7 @@ export interface IApiPaper {
     abstract?: string;
     numberOfReferences?: number;
     numberOfCitations?: number;
-    year?: string;
+    year?: number;
     publisher?: string;
     type?: string;
     scope?: string;

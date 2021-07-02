@@ -124,10 +124,10 @@ export class OpenCitationsApi implements IApiFetcher {
         for (let a of response.author.split(';')) {
             let parsedAuthor: IApiAuthor = {
                 id: undefined,
-                orcid: a.split(',').length > 2 ? a.split(',')[2] : undefined,
-                rawString: a,
-                lastName: a.split(',').length > 1 ? a.split(',')[0] : undefined,
-                firstName: a.split(',').length > 1 ? a.split(',')[1] : a.split(',')[0],
+                orcid: a.split(',').length > 2 ? a.split(',')[2].trim() : undefined,
+                rawString: a.split(',').length > 1 ? `${a.split(',')[0]},${a.split(',')[1]}`.trim() : a.split(',')[0].trim(),
+                lastName: a.split(',').length > 1 ? a.split(',')[0].trim() : undefined,
+                firstName: a.split(',').length > 1 ? a.split(',')[1].trim() : a.split(',')[0].trim(),
             }
             parsedAuthors.push(parsedAuthor);
         }

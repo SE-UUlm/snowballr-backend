@@ -3,7 +3,7 @@ import {toIMF} from "https://deno.land/std/datetime/mod.ts";
 
 await log.setup({
     handlers: {
-        console: new log.handlers.ConsoleHandler("ERROR", {
+        console: new log.handlers.ConsoleHandler("DEBUG", {
             formatter: logRecord => {
                 let msg = `${toIMF(new Date())}\t${logRecord.levelName}\t${logRecord.msg}`;
 

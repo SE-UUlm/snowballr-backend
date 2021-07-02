@@ -4,5 +4,6 @@ export interface IComparisonWeight {
     abstractWeight: number;
     abstractLevenshtein: number;
     authorWeight: number;
+    yearWeight: number;
     overallWeight: number;
 }
