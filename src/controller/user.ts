@@ -118,9 +118,14 @@ export const getUser = async (ctx: Context, id: number | undefined) => {
     const payloadJson = await getPayloadFromJWT(ctx);
     if (await checkAdmin(payloadJson) || await getUserID(payloadJson) === id || await checkPO(payloadJson)) {
         let user = await User.find(id);
-        let userProfile = convertUserToUserProfile(user);
-        ctx.response.body = JSON.stringify(userProfile);
-        ctx.response.status = 200;
+        if (user) {
+            let userProfile = convertUserToUserProfile(user);
+            ctx.response.body = JSON.stringify(userProfile);
+            ctx.response.status = 200;
+        } else {
+            makeErrorMessage(ctx, 404, "User not Found")
+        }
+
 
     } else {
         makeErrorMessage(ctx, 401, "not authorized");
@@ -140,8 +145,10 @@ export const getUserProjects = async (ctx: Context, id: number | undefined) => {
     const payloadJson = await getPayloadFromJWT(ctx);
     if (await checkAdmin(payloadJson) || await getUserID(payloadJson) === id) {
         let userProjects = await getAllProjectsByUser(id)
-        ctx.response.body = JSON.stringify(await convertProjectToProjectMessage(userProjects))
-        ctx.response.status = 200;
+        if (userProjects) {
+            ctx.response.body = JSON.stringify(await convertProjectToProjectMessage(userProjects))
+            ctx.response.status = 200;
+        }
 
     } else {
         makeErrorMessage(ctx, 401, "not authorized");
@@ -168,6 +175,10 @@ export const patchUser = async (ctx: Context, id: number | undefined) => {
     if (isSameUser || isAdmin || isPO) {
         let user = await User.find(id);
 
+        if (!user) {
+            makeErrorMessage(ctx, 404, "User not Found")
+            return;
+        }
         if (isSameUser) {
             if (userData.password) {
                 user.password = hashPassword(userData.password)
