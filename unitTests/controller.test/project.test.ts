@@ -3,10 +3,100 @@ import {insertUser} from "../../src/controller/databaseFetcher/user.ts";
 import {createMockApp} from "../mockObjects/oak/mockApp.test.ts";
 import {checkMemberOfProject, createJWT} from "../../src/controller/validation.ts";
 import {createMockContext} from "../mockObjects/oak/mockContext.test.ts";
-import {addPersonToProject, getMembersOfProject, getProjects} from "../../src/controller/project.ts";
+import {
+    addMemberToProject,
+    addStageToProject,
+    createProject,
+    getMembersOfProject,
+    getProjects
+} from "../../src/controller/project.ts";
 import {Project} from "../../src/model/db/project.ts";
 import {assertEquals, assertNotEquals} from "https://deno.land/std/testing/asserts.ts"
 import {UserIsPartOfProject} from "../../src/model/db/userIsPartOfProject.ts";
+import {client, db} from "../../src/controller/database.ts";
+
+Deno.test({
+    name: "createProjectUnauth",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, `{"name":"3", "minCountReviewers": 5, "countDecisiveReviewers":8}`, [["Content-Type", "application/json"]], "/", token);
+        await createProject(ctx)
+        assertEquals(ctx.response.status, 401)
+        await db.close();
+        await client.end();
+    },
+})
+
+Deno.test({
+    name: "createProject",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+        let app = await createMockApp();
+        let token = await createJWT(user)
+
+        let projects = await Project.all()
+
+        let size = projects.length
+        let name = "nameee"
+        let minCount = 3
+        let countDecRev = 5
+        let ctx = await createMockContext(app, `{"name":"${name}", "minCountReviewers": ${minCount}, "countDecisiveReviewers":${countDecRev}}`, [["Content-Type", "application/json"]], "/", token);
+        await createProject(ctx)
+        projects = await Project.all()
+        assertEquals(projects.length, size + 1)
+        let answer = JSON.parse(ctx.response.body as string)
+        assertEquals(answer.name, name)
+        assertEquals(answer.minCountReviewers, minCount)
+        assertEquals(answer.countDecisiveReviewers, countDecRev)
+        await db.close();
+        await client.end();
+    },
+})
+
+Deno.test({
+    name: "createProjectEvalFormula",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+        let app = await createMockApp();
+        let token = await createJWT(user)
+
+        let evalFormula = "NoExampleKnownYet"
+        let ctx = await createMockContext(app, `{"name":"name", "minCountReviewers": 3, "countDecisiveReviewers":5, "evaluationFormula": "${evalFormula}"}`, [["Content-Type", "application/json"]], "/", token);
+        await createProject(ctx)
+        let answer = JSON.parse(ctx.response.body as string)
+        assertEquals(answer.evaluationFormula, evalFormula)
+
+        await db.close();
+        await client.end();
+    },
+})
+
+Deno.test({
+    name: "createProjectNoName",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+        let app = await createMockApp();
+        let token = await createJWT(user)
+
+        let projects = await Project.all()
+
+        let size = projects.length
+
+        let ctx = await createMockContext(app, `{"minCountReviewers": 3, "countDecisiveReviewers":5}`, [["Content-Type", "application/json"]], "/", token);
+        await createProject(ctx)
+        projects = await Project.all()
+        assertEquals(projects.length, size)
+        assertEquals(ctx.response.status, 422)
+        await db.close();
+        await client.end();
+    },
+})
 
 Deno.test({
     name: "getProject",
@@ -25,8 +115,10 @@ Deno.test({
 
         let answer = JSON.parse(ctx.response.body as string)
         assertNotEquals(answer.projects.length, 0)
+
+        await db.close();
+        await client.end();
     },
-    sanitizeResources: false,
 })
 
 Deno.test({
@@ -51,8 +143,10 @@ Deno.test({
 
         let answer = JSON.parse(ctx.response.body as string)
         assertNotEquals(answer.members.length, 0)
+
+        await db.close();
+        await client.end();
     },
-    sanitizeResources: false,
 })
 
 Deno.test({
@@ -71,8 +165,10 @@ Deno.test({
         await getMembersOfProject(ctx, Number(project.id))
 
         assertEquals(ctx.response.status, 401)
-    },
-    sanitizeResources: false,
+
+        await db.close();
+        await client.end();
+    }
 })
 
 Deno.test({
@@ -94,7 +190,7 @@ Deno.test({
         let app = await createMockApp();
         let token = await createJWT(user)
         let ctx = await createMockContext(app, `{ "id": "${Number(user2.id)}"}`, [["Content-Type", "application/json"]], "/", token);
-        await addPersonToProject(ctx, Number(project.id))
+        await addMemberToProject(ctx, Number(project.id))
         let worked = await checkMemberOfProject(Number(project.id), {
             id: Number(user2.id),
             isAdmin: false,
@@ -104,10 +200,66 @@ Deno.test({
             status: "active"
         })
         assertEquals(worked, true)
-    },
 
-    sanitizeResources: false,
+        await db.close();
+        await client.end();
+    }
 })
+
+Deno.test({
+    name: "addMemberNoProjectId",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
+        let user2 = await insertUser("test2@test", "ash2", false, "Test2", "Tester2", "active");
+        let project = await Project.create({
+            name: "test",
+            minCountReviewers: 1,
+            countDecisiveReviewers: 1
+        })
+        let bla = await UserIsPartOfProject.create({
+            projectId: Number(project.id),
+            userId: Number(user.id),
+            isOwner: true
+        })
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, `{ "id": "${Number(user2.id)}"}`, [["Content-Type", "application/json"]], "/", token);
+        await addMemberToProject(ctx, undefined)
+        assertEquals(ctx.response.status, 422)
+
+        await db.close();
+        await client.end();
+    }
+})
+
+Deno.test({
+    name: "addMemberNoUserId",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
+        let user2 = await insertUser("test2@test", "ash2", false, "Test2", "Tester2", "active");
+        let project = await Project.create({
+            name: "test",
+            minCountReviewers: 1,
+            countDecisiveReviewers: 1
+        })
+        let bla = await UserIsPartOfProject.create({
+            projectId: Number(project.id),
+            userId: Number(user.id),
+            isOwner: true
+        })
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, `{}`, [["Content-Type", "application/json"]], "/", token);
+        await addMemberToProject(ctx, undefined)
+        assertEquals(ctx.response.status, 422)
+
+        await db.close();
+        await client.end();
+    }
+})
+
 
 Deno.test({
     name: "addMemberUnauthorized",
@@ -127,10 +279,97 @@ Deno.test({
         })
         let app = await createMockApp();
         let token = await createJWT(user)
-        let ctx = await createMockContext(app, `{ id: ${Number(user2.id)}`, [["Content-Type", "application/json"]], "/", token);
-        await addPersonToProject(ctx, Number(project.id))
+        let ctx = await createMockContext(app, `{ "id": {Number(user2.id)}`, [["Content-Type", "application/json"]], "/", token);
+        await addMemberToProject(ctx, Number(project.id))
 
         assertEquals(ctx.response.status, 401)
-    },
-    sanitizeResources: false,
+
+        await db.close();
+        await client.end();
+    }
+})
+Deno.test({
+    name: "addStage",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+        let project = await Project.create({
+            name: "test",
+            minCountReviewers: 1,
+            countDecisiveReviewers: 1
+        })
+        await UserIsPartOfProject.create({
+            projectId: Number(project.id),
+            userId: Number(user.id),
+            isOwner: false
+        })
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, `{ "name": "namee"}`, [["Content-Type", "application/json"]], "/", token);
+        await addStageToProject(ctx, Number(project.id))
+
+        assertEquals(ctx.response.status, 201)
+
+        await db.close();
+        await client.end();
+    }
+})
+
+Deno.test({
+    name: "addTwoStages",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+        let project = await Project.create({
+            name: "test",
+            minCountReviewers: 1,
+            countDecisiveReviewers: 1
+        })
+        await UserIsPartOfProject.create({
+            projectId: Number(project.id),
+            userId: Number(user.id),
+            isOwner: false
+        })
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, `{ "name": "namee"}`, [["Content-Type", "application/json"]], "/", token);
+        await addStageToProject(ctx, Number(project.id))
+        let answer = JSON.parse(ctx.response.body as string)
+        assertEquals(answer.number, 1)
+        ctx = await createMockContext(app, `{ "name": "namee2"}`, [["Content-Type", "application/json"]], "/", token);
+        await addStageToProject(ctx, Number(project.id))
+        answer = JSON.parse(ctx.response.body as string)
+        assertEquals(answer.number, 2)
+        assertEquals(ctx.response.status, 201)
+
+        await db.close();
+        await client.end();
+    }
+})
+
+Deno.test({
+    name: "addStageUnauthorized",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
+        let project = await Project.create({
+            name: "test",
+            minCountReviewers: 1,
+            countDecisiveReviewers: 1
+        })
+        await UserIsPartOfProject.create({
+            projectId: Number(project.id),
+            userId: Number(user.id),
+            isOwner: false
+        })
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, `{ "name": "namee"}`, [["Content-Type", "application/json"]], "/", token);
+        await addStageToProject(ctx, Number(project.id))
+
+        assertEquals(ctx.response.status, 401)
+
+        await db.close();
+        await client.end();
+    }
 })

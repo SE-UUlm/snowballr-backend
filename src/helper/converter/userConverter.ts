@@ -1,6 +1,7 @@
 import {User} from "../../model/db/user.ts";
 import {UserParameters, UserProfile} from "../../model/userProfile.ts";
 import {Context} from 'https://deno.land/x/oak/mod.ts';
+import {assign} from "../assign.ts"
 
 /**
  * Makes sure the password isn't send while delivering a user object
@@ -27,23 +28,6 @@ export const convertUserToUserProfile = (user: User) => {
 export const convertCtxBodyToUser = async (ctx: Context): Promise<UserParameters> => {
     const bodyJson = await ctx.request.body({type: "json"}).value;
     let userData: UserParameters = {};
-    if (bodyJson.email) {
-        userData.email = bodyJson.email
-    }
-    if (bodyJson.firstName) {
-        userData.firstName = bodyJson.firstName
-    }
-    if (bodyJson.lastName) {
-        userData.lastName = bodyJson.lastName
-    }
-    if (bodyJson.password) {
-        userData.password = bodyJson.password
-    }
-    if (bodyJson.status) {
-        userData.status = bodyJson.status
-    }
-    if (bodyJson.isAdmin !== undefined) {
-        userData.isAdmin = bodyJson.isAdmin
-    }
+    assign(userData, bodyJson)
     return userData;
 }

@@ -2,7 +2,7 @@ import {insertUser, returnUserByEmail} from "../controller/databaseFetcher/user.
 import {User} from "../model/db/user.ts";
 import {Invitation} from "../model/db/invitation.ts";
 import {Relationships} from 'https://deno.land/x/denodb/mod.ts';
-import {db} from "../controller/database.ts";
+import {client, db} from "../controller/database.ts";
 import {Token} from "../model/db/token.ts";
 import {Project} from "../model/db/project.ts";
 import {UserIsPartOfProject} from "../model/db/userIsPartOfProject.ts";
@@ -17,8 +17,6 @@ import {PaperScopeForStage} from "../model/db/paperScopeForStage.ts";
 import {Paper} from "../model/db/paper.ts";
 import {Wrote} from "../model/db/wrote.ts";
 import {Author} from "../model/db/author.ts";
-import {CitedBy} from "../model/db/citedBy.ts";
-import {ReferencedBy} from "../model/db/referencedBy.ts";
 import {PaperHasID} from "../model/db/paperHasID.ts";
 import {PaperID} from "../model/db/paperID.ts";
 import {AuthorHasID} from "../model/db/authorHasID.ts";
@@ -30,7 +28,12 @@ import {ResetToken} from "../model/db/resetToken.ts";
  * @param dropDatabase dropsDatabase during the setup
  */
 export const setup = async (dropDatabase: boolean) => {
+    await client.connect();
+    if (dropDatabase) {
+        await client.queryArray("DROP TABLE IF EXISTS citedby")
+        await client.queryArray("DROP TABLE IF EXISTS referencedby")
 
+    }
     Relationships.belongsTo(Invitation, User);
     Relationships.belongsTo(ResetToken, User);
     Relationships.belongsTo(Token, User);
@@ -45,8 +48,6 @@ export const setup = async (dropDatabase: boolean) => {
     Relationships.belongsTo(Stage, Project)
     Relationships.belongsTo(Review, Stage)
     Relationships.belongsTo(Review, Paper)
-    Relationships.belongsTo(CitedBy, Paper)
-    Relationships.belongsTo(ReferencedBy, Paper)
     Relationships.belongsTo(ReadingList, Paper)
     Relationships.belongsTo(ReadingList, User)
     Relationships.belongsTo(PaperScopeForStage, Stage)
@@ -57,12 +58,26 @@ export const setup = async (dropDatabase: boolean) => {
     Relationships.belongsTo(PaperHasID, PaperID)
     Relationships.belongsTo(AuthorHasID, Author)
     Relationships.belongsTo(AuthorHasID, AuthorID)
-    db.link([User, Invitation, ResetToken, Paper, Token, ReferencedBy, CitedBy, Author, AuthorID, Wrote, Project, Stage, PaperScopeForStage, SearchApi, ReadingList, Criteria, Review, PaperID, CriteriaEvaluation, UserIsPartOfProject, ProjectUsesApi, PaperHasID, AuthorHasID]);
+    db.link([User, Invitation, ResetToken, Paper, Token, Author, AuthorID, Wrote, Project, Stage, PaperScopeForStage, SearchApi, ReadingList, Criteria, Review, PaperID, CriteriaEvaluation, UserIsPartOfProject, ProjectUsesApi, PaperHasID, AuthorHasID]);
     await db.sync({drop: dropDatabase}).catch(err => {
         //TODO fix for https://github.com/eveningkid/denodb/issues/258
         console.log(err)
         console.log("Entering workaround for: https://github.com/eveningkid/denodb/issues/258")
     });
+    await client.queryArray(`CREATE TABLE IF NOT EXISTS citedby(
+                                                        id SERIAL,
+                                                        papercitedid int NOT NULL,
+                                                        papercitingid int NOT NULL,
+                                                        FOREIGN KEY (papercitedid) REFERENCES paper (id),
+                                                        FOREIGN KEY (papercitingid) REFERENCES paper (id),
+                                                        PRIMARY KEY (id))`);
+    await client.queryArray(`CREATE TABLE IF NOT EXISTS referencedby(
+                                                        id SERIAL,
+                                                        paperreferencedid int NOT NULL,
+                                                        paperreferencingid int NOT NULL,
+                                                        FOREIGN KEY (paperreferencedid) REFERENCES paper (id),
+                                                        FOREIGN KEY (paperreferencingid) REFERENCES paper (id),
+                                                        PRIMARY KEY (id))`);
     let admin = await returnUserByEmail(String(Deno.env.get("ADMIN_EMAIL")));
     if (!admin) {
         admin = await insertUser(String(Deno.env.get("ADMIN_EMAIL")), String(Deno.env.get("ADMIN_PASSWORD")), true, "admin", "admin", "active");
@@ -73,8 +88,23 @@ export const setup = async (dropDatabase: boolean) => {
             userId: Number(admin.id),
             projectId: Number(project.id)
         })
-        await Stage.create({projectId: Number(project.id), name: "awesome Stage", number: 0})
+        let stage = await Stage.create({projectId: Number(project.id), name: "awesome Stage", number: 0})
         await Stage.create({projectId: Number(project.id), name: "the next Stage", number: 1})
+        let paper01 = await Paper.create({title: "paper01"})
+        let paper02 = await Paper.create({title: "paper02"})
+        let paper03 = await Paper.create({title: "paper03"})
+        let paper04 = await Paper.create({title: "paper04"})
+        let paper05 = await Paper.create({title: "paper05"})
+        await PaperScopeForStage.create({paperId: Number(paper01.id), stageId: Number(stage.id)})
+        await PaperScopeForStage.create({paperId: Number(paper02.id), stageId: Number(stage.id)})
+        await PaperScopeForStage.create({paperId: Number(paper05.id), stageId: Number(stage.id)})
+
+        await client.queryArray(`INSERT INTO citedby (papercitedid, papercitingid)
+                VALUES (${Number(paper01.id)}, ${Number(paper02.id)}),
+                        (${Number(paper01.id)}, ${Number(paper03.id)})`)
+
+
     }
+
 
 }

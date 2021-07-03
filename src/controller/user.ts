@@ -36,20 +36,24 @@ export const createUser = async (ctx: Context, client: EMailClient) => {
             makeErrorMessage(ctx, 422, "no email provided")
             return;
         }
+        try {
+            let user = await insertUserForRegistration(requestParameter.email);
+            let jwt = await createJWT(user)
+            await insertInvitation(user, jwt);
+            let linkText = "snowballR"
 
-        let user = await insertUserForRegistration(requestParameter.email);
-        let jwt = await createJWT(user)
-        await insertInvitation(user, jwt);
-        let linkText = "snowballR"
-
-        if (adminMail) {
-            await sendInvitationMail(jwt, linkText, requestParameter.email, Number(user.id), client, await getUserName(payloadJson));
-            ctx.response.status = 201;
-            ctx.response.body = JSON.stringify(convertUserToUserProfile(user))
-        } else {
-            console.error("no email in env!")
-            makeErrorMessage(ctx, 401, "not authorized")
+            if (adminMail) {
+                await sendInvitationMail(jwt, linkText, requestParameter.email, Number(user.id), client, await getUserName(payloadJson));
+                ctx.response.status = 201;
+                ctx.response.body = JSON.stringify(convertUserToUserProfile(user))
+            } else {
+                console.error("no email in env!")
+                makeErrorMessage(ctx, 401, "not authorized")
+            }
+        } catch (err) {
+            makeErrorMessage(ctx, 422, "email already exists")
         }
+
     } else {
         makeErrorMessage(ctx, 401, "not authorized")
     }
