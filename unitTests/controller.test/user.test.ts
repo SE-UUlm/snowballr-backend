@@ -22,18 +22,20 @@ Deno.test({
 
         let app = await createMockApp();
         let token = await createJWT(user)
-        let ctx = await createMockContext(app, `{"email": "andreas.decker@uni-ulm.de"}`, [["Content-Type", "application/json"]], "/", token);
+        let ctx = await createMockContext(app, `{"email": "test2@test"}`, [["Content-Type", "application/json"]], "/", token);
         await createUser(ctx, new MockEmailClient())
 
         assertEquals(ctx.response.status, 201)
-
+        let answer = JSON.parse(ctx.response.body as string)
+        assertEquals(answer.email, "test2@test")
+        assertNotEquals(answer.id, undefined)
         await db.close();
         await client.end();
     },
 })
 
 Deno.test({
-    name: "insertUserForCreation",
+    name: "insertUserForCreationUnauth",
     async fn(): Promise<void> {
         await setup(true);
         let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
@@ -90,6 +92,7 @@ Deno.test({
     name: "getAllUsersAsAdmin",
     async fn(): Promise<void> {
         await setup(true);
+        let countOld = (await User.all()).length
         let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
         await insertUser("tes2t@test", "ash", true, "Test", "Tester", "active");
         let app = await createMockApp();
@@ -97,6 +100,8 @@ Deno.test({
         let ctx = await createMockContext(app, undefined, [["Content-Type", "application/json"]], "/", token);
         await getUsers(ctx)
         assertEquals(ctx.response.status, 200);
+        let answer = JSON.parse(ctx.response.body as string)
+        assertEquals(answer.users.length, countOld + 2)
 
         await db.close();
         await client.end();
@@ -125,12 +130,19 @@ Deno.test({
     fn: async function (): Promise<void> {
         await setup(true);
         let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
-        await insertUser("test2@test", "ash", true, "Test", "Tester", "active");
+        let user2 = await insertUser("test2@test", "ash", true, "Testing", "Testerer", "active");
         let app = await createMockApp();
         let token = await createJWT(user)
         let ctx = await createMockContext(app, undefined, [["Content-Type", "application/json"]], "/users/1", token);
-        await getUser(ctx, 2);
+        await getUser(ctx, Number(user2.id));
         assertEquals(ctx.response.status, 200)
+        let answer = JSON.parse(ctx.response.body as string)
+        assertEquals(answer.email, "test2@test")
+        assertEquals(answer.isAdmin, true)
+        assertEquals(answer.firstName, "Testing")
+        assertEquals(answer.lastName, "Testerer")
+        assertEquals(answer.status, "active")
+        assertEquals(answer.password, undefined)
         await db.close();
         await client.end();
     },
@@ -236,7 +248,12 @@ Deno.test({
         let ctx = await createMockContext(app, "{}", [["Content-Type", "application/json"]], "/users/1", token);
         await getUserProjects(ctx, 1)
         assertEquals(ctx.response.status, 200)
-
+        let answer = JSON.parse(ctx.response.body as string)
+        assertEquals(1, answer.projects.length)
+        assertEquals("Test", answer.projects[0].name)
+        assertEquals(2, answer.projects[0].stages.length)
+        assertEquals("the next Stage", answer.projects[0].stages[1].name)
+        assertEquals(1, answer.projects[0].stages[1].number)
         await db.close();
         await client.end();
     },
