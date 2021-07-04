@@ -1,5 +1,10 @@
 import {Body, BodyOptions, BodyReader, BodyStream} from 'https://deno.land/x/oak/mod.ts';
 
+/**
+ * This class is for mocking a body in an oak request.
+ * It currently only holds the possibility to either hold an empty body or a json body.
+ * The json body can be set through the constructor and can then be parsed like a normal request in the code.
+ */
 export class RequestBodyMock {
     bodyJsonString
 
