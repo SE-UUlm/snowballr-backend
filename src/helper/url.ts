@@ -7,7 +7,7 @@ export const urlSanitizer = (url: string) => {
     let port = Number(Deno.env.get("PORT"));
     if (port) {
         if (port !== 443) {
-            url += port;
+            url += `:${port}`;
         }
     }
     if (url.startsWith("http://")) {
