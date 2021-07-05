@@ -36,6 +36,7 @@ export class ApiMerger implements IApiMerger {
         return pattern;
     }
 
+
     /**
      * Compares multiple ApiResponses with each other for all their properties.
      *
@@ -47,17 +48,21 @@ export class ApiMerger implements IApiMerger {
         let finished: IApiResponse[] = [];
         while (response.length > 1) {
             logger.debug("new RUN");
-            let stuff = await this.comparePaperWithPapers(response.shift()!, response);
-            logger.debug(JSON.stringify(stuff, null, 2))
-            stuff.forEach(item => finished.push(item))
+            //TODO AWSOME NAME NEEDED
+            let stuff = await this.comparePaperWithPapers(response.shift()!, response)
+
+            stuff.length === 1 ? response[0] = this.makePromise(stuff[0]) : finished.push(stuff[0]);
+        }
+        if (response[0]) {
+            finished.push(await response[0]);
         }
 
-        for (let i: number = 0; i < response.length; i++) {
-            if (response[i]) {
-                finished.push(await response[i])
-            }
-        }
+        logger.debug("FINISHED LENGTH " + finished.length)
         return finished;
+    }
+
+    async makePromise(stuff: IApiResponse) {
+        return stuff
     }
 
     /**
@@ -72,16 +77,10 @@ export class ApiMerger implements IApiMerger {
         //   logger.debug(JSON.stringify(await response, null, 2) + "\n")
         logger.debug("OTHERS LENGTH: " + others.length)
         logger.debug("RESPONSE: " + (await response).paper)
-
-        //   Promise.all(others).then((item: any) => {
-        //       logger.debug(JSON.stringify(item, null, 2) + "\n")
-        //   })
         for (let i: number = 0; i < others.length; i++) {
-            logger.debug("OTHERS: " + (await others[i]).paper)
+            //logger.debug("OTHERS: " + (await others[i]).paper)
             let isEqual: boolean = this._isEqual((await response).paper, (await others[i]).paper);
             if (isEqual) {
-                logger.debug("Others before: " + await others[j]);
-                logger.debug("Objects merged");
                 let otherResponses = others[i];
 
                 let response1Citations = (await response).citations;
@@ -90,16 +89,17 @@ export class ApiMerger implements IApiMerger {
                 response2Citations = response2Citations ? response2Citations : [];
 
                 let response1References = (await response).references;
+                //TODO weird filters
                 response1References = response1References ? response1References : [];
                 let response2References = (await others[i]).references;
                 response2References = response2References ? response2References : [];
 
-                delete others[i];
-                return {
+
+                return [{
                     paper: this.merge((await response).paper, (await otherResponses).paper),
                     citations: this._compareChildren(response1Citations, response2Citations),
                     references: this._compareChildren(response1References, response2References)
-                };
+                }];
             }
 
         }
@@ -154,8 +154,18 @@ export class ApiMerger implements IApiMerger {
     private _isEqual(firstResponse: IApiPaper, secondResponse: IApiPaper): boolean {
         let comparison: IComparisonWeight = {} as IComparisonWeight;
         Object.assign(comparison, this.comparisonWeight)
-        let firstDOI: string | undefined = this._getDOI(firstResponse);
-        let secondDOI: string | undefined = this._getDOI(secondResponse);
+        let firstDOI: string[] = this._getDOI(firstResponse);
+        let secondDOI: string[] = this._getDOI(secondResponse);
+
+        for (let i = 0; i < firstDOI.length; i++) {
+            for (let j = 0; j < secondDOI.length; j++) {
+                if (firstDOI[i] == secondDOI[j]) {
+                    //TODO test for rest, commented out
+                    return true;
+                }
+
+            }
+        }
 
         let sameTitle: number = 0;
         let sameAbstract: number = 0;
@@ -241,6 +251,9 @@ export class ApiMerger implements IApiMerger {
         let second = <any>secondAuthor;
 
         for (const key in firstAuthor) {
+            if (!first[key] && !second[key]) {
+                continue;
+            }
             if (first[key] && !second[key]) {
                 mergedAuthor[key] = first[key]
             } else if (!first[key] && second[key]) {
@@ -295,6 +308,30 @@ export class ApiMerger implements IApiMerger {
         let s1 = firstAuthor.rawString;
         let s2 = secondAuthor.rawString;
         if (s1 && s2) {
+            if (Array.isArray(s1) && Array.isArray((s2))) {
+                let equal = 0;
+                for (let i = 0; i < s1.length; i++) {
+                    for (let j = 0; j < s1.length; j++) {
+                        equal += this._isEqualRawAuthorString(s1[i], s2[j]);
+                    }
+                }
+                logger.debug("equal weird: " + equal)
+                return equal;
+            } else if (Array.isArray(s1)) {
+                let equal = 0;
+                for (let i = 0; i < s1.length; i++) {
+                    equal += this._isEqualRawAuthorString(s1[i], s2);
+                }
+                logger.debug("equal 1 weird: " + equal)
+                return equal;
+            } else if (Array.isArray(s2)) {
+                let equal = 0;
+                for (let i = 0; i < s2.length; i++) {
+                    equal += this._isEqualRawAuthorString(s1, s2[i])
+                }
+                logger.debug("equal 2 weird: " + equal)
+                return equal;
+            }
             return this._isEqualRawAuthorString(s1, s2);
         }
         return 0;
@@ -321,17 +358,20 @@ export class ApiMerger implements IApiMerger {
      * @param secondResponse - paper similar to firstResponse. Most likely provided by another api
      * @returns DOI or undefined.
      */
-    private _getDOI(paper: IApiPaper): string | undefined {
-        let DOI: string;
+    private _getDOI(paper: IApiPaper): string[] {
+        let DOI: string[] = [];
 
         if (paper && paper.uniqueId) {
             for (let i: number = 0; i < paper.uniqueId.length; i++) {
                 if (paper.uniqueId[i].type == idType.DOI) {
-                    return paper.uniqueId[i].value;
+                    let s = paper.uniqueId[i].value;
+                    if (s) {
+                        DOI.push(s);
+                    }
                 }
             }
         }
-        return undefined;
+        return DOI;
     }
 
     /**
@@ -372,7 +412,9 @@ export class ApiMerger implements IApiMerger {
                 }
                 continue;
             }
-
+            if (!first[key] && !second[key]) {
+                continue;
+            }
             if (first[key] && !second[key]) {
                 resultingPaper[key] = first[key];
             } else if (!first[key] && second[key]) {

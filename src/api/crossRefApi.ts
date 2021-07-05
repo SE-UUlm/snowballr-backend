@@ -182,7 +182,7 @@ export class CrossRefApi implements IApiFetcher {
             type: response.message.type ? response.message.type : undefined,
             scope: undefined,
             scopeName: undefined,
-            pdf: response.message.link ? response.message.link.split(",") : undefined,
+            pdf: response.message.link ? response.message.link.map((item: any) => item.URL) : undefined,
             uniqueId: parsedUniqueIds
         };
         return parsedResponse;
