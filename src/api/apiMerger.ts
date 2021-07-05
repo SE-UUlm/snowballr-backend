@@ -47,8 +47,12 @@ export class ApiMerger implements IApiMerger {
         //TODO: async for fastness
         let finished: IApiResponse[] = [];
         while (response.length > 1) {
+            console.error("next round!")
+            response.forEach(item => console.error(item))
             let finalPaper = await this.comparePaperWithPapers(response.shift()!, response)
             finalPaper.length === 1 ? response[0] = this.makePromise(finalPaper[0]) : finished.push(finalPaper[0]);
+            console.error("length: " + finalPaper.length)
+            response.forEach(item => console.error(item))
         }
         if (response[0]) {
             finished.push(await response[0]);
@@ -116,7 +120,6 @@ export class ApiMerger implements IApiMerger {
      */
     public merge(firstResponse: IApiPaper, secondResponse: IApiPaper): IApiPaper {
         let uniqueProperties = this._selectUniqueKey(firstResponse, secondResponse);
-
         return uniqueProperties as IApiPaper;
     }
 
@@ -184,8 +187,10 @@ export class ApiMerger implements IApiMerger {
          * Weight is used to control the importance of the whole equality formula */
         if (firstResponse.title && secondResponse.title && secondResponse.title[0]) {
             let title = secondResponse.title[0];
+            let levTitle = Math.max.apply(null, firstResponse.title.map((item: string) => {
+                return Levenshtein(item.toLowerCase(), title.toLowerCase());
+            }));
 
-            let levTitle = Math.max.apply(null, firstResponse.title.map((item: any) => Levenshtein(item.toLowerCase(), title.toLowerCase())));
             sameTitle = comparison.titleWeight * ((firstResponse.title.length - levTitle) / firstResponse.title.length); // 0.9  -> 9
 
         } else {
@@ -455,19 +460,27 @@ export class ApiMerger implements IApiMerger {
                 if (typeof first[key] === "string") {
                     resultingPaper[key] = this._deriveGenericPropertyAuthor(first[key], second[key]);
                 } else if (Array.isArray(first[key])) {
-                    resultingPaper[key] = [];
+                    if (first[key].length === 0) {
+                        resultingPaper[key] = second[key]
+                        continue;
+                    }
+                    if (second[key].length === 0) {
+                        resultingPaper[key] = first[key]
+                        continue;
+                    }
                     let normalized = first[key].map((item: string) => ApiMerger.normalizeString(item));
-
                     if (first[key].includes(second[key])) {
                         resultingPaper[key] = first[key];
                     } else if (normalized.includes(ApiMerger.normalizeString(second[key][0]))) {
-                        let index = normalized[key].indexOf(ApiMerger.normalizeString(second[key]));
-                        resultingPaper[key].push(this._deriveGenericPropertyAuthor(first[key][index], second[key]));
+                        let index = normalized.indexOf(ApiMerger.normalizeString(second[key][0]));
+                        resultingPaper[key] = [this._deriveGenericPropertyAuthor(first[key][index], second[key][0])];
                         delete first[key][index];
                         first[key] = first[key].filter((item: any) => item);
-                        resultingPaper[key].push(first[key]);
+                        if (first[key].length > 0) {
+                            resultingPaper[key].push(first[key]);
+                        }
                     } else {
-                        resultingPaper[key].push(first[key].concat(second[key]));
+                        resultingPaper[key] = (first[key].concat(second[key]));
                     }
                     /*
                     arr1: [MegaTitle, mega title of doom]
