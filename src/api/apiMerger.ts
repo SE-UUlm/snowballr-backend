@@ -138,7 +138,7 @@ export class ApiMerger implements IApiMerger {
                 if (isEqual) {
                     response1Citations[j] = this.merge(response1Citations[j], response2Citations[k]);
                     delete response2Citations[k];
-                    //TODO make possible for 2+ api
+                    //TODO BREAK
                     break;
                 }
             }
@@ -422,7 +422,9 @@ export class ApiMerger implements IApiMerger {
         let second = <any>secondPaper;
 
         for (const key in firstPaper) {
-
+            if (!first[key] && !second[key]) {
+                continue;
+            }
             if (key == "author") {
                 if (first.author && second.author) {
                     resultingPaper.author = this._mergeAuthors(first.author, second.author);
@@ -444,25 +446,38 @@ export class ApiMerger implements IApiMerger {
                 }
                 continue;
             }
-            if (!first[key] && !second[key]) {
-                continue;
-            }
+
             if (first[key] && !second[key]) {
                 resultingPaper[key] = first[key];
             } else if (!first[key] && second[key]) {
                 resultingPaper[key] = second[key];
-            } else if (ApiMerger.normalizeString(first[key]) == ApiMerger.normalizeString(second[key])) {
+            } else {
                 if (typeof first[key] === "string") {
                     resultingPaper[key] = this._deriveGenericPropertyAuthor(first[key], second[key]);
+                } else if (Array.isArray(first[key])) {
+                    resultingPaper[key] = [];
+                    let normalized = first[key].map((item: string) => ApiMerger.normalizeString(item));
+
+                    if (first[key].includes(second[key])) {
+                        resultingPaper[key] = first[key];
+                    } else if (normalized.includes(ApiMerger.normalizeString(second[key][0]))) {
+                        let index = normalized[key].indexOf(ApiMerger.normalizeString(second[key]));
+                        resultingPaper[key].push(this._deriveGenericPropertyAuthor(first[key][index], second[key]));
+                        delete first[key][index];
+                        first[key] = first[key].filter((item: any) => item);
+                        resultingPaper[key].push(first[key]);
+                    } else {
+                        resultingPaper[key].push(first[key].concat(second[key]));
+                    }
+                    /*
+                    arr1: [MegaTitle, mega title of doom]
+                    arr2: [mega Title of Doom]
+                    => [MegaTitle, mega Title of Doom]
+                     */
                 } else {
+                    //TODO needed?
                     resultingPaper[key] = first[key];
                 }
-            } else if (ApiMerger.normalizeString(first[key]) != ApiMerger.normalizeString(second[key])) {
-                if (Array.isArray(first[key])) {
-                    resultingPaper[key] = first[key].concat(second[key]);
-                    continue;
-                }
-                resultingPaper[key] = [first[key], second[key]];
             }
 
         }
