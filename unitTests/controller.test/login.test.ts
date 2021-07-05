@@ -19,6 +19,14 @@ Deno.test({
         let loginWorked: boolean = await login(ctx);
 
         assertEquals(true, loginWorked);
+        let answer = JSON.parse(ctx.response.body as string)
+        assertEquals(answer.user.email, "test@test")
+        assertEquals(answer.user.isAdmin, true)
+        assertEquals(answer.user.firstName, "Test")
+        assertEquals(answer.user.lastName, "Tester")
+        assertEquals(answer.user.status, "active")
+        assertEquals(answer.user.password, undefined)
+        assertNotEquals(answer.token, undefined)
         await db.close();
         await client.end();
 
@@ -38,7 +46,7 @@ Deno.test({
 
         let loginWorked: boolean = await login(ctx);
 
-        assertNotEquals(loginWorked, true);
+        assertEquals(loginWorked, false);
         await db.close();
         await client.end();
     }
@@ -57,7 +65,8 @@ Deno.test({
 
         let loginWorked: boolean = await login(ctx);
 
-        assertNotEquals(loginWorked, true);
+        assertEquals(loginWorked, false);
+
         await db.close();
         await client.end();
     }

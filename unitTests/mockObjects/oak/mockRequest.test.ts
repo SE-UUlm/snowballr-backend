@@ -3,6 +3,16 @@ import {RequestBodyMock} from './mockBody.test.ts'
 
 let requestResponseStack: ServerResponse[] = [];
 
+/**
+ * Creates a request that is set in the context.
+ * Most of the params are usually set in the context mock.
+ *
+ * @param headersInit
+ * @param requestBodyJsonString
+ * @param pathname
+ * @param proto
+ * @param host
+ */
 export function createMockRequest(
     headersInit: string[][],
     requestBodyJsonString?: string,
