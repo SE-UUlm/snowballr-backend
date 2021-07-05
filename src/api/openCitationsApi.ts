@@ -1,7 +1,7 @@
 import {IApiQuery} from "./iApiQuery.ts";
 import {IApiResponse} from "./iApiResponse.ts";
 import {IApiFetcher} from "./iApiFetcher.ts";
-import {IApiPaper} from './iApiPaper.ts';
+import {IApiPaper, sourceApi} from './iApiPaper.ts';
 import {logger} from "./logger.ts";
 import {IApiAuthor} from "./iApiAuthor.ts";
 import {IApiUniqueId, idType} from "./iApiUniqueId.ts";
@@ -143,19 +143,20 @@ export class OpenCitationsApi implements IApiFetcher {
 
         let parsedResponse: IApiPaper = {
             id: undefined,
-            title: response.title ? response.title : undefined,
+            title: response.title ? [response.title] : [],
             sourceTitle: response.source_title ? response.source_title : undefined,
             author: parsedAuthors,
-            abstract: undefined,
+            abstract: [],
             numberOfReferences: refCount,
             numberOfCitations: response.citation_count ? parseInt(response.citation_count) : undefined,
             year: response.year ? response.year : undefined,
-            publisher: undefined,
+            publisher: [],
             type: undefined,
             scope: undefined,
             scopeName: undefined,
             pdf: response.oa_link ? response.oa_link.split(",") : undefined,
-            uniqueId: parsedUniqueIds
+            uniqueId: parsedUniqueIds,
+            source: sourceApi.OC
         };
         return parsedResponse;
     }

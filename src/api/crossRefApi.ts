@@ -1,7 +1,7 @@
 import {IApiQuery} from "./iApiQuery.ts";
 import {IApiResponse} from "./iApiResponse.ts";
 import {IApiFetcher} from "./iApiFetcher.ts";
-import {IApiPaper} from './iApiPaper.ts';
+import {IApiPaper, sourceApi} from './iApiPaper.ts';
 import {logger} from "./logger.ts";
 import {IApiAuthor} from "./iApiAuthor.ts";
 import {IApiUniqueId, idType} from "./iApiUniqueId.ts";
@@ -172,18 +172,19 @@ export class CrossRefApi implements IApiFetcher {
 
         let parsedResponse: IApiPaper = {
             id: undefined,
-            title: response.message.title[0] ? response.message.title[0] : undefined,
+            title: response.message.title[0] ? [response.message.title[0]] : [],
             author: parsedAuthors,
-            abstract: undefined,
+            abstract: [],
             numberOfReferences: response.message['reference-count'] ? response.message['reference-count'] : undefined,
             numberOfCitations: response.message.relation && response.message.relation.cites ? response.message.relation.cites.length : undefined,
             year: response.Y ? response.Y : undefined,
-            publisher: response.message.publisher ? response.message.publisher : undefined,
+            publisher: response.message.publisher ? [response.message.publisher] : [],
             type: response.message.type ? response.message.type : undefined,
             scope: undefined,
             scopeName: undefined,
             pdf: response.message.link ? response.message.link.map((item: any) => item.URL) : undefined,
-            uniqueId: parsedUniqueIds
+            uniqueId: parsedUniqueIds,
+            source: sourceApi.CR
         };
         return parsedResponse;
     }

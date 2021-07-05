@@ -47,22 +47,19 @@ export class ApiMerger implements IApiMerger {
         //TODO: async for fastness
         let finished: IApiResponse[] = [];
         while (response.length > 1) {
-            logger.debug("new RUN");
-            //TODO AWSOME NAME NEEDED
-            let stuff = await this.comparePaperWithPapers(response.shift()!, response)
-
-            stuff.length === 1 ? response[0] = this.makePromise(stuff[0]) : finished.push(stuff[0]);
+            let finalPaper = await this.comparePaperWithPapers(response.shift()!, response)
+            finalPaper.length === 1 ? response[0] = this.makePromise(finalPaper[0]) : finished.push(finalPaper[0]);
         }
         if (response[0]) {
             finished.push(await response[0]);
         }
 
-        logger.debug("FINISHED LENGTH " + finished.length)
+        //logger.debug("FINISHED LENGTH " + finished.length)
         return finished;
     }
 
-    async makePromise(stuff: IApiResponse) {
-        return stuff
+    async makePromise(finalPaper: IApiResponse) {
+        return finalPaper
     }
 
     /**
@@ -74,20 +71,22 @@ export class ApiMerger implements IApiMerger {
      */
     public async comparePaperWithPapers(response: Promise<IApiResponse>, others: Promise<IApiResponse>[]): Promise<IApiResponse[]> {
 
-        //   logger.debug(JSON.stringify(await response, null, 2) + "\n")
-        logger.debug("OTHERS LENGTH: " + others.length)
-        logger.debug("RESPONSE: " + (await response).paper)
+        //logger.debug("OTHERS LENGTH: " + others.length)
+        //logger.debug("RESPONSE: " + (await response).paper)
+        /** Iterate over all other apiresponses expecpt for the first one to compare them each */
         for (let i: number = 0; i < others.length; i++) {
             //logger.debug("OTHERS: " + (await others[i]).paper)
             let isEqual: boolean = this._isEqual((await response).paper, (await others[i]).paper);
             if (isEqual) {
                 let otherResponses = others[i];
 
+                /** Comparison for each citation with the citations of the other paper*/
                 let response1Citations = (await response).citations;
                 response1Citations = response1Citations ? response1Citations : [];
                 let response2Citations = (await others[i]).citations;
                 response2Citations = response2Citations ? response2Citations : [];
 
+                /** Same for references*/
                 let response1References = (await response).references;
                 //TODO weird filters
                 response1References = response1References ? response1References : [];
@@ -121,6 +120,15 @@ export class ApiMerger implements IApiMerger {
         return uniqueProperties as IApiPaper;
     }
 
+    /**
+     * Compare list of childobject from a reponse object with a list of childobjects from another response
+     * EG: citations with citations or references with references
+     * delete the citaiton in the second paper so it wont be compared once more
+     *
+     * @param response1Citations - child paper of an api response like reference or citation
+     * @param response2Citations - child paper of an api response like reference or citation
+     * @returns IApiResponse only unique paper child objkects
+     */
     private _compareChildren(response1Citations: IApiPaper[], response2Citations: IApiPaper[]) {
         logger.debug("Comparing Refs or Cites");
 
@@ -150,13 +158,13 @@ export class ApiMerger implements IApiMerger {
      * @param secondResponse - paper similar to firstResponse. Most likely provided by another api
      * @returns boolean whether the papers are found out to be equal or not
      */
-
     private _isEqual(firstResponse: IApiPaper, secondResponse: IApiPaper): boolean {
         let comparison: IComparisonWeight = {} as IComparisonWeight;
         Object.assign(comparison, this.comparisonWeight)
         let firstDOI: string[] = this._getDOI(firstResponse);
         let secondDOI: string[] = this._getDOI(secondResponse);
 
+        /** if DOI of 2 paper is equal we can assume that its the same paper */
         for (let i = 0; i < firstDOI.length; i++) {
             for (let j = 0; j < secondDOI.length; j++) {
                 if (firstDOI[i] == secondDOI[j]) {
@@ -171,20 +179,26 @@ export class ApiMerger implements IApiMerger {
         let sameAbstract: number = 0;
         let sameAuthor: number = 0;
         let sameYear: number = 0;
-        if (firstResponse.title && secondResponse.title) {
-            try {
-                var levTitle = Levenshtein(firstResponse.title.toLowerCase(), secondResponse.title.toLowerCase());
-                sameTitle = comparison.titleWeight * ((firstResponse.title.length - levTitle) / firstResponse.title.length); // 0.9  -> 9
-            } catch (err) {
-                err.print()
-            }
+
+        /** Get the levenshtein distance for both titles and compare the in comparison to their length
+         * Weight is used to control the importance of the whole equality formula */
+        if (firstResponse.title && secondResponse.title && secondResponse.title[0]) {
+            let title = secondResponse.title[0];
+
+            let levTitle = Math.max.apply(null, firstResponse.title.map((item: any) => Levenshtein(item.toLowerCase(), title.toLowerCase())));
+            sameTitle = comparison.titleWeight * ((firstResponse.title.length - levTitle) / firstResponse.title.length); // 0.9  -> 9
 
         } else {
             comparison.titleWeight = 0;
         }
-        if (firstResponse.abstract && secondResponse.abstract) {
-            var levAbstract = Levenshtein(firstResponse.abstract.toLowerCase(), secondResponse.abstract.toLowerCase());
-            sameAbstract = comparison.abstractWeight * ((firstResponse.abstract.length - levAbstract) / firstResponse.abstract.length); // 0.9 -> 6.3
+
+        /** Get the levenshtein distance for both abstracts and compare the in comparison to their length
+         * Weight is used to control the importance of the whole equality formula */
+        if (firstResponse.abstract && secondResponse.abstract && secondResponse.abstract[0]) {
+            let abstract = secondResponse.abstract[0];
+
+            let levAbstract = Math.max.apply(null, firstResponse.abstract.map((item: any) => Levenshtein(item.toLowerCase(), abstract.toLowerCase())));
+            sameAbstract = comparison.abstractWeight * ((firstResponse.abstract.length - levAbstract) / firstResponse.abstract.length); // 0.9  -> 9
         } else {
             comparison.abstractWeight = 0;
         }
@@ -196,6 +210,8 @@ export class ApiMerger implements IApiMerger {
             comparison.yearWeight = 0;
         }
 
+        /** Compare of each of the authors is the same by normalizing them or using the orchid.
+         * Weight is used to control the importance of the whole equality formula */
         if (firstResponse.author && secondResponse.author) { // 0.7 ->
             sameAuthor = this._isEqualAuthors(firstResponse.author, secondResponse.author) * comparison.authorWeight;
 
@@ -208,12 +224,21 @@ export class ApiMerger implements IApiMerger {
             return false;
         }
 
+        /** Calculate the complete equality of 2 papers. OverallWeight is used to kinda control the aggressiveness of the algorithm */
         if (((sameTitle + sameAbstract + sameAuthor + sameYear) / (comparison.titleWeight + comparison.abstractWeight + comparison.authorWeight + comparison.yearWeight)) > comparison.overallWeight) {
             return true;
         }
         return false;
     }
 
+    /**
+     * Compares all author objects of 2 papers and merge dublicates into a single list of authors.
+     *
+     *
+     * @param firstResponse - paper similar to secondResponse. Most likely provided by another api
+     * @param secondResponse - paper similar to firstResponse. Most likely provided by another api
+     * @returns boolean whether the papers are found out to be equal or not
+     */
     private _mergeAuthors(firstAuthors: IApiAuthor[], secondAuthors: IApiAuthor[]): IApiAuthor[] {
         if (firstAuthors.length === 0) {
             return secondAuthors as IApiAuthor[];
@@ -242,14 +267,21 @@ export class ApiMerger implements IApiMerger {
     // wenn normalized(rawName) = normalized(lastName),normalized(firstName)
     // wenn normalized beide gleich, wenn mehr großgeschrieben nimm den und vllt "," drin
 
-
+    /**
+     * If an author object is merged decide which subproperties of a single dublicated author is to be taken
+     *
+     *
+     * @param firstAuthor - single author object dublicated
+     * @param secondAuthor - single author object dublicated
+     * @returns IApiAuthor which contains optionals or the most fitting values
+     */
     private _mergeAuthor(firstAuthor: IApiAuthor, secondAuthor: IApiAuthor): IApiAuthor {
-
         //TODO: if equal compare raw string with lastname and firstname if given and sort rawstring
         let mergedAuthor: any = {};
         let first = <any>firstAuthor;
         let second = <any>secondAuthor;
 
+        /** take the value which is more normalized if the key are equal*/
         for (const key in firstAuthor) {
             if (!first[key] && !second[key]) {
                 continue;

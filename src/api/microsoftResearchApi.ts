@@ -1,7 +1,7 @@
 import {IApiQuery} from "./iApiQuery.ts";
 import {IApiResponse} from "./iApiResponse.ts";
 import {IApiFetcher} from "./iApiFetcher.ts";
-import {IApiPaper} from './iApiPaper.ts';
+import {IApiPaper, sourceApi} from './iApiPaper.ts';
 import {logger} from "./logger.ts";
 import {IApiAuthor} from "./iApiAuthor.ts";
 import {IApiUniqueId, idType} from "./iApiUniqueId.ts";
@@ -37,17 +37,16 @@ export class MicrosoftResearchApi implements IApiFetcher {
      * @param iA - invertedAbstract object provided by microsoft api
      * @returns abstract of a paper in a single string.
      */
-    private static _convertInvertedAbstract(iA: any): string {
-        let abstract: string = "";
+    private static _convertInvertedAbstract(iA: any): string[] {
+        let abstr: string = "";
         try {
             for (let key in iA.InvertedIndex) {
-            abstract
-                = `${abstract} ${key}`;
+                abstr += " " + key;
             }
-            return abstract.trim();
+            return [abstr.trim()];
         } catch (error) {
             logger.error("Couldn't convert InvertedAbstract from Microsoft API to a single string.");
-            return "";
+            return [];
         }
     }
 
@@ -230,18 +229,19 @@ export class MicrosoftResearchApi implements IApiFetcher {
 
         let parsedResponse: IApiPaper = {
             id: undefined,
-            title: response.Ti ? response.Ti : undefined,
+            title: response.Ti ? [response.Ti] : [],
             author: parsedAuthors,
             abstract: MicrosoftResearchApi._convertInvertedAbstract(response.IA),
             numberOfReferences: refLength,
             numberOfCitations: response.CC ? response.CC : undefined,
             year: response.Y ? response.Y : undefined,
-            publisher: response.PB ? response.PB : undefined,
+            publisher: response.PB ? [response.PB] : [],
             type: response.Pt ? this._paperTypeMapper[response.Pt] : undefined,
             scope: undefined,
             scopeName: undefined,
             pdf: response.S ? response.S.map((item: any) => item.U) : undefined,
-            uniqueId: parsedUniqueIds
+            uniqueId: parsedUniqueIds,
+            source: sourceApi.MA
         };
         return parsedResponse;
     }

@@ -7,17 +7,24 @@ import {IApiAuthor} from "./iApiAuthor.ts";
  */
 export interface IApiPaper {
     id?: number;
-    title?: string;
+    title?: string[];
     sourceTitle?: string;
     author?: IApiAuthor[];
-    abstract?: string;
+    abstract?: string[];
     numberOfReferences?: number;
     numberOfCitations?: number;
     year?: number;
-    publisher?: string;
+    publisher?: string[];
     type?: string;
     scope?: string;
     scopeName?: string;
     pdf?: string[];
     uniqueId?: IApiUniqueId[];
+    source?: sourceApi;
+}
+
+export enum sourceApi {
+    MA = "microsoftAcademic",
+    CR = "crossRef",
+    OC = "openCitations"
 }
