@@ -288,7 +288,7 @@ const checkResetToken = async (id: number, providedToken: string, ctx: Context) 
 const sendInvitationMail = async (jwt: string, linkText: string, email: string, userId: number, client: EMailClient, name?: string) => {
     if (URL) {
         let url = urlSanitizer(URL);
-        url += "/register/?id=" + userId + "&token=" + jwt;
+        url += "/register?id=" + userId + "&token=" + jwt;
         let finalText = linkText.link(url);
         const content = `Welcome, </br>
         to finalize your registration for snowballR, please visit: ${finalText}.</br>
@@ -318,7 +318,7 @@ const sendInvitationMail = async (jwt: string, linkText: string, email: string, 
 const sendResetMail = async (jwt: string, linkText: string, email: string, userId: number, client: EMailClient) => {
     if (URL) {
         let url = urlSanitizer(URL);
-        url += "/resetpassword/?id=" + userId + "&token=" + jwt;
+        url += "/resetpassword?id=" + userId + "&token=" + jwt;
         let finalText = linkText.link(url);
         const content = `Hello, </br>
                 to reset your password for snowballR, please visit: ${finalText}. </br>
