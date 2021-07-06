@@ -119,6 +119,11 @@ export class ApiMerger implements IApiMerger {
      * @returns IApiResponse that has all unique values and decidable values.
      */
     public merge(firstResponse: IApiPaper, secondResponse: IApiPaper): IApiPaper {
+        if (firstResponse.title && secondResponse.title && firstResponse.title[0] && secondResponse.title[0] && firstResponse.title[0].toLowerCase().includes("metar") && secondResponse.title[0].toLowerCase().includes("metar")) {
+            logger.info(`MERGE metar ---------------------`)
+            //logger.info(firstResponse)
+            //logger.info(secondResponse)
+        }
         let uniqueProperties = this._selectUniqueKey(firstResponse, secondResponse);
         return uniqueProperties as IApiPaper;
     }
