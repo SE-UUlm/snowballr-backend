@@ -75,7 +75,7 @@ export class MicrosoftResearchApi implements IApiFetcher {
                 return data.json();
             })
             .then(data => {
-                logger.debug(data);
+                //logger.debug(data);
                 paper = this._parseResponse(data.entities[0]);
                 RIds = data.entities[0] ? data.entities[0].RId : [];
                 return data.entities[0] ? this._getCitations(data.entities[0].Id) : [];
