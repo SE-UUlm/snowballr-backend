@@ -47,15 +47,14 @@ export class ApiMerger implements IApiMerger {
         //TODO: async for fastness
         let finished: IApiResponse[] = [];
         while (response.length > 1) {
-            //logger.debug("next round!")
+            logger.debug("next round!")
             let finalPaper = await this.comparePaperWithPapers(response.shift()!, response)
-            finalPaper.length === 1 ? response[0] = this.makePromise(finalPaper[0]) : finished.push(finalPaper[0]);
-            //logger.debug("length: " + finalPaper.length)
+            finalPaper.items.length === 1 ? response[finalPaper.position] = this.makePromise<IApiResponse>(finalPaper.items[0]) : finished.push(finalPaper.items[0]);
+            logger.debug("length: " + finalPaper.items.length)
         }
         if (response[0]) {
             finished.push(await response[0]);
         }
-
 
         //logger.debug("FINISHED LENGTH " + finished.length)
         return finished;
@@ -67,12 +66,8 @@ export class ApiMerger implements IApiMerger {
       item 2 / item 3
        finished: item1 /merged(2&3)
      */
-    async makePromise(finalPaper: IApiResponse) {
-        logger.info("Starting to merge dublicates from final CITATIONS list!")
-        finalPaper.citations = this.reviewPaper(finalPaper.citations!.filter(item => item));
-        logger.info("Starting to merge dublicates from final REFEREBCES list!")
-        finalPaper.references = this.reviewPaper(finalPaper.references!.filter(item => item));
-        return finalPaper
+    async makePromise<T>(item: T) {
+        return item
     }
 
     /**
@@ -82,7 +77,7 @@ export class ApiMerger implements IApiMerger {
      * @param others - other papers
      * @returns list list of merged papers
      */
-    public async comparePaperWithPapers(response: Promise<IApiResponse>, others: Promise<IApiResponse>[]): Promise<IApiResponse[]> {
+    public async comparePaperWithPapers(response: Promise<IApiResponse>, others: Promise<IApiResponse>[]): Promise<{ position: number, items: IApiResponse[] }> {
 
         //logger.debug("OTHERS LENGTH: " + others.length)
         //logger.debug("RESPONSE: " + (await response).paper)
@@ -108,15 +103,18 @@ export class ApiMerger implements IApiMerger {
 
                 //logger.info("NEXT");
 
-                return [{
-                    paper: this.merge((await response).paper, (await otherResponses).paper),
-                    citations: this._compareChildren(response1Citations, response2Citations),
-                    references: this._compareChildren(response1References, response2References)
-                }];
+                return {
+                    position: i,
+                    items: [{
+                        paper: this.merge((await response).paper, (await otherResponses).paper),
+                        citations: this._compareChildren(response1Citations, response2Citations),
+                        references: this._compareChildren(response1References, response2References)
+                    }]
+                };
             }
 
         }
-        return [await response, await others[0]];
+        return {position: -1, items: [await response, await others[0]]};
     }
 
     /**
@@ -224,30 +222,32 @@ export class ApiMerger implements IApiMerger {
         let sameAbstract: number = 0;
         let sameAuthor: number = 0;
         let sameYear: number = 0;
-        //let title1 = firstResponse.title;
-        //let title2 = secondResponse.title;
+        let title1 = firstResponse.title;
+        let title2 = secondResponse.title;
+
         /** Get the levenshtein distance for both titles and compare the in comparison to their length
          * Weight is used to control the importance of the whole equality formula */
-        if (firstResponse.title && secondResponse.title && secondResponse.title[0]) {
+
+        if (firstResponse.title && secondResponse.title && secondResponse.title[0] && firstResponse.title[0]) {
             let title = secondResponse.title[0];
-            // if (title1 && title2 && title1[0].toLowerCase().includes("metar") && title2[0].toLowerCase().includes("metar")) {
-            //     firstResponse.title.map((item: string) => {
-            //         logger.info(`${item.toLowerCase()} <=> ${title.toLowerCase()}`)
-            //         logger.info(Levenshtein(item.toLowerCase(), title.toLowerCase()));
-            //         logger.info(Levenshtein(ApiMerger.normalizeString(item), ApiMerger.normalizeString(title.toLowerCase())));
-            //
-            //         // @ts-ignore
-            //         logger.info(`MAX: ${Math.max.apply(null, firstResponse.title.map((item: string) => {
-            //             return Levenshtein(item.toLowerCase(), title.toLowerCase());
-            //         }))}`)
-            //
-            //         // @ts-ignore
-            //         logger.info(`MAX2: ${Math.max.apply(null, firstResponse.title.map((item: string) => {
-            //             return Levenshtein(ApiMerger.normalizeString(item), ApiMerger.normalizeString(title.toLowerCase()));
-            //         }))}`)
-            //     })
-            //
-            // }
+            if (title1 && title2 && title1[0].toLowerCase().includes("metar") && title2[0].toLowerCase().includes("metar")) {
+                firstResponse.title.map((item: string) => {
+                    logger.info(`${item.toLowerCase()} <=> ${title.toLowerCase()}`)
+                    logger.info(Levenshtein(item.toLowerCase(), title.toLowerCase()));
+                    logger.info(Levenshtein(ApiMerger.normalizeString(item), ApiMerger.normalizeString(title.toLowerCase())));
+
+                    // @ts-ignore
+                    logger.info(`MAX: ${Math.max.apply(null, firstResponse.title.map((item: string) => {
+                        return Levenshtein(item.toLowerCase(), title.toLowerCase());
+                    }))}`)
+
+                    // @ts-ignore
+                    logger.info(`MAX2: ${Math.max.apply(null, firstResponse.title.map((item: string) => {
+                        return Levenshtein(ApiMerger.normalizeString(item), ApiMerger.normalizeString(title.toLowerCase()));
+                    }))}`)
+                })
+
+            }
 
             let levTitle = Math.max.apply(null, firstResponse.title.map((item: string) => {
                 return Levenshtein(item.toLowerCase(), title.toLowerCase());
@@ -261,7 +261,7 @@ export class ApiMerger implements IApiMerger {
 
         /** Get the levenshtein distance for both abstracts and compare the in comparison to their length
          * Weight is used to control the importance of the whole equality formula */
-        if (firstResponse.abstract && secondResponse.abstract && secondResponse.abstract[0]) {
+        if (firstResponse.abstract && secondResponse.abstract && firstResponse.abstract[0] && secondResponse.abstract[0]) {
             let abstract = secondResponse.abstract[0];
 
             let levAbstract = Math.max.apply(null, firstResponse.abstract.map((item: any) => Levenshtein(item.toLowerCase(), abstract.toLowerCase())));
@@ -292,13 +292,14 @@ export class ApiMerger implements IApiMerger {
         }
 
 
-        // if (title1 && title2 && title1[0].toLowerCase().includes("metar") && title2[0].toLowerCase().includes("metar")) {
-        //
-        //     logger.info(`another isequal with ${title1[0]} and ${title2[0]} => ${sameTitle} +  ${sameAbstract} + ${sameAuthor} + ${sameYear}`)
-        //     logger.info(`${comparison.titleWeight} + ${comparison.abstractWeight} + ${comparison.authorWeight} + ${comparison.yearWeight}`)
-        //     logger.info(`${((sameTitle + sameAbstract + sameAuthor + sameYear) / (comparison.titleWeight + comparison.abstractWeight + comparison.authorWeight + comparison.yearWeight))}`)
-        // }
+        if (title1 && title2 && title1[0].toLowerCase().includes("metar") && title2[0].toLowerCase().includes("metar")) {
+
+            logger.info(`another isequal with ${title1[0]} and ${title2[0]} => ${sameTitle} +  ${sameAbstract} + ${sameAuthor} + ${sameYear}`)
+            logger.info(`${comparison.titleWeight} + ${comparison.abstractWeight} + ${comparison.authorWeight} + ${comparison.yearWeight}`)
+            logger.info(`${((sameTitle + sameAbstract + sameAuthor + sameYear) / (comparison.titleWeight + comparison.abstractWeight + comparison.authorWeight + comparison.yearWeight))}`)
+        }
         /** Calculate the complete equality of 2 papers. OverallWeight is used to kinda control the aggressiveness of the algorithm */
+
         if (((sameTitle + sameAbstract + sameAuthor + sameYear) / (comparison.titleWeight + comparison.abstractWeight + comparison.authorWeight + comparison.yearWeight)) > comparison.overallWeight) {
             return true;
         }
@@ -494,21 +495,18 @@ export class ApiMerger implements IApiMerger {
         let resultingPaper: any = {};
         let first = <any>firstPaper;
         let second = <any>secondPaper;
-
+        let keys = {}
         for (const key in Object.assign({}, firstPaper, secondPaper)) {
-            //for (const key in first) {
             if (!first[key] && !second[key]) {
                 continue;
             }
             if (key == "author") {
                 if (first.author && second.author) {
-                    // TODO: reenable merge
-                    //resultingPaper.author = this._mergeAuthors(first.author, second.author);
-                    resultingPaper.author = first.author;
+                    resultingPaper.author = this._mergeAuthors(first.author, second.author);
                 } else if (first.author) {
-                    resultingPaper.author = first.author;
+                    resultingPaper.author = first.author
                 } else if (second.author) {
-                    resultingPaper.author = second.author;
+                    resultingPaper.author = second.author
                 }
                 continue;
             }
@@ -523,7 +521,6 @@ export class ApiMerger implements IApiMerger {
                 }
                 continue;
             }
-
             if (first[key] && !second[key]) {
                 resultingPaper[key] = first[key];
             } else if (!first[key] && second[key]) {
@@ -567,7 +564,6 @@ export class ApiMerger implements IApiMerger {
 
         }
         return resultingPaper as IApiPaper;
-
     }
 
 }
