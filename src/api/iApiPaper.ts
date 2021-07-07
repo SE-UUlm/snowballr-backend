@@ -11,8 +11,8 @@ export interface IApiPaper {
     sourceTitle?: string;
     author?: IApiAuthor[];
     abstract?: string[];
-    numberOfReferences?: number;
-    numberOfCitations?: number;
+    numberOfReferences?: number[];
+    numberOfCitations?: number[];
     year?: number;
     publisher?: string[];
     type?: string;
@@ -20,7 +20,7 @@ export interface IApiPaper {
     scopeName?: string;
     pdf?: string[];
     uniqueId?: IApiUniqueId[];
-    source?: sourceApi;
+    source?: sourceApi[];
 }
 
 export enum sourceApi {

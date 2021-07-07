@@ -49,7 +49,11 @@ export class ApiMerger implements IApiMerger {
         while (response.length > 1) {
             logger.debug("next round!")
             let finalPaper = await this.comparePaperWithPapers(response.shift()!, response)
-            finalPaper.items.length === 1 ? response[finalPaper.position] = this.makePromise<IApiResponse>(finalPaper.items[0]) : finished.push(finalPaper.items[0]);
+            finalPaper.items.length === 1 ? response[finalPaper.position] = this.makePromise<IApiResponse>({
+                paper: finalPaper.items[0].paper,
+                citations: this.reviewPaper(finalPaper.items[0].citations!),
+                references: this.reviewPaper(finalPaper.items[0].references!)
+            } as IApiResponse) : finished.push(finalPaper.items[0]);
             logger.debug("length: " + finalPaper.items.length)
         }
         if (response[0]) {
@@ -184,8 +188,14 @@ export class ApiMerger implements IApiMerger {
         //         logger.info(`item: ${JSON.stringify(item)}`)
         //     }
         // })
+        try {
+            return response1Citations.concat(response2Citations.filter(item => item));
+        } catch (e) {
+            logger.error(`Cannot delete undefined: ${response2Citations}`);
+            logger.error(`Error: ${e}`);
+            return response1Citations.concat(response2Citations);
+        }
 
-        return response1Citations.concat(response2Citations.filter(item => item))
     }
 
 
@@ -535,6 +545,10 @@ export class ApiMerger implements IApiMerger {
                     }
                     if (second[key].length === 0) {
                         resultingPaper[key] = first[key]
+                        continue;
+                    }
+                    if (typeof first[key][0] == "number" || typeof second[key][0] == "number") {
+                        resultingPaper[key] = first[key].concat(second[key]);
                         continue;
                     }
                     let normalized = first[key].map((item: string) => ApiMerger.normalizeString(item));

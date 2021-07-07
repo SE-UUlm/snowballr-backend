@@ -232,16 +232,16 @@ export class MicrosoftResearchApi implements IApiFetcher {
             title: response.Ti ? [response.Ti] : [],
             author: parsedAuthors,
             abstract: MicrosoftResearchApi._convertInvertedAbstract(response.IA),
-            numberOfReferences: refLength,
-            numberOfCitations: response.CC ? response.CC : undefined,
-            year: response.Y ? response.Y : undefined,
+            numberOfReferences: refLength ? [refLength] : [],
+            numberOfCitations: response.CC ? [response.CC] : [],
+            year: response.Y ? Number(response.Y) : undefined,
             publisher: response.PB ? [response.PB] : [],
             type: response.Pt ? this._paperTypeMapper[response.Pt] : undefined,
             scope: undefined,
             scopeName: undefined,
             pdf: response.S ? response.S.map((item: any) => item.U) : undefined,
             uniqueId: parsedUniqueIds,
-            source: sourceApi.MA
+            source: [sourceApi.MA]
         };
         return parsedResponse;
     }

@@ -147,16 +147,16 @@ export class OpenCitationsApi implements IApiFetcher {
             sourceTitle: response.source_title ? response.source_title : undefined,
             author: parsedAuthors,
             abstract: [],
-            numberOfReferences: refCount,
-            numberOfCitations: response.citation_count ? parseInt(response.citation_count) : undefined,
-            year: response.year ? response.year : undefined,
+            numberOfReferences: refCount ? [refCount] : [],
+            numberOfCitations: response.citation_count ? [parseInt(response.citation_count)] : [],
+            year: response.year ? Number(response.year) : undefined,
             publisher: [],
             type: undefined,
             scope: undefined,
             scopeName: undefined,
             pdf: response.oa_link ? response.oa_link.split(",") : undefined,
             uniqueId: parsedUniqueIds,
-            source: sourceApi.OC
+            source: [sourceApi.OC]
         };
         return parsedResponse;
     }
