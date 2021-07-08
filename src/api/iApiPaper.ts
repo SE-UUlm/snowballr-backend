@@ -17,7 +17,7 @@ export interface IApiPaper {
     publisher?: string[];
     type?: string;
     scope?: string;
-    scopeName?: string;
+    scopeName?: string[];
     pdf?: string[];
     uniqueId?: IApiUniqueId[];
     source?: sourceApi[];
@@ -26,5 +26,6 @@ export interface IApiPaper {
 export enum sourceApi {
     MA = "microsoftAcademic",
     CR = "crossRef",
-    OC = "openCitations"
+    OC = "openCitations",
+    S2 = "semanticScholar"
 }

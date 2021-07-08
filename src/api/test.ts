@@ -6,6 +6,7 @@ import {OpenCitationsApi} from "./openCitationsApi.ts";
 import {logger, fileLogger} from "./logger.ts";
 import {CrossRefApi} from "./crossRefApi.ts";
 import {ApiMerger} from "./apiMerger.ts";
+import {SemanticScholar} from "./semanticScholar.ts"
 
 const query: IApiQuery = {
     rawName: "sebastian erdweg",
@@ -21,10 +22,13 @@ const query: IApiQuery = {
 
 const microsoft = new MicrosoftResearchApi("https://api.labs.cognitive.microsoft.com/academic/v1.0/evaluate", "9a02225751354cd29397eba3f5382101");
 const res = microsoft.fetch(query);
-const openCitations = new OpenCitationsApi("https://opencitations.net",)
-const res2 = openCitations.fetch(query);
-const crossRef = new CrossRefApi("https://api.crossref.org/works");
-const res3 = crossRef.fetch(query);
+// const openCitations = new OpenCitationsApi("https://opencitations.net",)
+// const res2 = openCitations.fetch(query);
+// const crossRef = new CrossRefApi("https://api.crossref.org/works");
+// const res3 = crossRef.fetch(query);
+const semanticScholar = new SemanticScholar("https://api.semanticscholar.org/v1/paper");
+const res4 = semanticScholar.fetch(query);
+
 const merger = new ApiMerger();
 //console.log((await res3).references);
 //@ts-ignore
@@ -33,7 +37,7 @@ const merger = new ApiMerger();
 //         console.log("RESPONSE FROM MICRO: " + JSON.stringify(item, null, 2))
 //     }
 // })
-merger.compare([res, res2, res3]).then(data => {
+merger.compare([res, res4]).then(data => {
     //console.log(JSON.stringify(data, null, 2));
     for (let i = 0; i < data.length; i++) {
 
