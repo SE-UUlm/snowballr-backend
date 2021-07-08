@@ -6,11 +6,23 @@ import {OpenCitationsApi} from "./openCitationsApi.ts";
 import {logger, fileLogger} from "./logger.ts";
 import {CrossRefApi} from "./crossRefApi.ts";
 import {ApiMerger} from "./apiMerger.ts";
+import { IApiPaper } from "./iApiPaper.ts";
 
 const query: IApiQuery = {
     rawName: "sebastian erdweg",
     id: "10.1007/978-3-319-02654-1_11",
     title: "The State of the Art in Language Workbenches"
+}
+
+const sortPapersByName = (item1: IApiPaper, item2: IApiPaper) => {
+    if(item1.title && item2.title){
+        if(item1.title[0].toLowerCase() < item2.title[0].toLowerCase()){
+            return -1
+        } else{
+            return 1
+        }
+    }
+    return 0
 }
 
 // const query: IApiQuery = {
@@ -33,23 +45,58 @@ const merger = new ApiMerger();
 //         console.log("RESPONSE FROM MICRO: " + JSON.stringify(item, null, 2))
 //     }
 // })
-merger.compare([res, res2, res3]).then(data => {
+
+
+let first = JSON.parse(JSON.stringify((await res).references));
+if(first){
+    first = first.sort(sortPapersByName)
+
+}
+
+let second = JSON.parse(JSON.stringify((await res2).references));
+if(second){
+    second = second.sort(sortPapersByName)
+}
+
+let doMerge = merger.compare([res, res2, res3]).then(data => {
     //console.log(JSON.stringify(data, null, 2));
     for (let i = 0; i < data.length; i++) {
 
         fileLogger.info(`PAPER${i}:`);
         fileLogger.info(data[i].paper);
         fileLogger.info("CITATIONS:");
-        for (let cite in data[i].citations) {
-            fileLogger.info((data[i].citations as any)[cite]);
+
+        let  citeOriginal = data[i].citations;
+        if(citeOriginal){
+        citeOriginal = citeOriginal.sort(sortPapersByName)
+    }
+        for (let cite in citeOriginal) {
+            fileLogger.info((citeOriginal as any)[cite]);
         }
+
+
+        let  refOriginal = data[i].references;
+        if(refOriginal){
+        refOriginal = refOriginal.sort(sortPapersByName)
+    }
         fileLogger.info("REFERENCES:");
-        for (let ref in data[i].references) {
+        for (let ref in refOriginal) {
             fileLogger.info((data[i].references as any)[ref]);
         }
     }
 
 });
+
+await doMerge;
+fileLogger.info("1 references")
+for (let cite in first) {
+    fileLogger.info((first as any)[cite]);
+}
+fileLogger.info("2 references")
+for (let cite in second) {
+    fileLogger.info((second as any)[cite]);
+}
+
 
 // const crossRef = new CrossRefApi("https://api.crossref.org/works")
 // const res3 = crossRef.fetch(query)
