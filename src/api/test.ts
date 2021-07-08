@@ -26,7 +26,7 @@ const res2 = openCitations.fetch(query);
 const crossRef = new CrossRefApi("https://api.crossref.org/works");
 const res3 = crossRef.fetch(query);
 const merger = new ApiMerger();
-//console.log((await res).references);
+//console.log((await res3).references);
 //@ts-ignore
 // (await res).citations.forEach((item) => {
 //     if (item.title && item.title[0] && item.title[0].toLowerCase().includes("metar")) {

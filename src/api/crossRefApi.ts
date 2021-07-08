@@ -5,10 +5,14 @@ import {IApiPaper, sourceApi} from './iApiPaper.ts';
 import {logger} from "./logger.ts";
 import {IApiAuthor} from "./iApiAuthor.ts";
 import {IApiUniqueId, idType} from "./iApiUniqueId.ts";
+import { sleep } from "https://deno.land/x/sleep/mod.ts";
 
 export class CrossRefApi implements IApiFetcher {
     url: string;
     private _headers: {};
+    private _rateLimit: number = 50;
+    private _rateInterval: number = 1;
+    private _iterations : number = 0;
 
     public constructor(url: string) {
         logger.info("CrossRefApi initialized");
@@ -30,19 +34,20 @@ export class CrossRefApi implements IApiFetcher {
         var rawReferences: [];
         //logger.debug(query);
 
-        let response = fetch(`${this.url}/${query.id}`)
+        let rawPaperResponse = {};
+
+        let response = fetch(`${this.url}/${query.id}?mailto=lukas.romer@uni-ulm.de`)
             .then(data => {
+                rawPaperResponse = data.statusText;
+                this._rateInterval = Number(data.headers.get("x-rate-limit-interval")) ? Number(data.headers.get("x-rate-limit-interval")!.replace('s', '')) : this._rateInterval;
+                this._rateLimit = Number(data.headers.get("x-rate-limit-limit")) ? Number(data.headers.get("x-rate-limit-limit")!.replace('s', '')) : this._rateInterval;
                 return data.json();
             })
             .then(data => {
-                logger.debug(data);
                 paper = this._parseResponse(data);
-                //logger.debug(JSON.stringify(paper, null, 2));
-                //doiReference = data[0].reference;
-                //console.log(data.message);
+
                 rawReferences = data.message.reference;
                 return data.message.relation ? this._getChildObjects(data.message.relation.cites) : [];
-                //return this._getLinkedDOIs(data[0].citation);
             })
             .then(data => {
                 citations = data;
@@ -58,7 +63,7 @@ export class CrossRefApi implements IApiFetcher {
                 return apiReturn;
             })
             .catch(data => {
-                logger.error("Error while fetching crossRefApi: " + data);
+                logger.error("Error while fetching crossRefApi. PaperQuery " + rawPaperResponse);
                 return {
                     "paper": paper ? paper : undefined,
                     "citations": citations ? citations : undefined,
@@ -75,7 +80,7 @@ export class CrossRefApi implements IApiFetcher {
      * @param rawChildren - list of citation or reference objcets return by the api
      * @returns Object list of citations or references implemented via IApiPaper
      */
-    private _getChildObjects(rawChildren: any): Promise<IApiPaper[]> {
+    private async _getChildObjects(rawChildren: any): Promise<IApiPaper[]> {
         var fetchableByDoi: string[] = [];
         var fetchableByBibliographic: string[] = [];
         let children: Array<IApiPaper> = [];
@@ -83,6 +88,7 @@ export class CrossRefApi implements IApiFetcher {
 
         for (let r of rawChildren) {
             if (r.DOI) {
+
                 fetchableByDoi.push(r.DOI);
             } else {
                 //console.log(r);
@@ -90,9 +96,15 @@ export class CrossRefApi implements IApiFetcher {
             }
         }
 
+        let rawDoi = {};
+
         for (let d in fetchableByDoi) {
-            fetches.push(fetch(`${this.url}/${fetchableByDoi[d]}`)
+
+            await this._limitRequests();
+
+            fetches.push(fetch(`${this.url}/${fetchableByDoi[d]}?mailto=lukas.romer@uni-ulm.de`)
                 .then(data => {
+                    rawDoi = data.statusText;
                     return data.json();
                 })
                 .then(data => {
@@ -102,13 +114,24 @@ export class CrossRefApi implements IApiFetcher {
                 .then(data => {
                     //console.log(data);
                     children.push(data);
-                }))
+                })
+                .catch(data => {
+                    logger.error("ChildObject not fetchable by DOI: " + rawDoi);
+                })
+            )
         }
+
+        let rawBibliographic : string | null;
+
         for (let b in fetchableByBibliographic) {
             let query: string = fetchableByBibliographic[b].replace(/ /g, '+');
             //console.log(query);
-            fetches.push(fetch(`${this.url}/?query.bibliographic=${query}&rows=1`)
+ 
+            await this._limitRequests();
+
+            fetches.push(fetch(`${this.url}/?query.bibliographic=${query}&rows=1&mailto=lukas.romer@uni-ulm.de`)
                 .then(data => {
+                    rawBibliographic = data.headers.get("x-rate-limit-limit");
                     return data.json();
                 })
                 .then(data => {
@@ -119,9 +142,23 @@ export class CrossRefApi implements IApiFetcher {
                 .then(data => {
                     //console.log(data);
                     children.push(data);
-                }))
+                })
+                .catch(data => {
+                    logger.error("ChildObject not fetchable by Bibliographic: " + rawBibliographic);
+                })
+            )
         }
         return Promise.all(fetches).then(() => children);
+    }
+
+    private async _limitRequests() {
+        this._iterations ++;
+        //logger.warning(this._iterations);
+        if ( this._iterations === this._rateLimit) {
+            await sleep(this._rateInterval * 2);
+            this._iterations = 0;
+            logger.warning(`Limiting Crossref Api due to following Restricitons: rateLimit=${this._rateLimit}; rateInterval=${this._rateInterval}`);
+        }   
     }
 
     /**

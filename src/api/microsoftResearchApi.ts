@@ -45,7 +45,8 @@ export class MicrosoftResearchApi implements IApiFetcher {
             }
             return [abstr.trim()];
         } catch (error) {
-            logger.error("Couldn't convert InvertedAbstract from Microsoft API to a single string.");
+            logger.error("Couldn't convert InvertedAbstract from Microsoft API to a single string: " + error);
+            //logger.critical(iA);
             return [];
         }
     }
@@ -231,7 +232,7 @@ export class MicrosoftResearchApi implements IApiFetcher {
             id: undefined,
             title: response.Ti ? [response.Ti] : [],
             author: parsedAuthors,
-            abstract: MicrosoftResearchApi._convertInvertedAbstract(response.IA),
+            abstract: response.IA ? MicrosoftResearchApi._convertInvertedAbstract(response.IA) : [],
             numberOfReferences: refLength ? [refLength] : [],
             numberOfCitations: response.CC ? [response.CC] : [],
             year: response.Y ? Number(response.Y) : undefined,
