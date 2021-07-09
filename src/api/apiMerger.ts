@@ -141,9 +141,11 @@ export class ApiMerger implements IApiMerger {
     }
 
     private reviewPaper(finalChildren: IApiPaper[]) {
+        finalChildren = finalChildren.filter(item => item);
         for (let i: number = 0; i < finalChildren.length; i++) {
             /** Check if paper is in childpapers of the same api. Since the same paper could return with a different DOI */
             for (let j: number = i + 1; j < finalChildren.length; j++) {
+
                 let isEqual: boolean = this._isEqual(finalChildren[i], finalChildren[j]);
                 if (isEqual) {
                     logger.info(`CONCLUSIVE API paper merging: ${finalChildren[i].uniqueId!.map(item => item.type == idType.DOI ? item.value : undefined)} // ${finalChildren[i].title} <-> ${finalChildren[j].uniqueId!.map(item => item.type == idType.DOI ? item.value : undefined)} // ${finalChildren[j].title}`);
@@ -169,7 +171,8 @@ export class ApiMerger implements IApiMerger {
     private _compareChildren(response1Citations: IApiPaper[], response2Citations: IApiPaper[]) {
         //logger.debug("Comparing Refs or Cites");
 
-
+        response1Citations = response1Citations.filter(item => item);
+        response2Citations = response2Citations.filter(item => item);
         for (let i: number = 0; i < response1Citations.length; i++) {
             /** Check for the same paper in other apis */
             for (let k: number = 0; k < response2Citations.length; k++) {
@@ -211,6 +214,9 @@ export class ApiMerger implements IApiMerger {
      * @returns boolean whether the papers are found out to be equal or not
      */
     private _isEqual(firstResponse: IApiPaper, secondResponse: IApiPaper): boolean {
+        if(!firstResponse || !secondResponse){
+            return false
+        }
         let comparison: IComparisonWeight = {} as IComparisonWeight;
         Object.assign(comparison, this.comparisonWeight)
         let firstDOI: string[] = this._getDOI(firstResponse);
@@ -260,7 +266,7 @@ export class ApiMerger implements IApiMerger {
             }
 
             let levTitle = Math.max.apply(null, firstResponse.title.map((item: string) => {
-                return Levenshtein(item.toLowerCase(), title.toLowerCase());
+                return Levenshtein(ApiMerger.normalizeString(item), ApiMerger.normalizeString(title));
             }));
 
             sameTitle = comparison.titleWeight * ((secondResponse.title[0].length - levTitle) / secondResponse.title[0].length); // 0.9  -> 9
@@ -274,7 +280,7 @@ export class ApiMerger implements IApiMerger {
         if (firstResponse.abstract && secondResponse.abstract && firstResponse.abstract[0] && secondResponse.abstract[0]) {
             let abstract = secondResponse.abstract[0];
 
-            let levAbstract = Math.max.apply(null, firstResponse.abstract.map((item: any) => Levenshtein(item.toLowerCase(), abstract.toLowerCase())));
+            let levAbstract = Math.max.apply(null, firstResponse.abstract.map((item: any) => Levenshtein(ApiMerger.normalizeString(item), ApiMerger.normalizeString(abstract))));
             sameAbstract = comparison.abstractWeight * ((secondResponse.abstract[0].length - levAbstract) / secondResponse.abstract[0].length); // 0.9  -> 9
         } else {
             comparison.abstractWeight = 0;
@@ -302,12 +308,13 @@ export class ApiMerger implements IApiMerger {
         }
 
 
-        if (title1 && title2 && title1[0].toLowerCase().includes("metar") && title2[0].toLowerCase().includes("metar")) {
+       /* if (title1 && title2) {
 
-            logger.info(`another isequal with ${title1[0]} and ${title2[0]} => ${sameTitle} +  ${sameAbstract} + ${sameAuthor} + ${sameYear}`)
-            logger.info(`${comparison.titleWeight} + ${comparison.abstractWeight} + ${comparison.authorWeight} + ${comparison.yearWeight}`)
-            logger.info(`${((sameTitle + sameAbstract + sameAuthor + sameYear) / (comparison.titleWeight + comparison.abstractWeight + comparison.authorWeight + comparison.yearWeight))}`)
+            console.error(`another isequal with ${title1[0]} and ${title2[0]} => ${sameTitle} +  ${sameAbstract} + ${sameAuthor} + ${sameYear}`)
+            console.error(`${comparison.titleWeight} + ${comparison.abstractWeight} + ${comparison.authorWeight} + ${comparison.yearWeight}`)
+            console.error(`${((sameTitle + sameAbstract + sameAuthor + sameYear) / (comparison.titleWeight + comparison.abstractWeight + comparison.authorWeight + comparison.yearWeight))}`)
         }
+        */
         /** Calculate the complete equality of 2 papers. OverallWeight is used to kinda control the aggressiveness of the algorithm */
 
         if (((sameTitle + sameAbstract + sameAuthor + sameYear) / (comparison.titleWeight + comparison.abstractWeight + comparison.authorWeight + comparison.yearWeight)) > comparison.overallWeight) {
