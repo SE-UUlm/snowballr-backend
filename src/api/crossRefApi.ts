@@ -174,11 +174,11 @@ export class CrossRefApi implements IApiFetcher {
 		if (response.message.author) {
 			for (let a of response.message.author) {
 				let parsedAuthor: IApiAuthor = {
-					id: undefined,
-					orcid: undefined,
-					rawString: a.given && a.family ? `${a.given}, ${a.family}` : undefined,
-					lastName: a.family ? a.family : undefined,
-					firstName: a.given ? a.given : undefined,
+					id: [],
+					orcid: [],
+					rawString: a.given && a.family ? [`${a.given}, ${a.family}`] : [],
+					lastName: a.family ? [a.family] : [],
+					firstName: a.given ? [a.given] : [],
 				}
 				parsedAuthors.push(parsedAuthor);
 			}

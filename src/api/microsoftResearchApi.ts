@@ -203,11 +203,11 @@ export class MicrosoftResearchApi implements IApiFetcher {
 		let parsedAuthors: IApiAuthor[] = [];
 		for (let a of response.AA) {
 			let parsedAuthor: IApiAuthor = {
-				id: undefined,
-				orcid: undefined,
-				rawString: a.AuN,
-				lastName: undefined,
-				firstName: undefined,
+				id: [],
+				orcid: [],
+				rawString: [a.AuN],
+				lastName: [],
+				firstName: [],
 			}
 			parsedAuthors.push(parsedAuthor);
 		}

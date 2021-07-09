@@ -84,11 +84,11 @@ export class SemanticScholar implements IApiFetcher {
 		let parsedAuthors: IApiAuthor[] = [];
 		for (let a of response.authors) {
 			let parsedAuthor: IApiAuthor = {
-				id: undefined,
-				orcid: undefined,
-				rawString: a.name,
-				lastName: undefined,
-				firstName: undefined,
+				id: [],
+				orcid: [],
+				rawString: [a.name],
+				lastName: [],
+				firstName: [],
 			}
 			parsedAuthors.push(parsedAuthor);
 		}
