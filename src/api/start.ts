@@ -1,28 +1,29 @@
-import {IApiQuery} from "./iApiQuery.ts";
-import {IApiResponse} from "./iApiResponse.ts";
-import {IApiFetcher} from "./iApiFetcher.ts";
-import {MicrosoftResearchApi} from "./microsoftResearchApi.ts";
-import {OpenCitationsApi} from "./openCitationsApi.ts";
-import {logger, fileLogger} from "./logger.ts";
-import {CrossRefApi} from "./crossRefApi.ts";
-import {ApiMerger} from "./apiMerger.ts";
+import { IApiQuery } from "./iApiQuery.ts";
+import { IApiResponse } from "./iApiResponse.ts";
+import { IApiFetcher } from "./iApiFetcher.ts";
+import { MicrosoftResearchApi } from "./microsoftResearchApi.ts";
+import { OpenCitationsApi } from "./openCitationsApi.ts";
+import { logger, fileLogger } from "./logger.ts";
+import { CrossRefApi } from "./crossRefApi.ts";
+import { ApiMerger } from "./apiMerger.ts";
+import { SemanticScholar } from "./semanticScholar.ts"
 import { IApiPaper } from "./iApiPaper.ts";
 
 const query: IApiQuery = {
-    rawName: "sebastian erdweg",
-    id: "10.1007/978-3-319-02654-1_11",
-    title: "The State of the Art in Language Workbenches"
+	rawName: "sebastian erdweg",
+	id: "10.1007/978-3-319-02654-1_11",
+	title: "The State of the Art in Language Workbenches"
 }
 
 const sortPapersByName = (item1: IApiPaper, item2: IApiPaper) => {
-    if(item1.title && item2.title){
-        if(item1.title[0].toLowerCase() < item2.title[0].toLowerCase()){
-            return -1
-        } else{
-            return 1
-        }
-    }
-    return 0
+	if (item1.title && item2.title) {
+		if (item1.title[0].toLowerCase() < item2.title[0].toLowerCase()) {
+			return -1
+		} else {
+			return 1
+		}
+	}
+	return 0
 }
 
 // const query: IApiQuery = {
@@ -37,8 +38,11 @@ const openCitations = new OpenCitationsApi("https://opencitations.net",)
 const res2 = openCitations.fetch(query);
 const crossRef = new CrossRefApi("https://api.crossref.org/works");
 const res3 = crossRef.fetch(query);
+const semanticScholar = new SemanticScholar("https://api.semanticscholar.org/v1/paper");
+const res4 = semanticScholar.fetch(query);
+
 const merger = new ApiMerger();
-//console.log((await res).references);
+//console.log((await res3).references);
 //@ts-ignore
 // (await res).citations.forEach((item) => {
 //     if (item.title && item.title[0] && item.title[0].toLowerCase().includes("metar")) {
@@ -46,55 +50,54 @@ const merger = new ApiMerger();
 //     }
 // })
 
-
 let first = JSON.parse(JSON.stringify((await res).references));
-if(first){
-    first = first.sort(sortPapersByName)
+if (first) {
+	first = first.sort(sortPapersByName)
 
 }
 
 let second = JSON.parse(JSON.stringify((await res2).references));
-if(second){
-    second = second.sort(sortPapersByName)
+if (second) {
+	second = second.sort(sortPapersByName)
 }
 
-let doMerge = merger.compare([res, res2, res3]).then(data => {
-    //console.log(JSON.stringify(data, null, 2));
-    for (let i = 0; i < data.length; i++) {
+let doMerge = merger.compare([res, res2, res3, res4]).then(data => {
+	//console.log(JSON.stringify(data, null, 2));
+	for (let i = 0; i < data.length; i++) {
 
-        fileLogger.info(`PAPER${i}:`);
-        fileLogger.info(data[i].paper);
-        fileLogger.info("CITATIONS:");
+		fileLogger.info(`PAPER${i}:`);
+		fileLogger.info(data[i].paper);
+		fileLogger.info("CITATIONS:");
 
-        let  citeOriginal = data[i].citations;
-        if(citeOriginal){
-        citeOriginal = citeOriginal.sort(sortPapersByName)
-    }
-        for (let cite in citeOriginal) {
-            fileLogger.info((citeOriginal as any)[cite]);
-        }
+		let citeOriginal = data[i].citations;
+		if (citeOriginal) {
+			citeOriginal = citeOriginal.sort(sortPapersByName)
+		}
+		for (let cite in citeOriginal) {
+			fileLogger.info((citeOriginal as any)[cite]);
+		}
 
 
-        let  refOriginal = data[i].references;
-        if(refOriginal){
-        refOriginal = refOriginal.sort(sortPapersByName)
-    }
-        fileLogger.info("REFERENCES:");
-        for (let ref in refOriginal) {
-            fileLogger.info((data[i].references as any)[ref]);
-        }
-    }
+		let refOriginal = data[i].references;
+		if (refOriginal) {
+			refOriginal = refOriginal.sort(sortPapersByName)
+		}
+		fileLogger.info("REFERENCES:");
+		for (let ref in refOriginal) {
+			fileLogger.info((data[i].references as any)[ref]);
+		}
+	}
 
 });
 
 await doMerge;
 fileLogger.info("1 references")
 for (let cite in first) {
-    fileLogger.info((first as any)[cite]);
+	fileLogger.info((first as any)[cite]);
 }
 fileLogger.info("2 references")
 for (let cite in second) {
-    fileLogger.info((second as any)[cite]);
+	fileLogger.info((second as any)[cite]);
 }
 
 

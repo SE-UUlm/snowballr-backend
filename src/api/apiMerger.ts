@@ -519,11 +519,12 @@ export class ApiMerger implements IApiMerger {
             }
             if (key == "author") {
                 if (first.author && second.author) {
-                    resultingPaper.author = this._mergeAuthors(first.author, second.author);
+                    //resultingPaper.author = this._mergeAuthors(first.author, second.author);
+                    resultingPaper.author = first.author;
                 } else if (first.author) {
-                    resultingPaper.author = first.author
+                    resultingPaper.author = first.author;
                 } else if (second.author) {
-                    resultingPaper.author = second.author
+                    resultingPaper.author = second.author;
                 }
                 continue;
             }
