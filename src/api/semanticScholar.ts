@@ -22,38 +22,33 @@ export class SemanticScholar implements IApiFetcher {
 	 * @returns Object containing the fetched paper and all paperObjects from citations and references. Promise.
 	 */
 	public async fetch(query: IApiQuery): Promise<IApiResponse> {
-		var citations: IApiPaper[];
-		var paper: IApiPaper;
-		var RIds: number[];
-		var references: IApiPaper[];
-
-		let response = fetch(`${this.url}/${query.id}`)
-			.then(data => {
-				return data.json();
-			})
-			.then(data => {
-				//logger.debug(data);
-				paper = this._parseResponse(data);
-				citations = this._getChildren(data.citations);
-				references = this._getChildren(data.references);
-			})
-			.then(data => {
-				let apiReturn: IApiResponse = {
-					"paper": paper,
-					"citations": citations,
-					"references": references
-				}
-				return apiReturn;
-			})
-			.catch(data => {
-				logger.error("Error while fetching semanticScholar: " + data);
-				return {
-					"paper": paper ? paper : undefined,
-					"citations": citations ? citations : undefined,
-					"references": references ? references : undefined
-				} as IApiResponse;
-			})
-		return response;
+		var paper: IApiPaper = {};
+		let citations: Promise<IApiPaper[]> | undefined;
+		let references: Promise<IApiPaper[]> | undefined;
+		try {
+			//logger.debug("here")
+			let response = await fetch(`${this.url}/${query.id}`);
+			let json = await response.json();
+			paper = this._parseResponse(json);
+			//logger.critical(json.citations)
+			citations = json.citations && this._getChildren(json.citations);
+			references = json.references && this._getChildren(json.references);
+			//logger.debug(await citations)
+			var apiReturn: IApiResponse = {
+				"paper": paper,
+				"citations": await citations,
+				"references": await references
+			}
+		}
+		catch (e) {
+			logger.critical(`SemanticScholarApi: Failed to fetch Query: ${e}`);
+			var apiReturn: IApiResponse = {
+				"paper": paper,
+				"citations": citations ? await citations : [],
+				"references": references ? await references : []
+			}
+		}
+		return apiReturn;
 	}
 
 	/**
@@ -62,7 +57,8 @@ export class SemanticScholar implements IApiFetcher {
 	 * @param microsoftIds - list of microsoft-ids provided by the source-paper in key RId
 	 * @returns list of paperObjects containing the references. Promise.
 	 */
-	private _getChildren(children: []): IApiPaper[] {
+	private async _getChildren(children: []): Promise<IApiPaper[]> {
+		//logger.debug(children)
 		let parsedChildren: IApiPaper[] = [];
 		for (let child in children) {
 			let parsedChild = this._parseResponse(children[child]);
@@ -84,24 +80,24 @@ export class SemanticScholar implements IApiFetcher {
 		let parsedAuthors: IApiAuthor[] = [];
 		for (let a of response.authors) {
 			let parsedAuthor: IApiAuthor = {
-				id: undefined,
-				orcid: undefined,
-				rawString: a.name,
-				lastName: undefined,
-				firstName: undefined,
+				id: [],
+				orcid: [],
+				rawString: [a.name],
+				lastName: [],
+				firstName: [],
 			}
 			parsedAuthors.push(parsedAuthor);
 		}
 
 		let parsedUniqueIds: IApiUniqueId[] = [];
-		parsedUniqueIds.push(
+		response.doi && parsedUniqueIds.push(
 			{
 				id: undefined,
 				type: idType.DOI,
 				value: response.doi ? response.doi : undefined,
 			} as IApiUniqueId
 		)
-		parsedUniqueIds.push(
+		response.paperId && parsedUniqueIds.push(
 			{
 				id: undefined,
 				type: idType.SemanticScholar,

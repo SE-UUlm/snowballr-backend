@@ -36,7 +36,7 @@ const microsoft = new MicrosoftResearchApi("https://api.labs.cognitive.microsoft
 const res = microsoft.fetch(query);
 const openCitations = new OpenCitationsApi("https://opencitations.net",)
 const res2 = openCitations.fetch(query);
-const crossRef = new CrossRefApi("https://api.crossref.org/works");
+const crossRef = new CrossRefApi("https://api.crossref.org/works", "lukas.romer@uni-ulm.de");
 const res3 = crossRef.fetch(query);
 const semanticScholar = new SemanticScholar("https://api.semanticscholar.org/v1/paper");
 const res4 = semanticScholar.fetch(query);
@@ -50,13 +50,13 @@ const merger = new ApiMerger();
 //     }
 // })
 
-let first = JSON.parse(JSON.stringify((await res).references));
+let first = JSON.parse(JSON.stringify((await res2).citations));
 if (first) {
 	first = first.sort(sortPapersByName)
 
 }
 
-let second = JSON.parse(JSON.stringify((await res2).references));
+let second = JSON.parse(JSON.stringify((await res4).citations));
 if (second) {
 	second = second.sort(sortPapersByName)
 }

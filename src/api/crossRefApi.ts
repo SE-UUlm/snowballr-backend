@@ -13,11 +13,13 @@ export class CrossRefApi implements IApiFetcher {
 	private _rateLimit: number = 50;
 	private _rateInterval: number = 1;
 	private _iterations: number = 0;
+	private _mail: string = "";
 
-	public constructor(url: string) {
+	public constructor(url: string, mail?: string) {
 		logger.info("CrossRefApi initialized");
 		this.url = url;
 		this._headers = { "Content-Type": "application/json" };
+		mail ? this._mail = `?mailto=${mail}` : "";
 	}
 
 	/**
@@ -28,49 +30,40 @@ export class CrossRefApi implements IApiFetcher {
 	 * @returns Object containing the fetched paper and all paperObjects from citations and references. Promise.
 	 */
 	public async fetch(query: IApiQuery): Promise<IApiResponse> {
-		var citations: IApiPaper[];
-		var paper: IApiPaper;
-		var references: IApiPaper[];
-		var rawReferences: [];
-		//logger.debug(query);
+		var citations: Promise<IApiPaper[]> | undefined;
+		var paper: IApiPaper = {};
+		var references: Promise<IApiPaper[]> | undefined;
 
-		let rawPaperResponse = {};
+		try {
+			let response = await fetch(`${this.url}/${query.id}${this._mail}`)
 
-		let response = fetch(`${this.url}/${query.id}?mailto=lukas.romer@uni-ulm.de`)
-			.then(data => {
-				rawPaperResponse = data.statusText;
-				this._rateInterval = Number(data.headers.get("x-rate-limit-interval")) ? Number(data.headers.get("x-rate-limit-interval")!.replace('s', '')) : this._rateInterval;
-				this._rateLimit = Number(data.headers.get("x-rate-limit-limit")) ? Number(data.headers.get("x-rate-limit-limit")!.replace('s', '')) : this._rateInterval;
-				return data.json();
-			})
-			.then(data => {
-				paper = this._parseResponse(data);
+			/** Get rate limit from api to apply it dynamically since it can change from time to time */
+			this._rateInterval = Number(response.headers.get("x-rate-limit-interval")) ? Number(response.headers.get("x-rate-limit-interval")!.replace('s', '')) : this._rateInterval;
+			this._rateLimit = Number(response.headers.get("x-rate-limit-limit")) ? Number(response.headers.get("x-rate-limit-limit")!.replace('s', '')) : this._rateInterval;
+			let json = await response.json();
+			paper = this._parseResponse(json);
+			//logger.debug(JSON.stringify(json.message, null, 2));
+			references = json.message.reference && this._getChildObjects(json.message.reference);
+			citations = json.message.relation && this._getChildObjects(json.message.relation.cites);
+			// logger.debug(JSON.stringify(json, null, 2));
+			//logger.debug(json.message.reference)
+			//logger.debug(await references)
+			var apiReturn: IApiResponse = {
+				"paper": paper,
+				"citations": await citations,
+				"references": await references
+			}
+		}
+		catch (e) {
+			logger.critical(`CrossRef: Failed to fetch Query: ${e}`);
+			var apiReturn: IApiResponse = {
+				"paper": paper,
+				"citations": citations ? await citations : [],
+				"references": references ? await references : []
+			}
+		}
 
-				rawReferences = data.message.reference;
-				return data.message.relation ? this._getChildObjects(data.message.relation.cites) : [];
-			})
-			.then(data => {
-				citations = data;
-				return this._getChildObjects(rawReferences);
-			})
-			.then(data => {
-				references = data;
-				let apiReturn: IApiResponse = {
-					"paper": paper,
-					"citations": citations,
-					"references": references
-				}
-				return apiReturn;
-			})
-			.catch(data => {
-				logger.error("Error while fetching crossRefApi. PaperQuery " + rawPaperResponse);
-				return {
-					"paper": paper ? paper : undefined,
-					"citations": citations ? citations : undefined,
-					"references": references ? references : undefined
-				} as IApiResponse;
-			})
-		return response;
+		return apiReturn;
 	}
 
 	/**
@@ -83,12 +76,11 @@ export class CrossRefApi implements IApiFetcher {
 	private async _getChildObjects(rawChildren: any): Promise<IApiPaper[]> {
 		var fetchableByDoi: string[] = [];
 		var fetchableByBibliographic: string[] = [];
-		let children: Array<IApiPaper> = [];
+		var children: Array<IApiPaper> = [];
 		var fetches = [];
 
 		for (let r of rawChildren) {
 			if (r.DOI) {
-
 				fetchableByDoi.push(r.DOI);
 			} else {
 				//console.log(r);
@@ -96,59 +88,44 @@ export class CrossRefApi implements IApiFetcher {
 			}
 		}
 
-		let rawDoi = {};
-
 		for (let d in fetchableByDoi) {
-
+			//logger.debug("fetchableByDoi")
 			await this._limitRequests();
-
-			fetches.push(fetch(`${this.url}/${fetchableByDoi[d]}?mailto=lukas.romer@uni-ulm.de`)
-				.then(data => {
-					rawDoi = data.statusText;
-					return data.json();
-				})
-				.then(data => {
-					let ref = this._parseResponse(data);
-					return ref;
-				})
-				.then(data => {
-					//console.log(data);
-					children.push(data);
-				})
-				.catch(data => {
-					logger.error("ChildObject not fetchable by DOI: " + rawDoi);
-				})
-			)
+			fetches.push(this._fetchDoiFromApi(fetchableByDoi[d]));
 		}
-
-		let rawBibliographic: string | null;
 
 		for (let b in fetchableByBibliographic) {
 			let query: string = fetchableByBibliographic[b].replace(/ /g, '+');
-			//console.log(query);
-
 			await this._limitRequests();
-
-			fetches.push(fetch(`${this.url}/?query.bibliographic=${query}&rows=1&mailto=lukas.romer@uni-ulm.de`)
-				.then(data => {
-					rawBibliographic = data.headers.get("x-rate-limit-limit");
-					return data.json();
-				})
-				.then(data => {
-					//console.log(data);
-					let ref = this._parseResponse({ 'message': data.message.items[0] });
-					return ref;
-				})
-				.then(data => {
-					//console.log(data);
-					children.push(data);
-				})
-				.catch(data => {
-					logger.error("ChildObject not fetchable by Bibliographic: " + rawBibliographic);
-				})
-			)
+			fetches.push(this._fetchBibFromApi(query));
 		}
-		return Promise.all(fetches).then(() => children);
+		return await Promise.all(fetches);
+	}
+
+	private async _fetchDoiFromApi(item: string): Promise<IApiPaper> {
+		try {
+			let response = await fetch(`${this.url}/${item}${this._mail}`);
+			let json = await response.json();
+			let child = this._parseResponse(json);
+			return child;
+		}
+		catch (e) {
+			logger.critical(`CrossRef: Failed to fetch child by doi: ${e}`);
+			return {} as IApiPaper;
+		}
+	}
+
+	private async _fetchBibFromApi(item: string): Promise<IApiPaper> {
+		try {
+			let response = await fetch(`${this.url}/?query.bibliographic=${item}&rows=1${this._mail.replace('?', '&')}`);
+			let json = await response.json();
+			let child = this._parseResponse({ 'message': json.message.items[0] });
+			return child;
+		}
+		catch (e) {
+			logger.critical(`CrossRef: Failed to fetch child by doi: ${e}`);
+			return {} as IApiPaper;
+		}
 	}
 
 	private async _limitRequests() {
@@ -174,32 +151,32 @@ export class CrossRefApi implements IApiFetcher {
 		if (response.message.author) {
 			for (let a of response.message.author) {
 				let parsedAuthor: IApiAuthor = {
-					id: undefined,
-					orcid: undefined,
-					rawString: a.given && a.family ? `${a.given}, ${a.family}` : undefined,
-					lastName: a.family ? a.family : undefined,
-					firstName: a.given ? a.given : undefined,
+					id: [],
+					orcid: [],
+					rawString: a.given && a.family ? [`${a.given}, ${a.family}`] : [],
+					lastName: a.family ? [a.family] : [],
+					firstName: a.given ? [a.given] : [],
 				}
 				parsedAuthors.push(parsedAuthor);
 			}
 		}
 
 		let parsedUniqueIds: IApiUniqueId[] = [];
-		parsedUniqueIds.push(
+		response.message.ISSN && parsedUniqueIds.push(
 			{
 				id: undefined,
 				type: idType.ISSN,
 				value: response.message.ISSN ? response.message.ISSN : undefined,
 			} as IApiUniqueId
 		)
-		parsedUniqueIds.push(
+		response.message.ISBN && parsedUniqueIds.push(
 			{
 				id: undefined,
 				type: idType.ISBN,
 				value: response.message.ISBN ? response.message.ISBN : undefined,
 			} as IApiUniqueId
 		)
-		parsedUniqueIds.push(
+		response.message.DOI && parsedUniqueIds.push(
 			{
 				id: undefined,
 				type: idType.DOI,
