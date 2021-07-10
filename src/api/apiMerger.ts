@@ -15,7 +15,7 @@ export class ApiMerger implements IApiMerger {
 		abstractWeight: 7,
 		abstractLevenshtein: 0,
 		authorWeight: 8,
-		overallWeight: 0.85,
+		overallWeight: 0.8,
 		yearWeight: 2
 	} as IComparisonWeight;
 
@@ -51,13 +51,19 @@ export class ApiMerger implements IApiMerger {
 			let finalPaper = await this.comparePaperWithPapers(response.shift()!, response)
 			finalPaper.items.length === 1 ? response[finalPaper.position] = this.makePromise<IApiResponse>({
 				paper: finalPaper.items[0].paper,
-				citations: this.reviewPaper(finalPaper.items[0].citations!),
-				references: this.reviewPaper(finalPaper.items[0].references!)
+				citations: finalPaper.items[0].citations,
+				references: finalPaper.items[0].references!
 			} as IApiResponse) : finished.push(finalPaper.items[0]);
 			logger.debug("length: " + finalPaper.items.length)
 		}
 		if (response[0]) {
 			finished.push(await response[0]);
+		}
+
+		/** Merge dublicates coming from the same apis */
+		for (let res in finished) {
+			finished[res].citations = this.reviewPaper(finished[res].citations!);
+			finished[res].references = this.reviewPaper(finished[res].references!);
 		}
 
 		//logger.debug("FINISHED LENGTH " + finished.length)
@@ -147,6 +153,9 @@ export class ApiMerger implements IApiMerger {
 			for (let j: number = i + 1; j < finalChildren.length; j++) {
 
 				let isEqual: boolean = this._isEqual(finalChildren[i], finalChildren[j]);
+				// if (ApiMerger.normalizeString(finalChildren[i].title![0]) === "a domain specific language and editor for parallel particle methods") {
+				// 	logger.critical(`${isEqual} ||| ${finalChildren[j].title![0]}`);
+				// }
 				if (isEqual) {
 					logger.info(`CONCLUSIVE API paper merging: ${finalChildren[i].uniqueId!.map(item => item.type == idType.DOI ? item.value : undefined)} // ${finalChildren[i].title} <-> ${finalChildren[j].uniqueId!.map(item => item.type == idType.DOI ? item.value : undefined)} // ${finalChildren[j].title}`);
 					finalChildren[j] = this.merge(finalChildren[i], finalChildren[j]);
@@ -316,6 +325,10 @@ export class ApiMerger implements IApiMerger {
 		 }
 		 */
 		/** Calculate the complete equality of 2 papers. OverallWeight is used to kinda control the aggressiveness of the algorithm */
+
+		// if (ApiMerger.normalizeString(firstResponse.title![0]) === "a domain specific language and editor for parallel particle methods") {
+		// 	logger.error(`${((sameTitle + sameAbstract + sameAuthor + sameYear) / (comparison.titleWeight + comparison.abstractWeight + comparison.authorWeight + comparison.yearWeight))} ||| ${secondResponse.title![0]}`);
+		// }
 
 		if (((sameTitle + sameAbstract + sameAuthor + sameYear) / (comparison.titleWeight + comparison.abstractWeight + comparison.authorWeight + comparison.yearWeight)) > comparison.overallWeight) {
 			return true;

@@ -59,50 +59,40 @@ export class MicrosoftResearchApi implements IApiFetcher {
 	 * @returns Object containing the fetched paper and all paperObjects from citations and references. Promise.
 	 */
 	public async fetch(query: IApiQuery): Promise<IApiResponse> {
-		var citations: IApiPaper[];
-		var paper: IApiPaper;
-		var RIds: number[];
-		var references: IApiPaper[];
-
-		let response = fetch(this.url, {
-			method: 'POST',
-			headers: this._headers,
-			body: JSON.stringify({
-				expr: this._parseQuery(query),
-				attributes: this._attributes
+		var paper: IApiPaper = {};
+		var citations: Promise<IApiPaper[]> | undefined;
+		let references: Promise<IApiPaper[]> | undefined;
+		try {
+			let response = await fetch(this.url, {
+				method: 'POST',
+				headers: this._headers,
+				body: JSON.stringify({
+					expr: this._parseQuery(query),
+					attributes: this._attributes
+				})
 			})
-		})
-			.then(data => {
-				return data.json();
-			})
-			.then(data => {
-				//logger.debug(data);
-				paper = this._parseResponse(data.entities[0]);
-				RIds = data.entities[0] ? data.entities[0].RId : [];
-				return data.entities[0] ? this._getCitations(data.entities[0].Id) : [];
-			})
-			.then(data => {
-				citations = data
-				return RIds.length > 0 ? this._getReferences(RIds) : [];
-			})
-			.then(data => {
-				references = data;
-				let apiReturn: IApiResponse = {
-					"paper": paper,
-					"citations": citations,
-					"references": references
-				}
-				return apiReturn;
-			})
-			.catch(data => {
-				logger.error("Error while fetching microsoftResearch: " + data);
-				return {
-					"paper": paper ? paper : undefined,
-					"citations": citations ? citations : undefined,
-					"references": references ? references : undefined
-				} as IApiResponse;
-			})
-		return response;
+			let json = await response.json();
+			paper = this._parseResponse(json.entities[0]);
+			citations = json.entities[0] && this._getCitations(json.entities[0].Id);
+			//logger.debug(json.entities[0].RId)
+			// references = (json.entities[0] && json.entities[0].RId > 0) && this._getReferences(json.entities[0].RId);
+			references = json.entities[0] && this._getReferences(json.entities[0].RId);
+			//logger.debug(await references)
+			var apiReturn: IApiResponse = {
+				"paper": paper,
+				"citations": await citations,
+				"references": await references
+			}
+		}
+		catch (e) {
+			logger.critical(`MicrosoftResearchApi: Failed to fetch Query: ${e}`);
+			var apiReturn: IApiResponse = {
+				"paper": paper,
+				"citations": citations ? await citations : [],
+				"references": references ? await references : []
+			}
+		}
+		return apiReturn;
 	}
 
 	/**
@@ -111,32 +101,35 @@ export class MicrosoftResearchApi implements IApiFetcher {
 	 * @param microsoftIds - list of microsoft-ids provided by the source-paper in key RId
 	 * @returns list of paperObjects containing the references. Promise.
 	 */
-	private _getReferences(microsoftIds: number[]): Promise<IApiPaper[]> {
+	private async _getReferences(microsoftIds: number[]): Promise<IApiPaper[]> {
 		let convertedIds: string[] = microsoftIds.map(String);
-		convertedIds = convertedIds.map(i => 'Id=' + i);
-		let queryPattern = convertedIds.join(',');
+		let references: Array<IApiPaper> = [];
+		//logger.debug(microsoftIds);
+		try {
+			convertedIds = convertedIds.map(i => 'Id=' + i);
+			let queryPattern = convertedIds.join(',');
 
-		let response = fetch(this.url, {
-			method: 'POST',
-			headers: this._headers,
-			body: JSON.stringify({
-				expr: `Or(${queryPattern})`,
-				count: convertedIds.length,
-				attributes: this._attributes
+			let response = await fetch(this.url, {
+				method: 'POST',
+				headers: this._headers,
+				body: JSON.stringify({
+					expr: `Or(${queryPattern})`,
+					count: convertedIds.length,
+					attributes: this._attributes
+				})
 			})
-		})
-			.then(data => {
-				return data.json();
-			})
-			.then(data => {
-				let citations: Array<IApiPaper> = [];
-				for (let value in data.entities) {
-					let cit = this._parseResponse(data.entities[value]);
-					citations.push(cit);
-				}
-				return citations;
-			})
-		return response;
+			let json = await response.json();
+			//logger.debug(json);
+			for (let value in json.entities) {
+				let cit = this._parseResponse(json.entities[value]);
+				references.push(cit);
+			}
+		}
+		catch (e) {
+			logger.error(`MicrosoftResearchApi: Failed to fetch References: ${e}`);
+		}
+
+		return references;
 	}
 
 	/**
@@ -145,36 +138,29 @@ export class MicrosoftResearchApi implements IApiFetcher {
 	 * @param microsoftId - original-paper microsoft id. Returned by another fetch call.
 	 * @returns list of paperObjects containing the citations. Promise.
 	 */
-	private _getCitations(microsoftId: string): Promise<IApiPaper[]> {
-		let response = fetch(this.url, {
-			method: 'POST',
-			headers: this._headers,
-			body: JSON.stringify({
-				expr: `RId=${microsoftId}`,
-				count: 1000,
-				attributes: this._attributes
+	private async _getCitations(microsoftId: string): Promise<IApiPaper[]> {
+		var citations: Array<IApiPaper> = [];
+		try {
+			let response = await fetch(this.url, {
+				method: 'POST',
+				headers: this._headers,
+				body: JSON.stringify({
+					expr: `RId=${microsoftId}`,
+					count: 1000,
+					attributes: this._attributes
+				})
 			})
-		})
-			.then(data => {
-				return data.json();
-			})
-			.then(data => {
-				var citations: Array<IApiPaper> = [];
-				for (let value in data.entities) {
-					let cit = this._parseResponse(data.entities[value]);
-					citations.push(cit);
-				}
-				return citations;
-			})
-			.then(
-				(result) => {
-					return result; // This returns undefined
-				},
-				(error) => {
-					return error;
-				}
-			);
-		return response;
+			let json = await response.json();
+			for (let value in json.entities) {
+				let cit = this._parseResponse(json.entities[value]);
+				citations.push(cit);
+			}
+		}
+		catch (e) {
+			logger.error(`MicrosoftResearchApi: Failed to fetch Citations: ${e}`);
+		}
+
+		return citations;
 	}
 
 	/**
@@ -213,14 +199,14 @@ export class MicrosoftResearchApi implements IApiFetcher {
 		}
 
 		let parsedUniqueIds: IApiUniqueId[] = [];
-		parsedUniqueIds.push(
+		response.DOI && parsedUniqueIds.push(
 			{
 				id: undefined,
 				type: idType.DOI,
 				value: response.DOI ? response.DOI : undefined,
 			} as IApiUniqueId
 		)
-		parsedUniqueIds.push(
+		response.Id && parsedUniqueIds.push(
 			{
 				id: undefined,
 				type: idType.MicrosoftAcademic,

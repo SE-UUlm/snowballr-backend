@@ -24,44 +24,30 @@ export class OpenCitationsApi implements IApiFetcher {
 	 * @returns Object containing the fetched paper and all paperObjects from citations and references. Promise.
 	 */
 	public async fetch(query: IApiQuery): Promise<IApiResponse> {
-		var citations: IApiPaper[];
-		var paper: IApiPaper;
-		var doiReference: string;
-		var references: IApiPaper[];
-		//logger.debug(query);
-
-		let response = fetch(`${this.url}/index/api/v1/metadata/${query.id}`)
-			.then(data => {
-				return data.json();
-			})
-			.then(data => {
-				paper = this._parseResponse(data[0]);
-				//logger.debug(data);
-				doiReference = data[0].reference;
-				return this._getLinkedDOIs(data[0].citation);
-			})
-			.then(data => {
-				citations = data
-				return this._getLinkedDOIs(doiReference);
-			})
-			.then(data => {
-				references = data;
-				let apiReturn: IApiResponse = {
-					"paper": paper,
-					"citations": citations,
-					"references": references
-				}
-				return apiReturn;
-			})
-			.catch(data => {
-				logger.error("Error while fetching openCitations: " + data);
-				return {
-					"paper": paper ? paper : undefined,
-					"citations": citations ? citations : undefined,
-					"references": references ? references : undefined
-				} as IApiResponse;
-			})
-		return response;
+		var paper: IApiPaper = {};
+		var citations: Promise<IApiPaper[]> | undefined;
+		let references: Promise<IApiPaper[]> | undefined;
+		try {
+			let response = await fetch(`${this.url}/index/api/v1/metadata/${query.id}`);
+			let json = await response.json();
+			paper = this._parseResponse(json[0]);
+			citations = this._getLinkedDOIs(json[0].citation);
+			references = this._getLinkedDOIs(json[0].reference);
+			var apiReturn: IApiResponse = {
+				"paper": paper,
+				"citations": await citations,
+				"references": await references
+			}
+		}
+		catch (e) {
+			logger.critical(`OpenCitationsApi: Failed to fetch Query: ${e}`);
+			var apiReturn: IApiResponse = {
+				"paper": paper,
+				"citations": citations ? await citations : [],
+				"references": references ? await references : []
+			}
+		}
+		return apiReturn;
 	}
 
 	/**
@@ -71,31 +57,23 @@ export class OpenCitationsApi implements IApiFetcher {
 	 * @param dois - string of DOIs return by the original api called. Each doi separated by ";"
 	 * @returns Object List of IApiPaper with all metadata for the references or citations. Promise.
 	 */
-	private _getLinkedDOIs(dois: string): Promise<IApiPaper[]> {
+	private async _getLinkedDOIs(dois: string): Promise<IApiPaper[]> {
 		let urlQuery: string = dois.replace(/; /g, '__');
+		let children: Array<IApiPaper> = [];
 		//logger.debug(urlQuery)
-		let response = fetch(`${this.url}/index/api/v1/metadata/${urlQuery}`)
-			.then(data => {
-				return data.json();
-			})
-			.then(data => {
-				//console.log(data);
-				var citations: Array<IApiPaper> = [];
-				for (let value in data) {
-					let cit = this._parseResponse(data[value]);
-					citations.push(cit);
-				}
-				return citations;
-			})
-			.then(
-				(result) => {
-					return result; // This returns undefined
-				},
-				(error) => {
-					return error;
-				}
-			);
-		return response;
+		try {
+			let response = await fetch(`${this.url}/index/api/v1/metadata/${urlQuery}`);
+			let json = await response.json();
+
+			for (let value in json) {
+				let child = this._parseResponse(json[value]);
+				children.push(child);
+			}
+		}
+		catch (e) {
+			logger.error(`OpenCitationsApi: Failed to fetch ChildObjects: ${e}`);
+		}
+		return children;
 	}
 
 	/**
@@ -133,7 +111,7 @@ export class OpenCitationsApi implements IApiFetcher {
 		}
 
 		let parsedUniqueIds: IApiUniqueId[] = [];
-		parsedUniqueIds.push(
+		response.doi && parsedUniqueIds.push(
 			{
 				id: undefined,
 				type: idType.DOI,
