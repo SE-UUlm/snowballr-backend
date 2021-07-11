@@ -241,8 +241,9 @@ export class ApiMerger implements IApiMerger {
 			comparison.abstractWeight = 0;
 		}
 
+		/** Compare if papers have equal publication year. Year might differ by one for papers published on different platform at the end of the year */
 		if (firstResponse.year && secondResponse.year) {
-			sameYear = firstResponse.year - secondResponse.year in [-1, 0, 1] ? comparison.yearWeight : -comparison.yearWeight;
+			sameYear = ApiMerger.compareYears(firstResponse.year, secondResponse.year) ? comparison.yearWeight : -comparison.yearWeight;
 		} else {
 			comparison.yearWeight = 0;
 		}
@@ -273,6 +274,17 @@ export class ApiMerger implements IApiMerger {
 		/** Calculate the complete equality of 2 papers. OverallWeight is used to kinda control the aggressiveness of the algorithm */
 		if (((sameTitle + sameAbstract + sameAuthor + sameYear) / (comparison.titleWeight + comparison.abstractWeight + comparison.authorWeight + comparison.yearWeight)) > comparison.overallWeight) {
 			return true;
+		}
+		return false;
+	}
+
+	public static compareYears(firstYear: number[], secondYear: number[]): boolean {
+		for (let i in firstYear) {
+			for (let j in secondYear) {
+				if (firstYear[i] - secondYear[i] in [-1, 0, 1]) {
+					return true;
+				}
+			}
 		}
 		return false;
 	}

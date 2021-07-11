@@ -112,12 +112,12 @@ export class SemanticScholar implements IApiFetcher {
 			abstract: response.abstract ? [response.abstract] : [],
 			numberOfReferences: response.references ? [response.references.length] : [],
 			numberOfCitations: response.citations ? [response.citations.length] : [],
-			year: response.year ? Number(response.year) : undefined,
+			year: response.year ? [Number(response.year)] : [],
 			publisher: undefined,
 			type: undefined,
 			scope: undefined,
-			scopeName: response.venue ? [response.venue] : undefined,
-			pdf: response.url ? [response.url] : undefined,
+			scopeName: response.venue ? [response.venue] : [],
+			pdf: response.url ? [response.url] : [],
 			uniqueId: parsedUniqueIds,
 			source: [sourceApi.S2]
 		};

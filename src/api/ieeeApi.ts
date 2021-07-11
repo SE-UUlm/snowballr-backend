@@ -1,0 +1,191 @@
+import { IApiQuery } from "./iApiQuery.ts";
+import { IApiResponse } from "./iApiResponse.ts";
+import { IApiFetcher } from "./iApiFetcher.ts";
+import { IApiPaper, sourceApi } from './iApiPaper.ts';
+import { logger } from "./logger.ts";
+import { IApiAuthor } from "./iApiAuthor.ts";
+import { IApiUniqueId, idType } from "./iApiUniqueId.ts";
+import axiod from "https://deno.land/x/axiod/mod.ts";
+
+export class IeeeApi implements IApiFetcher {
+	url: string;
+	private _token: string;
+	private _config: {} = {};
+	private _paperReferences: number = 0;
+
+	public constructor(url: string, token: string) {
+		logger.info("IEEE initialized");
+		this.url = url;
+		this._token = token;
+	}
+
+	/**
+	 * Checks for a paper at the ieee research api via a query object.
+	 * Since IEEE is daily rate limited and we dont get any information or refs and cites we only use it to fetch metadata of the original paper searched.
+	 *
+	 * @param query - Object defined by interface in IApiQuery to filter and query api calls.
+	 * @returns Object containing the fetched paper and all paperObjects from citations and references. Promise.
+	 */
+	public async fetch(query: IApiQuery): Promise<IApiResponse> {
+		var paper: IApiPaper = {};
+		let citations: Promise<IApiPaper[]> | undefined;
+		let references: Promise<IApiPaper[]> | undefined;
+		try {
+			//logger.debug("here")
+			if (query.id) {
+				logger.debug(`Fetching IEEE by DOI: ${query.id}`);
+				var response = await fetch(`${this.url}/?apikey=${this._token}&format=json&max_records=25&start_record=1&sort_order=asc&sort_field=article_title&doi=${query.id}`);
+			}
+			else if (query.rawName && query.title) {
+				logger.debug(`Fetching IEEE by title and author: ${query.title} | ${query.rawName}`);
+				var response = await fetch(`${this.url}/?apikey=${this._token}&format=json&max_records=25&start_record=1&sort_order=asc&sort_field=article_title&author=${query.rawName}&title=${query.title}`);
+			}
+			else {
+				logger.critical("Query not fetchable by IEEE. Need either the DOI or (title and author).");
+				return {} as IApiResponse;
+			}
+			let json = await response.json();
+			if (!json.articles) {
+				throw new Error("Paper not found by IEEE");
+			}
+			//logger.debug(json);
+			this._config = {
+				params: {},
+				headers: {
+					'Accept': 'application/json',
+					'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Safari/605.1.15',
+					'Referer': json.articles[0].html_url
+				},
+				//validateStatus: status) => true
+			}
+			this._getReferencesFromHtml(json.articles[0].html_url);
+			paper = {}// this._parseResponse(json.articles[0]);
+
+			var apiReturn: IApiResponse = {
+				"paper": paper,
+				"citations": [],
+				"references": []
+			}
+		}
+		catch (e) {
+			logger.critical(`IEEE - Failed to fetch Query | ${e}`);
+			var apiReturn: IApiResponse = {
+				"paper": paper,
+				"citations": citations ? await citations : [],
+				"references": references ? await references : []
+			}
+		}
+		return apiReturn;
+	}
+
+	private async _getCitationsFromHtml(url: string) {
+		logger.debug(url);
+		const response = await axiod.get(`${url.replace('document', 'rest/document')}citations`, this._config);
+		logger.debug(response.data);
+		let citationIDs = response.data.paperCitations.ieee.map((item: any) => item.links.documentLink.replace("/document/", ''));
+		//citationIDs.concat(response.data.paperCitations.nonIeee.map((item: any) => item.publicationNumber));
+		logger.debug(citationIDs);
+		for (let cite in response.data.paperCitations.ieee) {
+
+		}
+	}
+
+	private async _getReferencesFromHtml(url: string) {
+		logger.debug(url);
+
+		const response = await axiod.get(`${url.replace('document', 'rest/document')}references`, this._config);
+		this._paperReferences = response.data.references ? response.data.references.length : 0;
+		logger.debug(response.data.references[2]);
+		for (let r in response.data.references) {
+			let data = response.data.references[r];
+			let text = data.text.split('.');
+			let rawMetadata = {
+				'title': data.title,
+				'authors': {
+					'authors': text[0].replace(`, ${data.title}`, '').replace('and', ',').split(',').map((item: string) => { return { 'fullname': item.trim() } })
+				}
+
+			}
+		}
+		// let citationIDs = response.data.references.ieee.map((item: any) => item.links.documentLink.replace("/document/", ''));
+		//citationIDs.concat(response.data.paperCitations.nonIeee.map((item: any) => item.publicationNumber));
+		//logger.debug(response);
+		// for (let cite in response.data.paperCitations.ieee) {
+
+		// }
+	}
+
+
+	/**
+	 * Cast the response of a single paper return by the IEEE to a ApiPaper object
+	 * Used to get normalized result of all apis.
+	 *
+	 * @param response - single object return for a single paper by the IEEE
+	 * @returns normalized ApiPaper object.
+	 */
+	private _parseResponse(response: any): IApiPaper {
+		//logger.debug(response);
+
+		let parsedAuthors: IApiAuthor[] = [];
+		for (let a of response.authors.authors) {
+			let parsedAuthor: IApiAuthor = {
+				id: [],
+				orcid: [],
+				rawString: [a.full_name],
+				lastName: [],
+				firstName: [],
+			}
+			parsedAuthors.push(parsedAuthor);
+		}
+
+		let parsedUniqueIds: IApiUniqueId[] = [];
+		response.doi && parsedUniqueIds.push(
+			{
+				id: undefined,
+				type: idType.DOI,
+				value: response.doi ? response.doi : undefined,
+			} as IApiUniqueId
+		)
+		response.partnum && parsedUniqueIds.push(
+			{
+				id: undefined,
+				type: idType.IEEE,
+				value: response.partnum ? response.partnum : undefined,
+			} as IApiUniqueId
+		)
+
+		response.isbn && parsedUniqueIds.push(
+			{
+				id: undefined,
+				type: idType.ISBN,
+				value: response.isbn ? response.isbn : undefined,
+			} as IApiUniqueId
+		)
+
+		response.issn && parsedUniqueIds.push(
+			{
+				id: undefined,
+				type: idType.ISSN,
+				value: response.issn ? response.issn : undefined,
+			} as IApiUniqueId
+		)
+
+		let parsedResponse: IApiPaper = {
+			id: undefined,
+			title: response.title ? [response.title] : [],
+			author: parsedAuthors,
+			abstract: response.abstract ? [response.abstract] : [],
+			numberOfReferences: response.references ? [response.references.length] : [],
+			numberOfCitations: response.citing_paper_count ? [response.citing_paper_count] : [],
+			year: response.publication_year ? [Number(response.publication_year)] : [],
+			publisher: response.publisher ? [response.publisher] : [],
+			type: undefined,
+			scope: response.content_type ? [response.content_type] : [],
+			scopeName: response.publication_title ? [response.publication_title] : [],
+			pdf: response.pdf_url ? [response.pdf_url] : undefined,
+			uniqueId: parsedUniqueIds,
+			source: [sourceApi.IE]
+		};
+		return parsedResponse;
+	}
+}

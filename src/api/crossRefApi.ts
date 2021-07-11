@@ -191,12 +191,12 @@ export class CrossRefApi implements IApiFetcher {
 			abstract: [],
 			numberOfReferences: response.message['reference-count'] ? [response.message['reference-count']] : [],
 			numberOfCitations: response.message.relation && response.message.relation.cites ? [response.message.relation.cites.length] : [],
-			year: response.Y ? Number(response.Y) : undefined,
+			year: response.Y ? [Number(response.Y)] : [],
 			publisher: response.message.publisher ? [response.message.publisher] : [],
-			type: response.message.type ? response.message.type : undefined,
+			type: response.message.type ? [response.message.type] : [],
 			scope: undefined,
 			scopeName: undefined,
-			pdf: response.message.link ? response.message.link.map((item: any) => item.URL) : undefined,
+			pdf: response.message.link ? response.message.link.map((item: any) => item.URL) : [],
 			uniqueId: parsedUniqueIds,
 			source: [sourceApi.CR]
 		};

@@ -8,10 +8,11 @@ import { CrossRefApi } from "./crossRefApi.ts";
 import { ApiMerger } from "./apiMerger.ts";
 import { SemanticScholar } from "./semanticScholar.ts"
 import { IApiPaper } from "./iApiPaper.ts";
+import { IeeeApi } from "./ieeeApi.ts";
 
 const query: IApiQuery = {
 	rawName: "sebastian erdweg",
-	id: "10.1007/978-3-319-02654-1_11",
+	id: "10.1109/SEAA.2009.60",
 	title: "The State of the Art in Language Workbenches"
 }
 
@@ -32,14 +33,16 @@ const sortPapersByName = (item1: IApiPaper, item2: IApiPaper) => {
 //     title: "Adaptive Exterior Light and Speed Control System"
 // }
 
-const microsoft = new MicrosoftResearchApi("https://api.labs.cognitive.microsoft.com/academic/v1.0/evaluate", "9a02225751354cd29397eba3f5382101");
-const res = microsoft.fetch(query);
-const openCitations = new OpenCitationsApi("https://opencitations.net",)
-const res2 = openCitations.fetch(query);
-const crossRef = new CrossRefApi("https://api.crossref.org/works", "lukas.romer@uni-ulm.de");
-const res3 = crossRef.fetch(query);
-const semanticScholar = new SemanticScholar("https://api.semanticscholar.org/v1/paper");
-const res4 = semanticScholar.fetch(query);
+// const microsoft = new MicrosoftResearchApi("https://api.labs.cognitive.microsoft.com/academic/v1.0/evaluate", "9a02225751354cd29397eba3f5382101");
+// const res = microsoft.fetch(query);
+// const openCitations = new OpenCitationsApi("https://opencitations.net",)
+// const res2 = openCitations.fetch(query);
+// const crossRef = new CrossRefApi("https://api.crossref.org/works", "lukas.romer@uni-ulm.de");
+// const res3 = crossRef.fetch(query);
+// const semanticScholar = new SemanticScholar("https://api.semanticscholar.org/v1/paper");
+// const res4 = semanticScholar.fetch(query);
+const ieee = new IeeeApi("http://ieeexploreapi.ieee.org/api/v1/search/articles", "4yk5d9an52ejynjsmzqxe62r");
+const res5 = ieee.fetch(query);
 
 const merger = new ApiMerger();
 //console.log((await res3).references);
@@ -50,18 +53,18 @@ const merger = new ApiMerger();
 //     }
 // })
 
-let first = JSON.parse(JSON.stringify((await res2).citations));
-if (first) {
-	first = first.sort(sortPapersByName)
+// let first = JSON.parse(JSON.stringify((await res).citations));
+// if (first) {
+// 	first = first.sort(sortPapersByName)
 
-}
+// }
 
-let second = JSON.parse(JSON.stringify((await res3).citations));
-if (second) {
-	second = second.sort(sortPapersByName)
-}
+// let second = JSON.parse(JSON.stringify((await res3).citations));
+// if (second) {
+// 	second = second.sort(sortPapersByName)
+// }
 
-let doMerge = merger.compare([res, res2, res3, res4]).then(data => {
+let doMerge = merger.compare([res5]).then(data => {
 	//console.log(JSON.stringify(data, null, 2));
 	for (let i = 0; i < data.length; i++) {
 
@@ -91,14 +94,14 @@ let doMerge = merger.compare([res, res2, res3, res4]).then(data => {
 });
 
 await doMerge;
-fileLogger.info("1 references")
-for (let cite in first) {
-	fileLogger.info((first as any)[cite]);
-}
-fileLogger.info("2 references")
-for (let cite in second) {
-	fileLogger.info((second as any)[cite]);
-}
+// fileLogger.info("1 references")
+// for (let cite in first) {
+// 	fileLogger.info((first as any)[cite]);
+// }
+// fileLogger.info("2 references")
+// for (let cite in second) {
+// 	fileLogger.info((second as any)[cite]);
+// }
 
 
 // const crossRef = new CrossRefApi("https://api.crossref.org/works")
