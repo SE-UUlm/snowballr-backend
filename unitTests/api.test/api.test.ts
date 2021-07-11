@@ -105,7 +105,6 @@ Deno.test({
 		const secondApiResponseJustTitle: IApiResponse = { paper: secondPaper, citations: [], references: [] }
 		const thirdApiResponseJustTitle: IApiResponse = { paper: thirdPaper, citations: [], references: [] }
 		let merged = await apiMerger.compare([makePromise<IApiResponse>(firstApiResponseJustTitle), makePromise<IApiResponse>(secondApiResponseJustTitle), makePromise<IApiResponse>(thirdApiResponseJustTitle)]);
-		console.error(JSON.stringify(merged, null, 2))
 		assertEquals(merged.length, 1)
 		assertEquals(merged[0].paper.author![0]!.firstName!, ["Samuel"])
 	}
@@ -135,7 +134,6 @@ Deno.test({
 		const thirdApiResponseJustTitle: IApiResponse = { paper: thirdPaper, citations: [], references: [] }
 		const fourthApiResponseJustTitle: IApiResponse = { paper: fourthPaper, citations: [], references: [] }
 		let merged = await apiMerger.compare([makePromise<IApiResponse>(firstApiResponseJustTitle), makePromise<IApiResponse>(secondApiResponseJustTitle), makePromise<IApiResponse>(thirdApiResponseJustTitle), makePromise<IApiResponse>(fourthApiResponseJustTitle)]);
-		console.error("Merged" + JSON.stringify(merged, null, 2))
 		assertEquals(merged.length, 1)
 		assertEquals(merged[0].paper.author![0]!.firstName!, ["Samuel"])
 		assertEquals(merged[0].paper.author![0]!.lastName!, ["Idowu"])
