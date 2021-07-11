@@ -56,7 +56,7 @@ if (first) {
 
 }
 
-let second = JSON.parse(JSON.stringify((await res4).citations));
+let second = JSON.parse(JSON.stringify((await res3).citations));
 if (second) {
 	second = second.sort(sortPapersByName)
 }
