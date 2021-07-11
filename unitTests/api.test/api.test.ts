@@ -42,17 +42,114 @@ Deno.test({
 			overallWeight: 0.85,
 			yearWeight: 2
 		})
-		const firstPaper: IApiPaper = { "title": ["asset management in machine learning a survey"], "author": [{ "id": [], "orcid": [], "rawString": ["samuel idowu"], "lastName": ["idowu"], "firstName": ["samuel"] }] }
-		const secondPaper: IApiPaper = { "title": ["asset management in machine learning a survey"], "author": [{ "id": [], "orcid": [], "rawString": ["samuel idowu"], "lastName": ["Idowu"], "firstName": ["Samuel"] }] }
+		const firstPaper: IApiPaper = { "title": ["awsome paper title"], "author": [{ "id": [], "orcid": [], "rawString": ["samuel idowu"], "lastName": ["idowu"], "firstName": ["samuel"] }, { "id": [], "orcid": [], "rawString": ["max muster"], "lastName": ["Muster"], "firstName": ["Max"] }] }
+		const secondPaper: IApiPaper = { "title": ["awsome paper title"], "author": [{ "id": [], "orcid": [], "rawString": ["Samuel Idowu"], "lastName": ["Idowu"], "firstName": ["Samuel"] }, { "id": [], "orcid": [], "rawString": ["Max Muster"], "lastName": ["muster"], "firstName": ["max"] }] }
 		const firstApiResponseJustTitle: IApiResponse = { paper: firstPaper, citations: [], references: [] }
 		const secondApiResponseJustTitle: IApiResponse = { paper: secondPaper, citations: [], references: [] }
 		let merged = await apiMerger.compare([makePromise<IApiResponse>(firstApiResponseJustTitle), makePromise<IApiResponse>(secondApiResponseJustTitle)]);
+		assertEquals(merged.length, 1)
+		assertEquals(merged[0].paper.author![0]!.firstName!, ["Samuel"])
+		assertEquals(merged[0].paper.author![0]!.lastName!, ["Idowu"])
+		assertEquals(merged[0].paper.author![0]!.rawString!, ["Samuel Idowu"])
+	}
+
+})
+
+
+Deno.test({
+	name: "test 3 papers merge author",
+	async fn(): Promise<void> {
+		let apiMerger = new ApiMerger({
+			titleWeight: 10,
+			titleLevenshtein: 10,
+			abstractWeight: 7,
+			abstractLevenshtein: 0,
+			authorWeight: 8,
+			overallWeight: 0.85,
+			yearWeight: 2
+		})
+		const firstPaper: IApiPaper = { "title": ["awsome paper title"], "abstract": ["one good abstract"], "author": [{ "id": [], "orcid": [], "rawString": ["samuel idowu"], "lastName": ["idowu"], "firstName": [] }, { "id": [], "orcid": [], "rawString": ["max muster"], "lastName": ["muster"], "firstName": ["Max"] }] }
+		const secondPaper: IApiPaper = { "title": ["awsome paper title"], "abstract": ["one good abstract"], "author": [{ "id": [], "orcid": [], "rawString": ["Samuel Idowu"], "lastName": [], "firstName": ["samuel"] }, { "id": [], "orcid": [], "rawString": [], "lastName": ["Muster"], "firstName": ["max"] }] }
+		const thirdPaper: IApiPaper = { "title": ["awsome paper title"], "abstract": ["one good abstract"], "author": [{ "id": [], "orcid": [], "rawString": ["Samuel Idowu"], "lastName": ["Idowu"], "firstName": ["Samuel"] }, { "id": [], "orcid": [], "rawString": ["Max Muster"], "lastName": [], "firstName": [] }] }
+		const firstApiResponseJustTitle: IApiResponse = { paper: firstPaper, citations: [], references: [] }
+		const secondApiResponseJustTitle: IApiResponse = { paper: secondPaper, citations: [], references: [] }
+		const thirdApiResponseJustTitle: IApiResponse = { paper: thirdPaper, citations: [], references: [] }
+		let merged = await apiMerger.compare([makePromise<IApiResponse>(firstApiResponseJustTitle), makePromise<IApiResponse>(secondApiResponseJustTitle), makePromise<IApiResponse>(thirdApiResponseJustTitle)]);
+		assertEquals(merged.length, 1)
+		assertEquals(merged[0].paper.author![0]!.firstName!, ["Samuel"])
+		assertEquals(merged[0].paper.author![0]!.lastName!, ["Idowu"])
+		assertEquals(merged[0].paper.author![0]!.rawString!, ["Samuel Idowu"])
+		assertEquals(merged[0].paper.author![1]!.firstName!, ["Max"])
+		assertEquals(merged[0].paper.author![1]!.lastName!, ["Muster"])
+		assertEquals(merged[0].paper.author![1]!.rawString!, ["Max Muster"])
+	}
+
+})
+
+Deno.test({
+	name: "test 3 papers merge author",
+	async fn(): Promise<void> {
+		let apiMerger = new ApiMerger({
+			titleWeight: 10,
+			titleLevenshtein: 10,
+			abstractWeight: 7,
+			abstractLevenshtein: 0,
+			authorWeight: 8,
+			overallWeight: 0.8,
+			yearWeight: 2
+		})
+		const firstPaper: IApiPaper = { "title": ["awsome paper title"], "abstract": ["one good abstract"], "author": [{ "id": [], "orcid": [], "rawString": ["samuel idowu"], "lastName": ["idowu"], "firstName": [] }, { "id": [], "orcid": [], "rawString": ["max muster"], "lastName": ["muster"], "firstName": ["Max"] }] }
+		const secondPaper: IApiPaper = { "title": ["awsome paper title"], "abstract": ["one good abstract"], "author": [{ "id": [], "orcid": [], "rawString": ["Samuel Idowu"], "lastName": [], "firstName": ["samuel"] }, { "id": [], "orcid": [], "rawString": [], "lastName": ["Muster"], "firstName": ["max"] }] }
+		const thirdPaper: IApiPaper = { "title": ["awsome paper title"], "abstract": ["one good abstract"], "author": [{ "id": [], "orcid": [], "rawString": ["Samuel Idowu"], "lastName": ["Idowu"], "firstName": ["Samuel"] }, { "id": [], "orcid": [], "rawString": ["Max Muster"], "lastName": [], "firstName": [] }] }
+		const firstApiResponseJustTitle: IApiResponse = { paper: firstPaper, citations: [], references: [] }
+		const secondApiResponseJustTitle: IApiResponse = { paper: secondPaper, citations: [], references: [] }
+		const thirdApiResponseJustTitle: IApiResponse = { paper: thirdPaper, citations: [], references: [] }
+		let merged = await apiMerger.compare([makePromise<IApiResponse>(firstApiResponseJustTitle), makePromise<IApiResponse>(secondApiResponseJustTitle), makePromise<IApiResponse>(thirdApiResponseJustTitle)]);
 		console.error(JSON.stringify(merged, null, 2))
 		assertEquals(merged.length, 1)
 		assertEquals(merged[0].paper.author![0]!.firstName!, ["Samuel"])
 	}
 
 })
+
+
+Deno.test({
+	name: "test 4 papers merge author",
+	async fn(): Promise<void> {
+		let apiMerger = new ApiMerger({
+			titleWeight: 10,
+			titleLevenshtein: 10,
+			abstractWeight: 7,
+			abstractLevenshtein: 0,
+			authorWeight: 8,
+			overallWeight: 0.85,
+			yearWeight: 2
+		})
+		const firstPaper: IApiPaper = { "title": ["awsome paper title"], "abstract": ["one good abstract"], "author": [{ "id": [], "orcid": [], "rawString": ["Samuel Idowu"], "lastName": ["idowu"], "firstName": [] }, { "id": [], "orcid": [], "rawString": ["max muster"], "lastName": ["muster"], "firstName": ["Max"] }] }
+		const secondPaper: IApiPaper = { "title": ["awsome paper title"], "abstract": ["one good abstract"], "author": [{ "id": [], "orcid": [], "rawString": ["samuel idowu"], "lastName": [], "firstName": ["samuel"] }, { "id": [], "orcid": [], "rawString": [], "lastName": ["Muster"], "firstName": ["max"] }, { "id": [], "orcid": [], "rawString": ["timmy turner"], "lastName": [], "firstName": [] }] }
+		const thirdPaper: IApiPaper = { "title": ["awsome paper title"], "abstract": ["one good abstract"], "author": [{ "id": [], "orcid": [], "rawString": [], "lastName": ["Idowu"], "firstName": ["Samuel"] }, { "id": [], "orcid": [], "rawString": ["Max Muster"], "lastName": [], "firstName": [] }, { "id": [], "orcid": [], "rawString": [], "lastName": ["Turner"], "firstName": ["Timmy"] }] }
+		const fourthPaper: IApiPaper = { "title": ["awsome paper title"], "abstract": ["one good abstract"], "author": [{ "id": [], "orcid": [], "rawString": ["Samuel Idowu"], "lastName": ["idowu"], "firstName": [] }, { "id": [], "orcid": [], "rawString": ["Max Muster"], "lastName": [], "firstName": [] }, { "id": [], "orcid": [], "rawString": ["Timmy Turner"], "lastName": ["turner"], "firstName": ["timmy"] }] }
+
+		const firstApiResponseJustTitle: IApiResponse = { paper: firstPaper, citations: [], references: [] }
+		const secondApiResponseJustTitle: IApiResponse = { paper: secondPaper, citations: [], references: [] }
+		const thirdApiResponseJustTitle: IApiResponse = { paper: thirdPaper, citations: [], references: [] }
+		const fourthApiResponseJustTitle: IApiResponse = { paper: fourthPaper, citations: [], references: [] }
+		let merged = await apiMerger.compare([makePromise<IApiResponse>(firstApiResponseJustTitle), makePromise<IApiResponse>(secondApiResponseJustTitle), makePromise<IApiResponse>(thirdApiResponseJustTitle), makePromise<IApiResponse>(fourthApiResponseJustTitle)]);
+		console.error("Merged" + JSON.stringify(merged, null, 2))
+		assertEquals(merged.length, 1)
+		assertEquals(merged[0].paper.author![0]!.firstName!, ["Samuel"])
+		assertEquals(merged[0].paper.author![0]!.lastName!, ["Idowu"])
+		assertEquals(merged[0].paper.author![0]!.rawString!, ["Samuel Idowu"])
+		assertEquals(merged[0].paper.author![1]!.firstName!, ["Max"])
+		assertEquals(merged[0].paper.author![1]!.lastName!, ["Muster"])
+		assertEquals(merged[0].paper.author![1]!.rawString!, ["Max Muster"])
+		assertEquals(merged[0].paper.author![2]!.firstName!, ["Timmy"])
+		assertEquals(merged[0].paper.author![2]!.lastName!, ["Turner"])
+		assertEquals(merged[0].paper.author![2]!.rawString!, ["Timmy Turner"])
+	}
+
+})
+
 
 Deno.test({
 	name: "Merge 3 same Titles",
