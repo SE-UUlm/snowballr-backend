@@ -169,8 +169,6 @@ export class ApiMerger implements IApiMerger {
 	 * @returns IApiResponse only unique paper child objkects
 	 */
 	private _compareChildren(response1Citations: IApiPaper[], response2Citations: IApiPaper[]) {
-		response1Citations = response1Citations.filter(item => item);
-		response2Citations = response2Citations.filter(item => item);
 		for (let i: number = 0; i < response1Citations.length; i++) {
 			/** Check for the same paper in other apis */
 			for (let k: number = 0; k < response2Citations.length; k++) {
@@ -301,12 +299,6 @@ export class ApiMerger implements IApiMerger {
 	 * @returns boolean whether the papers are found out to be equal or not
 	 */
 	private _mergeAuthors(firstAuthors: IApiAuthor[], secondAuthors: IApiAuthor[]): IApiAuthor[] {
-		if (firstAuthors.length === 0) {
-			return secondAuthors;
-		} else if (secondAuthors.length === 0) {
-			return firstAuthors;
-		}
-
 		let mergingAuthors: IApiAuthor[] = [];
 
 		for (let f1 in firstAuthors) {
@@ -487,10 +479,6 @@ export class ApiMerger implements IApiMerger {
                 resultingPaper[key] = first[key]
                 continue;
             }
-            if (key == "author") {
-                resultingPaper.author = this._mergeAuthors(first.author, second.author);
-                continue;
-            }
 
             if (key == "pdf") {
                 resultingPaper.pdf = first.pdf.concat(second.pdf);
@@ -500,6 +488,7 @@ export class ApiMerger implements IApiMerger {
             if (typeof first[key] === "string") {
                 resultingPaper[key] = this._deriveGenericProperty(first[key], second[key]);
             } else if (Array.isArray(first[key])) {
+
 					if (first[key].length === 0) {
 						resultingPaper[key] = second[key]
 					} else if (second[key].length === 0) {
@@ -507,7 +496,9 @@ export class ApiMerger implements IApiMerger {
 
 					} else if (typeof first[key][0] == "number" || typeof second[key][0] == "number") {
 						resultingPaper[key] = first[key].concat(second[key]);
-					} else{
+					} else if(key == "author") {
+							resultingPaper.author = this._mergeAuthors(first.author, second.author);
+					}else{
                         resultingPaper[key] = [];
                         for(let i = 0; i < first[key].length;i++){
                             for(let j = 0; j < second[key].length;j++){
