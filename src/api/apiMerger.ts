@@ -217,11 +217,14 @@ export class ApiMerger implements IApiMerger {
 		/** if DOI of 2 paper is equal we can assume that its the same paper */
 		for (let i = 0; i < firstDOI.length; i++) {
 			for (let j = 0; j < secondDOI.length; j++) {
-				if (firstDOI[i] == secondDOI[j]) {
-					//TODO test for rest, commented out
-					return true;
+				if (firstDOI[i] && secondDOI[j]) {
+					if (firstDOI[i] == secondDOI[j]) {
+						//TODO test for rest, commented out
+						return true;
+					} else {
+						return false;
+					}
 				}
-
 			}
 		}
 
@@ -465,7 +468,7 @@ export class ApiMerger implements IApiMerger {
 				if (paper.uniqueId[i].type == idType.DOI) {
 					let s = paper.uniqueId[i].value;
 					if (s) {
-						DOI.push(s);
+						DOI.push(s.toLowerCase());
 					}
 				}
 			}
@@ -516,6 +519,22 @@ export class ApiMerger implements IApiMerger {
 					resultingPaper[key] = first[key].concat(second[key]);
 				} else if (key == "author") {
 					resultingPaper.author = this._mergeAuthors(first.author, second.author);
+				} else if (key == "uniqueId") {
+					resultingPaper[key] = [];
+					for (let i = 0; i < first[key].length; i++) {
+						for (let j = 0; j < second[key].length; j++) {
+							if (ApiMerger.normalizeString(first[key][i].value) == ApiMerger.normalizeString(second[key][j].value)) {
+								resultingPaper[key].push(first[key][i]);
+								delete first[key][i];
+								delete second[key][j];
+								break;
+							}
+						}
+						second[key] = second[key].filter((item: string) => item);
+					}
+					first[key] = first[key].filter((item: string) => item)
+					resultingPaper[key] = resultingPaper[key].concat(first[key]).concat(second[key])
+
 				} else {
 					resultingPaper[key] = [];
 					for (let i = 0; i < first[key].length; i++) {
@@ -530,7 +549,7 @@ export class ApiMerger implements IApiMerger {
 						second[key] = second[key].filter((item: string) => item);
 					}
 					first[key] = first[key].filter((item: string) => item)
-					resultingPaper[key] = resultingPaper[key].concat(first[key], second[key])
+					resultingPaper[key] = resultingPaper[key].concat(first[key]).concat(second[key])
 
 				}
 			} else {
