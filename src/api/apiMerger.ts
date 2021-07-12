@@ -349,10 +349,12 @@ export class ApiMerger implements IApiMerger {
 			FIRSTLOOP: for (let i in first[key]) {
 				second[key] = second[key].filter((item: string) => item)
 				for (let j in second[key]) {
-					if (first[key][i] && second[key][j] && ApiMerger.normalizeString(first[key][i]) === ApiMerger.normalizeString(second[key][j])) {
-						mergedAuthor[key].push(this._deriveGenericProperty(first[key][i], second[key][j]));
-						delete second[key][j];
-						continue FIRSTLOOP;
+					if (first[key][i] && second[key][j]) {
+						if (ApiMerger.normalizeString(first[key][i]) === ApiMerger.normalizeString(second[key][j])) {
+							mergedAuthor[key].push(this._deriveGenericProperty(first[key][i], second[key][j]));
+							delete second[key][j];
+							continue FIRSTLOOP;
+						}
 					}
 				}
 				mergedAuthor[key].push(first[key][i]);
@@ -377,14 +379,9 @@ export class ApiMerger implements IApiMerger {
 	}
 
 	private _deriveRawStringAuthor(mergedAuthor: IApiAuthor): IApiAuthor {
-		//TODO: Check if if clauses are necessary
-		if (mergedAuthor.rawString) {
-			for (let i in mergedAuthor.rawString) {
-				if (!Array.isArray(mergedAuthor.lastName) && !Array.isArray(mergedAuthor.firstName) && mergedAuthor.rawString[i] == `${mergedAuthor.lastName}, ${mergedAuthor.firstName}`) {
-					mergedAuthor.rawString = [mergedAuthor.rawString[i]];
-					break;
-				}
-			}
+
+		if (mergedAuthor.firstName!.length === 1 && mergedAuthor.lastName!.length === 1) {
+			mergedAuthor.rawString = [`${mergedAuthor.lastName![0]}, ${mergedAuthor.firstName![0]}`]
 		}
 		return mergedAuthor as IApiAuthor;
 	}
@@ -416,15 +413,11 @@ export class ApiMerger implements IApiMerger {
 		let s2 = secondAuthor.rawString!
 
 		if (s1.length === 0 && firstAuthor.firstName!.length > 0 && firstAuthor.lastName!.length > 0) {
-			console.error("s1: " + s1)
 			s1 = [`${firstAuthor.firstName![0]} ${firstAuthor.lastName![0]}`]
 		}
 		if (s2.length === 0 && secondAuthor.firstName!.length > 0 && secondAuthor.lastName!.length > 0) {
-			console.error("s2: " + s2)
 			s2 = [`${secondAuthor.firstName![0]} ${secondAuthor.lastName![0]}`]
 		}
-
-
 
 		let equal = 0;
 		for (let i = 0; i < s1.length; i++) {
@@ -434,9 +427,6 @@ export class ApiMerger implements IApiMerger {
 		}
 
 		return equal;
-
-
-		return 0;
 	}
 
 	private _isEqualRawAuthorString(firstRawString: string, secondRawString: string): number {
@@ -445,11 +435,13 @@ export class ApiMerger implements IApiMerger {
 		let firstNormalizedItems = ApiMerger.normalizeString(firstRawString).split(" ");
 		let secondNormalizedItems = ApiMerger.normalizeString(secondRawString).split(" ");
 
+
 		for (let i in firstNormalizedItems) {
 			if (secondNormalizedItems.includes(firstNormalizedItems[i])) {
 				equalParts++;
 			}
 		}
+
 		return equalParts / (firstNormalizedItems.length >= secondNormalizedItems.length ? firstNormalizedItems.length : secondNormalizedItems.length)
 	}
 

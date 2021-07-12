@@ -50,7 +50,7 @@ Deno.test({
 		assertEquals(merged.length, 1)
 		assertEquals(merged[0].paper.author![0]!.firstName!, ["Samuel"])
 		assertEquals(merged[0].paper.author![0]!.lastName!, ["Idowu"])
-		assertEquals(merged[0].paper.author![0]!.rawString!, ["Samuel Idowu"])
+		assertEquals(merged[0].paper.author![0]!.rawString!, ["Idowu, Samuel"])
 	}
 
 })
@@ -78,10 +78,10 @@ Deno.test({
 		assertEquals(merged.length, 1)
 		assertEquals(merged[0].paper.author![0]!.firstName!, ["Samuel"])
 		assertEquals(merged[0].paper.author![0]!.lastName!, ["Idowu"])
-		assertEquals(merged[0].paper.author![0]!.rawString!, ["Samuel Idowu"])
+		assertEquals(merged[0].paper.author![0]!.rawString!, ["Idowu, Samuel"])
 		assertEquals(merged[0].paper.author![1]!.firstName!, ["Max"])
 		assertEquals(merged[0].paper.author![1]!.lastName!, ["Muster"])
-		assertEquals(merged[0].paper.author![1]!.rawString!, ["Max Muster"])
+		assertEquals(merged[0].paper.author![1]!.rawString!, ["Muster, Max"])
 	}
 
 })
@@ -137,13 +137,13 @@ Deno.test({
 		assertEquals(merged.length, 1)
 		assertEquals(merged[0].paper.author![0]!.firstName!, ["Samuel"])
 		assertEquals(merged[0].paper.author![0]!.lastName!, ["Idowu"])
-		assertEquals(merged[0].paper.author![0]!.rawString!, ["Samuel Idowu"])
+		assertEquals(merged[0].paper.author![0]!.rawString!, ["Idowu, Samuel"])
 		assertEquals(merged[0].paper.author![1]!.firstName!, ["Max"])
 		assertEquals(merged[0].paper.author![1]!.lastName!, ["Muster"])
-		assertEquals(merged[0].paper.author![1]!.rawString!, ["Max Muster"])
+		assertEquals(merged[0].paper.author![1]!.rawString!, ["Muster, Max"])
 		assertEquals(merged[0].paper.author![2]!.firstName!, ["Timmy"])
 		assertEquals(merged[0].paper.author![2]!.lastName!, ["Turner"])
-		assertEquals(merged[0].paper.author![2]!.rawString!, ["Timmy Turner"])
+		assertEquals(merged[0].paper.author![2]!.rawString!, ["Turner, Timmy"])
 	}
 
 })
