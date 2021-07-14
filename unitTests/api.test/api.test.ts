@@ -50,11 +50,35 @@ Deno.test({
 		assertEquals(merged.length, 1)
 		assertEquals(merged[0].paper.author![0]!.firstName!, ["Samuel"])
 		assertEquals(merged[0].paper.author![0]!.lastName!, ["Idowu"])
-		assertEquals(merged[0].paper.author![0]!.rawString!, ["Idowu, Samuel"])
+		assertEquals(merged[0].paper.author![0]!.rawString!, ["Samuel Idowu"])
 	}
 
 })
+Deno.test({
+	name: "test 2 papers shortened author",
+	async fn(): Promise<void> {
+		let apiMerger = new ApiMerger({
+			titleWeight: 10,
+			titleLevenshtein: 10,
+			abstractWeight: 7,
+			abstractLevenshtein: 0,
+			authorWeight: 8,
+			overallWeight: 0.85,
+			yearWeight: 2
+		})
+		const firstPaper: IApiPaper = { "title": ["awsome paper title"], "author": [{ "id": [], "orcid": [], "rawString": ["samuel idowu"], "lastName": ["idowu"], "firstName": ["samuel"] }, { "id": [], "orcid": [], "rawString": ["max muster"], "lastName": [], "firstName": [] }] }
+		const secondPaper: IApiPaper = { "title": ["awsome paper title"], "author": [{ "id": [], "orcid": [], "rawString": ["Samuel Idowu"], "lastName": ["Idowu"], "firstName": ["Samuel"] }, { "id": [], "orcid": [], "rawString": ["M. Muster"], "lastName": [], "firstName": [] }] }
+		const firstApiResponseJustTitle: IApiResponse = { paper: firstPaper, citations: [], references: [] }
+		const secondApiResponseJustTitle: IApiResponse = { paper: secondPaper, citations: [], references: [] }
+		let merged = await apiMerger.compare([makePromise<IApiResponse>(firstApiResponseJustTitle), makePromise<IApiResponse>(secondApiResponseJustTitle)]);
+		assertEquals(merged.length, 1)
+		assertEquals(merged[0].paper.author![0]!.firstName!, ["Samuel"])
+		assertEquals(merged[0].paper.author![0]!.lastName!, ["Idowu"])
+		assertEquals(merged[0].paper.author![0]!.rawString!, ["Samuel Idowu"])
+		assertEquals(merged[0].paper.author![1]!.rawString!, ["max muster"])
+	}
 
+})
 
 Deno.test({
 	name: "test 3 papers merge author",
@@ -78,10 +102,10 @@ Deno.test({
 		assertEquals(merged.length, 1)
 		assertEquals(merged[0].paper.author![0]!.firstName!, ["Samuel"])
 		assertEquals(merged[0].paper.author![0]!.lastName!, ["Idowu"])
-		assertEquals(merged[0].paper.author![0]!.rawString!, ["Idowu, Samuel"])
+		assertEquals(merged[0].paper.author![0]!.rawString!, ["Samuel Idowu"])
 		assertEquals(merged[0].paper.author![1]!.firstName!, ["Max"])
 		assertEquals(merged[0].paper.author![1]!.lastName!, ["Muster"])
-		assertEquals(merged[0].paper.author![1]!.rawString!, ["Muster, Max"])
+		assertEquals(merged[0].paper.author![1]!.rawString!, ["Max Muster"])
 	}
 
 })
@@ -137,13 +161,13 @@ Deno.test({
 		assertEquals(merged.length, 1)
 		assertEquals(merged[0].paper.author![0]!.firstName!, ["Samuel"])
 		assertEquals(merged[0].paper.author![0]!.lastName!, ["Idowu"])
-		assertEquals(merged[0].paper.author![0]!.rawString!, ["Idowu, Samuel"])
+		assertEquals(merged[0].paper.author![0]!.rawString!, ["Samuel Idowu"])
 		assertEquals(merged[0].paper.author![1]!.firstName!, ["Max"])
 		assertEquals(merged[0].paper.author![1]!.lastName!, ["Muster"])
-		assertEquals(merged[0].paper.author![1]!.rawString!, ["Muster, Max"])
+		assertEquals(merged[0].paper.author![1]!.rawString!, ["Max Muster"])
 		assertEquals(merged[0].paper.author![2]!.firstName!, ["Timmy"])
 		assertEquals(merged[0].paper.author![2]!.lastName!, ["Turner"])
-		assertEquals(merged[0].paper.author![2]!.rawString!, ["Turner, Timmy"])
+		assertEquals(merged[0].paper.author![2]!.rawString!, ["Timmy Turner"])
 	}
 
 })
