@@ -21,6 +21,7 @@ export interface IApiPaper {
 	pdf?: string[];
 	uniqueId?: IApiUniqueId[];
 	source?: sourceApi[];
+	raw?: string[];
 }
 
 export enum sourceApi {
