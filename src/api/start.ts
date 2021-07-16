@@ -77,7 +77,8 @@ let doMerge = merger.compare([res5]).then(data => {
 			citeOriginal = citeOriginal.sort(sortPapersByName)
 		}
 		for (let cite in citeOriginal) {
-			fileLogger.info((citeOriginal as any)[cite]);
+			//fileLogger.info((citeOriginal as any)[cite].title + ": " + JSON.stringify((citeOriginal as any)[cite].uniqueId.filter((item: any) => item.type == "DOI")) + ": " + JSON.stringify((citeOriginal as any)[cite].pdf));
+			fileLogger.info((citeOriginal as any)[cite])
 		}
 
 
@@ -87,7 +88,8 @@ let doMerge = merger.compare([res5]).then(data => {
 		}
 		fileLogger.info("REFERENCES:");
 		for (let ref in refOriginal) {
-			fileLogger.info((data[i].references as any)[ref]);
+			//fileLogger.info((refOriginal as any)[ref].title + ": " + JSON.stringify((refOriginal as any)[ref].uniqueId.filter((item: any) => item.type == "DOI")) + JSON.stringify((refOriginal as any)[ref].pdf));
+			fileLogger.info((refOriginal as any)[ref]);
 		}
 	}
 

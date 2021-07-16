@@ -7,6 +7,7 @@ import { Levenshtein } from "./levenshtein.ts";
 import { IComparisonWeight } from "./iComparisonWeight.ts";
 import { IApiAuthor } from "./iApiAuthor.ts";
 
+const regexLetterFollowedByPoint = /^[a-zA-Z]\..*/g
 
 export class ApiMerger implements IApiMerger {
 	public comparisonWeight = {
@@ -29,9 +30,9 @@ export class ApiMerger implements IApiMerger {
 	 * @param pattern - string to normalize
 	 * @returns string without special signs and all lower case
 	 */
-	static normalizeString(pattern: any): any {
+	static normalizeString(pattern: string): string {
 		if (typeof pattern === "string") {
-			return pattern.toLowerCase().replace(/[äüö,\\\-:/]/g, " ").replace(/  /g, " ").trim();
+			return pattern.toLowerCase().replace(/[äüö,\\\-:/\.]/g, " ").replace(/ +/g, " ").trim();
 		}
 		return pattern;
 	}
@@ -171,11 +172,11 @@ export class ApiMerger implements IApiMerger {
 	private _compareChildren(response1Citations: IApiPaper[], response2Citations: IApiPaper[]) {
 		for (let i: number = 0; i < response1Citations.length; i++) {
 			/** Check for the same paper in other apis */
-			for (let k: number = 0; k < response2Citations.length; k++) {
-				let isEqual: boolean = this._isEqual(response1Citations[i], response2Citations[k]);
+			for (let j: number = 0; j < response2Citations.length; j++) {
+				let isEqual: boolean = this._isEqual(response1Citations[i], response2Citations[j]);
 				if (isEqual) {
-					logger.info(`DIFFERENT API paper merging: ${response1Citations[i].uniqueId!.map(item => item.type == idType.DOI ? item.value : undefined)} // ${response1Citations[i].title} <-> ${response2Citations[k].uniqueId!.map(item => item.type == idType.DOI ? item.value : undefined)} // ${response2Citations[k].title}`);
-					response2Citations[k] = this.merge(response1Citations[i], response2Citations[k]);
+					logger.info(`DIFFERENT API paper merging: ${response1Citations[i].uniqueId!.map(item => item.type == idType.DOI ? item.value : undefined)} // ${response1Citations[i].title} <-> ${response2Citations[j].uniqueId!.map(item => item.type == idType.DOI ? item.value : undefined)} // ${response2Citations[j].title}`);
+					response2Citations[j] = this.merge(response1Citations[i], response2Citations[j]);
 					delete response1Citations[i];
 					break;
 				}
@@ -217,11 +218,14 @@ export class ApiMerger implements IApiMerger {
 		/** if DOI of 2 paper is equal we can assume that its the same paper */
 		for (let i = 0; i < firstDOI.length; i++) {
 			for (let j = 0; j < secondDOI.length; j++) {
-				if (firstDOI[i] == secondDOI[j]) {
-					//TODO test for rest, commented out
-					return true;
+				if (firstDOI[i] && secondDOI[j]) {
+					if (firstDOI[i] == secondDOI[j]) {
+						//TODO test for rest, commented out
+						return true;
+					} else {
+						return false;
+					}
 				}
-
 			}
 		}
 
@@ -261,16 +265,17 @@ export class ApiMerger implements IApiMerger {
 		if ((comparison.titleWeight + comparison.abstractWeight) === 0) {
 			return false;
 		}
-
 		/*
+		let title1 = firstResponse.title;
+		let title2 = secondResponse.title;
 		if (title1 && title2) {
 
 			console.error(`another isequal with ${title1[0]} and ${title2[0]} => ${sameTitle} +  ${sameAbstract} + ${sameAuthor} + ${sameYear}`)
 			console.error(`${comparison.titleWeight} + ${comparison.abstractWeight} + ${comparison.authorWeight} + ${comparison.yearWeight}`)
 			console.error(`${((sameTitle + sameAbstract + sameAuthor + sameYear) / (comparison.titleWeight + comparison.abstractWeight + comparison.authorWeight + comparison.yearWeight))}`)
 		}
-
 		*/
+
 		/** Calculate the complete equality of 2 papers. OverallWeight is used to kinda control the aggressiveness of the algorithm */
 		if (((sameTitle + sameAbstract + sameAuthor + sameYear) / (comparison.titleWeight + comparison.abstractWeight + comparison.authorWeight + comparison.yearWeight)) > comparison.overallWeight) {
 			return true;
@@ -318,8 +323,9 @@ export class ApiMerger implements IApiMerger {
 			for (let s1 in secondAuthors) {
 
 				let val = this._isEqualAuthor(firstAuthors[f1], secondAuthors[s1]);
-				if (val) {
+				if (val > this.comparisonWeight.overallWeight) {
 					mergingAuthors.push(this._mergeAuthor(firstAuthors[f1], secondAuthors[s1]));
+					delete firstAuthors[f1]
 					delete secondAuthors[s1];
 					break;
 				}
@@ -327,8 +333,8 @@ export class ApiMerger implements IApiMerger {
 			}
 			secondAuthors = secondAuthors.filter(item => item)
 		}
-
-		mergingAuthors.push.apply(firstAuthors, secondAuthors);
+		firstAuthors = firstAuthors.filter(item => item)
+		mergingAuthors = mergingAuthors.concat(firstAuthors, secondAuthors);
 		return mergingAuthors;
 	}
 
@@ -350,19 +356,23 @@ export class ApiMerger implements IApiMerger {
 		let second = <any>secondAuthor;
 
 		/** take the value which is more normalized if the key are equal*/
-		for (const key in firstAuthor) {
+		for (const key in Object.assign({}, firstAuthor, secondAuthor)) {
 			/** Check if a value of an author property is existing in both AuthorObjects. If so merge, else append. */
 			mergedAuthor[key] = [];//first[key].push.append(second[key]);
 			FIRSTLOOP: for (let i in first[key]) {
+				second[key] = second[key].filter((item: string) => item)
 				for (let j in second[key]) {
-					if (first[key][i] && second[key][j] && ApiMerger.normalizeString(first[key][i]) === ApiMerger.normalizeString(second[key][j])) {
-						mergedAuthor[key].push(this._deriveGenericProperty(first[key][i], second[key][j]));
-						delete second[key][j];
-						continue FIRSTLOOP;
+					if (first[key][i] && second[key][j]) {
+						if (ApiMerger.normalizeString(first[key][i]) === ApiMerger.normalizeString(second[key][j])) {
+							mergedAuthor[key].push(this._deriveGenericProperty(first[key][i], second[key][j]));
+							delete second[key][j];
+							continue FIRSTLOOP;
+						}
 					}
 				}
 				mergedAuthor[key].push(first[key][i]);
 			}
+			mergedAuthor[key] = mergedAuthor[key].concat(second[key].filter((item: string) => item))
 		}
 
 		return this._deriveRawStringAuthor(mergedAuthor);
@@ -375,20 +385,21 @@ export class ApiMerger implements IApiMerger {
 	 * @param second 
 	 * @returns 
 	 */
-	private _deriveGenericProperty(first: string, second: string): any {
+	private _deriveGenericProperty(first: string, second: string): string {
 		let distance = Levenshtein(first, ApiMerger.normalizeString(first))
 		let distance2 = Levenshtein(second, ApiMerger.normalizeString(second))
 		return distance > distance2 ? first : second;
 	}
 
 	private _deriveRawStringAuthor(mergedAuthor: IApiAuthor): IApiAuthor {
-		//TODO: Check if if clauses are necessary
-		if (mergedAuthor.rawString) {
-			for (let i in mergedAuthor.rawString) {
-				if (!Array.isArray(mergedAuthor.lastName) && !Array.isArray(mergedAuthor.firstName) && mergedAuthor.rawString[i] == `${mergedAuthor.lastName}, ${mergedAuthor.firstName}`) {
-					mergedAuthor.rawString = [mergedAuthor.rawString[i]];
-					break;
-				}
+
+		if (mergedAuthor.firstName!.length === 1 && mergedAuthor.lastName!.length === 1) {
+			mergedAuthor.rawString = [`${mergedAuthor.firstName![0]} ${mergedAuthor.lastName![0]}`]
+		} else if (mergedAuthor.rawString!.length > 1) {
+			//only leaves rawstrings that have a full name, not names like M. Muster
+			let rawstring = mergedAuthor.rawString!.filter((item: string) => !item.match(regexLetterFollowedByPoint))
+			if (rawstring.length > 0) {
+				mergedAuthor.rawString = rawstring;
 			}
 		}
 		return mergedAuthor as IApiAuthor;
@@ -408,27 +419,33 @@ export class ApiMerger implements IApiMerger {
 
 	// TODO: first name might be shortened while last name is most likely not shortened. handle this via a heuristic
 	private _isEqualAuthor(firstAuthor: IApiAuthor, secondAuthor: IApiAuthor) {
+		let fFirstName = firstAuthor.firstName!.map((item: string) => ApiMerger.normalizeString(item))
+		let sFirstName = secondAuthor.firstName!.map((item: string) => ApiMerger.normalizeString(item))
+		let fLastName = firstAuthor.lastName!.map((item: string) => ApiMerger.normalizeString(item))
+		let sLastName = secondAuthor.lastName!.map((item: string) => ApiMerger.normalizeString(item))
 
-		if (firstAuthor.firstName && secondAuthor.firstName && firstAuthor.lastName && secondAuthor.lastName) {
-			if ((firstAuthor.firstName.some(item => secondAuthor.firstName!.includes(item))) && (firstAuthor.lastName.some(item => secondAuthor.lastName!.includes(item)))) {
-				return 1;
+		if (fFirstName.some(item => sFirstName.includes(item)) && fLastName.some(item => sLastName.includes(item))) {
+			return 1;
+		}
+
+		let s1 = firstAuthor.rawString!
+		let s2 = secondAuthor.rawString!
+
+		if (s1.length === 0 && firstAuthor.firstName!.length > 0 && firstAuthor.lastName!.length > 0) {
+			s1 = [`${firstAuthor.firstName![0]} ${firstAuthor.lastName![0]}`]
+		}
+		if (s2.length === 0 && secondAuthor.firstName!.length > 0 && secondAuthor.lastName!.length > 0) {
+			s2 = [`${secondAuthor.firstName![0]} ${secondAuthor.lastName![0]}`]
+		}
+
+		let equal = 0;
+		for (let i = 0; i < s1.length; i++) {
+			for (let j = 0; j < s2.length; j++) {
+				equal += this._isEqualRawAuthorString(s1[i], s2[j]);
 			}
 		}
-		let s1 = firstAuthor.rawString;
-		let s2 = secondAuthor.rawString;
-		if (s1 && s2 && s1.length > 0 && s2.length > 0) {
 
-			let equal = 0;
-			for (let i = 0; i < s1.length; i++) {
-				for (let j = 0; j < s1.length; j++) {
-					equal += this._isEqualRawAuthorString(s1[i], s2[j]);
-				}
-			}
-
-			return equal;
-
-		}
-		return 0;
+		return equal;
 	}
 
 	private _isEqualRawAuthorString(firstRawString: string, secondRawString: string): number {
@@ -437,9 +454,20 @@ export class ApiMerger implements IApiMerger {
 		let firstNormalizedItems = ApiMerger.normalizeString(firstRawString).split(" ");
 		let secondNormalizedItems = ApiMerger.normalizeString(secondRawString).split(" ");
 
-		for (let i in firstNormalizedItems) {
-			if (secondNormalizedItems.includes(firstNormalizedItems[i])) {
-				equalParts++;
+		//Special case a name is given like M. Muster
+		if (firstRawString.match(regexLetterFollowedByPoint) || secondRawString.match(regexLetterFollowedByPoint)) {
+			//Check if last name is same, and if yes, check if at least the first name is same
+			if (firstNormalizedItems[firstNormalizedItems.length - 1] == secondNormalizedItems[secondNormalizedItems.length - 1]) {
+				if (firstNormalizedItems[0].startsWith(secondNormalizedItems[0]) || secondNormalizedItems[0].startsWith(firstNormalizedItems[0])) {
+					// TODO hardcoded
+					return 0.9;
+				}
+			}
+		} else {
+			for (let i in firstNormalizedItems) {
+				if (secondNormalizedItems.includes(firstNormalizedItems[i])) {
+					equalParts++;
+				}
 			}
 		}
 		return equalParts / (firstNormalizedItems.length >= secondNormalizedItems.length ? firstNormalizedItems.length : secondNormalizedItems.length)
@@ -460,7 +488,7 @@ export class ApiMerger implements IApiMerger {
 				if (paper.uniqueId[i].type == idType.DOI) {
 					let s = paper.uniqueId[i].value;
 					if (s) {
-						DOI.push(s);
+						DOI.push(s.toLowerCase());
 					}
 				}
 			}
@@ -511,6 +539,22 @@ export class ApiMerger implements IApiMerger {
 					resultingPaper[key] = first[key].concat(second[key]);
 				} else if (key == "author") {
 					resultingPaper.author = this._mergeAuthors(first.author, second.author);
+				} else if (key == "uniqueId") {
+					resultingPaper[key] = [];
+					for (let i = 0; i < first[key].length; i++) {
+						for (let j = 0; j < second[key].length; j++) {
+							if (ApiMerger.normalizeString(first[key][i].value) == ApiMerger.normalizeString(second[key][j].value)) {
+								resultingPaper[key].push(first[key][i]);
+								delete first[key][i];
+								delete second[key][j];
+								break;
+							}
+						}
+						second[key] = second[key].filter((item: string) => item);
+					}
+					first[key] = first[key].filter((item: string) => item)
+					resultingPaper[key] = resultingPaper[key].concat(first[key]).concat(second[key])
+
 				} else {
 					resultingPaper[key] = [];
 					for (let i = 0; i < first[key].length; i++) {
@@ -525,7 +569,7 @@ export class ApiMerger implements IApiMerger {
 						second[key] = second[key].filter((item: string) => item);
 					}
 					first[key] = first[key].filter((item: string) => item)
-					resultingPaper[key] = resultingPaper[key].concat(first[key], second[key])
+					resultingPaper[key] = resultingPaper[key].concat(first[key]).concat(second[key])
 
 				}
 			} else {
