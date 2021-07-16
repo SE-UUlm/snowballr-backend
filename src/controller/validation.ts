@@ -4,6 +4,7 @@ import {User} from "../model/db/user.ts";
 import {createNumericTerminationDate} from "../helper/dateHelper.ts";
 import {makeErrorMessage} from "../helper/error.ts";
 import {PayloadJson} from "../model/payloadJson.ts";
+import {UserIsPartOfProject} from "../model/db/userIsPartOfProject.ts";
 
 const SECRET = String(Deno.env.get('SECRET'));
 
@@ -118,17 +119,39 @@ export const checkAdmin = async (payloadJson?: PayloadJson) => {
  * @param payloadJson
  */
 export const checkPO = async (payloadJson?: PayloadJson) => {
-    let isPO = false;
     if (payloadJson) {
         let projects = await User.where('id', payloadJson.id).project();
         if (Array.isArray(projects)) {
-            isPO = !(projects.every((userIsPartOfProject) => {
+            return !(projects.every((userIsPartOfProject) => {
                 return !userIsPartOfProject.isOwner;
             }))
         }
 
     }
-    return isPO;
+    return false;
+}
+
+export const checkPOofProject = async (projectID: number, payloadJson?: PayloadJson) => {
+    if (payloadJson) {
+        let userProject = await UserIsPartOfProject.where({userId: payloadJson.id, projectId: projectID}).get()
+        if (Array.isArray(userProject)) {
+            let value: boolean = Boolean(userProject[0].isOwner)
+            return value
+        }
+
+    }
+    return false;
+}
+
+export const checkMemberOfProject = async (projectID: number, payloadJson?: PayloadJson) => {
+    if (payloadJson) {
+        let userProject = await UserIsPartOfProject.where({userId: payloadJson.id, projectId: projectID}).get()
+        if (Array.isArray(userProject) && userProject[0]) {
+            return true;
+        }
+
+    }
+    return false;
 }
 
 /**
@@ -188,6 +211,7 @@ const verifyJWT = async (ctx: Context, next: () => Promise<unknown>, token: stri
  */
 const allowedAddressesUnauthorized = async (ctx: Context, next: () => Promise<unknown>) => {
     if (ctx.request.url.pathname === "/login/" || ctx.request.url.pathname === "/reset-password/" || (ctx.request.url.pathname.match(/\/users\/[0-9]+\//g) && ctx.request.method.toString() === "PATCH")) {
+        ctx.response.status = 200;
         await next();
     } else {
         makeErrorMessage(ctx, 401, "not authorized")

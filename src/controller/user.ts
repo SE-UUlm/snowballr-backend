@@ -2,7 +2,7 @@ import {Context} from 'https://deno.land/x/oak/mod.ts';
 import {checkAdmin, checkPO, createJWT, getPayloadFromJWT, getUserID, getUserName} from "./validation.ts";
 import {insertUserForRegistration, returnUserByEmail} from "./databaseFetcher/user.ts";
 import {User} from "../model/db/user.ts";
-import {convertCtxBodyToUser, convertUserToUserProfile} from "../helper/userConverter.ts";
+import {convertCtxBodyToUser, convertUserToUserProfile} from "../helper/converter/userConverter.ts";
 import {EMailClient} from "../model/eMailClient.ts";
 import {makeErrorMessage} from "../helper/error.ts";
 import {urlSanitizer} from "../helper/url.ts";
@@ -12,6 +12,8 @@ import {getResetToken, insertResetToken} from "./databaseFetcher/resetToken.ts";
 import {getAllProjectsByUser} from "./databaseFetcher/userProject.ts";
 import {hashPassword} from "../helper/passwordHasher.ts";
 import {UserParameters} from "../model/userProfile.ts";
+import {convertProjectToProjectMessage} from "../helper/converter/projectConverter.ts";
+import {UsersMessage} from "../model/messages/user.message.ts";
 
 const adminMail = Deno.env.get("ADMIN_EMAIL");
 const URL = Deno.env.get("URL");
@@ -34,20 +36,24 @@ export const createUser = async (ctx: Context, client: EMailClient) => {
             makeErrorMessage(ctx, 422, "no email provided")
             return;
         }
+        try {
+            let user = await insertUserForRegistration(requestParameter.email);
+            let jwt = await createJWT(user)
+            await insertInvitation(user, jwt);
+            let linkText = "snowballR"
 
-        let user = await insertUserForRegistration(requestParameter.email);
-        let jwt = await createJWT(user)
-        await insertInvitation(user, jwt);
-        let linkText = "snowballR"
-
-        if (adminMail) {
-            await sendInvitationMail(jwt, linkText, requestParameter.email, Number(user.id), client, await getUserName(payloadJson));
-            ctx.response.status = 201;
-            return user;
-        } else {
-            console.error("no email in env!")
-            makeErrorMessage(ctx, 401, "not authorized")
+            if (adminMail) {
+                await sendInvitationMail(jwt, linkText, requestParameter.email, Number(user.id), client, await getUserName(payloadJson));
+                ctx.response.status = 201;
+                ctx.response.body = JSON.stringify(convertUserToUserProfile(user))
+            } else {
+                console.error("no email in env!")
+                makeErrorMessage(ctx, 401, "not authorized")
+            }
+        } catch (err) {
+            makeErrorMessage(ctx, 422, "email already exists")
         }
+
     } else {
         makeErrorMessage(ctx, 401, "not authorized")
     }
@@ -81,7 +87,6 @@ export const resetPassword = async (ctx: Context, client: EMailClient) => {
     }
 }
 
-//TODO: others
 /**
  * Gets all user instances for admin and PO
  * @param ctx
@@ -91,16 +96,15 @@ export const getUsers = async (ctx: Context) => {
     if (await checkAdmin(payloadJson) || await checkPO(payloadJson)) {
         let users = await User.all();
         let userProfile = users.map(user => convertUserToUserProfile(user));
-        ctx.response.body = `{
-                                "users": ${JSON.stringify(userProfile)}
-                             }`
+        let userMessage: UsersMessage = {users: userProfile}
+        ctx.response.body = JSON.stringify(userMessage)
         ctx.response.status = 200;
-        return true;
+    } else {
+        makeErrorMessage(ctx, 401, "not authorized");
     }
-    return false;
+
 }
 
-//TODO: others
 /**
  * Gets a single user profile for admin and PO
  * @param ctx
@@ -108,15 +112,20 @@ export const getUsers = async (ctx: Context) => {
  */
 export const getUser = async (ctx: Context, id: number | undefined) => {
     if (!id) {
-        makeErrorMessage(ctx, 400, "no user id included")
+        makeErrorMessage(ctx, 422, "no user id included")
         return
     }
     const payloadJson = await getPayloadFromJWT(ctx);
     if (await checkAdmin(payloadJson) || await getUserID(payloadJson) === id || await checkPO(payloadJson)) {
         let user = await User.find(id);
-        let userProfile = convertUserToUserProfile(user);
-        ctx.response.body = JSON.stringify(userProfile);
-        ctx.response.status = 200;
+        if (user) {
+            let userProfile = convertUserToUserProfile(user);
+            ctx.response.body = JSON.stringify(userProfile);
+            ctx.response.status = 200;
+        } else {
+            makeErrorMessage(ctx, 404, "User not Found")
+        }
+
 
     } else {
         makeErrorMessage(ctx, 401, "not authorized");
@@ -130,14 +139,16 @@ export const getUser = async (ctx: Context, id: number | undefined) => {
  */
 export const getUserProjects = async (ctx: Context, id: number | undefined) => {
     if (!id) {
-        makeErrorMessage(ctx, 400, "no user id included")
+        makeErrorMessage(ctx, 422, "no user id included")
         return
     }
     const payloadJson = await getPayloadFromJWT(ctx);
     if (await checkAdmin(payloadJson) || await getUserID(payloadJson) === id) {
         let userProjects = await getAllProjectsByUser(id)
-        ctx.response.body = `{"projects": ${JSON.stringify(userProjects)}}`;
-        ctx.response.status = 200;
+        if (userProjects) {
+            ctx.response.body = JSON.stringify(await convertProjectToProjectMessage(userProjects))
+            ctx.response.status = 200;
+        }
 
     } else {
         makeErrorMessage(ctx, 401, "not authorized");
@@ -152,7 +163,7 @@ export const getUserProjects = async (ctx: Context, id: number | undefined) => {
  */
 export const patchUser = async (ctx: Context, id: number | undefined) => {
     if (!id) {
-        makeErrorMessage(ctx, 400, "no user id included")
+        makeErrorMessage(ctx, 422, "no user id included")
         return;
     }
     const payloadJson = await getPayloadFromJWT(ctx);
@@ -164,6 +175,10 @@ export const patchUser = async (ctx: Context, id: number | undefined) => {
     if (isSameUser || isAdmin || isPO) {
         let user = await User.find(id);
 
+        if (!user) {
+            makeErrorMessage(ctx, 404, "User not Found")
+            return;
+        }
         if (isSameUser) {
             if (userData.password) {
                 user.password = hashPassword(userData.password)
@@ -273,7 +288,7 @@ const checkResetToken = async (id: number, providedToken: string, ctx: Context) 
 const sendInvitationMail = async (jwt: string, linkText: string, email: string, userId: number, client: EMailClient, name?: string) => {
     if (URL) {
         let url = urlSanitizer(URL);
-        url += "/register/?id=" + userId + "&token=" + jwt;
+        url += "/register?id=" + userId + "&token=" + jwt;
         let finalText = linkText.link(url);
         const content = `Welcome, </br>
         to finalize your registration for snowballR, please visit: ${finalText}.</br>
@@ -303,7 +318,7 @@ const sendInvitationMail = async (jwt: string, linkText: string, email: string, 
 const sendResetMail = async (jwt: string, linkText: string, email: string, userId: number, client: EMailClient) => {
     if (URL) {
         let url = urlSanitizer(URL);
-        url += "/resetpassword/?id=" + userId + "&token=" + jwt;
+        url += "/resetpassword?id=" + userId + "&token=" + jwt;
         let finalText = linkText.link(url);
         const content = `Hello, </br>
                 to reset your password for snowballR, please visit: ${finalText}. </br>

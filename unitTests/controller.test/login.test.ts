@@ -4,7 +4,7 @@ import {login} from "../../src/controller/login.ts";
 import {createMockContext} from "../mockObjects/oak/mockContext.test.ts";
 import {createMockApp} from "../mockObjects/oak/mockApp.test.ts";
 import {assertEquals, assertNotEquals} from "https://deno.land/std@0.97.0/testing/asserts.ts"
-import {db} from "../../src/controller/database.ts";
+import {client, db} from "../../src/controller/database.ts";
 
 
 Deno.test({
@@ -19,7 +19,16 @@ Deno.test({
         let loginWorked: boolean = await login(ctx);
 
         assertEquals(true, loginWorked);
-        db.close();
+        let answer = JSON.parse(ctx.response.body as string)
+        assertEquals(answer.user.email, "test@test")
+        assertEquals(answer.user.isAdmin, true)
+        assertEquals(answer.user.firstName, "Test")
+        assertEquals(answer.user.lastName, "Tester")
+        assertEquals(answer.user.status, "active")
+        assertEquals(answer.user.password, undefined)
+        assertNotEquals(answer.token, undefined)
+        await db.close();
+        await client.end();
 
     }
 
@@ -37,9 +46,9 @@ Deno.test({
 
         let loginWorked: boolean = await login(ctx);
 
-        assertNotEquals(loginWorked, true);
-        db.close();
-
+        assertEquals(loginWorked, false);
+        await db.close();
+        await client.end();
     }
 
 })
@@ -56,8 +65,10 @@ Deno.test({
 
         let loginWorked: boolean = await login(ctx);
 
-        assertNotEquals(loginWorked, true);
-        db.close();
+        assertEquals(loginWorked, false);
+
+        await db.close();
+        await client.end();
     }
 
 })

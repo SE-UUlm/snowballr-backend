@@ -9,7 +9,6 @@ export class PaperScopeForStage extends Model {
 
     static fields = {
         id: {primaryKey: true, autoIncrement: true, type: DataTypes.INTEGER},
-        projectPaperId: DataTypes.INTEGER,
         additionDate: DataTypes.DATE
     }
 

@@ -14,7 +14,7 @@ export class User extends Model {
         password: {type: DataTypes.STRING, allowNull: true},
         lastName: {type: DataTypes.STRING, allowNull: true},
         firstName: DataTypes.STRING,
-        eMail: {type: DataTypes.STRING},
+        eMail: {type: DataTypes.STRING, unique: true},
         status: {type: DataTypes.STRING},
         loginBlock: {type: DataTypes.BOOLEAN}
     };
@@ -22,7 +22,7 @@ export class User extends Model {
     static defaults = {
         isAdmin: false,
         loginBlock: false,
-        status: "not fully registered"
+        status: "not-fully-registered"
     }
 
     static token() {

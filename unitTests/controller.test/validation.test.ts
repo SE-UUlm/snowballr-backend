@@ -13,6 +13,7 @@ import {setup} from "../../src/helper/setup.ts";
 import {insertUser} from "../../src/controller/databaseFetcher/user.ts";
 import {Project} from "../../src/model/db/project.ts";
 import {UserIsPartOfProject} from "../../src/model/db/userIsPartOfProject.ts";
+import {client, db} from "../../src/controller/database.ts";
 
 Deno.test({
     name: "testCorrectContentTypeAndContent",
@@ -21,7 +22,8 @@ Deno.test({
         let ctx = await createMockContext(app, `{"email": "test@test", "password":"ash"}`);
         await validateContentType(ctx, emptyAsyncFunctionTest)
 
-        assertEquals(ctx.response.status, 200)
+        assertEquals(ctx.response.status, 999)
+
     }
 
 })
@@ -33,7 +35,7 @@ Deno.test({
         let ctx = await createMockContext(app, undefined);
         await validateContentType(ctx, emptyAsyncFunctionTest)
 
-        assertEquals(ctx.response.status, 200)
+        assertEquals(ctx.response.status, 999)
     }
 
 })
@@ -97,9 +99,11 @@ Deno.test({
         let ctx = await createMockContext(app, undefined, [["Content-Type", "text"]], "/", token);
         await validateJWTIfExists(ctx, emptyAsyncFunctionTest)
 
-        assertEquals(ctx.response.status, 200)
-    },
-    sanitizeResources: false,
+        assertEquals(ctx.response.status, 999)
+
+        await db.close();
+        await client.end();
+    }
 })
 
 Deno.test({
@@ -114,6 +118,8 @@ Deno.test({
         await validateJWTIfExists(ctx, emptyAsyncFunctionTest)
 
         assertEquals(ctx.response.status, 401)
+        await db.close();
+        await client.end();
     },
 })
 
@@ -124,7 +130,7 @@ Deno.test({
         let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
         let app = await createMockApp();
         let token = await createJWT(user)
-        let project = await Project.create({name: "bla"})
+        let project = await Project.create({name: "Test", minCountReviewers: 1, countDecisiveReviewers: 1})
         let userIsPartOfProject = await UserIsPartOfProject.create({
             isOwner: true,
             userId: Number(user.id),
@@ -133,6 +139,8 @@ Deno.test({
         let ctx = await createMockContext(app, undefined, [["Content-Type", "text"]], "/", token);
         let payLoad = await getPayloadFromJWT(ctx);
         assertEquals(await checkPO(payLoad), true)
+        await db.close();
+        await client.end();
 
     }
 
@@ -145,7 +153,7 @@ Deno.test({
         let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
         let app = await createMockApp();
         let token = await createJWT(user)
-        let project = await Project.create({name: "bla"})
+        let project = await Project.create({name: "Test", minCountReviewers: 1, countDecisiveReviewers: 1})
         let userIsPartOfProject = await UserIsPartOfProject.create({
             isOwner: false,
             userId: Number(user.id),
@@ -154,6 +162,9 @@ Deno.test({
         let ctx = await createMockContext(app, undefined, [["Content-Type", "text"]], "/", token);
         let payLoad = await getPayloadFromJWT(ctx);
         assertEquals(await checkPO(payLoad), false)
+
+        await db.close();
+        await client.end();
 
     }
 
