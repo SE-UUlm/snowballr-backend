@@ -1,7 +1,7 @@
 import { IApiQuery } from "./iApiQuery.ts";
 import { IApiResponse } from "./iApiResponse.ts";
 import { IApiFetcher } from "./iApiFetcher.ts";
-import { IApiPaper, sourceApi } from './iApiPaper.ts';
+import { IApiPaper, SourceApi } from './iApiPaper.ts';
 import { logger } from "./logger.ts";
 import { IApiAuthor } from "./iApiAuthor.ts";
 import { IApiUniqueId, idType } from "./iApiUniqueId.ts";
@@ -32,9 +32,9 @@ export class IeeeApi implements IApiFetcher {
 		let references: Promise<IApiPaper[]> | undefined;
 		try {
 			//logger.debug("here")
-			if (query.id) {
-				logger.debug(`Fetching IEEE by DOI: ${query.id}`);
-				var response = await fetch(`${this.url}/?apikey=${this._token}&format=json&max_records=25&start_record=1&sort_order=asc&sort_field=article_title&doi=${query.id}`);
+			if (query.doi) {
+				logger.debug(`Fetching IEEE by DOI: ${query.doi}`);
+				var response = await fetch(`${this.url}/?apikey=${this._token}&format=json&max_records=25&start_record=1&sort_order=asc&sort_field=article_title&doi=${query.doi}`);
 			}
 			else if (query.rawName && query.title) {
 				logger.debug(`Fetching IEEE by title and author: ${query.title} | ${query.rawName}`);
@@ -220,7 +220,7 @@ export class IeeeApi implements IApiFetcher {
 			scopeName: response.publication_title ? [response.publication_title] : [],
 			pdf: response.pdf_url ? [response.pdf_url] : undefined,
 			uniqueId: parsedUniqueIds,
-			source: [sourceApi.IE],
+			source: [SourceApi.IE],
 			raw: response.raw ? [response.raw] : []
 		};
 		return parsedResponse;

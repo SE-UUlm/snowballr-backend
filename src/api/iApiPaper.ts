@@ -20,11 +20,11 @@ export interface IApiPaper {
 	scopeName?: string[];
 	pdf?: string[];
 	uniqueId?: IApiUniqueId[];
-	source?: sourceApi[];
+	source?: SourceApi[];
 	raw?: string[];
 }
 
-export enum sourceApi {
+export enum SourceApi {
 	MA = "microsoftAcademic",
 	CR = "crossRef",
 	OC = "openCitations",

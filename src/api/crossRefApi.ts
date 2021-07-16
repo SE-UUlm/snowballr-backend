@@ -1,7 +1,7 @@
 import { IApiQuery } from "./iApiQuery.ts";
 import { IApiResponse } from "./iApiResponse.ts";
 import { IApiFetcher } from "./iApiFetcher.ts";
-import { IApiPaper, sourceApi } from './iApiPaper.ts';
+import { IApiPaper, SourceApi } from './iApiPaper.ts';
 import { logger } from "./logger.ts";
 import { IApiAuthor } from "./iApiAuthor.ts";
 import { IApiUniqueId, idType } from "./iApiUniqueId.ts";
@@ -35,7 +35,7 @@ export class CrossRefApi implements IApiFetcher {
 		var references: Promise<IApiPaper[]> | undefined;
 
 		try {
-			let response = await fetch(`${this.url}/${query.id}${this._mail}`)
+			let response = await fetch(`${this.url}/${query.doi}${this._mail}`)
 
 			/** Get rate limit from api to apply it dynamically since it can change from time to time */
 			this._rateInterval = Number(response.headers.get("x-rate-limit-interval")) ? Number(response.headers.get("x-rate-limit-interval")!.replace('s', '')) : this._rateInterval;
@@ -198,7 +198,7 @@ export class CrossRefApi implements IApiFetcher {
 			scopeName: undefined,
 			pdf: response.message.link ? response.message.link.map((item: any) => item.URL) : [],
 			uniqueId: parsedUniqueIds,
-			source: [sourceApi.CR]
+			source: [SourceApi.CR]
 		};
 		return parsedResponse;
 	}

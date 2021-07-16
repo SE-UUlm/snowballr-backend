@@ -11,8 +11,9 @@ import { IApiPaper } from "./iApiPaper.ts";
 import { IeeeApi } from "./ieeeApi.ts";
 
 const query: IApiQuery = {
+	id: "tst",
 	rawName: "sebastian erdweg",
-	id: "10.1109/SEAA.2009.60",
+	doi: "10.1109/SEAA.2009.60",
 	title: "The State of the Art in Language Workbenches"
 }
 

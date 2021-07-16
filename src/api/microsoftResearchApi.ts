@@ -1,7 +1,7 @@
 import { IApiQuery } from "./iApiQuery.ts";
 import { IApiResponse } from "./iApiResponse.ts";
 import { IApiFetcher } from "./iApiFetcher.ts";
-import { IApiPaper, sourceApi } from './iApiPaper.ts';
+import { IApiPaper, SourceApi } from './iApiPaper.ts';
 import { logger } from "./logger.ts";
 import { IApiAuthor } from "./iApiAuthor.ts";
 import { IApiUniqueId, idType } from "./iApiUniqueId.ts";
@@ -170,7 +170,7 @@ export class MicrosoftResearchApi implements IApiFetcher {
 	 * @returns string appendable to the api call via body-key "expr".
 	 */
 	private _parseQuery(query: IApiQuery): string {
-		let baseExpr: string = `Or(DOI='${query.id}', And(Composite(AA.AuN='${query.rawName.toLowerCase()}'), Ti='${query.title.toLowerCase()}'))`
+		let baseExpr: string = `Or(DOI='${query.doi}', And(Composite(AA.AuN='${query.rawName.toLowerCase()}'), Ti='${query.title.toLowerCase()}'))`
 
 		return baseExpr;
 	}
@@ -228,7 +228,7 @@ export class MicrosoftResearchApi implements IApiFetcher {
 			scopeName: undefined,
 			pdf: response.S ? response.S.map((item: any) => item.U) : undefined,
 			uniqueId: parsedUniqueIds,
-			source: [sourceApi.MA]
+			source: [SourceApi.MA]
 		};
 		return parsedResponse;
 	}

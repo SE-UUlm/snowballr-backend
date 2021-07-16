@@ -1,7 +1,7 @@
 import { IApiQuery } from "./iApiQuery.ts";
 import { IApiResponse } from "./iApiResponse.ts";
 import { IApiFetcher } from "./iApiFetcher.ts";
-import { IApiPaper, sourceApi } from './iApiPaper.ts';
+import { IApiPaper, SourceApi } from './iApiPaper.ts';
 import { logger } from "./logger.ts";
 import { IApiAuthor } from "./iApiAuthor.ts";
 import { IApiUniqueId, idType } from "./iApiUniqueId.ts";
@@ -27,7 +27,7 @@ export class SemanticScholar implements IApiFetcher {
 		let references: Promise<IApiPaper[]> | undefined;
 		try {
 			//logger.debug("here")
-			let response = await fetch(`${this.url}/${query.id}`);
+			let response = await fetch(`${this.url}/${query.doi}`);
 			let json = await response.json();
 			paper = this._parseResponse(json);
 			//logger.critical(json.citations)
@@ -119,7 +119,7 @@ export class SemanticScholar implements IApiFetcher {
 			scopeName: response.venue ? [response.venue] : [],
 			pdf: response.url ? [response.url] : [],
 			uniqueId: parsedUniqueIds,
-			source: [sourceApi.S2]
+			source: [SourceApi.S2]
 		};
 		return parsedResponse;
 	}

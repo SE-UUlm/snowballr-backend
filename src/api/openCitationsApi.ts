@@ -1,7 +1,7 @@
 import { IApiQuery } from "./iApiQuery.ts";
 import { IApiResponse } from "./iApiResponse.ts";
 import { IApiFetcher } from "./iApiFetcher.ts";
-import { IApiPaper, sourceApi } from './iApiPaper.ts';
+import { IApiPaper, SourceApi } from './iApiPaper.ts';
 import { logger } from "./logger.ts";
 import { IApiAuthor } from "./iApiAuthor.ts";
 import { IApiUniqueId, idType } from "./iApiUniqueId.ts";
@@ -28,7 +28,7 @@ export class OpenCitationsApi implements IApiFetcher {
 		var citations: Promise<IApiPaper[]> | undefined;
 		let references: Promise<IApiPaper[]> | undefined;
 		try {
-			let response = await fetch(`${this.url}/index/api/v1/metadata/${query.id}`);
+			let response = await fetch(`${this.url}/index/api/v1/metadata/${query.doi}`);
 			let json = await response.json();
 			paper = this._parseResponse(json[0]);
 			citations = this._getLinkedDOIs(json[0].citation);
@@ -134,7 +134,7 @@ export class OpenCitationsApi implements IApiFetcher {
 			scopeName: undefined,
 			pdf: response.oa_link ? response.oa_link.split(",") : [],
 			uniqueId: parsedUniqueIds,
-			source: [sourceApi.OC]
+			source: [SourceApi.OC]
 		};
 		return parsedResponse;
 	}

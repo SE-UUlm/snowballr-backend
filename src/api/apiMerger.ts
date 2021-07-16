@@ -1,5 +1,5 @@
 import { IApiMerger } from "./iApiMerger.ts";
-import { logger } from "./logger.ts";
+import { logger, fileLogger } from "./logger.ts";
 import { IApiResponse } from "./iApiResponse.ts";
 import { idType } from "./iApiUniqueId.ts";
 import { IApiPaper } from "./iApiPaper.ts";
@@ -589,5 +589,43 @@ export class ApiMerger implements IApiMerger {
 
 		}
 		return resultingPaper as IApiPaper;
+	}
+
+	public static logResponse(response: IApiResponse[]): void {
+		for (let i = 0; i < response.length; i++) {
+
+			fileLogger.info(`PAPER${i}:`);
+			fileLogger.info(response[i].paper);
+			fileLogger.info("CITATIONS:");
+
+			let citeOriginal = response[i].citations;
+			if (citeOriginal) {
+				citeOriginal = citeOriginal.sort(ApiMerger.sortPapersByName)
+			}
+			for (let cite in citeOriginal) {
+				fileLogger.info((citeOriginal as any)[cite])
+			}
+
+
+			let refOriginal = response[i].references;
+			if (refOriginal) {
+				refOriginal = refOriginal.sort(ApiMerger.sortPapersByName)
+			}
+			fileLogger.info("REFERENCES:");
+			for (let ref in refOriginal) {
+				fileLogger.info((refOriginal as any)[ref]);
+			}
+		}
+	}
+
+	public static sortPapersByName(item1: IApiPaper, item2: IApiPaper) {
+		if (item1.title && item2.title && item1.title[0] && item2.title[0]) {
+			if (item1.title[0].toLowerCase() < item2.title[0].toLowerCase()) {
+				return -1
+			} else {
+				return 1
+			}
+		}
+		return 0
 	}
 }
