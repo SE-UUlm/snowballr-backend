@@ -56,6 +56,7 @@ export class ApiMerger implements IApiMerger {
 				references: finalPaper.item.references!
 			} as IApiResponse) : finished.push(finalPaper.item);
 		}
+		//console.error(JSON.stringify((await response[0]).references!.map((item) => item.author), null, 2))
 		if (response[0]) {
 			finished.push(await response[0]);
 		}
@@ -450,9 +451,17 @@ export class ApiMerger implements IApiMerger {
 
 	private _isEqualRawAuthorString(firstRawString: string, secondRawString: string): number {
 		let equalParts: number = 0;
+		let firstNormalizedItems: string[] = [];
+		let secondNormalizedItems: string[] = [];
+		try {
+			firstNormalizedItems = ApiMerger.normalizeString(firstRawString).split(" ");
+			secondNormalizedItems = ApiMerger.normalizeString(secondRawString).split(" ");
+		}
+		catch (e) {
 
-		let firstNormalizedItems = ApiMerger.normalizeString(firstRawString).split(" ");
-		let secondNormalizedItems = ApiMerger.normalizeString(secondRawString).split(" ");
+			logger.critical(e);
+			logger.error(`${firstRawString}, ${secondRawString}`);
+		}
 
 		//Special case a name is given like M. Muster
 		if (firstRawString.match(regexLetterFollowedByPoint) || secondRawString.match(regexLetterFollowedByPoint)) {

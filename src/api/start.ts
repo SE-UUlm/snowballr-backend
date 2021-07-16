@@ -17,7 +17,7 @@ const query: IApiQuery = {
 }
 
 const sortPapersByName = (item1: IApiPaper, item2: IApiPaper) => {
-	if (item1.title && item2.title) {
+	if (item1.title && item2.title && item1.title[0] && item2.title[0]) {
 		if (item1.title[0].toLowerCase() < item2.title[0].toLowerCase()) {
 			return -1
 		} else {

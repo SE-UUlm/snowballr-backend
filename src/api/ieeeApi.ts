@@ -113,13 +113,15 @@ export class IeeeApi implements IApiFetcher {
 			let rawMetadata = {};
 			if (data.title) {
 				let text = String(data.text).split(data.title);
+				let authors = text[0].match(regexAuthors);
+				let year = text[1].match(regexYear);
 				rawMetadata = {
 					'title': data.title,
 					'authors': {
 						//'authors': data.title ? text[0].replace(/,([^,]*)$/, '$1').replace(/,* *(and)/, ',').split(',').map((item: any) => { return { 'fullname': item.trim() } }) : []
-						'authors': text[0] && text[0].match(regexAuthors) ? text[0].match(regexAuthors).map((item: any) => { return { 'fullname': item } }) : []
+						'authors': authors ? authors.map((item: any) => { return { 'full_name': item } }) : []
 					},
-					'year': text[1].match(regexYear) ? text[1].match(regexYear).slice(-1)[0] : undefined,
+					'year': year ? year.slice(-1)[0] : undefined,
 					'publisher': data.text[1].split(',') ? text[1].split(',')[0].trim() : undefined,
 					'pdf_url': data.googleScholarLink ? data.googleScholarLink : undefined,
 				}
@@ -155,11 +157,12 @@ export class IeeeApi implements IApiFetcher {
 		//logger.debug(response);
 
 		let parsedAuthors: IApiAuthor[] = [];
-		logger.info(response.authors.authors);
-		logger.info(response.year)
-		logger.info(response.title)
+		//logger.info(response.authors.authors);
+		//logger.info(response.year)
+		//logger.info(response.title)
 		if (response.authors && response.authors.authors) {
 			for (let a of response.authors.authors) {
+				console.error("hier" + JSON.stringify(a, null, 2))
 				let parsedAuthor: IApiAuthor = {
 					id: [],
 					orcid: [],
@@ -217,7 +220,8 @@ export class IeeeApi implements IApiFetcher {
 			scopeName: response.publication_title ? [response.publication_title] : [],
 			pdf: response.pdf_url ? [response.pdf_url] : undefined,
 			uniqueId: parsedUniqueIds,
-			source: [sourceApi.IE]
+			source: [sourceApi.IE],
+			raw: response.raw ? [response.raw] : []
 		};
 		return parsedResponse;
 	}
