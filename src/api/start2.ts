@@ -26,9 +26,9 @@ const comparisonWeight = {
 const query: IApiQuery = {
 	id: "tst",
 	rawName: "sebastian erdweg",
-	doi: "10.1007/S10009-010-0142-1",
+	doi: "10.1109/SEAA.2009.60",
 	title: "The State of the Art in Language Workbenches",
-	enabledApis: [SourceApi.MA, SourceApi.S2],
+	enabledApis: [SourceApi.IE],
 	aggressivity: comparisonWeight
 }
 
