@@ -24,7 +24,7 @@ export class OpenCitationsApi implements IApiFetcher {
 	 * @returns Object containing the fetched paper and all paperObjects from citations and references. Promise.
 	 */
 	public async fetch(query: IApiQuery): Promise<IApiResponse> {
-		var paper: IApiPaper = {};
+		var paper: IApiPaper = {} as IApiPaper;
 		var citations: Promise<IApiPaper[]> | undefined;
 		let references: Promise<IApiPaper[]> | undefined;
 		try {
@@ -101,7 +101,7 @@ export class OpenCitationsApi implements IApiFetcher {
 		let parsedAuthors: IApiAuthor[] = [];
 		for (let a of response.author.split(';')) {
 			let parsedAuthor: IApiAuthor = {
-				id: [],
+				id: undefined,
 				orcid: a.split(',').length > 2 ? [a.split(',')[2].trim()] : [],
 				rawString: a.split(',').length > 1 ? [`${a.split(',')[0]},${a.split(',')[1]}`.trim()] : [a.split(',')[0].trim()],
 				lastName: a.split(',').length > 1 ? [a.split(',')[0].trim()] : [],
@@ -122,19 +122,19 @@ export class OpenCitationsApi implements IApiFetcher {
 		let parsedResponse: IApiPaper = {
 			id: undefined,
 			title: response.title ? [response.title] : [],
-			sourceTitle: response.source_title ? response.source_title : undefined,
 			author: parsedAuthors,
 			abstract: [],
 			numberOfReferences: refCount ? [refCount] : [],
 			numberOfCitations: response.citation_count ? [parseInt(response.citation_count)] : [],
 			year: response.year ? [Number(response.year)] : [],
 			publisher: [],
-			type: undefined,
-			scope: undefined,
-			scopeName: undefined,
+			type: [],
+			scope: [],
+			scopeName: response.source_title ? [response.source_title] : [],
 			pdf: response.oa_link ? response.oa_link.split(",") : [],
 			uniqueId: parsedUniqueIds,
-			source: [SourceApi.OC]
+			source: [SourceApi.OC],
+			raw: []
 		};
 		return parsedResponse;
 	}

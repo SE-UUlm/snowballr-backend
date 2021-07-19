@@ -22,7 +22,7 @@ export class SemanticScholar implements IApiFetcher {
 	 * @returns Object containing the fetched paper and all paperObjects from citations and references. Promise.
 	 */
 	public async fetch(query: IApiQuery): Promise<IApiResponse> {
-		var paper: IApiPaper = {};
+		var paper: IApiPaper = {} as IApiPaper;
 		let citations: Promise<IApiPaper[]> | undefined;
 		let references: Promise<IApiPaper[]> | undefined;
 		try {
@@ -80,7 +80,7 @@ export class SemanticScholar implements IApiFetcher {
 		let parsedAuthors: IApiAuthor[] = [];
 		for (let a of response.authors) {
 			let parsedAuthor: IApiAuthor = {
-				id: [],
+				id: undefined,
 				orcid: [],
 				rawString: [a.name],
 				lastName: [],
@@ -113,13 +113,14 @@ export class SemanticScholar implements IApiFetcher {
 			numberOfReferences: response.references ? [response.references.length] : [],
 			numberOfCitations: response.citations ? [response.citations.length] : [],
 			year: response.year ? [Number(response.year)] : [],
-			publisher: undefined,
-			type: undefined,
-			scope: undefined,
+			publisher: [],
+			type: [],
+			scope: [],
 			scopeName: response.venue ? [response.venue] : [],
 			pdf: response.url ? [response.url] : [],
 			uniqueId: parsedUniqueIds,
-			source: [SourceApi.S2]
+			source: [SourceApi.S2],
+			raw: []
 		};
 		return parsedResponse;
 	}

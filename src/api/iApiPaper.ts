@@ -7,21 +7,20 @@ import { IApiAuthor } from "./iApiAuthor.ts";
  */
 export interface IApiPaper {
 	id?: number;
-	title?: string[];
-	sourceTitle?: string;
-	author?: IApiAuthor[];
-	abstract?: string[];
-	numberOfReferences?: number[];
-	numberOfCitations?: number[];
-	year?: number[];
-	publisher?: string[];
-	type?: string[];
-	scope?: string[];
-	scopeName?: string[];
-	pdf?: string[];
-	uniqueId?: IApiUniqueId[];
-	source?: SourceApi[];
-	raw?: string[];
+	title: string[];
+	author: IApiAuthor[];
+	abstract: string[];
+	numberOfReferences: number[];
+	numberOfCitations: number[];
+	year: number[];
+	publisher: string[];
+	type: string[];
+	scope: string[];
+	scopeName: string[];
+	pdf: string[];
+	uniqueId: IApiUniqueId[];
+	source: SourceApi[];
+	raw: string[];
 }
 
 export enum SourceApi {

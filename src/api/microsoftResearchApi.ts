@@ -59,7 +59,7 @@ export class MicrosoftResearchApi implements IApiFetcher {
 	 * @returns Object containing the fetched paper and all paperObjects from citations and references. Promise.
 	 */
 	public async fetch(query: IApiQuery): Promise<IApiResponse> {
-		var paper: IApiPaper = {};
+		var paper: IApiPaper = {} as IApiPaper;
 		var citations: Promise<IApiPaper[]> | undefined;
 		let references: Promise<IApiPaper[]> | undefined;
 		try {
@@ -189,7 +189,7 @@ export class MicrosoftResearchApi implements IApiFetcher {
 		let parsedAuthors: IApiAuthor[] = [];
 		for (let a of response.AA) {
 			let parsedAuthor: IApiAuthor = {
-				id: [],
+				id: undefined,
 				orcid: [],
 				rawString: [a.AuN],
 				lastName: [],
@@ -224,11 +224,12 @@ export class MicrosoftResearchApi implements IApiFetcher {
 			year: response.Y ? [Number(response.Y)] : [],
 			publisher: response.PB ? [response.PB] : [],
 			type: response.Pt ? [this._paperTypeMapper[response.Pt]] : [],
-			scope: undefined,
-			scopeName: undefined,
-			pdf: response.S ? response.S.map((item: any) => item.U) : undefined,
+			scope: [],
+			scopeName: [],
+			pdf: response.S ? response.S.map((item: any) => item.U) : [],
 			uniqueId: parsedUniqueIds,
-			source: [SourceApi.MA]
+			source: [SourceApi.MA],
+			raw: []
 		};
 		return parsedResponse;
 	}

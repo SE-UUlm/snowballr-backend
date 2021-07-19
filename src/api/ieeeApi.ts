@@ -27,7 +27,7 @@ export class IeeeApi implements IApiFetcher {
 	 * @returns Object containing the fetched paper and all paperObjects from citations and references. Promise.
 	 */
 	public async fetch(query: IApiQuery): Promise<IApiResponse> {
-		var paper: IApiPaper = {};
+		var paper: IApiPaper = {} as IApiPaper;
 		let citations: Promise<IApiPaper[]> | undefined;
 		let references: Promise<IApiPaper[]> | undefined;
 		try {
@@ -164,7 +164,7 @@ export class IeeeApi implements IApiFetcher {
 			for (let a of response.authors.authors) {
 				console.error("hier" + JSON.stringify(a, null, 2))
 				let parsedAuthor: IApiAuthor = {
-					id: [],
+					id: undefined,
 					orcid: [],
 					rawString: [a.full_name],
 					lastName: [],
@@ -215,10 +215,10 @@ export class IeeeApi implements IApiFetcher {
 			numberOfCitations: response.citing_paper_count ? [response.citing_paper_count] : [],
 			year: response.publication_year ? [Number(response.publication_year)] : [],
 			publisher: response.publisher ? [response.publisher] : [],
-			type: undefined,
+			type: [],
 			scope: response.content_type ? [response.content_type] : [],
 			scopeName: response.publication_title ? [response.publication_title] : [],
-			pdf: response.pdf_url ? [response.pdf_url] : undefined,
+			pdf: response.pdf_url ? [response.pdf_url] : [],
 			uniqueId: parsedUniqueIds,
 			source: [SourceApi.IE],
 			raw: response.raw ? [response.raw] : []

@@ -31,7 +31,7 @@ export class CrossRefApi implements IApiFetcher {
 	 */
 	public async fetch(query: IApiQuery): Promise<IApiResponse> {
 		var citations: Promise<IApiPaper[]> | undefined;
-		var paper: IApiPaper = {};
+		var paper: IApiPaper = {} as IApiPaper;
 		var references: Promise<IApiPaper[]> | undefined;
 
 		try {
@@ -151,7 +151,7 @@ export class CrossRefApi implements IApiFetcher {
 		if (response.message.author) {
 			for (let a of response.message.author) {
 				let parsedAuthor: IApiAuthor = {
-					id: [],
+					id: undefined,
 					orcid: [],
 					rawString: a.given && a.family ? [`${a.given}, ${a.family}`] : [],
 					lastName: a.family ? [a.family] : [],
@@ -194,11 +194,12 @@ export class CrossRefApi implements IApiFetcher {
 			year: response.Y ? [Number(response.Y)] : [],
 			publisher: response.message.publisher ? [response.message.publisher] : [],
 			type: response.message.type ? [response.message.type] : [],
-			scope: undefined,
-			scopeName: undefined,
+			scope: [],
+			scopeName: [],
 			pdf: response.message.link ? response.message.link.map((item: any) => item.URL) : [],
 			uniqueId: parsedUniqueIds,
-			source: [SourceApi.CR]
+			source: [SourceApi.CR],
+			raw: []
 		};
 		return parsedResponse;
 	}
