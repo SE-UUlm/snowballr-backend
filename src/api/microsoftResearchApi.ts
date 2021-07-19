@@ -97,6 +97,33 @@ export class MicrosoftResearchApi implements IApiFetcher {
 		return apiReturn;
 	}
 
+	public async getDoi(query: IApiQuery) {
+		try {
+			let response = await fetch(this.url, {
+				method: 'POST',
+				headers: this._headers,
+				body: JSON.stringify({
+					expr: `And(Composite(AA.AuN='${query.rawName.toLowerCase()}'), Ti='${query.title.toLowerCase()}')`,
+					attributes: this._attributes
+				})
+			})
+			let json = await response.json();
+			logger.debug(json);
+			logger.debug(json.entities[0].DOI)
+			if (json.entities[0].DOI) {
+				query.doi = json.entities[0].DOI
+			}
+			else {
+				throw new Error("Fetched object has no DOI");
+			}
+		}
+		catch (e) {
+			logger.warning(`MA: Couldnt fetch DOI for the following query: ${query}`);
+			//logger.warning(e);
+		}
+		return query;
+	}
+
 	/**
 	 * Parse all microsoft-id references from a single paper and query for all the ids to return a paperObject for each.
 	 *
@@ -172,7 +199,7 @@ export class MicrosoftResearchApi implements IApiFetcher {
 	 * @returns string appendable to the api call via body-key "expr".
 	 */
 	private _parseQuery(query: IApiQuery): string {
-		let baseExpr: string = `Or(DOI='${query.doi.toUpperCase()}', And(Composite(AA.AuN='${query.rawName.toLowerCase()}'), Ti='${query.title.toLowerCase()}'))`
+		let baseExpr: string = `Or(DOI='${query.doi ? query.doi.toUpperCase() : ""}', And(Composite(AA.AuN='${query.rawName.toLowerCase()}'), Ti='${query.title.toLowerCase()}'))`
 
 		return baseExpr;
 	}

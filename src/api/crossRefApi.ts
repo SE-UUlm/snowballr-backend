@@ -203,4 +203,17 @@ export class CrossRefApi implements IApiFetcher {
 		};
 		return parsedResponse;
 	}
+
+	public async getDoi(query: IApiQuery): Promise<IApiQuery> {
+		try {
+			let response = await fetch(`${this.url}/?query.bibliographic=${query.title}&rows=1${this._mail.replace('?', '&')}`);
+			let json = await response.json();
+			query.doi = json.message.DOI;
+		}
+		catch (e) {
+			logger.warning(`CR: Couldnt fetch DOI for the following query: ${query}`);
+			logger.warning(e);
+		}
+		return query;
+	}
 }

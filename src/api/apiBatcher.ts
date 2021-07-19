@@ -11,6 +11,7 @@ import { OpenCitationsApi } from "./openCitationsApi.ts";
 import { SemanticScholar } from "./semanticScholar.ts";
 //import { v4 } from "https://deno.land/std@$STD_VERSION/uuid/mod.ts";
 import { ApiMerger } from "./apiMerger.ts";
+import { logger, fileLogger } from "./logger.ts";
 
 export const ApiBatch: IApiBatch = {
 	id: undefined,
@@ -45,12 +46,14 @@ export class ApiBatcher implements IApiBatcher {
 		this.activeBatches = []
 	}
 
-	public startFetch(query: IApiQuery): IApiBatch {
+	public async startFetch(query: IApiQuery): Promise<IApiBatch> {
 		let initializedFetchers: IApiFetcher[] = this._initializeEnabledApis(query.enabledApis!);
 		let response: Promise<IApiResponse>[] = [];
+		if (!query.doi) {
+			query = await this._getDoiByFetching(query, initializedFetchers);
+		}
 		for (let i in initializedFetchers) {
 			response.push(initializedFetchers[i].fetch(query));
-
 		}
 		const merger = new ApiMerger(query.aggressivity);
 		let apiBatch = {} as IApiBatch;
@@ -61,6 +64,28 @@ export class ApiBatcher implements IApiBatcher {
 		apiBatch.response = merger.compare(response);
 
 		return apiBatch;
+	}
+
+	private async _getDoiByFetching(query: IApiQuery, initializedFetchers: IApiFetcher[]): Promise<IApiQuery> {
+		try {
+			logger.info("Trying to fetch DOI for query without one");
+			let newQueries: Promise<IApiQuery>[] = []
+			for (let i in initializedFetchers) {
+				newQueries.push(initializedFetchers[i].getDoi(query));
+			}
+			let fetchedQueries = await Promise.all(newQueries);
+			query.doi = this._compareDoisOfQueries(fetchedQueries);
+		}
+		catch (e) {
+			logger.error(`Couldnt fetch any DOI by query: ${e}`)
+		}
+
+		return query;
+	}
+
+	private _compareDoisOfQueries(queries: IApiQuery[]): string | undefined {
+		let dois = queries.map(item => item.doi).filter(item => item);
+		return dois[0];
 	}
 
 	private _initializeEnabledApis(apis: SourceApi[]): IApiFetcher[] {
