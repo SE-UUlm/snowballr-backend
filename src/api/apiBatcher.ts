@@ -52,7 +52,7 @@ export class ApiBatcher implements IApiBatcher {
 			response.push(initializedFetchers[i].fetch(query));
 
 		}
-		const merger = new ApiMerger();
+		const merger = new ApiMerger(query.aggressivity);
 		let apiBatch = {} as IApiBatch;
 		assign(apiBatch, ApiBatch);
 		apiBatch.id = crypto.randomUUID();

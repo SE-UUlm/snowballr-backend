@@ -72,7 +72,9 @@ export class MicrosoftResearchApi implements IApiFetcher {
 				})
 			})
 			let json = await response.json();
+			logger.debug(json)
 			paper = this._parseResponse(json.entities[0]);
+
 			citations = json.entities[0] && this._getCitations(json.entities[0].Id);
 			//logger.debug(json.entities[0].RId)
 			// references = (json.entities[0] && json.entities[0].RId > 0) && this._getReferences(json.entities[0].RId);
@@ -85,7 +87,7 @@ export class MicrosoftResearchApi implements IApiFetcher {
 			}
 		}
 		catch (e) {
-			logger.critical(`MicrosoftResearchApi: Failed to fetch Query: ${e}`);
+			logger.warning(`MicrosoftResearchApi: Failed to fetch Query: ${e}`);
 			var apiReturn: IApiResponse = {
 				"paper": paper,
 				"citations": citations ? await citations : [],
@@ -170,7 +172,7 @@ export class MicrosoftResearchApi implements IApiFetcher {
 	 * @returns string appendable to the api call via body-key "expr".
 	 */
 	private _parseQuery(query: IApiQuery): string {
-		let baseExpr: string = `Or(DOI='${query.doi}', And(Composite(AA.AuN='${query.rawName.toLowerCase()}'), Ti='${query.title.toLowerCase()}'))`
+		let baseExpr: string = `Or(DOI='${query.doi.toUpperCase()}', And(Composite(AA.AuN='${query.rawName.toLowerCase()}'), Ti='${query.title.toLowerCase()}'))`
 
 		return baseExpr;
 	}
@@ -184,7 +186,7 @@ export class MicrosoftResearchApi implements IApiFetcher {
 	 */
 	private _parseResponse(response: any): IApiPaper {
 		//logger.debug(response);
-		let refLength: number = (response.RId === undefined ? 0 : response.RId.length);
+		let refLength: number = (response.RId ? response.RId.length : 0);
 
 		let parsedAuthors: IApiAuthor[] = [];
 		for (let a of response.AA) {

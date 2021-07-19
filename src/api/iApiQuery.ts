@@ -3,6 +3,7 @@
  */
 
 import { SourceApi } from "./iApiPaper.ts";
+import { IComparisonWeight } from "./iComparisonWeight.ts";
 
 export interface IApiQuery {
 	id: string;
@@ -15,4 +16,5 @@ export interface IApiQuery {
 	publisher?: string;
 	type?: string;
 	enabledApis?: SourceApi[];
+	aggressivity: IComparisonWeight;
 }

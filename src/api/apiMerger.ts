@@ -20,7 +20,7 @@ export class ApiMerger implements IApiMerger {
 		yearWeight: 2
 	} as IComparisonWeight;
 
-	public constructor(comparisonWeight?: IComparisonWeight) {
+	public constructor(comparisonWeight: IComparisonWeight) {
 		this.comparisonWeight = comparisonWeight ? comparisonWeight : this.comparisonWeight;
 	}
 
@@ -358,6 +358,10 @@ export class ApiMerger implements IApiMerger {
 
 		/** take the value which is more normalized if the key are equal*/
 		for (const key in Object.assign({}, firstAuthor, secondAuthor)) {
+			/** Id isnt a list. Since we are only able to merge lists we skip the database id if even given */
+			if (key === "id" && (first[key] === undefined || second[key] === undefined)) {
+				continue;
+			}
 			/** Check if a value of an author property is existing in both AuthorObjects. If so merge, else append. */
 			mergedAuthor[key] = [];//first[key].push.append(second[key]);
 			FIRSTLOOP: for (let i in first[key]) {
