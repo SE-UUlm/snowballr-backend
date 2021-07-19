@@ -1,9 +1,9 @@
 import * as log from "https://deno.land/std/log/mod.ts";
-import { toIMF } from "https://deno.land/std/datetime/mod.ts";
+import {toIMF} from "https://deno.land/std/datetime/mod.ts";
 
 await log.setup({
     handlers: {
-        console: new log.handlers.ConsoleHandler("INFO", {
+        console: new log.handlers.ConsoleHandler("DEBUG", {
             formatter: logRecord => {
                 let msg = `${toIMF(new Date())}\t${logRecord.levelName}\t${logRecord.msg}`;
 
@@ -16,14 +16,10 @@ await log.setup({
         }),
         file: new log.handlers.RotatingFileHandler('INFO', {
             filename: './a.log',
-            maxBytes: 15,
+            maxBytes: 65000000,
             maxBackupCount: 5,
-            formatter: rec => JSON.stringify({
-                region: rec.loggerName,
-                ts: rec.datetime,
-                level: rec.levelName,
-                data: rec.msg
-            })
+            mode: 'w',
+            formatter: rec => rec.msg
         })
     },
 

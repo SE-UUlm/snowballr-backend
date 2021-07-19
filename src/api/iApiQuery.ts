@@ -2,13 +2,19 @@
  * Parameters which are queriable by most apis. TBI
  */
 
+import { SourceApi } from "./iApiPaper.ts";
+import { IComparisonWeight } from "./iComparisonWeight.ts";
+
 export interface IApiQuery {
-    firstName?: string;
-    lastName?: string;
-    rawName: string;
-    title: string;
-    id: string;
-    year?: number;
-    publisher?: string;
-    type?: string;
+	id: string;
+	firstName?: string;
+	lastName?: string;
+	rawName: string;
+	title: string;
+	doi: string;
+	year?: number;
+	publisher?: string;
+	type?: string;
+	enabledApis?: SourceApi[];
+	aggressivity: IComparisonWeight;
 }
