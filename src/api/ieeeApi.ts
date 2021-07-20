@@ -13,6 +13,10 @@ export class IeeeApi implements IApiFetcher {
 	private _config: {} = {};
 	private _paperReferences: number = 0;
 
+	private _citeRegexYear: RegExp = new RegExp(/(?<!pp\. |-)[\d]{4}/g);
+	private _citeRegexAuthors: RegExp = new RegExp(/([A-ZÀ-Ú][a-zà-ú]* [A-ZÀ-Ú][a-zà-ú.\-]*)/g);
+	private _citeRegexTitle: RegExp = new RegExp(/(?<=\<i\>)(.*?)(?=\<\/i\>)/g);
+
 	public constructor(url: string, token: string) {
 		logger.info("IEEE initialized");
 		this.url = url;
@@ -63,7 +67,7 @@ export class IeeeApi implements IApiFetcher {
 
 			var apiReturn: IApiResponse = {
 				"paper": paper,
-				"citations": [], //await this._getCitationsFromHtml(json.articles[0].html_url),
+				"citations": await this._getCitationsFromHtml(json.articles[0].html_url),
 				"references": await this._getReferencesFromHtml(json.articles[0].html_url)
 			}
 		}
@@ -79,37 +83,72 @@ export class IeeeApi implements IApiFetcher {
 	}
 
 	private async _getCitationsFromHtml(url: string): Promise<IApiPaper[]> {
-		logger.debug(url);
+		//logger.debug(url);
 		let citations: IApiPaper[] = [];
 		const response = await axiod.get(`${url.replace('document', 'rest/document')}citations`, this._config);
-		logger.debug(response.data);
+		//logger.debug(response.data);
+
 		let citationIDs = response.data.paperCitations.ieee.map((item: any) => item.links.documentLink.replace("/document/", ''));
-		//citationIDs.concat(response.data.paperCitations.nonIeee.map((item: any) => item.publicationNumber));
-		logger.debug(citationIDs);
-		for (let c in response.data.paperCitations.ieee) {
-			let rawMetadata = {};
-			citations.push(this._parseResponse(rawMetadata));
+		//logger.debug(citationIDs);
+		citations.push.apply(citations, this._getCitationsTypeIeee(response.data.paperCitations.ieee));
+		citations.push.apply(citations, this._getCitationsTypeNonIeee(response.data.paperCitations.nonIeee));
+
+		return citations;
+	}
+
+	private _getCitationsTypeIeee(ieeeData: any): IApiPaper[] {
+		let citations: IApiPaper[] = [];
+		for (let c in ieeeData) {
+			let year = ieeeData[c].displayText.match(this._citeRegexYear);
+			let authors = ieeeData[c].displayText.split('\"')[0].match(this._citeRegexAuthors);
+			//logger.debug(authors)
+			let rawMetaData = {
+				'title': ieeeData[c].title ? ieeeData[c].title : ieeeData[c].displayText.split('\"')[1],
+				'authors': {
+					'authors': authors ? authors.map((item: any) => { return { 'full_name': item } }) : []
+				},
+				'year': year ? year.slice(-1)[0] : undefined,
+				'pdf_url': ieeeData[c].googleScholarLink ? ieeeData[c].googleScholarLink : undefined,
+			};
+			citations.push(this._parseResponse(rawMetaData));
+		}
+		return citations;
+	}
+
+	private _getCitationsTypeNonIeee(othersData: any): IApiPaper[] {
+		let citations: IApiPaper[] = [];
+		for (let c in othersData) {
+			let year = othersData[c].displayText.match(this._citeRegexYear);
+			let authors = othersData[c].displayText.split('<i>')[0].match(this._citeRegexAuthors);
+			//logger.debug(authors)
+			let rawMetaData = {
+				'title': othersData[c].title ? othersData[c].title : othersData[c].displayText.match(this._citeRegexTitle)[0],
+				'authors': {
+					'authors': authors ? authors.map((item: any) => { return { 'full_name': item } }) : []
+				},
+				'year': year ? year.slice(-1)[0] : undefined,
+				'pdf_url': othersData[c].googleScholarLink ? othersData[c].googleScholarLink : undefined,
+			};
+			citations.push(this._parseResponse(rawMetaData));
 		}
 		return citations;
 	}
 
 	private async _getReferencesFromHtml(url: string): Promise<IApiPaper[]> {
-		logger.debug(url);
+		//logger.debug(url);
 		let references: IApiPaper[] = [];
 
 		const response = await axiod.get(`${url.replace('document', 'rest/document')}references`, this._config);
 		this._paperReferences = response.data.references ? response.data.references.length : 0;
 
 		for (let r in response.data.references) {
-			logger.debug(r);
-			logger.debug(response.data.references[r]);
+			//logger.debug(r);
+			//logger.debug(response.data.references[r]);
 			let data = response.data.references[r];
 			let regexAuthors = new RegExp(/([A-ZÀ-Ú]\. )+(([A-ZÀ-Ú][a-zà-ú]*)-*)+/g);
 			let regexYear = new RegExp(/(?<!pp\. |-)[\d]{4}/g);
-			//let publisherRegex = new RegExp();
 			let text = String(data.text).split(data.title);
 			let replacement = ",";
-			//logger.debug(data.text.match(regexAuthors).map((item: any) => { return { 'fullname': item } }));
 			let rawMetadata = {};
 			if (data.title) {
 				let text = String(data.text).split(data.title);
@@ -118,7 +157,6 @@ export class IeeeApi implements IApiFetcher {
 				rawMetadata = {
 					'title': data.title,
 					'authors': {
-						//'authors': data.title ? text[0].replace(/,([^,]*)$/, '$1').replace(/,* *(and)/, ',').split(',').map((item: any) => { return { 'fullname': item.trim() } }) : []
 						'authors': authors ? authors.map((item: any) => { return { 'full_name': item } }) : []
 					},
 					'year': year ? year.slice(-1)[0] : undefined,
@@ -131,18 +169,11 @@ export class IeeeApi implements IApiFetcher {
 					'raw': data.text
 				};
 			}
-			logger.debug(rawMetadata);
+			//logger.debug(rawMetadata);
 			references.push(this._parseResponse(rawMetadata));
 		}
 		//logger.debug(references);
 		return references;
-
-		// let citationIDs = response.data.references.ieee.map((item: any) => item.links.documentLink.replace("/document/", ''));
-		//citationIDs.concat(response.data.paperCitations.nonIeee.map((item: any) => item.publicationNumber));
-		//logger.debug(response);
-		// for (let cite in response.data.paperCitations.ieee) {
-
-		// }
 	}
 
 
@@ -154,15 +185,10 @@ export class IeeeApi implements IApiFetcher {
 	 * @returns normalized ApiPaper object.
 	 */
 	private _parseResponse(response: any): IApiPaper {
-		//logger.debug(response);
 
 		let parsedAuthors: IApiAuthor[] = [];
-		//logger.info(response.authors.authors);
-		//logger.info(response.year)
-		//logger.info(response.title)
 		if (response.authors && response.authors.authors) {
 			for (let a of response.authors.authors) {
-				console.error("hier" + JSON.stringify(a, null, 2))
 				let parsedAuthor: IApiAuthor = {
 					id: undefined,
 					orcid: [],
