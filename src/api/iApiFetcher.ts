@@ -7,5 +7,5 @@ import { IApiResponse } from "./iApiResponse.ts";
 export interface IApiFetcher {
 	url?: string;
 	fetch(query: IApiQuery): Promise<IApiResponse>;
-	getDoi(query: IApiQuery): Promise<IApiQuery>;
+	getDoi(query: IApiQuery): Promise<string | undefined>;
 }

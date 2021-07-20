@@ -252,8 +252,8 @@ export class IeeeApi implements IApiFetcher {
 		return parsedResponse;
 	}
 
-	public async getDoi(query: IApiQuery): Promise<IApiQuery> {
+	public async getDoi(query: IApiQuery): Promise<string | undefined> {
 		logger.warning(`IE: Not able to fetch without DOI`);
-		return query;
+		return undefined;
 	}
 }

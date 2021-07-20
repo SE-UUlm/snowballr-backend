@@ -26,8 +26,8 @@ const comparisonWeight = {
 const query: IApiQuery = {
 	id: "tst",
 	rawName: "alexander raschke",
-	title: "Modeling Companion for Software Practitioners",
-	enabledApis: [SourceApi.MA, SourceApi.S2],
+	title: "Adaptive Exterior Light and Speed Control System",
+	enabledApis: [SourceApi.MA, SourceApi.CR],
 	aggressivity: comparisonWeight
 }
 

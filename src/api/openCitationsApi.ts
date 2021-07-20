@@ -139,8 +139,8 @@ export class OpenCitationsApi implements IApiFetcher {
 		return parsedResponse;
 	}
 
-	public async getDoi(query: IApiQuery): Promise<IApiQuery> {
+	public async getDoi(query: IApiQuery): Promise<string | undefined> {
 		logger.warning(`OC: Not able to fetch without DOI`);
-		return query;
+		return undefined;
 	}
 }
