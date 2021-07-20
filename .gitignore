@@ -2,7 +2,10 @@ db/couchdb
 db/postgresdb
 docker/.env
 .idea
-a.log
-b.log
+src/api/a.log
+src/api/b.log
+cov_profile/
 cov_profile.lcov
-cov_profile/*
+b.log
+a.log
+
