@@ -16,7 +16,7 @@ export class CrossRefApi implements IApiFetcher {
 	private _mail: string = "";
 
 	public constructor(url: string, mail?: string) {
-		logger.info("CrossRefApi initialized");
+		//logger.info("CrossRefApi initialized");
 		this.url = url;
 		//this._headers = { 'User-Agent': `GroovyBib/1.1 (https://example.org/GroovyBib/; mailto:GroovyBib@example.org) BasedOnFunkyLib/1.4` };
 		this._headers = { "Content-Type": "application/json" };
@@ -39,19 +39,18 @@ export class CrossRefApi implements IApiFetcher {
 			let response = await fetch(`${this.url}/${query.doi}`, {
 				headers: this._headers,
 			})
+			//console.log(response)
+			//console.log(response.json())
 
 			/** Get rate limit from api to apply it dynamically since it can change from time to time */
 			this._rateInterval = Number(response.headers.get("x-rate-limit-interval")) ? Number(response.headers.get("x-rate-limit-interval")!.replace('s', '')) : this._rateInterval;
 			this._rateLimit = Number(response.headers.get("x-rate-limit-limit")) ? Number(response.headers.get("x-rate-limit-limit")!.replace('s', '')) : this._rateInterval;
 			let json = await response.json();
-			//console.log(json);
+			//console.log(json)
 			paper = this._parseResponse(json);
-			//logger.debug(JSON.stringify(json.message, null, 2));
 			references = json.message.reference && this._getChildObjects(json.message.reference);
 			citations = json.message.relation.cites && this._getChildObjects(json.message.relation.cites);
-			// logger.debug(JSON.stringify(json, null, 2));
-			//logger.debug(json.message.reference)
-			//logger.debug(await references)
+			console.log(paper)
 			var apiReturn: IApiResponse = {
 				"paper": paper,
 				"citations": await citations,
@@ -59,7 +58,7 @@ export class CrossRefApi implements IApiFetcher {
 			}
 		}
 		catch (e) {
-			logger.critical(`CrossRef: Failed to fetch Query: ${e}`);
+			//logger.critical(`CrossRef: Failed to fetch Query: ${e}`);
 			var apiReturn: IApiResponse = {
 				"paper": paper,
 				"citations": citations ? await citations : [],
@@ -93,7 +92,7 @@ export class CrossRefApi implements IApiFetcher {
 		}
 
 		for (let d in fetchableByDoi) {
-			//logger.debug("fetchableByDoi")
+			////logger.debug("fetchableByDoi")
 			await this._limitRequests();
 			fetches.push(this._fetchDoiFromApi(fetchableByDoi[d]));
 		}
@@ -116,7 +115,7 @@ export class CrossRefApi implements IApiFetcher {
 			return child;
 		}
 		catch (e) {
-			logger.critical(`CrossRef: Failed to fetch child by doi: ${e}`);
+			//logger.critical(`CrossRef: Failed to fetch child by doi: ${e}`);
 			return {} as IApiPaper;
 		}
 	}
@@ -131,18 +130,18 @@ export class CrossRefApi implements IApiFetcher {
 			return child;
 		}
 		catch (e) {
-			logger.critical(`CrossRef: Failed to fetch child by doi: ${e}`);
+			//logger.critical(`CrossRef: Failed to fetch child by doi: ${e}`);
 			return {} as IApiPaper;
 		}
 	}
 
 	private async _limitRequests() {
 		this._iterations++;
-		//logger.warning(this._iterations);
+		////logger.warning(this._iterations);
 		if (this._iterations === this._rateLimit) {
 			await sleep(this._rateInterval * 2);
 			this._iterations = 0;
-			logger.warning(`Limiting Crossref Api due to following Restricitons: rateLimit=${this._rateLimit}; rateInterval=${this._rateInterval}`);
+			//logger.warning(`Limiting Crossref Api due to following Restricitons: rateLimit=${this._rateLimit}; rateInterval=${this._rateInterval}`);
 		}
 	}
 
@@ -153,7 +152,7 @@ export class CrossRefApi implements IApiFetcher {
 	 * @returns Object Single IApiPaper object which represents metadata of such
 	 */
 	private _parseResponse(response: any): IApiPaper {
-		//logger.debug(JSON.stringify(response, null, 2));
+		////logger.debug(JSON.stringify(response, null, 2));
 
 		let parsedAuthors: IApiAuthor[] = [];
 		if (response.message.author) {
@@ -222,8 +221,8 @@ export class CrossRefApi implements IApiFetcher {
 			return json.message.items[0].DOI;
 		}
 		catch (e) {
-			logger.warning(`CR: Couldnt fetch DOI for the following query: ${JSON.stringify(query, null, 2)}`);
-			logger.warning(e);
+			//logger.warning(`CR: Couldnt fetch DOI for the following query: ${JSON.stringify(query, null, 2)}`);
+			//logger.warning(e);
 		}
 		return undefined;
 	}
