@@ -39,18 +39,15 @@ export class CrossRefApi implements IApiFetcher {
 			let response = await fetch(`${this.url}/${query.doi}`, {
 				headers: this._headers,
 			})
-			//console.log(response)
-			//console.log(response.json())
 
 			/** Get rate limit from api to apply it dynamically since it can change from time to time */
 			this._rateInterval = Number(response.headers.get("x-rate-limit-interval")) ? Number(response.headers.get("x-rate-limit-interval")!.replace('s', '')) : this._rateInterval;
 			this._rateLimit = Number(response.headers.get("x-rate-limit-limit")) ? Number(response.headers.get("x-rate-limit-limit")!.replace('s', '')) : this._rateInterval;
 			let json = await response.json();
-			//console.log(json)
 			paper = this._parseResponse(json);
-			references = json.message.reference && this._getChildObjects(json.message.reference);
-			citations = json.message.relation.cites && this._getChildObjects(json.message.relation.cites);
-			console.log(paper)
+			references = json.message.reference ? this.getChildObjects(json.message.reference) : new Promise((resolve) => { resolve([]); });
+			citations = json.message.relation && json.message.relation.cites ? this.getChildObjects(json.message.relation.cites) : new Promise((resolve) => { resolve([]); });
+			//console.log(JSON.stringify(await references, null, 2))
 			var apiReturn: IApiResponse = {
 				"paper": paper,
 				"citations": await citations,
@@ -58,7 +55,7 @@ export class CrossRefApi implements IApiFetcher {
 			}
 		}
 		catch (e) {
-			//logger.critical(`CrossRef: Failed to fetch Query: ${e}`);
+			logger.warning(`CrossRef: Failed to fetch Query: ${e}`);
 			var apiReturn: IApiResponse = {
 				"paper": paper,
 				"citations": citations ? await citations : [],
@@ -76,7 +73,7 @@ export class CrossRefApi implements IApiFetcher {
 	 * @param rawChildren - list of citation or reference objcets return by the api
 	 * @returns Object list of citations or references implemented via IApiPaper
 	 */
-	private async _getChildObjects(rawChildren: any): Promise<IApiPaper[]> {
+	public async getChildObjects(rawChildren: any): Promise<IApiPaper[]> {
 		var fetchableByDoi: string[] = [];
 		var fetchableByBibliographic: string[] = [];
 		var children: Array<IApiPaper> = [];
@@ -111,11 +108,12 @@ export class CrossRefApi implements IApiFetcher {
 				headers: this._headers,
 			});
 			let json = await response.json();
+			//console.log(json)
 			let child = this._parseResponse(json);
 			return child;
 		}
 		catch (e) {
-			//logger.critical(`CrossRef: Failed to fetch child by doi: ${e}`);
+			logger.warning(`CrossRef: Failed to fetch child by doi: ${e}`);
 			return {} as IApiPaper;
 		}
 	}
@@ -130,7 +128,7 @@ export class CrossRefApi implements IApiFetcher {
 			return child;
 		}
 		catch (e) {
-			//logger.critical(`CrossRef: Failed to fetch child by doi: ${e}`);
+			logger.warning(`CrossRef: Failed to fetch child by doi: ${e}`);
 			return {} as IApiPaper;
 		}
 	}
@@ -141,7 +139,7 @@ export class CrossRefApi implements IApiFetcher {
 		if (this._iterations === this._rateLimit) {
 			await sleep(this._rateInterval * 2);
 			this._iterations = 0;
-			//logger.warning(`Limiting Crossref Api due to following Restricitons: rateLimit=${this._rateLimit}; rateInterval=${this._rateInterval}`);
+			logger.warning(`Limiting Crossref Api due to following Restricitons: rateLimit=${this._rateLimit}; rateInterval=${this._rateInterval}`);
 		}
 	}
 
@@ -196,7 +194,7 @@ export class CrossRefApi implements IApiFetcher {
 			title: response.message.title[0] ? [response.message.title[0]] : [],
 			author: parsedAuthors,
 			abstract: [],
-			numberOfReferences: response.message['reference-count'] ? [response.message['reference-count']] : [],
+			numberOfReferences: response.message['references-count'] ? [response.message['references-count']] : [],
 			numberOfCitations: response.message.relation && response.message.relation.cites ? [response.message.relation.cites.length] : [],
 			year: response.Y ? [Number(response.Y)] : [],
 			publisher: response.message.publisher ? [response.message.publisher] : [],
