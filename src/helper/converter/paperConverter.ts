@@ -1,8 +1,10 @@
-import {Paper} from "../../model/db/paper.ts";
-import {PaperMessage} from "../../model/messages/papersMessage.ts";
-import {getProjectPaperID} from "../../controller/databaseFetcher/paper.ts";
-import {assign} from "../assign.ts"
-
+import { Paper } from "../../model/db/paper.ts";
+import { PaperMessage } from "../../model/messages/papersMessage.ts";
+import { getProjectPaperID } from "../../controller/databaseFetcher/paper.ts";
+import { assign } from "../assign.ts"
+import { IApiPaper } from "../../api/iApiPaper.ts"
+import { getDOI } from "../../api/apiMerger.ts";
+import { logger, fileLogger } from "../../api/logger.ts";
 export const convertPapersToPaperMessage = async (papers: Paper[], stageId: number) => {
     let paperMessages: PaperMessage[] = [];
     for (const item of papers) {
@@ -13,8 +15,41 @@ export const convertPapersToPaperMessage = async (papers: Paper[], stageId: numb
 }
 
 export const convertPaperToPaperMessage = async (paper: Paper, stageId: number) => {
-    let paperMessage: PaperMessage = {id: Number(paper.id), ppid: await getProjectPaperID(stageId, Number(paper.id))}
+    let paperMessage: PaperMessage = { id: Number(paper.id), ppid: await getProjectPaperID(stageId, Number(paper.id)) }
     assign(paperMessage, paper)
     return paperMessage;
 }
 
+export const convertIApiPaperToDBPaper = async (paper: { [index: string]: any }): Promise<Paper | undefined> => {
+    if (!checkIApiPaper(paper)) {
+        let newPaper = await Paper.create({})
+        for (let i in paper) {
+            if (i in ["title", "abstract", "publisher", "type", "scopeName", "year"]) {
+                newPaper[i] = paper[i][0]
+            } else if (i == "uniqueId") {
+                //TODO rest unique keys
+                newPaper.doi = getDOI(paper)[0]
+            } else if (i == "author") {
+                //TODO author
+            } else if (i == "pdf") {
+                //TODO pdf
+            }
+        }
+        await newPaper.update()
+        return newPaper;
+    }
+
+
+}
+
+const checkIApiPaper = (paper: { [index: string]: any }): boolean => {
+    for (let i in paper) {
+        if (!(i in ["id", "uniqueId", "source", "author", "pdf"])) {
+            if (paper[i].length > 1) {
+                logger.critical(`${i} wasn't single`)
+                return false;
+            }
+        }
+    }
+    return true;
+}

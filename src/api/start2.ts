@@ -1,4 +1,5 @@
 import { IApiQuery } from "./iApiQuery.ts";
+import { IApiResponse } from "./iApiResponse.ts";
 import { MicrosoftResearchApi } from "./microsoftResearchApi.ts";
 import { OpenCitationsApi } from "./openCitationsApi.ts";
 import { logger, fileLogger } from "./logger.ts";
@@ -9,6 +10,7 @@ import { IeeeApi } from "./ieeeApi.ts";
 import { ApiBatcher } from "./apiBatcher.ts";
 import { SourceApi } from "./iApiPaper.ts";
 import { IComparisonWeight } from "./iComparisonWeight.ts";
+import { convertIApiPaperToDBPaper } from "../helper/converter/paperConverter.ts";
 
 
 const Batcher = new ApiBatcher();
@@ -28,7 +30,7 @@ const query: IApiQuery = {
 	rawName: "sebastian erdweg",
 	doi: "10.1109/SEAA.2009.60",
 	title: "The State of the Art in Language Workbenches",
-	enabledApis: [SourceApi.IE],
+	enabledApis: [SourceApi.IE, SourceApi.MA, SourceApi.CR, SourceApi.OC, SourceApi.S2],
 	aggressivity: comparisonWeight
 }
 
