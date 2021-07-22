@@ -1,5 +1,5 @@
-/*import {createMockApp} from "../mockObjects/oak/mockApp.test.ts";
-import {createMockContext} from "../mockObjects/oak/mockContext.test.ts";
+import { createMockApp } from "../mockObjects/oak/mockApp.test.ts";
+import { createMockContext } from "../mockObjects/oak/mockContext.test.ts";
 import {
     checkPO,
     createJWT,
@@ -7,13 +7,13 @@ import {
     validateContentType,
     validateJWTIfExists
 } from "../../src/controller/validation.ts";
-import {assertEquals} from "https://deno.land/std@0.97.0/testing/asserts.ts"
-import {emptyAsyncFunctionTest} from "../mockObjects/emptyAsyncFunction.test.ts";
-import {setup} from "../../src/helper/setup.ts";
-import {insertUser} from "../../src/controller/databaseFetcher/user.ts";
-import {Project} from "../../src/model/db/project.ts";
-import {UserIsPartOfProject} from "../../src/model/db/userIsPartOfProject.ts";
-import {client, db} from "../../src/controller/database.ts";
+import { assertEquals } from "https://deno.land/std@0.97.0/testing/asserts.ts"
+import { emptyAsyncFunctionTest } from "../mockObjects/emptyAsyncFunction.test.ts";
+import { setup } from "../../src/helper/setup.ts";
+import { insertUser } from "../../src/controller/databaseFetcher/user.ts";
+import { Project } from "../../src/model/db/project.ts";
+import { UserIsPartOfProject } from "../../src/model/db/userIsPartOfProject.ts";
+import { client, db } from "../../src/controller/database.ts";
 
 Deno.test({
     name: "testCorrectContentTypeAndContent",
@@ -130,7 +130,7 @@ Deno.test({
         let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
         let app = await createMockApp();
         let token = await createJWT(user)
-        let project = await Project.create({name: "Test", minCountReviewers: 1, countDecisiveReviewers: 1})
+        let project = await Project.create({ name: "Test", minCountReviewers: 1, countDecisiveReviewers: 1 })
         let userIsPartOfProject = await UserIsPartOfProject.create({
             isOwner: true,
             userId: Number(user.id),
@@ -153,7 +153,7 @@ Deno.test({
         let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
         let app = await createMockApp();
         let token = await createJWT(user)
-        let project = await Project.create({name: "Test", minCountReviewers: 1, countDecisiveReviewers: 1})
+        let project = await Project.create({ name: "Test", minCountReviewers: 1, countDecisiveReviewers: 1 })
         let userIsPartOfProject = await UserIsPartOfProject.create({
             isOwner: false,
             userId: Number(user.id),
@@ -169,4 +169,3 @@ Deno.test({
     }
 
 })
-*/

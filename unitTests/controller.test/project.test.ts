@@ -1,4 +1,3 @@
-/*
 import { setup } from "../../src/helper/setup.ts";
 import { insertUser } from "../../src/controller/databaseFetcher/user.ts";
 import { createMockApp } from "../mockObjects/oak/mockApp.test.ts";
@@ -404,4 +403,3 @@ Deno.test({
         await client.end();
     }
 })
-*/
