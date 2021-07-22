@@ -247,7 +247,7 @@ export class ApiMerger implements IApiMerger {
 		}
 
 		/** Compare if papers have equal publication year. Year might differ by one for papers published on different platform at the end of the year */
-		if (firstResponse.year.length > 0 && secondResponse.year.length > 0) {
+		if (firstResponse.year && secondResponse.year && firstResponse.year.length > 0 && secondResponse.year.length > 0) {
 			sameYear = ApiMerger.compareYears(firstResponse.year, secondResponse.year) ? comparison.yearWeight : -comparison.yearWeight;
 		} else {
 			comparison.yearWeight = 0;
@@ -255,7 +255,7 @@ export class ApiMerger implements IApiMerger {
 
 		/** Compare of each of the authors is the same by normalizing them or using the orchid.
 		 * Weight is used to control the importance of the whole equality formula */
-		if (firstResponse.author.length > 0 && secondResponse.author.length > 0) { // 0.7 ->
+		if (firstResponse.author && secondResponse.author && firstResponse.author.length > 0 && secondResponse.author.length > 0) { // 0.7 ->
 			sameAuthor = this._isEqualAuthors(firstResponse.author, secondResponse.author) * comparison.authorWeight;
 
 			//TODO: if title and year are equal likely to be equal --> year might be shifted by one year
