@@ -28,7 +28,7 @@ Deno.test({
 	}
 
 })
-*/
+
 Deno.test({
 	name: "test 2 papers merge author",
 	async fn(): Promise<void> {
@@ -495,3 +495,4 @@ Deno.test({
 export const makePromise = async <T>(t: T) => {
 	return t
 }
+*/
