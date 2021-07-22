@@ -202,7 +202,7 @@ export const addPaperToProjectStage = async (ctx: Context, projectId: number | u
 }
 
 const doiFetchToDB = async (doi: string) => {
-    let fetch = startDoiFetch(doi);
+    let fetch = await startDoiFetch(doi);
 
     (await fetch.response).forEach(element => {
         if (element) {
