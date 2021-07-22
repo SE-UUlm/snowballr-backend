@@ -1,4 +1,4 @@
-import {insertUser} from "../../src/controller/databaseFetcher/user.ts";
+/*import {insertUser} from "../../src/controller/databaseFetcher/user.ts";
 import {setup} from "../../src/helper/setup.ts";
 import {login} from "../../src/controller/login.ts";
 import {createMockContext} from "../mockObjects/oak/mockContext.test.ts";
@@ -72,3 +72,4 @@ Deno.test({
     }
 
 })
+*/
