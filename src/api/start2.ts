@@ -25,13 +25,13 @@ const comparisonWeight = {
 
 const query: IApiQuery = {
 	id: "tst",
-	rawName: "sebastian erdweg",
-	doi: "10.1109/SEAA.2009.60",
-	title: "The State of the Art in Language Workbenches",
-	enabledApis: [SourceApi.IE],
-	aggressivity: comparisonWeight
+	rawName: "",
+	title: "",
+	enabledApis: [SourceApi.MA, SourceApi.CR],
+	aggressivity: comparisonWeight,
+	doi: "10.1007%2F978-3-319-02654-1_11"
 }
 
-let batch = Batcher.startFetch(query);
+let batch = await Batcher.startFetch(query);
 
 ApiMerger.logResponse(await batch.response);
