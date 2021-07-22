@@ -1,4 +1,4 @@
-import {setup} from "../../src/helper/setup.ts";
+/*import {setup} from "../../src/helper/setup.ts";
 import {insertUser} from "../../src/controller/databaseFetcher/user.ts";
 import {createMockApp} from "../mockObjects/oak/mockApp.test.ts";
 import {createJWT} from "../../src/controller/validation.ts";
@@ -479,3 +479,4 @@ Deno.test({
     }
 
 })
+*/
