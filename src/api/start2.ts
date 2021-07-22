@@ -41,6 +41,6 @@ batch = await BATCHER.startFetch(query);
 
 ApiMerger.logResponse(await batch.response);
 
-BATCHER.killAllCaches();
+BATCHER.kill();
 
-Deno.exit(1)
+Deno.exit(0)
