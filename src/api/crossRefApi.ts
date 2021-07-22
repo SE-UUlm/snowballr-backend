@@ -6,21 +6,25 @@ import { logger } from "./logger.ts";
 import { IApiAuthor } from "./iApiAuthor.ts";
 import { IApiUniqueId, idType } from "./iApiUniqueId.ts";
 import { sleep } from "https://deno.land/x/sleep/mod.ts";
+import { Cache } from "./cache.ts";
+import { assign } from "../helper/assign.ts";
 
 export class CrossRefApi implements IApiFetcher {
 	url: string;
+	cache: Cache | undefined;
 	private _headers: {};
 	private _rateLimit: number = 50;
 	private _rateInterval: number = 1;
 	private _iterations: number = 0;
 	private _mail: string = "";
 
-	public constructor(url: string, mail?: string) {
+	public constructor(url: string, mail?: string, cache?: Cache) {
 		logger.info("CrossRefApi initialized");
 		this.url = url;
 		//this._headers = { 'User-Agent': `GroovyBib/1.1 (https://example.org/GroovyBib/; mailto:GroovyBib@example.org) BasedOnFunkyLib/1.4` };
 		this._headers = { "Content-Type": "application/json" };
 		mail ? this._mail = `?mailto=${mail}` : "";
+		this.cache = cache;
 	}
 
 	/**
@@ -36,6 +40,12 @@ export class CrossRefApi implements IApiFetcher {
 		var references: Promise<IApiPaper[]> | undefined;
 
 		try {
+			let get = this.cache!.get(query)
+			if (this.cache && get) {
+				logger.info(`CR: Loaded fetch from cache.`);
+				return get;
+			}
+
 			let response = await fetch(`${this.url}/${query.doi}`, {
 				headers: this._headers,
 			})
@@ -44,16 +54,18 @@ export class CrossRefApi implements IApiFetcher {
 			this._rateInterval = Number(response.headers.get("x-rate-limit-interval")) ? Number(response.headers.get("x-rate-limit-interval")!.replace('s', '')) : this._rateInterval;
 			this._rateLimit = Number(response.headers.get("x-rate-limit-limit")) ? Number(response.headers.get("x-rate-limit-limit")!.replace('s', '')) : this._rateInterval;
 			let json = await response.json();
-			console.log(json)
 			paper = this._parseResponse(json);
 			references = json.message.reference ? this.getChildObjects(json.message.reference) : new Promise((resolve) => { resolve([]); });
 			citations = json.message.relation && json.message.relation.cites ? this.getChildObjects(json.message.relation.cites) : new Promise((resolve) => { resolve([]); });
-			console.log(JSON.stringify(await citations, null, 2))
 			var apiReturn: IApiResponse = {
 				"paper": paper,
 				"citations": await citations,
 				"references": await references
 			}
+			if (this.cache) {
+				this.cache.add(query, apiReturn);
+			};
+
 		}
 		catch (e) {
 			logger.warning(`CrossRef: Failed to fetch Query: ${e}`);

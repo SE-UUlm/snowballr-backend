@@ -5,16 +5,19 @@ import { IApiPaper, SourceApi } from './iApiPaper.ts';
 import { logger } from "./logger.ts";
 import { IApiAuthor } from "./iApiAuthor.ts";
 import { IApiUniqueId, idType } from "./iApiUniqueId.ts";
+import { Cache } from "./cache.ts";
+import { assign } from "../helper/assign.ts";
 
 export class MicrosoftResearchApi implements IApiFetcher {
 	url: string;
+	cache: Cache | undefined;
 	private _authToken: string;
 	private _headers: {};
 	private _attributes: string;
 	private _paperTypeMapper: string[];
 	private _queryAttributeMapper: {};
 
-	public constructor(url: string, authToken: string) {
+	public constructor(url: string, authToken: string, cache?: Cache) {
 		logger.info("MicrosoftResearchApi initialized");
 		this.url = url;
 		this._authToken = authToken;
@@ -29,6 +32,7 @@ export class MicrosoftResearchApi implements IApiFetcher {
 			"publisher": "PB",
 			"type": "Pt"
 		};
+		this.cache = cache;
 	}
 
 	/**
@@ -63,6 +67,12 @@ export class MicrosoftResearchApi implements IApiFetcher {
 		var citations: Promise<IApiPaper[]> | undefined;
 		let references: Promise<IApiPaper[]> | undefined;
 		try {
+			let get = this.cache!.get(query);
+			if (this.cache && get) {
+				logger.info(`MA: Loaded fetch from cache.`)
+				//console.log(get)
+				return get;
+			}
 			let response = await fetch(this.url, {
 				method: 'POST',
 				headers: this._headers,
@@ -72,19 +82,20 @@ export class MicrosoftResearchApi implements IApiFetcher {
 				})
 			})
 			let json = await response.json();
-			//logger.debug(json)
-			paper = this._parseResponse(json.entities[0]);
 
+			// --> DB
+			paper = this._parseResponse(json.entities[0]);
 			citations = json.entities[0] && json.entities[0].Id ? this._getCitations(json.entities[0].Id) : new Promise((resolve) => { resolve([]); });
-			//logger.debug(json.entities[0].RId)
-			// references = (json.entities[0] && json.entities[0].RId > 0) && this._getReferences(json.entities[0].RId);
 			references = json.entities[0] && json.entities[0].RId ? this._getReferences(json.entities[0].RId) : new Promise((resolve) => { resolve([]); });
-			//logger.debug(await references)
+
 			var apiReturn: IApiResponse = {
 				"paper": paper,
 				"citations": await citations,
 				"references": await references
 			}
+			if (this.cache) {
+				this.cache.add(query, apiReturn);
+			};
 		}
 		catch (e) {
 			logger.warning(`MicrosoftResearchApi: Failed to fetch Query: ${e}`);

@@ -12,6 +12,7 @@ import { SemanticScholar } from "./semanticScholar.ts";
 //import { v4 } from "https://deno.land/std@$STD_VERSION/uuid/mod.ts";
 import { ApiMerger } from "./apiMerger.ts";
 import { logger, fileLogger } from "./logger.ts";
+import { Cache } from "./cache.ts";
 
 export const ApiBatch: IApiBatch = {
 	id: undefined,
@@ -22,7 +23,13 @@ export const ApiBatch: IApiBatch = {
 		this.subscribers.push(subscriber);
 	}
 }
+
+type SourceApiToCache = {
+	[key: string]: Cache;
+}
+
 export class ApiBatcher implements IApiBatcher {
+	public cache: SourceApiToCache = {};  //= new Cache(true, false, 3000000);
 	public activeBatches: IApiBatch[];
 	private _apiMapper = {
 		[SourceApi.MA]: MicrosoftResearchApi,
@@ -31,8 +38,6 @@ export class ApiBatcher implements IApiBatcher {
 		[SourceApi.S2]: SemanticScholar,
 		[SourceApi.IE]: IeeeApi
 	}
-
-
 
 	private _apiParamMapper = {
 		[SourceApi.MA]: ["https://api.labs.cognitive.microsoft.com/academic/v1.0/evaluate", "9a02225751354cd29397eba3f5382101"],
@@ -44,6 +49,9 @@ export class ApiBatcher implements IApiBatcher {
 
 	public constructor() {
 		this.activeBatches = []
+		for (let s in this._apiMapper) {
+			this.cache[s] = new Cache(true, false, 10000);
+		}
 	}
 
 	public async startFetch(query: IApiQuery): Promise<IApiBatch> {
@@ -95,7 +103,7 @@ export class ApiBatcher implements IApiBatcher {
 		for (let a of apis) {
 			let ApiObject = this._apiMapper[a as SourceApi];
 			let params = this._apiParamMapper[a as SourceApi];
-			initializedFetchers.push(new ApiObject(params[0], params[1] ? params[1] : ''));
+			initializedFetchers.push(new ApiObject(params[0], params[1] ? params[1] : '', this.cache[a as SourceApi]));
 		}
 		return initializedFetchers;
 	}
@@ -115,6 +123,12 @@ export class ApiBatcher implements IApiBatcher {
 			included[0].addSubscriber(query)
 			return included[0]
 		}
+	}
+
+	public killAllCaches() {
+		Object.keys(this.cache).forEach(key => this.cache[key].clear());
+		logger.info("Killed all Caches");
+		Object.keys(this.cache).forEach(key => console.log(this.cache[key].empty()));
 	}
 }
 

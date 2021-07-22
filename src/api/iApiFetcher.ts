@@ -6,6 +6,7 @@ import { IApiResponse } from "./iApiResponse.ts";
  */
 export interface IApiFetcher {
 	url?: string;
+	enableCache?: boolean;
 	fetch(query: IApiQuery): Promise<IApiResponse>;
 	getDoi(query: IApiQuery): Promise<string | undefined>;
 }
