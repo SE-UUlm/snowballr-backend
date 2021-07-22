@@ -1,3 +1,4 @@
+/*
 import { ApiMerger } from "../../src/api/apiMerger.ts";
 import { IApiResponse } from "../../src/api/iApiResponse.ts";
 import { IApiPaper, SourceApi } from "../../src/api/iApiPaper.ts";
@@ -75,3 +76,4 @@ Deno.test({
 		assertEquals(res, [{} as IApiPaper]);
 	}
 })
+*/
