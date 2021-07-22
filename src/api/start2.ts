@@ -10,7 +10,6 @@ import { IeeeApi } from "./ieeeApi.ts";
 import { ApiBatcher } from "./apiBatcher.ts";
 import { SourceApi } from "./iApiPaper.ts";
 import { IComparisonWeight } from "./iComparisonWeight.ts";
-import { convertIApiPaperToDBPaper } from "../helper/converter/paperConverter.ts";
 
 
 const Batcher = new ApiBatcher();

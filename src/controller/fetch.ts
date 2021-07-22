@@ -9,7 +9,9 @@ const Batcher = new ApiBatcher();
 //TODO id
 let id = 1;
 
-export const startFetch = (doi: string): IApiBatch => {
+
+
+export const startDoiFetch = (doi: string): IApiBatch => {
 
     //TODO comparisons from logfile
     const comparisonWeight: IComparisonWeight = {

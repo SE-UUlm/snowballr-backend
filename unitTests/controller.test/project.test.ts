@@ -1,19 +1,21 @@
-import {setup} from "../../src/helper/setup.ts";
-import {insertUser} from "../../src/controller/databaseFetcher/user.ts";
-import {createMockApp} from "../mockObjects/oak/mockApp.test.ts";
-import {checkMemberOfProject, createJWT} from "../../src/controller/validation.ts";
-import {createMockContext} from "../mockObjects/oak/mockContext.test.ts";
+import { setup } from "../../src/helper/setup.ts";
+import { insertUser } from "../../src/controller/databaseFetcher/user.ts";
+import { createMockApp } from "../mockObjects/oak/mockApp.test.ts";
+import { checkMemberOfProject, createJWT } from "../../src/controller/validation.ts";
+import { createMockContext } from "../mockObjects/oak/mockContext.test.ts";
 import {
     addMemberToProject,
+    addPaperToProjectStage,
     addStageToProject,
     createProject,
     getMembersOfProject,
     getProjects
 } from "../../src/controller/project.ts";
-import {Project} from "../../src/model/db/project.ts";
-import {assertEquals, assertNotEquals} from "https://deno.land/std/testing/asserts.ts"
-import {UserIsPartOfProject} from "../../src/model/db/userIsPartOfProject.ts";
-import {client, db} from "../../src/controller/database.ts";
+import { Project } from "../../src/model/db/project.ts";
+import { assertEquals, assertNotEquals } from "https://deno.land/std/testing/asserts.ts"
+import { UserIsPartOfProject } from "../../src/model/db/userIsPartOfProject.ts";
+import { client, db } from "../../src/controller/database.ts";
+import { Stage } from "../../src/model/db/stage.ts";
 
 Deno.test({
     name: "createProjectUnauth",
@@ -366,6 +368,34 @@ Deno.test({
         let token = await createJWT(user)
         let ctx = await createMockContext(app, `{ "name": "namee"}`, [["Content-Type", "application/json"]], "/", token);
         await addStageToProject(ctx, Number(project.id))
+
+        assertEquals(ctx.response.status, 401)
+
+        await db.close();
+        await client.end();
+    }
+})
+
+Deno.test({
+    name: "AddPaperToProject",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+        let project = await Project.create({
+            name: "test",
+            minCountReviewers: 1,
+            countDecisiveReviewers: 1
+        })
+        let stage = await Stage.create({
+            name: "TestStage",
+            projectId: Number(project.id),
+            number: 1
+        })
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, `{"doi":"10.1109/SEAA.2009.60" }`, [["Content-Type", "application/json"]], "/", token);
+        console.error(`${Number(project.id)}, ${Number(stage.id)}`)
+        await addPaperToProjectStage(ctx, Number(project.id), Number(stage.id))
 
         assertEquals(ctx.response.status, 401)
 
