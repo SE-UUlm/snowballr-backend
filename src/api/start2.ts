@@ -34,6 +34,6 @@ const query: IApiQuery = {
 	aggressivity: comparisonWeight
 }
 
-let batch = Batcher.startFetch(query);
+let batch = await Batcher.startFetch(query);
 
 ApiMerger.logResponse(await batch.response);
