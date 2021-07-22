@@ -124,4 +124,9 @@ export class SemanticScholar implements IApiFetcher {
 		};
 		return parsedResponse;
 	}
+
+	public async getDoi(query: IApiQuery): Promise<string | undefined> {
+		logger.warning(`S2: Not able to fetch without DOI`);
+		return undefined;
+	}
 }

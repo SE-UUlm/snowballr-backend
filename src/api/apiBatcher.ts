@@ -11,6 +11,7 @@ import { OpenCitationsApi } from "./openCitationsApi.ts";
 import { SemanticScholar } from "./semanticScholar.ts";
 //import { v4 } from "https://deno.land/std@$STD_VERSION/uuid/mod.ts";
 import { ApiMerger } from "./apiMerger.ts";
+import { logger, fileLogger } from "./logger.ts";
 
 export const ApiBatch: IApiBatch = {
 	id: undefined,
@@ -35,8 +36,8 @@ export class ApiBatcher implements IApiBatcher {
 
 	private _apiParamMapper = {
 		[SourceApi.MA]: ["https://api.labs.cognitive.microsoft.com/academic/v1.0/evaluate", "9a02225751354cd29397eba3f5382101"],
-		[SourceApi.CR]: ["https://opencitations.net"],
-		[SourceApi.OC]: ["https://api.crossref.org/works", "lukas.romer@uni-ulm.de"],
+		[SourceApi.OC]: ["https://opencitations.net"],
+		[SourceApi.CR]: ["https://api.crossref.org/works", "lukas.romer@uni-ulm.de"],
 		[SourceApi.S2]: ["https://api.semanticscholar.org/v1/paper"],
 		[SourceApi.IE]: ["http://ieeexploreapi.ieee.org/api/v1/search/articles", "4yk5d9an52ejynjsmzqxe62r"]
 	}
@@ -45,12 +46,14 @@ export class ApiBatcher implements IApiBatcher {
 		this.activeBatches = []
 	}
 
-	public startFetch(query: IApiQuery): IApiBatch {
+	public async startFetch(query: IApiQuery): Promise<IApiBatch> {
 		let initializedFetchers: IApiFetcher[] = this._initializeEnabledApis(query.enabledApis!);
 		let response: Promise<IApiResponse>[] = [];
+		if (!query.doi) {
+			query = await this._getDoiByFetching(query, initializedFetchers);
+		}
 		for (let i in initializedFetchers) {
 			response.push(initializedFetchers[i].fetch(query));
-
 		}
 		const merger = new ApiMerger(query.aggressivity);
 		let apiBatch = {} as IApiBatch;
@@ -61,6 +64,30 @@ export class ApiBatcher implements IApiBatcher {
 		apiBatch.response = merger.compare(response);
 
 		return apiBatch;
+	}
+
+	private async _getDoiByFetching(query: IApiQuery, initializedFetchers: IApiFetcher[]): Promise<IApiQuery> {
+		try {
+			logger.info("Trying to fetch DOI for query without one");
+			let fetchedDois: Promise<string | undefined>[] = []
+			for (let i in initializedFetchers) {
+				fetchedDois.push(initializedFetchers[i].getDoi(query));
+			}
+			let fetchedQueries = await Promise.all(fetchedDois);
+			query.doi = this._compareDoisOfQueries(fetchedQueries);
+			logger.info(`Fetched DOI ${query.doi} for title ${query.title}`);
+		}
+		catch (e) {
+			logger.error(`Couldnt fetch any DOI by query: ${e}`)
+		}
+
+		return query;
+	}
+
+	private _compareDoisOfQueries(dois: (string | undefined)[]): string {
+		logger.info(`List of DOIS for paper: ${dois}`)
+		let validDois = dois.filter(item => item);
+		return validDois[0]!;
 	}
 
 	private _initializeEnabledApis(apis: SourceApi[]): IApiFetcher[] {

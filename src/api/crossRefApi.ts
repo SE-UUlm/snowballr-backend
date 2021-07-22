@@ -18,6 +18,7 @@ export class CrossRefApi implements IApiFetcher {
 	public constructor(url: string, mail?: string) {
 		logger.info("CrossRefApi initialized");
 		this.url = url;
+		//this._headers = { 'User-Agent': `GroovyBib/1.1 (https://example.org/GroovyBib/; mailto:GroovyBib@example.org) BasedOnFunkyLib/1.4` };
 		this._headers = { "Content-Type": "application/json" };
 		mail ? this._mail = `?mailto=${mail}` : "";
 	}
@@ -35,19 +36,19 @@ export class CrossRefApi implements IApiFetcher {
 		var references: Promise<IApiPaper[]> | undefined;
 
 		try {
-			let response = await fetch(`${this.url}/${query.doi}${this._mail}`)
+			let response = await fetch(`${this.url}/${query.doi}`, {
+				headers: this._headers,
+			})
 
 			/** Get rate limit from api to apply it dynamically since it can change from time to time */
 			this._rateInterval = Number(response.headers.get("x-rate-limit-interval")) ? Number(response.headers.get("x-rate-limit-interval")!.replace('s', '')) : this._rateInterval;
 			this._rateLimit = Number(response.headers.get("x-rate-limit-limit")) ? Number(response.headers.get("x-rate-limit-limit")!.replace('s', '')) : this._rateInterval;
 			let json = await response.json();
+			console.log(json)
 			paper = this._parseResponse(json);
-			//logger.debug(JSON.stringify(json.message, null, 2));
-			references = json.message.reference && this._getChildObjects(json.message.reference);
-			citations = json.message.relation && this._getChildObjects(json.message.relation.cites);
-			// logger.debug(JSON.stringify(json, null, 2));
-			//logger.debug(json.message.reference)
-			//logger.debug(await references)
+			references = json.message.reference ? this.getChildObjects(json.message.reference) : new Promise((resolve) => { resolve([]); });
+			citations = json.message.relation && json.message.relation.cites ? this.getChildObjects(json.message.relation.cites) : new Promise((resolve) => { resolve([]); });
+			console.log(JSON.stringify(await citations, null, 2))
 			var apiReturn: IApiResponse = {
 				"paper": paper,
 				"citations": await citations,
@@ -55,7 +56,7 @@ export class CrossRefApi implements IApiFetcher {
 			}
 		}
 		catch (e) {
-			logger.critical(`CrossRef: Failed to fetch Query: ${e}`);
+			logger.warning(`CrossRef: Failed to fetch Query: ${e}`);
 			var apiReturn: IApiResponse = {
 				"paper": paper,
 				"citations": citations ? await citations : [],
@@ -73,7 +74,7 @@ export class CrossRefApi implements IApiFetcher {
 	 * @param rawChildren - list of citation or reference objcets return by the api
 	 * @returns Object list of citations or references implemented via IApiPaper
 	 */
-	private async _getChildObjects(rawChildren: any): Promise<IApiPaper[]> {
+	public async getChildObjects(rawChildren: any): Promise<IApiPaper[]> {
 		var fetchableByDoi: string[] = [];
 		var fetchableByBibliographic: string[] = [];
 		var children: Array<IApiPaper> = [];
@@ -89,7 +90,7 @@ export class CrossRefApi implements IApiFetcher {
 		}
 
 		for (let d in fetchableByDoi) {
-			//logger.debug("fetchableByDoi")
+			////logger.debug("fetchableByDoi")
 			await this._limitRequests();
 			fetches.push(this._fetchDoiFromApi(fetchableByDoi[d]));
 		}
@@ -104,33 +105,38 @@ export class CrossRefApi implements IApiFetcher {
 
 	private async _fetchDoiFromApi(item: string): Promise<IApiPaper> {
 		try {
-			let response = await fetch(`${this.url}/${item}${this._mail}`);
+			let response = await fetch(`${this.url}/${item}`, {
+				headers: this._headers,
+			});
 			let json = await response.json();
+			//console.log(json)
 			let child = this._parseResponse(json);
 			return child;
 		}
 		catch (e) {
-			logger.critical(`CrossRef: Failed to fetch child by doi: ${e}`);
+			logger.warning(`CrossRef: Failed to fetch child by doi: ${e}`);
 			return {} as IApiPaper;
 		}
 	}
 
 	private async _fetchBibFromApi(item: string): Promise<IApiPaper> {
 		try {
-			let response = await fetch(`${this.url}/?query.bibliographic=${item}&rows=1${this._mail.replace('?', '&')}`);
+			let response = await fetch(`${this.url}?query.bibliographic=${item.replace(/\s/g, '+')}&rows=1`, {
+				headers: this._headers,
+			});
 			let json = await response.json();
 			let child = this._parseResponse({ 'message': json.message.items[0] });
 			return child;
 		}
 		catch (e) {
-			logger.critical(`CrossRef: Failed to fetch child by doi: ${e}`);
+			logger.warning(`CrossRef: Failed to fetch child by doi: ${e}`);
 			return {} as IApiPaper;
 		}
 	}
 
 	private async _limitRequests() {
 		this._iterations++;
-		//logger.warning(this._iterations);
+		////logger.warning(this._iterations);
 		if (this._iterations === this._rateLimit) {
 			await sleep(this._rateInterval * 2);
 			this._iterations = 0;
@@ -145,7 +151,7 @@ export class CrossRefApi implements IApiFetcher {
 	 * @returns Object Single IApiPaper object which represents metadata of such
 	 */
 	private _parseResponse(response: any): IApiPaper {
-		//logger.debug(JSON.stringify(response, null, 2));
+		////logger.debug(JSON.stringify(response, null, 2));
 
 		let parsedAuthors: IApiAuthor[] = [];
 		if (response.message.author) {
@@ -189,8 +195,8 @@ export class CrossRefApi implements IApiFetcher {
 			title: response.message.title[0] ? [response.message.title[0]] : [],
 			author: parsedAuthors,
 			abstract: [],
-			numberOfReferences: response.message['reference-count'] ? [response.message['reference-count']] : [],
-			numberOfCitations: response.message.relation && response.message.relation.cites ? [response.message.relation.cites.length] : [],
+			numberOfReferences: response.message['references-count'] ? [response.message['references-count']] : [],
+			numberOfCitations: response.message['is-referenced-by-count'] ? [response.message['is-referenced-by-count']] : [],
 			year: response.Y ? [Number(response.Y)] : [],
 			publisher: response.message.publisher ? [response.message.publisher] : [],
 			type: response.message.type ? [response.message.type] : [],
@@ -202,5 +208,21 @@ export class CrossRefApi implements IApiFetcher {
 			raw: []
 		};
 		return parsedResponse;
+	}
+
+	public async getDoi(query: IApiQuery): Promise<string | undefined> {
+		try {
+			let url = `${this.url}?query.bibliographic=${query.title.replace(/\s/g, '+')}&rows=1`;
+			let response = await fetch(url, {
+				headers: this._headers,
+			});
+			let json = await response.json();
+			return json.message.items[0].DOI;
+		}
+		catch (e) {
+			//logger.warning(`CR: Couldnt fetch DOI for the following query: ${JSON.stringify(query, null, 2)}`);
+			//logger.warning(e);
+		}
+		return undefined;
 	}
 }

@@ -75,10 +75,10 @@ export class MicrosoftResearchApi implements IApiFetcher {
 			//logger.debug(json)
 			paper = this._parseResponse(json.entities[0]);
 
-			citations = json.entities[0] && this._getCitations(json.entities[0].Id);
+			citations = json.entities[0] && json.entities[0].Id ? this._getCitations(json.entities[0].Id) : new Promise((resolve) => { resolve([]); });
 			//logger.debug(json.entities[0].RId)
 			// references = (json.entities[0] && json.entities[0].RId > 0) && this._getReferences(json.entities[0].RId);
-			references = json.entities[0] && this._getReferences(json.entities[0].RId);
+			references = json.entities[0] && json.entities[0].RId ? this._getReferences(json.entities[0].RId) : new Promise((resolve) => { resolve([]); });
 			//logger.debug(await references)
 			var apiReturn: IApiResponse = {
 				"paper": paper,
@@ -96,6 +96,7 @@ export class MicrosoftResearchApi implements IApiFetcher {
 		}
 		return apiReturn;
 	}
+
 
 	/**
 	 * Parse all microsoft-id references from a single paper and query for all the ids to return a paperObject for each.
@@ -172,7 +173,7 @@ export class MicrosoftResearchApi implements IApiFetcher {
 	 * @returns string appendable to the api call via body-key "expr".
 	 */
 	private _parseQuery(query: IApiQuery): string {
-		let baseExpr: string = `Or(DOI='${query.doi.toUpperCase()}', And(Composite(AA.AuN='${query.rawName.toLowerCase()}'), Ti='${query.title.toLowerCase()}'))`
+		let baseExpr: string = `Or(DOI='${query.doi ? query.doi.toUpperCase() : ""}', And(Composite(AA.AuN='${query.rawName.toLowerCase()}'), Ti='${query.title.toLowerCase()}'))`
 
 		return baseExpr;
 	}
@@ -235,4 +236,32 @@ export class MicrosoftResearchApi implements IApiFetcher {
 		};
 		return parsedResponse;
 	}
+
+	public async getDoi(query: IApiQuery): Promise<string | undefined> {
+		try {
+			let response = await fetch(this.url, {
+				method: 'POST',
+				headers: this._headers,
+				body: JSON.stringify({
+					expr: `And(Composite(AA.AuN='${query.rawName.toLowerCase()}'), Ti='${query.title.toLowerCase()}')`,
+					attributes: this._attributes
+				})
+			})
+			let json = await response.json();
+			//logger.debug(json);
+			//logger.debug(json.entities[0].DOI)
+			if (json.entities[0].DOI) {
+				return json.entities[0].DOI;
+			}
+			else {
+				throw new Error("Fetched object has no DOI");
+			}
+		}
+		catch (e) {
+			logger.warning(`MA: Couldnt fetch DOI for the following query: ${query}`);
+			logger.warning(e);
+		}
+		return undefined;
+	}
+
 }
