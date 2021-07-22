@@ -6,7 +6,7 @@ import { idType } from "../../src/api/iApiUniqueId.ts";
 
 export const standardPaper: IApiPaper = { title: [], abstract: [], author: [], year: [], publisher: [], numberOfCitations: [], numberOfReferences: [], type: [], scope: [], scopeName: [], pdf: [], uniqueId: [], source: [], raw: [] }
 
-/*
+
 Deno.test({
 	name: "test 2 papers",
 	async fn(): Promise<void> {
@@ -495,4 +495,3 @@ Deno.test({
 export const makePromise = async <T>(t: T) => {
 	return t
 }
-*/
