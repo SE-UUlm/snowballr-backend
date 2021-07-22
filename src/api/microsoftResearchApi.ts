@@ -75,10 +75,10 @@ export class MicrosoftResearchApi implements IApiFetcher {
 			//logger.debug(json)
 			paper = this._parseResponse(json.entities[0]);
 
-			citations = json.entities[0] && this._getCitations(json.entities[0].Id);
+			citations = json.entities[0] && json.entities[0].Id ? this._getCitations(json.entities[0].Id) : new Promise((resolve) => { resolve([]); });
 			//logger.debug(json.entities[0].RId)
 			// references = (json.entities[0] && json.entities[0].RId > 0) && this._getReferences(json.entities[0].RId);
-			references = json.entities[0] && this._getReferences(json.entities[0].RId);
+			references = json.entities[0] && json.entities[0].RId ? this._getReferences(json.entities[0].RId) : new Promise((resolve) => { resolve([]); });
 			//logger.debug(await references)
 			var apiReturn: IApiResponse = {
 				"paper": paper,

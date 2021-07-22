@@ -65,3 +65,13 @@ Deno.test({
 		assertEquals(res, [Mock.parsedReference]);
 	}
 })
+
+Deno.test({
+	name: "CrossRefApi invalid citations",
+	async fn(): Promise<void> {
+		stub(globalThis, "fetch", () => { return {} as Response });
+
+		let res = await CR.getChildObjects([Mock.referenceRequest]);
+		assertEquals(res, [{} as IApiPaper]);
+	}
+})

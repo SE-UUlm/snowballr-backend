@@ -16,7 +16,7 @@ export class CrossRefApi implements IApiFetcher {
 	private _mail: string = "";
 
 	public constructor(url: string, mail?: string) {
-		//logger.info("CrossRefApi initialized");
+		logger.info("CrossRefApi initialized");
 		this.url = url;
 		//this._headers = { 'User-Agent': `GroovyBib/1.1 (https://example.org/GroovyBib/; mailto:GroovyBib@example.org) BasedOnFunkyLib/1.4` };
 		this._headers = { "Content-Type": "application/json" };
@@ -44,10 +44,11 @@ export class CrossRefApi implements IApiFetcher {
 			this._rateInterval = Number(response.headers.get("x-rate-limit-interval")) ? Number(response.headers.get("x-rate-limit-interval")!.replace('s', '')) : this._rateInterval;
 			this._rateLimit = Number(response.headers.get("x-rate-limit-limit")) ? Number(response.headers.get("x-rate-limit-limit")!.replace('s', '')) : this._rateInterval;
 			let json = await response.json();
+			console.log(json)
 			paper = this._parseResponse(json);
 			references = json.message.reference ? this.getChildObjects(json.message.reference) : new Promise((resolve) => { resolve([]); });
 			citations = json.message.relation && json.message.relation.cites ? this.getChildObjects(json.message.relation.cites) : new Promise((resolve) => { resolve([]); });
-			//console.log(JSON.stringify(await references, null, 2))
+			console.log(JSON.stringify(await citations, null, 2))
 			var apiReturn: IApiResponse = {
 				"paper": paper,
 				"citations": await citations,
@@ -195,7 +196,7 @@ export class CrossRefApi implements IApiFetcher {
 			author: parsedAuthors,
 			abstract: [],
 			numberOfReferences: response.message['references-count'] ? [response.message['references-count']] : [],
-			numberOfCitations: response.message.relation && response.message.relation.cites ? [response.message.relation.cites.length] : [],
+			numberOfCitations: response.message['is-referenced-by-count'] ? [response.message['is-referenced-by-count']] : [],
 			year: response.Y ? [Number(response.Y)] : [],
 			publisher: response.message.publisher ? [response.message.publisher] : [],
 			type: response.message.type ? [response.message.type] : [],

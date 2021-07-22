@@ -25,10 +25,11 @@ const comparisonWeight = {
 
 const query: IApiQuery = {
 	id: "tst",
-	rawName: "alexander raschke",
-	title: "Adaptive Exterior Light and Speed Control System",
+	rawName: "",
+	title: "",
 	enabledApis: [SourceApi.MA, SourceApi.CR],
-	aggressivity: comparisonWeight
+	aggressivity: comparisonWeight,
+	doi: "10.1007%2F978-3-319-02654-1_11"
 }
 
 let batch = await Batcher.startFetch(query);
