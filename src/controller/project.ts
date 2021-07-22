@@ -1,20 +1,21 @@
-import {Context} from 'https://deno.land/x/oak/mod.ts';
-import {checkAdmin, checkMemberOfProject, checkPO, checkPOofProject, getPayloadFromJWT} from "./validation.ts";
-import {makeErrorMessage} from "../helper/error.ts";
-import {jsonBodyToObject} from "../helper/body.ts";
-import {Project} from "../model/db/project.ts";
-import {UserIsPartOfProject} from "../model/db/userIsPartOfProject.ts";
-import {ProjectMembersMessage} from "../model/messages/projectMembers.message.ts";
-import {getAllMembersOfProject} from "./databaseFetcher/userProject.ts";
-import {convertProjectToProjectMessage} from "../helper/converter/projectConverter.ts";
-import {Stage} from "../model/db/stage.ts";
-import {Paper} from "../model/db/paper.ts";
-import {getAllStagesFromProject} from "./databaseFetcher/stage.ts";
-import {getAllPapersFromStage} from "./databaseFetcher/paper.ts";
-import {PapersMessage} from "../model/messages/papersMessage.ts";
-import {PaperScopeForStage} from "../model/db/paperScopeForStage.ts";
-import {convertPapersToPaperMessage, convertPaperToPaperMessage} from "../helper/converter/paperConverter.ts";
-import {assign} from "../helper/assign.ts"
+import { Context } from 'https://deno.land/x/oak/mod.ts';
+import { checkAdmin, checkMemberOfProject, checkPO, checkPOofProject, getPayloadFromJWT } from "./validation.ts";
+import { makeErrorMessage } from "../helper/error.ts";
+import { jsonBodyToObject } from "../helper/body.ts";
+import { Project } from "../model/db/project.ts";
+import { UserIsPartOfProject } from "../model/db/userIsPartOfProject.ts";
+import { ProjectMembersMessage } from "../model/messages/projectMembers.message.ts";
+import { getAllMembersOfProject } from "./databaseFetcher/userProject.ts";
+import { convertProjectToProjectMessage } from "../helper/converter/projectConverter.ts";
+import { Stage } from "../model/db/stage.ts";
+import { Paper } from "../model/db/paper.ts";
+import { getAllStagesFromProject } from "./databaseFetcher/stage.ts";
+import { getAllPapersFromStage } from "./databaseFetcher/paper.ts";
+import { PapersMessage } from "../model/messages/papersMessage.ts";
+import { PaperScopeForStage } from "../model/db/paperScopeForStage.ts";
+import { convertPapersToPaperMessage, convertPaperToPaperMessage } from "../helper/converter/paperConverter.ts";
+import { assign } from "../helper/assign.ts"
+import { startFetch } from './fetch.ts';
 
 /**
  * Creates a project
@@ -94,7 +95,7 @@ export const getMembersOfProject = async (ctx: Context, id: number | undefined) 
     const payloadJson = await getPayloadFromJWT(ctx);
     if (await checkAdmin(payloadJson) || await checkMemberOfProject(id, payloadJson)) {
         ctx.response.status = 200;
-        let message: ProjectMembersMessage = {members: await getAllMembersOfProject(id)}
+        let message: ProjectMembersMessage = { members: await getAllMembersOfProject(id) }
         ctx.response.body = JSON.stringify(message)
     } else {
         makeErrorMessage(ctx, 401, "not authorized");
@@ -181,11 +182,20 @@ export const addPaperToProjectStage = async (ctx: Context, projectId: number | u
             makeErrorMessage(ctx, 422, "to add a paper to a stage, at least a DOI or a title is needed")
             return;
         }
+        if (requestParameter.doi) {
+            let fetch = startFetch(requestParameter.doi);
+            (await fetch.response).forEach(element => {
+                if (element) {
+                    console.log(element)
+                }
+            });
+        }
         //TODO check paper already exists
         let paper = await Paper.create({})
+
         assign(paper, requestParameter)
         paper.save()
-        PaperScopeForStage.create({paperId: Number(paper.id), stageId: stageID})
+        PaperScopeForStage.create({ paperId: Number(paper.id), stageId: stageID })
         ctx.response.status = 201;
         ctx.response.body = JSON.stringify(paper);
     } else {
@@ -208,7 +218,7 @@ export const getPapersOfProjectStage = async (ctx: Context, projectID: number | 
     const payloadJson = await getPayloadFromJWT(ctx);
     if (await checkAdmin(payloadJson) || await checkMemberOfProject(projectID, payloadJson)) {
         ctx.response.status = 200;
-        let message: PapersMessage = {papers: await convertPapersToPaperMessage(await getAllPapersFromStage(stageID), stageID)}
+        let message: PapersMessage = { papers: await convertPapersToPaperMessage(await getAllPapersFromStage(stageID), stageID) }
         ctx.response.body = JSON.stringify(message)
     } else {
         makeErrorMessage(ctx, 401, "not authorized");
