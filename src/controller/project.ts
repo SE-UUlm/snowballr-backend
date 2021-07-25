@@ -10,13 +10,14 @@ import { convertProjectToProjectMessage } from "../helper/converter/projectConve
 import { Stage } from "../model/db/stage.ts";
 import { Paper } from "../model/db/paper.ts";
 import { getAllStagesFromProject } from "./databaseFetcher/stage.ts";
-import { getAllPapersFromStage } from "./databaseFetcher/paper.ts";
+import { getAllPapersFromStage, getPaperByDoi } from "./databaseFetcher/paper.ts";
 import { PapersMessage } from "../model/messages/papersMessage.ts";
 import { PaperScopeForStage } from "../model/db/paperScopeForStage.ts";
-import { convertIApiPaperToDBPaper, convertPapersToPaperMessage, convertPaperToPaperMessage } from "../helper/converter/paperConverter.ts";
+import { assignOnlyIfUnassignedPaper, checkIApiPaper, convertIApiPaperToDBPaper, convertPapersToPaperMessage, convertPaperToPaperMessage } from "../helper/converter/paperConverter.ts";
 import { assign } from "../helper/assign.ts"
 import { startDoiFetch } from './fetch.ts';
 import { IApiPaper } from "../api/iApiPaper.ts";
+import { getDOI } from "../api/apiMerger.ts";
 
 /**
  * Creates a project
@@ -184,7 +185,7 @@ export const addPaperToProjectStage = async (ctx: Context, projectId: number | u
             return;
         }
         if (requestParameter.doi) {
-            await doiFetchToDB(requestParameter.doi)
+            doiFetchToDB(requestParameter.doi)
         }
         //TODO check paper already exists
         /*
@@ -203,15 +204,15 @@ export const addPaperToProjectStage = async (ctx: Context, projectId: number | u
 
 const doiFetchToDB = async (doi: string) => {
     let fetch = await startDoiFetch(doi);
-
+    //TODO cites & refs
     (await fetch.response).forEach(element => {
         if (element) {
-            savePapers(element.paper)
+            savePaper(element.paper)
             element.citations!.forEach(element => {
-                savePapers(element)
+                savePaper(element)
             })
             element.references!.forEach(element => {
-                savePapers(element)
+                savePaper(element)
             })
         }
     });
@@ -219,15 +220,23 @@ const doiFetchToDB = async (doi: string) => {
 
 }
 
-const savePapers = async (apiPaper: IApiPaper) => {
 
-    let paper = await convertIApiPaperToDBPaper(apiPaper)
-    if (paper) {
-        console.error(`paper: ${paper.title}`)
-        return paper;
-    } else {
-        console.error(`iapi: ${apiPaper.title}`)
+const savePaper = async (apiPaper: IApiPaper): Promise<Paper> => {
+    let doi = getDOI(apiPaper)
+
+    let dbPaper: any
+    if (doi[0]) {
+        dbPaper = await getPaperByDoi(doi[0])
     }
+    if (dbPaper) {
+        assignOnlyIfUnassignedPaper(dbPaper, apiPaper)
+        return dbPaper.save()
+    }
+    if (!checkIApiPaper(apiPaper)) {
+
+    }
+    return await convertIApiPaperToDBPaper(apiPaper)
+
 }
 /**
  *
