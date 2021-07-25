@@ -18,6 +18,7 @@ import { assign } from "../helper/assign.ts"
 import { startDoiFetch } from './fetch.ts';
 import { IApiPaper } from "../api/iApiPaper.ts";
 import { getDOI } from "../api/apiMerger.ts";
+import { client } from "./database.ts";
 
 /**
  * Creates a project
@@ -205,14 +206,16 @@ export const addPaperToProjectStage = async (ctx: Context, projectId: number | u
 const doiFetchToDB = async (doi: string) => {
     let fetch = await startDoiFetch(doi);
     //TODO cites & refs
-    (await fetch.response).forEach(element => {
+    (await fetch.response).forEach(async element => {
         if (element) {
-            savePaper(element.paper)
-            element.citations!.forEach(element => {
-                savePaper(element)
+            let parent = await savePaper(element.paper)
+            element.citations!.forEach(async element => {
+                let child = await savePaper(element)
+                saveChildren("citedBy", "papercitedid", "papercitingid", Number(parent.id), Number(child.id))
             })
-            element.references!.forEach(element => {
-                savePaper(element)
+            element.references!.forEach(async element => {
+                let child = await savePaper(element)
+                saveChildren("referencedby", "paperreferencedid", "paperreferencingid", Number(parent.id), Number(child.id))
             })
         }
     });
@@ -220,22 +223,30 @@ const doiFetchToDB = async (doi: string) => {
 
 }
 
+const saveChildren = (into: string, column1: string, column2: string, firstId: number, secondId: number) => {
+    client.queryArray(`insert into ${into}(${column1}, ${column2})
+                        VALUES (${firstId}, ${secondId})`);
+}
 
 const savePaper = async (apiPaper: IApiPaper): Promise<Paper> => {
     let doi = getDOI(apiPaper)
-
+    let paper;
     let dbPaper: any
     if (doi[0]) {
         dbPaper = await getPaperByDoi(doi[0])
     }
     if (dbPaper) {
         assignOnlyIfUnassignedPaper(dbPaper, apiPaper)
-        return dbPaper.save()
+        paper = dbPaper.save()
+    } else {
+        paper = await convertIApiPaperToDBPaper(apiPaper)
     }
-    if (!checkIApiPaper(apiPaper)) {
 
+    if (!checkIApiPaper(apiPaper)) {
+        let id = Number(paper.id);
+        //TODO safe in filecache
     }
-    return await convertIApiPaperToDBPaper(apiPaper)
+    return paper;
 
 }
 /**
