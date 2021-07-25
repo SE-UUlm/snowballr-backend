@@ -11,7 +11,7 @@ let id = 1;
 
 
 
-export const startDoiFetch = (doi: string): IApiBatch => {
+export const startDoiFetch = (doi: string) => {
 
     //TODO comparisons from logfile
     const comparisonWeight: IComparisonWeight = {

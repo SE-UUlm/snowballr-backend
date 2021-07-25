@@ -23,41 +23,56 @@ export const convertPaperToPaperMessage = async (paper: Paper, stageId: number) 
 }
 
 
-export const convertIApiPaperToDBPaper = async (paper: { [index: string]: any }): Promise<Paper | undefined> => {
-	if (checkIApiPaper(paper)) {
-		let paperId: PaperID | PaperID[] = await PaperID.where({ value: getDOI(paper)[0], type: "DOI" }).get()
-		let newPaper: Paper;
-		if (Array.isArray(paperId) && paperId.length > 0) {
-			//TODO JOIN & MERGE
-			let paperHasId = PaperHasID.where({ idId: Number(paperId[0].id) }).get()
-			newPaper = await Paper.create({})
-		} else {
-			newPaper = await Paper.create({})
-			for (let i in paper) {
-				if (["title", "abstract", "publisher", "type", "scopeName", "year"].includes(i)) {
-					newPaper[i] = paper[i][0]
-				} else if (i == "uniqueId") {
-					//TODO rest unique keys
-					newPaper.doi = getDOI(paper)[0]
-				} else if (i == "author") {
-					//TODO author
-				} else if (i == "pdf") {
-					//TODO pdf
-				}
-			}
-			await newPaper.update()
-		}
+export const convertIApiPaperToDBPaper = async (paper: { [index: string]: any }): Promise<Paper> => {
+    let newPaper = await Paper.create({})
+    for (let i in paper) {
+        if (["title", "abstract", "publisher", "type", "scopeName", "year"].includes(i)) {
+            newPaper[i] = paper[i][0]
+        } else if (i == "uniqueId") {
+            //TODO rest unique keys
+            newPaper.doi = getDOI(paper)[0]
+        } else if (i == "author") {
+            //TODO author
+        } else if (i == "pdf") {
+            //TODO pdf
+        }
+    }
+    await newPaper.update()
 
-		return newPaper;
-	}
+
+    return newPaper;
+
 
 
 }
 
-const checkIApiPaper = (paper: { [index: string]: any }): boolean => {
-	//todo: RAW api stuff?
-	for (let i in paper) {
-		if (!["id", "uniqueId", "source", "author", "pdf"].includes(i)) {
+export const assignOnlyIfUnassignedPaper = (target: Paper, source: IApiPaper) => {
+    let s = <any>source
+    for (const key in source) {
+        const val = s[key];
+        if (val && !target[key]) {
+            if (["title", "abstract", "publisher", "type", "scopeName", "year"].includes(key)) {
+                target[key] = s[key][0]
+                if (s[key].length <= 1) {
+                    delete s[key]
+                }
+            } else if (key == "uniqueId") {
+                //TODO rest unique keys
+                if (!target.doi) {
+                    target.doi = getDOI(source)[0]
+                }
+            } else if (key == "author") {
+                //TODO author
+            } else if (key == "pdf") {
+                //TODO pdf
+            }
+        }
+    }
+    return target;
+}
+export const checkIApiPaper = (paper: { [index: string]: any }): boolean => {
+    for (let i in paper) {
+        if (!["id", "uniqueId", "source", "author", "pdf"].includes(i)) {
 
 			if (paper[i] && paper[i].length > 1) {
 				logger.critical(`${i} wasn't single`)

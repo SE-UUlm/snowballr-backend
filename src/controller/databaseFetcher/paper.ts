@@ -1,5 +1,5 @@
-import {PaperScopeForStage} from "../../model/db/paperScopeForStage.ts";
-import {Paper} from "../../model/db/paper.ts";
+import { PaperScopeForStage } from "../../model/db/paperScopeForStage.ts";
+import { Paper } from "../../model/db/paper.ts";
 
 export const getAllPapersFromStage = async (id: number) => {
     let paperScope = await PaperScopeForStage.where("stageId", id).get()
@@ -23,4 +23,9 @@ export const getProjectPaperID = async (stageId: number, paperId: number) => {
         return Number(paperScope[0].id)
     }
     return -1;
+}
+
+export const getPaperByDoi = async (doi: string) => {
+    let paper = await Paper.where({ doi: doi[0] }).get
+    return Array.isArray(paper) ? paper[0] : paper
 }
