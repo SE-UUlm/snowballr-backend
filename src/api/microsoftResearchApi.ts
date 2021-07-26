@@ -7,17 +7,18 @@ import { IApiAuthor } from "./iApiAuthor.ts";
 import { IApiUniqueId, idType } from "./iApiUniqueId.ts";
 import { Cache } from "./cache.ts";
 import { assign } from "../helper/assign.ts";
+import { createHash } from "https://deno.land/std/hash/mod.ts";
 
 export class MicrosoftResearchApi implements IApiFetcher {
 	url: string;
-	cache: Cache | undefined;
+	cache: Cache<IApiResponse> | undefined;
 	private _authToken: string;
 	private _headers: {};
 	private _attributes: string;
 	private _paperTypeMapper: string[];
 	private _queryAttributeMapper: {};
 
-	public constructor(url: string, authToken: string, cache?: Cache) {
+	public constructor(url: string, authToken: string, cache?: Cache<IApiResponse>) {
 		logger.info("MicrosoftResearchApi initialized");
 		this.url = url;
 		this._authToken = authToken;
@@ -66,11 +67,13 @@ export class MicrosoftResearchApi implements IApiFetcher {
 		var paper: IApiPaper = {} as IApiPaper;
 		var citations: Promise<IApiPaper[]> | undefined;
 		let references: Promise<IApiPaper[]> | undefined;
+		let queryIdentifier = createHash("sha3-256");
+		queryIdentifier.update(JSON.stringify(query));
+		let queryString = queryIdentifier.toString();
 		try {
-			let get = this.cache!.get(query);
+			let get = this.cache!.get(queryString);
 			if (this.cache && get) {
 				logger.info(`MA: Loaded fetch from cache.`)
-				//console.log(get)
 				return get;
 			}
 			let response = await fetch(this.url, {
@@ -94,7 +97,7 @@ export class MicrosoftResearchApi implements IApiFetcher {
 				"references": await references
 			}
 			if (this.cache) {
-				this.cache.add(query, apiReturn);
+				this.cache.add(queryString, apiReturn);
 			};
 		}
 		catch (e) {

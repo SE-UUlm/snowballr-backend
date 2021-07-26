@@ -184,7 +184,7 @@ export const parsedReference = {
 	],
 	abstract: [],
 	numberOfReferences: [],
-	numberOfCitations: [],
+	numberOfCitations: [33],
 	year: [],
 	publisher: ["Springer International Publishing"],
 	type: ["book-chapter"],

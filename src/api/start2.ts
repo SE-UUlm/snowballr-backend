@@ -12,6 +12,7 @@ import { SourceApi } from "./iApiPaper.ts";
 import { IComparisonWeight } from "./iComparisonWeight.ts";
 
 
+
 const BATCHER = new ApiBatcher();
 
 const comparisonWeight = {
@@ -29,7 +30,7 @@ const query: IApiQuery = {
 	rawName: "sebastian erdweg",
 	doi: "10.1109/SEAA.2009.60",
 	title: "The State of the Art in Language Workbenches",
-	enabledApis: [SourceApi.MA, SourceApi.CR],
+	enabledApis: [SourceApi.MA, SourceApi.OC],
 	aggressivity: comparisonWeight
 }
 
@@ -43,4 +44,4 @@ ApiMerger.logResponse(await batch.response);
 
 BATCHER.kill();
 
-Deno.exit(0)
+//cd Deno.exit(0)
