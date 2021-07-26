@@ -7,7 +7,7 @@ import { Stub, stub } from "https://deno.land/x/mock@v0.10.0/stub.ts";
 import { IApiQuery } from "../../src/api/iApiQuery.ts";
 import { IComparisonWeight } from "../../src/api/iComparisonWeight.ts";
 import * as Mock from "../mockObjects/fetch/crossRefMock.test.ts"
-
+/*
 const CR = new CrossRefApi("");
 const query: IApiQuery = {
 	id: "tst",
@@ -75,3 +75,4 @@ Deno.test({
 		assertEquals(res, [{} as IApiPaper]);
 	}
 })
+*/

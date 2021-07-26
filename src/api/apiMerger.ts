@@ -45,7 +45,6 @@ export class ApiMerger implements IApiMerger {
 	 * @returns list of api responses without dublicates either by merging them or declaring them different
 	 */
 	public async compare(response: Promise<IApiResponse>[]): Promise<IApiResponse[]> {
-		//TODO: async for fastness
 		let finished: IApiResponse[] = [];
 		while (response.length > 1) {
 
@@ -221,7 +220,6 @@ export class ApiMerger implements IApiMerger {
 			for (let j = 0; j < secondDOI.length; j++) {
 				if (firstDOI[i] && secondDOI[j]) {
 					if (firstDOI[i] == secondDOI[j]) {
-						//TODO test for rest, commented out
 						return true;
 					} else {
 						return false;
@@ -349,7 +347,6 @@ export class ApiMerger implements IApiMerger {
 	 * @returns IApiAuthor which contains optionals or the most fitting values
 	 */
 	private _mergeAuthor(firstAuthor: IApiAuthor, secondAuthor: IApiAuthor): IApiAuthor {
-		//TODO: if equal compare raw string with lastname and firstname if given and sort rawstring
 		let mergedAuthor: any = {};
 		let first = <any>firstAuthor;
 		let second = <any>secondAuthor;

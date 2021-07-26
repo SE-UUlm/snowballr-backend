@@ -7,9 +7,9 @@ import { UserIsPartOfProject } from "../model/db/userIsPartOfProject.ts";
 import { ProjectMembersMessage } from "../model/messages/projectMembers.message.ts";
 import { getAllMembersOfProject } from "./databaseFetcher/userProject.ts";
 import { convertProjectToProjectMessage } from "../helper/converter/projectConverter.ts";
-import { Stage } from "../model/db/nextStage.ts";
+import { Stage } from "../model/db/stage.ts";
 import { Paper } from "../model/db/paper.ts";
-import { getAllStagesFromProject } from "./databaseFetcher/nextStage.ts";
+import { getAllStagesFromProject } from "./databaseFetcher/stage.ts";
 import { getAllPapersFromStage, getPaperByDoi } from "./databaseFetcher/paper.ts";
 import { PapersMessage } from "../model/messages/papersMessage.ts";
 import { PaperScopeForStage } from "../model/db/paperScopeForStage.ts";
@@ -19,7 +19,10 @@ import { makeFetching } from './fetch.ts';
 import { IApiPaper } from "../api/iApiPaper.ts";
 import { getDOI } from "../api/apiMerger.ts";
 import { client } from "./database.ts";
+import { Cache } from "../api/cache.ts";
+import { logger } from "../api/logger.ts";
 
+const paperCache = new Cache<IApiPaper>(false, true, undefined, undefined, "paperCache")
 /**
  * Creates a project
  *
@@ -174,7 +177,9 @@ export const addPaperToProjectStage = async (ctx: Context, projectId: number | u
             return;
         }
 
-        fetchToDB(stageID, requestParameter.doi, requestParameter.title, requestParameter.author)
+
+        fetchToDB(stageID, projectId, requestParameter.doi, requestParameter.title, requestParameter.author)
+
 
         ctx.response.status = 200;
 
@@ -184,31 +189,42 @@ export const addPaperToProjectStage = async (ctx: Context, projectId: number | u
 }
 
 const fetchToDB = async (stageID: number, projectID: number, doi?: string, title?: string, authorName?: string) => {
+    await client.connect();
     let fetch = await makeFetching(doi, title, authorName);
-    (await fetch.response).forEach(async element => {
+    let response = (await fetch.response)
+    response.forEach(async element => {
         if (element) {
-            let parent = await savePaper(element.paper)
-            PaperScopeForStage.create({ stageId: stageID, paperId: Number(parent.id) })
-            let currentStage = await Stage.find(stageID)
-            let stages = (await getAllStagesFromProject(projectID))
-            let nextStage = stages.filter((item: Stage) => item.number === currentStage.number);
-            if (!nextStage) {
-                nextStage = Stage.create({
-                    name: `Stage ${stages.length}`,
-                    projectId: projectID,
-                    number: stages.length
+            try {
+                let parent = await savePaper(element.paper)
+
+                PaperScopeForStage.create({ stageId: stageID, paperId: Number(parent.id) })
+                let currentStage = await Stage.find(stageID)
+                let stages = (await getAllStagesFromProject(projectID))
+                let nextStage: Stage = stages.filter((item: Stage) => item.number === currentStage.number)[0];
+                if (!nextStage) {
+                    nextStage = await Stage.create({
+                        name: `Stage ${stages.length}`,
+                        projectId: projectID,
+                        number: stages.length
+                    })
+                }
+
+                console.log("number cites" + element.citations!.length)
+
+                element.citations!.forEach(async element => {
+                    let child = await savePaper(element)
+                    saveChildren("citedBy", "papercitedid", "papercitingid", Number(parent.id), Number(child.id))
+                    PaperScopeForStage.create({ stageId: Number(nextStage.id), paperId: Number(child.id) })
                 })
+                element.references!.forEach(async element => {
+                    let child = await savePaper(element)
+                    saveChildren("referencedby", "paperreferencedid", "paperreferencingid", Number(parent.id), Number(child.id))
+                    PaperScopeForStage.create({ stageId: Number(nextStage.id), paperId: Number(child.id) })
+                })
+
+            } catch (e) {
+                console.error(e)
             }
-            element.citations!.forEach(async element => {
-                let child = await savePaper(element)
-                saveChildren("citedBy", "papercitedid", "papercitingid", Number(parent.id), Number(child.id))
-                PaperScopeForStage.create({ stageId: stageID, paperId: Number(child.id) })
-            })
-            element.references!.forEach(async element => {
-                let child = await savePaper(element)
-                saveChildren("referencedby", "paperreferencedid", "paperreferencingid", Number(parent.id), Number(child.id))
-                PaperScopeForStage.create({ stageId: stageID, paperId: Number(child.id) })
-            })
         }
     });
 
@@ -221,22 +237,24 @@ const saveChildren = (into: string, column1: string, column2: string, firstId: n
 }
 
 const savePaper = async (apiPaper: IApiPaper): Promise<Paper> => {
+
+    console.debug("saving paper")
     let doi = getDOI(apiPaper)
-    let paper;
-    let dbPaper: any
+
     if (doi[0]) {
-        dbPaper = await getPaperByDoi(doi[0])
+        let dbPaper = await getPaperByDoi(doi[0])
+
+        if (dbPaper) {
+            assignOnlyIfUnassignedPaper(dbPaper, apiPaper)
+            return dbPaper.update()
+        }
+
     }
-    if (dbPaper) {
-        assignOnlyIfUnassignedPaper(dbPaper, apiPaper)
-        paper = dbPaper.save()
-    } else {
-        paper = await convertIApiPaperToDBPaper(apiPaper)
-    }
+    let paper = await convertIApiPaperToDBPaper(apiPaper)
 
     if (!checkIApiPaper(apiPaper)) {
         let id = Number(paper.id);
-        //TODO safe in filecache
+        paperCache.add(String(id), apiPaper)
     }
     return paper;
 
