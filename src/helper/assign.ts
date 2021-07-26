@@ -4,11 +4,19 @@ export const assign = (target: Object, source: Object) => {
 	for (const key in source) {
 		const val = s[key];
 		if (val) {
-			t[key] = val;
+			if (typeof val === "object") {
+				t[key] = assign({}, s[key])
+			} else if (Array.isArray(val)) {
+				t[key] = Array.from(s[key])
+			} else {
+				t[key] = val;
+			}
 		}
 	}
 	return t;
 }
+
+
 
 export const isEqual = (first: Object, second: Object) => {
 	let firstProbs = Object.getOwnPropertyNames(first)

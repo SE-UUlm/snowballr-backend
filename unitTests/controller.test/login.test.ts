@@ -1,10 +1,10 @@
-import {insertUser} from "../../src/controller/databaseFetcher/user.ts";
-import {setup} from "../../src/helper/setup.ts";
-import {login} from "../../src/controller/login.ts";
-import {createMockContext} from "../mockObjects/oak/mockContext.test.ts";
-import {createMockApp} from "../mockObjects/oak/mockApp.test.ts";
-import {assertEquals, assertNotEquals} from "https://deno.land/std@0.97.0/testing/asserts.ts"
-import {client, db} from "../../src/controller/database.ts";
+import { insertUser } from "../../src/controller/databaseFetcher/user.ts";
+import { setup } from "../../src/helper/setup.ts";
+import { login } from "../../src/controller/login.ts";
+import { createMockContext } from "../mockObjects/oak/mockContext.test.ts";
+import { createMockApp } from "../mockObjects/oak/mockApp.test.ts";
+import { assertEquals, assertNotEquals } from "https://deno.land/std@0.97.0/testing/asserts.ts"
+import { client, db } from "../../src/controller/database.ts";
 
 
 Deno.test({

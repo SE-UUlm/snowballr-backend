@@ -1,18 +1,18 @@
-import {setup} from "../../src/helper/setup.ts";
-import {insertUser} from "../../src/controller/databaseFetcher/user.ts";
-import {createMockApp} from "../mockObjects/oak/mockApp.test.ts";
-import {createJWT} from "../../src/controller/validation.ts";
-import {createMockContext} from "../mockObjects/oak/mockContext.test.ts";
-import {assertEquals, assertNotEquals} from "https://deno.land/std/testing/asserts.ts"
-import {createUser, getUser, getUserProjects, getUsers, patchUser, resetPassword} from "../../src/controller/user.ts";
-import {User} from "../../src/model/db/user.ts";
-import {MockEmailClient} from "../mockObjects/mockEmailClient.test.ts";
-import {getTokens} from "../../src/controller/databaseFetcher/token.ts";
-import {getInvitations} from "../../src/controller/databaseFetcher/invitation.ts";
-import {Project} from "../../src/model/db/project.ts";
-import {UserIsPartOfProject} from "../../src/model/db/userIsPartOfProject.ts";
-import {Stage} from "../../src/model/db/stage.ts";
-import {client, db} from "../../src/controller/database.ts";
+import { setup } from "../../src/helper/setup.ts";
+import { insertUser } from "../../src/controller/databaseFetcher/user.ts";
+import { createMockApp } from "../mockObjects/oak/mockApp.test.ts";
+import { createJWT } from "../../src/controller/validation.ts";
+import { createMockContext } from "../mockObjects/oak/mockContext.test.ts";
+import { assertEquals, assertNotEquals } from "https://deno.land/std/testing/asserts.ts"
+import { createUser, getUser, getUserProjects, getUsers, patchUser, resetPassword } from "../../src/controller/user.ts";
+import { User } from "../../src/model/db/user.ts";
+import { MockEmailClient } from "../mockObjects/mockEmailClient.test.ts";
+import { getTokens } from "../../src/controller/databaseFetcher/token.ts";
+import { getInvitations } from "../../src/controller/databaseFetcher/invitation.ts";
+import { Project } from "../../src/model/db/project.ts";
+import { UserIsPartOfProject } from "../../src/model/db/userIsPartOfProject.ts";
+import { Stage } from "../../src/model/db/stage.ts";
+import { client, db } from "../../src/controller/database.ts";
 
 Deno.test({
     name: "insertUserForCreation",
@@ -235,14 +235,14 @@ Deno.test({
     fn: async function (): Promise<void> {
         await setup(true);
         let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
-        let project = await Project.create({name: "Test", minCountReviewers: 1, countDecisiveReviewers: 1})
+        let project = await Project.create({ name: "Test", minCountReviewers: 1, countDecisiveReviewers: 1 })
         let userProject = await UserIsPartOfProject.create({
             isOwner: true,
             userId: Number(user.id),
             projectId: Number(project.id)
         })
-        await Stage.create({projectId: Number(project.id), name: "awesome Stage", number: 0})
-        await Stage.create({projectId: Number(project.id), name: "the next Stage", number: 1})
+        await Stage.create({ projectId: Number(project.id), name: "awesome Stage", number: 0 })
+        await Stage.create({ projectId: Number(project.id), name: "the next Stage", number: 1 })
         let app = await createMockApp();
         let token = await createJWT(user)
         let ctx = await createMockContext(app, "{}", [["Content-Type", "application/json"]], "/users/1", token);
@@ -264,14 +264,14 @@ Deno.test({
     fn: async function (): Promise<void> {
         await setup(true);
         let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
-        let project = await Project.create({name: "Test", minCountReviewers: 0, countDecisiveReviewers: 0})
+        let project = await Project.create({ name: "Test", minCountReviewers: 0, countDecisiveReviewers: 0 })
         let userProject = await UserIsPartOfProject.create({
             isOwner: true,
             userId: Number(user.id),
             projectId: Number(project.id)
         })
-        await Stage.create({projectId: Number(project.id), name: "awesome Stage", number: 0})
-        await Stage.create({projectId: Number(project.id), name: "the next Stage", number: 1})
+        await Stage.create({ projectId: Number(project.id), name: "awesome Stage", number: 0 })
+        await Stage.create({ projectId: Number(project.id), name: "the next Stage", number: 1 })
         let app = await createMockApp();
         let token = await createJWT(user)
         let ctx = await createMockContext(app, "{}", [["Content-Type", "application/json"]], "/users/1", token);
@@ -288,14 +288,14 @@ Deno.test({
     fn: async function (): Promise<void> {
         await setup(true);
         let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
-        let project = await Project.create({name: "Test", minCountReviewers: 1, countDecisiveReviewers: 1})
+        let project = await Project.create({ name: "Test", minCountReviewers: 1, countDecisiveReviewers: 1 })
         let userProject = await UserIsPartOfProject.create({
             isOwner: true,
             userId: Number(user.id),
             projectId: Number(project.id)
         })
-        await Stage.create({projectId: Number(project.id), name: "awesome Stage", number: 0})
-        await Stage.create({projectId: Number(project.id), name: "the next Stage", number: 1})
+        await Stage.create({ projectId: Number(project.id), name: "awesome Stage", number: 0 })
+        await Stage.create({ projectId: Number(project.id), name: "the next Stage", number: 1 })
         let app = await createMockApp();
         let token = await createJWT(user)
         let ctx = await createMockContext(app, "{}", [["Content-Type", "application/json"]], "/users/1", token);
