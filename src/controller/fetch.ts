@@ -11,7 +11,7 @@ let id = 1;
 
 
 
-export const startDoiFetch = (doi: string) => {
+export const makeFetching = (doi?: string, title?: string, name?: string) => {
 
     //TODO comparisons from logfile
     const comparisonWeight: IComparisonWeight = {
@@ -26,9 +26,9 @@ export const startDoiFetch = (doi: string) => {
 
     const query: IApiQuery = {
         id: String(id++),
-        rawName: "",
-        title: "",
-        doi: doi,
+        rawName: name ? name : "",
+        title: title ? title : "",
+        doi: doi ? doi : undefined,
         enabledApis: [SourceApi.IE, SourceApi.MA, SourceApi.CR, SourceApi.OC, SourceApi.S2],
         aggressivity: comparisonWeight
     }

@@ -7,15 +7,15 @@ import { UserIsPartOfProject } from "../model/db/userIsPartOfProject.ts";
 import { ProjectMembersMessage } from "../model/messages/projectMembers.message.ts";
 import { getAllMembersOfProject } from "./databaseFetcher/userProject.ts";
 import { convertProjectToProjectMessage } from "../helper/converter/projectConverter.ts";
-import { Stage } from "../model/db/stage.ts";
+import { Stage } from "../model/db/nextStage.ts";
 import { Paper } from "../model/db/paper.ts";
-import { getAllStagesFromProject } from "./databaseFetcher/stage.ts";
+import { getAllStagesFromProject } from "./databaseFetcher/nextStage.ts";
 import { getAllPapersFromStage, getPaperByDoi } from "./databaseFetcher/paper.ts";
 import { PapersMessage } from "../model/messages/papersMessage.ts";
 import { PaperScopeForStage } from "../model/db/paperScopeForStage.ts";
 import { assignOnlyIfUnassignedPaper, checkIApiPaper, convertIApiPaperToDBPaper, convertPapersToPaperMessage, convertPaperToPaperMessage } from "../helper/converter/paperConverter.ts";
 import { assign } from "../helper/assign.ts"
-import { startDoiFetch } from './fetch.ts';
+import { makeFetching } from './fetch.ts';
 import { IApiPaper } from "../api/iApiPaper.ts";
 import { getDOI } from "../api/apiMerger.ts";
 import { client } from "./database.ts";
@@ -118,7 +118,7 @@ export const getProjects = async (ctx: Context) => {
 }
 
 /**
- * Adds a stage to a project
+ * Adds a nextStage to a project
  *
  * @param ctx
  * @param id id of project
@@ -135,25 +135,13 @@ export const addStageToProject = async (ctx: Context, id: number | undefined) =>
         if (!requestParameter) {
             return
         }
-        if (!requestParameter.name) {
-            makeErrorMessage(ctx, 422, "to add a stage, a name is needed")
-            return;
-        }
-
 
         const stages = await getAllStagesFromProject(id);
-        let number = requestParameter.number ? requestParameter.number : 1
-        if (!requestParameter.number) {
-            for (const item of stages) {
-                if (Number(item.number) >= number) {
-                    number = Number(item.number) + 1;
-                }
-            }
-        }
+
         let stage = await Stage.create({
-            name: requestParameter.name,
+            name: requestParameter.name ? requestParameter.name : `Stage ${stages.length}`,
             projectId: id,
-            number: number
+            number: stages.length
         })
 
         ctx.response.status = 201;
@@ -164,15 +152,15 @@ export const addStageToProject = async (ctx: Context, id: number | undefined) =>
 }
 
 /**
- * Adds a paper to a project stage
+ * Adds a paper to a project nextStage
  *
  * @param ctx
  * @param projectId id of project
- * @param stageID id of stage
+ * @param stageID id of nextStage
  */
 export const addPaperToProjectStage = async (ctx: Context, projectId: number | undefined, stageID: number | undefined) => {
     if (!projectId || !stageID) {
-        makeErrorMessage(ctx, 422, "no project and/or stage id included")
+        makeErrorMessage(ctx, 422, "no project and/or nextStage id included")
         return
     }
     const payloadJson = await getPayloadFromJWT(ctx);
@@ -182,40 +170,44 @@ export const addPaperToProjectStage = async (ctx: Context, projectId: number | u
             return
         }
         if (!requestParameter.doi && !requestParameter.title) {
-            makeErrorMessage(ctx, 422, "to add a paper to a stage, at least a DOI or a title is needed")
+            makeErrorMessage(ctx, 422, "to add a paper to a nextStage, at least a DOI or a title is needed")
             return;
         }
-        if (requestParameter.doi) {
-            doiFetchToDB(requestParameter.doi)
-        }
-        //TODO check paper already exists
-        /*
-        let paper = await Paper.create({})
 
-        assign(paper, requestParameter)
-        paper.save()
-        PaperScopeForStage.create({ paperId: Number(paper.id), stageId: stageID })
-        */
-        ctx.response.status = 201;
-        //ctx.response.body = JSON.stringify(paper);
+        fetchToDB(stageID, requestParameter.doi, requestParameter.title, requestParameter.author)
+
+        ctx.response.status = 200;
+
     } else {
         makeErrorMessage(ctx, 401, "not authorized");
     }
 }
 
-const doiFetchToDB = async (doi: string) => {
-    let fetch = await startDoiFetch(doi);
-    //TODO cites & refs
+const fetchToDB = async (stageID: number, projectID: number, doi?: string, title?: string, authorName?: string) => {
+    let fetch = await makeFetching(doi, title, authorName);
     (await fetch.response).forEach(async element => {
         if (element) {
             let parent = await savePaper(element.paper)
+            PaperScopeForStage.create({ stageId: stageID, paperId: Number(parent.id) })
+            let currentStage = await Stage.find(stageID)
+            let stages = (await getAllStagesFromProject(projectID))
+            let nextStage = stages.filter((item: Stage) => item.number === currentStage.number);
+            if (!nextStage) {
+                nextStage = Stage.create({
+                    name: `Stage ${stages.length}`,
+                    projectId: projectID,
+                    number: stages.length
+                })
+            }
             element.citations!.forEach(async element => {
                 let child = await savePaper(element)
                 saveChildren("citedBy", "papercitedid", "papercitingid", Number(parent.id), Number(child.id))
+                PaperScopeForStage.create({ stageId: stageID, paperId: Number(child.id) })
             })
             element.references!.forEach(async element => {
                 let child = await savePaper(element)
                 saveChildren("referencedby", "paperreferencedid", "paperreferencingid", Number(parent.id), Number(child.id))
+                PaperScopeForStage.create({ stageId: stageID, paperId: Number(child.id) })
             })
         }
     });
@@ -257,7 +249,7 @@ const savePaper = async (apiPaper: IApiPaper): Promise<Paper> => {
  */
 export const getPapersOfProjectStage = async (ctx: Context, projectID: number | undefined, stageID: number | undefined) => {
     if (!projectID || !stageID) {
-        makeErrorMessage(ctx, 422, "no project and/or stage id included")
+        makeErrorMessage(ctx, 422, "no project and/or nextStage id included")
         return
     }
 
@@ -281,7 +273,7 @@ export const getPapersOfProjectStage = async (ctx: Context, projectID: number | 
  */
 export const getPaperOfProjectStage = async (ctx: Context, projectID: number | undefined, stageID: number | undefined, ppID: number | undefined) => {
     if (!projectID || !stageID || !ppID) {
-        makeErrorMessage(ctx, 422, "no project and/or stage and/or no project paper id included")
+        makeErrorMessage(ctx, 422, "no project and/or nextStage and/or no project paper id included")
         return
     }
 
@@ -301,7 +293,7 @@ export const getPaperOfProjectStage = async (ctx: Context, projectID: number | u
 
 export const patchPaperOfProjectStage = async (ctx: Context, projectID: number | undefined, stageID: number | undefined, ppID: number | undefined) => {
     if (!projectID || !stageID || !ppID) {
-        makeErrorMessage(ctx, 422, "no project and/or stage and/or no project paper id included")
+        makeErrorMessage(ctx, 422, "no project and/or nextStage and/or no project paper id included")
         return
     }
 

@@ -84,6 +84,7 @@ export class ApiBatcher implements IApiBatcher {
 			let fetchedQueries = await Promise.all(fetchedDois);
 			query.doi = this._compareDoisOfQueries(fetchedQueries);
 			logger.info(`Fetched DOI ${query.doi} for title ${query.title}`);
+
 		}
 		catch (e) {
 			logger.error(`Couldnt fetch any DOI by query: ${e}`)
