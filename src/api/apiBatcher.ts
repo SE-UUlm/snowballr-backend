@@ -25,7 +25,7 @@ export const ApiBatch: IApiBatch = {
 }
 
 type SourceApiToCache = {
-	[key: string]: Cache;
+	[key: string]: Cache<IApiResponse>;
 }
 
 export class ApiBatcher implements IApiBatcher {
@@ -42,7 +42,7 @@ export class ApiBatcher implements IApiBatcher {
 	private _apiParamMapper = {
 		[SourceApi.MA]: ["https://api.labs.cognitive.microsoft.com/academic/v1.0/evaluate", "9a02225751354cd29397eba3f5382101"],
 		[SourceApi.OC]: ["https://opencitations.net"],
-		[SourceApi.CR]: ["https://api.crossref.org/works", "lukas.romer@uni-ulm.de"],
+		[SourceApi.CR]: ["https://api.crossref.org/works", "luca999@web.de"],
 		[SourceApi.S2]: ["https://api.semanticscholar.org/v1/paper"],
 		[SourceApi.IE]: ["http://ieeexploreapi.ieee.org/api/v1/search/articles", "4yk5d9an52ejynjsmzqxe62r"]
 	}
@@ -50,7 +50,7 @@ export class ApiBatcher implements IApiBatcher {
 	public constructor() {
 		this.activeBatches = []
 		for (let s in this._apiMapper) {
-			this.cache[s] = new Cache(true, false, 10000);
+			this.cache[s] = new Cache<IApiResponse>(false, true, 60, 10080, s.toString());
 		}
 	}
 
@@ -129,7 +129,7 @@ export class ApiBatcher implements IApiBatcher {
 	public kill() {
 		Object.keys(this.cache).forEach(key => this.cache[key].clear());
 		logger.info("Killed all Caches");
-		Object.keys(this.cache).forEach(key => console.log(this.cache[key].empty()));
+		//Object.keys(this.cache).forEach(key => console.log(this.cache[key].empty()));
 	}
 }
 

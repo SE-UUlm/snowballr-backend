@@ -8,17 +8,18 @@ import { IApiUniqueId, idType } from "./iApiUniqueId.ts";
 import { sleep } from "https://deno.land/x/sleep/mod.ts";
 import { Cache } from "./cache.ts";
 import { assign } from "../helper/assign.ts";
+import { createHash } from "https://deno.land/std/hash/mod.ts";
 
 export class CrossRefApi implements IApiFetcher {
 	url: string;
-	cache: Cache | undefined;
+	cache: Cache<IApiResponse> | undefined;
 	private _headers: {};
 	private _rateLimit: number = 50;
 	private _rateInterval: number = 1;
 	private _iterations: number = 0;
 	private _mail: string = "";
 
-	public constructor(url: string, mail?: string, cache?: Cache) {
+	public constructor(url: string, mail?: string, cache?: Cache<IApiResponse>) {
 		logger.info("CrossRefApi initialized");
 		this.url = url;
 		//this._headers = { 'User-Agent': `GroovyBib/1.1 (https://example.org/GroovyBib/; mailto:GroovyBib@example.org) BasedOnFunkyLib/1.4` };
@@ -38,9 +39,12 @@ export class CrossRefApi implements IApiFetcher {
 		var citations: Promise<IApiPaper[]> | undefined;
 		var paper: IApiPaper = {} as IApiPaper;
 		var references: Promise<IApiPaper[]> | undefined;
+		let queryIdentifier = createHash("sha3-256");
+		queryIdentifier.update(JSON.stringify(query));
+		let queryString = queryIdentifier.toString();
 
 		try {
-			let get = this.cache!.get(query)
+			let get = this.cache!.get(queryString)
 			if (this.cache && get) {
 				logger.info(`CR: Loaded fetch from cache.`);
 				return get;
@@ -63,7 +67,7 @@ export class CrossRefApi implements IApiFetcher {
 				"references": await references
 			}
 			if (this.cache) {
-				this.cache.add(query, apiReturn);
+				this.cache.add(queryString, apiReturn);
 			};
 
 		}
