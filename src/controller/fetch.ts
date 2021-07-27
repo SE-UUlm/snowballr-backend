@@ -5,7 +5,7 @@ import { SourceApi } from "../api/iApiPaper.ts";
 import { IComparisonWeight } from "../api/iComparisonWeight.ts";
 import { IApiBatch } from "../api/iApiBatcher.ts";
 
-const Batcher = new ApiBatcher();
+export const Batcher = new ApiBatcher();
 //TODO id
 let id = 1;
 

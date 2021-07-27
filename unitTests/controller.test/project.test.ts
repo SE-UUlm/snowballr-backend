@@ -16,6 +16,7 @@ import { assertEquals, assertNotEquals } from "https://deno.land/std/testing/ass
 import { UserIsPartOfProject } from "../../src/model/db/userIsPartOfProject.ts";
 import { client, db } from "../../src/controller/database.ts";
 import { Stage } from "../../src/model/db/stage.ts";
+import { Batcher } from "../../src/controller/fetch.ts";
 /*
 Deno.test({
     name: "createProjectUnauth",
@@ -389,17 +390,20 @@ Deno.test({
         let stage = await Stage.create({
             name: "TestStage",
             projectId: Number(project.id),
-            number: 1
+            number: 0
         })
         let app = await createMockApp();
         let token = await createJWT(user)
         let ctx = await createMockContext(app, `{"doi":"10.1109/SEAA.2009.60" }`, [["Content-Type", "application/json"]], "/", token);
-        console.error(`${Number(project.id)}, ${Number(stage.id)}`)
-        await addPaperToProjectStage(ctx, Number(project.id), Number(stage.id))
+        await addPaperToProjectStage(ctx, Number(project.id), Number(stage.id), true)
 
         assertEquals(ctx.response.status, 200)
 
+        Batcher.kill()
         await db.close();
         await client.end();
-    }
+
+    },
+    sanitizeResources: false,
+    sanitizeOps: false,
 })

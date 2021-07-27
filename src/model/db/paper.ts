@@ -4,6 +4,7 @@ import { ReadingList } from "./readingList.ts";
 import { PaperScopeForStage } from "./paperScopeForStage.ts";
 import { Wrote } from "./wrote.ts";
 import { PaperHasID } from "./paperHasID.ts";
+import { Pdf } from "./pdf.ts";
 
 
 export class Paper extends Model {
@@ -41,6 +42,10 @@ export class Paper extends Model {
 
     static paperid() {
         return this.hasMany(PaperHasID);
+    }
+
+    static pdf() {
+        return this.hasMany(Pdf)
     }
 }
 

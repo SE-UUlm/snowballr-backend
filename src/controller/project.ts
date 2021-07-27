@@ -15,7 +15,7 @@ import { PapersMessage } from "../model/messages/papersMessage.ts";
 import { PaperScopeForStage } from "../model/db/paperScopeForStage.ts";
 import { assignOnlyIfUnassignedPaper, checkIApiPaper, convertIApiPaperToDBPaper, convertPapersToPaperMessage, convertPaperToPaperMessage } from "../helper/converter/paperConverter.ts";
 import { assign } from "../helper/assign.ts"
-import { makeFetching } from './fetch.ts';
+import { Batcher, makeFetching } from './fetch.ts';
 import { IApiPaper } from "../api/iApiPaper.ts";
 import { getDOI } from "../api/apiMerger.ts";
 import { client } from "./database.ts";
@@ -161,7 +161,7 @@ export const addStageToProject = async (ctx: Context, id: number | undefined) =>
  * @param projectId id of project
  * @param stageID id of nextStage
  */
-export const addPaperToProjectStage = async (ctx: Context, projectId: number | undefined, stageID: number | undefined) => {
+export const addPaperToProjectStage = async (ctx: Context, projectId: number | undefined, stageID: number | undefined, awaitFetch?: boolean) => {
     if (!projectId || !stageID) {
         makeErrorMessage(ctx, 422, "no project and/or nextStage id included")
         return
@@ -177,8 +177,11 @@ export const addPaperToProjectStage = async (ctx: Context, projectId: number | u
             return;
         }
 
-
-        fetchToDB(stageID, projectId, requestParameter.doi, requestParameter.title, requestParameter.author)
+        if (awaitFetch) {
+            await fetchToDB(stageID, projectId, requestParameter.doi, requestParameter.title, requestParameter.author)
+        } else {
+            fetchToDB(stageID, projectId, requestParameter.doi, requestParameter.title, requestParameter.author)
+        }
 
 
         ctx.response.status = 200;
@@ -189,56 +192,50 @@ export const addPaperToProjectStage = async (ctx: Context, projectId: number | u
 }
 
 const fetchToDB = async (stageID: number, projectID: number, doi?: string, title?: string, authorName?: string) => {
-    await client.connect();
+
     let fetch = await makeFetching(doi, title, authorName);
     let response = (await fetch.response)
-    response.forEach(async element => {
+
+    for (let element of response) {
         if (element) {
-            try {
-                let parent = await savePaper(element.paper)
+            let parent = await savePaper(element.paper)
 
-                PaperScopeForStage.create({ stageId: stageID, paperId: Number(parent.id) })
-                let currentStage = await Stage.find(stageID)
-                let stages = (await getAllStagesFromProject(projectID))
-                let nextStage: Stage = stages.filter((item: Stage) => item.number === currentStage.number)[0];
-                if (!nextStage) {
-                    nextStage = await Stage.create({
-                        name: `Stage ${stages.length}`,
-                        projectId: projectID,
-                        number: stages.length
-                    })
-                }
-
-                console.log("number cites" + element.citations!.length)
-
-                element.citations!.forEach(async element => {
-                    let child = await savePaper(element)
-                    saveChildren("citedBy", "papercitedid", "papercitingid", Number(parent.id), Number(child.id))
-                    PaperScopeForStage.create({ stageId: Number(nextStage.id), paperId: Number(child.id) })
+            PaperScopeForStage.create({ stageId: stageID, paperId: Number(parent.id) })
+            let currentStage = await Stage.find(stageID)
+            let stages = (await getAllStagesFromProject(projectID))
+            let nextStage: Stage = stages.filter((item: Stage) => item.number === currentStage.number)[0];
+            if (!nextStage) {
+                nextStage = await Stage.create({
+                    name: `Stage ${stages.length}`,
+                    projectId: projectID,
+                    number: stages.length
                 })
-                element.references!.forEach(async element => {
-                    let child = await savePaper(element)
-                    saveChildren("referencedby", "paperreferencedid", "paperreferencingid", Number(parent.id), Number(child.id))
-                    PaperScopeForStage.create({ stageId: Number(nextStage.id), paperId: Number(child.id) })
-                })
-
-            } catch (e) {
-                console.error(e)
             }
-        }
-    });
 
+            //TODO async for fastness
+            for (let item of element.citations!) {
+                let child = await savePaper(item)
+                await saveChildren("citedBy", "papercitedid", "papercitingid", Number(parent.id), Number(child.id))
+                await PaperScopeForStage.create({ stageId: Number(nextStage.id), paperId: Number(child.id) })
+            }
+            for (let item of element.references!) {
+                let child = await savePaper(item)
+                await saveChildren("referencedby", "paperreferencedid", "paperreferencingid", Number(parent.id), Number(child.id))
+                await PaperScopeForStage.create({ stageId: Number(nextStage.id), paperId: Number(child.id) })
+            }
+
+        }
+
+    }
 
 }
 
-const saveChildren = (into: string, column1: string, column2: string, firstId: number, secondId: number) => {
-    client.queryArray(`insert into ${into}(${column1}, ${column2})
+const saveChildren = async (into: string, column1: string, column2: string, firstId: number, secondId: number) => {
+    await client.queryArray(`insert into ${into}(${column1}, ${column2})
                         VALUES (${firstId}, ${secondId})`);
 }
 
 const savePaper = async (apiPaper: IApiPaper): Promise<Paper> => {
-
-    console.debug("saving paper")
     let doi = getDOI(apiPaper)
 
     if (doi[0]) {
