@@ -42,6 +42,14 @@ export class Cache<V> {
 		if (this.fileCache) { this.fileCache.get(key) };
 	}
 
+	public has(key: string | number): boolean {
+		if (this.memoryCache) {
+			return this.memoryCache.has(String(key))
+		}
+		if (this.fileCache) { return this.fileCache.has(key) };
+		return false;
+	}
+
 	public clear() {
 		if (this.memoryCache) { this.memoryCache.clear() };
 		if (this.fileCache) { this.fileCache.clear() };
@@ -51,6 +59,9 @@ export class Cache<V> {
 		if (this.memoryCache) { return this.memoryCache.empty() };
 		if (this.fileCache) { return this.fileCache.empty() };
 	}
+
+
+
 }
 
 type FileCacheIndex = string | number
@@ -139,6 +150,13 @@ export class FileCache {
 			return this.fileCaches.get(key);
 		}
 		return undefined;
+	}
+
+	public has(key: FileCacheIndex): boolean {
+		if (this.fileCaches.has(key)) {
+			return true;
+		}
+		return false;
 	}
 
 	public clear() {

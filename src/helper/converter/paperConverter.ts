@@ -26,6 +26,13 @@ export const convertPaperToPaperMessage = async (paper: Paper, stageId: number) 
     return paperMessage;
 }
 
+export const convertPaperToPaperMessageFinished = (paper: Paper, finished: boolean) => {
+    let paperMessage: PaperMessage = { id: Number(paper.id) }
+    assign(paperMessage, paper)
+    return JSON.stringify({ finished: finished, paper: paperMessage })
+}
+
+
 
 export const convertIApiPaperToDBPaper = async (paper: IApiPaper): Promise<Paper> => {
     let newPaper = await Paper.create({})

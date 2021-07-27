@@ -1,10 +1,10 @@
-import {Application, Router} from 'https://deno.land/x/oak/mod.ts';
-import {validateContentType, validateJWTIfExists} from "./controller/validation.ts";
-import {login} from "./controller/login.ts";
-import {setup} from "./helper/setup.ts";
-import {createUser, getUser, getUserProjects, getUsers, patchUser, resetPassword} from "./controller/user.ts";
-import {logout} from "./controller/logout.ts";
-import {SmtpClient} from "https://deno.land/x/smtp/mod.ts";
+import { Application, Router } from 'https://deno.land/x/oak/mod.ts';
+import { validateContentType, validateJWTIfExists } from "./controller/validation.ts";
+import { login } from "./controller/login.ts";
+import { setup } from "./helper/setup.ts";
+import { createUser, getUser, getUserProjects, getUsers, patchUser, resetPassword } from "./controller/user.ts";
+import { logout } from "./controller/logout.ts";
+import { SmtpClient } from "https://deno.land/x/smtp/mod.ts";
 import {
     addMemberToProject,
     addPaperToProjectStage,
@@ -16,6 +16,7 @@ import {
     getProjects,
     patchPaperOfProjectStage
 } from "./controller/project.ts";
+import { getPaper, getSourcePaper, patchPaper } from "./controller/paper.ts";
 
 await setup(true);
 const client = new SmtpClient();
@@ -23,7 +24,7 @@ const client = new SmtpClient();
 const router = new Router();
 router
     .get("/", (context) => {
-        context.response.body = {message: "hello there"}
+        context.response.body = { message: "hello there" }
     })
     .post("/login", async (context) => {
         await login(context)
@@ -76,10 +77,19 @@ router
     .patch("/projects/:id/stages/:id2/papers/:ppid", async (context) => {
         await patchPaperOfProjectStage(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))
     })
+    .get("/papers/:id", async (context) => {
+        await getPaper(context, Number(context.params.id))
+    })
+    .patch("/papers/:id", async (context) => {
+        await patchPaper(context, Number(context.params.id))
+    })
+    .get("/sourcePapers/:id", (context) => {
+        getSourcePaper(context, Number(context.params.id))
+    })
 const app = new Application();
 app.use(await validateContentType)
 app.use(await validateJWTIfExists)
 app.use(router.routes());
 app.use(router.allowedMethods());
 
-await app.listen({port: 80});
+await app.listen({ port: 80 });

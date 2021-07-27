@@ -22,7 +22,7 @@ import { client } from "./database.ts";
 import { Cache } from "../api/cache.ts";
 import { logger } from "../api/logger.ts";
 
-const paperCache = new Cache<IApiPaper>(false, true, undefined, undefined, "paperCache")
+export const paperCache = new Cache<IApiPaper>(false, true, undefined, undefined, "paperCache")
 /**
  * Creates a project
  *
