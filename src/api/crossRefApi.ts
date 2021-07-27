@@ -50,7 +50,7 @@ export class CrossRefApi implements IApiFetcher {
 				return get;
 			}
 
-			let response = await fetch(`${this.url}/${query.doi}`, {
+			let response = await fetch(this._parseQuery(query), {
 				headers: this._headers,
 			})
 
@@ -81,6 +81,13 @@ export class CrossRefApi implements IApiFetcher {
 		}
 
 		return apiReturn;
+	}
+
+	private _parseQuery(query: IApiQuery): string {
+		if (query.doi) { return `${this.url}/${query.doi}` };
+		if (query.title && query.rawName) { return `${this.url}?query.bibliographic=${query.title.replace(/\s/g, '+')}&query.author=${query.rawName.replace(/\s/g, '+')}&rows=1` };
+		if (query.title) { return `${this.url}?query.bibliographic=${query.title.replace(/\s/g, '+')}&rows=1` };
+		throw new Error('Cannot fetch for this query. We either need a doi or a title.')
 	}
 
 	/**
@@ -228,7 +235,7 @@ export class CrossRefApi implements IApiFetcher {
 
 	public async getDoi(query: IApiQuery): Promise<string | undefined> {
 		try {
-			let url = `${this.url}?query.bibliographic=${query.title.replace(/\s/g, '+')}&rows=1`;
+			let url = `${this.url}?query.bibliographic=${query.title!.replace(/\s/g, '+')}&rows=1`;
 			let response = await fetch(url, {
 				headers: this._headers,
 			});

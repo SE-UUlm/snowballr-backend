@@ -187,9 +187,15 @@ export class MicrosoftResearchApi implements IApiFetcher {
 	 * @returns string appendable to the api call via body-key "expr".
 	 */
 	private _parseQuery(query: IApiQuery): string {
-		let baseExpr: string = `Or(DOI='${query.doi ? query.doi.toUpperCase() : ""}', And(Composite(AA.AuN='${query.rawName.toLowerCase()}'), Ti='${query.title.toLowerCase()}'))`
+		if (!((query.title && query.title.trim().length > 0) || query.doi)) {
+			throw new Error("Neither a doi nor a title is given. We cannot search for anything.");
+		}
+		let urlQuery: string = `Or(DOI='${query.doi ? query.doi.toUpperCase() : ""}', Ti='${query.title!.toLowerCase()}')`
 
-		return baseExpr;
+		if (query.rawName && query.rawName.trim().length > 0 && query.title) {
+			urlQuery = `Or(DOI='${query.doi ? query.doi.toUpperCase() : ""}', And(Composite(AA.AuN='${query.rawName!.toLowerCase()}'), Ti='${query.title!.toLowerCase()}'))`
+		}
+		return urlQuery;
 	}
 
 	/**
@@ -253,11 +259,18 @@ export class MicrosoftResearchApi implements IApiFetcher {
 
 	public async getDoi(query: IApiQuery): Promise<string | undefined> {
 		try {
+			if (!(query.title && query.title.trim().length > 0)) {
+				throw new Error("If no DOI is given, we need atleast a title for the search.");
+			}
+			let urlQuery = `Composite(AA.AuN='${query.rawName!.toLowerCase()}')`;
+			if (query.rawName) {
+				urlQuery = `And(Composite(AA.AuN='${query.rawName!.toLowerCase()}'), Ti='${query.title!.toLowerCase()}')`;
+			}
 			let response = await fetch(this.url, {
 				method: 'POST',
 				headers: this._headers,
 				body: JSON.stringify({
-					expr: `And(Composite(AA.AuN='${query.rawName.toLowerCase()}'), Ti='${query.title.toLowerCase()}')`,
+					expr: urlQuery,
 					attributes: this._attributes
 				})
 			})
