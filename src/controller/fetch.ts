@@ -5,14 +5,14 @@ import { SourceApi } from "../api/iApiPaper.ts";
 import { IComparisonWeight } from "../api/iComparisonWeight.ts";
 import { IApiBatch } from "../api/iApiBatcher.ts";
 
-const Batcher = new ApiBatcher();
+export const Batcher = new ApiBatcher();
 //TODO id
 let id = 1;
 
 
 
-export const startDoiFetch = (doi: string) => {
-
+export const makeFetching = (doi?: string, title?: string, name?: string) => {
+    console.error(doi)
     //TODO comparisons from logfile
     const comparisonWeight: IComparisonWeight = {
         titleWeight: 15,
@@ -26,13 +26,14 @@ export const startDoiFetch = (doi: string) => {
 
     const query: IApiQuery = {
         id: String(id++),
-        rawName: "",
-        title: "",
-        doi: doi,
+        rawName: name ? name : "",
+        title: title ? title : "",
+        doi: doi ? doi : undefined,
         enabledApis: [SourceApi.IE, SourceApi.MA, SourceApi.CR, SourceApi.OC, SourceApi.S2],
         aggressivity: comparisonWeight
     }
 
+    console.error(query.doi)
     return Batcher.startFetch(query);
 }
 

@@ -1,5 +1,5 @@
 import { Paper } from "../../model/db/paper.ts";
-import { PaperMessage } from "../../model/messages/papersMessage.ts";
+import { PaperMessage, PaperStatus } from "../../model/messages/papersMessage.ts";
 import { getProjectPaperID } from "../../controller/databaseFetcher/paper.ts";
 import { assign } from "../assign.ts"
 import { IApiPaper } from "../../api/iApiPaper.ts"
@@ -7,40 +7,73 @@ import { getDOI } from "../../api/apiMerger.ts";
 import { logger, fileLogger } from "../../api/logger.ts";
 import { PaperID } from "../../model/db/paperID.ts";
 import { PaperHasID } from "../../model/db/paperHasID.ts";
-export const convertPapersToPaperMessage = async (papers: Paper[], stageId: number) => {
-	let paperMessages: PaperMessage[] = [];
-	for (const item of papers) {
-		let paperMessage: PaperMessage = await convertPaperToPaperMessage(item, stageId)
-		paperMessages.push(paperMessage)
-	}
-	return paperMessages;
+import { IApiUniqueId } from "../../api/iApiUniqueId.ts";
+import { Author } from "../../model/db/author.ts";
+import { Wrote } from "../../model/db/wrote.ts";
+import { Pdf } from "../../model/db/pdf.ts";
+import { paperCache } from "../../controller/project.ts";
+export const convertPapersToPaperMessage = async (papers: Paper[], stageId?: number) => {
+    let paperMessages: PaperMessage[] = [];
+    for (const item of papers) {
+        let paperMessage: PaperMessage = await convertPaperToPaperMessage(item, stageId)
+        paperMessages.push(paperMessage)
+    }
+    return paperMessages;
 }
 
-export const convertPaperToPaperMessage = async (paper: Paper, stageId: number) => {
-	let paperMessage: PaperMessage = { id: Number(paper.id), ppid: await getProjectPaperID(stageId, Number(paper.id)) }
-	assign(paperMessage, paper)
-	return paperMessage;
+export const convertPaperToPaperMessage = async (paper: Paper, stageId?: number) => {
+    let paperMessage: PaperMessage = { id: Number(paper.id) }
+    if (stageId) { paperMessage.ppid = await getProjectPaperID(stageId, Number(paper.id)) }
+    if (paperCache.has(String(paper.id))) {
+        paperMessage.status = PaperStatus.finished
+    }
+    assign(paperMessage, paper)
+    return paperMessage;
 }
 
-
-export const convertIApiPaperToDBPaper = async (paper: { [index: string]: any }): Promise<Paper> => {
+export const convertIApiPaperToDBPaper = async (paper: IApiPaper): Promise<Paper> => {
     let newPaper = await Paper.create({})
+    let p: any = paper;
     for (let i in paper) {
         if (["title", "abstract", "publisher", "type", "scopeName", "year"].includes(i)) {
-            newPaper[i] = paper[i][0]
+            newPaper[i] = p[i][0]
         } else if (i == "uniqueId") {
             //TODO rest unique keys
             newPaper.doi = getDOI(paper)[0]
+            let uniqueId = paper.uniqueId.filter((item: IApiUniqueId) => item.type !== "DOI")
+
         } else if (i == "author") {
-            //TODO author
+            for (let item of paper.author) {
+                let author: Author;
+                if (item.orcid[0]) {
+                    let oldAuthor = await Author.where({ orcid: item.orcid[0] }).get()
+                    if (Array.isArray(oldAuthor) && oldAuthor[0]) {
+                        author = oldAuthor[0]
+                    } else {
+                        author = await Author.create({})
+                    }
+                } else {
+                    author = await Author.create({})
+                }
+                //TODO unique values....
+                if (!author.firstName) { author.firstName = item.firstName[0] }
+                if (!author.lastName) { author.lastName = item.lastName[0] }
+                if (!author.raw) { author.raw = item.rawString[0] }
+                author.update()
+                Wrote.create({ paperId: Number(newPaper.id), authorId: Number(author.id) })
+            }
+
         } else if (i == "pdf") {
-            //TODO pdf
+            paper.pdf.forEach(item => {
+                Pdf.create({ paperId: Number(newPaper.id), url: item })
+            })
         }
     }
     await newPaper.update()
 
 
     return newPaper;
+
 
 
 
@@ -72,13 +105,13 @@ export const assignOnlyIfUnassignedPaper = (target: Paper, source: IApiPaper) =>
 }
 export const checkIApiPaper = (paper: { [index: string]: any }): boolean => {
     for (let i in paper) {
-        if (!["id", "uniqueId", "source", "author", "pdf"].includes(i)) {
+        if (!["id", "uniqueId", "source", "author", "pdf", "numberOfCitations", "numberOfReferences"].includes(i)) {
 
-			if (paper[i] && paper[i].length > 1) {
-				logger.critical(`${i} wasn't single`)
-				return false;
-			}
-		}
-	}
-	return true;
+            if (paper[i] && paper[i].length > 1) {
+                logger.critical(`${i} wasn't single`)
+                return false;
+            }
+        }
+    }
+    return true;
 }

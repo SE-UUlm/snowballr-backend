@@ -23,23 +23,31 @@ export class Cache<V> {
 		}
 	}
 
-	public add(key: string | number, value: V) {
+	public add(key: string, value: V) {
 		if (this.memoryCache) { this.memoryCache.add(String(key), JSON.stringify(value)) };
 		if (this.fileCache) { this.fileCache.add(key, JSON.stringify(value)) };
 
 	}
 
-	public delete(key: string | number) {
+	public delete(key: string) {
 		if (this.memoryCache) { this.memoryCache.delete(String(key)) };
 		if (this.fileCache) { this.fileCache.delete(key) };
 	}
 
-	public get(key: string | number): V | undefined {
+	public get(key: string): V | undefined {
 		if (this.memoryCache) {
 			let result = this.memoryCache.get(String(key));
 			if (result) { return JSON.parse(result) }
 		}
-		if (this.fileCache) { this.fileCache.get(key) };
+		if (this.fileCache) { let result = this.fileCache.get(key); if (result) { return JSON.parse(result) } };
+	}
+
+	public has(key: string): boolean {
+		if (this.memoryCache) {
+			return this.memoryCache.has(String(key))
+		}
+		if (this.fileCache) { return this.fileCache.has(key) };
+		return false;
 	}
 
 	public clear() {
@@ -51,13 +59,16 @@ export class Cache<V> {
 		if (this.memoryCache) { return this.memoryCache.empty() };
 		if (this.fileCache) { return this.fileCache.empty() };
 	}
+
+
+
 }
 
-type FileCacheIndex = string | number
+//type FileCacheIndex = string | number
 
 export class FileCache {
 	path: string;
-	fileCaches: Map<FileCacheIndex, string>;
+	fileCaches: Map<string, string>;
 	private _watchDog: number | undefined = undefined;
 	ttl: number | undefined;
 
@@ -122,23 +133,30 @@ export class FileCache {
 		}
 	}
 
-	public async add(key: FileCacheIndex, value: string) {
+	public async add(key: string, value: string) {
 		await Deno.writeTextFile(`${this.path}/${key}`, value);
 		this.fileCaches.set(key, value);
 	}
 
-	public async delete(key: FileCacheIndex) {
+	public async delete(key: string) {
 		await Deno.remove(`${this.path}/${key}`);
 		this.fileCaches.delete(key);
 	}
 
-	public get(key: FileCacheIndex): string | undefined {
+	public get(key: string): string | undefined {
 
 		if (this.fileCaches.has(key)) {
 
 			return this.fileCaches.get(key);
 		}
 		return undefined;
+	}
+
+	public has(key: string): boolean {
+		if (this.fileCaches.has(key)) {
+			return true;
+		}
+		return false;
 	}
 
 	public clear() {

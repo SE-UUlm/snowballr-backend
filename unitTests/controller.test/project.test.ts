@@ -16,7 +16,9 @@ import { assertEquals, assertNotEquals } from "https://deno.land/std/testing/ass
 import { UserIsPartOfProject } from "../../src/model/db/userIsPartOfProject.ts";
 import { client, db } from "../../src/controller/database.ts";
 import { Stage } from "../../src/model/db/stage.ts";
-
+import { Batcher } from "../../src/controller/fetch.ts";
+import { getPaper, getSourcePaper } from "../../src/controller/paper.ts";
+/*
 Deno.test({
     name: "createProjectUnauth",
     async fn(): Promise<void> {
@@ -337,11 +339,11 @@ Deno.test({
         let ctx = await createMockContext(app, `{ "name": "namee"}`, [["Content-Type", "application/json"]], "/", token);
         await addStageToProject(ctx, Number(project.id))
         let answer = JSON.parse(ctx.response.body as string)
-        assertEquals(answer.number, 1)
+        assertEquals(answer.number, 0)
         ctx = await createMockContext(app, `{ "name": "namee2"}`, [["Content-Type", "application/json"]], "/", token);
         await addStageToProject(ctx, Number(project.id))
         answer = JSON.parse(ctx.response.body as string)
-        assertEquals(answer.number, 2)
+        assertEquals(answer.number, 1)
         assertEquals(ctx.response.status, 201)
 
         await db.close();
@@ -375,7 +377,7 @@ Deno.test({
         await client.end();
     }
 })
-
+*/
 Deno.test({
     name: "AddPaperToProject",
     async fn(): Promise<void> {
@@ -389,17 +391,28 @@ Deno.test({
         let stage = await Stage.create({
             name: "TestStage",
             projectId: Number(project.id),
-            number: 1
+            number: 0
         })
         let app = await createMockApp();
         let token = await createJWT(user)
         let ctx = await createMockContext(app, `{"doi":"10.1109/SEAA.2009.60" }`, [["Content-Type", "application/json"]], "/", token);
-        console.error(`${Number(project.id)}, ${Number(stage.id)}`)
-        await addPaperToProjectStage(ctx, Number(project.id), Number(stage.id))
+        await addPaperToProjectStage(ctx, Number(project.id), Number(stage.id), true)
 
-        assertEquals(ctx.response.status, 401)
+        assertEquals(ctx.response.status, 200)
 
+        for (let i = 1; i < 30; i++) {
+            console.log("PAPERS")
+            await getPaper(ctx, i)
+            console.log(ctx.response.body)
+            console.log("SOURCEPAPERS")
+            getSourcePaper(ctx, i)
+            console.log(ctx.response.body)
+        }
+        Batcher.kill()
         await db.close();
         await client.end();
-    }
+
+    },
+    sanitizeResources: false,
+    sanitizeOps: false,
 })
