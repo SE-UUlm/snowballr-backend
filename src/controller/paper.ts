@@ -1,4 +1,4 @@
-import { Context } from "https://deno.land/x/oak@v7.6.2/context.ts";
+import { Context } from 'https://deno.land/x/oak/mod.ts';
 import { assign } from "../helper/assign.ts";
 import { jsonBodyToObject } from "../helper/body.ts";
 import { makeErrorMessage } from "../helper/error.ts";
@@ -13,7 +13,7 @@ export const getPaper = async (ctx: Context, paperID: number | undefined) => {
 
     let paper: Paper = await Paper.find(paperID)
     if (paper) {
-        let finished = !paperCache.has(paperID)
+        let finished = !paperCache.has(String(paperID))
         ctx.response.status = 200;
         ctx.response.body = convertPaperToPaperMessageFinished(paper, finished);
     } else {
@@ -33,15 +33,15 @@ export const patchPaper = async (ctx: Context, paperID: number | undefined) => {
         if (!bodyJson) {
             return
         }
-        let sourcePaper: any = paperCache.get(paperID)
+        let sourcePaper: any = paperCache.get(String(paperID))
         if (sourcePaper) {
             for (let key in bodyJson) {
                 delete sourcePaper[key]
             }
             if (Object.keys(sourcePaper).length > 0) {
-                paperCache.add(paperID, sourcePaper)
+                paperCache.add(String(paperID), sourcePaper)
             } else {
-                paperCache.delete(paperID)
+                paperCache.delete(String(paperID))
             }
         }
         assign(paper, bodyJson);
@@ -59,7 +59,12 @@ export const getSourcePaper = (ctx: Context, paperID: number | undefined) => {
         return
     }
     ctx.response.status = 200;
-    ctx.response.body = JSON.stringify(paperCache.get(paperID))
+    let paper = paperCache.get(String(paperID))
+    if (paper) {
+        ctx.response.body = JSON.stringify(paper)
+    } else {
+        makeErrorMessage(ctx, 404, "paper does not exist")
+    }
 
 
 

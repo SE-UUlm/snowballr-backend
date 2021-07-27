@@ -17,6 +17,7 @@ import { UserIsPartOfProject } from "../../src/model/db/userIsPartOfProject.ts";
 import { client, db } from "../../src/controller/database.ts";
 import { Stage } from "../../src/model/db/stage.ts";
 import { Batcher } from "../../src/controller/fetch.ts";
+import { getPaper, getSourcePaper } from "../../src/controller/paper.ts";
 /*
 Deno.test({
     name: "createProjectUnauth",
@@ -399,6 +400,14 @@ Deno.test({
 
         assertEquals(ctx.response.status, 200)
 
+        for (let i = 1; i < 30; i++) {
+            console.log("PAPERS")
+            await getPaper(ctx, i)
+            console.log(ctx.response.body)
+            console.log("SOURCEPAPERS")
+            getSourcePaper(ctx, i)
+            console.log(ctx.response.body)
+        }
         Batcher.kill()
         await db.close();
         await client.end();

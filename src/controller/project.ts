@@ -177,11 +177,8 @@ export const addPaperToProjectStage = async (ctx: Context, projectId: number | u
             return;
         }
 
-        if (awaitFetch) {
-            await fetchToDB(stageID, projectId, requestParameter.doi, requestParameter.title, requestParameter.author)
-        } else {
-            fetchToDB(stageID, projectId, requestParameter.doi, requestParameter.title, requestParameter.author)
-        }
+
+        await fetchToDB(stageID, projectId, requestParameter.doi, requestParameter.title, requestParameter.author)
 
 
         ctx.response.status = 200;
