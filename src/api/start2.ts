@@ -31,7 +31,7 @@ const query: IApiQuery = {
 	doi: undefined,
 	title: "Translation of UML 2 Activity Diagrams into Finite State Machines for Model Checking",
 	enabledApis: [SourceApi.MA, SourceApi.OC, SourceApi.IE, SourceApi.CR, SourceApi.S2],
-	aggressivity: comparisonWeight
+	aggression: comparisonWeight
 }
 
 let batch = await BATCHER.startFetch(query);

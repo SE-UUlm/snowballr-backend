@@ -14,5 +14,5 @@ export interface IApiQuery {
 	publisher?: string;
 	type?: string;
 	enabledApis?: SourceApi[];
-	aggressivity: IComparisonWeight;
+	aggression: IComparisonWeight;
 }
