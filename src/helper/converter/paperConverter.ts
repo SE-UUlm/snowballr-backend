@@ -1,5 +1,5 @@
 import { Paper } from "../../model/db/paper.ts";
-import { PaperMessage } from "../../model/messages/papersMessage.ts";
+import { PaperMessage, PaperStatus } from "../../model/messages/papersMessage.ts";
 import { getProjectPaperID } from "../../controller/databaseFetcher/paper.ts";
 import { assign } from "../assign.ts"
 import { IApiPaper } from "../../api/iApiPaper.ts"
@@ -11,7 +11,8 @@ import { IApiUniqueId } from "../../api/iApiUniqueId.ts";
 import { Author } from "../../model/db/author.ts";
 import { Wrote } from "../../model/db/wrote.ts";
 import { Pdf } from "../../model/db/pdf.ts";
-export const convertPapersToPaperMessage = async (papers: Paper[], stageId: number) => {
+import { paperCache } from "../../controller/project.ts";
+export const convertPapersToPaperMessage = async (papers: Paper[], stageId?: number) => {
     let paperMessages: PaperMessage[] = [];
     for (const item of papers) {
         let paperMessage: PaperMessage = await convertPaperToPaperMessage(item, stageId)
@@ -20,19 +21,15 @@ export const convertPapersToPaperMessage = async (papers: Paper[], stageId: numb
     return paperMessages;
 }
 
-export const convertPaperToPaperMessage = async (paper: Paper, stageId: number) => {
-    let paperMessage: PaperMessage = { id: Number(paper.id), ppid: await getProjectPaperID(stageId, Number(paper.id)) }
+export const convertPaperToPaperMessage = async (paper: Paper, stageId?: number) => {
+    let paperMessage: PaperMessage = { id: Number(paper.id) }
+    if (stageId) { paperMessage.ppid = await getProjectPaperID(stageId, Number(paper.id)) }
+    if (paperCache.has(String(paper.id))) {
+        paperMessage.status = PaperStatus.finished
+    }
     assign(paperMessage, paper)
     return paperMessage;
 }
-
-export const convertPaperToPaperMessageFinished = (paper: Paper, finished: boolean) => {
-    let paperMessage: PaperMessage = { id: Number(paper.id) }
-    assign(paperMessage, paper)
-    return JSON.stringify({ finished: finished, paper: paperMessage })
-}
-
-
 
 export const convertIApiPaperToDBPaper = async (paper: IApiPaper): Promise<Paper> => {
     let newPaper = await Paper.create({})

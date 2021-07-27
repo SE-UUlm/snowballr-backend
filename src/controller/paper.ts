@@ -3,8 +3,15 @@ import { assign } from "../helper/assign.ts";
 import { jsonBodyToObject } from "../helper/body.ts";
 import { makeErrorMessage } from "../helper/error.ts";
 import { Paper } from "../model/db/paper.ts";
+import { PaperMessage, PapersMessage, PaperStatus } from "../model/messages/papersMessage.ts";
 import { paperCache } from "./project.ts";
-import { convertPaperToPaperMessageFinished } from "../helper/converter/paperConverter.ts"
+import { convertPapersToPaperMessage, convertPaperToPaperMessage } from "../helper/converter/paperConverter.ts"
+
+export const getPapers = async (ctx: Context) => {
+    ctx.response.status = 200;
+    let message: PapersMessage = { papers: await convertPapersToPaperMessage(await Paper.all()) }
+    ctx.response.body = JSON.stringify(message)
+}
 export const getPaper = async (ctx: Context, paperID: number | undefined) => {
     if (!paperID) {
         makeErrorMessage(ctx, 422, "no paperID included")
@@ -13,9 +20,8 @@ export const getPaper = async (ctx: Context, paperID: number | undefined) => {
 
     let paper: Paper = await Paper.find(paperID)
     if (paper) {
-        let finished = !paperCache.has(String(paperID))
         ctx.response.status = 200;
-        ctx.response.body = convertPaperToPaperMessageFinished(paper, finished);
+        ctx.response.body = await convertPaperToPaperMessage(paper)
     } else {
         makeErrorMessage(ctx, 404, "paper does not exist")
     }

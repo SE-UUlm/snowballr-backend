@@ -15,5 +15,11 @@ export interface PaperMessage {
     scopeName?: string,
     createdAt?: Date,
     updatedAt?: Date
+    status?: PaperStatus
 
+}
+
+export enum PaperStatus {
+    finished,
+    unfinished
 }

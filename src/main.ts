@@ -16,7 +16,7 @@ import {
     getProjects,
     patchPaperOfProjectStage
 } from "./controller/project.ts";
-import { getPaper, getSourcePaper, patchPaper } from "./controller/paper.ts";
+import { getPaper, getPapers, getSourcePaper, patchPaper } from "./controller/paper.ts";
 
 await setup(true);
 const client = new SmtpClient();
@@ -85,6 +85,9 @@ router
     })
     .get("/sourcePapers/:id", (context) => {
         getSourcePaper(context, Number(context.params.id))
+    })
+    .get("/papers/", async (context) => {
+        await getPapers(context)
     })
 const app = new Application();
 app.use(await validateContentType)
