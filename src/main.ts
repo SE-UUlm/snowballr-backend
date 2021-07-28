@@ -16,7 +16,7 @@ import {
     getProjects,
     patchPaperOfProjectStage
 } from "./controller/project.ts";
-import { getPaper, getPapers, getSourcePaper, patchPaper } from "./controller/paper.ts";
+import { getPaper, getPaperCitations, getPaperReferences, getPapers, getSourcePaper, patchPaper } from "./controller/paper.ts";
 
 await setup(true);
 const client = new SmtpClient();
@@ -77,6 +77,9 @@ router
     .patch("/projects/:id/stages/:id2/papers/:ppid", async (context) => {
         await patchPaperOfProjectStage(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))
     })
+    .get("/papers/", async (context) => {
+        await getPapers(context)
+    })
     .get("/papers/:id", async (context) => {
         await getPaper(context, Number(context.params.id))
     })
@@ -86,9 +89,13 @@ router
     .get("/sourcePapers/:id", (context) => {
         getSourcePaper(context, Number(context.params.id))
     })
-    .get("/papers/", async (context) => {
-        await getPapers(context)
+    .get("/papers/:id/references", async (context) => {
+        await getPaperReferences(context, Number(context.params.id))
     })
+    .get("/papers/:id/citations", async (context) => {
+        await getPaperCitations(context, Number(context.params.id))
+    })
+
 const app = new Application();
 app.use(await validateContentType)
 app.use(await validateJWTIfExists)

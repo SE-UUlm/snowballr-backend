@@ -11,7 +11,8 @@ import { IApiUniqueId } from "../../api/iApiUniqueId.ts";
 import { Author } from "../../model/db/author.ts";
 import { Wrote } from "../../model/db/wrote.ts";
 import { Pdf } from "../../model/db/pdf.ts";
-import { paperCache } from "../../controller/project.ts";
+import { authorCache, paperCache } from "../../controller/project.ts";
+import { checkIApiAuthor } from "./authorConverter.ts";
 export const convertPapersToPaperMessage = async (papers: Paper[], stageId?: number) => {
     let paperMessages: PaperMessage[] = [];
     for (const item of papers) {
@@ -26,6 +27,13 @@ export const convertPaperToPaperMessage = async (paper: Paper, stageId?: number)
     if (stageId) { paperMessage.ppid = await getProjectPaperID(stageId, Number(paper.id)) }
     if (paperCache.has(String(paper.id))) {
         paperMessage.status = PaperStatus.finished
+    }
+    paperMessage.pdf = [];
+    let pdf = await Pdf.where({ paperId: Number(paper.id) }).get()
+    if (Array.isArray(pdf)) {
+        pdf.forEach(pdf => {
+            paperMessage.pdf?.push(String(pdf.url))
+        })
     }
     assign(paperMessage, paper)
     return paperMessage;
@@ -55,12 +63,15 @@ export const convertIApiPaperToDBPaper = async (paper: IApiPaper): Promise<Paper
                 } else {
                     author = await Author.create({})
                 }
-                //TODO unique values....
                 if (!author.firstName) { author.firstName = item.firstName[0] }
                 if (!author.lastName) { author.lastName = item.lastName[0] }
                 if (!author.raw) { author.raw = item.rawString[0] }
                 author.update()
                 Wrote.create({ paperId: Number(newPaper.id), authorId: Number(author.id) })
+                if (!checkIApiAuthor(author)) {
+                    let id = Number(author.id);
+                    authorCache.add(String(id), item)
+                }
             }
 
         } else if (i == "pdf") {

@@ -21,8 +21,10 @@ import { getDOI } from "../api/apiMerger.ts";
 import { client } from "./database.ts";
 import { Cache } from "../api/cache.ts";
 import { logger } from "../api/logger.ts";
+import { IApiAuthor } from "../api/iApiAuthor.ts";
 
 export const paperCache = new Cache<IApiPaper>(false, true, undefined, undefined, "paperCache")
+export const authorCache = new Cache<IApiAuthor>(false, true, undefined, undefined, "authorCache")
 /**
  * Creates a project
  *
