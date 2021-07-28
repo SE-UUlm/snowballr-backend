@@ -1,5 +1,7 @@
 import { PaperScopeForStage } from "../../model/db/paperScopeForStage.ts";
 import { Paper } from "../../model/db/paper.ts";
+import { PaperID } from "../../model/db/paperID.ts";
+import { IApiUniqueId } from "../../api/iApiUniqueId.ts";
 
 export const getAllPapersFromStage = async (id: number) => {
     let paperScope = await PaperScopeForStage.where("stageId", id).get()
@@ -28,4 +30,14 @@ export const getProjectPaperID = async (stageId: number, paperId: number) => {
 export const getPaperByDoi = async (doi: string): Promise<Paper> => {
     let paper = await Paper.where({ doi: doi[0] }).get()
     return Array.isArray(paper) ? paper[0] : paper
+}
+
+export const checkUniqueVal = async (type: string, value: string) => {
+
+    let paperId = await PaperID.where({ type: type, value: value }).get()
+    if (Array.isArray(paperId)) {
+        return paperId.length > 0
+    }
+
+    return false;
 }

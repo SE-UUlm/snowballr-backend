@@ -6,6 +6,7 @@ import { Paper } from "../model/db/paper.ts";
 import { PaperMessage, PapersMessage, PaperStatus } from "../model/messages/papersMessage.ts";
 import { paperCache } from "./project.ts";
 import { convertPapersToPaperMessage, convertPaperToPaperMessage } from "../helper/converter/paperConverter.ts"
+import { client } from "./database.ts";
 
 export const getPapers = async (ctx: Context) => {
     ctx.response.status = 200;
@@ -25,6 +26,39 @@ export const getPaper = async (ctx: Context, paperID: number | undefined) => {
     } else {
         makeErrorMessage(ctx, 404, "paper does not exist")
     }
+}
+
+export const getPaperReferences = async (ctx: Context, paperID: number | undefined) => {
+    if (!paperID) {
+        makeErrorMessage(ctx, 422, "no paperID included")
+        return
+    }
+    await getRefOrCiteList(ctx, "referencedby", "paperreferencedid", "paperreferencingid", paperID)
+
+}
+
+export const getPaperCitations = async (ctx: Context, paperID: number | undefined) => {
+    if (!paperID) {
+        makeErrorMessage(ctx, 422, "no paperID included")
+        return
+    }
+    await getRefOrCiteList(ctx, "citedBy", "papercitedid", "papercitingid", paperID)
+
+}
+
+const getRefOrCiteList = async (ctx: Context, table: string, column1: string, column2: string, id: number) => {
+
+    let children = await getChildren(table, column1, column2, id)
+    let papersToBe: Promise<Paper>[] = []
+    children.rows.forEach(item => papersToBe.push(Paper.find(Number(item[0]))));
+    ctx.response.status = 200;
+    let message: PapersMessage = { papers: await convertPapersToPaperMessage(await Promise.all(papersToBe)) }
+    ctx.response.body = JSON.stringify(message)
+    console.log(JSON.stringify(message))
+}
+
+const getChildren = (table: string, column1: string, column2: string, id: number) => {
+    return client.queryArray(`select p.* from ${table} as i JOIN paper as p ON i.${column2} = p.id WHERE i.${column1} = ${id}`);
 }
 
 export const patchPaper = async (ctx: Context, paperID: number | undefined) => {

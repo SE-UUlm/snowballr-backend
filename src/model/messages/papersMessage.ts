@@ -16,6 +16,7 @@ export interface PaperMessage {
     createdAt?: Date,
     updatedAt?: Date
     status?: PaperStatus
+    pdf?: string[]
 
 }
 

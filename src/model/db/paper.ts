@@ -12,6 +12,7 @@ export class Paper extends Model {
     static timestamps = true;
 
     static fields = {
+        // !!!!!! ID has to stay as first value !!!!!
         id: { primaryKey: true, autoIncrement: true, type: DataTypes.INTEGER },
         doi: { type: DataTypes.STRING, allowNull: true },
         title: { type: DataTypes.STRING, allowNull: true },

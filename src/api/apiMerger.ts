@@ -6,8 +6,8 @@ import { IApiPaper } from "./iApiPaper.ts";
 import { Levenshtein } from "./levenshtein.ts";
 import { IComparisonWeight } from "./iComparisonWeight.ts";
 import { IApiAuthor } from "./iApiAuthor.ts";
+import { isEqualAuthor, regexLetterFollowedByPoint } from "./checkIsEqual.ts";
 
-const regexLetterFollowedByPoint = /^[a-zA-Z]\..*/g
 
 export class ApiMerger implements IApiMerger {
 	public comparisonWeight = {
@@ -321,7 +321,7 @@ export class ApiMerger implements IApiMerger {
 		for (let f1 = 0; f1 < firstAuthors.length; f1++) {
 			for (let s1 = 0; s1 < secondAuthors.length; s1++) {
 
-				let val = this._isEqualAuthor(firstAuthors[f1], secondAuthors[s1]);
+				let val = isEqualAuthor(firstAuthors[f1], secondAuthors[s1]);
 				if (val > this.comparisonWeight.overallWeight) {
 					mergingAuthors.push(this._mergeAuthor(firstAuthors[f1], secondAuthors[s1]));
 					delete firstAuthors[f1]
@@ -412,75 +412,10 @@ export class ApiMerger implements IApiMerger {
 
 		for (let a1 in firstAuthors) {
 			for (let a2 in secondAuthors) {
-				equalAuthors += this._isEqualAuthor(firstAuthors[a1], secondAuthors[a2])
+				equalAuthors += isEqualAuthor(firstAuthors[a1], secondAuthors[a2])
 			}
 		}
 		return equalAuthors / (firstAuthors.length >= secondAuthors.length ? firstAuthors.length : secondAuthors.length);
-		//return 0.7
-	}
-
-	// TODO: first name might be shortened while last name is most likely not shortened. handle this via a heuristic
-	private _isEqualAuthor(firstAuthor: IApiAuthor, secondAuthor: IApiAuthor) {
-		let fFirstName = firstAuthor.firstName!.map((item: string) => ApiMerger.normalizeString(item))
-		let sFirstName = secondAuthor.firstName!.map((item: string) => ApiMerger.normalizeString(item))
-		let fLastName = firstAuthor.lastName!.map((item: string) => ApiMerger.normalizeString(item))
-		let sLastName = secondAuthor.lastName!.map((item: string) => ApiMerger.normalizeString(item))
-
-		if (fFirstName.some(item => sFirstName.includes(item)) && fLastName.some(item => sLastName.includes(item))) {
-			return 1;
-		}
-
-		let s1 = firstAuthor.rawString!
-		let s2 = secondAuthor.rawString!
-
-		if (s1.length === 0 && firstAuthor.firstName!.length > 0 && firstAuthor.lastName!.length > 0) {
-			s1 = [`${firstAuthor.firstName![0]} ${firstAuthor.lastName![0]}`]
-		}
-		if (s2.length === 0 && secondAuthor.firstName!.length > 0 && secondAuthor.lastName!.length > 0) {
-			s2 = [`${secondAuthor.firstName![0]} ${secondAuthor.lastName![0]}`]
-		}
-
-		let equal = 0;
-		for (let i = 0; i < s1.length; i++) {
-			for (let j = 0; j < s2.length; j++) {
-				equal += this._isEqualRawAuthorString(s1[i], s2[j]);
-			}
-		}
-
-		return equal;
-	}
-
-	private _isEqualRawAuthorString(firstRawString: string, secondRawString: string): number {
-		let equalParts: number = 0;
-		let firstNormalizedItems: string[] = [];
-		let secondNormalizedItems: string[] = [];
-		try {
-			firstNormalizedItems = ApiMerger.normalizeString(firstRawString).split(" ");
-			secondNormalizedItems = ApiMerger.normalizeString(secondRawString).split(" ");
-		}
-		catch (e) {
-
-			logger.critical(e);
-			logger.error(`${firstRawString}, ${secondRawString}`);
-		}
-
-		//Special case a name is given like M. Muster
-		if (firstRawString.match(regexLetterFollowedByPoint) || secondRawString.match(regexLetterFollowedByPoint)) {
-			//Check if last name is same, and if yes, check if at least the first name is same
-			if (firstNormalizedItems[firstNormalizedItems.length - 1] == secondNormalizedItems[secondNormalizedItems.length - 1]) {
-				if (firstNormalizedItems[0].startsWith(secondNormalizedItems[0]) || secondNormalizedItems[0].startsWith(firstNormalizedItems[0])) {
-					// TODO hardcoded
-					return 0.9;
-				}
-			}
-		} else {
-			for (let i in firstNormalizedItems) {
-				if (secondNormalizedItems.includes(firstNormalizedItems[i])) {
-					equalParts++;
-				}
-			}
-		}
-		return equalParts / (firstNormalizedItems.length >= secondNormalizedItems.length ? firstNormalizedItems.length : secondNormalizedItems.length)
 	}
 
 	/**
