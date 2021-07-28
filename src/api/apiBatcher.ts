@@ -12,7 +12,7 @@ import { SemanticScholar } from "./semanticScholar.ts";
 //import { v4 } from "https://deno.land/std@$STD_VERSION/uuid/mod.ts";
 import { ApiMerger } from "./apiMerger.ts";
 import { logger, fileLogger } from "./logger.ts";
-import { Cache } from "./cache.ts";
+import { Cache, CacheType } from "./cache.ts";
 
 
 /**
@@ -64,7 +64,7 @@ export class ApiBatcher implements IApiBatcher {
 	public constructor() {
 		this.activeBatches = []
 		for (let s in this._apiMapper) {
-			this.cache[s] = new Cache<IApiResponse>(false, true, 60, 10080, s.toString());
+			this.cache[s] = new Cache<IApiResponse>(CacheType.F, 10080, s.toString());
 		}
 	}
 

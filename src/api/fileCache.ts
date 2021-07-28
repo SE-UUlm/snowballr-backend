@@ -8,12 +8,14 @@ export class FileCache {
 	fileCaches: Map<string, string>;
 	private _watchDog: number | undefined = undefined;
 	ttl: number | undefined;
+	checkInterval: number = 60000;
 
-	public constructor(pathToFolder: string, ttlInMinutes?: number) {
+	public constructor(pathToFolder: string, ttlInSec?: number, checkInterval?: number) {
 		this.path = pathToFolder;
 		this.fileCaches = new Map<string, string>();
 		this._initializeCache();
-		this.ttl = ttlInMinutes;
+		this.ttl = ttlInSec;
+		if (checkInterval) { this.checkInterval = checkInterval; }
 		if (this.ttl) {
 			this._watchTTL();
 			logger.info("Watchdog for fileCache started.")
@@ -46,14 +48,14 @@ export class FileCache {
 				for await (const dirEntry of files) {
 					let birth = (await Deno.stat(`${this.path}/${dirEntry.name}`)).birthtime;
 					//logger.debug(`${new Date()} - ${birth!} = ${difference(new Date(), birth!, { units: ["minutes"] })}`)
-					if (birth && difference(new Date(), birth, { units: ["minutes"] }).minutes! > this.ttl!) {
+					if (birth && difference(new Date(), birth, { units: ["seconds"] }).seconds! > this.ttl!) {
 						Deno.remove(`${this.path}/${dirEntry.name}`);
 						this.fileCaches.delete(dirEntry.name);
 						logger.info(`Deleted file ${dirEntry.name} of fileCache ${this.path} due to TTL`);
 					}
 				}
 			}
-				, 60000)
+				, this.checkInterval)
 		} catch (e) {
 			logger.error(e)
 		}
@@ -107,7 +109,7 @@ export class FileCache {
 
 	public async purge() {
 		logger.warning(`Deleting all of fileCache. Good luck restoring.`)
-		await Deno.remove(this.path);
+		await Deno.remove(this.path, { recursive: true });
 		this.fileCaches.clear();
 	}
 }
