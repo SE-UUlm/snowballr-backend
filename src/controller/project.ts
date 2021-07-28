@@ -179,8 +179,11 @@ export const addPaperToProjectStage = async (ctx: Context, projectId: number | u
             return;
         }
 
-
-        await fetchToDB(stageID, projectId, requestParameter.doi, requestParameter.title, requestParameter.author)
+        try {
+            await fetchToDB(stageID, projectId, requestParameter.doi, requestParameter.title, requestParameter.author)
+        } catch (error) {
+            console.error(error)
+        }
 
 
         ctx.response.status = 200;
@@ -211,22 +214,25 @@ const fetchToDB = async (stageID: number, projectID: number, doi?: string, title
                 })
             }
 
-            //TODO async for fastness
+            let allChildren: Promise<Paper>[] = []
             for (let item of element.citations!) {
-                let child = await savePaper(item)
-                await saveChildren("citedBy", "papercitedid", "papercitingid", Number(parent.id), Number(child.id))
-                await PaperScopeForStage.create({ stageId: Number(nextStage.id), paperId: Number(child.id) })
+                allChildren.push(createChildren(item, "citedBy", "papercitedid", "papercitingid", Number(parent.id), Number(nextStage.id)))
             }
             for (let item of element.references!) {
-                let child = await savePaper(item)
-                await saveChildren("referencedby", "paperreferencedid", "paperreferencingid", Number(parent.id), Number(child.id))
-                await PaperScopeForStage.create({ stageId: Number(nextStage.id), paperId: Number(child.id) })
+                allChildren.push(createChildren(item, "referencedby", "paperreferencedid", "paperreferencingid", Number(parent.id), Number(nextStage.id)))
             }
-
+            await Promise.all(allChildren)
         }
 
     }
 
+}
+
+const createChildren = async (item: IApiPaper, into: string, column1: string, column2: string, firstId: number, nextStageId: number) => {
+    let child = await savePaper(item)
+    await saveChildren(into, column1, column2, firstId, Number(child.id))
+    await PaperScopeForStage.create({ stageId: Number(nextStageId), paperId: Number(child.id) })
+    return child;
 }
 
 const saveChildren = async (into: string, column1: string, column2: string, firstId: number, secondId: number) => {
@@ -241,7 +247,7 @@ const savePaper = async (apiPaper: IApiPaper): Promise<Paper> => {
         let dbPaper = await getPaperByDoi(doi[0])
 
         if (dbPaper) {
-            assignOnlyIfUnassignedPaper(dbPaper, apiPaper)
+            await assignOnlyIfUnassignedPaper(dbPaper, apiPaper)
             return dbPaper.update()
         }
 
