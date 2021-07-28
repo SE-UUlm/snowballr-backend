@@ -30,7 +30,7 @@ export const makeFetching = (doi?: string, title?: string, name?: string) => {
         title: title ? title : "",
         doi: doi ? doi : undefined,
         enabledApis: [SourceApi.IE, SourceApi.MA, SourceApi.CR, SourceApi.OC, SourceApi.S2],
-        aggressivity: comparisonWeight
+        aggression: comparisonWeight
     }
 
     console.error(query.doi)
