@@ -5,16 +5,20 @@ import { IApiPaper, SourceApi } from './iApiPaper.ts';
 import { logger } from "./logger.ts";
 import { IApiAuthor } from "./iApiAuthor.ts";
 import { IApiUniqueId, idType } from "./iApiUniqueId.ts";
+import { Cache } from "./cache.ts";
+import { assign } from "../helper/assign.ts";
+import { createHash } from "https://deno.land/std/hash/mod.ts";
 
 export class MicrosoftResearchApi implements IApiFetcher {
 	url: string;
+	cache: Cache<IApiResponse> | undefined;
 	private _authToken: string;
 	private _headers: {};
 	private _attributes: string;
 	private _paperTypeMapper: string[];
 	private _queryAttributeMapper: {};
 
-	public constructor(url: string, authToken: string) {
+	public constructor(url: string, authToken: string, cache?: Cache<IApiResponse>) {
 		logger.info("MicrosoftResearchApi initialized");
 		this.url = url;
 		this._authToken = authToken;
@@ -29,6 +33,7 @@ export class MicrosoftResearchApi implements IApiFetcher {
 			"publisher": "PB",
 			"type": "Pt"
 		};
+		this.cache = cache;
 	}
 
 	/**
@@ -62,7 +67,15 @@ export class MicrosoftResearchApi implements IApiFetcher {
 		var paper: IApiPaper = {} as IApiPaper;
 		var citations: Promise<IApiPaper[]> | undefined;
 		let references: Promise<IApiPaper[]> | undefined;
+		let queryIdentifier = createHash("sha3-256");
+		queryIdentifier.update(JSON.stringify(query));
+		let queryString = queryIdentifier.toString();
 		try {
+			let get = this.cache!.get(queryString);
+			if (this.cache && get) {
+				logger.info(`MA: Loaded fetch from cache.`)
+				return get;
+			}
 			let response = await fetch(this.url, {
 				method: 'POST',
 				headers: this._headers,
@@ -72,19 +85,20 @@ export class MicrosoftResearchApi implements IApiFetcher {
 				})
 			})
 			let json = await response.json();
-			//logger.debug(json)
-			paper = this._parseResponse(json.entities[0]);
 
+			// --> DB
+			paper = this._parseResponse(json.entities[0]);
 			citations = json.entities[0] && json.entities[0].Id ? this._getCitations(json.entities[0].Id) : new Promise((resolve) => { resolve([]); });
-			//logger.debug(json.entities[0].RId)
-			// references = (json.entities[0] && json.entities[0].RId > 0) && this._getReferences(json.entities[0].RId);
 			references = json.entities[0] && json.entities[0].RId ? this._getReferences(json.entities[0].RId) : new Promise((resolve) => { resolve([]); });
-			//logger.debug(await references)
+
 			var apiReturn: IApiResponse = {
 				"paper": paper,
 				"citations": await citations,
 				"references": await references
 			}
+			if (this.cache) {
+				this.cache.add(queryString, apiReturn);
+			};
 		}
 		catch (e) {
 			logger.warning(`MicrosoftResearchApi: Failed to fetch Query: ${e}`);
@@ -173,9 +187,15 @@ export class MicrosoftResearchApi implements IApiFetcher {
 	 * @returns string appendable to the api call via body-key "expr".
 	 */
 	private _parseQuery(query: IApiQuery): string {
-		let baseExpr: string = `Or(DOI='${query.doi ? query.doi.toUpperCase() : ""}', And(Composite(AA.AuN='${query.rawName.toLowerCase()}'), Ti='${query.title.toLowerCase()}'))`
+		if (!((query.title && query.title.trim().length > 0) || query.doi)) {
+			throw new Error("Neither a doi nor a title is given. We cannot search for anything.");
+		}
+		let urlQuery: string = `Or(DOI='${query.doi ? query.doi.toUpperCase() : ""}', Ti='${query.title!.toLowerCase()}')`
 
-		return baseExpr;
+		if (query.rawName && query.rawName.trim().length > 0 && query.title) {
+			urlQuery = `Or(DOI='${query.doi ? query.doi.toUpperCase() : ""}', And(Composite(AA.AuN='${query.rawName!.toLowerCase()}'), Ti='${query.title!.toLowerCase()}'))`
+		}
+		return urlQuery;
 	}
 
 	/**
@@ -239,11 +259,18 @@ export class MicrosoftResearchApi implements IApiFetcher {
 
 	public async getDoi(query: IApiQuery): Promise<string | undefined> {
 		try {
+			if (!(query.title && query.title.trim().length > 0)) {
+				throw new Error("If no DOI is given, we need atleast a title for the search.");
+			}
+			let urlQuery = `Composite(AA.AuN='${query.rawName!.toLowerCase()}')`;
+			if (query.rawName) {
+				urlQuery = `And(Composite(AA.AuN='${query.rawName!.toLowerCase()}'), Ti='${query.title!.toLowerCase()}')`;
+			}
 			let response = await fetch(this.url, {
 				method: 'POST',
 				headers: this._headers,
 				body: JSON.stringify({
-					expr: `And(Composite(AA.AuN='${query.rawName.toLowerCase()}'), Ti='${query.title.toLowerCase()}')`,
+					expr: urlQuery,
 					attributes: this._attributes
 				})
 			})

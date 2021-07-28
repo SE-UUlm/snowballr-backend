@@ -12,7 +12,8 @@ import { SourceApi } from "./iApiPaper.ts";
 import { IComparisonWeight } from "./iComparisonWeight.ts";
 
 
-const Batcher = new ApiBatcher();
+
+const BATCHER = new ApiBatcher();
 
 const comparisonWeight = {
 	titleWeight: 15,
@@ -26,13 +27,21 @@ const comparisonWeight = {
 
 const query: IApiQuery = {
 	id: "tst",
-	rawName: "sebastian erdweg",
-	doi: "10.1109/SEAA.2009.60",
-	title: "The State of the Art in Language Workbenches",
-	enabledApis: [SourceApi.IE, SourceApi.MA, SourceApi.CR, SourceApi.OC, SourceApi.S2],
-	aggressivity: comparisonWeight
+	rawName: undefined,
+	doi: undefined,
+	title: "Translation of UML 2 Activity Diagrams into Finite State Machines for Model Checking",
+	enabledApis: [SourceApi.MA, SourceApi.OC, SourceApi.IE, SourceApi.CR, SourceApi.S2],
+	aggression: comparisonWeight
 }
 
-let batch = await Batcher.startFetch(query);
+let batch = await BATCHER.startFetch(query);
 
 ApiMerger.logResponse(await batch.response);
+
+batch = await BATCHER.startFetch(query);
+
+ApiMerger.logResponse(await batch.response);
+
+BATCHER.kill();
+
+//cd Deno.exit(0)

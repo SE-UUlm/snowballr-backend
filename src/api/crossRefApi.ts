@@ -6,21 +6,26 @@ import { logger } from "./logger.ts";
 import { IApiAuthor } from "./iApiAuthor.ts";
 import { IApiUniqueId, idType } from "./iApiUniqueId.ts";
 import { sleep } from "https://deno.land/x/sleep/mod.ts";
+import { Cache } from "./cache.ts";
+import { assign } from "../helper/assign.ts";
+import { createHash } from "https://deno.land/std/hash/mod.ts";
 
 export class CrossRefApi implements IApiFetcher {
 	url: string;
+	cache: Cache<IApiResponse> | undefined;
 	private _headers: {};
 	private _rateLimit: number = 50;
 	private _rateInterval: number = 1;
 	private _iterations: number = 0;
 	private _mail: string = "";
 
-	public constructor(url: string, mail?: string) {
+	public constructor(url: string, mail?: string, cache?: Cache<IApiResponse>) {
 		logger.info("CrossRefApi initialized");
 		this.url = url;
 		//this._headers = { 'User-Agent': `GroovyBib/1.1 (https://example.org/GroovyBib/; mailto:GroovyBib@example.org) BasedOnFunkyLib/1.4` };
 		this._headers = { "Content-Type": "application/json" };
 		mail ? this._mail = `?mailto=${mail}` : "";
+		this.cache = cache;
 	}
 
 	/**
@@ -34,9 +39,18 @@ export class CrossRefApi implements IApiFetcher {
 		var citations: Promise<IApiPaper[]> | undefined;
 		var paper: IApiPaper = {} as IApiPaper;
 		var references: Promise<IApiPaper[]> | undefined;
+		let queryIdentifier = createHash("sha3-256");
+		queryIdentifier.update(JSON.stringify(query));
+		let queryString = queryIdentifier.toString();
 
 		try {
-			let response = await fetch(`${this.url}/${query.doi}`, {
+			let get = this.cache!.get(queryString)
+			if (this.cache && get) {
+				logger.info(`CR: Loaded fetch from cache.`);
+				return get;
+			}
+
+			let response = await fetch(this._parseQuery(query), {
 				headers: this._headers,
 			})
 
@@ -44,16 +58,18 @@ export class CrossRefApi implements IApiFetcher {
 			this._rateInterval = Number(response.headers.get("x-rate-limit-interval")) ? Number(response.headers.get("x-rate-limit-interval")!.replace('s', '')) : this._rateInterval;
 			this._rateLimit = Number(response.headers.get("x-rate-limit-limit")) ? Number(response.headers.get("x-rate-limit-limit")!.replace('s', '')) : this._rateInterval;
 			let json = await response.json();
-			console.log(json)
 			paper = this._parseResponse(json);
 			references = json.message.reference ? this.getChildObjects(json.message.reference) : new Promise((resolve) => { resolve([]); });
 			citations = json.message.relation && json.message.relation.cites ? this.getChildObjects(json.message.relation.cites) : new Promise((resolve) => { resolve([]); });
-			console.log(JSON.stringify(await citations, null, 2))
 			var apiReturn: IApiResponse = {
 				"paper": paper,
 				"citations": await citations,
 				"references": await references
 			}
+			if (this.cache) {
+				this.cache.add(queryString, apiReturn);
+			};
+
 		}
 		catch (e) {
 			logger.warning(`CrossRef: Failed to fetch Query: ${e}`);
@@ -65,6 +81,13 @@ export class CrossRefApi implements IApiFetcher {
 		}
 
 		return apiReturn;
+	}
+
+	private _parseQuery(query: IApiQuery): string {
+		if (query.doi) { return `${this.url}/${query.doi}` };
+		if (query.title && query.rawName) { return `${this.url}?query.bibliographic=${query.title.replace(/\s/g, '+')}&query.author=${query.rawName.replace(/\s/g, '+')}&rows=1` };
+		if (query.title) { return `${this.url}?query.bibliographic=${query.title.replace(/\s/g, '+')}&rows=1` };
+		throw new Error('Cannot fetch for this query. We either need a doi or a title.')
 	}
 
 	/**
@@ -212,7 +235,7 @@ export class CrossRefApi implements IApiFetcher {
 
 	public async getDoi(query: IApiQuery): Promise<string | undefined> {
 		try {
-			let url = `${this.url}?query.bibliographic=${query.title.replace(/\s/g, '+')}&rows=1`;
+			let url = `${this.url}?query.bibliographic=${query.title!.replace(/\s/g, '+')}&rows=1`;
 			let response = await fetch(url, {
 				headers: this._headers,
 			});

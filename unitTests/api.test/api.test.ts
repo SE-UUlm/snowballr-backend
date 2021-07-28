@@ -1,9 +1,9 @@
-/*import { ApiMerger } from "../../src/api/apiMerger.ts";
+import { ApiMerger } from "../../src/api/apiMerger.ts";
 import { IApiResponse } from "../../src/api/iApiResponse.ts";
 import { IApiPaper, SourceApi } from "../../src/api/iApiPaper.ts";
 import { assertEquals } from "https://deno.land/std@0.97.0/testing/asserts.ts"
 import { idType } from "../../src/api/iApiUniqueId.ts";
-
+/*
 export const standardPaper: IApiPaper = { title: [], abstract: [], author: [], year: [], publisher: [], numberOfCitations: [], numberOfReferences: [], type: [], scope: [], scopeName: [], pdf: [], uniqueId: [], source: [], raw: [] }
 
 
@@ -473,4 +473,5 @@ Deno.test({
 export const makePromise = async <T>(t: T) => {
 	return t
 }
+
 */
