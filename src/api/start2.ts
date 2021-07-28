@@ -27,10 +27,10 @@ const comparisonWeight = {
 
 const query: IApiQuery = {
 	id: "tst",
-	rawName: undefined,
-	doi: undefined,
+	rawName: "alexander raschke",
+	doi: "10.1109/SEAA.2009.60",
 	title: "Translation of UML 2 Activity Diagrams into Finite State Machines for Model Checking",
-	enabledApis: [SourceApi.MA, SourceApi.OC, SourceApi.IE, SourceApi.CR, SourceApi.S2],
+	enabledApis: [SourceApi.MA],
 	aggression: comparisonWeight
 }
 

@@ -71,9 +71,9 @@ export class MicrosoftResearchApi implements IApiFetcher {
 		queryIdentifier.update(JSON.stringify(query));
 		let queryString = queryIdentifier.toString();
 		try {
-			let get = this.cache!.get(queryString);
-			if (this.cache && get) {
-				logger.info(`MA: Loaded fetch from cache.`)
+			if (this.cache) { var get = this.cache.get(queryString); }
+			if (get) {
+				logger.info(`MA: Loaded fetch from cache.`);
 				return get;
 			}
 			let response = await fetch(this.url, {
@@ -108,6 +108,7 @@ export class MicrosoftResearchApi implements IApiFetcher {
 				"references": references ? await references : []
 			}
 		}
+		console.log(JSON.stringify(apiReturn.paper, null, 2));
 		return apiReturn;
 	}
 

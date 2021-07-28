@@ -44,8 +44,8 @@ export class CrossRefApi implements IApiFetcher {
 		let queryString = queryIdentifier.toString();
 
 		try {
-			let get = this.cache!.get(queryString)
-			if (this.cache && get) {
+			if (this.cache) { var get = this.cache.get(queryString); }
+			if (get) {
 				logger.info(`CR: Loaded fetch from cache.`);
 				return get;
 			}

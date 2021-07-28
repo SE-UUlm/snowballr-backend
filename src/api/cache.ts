@@ -2,6 +2,7 @@ import * as RemoteCache from "./local_cache/mod.ts";
 import { logger, fileLogger } from "./logger.ts";
 import { difference } from "https://deno.land/std/datetime/mod.ts";
 import { FileCache } from "./fileCache.ts";
+import { IApiResponse } from "./iApiResponse.ts";
 
 
 /**
@@ -74,7 +75,7 @@ export class Cache<V> {
 	 */
 	public has(key: string): boolean {
 		if (this.memoryCache) {
-			return this.memoryCache.has(String(key))
+			return this.memoryCache.has(String(key));
 		}
 		if (this.fileCache) { return this.fileCache.has(key) };
 		return false;
@@ -96,5 +97,4 @@ export class Cache<V> {
 		if (this.memoryCache) { return this.memoryCache.empty() };
 		if (this.fileCache) { return this.fileCache.empty() };
 	}
-
 }
