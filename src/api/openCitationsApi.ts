@@ -5,15 +5,18 @@ import { IApiPaper, SourceApi } from './iApiPaper.ts';
 import { logger } from "./logger.ts";
 import { IApiAuthor } from "./iApiAuthor.ts";
 import { IApiUniqueId, idType } from "./iApiUniqueId.ts";
-
+import { Cache } from "./cache.ts";
+import { createHash } from "https://deno.land/std/hash/mod.ts";
 export class OpenCitationsApi implements IApiFetcher {
 	url: string;
+	cache: Cache<IApiResponse> | undefined;
 	private _headers: {};
 
-	public constructor(url: string) {
+	public constructor(url: string, token: string, cache?: Cache<IApiResponse>) {
 		logger.info("OpenCitationsApi initialized");
 		this.url = url;
 		this._headers = { "Content-Type": "application/json" };
+		this.cache = cache;
 	}
 
 	/**
@@ -27,7 +30,15 @@ export class OpenCitationsApi implements IApiFetcher {
 		var paper: IApiPaper = {} as IApiPaper;
 		var citations: Promise<IApiPaper[]> | undefined;
 		let references: Promise<IApiPaper[]> | undefined;
+		let queryIdentifier = createHash("sha3-256");
+		queryIdentifier.update(JSON.stringify(query));
+		let queryString = queryIdentifier.toString();
 		try {
+			let get = this.cache!.get(queryString);
+			if (this.cache && get) {
+				logger.info(`OC: Loaded fetch from cache.`)
+				return get;
+			}
 			let response = await fetch(`${this.url}/index/api/v1/metadata/${query.doi}`);
 			let json = await response.json();
 			paper = this._parseResponse(json[0]);
@@ -38,6 +49,9 @@ export class OpenCitationsApi implements IApiFetcher {
 				"citations": await citations,
 				"references": await references
 			}
+			if (this.cache) {
+				this.cache.add(queryString, apiReturn);
+			};
 		}
 		catch (e) {
 			logger.critical(`OpenCitationsApi: Failed to fetch Query: ${e}`);
