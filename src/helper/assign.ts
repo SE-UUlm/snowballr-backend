@@ -43,3 +43,7 @@ export const isEqual = (first: Object, second: Object) => {
 export const makePromise = async (arg0: any): Promise<typeof arg0> => {
 	return arg0
 }
+
+export const concatWithoutDuplicates = (a: any[], b: any[]) => {
+	return a.concat(b.filter((item) => a.indexOf(item) < 0))
+}

@@ -7,16 +7,16 @@ export class FileCache {
 	path: string;
 	fileCaches: Map<string, string>;
 	private _watchDog: number | undefined = undefined;
-	ttl: number | undefined;
+	ttl: number;
 	checkInterval: number = 60000;
 
-	public constructor(pathToFolder: string, ttlInSec?: number, checkInterval?: number) {
+	public constructor(pathToFolder: string, ttlInSec: number, checkInterval?: number) {
 		this.path = pathToFolder;
 		this.fileCaches = new Map<string, string>();
 		this._initializeCache();
 		this.ttl = ttlInSec;
 		if (checkInterval) { this.checkInterval = checkInterval; }
-		if (this.ttl) {
+		if (this.ttl > 0) {
 			this._watchTTL();
 			logger.info("Watchdog for fileCache started.")
 		};

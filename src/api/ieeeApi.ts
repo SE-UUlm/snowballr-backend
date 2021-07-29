@@ -6,9 +6,11 @@ import { logger } from "./logger.ts";
 import { IApiAuthor } from "./iApiAuthor.ts";
 import { IApiUniqueId, idType } from "./iApiUniqueId.ts";
 import axiod from "https://deno.land/x/axiod/mod.ts";
-
+import { Cache } from "./cache.ts";
+import { createHash } from "https://deno.land/std/hash/mod.ts";
 export class IeeeApi implements IApiFetcher {
 	url: string;
+	cache: Cache<IApiResponse> | undefined;
 	private _token: string;
 	private _config: {} = {};
 	private _paperReferences: number = 0;
@@ -17,10 +19,11 @@ export class IeeeApi implements IApiFetcher {
 	private _citeRegexAuthors: RegExp = new RegExp(/([A-ZÀ-Ú][a-zà-ú]* [A-ZÀ-Ú][a-zà-ú.\-]*)/g);
 	private _citeRegexTitle: RegExp = new RegExp(/(?<=\<i\>)(.*?)(?=\<\/i\>)/g);
 
-	public constructor(url: string, token: string) {
+	public constructor(url: string, token: string, cache?: Cache<IApiResponse>) {
 		logger.info("IEEE initialized");
 		this.url = url;
 		this._token = token;
+		this.cache = cache;
 	}
 
 	/**
@@ -34,7 +37,15 @@ export class IeeeApi implements IApiFetcher {
 		var paper: IApiPaper = {} as IApiPaper;
 		let citations: Promise<IApiPaper[]> | undefined;
 		let references: Promise<IApiPaper[]> | undefined;
+		let queryIdentifier = createHash("sha3-256");
+		queryIdentifier.update(JSON.stringify(query));
+		let queryString = queryIdentifier.toString();
 		try {
+			let get = this.cache!.get(queryString);
+			if (this.cache && get) {
+				logger.info(`IEEE: Loaded fetch from cache.`)
+				return get;
+			}
 			//logger.debug("here")
 			if (query.doi) {
 				logger.debug(`Fetching IEEE by DOI: ${query.doi}`);
@@ -70,6 +81,9 @@ export class IeeeApi implements IApiFetcher {
 				"citations": await this._getCitationsFromHtml(json.articles[0].html_url),
 				"references": await this._getReferencesFromHtml(json.articles[0].html_url)
 			}
+			if (this.cache) {
+				this.cache.add(queryString, apiReturn);
+			};
 		}
 		catch (e) {
 			logger.critical(`IEEE - Failed to fetch Query | ${e}`);

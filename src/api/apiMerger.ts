@@ -7,6 +7,7 @@ import { Levenshtein } from "./levenshtein.ts";
 import { IComparisonWeight } from "./iComparisonWeight.ts";
 import { IApiAuthor } from "./iApiAuthor.ts";
 import { isEqualAuthor, regexLetterFollowedByPoint } from "./checkIsEqual.ts";
+import { concatWithoutDuplicates } from "../helper/assign.ts";
 
 
 export class ApiMerger implements IApiMerger {
@@ -453,7 +454,7 @@ export class ApiMerger implements IApiMerger {
 			}
 
 			if (key == "pdf") {
-				resultingPaper.pdf = first.pdf.concat(second.pdf);
+				resultingPaper.pdf = concatWithoutDuplicates(first.pdf, second.pdf)
 				continue;
 			}
 
@@ -467,7 +468,7 @@ export class ApiMerger implements IApiMerger {
 					resultingPaper[key] = first[key]
 
 				} else if (typeof first[key][0] == "number" || typeof second[key][0] == "number") {
-					resultingPaper[key] = first[key].concat(second[key]);
+					resultingPaper[key] = concatWithoutDuplicates(first[key], second[key])
 				} else if (key == "author") {
 					resultingPaper.author = this._mergeAuthors(first.author, second.author);
 				} else if (key == "uniqueId") {

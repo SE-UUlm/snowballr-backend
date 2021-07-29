@@ -19,12 +19,12 @@ import { Batcher, makeFetching } from './fetch.ts';
 import { IApiPaper } from "../api/iApiPaper.ts";
 import { getDOI } from "../api/apiMerger.ts";
 import { client } from "./database.ts";
-import { Cache } from "../api/cache.ts";
+import { Cache, CacheType } from "../api/cache.ts";
 import { logger } from "../api/logger.ts";
 import { IApiAuthor } from "../api/iApiAuthor.ts";
 
-export const paperCache = new Cache<IApiPaper>(false, true, undefined, undefined, "paperCache")
-export const authorCache = new Cache<IApiAuthor>(false, true, undefined, undefined, "authorCache")
+export const paperCache = new Cache<IApiPaper>(CacheType.F, 0, "paperCache")
+export const authorCache = new Cache<IApiAuthor>(CacheType.F, 0, "authorCache")
 /**
  * Creates a project
  *

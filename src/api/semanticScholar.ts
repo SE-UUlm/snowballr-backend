@@ -5,13 +5,16 @@ import { IApiPaper, SourceApi } from './iApiPaper.ts';
 import { logger } from "./logger.ts";
 import { IApiAuthor } from "./iApiAuthor.ts";
 import { IApiUniqueId, idType } from "./iApiUniqueId.ts";
+import { Cache } from "./cache.ts";
+import { createHash } from "https://deno.land/std/hash/mod.ts";
 
 export class SemanticScholar implements IApiFetcher {
 	url: string;
-
-	public constructor(url: string) {
+	cache: Cache<IApiResponse> | undefined;
+	public constructor(url: string, token: string, cache?: Cache<IApiResponse>) {
 		logger.info("SemanticScholar initialized");
 		this.url = url;
+		this.cache = cache;
 	}
 
 	/**
@@ -25,7 +28,15 @@ export class SemanticScholar implements IApiFetcher {
 		var paper: IApiPaper = {} as IApiPaper;
 		let citations: Promise<IApiPaper[]> | undefined;
 		let references: Promise<IApiPaper[]> | undefined;
+		let queryIdentifier = createHash("sha3-256");
+		queryIdentifier.update(JSON.stringify(query));
+		let queryString = queryIdentifier.toString();
 		try {
+			let get = this.cache!.get(queryString);
+			if (this.cache && get) {
+				logger.info(`S2: Loaded fetch from cache.`)
+				return get;
+			}
 			//logger.debug("here")
 			let response = await fetch(`${this.url}/${query.doi}`);
 			let json = await response.json();
@@ -39,6 +50,9 @@ export class SemanticScholar implements IApiFetcher {
 				"citations": await citations,
 				"references": await references
 			}
+			if (this.cache) {
+				this.cache.add(queryString, apiReturn);
+			};
 		}
 		catch (e) {
 			logger.critical(`SemanticScholarApi: Failed to fetch Query: ${e}`);
