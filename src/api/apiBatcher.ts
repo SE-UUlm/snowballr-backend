@@ -181,5 +181,11 @@ export class ApiBatcher implements IApiBatcher {
 		logger.info("Killed all Caches");
 		//Object.keys(this.cache).forEach(key => console.log(this.cache[key].empty()));
 	}
+
+	public async register(query: IApiQuery): Promise<IApiBatch> {
+		let active = this.subscribeActiveFetch(query);
+		if (active) { return makePromise(active) }
+		return await this.startFetch(query);
+	}
 }
 
