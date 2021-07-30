@@ -49,7 +49,7 @@ export const isEqualRawAuthorString = (firstRawString: string, secondRawString: 
 
     //Special case a name is given like M. Muster
     if (firstRawString.match(regexLetterFollowedByPoint) || secondRawString.match(regexLetterFollowedByPoint)) {
-        //Check if last name is same, and if yes, check if at least the first name is same
+        //Check if last name is same, and if yes, check if at least the beginning of the first name is same
         if (firstNormalizedItems[firstNormalizedItems.length - 1] == secondNormalizedItems[secondNormalizedItems.length - 1]) {
             if (firstNormalizedItems[0].startsWith(secondNormalizedItems[0]) || secondNormalizedItems[0].startsWith(firstNormalizedItems[0])) {
                 // TODO hardcoded
