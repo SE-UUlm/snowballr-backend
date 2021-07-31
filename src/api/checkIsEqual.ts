@@ -155,7 +155,7 @@ export const isEqualRawAuthorString = (firstRawString: string, secondRawString: 
         if (firstNormalizedItems[firstNormalizedItems.length - 1] == secondNormalizedItems[secondNormalizedItems.length - 1]) {
             if (firstNormalizedItems[0].startsWith(secondNormalizedItems[0]) || secondNormalizedItems[0].startsWith(firstNormalizedItems[0])) {
                 // TODO hardcoded
-                return 0.9;
+                return 1;
             }
         }
     } else {

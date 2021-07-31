@@ -396,7 +396,7 @@ Deno.test({
         let app = await createMockApp();
         let token = await createJWT(user)
         let ctx = await createMockContext(app, `{"doi":"10.1109/SEAA.2009.60" }`, [["Content-Type", "application/json"]], "/", token);
-        await addPaperToProjectStage(ctx, Number(project.id), Number(stage.id), true)
+        let bla = await addPaperToProjectStage(ctx, Number(project.id), Number(stage.id), true)
 
         assertEquals(ctx.response.status, 200)
 

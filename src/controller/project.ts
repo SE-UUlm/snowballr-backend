@@ -179,14 +179,14 @@ export const addPaperToProjectStage = async (ctx: Context, projectId: number | u
             return;
         }
 
-        try {
+        if (awaitFetch) {
             await fetchToDB(stageID, projectId, requestParameter.doi, requestParameter.title, requestParameter.author)
-        } catch (error) {
-            console.error(error)
+        } else {
+            fetchToDB(stageID, projectId, requestParameter.doi, requestParameter.title, requestParameter.author)
         }
 
 
-        ctx.response.status = 200;
+        ctx.response.status = 201;
 
     } else {
         makeErrorMessage(ctx, 401, "not authorized");
@@ -255,8 +255,7 @@ const savePaper = async (apiPaper: IApiPaper): Promise<Paper> => {
     let paper = await convertIApiPaperToDBPaper(apiPaper)
 
     if (!checkIApiPaper(apiPaper)) {
-        let id = Number(paper.id);
-        paperCache.add(String(id), apiPaper)
+        paperCache.add(String(paper.id), (apiPaper))
     }
     return paper;
 

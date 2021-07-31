@@ -1,3 +1,5 @@
+import { Author } from "../db/author.ts";
+
 export interface PapersMessage {
     papers: PaperMessage[]
 }
@@ -16,7 +18,8 @@ export interface PaperMessage {
     createdAt?: Date,
     updatedAt?: Date
     status?: PaperStatus
-    pdf?: string[]
+    pdf: string[]
+    author: Author[]
 
 }
 

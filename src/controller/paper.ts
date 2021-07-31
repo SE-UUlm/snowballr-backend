@@ -50,7 +50,7 @@ const getRefOrCiteList = async (ctx: Context, table: string, column1: string, co
 
     let children = await getChildren(table, column1, column2, id)
     let papersToBe: Promise<Paper>[] = []
-    children.rows.forEach(item => papersToBe.push(Paper.find(Number(item[0]))));
+    children.rows.forEach((item: any[]) => papersToBe.push(Paper.find(Number(item[0]))));
     ctx.response.status = 200;
     let message: PapersMessage = { papers: await convertPapersToPaperMessage(await Promise.all(papersToBe)) }
     ctx.response.body = JSON.stringify(message)

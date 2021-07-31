@@ -26,18 +26,19 @@ export const convertPapersToPaperMessage = async (papers: Paper[], stageId?: num
 }
 
 export const convertPaperToPaperMessage = async (paper: Paper, stageId?: number) => {
-    let paperMessage: PaperMessage = { id: Number(paper.id) }
+    let paperMessage: PaperMessage = { id: Number(paper.id), pdf: [], author: [] }
     if (stageId) { paperMessage.ppid = await getProjectPaperID(stageId, Number(paper.id)) }
     if (paperCache.has(String(paper.id))) {
         paperMessage.status = PaperStatus.finished
     }
-    paperMessage.pdf = [];
     let pdf = await Pdf.where({ paperId: Number(paper.id) }).get()
     if (Array.isArray(pdf)) {
         pdf.forEach(pdf => {
             paperMessage.pdf?.push(String(pdf.url))
         })
     }
+    let authors = await getAllAuthorsFromPaper(Number(paper.id))
+    authors.forEach(author => paperMessage.author.push(author))
     assign(paperMessage, paper)
     return paperMessage;
 }
@@ -156,19 +157,24 @@ const updateAuthorOfPaper = async (author: Author, item: IApiAuthor, paperId: nu
     if (!author.raw) { author.raw = item.rawString[0] }
     await author.update()
     Wrote.create({ paperId: Number(paperId), authorId: Number(author.id) })
-    if (!checkIApiAuthor(author)) {
+    if (!checkIApiAuthor(item)) {
         authorCache.add(String(author.id), item)
     }
 }
 export const checkIApiPaper = (paper: { [index: string]: any }): boolean => {
+    let check = true;
     for (let i in paper) {
         if (!["id", "uniqueId", "source", "author", "pdf", "numberOfCitations", "numberOfReferences"].includes(i)) {
 
             if (paper[i] && paper[i].length > 1) {
                 logger.critical(`${i} wasn't single for ${paper.title}`)
-                return false;
+                check = false;
+            } else {
+                delete paper[i]
             }
+        } else {
+            delete paper[i]
         }
     }
-    return true;
+    return check;
 }
