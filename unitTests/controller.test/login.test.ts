@@ -6,7 +6,6 @@ import { createMockApp } from "../mockObjects/oak/mockApp.test.ts";
 import { assertEquals, assertNotEquals } from "https://deno.land/std@0.97.0/testing/asserts.ts"
 import { client, db } from "../../src/controller/database.ts";
 
-/*
 Deno.test({
     name: "testLoginAllowed",
     async fn(): Promise<void> {
@@ -72,4 +71,3 @@ Deno.test({
     }
 
 })
-*/

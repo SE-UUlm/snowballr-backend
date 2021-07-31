@@ -7,9 +7,11 @@ import {
     addMemberToProject,
     addPaperToProjectStage,
     addStageToProject,
+    authorCache,
     createProject,
     getMembersOfProject,
-    getProjects
+    getProjects,
+    paperCache
 } from "../../src/controller/project.ts";
 import { Project } from "../../src/model/db/project.ts";
 import { assertEquals, assertNotEquals } from "https://deno.land/std/testing/asserts.ts"
@@ -18,7 +20,7 @@ import { client, db } from "../../src/controller/database.ts";
 import { Stage } from "../../src/model/db/stage.ts";
 import { Batcher } from "../../src/controller/fetch.ts";
 import { getPaper, getPaperCitations, getPaperReferences, getSourcePaper } from "../../src/controller/paper.ts";
-/*
+
 Deno.test({
     name: "createProjectUnauth",
     async fn(): Promise<void> {
@@ -377,7 +379,7 @@ Deno.test({
         await client.end();
     }
 })
-*/
+
 Deno.test({
     name: "AddPaperToProject",
     async fn(): Promise<void> {
@@ -398,11 +400,13 @@ Deno.test({
         let ctx = await createMockContext(app, `{"doi":"10.1109/SEAA.2009.60" }`, [["Content-Type", "application/json"]], "/", token);
         let bla = await addPaperToProjectStage(ctx, Number(project.id), Number(stage.id), true)
 
-        assertEquals(ctx.response.status, 200)
+        assertEquals(ctx.response.status, 201)
 
         for (let i = 1; i < 30; i++) {
             await getPaperCitations(ctx, i)
         }
+        paperCache.clear()
+        authorCache.clear()
         Batcher.kill()
         await db.close();
         await client.end();
