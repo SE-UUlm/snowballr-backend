@@ -69,7 +69,7 @@ export const patchPaper = async (ctx: Context, paperID: number | undefined) => {
 
     let paper: Paper = await Paper.find(paperID);
     if (paper) {
-        let bodyJson = jsonBodyToObject(ctx);
+        let bodyJson = await jsonBodyToObject(ctx);
         if (!bodyJson) {
             return
         }
@@ -84,6 +84,7 @@ export const patchPaper = async (ctx: Context, paperID: number | undefined) => {
                 paperCache.delete(String(paperID))
             }
         }
+        delete bodyJson.author;
         assign(paper, bodyJson);
         await paper.update()
         ctx.response.status = 200;

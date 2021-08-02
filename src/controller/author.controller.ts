@@ -4,7 +4,6 @@ import { jsonBodyToObject } from "../helper/body.ts";
 import { makeErrorMessage } from "../helper/error.ts";
 import { Author } from "../model/db/author.ts";
 import { authorCache } from "./project.ts";
-import {authorMessage} from "../model/messages/author.message.ts"
 import {convertAuthorToAuthorMessage} from "../helper/converter/authorConverter.ts"
 
 export const getAuthor = async (ctx: Context, authorID: number | undefined) => {
@@ -31,7 +30,7 @@ export const patchAuthor = async (ctx: Context, authorID: number | undefined) =>
 
     let author: Author = await Author.find(authorID);
     if (author) {
-        let bodyJson = jsonBodyToObject(ctx);
+        let bodyJson = await jsonBodyToObject(ctx);
         if (!bodyJson) {
             return
         }
