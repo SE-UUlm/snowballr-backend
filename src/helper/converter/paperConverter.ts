@@ -1,5 +1,5 @@
 import { Paper } from "../../model/db/paper.ts";
-import { PaperMessage, PaperStatus } from "../../model/messages/papersMessage.ts";
+import { PaperMessage, Status } from "../../model/messages/papersMessage.ts";
 import { checkUniqueVal, getProjectPaperID } from "../../controller/databaseFetcher/paper.ts";
 import { assign } from "../assign.ts"
 import { IApiPaper } from "../../api/iApiPaper.ts"
@@ -16,6 +16,7 @@ import { checkIApiAuthor } from "./authorConverter.ts";
 import { getAllAuthorsFromPaper } from "../../controller/databaseFetcher/author.ts";
 import { IApiAuthor } from "../../api/iApiAuthor.ts";
 import { isEqualAuthor } from "../../api/checkIsEqual.ts";
+import {convertAuthorToAuthorMessage} from "./authorConverter.ts"
 export const convertPapersToPaperMessage = async (papers: Paper[], stageId?: number) => {
     let paperMessages: PaperMessage[] = [];
     for (const item of papers) {
@@ -29,7 +30,9 @@ export const convertPaperToPaperMessage = async (paper: Paper, stageId?: number)
     let paperMessage: PaperMessage = { id: Number(paper.id), pdf: [], author: [] }
     if (stageId) { paperMessage.ppid = await getProjectPaperID(stageId, Number(paper.id)) }
     if (paperCache.has(String(paper.id))) {
-        paperMessage.status = PaperStatus.finished
+        paperMessage.status = Status.unfinished
+    } else{
+        paperMessage.status = Status.finished
     }
     let pdf = await Pdf.where({ paperId: Number(paper.id) }).get()
     if (Array.isArray(pdf)) {
@@ -38,7 +41,7 @@ export const convertPaperToPaperMessage = async (paper: Paper, stageId?: number)
         })
     }
     let authors = await getAllAuthorsFromPaper(Number(paper.id))
-    authors.forEach(author => paperMessage.author.push(author))
+    authors.forEach(author => paperMessage.author.push(convertAuthorToAuthorMessage(author)))
     assign(paperMessage, paper)
     return paperMessage;
 }

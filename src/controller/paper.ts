@@ -3,7 +3,7 @@ import { assign } from "../helper/assign.ts";
 import { jsonBodyToObject } from "../helper/body.ts";
 import { makeErrorMessage } from "../helper/error.ts";
 import { Paper } from "../model/db/paper.ts";
-import { PaperMessage, PapersMessage, PaperStatus } from "../model/messages/papersMessage.ts";
+import { PaperMessage, PapersMessage, Status } from "../model/messages/papersMessage.ts";
 import { paperCache } from "./project.ts";
 import { convertPapersToPaperMessage, convertPaperToPaperMessage } from "../helper/converter/paperConverter.ts"
 import { client } from "./database.ts";
