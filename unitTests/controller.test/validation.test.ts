@@ -14,7 +14,7 @@ import { insertUser } from "../../src/controller/databaseFetcher/user.ts";
 import { Project } from "../../src/model/db/project.ts";
 import { UserIsPartOfProject } from "../../src/model/db/userIsPartOfProject.ts";
 import { client, db } from "../../src/controller/database.ts";
-/*
+
 Deno.test({
     name: "testCorrectContentTypeAndContent",
     async fn(): Promise<void> {
@@ -169,4 +169,3 @@ Deno.test({
     }
 
 })
-*/

@@ -18,7 +18,7 @@ import { client, db } from "../../src/controller/database.ts";
 import { Stage } from "../../src/model/db/stage.ts";
 import { Batcher } from "../../src/controller/fetch.ts";
 import { getPaper, getPaperCitations, getPaperReferences, getSourcePaper } from "../../src/controller/paper.ts";
-/*
+
 Deno.test({
     name: "createProjectUnauth",
     async fn(): Promise<void> {
@@ -377,7 +377,7 @@ Deno.test({
         await client.end();
     }
 })
-*/
+
 Deno.test({
     name: "AddPaperToProject",
     async fn(): Promise<void> {

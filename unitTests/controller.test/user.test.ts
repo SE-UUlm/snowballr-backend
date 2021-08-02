@@ -13,7 +13,7 @@ import { Project } from "../../src/model/db/project.ts";
 import { UserIsPartOfProject } from "../../src/model/db/userIsPartOfProject.ts";
 import { Stage } from "../../src/model/db/stage.ts";
 import { client, db } from "../../src/controller/database.ts";
-/*
+
 Deno.test({
     name: "insertUserForCreation",
     async fn(): Promise<void> {
@@ -479,4 +479,3 @@ Deno.test({
     }
 
 })
-*/
