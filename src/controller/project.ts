@@ -83,11 +83,12 @@ export const addMemberToProject = async (ctx: Context, id: number | undefined) =
             makeErrorMessage(ctx, 422, "to add a member, a userid is needed")
             return;
         }
-        await UserIsPartOfProject.create({
+        let hi = await UserIsPartOfProject.create({
             isOwner: requestParameter.isOwner ? requestParameter.isOwner : false,
             userId: requestParameter.id,
             projectId: id
         })
+
         ctx.response.status = 201;
     } else {
         makeErrorMessage(ctx, 401, "not authorized");
@@ -298,11 +299,13 @@ export const getPaperOfProjectStage = async (ctx: Context, projectID: number | u
 
     const payloadJson = await getPayloadFromJWT(ctx);
     if (await checkAdmin(payloadJson) || await checkMemberOfProject(projectID, payloadJson)) {
+        try{
         let paper = await PaperScopeForStage.where("id", ppID).paper();
         if (paper) {
             ctx.response.status = 200;
             ctx.response.body = JSON.stringify(await convertPaperToPaperMessage(paper, stageID));
-        } else {
+        } 
+        }catch(e){
             makeErrorMessage(ctx, 404, "paper does not exist")
         }
     } else {
@@ -318,9 +321,10 @@ export const patchPaperOfProjectStage = async (ctx: Context, projectID: number |
 
     const payloadJson = await getPayloadFromJWT(ctx);
     if (await checkAdmin(payloadJson) || await checkMemberOfProject(projectID, payloadJson)) {
+        try{
         let paper = await PaperScopeForStage.where("id", ppID).paper();
         if (paper) {
-            let bodyJson = jsonBodyToObject(ctx);
+            let bodyJson = await jsonBodyToObject(ctx);
             if (!bodyJson) {
                 return
             }
@@ -328,7 +332,8 @@ export const patchPaperOfProjectStage = async (ctx: Context, projectID: number |
             await paper.update()
             ctx.response.status = 200;
             ctx.response.body = JSON.stringify(await convertPaperToPaperMessage(paper, stageID))
-        } else {
+        }
+        }catch(e){ 
             makeErrorMessage(ctx, 404, "paper does not exist")
         }
 

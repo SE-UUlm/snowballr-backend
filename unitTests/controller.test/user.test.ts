@@ -38,7 +38,7 @@ Deno.test({
     name: "insertUserForCreationUnauth",
     async fn(): Promise<void> {
         await setup(true);
-        let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
+        let user = await insertUser("testt43t34t@test", "ash", false, "Test", "Tester", "active");
 
         let app = await createMockApp();
         let token = await createJWT(user)
@@ -56,7 +56,7 @@ Deno.test({
     name: "insertUserNoEmail",
     async fn(): Promise<void> {
         await setup(true);
-        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+        let user = await insertUser("test1jgfh@test", "ash", true, "Test", "Tester", "active");
 
         let app = await createMockApp();
         let token = await createJWT(user)
@@ -472,7 +472,7 @@ Deno.test({
         let ctx = await createMockContext(app, undefined, [["Content-Type", "application/json"]], "/", token);
         await createUser(ctx, new MockEmailClient())
 
-        assertEquals(ctx.response.status, 401)
+        assertEquals(ctx.response.status, 422)
 
         await db.close();
         await client.end();

@@ -10,7 +10,7 @@ Deno.test({
         let ctx = await createMockContext(app, undefined);
         await jsonBodyToObject(ctx)
 
-        assertEquals(ctx.response.status, 401)
+        assertEquals(ctx.response.status, 422)
     }
 
 })

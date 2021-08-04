@@ -27,7 +27,7 @@ export const convertPapersToPaperMessage = async (papers: Paper[], stageId?: num
 }
 
 export const convertPaperToPaperMessage = async (paper: Paper, stageId?: number) => {
-    let paperMessage: PaperMessage = { id: Number(paper.id), pdf: [], author: [] }
+    let paperMessage: PaperMessage = { id: Number(paper.id), pdf: [], authors: [] }
     if (stageId) { paperMessage.ppid = await getProjectPaperID(stageId, Number(paper.id)) }
     if (paperCache.has(String(paper.id))) {
         paperMessage.status = Status.unfinished
@@ -41,7 +41,7 @@ export const convertPaperToPaperMessage = async (paper: Paper, stageId?: number)
         })
     }
     let authors = await getAllAuthorsFromPaper(Number(paper.id))
-    authors.forEach(author => paperMessage.author.push(convertAuthorToAuthorMessage(author)))
+    authors.forEach(author => paperMessage.authors.push(convertAuthorToAuthorMessage(author)))
     assign(paperMessage, paper)
     return paperMessage;
 }

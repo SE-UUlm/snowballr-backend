@@ -11,7 +11,7 @@ export const jsonBodyToObject = (ctx: Context) => {
     try {
         return ctx.request.body({type: "json"}).value;
     } catch (err) {
-        makeErrorMessage(ctx, 401, "noBodyProvided")
+        makeErrorMessage(ctx, 422, "noBodyProvided")
     }
     return makePromise(undefined)
 }

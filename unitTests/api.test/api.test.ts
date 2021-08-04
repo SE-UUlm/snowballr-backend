@@ -470,6 +470,96 @@ Deno.test({
 
 })
 
+Deno.test({
+	name: "Merge Cites",
+	async fn(): Promise<void> {
+		let apiMerger = new ApiMerger({
+			titleWeight: 10,
+			titleLevenshtein: 10,
+			abstractWeight: 7,
+			abstractLevenshtein: 0,
+			authorWeight: 8,
+			overallWeight: 0.85,
+			yearWeight: 2
+		})
+
+		let firstPaper = {} as IApiPaper;
+		let secondPaper = {} as IApiPaper;
+		let thirdPaper = {} as IApiPaper;
+		let fourthPaper = {} as IApiPaper;
+		let fifthPaper = {} as IApiPaper;
+		let sixthPaper = {} as IApiPaper;
+		Object.assign(firstPaper, standardPaper)
+		Object.assign(firstPaper, { title: ["Hello There"] })
+		Object.assign(secondPaper, standardPaper)
+		Object.assign(secondPaper, { title: ["Hello There"]})
+		Object.assign(thirdPaper, standardPaper)
+		Object.assign(thirdPaper, { title: ["general kenobi"], abstract: ["I am the Abstract: of the Light Side"] })
+		Object.assign(fourthPaper, standardPaper)
+		Object.assign(fourthPaper, {title: ["general Kenobi"], abstract: ["I am the Abstract: of the Light Side"] })
+		Object.assign(fifthPaper, standardPaper)
+		Object.assign(fifthPaper, {title: ["General Kenobi"], abstract: ["I am the Abstract: of the Light Side"] })
+		Object.assign(sixthPaper, standardPaper)
+		Object.assign(sixthPaper, {title: ["general kenobi"], abstract: ["I am the Abstract: of the Light Side"] })
+
+
+		const firstApiResponseJustTitle: IApiResponse = { paper: firstPaper, citations: [thirdPaper,fourthPaper], references: [] }
+		const secondApiResponseJustTitle: IApiResponse = { paper: secondPaper, citations: [fifthPaper, sixthPaper], references: [] }
+
+		let merged = await apiMerger.compare([makePromise<IApiResponse>(firstApiResponseJustTitle), makePromise<IApiResponse>(secondApiResponseJustTitle)]);
+		assertEquals(merged.length, 1)
+		assertEquals(merged[0].paper.title, ["Hello There"])
+		assertEquals(merged[0].citations!.length, 1)
+
+	}
+
+})
+
+Deno.test({
+	name: "Merge Refs",
+	async fn(): Promise<void> {
+		let apiMerger = new ApiMerger({
+			titleWeight: 10,
+			titleLevenshtein: 10,
+			abstractWeight: 7,
+			abstractLevenshtein: 0,
+			authorWeight: 8,
+			overallWeight: 0.85,
+			yearWeight: 2
+		})
+
+		let firstPaper = {} as IApiPaper;
+		let secondPaper = {} as IApiPaper;
+		let thirdPaper = {} as IApiPaper;
+		let fourthPaper = {} as IApiPaper;
+		let fifthPaper = {} as IApiPaper;
+		let sixthPaper = {} as IApiPaper;
+		Object.assign(firstPaper, standardPaper)
+		Object.assign(firstPaper, { title: ["Hello There"] })
+		Object.assign(secondPaper, standardPaper)
+		Object.assign(secondPaper, { title: ["Hello There"]})
+		Object.assign(thirdPaper, standardPaper)
+		Object.assign(thirdPaper, { title: ["general kenobi"], abstract: ["I am the Abstract: of the Light Side"] })
+		Object.assign(fourthPaper, standardPaper)
+		Object.assign(fourthPaper, {title: ["general Kenobi"], abstract: ["I am the Abstract: of the Light Side"] })
+		Object.assign(fifthPaper, standardPaper)
+		Object.assign(fifthPaper, {title: ["General Kenobi"], abstract: ["I am the Abstract: of the Light Side"] })
+		Object.assign(sixthPaper, standardPaper)
+		Object.assign(sixthPaper, {title: ["general kenobi"], abstract: ["I am the Abstract: of the Light Side"] })
+
+
+		const firstApiResponseJustTitle: IApiResponse = { paper: firstPaper, citations: [], references: [thirdPaper,fourthPaper] }
+		const secondApiResponseJustTitle: IApiResponse = { paper: secondPaper, citations: [], references: [fifthPaper, sixthPaper] }
+
+		let merged = await apiMerger.compare([makePromise<IApiResponse>(firstApiResponseJustTitle), makePromise<IApiResponse>(secondApiResponseJustTitle)]);
+		assertEquals(merged.length, 1)
+		assertEquals(merged[0].paper.title, ["Hello There"])
+		assertEquals(merged[0].references!.length, 1)
+
+	}
+
+})
+
 export const makePromise = async <T>(t: T) => {
 	return t
 }

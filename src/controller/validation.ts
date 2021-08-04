@@ -5,6 +5,7 @@ import {createNumericTerminationDate} from "../helper/dateHelper.ts";
 import {makeErrorMessage} from "../helper/error.ts";
 import {PayloadJson} from "../model/payloadJson.ts";
 import {UserIsPartOfProject} from "../model/db/userIsPartOfProject.ts";
+import { jsonBodyToObject } from "../helper/body.ts";
 
 const SECRET = String(Deno.env.get('SECRET'));
 
@@ -146,6 +147,8 @@ export const checkPOofProject = async (projectID: number, payloadJson?: PayloadJ
 export const checkMemberOfProject = async (projectID: number, payloadJson?: PayloadJson) => {
     if (payloadJson) {
         let userProject = await UserIsPartOfProject.where({userId: payloadJson.id, projectId: projectID}).get()
+
+
         if (Array.isArray(userProject) && userProject[0]) {
             return true;
         }
