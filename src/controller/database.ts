@@ -21,3 +21,8 @@ export const client = new Client({
     hostname: PostgresHost,
     port: 5432,
 });
+
+export const saveChildren = async (into: string, column1: string, column2: string, firstId: number, secondId: number) => {
+    await client.queryArray(`insert into ${into}(${column1}, ${column2})
+                        VALUES (${firstId}, ${secondId})`);
+}

@@ -18,7 +18,7 @@ import { assign } from "../helper/assign.ts"
 import { Batcher, makeFetching } from './fetch.ts';
 import { IApiPaper } from "../api/iApiPaper.ts";
 import { getDOI } from "../api/apiMerger.ts";
-import { client } from "./database.ts";
+import { client, saveChildren } from "./database.ts";
 import { Cache, CacheType } from "../api/cache.ts";
 import { logger } from "../api/logger.ts";
 import { IApiAuthor } from "../api/iApiAuthor.ts";
@@ -236,10 +236,7 @@ const createChildren = async (item: IApiPaper, into: string, column1: string, co
     return child;
 }
 
-const saveChildren = async (into: string, column1: string, column2: string, firstId: number, secondId: number) => {
-    await client.queryArray(`insert into ${into}(${column1}, ${column2})
-                        VALUES (${firstId}, ${secondId})`);
-}
+
 
 const savePaper = async (apiPaper: IApiPaper): Promise<Paper> => {
     let doi = getDOI(apiPaper)

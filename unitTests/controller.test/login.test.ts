@@ -5,6 +5,7 @@ import { createMockContext } from "../mockObjects/oak/mockContext.test.ts";
 import { createMockApp } from "../mockObjects/oak/mockApp.test.ts";
 import { assertEquals, assertNotEquals } from "https://deno.land/std@0.97.0/testing/asserts.ts"
 import { client, db } from "../../src/controller/database.ts";
+import { Batcher } from "../../src/controller/fetch.ts";
 
 Deno.test({
     name: "testLoginAllowed",
@@ -26,10 +27,13 @@ Deno.test({
         assertEquals(answer.user.status, "active")
         assertEquals(answer.user.password, undefined)
         assertNotEquals(answer.token, undefined)
+        Batcher.kill()
         await db.close();
         await client.end();
 
-    }
+    },
+    sanitizeResources: false,
+    sanitizeOps: false,
 
 })
 
@@ -46,9 +50,12 @@ Deno.test({
         let loginWorked: boolean = await login(ctx);
 
         assertEquals(loginWorked, false);
+        Batcher.kill()
         await db.close();
         await client.end();
-    }
+    },
+    sanitizeResources: false,
+    sanitizeOps: false,
 
 })
 
@@ -65,9 +72,11 @@ Deno.test({
         let loginWorked: boolean = await login(ctx);
 
         assertEquals(loginWorked, false);
-
+        Batcher.kill()
         await db.close();
         await client.end();
-    }
+    },
+    sanitizeResources: false,
+    sanitizeOps: false,
 
 })

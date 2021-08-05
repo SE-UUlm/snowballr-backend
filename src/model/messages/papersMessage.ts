@@ -25,6 +25,6 @@ export interface PaperMessage {
 }
 
 export enum Status {
-    finished,
-    unfinished
+    finished = "finished",
+    unfinished = "unfinished"
 }

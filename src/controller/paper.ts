@@ -22,7 +22,7 @@ export const getPaper = async (ctx: Context, paperID: number | undefined) => {
     let paper: Paper = await Paper.find(paperID)
     if (paper) {
         ctx.response.status = 200;
-        ctx.response.body = await convertPaperToPaperMessage(paper)
+        ctx.response.body = JSON.stringify(await convertPaperToPaperMessage(paper))
     } else {
         makeErrorMessage(ctx, 404, "paper does not exist")
     }
@@ -54,7 +54,6 @@ const getRefOrCiteList = async (ctx: Context, table: string, column1: string, co
     ctx.response.status = 200;
     let message: PapersMessage = { papers: await convertPapersToPaperMessage(await Promise.all(papersToBe)) }
     ctx.response.body = JSON.stringify(message)
-    console.log(JSON.stringify(message))
 }
 
 const getChildren = (table: string, column1: string, column2: string, id: number) => {
