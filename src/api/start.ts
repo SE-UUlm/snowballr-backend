@@ -46,7 +46,7 @@ const ieee = new IeeeApi("http://ieeexploreapi.ieee.org/api/v1/search/articles",
 const res5 = ieee.fetch(query);
 
 const merger = new ApiMerger();
-//console.log((await res3).references);
+
 //@ts-ignore
 // (await res).citations.forEach((item) => {
 //     if (item.title && item.title[0] && item.title[0].toLowerCase().includes("metar")) {
@@ -66,7 +66,7 @@ const merger = new ApiMerger();
 // }
 
 let doMerge = merger.compare([res5]).then(data => {
-	//console.log(JSON.stringify(data, null, 2));
+
 	for (let i = 0; i < data.length; i++) {
 
 		fileLogger.info(`PAPER${i}:`);

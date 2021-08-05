@@ -21,7 +21,6 @@ export const getProjectPaperID = async (stageId: number, paperId: number) => {
         stageId: stageId,
         paperId: paperId
     }).get()
-    console.log(paperScope)
     if (Array.isArray(paperScope) && paperScope[0]) {
         return Number(paperScope[0].id)
     }

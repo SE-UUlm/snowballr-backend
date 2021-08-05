@@ -204,7 +204,6 @@ Deno.test({
         let ctx = await createMockContext(app, ``, [["Content-Type", "application/json"]], "/", token);
         getSourcePaper(ctx, Number(paper.id))
         let answer = JSON.parse(ctx.response.body as string)
-        console.log(answer)
         assertEquals(ctx.response.status, 200)
         assertEquals(answer.title, ["Hello there, Hi There"])
 

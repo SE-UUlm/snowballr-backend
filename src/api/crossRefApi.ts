@@ -107,7 +107,7 @@ export class CrossRefApi implements IApiFetcher {
 			if (r.DOI) {
 				fetchableByDoi.push(r.DOI);
 			} else {
-				//console.log(r);
+	
 				fetchableByBibliographic.push(r.unstructured);
 			}
 		}
@@ -132,7 +132,7 @@ export class CrossRefApi implements IApiFetcher {
 				headers: this._headers,
 			});
 			let json = await response.json();
-			//console.log(json)
+		
 			let child = this._parseResponse(json);
 			return child;
 		}
