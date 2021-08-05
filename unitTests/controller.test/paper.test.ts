@@ -197,7 +197,7 @@ Deno.test({
 
         let app = await createMockApp();
         let paper = await Paper.create({title: "Hello there", abstract: "General Kenobi"})
-        let source: IApiPaper =  {title:["Hello there, Hi There"]} as IApiPaper
+        let source: IApiPaper =  {title:["Hello there", "Hi There"]} as IApiPaper
         await paperCache.add(String(paper.id),source)
 
         let token = await createJWT(user)
@@ -205,7 +205,7 @@ Deno.test({
         getSourcePaper(ctx, Number(paper.id))
         let answer = JSON.parse(ctx.response.body as string)
         assertEquals(ctx.response.status, 200)
-        assertEquals(answer.title, ["Hello there, Hi There"])
+        assertEquals(answer.title, ["Hello there", "Hi There"])
 
         await db.close();
         await client.end();

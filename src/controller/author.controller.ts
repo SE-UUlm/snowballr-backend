@@ -36,6 +36,7 @@ export const patchAuthor = async (ctx: Context, authorID: number | undefined) =>
         }
         let sourceAuthor: any = authorCache.get(String(authorID))
         if (sourceAuthor) {
+
             for (let key in bodyJson) {
                 delete sourceAuthor[key]
             }
@@ -44,6 +45,7 @@ export const patchAuthor = async (ctx: Context, authorID: number | undefined) =>
             } else {
                 await authorCache.delete(String(authorID))
             }
+
         }
         assign(author, bodyJson);
         await author.update()

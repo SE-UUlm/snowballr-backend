@@ -207,7 +207,9 @@ export const patchUser = async (ctx: Context, id: number | undefined) => {
         ctx.response.body = JSON.stringify(userProfile);
         ctx.response.status = 200;
     } else {
+        if(ctx.response.status !== 400){
         makeErrorMessage(ctx, 401, "not authorized");
+        }
     }
 }
 
@@ -221,7 +223,7 @@ export const patchUser = async (ctx: Context, id: number | undefined) => {
 const checkToken = async (id: number, ctx: Context, userData: UserParameters) => {
     let validToken = false;
     let invitationToken = ctx.request.headers.get("invitationToken");
-    let resetToken = ctx.request.headers.get("resetPasswordToken")
+    let resetToken = ctx.request.headers.get("resetToken")
 
     if (invitationToken) {
         if (userData.password && userData.firstName) {
