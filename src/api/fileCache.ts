@@ -110,6 +110,7 @@ export class FileCache {
 	public async purge() {
 		logger.warning(`Deleting all of fileCache. Good luck restoring.`)
 		await Deno.remove(this.path, { recursive: true });
+		this._ensureDir(this.path)
 		this.fileCaches.clear();
 	}
 }

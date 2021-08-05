@@ -78,9 +78,9 @@ export const patchPaper = async (ctx: Context, paperID: number | undefined) => {
                 delete sourcePaper[key]
             }
             if (Object.keys(sourcePaper).length > 0) {
-                paperCache.add(String(paperID), sourcePaper)
+                await paperCache.add(String(paperID), sourcePaper)
             } else {
-                paperCache.delete(String(paperID))
+                await paperCache.delete(String(paperID))
             }
         }
         delete bodyJson.author;
