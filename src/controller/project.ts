@@ -206,7 +206,7 @@ const fetchToDB = async (stageID: number, projectID: number, doi?: string, title
             PaperScopeForStage.create({ stageId: stageID, paperId: Number(parent.id) })
             let currentStage = await Stage.find(stageID)
             let stages = (await getAllStagesFromProject(projectID))
-            let nextStage: Stage = stages.filter((item: Stage) => item.number === currentStage.number)[0];
+            let nextStage: Stage = stages.filter((item: Stage) => Number(item.number) == Number(currentStage.number) + 1)[0];
             if (!nextStage) {
                 nextStage = await Stage.create({
                     name: `Stage ${stages.length}`,

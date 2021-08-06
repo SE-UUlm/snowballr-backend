@@ -51,7 +51,7 @@ export const convertIApiPaperToDBPaper = async (paper: IApiPaper): Promise<Paper
     let newPaper = await Paper.create({})
     let p: any = paper;
     for (let i in paper) {
-        if (["title", "abstract", "publisher", "type", "scopeName", "year"].includes(i)) {
+        if (["title", "abstract", "publisher", "type", "scope","scopeName", "year"].includes(i)) {
             newPaper[i] = p[i][0]
         } else if (i == "uniqueId") {
             newPaper.doi = getDOI(paper)[0]
@@ -89,7 +89,7 @@ export const assignOnlyIfUnassignedPaper = async (target: Paper, source: IApiPap
     for (const key in source) {
         const val = s[key];
         if (val && !target[key]) {
-            if (["title", "abstract", "publisher", "type", "scopeName", "year"].includes(key)) {
+            if (["title", "abstract", "publisher", "type","scope", "scopeName", "year"].includes(key)) {
                 target[key] = s[key][0]
                 if (s[key].length <= 1) {
                     delete s[key]
@@ -112,7 +112,7 @@ export const assignOnlyIfUnassignedPaper = async (target: Paper, source: IApiPap
                 for (let element of authors) {
                     let iAuthor: IApiAuthor = {
                         orcid: element.orcid ? [String(element.orcid)] : [],
-                        rawString: element.raw ? [String(element.raw)] : [],
+                        rawString: element.rawString ? [String(element.rawString)] : [],
                         lastName: element.lastName ? [String(element.lastName)] : [],
                         firstName: element.firstName ? [String(element.firstName)] : []
                     }
@@ -155,9 +155,9 @@ const updateUniqueIdOfPaper = async (uniqueId: IApiUniqueId[], newPaperId: numbe
     }
 }
 const updateAuthorOfPaper = async (author: Author, item: IApiAuthor, paperId: number) => {
-    if (!author.firstName) { author.firstName = item.firstName[0] }
+if (!author.firstName) { author.firstName = item.firstName[0] }
     if (!author.lastName) { author.lastName = item.lastName[0] }
-    if (!author.raw) { author.raw = item.rawString[0] }
+    if (!author.rawString) { author.rawString = item.rawString[0] }
     await author.update()
     Wrote.create({ paperId: Number(paperId), authorId: Number(author.id) })
     if (!checkIApiAuthor(item)) {
