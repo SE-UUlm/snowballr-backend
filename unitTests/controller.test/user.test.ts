@@ -13,6 +13,8 @@ import { Project } from "../../src/model/db/project.ts";
 import { UserIsPartOfProject } from "../../src/model/db/userIsPartOfProject.ts";
 import { Stage } from "../../src/model/db/stage.ts";
 import { client, db } from "../../src/controller/database.ts";
+import { Token } from "../../src/model/db/token.ts";
+import { getResetTokens } from "../../src/controller/databaseFetcher/resetToken.ts";
 
 Deno.test({
     name: "insertUserForCreation",
@@ -38,7 +40,7 @@ Deno.test({
     name: "insertUserForCreationUnauth",
     async fn(): Promise<void> {
         await setup(true);
-        let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
+        let user = await insertUser("testt43t34t@test", "ash", false, "Test", "Tester", "active");
 
         let app = await createMockApp();
         let token = await createJWT(user)
@@ -56,7 +58,7 @@ Deno.test({
     name: "insertUserNoEmail",
     async fn(): Promise<void> {
         await setup(true);
-        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+        let user = await insertUser("test1jgfh@test", "ash", true, "Test", "Tester", "active");
 
         let app = await createMockApp();
         let token = await createJWT(user)
@@ -419,6 +421,86 @@ Deno.test({
     },
 })
 
+
+Deno.test({
+    name: "PatchUserInvitationNoPassword",
+    async fn(): Promise<void> {
+        await setup(true);
+        let app = await createMockApp();
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "registered");
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, `{"email": "testing@test"}`, [["Content-Type", "application/json"]], "/", token);
+        await createUser(ctx, new MockEmailClient())
+        let userToChange = JSON.parse(ctx.response.body as string)
+        if (userToChange) {
+            let email = String(userToChange.eMail);
+            let password = String(userToChange.password);
+            let firstName = String(userToChange.firstName);
+            let lastName = String(userToChange.lastName)
+            let isAdmin = Boolean(userToChange.isAdmin)
+            let status = String(userToChange.status)
+
+            let testToken = await getInvitations(Number(userToChange.id));
+            assertNotEquals(testToken, undefined)
+            if (testToken) {
+                ctx = await createMockContext(app, `{"email":"hey@hey.to","firstName":"Thomas","lastName":"Schmiddy","isAdmin":false,"status":"registered"}`, [["Content-Type", "application/json"], ["invitationToken", String(testToken[0].token)]], "/");
+                await patchUser(ctx, Number(userToChange.id));
+                userToChange = await User.find(Number(userToChange.id));
+
+                assertEquals(ctx.response.status,400)
+            }
+        }
+
+        await db.close();
+        await client.end();
+    },
+})
+
+Deno.test({
+    name: "PatchUserResetToken",
+    async fn(): Promise<void> {
+        await setup(true);
+        let app = await createMockApp();
+        let user = await insertUser("tester@test", "ash", false, "Test", "Tester", "registered");
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, `{"email":"tester@test"}`, [["Content-Type", "application/json"]], "/", token);
+        await resetPassword(ctx, new MockEmailClient())
+
+            let email = String(user.eMail);
+            let password = String(user.password);
+            let firstName = String(user.firstName);
+            let lastName = String(user.lastName)
+            let isAdmin = Boolean(user.isAdmin)
+
+            let testToken = await getResetTokens(Number(user.id));
+            assertNotEquals(testToken, undefined)
+            if (testToken) {
+                ctx = await createMockContext(app, `{"email":"hey@hey.to", "password":"meow","firstName":"Thomas","lastName":"Schmiddy","isAdmin":true,"status":"registered"}`, [["Content-Type", "application/json"], ["resetToken", String(testToken[0].token)]], "/");
+                await patchUser(ctx, Number(user.id));
+                assertEquals(ctx.response.status, 200)
+                user = await User.find(Number(user.id));
+                assertNotEquals("undefined", String(user.eMail));
+                assertNotEquals("undefined", String(user.password));
+                assertNotEquals("undefined", String(user.firstName));
+                assertNotEquals("undefined", String(user.lastName));
+                assertNotEquals(undefined, Boolean(user.isAdmin));
+                assertNotEquals("undefined", String(user.status));
+                assertNotEquals(email, String(user.eMail));
+                assertNotEquals(password, String(user.password));
+                assertNotEquals(firstName, String(user.firstName));
+                assertNotEquals(lastName, String(user.lastName));
+                assertEquals(isAdmin, Boolean(user.isAdmin));
+            }
+        
+
+        await db.close();
+        await client.end();
+    },
+    sanitizeResources: false,
+    sanitizeOps: false,
+})
+
+
 Deno.test({
     name: "PatchUserFakeInvitation",
     async fn(): Promise<void> {
@@ -442,7 +524,8 @@ Deno.test({
         await db.close();
         await client.end();
     },
-
+    sanitizeResources: false,
+    sanitizeOps: false,
 })
 
 Deno.test({
@@ -472,7 +555,7 @@ Deno.test({
         let ctx = await createMockContext(app, undefined, [["Content-Type", "application/json"]], "/", token);
         await createUser(ctx, new MockEmailClient())
 
-        assertEquals(ctx.response.status, 401)
+        assertEquals(ctx.response.status, 422)
 
         await db.close();
         await client.end();

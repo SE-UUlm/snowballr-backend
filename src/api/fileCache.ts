@@ -10,11 +10,11 @@ export class FileCache {
 	ttl: number;
 	checkInterval: number = 60000;
 
-	public constructor(pathToFolder: string, ttlInSec: number, checkInterval?: number) {
+	public constructor(pathToFolder: string, ttlInSec?: number, checkInterval?: number) {
 		this.path = pathToFolder;
 		this.fileCaches = new Map<string, string>();
 		this._initializeCache();
-		this.ttl = ttlInSec;
+		ttlInSec ? this.ttl = ttlInSec : this.ttl = -1;
 		if (checkInterval) { this.checkInterval = checkInterval; }
 		if (this.ttl > 0) {
 			this._watchTTL();
@@ -110,6 +110,7 @@ export class FileCache {
 	public async purge() {
 		logger.warning(`Deleting all of fileCache. Good luck restoring.`)
 		await Deno.remove(this.path, { recursive: true });
+		this._ensureDir(this.path)
 		this.fileCaches.clear();
 	}
 }

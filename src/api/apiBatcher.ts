@@ -179,7 +179,6 @@ export class ApiBatcher implements IApiBatcher {
 	public kill() {
 		Object.keys(this.cache).forEach(key => this.cache[key].clear());
 		logger.info("Killed all Caches");
-		//Object.keys(this.cache).forEach(key => console.log(this.cache[key].empty()));
 	}
 
 	public async register(query: IApiQuery): Promise<IApiBatch> {

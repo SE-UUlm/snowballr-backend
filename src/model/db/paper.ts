@@ -15,8 +15,8 @@ export class Paper extends Model {
         // !!!!!! ID has to stay as first value !!!!!
         id: { primaryKey: true, autoIncrement: true, type: DataTypes.INTEGER },
         doi: { type: DataTypes.STRING, allowNull: true },
-        title: { type: DataTypes.STRING, allowNull: true },
-        abstract: { type: DataTypes.STRING, allowNull: true, length: 5120 },
+        title: { type: DataTypes.STRING, allowNull: true,length: 1024 },
+        abstract: { type: DataTypes.STRING, allowNull: true, length: 10240 },
         year: { type: DataTypes.INTEGER, allowNull: true },
         publisher: { type: DataTypes.STRING, allowNull: true },
         type: { type: DataTypes.STRING, allowNull: true },

@@ -17,6 +17,7 @@ import {
     patchPaperOfProjectStage
 } from "./controller/project.ts";
 import { getPaper, getPaperCitations, getPaperReferences, getPapers, getSourcePaper, patchPaper } from "./controller/paper.ts";
+import { getAuthor, getSourceAuthor, patchAuthor } from "./controller/author.controller.ts";
 
 await setup(true);
 const client = new SmtpClient();
@@ -94,6 +95,15 @@ router
     })
     .get("/papers/:id/citations", async (context) => {
         await getPaperCitations(context, Number(context.params.id))
+    })
+    .get("/authors/:id", async (context) => {
+        await getAuthor(context, Number(context.params.id))
+    })
+    .patch("/authors/:id", async (context) => {
+        await patchAuthor(context, Number(context.params.id))
+    })
+    .get("/sourceAuthors/:id", async (context) => {
+        await getSourceAuthor(context, Number(context.params.id))
     })
 
 const app = new Application();

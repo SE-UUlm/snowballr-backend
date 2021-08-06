@@ -27,7 +27,7 @@ export class Cache<V> {
 	 * @param [ttlOfFileCacheInSec] 
 	 * @param [folderName] 
 	 */
-	public constructor(type: CacheType, ttl: number, folderName?: string, checkInterval?: number) {
+	public constructor(type: CacheType, ttl?: number, folderName?: string, checkInterval?: number) {
 		this.uuid = crypto.randomUUID();
 		// if (!memoryCacheEnabled && !fileCacheEnabled) {
 		// 	throw new Error("Cache implementation needs either memoryCache or fileCache enabled. Neither is. Control via constructor params.")

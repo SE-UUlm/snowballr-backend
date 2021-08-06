@@ -33,7 +33,6 @@ export const makeFetching = (doi?: string, title?: string, name?: string) => {
         aggression: comparisonWeight
     }
 
-    console.error(query.doi)
     return Batcher.startFetch(query);
 }
 

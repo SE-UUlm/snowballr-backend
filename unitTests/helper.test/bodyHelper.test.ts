@@ -1,7 +1,7 @@
-import {createMockApp} from "../mockObjects/oak/mockApp.test.ts";
-import {createMockContext} from "../mockObjects/oak/mockContext.test.ts";
-import {assertEquals} from "https://deno.land/std@0.97.0/testing/asserts.ts"
-import {jsonBodyToObject} from "../../src/helper/body.ts";
+import { createMockApp } from "../mockObjects/oak/mockApp.test.ts";
+import { createMockContext } from "../mockObjects/oak/mockContext.test.ts";
+import { assertEquals } from "https://deno.land/std@0.97.0/testing/asserts.ts"
+import { jsonBodyToObject } from "../../src/helper/body.ts";
 
 Deno.test({
     name: "testEmptyBody",
@@ -10,7 +10,7 @@ Deno.test({
         let ctx = await createMockContext(app, undefined);
         await jsonBodyToObject(ctx)
 
-        assertEquals(ctx.response.status, 401)
+        assertEquals(ctx.response.status, 422)
     }
 
 })

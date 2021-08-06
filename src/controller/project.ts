@@ -18,7 +18,7 @@ import { assign } from "../helper/assign.ts"
 import { Batcher, makeFetching } from './fetch.ts';
 import { IApiPaper } from "../api/iApiPaper.ts";
 import { getDOI } from "../api/apiMerger.ts";
-import { client } from "./database.ts";
+import { client, saveChildren } from "./database.ts";
 import { Cache, CacheType } from "../api/cache.ts";
 import { logger } from "../api/logger.ts";
 import { IApiAuthor } from "../api/iApiAuthor.ts";
@@ -83,11 +83,12 @@ export const addMemberToProject = async (ctx: Context, id: number | undefined) =
             makeErrorMessage(ctx, 422, "to add a member, a userid is needed")
             return;
         }
-        await UserIsPartOfProject.create({
+        let hi = await UserIsPartOfProject.create({
             isOwner: requestParameter.isOwner ? requestParameter.isOwner : false,
             userId: requestParameter.id,
             projectId: id
         })
+
         ctx.response.status = 201;
     } else {
         makeErrorMessage(ctx, 401, "not authorized");
@@ -179,14 +180,14 @@ export const addPaperToProjectStage = async (ctx: Context, projectId: number | u
             return;
         }
 
-        try {
+        if (awaitFetch) {
             await fetchToDB(stageID, projectId, requestParameter.doi, requestParameter.title, requestParameter.author)
-        } catch (error) {
-            console.error(error)
+        } else {
+            fetchToDB(stageID, projectId, requestParameter.doi, requestParameter.title, requestParameter.author)
         }
 
 
-        ctx.response.status = 200;
+        ctx.response.status = 201;
 
     } else {
         makeErrorMessage(ctx, 401, "not authorized");
@@ -235,10 +236,7 @@ const createChildren = async (item: IApiPaper, into: string, column1: string, co
     return child;
 }
 
-const saveChildren = async (into: string, column1: string, column2: string, firstId: number, secondId: number) => {
-    await client.queryArray(`insert into ${into}(${column1}, ${column2})
-                        VALUES (${firstId}, ${secondId})`);
-}
+
 
 const savePaper = async (apiPaper: IApiPaper): Promise<Paper> => {
     let doi = getDOI(apiPaper)
@@ -255,8 +253,7 @@ const savePaper = async (apiPaper: IApiPaper): Promise<Paper> => {
     let paper = await convertIApiPaperToDBPaper(apiPaper)
 
     if (!checkIApiPaper(apiPaper)) {
-        let id = Number(paper.id);
-        paperCache.add(String(id), apiPaper)
+        paperCache.add(String(paper.id), (apiPaper))
     }
     return paper;
 
@@ -299,11 +296,13 @@ export const getPaperOfProjectStage = async (ctx: Context, projectID: number | u
 
     const payloadJson = await getPayloadFromJWT(ctx);
     if (await checkAdmin(payloadJson) || await checkMemberOfProject(projectID, payloadJson)) {
+        try{
         let paper = await PaperScopeForStage.where("id", ppID).paper();
         if (paper) {
             ctx.response.status = 200;
             ctx.response.body = JSON.stringify(await convertPaperToPaperMessage(paper, stageID));
-        } else {
+        } 
+        }catch(e){
             makeErrorMessage(ctx, 404, "paper does not exist")
         }
     } else {
@@ -319,9 +318,10 @@ export const patchPaperOfProjectStage = async (ctx: Context, projectID: number |
 
     const payloadJson = await getPayloadFromJWT(ctx);
     if (await checkAdmin(payloadJson) || await checkMemberOfProject(projectID, payloadJson)) {
+        try{
         let paper = await PaperScopeForStage.where("id", ppID).paper();
         if (paper) {
-            let bodyJson = jsonBodyToObject(ctx);
+            let bodyJson = await jsonBodyToObject(ctx);
             if (!bodyJson) {
                 return
             }
@@ -329,7 +329,8 @@ export const patchPaperOfProjectStage = async (ctx: Context, projectID: number |
             await paper.update()
             ctx.response.status = 200;
             ctx.response.body = JSON.stringify(await convertPaperToPaperMessage(paper, stageID))
-        } else {
+        }
+        }catch(e){ 
             makeErrorMessage(ctx, 404, "paper does not exist")
         }
 

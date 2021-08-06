@@ -1,5 +1,5 @@
-import {assertEquals} from "https://deno.land/std@0.97.0/testing/asserts.ts"
-import {urlSanitizer} from "../../src/helper/url.ts";
+import { assertEquals } from "https://deno.land/std@0.97.0/testing/asserts.ts"
+import { urlSanitizer } from "../../src/helper/url.ts";
 
 Deno.test({
     name: "testUrlWithHttp",

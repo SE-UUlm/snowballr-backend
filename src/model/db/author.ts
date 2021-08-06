@@ -9,7 +9,7 @@ export class Author extends Model {
 
     static fields = {
         id: { primaryKey: true, autoIncrement: true, type: DataTypes.INTEGER },
-        raw: { type: DataTypes.STRING, allowNull: true },
+        rawString: { type: DataTypes.STRING, allowNull: true },
         orcid: { type: DataTypes.STRING, allowNull: true },
         lastName: { type: DataTypes.STRING, allowNull: true },
         firstName: { type: DataTypes.STRING, allowNull: true },

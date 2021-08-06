@@ -8,6 +8,7 @@ import { IComparisonWeight } from "./iComparisonWeight.ts";
 import { IApiAuthor } from "./iApiAuthor.ts";
 import { isEqualAuthor, regexLetterFollowedByPoint } from "./checkIsEqual.ts";
 import { concatWithoutDuplicates } from "../helper/assign.ts";
+import { isEqualPaper } from "./checkIsEqual.ts"
 
 
 export class ApiMerger implements IApiMerger {
@@ -95,7 +96,7 @@ export class ApiMerger implements IApiMerger {
 		/** Iterate over all other apiresponses expecpt for the first one to compare them each */
 		for (let i: number = 0; i < others.length; i++) {
 			//logger.debug("OTHERS: " + (await others[i]).paper)
-			let isEqual: boolean = this._isEqual((await response).paper, (await others[i]).paper);
+			let isEqual: boolean = isEqualPaper((await response).paper, (await others[i]).paper, this.comparisonWeight);
 			if (isEqual) {
 				let otherResponses = others[i];
 
@@ -149,7 +150,7 @@ export class ApiMerger implements IApiMerger {
 			/** Check if paper is in childpapers of the same api. Since the same paper could return with a different DOI */
 			for (let j: number = i + 1; j < finalChildren.length; j++) {
 
-				let isEqual: boolean = this._isEqual(finalChildren[i], finalChildren[j]);
+				let isEqual: boolean = isEqualPaper(finalChildren[i], finalChildren[j], this.comparisonWeight);
 				if (isEqual) {
 					logger.info(`CONCLUSIVE API paper merging: ${finalChildren[i].uniqueId!.map(item => item.type == idType.DOI ? item.value : undefined)} // ${finalChildren[i].title} <-> ${finalChildren[j].uniqueId!.map(item => item.type == idType.DOI ? item.value : undefined)} // ${finalChildren[j].title}`);
 					finalChildren[j] = this.merge(finalChildren[i], finalChildren[j]);
@@ -175,7 +176,7 @@ export class ApiMerger implements IApiMerger {
 		for (let i: number = 0; i < response1Citations.length; i++) {
 			/** Check for the same paper in other apis */
 			for (let j: number = 0; j < response2Citations.length; j++) {
-				let isEqual: boolean = this._isEqual(response1Citations[i], response2Citations[j]);
+				let isEqual: boolean = isEqualPaper(response1Citations[i], response2Citations[j], this.comparisonWeight);
 				if (isEqual) {
 					logger.info(`DIFFERENT API paper merging: ${response1Citations[i].uniqueId!.map(item => item.type == idType.DOI ? item.value : undefined)} // ${response1Citations[i].title} <-> ${response2Citations[j].uniqueId!.map(item => item.type == idType.DOI ? item.value : undefined)} // ${response2Citations[j].title}`);
 					response2Citations[j] = this.merge(response1Citations[i], response2Citations[j]);
@@ -195,118 +196,10 @@ export class ApiMerger implements IApiMerger {
 	}
 
 
-	/**
-	 * Compare two papers for equality
-	 * Papers are equal if:
-	 * - the DOI of each paper is equal
-	 * - or the weighted levenshtein distance of title, abstract and a similarity of the author are greater than a defined threshold
-	 *    - these parameters are settable by an IComparisonWeight object
-	 *
-	 * @param firstResponse - paper similar to secondResponse. Most likely provided by another api
-	 * @param secondResponse - paper similar to firstResponse. Most likely provided by another api
-	 * @returns boolean whether the papers are found out to be equal or not
-	 */
-	private _isEqual(firstResponse: IApiPaper, secondResponse: IApiPaper): boolean {
-		if (!firstResponse || !secondResponse) {
-			return false
-		}
-		let comparison: IComparisonWeight = {} as IComparisonWeight;
-		Object.assign(comparison, this.comparisonWeight)
-		let firstDOI: string[] = getDOI(firstResponse);
-		let secondDOI: string[] = getDOI(secondResponse);
 
 
-		/** if DOI of 2 paper is equal we can assume that its the same paper */
-		for (let i = 0; i < firstDOI.length; i++) {
-			for (let j = 0; j < secondDOI.length; j++) {
-				if (firstDOI[i] && secondDOI[j]) {
-					if (firstDOI[i] == secondDOI[j]) {
-						return true;
-					} else {
-						return false;
-					}
-				}
-			}
-		}
 
-		let sameAuthor: number = 0;
-		let sameYear: number = 0;
 
-		/** Get the levenshtein distance for both titles and compare the in comparison to their length
-		 * Weight is used to control the importance of the whole equality formula */
-		const [sameTitle, worked1] = this.compareStringArrays(comparison.titleWeight, firstResponse.title, secondResponse.title);
-		if (!worked1) {
-			comparison.titleWeight = 0;
-		}
-		/** Get the levenshtein distance for both abstracts and compare the in comparison to their length
-		 * Weight is used to control the importance of the whole equality formula */
-		const [sameAbstract, worked2] = this.compareStringArrays(comparison.abstractWeight, firstResponse.abstract, secondResponse.abstract)
-		if (!worked2) {
-			comparison.abstractWeight = 0;
-		}
-
-		/** Compare if papers have equal publication year. Year might differ by one for papers published on different platform at the end of the year */
-		if (firstResponse.year && secondResponse.year && firstResponse.year.length > 0 && secondResponse.year.length > 0) {
-			sameYear = ApiMerger.compareYears(firstResponse.year, secondResponse.year) ? comparison.yearWeight : -comparison.yearWeight;
-		} else {
-			comparison.yearWeight = 0;
-		}
-
-		/** Compare of each of the authors is the same by normalizing them or using the orchid.
-		 * Weight is used to control the importance of the whole equality formula */
-		if (firstResponse.author && secondResponse.author && firstResponse.author.length > 0 && secondResponse.author.length > 0) { // 0.7 ->
-			sameAuthor = this._isEqualAuthors(firstResponse.author, secondResponse.author) * comparison.authorWeight;
-
-			//TODO: if title and year are equal likely to be equal --> year might be shifted by one year
-			//TODO: Take Publisher into Account.
-		} else {
-			comparison.authorWeight = 0;
-		}
-		if ((comparison.titleWeight + comparison.abstractWeight) === 0) {
-			return false;
-		}
-		/*
-		let title1 = firstResponse.title;
-		let title2 = secondResponse.title;
-		if (title1 && title2) {
-
-			console.error(`another isequal with ${title1[0]} and ${title2[0]} => ${sameTitle} +  ${sameAbstract} + ${sameAuthor} + ${sameYear}`)
-			console.error(`${comparison.titleWeight} + ${comparison.abstractWeight} + ${comparison.authorWeight} + ${comparison.yearWeight}`)
-			console.error(`${((sameTitle + sameAbstract + sameAuthor + sameYear) / (comparison.titleWeight + comparison.abstractWeight + comparison.authorWeight + comparison.yearWeight))}`)
-		}
-*/
-
-		/** Calculate the complete equality of 2 papers. OverallWeight is used to kinda control the aggressiveness of the algorithm */
-		if (((sameTitle + sameAbstract + sameAuthor + sameYear) / (comparison.titleWeight + comparison.abstractWeight + comparison.authorWeight + comparison.yearWeight)) > comparison.overallWeight) {
-			return true;
-		}
-		return false;
-	}
-
-	public static compareYears(firstYear: number[], secondYear: number[]): boolean {
-		for (let i in firstYear) {
-			for (let j in secondYear) {
-				if (firstYear[i] - secondYear[i] in [-1, 0, 1]) {
-					return true;
-				}
-			}
-		}
-		return false;
-	}
-
-	private compareStringArrays(weight: number, first?: string[], second?: string[]): [number, boolean] {
-		if (first && second && first[0] && second[0]) {
-			let title = second[0];
-
-			let lev = Math.max.apply(null, first.map((item) => {
-				return Levenshtein(ApiMerger.normalizeString(item), ApiMerger.normalizeString(title));
-			}));
-
-			return [weight * ((second[0].length - lev) / second[0].length), true]; // 0.9  -> 9
-
-		}
-		return [0, false];
-	}
 
 	/**
 	 * Compares all author objects of 2 papers and merge dublicates into a single list of authors.
@@ -408,16 +301,7 @@ export class ApiMerger implements IApiMerger {
 		return mergedAuthor as IApiAuthor;
 	}
 
-	private _isEqualAuthors(firstAuthors: IApiAuthor[], secondAuthors: IApiAuthor[]): number {
-		let equalAuthors: number = 0;
 
-		for (let a1 in firstAuthors) {
-			for (let a2 in secondAuthors) {
-				equalAuthors += isEqualAuthor(firstAuthors[a1], secondAuthors[a2])
-			}
-		}
-		return equalAuthors / (firstAuthors.length >= secondAuthors.length ? firstAuthors.length : secondAuthors.length);
-	}
 
 	/**
 	 * Return DOI of Paper if it has one in it's unique IDs

@@ -1,3 +1,6 @@
+import { Author } from "../db/author.ts";
+import { AuthorMessage } from "./author.message.ts";
+
 export interface PapersMessage {
     papers: PaperMessage[]
 }
@@ -15,12 +18,13 @@ export interface PaperMessage {
     scopeName?: string,
     createdAt?: Date,
     updatedAt?: Date
-    status?: PaperStatus
-    pdf?: string[]
+    status?: Status
+    pdf: string[]
+    authors: AuthorMessage[]
 
 }
 
-export enum PaperStatus {
-    finished,
-    unfinished
+export enum Status {
+    finished = "finished",
+    unfinished = "unfinished"
 }
