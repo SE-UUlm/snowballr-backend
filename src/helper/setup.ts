@@ -23,6 +23,8 @@ import { AuthorHasID } from "../model/db/authorHasID.ts";
 import { AuthorID } from "../model/db/authorID.ts";
 import { ResetToken } from "../model/db/resetToken.ts";
 import { Pdf } from "../model/db/pdf.ts";
+import { authorCache, paperCache } from "../controller/project.ts";
+import { Batcher } from "../controller/fetch.ts";
 
 /**
  * Links all model files to the database and inserts the first admin, if he doesn't exist yet
@@ -33,7 +35,9 @@ export const setup = async (dropDatabase: boolean) => {
     if (dropDatabase) {
         await client.queryArray("DROP TABLE IF EXISTS citedby")
         await client.queryArray("DROP TABLE IF EXISTS referencedby")
-
+        paperCache.fileCache!.purge()
+        authorCache.fileCache!.purge()
+        Batcher.purge()
     }
     Relationships.belongsTo(Invitation, User);
     Relationships.belongsTo(ResetToken, User);
