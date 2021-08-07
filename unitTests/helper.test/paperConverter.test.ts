@@ -57,16 +57,16 @@ try{
     scopeName = ["scopje"]
     pdf = ["www.randomurl.com"]
 
-        //assertEquals(String(dbPaper.title), title[0]);
-        //assertEquals(String(dbPaper.abstract), abstract[0]);
-        //assertEquals(Number(dbPaper.year), year[0]);
-        //assertEquals(String(dbPaper.publisher),publisher[0] );
-        //assertEquals(String(dbPaper.type), type[0]);
-        //assertEquals(String(dbPaper.scope), scope[0]);
-        //assertEquals(String(dbPaper.scopeName), scopeName[0]);
-        //assertEquals(String(dbPaper.doi), uniqueId[0].value);
-        //assertEquals(String(authors[0].rawString),author[0].rawString[0] );
-        //assertEquals(String(authors[1].rawString),author[1].rawString[0] );
+        assertEquals(String(dbPaper.title), title[0]);
+        assertEquals(String(dbPaper.abstract), abstract[0]);
+        assertEquals(Number(dbPaper.year), year[0]);
+        assertEquals(String(dbPaper.publisher),publisher[0] );
+        assertEquals(String(dbPaper.type), type[0]);
+        assertEquals(String(dbPaper.scope), scope[0]);
+        assertEquals(String(dbPaper.scopeName), scopeName[0]);
+        assertEquals(String(dbPaper.doi), uniqueId[0].value);
+        assertEquals(String(authors[0].rawString),author[0].rawString[0] );
+        assertEquals(String(authors[1].rawString),author[1].rawString[0] );
         paperCache.clear()
         authorCache.clear()
         await db.close()
