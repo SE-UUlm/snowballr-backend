@@ -185,13 +185,8 @@ export class ApiMerger implements IApiMerger {
 				}
 			}
 		}
-		try {
-			return response1Citations.concat(response2Citations);
-		} catch (e) {
-			logger.error(`Cannot delete undefined: ${response2Citations}`);
-			logger.error(`Error: ${e}`);
-			return response1Citations.concat(response2Citations);
-		}
+		return response1Citations.concat(response2Citations);
+
 
 	}
 
@@ -327,109 +322,50 @@ export class ApiMerger implements IApiMerger {
 		let first = <any>firstPaper;
 		let second = <any>secondPaper;
 		for (const key in Object.assign({}, firstPaper, secondPaper)) {
-			if (!first[key] && !second[key]) {
+			if (key == "id" || (!first[key] && !second[key])) {
 				continue;
-			} else if (!first[key]) {
+			}
+
+			if (first[key].length === 0) {
 				resultingPaper[key] = second[key]
-				continue;
-			} else if (!second[key]) {
+			} else if (second[key].length === 0) {
 				resultingPaper[key] = first[key]
-				continue;
-			}
-
-			if (key == "pdf") {
-				resultingPaper.pdf = concatWithoutDuplicates(first.pdf, second.pdf)
-				continue;
-			}
-
-			if (typeof first[key] === "string") {
-				resultingPaper[key] = this._deriveGenericProperty(first[key], second[key]);
-			} else if (Array.isArray(first[key])) {
-
-				if (first[key].length === 0) {
-					resultingPaper[key] = second[key]
-				} else if (second[key].length === 0) {
-					resultingPaper[key] = first[key]
-
-				} else if (typeof first[key][0] == "number" || typeof second[key][0] == "number") {
-					resultingPaper[key] = concatWithoutDuplicates(first[key], second[key])
-				} else if (key == "author") {
-					resultingPaper.author = this._mergeAuthors(first.author, second.author);
-				} else if (key == "uniqueId") {
-					resultingPaper[key] = [];
-					for (let i = 0; i < first[key].length; i++) {
-						for (let j = 0; j < second[key].length; j++) {
-							if (ApiMerger.normalizeString(first[key][i].value) == ApiMerger.normalizeString(second[key][j].value)) {
-								resultingPaper[key].push(first[key][i]);
-								delete first[key][i]
-								second[key] = second[key].slice(0, j).concat(second[key].slice(j + 1))
-								break;
-							}
+			} else if (key == "pdf" || typeof first[key][0] == "number" || typeof second[key][0] == "number") {
+				resultingPaper[key] = concatWithoutDuplicates(first[key], second[key])
+			} else if (key == "author") {
+				resultingPaper.author = this._mergeAuthors(first.author, second.author);
+			} else if (key == "uniqueId") {
+				resultingPaper[key] = [];
+				for (let i = 0; i < first[key].length; i++) {
+					for (let j = 0; j < second[key].length; j++) {
+						if (ApiMerger.normalizeString(first[key][i].value) == ApiMerger.normalizeString(second[key][j].value)) {
+							resultingPaper[key].push(first[key][i]);
+							delete first[key][i]
+							second[key] = second[key].slice(0, j).concat(second[key].slice(j + 1))
+							break;
 						}
 					}
-					resultingPaper[key] = resultingPaper[key].concat(first[key].filter((item: string) => item)).concat(second[key])
-
-				} else {
-					resultingPaper[key] = [];
-					for (let i = 0; i < first[key].length; i++) {
-						for (let j = 0; j < second[key].length; j++) {
-							if (ApiMerger.normalizeString(first[key][i]) == ApiMerger.normalizeString(second[key][j])) {
-								resultingPaper[key].push(this._deriveGenericProperty(first[key][i], second[key][j]));
-								delete first[key][i]
-								second[key] = second[key].slice(0, j).concat(second[key].slice(j + 1))
-								break;
-							}
-						}
-					}
-					resultingPaper[key] = resultingPaper[key].concat(first[key].filter((item: string) => item)).concat(second[key])
-
 				}
-			} else {
-				//TODO needed?
-				resultingPaper[key] = first[key];
-			}
+				resultingPaper[key] = resultingPaper[key].concat(first[key].filter((item: string) => item)).concat(second[key])
 
+			} else {
+				resultingPaper[key] = [];
+				for (let i = 0; i < first[key].length; i++) {
+					for (let j = 0; j < second[key].length; j++) {
+						if (ApiMerger.normalizeString(first[key][i]) == ApiMerger.normalizeString(second[key][j])) {
+							resultingPaper[key].push(this._deriveGenericProperty(first[key][i], second[key][j]));
+							delete first[key][i]
+							second[key] = second[key].slice(0, j).concat(second[key].slice(j + 1))
+							break;
+						}
+					}
+				}
+				resultingPaper[key] = resultingPaper[key].concat(first[key].filter((item: string) => item)).concat(second[key])
+
+			}
 
 		}
 		return resultingPaper as IApiPaper;
-	}
-
-	public static logResponse(response: IApiResponse[]): void {
-		for (let i = 0; i < response.length; i++) {
-
-			fileLogger.info(`PAPER${i}:`);
-			fileLogger.info(response[i].paper);
-			fileLogger.info("CITATIONS:");
-
-			let citeOriginal = response[i].citations;
-			if (citeOriginal) {
-				citeOriginal = citeOriginal.sort(ApiMerger.sortPapersByName)
-			}
-			for (let cite in citeOriginal) {
-				fileLogger.info((citeOriginal as any)[cite])
-			}
-
-
-			let refOriginal = response[i].references;
-			if (refOriginal) {
-				refOriginal = refOriginal.sort(ApiMerger.sortPapersByName)
-			}
-			fileLogger.info("REFERENCES:");
-			for (let ref in refOriginal) {
-				fileLogger.info((refOriginal as any)[ref]);
-			}
-		}
-	}
-
-	public static sortPapersByName(item1: IApiPaper, item2: IApiPaper) {
-		if (item1.title && item2.title && item1.title[0] && item2.title[0]) {
-			if (item1.title[0].toLowerCase() < item2.title[0].toLowerCase()) {
-				return -1
-			} else {
-				return 1
-			}
-		}
-		return 0
 	}
 }
 

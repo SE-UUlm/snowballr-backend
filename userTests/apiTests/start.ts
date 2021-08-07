@@ -1,14 +1,8 @@
-import { IApiQuery } from "./iApiQuery.ts";
-import { IApiResponse } from "./iApiResponse.ts";
-import { IApiFetcher } from "./iApiFetcher.ts";
-import { MicrosoftResearchApi } from "./microsoftResearchApi.ts";
-import { OpenCitationsApi } from "./openCitationsApi.ts";
-import { logger, fileLogger } from "./logger.ts";
-import { CrossRefApi } from "./crossRefApi.ts";
-import { ApiMerger } from "./apiMerger.ts";
-import { SemanticScholar } from "./semanticScholar.ts"
-import { IApiPaper } from "./iApiPaper.ts";
-import { IeeeApi } from "./ieeeApi.ts";
+import { ApiMerger } from "../../src/api/apiMerger.ts";
+import { IApiPaper } from "../../src/api/iApiPaper.ts";
+import { IApiQuery } from "../../src/api/iApiQuery.ts";
+import { IeeeApi } from "../../src/api/ieeeApi.ts";
+import { fileLogger } from "../../src/api/logger.ts";
 
 const query: IApiQuery = {
 	id: "tst",
