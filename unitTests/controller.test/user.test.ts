@@ -1,10 +1,10 @@
 import { setup } from "../../src/helper/setup.ts";
 import { insertUser } from "../../src/controller/databaseFetcher/user.ts";
 import { createMockApp } from "../mockObjects/oak/mockApp.test.ts";
-import { createJWT } from "../../src/controller/validation.ts";
+import { createJWT } from "../../src/controller/validation.controller.ts";
 import { createMockContext } from "../mockObjects/oak/mockContext.test.ts";
 import { assertEquals, assertNotEquals } from "https://deno.land/std/testing/asserts.ts"
-import { createUser, getUser, getUserProjects, getUsers, patchUser, resetPassword } from "../../src/controller/user.ts";
+import { createUser, getUser, getUserProjects, getUsers, patchUser, resetPassword } from "../../src/controller/user.controller.ts";
 import { User } from "../../src/model/db/user.ts";
 import { MockEmailClient } from "../mockObjects/mockEmailClient.test.ts";
 import { getTokens } from "../../src/controller/databaseFetcher/token.ts";
@@ -12,7 +12,7 @@ import { getInvitations } from "../../src/controller/databaseFetcher/invitation.
 import { Project } from "../../src/model/db/project.ts";
 import { UserIsPartOfProject } from "../../src/model/db/userIsPartOfProject.ts";
 import { Stage } from "../../src/model/db/stage.ts";
-import { client, db } from "../../src/controller/database.ts";
+import { client, db } from "../../src/controller/database.controller.ts";
 import { Token } from "../../src/model/db/token.ts";
 import { getResetTokens } from "../../src/controller/databaseFetcher/resetToken.ts";
 
@@ -36,7 +36,7 @@ Deno.test({
     },
     sanitizeResources: false,
     sanitizeOps: false,
-    
+
 })
 
 Deno.test({
@@ -450,7 +450,7 @@ Deno.test({
                 await patchUser(ctx, Number(userToChange.id));
                 userToChange = await User.find(Number(userToChange.id));
 
-                assertEquals(ctx.response.status,400)
+                assertEquals(ctx.response.status, 400)
             }
         }
 
@@ -469,32 +469,32 @@ Deno.test({
         let ctx = await createMockContext(app, `{"email":"tester@test"}`, [["Content-Type", "application/json"]], "/", token);
         await resetPassword(ctx, new MockEmailClient())
 
-            let email = String(user.eMail);
-            let password = String(user.password);
-            let firstName = String(user.firstName);
-            let lastName = String(user.lastName)
-            let isAdmin = Boolean(user.isAdmin)
+        let email = String(user.eMail);
+        let password = String(user.password);
+        let firstName = String(user.firstName);
+        let lastName = String(user.lastName)
+        let isAdmin = Boolean(user.isAdmin)
 
-            let testToken = await getResetTokens(Number(user.id));
-            assertNotEquals(testToken, undefined)
-            if (testToken) {
-                ctx = await createMockContext(app, `{"email":"hey@hey.to", "password":"meow","firstName":"Thomas","lastName":"Schmiddy","isAdmin":true,"status":"registered"}`, [["Content-Type", "application/json"], ["resetToken", String(testToken[0].token)]], "/");
-                await patchUser(ctx, Number(user.id));
-                assertEquals(ctx.response.status, 200)
-                user = await User.find(Number(user.id));
-                assertNotEquals("undefined", String(user.eMail));
-                assertNotEquals("undefined", String(user.password));
-                assertNotEquals("undefined", String(user.firstName));
-                assertNotEquals("undefined", String(user.lastName));
-                assertNotEquals(undefined, Boolean(user.isAdmin));
-                assertNotEquals("undefined", String(user.status));
-                assertNotEquals(email, String(user.eMail));
-                assertNotEquals(password, String(user.password));
-                assertNotEquals(firstName, String(user.firstName));
-                assertNotEquals(lastName, String(user.lastName));
-                assertEquals(isAdmin, Boolean(user.isAdmin));
-            }
-        
+        let testToken = await getResetTokens(Number(user.id));
+        assertNotEquals(testToken, undefined)
+        if (testToken) {
+            ctx = await createMockContext(app, `{"email":"hey@hey.to", "password":"meow","firstName":"Thomas","lastName":"Schmiddy","isAdmin":true,"status":"registered"}`, [["Content-Type", "application/json"], ["resetToken", String(testToken[0].token)]], "/");
+            await patchUser(ctx, Number(user.id));
+            assertEquals(ctx.response.status, 200)
+            user = await User.find(Number(user.id));
+            assertNotEquals("undefined", String(user.eMail));
+            assertNotEquals("undefined", String(user.password));
+            assertNotEquals("undefined", String(user.firstName));
+            assertNotEquals("undefined", String(user.lastName));
+            assertNotEquals(undefined, Boolean(user.isAdmin));
+            assertNotEquals("undefined", String(user.status));
+            assertNotEquals(email, String(user.eMail));
+            assertNotEquals(password, String(user.password));
+            assertNotEquals(firstName, String(user.firstName));
+            assertNotEquals(lastName, String(user.lastName));
+            assertEquals(isAdmin, Boolean(user.isAdmin));
+        }
+
 
         await db.close();
         await client.end();

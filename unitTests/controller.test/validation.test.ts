@@ -6,14 +6,14 @@ import {
     getPayloadFromJWT,
     validateContentType,
     validateJWTIfExists
-} from "../../src/controller/validation.ts";
+} from "../../src/controller/validation.controller.ts";
 import { assertEquals } from "https://deno.land/std@0.97.0/testing/asserts.ts"
 import { emptyAsyncFunctionTest } from "../mockObjects/emptyAsyncFunction.test.ts";
 import { setup } from "../../src/helper/setup.ts";
 import { insertUser } from "../../src/controller/databaseFetcher/user.ts";
 import { Project } from "../../src/model/db/project.ts";
 import { UserIsPartOfProject } from "../../src/model/db/userIsPartOfProject.ts";
-import { client, db } from "../../src/controller/database.ts";
+import { client, db } from "../../src/controller/database.controller.ts";
 
 Deno.test({
     name: "testCorrectContentTypeAndContent",
@@ -104,7 +104,7 @@ Deno.test({
         await db.close();
         await client.end();
     },
-    
+
     sanitizeResources: false,
     sanitizeOps: false,
 })

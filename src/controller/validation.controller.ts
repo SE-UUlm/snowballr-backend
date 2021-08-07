@@ -1,10 +1,10 @@
-import {Context} from 'https://deno.land/x/oak/mod.ts';
-import {create, decode, verify} from "https://deno.land/x/djwt@/mod.ts"
-import {User} from "../model/db/user.ts";
-import {createNumericTerminationDate} from "../helper/dateHelper.ts";
-import {makeErrorMessage} from "../helper/error.ts";
-import {PayloadJson} from "../model/payloadJson.ts";
-import {UserIsPartOfProject} from "../model/db/userIsPartOfProject.ts";
+import { Context } from 'https://deno.land/x/oak/mod.ts';
+import { create, decode, verify } from "https://deno.land/x/djwt@/mod.ts"
+import { User } from "../model/db/user.ts";
+import { createNumericTerminationDate } from "../helper/dateHelper.ts";
+import { makeErrorMessage } from "../helper/error.ts";
+import { PayloadJson } from "../model/payloadJson.ts";
+import { UserIsPartOfProject } from "../model/db/userIsPartOfProject.ts";
 import { jsonBodyToObject } from "../helper/body.ts";
 
 const SECRET = String(Deno.env.get('SECRET'));
@@ -38,7 +38,7 @@ export const validateContentType = async (ctx: Context, next: () => Promise<unkn
  */
 const emptyContent = async (ctx: Context): Promise<boolean> => {
     try {
-        await ctx.request.body({type: "undefined"}).value
+        await ctx.request.body({ type: "undefined" }).value
         return true;
     } catch (error) {
         return false;
@@ -52,7 +52,7 @@ const emptyContent = async (ctx: Context): Promise<boolean> => {
  */
 const validateContent = async (ctx: Context): Promise<boolean> => {
     try {
-        await ctx.request.body({type: "json"}).value
+        await ctx.request.body({ type: "json" }).value
     } catch (error) {
         return false;
     }
@@ -80,7 +80,7 @@ export const validateJWTIfExists = async (ctx: Context, next: () => Promise<unkn
  * @param user
  */
 export const createJWT = async (user: User) => {
-    return create({alg: "HS512", typ: "JWT"}, {
+    return create({ alg: "HS512", typ: "JWT" }, {
         id: user.id,
         eMail: user.email,
         isAdmin: user.isAdmin,
@@ -134,7 +134,7 @@ export const checkPO = async (payloadJson?: PayloadJson) => {
 
 export const checkPOofProject = async (projectID: number, payloadJson?: PayloadJson) => {
     if (payloadJson) {
-        let userProject = await UserIsPartOfProject.where({userId: payloadJson.id, projectId: projectID}).get()
+        let userProject = await UserIsPartOfProject.where({ userId: payloadJson.id, projectId: projectID }).get()
         if (Array.isArray(userProject)) {
             let value: boolean = Boolean(userProject[0].isOwner)
             return value
@@ -146,7 +146,7 @@ export const checkPOofProject = async (projectID: number, payloadJson?: PayloadJ
 
 export const checkMemberOfProject = async (projectID: number, payloadJson?: PayloadJson) => {
     if (payloadJson) {
-        let userProject = await UserIsPartOfProject.where({userId: payloadJson.id, projectId: projectID}).get()
+        let userProject = await UserIsPartOfProject.where({ userId: payloadJson.id, projectId: projectID }).get()
 
 
         if (Array.isArray(userProject) && userProject[0]) {
@@ -219,4 +219,8 @@ const allowedAddressesUnauthorized = async (ctx: Context, next: () => Promise<un
     } else {
         makeErrorMessage(ctx, 401, "not authorized")
     }
+}
+
+export const validateUserEntry = async () => {
+
 }

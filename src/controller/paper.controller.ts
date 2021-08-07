@@ -4,9 +4,9 @@ import { jsonBodyToObject } from "../helper/body.ts";
 import { makeErrorMessage } from "../helper/error.ts";
 import { Paper } from "../model/db/paper.ts";
 import { PaperMessage, PapersMessage, Status } from "../model/messages/papersMessage.ts";
-import { paperCache } from "./project.ts";
+import { paperCache } from "./project.controller.ts";
 import { convertPapersToPaperMessage, convertPaperToPaperMessage } from "../helper/converter/paperConverter.ts"
-import { client } from "./database.ts";
+import { client } from "./database.controller.ts";
 
 export const getPapers = async (ctx: Context) => {
     ctx.response.status = 200;

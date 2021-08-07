@@ -3,8 +3,8 @@ import { assign } from "../helper/assign.ts";
 import { jsonBodyToObject } from "../helper/body.ts";
 import { makeErrorMessage } from "../helper/error.ts";
 import { Author } from "../model/db/author.ts";
-import { authorCache } from "./project.ts";
-import {convertAuthorToAuthorMessage} from "../helper/converter/authorConverter.ts"
+import { convertAuthorToAuthorMessage } from "../helper/converter/authorConverter.ts"
+import { authorCache } from "./project.controller.ts";
 
 export const getAuthor = async (ctx: Context, authorID: number | undefined) => {
     if (!authorID) {

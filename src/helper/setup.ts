@@ -2,7 +2,7 @@ import { insertUser, returnUserByEmail } from "../controller/databaseFetcher/use
 import { User } from "../model/db/user.ts";
 import { Invitation } from "../model/db/invitation.ts";
 import { Relationships } from 'https://deno.land/x/denodb/mod.ts';
-import { client, db } from "../controller/database.ts";
+import { client, db } from "../controller/database.controller.ts";
 import { Token } from "../model/db/token.ts";
 import { Project } from "../model/db/project.ts";
 import { UserIsPartOfProject } from "../model/db/userIsPartOfProject.ts";
@@ -23,8 +23,8 @@ import { AuthorHasID } from "../model/db/authorHasID.ts";
 import { AuthorID } from "../model/db/authorID.ts";
 import { ResetToken } from "../model/db/resetToken.ts";
 import { Pdf } from "../model/db/pdf.ts";
-import { authorCache, paperCache } from "../controller/project.ts";
-import { Batcher } from "../controller/fetch.ts";
+import { authorCache, paperCache } from "../controller/project.controller.ts";
+import { Batcher } from "../controller/fetch.controller.ts";
 
 /**
  * Links all model files to the database and inserts the first admin, if he doesn't exist yet

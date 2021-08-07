@@ -1,5 +1,4 @@
 import { Context } from 'https://deno.land/x/oak/mod.ts';
-import { checkAdmin, checkMemberOfProject, checkPO, checkPOofProject, getPayloadFromJWT } from "./validation.ts";
 import { makeErrorMessage } from "../helper/error.ts";
 import { jsonBodyToObject } from "../helper/body.ts";
 import { Project } from "../model/db/project.ts";
@@ -15,13 +14,14 @@ import { PapersMessage } from "../model/messages/papersMessage.ts";
 import { PaperScopeForStage } from "../model/db/paperScopeForStage.ts";
 import { assignOnlyIfUnassignedPaper, checkIApiPaper, convertIApiPaperToDBPaper, convertPapersToPaperMessage, convertPaperToPaperMessage } from "../helper/converter/paperConverter.ts";
 import { assign } from "../helper/assign.ts"
-import { Batcher, makeFetching } from './fetch.ts';
 import { IApiPaper } from "../api/iApiPaper.ts";
 import { getDOI } from "../api/apiMerger.ts";
-import { client, saveChildren } from "./database.ts";
 import { Cache, CacheType } from "../api/cache.ts";
 import { logger } from "../api/logger.ts";
 import { IApiAuthor } from "../api/iApiAuthor.ts";
+import { checkAdmin, checkMemberOfProject, checkPO, checkPOofProject, getPayloadFromJWT } from "./validation.controller.ts";
+import { makeFetching } from "./fetch.controller.ts";
+import { saveChildren } from "./database.controller.ts";
 
 export const paperCache = new Cache<IApiPaper>(CacheType.F, 0, "paperCache")
 export const authorCache = new Cache<IApiAuthor>(CacheType.F, 0, "authorCache")
@@ -296,13 +296,13 @@ export const getPaperOfProjectStage = async (ctx: Context, projectID: number | u
 
     const payloadJson = await getPayloadFromJWT(ctx);
     if (await checkAdmin(payloadJson) || await checkMemberOfProject(projectID, payloadJson)) {
-        try{
-        let paper = await PaperScopeForStage.where("id", ppID).paper();
-        if (paper) {
-            ctx.response.status = 200;
-            ctx.response.body = JSON.stringify(await convertPaperToPaperMessage(paper, stageID));
-        } 
-        }catch(e){
+        try {
+            let paper = await PaperScopeForStage.where("id", ppID).paper();
+            if (paper) {
+                ctx.response.status = 200;
+                ctx.response.body = JSON.stringify(await convertPaperToPaperMessage(paper, stageID));
+            }
+        } catch (e) {
             makeErrorMessage(ctx, 404, "paper does not exist")
         }
     } else {
@@ -318,19 +318,19 @@ export const patchPaperOfProjectStage = async (ctx: Context, projectID: number |
 
     const payloadJson = await getPayloadFromJWT(ctx);
     if (await checkAdmin(payloadJson) || await checkMemberOfProject(projectID, payloadJson)) {
-        try{
-        let paper = await PaperScopeForStage.where("id", ppID).paper();
-        if (paper) {
-            let bodyJson = await jsonBodyToObject(ctx);
-            if (!bodyJson) {
-                return
+        try {
+            let paper = await PaperScopeForStage.where("id", ppID).paper();
+            if (paper) {
+                let bodyJson = await jsonBodyToObject(ctx);
+                if (!bodyJson) {
+                    return
+                }
+                assign(paper, bodyJson);
+                await paper.update()
+                ctx.response.status = 200;
+                ctx.response.body = JSON.stringify(await convertPaperToPaperMessage(paper, stageID))
             }
-            assign(paper, bodyJson);
-            await paper.update()
-            ctx.response.status = 200;
-            ctx.response.body = JSON.stringify(await convertPaperToPaperMessage(paper, stageID))
-        }
-        }catch(e){ 
+        } catch (e) {
             makeErrorMessage(ctx, 404, "paper does not exist")
         }
 

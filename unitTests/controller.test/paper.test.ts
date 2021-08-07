@@ -1,11 +1,11 @@
 import { assertEquals, assertNotEquals } from "https://deno.land/std@0.83.0/testing/asserts.ts";
 import { IApiPaper } from "../../src/api/iApiPaper.ts";
-import { db,client, saveChildren } from "../../src/controller/database.ts";
+import { db, client, saveChildren } from "../../src/controller/database.controller.ts";
 import { insertUser } from "../../src/controller/databaseFetcher/user.ts";
-import { Batcher } from "../../src/controller/fetch.ts";
-import { getPaper, getPaperCitations, getPaperReferences, getPapers, getSourcePaper, patchPaper } from "../../src/controller/paper.ts";
-import { paperCache } from "../../src/controller/project.ts";
-import { createJWT } from "../../src/controller/validation.ts";
+import { Batcher } from "../../src/controller/fetch.controller.ts";
+import { getPaper, getPaperCitations, getPaperReferences, getPapers, getSourcePaper, patchPaper } from "../../src/controller/paper.controller.ts";
+import { paperCache } from "../../src/controller/project.controller.ts";
+import { createJWT } from "../../src/controller/validation.controller.ts";
 import { setup } from "../../src/helper/setup.ts";
 import { Paper } from "../../src/model/db/paper.ts";
 import { createMockApp } from "../mockObjects/oak/mockApp.test.ts";
@@ -46,7 +46,7 @@ Deno.test({
 
         let paperNumber = (await Paper.all()).length
         let app = await createMockApp();
-        let paper = await Paper.create({title: "Hello there", abstract: "General Kenobi"})
+        let paper = await Paper.create({ title: "Hello there", abstract: "General Kenobi" })
 
         let token = await createJWT(user)
         let ctx = await createMockContext(app, `{}`, [["Content-Type", "application/json"]], "/", token);
@@ -72,7 +72,7 @@ Deno.test({
         let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
 
         let app = await createMockApp();
-        await Paper.create({title: "Hello there", abstract: "General Kenobi"})
+        await Paper.create({ title: "Hello there", abstract: "General Kenobi" })
 
         let token = await createJWT(user)
         let ctx = await createMockContext(app, `{}`, [["Content-Type", "application/json"]], "/", token);
@@ -92,7 +92,7 @@ Deno.test({
         await setup(true);
         let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
         let app = await createMockApp();
-        let paper = await Paper.create({title: "Hello there", abstract: "General Kenobi"})
+        let paper = await Paper.create({ title: "Hello there", abstract: "General Kenobi" })
 
         let token = await createJWT(user)
         let ctx = await createMockContext(app, ``, [["Content-Type", "application/json"]], "/", token);
@@ -113,9 +113,9 @@ Deno.test({
         let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
 
         let app = await createMockApp();
-        let paper = await Paper.create({title: "Hello there", abstract: "General Kenobi"})
-        let paper1 = await Paper.create({title: "Hi", abstract: "this abstract"})
-        let paper2 = await Paper.create({title: "mlem", abstract: "mlem mlem"})
+        let paper = await Paper.create({ title: "Hello there", abstract: "General Kenobi" })
+        let paper1 = await Paper.create({ title: "Hi", abstract: "this abstract" })
+        let paper2 = await Paper.create({ title: "mlem", abstract: "mlem mlem" })
         await saveChildren("referencedby", "paperreferencedid", "paperreferencingid", Number(paper.id), Number(paper1.id))
         await saveChildren("referencedby", "paperreferencedid", "paperreferencingid", Number(paper.id), Number(paper2.id))
         let token = await createJWT(user)
@@ -143,9 +143,9 @@ Deno.test({
         let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
 
         let app = await createMockApp();
-        let paper = await Paper.create({title: "Hello there", abstract: "General Kenobi"})
-        let paper1 = await Paper.create({title: "Hi", abstract: "this abstract"})
-        let paper2 = await Paper.create({title: "mlem", abstract: "mlem mlem"})
+        let paper = await Paper.create({ title: "Hello there", abstract: "General Kenobi" })
+        let paper1 = await Paper.create({ title: "Hi", abstract: "this abstract" })
+        let paper2 = await Paper.create({ title: "mlem", abstract: "mlem mlem" })
         await saveChildren("referencedby", "paperreferencedid", "paperreferencingid", Number(paper.id), Number(paper1.id))
         await saveChildren("referencedby", "paperreferencedid", "paperreferencingid", Number(paper.id), Number(paper2.id))
         let token = await createJWT(user)
@@ -169,9 +169,9 @@ Deno.test({
         let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
 
         let app = await createMockApp();
-        let paper = await Paper.create({title: "Hello there", abstract: "General Kenobi"})
-        let paper1 = await Paper.create({title: "Hi", abstract: "this abstract"})
-        let paper2 = await Paper.create({title: "mlem", abstract: "mlem mlem"})
+        let paper = await Paper.create({ title: "Hello there", abstract: "General Kenobi" })
+        let paper1 = await Paper.create({ title: "Hi", abstract: "this abstract" })
+        let paper2 = await Paper.create({ title: "mlem", abstract: "mlem mlem" })
         await saveChildren("referencedby", "paperreferencedid", "paperreferencingid", Number(paper.id), Number(paper1.id))
         await saveChildren("referencedby", "paperreferencedid", "paperreferencingid", Number(paper.id), Number(paper2.id))
         let token = await createJWT(user)
@@ -196,9 +196,9 @@ Deno.test({
         let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
 
         let app = await createMockApp();
-        let paper = await Paper.create({title: "Hello there", abstract: "General Kenobi"})
-        let source: IApiPaper =  {title:["Hello there", "Hi There"]} as IApiPaper
-        await paperCache.add(String(paper.id),source)
+        let paper = await Paper.create({ title: "Hello there", abstract: "General Kenobi" })
+        let source: IApiPaper = { title: ["Hello there", "Hi There"] } as IApiPaper
+        await paperCache.add(String(paper.id), source)
 
         let token = await createJWT(user)
         let ctx = await createMockContext(app, ``, [["Content-Type", "application/json"]], "/", token);
@@ -224,9 +224,9 @@ Deno.test({
         let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
 
         let app = await createMockApp();
-        let paper = await Paper.create({title: "Hello there", abstract: "General Kenobi"})
-        let source: IApiPaper =  {title:["Hello there, Hi There"]} as IApiPaper
-        paperCache.add(String(paper.id),source)
+        let paper = await Paper.create({ title: "Hello there", abstract: "General Kenobi" })
+        let source: IApiPaper = { title: ["Hello there, Hi There"] } as IApiPaper
+        paperCache.add(String(paper.id), source)
 
         let token = await createJWT(user)
         let ctx = await createMockContext(app, ``, [["Content-Type", "application/json"]], "/", token);
@@ -251,13 +251,13 @@ Deno.test({
         let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
 
         let app = await createMockApp();
-        let paper = await Paper.create({title: "Hello there", abstract: "General Kenobi"})
-        let source: IApiPaper =  {title:["Hello there, Hi There"]} as IApiPaper
-        paperCache.add(String(paper.id),source)
+        let paper = await Paper.create({ title: "Hello there", abstract: "General Kenobi" })
+        let source: IApiPaper = { title: ["Hello there, Hi There"] } as IApiPaper
+        paperCache.add(String(paper.id), source)
 
         let token = await createJWT(user)
         let ctx = await createMockContext(app, ``, [["Content-Type", "application/json"]], "/", token);
-        getSourcePaper(ctx, Number(paper.id)+1)
+        getSourcePaper(ctx, Number(paper.id) + 1)
         assertEquals(ctx.response.status, 404)
 
 
@@ -277,14 +277,14 @@ Deno.test({
         let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
 
         let app = await createMockApp();
-        let paper = await Paper.create({title: "Hello there", abstract: "General Kenobi"})
+        let paper = await Paper.create({ title: "Hello there", abstract: "General Kenobi" })
 
         let token = await createJWT(user)
         let ctx = await createMockContext(app, `{"title":"Hello There"}`, [["Content-Type", "application/json"]], "/", token);
         await patchPaper(ctx, Number(paper.id))
         assertEquals(ctx.response.status, 200)
         paper = await Paper.find(Number(paper.id))
-        assertEquals(String(paper.title),"Hello There")
+        assertEquals(String(paper.title), "Hello There")
 
 
         await db.close();
@@ -302,14 +302,14 @@ Deno.test({
         let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
 
         let app = await createMockApp();
-        let paper = await Paper.create({title: "Hello there", abstract: "General Kenobi"})
+        let paper = await Paper.create({ title: "Hello there", abstract: "General Kenobi" })
 
         let token = await createJWT(user)
         let ctx = await createMockContext(app, `{"title":"Hello There}`, [["Content-Type", "application/json"]], "/", token);
         await patchPaper(ctx, undefined)
         assertEquals(ctx.response.status, 422)
         paper = await Paper.find(Number(paper.id))
-        assertEquals(String(paper.title),"Hello there")
+        assertEquals(String(paper.title), "Hello there")
 
 
         await db.close();
@@ -327,14 +327,14 @@ Deno.test({
         let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
 
         let app = await createMockApp();
-        let paper = await Paper.create({title: "Hello there", abstract: "General Kenobi"})
+        let paper = await Paper.create({ title: "Hello there", abstract: "General Kenobi" })
 
         let token = await createJWT(user)
         let ctx = await createMockContext(app, `{"title":"Hello There}`, [["Content-Type", "application/json"]], "/", token);
         await patchPaper(ctx, Number(paper.id) + 1)
         assertEquals(ctx.response.status, 404)
         paper = await Paper.find(Number(paper.id))
-        assertEquals(String(paper.title),"Hello there")
+        assertEquals(String(paper.title), "Hello there")
 
 
         await db.close();
@@ -351,8 +351,8 @@ Deno.test({
         await setup(true);
         let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
         let app = await createMockApp();
-        let paper = await Paper.create({title: "Hello there", abstract: "General Kenobi"})
-        await paperCache.add(String(paper.id),{title: ["Hello there", "Hi There"]} as IApiPaper)
+        let paper = await Paper.create({ title: "Hello there", abstract: "General Kenobi" })
+        await paperCache.add(String(paper.id), { title: ["Hello there", "Hi There"] } as IApiPaper)
         let token = await createJWT(user)
         let ctx = await createMockContext(app, `{"title":"Hello There"}`, [["Content-Type", "application/json"]], "/", token);
         await getPaper(ctx, Number(paper.id))
@@ -361,7 +361,7 @@ Deno.test({
         await patchPaper(ctx, Number(paper.id))
         assertEquals(ctx.response.status, 200)
         paper = await Paper.find(Number(paper.id))
-        assertEquals(String(paper.title),"Hello There")
+        assertEquals(String(paper.title), "Hello There")
         let source = paperCache.get(String(paper.id))
         assertEquals(source, undefined)
         await getPaper(ctx, Number(paper.id))
