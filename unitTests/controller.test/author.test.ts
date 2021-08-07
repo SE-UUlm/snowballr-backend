@@ -240,10 +240,9 @@ Deno.test({
     async fn(): Promise<void> {
         await setup(true);
         let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
-        await authorCache.fileCache!.purge()
         let app = await createMockApp();
         let author = await Author.create({rawString: "test tester", firstName: "test", lastName: "tester", orcid: "fafadadf"})
-        authorCache.add(String(author.id),{rawString: ["test tester", "testing tester"]} as IApiAuthor)
+        await authorCache.add(String(author.id),{rawString: ["test tester", "testing tester"]} as IApiAuthor)
         let token = await createJWT(user)
         let ctx = await createMockContext(app, `{"rawString":"Test Tester"}`, [["Content-Type", "application/json"]], "/", token);
         await getAuthor(ctx, Number(author.id))

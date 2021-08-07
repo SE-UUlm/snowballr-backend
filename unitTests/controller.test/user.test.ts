@@ -34,6 +34,9 @@ Deno.test({
         await db.close();
         await client.end();
     },
+    sanitizeResources: false,
+    sanitizeOps: false,
+    
 })
 
 Deno.test({

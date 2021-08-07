@@ -75,7 +75,10 @@ try{
         }catch(error){
             console.log(error)
         }
-    }
+    },
+    
+    sanitizeResources: false,
+    sanitizeOps: false,
 
 })
 
@@ -131,7 +134,9 @@ Deno.test({
         console.error("in catch")
         console.error(e)
     }
-}
+},
+    sanitizeResources: false,
+    sanitizeOps: false,
 })
 
 

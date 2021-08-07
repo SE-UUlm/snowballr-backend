@@ -350,10 +350,9 @@ Deno.test({
     async fn(): Promise<void> {
         await setup(true);
         let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
-        await paperCache.fileCache!.purge()
         let app = await createMockApp();
         let paper = await Paper.create({title: "Hello there", abstract: "General Kenobi"})
-        paperCache.add(String(paper.id),{title: ["Hello there", "Hi There"]} as IApiPaper)
+        await paperCache.add(String(paper.id),{title: ["Hello there", "Hi There"]} as IApiPaper)
         let token = await createJWT(user)
         let ctx = await createMockContext(app, `{"title":"Hello There"}`, [["Content-Type", "application/json"]], "/", token);
         await getPaper(ctx, Number(paper.id))
