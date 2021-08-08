@@ -1,9 +1,9 @@
 import { Application, Router } from 'https://deno.land/x/oak/mod.ts';
-import { validateContentType, validateJWTIfExists } from "./controller/validation.ts";
-import { login } from "./controller/login.ts";
+import { validateContentType, validateJWTIfExists } from "./controller/validation.controller.ts";
+import { login } from "./controller/login.controller.ts";
 import { setup } from "./helper/setup.ts";
-import { createUser, getUser, getUserProjects, getUsers, patchUser, resetPassword } from "./controller/user.ts";
-import { logout } from "./controller/logout.ts";
+import { createUser, getUser, getUserProjects, getUsers, patchUser, resetPassword } from "./controller/user.controller.ts";
+import { logout } from "./controller/logout.controller.ts";
 import { SmtpClient } from "https://deno.land/x/smtp/mod.ts";
 import {
     addMemberToProject,
@@ -15,8 +15,8 @@ import {
     getPapersOfProjectStage,
     getProjects,
     patchPaperOfProjectStage
-} from "./controller/project.ts";
-import { getPaper, getPaperCitations, getPaperReferences, getPapers, getSourcePaper, patchPaper } from "./controller/paper.ts";
+} from "./controller/project.controller.ts";
+import { getPaper, getPaperCitations, getPaperReferences, getPapers, getSourcePaper, patchPaper } from "./controller/paper.controller.ts";
 import { getAuthor, getSourceAuthor, patchAuthor } from "./controller/author.controller.ts";
 
 await setup(true);

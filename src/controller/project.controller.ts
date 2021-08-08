@@ -19,7 +19,7 @@ import { getDOI } from "../api/apiMerger.ts";
 import { Cache, CacheType } from "../api/cache.ts";
 import { logger } from "../api/logger.ts";
 import { IApiAuthor } from "../api/iApiAuthor.ts";
-import { checkAdmin, checkMemberOfProject, checkPO, checkPOofProject, getPayloadFromJWT } from "./validation.controller.ts";
+import { checkAdmin, checkMemberOfProject, checkPO, checkPOofProject, getPayloadFromJWT, UserStatus, validateUserEntry } from "./validation.controller.ts";
 import { makeFetching } from "./fetch.controller.ts";
 import { saveChildren } from "./database.controller.ts";
 
@@ -31,34 +31,25 @@ export const authorCache = new Cache<IApiAuthor>(CacheType.F, 0, "authorCache")
  * @param ctx
  */
 export const createProject = async (ctx: Context) => {
-    const payloadJson = await getPayloadFromJWT(ctx);
-    if (await checkAdmin(payloadJson) || await checkPO(payloadJson)) {
-        const requestParameter = await jsonBodyToObject(ctx)
-        if (!requestParameter) {
-            return
-        }
-
-        if (!requestParameter.name || !requestParameter.minCountReviewers || !requestParameter.countDecisiveReviewers) {
-            makeErrorMessage(ctx, 422, "A project must have a name, minCountReviewers and countDecisiveReviewers")
-            return;
-        }
-
-        let project = await Project.create({
-            name: requestParameter.name,
-            minCountReviewers: requestParameter.minCountReviewers,
-            countDecisiveReviewers: requestParameter.countDecisiveReviewers
-        })
-        if (requestParameter.evaluationFormula) {
-            project.evaluationFormula = requestParameter.evaluationFormula;
-            await project.update();
-        }
-
-        ctx.response.status = 201;
-        ctx.response.body = JSON.stringify(project)
-    } else {
-        makeErrorMessage(ctx, 401, "not authorized")
+    let validate = await validateUserEntry(ctx, [], UserStatus.needsPO, -1, { needed: true, params: ["name", "minCountReviewers", "countDecisiveReviewers"] })
+    if (!validate) {
+        return
     }
+
+    let project = await Project.create({
+        name: validate.name,
+        minCountReviewers: validate.minCountReviewers,
+        countDecisiveReviewers: validate.countDecisiveReviewers
+    })
+    if (validate.evaluationFormula) {
+        project.evaluationFormula = validate.evaluationFormula;
+        await project.update();
+    }
+
+    ctx.response.status = 201;
+    ctx.response.body = JSON.stringify(project)
 }
+
 
 
 /**
@@ -67,48 +58,31 @@ export const createProject = async (ctx: Context) => {
  * @param ctx
  * @param id id of project
  */
-export const addMemberToProject = async (ctx: Context, id: number | undefined) => {
-    if (!id) {
-        makeErrorMessage(ctx, 422, "no project id included")
+export const addMemberToProject = async (ctx: Context, id: number) => {
+    let validate: any = await validateUserEntry(ctx, [id], UserStatus.needsPOOfProject, id, { needed: true, params: ["id"] })
+    if (!validate) {
         return
     }
+    const params = await jsonBodyToObject(ctx)
+    await UserIsPartOfProject.create({
+        isOwner: params.isOwner ? params.isOwner : false,
+        userId: validate.id,
+        projectId: id
+    })
 
-    const payloadJson = await getPayloadFromJWT(ctx);
-    if (await checkAdmin(payloadJson) || await checkPOofProject(id, payloadJson)) {
-        const requestParameter = await jsonBodyToObject(ctx)
-        if (!requestParameter) {
-            return
-        }
-        if (!requestParameter.id) {
-            makeErrorMessage(ctx, 422, "to add a member, a userid is needed")
-            return;
-        }
-        let hi = await UserIsPartOfProject.create({
-            isOwner: requestParameter.isOwner ? requestParameter.isOwner : false,
-            userId: requestParameter.id,
-            projectId: id
-        })
+    ctx.response.status = 201;
 
-        ctx.response.status = 201;
-    } else {
-        makeErrorMessage(ctx, 401, "not authorized");
-    }
 }
 
-export const getMembersOfProject = async (ctx: Context, id: number | undefined) => {
-    if (!id) {
-        makeErrorMessage(ctx, 422, "no project id included")
+export const getMembersOfProject = async (ctx: Context, id: number) => {
+    let validate = await validateUserEntry(ctx, [id], UserStatus.needsMemberOfProject, id, { needed: false, params: [] })
+    if (!validate) {
         return
     }
+    ctx.response.status = 200;
+    let message: ProjectMembersMessage = { members: await getAllMembersOfProject(id) }
+    ctx.response.body = JSON.stringify(message)
 
-    const payloadJson = await getPayloadFromJWT(ctx);
-    if (await checkAdmin(payloadJson) || await checkMemberOfProject(id, payloadJson)) {
-        ctx.response.status = 200;
-        let message: ProjectMembersMessage = { members: await getAllMembersOfProject(id) }
-        ctx.response.body = JSON.stringify(message)
-    } else {
-        makeErrorMessage(ctx, 401, "not authorized");
-    }
 }
 
 export const getProjects = async (ctx: Context) => {
@@ -129,69 +103,51 @@ export const getProjects = async (ctx: Context) => {
  * @param ctx
  * @param id id of project
  */
-export const addStageToProject = async (ctx: Context, id: number | undefined) => {
-    if (!id) {
-        makeErrorMessage(ctx, 422, "no project id included")
+export const addStageToProject = async (ctx: Context, id: number) => {
+    let validate = await validateUserEntry(ctx, [id], UserStatus.needsPOOfProject, id, { needed: false, params: [] })
+    if (!validate) {
         return
     }
+    const requestParameter = await jsonBodyToObject(ctx)
+    const stages = await getAllStagesFromProject(id);
 
-    const payloadJson = await getPayloadFromJWT(ctx);
-    if (await checkAdmin(payloadJson) || await checkPOofProject(id, payloadJson)) {
-        const requestParameter = await jsonBodyToObject(ctx)
-        if (!requestParameter) {
-            return
-        }
+    let stage = await Stage.create({
+        name: requestParameter.name ? requestParameter.name : `Stage ${stages.length}`,
+        projectId: id,
+        number: stages.length
+    })
 
-        const stages = await getAllStagesFromProject(id);
+    ctx.response.status = 201;
+    ctx.response.body = JSON.stringify(stage)
 
-        let stage = await Stage.create({
-            name: requestParameter.name ? requestParameter.name : `Stage ${stages.length}`,
-            projectId: id,
-            number: stages.length
-        })
-
-        ctx.response.status = 201;
-        ctx.response.body = JSON.stringify(stage)
-    } else {
-        makeErrorMessage(ctx, 401, "not authorized");
-    }
 }
 
 /**
  * Adds a paper to a project nextStage
  *
  * @param ctx
- * @param projectId id of project
+ * @param projectID id of project
  * @param stageID id of nextStage
  */
-export const addPaperToProjectStage = async (ctx: Context, projectId: number | undefined, stageID: number | undefined, awaitFetch?: boolean) => {
-    if (!projectId || !stageID) {
-        makeErrorMessage(ctx, 422, "no project and/or nextStage id included")
+export const addPaperToProjectStage = async (ctx: Context, projectID: number, stageID: number, awaitFetch?: boolean) => {
+    let validate = await validateUserEntry(ctx, [projectID, stageID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
+    if (!validate) {
         return
     }
-    const payloadJson = await getPayloadFromJWT(ctx);
-    if (await checkAdmin(payloadJson) || await checkMemberOfProject(projectId, payloadJson)) {
-        const requestParameter = await jsonBodyToObject(ctx)
-        if (!requestParameter) {
-            return
-        }
-        if (!requestParameter.doi && !requestParameter.title) {
-            makeErrorMessage(ctx, 422, "to add a paper to a nextStage, at least a DOI or a title is needed")
-            return;
-        }
 
-        if (awaitFetch) {
-            await fetchToDB(stageID, projectId, requestParameter.doi, requestParameter.title, requestParameter.author)
-        } else {
-            fetchToDB(stageID, projectId, requestParameter.doi, requestParameter.title, requestParameter.author)
-        }
-
-
-        ctx.response.status = 201;
-
-    } else {
-        makeErrorMessage(ctx, 401, "not authorized");
+    const requestParameter = await jsonBodyToObject(ctx)
+    if (!requestParameter.doi && !requestParameter.title) {
+        makeErrorMessage(ctx, 422, "to add a paper to a nextStage, at least a DOI or a title is needed")
+        return;
     }
+
+    if (awaitFetch) {
+        await fetchToDB(stageID, projectID, requestParameter.doi, requestParameter.title, requestParameter.author)
+    } else {
+        fetchToDB(stageID, projectID, requestParameter.doi, requestParameter.title, requestParameter.author)
+    }
+    ctx.response.status = 201;
+
 }
 
 const fetchToDB = async (stageID: number, projectID: number, doi?: string, title?: string, authorName?: string) => {
@@ -264,20 +220,16 @@ const savePaper = async (apiPaper: IApiPaper): Promise<Paper> => {
  * @param projectID
  * @param stageID
  */
-export const getPapersOfProjectStage = async (ctx: Context, projectID: number | undefined, stageID: number | undefined) => {
-    if (!projectID || !stageID) {
-        makeErrorMessage(ctx, 422, "no project and/or nextStage id included")
+export const getPapersOfProjectStage = async (ctx: Context, projectID: number, stageID: number) => {
+    let validate = await validateUserEntry(ctx, [projectID, stageID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
+    if (!validate) {
         return
     }
 
-    const payloadJson = await getPayloadFromJWT(ctx);
-    if (await checkAdmin(payloadJson) || await checkMemberOfProject(projectID, payloadJson)) {
-        ctx.response.status = 200;
-        let message: PapersMessage = { papers: await convertPapersToPaperMessage(await getAllPapersFromStage(stageID), stageID) }
-        ctx.response.body = JSON.stringify(message)
-    } else {
-        makeErrorMessage(ctx, 401, "not authorized");
-    }
+    ctx.response.status = 200;
+    let message: PapersMessage = { papers: await convertPapersToPaperMessage(await getAllPapersFromStage(stageID), stageID) }
+    ctx.response.body = JSON.stringify(message)
+
 }
 
 /**
@@ -288,53 +240,45 @@ export const getPapersOfProjectStage = async (ctx: Context, projectID: number | 
  * @param stageID
  * @param ppID project specific paper id
  */
-export const getPaperOfProjectStage = async (ctx: Context, projectID: number | undefined, stageID: number | undefined, ppID: number | undefined) => {
-    if (!projectID || !stageID || !ppID) {
-        makeErrorMessage(ctx, 422, "no project and/or nextStage and/or no project paper id included")
+export const getPaperOfProjectStage = async (ctx: Context, projectID: number, stageID: number, ppID: number) => {
+    let validate = await validateUserEntry(ctx, [projectID, stageID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
+    if (!validate) {
         return
     }
 
-    const payloadJson = await getPayloadFromJWT(ctx);
-    if (await checkAdmin(payloadJson) || await checkMemberOfProject(projectID, payloadJson)) {
-        try {
-            let paper = await PaperScopeForStage.where("id", ppID).paper();
-            if (paper) {
-                ctx.response.status = 200;
-                ctx.response.body = JSON.stringify(await convertPaperToPaperMessage(paper, stageID));
-            }
-        } catch (e) {
-            makeErrorMessage(ctx, 404, "paper does not exist")
+    try {
+        let paper = await PaperScopeForStage.where("id", ppID).paper();
+        if (paper) {
+            ctx.response.status = 200;
+            ctx.response.body = JSON.stringify(await convertPaperToPaperMessage(paper, stageID));
         }
-    } else {
-        makeErrorMessage(ctx, 401, "not authorized");
+    } catch (e) {
+        makeErrorMessage(ctx, 404, "paper does not exist")
     }
+
 }
 
-export const patchPaperOfProjectStage = async (ctx: Context, projectID: number | undefined, stageID: number | undefined, ppID: number | undefined) => {
-    if (!projectID || !stageID || !ppID) {
-        makeErrorMessage(ctx, 422, "no project and/or nextStage and/or no project paper id included")
+export const patchPaperOfProjectStage = async (ctx: Context, projectID: number, stageID: number, ppID: number) => {
+    let validate = await validateUserEntry(ctx, [projectID, stageID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
+    if (!validate) {
         return
     }
 
-    const payloadJson = await getPayloadFromJWT(ctx);
-    if (await checkAdmin(payloadJson) || await checkMemberOfProject(projectID, payloadJson)) {
-        try {
-            let paper = await PaperScopeForStage.where("id", ppID).paper();
-            if (paper) {
-                let bodyJson = await jsonBodyToObject(ctx);
-                if (!bodyJson) {
-                    return
-                }
-                assign(paper, bodyJson);
-                await paper.update()
-                ctx.response.status = 200;
-                ctx.response.body = JSON.stringify(await convertPaperToPaperMessage(paper, stageID))
+    try {
+        let paper = await PaperScopeForStage.where("id", ppID).paper();
+        if (paper) {
+            let bodyJson = await jsonBodyToObject(ctx);
+            if (!bodyJson) {
+                return
             }
-        } catch (e) {
-            makeErrorMessage(ctx, 404, "paper does not exist")
+            assign(paper, bodyJson);
+            await paper.update()
+            ctx.response.status = 200;
+            ctx.response.body = JSON.stringify(await convertPaperToPaperMessage(paper, stageID))
         }
-
-    } else {
-        makeErrorMessage(ctx, 401, "not authorized");
+    } catch (e) {
+        makeErrorMessage(ctx, 404, "paper does not exist")
     }
+
+
 }

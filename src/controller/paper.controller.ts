@@ -6,18 +6,21 @@ import { Paper } from "../model/db/paper.ts";
 import { PaperMessage, PapersMessage, Status } from "../model/messages/papersMessage.ts";
 import { paperCache } from "./project.controller.ts";
 import { convertPapersToPaperMessage, convertPaperToPaperMessage } from "../helper/converter/paperConverter.ts"
-import { client } from "./database.controller.ts";
+import { client, getChildren } from "./database.controller.ts";
+import { UserStatus, validateUserEntry } from "./validation.controller.ts";
 
 export const getPapers = async (ctx: Context) => {
     ctx.response.status = 200;
     let message: PapersMessage = { papers: await convertPapersToPaperMessage(await Paper.all()) }
     ctx.response.body = JSON.stringify(message)
 }
-export const getPaper = async (ctx: Context, paperID: number | undefined) => {
-    if (!paperID) {
-        makeErrorMessage(ctx, 422, "no paperID included")
+
+export const getPaper = async (ctx: Context, paperID: number) => {
+    let validate = await validateUserEntry(ctx, [paperID], UserStatus.none, -1, { needed: false, params: [] })
+    if (!validate) {
         return
     }
+
 
     let paper: Paper = await Paper.find(paperID)
     if (paper) {
@@ -28,26 +31,27 @@ export const getPaper = async (ctx: Context, paperID: number | undefined) => {
     }
 }
 
-export const getPaperReferences = async (ctx: Context, paperID: number | undefined) => {
-    if (!paperID) {
-        makeErrorMessage(ctx, 422, "no paperID included")
+export const getPaperReferences = async (ctx: Context, paperID: number) => {
+    let validate = await validateUserEntry(ctx, [paperID], UserStatus.none, -1, { needed: false, params: [] })
+    if (!validate) {
         return
     }
+
     await getRefOrCiteList(ctx, "referencedby", "paperreferencedid", "paperreferencingid", paperID)
 
 }
 
-export const getPaperCitations = async (ctx: Context, paperID: number | undefined) => {
-    if (!paperID) {
-        makeErrorMessage(ctx, 422, "no paperID included")
+export const getPaperCitations = async (ctx: Context, paperID: number) => {
+    let validate = await validateUserEntry(ctx, [paperID], UserStatus.none, -1, { needed: false, params: [] })
+    if (!validate) {
         return
     }
+
     await getRefOrCiteList(ctx, "citedBy", "papercitedid", "papercitingid", paperID)
 
 }
 
 const getRefOrCiteList = async (ctx: Context, table: string, column1: string, column2: string, id: number) => {
-
     let children = await getChildren(table, column1, column2, id)
     let papersToBe: Promise<Paper>[] = []
     children.rows.forEach((item: any[]) => papersToBe.push(Paper.find(Number(item[0]))));
@@ -56,13 +60,9 @@ const getRefOrCiteList = async (ctx: Context, table: string, column1: string, co
     ctx.response.body = JSON.stringify(message)
 }
 
-const getChildren = (table: string, column1: string, column2: string, id: number) => {
-    return client.queryArray(`select p.* from ${table} as i JOIN paper as p ON i.${column2} = p.id WHERE i.${column1} = ${id}`);
-}
-
-export const patchPaper = async (ctx: Context, paperID: number | undefined) => {
-    if (!paperID) {
-        makeErrorMessage(ctx, 422, "no paperID included")
+export const patchPaper = async (ctx: Context, paperID: number) => {
+    let validate = await validateUserEntry(ctx, [paperID], UserStatus.none, -1, { needed: false, params: [] })
+    if (!validate) {
         return
     }
 
@@ -93,9 +93,9 @@ export const patchPaper = async (ctx: Context, paperID: number | undefined) => {
     }
 }
 
-export const getSourcePaper = (ctx: Context, paperID: number | undefined) => {
-    if (!paperID) {
-        makeErrorMessage(ctx, 422, "no paperID included")
+export const getSourcePaper = async (ctx: Context, paperID: number) => {
+    let validate = await validateUserEntry(ctx, [paperID], UserStatus.none, -1, { needed: false, params: [] })
+    if (!validate) {
         return
     }
     ctx.response.status = 200;

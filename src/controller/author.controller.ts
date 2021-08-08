@@ -5,10 +5,11 @@ import { makeErrorMessage } from "../helper/error.ts";
 import { Author } from "../model/db/author.ts";
 import { convertAuthorToAuthorMessage } from "../helper/converter/authorConverter.ts"
 import { authorCache } from "./project.controller.ts";
+import { UserStatus, validateUserEntry } from "./validation.controller.ts";
 
-export const getAuthor = async (ctx: Context, authorID: number | undefined) => {
-    if (!authorID) {
-        makeErrorMessage(ctx, 422, "no authorID included")
+export const getAuthor = async (ctx: Context, authorID: number) => {
+    let validate = await validateUserEntry(ctx, [], UserStatus.none, -1, { needed: false, params: [] })
+    if (!validate) {
         return
     }
 
@@ -22,11 +23,12 @@ export const getAuthor = async (ctx: Context, authorID: number | undefined) => {
 }
 
 
-export const patchAuthor = async (ctx: Context, authorID: number | undefined) => {
-    if (!authorID) {
-        makeErrorMessage(ctx, 422, "no authorID included")
+export const patchAuthor = async (ctx: Context, authorID: number) => {
+    let validate = await validateUserEntry(ctx, [], UserStatus.none, -1, { needed: false, params: [] })
+    if (!validate) {
         return
     }
+
 
     let author: Author = await Author.find(authorID);
     if (author) {
@@ -56,11 +58,12 @@ export const patchAuthor = async (ctx: Context, authorID: number | undefined) =>
     }
 }
 
-export const getSourceAuthor = (ctx: Context, authorID: number | undefined) => {
-    if (!authorID) {
-        makeErrorMessage(ctx, 422, "no authorID included")
+export const getSourceAuthor = async (ctx: Context, authorID: number | undefined) => {
+    let validate = await validateUserEntry(ctx, [], UserStatus.none, -1, { needed: false, params: [] })
+    if (!validate) {
         return
     }
+
     ctx.response.status = 200;
     let author = authorCache.get(String(authorID))
     if (author) {

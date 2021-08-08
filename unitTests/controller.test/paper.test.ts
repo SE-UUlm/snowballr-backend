@@ -66,27 +66,6 @@ Deno.test({
 })
 
 Deno.test({
-    name: "getPaperNoId",
-    async fn(): Promise<void> {
-        await setup(true);
-        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
-
-        let app = await createMockApp();
-        await Paper.create({ title: "Hello there", abstract: "General Kenobi" })
-
-        let token = await createJWT(user)
-        let ctx = await createMockContext(app, `{}`, [["Content-Type", "application/json"]], "/", token);
-        await getPaper(ctx, undefined)
-        assertEquals(ctx.response.status, 422)
-        Batcher.kill()
-        await db.close();
-        await client.end();
-    },
-    sanitizeResources: false,
-    sanitizeOps: false,
-})
-
-Deno.test({
     name: "getPaperWrongId",
     async fn(): Promise<void> {
         await setup(true);
@@ -136,57 +115,6 @@ Deno.test({
     sanitizeOps: false,
 })
 
-Deno.test({
-    name: "getPaperReferencesNoId",
-    async fn(): Promise<void> {
-        await setup(true);
-        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
-
-        let app = await createMockApp();
-        let paper = await Paper.create({ title: "Hello there", abstract: "General Kenobi" })
-        let paper1 = await Paper.create({ title: "Hi", abstract: "this abstract" })
-        let paper2 = await Paper.create({ title: "mlem", abstract: "mlem mlem" })
-        await saveChildren("referencedby", "paperreferencedid", "paperreferencingid", Number(paper.id), Number(paper1.id))
-        await saveChildren("referencedby", "paperreferencedid", "paperreferencingid", Number(paper.id), Number(paper2.id))
-        let token = await createJWT(user)
-        let ctx = await createMockContext(app, ``, [["Content-Type", "application/json"]], "/", token);
-        await getPaperReferences(ctx, undefined)
-
-        assertEquals(ctx.response.status, 422)
-
-        await db.close();
-        await client.end();
-        Batcher.kill()
-    },
-    sanitizeResources: false,
-    sanitizeOps: false,
-})
-
-Deno.test({
-    name: "getPaperReferencesNoId",
-    async fn(): Promise<void> {
-        await setup(true);
-        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
-
-        let app = await createMockApp();
-        let paper = await Paper.create({ title: "Hello there", abstract: "General Kenobi" })
-        let paper1 = await Paper.create({ title: "Hi", abstract: "this abstract" })
-        let paper2 = await Paper.create({ title: "mlem", abstract: "mlem mlem" })
-        await saveChildren("referencedby", "paperreferencedid", "paperreferencingid", Number(paper.id), Number(paper1.id))
-        await saveChildren("referencedby", "paperreferencedid", "paperreferencingid", Number(paper.id), Number(paper2.id))
-        let token = await createJWT(user)
-        let ctx = await createMockContext(app, ``, [["Content-Type", "application/json"]], "/", token);
-        await getPaperCitations(ctx, undefined)
-
-        assertEquals(ctx.response.status, 422)
-
-        await db.close();
-        await client.end();
-        Batcher.kill()
-    },
-    sanitizeResources: false,
-    sanitizeOps: false,
-})
 
 Deno.test({
     name: "getPaperSource",
@@ -202,37 +130,10 @@ Deno.test({
 
         let token = await createJWT(user)
         let ctx = await createMockContext(app, ``, [["Content-Type", "application/json"]], "/", token);
-        getSourcePaper(ctx, Number(paper.id))
+        await getSourcePaper(ctx, Number(paper.id))
         let answer = JSON.parse(ctx.response.body as string)
         assertEquals(ctx.response.status, 200)
         assertEquals(answer.title, ["Hello there", "Hi There"])
-
-        await db.close();
-        await client.end();
-        Batcher.kill()
-        paperCache.clear()
-    },
-    sanitizeResources: false,
-    sanitizeOps: false,
-})
-
-Deno.test({
-    name: "getPaperSourceNoId",
-    async fn(): Promise<void> {
-        await setup(true);
-        await paperCache.fileCache!.purge()
-        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
-
-        let app = await createMockApp();
-        let paper = await Paper.create({ title: "Hello there", abstract: "General Kenobi" })
-        let source: IApiPaper = { title: ["Hello there, Hi There"] } as IApiPaper
-        paperCache.add(String(paper.id), source)
-
-        let token = await createJWT(user)
-        let ctx = await createMockContext(app, ``, [["Content-Type", "application/json"]], "/", token);
-        getSourcePaper(ctx, undefined)
-        assertEquals(ctx.response.status, 422)
-
 
         await db.close();
         await client.end();
@@ -257,7 +158,7 @@ Deno.test({
 
         let token = await createJWT(user)
         let ctx = await createMockContext(app, ``, [["Content-Type", "application/json"]], "/", token);
-        getSourcePaper(ctx, Number(paper.id) + 1)
+        await getSourcePaper(ctx, Number(paper.id) + 1)
         assertEquals(ctx.response.status, 404)
 
 
@@ -285,31 +186,6 @@ Deno.test({
         assertEquals(ctx.response.status, 200)
         paper = await Paper.find(Number(paper.id))
         assertEquals(String(paper.title), "Hello There")
-
-
-        await db.close();
-        await client.end();
-        Batcher.kill()
-    },
-    sanitizeResources: false,
-    sanitizeOps: false,
-})
-
-Deno.test({
-    name: "PatchPaperNoId",
-    async fn(): Promise<void> {
-        await setup(true);
-        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
-
-        let app = await createMockApp();
-        let paper = await Paper.create({ title: "Hello there", abstract: "General Kenobi" })
-
-        let token = await createJWT(user)
-        let ctx = await createMockContext(app, `{"title":"Hello There}`, [["Content-Type", "application/json"]], "/", token);
-        await patchPaper(ctx, undefined)
-        assertEquals(ctx.response.status, 422)
-        paper = await Paper.find(Number(paper.id))
-        assertEquals(String(paper.title), "Hello there")
 
 
         await db.close();

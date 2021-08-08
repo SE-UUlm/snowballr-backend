@@ -154,23 +154,6 @@ Deno.test({
 })
 
 Deno.test({
-    name: "getOneUserNoId",
-    fn: async function (): Promise<void> {
-        await setup(true);
-        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
-        await insertUser("test2@test", "ash", true, "Test", "Tester", "active");
-        let app = await createMockApp();
-        let token = await createJWT(user)
-        let ctx = await createMockContext(app, undefined, [["Content-Type", "application/json"]], "/users/1", token);
-        await getUser(ctx, undefined);
-        assertEquals(ctx.response.status, 422)
-
-        await db.close();
-        await client.end();
-    },
-})
-
-Deno.test({
     name: "getOneUserUnAuthorized",
     fn: async function (): Promise<void> {
         await setup(true);
@@ -259,30 +242,6 @@ Deno.test({
         assertEquals(2, answer.projects[0].stages.length)
         assertEquals("the next Stage", answer.projects[0].stages[1].name)
         assertEquals(1, answer.projects[0].stages[1].number)
-        await db.close();
-        await client.end();
-    },
-})
-
-Deno.test({
-    name: "getUsersProjectsNoId",
-    fn: async function (): Promise<void> {
-        await setup(true);
-        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
-        let project = await Project.create({ name: "Test", minCountReviewers: 0, countDecisiveReviewers: 0 })
-        let userProject = await UserIsPartOfProject.create({
-            isOwner: true,
-            userId: Number(user.id),
-            projectId: Number(project.id)
-        })
-        await Stage.create({ projectId: Number(project.id), name: "awesome Stage", number: 0 })
-        await Stage.create({ projectId: Number(project.id), name: "the next Stage", number: 1 })
-        let app = await createMockApp();
-        let token = await createJWT(user)
-        let ctx = await createMockContext(app, "{}", [["Content-Type", "application/json"]], "/users/1", token);
-        await getUserProjects(ctx, undefined)
-        assertEquals(ctx.response.status, 422)
-
         await db.close();
         await client.end();
     },

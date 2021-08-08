@@ -12,7 +12,6 @@ let id = 1;
 
 
 export const makeFetching = (doi?: string, title?: string, name?: string) => {
-    console.error(doi)
     //TODO comparisons from logfile
     const comparisonWeight: IComparisonWeight = {
         titleWeight: 15,

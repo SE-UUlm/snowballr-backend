@@ -89,7 +89,7 @@ export const setup = async (dropDatabase: boolean) => {
         admin = await insertUser(String(Deno.env.get("ADMIN_EMAIL")), String(Deno.env.get("ADMIN_PASSWORD")), true, "admin", "admin", "active");
         //TODO: only to showcase functionality, otherwise delete
         let project = await Project.create({ name: "Test", minCountReviewers: 0, countDecisiveReviewers: 0 })
-        let userProject = await UserIsPartOfProject.create({
+        await UserIsPartOfProject.create({
             isOwner: true,
             userId: Number(admin.id),
             projectId: Number(project.id)
@@ -99,7 +99,7 @@ export const setup = async (dropDatabase: boolean) => {
         let paper01 = await Paper.create({ title: "paper01" })
         let paper02 = await Paper.create({ title: "paper02" })
         let paper03 = await Paper.create({ title: "paper03" })
-        let paper04 = await Paper.create({ title: "paper04" })
+        await Paper.create({ title: "paper04" })
         let paper05 = await Paper.create({ title: "paper05" })
         await PaperScopeForStage.create({ paperId: Number(paper01.id), stageId: Number(stage.id) })
         await PaperScopeForStage.create({ paperId: Number(paper02.id), stageId: Number(stage.id) })

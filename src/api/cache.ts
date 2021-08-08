@@ -29,16 +29,14 @@ export class Cache<V> {
 	 */
 	public constructor(type: CacheType, ttl?: number, folderName?: string, checkInterval?: number) {
 		this.uuid = crypto.randomUUID();
-		// if (!memoryCacheEnabled && !fileCacheEnabled) {
-		// 	throw new Error("Cache implementation needs either memoryCache or fileCache enabled. Neither is. Control via constructor params.")
-		// }
 		if (type === CacheType.IM) { this.memoryCache = new RemoteCache.Cache<string, string>(ttl! * 1000); }
 		else if (type === CacheType.F) {
-			//`${new URL('.', import.meta.url).pathname}/a.log`
 			this.fileCache = new FileCache(`${new URL('.', import.meta.url).pathname}/../../fileCache/${folderName}`, ttl, checkInterval);
 			logger.info(`FileCache created. FolderName: ${folderName}`)
 		}
-		else { throw new Error("Invalid Constructor") };
+		else {
+			throw new Error("Invalid Constructor")
+		};
 	}
 
 	/**

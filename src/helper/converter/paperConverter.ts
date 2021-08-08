@@ -36,8 +36,8 @@ export const convertPaperToPaperMessage = async (paper: Paper, stageId?: number)
     }
     let pdf = await Pdf.where({ paperId: Number(paper.id) }).get()
     if (Array.isArray(pdf)) {
-        pdf.forEach(pdf => {
-            paperMessage.pdf?.push(String(pdf.url))
+        pdf.forEach(url => {
+            paperMessage.pdf.push(String(url.url))
         })
     }
     let authors = await getAllAuthorsFromPaper(Number(paper.id))

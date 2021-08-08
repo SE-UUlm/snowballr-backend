@@ -39,28 +39,6 @@ Deno.test({
 })
 
 Deno.test({
-    name: "getAuthorNoId",
-    async fn(): Promise<void> {
-        await setup(true);
-        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
-
-        let app = await createMockApp();
-        let author = await Author.create({ rawString: "test tester", firstName: "test", lastName: "tester", orcid: "fafadadf" })
-
-        let token = await createJWT(user)
-        let ctx = await createMockContext(app, `{}`, [["Content-Type", "application/json"]], "/", token);
-        await getAuthor(ctx, undefined)
-        assertEquals(ctx.response.status, 422)
-        Batcher.kill()
-        await db.close();
-        await client.end();
-        authorCache.clear()
-    },
-    sanitizeResources: false,
-    sanitizeOps: false,
-})
-
-Deno.test({
     name: "getAuthorWrongId",
     async fn(): Promise<void> {
         await setup(true);
@@ -98,37 +76,10 @@ Deno.test({
 
         let token = await createJWT(user)
         let ctx = await createMockContext(app, ``, [["Content-Type", "application/json"]], "/", token);
-        getSourceAuthor(ctx, Number(author.id))
+        await getSourceAuthor(ctx, Number(author.id))
         let answer = JSON.parse(ctx.response.body as string)
         assertEquals(ctx.response.status, 200)
         assertEquals(answer.rawString, ["test tester", "testing tester"])
-
-        await db.close();
-        await client.end();
-        Batcher.kill()
-        authorCache.clear()
-    },
-    sanitizeResources: false,
-    sanitizeOps: false,
-})
-
-Deno.test({
-    name: "getAuthorSourceNoId",
-    async fn(): Promise<void> {
-        await setup(true);
-        await authorCache.fileCache!.purge()
-        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
-
-        let app = await createMockApp();
-        let author = await Author.create({ rawString: "test tester", firstName: "test", lastName: "tester", orcid: "fafadadf" })
-        let source: IApiAuthor = { rawString: ["test tester", "testing tester"] } as IApiAuthor
-        await authorCache.add(String(author.id), source)
-
-        let token = await createJWT(user)
-        let ctx = await createMockContext(app, ``, [["Content-Type", "application/json"]], "/", token);
-        getSourceAuthor(ctx, undefined)
-        assertEquals(ctx.response.status, 422)
-
 
         await db.close();
         await client.end();
@@ -153,7 +104,7 @@ Deno.test({
 
         let token = await createJWT(user)
         let ctx = await createMockContext(app, ``, [["Content-Type", "application/json"]], "/", token);
-        getSourceAuthor(ctx, Number(author.id) + 1)
+        await getSourceAuthor(ctx, Number(author.id) + 1)
         assertEquals(ctx.response.status, 404)
 
 
@@ -182,28 +133,6 @@ Deno.test({
         author = await Author.find(Number(author.id))
         assertEquals(String(author.rawString), "Test Tester")
 
-
-        await db.close();
-        await client.end();
-        Batcher.kill()
-    },
-    sanitizeResources: false,
-    sanitizeOps: false,
-})
-
-Deno.test({
-    name: "PatchAuthorNoId",
-    async fn(): Promise<void> {
-        await setup(true);
-        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
-
-        let app = await createMockApp();
-        let author = await Author.create({ rawString: "test tester", firstName: "test", lastName: "tester", orcid: "fafadadf" })
-
-        let token = await createJWT(user)
-        let ctx = await createMockContext(app, `{"rawString":"Test Tester"}`, [["Content-Type", "application/json"]], "/", token);
-        await patchAuthor(ctx, undefined)
-        assertEquals(ctx.response.status, 422)
 
         await db.close();
         await client.end();

@@ -221,6 +221,83 @@ const allowedAddressesUnauthorized = async (ctx: Context, next: () => Promise<un
     }
 }
 
-export const validateUserEntry = async () => {
+export const validateUserEntry = async (ctx: Context, id: (number | undefined)[], needed: UserStatus, projectID: number, requestParameter: { needed: boolean, params: string[] }, userID?: number) => {
+    for (let element in id) {
+        if (!Number(element) && Number(element) !== 0) {
+            console.error("path id wrong for" + element)
+            makeErrorMessage(ctx, 422, "path ids must be numbers");
+            return;
+        }
+    }
+    const payloadJson = await getPayloadFromJWT(ctx);
+    let isAdmin = await checkAdmin(payloadJson)
+    if (needed === UserStatus.needsAdmin) {
+        if (!isAdmin) {
+            makeErrorMessage(ctx, 401, "not authorized");
+            return
+        }
+    }
+    if (needed === UserStatus.needsPO) {
+        if (!isAdmin && !await checkPO(payloadJson)) {
+            makeErrorMessage(ctx, 401, "not authorized");
+            return
+        }
+    }
+    if (needed === UserStatus.needsPOOfProject) {
+        if (!isAdmin && !await checkPOofProject(projectID, payloadJson)) {
+            makeErrorMessage(ctx, 401, "not authorized");
+            return
+        }
+    }
+    if (needed === UserStatus.needsMemberOfProject) {
+        if (!isAdmin && !await checkMemberOfProject(projectID, payloadJson)) {
+            makeErrorMessage(ctx, 401, "not authorized");
+            return
+        }
+    }
+    if (needed === UserStatus.needsSameUserOrPO) {
+        if (!isAdmin && !(await getUserID(payloadJson) === userID) && !(await checkPO(payloadJson))) {
+            makeErrorMessage(ctx, 401, "not authorized");
+            return
+        }
+    }
+    if (needed === UserStatus.needsSameUser) {
+        if (!isAdmin && !(await getUserID(payloadJson) === userID)) {
+            makeErrorMessage(ctx, 401, "not authorized");
+            return
+        }
+    }
+
+    if (requestParameter.needed) {
+        const params = await jsonBodyToObject(ctx)
+        if (!params) {
+            return
+        }
+        for (let param of requestParameter.params) {
+            if (!params[param]) {
+                console.error(`Request doesn't include parameter ${param}`)
+                makeErrorMessage(ctx, 422, `Request doesn't include parameter ${param}`)
+                return;
+            }
+        }
+
+        return params
+    }
+
+
+
+
+    return true;
+
+}
+
+export enum UserStatus {
+    needsAdmin,
+    needsPO,
+    needsPOOfProject,
+    needsMemberOfProject,
+    needsSameUserOrPO,
+    needsSameUser,
+    none
 
 }

@@ -52,11 +52,13 @@ export class ApiMerger implements IApiMerger {
 
 			logger.debug("next round!")
 			let finalPaper = await this.comparePaperWithPapers(response.shift()!, response)
-			finalPaper.position != -1 ? response[finalPaper.position] = this.makePromise<IApiResponse>({
-				paper: finalPaper.item.paper,
-				citations: finalPaper.item.citations,
-				references: finalPaper.item.references!
-			} as IApiResponse) : finished.push(finalPaper.item);
+			if (finalPaper.position != -1) {
+				response[finalPaper.position] = this.makePromise<IApiResponse>({
+					paper: finalPaper.item.paper,
+					citations: finalPaper.item.citations,
+					references: finalPaper.item.references!
+				} as IApiResponse)
+			} else { finished.push(finalPaper.item) }
 		}
 		//console.error(JSON.stringify((await response[0]).references!.map((item) => item.author), null, 2))
 		if (response[0]) {
@@ -68,8 +70,6 @@ export class ApiMerger implements IApiMerger {
 			finished[res].references = this.reviewPaper(finished[res].references!);
 		}
 
-		//logger.debug("FINISHED LENGTH " + finished.length)
-		//TODO better cleanup
 		return finished.filter(item => Array.isArray(item.paper.title));
 	}
 
@@ -109,7 +109,6 @@ export class ApiMerger implements IApiMerger {
 				let response1References = this._getCiteOrRefList((await response).references);
 				let response2References = this._getCiteOrRefList((await others[i]).references);
 
-				//logger.info("NEXT");
 
 				return {
 					position: i,
@@ -159,7 +158,6 @@ export class ApiMerger implements IApiMerger {
 				}
 			}
 		}
-		//finalChildren = finalChildren.filter(item => item);
 		return finalChildren.filter(item => item);
 	}
 
@@ -248,7 +246,7 @@ export class ApiMerger implements IApiMerger {
 			}
 
 			/** Check if a value of an author property is existing in both AuthorObjects. If so merge, else append. */
-			mergedAuthor[key] = [];//first[key].push.append(second[key]);
+			mergedAuthor[key] = [];
 			FIRSTLOOP: for (let i in first[key]) {
 				second[key] = second[key].filter((item: string) => item)
 				for (let j in second[key]) {
@@ -256,7 +254,6 @@ export class ApiMerger implements IApiMerger {
 						if (ApiMerger.normalizeString(first[key][i]) === ApiMerger.normalizeString(second[key][j])) {
 							mergedAuthor[key].push(this._deriveGenericProperty(first[key][i], second[key][j]));
 							second[key] = second[key].slice(0, j).concat(second[key].slice(j + 1))
-							//console.debug(`WON: ${JSON.stringify(mergedAuthor, null, 2)}`)
 							continue FIRSTLOOP;
 						}
 					}

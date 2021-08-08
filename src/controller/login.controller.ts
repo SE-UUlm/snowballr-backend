@@ -4,21 +4,16 @@ import { convertUserToUserProfile } from "../helper/converter/userConverter.ts";
 import { startSession } from "./session.controller.ts";
 import { makeErrorMessage } from "../helper/error.ts";
 import { jsonBodyToObject } from "../helper/body.ts";
-import { checkActive } from "./validation.controller.ts";
+import { checkActive, UserStatus, validateUserEntry } from "./validation.controller.ts";
 import { LoginMessage } from "../model/messages/login.message.ts";
 
 export const login = async (ctx: Context): Promise<boolean> => {
-    const requestParameter = await jsonBodyToObject(ctx)
-    if (!requestParameter) {
+    let validate = await validateUserEntry(ctx, [], UserStatus.none, -1, { needed: true, params: ["email", "password"] })
+    if (!validate) {
         return false
     }
 
-    if (!requestParameter.email || !requestParameter.password) {
-        makeErrorMessage(ctx, 422, "no email or password provided")
-        return false;
-    }
-
-    let user = await returnUserByEmailAndPassword(requestParameter.email, requestParameter.password);
+    let user = await returnUserByEmailAndPassword(validate.email, validate.password);
     if (user) {
         if (checkActive(String(user.status))) {
             let token = await startSession(user);
