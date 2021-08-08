@@ -22,6 +22,7 @@ import { IApiAuthor } from "../api/iApiAuthor.ts";
 import { checkAdmin, checkMemberOfProject, checkPO, checkPOofProject, getPayloadFromJWT, UserStatus, validateUserEntry } from "./validation.controller.ts";
 import { makeFetching } from "./fetch.controller.ts";
 import { saveChildren } from "./database.controller.ts";
+import { paperUpdate } from "./paper.controller.ts";
 
 export const paperCache = new Cache<IApiPaper>(CacheType.F, 0, "paperCache")
 export const authorCache = new Cache<IApiAuthor>(CacheType.F, 0, "authorCache")
@@ -74,6 +75,12 @@ export const addMemberToProject = async (ctx: Context, id: number) => {
 
 }
 
+/**
+ * Returns all members, that are currently part of the looked up project.
+ * @param ctx 
+ * @param id 
+ * @returns 
+ */
 export const getMembersOfProject = async (ctx: Context, id: number) => {
     let validate = await validateUserEntry(ctx, [id], UserStatus.needsMemberOfProject, id, { needed: false, params: [] })
     if (!validate) {
@@ -85,6 +92,10 @@ export const getMembersOfProject = async (ctx: Context, id: number) => {
 
 }
 
+/**
+ * Gets all projects
+ * @param ctx 
+ */
 export const getProjects = async (ctx: Context) => {
     const payloadJson = await getPayloadFromJWT(ctx);
     if (await checkAdmin(payloadJson)) {
@@ -123,7 +134,7 @@ export const addStageToProject = async (ctx: Context, id: number) => {
 }
 
 /**
- * Adds a paper to a project nextStage
+ * Adds a paper to a project Stage 0 and also starts to fetch the info of the paper and the cites and refs
  *
  * @param ctx
  * @param projectID id of project
@@ -150,6 +161,14 @@ export const addPaperToProjectStage = async (ctx: Context, projectID: number, st
 
 }
 
+/**
+ * Saves all paper that were fetched by the APIs to the db and corresponding stage.
+ * @param stageID 
+ * @param projectID 
+ * @param doi 
+ * @param title 
+ * @param authorName 
+ */
 const fetchToDB = async (stageID: number, projectID: number, doi?: string, title?: string, authorName?: string) => {
 
     let fetch = await makeFetching(doi, title, authorName);
@@ -184,7 +203,16 @@ const fetchToDB = async (stageID: number, projectID: number, doi?: string, title
     }
 
 }
-
+/**
+ * Saves all cites and refs in the cite and ref table and puts them to their corresponding stage
+ * @param item 
+ * @param into 
+ * @param column1 
+ * @param column2 
+ * @param firstId 
+ * @param nextStageId 
+ * @returns 
+ */
 const createChildren = async (item: IApiPaper, into: string, column1: string, column2: string, firstId: number, nextStageId: number) => {
     let child = await savePaper(item)
     await saveChildren(into, column1, column2, firstId, Number(child.id))
@@ -193,7 +221,13 @@ const createChildren = async (item: IApiPaper, into: string, column1: string, co
 }
 
 
-
+/**
+ * Saves a paper to the database.
+ * If the paper is already in the database, it will be tried to be merged.
+ * Adds leftover values to the paperCache, to be choosen by the user.
+ * @param apiPaper 
+ * @returns 
+ */
 const savePaper = async (apiPaper: IApiPaper): Promise<Paper> => {
     let doi = getDOI(apiPaper)
 
@@ -215,7 +249,7 @@ const savePaper = async (apiPaper: IApiPaper): Promise<Paper> => {
 
 }
 /**
- *
+ * Gets all papers that are part of the selected stage of a project
  * @param ctx
  * @param projectID
  * @param stageID
@@ -257,7 +291,14 @@ export const getPaperOfProjectStage = async (ctx: Context, projectID: number, st
     }
 
 }
-
+/**
+ * Patches a paper by its project paper id.
+ * @param ctx 
+ * @param projectID 
+ * @param stageID 
+ * @param ppID 
+ * @returns 
+ */
 export const patchPaperOfProjectStage = async (ctx: Context, projectID: number, stageID: number, ppID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
     if (!validate) {
@@ -267,14 +308,7 @@ export const patchPaperOfProjectStage = async (ctx: Context, projectID: number, 
     try {
         let paper = await PaperScopeForStage.where("id", ppID).paper();
         if (paper) {
-            let bodyJson = await jsonBodyToObject(ctx);
-            if (!bodyJson) {
-                return
-            }
-            assign(paper, bodyJson);
-            await paper.update()
-            ctx.response.status = 200;
-            ctx.response.body = JSON.stringify(await convertPaperToPaperMessage(paper, stageID))
+            await paperUpdate(ctx, paper)
         }
     } catch (e) {
         makeErrorMessage(ctx, 404, "paper does not exist")

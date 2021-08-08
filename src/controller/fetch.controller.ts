@@ -10,7 +10,14 @@ export const Batcher = new ApiBatcher();
 let id = 1;
 
 
-
+/**
+ * starts a fetch by the given info of a paper.
+ * To work either a DOI or a title + authorname is needed.
+ * @param doi 
+ * @param title 
+ * @param name a single rawname of on of the authors
+ * @returns 
+ */
 export const makeFetching = (doi?: string, title?: string, name?: string) => {
     //TODO comparisons from logfile
     const comparisonWeight: IComparisonWeight = {

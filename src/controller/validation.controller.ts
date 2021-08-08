@@ -132,6 +132,12 @@ export const checkPO = async (payloadJson?: PayloadJson) => {
     return false;
 }
 
+/**
+ * Checks if the user making the request is the PO of a project
+ * @param projectID 
+ * @param payloadJson 
+ * @returns 
+ */
 export const checkPOofProject = async (projectID: number, payloadJson?: PayloadJson) => {
     if (payloadJson) {
         let userProject = await UserIsPartOfProject.where({ userId: payloadJson.id, projectId: projectID }).get()
@@ -144,6 +150,12 @@ export const checkPOofProject = async (projectID: number, payloadJson?: PayloadJ
     return false;
 }
 
+/**
+ * Checks if the user making the request is a member of the corresponding project
+ * @param projectID 
+ * @param payloadJson 
+ * @returns 
+ */
 export const checkMemberOfProject = async (projectID: number, payloadJson?: PayloadJson) => {
     if (payloadJson) {
         let userProject = await UserIsPartOfProject.where({ userId: payloadJson.id, projectId: projectID }).get()
@@ -229,6 +241,31 @@ export const validateUserEntry = async (ctx: Context, id: (number | undefined)[]
             return;
         }
     }
+
+    if (! await checkAuthorization(ctx, needed, projectID, userID)) {
+        return
+    }
+
+    if (requestParameter.needed) {
+        const params = await jsonBodyToObject(ctx)
+        if (!params) {
+            return
+        }
+        for (let param of requestParameter.params) {
+            if (!params[param]) {
+                console.error(`Request doesn't include parameter ${param}`)
+                makeErrorMessage(ctx, 422, `Request doesn't include parameter ${param}`)
+                return;
+            }
+        }
+
+        return params
+    }
+    return true;
+
+}
+
+const checkAuthorization = async (ctx: Context, needed: UserStatus, projectID: number, userID?: number) => {
     const payloadJson = await getPayloadFromJWT(ctx);
     let isAdmin = await checkAdmin(payloadJson)
     if (needed === UserStatus.needsAdmin) {
@@ -267,28 +304,7 @@ export const validateUserEntry = async (ctx: Context, id: (number | undefined)[]
             return
         }
     }
-
-    if (requestParameter.needed) {
-        const params = await jsonBodyToObject(ctx)
-        if (!params) {
-            return
-        }
-        for (let param of requestParameter.params) {
-            if (!params[param]) {
-                console.error(`Request doesn't include parameter ${param}`)
-                makeErrorMessage(ctx, 422, `Request doesn't include parameter ${param}`)
-                return;
-            }
-        }
-
-        return params
-    }
-
-
-
-
     return true;
-
 }
 
 export enum UserStatus {

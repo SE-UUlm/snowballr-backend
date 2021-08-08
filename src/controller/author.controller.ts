@@ -7,6 +7,13 @@ import { convertAuthorToAuthorMessage } from "../helper/converter/authorConverte
 import { authorCache } from "./project.controller.ts";
 import { UserStatus, validateUserEntry } from "./validation.controller.ts";
 
+
+/**
+ * Returns one Author
+ * @param ctx 
+ * @param authorID id of the author
+ *
+ */
 export const getAuthor = async (ctx: Context, authorID: number) => {
     let validate = await validateUserEntry(ctx, [], UserStatus.none, -1, { needed: false, params: [] })
     if (!validate) {
@@ -22,7 +29,12 @@ export const getAuthor = async (ctx: Context, authorID: number) => {
     }
 }
 
-
+/**
+ * Changes the Parameter of an author
+ * @param ctx 
+ * @param authorID 
+ * @returns 
+ */
 export const patchAuthor = async (ctx: Context, authorID: number) => {
     let validate = await validateUserEntry(ctx, [], UserStatus.none, -1, { needed: false, params: [] })
     if (!validate) {
@@ -58,6 +70,12 @@ export const patchAuthor = async (ctx: Context, authorID: number) => {
     }
 }
 
+/**
+ * Returns the author values, that are currently in the filecache of the correspondend author
+ * @param ctx 
+ * @param authorID 
+ * @returns 
+ */
 export const getSourceAuthor = async (ctx: Context, authorID: number | undefined) => {
     let validate = await validateUserEntry(ctx, [], UserStatus.none, -1, { needed: false, params: [] })
     if (!validate) {

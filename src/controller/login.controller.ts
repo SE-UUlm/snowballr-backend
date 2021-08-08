@@ -7,6 +7,11 @@ import { jsonBodyToObject } from "../helper/body.ts";
 import { checkActive, UserStatus, validateUserEntry } from "./validation.controller.ts";
 import { LoginMessage } from "../model/messages/login.message.ts";
 
+/**
+ * Login of a user by email and password.
+ * @param ctx 
+ * @returns login successfull or not
+ */
 export const login = async (ctx: Context): Promise<boolean> => {
     let validate = await validateUserEntry(ctx, [], UserStatus.none, -1, { needed: true, params: ["email", "password"] })
     if (!validate) {

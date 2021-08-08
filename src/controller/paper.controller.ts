@@ -9,12 +9,22 @@ import { convertPapersToPaperMessage, convertPaperToPaperMessage } from "../help
 import { client, getChildren } from "./database.controller.ts";
 import { UserStatus, validateUserEntry } from "./validation.controller.ts";
 
+/**
+ * Gets all papers
+ * @param ctx 
+ */
 export const getPapers = async (ctx: Context) => {
     ctx.response.status = 200;
     let message: PapersMessage = { papers: await convertPapersToPaperMessage(await Paper.all()) }
     ctx.response.body = JSON.stringify(message)
 }
 
+/**
+ * Gets a single paper by it's ID
+ * @param ctx 
+ * @param paperID 
+ * @returns 
+ */
 export const getPaper = async (ctx: Context, paperID: number) => {
     let validate = await validateUserEntry(ctx, [paperID], UserStatus.none, -1, { needed: false, params: [] })
     if (!validate) {
@@ -30,7 +40,12 @@ export const getPaper = async (ctx: Context, paperID: number) => {
         makeErrorMessage(ctx, 404, "paper does not exist")
     }
 }
-
+/**
+ * Returns all papers that are referencing the corresponding paper
+ * @param ctx 
+ * @param paperID 
+ * @returns 
+ */
 export const getPaperReferences = async (ctx: Context, paperID: number) => {
     let validate = await validateUserEntry(ctx, [paperID], UserStatus.none, -1, { needed: false, params: [] })
     if (!validate) {
@@ -40,7 +55,12 @@ export const getPaperReferences = async (ctx: Context, paperID: number) => {
     await getRefOrCiteList(ctx, "referencedby", "paperreferencedid", "paperreferencingid", paperID)
 
 }
-
+/**
+ * Returns all paper that are cited by the corresponding paper
+ * @param ctx 
+ * @param paperID 
+ * @returns 
+ */
 export const getPaperCitations = async (ctx: Context, paperID: number) => {
     let validate = await validateUserEntry(ctx, [paperID], UserStatus.none, -1, { needed: false, params: [] })
     if (!validate) {
@@ -51,6 +71,16 @@ export const getPaperCitations = async (ctx: Context, paperID: number) => {
 
 }
 
+/**
+ * Gets all the paper refs or cites of one paper. 
+ * It uses the special sql call to retrieve the ids of the paper.
+ * The papers value will then be fetched through denodb, to have consistency in the data.
+ * @param ctx 
+ * @param table 
+ * @param column1 
+ * @param column2 
+ * @param id 
+ */
 const getRefOrCiteList = async (ctx: Context, table: string, column1: string, column2: string, id: number) => {
     let children = await getChildren(table, column1, column2, id)
     let papersToBe: Promise<Paper>[] = []
@@ -60,6 +90,12 @@ const getRefOrCiteList = async (ctx: Context, table: string, column1: string, co
     ctx.response.body = JSON.stringify(message)
 }
 
+/**
+ * Patches the values of the paper.
+ * @param ctx 
+ * @param paperID 
+ * @returns 
+ */
 export const patchPaper = async (ctx: Context, paperID: number) => {
     let validate = await validateUserEntry(ctx, [paperID], UserStatus.none, -1, { needed: false, params: [] })
     if (!validate) {
@@ -68,31 +104,50 @@ export const patchPaper = async (ctx: Context, paperID: number) => {
 
     let paper: Paper = await Paper.find(paperID);
     if (paper) {
-        let bodyJson = await jsonBodyToObject(ctx);
-        if (!bodyJson) {
-            return
-        }
-        let sourcePaper: any = paperCache.get(String(paperID))
-        if (sourcePaper) {
-            for (let key in bodyJson) {
-                delete sourcePaper[key]
-            }
-            if (Object.keys(sourcePaper).length > 0) {
-                await paperCache.add(String(paperID), sourcePaper)
-            } else {
-                await paperCache.delete(String(paperID))
-            }
-        }
-        delete bodyJson.author;
-        assign(paper, bodyJson);
-        await paper.update()
-        ctx.response.status = 200;
-        ctx.response.body = JSON.stringify(paper)
+        await paperUpdate(ctx, paper)
     } else {
         makeErrorMessage(ctx, 404, "paper does not exist")
     }
 }
 
+/**
+ * Updates a paper by the given values.
+ * If the paper has chooseable values in the filecache and that value is fetched, the corresponding choosable values will be deleted.
+ * If not a single value is left behind in the filecache, the file itself will be deleted.
+ * @param ctx 
+ * @param paper 
+ * @returns 
+ */
+export const paperUpdate = async (ctx: Context, paper: Paper) => {
+    let paperID = Number(paper.id)
+    let bodyJson = await jsonBodyToObject(ctx);
+    if (!bodyJson) {
+        return
+    }
+    let sourcePaper: any = paperCache.get(String(paperID))
+    if (sourcePaper) {
+        for (let key in bodyJson) {
+            delete sourcePaper[key]
+        }
+        if (Object.keys(sourcePaper).length > 0) {
+            await paperCache.add(String(paperID), sourcePaper)
+        } else {
+            await paperCache.delete(String(paperID))
+        }
+    }
+    delete bodyJson.author;
+    assign(paper, bodyJson);
+    await paper.update()
+    ctx.response.status = 200;
+    ctx.response.body = JSON.stringify(paper)
+}
+
+/**
+ * Returns all values left to be choosen by a user of a given paper.
+ * @param ctx 
+ * @param paperID 
+ * @returns 
+ */
 export const getSourcePaper = async (ctx: Context, paperID: number) => {
     let validate = await validateUserEntry(ctx, [paperID], UserStatus.none, -1, { needed: false, params: [] })
     if (!validate) {
