@@ -22,7 +22,7 @@ import { IApiAuthor } from "../api/iApiAuthor.ts";
 import { checkAdmin, checkMemberOfProject, checkPO, checkPOofProject, getPayloadFromJWT, UserStatus, validateUserEntry } from "./validation.controller.ts";
 import { makeFetching } from "./fetch.controller.ts";
 import { saveChildren } from "./database.controller.ts";
-import { paperUpdate } from "./paper.controller.ts";
+import { getPaperCitations, getPaperReferences, paperUpdate, postPaperCitation, postPaperReference } from "./paper.controller.ts";
 
 export const paperCache = new Cache<IApiPaper>(CacheType.F, 0, "paperCache")
 export const authorCache = new Cache<IApiAuthor>(CacheType.F, 0, "authorCache")
@@ -32,23 +32,30 @@ export const authorCache = new Cache<IApiAuthor>(CacheType.F, 0, "authorCache")
  * @param ctx
  */
 export const createProject = async (ctx: Context) => {
-    let validate = await validateUserEntry(ctx, [], UserStatus.needsPO, -1, { needed: true, params: ["name", "minCountReviewers", "countDecisiveReviewers"] })
+    let validate = await validateUserEntry(ctx, [], UserStatus.needsPO, -1, { needed: true, params: ["name", "minCountReviewers", "countDecisiveReviewers", "type", "combinationOfReviewers"] })
     if (!validate) {
         return
     }
+    try {
+        let project = await Project.create({
+            name: validate.name,
+            minCountReviewers: validate.minCountReviewers,
+            countDecisiveReviewers: validate.countDecisiveReviewers,
+            combinationOfReviewers: validate.combinationOfReviewers,
+            type: validate.type
+        })
+        if (validate.evaluationFormula) {
+            project.evaluationFormula = validate.evaluationFormula;
+            await project.update();
+        }
+        ctx.response.status = 201;
+        ctx.response.body = JSON.stringify(project)
 
-    let project = await Project.create({
-        name: validate.name,
-        minCountReviewers: validate.minCountReviewers,
-        countDecisiveReviewers: validate.countDecisiveReviewers
-    })
-    if (validate.evaluationFormula) {
-        project.evaluationFormula = validate.evaluationFormula;
-        await project.update();
+    } catch (error) {
+        makeErrorMessage(ctx, 422, "unable to process given data")
+        return
     }
 
-    ctx.response.status = 201;
-    ctx.response.body = JSON.stringify(project)
 }
 
 
@@ -65,11 +72,16 @@ export const addMemberToProject = async (ctx: Context, id: number) => {
         return
     }
     const params = await jsonBodyToObject(ctx)
-    await UserIsPartOfProject.create({
-        isOwner: params.isOwner ? params.isOwner : false,
-        userId: validate.id,
-        projectId: id
-    })
+    try {
+        await UserIsPartOfProject.create({
+            isOwner: params.isOwner ? params.isOwner : false,
+            userId: validate.id,
+            projectId: id
+        })
+    } catch (error) {
+        makeErrorMessage(ctx, 404, "User not found")
+        return
+    }
 
     ctx.response.status = 201;
 
@@ -180,19 +192,12 @@ const fetchToDB = async (stageID: number, projectID: number, doi?: string, title
 
             PaperScopeForStage.create({ stageId: stageID, paperId: Number(parent.id) })
             let currentStage = await Stage.find(stageID)
-            let stages = (await getAllStagesFromProject(projectID))
-            let nextStage: Stage = stages.filter((item: Stage) => Number(item.number) == Number(currentStage.number) + 1)[0];
-            if (!nextStage) {
-                nextStage = await Stage.create({
-                    name: `Stage ${stages.length}`,
-                    projectId: projectID,
-                    number: stages.length
-                })
-            }
+
+            let nextStage: Stage = await findNextStage(currentStage, projectID)
 
             let allChildren: Promise<Paper>[] = []
             for (let item of element.citations!) {
-                allChildren.push(createChildren(item, "citedBy", "papercitedid", "papercitingid", Number(parent.id), Number(nextStage.id)))
+                allChildren.push(createChildren(item, "citedBy", "papercitingid", "papercitedid", Number(parent.id), Number(nextStage.id)))
             }
             for (let item of element.references!) {
                 allChildren.push(createChildren(item, "referencedby", "paperreferencedid", "paperreferencingid", Number(parent.id), Number(nextStage.id)))
@@ -202,6 +207,19 @@ const fetchToDB = async (stageID: number, projectID: number, doi?: string, title
 
     }
 
+}
+
+export const findNextStage = async (currentStage: Stage, projectID: number) => {
+    let stages = (await getAllStagesFromProject(projectID))
+    let nextStage = stages.filter((item: Stage) => Number(item.number) == Number(currentStage.number) + 1)[0];
+    if (!nextStage) {
+        nextStage = await Stage.create({
+            name: `Stage ${stages.length}`,
+            projectId: projectID,
+            number: stages.length
+        })
+    }
+    return nextStage
 }
 /**
  * Saves all cites and refs in the cite and ref table and puts them to their corresponding stage
@@ -275,7 +293,7 @@ export const getPapersOfProjectStage = async (ctx: Context, projectID: number, s
  * @param ppID project specific paper id
  */
 export const getPaperOfProjectStage = async (ctx: Context, projectID: number, stageID: number, ppID: number) => {
-    let validate = await validateUserEntry(ctx, [projectID, stageID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
+    let validate = await validateUserEntry(ctx, [projectID, stageID, ppID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
     if (!validate) {
         return
     }
@@ -300,7 +318,7 @@ export const getPaperOfProjectStage = async (ctx: Context, projectID: number, st
  * @returns 
  */
 export const patchPaperOfProjectStage = async (ctx: Context, projectID: number, stageID: number, ppID: number) => {
-    let validate = await validateUserEntry(ctx, [projectID, stageID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
+    let validate = await validateUserEntry(ctx, [projectID, stageID, ppID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
     if (!validate) {
         return
     }
@@ -316,3 +334,89 @@ export const patchPaperOfProjectStage = async (ctx: Context, projectID: number, 
 
 
 }
+
+export const deletePaperOfProjectStage = async (ctx: Context, projectID: number, stageID: number, ppID: number) => {
+    let validate = await validateUserEntry(ctx, [projectID, stageID, ppID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
+    if (!validate) {
+        return
+    }
+
+    try {
+        await PaperScopeForStage.deleteById(ppID)
+        ctx.response.status = 200;
+    } catch (e) {
+        makeErrorMessage(ctx, 404, "paper already not part of project")
+    }
+
+}
+
+export const getCites = async (ctx: Context, projectID: number, stageID: number, ppID: number) => {
+    let validate = await validateUserEntry(ctx, [projectID, stageID, ppID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
+    if (!validate) {
+        return
+    }
+    try {
+        let paper = await PaperScopeForStage.where("id", ppID).paper();
+        if (paper) {
+            await getPaperCitations(ctx, Number(paper.id))
+        }
+    } catch (e) {
+        makeErrorMessage(ctx, 404, "paper does not exist")
+    }
+}
+
+export const getRefs = async (ctx: Context, projectID: number, stageID: number, ppID: number) => {
+    let validate = await validateUserEntry(ctx, [projectID, stageID, ppID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
+    if (!validate) {
+        return
+    }
+    try {
+        let paper = await PaperScopeForStage.where("id", ppID).paper();
+        if (paper) {
+            await getPaperReferences(ctx, Number(paper.id))
+        }
+    } catch (e) {
+        makeErrorMessage(ctx, 404, "paper does not exist")
+    }
+}
+
+export const postCiteProject = async (ctx: Context, projectID: number, stageID: number, ppID: number) => {
+    let validate = await validateUserEntry(ctx, [projectID, stageID, ppID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
+    if (!validate) {
+        return
+    }
+    try {
+        let paper = await PaperScopeForStage.where("id", ppID).paper();
+        let stage = await Stage.find(stageID)
+        if (paper && stage) {
+            let paper2 = await postPaperCitation(ctx, Number(paper.id))
+            if (paper2) {
+                let nextStage = await findNextStage(stage, projectID)
+                PaperScopeForStage.create({ stageId: Number(nextStage.id), paperId: Number(paper2.id) })
+            }
+        }
+    } catch (e) {
+        makeErrorMessage(ctx, 404, "paper does not exist")
+    }
+}
+
+export const postRefProject = async (ctx: Context, projectID: number, stageID: number, ppID: number) => {
+    let validate = await validateUserEntry(ctx, [projectID, stageID, ppID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
+    if (!validate) {
+        return
+    }
+    try {
+        let paper = await PaperScopeForStage.where("id", ppID).paper();
+        let stage = await Stage.find(stageID)
+        if (paper && stage) {
+            let paper2 = await postPaperReference(ctx, Number(paper.id))
+            if (paper2) {
+                let nextStage = await findNextStage(stage, projectID)
+                PaperScopeForStage.create({ stageId: Number(nextStage.id), paperId: Number(paper2.id) })
+            }
+        }
+    } catch (e) {
+        makeErrorMessage(ctx, 404, "paper does not exist")
+    }
+}
+

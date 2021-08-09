@@ -3,7 +3,7 @@ import { IApiPaper } from "../../src/api/iApiPaper.ts";
 import { db, client, saveChildren } from "../../src/controller/database.controller.ts";
 import { insertUser } from "../../src/controller/databaseFetcher/user.ts";
 import { Batcher } from "../../src/controller/fetch.controller.ts";
-import { getPaper, getPaperCitations, getPaperReferences, getPapers, getSourcePaper, patchPaper } from "../../src/controller/paper.controller.ts";
+import { getPaper, getPaperCitations, getPaperReferences, getPapers, getSourcePaper, patchPaper, postPaperCitation, postPaperReference } from "../../src/controller/paper.controller.ts";
 import { paperCache } from "../../src/controller/project.controller.ts";
 import { createJWT } from "../../src/controller/validation.controller.ts";
 import { setup } from "../../src/helper/setup.ts";
@@ -115,6 +115,100 @@ Deno.test({
     sanitizeOps: false,
 })
 
+Deno.test({
+    name: "getPaperCitations",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+
+        let app = await createMockApp();
+        let paper = await Paper.create({ title: "Hello there", abstract: "General Kenobi" })
+        let paper1 = await Paper.create({ title: "Hi", abstract: "this abstract" })
+        let paper2 = await Paper.create({ title: "mlem", abstract: "mlem mlem" })
+        await saveChildren("citedby", "papercitingid", "papercitedid", Number(paper.id), Number(paper1.id))
+        await saveChildren("citedby", "papercitingid", "papercitedid", Number(paper.id), Number(paper2.id))
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, ``, [["Content-Type", "application/json"]], "/", token);
+        await getPaperCitations(ctx, Number(paper.id))
+        let answer = JSON.parse(ctx.response.body as string)
+        assertEquals(ctx.response.status, 200)
+        assertEquals(answer.papers.length, 2)
+        assertEquals(answer.papers[0].title, "Hi")
+        assertEquals(answer.papers[0].id, Number(paper1.id))
+        assertEquals(answer.papers[1].title, "mlem")
+        assertEquals(answer.papers[1].abstract, "mlem mlem")
+        await db.close();
+        await client.end();
+        Batcher.kill()
+    },
+    sanitizeResources: false,
+    sanitizeOps: false,
+})
+Deno.test({
+    name: "postPaperCitations",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, ``, [["Content-Type", "application/json"]], "/", token);
+        let paper = await Paper.create({ title: "Hello there", abstract: "General Kenobi" })
+        let paper1 = await Paper.create({ title: "Hi", abstract: "this abstract" })
+        let paper2 = await Paper.create({ title: "mlem", abstract: "mlem mlem" })
+        await getPaperCitations(ctx, Number(paper.id))
+        let answer = JSON.parse(ctx.response.body as string)
+        let length = answer.papers.length
+        ctx = await createMockContext(app, `{"id": ${paper1.id}}`, [["Content-Type", "application/json"]], "/", token);
+        await postPaperCitation(ctx, Number(paper.id))
+
+        await getPaperCitations(ctx, Number(paper.id))
+        answer = JSON.parse(ctx.response.body as string)
+        assertEquals(ctx.response.status, 200)
+        assertEquals(answer.papers.length, length + 1)
+        assertEquals(answer.papers[0].title, "Hi")
+        assertEquals(answer.papers[0].abstract, "this abstract")
+        assertEquals(answer.papers[0].id, Number(paper1.id))
+        await db.close();
+        await client.end();
+        Batcher.kill()
+    },
+    sanitizeResources: false,
+    sanitizeOps: false,
+})
+
+Deno.test({
+    name: "postPaperReferences",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, ``, [["Content-Type", "application/json"]], "/", token);
+        let paper = await Paper.create({ title: "Hello there", abstract: "General Kenobi" })
+        let paper1 = await Paper.create({ title: "Hi", abstract: "this abstract" })
+        let paper2 = await Paper.create({ title: "mlem", abstract: "mlem mlem" })
+        await getPaperReferences(ctx, Number(paper.id))
+        let answer = JSON.parse(ctx.response.body as string)
+        let length = answer.papers.length
+        ctx = await createMockContext(app, `{"id": ${paper1.id}}`, [["Content-Type", "application/json"]], "/", token);
+        await postPaperReference(ctx, Number(paper.id))
+
+        await getPaperReferences(ctx, Number(paper.id))
+        answer = JSON.parse(ctx.response.body as string)
+        assertEquals(ctx.response.status, 200)
+        assertEquals(answer.papers.length, length + 1)
+        assertEquals(answer.papers[0].title, "Hi")
+        assertEquals(answer.papers[0].abstract, "this abstract")
+        assertEquals(answer.papers[0].id, Number(paper1.id))
+        await db.close();
+        await client.end();
+        Batcher.kill()
+    },
+    sanitizeResources: false,
+    sanitizeOps: false,
+})
 
 Deno.test({
     name: "getPaperSource",
@@ -251,3 +345,4 @@ Deno.test({
     sanitizeResources: false,
     sanitizeOps: false,
 })
+

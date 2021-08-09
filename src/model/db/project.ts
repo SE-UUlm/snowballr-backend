@@ -1,9 +1,9 @@
-import {DataTypes, Model} from "https://deno.land/x/denodb/mod.ts";
-import {UserIsPartOfProject} from "./userIsPartOfProject.ts";
-import {SearchApi} from "./searchApi.ts";
-import {Criteria} from "./criteria.ts";
-import {Review} from "./review.ts";
-import {Stage} from "./stage.ts";
+import { DataTypes, Model } from "https://deno.land/x/denodb/mod.ts";
+import { UserIsPartOfProject } from "./userIsPartOfProject.ts";
+import { SearchApi } from "./searchApi.ts";
+import { Criteria } from "./criteria.ts";
+import { Review } from "./review.ts";
+import { Stage } from "./stage.ts";
 
 
 export class Project extends Model {
@@ -11,11 +11,13 @@ export class Project extends Model {
     static timestamps = true;
 
     static fields = {
-        id: {primaryKey: true, autoIncrement: true, type: DataTypes.INTEGER},
+        id: { primaryKey: true, autoIncrement: true, type: DataTypes.INTEGER },
         name: DataTypes.STRING,
-        minCountReviewers: {type: DataTypes.INTEGER},
-        countDecisiveReviewers: {type: DataTypes.INTEGER},
-        evaluationFormula: {type: DataTypes.STRING},
+        minCountReviewers: { type: DataTypes.INTEGER },
+        countDecisiveReviewers: { type: DataTypes.INTEGER },
+        combinationOfReviewers: DataTypes.INTEGER,
+        type: DataTypes.STRING,
+        evaluationFormula: { type: DataTypes.STRING },
     }
 
     static defaults = {

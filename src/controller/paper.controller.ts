@@ -6,7 +6,7 @@ import { Paper } from "../model/db/paper.ts";
 import { PaperMessage, PapersMessage, Status } from "../model/messages/papersMessage.ts";
 import { paperCache } from "./project.controller.ts";
 import { convertPapersToPaperMessage, convertPaperToPaperMessage } from "../helper/converter/paperConverter.ts"
-import { client, getChildren } from "./database.controller.ts";
+import { client, getChildren, saveChildren } from "./database.controller.ts";
 import { UserStatus, validateUserEntry } from "./validation.controller.ts";
 
 /**
@@ -52,7 +52,7 @@ export const getPaperReferences = async (ctx: Context, paperID: number) => {
         return
     }
 
-    await getRefOrCiteList(ctx, "referencedby", "paperreferencedid", "paperreferencingid", paperID)
+    return getRefOrCiteList(ctx, "referencedby", "paperreferencedid", "paperreferencingid", paperID)
 
 }
 /**
@@ -67,7 +67,7 @@ export const getPaperCitations = async (ctx: Context, paperID: number) => {
         return
     }
 
-    await getRefOrCiteList(ctx, "citedBy", "papercitedid", "papercitingid", paperID)
+    return getRefOrCiteList(ctx, "citedBy", "papercitingid", "papercitedid", paperID)
 
 }
 
@@ -161,6 +161,47 @@ export const getSourcePaper = async (ctx: Context, paperID: number) => {
         makeErrorMessage(ctx, 404, "paper does not exist")
     }
 
+
+
+}
+
+export const postPaperCitation = async (ctx: Context, id: number) => {
+    let validate = await validateUserEntry(ctx, [id], UserStatus.none, -1, { needed: true, params: ["id"] })
+    if (!validate) {
+        return
+    }
+    let paper;
+    let paper2;
+
+    paper = await Paper.find(id)
+    paper2 = await Paper.find(validate.id)
+    if (paper && paper2) {
+        await saveChildren("citedby", "papercitedid", "papercitingid", Number(paper2.id), Number(paper.id));
+        ctx.response.status = 200
+        return paper2;
+    }
+    makeErrorMessage(ctx, 404, "Paper not found")
+    return
+
+
+}
+
+export const postPaperReference = async (ctx: Context, id: number) => {
+    let validate = await validateUserEntry(ctx, [id], UserStatus.none, -1, { needed: true, params: ["id"] })
+    if (!validate) {
+        return
+    }
+
+
+    let paper = await Paper.find(id)
+    let paper2 = await Paper.find(validate.id)
+    if (paper && paper2) {
+        await saveChildren("referencedby", "paperreferencedid", "paperreferencingid", Number(paper.id), Number(paper2.id));
+        return paper2;
+    }
+
+    makeErrorMessage(ctx, 404, "Paper not found")
+    return
 
 
 }

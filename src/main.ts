@@ -10,13 +10,18 @@ import {
     addPaperToProjectStage,
     addStageToProject,
     createProject,
+    deletePaperOfProjectStage,
+    getCites,
     getMembersOfProject,
     getPaperOfProjectStage,
     getPapersOfProjectStage,
     getProjects,
-    patchPaperOfProjectStage
+    getRefs,
+    patchPaperOfProjectStage,
+    postCiteProject,
+    postRefProject
 } from "./controller/project.controller.ts";
-import { getPaper, getPaperCitations, getPaperReferences, getPapers, getSourcePaper, patchPaper } from "./controller/paper.controller.ts";
+import { getPaper, getPaperCitations, getPaperReferences, getPapers, getSourcePaper, patchPaper, postPaperCitation, postPaperReference } from "./controller/paper.controller.ts";
 import { getAuthor, getSourceAuthor, patchAuthor } from "./controller/author.controller.ts";
 
 await setup(true);
@@ -78,6 +83,21 @@ router
     .patch("/projects/:id/stages/:id2/papers/:ppid", async (context) => {
         await patchPaperOfProjectStage(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))
     })
+    .delete("/projects/:id/stages/:id2/papers/:ppid", async (context) => {
+        await deletePaperOfProjectStage(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))
+    })
+    .get("/projects/:id/stages/:id2/papers/:ppid/references", async (context) => {
+        await getRefs(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))
+    })
+    .post("/projects/:id/stages/:id2/papers/:ppid/references", async (context) => {
+        await postRefProject(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))
+    })
+    .get("/projects/:id/stages/:id2/papers/:ppid/citations", async (context) => {
+        await getCites(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))
+    })
+    .post("/projects/:id/stages/:id2/papers/:ppid/citations", async (context) => {
+        await postCiteProject(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))
+    })
     .get("/papers/", async (context) => {
         await getPapers(context)
     })
@@ -93,8 +113,14 @@ router
     .get("/papers/:id/references", async (context) => {
         await getPaperReferences(context, Number(context.params.id))
     })
+    .post("/papers/:id/references", async (context) => {
+        await postPaperReference(context, Number(context.params.id))
+    })
     .get("/papers/:id/citations", async (context) => {
         await getPaperCitations(context, Number(context.params.id))
+    })
+    .post("/papers/:id/citations", async (context) => {
+        await postPaperCitation(context, Number(context.params.id))
     })
     .get("/authors/:id", async (context) => {
         await getAuthor(context, Number(context.params.id))
