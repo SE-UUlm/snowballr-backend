@@ -21,7 +21,7 @@ import {
     postCiteProject,
     postRefProject
 } from "./controller/project.controller.ts";
-import { addAuthorToPaper, deleteAuthorOfPaper, getAuthors, getPaper, getPaperCitations, getPaperReferences, getPapers, getSourcePaper, patchPaper, postPaperCitation, postPaperReference } from "./controller/paper.controller.ts";
+import { addAuthorToPaper, deleteAuthorOfPaper, getAuthors, getPaper, getPaperCitations, getPaperReferences, getPapers, getSourcePaper, patchPaper, postPaper, postPaperCitation, postPaperReference } from "./controller/paper.controller.ts";
 import { getAuthor, getSourceAuthor, patchAuthor, postAuthor } from "./controller/author.controller.ts";
 
 await setup(true);
@@ -100,6 +100,9 @@ router
     })
     .get("/papers/", async (context) => {
         await getPapers(context)
+    })
+    .post("/papers/", async (context) => {
+        await postPaper(context)
     })
     .get("/papers/:id", async (context) => {
         await getPaper(context, Number(context.params.id))

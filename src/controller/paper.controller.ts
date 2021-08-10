@@ -24,6 +24,23 @@ export const getPapers = async (ctx: Context) => {
 }
 
 /**
+ * Posts a paper
+ * @param ctx 
+ */
+export const postPaper = async (ctx: Context) => {
+    let validate = await validateUserEntry(ctx, [], UserStatus.none, -1, { needed: true, params: [] })
+    if (!validate) {
+        return
+    }
+    if (validate.id) { delete validate.id }
+    let paper = await Paper.create({})
+    Object.assign(paper, validate)
+    await paper.update()
+    ctx.response.status = 200;
+    ctx.response.body = JSON.stringify(paper)
+}
+
+/**
  * Gets a single paper by it's ID
  * @param ctx 
  * @param paperID 

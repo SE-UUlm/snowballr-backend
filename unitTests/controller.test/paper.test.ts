@@ -3,7 +3,7 @@ import { IApiPaper } from "../../src/api/iApiPaper.ts";
 import { db, client, saveChildren } from "../../src/controller/database.controller.ts";
 import { insertUser } from "../../src/controller/databaseFetcher/user.ts";
 import { Batcher } from "../../src/controller/fetch.controller.ts";
-import { addAuthorToPaper, deleteAuthorOfPaper, getAuthors, getPaper, getPaperCitations, getPaperReferences, getPapers, getSourcePaper, patchPaper, postPaperCitation, postPaperReference } from "../../src/controller/paper.controller.ts";
+import { addAuthorToPaper, deleteAuthorOfPaper, getAuthors, getPaper, getPaperCitations, getPaperReferences, getPapers, getSourcePaper, patchPaper, postPaper, postPaperCitation, postPaperReference } from "../../src/controller/paper.controller.ts";
 import { paperCache } from "../../src/controller/project.controller.ts";
 import { createJWT } from "../../src/controller/validation.controller.ts";
 import { setup } from "../../src/helper/setup.ts";
@@ -32,6 +32,43 @@ Deno.test({
         let answer = JSON.parse(ctx.response.body as string)
         assertEquals(ctx.response.status, 200)
         assertEquals(answer.papers.length, paperNumber + 4)
+        await db.close();
+        await client.end();
+        Batcher.kill()
+    },
+    sanitizeResources: false,
+    sanitizeOps: false,
+})
+
+Deno.test({
+    name: "postPaper",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, `{
+            "doi": "1234",
+            "title": "a title",
+            "abstract": "an abstract",
+            "year": 2009,
+            "publisher": "uni ulm",
+            "type": "proceeding",
+            "scope": "a scope",
+            "scopeName": "a scopeName"
+        }`, [["Content-Type", "application/json"]], "/", token);
+        await postPaper(ctx)
+        let answer = JSON.parse(ctx.response.body as string)
+        assertEquals(ctx.response.status, 200)
+        let paper = await Paper.find(answer.id)
+        assertEquals(String(paper.doi), "1234")
+        assertEquals(String(paper.title), "a title")
+        assertEquals(String(paper.abstract), "an abstract")
+        assertEquals(Number(paper.year), 2009)
+        assertEquals(String(paper.publisher), "uni ulm")
+        assertEquals(String(paper.type), "proceeding")
+        assertEquals(String(paper.scope), "a scope")
+        assertEquals(String(paper.scopeName), "a scopeName")
         await db.close();
         await client.end();
         Batcher.kill()
