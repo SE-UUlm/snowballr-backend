@@ -1,6 +1,6 @@
 import { assertEquals } from "https://deno.land/std@0.83.0/testing/asserts.ts";
 import { IApiAuthor } from "../../src/api/iApiAuthor.ts";
-import { getAuthor, getSourceAuthor, patchAuthor } from "../../src/controller/author.controller.ts";
+import { getAuthor, getSourceAuthor, patchAuthor, postAuthor } from "../../src/controller/author.controller.ts";
 import { db, client } from "../../src/controller/database.controller.ts";
 import { insertUser } from "../../src/controller/databaseFetcher/user.ts";
 import { Batcher } from "../../src/controller/fetch.controller.ts";
@@ -10,6 +10,38 @@ import { setup } from "../../src/helper/setup.ts";
 import { Author } from "../../src/model/db/author.ts";
 import { createMockApp } from "../mockObjects/oak/mockApp.test.ts";
 import { createMockContext } from "../mockObjects/oak/mockContext.test.ts";
+
+
+Deno.test({
+    name: "postAuthor",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, `{"firstName":"This", "lastName":"Works", "rawString": "This Works", "orcid":"12ab"}`, [["Content-Type", "application/json"]], "/", token);
+        await postAuthor(ctx)
+        let answer = JSON.parse(ctx.response.body as string)
+        assertEquals(ctx.response.status, 200)
+        assertEquals(answer.rawString, "This Works")
+        assertEquals(answer.firstName, "This")
+        assertEquals(answer.lastName, "Works")
+        assertEquals(answer.orcid, "12ab")
+
+        let dbAuthor = await Author.find(answer.id)
+        assertEquals(String(dbAuthor.rawString), "This Works")
+        assertEquals(String(dbAuthor.firstName), "This")
+        assertEquals(String(dbAuthor.lastName), "Works")
+        assertEquals(String(dbAuthor.orcid), "12ab")
+        await db.close()
+        await client.end();
+        Batcher.kill()
+        authorCache.clear()
+    },
+    sanitizeResources: false,
+    sanitizeOps: false,
+})
 
 Deno.test({
     name: "getAuthor",

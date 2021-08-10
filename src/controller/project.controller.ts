@@ -341,12 +341,9 @@ export const deletePaperOfProjectStage = async (ctx: Context, projectID: number,
         return
     }
 
-    try {
-        await PaperScopeForStage.deleteById(ppID)
-        ctx.response.status = 200;
-    } catch (e) {
-        makeErrorMessage(ctx, 404, "paper already not part of project")
-    }
+    await PaperScopeForStage.deleteById(ppID)
+    ctx.response.status = 200;
+
 
 }
 

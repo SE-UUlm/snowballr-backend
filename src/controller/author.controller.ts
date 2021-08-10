@@ -9,6 +9,28 @@ import { UserStatus, validateUserEntry } from "./validation.controller.ts";
 
 
 /**
+ * Inserts an author to the database
+ * @param ctx 
+ * @returns 
+ */
+export const postAuthor = async (ctx: Context) => {
+    let validate = await validateUserEntry(ctx, [], UserStatus.none, -1, { needed: true, params: [] })
+    if (!validate) {
+        return
+    }
+
+    let author = await Author.create({});
+    if (validate.rawString) { author.rawString = validate.rawString }
+    if (validate.orcid) { author.orcid = validate.orcid }
+    if (validate.lastName) { author.lastName = validate.lastName }
+    if (validate.firstName) { author.firstName = validate.firstName }
+    await author.update();
+
+    ctx.response.status = 200;
+    ctx.response.body = JSON.stringify(author)
+}
+
+/**
  * Returns one Author
  * @param ctx 
  * @param authorID id of the author

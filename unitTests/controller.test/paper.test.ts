@@ -3,11 +3,13 @@ import { IApiPaper } from "../../src/api/iApiPaper.ts";
 import { db, client, saveChildren } from "../../src/controller/database.controller.ts";
 import { insertUser } from "../../src/controller/databaseFetcher/user.ts";
 import { Batcher } from "../../src/controller/fetch.controller.ts";
-import { getPaper, getPaperCitations, getPaperReferences, getPapers, getSourcePaper, patchPaper, postPaperCitation, postPaperReference } from "../../src/controller/paper.controller.ts";
+import { addAuthorToPaper, deleteAuthorOfPaper, getAuthors, getPaper, getPaperCitations, getPaperReferences, getPapers, getSourcePaper, patchPaper, postPaperCitation, postPaperReference } from "../../src/controller/paper.controller.ts";
 import { paperCache } from "../../src/controller/project.controller.ts";
 import { createJWT } from "../../src/controller/validation.controller.ts";
 import { setup } from "../../src/helper/setup.ts";
+import { Author } from "../../src/model/db/author.ts";
 import { Paper } from "../../src/model/db/paper.ts";
+import { Wrote } from "../../src/model/db/wrote.ts";
 import { createMockApp } from "../mockObjects/oak/mockApp.test.ts";
 import { createMockContext } from "../mockObjects/oak/mockContext.test.ts";
 
@@ -346,3 +348,106 @@ Deno.test({
     sanitizeOps: false,
 })
 
+Deno.test({
+    name: "getAuthorsOfPaper",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+
+        let app = await createMockApp();
+        let paper = await Paper.create({ title: "Hello there", abstract: "General Kenobi" })
+        let author1 = await Author.create({ firstName: "Hi" })
+        let author2 = await Author.create({ lastName: "Hellu" })
+        await Wrote.create({ authorId: Number(author1.id), paperId: Number(paper.id) })
+        await Wrote.create({ authorId: Number(author2.id), paperId: Number(paper.id) })
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, ``, [["Content-Type", "application/json"]], "/", token);
+        await getAuthors(ctx, Number(paper.id))
+        let answer = JSON.parse(ctx.response.body as string)
+        assertEquals(ctx.response.status, 200)
+        assertEquals(answer.authors.length, 2)
+        assertEquals(answer.authors[0].firstName, "Hi")
+        assertEquals(answer.authors[1].lastName, "Hellu")
+        await db.close();
+        await client.end();
+        Batcher.kill()
+    },
+    sanitizeResources: false,
+    sanitizeOps: false,
+})
+
+Deno.test({
+    name: "addAuthorToPaper",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+
+        let app = await createMockApp();
+        let paper = await Paper.create({ title: "Hello there", abstract: "General Kenobi" })
+        let author1 = await Author.create({ firstName: "Hi" })
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, `{"id": ${Number(author1.id)}}`, [["Content-Type", "application/json"]], "/", token);
+        await addAuthorToPaper(ctx, Number(paper.id))
+        assertEquals(ctx.response.status, 200)
+        let wrote = await Wrote.where({ paperId: Number(paper.id), authorId: Number(author1.id) }).get()
+        assertNotEquals(wrote, undefined)
+        await db.close();
+        await client.end();
+        Batcher.kill()
+    },
+    sanitizeResources: false,
+    sanitizeOps: false,
+})
+
+Deno.test({
+    name: "addAuthorToPaperWrongId",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+
+        let app = await createMockApp();
+        let paper = await Paper.create({ title: "Hello there", abstract: "General Kenobi" })
+        let author1 = await Author.create({ firstName: "Hi" })
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, `{"id": ${Number(author1.id) + 1}}`, [["Content-Type", "application/json"]], "/", token);
+        await addAuthorToPaper(ctx, Number(paper.id))
+        assertEquals(ctx.response.status, 404)
+        let wrote = await Wrote.where({ paperId: Number(paper.id), authorId: Number(author1.id) }).get()
+        if (Array.isArray(wrote)) {
+            assertEquals(wrote[0], undefined)
+        } else {
+            assertEquals(wrote, "database now doesn't always return array")
+        }
+
+        await db.close();
+        await client.end();
+        Batcher.kill()
+    },
+    sanitizeResources: false,
+    sanitizeOps: false,
+})
+
+
+Deno.test({
+    name: "deleteAuthorOfPaper",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+
+        let app = await createMockApp();
+        let paper = await Paper.create({ title: "Hello there", abstract: "General Kenobi" })
+        let author1 = await Author.create({ firstName: "Hi" })
+        let wrote = await Wrote.create({ authorId: Number(author1.id), paperId: Number(paper.id) })
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, ``, [["Content-Type", "application/json"]], "/", token);
+        await deleteAuthorOfPaper(ctx, Number(paper.id), Number(author1.id))
+        assertEquals(ctx.response.status, 200)
+        wrote = await Wrote.find(Number(wrote.id))
+        assertEquals(wrote, undefined)
+        await db.close();
+        await client.end();
+        Batcher.kill()
+    },
+    sanitizeResources: false,
+    sanitizeOps: false,
+})

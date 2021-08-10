@@ -8,6 +8,10 @@ import { paperCache } from "./project.controller.ts";
 import { convertPapersToPaperMessage, convertPaperToPaperMessage } from "../helper/converter/paperConverter.ts"
 import { client, getChildren, saveChildren } from "./database.controller.ts";
 import { UserStatus, validateUserEntry } from "./validation.controller.ts";
+import { getAllAuthorsFromPaper } from "./databaseFetcher/author.ts";
+import { AuthorMessage } from "../model/messages/author.message.ts";
+import { convertAuthorToAuthorMessage } from "../helper/converter/authorConverter.ts";
+import { Wrote } from "../model/db/wrote.ts";
 
 /**
  * Gets all papers
@@ -165,6 +169,12 @@ export const getSourcePaper = async (ctx: Context, paperID: number) => {
 
 }
 
+/**
+ * Adds a citation of a paper into the database
+ * @param ctx 
+ * @param id 
+ * @returns 
+ */
 export const postPaperCitation = async (ctx: Context, id: number) => {
     let validate = await validateUserEntry(ctx, [id], UserStatus.none, -1, { needed: true, params: ["id"] })
     if (!validate) {
@@ -184,8 +194,12 @@ export const postPaperCitation = async (ctx: Context, id: number) => {
     return
 
 
-}
-
+}/**
+ * Adds a reference by a paper into the database
+ * @param ctx 
+ * @param id 
+ * @returns 
+ */
 export const postPaperReference = async (ctx: Context, id: number) => {
     let validate = await validateUserEntry(ctx, [id], UserStatus.none, -1, { needed: true, params: ["id"] })
     if (!validate) {
@@ -203,5 +217,59 @@ export const postPaperReference = async (ctx: Context, id: number) => {
     makeErrorMessage(ctx, 404, "Paper not found")
     return
 
+
+}
+
+/**
+ * Returns all authors of a paper
+ * @param ctx 
+ * @param id 
+ * @returns 
+ */
+export const getAuthors = async (ctx: Context, id: number) => {
+    let validate = await validateUserEntry(ctx, [id], UserStatus.none, -1, { needed: false, params: [] })
+    if (!validate) {
+        return
+    }
+
+    let authors = await getAllAuthorsFromPaper(id)
+    let message = { authors: authors.map(item => convertAuthorToAuthorMessage(item)) }
+    ctx.response.body = JSON.stringify(message)
+    ctx.response.status = 200
+}
+
+/**
+ * Adds an author to a paper
+ * @param ctx 
+ * @param id 
+ * @returns 
+ */
+export const addAuthorToPaper = async (ctx: Context, id: number) => {
+    let validate = await validateUserEntry(ctx, [id], UserStatus.none, -1, { needed: true, params: ["id"] })
+    if (!validate) {
+        return
+    }
+    try {
+        await Wrote.create({ paperId: id, authorId: validate.id })
+        ctx.response.status = 200
+    } catch (error) {
+        makeErrorMessage(ctx, 404, "Paper or Author not found")
+    }
+}
+
+/**
+ * Removes an author as author of a paper
+ * @param ctx 
+ * @param id 
+ * @returns 
+ */
+export const deleteAuthorOfPaper = async (ctx: Context, paperID: number, authorID: number) => {
+    let validate = await validateUserEntry(ctx, [paperID, authorID], UserStatus.none, -1, { needed: false, params: [] })
+    if (!validate) {
+        return
+    }
+
+    await Wrote.where({ paperId: paperID, authorId: authorID }).delete()
+    ctx.response.status = 200
 
 }
