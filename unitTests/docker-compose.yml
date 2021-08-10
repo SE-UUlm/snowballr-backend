@@ -19,6 +19,7 @@ services:
     profiles:
       - test
       - run
+      - db
   backend-test:
     image: denoland/deno:1.11.5
     command: bash -c "ls -a -l && deno test --allow-env --allow-read --allow-net --allow-write --coverage=cov_profile --unstable;

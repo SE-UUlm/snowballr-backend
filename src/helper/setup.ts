@@ -112,6 +112,8 @@ export const setup = async (dropDatabase: boolean) => {
                 VALUES (${Number(paper01.id)}, ${Number(paper02.id)}),
                         (${Number(paper01.id)}, ${Number(paper03.id)})`)
 
+        let searchApi = await SearchApi.create({ name: "microsoft" })
+        await ProjectUsesApi.create({ searchapiId: Number(searchApi.id), projectId: Number(project.id) })
 
     }
 

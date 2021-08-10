@@ -3,7 +3,12 @@ import { IApiPaper } from "../../src/api/iApiPaper.ts";
 import { IApiQuery } from "../../src/api/iApiQuery.ts";
 import { IeeeApi } from "../../src/api/ieeeApi.ts";
 import { fileLogger } from "../../src/api/logger.ts";
+import { getAllApisFromProject } from "../../src/controller/databaseFetcher/searchApi.ts";
+import { setup } from "../../src/helper/setup.ts";
 
+await setup(true);
+await getAllApisFromProject(1);
+/*
 const query: IApiQuery = {
 	id: "tst",
 	rawName: "sebastian erdweg",
