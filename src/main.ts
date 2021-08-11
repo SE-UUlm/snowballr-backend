@@ -1,4 +1,4 @@
-import { Application, Router } from 'https://deno.land/x/oak/mod.ts';
+import { Application, RouteParams, Router, RouterContext } from 'https://deno.land/x/oak/mod.ts';
 import { validateContentType, validateJWTIfExists } from "./controller/validation.controller.ts";
 import { login } from "./controller/login.controller.ts";
 import { setup } from "./helper/setup.ts";
@@ -6,20 +6,25 @@ import { createUser, getUser, getUserProjects, getUsers, patchUser, resetPasswor
 import { logout } from "./controller/logout.controller.ts";
 import { SmtpClient } from "https://deno.land/x/smtp/mod.ts";
 import {
+    addCriteriaToProject,
     addMemberToProject,
     addPaperToProjectStage,
     addStageToProject,
     createProject,
+    deleteCriteriaOfProject,
     deletePaperOfProjectStage,
     getCites,
+    getCriteriasOfProject,
     getMembersOfProject,
     getPaperOfProjectStage,
     getPapersOfProjectStage,
     getProjects,
     getRefs,
+    patchCriteriaOfProject,
     patchPaperOfProjectStage,
     postCiteProject,
-    postRefProject
+    postRefProject,
+    removeMemberOfProject
 } from "./controller/project.controller.ts";
 import { addAuthorToPaper, deleteAuthorOfPaper, getAuthors, getPaper, getPaperCitations, getPaperReferences, getPapers, getSourcePaper, patchPaper, postPaper, postPaperCitation, postPaperReference } from "./controller/paper.controller.ts";
 import { getAuthor, getSourceAuthor, patchAuthor, postAuthor } from "./controller/author.controller.ts";
@@ -67,6 +72,21 @@ router
     })
     .get("/projects/:id/members", async (context) => {
         await getMembersOfProject(context, Number(context.params.id))
+    })
+    .delete("/projects/:id/members/:id2", async (context) => {
+        await removeMemberOfProject(context, Number(context.params.id), Number(context.params.id2))
+    })
+    .post("/projects/:id/criterias", async (context) => {
+        await addCriteriaToProject(context, Number(context.params.id))
+    })
+    .get("/projects/:id/criterias", async (context) => {
+        await getCriteriasOfProject(context, Number(context.params.id))
+    })
+    .patch("/projects/:id/criterias/:id2", async (context) => {
+        await patchCriteriaOfProject(context, Number(context.params.id), Number(context.params.id2))
+    })
+    .delete("/projects/:id/members", async (context) => {
+        await deleteCriteriaOfProject(context, Number(context.params.id), Number(context.params.id2))
     })
     .post("/projects/:id/stages", async (context) => {
         await addStageToProject(context, Number(context.params.id))

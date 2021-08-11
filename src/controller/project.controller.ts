@@ -23,6 +23,7 @@ import { checkAdmin, checkMemberOfProject, checkPO, checkPOofProject, getPayload
 import { makeFetching } from "./fetch.controller.ts";
 import { saveChildren } from "./database.controller.ts";
 import { getPaperCitations, getPaperReferences, paperUpdate, postPaperCitation, postPaperReference } from "./paper.controller.ts";
+import { Criteria } from "../model/db/criteria.ts";
 
 export const paperCache = new Cache<IApiPaper>(CacheType.F, 0, "paperCache")
 export const authorCache = new Cache<IApiAuthor>(CacheType.F, 0, "authorCache")
@@ -85,6 +86,22 @@ export const addMemberToProject = async (ctx: Context, id: number) => {
 
     ctx.response.status = 201;
 
+}
+
+/**
+ * Removes a member from the project
+ * @param ctx 
+ * @param projectID 
+ * @returns 
+ */
+export const removeMemberOfProject = async (ctx: Context, projectID: number, userID: number) => {
+    let validate: any = await validateUserEntry(ctx, [projectID, userID], UserStatus.needsPOOfProject, projectID, { needed: false, params: [] })
+    if (!validate) {
+        return
+    }
+
+    await UserIsPartOfProject.where({ projectId: projectID, userId: userID }).delete()
+    ctx.response.status = 200;
 }
 
 /**
@@ -417,6 +434,76 @@ export const postRefProject = async (ctx: Context, projectID: number, stageID: n
     }
 }
 
+export const getCriteriasOfProject = async (ctx: Context, projectID: number) => {
+    let validate = await validateUserEntry(ctx, [projectID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
+    if (!validate) {
+        return
+    }
+
+    let criterias = await Criteria.where({ projectId: projectID }).get()
+    if (Array.isArray(criterias)) {
+        ctx.response.status = 200;
+        ctx.response.body = JSON.stringify({ criterias: criterias })
+    }
+}
+
+export const addCriteriaToProject = async (ctx: Context, projectID: number) => {
+    let validate = await validateUserEntry(ctx, [projectID], UserStatus.needsPOOfProject, projectID, { needed: true, params: ["short", "description", "abbreviation", "inclusionExclusion", "weight"] })
+    if (!validate) {
+        return
+    }
+    if (!["inclusion", "hard exclusion", "exclusion"].includes(validate.inclusionExclusion)) {
+        makeErrorMessage(ctx, 422, "inclusionExclusion must be one of the options: 'inclusion', 'exclusion', 'hard exclusion'")
+        return
+    }
+    if (!Number(validate.weight)) {
+        makeErrorMessage(ctx, 422, "weight must be a number")
+        return
+    }
+    try {
+        let criteria = await Criteria.create({ projectId: projectID, description: validate.description, short: validate.short, abbreviation: validate.abbreviation, inclusionExclusion: validate.inclusionExclusion, weight: validate.weight })
+        ctx.response.status = 200;
+        ctx.response.body = JSON.stringify(criteria)
+    } catch (err) {
+
+        makeErrorMessage(ctx, 404, "Project not found")
+    }
+}
+
+export const patchCriteriaOfProject = async (ctx: Context, projectID: number, criteriaID: number) => {
+    let validate = await validateUserEntry(ctx, [projectID, criteriaID], UserStatus.needsMemberOfProject, projectID, { needed: true, params: [] })
+    if (!validate) {
+        return
+    }
+
+    if (!Number(validate.weight)) {
+        makeErrorMessage(ctx, 422, "weight must be a number")
+        return
+    }
+
+    let criteria = await Criteria.find(criteriaID)
+    if (criteria) {
+        Object.assign(criteria, validate)
+        await criteria.update()
+        ctx.response.status = 200;
+        ctx.response.body = JSON.stringify(criteria)
+    } else {
+        makeErrorMessage(ctx, 404, "criteria not found")
+    }
+}
+
+export const deleteCriteriaOfProject = async (ctx: Context, projectID: number, criteriaID: number) => {
+    let validate = await validateUserEntry(ctx, [projectID, criteriaID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
+    if (!validate) {
+        return
+    }
+    try {
+        await Criteria.deleteById(criteriaID)
+        ctx.response.status = 200;
+    } catch (err) {
+        makeErrorMessage(ctx, 403, "Criterias have already been used to evaluate paper. For safety those have to be removed first")
+    }
+}
 export const getApis = async (ctx: Context, projectID: number) => {
 
 }
