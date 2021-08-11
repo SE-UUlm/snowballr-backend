@@ -501,7 +501,7 @@ export const deleteCriteriaOfProject = async (ctx: Context, projectID: number, c
         await Criteria.deleteById(criteriaID)
         ctx.response.status = 200;
     } catch (err) {
-        makeErrorMessage(ctx, 403, "Criterias have already been used to evaluate paper. For safety those have to be removed first")
+        makeErrorMessage(ctx, 403, "Criteria has already been used to evaluate paper. For safety those have to be removed first")
     }
 }
 export const getApis = async (ctx: Context, projectID: number) => {
