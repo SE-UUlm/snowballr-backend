@@ -462,7 +462,7 @@ export const addCriteriaToProject = async (ctx: Context, projectID: number) => {
     }
     try {
         let criteria = await Criteria.create({ projectId: projectID, description: validate.description, short: validate.short, abbreviation: validate.abbreviation, inclusionExclusion: validate.inclusionExclusion, weight: validate.weight })
-        ctx.response.status = 200;
+        ctx.response.status = 201;
         ctx.response.body = JSON.stringify(criteria)
     } catch (err) {
 
