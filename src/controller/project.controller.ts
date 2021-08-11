@@ -481,6 +481,7 @@ export const patchCriteriaOfProject = async (ctx: Context, projectID: number, cr
         return
     }
 
+    delete validate.id;
     let criteria = await Criteria.find(criteriaID)
     if (criteria) {
         Object.assign(criteria, validate)
