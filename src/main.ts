@@ -1,23 +1,33 @@
-import { Application, Router } from 'https://deno.land/x/oak/mod.ts';
-import { validateContentType, validateJWTIfExists } from "./controller/validation.ts";
-import { login } from "./controller/login.ts";
+import { Application, RouteParams, Router, RouterContext } from 'https://deno.land/x/oak/mod.ts';
+import { validateContentType, validateJWTIfExists } from "./controller/validation.controller.ts";
+import { login } from "./controller/login.controller.ts";
 import { setup } from "./helper/setup.ts";
-import { createUser, getUser, getUserProjects, getUsers, patchUser, resetPassword } from "./controller/user.ts";
-import { logout } from "./controller/logout.ts";
+import { createUser, getUser, getUserProjects, getUsers, patchUser, resetPassword } from "./controller/user.controller.ts";
+import { logout } from "./controller/logout.controller.ts";
 import { SmtpClient } from "https://deno.land/x/smtp/mod.ts";
 import {
+    addCriteriaToProject,
     addMemberToProject,
     addPaperToProjectStage,
     addStageToProject,
     createProject,
+    deleteCriteriaOfProject,
+    deletePaperOfProjectStage,
+    getCites,
+    getCriteriasOfProject,
     getMembersOfProject,
     getPaperOfProjectStage,
     getPapersOfProjectStage,
     getProjects,
-    patchPaperOfProjectStage
-} from "./controller/project.ts";
-import { getPaper, getPaperCitations, getPaperReferences, getPapers, getSourcePaper, patchPaper } from "./controller/paper.ts";
-import { getAuthor, getSourceAuthor, patchAuthor } from "./controller/author.controller.ts";
+    getRefs,
+    patchCriteriaOfProject,
+    patchPaperOfProjectStage,
+    postCiteProject,
+    postRefProject,
+    removeMemberOfProject
+} from "./controller/project.controller.ts";
+import { addAuthorToPaper, deleteAuthorOfPaper, getAuthors, getPaper, getPaperCitations, getPaperReferences, getPapers, getSourcePaper, patchPaper, postPaper, postPaperCitation, postPaperReference } from "./controller/paper.controller.ts";
+import { getAuthor, getSourceAuthor, patchAuthor, postAuthor } from "./controller/author.controller.ts";
 
 await setup(true);
 const client = new SmtpClient();
@@ -27,6 +37,18 @@ router
     .get("/", (context) => {
         context.response.body = { message: "hello there" }
     })
+    .get("/users", async (context) => {
+        await getUsers(context)
+    })
+    .post("/users", async (context) => {
+        await createUser(context, client)
+    })
+    .get("/users/:id", async (context) => {
+        await getUser(context, Number(context.params.id))
+    })
+    .patch("/users/:id", async (context) => {
+        await patchUser(context, Number(context.params.id))
+    })
     .post("/login", async (context) => {
         await login(context)
     })
@@ -35,18 +57,6 @@ router
     })
     .post("/reset-password", async (context) => {
         await resetPassword(context, client)
-    })
-    .post("/users", async (context) => {
-        await createUser(context, client)
-    })
-    .get("/users", async (context) => {
-        await getUsers(context)
-    })
-    .get("/users/:id", async (context) => {
-        await getUser(context, Number(context.params.id))
-    })
-    .patch("/users/:id", async (context, Methods) => {
-        await patchUser(context, Number(context.params.id))
     })
     .get("/users/:id/projects", async (context) => {
         await getUserProjects(context, Number(context.params.id))
@@ -63,6 +73,21 @@ router
     .get("/projects/:id/members", async (context) => {
         await getMembersOfProject(context, Number(context.params.id))
     })
+    .delete("/projects/:id/members/:id2", async (context) => {
+        await removeMemberOfProject(context, Number(context.params.id), Number(context.params.id2))
+    })
+    .post("/projects/:id/criterias", async (context) => {
+        await addCriteriaToProject(context, Number(context.params.id))
+    })
+    .get("/projects/:id/criterias", async (context) => {
+        await getCriteriasOfProject(context, Number(context.params.id))
+    })
+    .patch("/projects/:id/criterias/:id2", async (context) => {
+        await patchCriteriaOfProject(context, Number(context.params.id), Number(context.params.id2))
+    })
+    .delete("/projects/:id/members", async (context) => {
+        await deleteCriteriaOfProject(context, Number(context.params.id), Number(context.params.id2))
+    })
     .post("/projects/:id/stages", async (context) => {
         await addStageToProject(context, Number(context.params.id))
     })
@@ -78,8 +103,26 @@ router
     .patch("/projects/:id/stages/:id2/papers/:ppid", async (context) => {
         await patchPaperOfProjectStage(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))
     })
+    .delete("/projects/:id/stages/:id2/papers/:ppid", async (context) => {
+        await deletePaperOfProjectStage(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))
+    })
+    .get("/projects/:id/stages/:id2/papers/:ppid/references", async (context) => {
+        await getRefs(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))
+    })
+    .post("/projects/:id/stages/:id2/papers/:ppid/references", async (context) => {
+        await postRefProject(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))
+    })
+    .get("/projects/:id/stages/:id2/papers/:ppid/citations", async (context) => {
+        await getCites(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))
+    })
+    .post("/projects/:id/stages/:id2/papers/:ppid/citations", async (context) => {
+        await postCiteProject(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))
+    })
     .get("/papers/", async (context) => {
         await getPapers(context)
+    })
+    .post("/papers/", async (context) => {
+        await postPaper(context)
     })
     .get("/papers/:id", async (context) => {
         await getPaper(context, Number(context.params.id))
@@ -93,8 +136,26 @@ router
     .get("/papers/:id/references", async (context) => {
         await getPaperReferences(context, Number(context.params.id))
     })
+    .post("/papers/:id/references", async (context) => {
+        await postPaperReference(context, Number(context.params.id))
+    })
     .get("/papers/:id/citations", async (context) => {
         await getPaperCitations(context, Number(context.params.id))
+    })
+    .post("/papers/:id/citations", async (context) => {
+        await postPaperCitation(context, Number(context.params.id))
+    })
+    .get("/papers/:id/authors", async (context) => {
+        await getAuthors(context, Number(context.params.id))
+    })
+    .post("/papers/:id/authors", async (context) => {
+        await addAuthorToPaper(context, Number(context.params.id))
+    })
+    .delete("/papers/:id/authors/:id2", async (context) => {
+        await deleteAuthorOfPaper(context, Number(context.params.id), Number(context.params.id))
+    })
+    .post("/authors", async (context) => {
+        await postAuthor(context)
     })
     .get("/authors/:id", async (context) => {
         await getAuthor(context, Number(context.params.id))

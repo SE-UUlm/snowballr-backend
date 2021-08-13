@@ -1,19 +1,19 @@
-import {Context} from 'https://deno.land/x/oak/mod.ts';
-import {checkAdmin, checkPO, createJWT, getPayloadFromJWT, getUserID, getUserName} from "./validation.ts";
-import {insertUserForRegistration, returnUserByEmail} from "./databaseFetcher/user.ts";
-import {User} from "../model/db/user.ts";
-import {convertCtxBodyToUser, convertUserToUserProfile} from "../helper/converter/userConverter.ts";
-import {EMailClient} from "../model/eMailClient.ts";
-import {makeErrorMessage} from "../helper/error.ts";
-import {urlSanitizer} from "../helper/url.ts";
-import {jsonBodyToObject} from "../helper/body.ts";
-import {getInvitation, insertInvitation} from "./databaseFetcher/invitation.ts";
-import {getResetToken, insertResetToken} from "./databaseFetcher/resetToken.ts";
-import {getAllProjectsByUser} from "./databaseFetcher/userProject.ts";
-import {hashPassword} from "../helper/passwordHasher.ts";
-import {UserParameters} from "../model/userProfile.ts";
-import {convertProjectToProjectMessage} from "../helper/converter/projectConverter.ts";
-import {UsersMessage} from "../model/messages/user.message.ts";
+import { Context } from 'https://deno.land/x/oak/mod.ts';
+import { checkAdmin, checkPO, createJWT, getPayloadFromJWT, getUserID, getUserName, UserStatus, validateUserEntry } from "./validation.controller.ts";
+import { insertUserForRegistration, returnUserByEmail } from "./databaseFetcher/user.ts";
+import { User } from "../model/db/user.ts";
+import { convertCtxBodyToUser, convertUserToUserProfile } from "../helper/converter/userConverter.ts";
+import { EMailClient } from "../model/eMailClient.ts";
+import { makeErrorMessage } from "../helper/error.ts";
+import { urlSanitizer } from "../helper/url.ts";
+import { jsonBodyToObject } from "../helper/body.ts";
+import { getInvitation, insertInvitation } from "./databaseFetcher/invitation.ts";
+import { getResetToken, insertResetToken } from "./databaseFetcher/resetToken.ts";
+import { getAllProjectsByUser } from "./databaseFetcher/userProject.ts";
+import { hashPassword } from "../helper/passwordHasher.ts";
+import { UserParameters } from "../model/userProfile.ts";
+import { convertProjectToProjectMessage } from "../helper/converter/projectConverter.ts";
+import { UsersMessage } from "../model/messages/user.message.ts";
 
 const adminMail = Deno.env.get("ADMIN_EMAIL");
 const URL = Deno.env.get("URL");
@@ -25,38 +25,30 @@ const URL = Deno.env.get("URL");
  * @param client Only necessary to throw in an empty mock to not send mails during tests
  */
 export const createUser = async (ctx: Context, client: EMailClient) => {
-    const payloadJson = await getPayloadFromJWT(ctx);
-    if (await checkAdmin(payloadJson) || await checkPO(payloadJson)) {
-        const requestParameter = await jsonBodyToObject(ctx)
-        if (!requestParameter) {
-            return
-        }
-
-        if (!requestParameter.email) {
-            makeErrorMessage(ctx, 422, "no email provided")
-            return;
-        }
-        try {
-            let user = await insertUserForRegistration(requestParameter.email);
-            let jwt = await createJWT(user)
-            await insertInvitation(user, jwt);
-            let linkText = "snowballR"
-
-            if (adminMail) {
-                await sendInvitationMail(jwt, linkText, requestParameter.email, Number(user.id), client, await getUserName(payloadJson));
-                ctx.response.status = 201;
-                ctx.response.body = JSON.stringify(convertUserToUserProfile(user))
-            } else {
-                console.error("no email in env!")
-                makeErrorMessage(ctx, 401, "not authorized")
-            }
-        } catch (err) {
-            makeErrorMessage(ctx, 422, "email already exists")
-        }
-
-    } else {
-        makeErrorMessage(ctx, 401, "not authorized")
+    let validate = await validateUserEntry(ctx, [], UserStatus.needsPO, -1, { needed: true, params: ["email"] })
+    if (!validate) {
+        return
     }
+    const payloadJson = await getPayloadFromJWT(ctx);
+
+    try {
+        let user = await insertUserForRegistration(validate.email);
+        let jwt = await createJWT(user)
+        await insertInvitation(user, jwt);
+        let linkText = "snowballR"
+
+        if (adminMail) {
+            await sendInvitationMail(jwt, linkText, validate.email, Number(user.id), client, await getUserName(payloadJson));
+            ctx.response.status = 201;
+            ctx.response.body = JSON.stringify(convertUserToUserProfile(user))
+        } else {
+            console.error("no email in env!")
+            makeErrorMessage(ctx, 401, "not authorized")
+        }
+    } catch (err) {
+        makeErrorMessage(ctx, 422, "email already exists")
+    }
+
 }
 
 /**
@@ -65,22 +57,17 @@ export const createUser = async (ctx: Context, client: EMailClient) => {
  * @param client
  */
 export const resetPassword = async (ctx: Context, client: EMailClient) => {
-    const requestParameter = await jsonBodyToObject(ctx)
-    if (!requestParameter) {
+    let validate = await validateUserEntry(ctx, [], UserStatus.none, -1, { needed: true, params: ["email"] })
+    if (!validate) {
         return
     }
 
-    if (!requestParameter.email) {
-        makeErrorMessage(ctx, 422, "no email provided")
-        return;
-    }
-
-    let user = await returnUserByEmail(requestParameter.email)
+    let user = await returnUserByEmail(validate.email)
     if (user && URL) {
         let jwt = await createJWT(user)
         await insertResetToken(user, jwt);
         let linkText = "snowballR"
-        await sendResetMail(jwt, linkText, requestParameter.email, Number(user.id), client);
+        await sendResetMail(jwt, linkText, validate.email, Number(user.id), client);
         ctx.response.status = 200;
     } else {
         makeErrorMessage(ctx, 400, "wrong email provided")
@@ -92,44 +79,38 @@ export const resetPassword = async (ctx: Context, client: EMailClient) => {
  * @param ctx
  */
 export const getUsers = async (ctx: Context) => {
-    const payloadJson = await getPayloadFromJWT(ctx);
-    if (await checkAdmin(payloadJson) || await checkPO(payloadJson)) {
-        let users = await User.all();
-        let userProfile = users.map(user => convertUserToUserProfile(user));
-        let userMessage: UsersMessage = {users: userProfile}
-        ctx.response.body = JSON.stringify(userMessage)
-        ctx.response.status = 200;
-    } else {
-        makeErrorMessage(ctx, 401, "not authorized");
+    let validate = await validateUserEntry(ctx, [], UserStatus.needsPO, -1, { needed: false, params: [] })
+    if (!validate) {
+        return
     }
-
+    let users = await User.all();
+    let userProfile = users.map(user => convertUserToUserProfile(user));
+    let userMessage: UsersMessage = { users: userProfile }
+    ctx.response.body = JSON.stringify(userMessage)
+    ctx.response.status = 200;
 }
+
 
 /**
  * Gets a single user profile for admin and PO
  * @param ctx
  * @param id
  */
-export const getUser = async (ctx: Context, id: number | undefined) => {
-    if (!id) {
-        makeErrorMessage(ctx, 422, "no user id included")
+export const getUser = async (ctx: Context, id: number) => {
+    let validate = await validateUserEntry(ctx, [id], UserStatus.needsSameUserOrPO, -1, { needed: false, params: [] }, id)
+    if (!validate) {
         return
     }
-    const payloadJson = await getPayloadFromJWT(ctx);
-    if (await checkAdmin(payloadJson) || await getUserID(payloadJson) === id || await checkPO(payloadJson)) {
-        let user = await User.find(id);
-        if (user) {
-            let userProfile = convertUserToUserProfile(user);
-            ctx.response.body = JSON.stringify(userProfile);
-            ctx.response.status = 200;
-        } else {
-            makeErrorMessage(ctx, 404, "User not Found")
-        }
-
-
+    let user = await User.find(id);
+    if (user) {
+        let userProfile = convertUserToUserProfile(user);
+        ctx.response.body = JSON.stringify(userProfile);
+        ctx.response.status = 200;
     } else {
-        makeErrorMessage(ctx, 401, "not authorized");
+        makeErrorMessage(ctx, 404, "User not Found")
     }
+
+
 }
 
 /**
@@ -137,22 +118,18 @@ export const getUser = async (ctx: Context, id: number | undefined) => {
  * @param ctx
  * @param id
  */
-export const getUserProjects = async (ctx: Context, id: number | undefined) => {
-    if (!id) {
-        makeErrorMessage(ctx, 422, "no user id included")
+export const getUserProjects = async (ctx: Context, id: number) => {
+    let validate = await validateUserEntry(ctx, [id], UserStatus.needsSameUser, -1, { needed: false, params: [] }, id)
+    if (!validate) {
         return
     }
-    const payloadJson = await getPayloadFromJWT(ctx);
-    if (await checkAdmin(payloadJson) || await getUserID(payloadJson) === id) {
-        let userProjects = await getAllProjectsByUser(id)
-        if (userProjects) {
-            ctx.response.body = JSON.stringify(await convertProjectToProjectMessage(userProjects))
-            ctx.response.status = 200;
-        }
 
-    } else {
-        makeErrorMessage(ctx, 401, "not authorized");
+    let userProjects = await getAllProjectsByUser(id)
+    if (userProjects) {
+        ctx.response.body = JSON.stringify(await convertProjectToProjectMessage(userProjects))
+        ctx.response.status = 200;
     }
+
 }
 
 /**
@@ -207,8 +184,8 @@ export const patchUser = async (ctx: Context, id: number | undefined) => {
         ctx.response.body = JSON.stringify(userProfile);
         ctx.response.status = 200;
     } else {
-        if(ctx.response.status !== 400){
-        makeErrorMessage(ctx, 401, "not authorized");
+        if (ctx.response.status !== 400) {
+            makeErrorMessage(ctx, 401, "not authorized");
         }
     }
 }

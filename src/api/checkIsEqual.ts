@@ -77,16 +77,6 @@ export const isEqualPaper = (firstResponse: IApiPaper, secondResponse: IApiPaper
     if ((comparison.titleWeight + comparison.abstractWeight) === 0) {
         return false;
     }
-    /*
-    let title1 = firstResponse.title;
-    let title2 = secondResponse.title;
-    if (title1 && title2) {
-
-        console.error(`another isequal with ${title1[0]} and ${title2[0]} => ${sameTitle} +  ${sameAbstract} + ${sameAuthor} + ${sameYear}`)
-        console.error(`${comparison.titleWeight} + ${comparison.abstractWeight} + ${comparison.authorWeight} + ${comparison.yearWeight}`)
-        console.error(`${((sameTitle + sameAbstract + sameAuthor + sameYear) / (comparison.titleWeight + comparison.abstractWeight + comparison.authorWeight + comparison.yearWeight))}`)
-    }
-*/
 
     /** Calculate the complete equality of 2 papers. OverallWeight is used to kinda control the aggressiveness of the algorithm */
     if (((sameTitle + sameAbstract + sameAuthor + sameYear) / (comparison.titleWeight + comparison.abstractWeight + comparison.authorWeight + comparison.yearWeight)) > comparison.overallWeight) {
@@ -171,7 +161,7 @@ export const isEqualRawAuthorString = (firstRawString: string, secondRawString: 
 const compareYears = (firstYear: number[], secondYear: number[]): boolean => {
     for (let i in firstYear) {
         for (let j in secondYear) {
-            if (firstYear[i] - secondYear[i] in [-1, 0, 1]) {
+            if (firstYear[i] - secondYear[j] in [-1, 0, 1]) {
                 return true;
             }
         }

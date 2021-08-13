@@ -3,12 +3,42 @@ import { assign } from "../helper/assign.ts";
 import { jsonBodyToObject } from "../helper/body.ts";
 import { makeErrorMessage } from "../helper/error.ts";
 import { Author } from "../model/db/author.ts";
-import { authorCache } from "./project.ts";
-import {convertAuthorToAuthorMessage} from "../helper/converter/authorConverter.ts"
+import { convertAuthorToAuthorMessage } from "../helper/converter/authorConverter.ts"
+import { authorCache } from "./project.controller.ts";
+import { UserStatus, validateUserEntry } from "./validation.controller.ts";
 
-export const getAuthor = async (ctx: Context, authorID: number | undefined) => {
-    if (!authorID) {
-        makeErrorMessage(ctx, 422, "no authorID included")
+
+/**
+ * Inserts an author to the database
+ * @param ctx 
+ * @returns 
+ */
+export const postAuthor = async (ctx: Context) => {
+    let validate = await validateUserEntry(ctx, [], UserStatus.none, -1, { needed: true, params: [] })
+    if (!validate) {
+        return
+    }
+
+    let author = await Author.create({});
+    if (validate.rawString) { author.rawString = validate.rawString }
+    if (validate.orcid) { author.orcid = validate.orcid }
+    if (validate.lastName) { author.lastName = validate.lastName }
+    if (validate.firstName) { author.firstName = validate.firstName }
+    await author.update();
+
+    ctx.response.status = 200;
+    ctx.response.body = JSON.stringify(author)
+}
+
+/**
+ * Returns one Author
+ * @param ctx 
+ * @param authorID id of the author
+ *
+ */
+export const getAuthor = async (ctx: Context, authorID: number) => {
+    let validate = await validateUserEntry(ctx, [], UserStatus.none, -1, { needed: false, params: [] })
+    if (!validate) {
         return
     }
 
@@ -21,12 +51,18 @@ export const getAuthor = async (ctx: Context, authorID: number | undefined) => {
     }
 }
 
-
-export const patchAuthor = async (ctx: Context, authorID: number | undefined) => {
-    if (!authorID) {
-        makeErrorMessage(ctx, 422, "no authorID included")
+/**
+ * Changes the Parameter of an author
+ * @param ctx 
+ * @param authorID 
+ * @returns 
+ */
+export const patchAuthor = async (ctx: Context, authorID: number) => {
+    let validate = await validateUserEntry(ctx, [], UserStatus.none, -1, { needed: false, params: [] })
+    if (!validate) {
         return
     }
+
 
     let author: Author = await Author.find(authorID);
     if (author) {
@@ -56,11 +92,18 @@ export const patchAuthor = async (ctx: Context, authorID: number | undefined) =>
     }
 }
 
-export const getSourceAuthor = (ctx: Context, authorID: number | undefined) => {
-    if (!authorID) {
-        makeErrorMessage(ctx, 422, "no authorID included")
+/**
+ * Returns the author values, that are currently in the filecache of the correspondend author
+ * @param ctx 
+ * @param authorID 
+ * @returns 
+ */
+export const getSourceAuthor = async (ctx: Context, authorID: number | undefined) => {
+    let validate = await validateUserEntry(ctx, [], UserStatus.none, -1, { needed: false, params: [] })
+    if (!validate) {
         return
     }
+
     ctx.response.status = 200;
     let author = authorCache.get(String(authorID))
     if (author) {

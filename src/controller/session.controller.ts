@@ -1,6 +1,6 @@
-import {createJWT} from "./validation.ts";
-import {insertToken} from "./databaseFetcher/token.ts";
-import {User} from "../model/db/user.ts";
+import { createJWT } from "./validation.controller.ts";
+import { insertToken } from "./databaseFetcher/token.ts";
+import { User } from "../model/db/user.ts";
 
 /**
  * starts a session by creating a JWT and inserting it into the database

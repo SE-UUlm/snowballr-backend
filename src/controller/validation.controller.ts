@@ -1,10 +1,10 @@
-import {Context} from 'https://deno.land/x/oak/mod.ts';
-import {create, decode, verify} from "https://deno.land/x/djwt@/mod.ts"
-import {User} from "../model/db/user.ts";
-import {createNumericTerminationDate} from "../helper/dateHelper.ts";
-import {makeErrorMessage} from "../helper/error.ts";
-import {PayloadJson} from "../model/payloadJson.ts";
-import {UserIsPartOfProject} from "../model/db/userIsPartOfProject.ts";
+import { Context } from 'https://deno.land/x/oak/mod.ts';
+import { create, decode, verify } from "https://deno.land/x/djwt@/mod.ts"
+import { User } from "../model/db/user.ts";
+import { createNumericTerminationDate } from "../helper/dateHelper.ts";
+import { makeErrorMessage } from "../helper/error.ts";
+import { PayloadJson } from "../model/payloadJson.ts";
+import { UserIsPartOfProject } from "../model/db/userIsPartOfProject.ts";
 import { jsonBodyToObject } from "../helper/body.ts";
 
 const SECRET = String(Deno.env.get('SECRET'));
@@ -38,7 +38,7 @@ export const validateContentType = async (ctx: Context, next: () => Promise<unkn
  */
 const emptyContent = async (ctx: Context): Promise<boolean> => {
     try {
-        await ctx.request.body({type: "undefined"}).value
+        await ctx.request.body({ type: "undefined" }).value
         return true;
     } catch (error) {
         return false;
@@ -52,7 +52,7 @@ const emptyContent = async (ctx: Context): Promise<boolean> => {
  */
 const validateContent = async (ctx: Context): Promise<boolean> => {
     try {
-        await ctx.request.body({type: "json"}).value
+        await ctx.request.body({ type: "json" }).value
     } catch (error) {
         return false;
     }
@@ -80,7 +80,7 @@ export const validateJWTIfExists = async (ctx: Context, next: () => Promise<unkn
  * @param user
  */
 export const createJWT = async (user: User) => {
-    return create({alg: "HS512", typ: "JWT"}, {
+    return create({ alg: "HS512", typ: "JWT" }, {
         id: user.id,
         eMail: user.email,
         isAdmin: user.isAdmin,
@@ -132,9 +132,15 @@ export const checkPO = async (payloadJson?: PayloadJson) => {
     return false;
 }
 
+/**
+ * Checks if the user making the request is the PO of a project
+ * @param projectID 
+ * @param payloadJson 
+ * @returns 
+ */
 export const checkPOofProject = async (projectID: number, payloadJson?: PayloadJson) => {
     if (payloadJson) {
-        let userProject = await UserIsPartOfProject.where({userId: payloadJson.id, projectId: projectID}).get()
+        let userProject = await UserIsPartOfProject.where({ userId: payloadJson.id, projectId: projectID }).get()
         if (Array.isArray(userProject)) {
             let value: boolean = Boolean(userProject[0].isOwner)
             return value
@@ -144,9 +150,15 @@ export const checkPOofProject = async (projectID: number, payloadJson?: PayloadJ
     return false;
 }
 
+/**
+ * Checks if the user making the request is a member of the corresponding project
+ * @param projectID 
+ * @param payloadJson 
+ * @returns 
+ */
 export const checkMemberOfProject = async (projectID: number, payloadJson?: PayloadJson) => {
     if (payloadJson) {
-        let userProject = await UserIsPartOfProject.where({userId: payloadJson.id, projectId: projectID}).get()
+        let userProject = await UserIsPartOfProject.where({ userId: payloadJson.id, projectId: projectID }).get()
 
 
         if (Array.isArray(userProject) && userProject[0]) {
@@ -219,4 +231,89 @@ const allowedAddressesUnauthorized = async (ctx: Context, next: () => Promise<un
     } else {
         makeErrorMessage(ctx, 401, "not authorized")
     }
+}
+
+export const validateUserEntry = async (ctx: Context, id: (number | undefined)[], needed: UserStatus, projectID: number, requestParameter: { needed: boolean, params: string[] }, userID?: number) => {
+    for (let element in id) {
+        if (!Number(element) && Number(element) !== 0) {
+            console.error("path id wrong for" + element)
+            makeErrorMessage(ctx, 422, "path ids must be numbers");
+            return;
+        }
+    }
+
+    if (! await checkAuthorization(ctx, needed, projectID, userID)) {
+        return
+    }
+
+    if (requestParameter.needed) {
+        const params = await jsonBodyToObject(ctx)
+        if (!params) {
+            return
+        }
+        for (let param of requestParameter.params) {
+            if (!params[param]) {
+                console.error(`Request doesn't include parameter ${param}`)
+                makeErrorMessage(ctx, 422, `Request doesn't include parameter ${param}`)
+                return;
+            }
+        }
+
+        return params
+    }
+    return true;
+
+}
+
+const checkAuthorization = async (ctx: Context, needed: UserStatus, projectID: number, userID?: number) => {
+    const payloadJson = await getPayloadFromJWT(ctx);
+    let isAdmin = await checkAdmin(payloadJson)
+    if (needed === UserStatus.needsAdmin) {
+        if (!isAdmin) {
+            makeErrorMessage(ctx, 401, "not authorized");
+            return
+        }
+    }
+    if (needed === UserStatus.needsPO) {
+        if (!isAdmin && !await checkPO(payloadJson)) {
+            makeErrorMessage(ctx, 401, "not authorized");
+            return
+        }
+    }
+    if (needed === UserStatus.needsPOOfProject) {
+        if (!isAdmin && !await checkPOofProject(projectID, payloadJson)) {
+            makeErrorMessage(ctx, 401, "not authorized");
+            return
+        }
+    }
+    if (needed === UserStatus.needsMemberOfProject) {
+        if (!isAdmin && !await checkMemberOfProject(projectID, payloadJson)) {
+            makeErrorMessage(ctx, 401, "not authorized");
+            return
+        }
+    }
+    if (needed === UserStatus.needsSameUserOrPO) {
+        if (!isAdmin && !(await getUserID(payloadJson) === userID) && !(await checkPO(payloadJson))) {
+            makeErrorMessage(ctx, 401, "not authorized");
+            return
+        }
+    }
+    if (needed === UserStatus.needsSameUser) {
+        if (!isAdmin && !(await getUserID(payloadJson) === userID)) {
+            makeErrorMessage(ctx, 401, "not authorized");
+            return
+        }
+    }
+    return true;
+}
+
+export enum UserStatus {
+    needsAdmin,
+    needsPO,
+    needsPOOfProject,
+    needsMemberOfProject,
+    needsSameUserOrPO,
+    needsSameUser,
+    none
+
 }

@@ -1,15 +1,14 @@
-import { IApiQuery } from "./iApiQuery.ts";
-import { IApiResponse } from "./iApiResponse.ts";
-import { IApiFetcher } from "./iApiFetcher.ts";
-import { MicrosoftResearchApi } from "./microsoftResearchApi.ts";
-import { OpenCitationsApi } from "./openCitationsApi.ts";
-import { logger, fileLogger } from "./logger.ts";
-import { CrossRefApi } from "./crossRefApi.ts";
-import { ApiMerger } from "./apiMerger.ts";
-import { SemanticScholar } from "./semanticScholar.ts"
-import { IApiPaper } from "./iApiPaper.ts";
-import { IeeeApi } from "./ieeeApi.ts";
+import { ApiMerger } from "../../src/api/apiMerger.ts";
+import { IApiPaper } from "../../src/api/iApiPaper.ts";
+import { IApiQuery } from "../../src/api/iApiQuery.ts";
+import { IeeeApi } from "../../src/api/ieeeApi.ts";
+import { fileLogger } from "../../src/api/logger.ts";
+import { getAllApisFromProject } from "../../src/controller/databaseFetcher/searchApi.ts";
+import { setup } from "../../src/helper/setup.ts";
 
+await setup(true);
+await getAllApisFromProject(1);
+/*
 const query: IApiQuery = {
 	id: "tst",
 	rawName: "sebastian erdweg",

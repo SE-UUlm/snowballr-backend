@@ -1,9 +1,9 @@
-import {User} from "../../src/model/db/user.ts";
-import {convertCtxBodyToUser, convertUserToUserProfile} from "../../src/helper/converter/userConverter.ts";
+import { User } from "../../src/model/db/user.ts";
+import { convertCtxBodyToUser, convertUserToUserProfile } from "../../src/helper/converter/userConverter.ts";
 import { assertEquals } from "https://deno.land/std@0.97.0/testing/asserts.ts";
 import { createMockApp } from "../mockObjects/oak/mockApp.test.ts";
 import { createMockContext } from "../mockObjects/oak/mockContext.test.ts";
-import { validateContentType } from "../../src/controller/validation.ts";
+import { validateContentType } from "../../src/controller/validation.controller.ts";
 import { emptyAsyncFunctionTest } from "../mockObjects/emptyAsyncFunction.test.ts";
 
 Deno.test({

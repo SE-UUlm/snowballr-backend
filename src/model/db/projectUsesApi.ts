@@ -1,6 +1,6 @@
-import {DataTypes, Model} from "https://deno.land/x/denodb/mod.ts";
-import {SearchApi} from "./searchApi.ts";
-import {Project} from "./project.ts";
+import { DataTypes, Model } from "https://deno.land/x/denodb/mod.ts";
+import { SearchApi } from "./searchApi.ts";
+import { Project } from "./project.ts";
 
 
 export class ProjectUsesApi extends Model {
@@ -8,10 +8,10 @@ export class ProjectUsesApi extends Model {
     static timestamps = true;
 
     static fields = {
-        id: {primaryKey: true, autoIncrement: true, type: DataTypes.INTEGER},
+        id: { primaryKey: true, autoIncrement: true, type: DataTypes.INTEGER },
     }
 
-    static apis() {
+    static api() {
         return this.hasOne(SearchApi);
     }
 

@@ -1,32 +1,45 @@
 import { setup } from "../../src/helper/setup.ts";
 import { insertUser } from "../../src/controller/databaseFetcher/user.ts";
 import { createMockApp } from "../mockObjects/oak/mockApp.test.ts";
-import { checkMemberOfProject, createJWT } from "../../src/controller/validation.ts";
+import { checkMemberOfProject, createJWT } from "../../src/controller/validation.controller.ts";
 import { createMockContext } from "../mockObjects/oak/mockContext.test.ts";
 import {
+    addCriteriaToProject,
     addMemberToProject,
     addPaperToProjectStage,
     addStageToProject,
     authorCache,
     createProject,
+    deleteCriteriaOfProject,
+    deletePaperOfProjectStage,
+    getCites,
+    getCriteriasOfProject,
     getMembersOfProject,
     getPaperOfProjectStage,
     getPapersOfProjectStage,
     getProjects,
+    getRefs,
     paperCache,
-patchPaperOfProjectStage
-} from "../../src/controller/project.ts";
+    patchCriteriaOfProject,
+    patchPaperOfProjectStage,
+    postCiteProject,
+    postRefProject,
+    removeMemberOfProject
+} from "../../src/controller/project.controller.ts";
 import { Project } from "../../src/model/db/project.ts";
 import { assertEquals, assertNotEquals } from "https://deno.land/std/testing/asserts.ts"
 import { UserIsPartOfProject } from "../../src/model/db/userIsPartOfProject.ts";
-import { client, db } from "../../src/controller/database.ts";
+import { client, db } from "../../src/controller/database.controller.ts";
 import { Stage } from "../../src/model/db/stage.ts";
-import { Batcher } from "../../src/controller/fetch.ts";
-import { getPaper, getPaperCitations, getPaperReferences, getSourcePaper } from "../../src/controller/paper.ts";
+import { Batcher } from "../../src/controller/fetch.controller.ts";
+import { getPaper, getPaperCitations, getPaperReferences, getSourcePaper } from "../../src/controller/paper.controller.ts";
 import { Paper } from "../../src/model/db/paper.ts";
 import { Author } from "../../src/model/db/author.ts";
 import { Wrote } from "../../src/model/db/wrote.ts";
 import { PaperScopeForStage } from "../../src/model/db/paperScopeForStage.ts";
+import { Criteria } from "../../src/model/db/criteria.ts";
+import { CriteriaEvaluation } from "../../src/model/db/criteriaEval.ts";
+import { Review } from "../../src/model/db/review.ts";
 
 Deno.test({
     name: "createProjectUnauth",
@@ -59,14 +72,19 @@ Deno.test({
         let name = "nameee"
         let minCount = 3
         let countDecRev = 5
-        let ctx = await createMockContext(app, `{"name":"${name}", "minCountReviewers": ${minCount}, "countDecisiveReviewers":${countDecRev}}`, [["Content-Type", "application/json"]], "/", token);
+        let comb = 3
+        let type = "type"
+        let ctx = await createMockContext(app, `{"name":"${name}", "minCountReviewers": ${minCount}, "countDecisiveReviewers":${countDecRev}, "combinationOfReviewers":${comb}, "type": "${type}"}`, [["Content-Type", "application/json"]], "/", token);
         await createProject(ctx)
         projects = await Project.all()
+        assertEquals(ctx.response.status, 201)
         assertEquals(projects.length, size + 1)
         let answer = JSON.parse(ctx.response.body as string)
         assertEquals(answer.name, name)
         assertEquals(answer.minCountReviewers, minCount)
+        assertEquals(answer.combinationOfReviewers, comb)
         assertEquals(answer.countDecisiveReviewers, countDecRev)
+        assertEquals(answer.type, type)
         await db.close();
         await client.end();
     },
@@ -82,7 +100,7 @@ Deno.test({
         let app = await createMockApp();
         let token = await createJWT(user)
 
-5
+        5
         let ctx = await createMockContext(app, `{}`, [["Content-Type", "application/json"]], "/", token);
         await createProject(ctx)
         assertEquals(ctx.response.status, 422)
@@ -101,7 +119,7 @@ Deno.test({
         let token = await createJWT(user)
 
         let evalFormula = "NoExampleKnownYet"
-        let ctx = await createMockContext(app, `{"name":"name", "minCountReviewers": 3, "countDecisiveReviewers":5, "evaluationFormula": "${evalFormula}"}`, [["Content-Type", "application/json"]], "/", token);
+        let ctx = await createMockContext(app, `{"name":"name", "minCountReviewers": 3, "countDecisiveReviewers":5, "evaluationFormula": "${evalFormula}","combinationOfReviewers":3, "type": "type"}`, [["Content-Type", "application/json"]], "/", token);
         await createProject(ctx)
         let answer = JSON.parse(ctx.response.body as string)
         assertEquals(answer.evaluationFormula, evalFormula)
@@ -145,7 +163,9 @@ Deno.test({
         await Project.create({
             name: "test",
             minCountReviewers: 1,
-            countDecisiveReviewers: 1
+            countDecisiveReviewers: 1,
+            combinationOfReviewers: 1,
+            type: ""
         })
         let app = await createMockApp();
         let token = await createJWT(user)
@@ -170,7 +190,10 @@ Deno.test({
         await Project.create({
             name: "test",
             minCountReviewers: 1,
-            countDecisiveReviewers: 1
+            countDecisiveReviewers: 1,
+            combinationOfReviewers: 1,
+            type: ""
+
         })
         let app = await createMockApp();
         let token = await createJWT(user)
@@ -183,7 +206,7 @@ Deno.test({
         await client.end();
     },
 
-        sanitizeResources: false,
+    sanitizeResources: false,
     sanitizeOps: false,
 })
 
@@ -195,7 +218,9 @@ Deno.test({
         let project = await Project.create({
             name: "test",
             minCountReviewers: 1,
-            countDecisiveReviewers: 1
+            countDecisiveReviewers: 1,
+            combinationOfReviewers: 1,
+            type: ""
         })
         await UserIsPartOfProject.create({
             projectId: Number(project.id),
@@ -218,26 +243,29 @@ Deno.test({
 })
 
 Deno.test({
-    name: "getMembersNoId",
+    name: "Remove Member Of Project",
     async fn(): Promise<void> {
         await setup(true);
-        let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
         let project = await Project.create({
             name: "test",
             minCountReviewers: 1,
-            countDecisiveReviewers: 1
+            countDecisiveReviewers: 1,
+            combinationOfReviewers: 1,
+            type: ""
         })
-        await UserIsPartOfProject.create({
+        let id = Number((await UserIsPartOfProject.create({
             projectId: Number(project.id),
             userId: Number(user.id),
             isOwner: false
-        })
+        })).id)
         let app = await createMockApp();
         let token = await createJWT(user)
         let ctx = await createMockContext(app, `{}`, [["Content-Type", "application/json"]], "/", token);
-        await getMembersOfProject(ctx, undefined)
-
-        assertEquals(ctx.response.status , 422)
+        await removeMemberOfProject(ctx, Number(project.id), Number(user.id))
+        assertEquals(ctx.response.status, 200)
+        let upp = await UserIsPartOfProject.find(id);
+        assertEquals(upp, undefined)
 
         await db.close();
         await client.end();
@@ -254,7 +282,9 @@ Deno.test({
         let project = await Project.create({
             name: "test",
             minCountReviewers: 1,
-            countDecisiveReviewers: 1
+            countDecisiveReviewers: 1,
+            combinationOfReviewers: 1,
+            type: ""
         })
         let app = await createMockApp();
         let token = await createJWT(user)
@@ -279,7 +309,9 @@ Deno.test({
         let project = await Project.create({
             name: "test",
             minCountReviewers: 1,
-            countDecisiveReviewers: 1
+            countDecisiveReviewers: 1,
+            combinationOfReviewers: 1,
+            type: ""
         })
         let bla = await UserIsPartOfProject.create({
             projectId: Number(project.id),
@@ -308,95 +340,6 @@ Deno.test({
 })
 
 Deno.test({
-    name: "addMemberNoProjectId",
-    async fn(): Promise<void> {
-        await setup(true);
-        let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
-        let user2 = await insertUser("test2@test", "ash2", false, "Test2", "Tester2", "active");
-        let project = await Project.create({
-            name: "test",
-            minCountReviewers: 1,
-            countDecisiveReviewers: 1
-        })
-        let bla = await UserIsPartOfProject.create({
-            projectId: Number(project.id),
-            userId: Number(user.id),
-            isOwner: true
-        })
-        let app = await createMockApp();
-        let token = await createJWT(user)
-        let ctx = await createMockContext(app, `{ "id": "${Number(user2.id)}"}`, [["Content-Type", "application/json"]], "/", token);
-        await addMemberToProject(ctx, undefined)
-        assertEquals(ctx.response.status, 422)
-
-        await db.close();
-        await client.end();
-    },
-    sanitizeResources: false,
-    sanitizeOps: false,
-})
-
-
-Deno.test({
-    name: "addMemberNoBody",
-    async fn(): Promise<void> {
-        await setup(true);
-        let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
-        let user2 = await insertUser("test2@test", "ash2", false, "Test2", "Tester2", "active");
-        let project = await Project.create({
-            name: "test",
-            minCountReviewers: 1,
-            countDecisiveReviewers: 1
-        })
-        let bla = await UserIsPartOfProject.create({
-            projectId: Number(project.id),
-            userId: Number(user.id),
-            isOwner: true
-        })
-        let app = await createMockApp();
-        let token = await createJWT(user)
-        let ctx = await createMockContext(app, ``, [["Content-Type", "application/json"]], "/", token);
-        await addMemberToProject(ctx, undefined)
-        assertEquals(ctx.response.status, 422)
-
-        await db.close();
-        await client.end();
-    },
-    sanitizeResources: false,
-    sanitizeOps: false,
-})
-
-Deno.test({
-    name: "addMemberNoUserId",
-    async fn(): Promise<void> {
-        await setup(true);
-        let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
-        let user2 = await insertUser("test2@test", "ash2", false, "Test2", "Tester2", "active");
-        let project = await Project.create({
-            name: "test",
-            minCountReviewers: 1,
-            countDecisiveReviewers: 1
-        })
-        let bla = await UserIsPartOfProject.create({
-            projectId: Number(project.id),
-            userId: Number(user.id),
-            isOwner: true
-        })
-        let app = await createMockApp();
-        let token = await createJWT(user)
-        let ctx = await createMockContext(app, `{"something wrong": 3}`, [["Content-Type", "application/json"]], "/", token);
-        await addMemberToProject(ctx, undefined)
-        assertEquals(ctx.response.status, 422)
-
-        await db.close();
-        await client.end();
-    },
-    sanitizeResources: false,
-    sanitizeOps: false,
-})
-
-
-Deno.test({
     name: "addMemberUnauthorized",
     async fn(): Promise<void> {
         await setup(true);
@@ -405,7 +348,9 @@ Deno.test({
         let project = await Project.create({
             name: "test",
             minCountReviewers: 1,
-            countDecisiveReviewers: 1
+            countDecisiveReviewers: 1,
+            combinationOfReviewers: 1,
+            type: ""
         })
         await UserIsPartOfProject.create({
             projectId: Number(project.id),
@@ -433,7 +378,9 @@ Deno.test({
         let project = await Project.create({
             name: "test",
             minCountReviewers: 1,
-            countDecisiveReviewers: 1
+            countDecisiveReviewers: 1,
+            combinationOfReviewers: 1,
+            type: ""
         })
         await UserIsPartOfProject.create({
             projectId: Number(project.id),
@@ -455,56 +402,6 @@ Deno.test({
 })
 
 Deno.test({
-    name: "addStageNoId",
-    async fn(): Promise<void> {
-        await setup(true);
-        let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
-        let project = await Project.create({
-            name: "test",
-            minCountReviewers: 1,
-            countDecisiveReviewers: 1
-        });
-
-        let app = createMockApp();
-        let token = await createJWT(user)
-        let ctx = await createMockContext(app, `{ "name": "namee"}`, [["Content-Type", "application/json"]], "/", token);
-        await addStageToProject(ctx, undefined)
-
-        assertEquals(ctx.response.status, 422)
-
-        await db.close();
-        await client.end();
-    },
-    sanitizeResources: false,
-    sanitizeOps: false,
-})
-
-Deno.test({
-    name: "addStageNoParams",
-    async fn(): Promise<void> {
-        await setup(true);
-        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
-        let project = await Project.create({
-            name: "test",
-            minCountReviewers: 1,
-            countDecisiveReviewers: 1
-        });
-
-        let app = createMockApp();
-        let token = await createJWT(user)
-        let ctx = await createMockContext(app, ``, [["Content-Type", "application/json"]], "/", token);
-        await addStageToProject(ctx, undefined)
-
-        assertEquals(ctx.response.status, 422)
-
-        await db.close();
-        await client.end();
-    },
-    sanitizeResources: false,
-    sanitizeOps: false,
-})
-
-Deno.test({
     name: "addTwoStages",
     async fn(): Promise<void> {
         await setup(true);
@@ -512,7 +409,9 @@ Deno.test({
         let project = await Project.create({
             name: "test",
             minCountReviewers: 1,
-            countDecisiveReviewers: 1
+            countDecisiveReviewers: 1,
+            combinationOfReviewers: 1,
+            type: ""
         })
         await UserIsPartOfProject.create({
             projectId: Number(project.id),
@@ -546,7 +445,9 @@ Deno.test({
         let project = await Project.create({
             name: "test",
             minCountReviewers: 1,
-            countDecisiveReviewers: 1
+            countDecisiveReviewers: 1,
+            combinationOfReviewers: 1,
+            type: ""
         })
         await UserIsPartOfProject.create({
             projectId: Number(project.id),
@@ -575,7 +476,9 @@ Deno.test({
         let project = await Project.create({
             name: "test",
             minCountReviewers: 1,
-            countDecisiveReviewers: 1
+            countDecisiveReviewers: 1,
+            combinationOfReviewers: 1,
+            type: ""
         })
         let stage = await Stage.create({
             name: "TestStage",
@@ -611,7 +514,9 @@ Deno.test({
         let project = await Project.create({
             name: "test",
             minCountReviewers: 1,
-            countDecisiveReviewers: 1
+            countDecisiveReviewers: 1,
+            combinationOfReviewers: 1,
+            type: ""
         })
         let stage = await Stage.create({
             name: "TestStage",
@@ -641,7 +546,7 @@ Deno.test({
             paperId: Number(paper2.id),
             stageId: Number(stage.id)
         })
-        let wrote = await Wrote.create({authorId: Number(author.id), paperId: Number(paper.id )})
+        let wrote = await Wrote.create({ authorId: Number(author.id), paperId: Number(paper.id) })
         let app = await createMockApp();
         let token = await createJWT(user)
         let ctx = await createMockContext(app, `{"doi":"10.1109/SEAA.2009.60" }`, [["Content-Type", "application/json"]], "/", token);
@@ -649,8 +554,8 @@ Deno.test({
 
         let answer = JSON.parse(ctx.response.body as string)
         assertEquals(Array.isArray(answer.papers), true)
-        assertEquals(answer.papers[0].title , "nice title")
-        assertEquals(answer.papers[1].title , "nicer title")
+        assertEquals(answer.papers[0].title, "nice title")
+        assertEquals(answer.papers[1].title, "nicer title")
         paperCache.clear()
         authorCache.clear()
         Batcher.kill()
@@ -670,7 +575,9 @@ Deno.test({
         let project = await Project.create({
             name: "test",
             minCountReviewers: 1,
-            countDecisiveReviewers: 1
+            countDecisiveReviewers: 1,
+            combinationOfReviewers: 1,
+            type: ""
         })
         let stage = await Stage.create({
             name: "TestStage",
@@ -690,7 +597,7 @@ Deno.test({
             paperId: Number(paper.id),
             stageId: Number(stage.id)
         })
-        let wrote = await Wrote.create({authorId: Number(author.id), paperId: Number(paper.id )})
+        let wrote = await Wrote.create({ authorId: Number(author.id), paperId: Number(paper.id) })
         let app = await createMockApp();
         let token = await createJWT(user)
         let ctx = await createMockContext(app, `{"doi":"10.1109/SEAA.2009.60" }`, [["Content-Type", "application/json"]], "/", token);
@@ -699,7 +606,7 @@ Deno.test({
         let answer = JSON.parse(ctx.response.body as string)
         assertEquals(answer.title, "nice title")
         assertEquals(answer.abstract, "hellu")
-        assertEquals(answer.authors[0].rawString,"Awsome Name")
+        assertEquals(answer.authors[0].rawString, "Awsome Name")
         paperCache.clear()
         authorCache.clear()
         Batcher.kill()
@@ -719,7 +626,9 @@ Deno.test({
         let project = await Project.create({
             name: "test",
             minCountReviewers: 1,
-            countDecisiveReviewers: 1
+            countDecisiveReviewers: 1,
+            combinationOfReviewers: 1,
+            type: ""
         })
         let stage = await Stage.create({
             name: "TestStage",
@@ -739,7 +648,7 @@ Deno.test({
             paperId: Number(paper.id),
             stageId: Number(stage.id)
         })
-        let wrote = await Wrote.create({authorId: Number(author.id), paperId: Number(paper.id )})
+        let wrote = await Wrote.create({ authorId: Number(author.id), paperId: Number(paper.id) })
         let app = await createMockApp();
         let token = await createJWT(user)
         let ctx = await createMockContext(app, `{"doi":"10.1109/SEAA.2009.60" }`, [["Content-Type", "application/json"]], "/", token);
@@ -757,51 +666,6 @@ Deno.test({
     sanitizeOps: false,
 })
 
-Deno.test({
-    name: "GetPaperOfProjectStageNoId",
-    async fn(): Promise<void> {
-        await setup(true);
-        let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
-        let project = await Project.create({
-            name: "test",
-            minCountReviewers: 1,
-            countDecisiveReviewers: 1
-        })
-        let stage = await Stage.create({
-            name: "TestStage",
-            projectId: Number(project.id),
-            number: 0
-        })
-        let paper = await Paper.create({
-            doi: "fasfafraf",
-            title: "nice title",
-            abstract: "hellu"
-
-        })
-        let author = await Author.create({
-            rawString: "Awsome Name"
-        })
-        await PaperScopeForStage.create({
-            paperId: Number(paper.id),
-            stageId: Number(stage.id)
-        })
-        let wrote = await Wrote.create({authorId: Number(author.id), paperId: Number(paper.id )})
-        let app = await createMockApp();
-        let token = await createJWT(user)
-        let ctx = await createMockContext(app, `{"doi":"10.1109/SEAA.2009.60" }`, [["Content-Type", "application/json"]], "/", token);
-        let bla = await getPaperOfProjectStage(ctx, Number(project.id), Number(stage.id), undefined)
-
-        assertEquals(ctx.response.status, 422)
-        paperCache.clear()
-        authorCache.clear()
-        Batcher.kill()
-        await db.close();
-        await client.end();
-
-    },
-    sanitizeResources: false,
-    sanitizeOps: false,
-})
 
 Deno.test({
     name: "GetPapersOfProjectStage#unauth",
@@ -811,7 +675,9 @@ Deno.test({
         let project = await Project.create({
             name: "test",
             minCountReviewers: 1,
-            countDecisiveReviewers: 1
+            countDecisiveReviewers: 1,
+            combinationOfReviewers: 1,
+            type: ""
         })
         let stage = await Stage.create({
             name: "TestStage",
@@ -827,7 +693,7 @@ Deno.test({
         let author = await Author.create({
             rawString: "Awsome Name"
         })
-        let wrote = await Wrote.create({authorId: Number(author.id), paperId: Number(paper.id )})
+        let wrote = await Wrote.create({ authorId: Number(author.id), paperId: Number(paper.id) })
         await PaperScopeForStage.create({
             paperId: Number(paper.id),
             stageId: Number(stage.id)
@@ -850,52 +716,6 @@ Deno.test({
 })
 
 Deno.test({
-    name: "GetPapersOfProjectStageNoId",
-    async fn(): Promise<void> {
-        await setup(true);
-        let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
-        let project = await Project.create({
-            name: "test",
-            minCountReviewers: 1,
-            countDecisiveReviewers: 1
-        })
-        let stage = await Stage.create({
-            name: "TestStage",
-            projectId: Number(project.id),
-            number: 0
-        })
-        let paper = await Paper.create({
-            doi: "fasfafraf",
-            title: "nice title",
-            abstract: "hellu"
-
-        })
-        let author = await Author.create({
-            rawString: "Awsome Name"
-        })
-        await PaperScopeForStage.create({
-            paperId: Number(paper.id),
-            stageId: Number(stage.id)
-        })
-        let wrote = await Wrote.create({authorId: Number(author.id), paperId: Number(paper.id )})
-        let app = await createMockApp();
-        let token = await createJWT(user)
-        let ctx = await createMockContext(app, `{"doi":"10.1109/SEAA.2009.60" }`, [["Content-Type", "application/json"]], "/", token);
-        let bla = await getPapersOfProjectStage(ctx, Number(project.id), undefined)
-
-        assertEquals(ctx.response.status, 422)
-        paperCache.clear()
-        authorCache.clear()
-        Batcher.kill()
-        await db.close();
-        await client.end();
-
-    },
-    sanitizeResources: false,
-    sanitizeOps: false,
-})
-
-Deno.test({
     name: "PatchPaperOfProjectStage",
     async fn(): Promise<void> {
         await setup(true);
@@ -903,7 +723,9 @@ Deno.test({
         let project = await Project.create({
             name: "test",
             minCountReviewers: 1,
-            countDecisiveReviewers: 1
+            countDecisiveReviewers: 1,
+            combinationOfReviewers: 1,
+            type: ""
         })
         let stage = await Stage.create({
             name: "TestStage",
@@ -923,7 +745,7 @@ Deno.test({
             paperId: Number(paper.id),
             stageId: Number(stage.id)
         })
-        let wrote = await Wrote.create({authorId: Number(author.id), paperId: Number(paper.id )})
+        let wrote = await Wrote.create({ authorId: Number(author.id), paperId: Number(paper.id) })
         let app = await createMockApp();
         let token = await createJWT(user)
         let ctx = await createMockContext(app, `{"title":"New Title" }`, [["Content-Type", "application/json"]], "/", token);
@@ -943,53 +765,6 @@ Deno.test({
     sanitizeOps: false,
 })
 
-
-Deno.test({
-    name: "PatchPapersOfProjectStageNoId",
-    async fn(): Promise<void> {
-        await setup(true);
-        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
-        let project = await Project.create({
-            name: "test",
-            minCountReviewers: 1,
-            countDecisiveReviewers: 1
-        })
-        let stage = await Stage.create({
-            name: "TestStage",
-            projectId: Number(project.id),
-            number: 0
-        })
-        let paper = await Paper.create({
-            doi: "fasfafraf",
-            title: "nice title",
-            abstract: "hellu"
-
-        })
-        let author = await Author.create({
-            rawString: "Awsome Name"
-        })
-        let pp = await PaperScopeForStage.create({
-            paperId: Number(paper.id),
-            stageId: Number(stage.id)
-        })
-        let wrote = await Wrote.create({authorId: Number(author.id), paperId: Number(paper.id )})
-        let app = await createMockApp();
-        let token = await createJWT(user)
-        let ctx = await createMockContext(app, `{"doi":"10.1109/SEAA.2009.60" }`, [["Content-Type", "application/json"]], "/", token);
-        let bla = await patchPaperOfProjectStage(ctx, Number(project.id), Number(stage.id), undefined)
-
-        assertEquals(ctx.response.status, 422)
-        paperCache.clear()
-        authorCache.clear()
-        Batcher.kill()
-        await db.close();
-        await client.end();
-
-    },
-    sanitizeResources: false,
-    sanitizeOps: false,
-})
-
 Deno.test({
     name: "PatchPapersOfProjectStageUnAuthorized",
     async fn(): Promise<void> {
@@ -998,7 +773,9 @@ Deno.test({
         let project = await Project.create({
             name: "test",
             minCountReviewers: 1,
-            countDecisiveReviewers: 1
+            countDecisiveReviewers: 1,
+            combinationOfReviewers: 1,
+            type: ""
         })
         let stage = await Stage.create({
             name: "TestStage",
@@ -1018,7 +795,7 @@ Deno.test({
             paperId: Number(paper.id),
             stageId: Number(stage.id)
         })
-        let wrote = await Wrote.create({authorId: Number(author.id), paperId: Number(paper.id )})
+        let wrote = await Wrote.create({ authorId: Number(author.id), paperId: Number(paper.id) })
         let app = await createMockApp();
         let token = await createJWT(user)
         let ctx = await createMockContext(app, `{"doi":"10.1109/SEAA.2009.60" }`, [["Content-Type", "application/json"]], "/", token);
@@ -1044,7 +821,9 @@ Deno.test({
         let project = await Project.create({
             name: "test",
             minCountReviewers: 1,
-            countDecisiveReviewers: 1
+            countDecisiveReviewers: 1,
+            combinationOfReviewers: 1,
+            type: ""
         })
         let stage = await Stage.create({
             name: "TestStage",
@@ -1064,7 +843,7 @@ Deno.test({
             paperId: Number(paper.id),
             stageId: Number(stage.id)
         })
-        let wrote = await Wrote.create({authorId: Number(author.id), paperId: Number(paper.id )})
+        let wrote = await Wrote.create({ authorId: Number(author.id), paperId: Number(paper.id) })
         let app = await createMockApp();
         let token = await createJWT(user)
         let ctx = await createMockContext(app, `{"doi":"10.1109/SEAA.2009.60" }`, [["Content-Type", "application/json"]], "/", token);
@@ -1077,6 +856,558 @@ Deno.test({
         await db.close();
         await client.end();
 
+    },
+    sanitizeResources: false,
+    sanitizeOps: false,
+})
+
+Deno.test({
+    name: "deletePaperOfProjectStage",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+        let project = await Project.create({
+            name: "test",
+            minCountReviewers: 1,
+            countDecisiveReviewers: 1,
+            combinationOfReviewers: 1,
+            type: ""
+        })
+        let stage = await Stage.create({
+            name: "TestStage",
+            projectId: Number(project.id),
+            number: 0
+        })
+        let paper = await Paper.create({
+            doi: "fasfafraf",
+            title: "nice title",
+            abstract: "hellu"
+
+        })
+
+        let pp = await PaperScopeForStage.create({
+            paperId: Number(paper.id),
+            stageId: Number(stage.id)
+        })
+        let ppid = Number(pp.id)
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, `{"doi":"10.1109/SEAA.2009.60" }`, [["Content-Type", "application/json"]], "/", token);
+        await deletePaperOfProjectStage(ctx, Number(project.id), Number(stage.id), Number(pp.id))
+
+        assertEquals(ctx.response.status, 200)
+        assertEquals(await PaperScopeForStage.find(ppid), undefined)
+        paperCache.clear()
+        authorCache.clear()
+        Batcher.kill()
+        await db.close();
+        await client.end();
+
+    },
+    sanitizeResources: false,
+    sanitizeOps: false,
+})
+
+Deno.test({
+    name: "postPaperProjectReferences",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, ``, [["Content-Type", "application/json"]], "/", token);
+        let paper = await Paper.create({ title: "Hello there", abstract: "General Kenobi" })
+        let paper1 = await Paper.create({ title: "Hi", abstract: "this abstract" })
+        let paper2 = await Paper.create({ title: "mlem", abstract: "mlem mlem" })
+        let project = await Project.create({
+            name: "test",
+            minCountReviewers: 1,
+            countDecisiveReviewers: 1,
+            combinationOfReviewers: 1,
+            type: ""
+        })
+        let stage = await Stage.create({
+            name: "TestStage",
+            projectId: Number(project.id),
+            number: 0
+        })
+        let pp = await PaperScopeForStage.create({
+            paperId: Number(paper.id),
+            stageId: Number(stage.id)
+        })
+        await getRefs(ctx, Number(project.id), Number(stage.id), Number(pp.id))
+        let answer = JSON.parse(ctx.response.body as string)
+        let length = answer.papers.length
+        ctx = await createMockContext(app, `{"id": ${paper1.id}}`, [["Content-Type", "application/json"]], "/", token);
+        await postRefProject(ctx, Number(project.id), Number(stage.id), Number(pp.id))
+
+        await getRefs(ctx, Number(project.id), Number(stage.id), Number(pp.id))
+        answer = JSON.parse(ctx.response.body as string)
+        assertEquals(ctx.response.status, 200)
+        assertEquals(answer.papers.length, length + 1)
+        assertEquals(answer.papers[0].title, "Hi")
+        assertEquals(answer.papers[0].abstract, "this abstract")
+        assertEquals(answer.papers[0].id, Number(paper1.id))
+        await db.close();
+        await client.end();
+        Batcher.kill()
+    },
+    sanitizeResources: false,
+    sanitizeOps: false,
+})
+
+Deno.test({
+    name: "postPaperProjectCitations",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, ``, [["Content-Type", "application/json"]], "/", token);
+        let paper = await Paper.create({ title: "Hello there", abstract: "General Kenobi" })
+        let paper1 = await Paper.create({ title: "Hi", abstract: "this abstract" })
+        let paper2 = await Paper.create({ title: "mlem", abstract: "mlem mlem" })
+        let project = await Project.create({
+            name: "test",
+            minCountReviewers: 1,
+            countDecisiveReviewers: 1,
+            combinationOfReviewers: 1,
+            type: ""
+        })
+        let stage = await Stage.create({
+            name: "TestStage",
+            projectId: Number(project.id),
+            number: 0
+        })
+        let pp = await PaperScopeForStage.create({
+            paperId: Number(paper.id),
+            stageId: Number(stage.id)
+        })
+        await getCites(ctx, Number(project.id), Number(stage.id), Number(pp.id))
+        let answer = JSON.parse(ctx.response.body as string)
+        let length = answer.papers.length
+        ctx = await createMockContext(app, `{"id": ${paper1.id}}`, [["Content-Type", "application/json"]], "/", token);
+        await postCiteProject(ctx, Number(project.id), Number(stage.id), Number(pp.id))
+
+        await getCites(ctx, Number(project.id), Number(stage.id), Number(pp.id))
+        answer = JSON.parse(ctx.response.body as string)
+        assertEquals(ctx.response.status, 200)
+        assertEquals(answer.papers.length, length + 1)
+        assertEquals(answer.papers[0].title, "Hi")
+        assertEquals(answer.papers[0].abstract, "this abstract")
+        assertEquals(answer.papers[0].id, Number(paper1.id))
+        await db.close();
+        await client.end();
+        Batcher.kill()
+    },
+    sanitizeResources: false,
+    sanitizeOps: false,
+})
+
+Deno.test({
+    name: "GetCriteriasOfProject",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, ``, [["Content-Type", "application/json"]], "/", token);
+
+        let project = await Project.create({
+            name: "test",
+            minCountReviewers: 1,
+            countDecisiveReviewers: 1,
+            combinationOfReviewers: 1,
+            type: ""
+        })
+
+        let criteria = (await Criteria.create({
+            projectId: Number(project.id),
+            short: "FG", abbreviation: "An abbrevation", inclusionExclusion: "inclusion", weight: 3, description: "a description"
+        }))
+
+        let criteria1 = (await Criteria.create({
+            projectId: Number(project.id),
+            short: "AD", abbreviation: "Another abbrevation", inclusionExclusion: "exclusion", weight: 8, description: "another description"
+        }))
+        let criteria2 = (await Criteria.create({
+            projectId: Number(project.id),
+            short: "AG", abbreviation: "abbrevation", inclusionExclusion: "hard exclusion", weight: 4, description: "third description"
+        }))
+        await getCriteriasOfProject(ctx, Number(project.id))
+        let answer = JSON.parse(ctx.response.body as string)
+        assertEquals(ctx.response.status, 200)
+        assertEquals(answer.criterias.length, 3)
+        assertEquals(answer.criterias[0].short, String(criteria.short))
+        assertEquals(answer.criterias[0].description, String(criteria.description))
+        assertEquals(answer.criterias[0].abbreviation, String(criteria.abbreviation))
+        assertEquals(answer.criterias[0].inclusionExclusion, String(criteria.inclusionExclusion))
+        assertEquals(answer.criterias[0].weight, Number(criteria.weight))
+        assertEquals(answer.criterias[1].short, String(criteria1.short))
+        assertEquals(answer.criterias[1].description, String(criteria1.description))
+        assertEquals(answer.criterias[1].abbreviation, String(criteria1.abbreviation))
+        assertEquals(answer.criterias[1].inclusionExclusion, String(criteria1.inclusionExclusion))
+        assertEquals(answer.criterias[1].weight, Number(criteria1.weight))
+        assertEquals(answer.criterias[2].short, String(criteria2.short))
+        assertEquals(answer.criterias[2].description, String(criteria2.description))
+        assertEquals(answer.criterias[2].abbreviation, String(criteria2.abbreviation))
+        assertEquals(answer.criterias[2].inclusionExclusion, String(criteria2.inclusionExclusion))
+        assertEquals(answer.criterias[2].weight, Number(criteria2.weight))
+        await db.close();
+        await client.end();
+        Batcher.kill()
+    },
+    sanitizeResources: false,
+    sanitizeOps: false,
+})
+
+Deno.test({
+    name: "addCriteriaToProject",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app,
+            `{  "short": "AD",
+                "description": "A good criteria",
+                "abbreviation": "a good abbrevation",
+                "inclusionExclusion": "inclusion",
+                "weight": 3
+            }`, [["Content-Type", "application/json"]], "/", token);
+
+        let project = await Project.create({
+            name: "test",
+            minCountReviewers: 1,
+            countDecisiveReviewers: 1,
+            combinationOfReviewers: 1,
+            type: ""
+        })
+
+        await addCriteriaToProject(ctx, Number(project.id))
+        let answer = JSON.parse(ctx.response.body as string)
+        assertEquals(ctx.response.status, 200)
+        assertNotEquals(answer.id, undefined)
+        let criteria = await Criteria.find(answer.id);
+        assertEquals(String(criteria.short), "AD")
+        assertEquals(String(criteria.description), "A good criteria")
+        assertEquals(String(criteria.abbreviation), "a good abbrevation")
+        assertEquals(String(criteria.inclusionExclusion), "inclusion")
+        assertEquals(Number(criteria.weight), 3)
+        await db.close();
+        await client.end();
+        Batcher.kill()
+    },
+    sanitizeResources: false,
+    sanitizeOps: false,
+})
+
+Deno.test({
+    name: "addCriteriaToProjectWeigthNotANumber",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app,
+            `{  "short": "AD",
+                "description": "A good criteria",
+                "abbreviation": "a good abbrevation",
+                "inclusionExclusion": "inclusion",
+                "weight": abv
+            }`, [["Content-Type", "application/json"]], "/", token);
+
+        let project = await Project.create({
+            name: "test",
+            minCountReviewers: 1,
+            countDecisiveReviewers: 1,
+            combinationOfReviewers: 1,
+            type: ""
+        })
+
+        await addCriteriaToProject(ctx, Number(project.id))
+        let answer = JSON.parse(ctx.response.body as string)
+
+        assertEquals(ctx.response.status, 422)
+        assertEquals(answer.id, undefined)
+
+        await db.close();
+        await client.end();
+        Batcher.kill()
+    },
+    sanitizeResources: false,
+    sanitizeOps: false,
+})
+
+Deno.test({
+    name: "addCriteriaToProjectInclusionWrong",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app,
+            `{  "short": "AD",
+                "description": "A good criteria",
+                "abbreviation": "a good abbrevation",
+                "inclusionExclusion": "inclustion",
+                "weight": abv
+            }`, [["Content-Type", "application/json"]], "/", token);
+
+        let project = await Project.create({
+            name: "test",
+            minCountReviewers: 1,
+            countDecisiveReviewers: 1,
+            combinationOfReviewers: 1,
+            type: ""
+        })
+
+        await addCriteriaToProject(ctx, Number(project.id))
+
+        let answer = JSON.parse(ctx.response.body as string)
+        assertEquals(ctx.response.status, 422)
+        assertEquals(answer.id, undefined)
+
+        await db.close();
+        await client.end();
+        Batcher.kill()
+    },
+    sanitizeResources: false,
+    sanitizeOps: false,
+})
+Deno.test({
+    name: "addCriteriaToProjectWrongID",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app,
+            `{  "short": "AD",
+                "description": "A good criteria",
+                "abbreviation": "a good abbrevation",
+                "inclusionExclusion": "inclusion",
+                "weight": 3
+            }`, [["Content-Type", "application/json"]], "/", token);
+
+        let project = await Project.create({
+            name: "test",
+            minCountReviewers: 1,
+            countDecisiveReviewers: 1,
+            combinationOfReviewers: 1,
+            type: ""
+        })
+
+        await addCriteriaToProject(ctx, Number(project.id) + 1)
+        let answer = JSON.parse(ctx.response.body as string)
+        assertEquals(ctx.response.status, 404)
+        assertEquals(answer.id, undefined)
+
+        await db.close();
+        await client.end();
+        Batcher.kill()
+    },
+    sanitizeResources: false,
+    sanitizeOps: false,
+})
+
+Deno.test({
+    name: "deleteCriteriaOfProject",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, ``, [["Content-Type", "application/json"]], "/", token);
+
+        let project = await Project.create({
+            name: "test",
+            minCountReviewers: 1,
+            countDecisiveReviewers: 1,
+            combinationOfReviewers: 1,
+            type: ""
+        })
+        let criteriaID = Number((await Criteria.create({
+            projectId: Number(project.id),
+            short: "AD", abbreviation: "An abbrevation", inclusionExclusion: "inclusion", weight: 3, description: "description"
+        })).id)
+
+        await deleteCriteriaOfProject(ctx, Number(project.id), criteriaID)
+        assertEquals(ctx.response.status, 200)
+        assertEquals(await Criteria.find(criteriaID), undefined)
+        await db.close();
+        await client.end();
+        Batcher.kill()
+    },
+    sanitizeResources: false,
+    sanitizeOps: false,
+})
+
+Deno.test({
+    name: "deleteCriteriaOfProjectForbidden",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, ``, [["Content-Type", "application/json"]], "/", token);
+
+        let project = await Project.create({
+            name: "test",
+            minCountReviewers: 1,
+            countDecisiveReviewers: 1,
+            combinationOfReviewers: 1,
+            type: ""
+        })
+        let criteriaID = Number((await Criteria.create({
+            projectId: Number(project.id),
+            short: "AD", abbreviation: "An abbrevation", inclusionExclusion: "inclusion", weight: 3, description: "desc"
+        })).id)
+        let stage = await Stage.create({
+            name: "TestStage",
+            projectId: Number(project.id),
+            number: 0
+        })
+        let paper = await Paper.create({})
+        let review = await Review.create({ userId: Number(user.id), stageId: Number(stage.id), paperId: Number(paper.id) })
+        await CriteriaEvaluation.create({ criteriaId: criteriaID, reviewId: Number(review.id), value: "yes" })
+        await deleteCriteriaOfProject(ctx, Number(project.id), criteriaID)
+        assertEquals(ctx.response.status, 200)
+        assertEquals(await Criteria.find(criteriaID), undefined)
+        await db.close();
+        await client.end();
+        Batcher.kill()
+    },
+    sanitizeResources: false,
+    sanitizeOps: false,
+})
+
+Deno.test({
+    name: "patchCriteriaOfProject",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, `{
+            "short": "AD2",
+            "description": "another criteria",
+            "abbreviation": "another abbrevation",
+            "inclusionExclusion": "exclusion",
+            "weight": 4
+        }`, [["Content-Type", "application/json"]], "/", token);
+
+        let project = await Project.create({
+            name: "test",
+            minCountReviewers: 1,
+            countDecisiveReviewers: 1,
+            combinationOfReviewers: 1,
+            type: ""
+        })
+        let criteriaID = Number((await Criteria.create({
+            projectId: Number(project.id),
+            short: "AD", abbreviation: "An abbrevation", inclusionExclusion: "inclusion", weight: 3, description: "des"
+        })).id)
+
+        await patchCriteriaOfProject(ctx, Number(project.id), criteriaID)
+        assertEquals(ctx.response.status, 200)
+        let criteria = await Criteria.find(criteriaID);
+        assertEquals(String(criteria.short), "AD2")
+        assertEquals(String(criteria.description), "another criteria")
+        assertEquals(String(criteria.abbreviation), "another abbrevation")
+        assertEquals(String(criteria.inclusionExclusion), "exclusion")
+        assertEquals(Number(criteria.weight), 4)
+        await db.close();
+        await client.end();
+        Batcher.kill()
+    },
+    sanitizeResources: false,
+    sanitizeOps: false,
+})
+
+Deno.test({
+    name: "patchCriteriaOfProjectWrongID",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, `{
+            "short": "AD2",
+            "description": "another criteria",
+            "abbreviation": "another abbrevation",
+            "inclusionExclusion": "exclusion",
+            "weight": 4
+        }`, [["Content-Type", "application/json"]], "/", token);
+
+        let project = await Project.create({
+            name: "test",
+            minCountReviewers: 1,
+            countDecisiveReviewers: 1,
+            combinationOfReviewers: 1,
+            type: ""
+        })
+        let criteriaID = Number((await Criteria.create({
+            projectId: Number(project.id),
+            short: "AD", abbreviation: "An abbrevation", inclusionExclusion: "inclusion", weight: 3, description: "des"
+        })).id)
+
+        await patchCriteriaOfProject(ctx, Number(project.id), criteriaID + 1)
+        assertEquals(ctx.response.status, 404)
+
+        await db.close();
+        await client.end();
+        Batcher.kill()
+    },
+    sanitizeResources: false,
+    sanitizeOps: false,
+})
+
+Deno.test({
+    name: "patchCriteriaOfProjectWeightNotNumber",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, `{
+            "short": "AD2",
+            "description": "another criteria",
+            "abbreviation": "another abbrevation",
+            "inclusionExclusion": "exclusion",
+            "weight": "afg"
+        }`, [["Content-Type", "application/json"]], "/", token);
+
+        let project = await Project.create({
+            name: "test",
+            minCountReviewers: 1,
+            countDecisiveReviewers: 1,
+            combinationOfReviewers: 1,
+            type: ""
+        })
+        let criteriaID = Number((await Criteria.create({
+            projectId: Number(project.id),
+            short: "AD", abbreviation: "An abbrevation", inclusionExclusion: "inclusion", weight: 3, description: "des"
+        })).id)
+
+        await patchCriteriaOfProject(ctx, Number(project.id), criteriaID)
+        assertEquals(ctx.response.status, 422)
+
+        await db.close();
+        await client.end();
+        Batcher.kill()
     },
     sanitizeResources: false,
     sanitizeOps: false,

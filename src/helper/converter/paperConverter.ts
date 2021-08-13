@@ -11,12 +11,12 @@ import { IApiUniqueId } from "../../api/iApiUniqueId.ts";
 import { Author } from "../../model/db/author.ts";
 import { Wrote } from "../../model/db/wrote.ts";
 import { Pdf } from "../../model/db/pdf.ts";
-import { authorCache, paperCache } from "../../controller/project.ts";
+import { authorCache, paperCache } from "../../controller/project.controller.ts";
 import { checkIApiAuthor } from "./authorConverter.ts";
 import { getAllAuthorsFromPaper } from "../../controller/databaseFetcher/author.ts";
 import { IApiAuthor } from "../../api/iApiAuthor.ts";
 import { isEqualAuthor } from "../../api/checkIsEqual.ts";
-import {convertAuthorToAuthorMessage} from "./authorConverter.ts"
+import { convertAuthorToAuthorMessage } from "./authorConverter.ts"
 export const convertPapersToPaperMessage = async (papers: Paper[], stageId?: number) => {
     let paperMessages: PaperMessage[] = [];
     for (const item of papers) {
@@ -31,13 +31,13 @@ export const convertPaperToPaperMessage = async (paper: Paper, stageId?: number)
     if (stageId) { paperMessage.ppid = await getProjectPaperID(stageId, Number(paper.id)) }
     if (paperCache.has(String(paper.id))) {
         paperMessage.status = Status.unfinished
-    } else{
+    } else {
         paperMessage.status = Status.finished
     }
     let pdf = await Pdf.where({ paperId: Number(paper.id) }).get()
     if (Array.isArray(pdf)) {
-        pdf.forEach(pdf => {
-            paperMessage.pdf?.push(String(pdf.url))
+        pdf.forEach(url => {
+            paperMessage.pdf.push(String(url.url))
         })
     }
     let authors = await getAllAuthorsFromPaper(Number(paper.id))
@@ -51,7 +51,7 @@ export const convertIApiPaperToDBPaper = async (paper: IApiPaper): Promise<Paper
     let newPaper = await Paper.create({})
     let p: any = paper;
     for (let i in paper) {
-        if (["title", "abstract", "publisher", "type", "scope","scopeName", "year"].includes(i)) {
+        if (["title", "abstract", "publisher", "type", "scope", "scopeName", "year"].includes(i)) {
             newPaper[i] = p[i][0]
         } else if (i == "uniqueId") {
             newPaper.doi = getDOI(paper)[0]
@@ -89,7 +89,7 @@ export const assignOnlyIfUnassignedPaper = async (target: Paper, source: IApiPap
     for (const key in source) {
         const val = s[key];
         if (val && !target[key]) {
-            if (["title", "abstract", "publisher", "type","scope", "scopeName", "year"].includes(key)) {
+            if (["title", "abstract", "publisher", "type", "scope", "scopeName", "year"].includes(key)) {
                 target[key] = s[key][0]
                 if (s[key].length <= 1) {
                     delete s[key]
@@ -155,7 +155,7 @@ const updateUniqueIdOfPaper = async (uniqueId: IApiUniqueId[], newPaperId: numbe
     }
 }
 const updateAuthorOfPaper = async (author: Author, item: IApiAuthor, paperId: number) => {
-if (!author.firstName) { author.firstName = item.firstName[0] }
+    if (!author.firstName) { author.firstName = item.firstName[0] }
     if (!author.lastName) { author.lastName = item.lastName[0] }
     if (!author.rawString) { author.rawString = item.rawString[0] }
     await author.update()

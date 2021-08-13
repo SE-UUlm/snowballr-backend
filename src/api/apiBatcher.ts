@@ -9,9 +9,8 @@ import { IeeeApi } from "./ieeeApi.ts";
 import { MicrosoftResearchApi } from "./microsoftResearchApi.ts";
 import { OpenCitationsApi } from "./openCitationsApi.ts";
 import { SemanticScholar } from "./semanticScholar.ts";
-//import { v4 } from "https://deno.land/std@$STD_VERSION/uuid/mod.ts";
 import { ApiMerger } from "./apiMerger.ts";
-import { logger, fileLogger } from "./logger.ts";
+import { logger } from "./logger.ts";
 import { Cache, CacheType } from "./cache.ts";
 
 
@@ -183,8 +182,8 @@ export class ApiBatcher implements IApiBatcher {
 
 	public purge() {
 		this.kill()
-		Object.keys(this.cache).forEach(key => {if(this.cache[key].fileCache){this.cache[key].fileCache!.purge}});
-	
+		Object.keys(this.cache).forEach(key => { if (this.cache[key].fileCache) { this.cache[key].fileCache!.purge() } });
+
 		logger.info("Killed all Caches");
 	}
 	public async register(query: IApiQuery): Promise<IApiBatch> {
