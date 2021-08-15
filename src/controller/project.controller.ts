@@ -216,7 +216,12 @@ const fetchToDB = async (stageID: number, projectID: number, doi?: string, title
     }
 
 }
-
+/**
+ * Returns next stage of project by either finding it or creating it
+ * @param currentStage 
+ * @param projectID 
+ * @returns 
+ */
 export const findNextStage = async (currentStage: Stage, projectID: number) => {
     let stages = (await getAllStagesFromProject(projectID))
     let nextStage = stages.filter((item: Stage) => Number(item.number) == Number(currentStage.number) + 1)[0];
@@ -333,6 +338,13 @@ export const patchPaperOfProjectStage = async (ctx: Context, projectID: number, 
     }
 }
 
+/**
+ * Removes a paper from a project stage (not the paper itself)
+ * @param ctx 
+ * @param projectID 
+ * @param stageID 
+ * @param ppID 
+ */
 export const deletePaperOfProjectStage = async (ctx: Context, projectID: number, stageID: number, ppID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
     if (validate) {
@@ -341,6 +353,13 @@ export const deletePaperOfProjectStage = async (ctx: Context, projectID: number,
     }
 }
 
+/**
+ * Returns all citations of a paper by the project specific paper id
+ * @param ctx 
+ * @param projectID 
+ * @param stageID 
+ * @param ppID 
+ */
 export const getCites = async (ctx: Context, projectID: number, stageID: number, ppID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
     if (validate) {
@@ -355,6 +374,13 @@ export const getCites = async (ctx: Context, projectID: number, stageID: number,
     }
 }
 
+/**
+ * Returns all references of a paper by the project specific paper id
+ * @param ctx 
+ * @param projectID 
+ * @param stageID 
+ * @param ppID 
+ */
 export const getRefs = async (ctx: Context, projectID: number, stageID: number, ppID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
     if (validate) {
@@ -368,7 +394,13 @@ export const getRefs = async (ctx: Context, projectID: number, stageID: number, 
         }
     }
 }
-
+/**
+ * Posts a new cite to a paper and adds it to the project stage
+ * @param ctx 
+ * @param projectID 
+ * @param stageID 
+ * @param ppID 
+ */
 export const postCiteProject = async (ctx: Context, projectID: number, stageID: number, ppID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
     if (validate) {
@@ -387,7 +419,13 @@ export const postCiteProject = async (ctx: Context, projectID: number, stageID: 
         }
     }
 }
-
+/**
+ *  Posts a new reference to a paper and adds it to the project stage
+ * @param ctx 
+ * @param projectID 
+ * @param stageID 
+ * @param ppID 
+ */
 export const postRefProject = async (ctx: Context, projectID: number, stageID: number, ppID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
     if (validate) {
@@ -408,7 +446,11 @@ export const postRefProject = async (ctx: Context, projectID: number, stageID: n
 }
 
 
-
+/**
+ * Returns all criterias that are used to evaluate a paper of a project
+ * @param ctx 
+ * @param projectID 
+ */
 export const getCriteriasOfProject = async (ctx: Context, projectID: number) => {
     let validate = await validateUserEntry(ctx, [projectID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
     if (validate) {
@@ -427,7 +469,12 @@ export const getCriteriaOfProject = async (ctx: Context, projectID: number, crit
         ctx.response.body = JSON.stringify(criteria)
     }
 }
-
+/**
+ * Returns all evaluations of a criteria set by a project
+ * @param ctx 
+ * @param projectID 
+ * @param criteriaId 
+ */
 export const getCriteriaEvalsOfCriteria = async (ctx: Context, projectID: number, criteriaId: number) => {
     let validate = await validateUserEntry(ctx, [projectID, criteriaId], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
     if (validate) {
@@ -438,6 +485,12 @@ export const getCriteriaEvalsOfCriteria = async (ctx: Context, projectID: number
         }
     }
 }
+/**
+ * Adds a criteria to a project
+ * @param ctx 
+ * @param projectID 
+ * @returns 
+ */
 export const addCriteriaToProject = async (ctx: Context, projectID: number) => {
     let validate = await validateUserEntry(ctx, [projectID], UserStatus.needsPOOfProject, projectID, { needed: true, params: ["short", "description", "abbreviation", "inclusionExclusion", "weight"] })
     if (validate) {
@@ -459,7 +512,13 @@ export const addCriteriaToProject = async (ctx: Context, projectID: number) => {
         }
     }
 }
-
+/**
+ * Patches a criteria of a project
+ * @param ctx 
+ * @param projectID 
+ * @param criteriaID 
+ * @returns 
+ */
 export const patchCriteriaOfProject = async (ctx: Context, projectID: number, criteriaID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, criteriaID], UserStatus.needsMemberOfProject, projectID, { needed: true, params: [] })
     if (validate) {
@@ -480,7 +539,12 @@ export const patchCriteriaOfProject = async (ctx: Context, projectID: number, cr
         }
     }
 }
-
+/**
+ * Deletes a criteria of a project
+ * @param ctx 
+ * @param projectID 
+ * @param criteriaID 
+ */
 export const deleteCriteriaOfProject = async (ctx: Context, projectID: number, criteriaID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, criteriaID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
     if (validate) {
@@ -493,7 +557,13 @@ export const deleteCriteriaOfProject = async (ctx: Context, projectID: number, c
     }
 }
 
-
+/**
+ * Returns all reviews of a paper
+ * @param ctx 
+ * @param projectID 
+ * @param stageID 
+ * @param ppID 
+ */
 export const getReviewsOfPaper = async (ctx: Context, projectID: number, stageID: number, ppID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
     if (validate) {
@@ -502,6 +572,13 @@ export const getReviewsOfPaper = async (ctx: Context, projectID: number, stageID
     }
 }
 
+/**
+ * Adds a review to a paper
+ * @param ctx 
+ * @param projectID 
+ * @param stageID 
+ * @param ppID 
+ */
 export const addReviewToPaper = async (ctx: Context, projectID: number, stageID: number, ppID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
     if (validate) {
@@ -528,6 +605,14 @@ export const addReviewToPaper = async (ctx: Context, projectID: number, stageID:
     }
 }
 
+/**
+ * Patches a review of a paper
+ * @param ctx 
+ * @param projectID 
+ * @param stageID 
+ * @param ppID 
+ * @param reviewID 
+ */
 export const patchReviewOfPaper = async (ctx: Context, projectID: number, stageID: number, ppID: number, reviewID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID, reviewID], UserStatus.needsMemberOfProject, projectID, { needed: true, params: [] })
     if (validate) {
@@ -544,7 +629,14 @@ export const patchReviewOfPaper = async (ctx: Context, projectID: number, stageI
         }
     }
 }
-
+/**
+ * Retuns a review of a paper
+ * @param ctx 
+ * @param projectID 
+ * @param stageID 
+ * @param ppID 
+ * @param reviewID 
+ */
 export const getReviewOfPaper = async (ctx: Context, projectID: number, stageID: number, ppID: number, reviewID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID, reviewID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
     if (validate) {
@@ -557,7 +649,14 @@ export const getReviewOfPaper = async (ctx: Context, projectID: number, stageID:
         }
     }
 }
-
+/**
+ * Deletes a review of a paper
+ * @param ctx 
+ * @param projectID 
+ * @param stageID 
+ * @param ppID 
+ * @param reviewID 
+ */
 export const deleteReviewOfPaper = async (ctx: Context, projectID: number, stageID: number, ppID: number, reviewID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
     if (validate) {
@@ -572,7 +671,14 @@ export const deleteReviewOfPaper = async (ctx: Context, projectID: number, stage
 
 
 
-
+/**
+ * Retuns all criteria evaluations of a review
+ * @param ctx 
+ * @param projectID 
+ * @param stageID 
+ * @param ppID 
+ * @param reviewID 
+ */
 export const getCrtieriaEvalsOfReview = async (ctx: Context, projectID: number, stageID: number, ppID: number, reviewID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID, reviewID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
     if (validate) {
@@ -580,7 +686,14 @@ export const getCrtieriaEvalsOfReview = async (ctx: Context, projectID: number, 
         ctx.response.body = JSON.stringify({ criteriaevaluations: await CriteriaEvaluation.where(CriteriaEvaluation.field("review_id"), Number(reviewID)).get() })
     }
 }
-
+/**
+ * Adds a evaluation of a criteria to a review
+ * @param ctx 
+ * @param projectID 
+ * @param stageID 
+ * @param ppID 
+ * @param reviewID 
+ */
 export const addCrtieriaEvalToReview = async (ctx: Context, projectID: number, stageID: number, ppID: number, reviewID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID, reviewID], UserStatus.needsSameMemberOfProject, projectID, { needed: true, params: ["value", "criteriaId"] })
     if (validate) {
@@ -601,6 +714,15 @@ export const addCrtieriaEvalToReview = async (ctx: Context, projectID: number, s
     }
 }
 
+/**
+ * Patches a evaluation of a criteria of a review
+ * @param ctx 
+ * @param projectID 
+ * @param stageID 
+ * @param ppID 
+ * @param reviewID 
+ * @param criteriaEvalID 
+ */
 export const patchCritieriaEvalOfReview = async (ctx: Context, projectID: number, stageID: number, ppID: number, reviewID: number, criteriaEvalID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID, reviewID, criteriaEvalID], UserStatus.needsSameMemberOfProject, projectID, { needed: true, params: [] })
     if (validate) {
@@ -617,6 +739,15 @@ export const patchCritieriaEvalOfReview = async (ctx: Context, projectID: number
     }
 }
 
+/**
+ * Retuns a evaluation of a criteria of a review
+ * @param ctx 
+ * @param projectID 
+ * @param stageID 
+ * @param ppID 
+ * @param reviewID 
+ * @param criteriaEvalID 
+ */
 export const getCritieriaEvalOfReview = async (ctx: Context, projectID: number, stageID: number, ppID: number, reviewID: number, criteriaEvalID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID, reviewID, criteriaEvalID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
     if (validate) {
@@ -629,7 +760,15 @@ export const getCritieriaEvalOfReview = async (ctx: Context, projectID: number, 
         }
     }
 }
-
+/**
+ * Deletes a evaluation of a criteria of a review
+ * @param ctx 
+ * @param projectID 
+ * @param stageID 
+ * @param ppID 
+ * @param reviewID 
+ * @param criteriaEvalID 
+ */
 export const deleteCritieriaEvalOfReview = async (ctx: Context, projectID: number, stageID: number, ppID: number, reviewID: number, criteriaEvalID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID, reviewID, criteriaEvalID], UserStatus.needsSameMemberOfProject, projectID, { needed: false, params: [] })
     if (validate) {
