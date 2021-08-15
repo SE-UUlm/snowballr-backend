@@ -7,21 +7,32 @@ import { logout } from "./controller/logout.controller.ts";
 import { SmtpClient } from "https://deno.land/x/smtp/mod.ts";
 import {
     addCriteriaToProject,
+    addCrtieriaEvalToReview,
     addMemberToProject,
     addPaperToProjectStage,
+    addReviewToPaper,
     addStageToProject,
     createProject,
     deleteCriteriaOfProject,
+    deleteCritieriaEvalOfReview,
     deletePaperOfProjectStage,
+    deleteReviewOfPaper,
     getCites,
+    getCriteriaEvalsOfCriteria,
     getCriteriasOfProject,
+    getCritieriaEvalOfReview,
+    getCrtieriaEvalsOfReview,
     getMembersOfProject,
     getPaperOfProjectStage,
     getPapersOfProjectStage,
     getProjects,
     getRefs,
+    getReviewOfPaper,
+    getReviewsOfPaper,
     patchCriteriaOfProject,
+    patchCritieriaEvalOfReview,
     patchPaperOfProjectStage,
+    patchReviewOfPaper,
     postCiteProject,
     postRefProject,
     removeMemberOfProject
@@ -85,6 +96,10 @@ router
     .patch("/projects/:id/criterias/:id2", async (context) => {
         await patchCriteriaOfProject(context, Number(context.params.id), Number(context.params.id2))
     })
+
+    .get("/projects/:id/criterias/:id2/criteriaevaluations", async (context) => {
+        await getCriteriaEvalsOfCriteria(context, Number(context.params.id), Number(context.params.id2))
+    })
     .delete("/projects/:id/members", async (context) => {
         await deleteCriteriaOfProject(context, Number(context.params.id), Number(context.params.id2))
     })
@@ -117,6 +132,37 @@ router
     })
     .post("/projects/:id/stages/:id2/papers/:ppid/citations", async (context) => {
         await postCiteProject(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))
+    })
+    .get("/projects/:id/stages/:id2/papers/:ppid/reviews", async (context) => {
+        await getReviewsOfPaper(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))
+    })
+    .post("/projects/:id/stages/:id2/papers/:ppid/reviews", async (context) => {
+        await addReviewToPaper(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))
+    })
+    .get("/projects/:id/stages/:id2/papers/:ppid/reviews/:rid", async (context) => {
+        await getReviewOfPaper(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid), Number(context.params.rid))
+    })
+    .patch("/projects/:id/stages/:id2/papers/:ppid/reviews/:rid", async (context) => {
+        await patchReviewOfPaper(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid), Number(context.params.rid))
+    })
+    .delete("/projects/:id/stages/:id2/papers/:ppid/reviews/:rid", async (context) => {
+        await deleteReviewOfPaper(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid), Number(context.params.rid))
+    })
+
+    .get("/projects/:id/stages/:id2/papers/:ppid/reviews/:rid/criteriaevaluations", async (context) => {
+        await getCrtieriaEvalsOfReview(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid), Number(context.params.rid))
+    })
+    .post("/projects/:id/stages/:id2/papers/:ppid/reviews/:rid/criteriaevaluations", async (context) => {
+        await addCrtieriaEvalToReview(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid), Number(context.params.rid))
+    })
+    .get("/projects/:id/stages/:id2/papers/:ppid/reviews/:rid/criteriaevaluations/:cid", async (context) => {
+        await getCritieriaEvalOfReview(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid), Number(context.params.rid), Number(context.params.cid))
+    })
+    .patch("/projects/:id/stages/:id2/papers/:ppid/reviews/:rid/criteriaevaluations/:cid", async (context) => {
+        await patchCritieriaEvalOfReview(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid), Number(context.params.rid), Number(context.params.cid))
+    })
+    .delete("/projects/:id/stages/:id2/papers/:ppid/reviews/:rid/criteriaevaluations/:cid", async (context) => {
+        await deleteCritieriaEvalOfReview(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid), Number(context.params.rid), Number(context.params.cid))
     })
     .get("/papers/", async (context) => {
         await getPapers(context)

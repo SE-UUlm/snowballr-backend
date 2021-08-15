@@ -292,6 +292,14 @@ const checkAuthorization = async (ctx: Context, needed: UserStatus, projectID: n
             return
         }
     }
+
+    if (needed === UserStatus.needsSameMemberOfProject) {
+        if (!isAdmin && !(await checkMemberOfProject(projectID, payloadJson) && (await getUserID(payloadJson) === userID))) {
+            makeErrorMessage(ctx, 401, "not authorized");
+            return
+        }
+    }
+
     if (needed === UserStatus.needsSameUserOrPO) {
         if (!isAdmin && !(await getUserID(payloadJson) === userID) && !(await checkPO(payloadJson))) {
             makeErrorMessage(ctx, 401, "not authorized");
@@ -312,6 +320,7 @@ export enum UserStatus {
     needsPO,
     needsPOOfProject,
     needsMemberOfProject,
+    needsSameMemberOfProject,
     needsSameUserOrPO,
     needsSameUser,
     none
