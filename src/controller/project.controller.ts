@@ -38,29 +38,27 @@ export const authorCache = new Cache<IApiAuthor>(CacheType.F, 0, "authorCache")
  */
 export const createProject = async (ctx: Context) => {
     let validate = await validateUserEntry(ctx, [], UserStatus.needsPO, -1, { needed: true, params: ["name", "minCountReviewers", "countDecisiveReviewers", "type", "combinationOfReviewers"] })
-    if (!validate) {
-        return
-    }
-    try {
-        let project = await Project.create({
-            name: validate.name,
-            minCountReviewers: validate.minCountReviewers,
-            countDecisiveReviewers: validate.countDecisiveReviewers,
-            combinationOfReviewers: validate.combinationOfReviewers,
-            type: validate.type
-        })
-        if (validate.evaluationFormula) {
-            project.evaluationFormula = validate.evaluationFormula;
-            await project.update();
+    if (validate) {
+        try {
+            let project = await Project.create({
+                name: validate.name,
+                minCountReviewers: validate.minCountReviewers,
+                countDecisiveReviewers: validate.countDecisiveReviewers,
+                combinationOfReviewers: validate.combinationOfReviewers,
+                type: validate.type
+            })
+            if (validate.evaluationFormula) {
+                project.evaluationFormula = validate.evaluationFormula;
+                await project.update();
+            }
+            ctx.response.status = 201;
+            ctx.response.body = JSON.stringify(project)
+
+        } catch (error) {
+            makeErrorMessage(ctx, 422, "unable to process given data")
+            return
         }
-        ctx.response.status = 201;
-        ctx.response.body = JSON.stringify(project)
-
-    } catch (error) {
-        makeErrorMessage(ctx, 422, "unable to process given data")
-        return
     }
-
 }
 
 
@@ -73,22 +71,20 @@ export const createProject = async (ctx: Context) => {
  */
 export const addMemberToProject = async (ctx: Context, id: number) => {
     let validate: any = await validateUserEntry(ctx, [id], UserStatus.needsPOOfProject, id, { needed: true, params: ["id"] })
-    if (!validate) {
-        return
+    if (validate) {
+        const params = await jsonBodyToObject(ctx)
+        try {
+            await UserIsPartOfProject.create({
+                isOwner: params.isOwner ? params.isOwner : false,
+                userId: validate.id,
+                projectId: id
+            })
+        } catch (error) {
+            makeErrorMessage(ctx, 404, "User not found")
+            return
+        }
+        ctx.response.status = 201;
     }
-    const params = await jsonBodyToObject(ctx)
-    try {
-        await UserIsPartOfProject.create({
-            isOwner: params.isOwner ? params.isOwner : false,
-            userId: validate.id,
-            projectId: id
-        })
-    } catch (error) {
-        makeErrorMessage(ctx, 404, "User not found")
-        return
-    }
-
-    ctx.response.status = 201;
 
 }
 
@@ -100,12 +96,10 @@ export const addMemberToProject = async (ctx: Context, id: number) => {
  */
 export const removeMemberOfProject = async (ctx: Context, projectID: number, userID: number) => {
     let validate: any = await validateUserEntry(ctx, [projectID, userID], UserStatus.needsPOOfProject, projectID, { needed: false, params: [] })
-    if (!validate) {
-        return
+    if (validate) {
+        await UserIsPartOfProject.where({ projectId: projectID, userId: userID }).delete()
+        ctx.response.status = 200;
     }
-
-    await UserIsPartOfProject.where({ projectId: projectID, userId: userID }).delete()
-    ctx.response.status = 200;
 }
 
 /**
@@ -116,13 +110,11 @@ export const removeMemberOfProject = async (ctx: Context, projectID: number, use
  */
 export const getMembersOfProject = async (ctx: Context, id: number) => {
     let validate = await validateUserEntry(ctx, [id], UserStatus.needsMemberOfProject, id, { needed: false, params: [] })
-    if (!validate) {
-        return
+    if (validate) {
+        ctx.response.status = 200;
+        let message: ProjectMembersMessage = { members: await getAllMembersOfProject(id) }
+        ctx.response.body = JSON.stringify(message)
     }
-    ctx.response.status = 200;
-    let message: ProjectMembersMessage = { members: await getAllMembersOfProject(id) }
-    ctx.response.body = JSON.stringify(message)
-
 }
 
 /**
@@ -149,21 +141,19 @@ export const getProjects = async (ctx: Context) => {
  */
 export const addStageToProject = async (ctx: Context, id: number) => {
     let validate = await validateUserEntry(ctx, [id], UserStatus.needsPOOfProject, id, { needed: false, params: [] })
-    if (!validate) {
-        return
+    if (validate) {
+        const requestParameter = await jsonBodyToObject(ctx)
+        const stages = await getAllStagesFromProject(id);
+
+        let stage = await Stage.create({
+            name: requestParameter.name ? requestParameter.name : `Stage ${stages.length}`,
+            projectId: id,
+            number: stages.length
+        })
+
+        ctx.response.status = 201;
+        ctx.response.body = JSON.stringify(stage)
     }
-    const requestParameter = await jsonBodyToObject(ctx)
-    const stages = await getAllStagesFromProject(id);
-
-    let stage = await Stage.create({
-        name: requestParameter.name ? requestParameter.name : `Stage ${stages.length}`,
-        projectId: id,
-        number: stages.length
-    })
-
-    ctx.response.status = 201;
-    ctx.response.body = JSON.stringify(stage)
-
 }
 
 /**
@@ -175,23 +165,20 @@ export const addStageToProject = async (ctx: Context, id: number) => {
  */
 export const addPaperToProjectStage = async (ctx: Context, projectID: number, stageID: number, awaitFetch?: boolean) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
-    if (!validate) {
-        return
-    }
+    if (validate) {
+        const requestParameter = await jsonBodyToObject(ctx)
+        if (!requestParameter.doi && !requestParameter.title) {
+            makeErrorMessage(ctx, 422, "to add a paper to a nextStage, at least a DOI or a title is needed")
+            return;
+        }
 
-    const requestParameter = await jsonBodyToObject(ctx)
-    if (!requestParameter.doi && !requestParameter.title) {
-        makeErrorMessage(ctx, 422, "to add a paper to a nextStage, at least a DOI or a title is needed")
-        return;
+        if (awaitFetch) {
+            await fetchToDB(stageID, projectID, requestParameter.doi, requestParameter.title, requestParameter.author)
+        } else {
+            fetchToDB(stageID, projectID, requestParameter.doi, requestParameter.title, requestParameter.author)
+        }
+        ctx.response.status = 201;
     }
-
-    if (awaitFetch) {
-        await fetchToDB(stageID, projectID, requestParameter.doi, requestParameter.title, requestParameter.author)
-    } else {
-        fetchToDB(stageID, projectID, requestParameter.doi, requestParameter.title, requestParameter.author)
-    }
-    ctx.response.status = 201;
-
 }
 
 /**
@@ -295,14 +282,11 @@ const savePaper = async (apiPaper: IApiPaper): Promise<Paper> => {
  */
 export const getPapersOfProjectStage = async (ctx: Context, projectID: number, stageID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
-    if (!validate) {
-        return
+    if (validate) {
+        ctx.response.status = 200;
+        let message: PapersMessage = { papers: await convertPapersToPaperMessage(await getAllPapersFromStage(stageID), stageID) }
+        ctx.response.body = JSON.stringify(message)
     }
-
-    ctx.response.status = 200;
-    let message: PapersMessage = { papers: await convertPapersToPaperMessage(await getAllPapersFromStage(stageID), stageID) }
-    ctx.response.body = JSON.stringify(message)
-
 }
 
 /**
@@ -315,20 +299,17 @@ export const getPapersOfProjectStage = async (ctx: Context, projectID: number, s
  */
 export const getPaperOfProjectStage = async (ctx: Context, projectID: number, stageID: number, ppID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
-    if (!validate) {
-        return
-    }
-
-    try {
-        let paper = await PaperScopeForStage.where("id", ppID).paper();
-        if (paper) {
-            ctx.response.status = 200;
-            ctx.response.body = JSON.stringify(await convertPaperToPaperMessage(paper, stageID));
+    if (validate) {
+        try {
+            let paper = await PaperScopeForStage.where("id", ppID).paper();
+            if (paper) {
+                ctx.response.status = 200;
+                ctx.response.body = JSON.stringify(await convertPaperToPaperMessage(paper, stageID));
+            }
+        } catch (e) {
+            makeErrorMessage(ctx, 404, "paper does not exist")
         }
-    } catch (e) {
-        makeErrorMessage(ctx, 404, "paper does not exist")
     }
-
 }
 /**
  * Patches a paper by its project paper id.
@@ -340,101 +321,89 @@ export const getPaperOfProjectStage = async (ctx: Context, projectID: number, st
  */
 export const patchPaperOfProjectStage = async (ctx: Context, projectID: number, stageID: number, ppID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
-    if (!validate) {
-        return
-    }
-
-    try {
-        let paper = await PaperScopeForStage.where("id", ppID).paper();
-        if (paper) {
-            await paperUpdate(ctx, paper)
+    if (validate) {
+        try {
+            let paper = await PaperScopeForStage.where("id", ppID).paper();
+            if (paper) {
+                await paperUpdate(ctx, paper)
+            }
+        } catch (e) {
+            makeErrorMessage(ctx, 404, "paper does not exist")
         }
-    } catch (e) {
-        makeErrorMessage(ctx, 404, "paper does not exist")
     }
-
-
 }
 
 export const deletePaperOfProjectStage = async (ctx: Context, projectID: number, stageID: number, ppID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
-    if (!validate) {
-        return
+    if (validate) {
+        await PaperScopeForStage.deleteById(ppID)
+        ctx.response.status = 200;
     }
-
-    await PaperScopeForStage.deleteById(ppID)
-    ctx.response.status = 200;
-
-
 }
 
 export const getCites = async (ctx: Context, projectID: number, stageID: number, ppID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
-    if (!validate) {
-        return
-    }
-    try {
-        let paper = await PaperScopeForStage.where("id", ppID).paper();
-        if (paper) {
-            await getPaperCitations(ctx, Number(paper.id))
+    if (validate) {
+        try {
+            let paper = await PaperScopeForStage.where("id", ppID).paper();
+            if (paper) {
+                await getPaperCitations(ctx, Number(paper.id))
+            }
+        } catch (e) {
+            makeErrorMessage(ctx, 404, "paper does not exist")
         }
-    } catch (e) {
-        makeErrorMessage(ctx, 404, "paper does not exist")
     }
 }
 
 export const getRefs = async (ctx: Context, projectID: number, stageID: number, ppID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
-    if (!validate) {
-        return
-    }
-    try {
-        let paper = await PaperScopeForStage.where("id", ppID).paper();
-        if (paper) {
-            await getPaperReferences(ctx, Number(paper.id))
+    if (validate) {
+        try {
+            let paper = await PaperScopeForStage.where("id", ppID).paper();
+            if (paper) {
+                await getPaperReferences(ctx, Number(paper.id))
+            }
+        } catch (e) {
+            makeErrorMessage(ctx, 404, "paper does not exist")
         }
-    } catch (e) {
-        makeErrorMessage(ctx, 404, "paper does not exist")
     }
 }
 
 export const postCiteProject = async (ctx: Context, projectID: number, stageID: number, ppID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
-    if (!validate) {
-        return
-    }
-    try {
-        let paper = await PaperScopeForStage.where("id", ppID).paper();
-        let stage = await Stage.find(stageID)
-        if (paper && stage) {
-            let paper2 = await postPaperCitation(ctx, Number(paper.id))
-            if (paper2) {
-                let nextStage = await findNextStage(stage, projectID)
-                PaperScopeForStage.create({ stageId: Number(nextStage.id), paperId: Number(paper2.id) })
+    if (validate) {
+        try {
+            let paper = await PaperScopeForStage.where("id", ppID).paper();
+            let stage = await Stage.find(stageID)
+            if (paper && stage) {
+                let paper2 = await postPaperCitation(ctx, Number(paper.id))
+                if (paper2) {
+                    let nextStage = await findNextStage(stage, projectID)
+                    PaperScopeForStage.create({ stageId: Number(nextStage.id), paperId: Number(paper2.id) })
+                }
             }
+        } catch (e) {
+            makeErrorMessage(ctx, 404, "paper does not exist")
         }
-    } catch (e) {
-        makeErrorMessage(ctx, 404, "paper does not exist")
     }
 }
 
 export const postRefProject = async (ctx: Context, projectID: number, stageID: number, ppID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
-    if (!validate) {
-        return
-    }
-    try {
-        let paper = await PaperScopeForStage.where("id", ppID).paper();
-        let stage = await Stage.find(stageID)
-        if (paper && stage) {
-            let paper2 = await postPaperReference(ctx, Number(paper.id))
-            if (paper2) {
-                let nextStage = await findNextStage(stage, projectID)
-                PaperScopeForStage.create({ stageId: Number(nextStage.id), paperId: Number(paper2.id) })
+    if (validate) {
+        try {
+            let paper = await PaperScopeForStage.where("id", ppID).paper();
+            let stage = await Stage.find(stageID)
+            if (paper && stage) {
+                let paper2 = await postPaperReference(ctx, Number(paper.id))
+                if (paper2) {
+                    let nextStage = await findNextStage(stage, projectID)
+                    PaperScopeForStage.create({ stageId: Number(nextStage.id), paperId: Number(paper2.id) })
+                }
             }
+        } catch (e) {
+            makeErrorMessage(ctx, 404, "paper does not exist")
         }
-    } catch (e) {
-        makeErrorMessage(ctx, 404, "paper does not exist")
     }
 }
 
@@ -442,178 +411,162 @@ export const postRefProject = async (ctx: Context, projectID: number, stageID: n
 
 export const getCriteriasOfProject = async (ctx: Context, projectID: number) => {
     let validate = await validateUserEntry(ctx, [projectID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
-    if (!validate) {
-        return
-    }
-
-    let criterias = await Criteria.where({ projectId: projectID }).get()
-    if (Array.isArray(criterias)) {
-        ctx.response.status = 200;
-        ctx.response.body = JSON.stringify({ criterias: criterias })
+    if (validate) {
+        let criterias = await Criteria.where({ projectId: projectID }).get()
+        if (Array.isArray(criterias)) {
+            ctx.response.status = 200;
+            ctx.response.body = JSON.stringify({ criterias: criterias })
+        }
     }
 }
 export const getCriteriaOfProject = async (ctx: Context, projectID: number, criteriaId: number) => {
     let validate = await validateUserEntry(ctx, [projectID, criteriaId], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
-    if (!validate) {
-        return
+    if (validate) {
+        let criteria = await Criteria.find(criteriaId)
+        ctx.response.status = 200;
+        ctx.response.body = JSON.stringify(criteria)
     }
-
-    let criteria = await Criteria.find(criteriaId)
-
-    ctx.response.status = 200;
-    ctx.response.body = JSON.stringify(criteria)
-
 }
 
 export const getCriteriaEvalsOfCriteria = async (ctx: Context, projectID: number, criteriaId: number) => {
     let validate = await validateUserEntry(ctx, [projectID, criteriaId], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
-    if (!validate) {
-        return
-    }
-    let criteriaEvals = await CriteriaEvaluation.where({ criteriaId: criteriaId }).get()
-    if (Array.isArray(criteriaEvals)) {
-        ctx.response.status = 200;
-        ctx.response.body = JSON.stringify({ criteriaevaluations: criteriaEvals })
+    if (validate) {
+        let criteriaEvals = await CriteriaEvaluation.where({ criteriaId: criteriaId }).get()
+        if (Array.isArray(criteriaEvals)) {
+            ctx.response.status = 200;
+            ctx.response.body = JSON.stringify({ criteriaevaluations: criteriaEvals })
+        }
     }
 }
 export const addCriteriaToProject = async (ctx: Context, projectID: number) => {
     let validate = await validateUserEntry(ctx, [projectID], UserStatus.needsPOOfProject, projectID, { needed: true, params: ["short", "description", "abbreviation", "inclusionExclusion", "weight"] })
-    if (!validate) {
-        return
-    }
-    if (!["inclusion", "hard exclusion", "exclusion"].includes(validate.inclusionExclusion)) {
-        makeErrorMessage(ctx, 422, "inclusionExclusion must be one of the options: 'inclusion', 'exclusion', 'hard exclusion'")
-        return
-    }
-    if (!Number(validate.weight)) {
-        makeErrorMessage(ctx, 422, "weight must be a number")
-        return
-    }
-    try {
-        let criteria = await Criteria.create({ projectId: projectID, description: validate.description, short: validate.short, abbreviation: validate.abbreviation, inclusionExclusion: validate.inclusionExclusion, weight: validate.weight })
-        ctx.response.status = 201;
-        ctx.response.body = JSON.stringify(criteria)
-    } catch (err) {
+    if (validate) {
+        if (!["inclusion", "hard exclusion", "exclusion"].includes(validate.inclusionExclusion)) {
+            makeErrorMessage(ctx, 422, "inclusionExclusion must be one of the options: 'inclusion', 'exclusion', 'hard exclusion'")
+            return
+        }
+        if (!Number(validate.weight)) {
+            makeErrorMessage(ctx, 422, "weight must be a number")
+            return
+        }
+        try {
+            let criteria = await Criteria.create({ projectId: projectID, description: validate.description, short: validate.short, abbreviation: validate.abbreviation, inclusionExclusion: validate.inclusionExclusion, weight: validate.weight })
+            ctx.response.status = 201;
+            ctx.response.body = JSON.stringify(criteria)
+        } catch (err) {
 
-        makeErrorMessage(ctx, 404, "Project not found")
+            makeErrorMessage(ctx, 404, "Project not found")
+        }
     }
 }
 
 export const patchCriteriaOfProject = async (ctx: Context, projectID: number, criteriaID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, criteriaID], UserStatus.needsMemberOfProject, projectID, { needed: true, params: [] })
-    if (!validate) {
-        return
-    }
+    if (validate) {
+        if (!Number(validate.weight)) {
+            makeErrorMessage(ctx, 422, "weight must be a number")
+            return
+        }
 
-    if (!Number(validate.weight)) {
-        makeErrorMessage(ctx, 422, "weight must be a number")
-        return
-    }
-
-    delete validate.id;
-    let criteria = await Criteria.find(criteriaID)
-    if (criteria) {
-        Object.assign(criteria, validate)
-        await criteria.update()
-        ctx.response.status = 200;
-        ctx.response.body = JSON.stringify(criteria)
-    } else {
-        makeErrorMessage(ctx, 404, "criteria not found")
+        delete validate.id;
+        let criteria = await Criteria.find(criteriaID)
+        if (criteria) {
+            Object.assign(criteria, validate)
+            await criteria.update()
+            ctx.response.status = 200;
+            ctx.response.body = JSON.stringify(criteria)
+        } else {
+            makeErrorMessage(ctx, 404, "criteria not found")
+        }
     }
 }
 
 export const deleteCriteriaOfProject = async (ctx: Context, projectID: number, criteriaID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, criteriaID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
-    if (!validate) {
-        return
-    }
-    try {
-        await Criteria.deleteById(criteriaID)
-        ctx.response.status = 200;
-    } catch (err) {
-        makeErrorMessage(ctx, 403, "Criteria has already been used to evaluate paper. For safety those have to be removed first")
+    if (validate) {
+        try {
+            await Criteria.deleteById(criteriaID)
+            ctx.response.status = 200;
+        } catch (err) {
+            makeErrorMessage(ctx, 403, "Criteria has already been used to evaluate paper. For safety those have to be removed first")
+        }
     }
 }
 
 
 export const getReviewsOfPaper = async (ctx: Context, projectID: number, stageID: number, ppID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
-    if (!validate) {
-        return
+    if (validate) {
+        ctx.response.status = 200;
+        ctx.response.body = JSON.stringify({ reviews: await getAllReviewsFromProjectPaper(ppID) })
     }
-    ctx.response.status = 200;
-    ctx.response.body = JSON.stringify({ reviews: await getAllReviewsFromProjectPaper(ppID) })
 }
 
 export const addReviewToPaper = async (ctx: Context, projectID: number, stageID: number, ppID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
-    if (!validate) {
-        return
-    }
-    const payloadJson = await getPayloadFromJWT(ctx);
-    let userID = await getUserID(payloadJson)
-    const params = await jsonBodyToObject(ctx)
-    if (userID) {
-        try {
-            let review = await Review.create({
-                paperId: ppID,
-                userId: userID,
-                stageId: stageID
-            })
-            if (params.finished != undefined) { review.finished = params.finished }
-            if (params.overallEvaluation) { review.overallEvaluation = params.overallEvaluation }
-            if (params.finishDate) { review.finishDate = new Date(params.finishDate) }
-            await review.update();
-            ctx.response.status = 201;
-            ctx.response.body = JSON.stringify(review)
-        } catch (err) {
-            makeErrorMessage(ctx, 404, "stage or paper id not found")
+    if (validate) {
+        const payloadJson = await getPayloadFromJWT(ctx);
+        let userID = await getUserID(payloadJson)
+        const params = await jsonBodyToObject(ctx)
+        if (userID) {
+            try {
+                let review = await Review.create({
+                    paperId: ppID,
+                    userId: userID,
+                    stageId: stageID
+                })
+                if (params.finished != undefined) { review.finished = params.finished }
+                if (params.overallEvaluation) { review.overallEvaluation = params.overallEvaluation }
+                if (params.finishDate) { review.finishDate = new Date(params.finishDate) }
+                await review.update();
+                ctx.response.status = 201;
+                ctx.response.body = JSON.stringify(review)
+            } catch (err) {
+                makeErrorMessage(ctx, 404, "stage or paper id not found")
+            }
         }
     }
 }
 
 export const patchReviewOfPaper = async (ctx: Context, projectID: number, stageID: number, ppID: number, reviewID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID, reviewID], UserStatus.needsMemberOfProject, projectID, { needed: true, params: [] })
-    if (!validate) {
-        return
-    }
-    delete validate.id;
-    delete validate.userId;
-    let review = await Review.find(reviewID)
-    if (review) {
-        Object.assign(review, validate)
-        await review.update()
-        ctx.response.status = 200;
-        ctx.response.body = JSON.stringify(review)
-    } else {
-        makeErrorMessage(ctx, 404, "review not found")
+    if (validate) {
+        delete validate.id;
+        delete validate.userId;
+        let review = await Review.find(reviewID)
+        if (review) {
+            Object.assign(review, validate)
+            await review.update()
+            ctx.response.status = 200;
+            ctx.response.body = JSON.stringify(review)
+        } else {
+            makeErrorMessage(ctx, 404, "review not found")
+        }
     }
 }
 
 export const getReviewOfPaper = async (ctx: Context, projectID: number, stageID: number, ppID: number, reviewID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID, reviewID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
-    if (!validate) {
-        return
-    }
-    let review = await getReview(reviewID)
-    if (review) {
-        ctx.response.status = 200;
-        ctx.response.body = JSON.stringify(review[0])
-    } else {
-        makeErrorMessage(ctx, 404, "review not found")
+    if (validate) {
+        let review = await getReview(reviewID)
+        if (review) {
+            ctx.response.status = 200;
+            ctx.response.body = JSON.stringify(review[0])
+        } else {
+            makeErrorMessage(ctx, 404, "review not found")
+        }
     }
 }
 
 export const deleteReviewOfPaper = async (ctx: Context, projectID: number, stageID: number, ppID: number, reviewID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
-    if (!validate) {
-        return
-    }
-    try {
-        await Review.deleteById(reviewID)
-        ctx.response.status = 200;
-    } catch (err) {
-        makeErrorMessage(ctx, 403, "Review has already been used to evaluate paper. For safety those have to be removed first")
+    if (validate) {
+        try {
+            await Review.deleteById(reviewID)
+            ctx.response.status = 200;
+        } catch (err) {
+            makeErrorMessage(ctx, 403, "Review has already been used to evaluate paper. For safety those have to be removed first")
+        }
     }
 }
 
@@ -622,74 +575,67 @@ export const deleteReviewOfPaper = async (ctx: Context, projectID: number, stage
 
 export const getCrtieriaEvalsOfReview = async (ctx: Context, projectID: number, stageID: number, ppID: number, reviewID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID, reviewID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
-    if (!validate) {
-        return
+    if (validate) {
+        ctx.response.status = 200;
+        ctx.response.body = JSON.stringify({ criteriaevaluations: await CriteriaEvaluation.where(CriteriaEvaluation.field("review_id"), Number(reviewID)).get() })
     }
-    ctx.response.status = 200;
-    ctx.response.body = JSON.stringify({ criteriaevaluations: await CriteriaEvaluation.where(CriteriaEvaluation.field("review_id"), Number(reviewID)).get() })
 }
 
 export const addCrtieriaEvalToReview = async (ctx: Context, projectID: number, stageID: number, ppID: number, reviewID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID, reviewID], UserStatus.needsSameMemberOfProject, projectID, { needed: true, params: ["value", "criteriaId"] })
-    if (!validate) {
-        return
+    if (validate) {
+        if (!Number(validate.criteriaId)) {
+            makeErrorMessage(ctx, 422, "criteriaId must be number")
+        }
+        try {
+            let criteria = await CriteriaEvaluation.create({
+                criteriaId: validate.criteriaId,
+                reviewId: reviewID,
+                value: validate.value
+            })
+            ctx.response.status = 201;
+            ctx.response.body = JSON.stringify(criteria)
+        } catch (err) {
+            makeErrorMessage(ctx, 404, "review or criteria not found")
+        }
     }
-    if (!Number(validate.criteriaId)) {
-        makeErrorMessage(ctx, 422, "criteriaId must be number")
-    }
-    try {
-        let criteria = await CriteriaEvaluation.create({
-            criteriaId: validate.criteriaId,
-            reviewId: reviewID,
-            value: validate.value
-        })
-        ctx.response.status = 201;
-        ctx.response.body = JSON.stringify(criteria)
-    } catch (err) {
-        makeErrorMessage(ctx, 404, "review or criteria not found")
-    }
-
 }
 
 export const patchCritieriaEvalOfReview = async (ctx: Context, projectID: number, stageID: number, ppID: number, reviewID: number, criteriaEvalID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID, reviewID, criteriaEvalID], UserStatus.needsSameMemberOfProject, projectID, { needed: true, params: [] })
-    if (!validate) {
-        return
-    }
-    delete validate.id;
-    let criteriaeval = await CriteriaEvaluation.find(criteriaEvalID)
-    if (criteriaeval) {
-        Object.assign(criteriaeval, validate)
-        await criteriaeval.update()
-        ctx.response.status = 200;
-        ctx.response.body = JSON.stringify(criteriaeval)
-    } else {
-        makeErrorMessage(ctx, 404, "review not found")
+    if (validate) {
+        delete validate.id;
+        let criteriaeval = await CriteriaEvaluation.find(criteriaEvalID)
+        if (criteriaeval) {
+            Object.assign(criteriaeval, validate)
+            await criteriaeval.update()
+            ctx.response.status = 200;
+            ctx.response.body = JSON.stringify(criteriaeval)
+        } else {
+            makeErrorMessage(ctx, 404, "review not found")
+        }
     }
 }
 
 export const getCritieriaEvalOfReview = async (ctx: Context, projectID: number, stageID: number, ppID: number, reviewID: number, criteriaEvalID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID, reviewID, criteriaEvalID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
-    if (!validate) {
-        return
-    }
-    let criteriaeval = await CriteriaEvaluation.find(criteriaEvalID)
-    if (criteriaeval) {
-        ctx.response.status = 200;
-        ctx.response.body = JSON.stringify(criteriaeval)
-    } else {
-        makeErrorMessage(ctx, 404, "review not found")
+    if (validate) {
+        let criteriaeval = await CriteriaEvaluation.find(criteriaEvalID)
+        if (criteriaeval) {
+            ctx.response.status = 200;
+            ctx.response.body = JSON.stringify(criteriaeval)
+        } else {
+            makeErrorMessage(ctx, 404, "review not found")
+        }
     }
 }
 
 export const deleteCritieriaEvalOfReview = async (ctx: Context, projectID: number, stageID: number, ppID: number, reviewID: number, criteriaEvalID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID, reviewID, criteriaEvalID], UserStatus.needsSameMemberOfProject, projectID, { needed: false, params: [] })
-    if (!validate) {
-        return
+    if (validate) {
+        await Review.deleteById(criteriaEvalID)
+        ctx.response.status = 200;
     }
-    await Review.deleteById(criteriaEvalID)
-    ctx.response.status = 200;
-
 }
 export const getApis = async (ctx: Context, projectID: number) => {
 

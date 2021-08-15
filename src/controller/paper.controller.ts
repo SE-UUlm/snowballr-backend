@@ -29,15 +29,15 @@ export const getPapers = async (ctx: Context) => {
  */
 export const postPaper = async (ctx: Context) => {
     let validate = await validateUserEntry(ctx, [], UserStatus.none, -1, { needed: true, params: [] })
-    if (!validate) {
-        return
+    if (validate) {
+        if (validate.id) { delete validate.id }
+        let paper = await Paper.create({})
+        Object.assign(paper, validate)
+        await paper.update()
+        ctx.response.status = 200;
+        ctx.response.body = JSON.stringify(paper)
     }
-    if (validate.id) { delete validate.id }
-    let paper = await Paper.create({})
-    Object.assign(paper, validate)
-    await paper.update()
-    ctx.response.status = 200;
-    ctx.response.body = JSON.stringify(paper)
+
 }
 
 /**
@@ -48,18 +48,17 @@ export const postPaper = async (ctx: Context) => {
  */
 export const getPaper = async (ctx: Context, paperID: number) => {
     let validate = await validateUserEntry(ctx, [paperID], UserStatus.none, -1, { needed: false, params: [] })
-    if (!validate) {
-        return
+    if (validate) {
+
+        let paper: Paper = await Paper.find(paperID)
+        if (paper) {
+            ctx.response.status = 200;
+            ctx.response.body = JSON.stringify(await convertPaperToPaperMessage(paper))
+        } else {
+            makeErrorMessage(ctx, 404, "paper does not exist")
+        }
     }
 
-
-    let paper: Paper = await Paper.find(paperID)
-    if (paper) {
-        ctx.response.status = 200;
-        ctx.response.body = JSON.stringify(await convertPaperToPaperMessage(paper))
-    } else {
-        makeErrorMessage(ctx, 404, "paper does not exist")
-    }
 }
 /**
  * Returns all papers that are referencing the corresponding paper
@@ -69,13 +68,11 @@ export const getPaper = async (ctx: Context, paperID: number) => {
  */
 export const getPaperReferences = async (ctx: Context, paperID: number) => {
     let validate = await validateUserEntry(ctx, [paperID], UserStatus.none, -1, { needed: false, params: [] })
-    if (!validate) {
-        return
+    if (validate) {
+        return getRefOrCiteList(ctx, "referencedby", "paperreferencedid", "paperreferencingid", paperID)
     }
-
-    return getRefOrCiteList(ctx, "referencedby", "paperreferencedid", "paperreferencingid", paperID)
-
 }
+
 /**
  * Returns all paper that are cited by the corresponding paper
  * @param ctx 
@@ -84,11 +81,11 @@ export const getPaperReferences = async (ctx: Context, paperID: number) => {
  */
 export const getPaperCitations = async (ctx: Context, paperID: number) => {
     let validate = await validateUserEntry(ctx, [paperID], UserStatus.none, -1, { needed: false, params: [] })
-    if (!validate) {
-        return
+    if (validate) {
+        return getRefOrCiteList(ctx, "citedBy", "papercitingid", "papercitedid", paperID)
     }
 
-    return getRefOrCiteList(ctx, "citedBy", "papercitingid", "papercitedid", paperID)
+
 
 }
 
@@ -119,15 +116,13 @@ const getRefOrCiteList = async (ctx: Context, table: string, column1: string, co
  */
 export const patchPaper = async (ctx: Context, paperID: number) => {
     let validate = await validateUserEntry(ctx, [paperID], UserStatus.none, -1, { needed: false, params: [] })
-    if (!validate) {
-        return
-    }
-
-    let paper: Paper = await Paper.find(paperID);
-    if (paper) {
-        await paperUpdate(ctx, paper)
-    } else {
-        makeErrorMessage(ctx, 404, "paper does not exist")
+    if (validate) {
+        let paper: Paper = await Paper.find(paperID);
+        if (paper) {
+            await paperUpdate(ctx, paper)
+        } else {
+            makeErrorMessage(ctx, 404, "paper does not exist")
+        }
     }
 }
 
@@ -171,19 +166,15 @@ export const paperUpdate = async (ctx: Context, paper: Paper) => {
  */
 export const getSourcePaper = async (ctx: Context, paperID: number) => {
     let validate = await validateUserEntry(ctx, [paperID], UserStatus.none, -1, { needed: false, params: [] })
-    if (!validate) {
-        return
+    if (validate) {
+        ctx.response.status = 200;
+        let paper = paperCache.get(String(paperID))
+        if (paper) {
+            ctx.response.body = JSON.stringify(paper)
+        } else {
+            makeErrorMessage(ctx, 404, "paper does not exist")
+        }
     }
-    ctx.response.status = 200;
-    let paper = paperCache.get(String(paperID))
-    if (paper) {
-        ctx.response.body = JSON.stringify(paper)
-    } else {
-        makeErrorMessage(ctx, 404, "paper does not exist")
-    }
-
-
-
 }
 
 /**
@@ -194,24 +185,22 @@ export const getSourcePaper = async (ctx: Context, paperID: number) => {
  */
 export const postPaperCitation = async (ctx: Context, id: number) => {
     let validate = await validateUserEntry(ctx, [id], UserStatus.none, -1, { needed: true, params: ["id"] })
-    if (!validate) {
+    if (validate) {
+        let paper;
+        let paper2;
+
+        paper = await Paper.find(id)
+        paper2 = await Paper.find(validate.id)
+        if (paper && paper2) {
+            await saveChildren("citedby", "papercitedid", "papercitingid", Number(paper2.id), Number(paper.id));
+            ctx.response.status = 200
+            return paper2;
+        }
+        makeErrorMessage(ctx, 404, "Paper not found")
         return
     }
-    let paper;
-    let paper2;
-
-    paper = await Paper.find(id)
-    paper2 = await Paper.find(validate.id)
-    if (paper && paper2) {
-        await saveChildren("citedby", "papercitedid", "papercitingid", Number(paper2.id), Number(paper.id));
-        ctx.response.status = 200
-        return paper2;
-    }
-    makeErrorMessage(ctx, 404, "Paper not found")
-    return
-
-
-}/**
+}
+/**
  * Adds a reference by a paper into the database
  * @param ctx 
  * @param id 
@@ -219,22 +208,17 @@ export const postPaperCitation = async (ctx: Context, id: number) => {
  */
 export const postPaperReference = async (ctx: Context, id: number) => {
     let validate = await validateUserEntry(ctx, [id], UserStatus.none, -1, { needed: true, params: ["id"] })
-    if (!validate) {
+    if (validate) {
+        let paper = await Paper.find(id)
+        let paper2 = await Paper.find(validate.id)
+        if (paper && paper2) {
+            await saveChildren("referencedby", "paperreferencedid", "paperreferencingid", Number(paper.id), Number(paper2.id));
+            return paper2;
+        }
+
+        makeErrorMessage(ctx, 404, "Paper not found")
         return
     }
-
-
-    let paper = await Paper.find(id)
-    let paper2 = await Paper.find(validate.id)
-    if (paper && paper2) {
-        await saveChildren("referencedby", "paperreferencedid", "paperreferencingid", Number(paper.id), Number(paper2.id));
-        return paper2;
-    }
-
-    makeErrorMessage(ctx, 404, "Paper not found")
-    return
-
-
 }
 
 /**
@@ -245,14 +229,12 @@ export const postPaperReference = async (ctx: Context, id: number) => {
  */
 export const getAuthors = async (ctx: Context, id: number) => {
     let validate = await validateUserEntry(ctx, [id], UserStatus.none, -1, { needed: false, params: [] })
-    if (!validate) {
-        return
+    if (validate) {
+        let authors = await getAllAuthorsFromPaper(id)
+        let message = { authors: authors.map(item => convertAuthorToAuthorMessage(item)) }
+        ctx.response.body = JSON.stringify(message)
+        ctx.response.status = 200
     }
-
-    let authors = await getAllAuthorsFromPaper(id)
-    let message = { authors: authors.map(item => convertAuthorToAuthorMessage(item)) }
-    ctx.response.body = JSON.stringify(message)
-    ctx.response.status = 200
 }
 
 /**
@@ -263,14 +245,13 @@ export const getAuthors = async (ctx: Context, id: number) => {
  */
 export const addAuthorToPaper = async (ctx: Context, id: number) => {
     let validate = await validateUserEntry(ctx, [id], UserStatus.none, -1, { needed: true, params: ["id"] })
-    if (!validate) {
-        return
-    }
-    try {
-        await Wrote.create({ paperId: id, authorId: validate.id })
-        ctx.response.status = 200
-    } catch (error) {
-        makeErrorMessage(ctx, 404, "Paper or Author not found")
+    if (validate) {
+        try {
+            await Wrote.create({ paperId: id, authorId: validate.id })
+            ctx.response.status = 200
+        } catch (error) {
+            makeErrorMessage(ctx, 404, "Paper or Author not found")
+        }
     }
 }
 
@@ -282,11 +263,8 @@ export const addAuthorToPaper = async (ctx: Context, id: number) => {
  */
 export const deleteAuthorOfPaper = async (ctx: Context, paperID: number, authorID: number) => {
     let validate = await validateUserEntry(ctx, [paperID, authorID], UserStatus.none, -1, { needed: false, params: [] })
-    if (!validate) {
-        return
+    if (validate) {
+        await Wrote.where({ paperId: paperID, authorId: authorID }).delete()
+        ctx.response.status = 200
     }
-
-    await Wrote.where({ paperId: paperID, authorId: authorID }).delete()
-    ctx.response.status = 200
-
 }

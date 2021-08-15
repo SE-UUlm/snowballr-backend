@@ -15,19 +15,19 @@ import { UserStatus, validateUserEntry } from "./validation.controller.ts";
  */
 export const postAuthor = async (ctx: Context) => {
     let validate = await validateUserEntry(ctx, [], UserStatus.none, -1, { needed: true, params: [] })
-    if (!validate) {
-        return
+    if (validate) {
+        let author = await Author.create({});
+        if (validate.rawString) { author.rawString = validate.rawString }
+        if (validate.orcid) { author.orcid = validate.orcid }
+        if (validate.lastName) { author.lastName = validate.lastName }
+        if (validate.firstName) { author.firstName = validate.firstName }
+        await author.update();
+
+        ctx.response.status = 200;
+        ctx.response.body = JSON.stringify(author)
     }
 
-    let author = await Author.create({});
-    if (validate.rawString) { author.rawString = validate.rawString }
-    if (validate.orcid) { author.orcid = validate.orcid }
-    if (validate.lastName) { author.lastName = validate.lastName }
-    if (validate.firstName) { author.firstName = validate.firstName }
-    await author.update();
 
-    ctx.response.status = 200;
-    ctx.response.body = JSON.stringify(author)
 }
 
 /**
@@ -38,18 +38,18 @@ export const postAuthor = async (ctx: Context) => {
  */
 export const getAuthor = async (ctx: Context, authorID: number) => {
     let validate = await validateUserEntry(ctx, [], UserStatus.none, -1, { needed: false, params: [] })
-    if (!validate) {
-        return
-    }
-
-    let author: Author = await Author.find(authorID)
-    if (author) {
-        ctx.response.status = 200;
-        ctx.response.body = JSON.stringify(convertAuthorToAuthorMessage(author))
-    } else {
-        makeErrorMessage(ctx, 404, "author does not exist")
+    if (validate) {
+        let author: Author = await Author.find(authorID)
+        if (author) {
+            ctx.response.status = 200;
+            ctx.response.body = JSON.stringify(convertAuthorToAuthorMessage(author))
+        } else {
+            makeErrorMessage(ctx, 404, "author does not exist")
+        }
     }
 }
+
+
 
 /**
  * Changes the Parameter of an author
@@ -59,37 +59,37 @@ export const getAuthor = async (ctx: Context, authorID: number) => {
  */
 export const patchAuthor = async (ctx: Context, authorID: number) => {
     let validate = await validateUserEntry(ctx, [], UserStatus.none, -1, { needed: false, params: [] })
-    if (!validate) {
-        return
+    if (validate) {
+        let author: Author = await Author.find(authorID);
+        if (author) {
+            let bodyJson = await jsonBodyToObject(ctx);
+            if (!bodyJson) {
+                return
+            }
+            let sourceAuthor: any = authorCache.get(String(authorID))
+            if (sourceAuthor) {
+
+                for (let key in bodyJson) {
+                    delete sourceAuthor[key]
+                }
+                if (Object.keys(sourceAuthor).length > 0) {
+                    await authorCache.add(String(authorID), sourceAuthor)
+                } else {
+                    await authorCache.delete(String(authorID))
+                }
+
+            }
+            assign(author, bodyJson);
+            await author.update()
+            ctx.response.status = 200;
+            ctx.response.body = JSON.stringify(author)
+        } else {
+            makeErrorMessage(ctx, 404, "author does not exist")
+        }
     }
 
 
-    let author: Author = await Author.find(authorID);
-    if (author) {
-        let bodyJson = await jsonBodyToObject(ctx);
-        if (!bodyJson) {
-            return
-        }
-        let sourceAuthor: any = authorCache.get(String(authorID))
-        if (sourceAuthor) {
 
-            for (let key in bodyJson) {
-                delete sourceAuthor[key]
-            }
-            if (Object.keys(sourceAuthor).length > 0) {
-                await authorCache.add(String(authorID), sourceAuthor)
-            } else {
-                await authorCache.delete(String(authorID))
-            }
-
-        }
-        assign(author, bodyJson);
-        await author.update()
-        ctx.response.status = 200;
-        ctx.response.body = JSON.stringify(author)
-    } else {
-        makeErrorMessage(ctx, 404, "author does not exist")
-    }
 }
 
 /**
@@ -100,18 +100,13 @@ export const patchAuthor = async (ctx: Context, authorID: number) => {
  */
 export const getSourceAuthor = async (ctx: Context, authorID: number | undefined) => {
     let validate = await validateUserEntry(ctx, [], UserStatus.none, -1, { needed: false, params: [] })
-    if (!validate) {
-        return
+    if (validate) {
+        ctx.response.status = 200;
+        let author = authorCache.get(String(authorID))
+        if (author) {
+            ctx.response.body = JSON.stringify(author)
+        } else {
+            makeErrorMessage(ctx, 404, "author does not exist")
+        }
     }
-
-    ctx.response.status = 200;
-    let author = authorCache.get(String(authorID))
-    if (author) {
-        ctx.response.body = JSON.stringify(author)
-    } else {
-        makeErrorMessage(ctx, 404, "author does not exist")
-    }
-
-
-
 }

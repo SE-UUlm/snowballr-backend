@@ -26,29 +26,27 @@ const URL = Deno.env.get("URL");
  */
 export const createUser = async (ctx: Context, client: EMailClient) => {
     let validate = await validateUserEntry(ctx, [], UserStatus.needsPO, -1, { needed: true, params: ["email"] })
-    if (!validate) {
-        return
-    }
-    const payloadJson = await getPayloadFromJWT(ctx);
+    if (validate) {
+        const payloadJson = await getPayloadFromJWT(ctx);
 
-    try {
-        let user = await insertUserForRegistration(validate.email);
-        let jwt = await createJWT(user)
-        await insertInvitation(user, jwt);
-        let linkText = "snowballR"
+        try {
+            let user = await insertUserForRegistration(validate.email);
+            let jwt = await createJWT(user)
+            await insertInvitation(user, jwt);
+            let linkText = "snowballR"
 
-        if (adminMail) {
-            await sendInvitationMail(jwt, linkText, validate.email, Number(user.id), client, await getUserName(payloadJson));
-            ctx.response.status = 201;
-            ctx.response.body = JSON.stringify(convertUserToUserProfile(user))
-        } else {
-            console.error("no email in env!")
-            makeErrorMessage(ctx, 401, "not authorized")
+            if (adminMail) {
+                await sendInvitationMail(jwt, linkText, validate.email, Number(user.id), client, await getUserName(payloadJson));
+                ctx.response.status = 201;
+                ctx.response.body = JSON.stringify(convertUserToUserProfile(user))
+            } else {
+                console.error("no email in env!")
+                makeErrorMessage(ctx, 401, "not authorized")
+            }
+        } catch (err) {
+            makeErrorMessage(ctx, 422, "email already exists")
         }
-    } catch (err) {
-        makeErrorMessage(ctx, 422, "email already exists")
     }
-
 }
 
 /**
@@ -58,19 +56,17 @@ export const createUser = async (ctx: Context, client: EMailClient) => {
  */
 export const resetPassword = async (ctx: Context, client: EMailClient) => {
     let validate = await validateUserEntry(ctx, [], UserStatus.none, -1, { needed: true, params: ["email"] })
-    if (!validate) {
-        return
-    }
-
-    let user = await returnUserByEmail(validate.email)
-    if (user && URL) {
-        let jwt = await createJWT(user)
-        await insertResetToken(user, jwt);
-        let linkText = "snowballR"
-        await sendResetMail(jwt, linkText, validate.email, Number(user.id), client);
-        ctx.response.status = 200;
-    } else {
-        makeErrorMessage(ctx, 400, "wrong email provided")
+    if (validate) {
+        let user = await returnUserByEmail(validate.email)
+        if (user && URL) {
+            let jwt = await createJWT(user)
+            await insertResetToken(user, jwt);
+            let linkText = "snowballR"
+            await sendResetMail(jwt, linkText, validate.email, Number(user.id), client);
+            ctx.response.status = 200;
+        } else {
+            makeErrorMessage(ctx, 400, "wrong email provided")
+        }
     }
 }
 
@@ -80,14 +76,13 @@ export const resetPassword = async (ctx: Context, client: EMailClient) => {
  */
 export const getUsers = async (ctx: Context) => {
     let validate = await validateUserEntry(ctx, [], UserStatus.needsPO, -1, { needed: false, params: [] })
-    if (!validate) {
-        return
+    if (validate) {
+        let users = await User.all();
+        let userProfile = users.map(user => convertUserToUserProfile(user));
+        let userMessage: UsersMessage = { users: userProfile }
+        ctx.response.body = JSON.stringify(userMessage)
+        ctx.response.status = 200;
     }
-    let users = await User.all();
-    let userProfile = users.map(user => convertUserToUserProfile(user));
-    let userMessage: UsersMessage = { users: userProfile }
-    ctx.response.body = JSON.stringify(userMessage)
-    ctx.response.status = 200;
 }
 
 
@@ -98,19 +93,16 @@ export const getUsers = async (ctx: Context) => {
  */
 export const getUser = async (ctx: Context, id: number) => {
     let validate = await validateUserEntry(ctx, [id], UserStatus.needsSameUserOrPO, -1, { needed: false, params: [] }, id)
-    if (!validate) {
-        return
+    if (validate) {
+        let user = await User.find(id);
+        if (user) {
+            let userProfile = convertUserToUserProfile(user);
+            ctx.response.body = JSON.stringify(userProfile);
+            ctx.response.status = 200;
+        } else {
+            makeErrorMessage(ctx, 404, "User not Found")
+        }
     }
-    let user = await User.find(id);
-    if (user) {
-        let userProfile = convertUserToUserProfile(user);
-        ctx.response.body = JSON.stringify(userProfile);
-        ctx.response.status = 200;
-    } else {
-        makeErrorMessage(ctx, 404, "User not Found")
-    }
-
-
 }
 
 /**
@@ -120,16 +112,13 @@ export const getUser = async (ctx: Context, id: number) => {
  */
 export const getUserProjects = async (ctx: Context, id: number) => {
     let validate = await validateUserEntry(ctx, [id], UserStatus.needsSameUser, -1, { needed: false, params: [] }, id)
-    if (!validate) {
-        return
+    if (validate) {
+        let userProjects = await getAllProjectsByUser(id)
+        if (userProjects) {
+            ctx.response.body = JSON.stringify(await convertProjectToProjectMessage(userProjects))
+            ctx.response.status = 200;
+        }
     }
-
-    let userProjects = await getAllProjectsByUser(id)
-    if (userProjects) {
-        ctx.response.body = JSON.stringify(await convertProjectToProjectMessage(userProjects))
-        ctx.response.status = 200;
-    }
-
 }
 
 /**
