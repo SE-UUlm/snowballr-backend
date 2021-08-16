@@ -144,6 +144,7 @@ export const paperUpdate = async (ctx: Context, paper: Paper) => {
     if (sourcePaper) {
         for (let key in bodyJson) {
             delete sourcePaper[key]
+            delete sourcePaper[key + "Source"]
         }
         if (Object.keys(sourcePaper).length > 0) {
             await paperCache.add(String(paperID), sourcePaper)
