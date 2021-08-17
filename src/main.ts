@@ -1,4 +1,4 @@
-import { Application, RouteParams, Router, RouterContext } from 'https://deno.land/x/oak/mod.ts';
+import { Application, RouteParams, Router, RouterContext } from 'https://deno.land/x/oak@v8.0.0/mod.ts';
 import { validateContentType, validateJWTIfExists } from "./controller/validation.controller.ts";
 import { login } from "./controller/login.controller.ts";
 import { setup } from "./helper/setup.ts";
