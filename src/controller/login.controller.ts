@@ -1,5 +1,5 @@
 import { returnUserByEmailAndPassword } from "./databaseFetcher/user.ts";
-import { Context } from 'https://deno.land/x/oak/mod.ts';
+import { Context } from "https://deno.land/x/oak@v8.0.0/mod.ts";
 import { convertUserToUserProfile } from "../helper/converter/userConverter.ts";
 import { startSession } from "./session.controller.ts";
 import { makeErrorMessage } from "../helper/error.ts";

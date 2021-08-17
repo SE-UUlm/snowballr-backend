@@ -1,4 +1,4 @@
-import { Context } from 'https://deno.land/x/oak/mod.ts';
+import { Context } from "https://deno.land/x/oak@v8.0.0/mod.ts";
 import { checkAdmin, checkPO, createJWT, getPayloadFromJWT, getUserID, getUserName, UserStatus, validateUserEntry } from "./validation.controller.ts";
 import { insertUserForRegistration, returnUserByEmail } from "./databaseFetcher/user.ts";
 import { User } from "../model/db/user.ts";
