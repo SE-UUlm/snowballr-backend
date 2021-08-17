@@ -21,6 +21,14 @@ export interface IApiPaper {
 	uniqueId: IApiUniqueId[];
 	source: SourceApi[];
 	raw: string[];
+
+	titleSource?: string[];
+	abstractSource?: string[];
+	yearSource?: number[];
+	publisherSource?: string[];
+	typeSource?: string[];
+	scopeSource?: string[];
+	scopeNameSource?: string[];
 }
 
 export enum SourceApi {

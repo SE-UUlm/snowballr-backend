@@ -14,25 +14,27 @@ import { LoginMessage } from "../model/messages/login.message.ts";
  */
 export const login = async (ctx: Context): Promise<boolean> => {
     let validate = await validateUserEntry(ctx, [], UserStatus.none, -1, { needed: true, params: ["email", "password"] })
-    if (!validate) {
-        return false
-    }
+    if (validate) {
 
-    let user = await returnUserByEmailAndPassword(validate.email, validate.password);
-    if (user) {
-        if (checkActive(String(user.status))) {
-            let token = await startSession(user);
-            let loginMessage: LoginMessage = { token: token, user: convertUserToUserProfile(user) }
-            ctx.response.body = JSON.stringify(loginMessage)
+        let user = await returnUserByEmailAndPassword(validate.email, validate.password);
+        if (user) {
+            if (checkActive(String(user.status))) {
+                let token = await startSession(user);
+                let loginMessage: LoginMessage = { token: token, user: convertUserToUserProfile(user) }
+                ctx.response.body = JSON.stringify(loginMessage)
 
-            return true;
+                return true;
+            } else {
+                makeErrorMessage(ctx, 401, "not an active profile")
+                return false;
+            }
         } else {
-            makeErrorMessage(ctx, 401, "not an active profile")
+            makeErrorMessage(ctx, 400, "wrong username or password provided")
             return false;
         }
-    } else {
-        makeErrorMessage(ctx, 400, "wrong username or password provided")
-        return false;
+
     }
+
+    return false
 
 }

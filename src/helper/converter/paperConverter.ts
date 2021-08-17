@@ -167,6 +167,10 @@ const updateAuthorOfPaper = async (author: Author, item: IApiAuthor, paperId: nu
 export const checkIApiPaper = (paper: { [index: string]: any }): boolean => {
     let check = true;
     for (let i in paper) {
+        if (i.includes("Source")) {
+            continue;
+        }
+
         if (!["id", "uniqueId", "source", "author", "pdf", "numberOfCitations", "numberOfReferences"].includes(i)) {
 
             if (paper[i] && paper[i].length > 1) {
@@ -174,9 +178,11 @@ export const checkIApiPaper = (paper: { [index: string]: any }): boolean => {
                 check = false;
             } else {
                 delete paper[i]
+                delete paper[i + "Source"]
             }
         } else {
             delete paper[i]
+            delete paper[i + "Source"]
         }
     }
     return check;

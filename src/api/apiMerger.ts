@@ -319,16 +319,41 @@ export class ApiMerger implements IApiMerger {
 		let first = <any>firstPaper;
 		let second = <any>secondPaper;
 		for (const key in Object.assign({}, firstPaper, secondPaper)) {
-			if (key == "id" || (!first[key] && !second[key])) {
+			if (key == "id" || (!first[key] && !second[key]) || key.includes("Source")) {
 				continue;
 			}
-
+			if (first[key].length > 0 && !first[key + "Source"]) {
+				first[key + "Source"] = [first.source]
+			}
+			if (second[key].length > 0 && !second[key + "Source"]) {
+				second[key + "Source"] = [second.source]
+			}
 			if (first[key].length === 0) {
 				resultingPaper[key] = second[key]
+				resultingPaper[key + "Source"] = second[key + "Source"]
 			} else if (second[key].length === 0) {
 				resultingPaper[key] = first[key]
+				resultingPaper[key + "Source"] = first[key + "Source"]
 			} else if (key == "pdf" || typeof first[key][0] == "number" || typeof second[key][0] == "number") {
 				resultingPaper[key] = concatWithoutDuplicates(first[key], second[key])
+				resultingPaper[key + "Source"] = []
+				for (let i = 0; i < first[key].length; i++) {
+					let position = resultingPaper[key].indexOf(first[key][i])
+					if (Array.isArray(resultingPaper[key + "Source"][position])) {
+						resultingPaper[key + "Source"][position].push(first[key + "Source"][i][0])
+					} else {
+						resultingPaper[key + "Source"][position] = first[key + "Source"][i]
+					}
+				}
+				for (let i = 0; i < second[key].length; i++) {
+					let position = resultingPaper[key].indexOf(second[key][i])
+					if (Array.isArray(resultingPaper[key + "Source"][position])) {
+						resultingPaper[key + "Source"][position].push(second[key + "Source"][i][0])
+					} else {
+						resultingPaper[key + "Source"][position] = second[key + "Source"][i]
+					}
+				}
+
 			} else if (key == "author") {
 				resultingPaper.author = this._mergeAuthors(first.author, second.author);
 			} else if (key == "uniqueId") {
@@ -347,17 +372,31 @@ export class ApiMerger implements IApiMerger {
 
 			} else {
 				resultingPaper[key] = [];
+				resultingPaper[key + "Source"] = [];
 				for (let i = 0; i < first[key].length; i++) {
 					for (let j = 0; j < second[key].length; j++) {
 						if (ApiMerger.normalizeString(first[key][i]) == ApiMerger.normalizeString(second[key][j])) {
 							resultingPaper[key].push(this._deriveGenericProperty(first[key][i], second[key][j]));
+							resultingPaper[key + "Source"].push([first[key + "Source"][i], second[key + "Source"][j]].flat(2))
 							delete first[key][i]
+							delete first[key + "Source"][i]
 							second[key] = second[key].slice(0, j).concat(second[key].slice(j + 1))
+							second[key + "Source"] = second[key + "Source"].slice(0, j).concat(second[key + "Source"].slice(j + 1))
 							break;
 						}
 					}
 				}
-				resultingPaper[key] = resultingPaper[key].concat(first[key].filter((item: string) => item)).concat(second[key])
+				first[key] = first[key].filter((item: string) => item)
+				first[key + "Source"] = first[key + "Source"].filter((item: string) => item)
+
+				for (let i = 0; i < first[key].length; i++) {
+					resultingPaper[key + "Source"].push(first[key + "Source"][i].flat())
+				}
+				for (let i = 0; i < second[key].length; i++) {
+					resultingPaper[key + "Source"].push(second[key + "Source"][i].flat())
+				}
+
+				resultingPaper[key] = resultingPaper[key].concat(first[key]).concat(second[key])
 
 			}
 
