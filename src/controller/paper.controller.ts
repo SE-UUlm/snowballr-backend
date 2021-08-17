@@ -69,7 +69,10 @@ export const getPaper = async (ctx: Context, paperID: number) => {
 export const getPaperReferences = async (ctx: Context, paperID: number) => {
     let validate = await validateUserEntry(ctx, [paperID], UserStatus.none, -1, { needed: false, params: [] })
     if (validate) {
-        return getRefOrCiteList(ctx, "referencedby", "paperreferencedid", "paperreferencingid", paperID)
+        let papers = await getRefOrCiteList(ctx, "referencedby", "paperreferencedid", "paperreferencingid", paperID)
+        ctx.response.status = 200;
+        let message: PapersMessage = { papers: await convertPapersToPaperMessage(await Promise.all(papers)) }
+        ctx.response.body = JSON.stringify(message)
     }
 }
 
@@ -82,12 +85,13 @@ export const getPaperReferences = async (ctx: Context, paperID: number) => {
 export const getPaperCitations = async (ctx: Context, paperID: number) => {
     let validate = await validateUserEntry(ctx, [paperID], UserStatus.none, -1, { needed: false, params: [] })
     if (validate) {
-        return getRefOrCiteList(ctx, "citedBy", "papercitingid", "papercitedid", paperID)
+        let papers = await getRefOrCiteList(ctx, "citedBy", "papercitingid", "papercitedid", paperID)
+        ctx.response.status = 200;
+        let message: PapersMessage = { papers: await convertPapersToPaperMessage(await Promise.all(papers)) }
+        ctx.response.body = JSON.stringify(message)
     }
-
-
-
 }
+
 
 /**
  * Gets all the paper refs or cites of one paper. 
@@ -99,13 +103,11 @@ export const getPaperCitations = async (ctx: Context, paperID: number) => {
  * @param column2 
  * @param id 
  */
-const getRefOrCiteList = async (ctx: Context, table: string, column1: string, column2: string, id: number) => {
+export const getRefOrCiteList = async (ctx: Context, table: string, column1: string, column2: string, id: number) => {
     let children = await getChildren(table, column1, column2, id)
     let papersToBe: Promise<Paper>[] = []
     children.rows.forEach((item: any[]) => papersToBe.push(Paper.find(Number(item[0]))));
-    ctx.response.status = 200;
-    let message: PapersMessage = { papers: await convertPapersToPaperMessage(await Promise.all(papersToBe)) }
-    ctx.response.body = JSON.stringify(message)
+    return papersToBe
 }
 
 /**

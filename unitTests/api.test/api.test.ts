@@ -5,7 +5,7 @@ import { assertEquals } from "https://deno.land/std@0.97.0/testing/asserts.ts"
 import { idType } from "../../src/api/iApiUniqueId.ts";
 
 export const standardPaper: IApiPaper = { title: [], abstract: [], author: [], year: [], publisher: [], numberOfCitations: [], numberOfReferences: [], type: [], scope: [], scopeName: [], pdf: [], uniqueId: [], source: [], raw: [] }
-/*
+
 
 Deno.test({
 	name: "test 2 papers merge author",
@@ -559,7 +559,7 @@ Deno.test({
 	}
 
 })
-*/
+
 export const makePromise = async <T>(t: T) => {
 	return t
 }

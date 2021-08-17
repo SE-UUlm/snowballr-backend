@@ -9,7 +9,7 @@ import { convertProjectToProjectMessage } from "../helper/converter/projectConve
 import { Stage } from "../model/db/stage.ts";
 import { Paper } from "../model/db/paper.ts";
 import { getAllStagesFromProject } from "./databaseFetcher/stage.ts";
-import { getAllPapersFromStage, getPaperByDoi } from "./databaseFetcher/paper.ts";
+import { checkPaperInProjectStage, getAllPapersFromStage, getPaperByDoi } from "./databaseFetcher/paper.ts";
 import { PapersMessage } from "../model/messages/papersMessage.ts";
 import { PaperScopeForStage } from "../model/db/paperScopeForStage.ts";
 import { assignOnlyIfUnassignedPaper, checkIApiPaper, convertIApiPaperToDBPaper, convertPapersToPaperMessage, convertPaperToPaperMessage } from "../helper/converter/paperConverter.ts";
@@ -22,7 +22,7 @@ import { IApiAuthor } from "../api/iApiAuthor.ts";
 import { checkAdmin, checkMemberOfProject, checkPO, checkPOofProject, getPayloadFromJWT, getUserID, UserStatus, validateUserEntry } from "./validation.controller.ts";
 import { makeFetching } from "./fetch.controller.ts";
 import { saveChildren } from "./database.controller.ts";
-import { getPaperCitations, getPaperReferences, paperUpdate, postPaperCitation, postPaperReference } from "./paper.controller.ts";
+import { getPaperCitations, getPaperReferences, getRefOrCiteList, paperUpdate, postPaperCitation, postPaperReference } from "./paper.controller.ts";
 import { Criteria } from "../model/db/criteria.ts";
 import { Review } from "../model/db/review.ts";
 import { ReviewMessage } from "../model/messages/review.message.ts";
@@ -366,7 +366,17 @@ export const getCites = async (ctx: Context, projectID: number, stageID: number,
         try {
             let paper = await PaperScopeForStage.where("id", ppID).paper();
             if (paper) {
-                await getPaperCitations(ctx, Number(paper.id))
+                let papers: Promise<Paper>[] = await getRefOrCiteList(ctx, "citedBy", "papercitingid", "papercitedid", Number(paper.id))
+                let nextStage = await findNextStage(await Stage.find(stageID), projectID)
+                for (let i = 0; i < papers.length; i++) {
+                    if (!await checkPaperInProjectStage(await papers[i], Number(nextStage.id))) {
+                        delete papers[i]
+                    }
+                }
+                papers = papers.filter(item => item)
+                ctx.response.status = 200;
+                let message: PapersMessage = { papers: await convertPapersToPaperMessage(await Promise.all(papers)) }
+                ctx.response.body = JSON.stringify(message)
             }
         } catch (e) {
             makeErrorMessage(ctx, 404, "paper does not exist")
@@ -387,8 +397,19 @@ export const getRefs = async (ctx: Context, projectID: number, stageID: number, 
         try {
             let paper = await PaperScopeForStage.where("id", ppID).paper();
             if (paper) {
-                await getPaperReferences(ctx, Number(paper.id))
+                let papers = await getRefOrCiteList(ctx, "referencedby", "paperreferencedid", "paperreferencingid", Number(paper.id))
+                let nextStage = await findNextStage(await Stage.find(stageID), projectID)
+                for (let i = 0; i < papers.length; i++) {
+                    if (!await checkPaperInProjectStage(await papers[i], Number(nextStage.id))) {
+                        delete papers[i]
+                    }
+                }
+                papers = papers.filter(item => item)
+                ctx.response.status = 200;
+                let message: PapersMessage = { papers: await convertPapersToPaperMessage(await Promise.all(papers)) }
+                ctx.response.body = JSON.stringify(message)
             }
+
         } catch (e) {
             makeErrorMessage(ctx, 404, "paper does not exist")
         }
@@ -411,7 +432,7 @@ export const postCiteProject = async (ctx: Context, projectID: number, stageID: 
                 let paper2 = await postPaperCitation(ctx, Number(paper.id))
                 if (paper2) {
                     let nextStage = await findNextStage(stage, projectID)
-                    PaperScopeForStage.create({ stageId: Number(nextStage.id), paperId: Number(paper2.id) })
+                    await PaperScopeForStage.create({ stageId: Number(nextStage.id), paperId: Number(paper2.id) })
                 }
             }
         } catch (e) {
@@ -436,7 +457,7 @@ export const postRefProject = async (ctx: Context, projectID: number, stageID: n
                 let paper2 = await postPaperReference(ctx, Number(paper.id))
                 if (paper2) {
                     let nextStage = await findNextStage(stage, projectID)
-                    PaperScopeForStage.create({ stageId: Number(nextStage.id), paperId: Number(paper2.id) })
+                    await PaperScopeForStage.create({ stageId: Number(nextStage.id), paperId: Number(paper2.id) })
                 }
             }
         } catch (e) {

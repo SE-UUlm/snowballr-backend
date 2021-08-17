@@ -41,3 +41,12 @@ export const checkUniqueVal = async (type: string, value: string) => {
 
     return false;
 }
+
+export const checkPaperInProjectStage = async (paper: Paper, stageID: number) => {
+    let pp = await PaperScopeForStage.where({ paperId: Number(paper.id), stageId: stageID }).get()
+    if (Array.isArray(pp) && pp.length > 0) {
+        return true
+    } else {
+        return false
+    }
+}
