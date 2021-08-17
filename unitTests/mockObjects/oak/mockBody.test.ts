@@ -1,4 +1,4 @@
-import {Body, BodyOptions, BodyReader, BodyStream} from 'https://deno.land/x/oak/mod.ts';
+import { Body, BodyOptions, BodyReader, BodyStream } from 'https://deno.land/x/oak@v8.0.0/mod.ts';
 
 /**
  * This class is for mocking a body in an oak request.
@@ -15,7 +15,7 @@ export class RequestBodyMock {
     json = (bodyJsonString: any) => this.get(bodyJsonString, this.bodyJsonString);
 
     get(
-        {type, contentTypes = {}}: BodyOptions,
+        { type, contentTypes = {} }: BodyOptions,
         bla?: string
     ): Body | BodyReader | BodyStream {
 
