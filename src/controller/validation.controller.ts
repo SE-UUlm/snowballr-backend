@@ -8,7 +8,11 @@ import { UserIsPartOfProject } from "../model/db/userIsPartOfProject.ts";
 import { jsonBodyToObject } from "../helper/body.ts";
 
 const SECRET = String(Deno.env.get('SECRET'));
-
+const KEY = await crypto.subtle.generateKey(
+    { name: "HMAC", hash: "SHA-512" },
+    true,
+    ["sign", "verify"],
+);
 /**
  * Validates, whether the provided request has either an empty content or a right set content type with valid json.
  *
@@ -88,7 +92,7 @@ export const createJWT = async (user: User) => {
         firstName: user.firstName,
         status: user.status,
         exp: createNumericTerminationDate()
-    }, SECRET);
+    }, KEY);
 }
 
 /**
@@ -210,7 +214,7 @@ export const getPayloadFromJWT = async (ctx: Context): Promise<PayloadJson | und
  */
 const verifyJWT = async (ctx: Context, next: () => Promise<unknown>, token: string) => {
     let goingForward = true;
-    await verify(token, SECRET, "HS512").catch((err) => {
+    await verify(token, KEY).catch((err) => {
         goingForward = false;
         makeErrorMessage(ctx, 401, "token expired")
     });
