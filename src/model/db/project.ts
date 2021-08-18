@@ -15,7 +15,7 @@ export class Project extends Model {
         name: DataTypes.STRING,
         minCountReviewers: { type: DataTypes.INTEGER },
         countDecisiveReviewers: { type: DataTypes.INTEGER },
-        combinationOfReviewers: DataTypes.INTEGER,
+        combinationOfReviewers: DataTypes.STRING,
         type: DataTypes.STRING,
         evaluationFormula: { type: DataTypes.STRING },
     }

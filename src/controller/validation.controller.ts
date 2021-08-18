@@ -256,7 +256,7 @@ export const validateUserEntry = async (ctx: Context, id: (number | undefined)[]
             return
         }
         for (let param of requestParameter.params) {
-            if (!params[param]) {
+            if (params[param] === undefined) {
                 console.error(`Request doesn't include parameter ${param}`)
                 makeErrorMessage(ctx, 422, `Request doesn't include parameter ${param}`)
                 return;
