@@ -1,4 +1,4 @@
-import { Body, BodyOptions, BodyReader, BodyStream } from 'https://deno.land/x/oak@v8.0.0/mod.ts';
+import { Body, BodyOptions, BodyReader, BodyStream } from 'https://deno.land/x/mod.ts';
 
 /**
  * This class is for mocking a body in an oak request.

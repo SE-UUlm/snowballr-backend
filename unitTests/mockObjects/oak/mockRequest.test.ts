@@ -1,4 +1,4 @@
-import { Request, ServerResponse } from 'https://deno.land/x/oak@v8.0.0/mod.ts';
+import { Request, ServerResponse } from 'https://deno.land/x/mod.ts';
 import { RequestBodyMock } from './mockBody.test.ts'
 
 let requestResponseStack: ServerResponse[] = [];

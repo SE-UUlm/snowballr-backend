@@ -1,4 +1,4 @@
-import { Context } from "https://deno.land/x/oak@v8.0.0/mod.ts";
+import { Context } from "https://deno.land/x/mod.ts";
 
 /**
  * Adds an error message to the oak context
