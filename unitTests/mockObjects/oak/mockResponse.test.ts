@@ -1,4 +1,4 @@
-import { Response } from 'https://deno.land/x/oak@v8.0.0/mod.ts';
+import { Context } from from  "https://deno.land/x/oak/mod.ts";
 
 /**
  * Mocks a response.

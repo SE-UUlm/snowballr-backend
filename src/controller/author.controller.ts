@@ -1,4 +1,4 @@
-import { Context } from "https://deno.land/x/mod.ts";
+import { Context } from "https://deno.land/x/oak/mod.ts";
 import { assign } from "../helper/assign.ts";
 import { jsonBodyToObject } from "../helper/body.ts";
 import { makeErrorMessage } from "../helper/error.ts";

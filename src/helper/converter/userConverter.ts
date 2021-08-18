@@ -1,6 +1,6 @@
 import { User } from "../../model/db/user.ts";
 import { UserParameters, UserProfile } from "../../model/userProfile.ts";
-import { Context } from "https://deno.land/x/mod.ts";
+import { Context } from "https://deno.land/x/oak/mod.ts";
 import { assign } from "../assign.ts"
 
 /**
