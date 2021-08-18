@@ -1,5 +1,5 @@
-import { Context } from "https://deno.land/x/oak@v8.0.0/mod.ts";
-import { create, decode, verify } from "https://deno.land/x/djwt@v2.2/mod.ts"
+import { Context } from "https://deno.land/x/oak/mod.ts";
+import { create, decode, verify } from "https://deno.land/x/djwt/mod.ts"
 import { User } from "../model/db/user.ts";
 import { createNumericTerminationDate } from "../helper/dateHelper.ts";
 import { makeErrorMessage } from "../helper/error.ts";
