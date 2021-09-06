@@ -21,10 +21,10 @@ let id = 1;
 export const makeFetching = (doi?: string, title?: string, name?: string) => {
     //TODO comparisons from logfile
     const comparisonWeight: IComparisonWeight = {
-        titleWeight: 15,
+        titleWeight: 10,
         titleLevenshtein: 10,
         abstractWeight: 7,
-        abstractLevenshtein: 0,
+        abstractLevenshtein: 10,
         authorWeight: 8,
         overallWeight: 0.8,
         yearWeight: 2

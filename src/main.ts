@@ -29,6 +29,7 @@ import {
     getRefs,
     getReviewOfPaper,
     getReviewsOfPaper,
+    makeCsv,
     patchCriteriaOfProject,
     patchCritieriaEvalOfReview,
     patchPaperOfProjectStage,
@@ -123,6 +124,9 @@ router
     })
     .get("/projects/:id/stages/:id2/papers/:ppid/references", async (context) => {
         await getRefs(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))
+    })
+    .get("/projects/:id/stages/:id2/papers/:ppid/csv", async (context) => {
+        await makeCsv(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))
     })
     .post("/projects/:id/stages/:id2/papers/:ppid/references", async (context) => {
         await postRefProject(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))

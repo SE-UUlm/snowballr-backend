@@ -1,22 +1,23 @@
-import { Database } from "https://deno.land/x/denodb/mod.ts";
+import { Database, PostgresConnector } from "https://deno.land/x/denodb/mod.ts";
 import { Client } from "https://deno.land/x/postgres/mod.ts";
 
-const PostgresDB = Deno.env.get("POSTGRES_DB");
-const PostgresUser = Deno.env.get("POSTGRES_USER");
-const PostgresPassword = Deno.env.get("POSTGRES_PASSWORD");
-const PostgresHost = Deno.env.get("POSTGRES_HOST");
+const PostgresDB = String(Deno.env.get("POSTGRES_DB"));
+const PostgresUser = String(Deno.env.get("POSTGRES_USER"));
+const PostgresPassword = String(Deno.env.get("POSTGRES_PASSWORD"));
+const PostgresHost = String(Deno.env.get("POSTGRES_HOST"));
 
 
 /**
  * Database for DENODB
  */
-export const db = new Database('postgres', {
+const connection = new PostgresConnector({
     host: PostgresHost,
     username: PostgresUser,
     password: PostgresPassword,
     database: PostgresDB,
 });
 
+export const db = new Database(connection)
 /**
  * Database for native SQL (currently used for Selfjoins, since denodb can't use it)
  */
