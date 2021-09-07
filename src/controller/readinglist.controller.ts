@@ -43,7 +43,7 @@ export const getReadingList  = async (ctx: Context, userID: number) => {
             for(let i= 0; i < reading.length; i++){
                 finalResponse.push({id: Number(reading[i].id), paper: finalPapers[i]})
             }
-            ctx.response.body = JSON.stringify({ ReadingList: finalResponse})
+            ctx.response.body = JSON.stringify({ readinglist: finalResponse})
         }
 
     }
