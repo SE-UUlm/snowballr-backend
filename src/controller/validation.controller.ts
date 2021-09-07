@@ -93,7 +93,6 @@ export const createJWT = async (user: User) => {
         status: user.status,
         exp: createNumericTerminationDate()
     }, KEY);
-    console.log(await jwt)
     return jwt;
 }
 
@@ -216,11 +215,8 @@ export const getPayloadFromJWT = async (ctx: Context): Promise<PayloadJson | und
  */
 const verifyJWT = async (ctx: Context, next: () => Promise<unknown>, token: string) => {
     let goingForward = true;
-    console.log(token)
     await verify(token, KEY).catch((err) => {
         goingForward = false;
-        console.log(err)
-
         makeErrorMessage(ctx, 401, "token expired")
     });
     if (goingForward) {
