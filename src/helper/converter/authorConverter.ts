@@ -25,7 +25,7 @@ export const convertAuthorToAuthorMessage = (author: Author): AuthorMessage => {
     if (authorCache.has(String(author.id))) {
         authorMessage.status = Status.unfinished
     } else {
-        authorMessage.status = Status.finished
+        authorMessage.status = Status.ready
     }
     return authorMessage
 }

@@ -17,6 +17,8 @@ import { getAllAuthorsFromPaper } from "../../controller/databaseFetcher/author.
 import { IApiAuthor } from "../../api/iApiAuthor.ts";
 import { isEqualAuthor } from "../../api/checkIsEqual.ts";
 import { convertAuthorToAuthorMessage } from "./authorConverter.ts"
+import { getAllReviewsFromProjectPaper } from "../../controller/databaseFetcher/review.ts";
+
 export const convertPapersToPaperMessage = async (papers: Paper[], stageId?: number) => {
     let paperMessages: PaperMessage[] = [];
     for (const item of papers) {
@@ -31,8 +33,12 @@ export const convertPaperToPaperMessage = async (paper: Paper, stageId?: number)
     if (stageId) { paperMessage.ppid = await getProjectPaperID(stageId, Number(paper.id)) }
     if (paperCache.has(String(paper.id))) {
         paperMessage.status = Status.unfinished
+    } else if(paper.finalDecision){
+        paperMessage.status = Status.completelyEvaluated
+    } else if(paperMessage.ppid && (await getAllReviewsFromProjectPaper(paperMessage.ppid)).length > 0){
+        paperMessage.status = Status.partiallyEvaluated
     } else {
-        paperMessage.status = Status.finished
+        paperMessage.status = Status.ready
     }
     let pdf = await Pdf.where({ paperId: Number(paper.id) }).get()
     if (Array.isArray(pdf)) {
