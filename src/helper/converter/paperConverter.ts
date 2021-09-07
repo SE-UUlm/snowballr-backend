@@ -174,7 +174,6 @@ export const checkIApiPaper = (paper: { [index: string]: any }): boolean => {
         if (!["id", "uniqueId", "source", "author", "pdf", "numberOfCitations", "numberOfReferences"].includes(i)) {
 
             if (paper[i] && paper[i].length > 1) {
-                logger.critical(`${i} wasn't single for ${paper.title}`)
                 check = false;
             } else {
                 delete paper[i]
