@@ -10,3 +10,4 @@ b.log
 a.log
 fileCache/*
 *.csv
+deps/*

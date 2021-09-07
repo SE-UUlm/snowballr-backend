@@ -180,6 +180,22 @@ export const getSourcePaper = async (ctx: Context, paperID: number) => {
     }
 }
 
+
+/**
+ * Deletes a source paper
+ * @param ctx 
+ * @param paperID 
+ * @returns 
+ */
+ export const deleteSourcePaper = async (ctx: Context, paperID: number) => {
+    let validate = await validateUserEntry(ctx, [paperID], UserStatus.none, -1, { needed: false, params: [] })
+    if (validate) {
+        ctx.response.status = 200;
+        paperCache.delete(String(paperID))
+    }
+}
+
+
 /**
  * Adds a citation of a paper into the database
  * @param ctx 

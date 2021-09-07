@@ -7,7 +7,7 @@ export const checkIApiAuthor = (author: { [index: string]: any }): boolean => {
     let check = true;
     for (let i in author) {
         if (!["id"].includes(i)) {
-            if (author[i] && author[i].length > 1) {
+            if ((author[i] && author[i].length > 1) || (i === "raw" && author[i])) {
                 check = false;
             } else {
                 delete author[i]

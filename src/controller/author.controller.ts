@@ -110,3 +110,18 @@ export const getSourceAuthor = async (ctx: Context, authorID: number | undefined
         }
     }
 }
+
+/**
+ * Deletes a source author
+ * @param ctx 
+ * @param paperID 
+ * @returns 
+ */
+ export const deleteSourcePaper = async (ctx: Context,authorID: number) => {
+    let validate = await validateUserEntry(ctx, [authorID], UserStatus.none, -1, { needed: false, params: [] })
+    if (validate) {
+        ctx.response.status = 200;
+        authorCache.delete(String(authorID))
+    }
+}
+
