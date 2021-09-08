@@ -22,7 +22,7 @@ export class Paper extends Model {
         type: { type: DataTypes.STRING, allowNull: true },
         scope: { type: DataTypes.STRING, allowNull: true },
         scopeName: { type: DataTypes.STRING, allowNull: true },
-        finalDecision: { type: DataTypes.STRING, allowNull: true },
+
 
     }
 

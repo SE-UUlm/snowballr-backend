@@ -9,7 +9,7 @@ import { convertProjectToProjectMessage } from "../helper/converter/projectConve
 import { Stage } from "../model/db/stage.ts";
 import { Paper } from "../model/db/paper.ts";
 import { getAllStagesFromProject } from "./databaseFetcher/stage.ts";
-import { checkPaperInProjectStage, getAllPapersFromStage, getPaperByDoi, getProjectPaperID } from "./databaseFetcher/paper.ts";
+import { checkPaperInProjectStage, getAllPapersFromStage, getPaperByDoi, getProjectPaperID, getProjectPaperScope } from "./databaseFetcher/paper.ts";
 import { PapersMessage } from "../model/messages/papersMessage.ts";
 import { PaperScopeForStage } from "../model/db/paperScopeForStage.ts";
 import { assignOnlyIfUnassignedPaper, checkIApiPaper, convertIApiPaperToDBPaper, convertPapersToPaperMessage, convertPaperToPaperMessage } from "../helper/converter/paperConverter.ts";
@@ -441,21 +441,22 @@ const papersToRow = async (papers: Paper[], rows: string[][], getReviews: boolea
                 item.doi ? String(item.doi) : ""
             ]
             if(getReviews && project && stageID){
-                let ppID = await getProjectPaperID(stageID, Number(item.id))
-                let reviews = await Review.where(Review.field("paper_id"), ppID).get()
+                let ppID = await getProjectPaperScope(stageID, Number(item.id))
+                if(ppID){
+                    let reviews = await Review.where(Review.field("paper_id"), Number(ppID.id)).get()
 
-                if(Array.isArray(reviews)){
-                for(let review of reviews){
-                    row.push(review.overallEvaluation? String(review.overallEvaluation): "")
-                }
+                    if(Array.isArray(reviews)){
+                    for(let review of reviews){
+                        row.push(review.overallEvaluation? String(review.overallEvaluation): "")
+                    }
 
-                for(let i = 0; i < (Number(project.countDecisiveReviewers)- reviews.length);i++){
-                    row.push("")
-                }
+                    for(let i = 0; i < (Number(project.countDecisiveReviewers)- reviews.length);i++){
+                        row.push("")
+                    }
 
-                row.push(item.finalDecision? String(item.finalDecision): "")
+                    row.push(ppID.finalDecision? String(ppID.finalDecision): "")
             }
-
+            }
 
             }
             rows.push(row)

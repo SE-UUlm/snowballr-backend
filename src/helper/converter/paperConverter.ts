@@ -1,6 +1,6 @@
 import { Paper } from "../../model/db/paper.ts";
 import { PaperMessage, Status } from "../../model/messages/papersMessage.ts";
-import { checkUniqueVal, getProjectPaperID } from "../../controller/databaseFetcher/paper.ts";
+import { checkUniqueVal, getProjectPaperID, getProjectPaperScope } from "../../controller/databaseFetcher/paper.ts";
 import { assign } from "../assign.ts"
 import { IApiPaper } from "../../api/iApiPaper.ts"
 import { getDOI } from "../../api/apiMerger.ts";
@@ -18,6 +18,7 @@ import { IApiAuthor } from "../../api/iApiAuthor.ts";
 import { isEqualAuthor } from "../../api/checkIsEqual.ts";
 import { convertAuthorToAuthorMessage } from "./authorConverter.ts"
 import { getAllReviewsFromProjectPaper } from "../../controller/databaseFetcher/review.ts";
+import { PaperScopeForStage } from "../../model/db/paperScopeForStage.ts";
 
 export const convertPapersToPaperMessage = async (papers: Paper[], stageId?: number) => {
     let paperMessages: PaperMessage[] = [];
@@ -30,10 +31,15 @@ export const convertPapersToPaperMessage = async (papers: Paper[], stageId?: num
 
 export const convertPaperToPaperMessage = async (paper: Paper, stageId?: number) => {
     let paperMessage: PaperMessage = { id: Number(paper.id), pdf: [], authors: [] }
-    if (stageId) { paperMessage.ppid = await getProjectPaperID(stageId, Number(paper.id)) }
+    let pp: PaperScopeForStage | undefined;
+    if (stageId) { 
+        pp = await getProjectPaperScope(stageId, Number(paper.id))
+        if(pp){
+        paperMessage.ppid =  Number(pp.id) }
+    }
     if (paperCache.has(String(paper.id))) {
         paperMessage.status = Status.unfinished
-    } else if(paper.finalDecision){
+    } else if(pp && pp.finalDecision){
         paperMessage.status = Status.completelyEvaluated
     } else if(paperMessage.ppid && (await getAllReviewsFromProjectPaper(paperMessage.ppid)).length > 0){
         paperMessage.status = Status.partiallyEvaluated
