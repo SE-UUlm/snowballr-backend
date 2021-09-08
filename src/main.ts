@@ -29,7 +29,8 @@ import {
     getRefs,
     getReviewOfPaper,
     getReviewsOfPaper,
-    makeCsv,
+    makeRefCiteCsv,
+    makeStageCsv,
     patchCriteriaOfProject,
     patchCritieriaEvalOfReview,
     patchPaperOfProjectStage,
@@ -123,6 +124,9 @@ router
     .get("/projects/:id/stages/:id2/papers", async (context) => {
         await getPapersOfProjectStage(context, Number(context.params.id), Number(context.params.id2))
     })
+    .get("/projects/:id/stages/:id2/csv", async (context) => {
+        await makeStageCsv(context, Number(context.params.id), Number(context.params.id2))
+    })
     .get("/projects/:id/stages/:id2/papers/:ppid", async (context) => {
         await getPaperOfProjectStage(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))
     })
@@ -136,7 +140,7 @@ router
         await getRefs(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))
     })
     .get("/projects/:id/stages/:id2/papers/:ppid/csv", async (context) => {
-        await makeCsv(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))
+        await makeRefCiteCsv(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))
     })
     .post("/projects/:id/stages/:id2/papers/:ppid/references", async (context) => {
         await postRefProject(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))

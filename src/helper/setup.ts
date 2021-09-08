@@ -89,7 +89,7 @@ export const setup = async (dropDatabase: boolean) => {
         admin = await insertUser(String(Deno.env.get("ADMIN_EMAIL")), String(Deno.env.get("ADMIN_PASSWORD")), true, "admin", "admin", "active");
         //TODO: only to showcase functionality, otherwise delete
         let project = await Project.create({
-            name: "Test", minCountReviewers: 0, countDecisiveReviewers: 0, combinationOfReviewers: 0,
+            name: "Test", minCountReviewers: 0, countDecisiveReviewers: 5, combinationOfReviewers: 0,
             type: ""
         })
         await UserIsPartOfProject.create({
@@ -99,15 +99,26 @@ export const setup = async (dropDatabase: boolean) => {
         })
         let stage = await Stage.create({ projectId: Number(project.id), name: "awesome Stage", number: 0 })
         await Stage.create({ projectId: Number(project.id), name: "the next Stage", number: 1 })
-        let paper01 = await Paper.create({ title: "paper01" })
-        let paper02 = await Paper.create({ title: "paper02" })
+        let paper01 = await Paper.create({ title: "paper01" ,finalDecision: "YES"})
+        let paper02 = await Paper.create({ title: "paper02" ,finalDecision: "NO"})
         let paper03 = await Paper.create({ title: "paper03" })
+        let author = await Author.create({rawString: "Author01"})
+        let author2 = await Author.create({rawString: "Author02"})
+        await Wrote.create({paperId: Number(paper01.id), authorId: Number(author.id)})
+        await Wrote.create({paperId: Number(paper02.id), authorId: Number(author2.id)})
         await Paper.create({ title: "paper04" })
         let paper05 = await Paper.create({ title: "paper05" })
-        await PaperScopeForStage.create({ paperId: Number(paper01.id), stageId: Number(stage.id) })
-        await PaperScopeForStage.create({ paperId: Number(paper02.id), stageId: Number(stage.id) })
+        let pp01 = await PaperScopeForStage.create({ paperId: Number(paper01.id), stageId: Number(stage.id) })
+        let pp02 = await PaperScopeForStage.create({ paperId: Number(paper02.id), stageId: Number(stage.id) })
         await PaperScopeForStage.create({ paperId: Number(paper05.id), stageId: Number(stage.id) })
-
+        await Review.create({finished: true, overallEvaluation:"YES", userId: Number(admin.id), paperId: Number(pp01.id), stageId: Number(stage.id)})
+        await Review.create({finished: true, overallEvaluation:"YES", userId: Number(admin.id), paperId: Number(pp01.id), stageId: Number(stage.id)})
+        await Review.create({finished: true, overallEvaluation:"YES", userId: Number(admin.id), paperId: Number(pp01.id), stageId: Number(stage.id)})
+        await Review.create({finished: true, overallEvaluation:"MAYBE", userId: Number(admin.id), paperId: Number(pp02.id), stageId: Number(stage.id)})
+        await Review.create({finished: true, overallEvaluation:"MAYBE", userId: Number(admin.id), paperId: Number(pp02.id), stageId: Number(stage.id)})
+        await Review.create({finished: true, overallEvaluation:"MAYBE", userId: Number(admin.id), paperId: Number(pp02.id), stageId: Number(stage.id)})
+        await Review.create({finished: true, overallEvaluation:"MAYBE", userId: Number(admin.id), paperId: Number(pp02.id), stageId: Number(stage.id)})
+        await Review.create({finished: true, overallEvaluation:"NO", userId: Number(admin.id), paperId: Number(pp02.id), stageId: Number(stage.id)})
         await client.queryArray(`INSERT INTO citedby (papercitedid, papercitingid)
                 VALUES (${Number(paper01.id)}, ${Number(paper02.id)}),
                         (${Number(paper01.id)}, ${Number(paper03.id)})`)

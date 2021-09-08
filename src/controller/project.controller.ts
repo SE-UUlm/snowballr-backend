@@ -9,7 +9,7 @@ import { convertProjectToProjectMessage } from "../helper/converter/projectConve
 import { Stage } from "../model/db/stage.ts";
 import { Paper } from "../model/db/paper.ts";
 import { getAllStagesFromProject } from "./databaseFetcher/stage.ts";
-import { checkPaperInProjectStage, getAllPapersFromStage, getPaperByDoi } from "./databaseFetcher/paper.ts";
+import { checkPaperInProjectStage, getAllPapersFromStage, getPaperByDoi, getProjectPaperID } from "./databaseFetcher/paper.ts";
 import { PapersMessage } from "../model/messages/papersMessage.ts";
 import { PaperScopeForStage } from "../model/db/paperScopeForStage.ts";
 import { assignOnlyIfUnassignedPaper, checkIApiPaper, convertIApiPaperToDBPaper, convertPapersToPaperMessage, convertPaperToPaperMessage } from "../helper/converter/paperConverter.ts";
@@ -360,7 +360,7 @@ export const deletePaperOfProjectStage = async (ctx: Context, projectID: number,
 }
 
 
-export const makeCsv = async (ctx: Context, projectID: number, stageID: number, ppID: number) => {
+export const makeRefCiteCsv = async (ctx: Context, projectID: number, stageID: number, ppID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
     if (validate) {
         try {
@@ -375,10 +375,10 @@ export const makeCsv = async (ctx: Context, projectID: number, stageID: number, 
                 let paper = await PaperScopeForStage.where("id", ppID).paper();
                 let rows = [["authors", "title", "year", "publisher", "link", "doi"], [], ["References"], []]
 
-                rows = await papersToRow(finishedRefs, rows);
+                rows = await papersToRow(finishedRefs, rows, false);
 
                 rows.push([], ["Citations"], [])
-                rows = await papersToRow(finishedCites, rows);
+                rows = await papersToRow(finishedCites, rows, false);
                 const f = await Deno.open(`./${String(paper.title).replaceAll(" ", "_") + ".csv"}`, { write: true, create: true, truncate: true });
 
                 await writeCSV(f, rows);
@@ -395,8 +395,31 @@ export const makeCsv = async (ctx: Context, projectID: number, stageID: number, 
     }
 }
 
-const papersToRow = async (papers: Paper[], rows: string[][]) => {
-    try {
+export const makeStageCsv = async (ctx: Context, projectID: number, stageID: number) =>{
+    let validate = await validateUserEntry(ctx, [projectID, stageID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
+        if (validate) {
+        let papers = await getAllPapersFromStage(stageID)
+        let rows = [["authors", "title", "year", "publisher", "link", "doi"]]
+        let project = await Project.find(projectID);
+        let stage = await Stage.find(stageID);
+        for(let i = 1; i <= (Number(project.countDecisiveReviewers));i++){
+            rows[0].push(`SuggestedInclusion${i}`)
+        }
+        rows[0].push("FinalDecision")
+        rows = await papersToRow(papers, rows, true, project, stageID)
+        const f = await Deno.open(`./${String(project.name)}_Stage${Number(stage.number)}.csv`, { write: true, create: true, truncate: true });
+
+        await writeCSV(f, rows);
+        f.close();
+        const text = await Deno.readTextFile(`./${String(project.name)}_Stage${Number(stage.number)}.csv`);
+        ctx.response.status = 200;
+        ctx.response.type = "text/csv";
+        ctx.response.body = text;
+        ctx.response.headers.set('Content-disposition', `attachment; filename=${String(project.name)}_Stage${Number(stage.number)}.csv`);
+    }
+}
+
+const papersToRow = async (papers: Paper[], rows: string[][], getReviews: boolean, project?: Project, stageID?: number) => {
         for (let item of papers) {
 
             let link = ""
@@ -409,19 +432,34 @@ const papersToRow = async (papers: Paper[], rows: string[][]) => {
                 }
             }
             let authors = (await getAllAuthorsFromPaper(Number(item.id))).map(item => String(item.rawString))
-            rows.push([
+            let row = [
                 authors.length > 0 ? authors.reduce(reducer) : "",
                 item.title ? String(item.title) : "",
                 item.year ? String(item.year) : "",
                 item.publisher ? String(item.publisher) : "",
                 link,
                 item.doi ? String(item.doi) : ""
-            ])
-        }
+            ]
+            if(getReviews && project && stageID){
+                let ppID = await getProjectPaperID(stageID, Number(item.id))
+                let reviews = await Review.where(Review.field("paper_id"), ppID).get()
 
-    } catch (err) {
-        console.log(err)
-    }
+                if(Array.isArray(reviews)){
+                for(let review of reviews){
+                    row.push(review.overallEvaluation? String(review.overallEvaluation): "")
+                }
+
+                for(let i = 0; i < (Number(project.countDecisiveReviewers)- reviews.length);i++){
+                    row.push("")
+                }
+
+                row.push(item.finalDecision? String(item.finalDecision): "")
+            }
+
+
+            }
+            rows.push(row)
+        }
     return rows
 }
 /**
