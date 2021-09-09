@@ -19,6 +19,7 @@ export interface PaperMessage {
     createdAt?: Date,
     updatedAt?: Date
     status?: Status
+    finalDecision?: string
     pdf: string[]
     authors: AuthorMessage[]
 

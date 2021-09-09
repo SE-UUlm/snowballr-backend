@@ -35,7 +35,9 @@ export const convertPaperToPaperMessage = async (paper: Paper, stageId?: number)
     if (stageId) { 
         pp = await getProjectPaperScope(stageId, Number(paper.id))
         if(pp){
-        paperMessage.ppid =  Number(pp.id) }
+        paperMessage.ppid =  Number(pp.id) 
+        if(pp.finalDecision){paperMessage.finalDecision = String(pp.finalDecision)}
+    }
     }
     if (paperCache.has(String(paper.id))) {
         paperMessage.status = Status.unfinished
