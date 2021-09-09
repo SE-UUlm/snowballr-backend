@@ -21,16 +21,21 @@ export const getReviews = async (reviews: Review | Review[]) => {
             let message: ReviewMessage = { id: Number(review.id), criteriaEvaluations: [], finished: Boolean(review.finished) }
             if (review.overallEvaluation) { message.overallEvaluation = String(review.overallEvaluation) }
             if (review.finishDate) { message.finishDate = new Date(String(review.finishDate)) }
-            let ces = await CriteriaEvaluation.where(CriteriaEvaluation.field("review_id"), Number(review.id)).get()
+            message = await getCriteriaEvalsOfCriteria(Number(review.id), message)
+            arr.push(message)
+        }
+        return arr;
+    }
+    return new Array<ReviewMessage>();
+}
+
+const getCriteriaEvalsOfCriteria = async (reviewID: number, message: ReviewMessage) =>{
+    let ces = await CriteriaEvaluation.where(CriteriaEvaluation.field("review_id"), reviewID).get()
 
             if (Array.isArray(ces)) {
                 for (let ce of ces) {
                     message.criteriaEvaluations.push(ce)
                 }
             }
-            arr.push(message)
-        }
-        return arr;
-    }
-    return new Array<ReviewMessage>();
+    return message;
 }
