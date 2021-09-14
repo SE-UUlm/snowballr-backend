@@ -1,4 +1,4 @@
-import { Context } from "https://deno.land/x/oak/mod.ts";
+import { Context, send } from "https://deno.land/x/oak/mod.ts";
 import { makeErrorMessage } from "../helper/error.ts";
 import { jsonBodyToObject } from "../helper/body.ts";
 import { Project } from "../model/db/project.ts";
@@ -9,7 +9,7 @@ import { convertProjectToProjectMessage } from "../helper/converter/projectConve
 import { Stage } from "../model/db/stage.ts";
 import { Paper } from "../model/db/paper.ts";
 import { getAllStagesFromProject } from "./databaseFetcher/stage.ts";
-import { checkPaperInProjectStage, getAllPapersFromStage, getPaperByDoi } from "./databaseFetcher/paper.ts";
+import { checkPaperInProjectStage, getAllPapersFromStage, getPaperByDoi, getProjectPaperID, getProjectPaperScope } from "./databaseFetcher/paper.ts";
 import { PapersMessage } from "../model/messages/papersMessage.ts";
 import { PaperScopeForStage } from "../model/db/paperScopeForStage.ts";
 import { assignOnlyIfUnassignedPaper, checkIApiPaper, convertIApiPaperToDBPaper, convertPapersToPaperMessage, convertPaperToPaperMessage } from "../helper/converter/paperConverter.ts";
@@ -28,9 +28,15 @@ import { Review } from "../model/db/review.ts";
 import { ReviewMessage } from "../model/messages/review.message.ts";
 import { getAllReviewsFromProjectPaper, getReview } from "./databaseFetcher/review.ts";
 import { CriteriaEvaluation } from "../model/db/criteriaEval.ts";
+import { writeCSV } from "https://deno.land/x/csv/mod.ts";
+import { sortIApiPapersByName, sortPapersByName } from "../../userTests/loggerHelper.ts";
+import { Pdf } from "../model/db/pdf.ts";
+import { getAllAuthorsFromPaper } from "./databaseFetcher/author.ts";
 
 export const paperCache = new Cache<IApiPaper>(CacheType.F, 0, "paperCache")
 export const authorCache = new Cache<IApiAuthor>(CacheType.F, 0, "authorCache")
+
+const reducer = (accumulator: string, currentValue: string) => accumulator + " / " + currentValue;
 /**
  * Creates a project
  *
@@ -328,7 +334,13 @@ export const patchPaperOfProjectStage = async (ctx: Context, projectID: number, 
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
     if (validate) {
         try {
-            let paper = await PaperScopeForStage.where("id", ppID).paper();
+            let pp = await PaperScopeForStage.where("id", ppID);
+            if(validate.finalDecision){
+                let paperScope = (await pp.get())
+                if(Array.isArray(paperScope)){
+                    paperScope[0].finalDecision = validate.finalDecision}
+                }
+            let paper = await pp.paper();
             if (paper) {
                 await paperUpdate(ctx, paper)
             }
@@ -353,6 +365,128 @@ export const deletePaperOfProjectStage = async (ctx: Context, projectID: number,
     }
 }
 
+
+export const makeRefCiteCsv = async (ctx: Context, projectID: number, stageID: number, ppID: number) => {
+    let validate = await validateUserEntry(ctx, [projectID, stageID, ppID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
+    if (validate) {
+        try {
+            let references = getRefs(ctx, projectID, stageID, ppID)
+            let citations = getCites(ctx, projectID, stageID, ppID)
+
+            let finRef = await references;
+            let finCite = await citations;
+            if (finRef && finCite) {
+                let finishedRefs = (await Promise.all(finRef)).sort(sortPapersByName)
+                let finishedCites = (await Promise.all(finCite)).sort(sortPapersByName)
+                let paper = await PaperScopeForStage.where("id", ppID).paper();
+                let rows = [["authors", "title", "year", "publisher", "link", "doi"], [], ["References"], []]
+
+                rows = await papersToRow(finishedRefs, rows, false);
+
+                rows.push([], ["Citations"], [])
+                rows = await papersToRow(finishedCites, rows, false);
+                const f = await Deno.open(`./${String(paper.title).replaceAll(" ", "_") + ".csv"}`, { write: true, create: true, truncate: true });
+
+                await writeCSV(f, rows);
+                f.close();
+                const text = await Deno.readTextFile(String(paper.title).replaceAll(" ", "_") + ".csv");
+                ctx.response.status = 200;
+                ctx.response.type = "text/csv";
+                ctx.response.body = text;
+                ctx.response.headers.set('Content-disposition', `attachment; filename=${String(paper.title).replaceAll(" ", "_")}.csv`);
+            }
+        } catch (err) {
+            console.log(err)
+        }
+    }
+}
+
+export const makeStageCsv = async (ctx: Context, projectID: number, stageID: number) =>{
+    let validate = await validateUserEntry(ctx, [projectID, stageID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
+        if (validate) {
+        let papers = await getAllPapersFromStage(stageID)
+        let rows = [["authors", "title", "year", "publisher", "link", "doi"]]
+        let project = await Project.find(projectID);
+        let stage = await Stage.find(stageID);
+        for(let i = 1; i <= (Number(project.countDecisiveReviewers));i++){
+            rows[0].push(`SuggestedInclusion${i}`)
+        }
+        rows[0].push("FinalDecision")
+        rows = await papersToRow(papers, rows, true, project, stageID)
+        const f = await Deno.open(`./${String(project.name)}_Stage${Number(stage.number)}.csv`, { write: true, create: true, truncate: true });
+
+        await writeCSV(f, rows);
+        f.close();
+        const text = await Deno.readTextFile(`./${String(project.name)}_Stage${Number(stage.number)}.csv`);
+        ctx.response.status = 200;
+        ctx.response.type = "text/csv";
+        ctx.response.body = text;
+        ctx.response.headers.set('Content-disposition', `attachment; filename=${String(project.name)}_Stage${Number(stage.number)}.csv`);
+    }
+}
+
+const papersToRow = async (papers: Paper[], rows: string[][], getReviews: boolean, project?: Project, stageID?: number) => {
+        for (let item of papers) {
+
+            let link = ""
+            if (item.doi) {
+                link = `=HYPERLINK("https://doi.org/${String(item.doi)}")`
+            } else {
+                let pdfs = await Pdf.where("paperId", Number(item.id)).get()
+                if (Array.isArray(pdfs) && pdfs[0]) {
+                    link = `=HYPERLINK("${String(pdfs[0].url)}")`
+                }
+            }
+            let authors = (await getAllAuthorsFromPaper(Number(item.id))).map(item => String(item.rawString))
+            let row = [
+                authors.length > 0 ? authors.reduce(reducer) : "",
+                item.title ? String(item.title) : "",
+                item.year ? String(item.year) : "",
+                item.publisher ? String(item.publisher) : "",
+                link,
+                item.doi ? String(item.doi) : ""
+            ]
+            if(getReviews && project && stageID){
+                let ppID = await getProjectPaperScope(stageID, Number(item.id))
+                if(ppID){
+                    let reviews = await Review.where(Review.field("paper_id"), Number(ppID.id)).get()
+
+                    if(Array.isArray(reviews)){
+                    for(let review of reviews){
+                        row.push(review.overallEvaluation? String(review.overallEvaluation): "")
+                    }
+
+                    for(let i = 0; i < (Number(project.countDecisiveReviewers)- reviews.length);i++){
+                        row.push("")
+                    }
+
+                    row.push(ppID.finalDecision? String(ppID.finalDecision): "")
+            }
+            }
+
+            }
+            rows.push(row)
+        }
+    return rows
+}
+/**
+ * Puts all citations of a paper by the project specific paper id into a message
+ * @param ctx
+ * @param projectID
+ * @param stageID
+ * @param ppID
+ */
+export const getCitationsOfProjectPaper = async (ctx: Context, projectID: number, stageID: number, ppID: number) => {
+    let validate = await validateUserEntry(ctx, [projectID, stageID, ppID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
+    if (validate) {
+        let citations = await getCites(ctx, projectID, stageID, ppID)
+        if (citations) {
+            ctx.response.status = 200;
+            let message: PapersMessage = { papers: await convertPapersToPaperMessage(await Promise.all(citations)) }
+            ctx.response.body = JSON.stringify(message)
+        }
+    }
+}
 /**
  * Returns all citations of a paper by the project specific paper id
  * @param ctx 
@@ -361,25 +495,41 @@ export const deletePaperOfProjectStage = async (ctx: Context, projectID: number,
  * @param ppID 
  */
 export const getCites = async (ctx: Context, projectID: number, stageID: number, ppID: number) => {
+
+    try {
+        let paper = await PaperScopeForStage.where("id", ppID).paper();
+        if (paper) {
+            let papers: Promise<Paper>[] = await getRefOrCiteList(ctx, "citedBy", "papercitingid", "papercitedid", Number(paper.id))
+            let nextStage = await findNextStage(await Stage.find(stageID), projectID)
+            for (let i = 0; i < papers.length; i++) {
+                if (!await checkPaperInProjectStage(await papers[i], Number(nextStage.id))) {
+                    delete papers[i]
+                }
+            }
+            return papers.filter(item => item)
+
+        }
+    } catch (e) {
+        makeErrorMessage(ctx, 404, "paper does not exist")
+    }
+
+}
+
+/**
+ * Puts all references of a paper by the project specific paper id into a message
+ * @param ctx
+ * @param projectID
+ * @param stageID
+ * @param ppID
+ */
+export const getReferencesOfProjectPaper = async (ctx: Context, projectID: number, stageID: number, ppID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
     if (validate) {
-        try {
-            let paper = await PaperScopeForStage.where("id", ppID).paper();
-            if (paper) {
-                let papers: Promise<Paper>[] = await getRefOrCiteList(ctx, "citedBy", "papercitingid", "papercitedid", Number(paper.id))
-                let nextStage = await findNextStage(await Stage.find(stageID), projectID)
-                for (let i = 0; i < papers.length; i++) {
-                    if (!await checkPaperInProjectStage(await papers[i], Number(nextStage.id))) {
-                        delete papers[i]
-                    }
-                }
-                papers = papers.filter(item => item)
-                ctx.response.status = 200;
-                let message: PapersMessage = { papers: await convertPapersToPaperMessage(await Promise.all(papers)) }
-                ctx.response.body = JSON.stringify(message)
-            }
-        } catch (e) {
-            makeErrorMessage(ctx, 404, "paper does not exist")
+        let references = await getRefs(ctx, projectID, stageID, ppID)
+        if (references) {
+            ctx.response.status = 200;
+            let message: PapersMessage = { papers: await convertPapersToPaperMessage(await Promise.all(references)) }
+            ctx.response.body = JSON.stringify(message)
         }
     }
 }
@@ -392,28 +542,25 @@ export const getCites = async (ctx: Context, projectID: number, stageID: number,
  * @param ppID 
  */
 export const getRefs = async (ctx: Context, projectID: number, stageID: number, ppID: number) => {
-    let validate = await validateUserEntry(ctx, [projectID, stageID, ppID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
-    if (validate) {
-        try {
-            let paper = await PaperScopeForStage.where("id", ppID).paper();
-            if (paper) {
-                let papers = await getRefOrCiteList(ctx, "referencedby", "paperreferencedid", "paperreferencingid", Number(paper.id))
-                let nextStage = await findNextStage(await Stage.find(stageID), projectID)
-                for (let i = 0; i < papers.length; i++) {
-                    if (!await checkPaperInProjectStage(await papers[i], Number(nextStage.id))) {
-                        delete papers[i]
-                    }
-                }
-                papers = papers.filter(item => item)
-                ctx.response.status = 200;
-                let message: PapersMessage = { papers: await convertPapersToPaperMessage(await Promise.all(papers)) }
-                ctx.response.body = JSON.stringify(message)
-            }
 
-        } catch (e) {
-            makeErrorMessage(ctx, 404, "paper does not exist")
+    try {
+        let paper = await PaperScopeForStage.where("id", ppID).paper();
+        if (paper) {
+            let papers = await getRefOrCiteList(ctx, "referencedby", "paperreferencedid", "paperreferencingid", Number(paper.id))
+            let nextStage = await findNextStage(await Stage.find(stageID), projectID)
+            for (let i = 0; i < papers.length; i++) {
+                if (!await checkPaperInProjectStage(await papers[i], Number(nextStage.id))) {
+                    delete papers[i]
+                }
+            }
+            return papers.filter(item => item)
+
         }
+
+    } catch (e) {
+        makeErrorMessage(ctx, 404, "paper does not exist")
     }
+
 }
 /**
  * Posts a new cite to a paper and adds it to the project stage

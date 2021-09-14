@@ -9,3 +9,5 @@ cov_profile.lcov
 b.log
 a.log
 fileCache/*
+*.csv
+deps/*

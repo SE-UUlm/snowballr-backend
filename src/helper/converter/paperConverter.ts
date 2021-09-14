@@ -1,6 +1,6 @@
 import { Paper } from "../../model/db/paper.ts";
 import { PaperMessage, Status } from "../../model/messages/papersMessage.ts";
-import { checkUniqueVal, getProjectPaperID } from "../../controller/databaseFetcher/paper.ts";
+import { checkUniqueVal, getProjectPaperID, getProjectPaperScope } from "../../controller/databaseFetcher/paper.ts";
 import { assign } from "../assign.ts"
 import { IApiPaper } from "../../api/iApiPaper.ts"
 import { getDOI } from "../../api/apiMerger.ts";
@@ -17,6 +17,9 @@ import { getAllAuthorsFromPaper } from "../../controller/databaseFetcher/author.
 import { IApiAuthor } from "../../api/iApiAuthor.ts";
 import { isEqualAuthor } from "../../api/checkIsEqual.ts";
 import { convertAuthorToAuthorMessage } from "./authorConverter.ts"
+import { getAllReviewsFromProjectPaper } from "../../controller/databaseFetcher/review.ts";
+import { PaperScopeForStage } from "../../model/db/paperScopeForStage.ts";
+
 export const convertPapersToPaperMessage = async (papers: Paper[], stageId?: number) => {
     let paperMessages: PaperMessage[] = [];
     for (const item of papers) {
@@ -28,11 +31,22 @@ export const convertPapersToPaperMessage = async (papers: Paper[], stageId?: num
 
 export const convertPaperToPaperMessage = async (paper: Paper, stageId?: number) => {
     let paperMessage: PaperMessage = { id: Number(paper.id), pdf: [], authors: [] }
-    if (stageId) { paperMessage.ppid = await getProjectPaperID(stageId, Number(paper.id)) }
+    let pp: PaperScopeForStage | undefined;
+    if (stageId) { 
+        pp = await getProjectPaperScope(stageId, Number(paper.id))
+        if(pp){
+        paperMessage.ppid =  Number(pp.id) 
+        if(pp.finalDecision){paperMessage.finalDecision = String(pp.finalDecision)}
+    }
+    }
     if (paperCache.has(String(paper.id))) {
         paperMessage.status = Status.unfinished
+    } else if(pp && pp.finalDecision){
+        paperMessage.status = Status.completelyEvaluated
+    } else if(paperMessage.ppid && (await getAllReviewsFromProjectPaper(paperMessage.ppid)).length > 0){
+        paperMessage.status = Status.partiallyEvaluated
     } else {
-        paperMessage.status = Status.finished
+        paperMessage.status = Status.ready
     }
     let pdf = await Pdf.where({ paperId: Number(paper.id) }).get()
     if (Array.isArray(pdf)) {
@@ -56,24 +70,10 @@ export const convertIApiPaperToDBPaper = async (paper: IApiPaper): Promise<Paper
         } else if (i == "uniqueId") {
             newPaper.doi = getDOI(paper)[0]
             let uniqueId = paper.uniqueId.filter((item: IApiUniqueId) => item.type !== "DOI")
-            updateUniqueIdOfPaper(uniqueId, Number(newPaper.id))
+            addUniqueToPaper(uniqueId, Number(newPaper.id))
 
         } else if (i == "author") {
-            for (let item of paper.author) {
-                let author: Author;
-                if (item.orcid[0]) {
-                    let oldAuthor = await Author.where({ orcid: item.orcid[0] }).get()
-                    if (Array.isArray(oldAuthor) && oldAuthor[0]) {
-                        author = oldAuthor[0]
-                    } else {
-                        author = await Author.create({})
-                    }
-                } else {
-                    author = await Author.create({})
-                }
-                await updateAuthorOfPaper(author, item, Number(newPaper.id))
-            }
-
+            await addAuthorToDatabase(paper, newPaper)
         } else if (i == "pdf") {
             paper.pdf.forEach(item => {
                 Pdf.create({ paperId: Number(newPaper.id), url: item })
@@ -83,7 +83,29 @@ export const convertIApiPaperToDBPaper = async (paper: IApiPaper): Promise<Paper
     return newPaper.update()
 }
 
-
+/**
+ * First tries to find if an author is already there with the same orcid
+ * Otherwise it will not be set as same author since author names can be equal but not the same person
+ * It just makes a new entry in the database then
+ * @param paper 
+ * @param newPaper 
+ */
+const addAuthorToDatabase= async(paper: IApiPaper, newPaper: Paper) =>{
+    for (let item of paper.author) {
+        let author: Author;
+        if (item.orcid[0]) {
+            let oldAuthor = await Author.where({ orcid: item.orcid[0] }).get()
+            if (Array.isArray(oldAuthor) && oldAuthor[0]) {
+                author = oldAuthor[0]
+            } else {
+                author = await Author.create({})
+            }
+        } else {
+            author = await Author.create({})
+        }
+        await updateAuthorOfPaper(author, item, Number(newPaper.id))
+    }
+}
 export const assignOnlyIfUnassignedPaper = async (target: Paper, source: IApiPaper) => {
     let s = <any>source
     for (const key in source) {
@@ -95,20 +117,47 @@ export const assignOnlyIfUnassignedPaper = async (target: Paper, source: IApiPap
                     delete s[key]
                 }
             } else if (key == "uniqueId") {
-                if (!target.doi) {
-                    target.doi = getDOI(source)[0]
-                }
-                let uniqueId = source.uniqueId.filter((item: IApiUniqueId) => item.type !== "DOI")
-                for (let i = 0; i < uniqueId.length; i++) {
-                    if (uniqueId[i].type && uniqueId[i].value && checkUniqueVal(String(uniqueId[i].type), String(uniqueId[i].value))) {
-                        delete uniqueId[i];
-                    }
-                }
-                uniqueId = uniqueId.filter(item => item);
-                updateUniqueIdOfPaper(uniqueId, Number(target.id))
-
+                target = await updateUniqueIDsOfPaper(target, source)
             } else if (key == "author") {
-                let authors = await getAllAuthorsFromPaper(Number(target.id))
+                target = await updateAuthorsOfPaper(target, source)
+            } else if (key == "pdf") {
+               target = await updatePdfOfPaper(target, source)
+            }
+        }
+    }
+    return target;
+}
+
+/**
+ * Updates the uniqueids of a paper by first checking if they are already in the database.
+ * If not, they will be put into it.
+ * @param target 
+ * @param source 
+ * @returns 
+ */
+const updateUniqueIDsOfPaper = async(target: Paper, source: IApiPaper) =>{
+    if (!target.doi) {
+        target.doi = getDOI(source)[0]
+    }
+    let uniqueId = source.uniqueId.filter((item: IApiUniqueId) => item.type !== "DOI")
+    for (let i = 0; i < uniqueId.length; i++) {
+        if (uniqueId[i].type && uniqueId[i].value && checkUniqueVal(String(uniqueId[i].type), String(uniqueId[i].value))) {
+            delete uniqueId[i];
+        }
+    }
+    uniqueId = uniqueId.filter(item => item);
+    addUniqueToPaper(uniqueId, Number(target.id))
+    return target;
+}
+/**
+ * Updates all authors of a paper by first getting them all, iterating over those already in the database by comparing with found entries.
+ * If the entries look similar, the author gets updated values where none are set.
+ * If no entry looks similar, a new author will be put in the database.
+ * @param target 
+ * @param source 
+ */
+const updateAuthorsOfPaper = async(target: Paper, source: IApiPaper) =>{
+    let authors = await getAllAuthorsFromPaper(Number(target.id))
                 for (let element of authors) {
                     let iAuthor: IApiAuthor = {
                         orcid: element.orcid ? [String(element.orcid)] : [],
@@ -127,26 +176,35 @@ export const assignOnlyIfUnassignedPaper = async (target: Paper, source: IApiPap
                         await updateAuthorOfPaper(await Author.create({}), item, Number(target.id))
                     }
                 }
-            } else if (key == "pdf") {
-                let pdf = Pdf.where({ paperId: Number(target.id) }).get();
-                if (Array.isArray(pdf)) {
-                    let urls: string[] = []
-                    pdf.forEach(item => {
-                        urls.push(String(item.url))
-                    })
-                    for (let item of source.pdf) {
-                        if (!urls.includes(item)) {
-                            await Pdf.create({ paperId: Number(target.id), url: item })
-                        }
-                    }
-                }
+                return target
+}
+
+/**
+ * Gets the pdf link list of the source paper, then compares all those links with the new ones and only makes a new database entry for unknown links
+ * @param target 
+ * @param source 
+ */
+const updatePdfOfPaper = async(target: Paper, source: IApiPaper) =>{
+    let pdf = Pdf.where({ paperId: Number(target.id) }).get();
+    if (Array.isArray(pdf)) {
+        let urls: string[] = []
+        pdf.forEach(item => {
+            urls.push(String(item.url))
+        })
+        for (let item of source.pdf) {
+            if (!urls.includes(item)) {
+                await Pdf.create({ paperId: Number(target.id), url: item })
             }
         }
     }
     return target;
 }
-
-const updateUniqueIdOfPaper = async (uniqueId: IApiUniqueId[], newPaperId: number) => {
+/**
+ * Adds a new found unique id to the database
+ * @param uniqueId 
+ * @param newPaperId 
+ */
+const addUniqueToPaper = async (uniqueId: IApiUniqueId[], newPaperId: number) => {
     for (let item of uniqueId) {
         let paperId = await PaperID.create({});
         if (item.type) { paperId.type = item.type }
@@ -154,6 +212,13 @@ const updateUniqueIdOfPaper = async (uniqueId: IApiUniqueId[], newPaperId: numbe
         PaperHasID.create({ paperId: newPaperId, paperidId: Number(paperId.id) })
     }
 }
+
+/**
+ * Updates the authorlist of a paper. 
+ * @param author 
+ * @param item 
+ * @param paperId 
+ */
 const updateAuthorOfPaper = async (author: Author, item: IApiAuthor, paperId: number) => {
     if (!author.firstName) { author.firstName = item.firstName[0] }
     if (!author.lastName) { author.lastName = item.lastName[0] }
@@ -173,8 +238,7 @@ export const checkIApiPaper = (paper: { [index: string]: any }): boolean => {
 
         if (!["id", "uniqueId", "source", "author", "pdf", "numberOfCitations", "numberOfReferences"].includes(i)) {
 
-            if (paper[i] && paper[i].length > 1) {
-                logger.critical(`${i} wasn't single for ${paper.title}`)
+            if ((paper[i] && paper[i].length > 1) || (i === "raw" && paper[i].length >0)) {
                 check = false;
             } else {
                 delete paper[i]

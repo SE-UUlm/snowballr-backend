@@ -29,6 +29,8 @@ import {
     getRefs,
     getReviewOfPaper,
     getReviewsOfPaper,
+    makeRefCiteCsv,
+    makeStageCsv,
     patchCriteriaOfProject,
     patchCritieriaEvalOfReview,
     patchPaperOfProjectStage,
@@ -37,8 +39,9 @@ import {
     postRefProject,
     removeMemberOfProject
 } from "./controller/project.controller.ts";
-import { addAuthorToPaper, deleteAuthorOfPaper, getAuthors, getPaper, getPaperCitations, getPaperReferences, getPapers, getSourcePaper, patchPaper, postPaper, postPaperCitation, postPaperReference } from "./controller/paper.controller.ts";
-import { getAuthor, getSourceAuthor, patchAuthor, postAuthor } from "./controller/author.controller.ts";
+import { addAuthorToPaper, deleteAuthorOfPaper, deleteSourcePaper, getAuthors, getPaper, getPaperCitations, getPaperReferences, getPapers, getSourcePaper, patchPaper, postPaper, postPaperCitation, postPaperReference } from "./controller/paper.controller.ts";
+import { deleteSourceAuthor, getAuthor, getSourceAuthor, patchAuthor, postAuthor } from "./controller/author.controller.ts";
+import { addToReadingList, getReadingList, removeFromReadingList } from "./controller/readinglist.controller.ts";
 
 await setup(true);
 const client = new SmtpClient();
@@ -59,6 +62,15 @@ router
     })
     .patch("/users/:id", async (context) => {
         await patchUser(context, Number(context.params.id))
+    })
+    .get("/users/:id/readinglist", async (context) => {
+        await getReadingList(context, Number(context.params.id))
+    })
+    .post("/users/:id/readinglist", async (context) => {
+        await addToReadingList(context, Number(context.params.id))
+    })
+    .delete("/users/:id/readinglist/:id2", async (context) => {
+        await removeFromReadingList(context, Number(context.params.id),Number(context.params.id2))
     })
     .post("/login", async (context) => {
         await login(context)
@@ -112,6 +124,9 @@ router
     .get("/projects/:id/stages/:id2/papers", async (context) => {
         await getPapersOfProjectStage(context, Number(context.params.id), Number(context.params.id2))
     })
+    .get("/projects/:id/stages/:id2/csv", async (context) => {
+        await makeStageCsv(context, Number(context.params.id), Number(context.params.id2))
+    })
     .get("/projects/:id/stages/:id2/papers/:ppid", async (context) => {
         await getPaperOfProjectStage(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))
     })
@@ -123,6 +138,9 @@ router
     })
     .get("/projects/:id/stages/:id2/papers/:ppid/references", async (context) => {
         await getRefs(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))
+    })
+    .get("/projects/:id/stages/:id2/papers/:ppid/csv", async (context) => {
+        await makeRefCiteCsv(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))
     })
     .post("/projects/:id/stages/:id2/papers/:ppid/references", async (context) => {
         await postRefProject(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))
@@ -179,6 +197,9 @@ router
     .get("/sourcePapers/:id", (context) => {
         getSourcePaper(context, Number(context.params.id))
     })
+    .delete("/sourcePapers/:id", (context) => {
+        deleteSourcePaper(context, Number(context.params.id))
+    })
     .get("/papers/:id/references", async (context) => {
         await getPaperReferences(context, Number(context.params.id))
     })
@@ -211,6 +232,9 @@ router
     })
     .get("/sourceAuthors/:id", async (context) => {
         await getSourceAuthor(context, Number(context.params.id))
+    })
+    .delete("/sourceAuthors/:id", async (context) => {
+        await deleteSourceAuthor(context, Number(context.params.id))
     })
 
 const app = new Application();

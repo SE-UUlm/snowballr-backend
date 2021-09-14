@@ -15,6 +15,7 @@ export class Review extends Model {
         finished: { type: DataTypes.BOOLEAN },
         overallEvaluation: { type: DataTypes.STRING, allowNull: true },
         finishDate: { type: DataTypes.DATE, allowNull: true },
+        comment: { type: DataTypes.STRING, allowNull: true },
 
     }
     static defaults = {

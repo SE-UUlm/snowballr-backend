@@ -84,7 +84,7 @@ export const validateJWTIfExists = async (ctx: Context, next: () => Promise<unkn
  * @param user
  */
 export const createJWT = async (user: User) => {
-    return create({ alg: "HS512", typ: "JWT" }, {
+    let jwt = create({ alg: "HS512", typ: "JWT" }, {
         id: user.id,
         eMail: user.email,
         isAdmin: user.isAdmin,
@@ -93,6 +93,7 @@ export const createJWT = async (user: User) => {
         status: user.status,
         exp: createNumericTerminationDate()
     }, KEY);
+    return jwt;
 }
 
 /**
@@ -117,6 +118,7 @@ export const checkAdmin = async (payloadJson?: PayloadJson) => {
     if (payloadJson) {
         return payloadJson.isAdmin;
     }
+    return false;
 }
 
 /**
@@ -271,47 +273,44 @@ export const validateUserEntry = async (ctx: Context, id: (number | undefined)[]
 
 const checkAuthorization = async (ctx: Context, needed: UserStatus, projectID: number, userID?: number) => {
     const payloadJson = await getPayloadFromJWT(ctx);
-    let isAdmin = await checkAdmin(payloadJson)
-    if (needed === UserStatus.needsAdmin) {
-        if (!isAdmin) {
-            makeErrorMessage(ctx, 401, "not authorized");
-            return
-        }
+    if(await checkAdmin(payloadJson)){
+        return true
     }
+
     if (needed === UserStatus.needsPO) {
-        if (!isAdmin && !await checkPO(payloadJson)) {
+        if (!await checkPO(payloadJson)) {
             makeErrorMessage(ctx, 401, "not authorized");
             return
         }
     }
     if (needed === UserStatus.needsPOOfProject) {
-        if (!isAdmin && !await checkPOofProject(projectID, payloadJson)) {
+        if (!await checkPOofProject(projectID, payloadJson)) {
             makeErrorMessage(ctx, 401, "not authorized");
             return
         }
     }
     if (needed === UserStatus.needsMemberOfProject) {
-        if (!isAdmin && !await checkMemberOfProject(projectID, payloadJson)) {
+        if (!await checkMemberOfProject(projectID, payloadJson)) {
             makeErrorMessage(ctx, 401, "not authorized");
             return
         }
     }
 
     if (needed === UserStatus.needsSameMemberOfProject) {
-        if (!isAdmin && !(await checkMemberOfProject(projectID, payloadJson) && (await getUserID(payloadJson) === userID))) {
+        if (!(await checkMemberOfProject(projectID, payloadJson) && (await getUserID(payloadJson) === userID))) {
             makeErrorMessage(ctx, 401, "not authorized");
             return
         }
     }
 
     if (needed === UserStatus.needsSameUserOrPO) {
-        if (!isAdmin && !(await getUserID(payloadJson) === userID) && !(await checkPO(payloadJson))) {
+        if (!(await getUserID(payloadJson) === userID) && !(await checkPO(payloadJson))) {
             makeErrorMessage(ctx, 401, "not authorized");
             return
         }
     }
     if (needed === UserStatus.needsSameUser) {
-        if (!isAdmin && !(await getUserID(payloadJson) === userID)) {
+        if (!(await getUserID(payloadJson) === userID)) {
             makeErrorMessage(ctx, 401, "not authorized");
             return
         }

@@ -9,7 +9,8 @@ export class PaperScopeForStage extends Model {
 
     static fields = {
         id: {primaryKey: true, autoIncrement: true, type: DataTypes.INTEGER},
-        additionDate: DataTypes.DATE
+        additionDate: DataTypes.DATE,
+        finalDecision: { type: DataTypes.STRING, allowNull: true },
     }
 
     static stage() {

@@ -139,39 +139,13 @@ export const patchUser = async (ctx: Context, id: number | undefined) => {
     let isSameUser = (await getUserID(payloadJson)) === id || await checkToken(id, ctx, userData);
 
     if (isSameUser || isAdmin || isPO) {
-        let user = await User.find(id);
 
-        if (!user) {
-            makeErrorMessage(ctx, 404, "User not Found")
-            return;
+        let user = await changeUserData(ctx, id, isSameUser, isAdmin, userData)
+        if(user){
+            let userProfile = convertUserToUserProfile(user);
+            ctx.response.body = JSON.stringify(userProfile);
+            ctx.response.status = 200;
         }
-        if (isSameUser) {
-            if (userData.password) {
-                user.password = hashPassword(userData.password)
-            }
-        }
-        if (isAdmin) {
-            if (userData.status) {
-                user.status = userData.status;
-            }
-            if (userData.isAdmin !== undefined) {
-                user.isAdmin = userData.isAdmin;
-            }
-
-        }
-        if (userData.email) {
-            user.eMail = userData.email
-        }
-        if (userData.firstName) {
-            user.firstName = userData.firstName;
-        }
-        if (userData.lastName) {
-            user.lastName = userData.lastName;
-        }
-        user = await user.update();
-        let userProfile = convertUserToUserProfile(user);
-        ctx.response.body = JSON.stringify(userProfile);
-        ctx.response.status = 200;
     } else {
         if (ctx.response.status !== 400) {
             makeErrorMessage(ctx, 401, "not authorized");
@@ -179,6 +153,38 @@ export const patchUser = async (ctx: Context, id: number | undefined) => {
     }
 }
 
+const changeUserData = async (ctx: Context, id: number, isSameUser: boolean, isAdmin: boolean, userData: UserParameters) =>{
+    let user = await User.find(id);
+
+    if (!user) {
+        makeErrorMessage(ctx, 404, "User not Found")
+        return;
+    }
+    if (isSameUser) {
+        if (userData.password) {
+            user.password = hashPassword(userData.password)
+        }
+    }
+    if (isAdmin) {
+        if (userData.status) {
+            user.status = userData.status;
+        }
+        if (userData.isAdmin !== undefined) {
+            user.isAdmin = userData.isAdmin;
+        }
+
+    }
+    if (userData.email) {
+        user.eMail = userData.email
+    }
+    if (userData.firstName) {
+        user.firstName = userData.firstName;
+    }
+    if (userData.lastName) {
+        user.lastName = userData.lastName;
+    }
+    return user.update()
+}
 /**
  * Checks whether a resetToken or an invitationToken is set in the header and if it is valid
  *

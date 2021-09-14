@@ -23,6 +23,7 @@ export class Paper extends Model {
         scope: { type: DataTypes.STRING, allowNull: true },
         scopeName: { type: DataTypes.STRING, allowNull: true },
 
+
     }
 
     static review() {

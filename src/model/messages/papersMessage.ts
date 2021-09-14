@@ -19,12 +19,15 @@ export interface PaperMessage {
     createdAt?: Date,
     updatedAt?: Date
     status?: Status
+    finalDecision?: string
     pdf: string[]
     authors: AuthorMessage[]
 
 }
 
 export enum Status {
-    finished = "finished",
-    unfinished = "unfinished"
+    unfinished = "unfinished",
+    ready = "ready",
+    partiallyEvaluated = "Partially Evaluated",
+    completelyEvaluated = "Completly Evaluated"
 }

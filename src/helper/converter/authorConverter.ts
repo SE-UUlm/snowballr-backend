@@ -7,7 +7,7 @@ export const checkIApiAuthor = (author: { [index: string]: any }): boolean => {
     let check = true;
     for (let i in author) {
         if (!["id"].includes(i)) {
-            if (author[i] && author[i].length > 1) {
+            if ((author[i] && author[i].length > 1) || (i === "raw" && author[i].length >0)) {
                 check = false;
             } else {
                 delete author[i]
@@ -25,7 +25,7 @@ export const convertAuthorToAuthorMessage = (author: Author): AuthorMessage => {
     if (authorCache.has(String(author.id))) {
         authorMessage.status = Status.unfinished
     } else {
-        authorMessage.status = Status.finished
+        authorMessage.status = Status.ready
     }
     return authorMessage
 }
