@@ -125,26 +125,19 @@ export const isEqualAuthor = (firstAuthor: IApiAuthor, secondAuthor: IApiAuthor)
 
 export const isEqualRawAuthorString = (firstRawString: string, secondRawString: string): number => {
     let equalParts: number = 0;
-    let firstNormalizedItems: string[] = [];
-    let secondNormalizedItems: string[] = [];
-    try {
-        firstNormalizedItems = ApiMerger.normalizeString(firstRawString).split(" ");
-        secondNormalizedItems = ApiMerger.normalizeString(secondRawString).split(" ");
-    }
-    catch (e) {
-
-        logger.critical(e);
-        logger.error(`${firstRawString}, ${secondRawString}`);
-    }
+    let firstNormalizedItems: string[] = ApiMerger.normalizeString(firstRawString).split(" ");
+    let secondNormalizedItems: string[] =  ApiMerger.normalizeString(secondRawString).split(" ");
+    
 
     //Special case a name is given like M. Muster
     if (firstRawString.match(regexLetterFollowedByPoint) || secondRawString.match(regexLetterFollowedByPoint)) {
         //Check if last name is same, and if yes, check if at least the beginning of the first name is same
-        if (firstNormalizedItems[firstNormalizedItems.length - 1] == secondNormalizedItems[secondNormalizedItems.length - 1]) {
-            if (firstNormalizedItems[0].startsWith(secondNormalizedItems[0]) || secondNormalizedItems[0].startsWith(firstNormalizedItems[0])) {
+        if (firstNormalizedItems[firstNormalizedItems.length - 1] == secondNormalizedItems[secondNormalizedItems.length - 1]
+            && firstNormalizedItems[0].charAt(0) == secondNormalizedItems[0].charAt(0)) {
+
                 // TODO hardcoded
                 return 1;
-            }
+            
         }
     } else {
         for (let i in firstNormalizedItems) {

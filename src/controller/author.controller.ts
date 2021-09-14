@@ -66,19 +66,7 @@ export const patchAuthor = async (ctx: Context, authorID: number) => {
             if (!bodyJson) {
                 return
             }
-            let sourceAuthor: any = authorCache.get(String(authorID))
-            if (sourceAuthor) {
-
-                for (let key in bodyJson) {
-                    delete sourceAuthor[key]
-                }
-                if (Object.keys(sourceAuthor).length > 0) {
-                    await authorCache.add(String(authorID), sourceAuthor)
-                } else {
-                    await authorCache.delete(String(authorID))
-                }
-
-            }
+           deleteKeyOfAuthorSourceFile(authorID, bodyJson)
             assign(author, bodyJson);
             await author.update()
             ctx.response.status = 200;
@@ -87,10 +75,29 @@ export const patchAuthor = async (ctx: Context, authorID: number) => {
             makeErrorMessage(ctx, 404, "author does not exist")
         }
     }
-
-
-
 }
+
+/**
+ * Checks if there is still a source author file.
+ * If yes, deletes all the keys someone has patched
+ * @param authorID 
+ * @param bodyJson 
+ */
+const deleteKeyOfAuthorSourceFile = async (authorID: number, bodyJson: any) =>{
+    let sourceAuthor: any = authorCache.get(String(authorID))
+    if (sourceAuthor) {
+
+        for (let key in bodyJson) {
+            delete sourceAuthor[key]
+        }
+        if (Object.keys(sourceAuthor).length > 0) {
+            await authorCache.add(String(authorID), sourceAuthor)
+        } else {
+            await authorCache.delete(String(authorID))
+        }
+
+    }
+} 
 
 /**
  * Returns the author values, that are currently in the filecache of the correspondend author

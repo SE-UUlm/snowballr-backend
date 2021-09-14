@@ -334,7 +334,13 @@ export const patchPaperOfProjectStage = async (ctx: Context, projectID: number, 
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
     if (validate) {
         try {
-            let paper = await PaperScopeForStage.where("id", ppID).paper();
+            let pp = await PaperScopeForStage.where("id", ppID);
+            if(validate.finalDecision){
+                let paperScope = (await pp.get())
+                if(Array.isArray(paperScope)){
+                    paperScope[0].finalDecision = validate.finalDecision}
+                }
+            let paper = await pp.paper();
             if (paper) {
                 await paperUpdate(ctx, paper)
             }
