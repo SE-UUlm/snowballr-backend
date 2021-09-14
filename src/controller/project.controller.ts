@@ -747,6 +747,11 @@ export const addReviewToPaper = async (ctx: Context, projectID: number, stageID:
         const payloadJson = await getPayloadFromJWT(ctx);
         let userID = await getUserID(payloadJson)
         const params = await jsonBodyToObject(ctx)
+        let project = await Project.find(projectID);
+        let tresholds=  String(project.combinationOfReviewers).split(",")
+        if(tresholds.length !== 2 || isNaN(Number(tresholds[0])) || isNaN(Number(tresholds[1])) || isNaN(Number(tresholds[2]))|| tresholds[2] < tresholds[1] || tresholds[1] < tresholds[0]){
+            makeErrorMessage(ctx, 409, "Before a review can happen, the combination of reviewers has to be well formed so a final decision of the paper can be evaluated. This is not the case")
+        }
         if (userID) {
             try {
                 let review = await Review.create({
@@ -754,10 +759,13 @@ export const addReviewToPaper = async (ctx: Context, projectID: number, stageID:
                     userId: userID,
                     stageId: stageID
                 })
+
                 if (params.finished != undefined) { review.finished = params.finished }
                 if (params.overallEvaluation) { review.overallEvaluation = params.overallEvaluation }
                 if (params.finishDate) { review.finishDate = new Date(params.finishDate) }
                 await review.update();
+                let reviews = await getAllReviewsFromProjectPaper(ppID);
+
                 ctx.response.status = 201;
                 ctx.response.body = JSON.stringify(review)
             } catch (err) {

@@ -69,8 +69,6 @@ export const isEqualPaper = (firstResponse: IApiPaper, secondResponse: IApiPaper
     if (firstResponse.author && secondResponse.author && firstResponse.author.length > 0 && secondResponse.author.length > 0) { // 0.7 ->
         sameAuthor = isEqualAuthors(firstResponse.author, secondResponse.author) * comparison.authorWeight;
 
-        //TODO: if title and year are equal likely to be equal --> year might be shifted by one year
-        //TODO: Take Publisher into Account.
     } else {
         comparison.authorWeight = 0;
     }
