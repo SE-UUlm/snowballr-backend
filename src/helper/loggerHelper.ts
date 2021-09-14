@@ -1,8 +1,8 @@
-import { ApiMerger } from "../src/api/apiMerger.ts";
-import { IApiPaper } from "../src/api/iApiPaper.ts";
-import { IApiResponse } from "../src/api/iApiResponse.ts";
-import { fileLogger } from "../src/api/logger.ts";
-import { Paper } from "../src/model/db/paper.ts";
+import { ApiMerger } from "../api/apiMerger.ts";
+import { IApiPaper } from "../api/iApiPaper.ts";
+import { IApiResponse } from "../api/iApiResponse.ts";
+import { fileLogger } from "../api/logger.ts";
+import { Paper } from "../model/db/paper.ts";
 
 export const logResponse = (response: IApiResponse[]): void => {
     for (let i = 0; i < response.length; i++) {

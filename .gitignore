@@ -11,3 +11,5 @@ a.log
 fileCache/*
 *.csv
 deps/*
+registries/*
+.vscode/*
