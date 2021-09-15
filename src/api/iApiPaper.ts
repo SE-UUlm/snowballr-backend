@@ -36,5 +36,6 @@ export enum SourceApi {
 	CR = "crossRef",
 	OC = "openCitations",
 	S2 = "semanticScholar",
-	IE = "IEEE"
+	IE = "IEEE",
+	GS = "googleScholar"
 }

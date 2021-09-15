@@ -12,6 +12,7 @@ import { SemanticScholar } from "./semanticScholar.ts";
 import { ApiMerger } from "./apiMerger.ts";
 import { logger } from "./logger.ts";
 import { Cache, CacheType } from "./cache.ts";
+import { GoogleScholar } from "./googleScholar.ts";
 
 
 /**
@@ -48,7 +49,8 @@ export class ApiBatcher implements IApiBatcher {
 		[SourceApi.CR]: CrossRefApi,
 		[SourceApi.OC]: OpenCitationsApi,
 		[SourceApi.S2]: SemanticScholar,
-		[SourceApi.IE]: IeeeApi
+		[SourceApi.IE]: IeeeApi,
+		[SourceApi.GS]: GoogleScholar
 	}
 
 	// Map a constructor parameters to the api type so it can be implemented in a loop. ADD NEW PARAMETES HERE IF NEW CLASS IMPLEMENTED TO BE APPLIED
@@ -57,7 +59,8 @@ export class ApiBatcher implements IApiBatcher {
 		[SourceApi.OC]: ["https://opencitations.net"],
 		[SourceApi.CR]: ["https://api.crossref.org/works", "luca999@web.de"],
 		[SourceApi.S2]: ["https://api.semanticscholar.org/v1/paper"],
-		[SourceApi.IE]: ["http://ieeexploreapi.ieee.org/api/v1/search/articles", "4yk5d9an52ejynjsmzqxe62r"]
+		[SourceApi.IE]: ["http://ieeexploreapi.ieee.org/api/v1/search/articles", "4yk5d9an52ejynjsmzqxe62r"],
+		[SourceApi.GS]: ["https://scholar.google.com"]
 	}
 
 	public constructor() {
