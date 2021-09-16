@@ -9,23 +9,28 @@ import { IApiUniqueId, idType } from "./iApiUniqueId.ts";
 import axiod from "https://deno.land/x/axiod/mod.ts";
 import { Cache } from "./cache.ts";
 import { createHash } from "https://deno.land/std/hash/mod.ts";
-import { DOMParser } from 'https://deno.land/x/deno_dom/deno-dom-wasm.ts';
+import { DOMParser, Element } from 'https://deno.land/x/deno_dom/deno-dom-wasm.ts';
 import { HttpUserAgents } from './httpUserAgent.ts';
 import { sleep } from "https://deno.land/x/sleep/mod.ts";
 import { getRandomFromRange } from "../helper/random.ts";
+import { Semaphore } from "https://deno.land/x/semaphore/mod.ts"
+import { difference } from 'https://deno.land/std/datetime/mod.ts'
 
-var activeFetches = 0;
+const semaphore = new Semaphore(1);
+var lastScrappingRun: Date;
 
 export class GoogleScholar implements IApiFetcher {
 	url: string;
 	cache: Cache<IApiResponse> | undefined;
 	//private _rateInterval:  = new Range();
 	private _paperReferences: number = 0;
+	private _domParser: DOMParser;
 
 	public constructor(url: string, token: string, cache?: Cache<IApiResponse>) {
 		logger.info("GoogleScholar initialized");
 		this.url = url;
 		this.cache = cache;
+		this._domParser = new DOMParser();
 	}
 
 	/**
@@ -50,36 +55,20 @@ export class GoogleScholar implements IApiFetcher {
 			// }
 
 			// use a random user-agent to make it harder to get rate limited.
-			let axiodConfig = {
-				params: {},
-				headers: {
-					'Accept': 'application/json',
-					'User-Agent': HttpUserAgents[Math.floor(Math.random() * HttpUserAgents.length)],
-					//'Referer': json.articles[0].html_url
-				},
-				//validateStatus: status) => true
-			}
-			//console.log(this.url)
-			//console.log(query.doi)
-			if (activeFetches > 0) {
-				let timeout = getRandomFromRange(30, 45);
-				logger.info(`GS: Ratelimiting Requests. Waiting ${timeout} seconds...`)
-				await sleep(timeout * activeFetches);
-			}
-			activeFetches++;
-			let rawHtml = await axiod.get(`${this.url}/scholar?as_sdt=0,5&q=${query.doi}&hl=en`, axiodConfig);
-			let html: any = new DOMParser().parseFromString(rawHtml.data, 'text/html');
+			let rawHtml = await this._rateLimitedScrapeRequest(`${this.url}/scholar?as_sdt=0,5&q=${query.doi}&hl=en`);
+			let html: any = this._domParser.parseFromString(rawHtml.data, 'text/html');
+
 
 			// console.log(title.innerHTML);
 			// console.log(info.innerHTML);
 			// console.log(citedLink.innerHTML);
 			// console.log(citedLink.attributes.href);
 
-			paper = this._parseResponse(this._transformScrapedData(html));
+			paper = this._parseResponse(this._transformScrapedData(html.querySelector('#gs_res_ccl_mid > div')));
 
 			var apiReturn: IApiResponse = {
 				"paper": paper,
-				"citations": [],
+				"citations": await this._getCitations(html.querySelector('#gs_res_ccl_mid > div > div > div.gs_fl > a:nth-child(3)').attributes.href),
 				"references": []
 			}
 			if (this.cache) {
@@ -87,143 +76,109 @@ export class GoogleScholar implements IApiFetcher {
 			};
 		}
 		catch (e) {
-			logger.critical(`IEEE - Failed to fetch Query | ${e}`);
+			logger.critical(`GoogleScholar - Failed to fetch Query | ${e}`);
 			var apiReturn: IApiResponse = {
 				"paper": paper,
 				"citations": citations ? await citations : [],
 				"references": references ? await references : []
 			}
 		}
-		finally {
-			activeFetches--;
-		}
+		console.log(apiReturn);
 		return apiReturn;
 	}
 
 	private _transformScrapedData(dom: any) {
-		let content = dom.querySelector('#gs_res_ccl_mid > div');
-		let title = content.querySelector('.gs_ri > h3 > a');
-		let info = content.querySelector('.gs_a');
-		let citedLink = content.querySelector('.gs_fl > a:nth-child(3)');
+		//console.log(dom);
+		let title = dom.querySelector('.gs_ri > h3 > a');
+		let info = dom.querySelector('.gs_a');
+		let citedLink = dom.querySelector('.gs_fl > a:nth-child(3)');
 		let splittedInfo = info.innerHTML.replace(/&nbsp;/g, ' ').split('-');
+		let variousData = splittedInfo[1].split(',');
 
 		return {
 			'title': title.innerHTML,
 			'author': splittedInfo[0],
-			'publisher': splittedInfo[1].split(',')[0].trim(),
-			'year': splittedInfo[1].split(',')[1],
+			'publisher': variousData.length > 1 ? variousData[0].trim() : undefined,
+			'year': variousData[variousData.length - 1].trim(),
 			'citationCount': citedLink.innerHTML.split('Cited by ')[1]
 		}
 	}
 
-	// private async _getCitationsFromHtml(url: string): Promise<IApiPaper[]> {
-	// 	//logger.debug(url);
-	// 	let citations: IApiPaper[] = [];
-	// 	const response = await axiod.get(`${url.replace('document', 'rest/document')}citations`, this._config);
-	// 	//logger.debug(response.data);
+	private async _rateLimitedScrapeRequest(url: string) {
+		let axiodConfig = this._randomAxiodConfig();
+		let timeout = getRandomFromRange(30, 45);
+		let timeDelta = lastScrappingRun ? difference(lastScrappingRun, new Date()).seconds! : timeout;
+		var release = await semaphore.acquire();
+		if (timeDelta < timeout) {
+			logger.info(`GoogleScholar: globally ratelimiting requests. Waiting ${timeout} seconds...`)
+			await sleep(timeout - timeDelta);
+		}
+		let html = await axiod.get(url, axiodConfig);
+		lastScrappingRun = new Date();
+		release();
+		return html;
+	}
 
-	// 	let citationIDs = response.data.paperCitations.ieee.map((item: any) => item.links.documentLink.replace("/document/", ''));
-	// 	//logger.debug(citationIDs);
-	// 	citations.push.apply(citations, this._getCitationsTypeIeee(response.data.paperCitations.ieee));
-	// 	citations.push.apply(citations, this._getCitationsTypeNonIeee(response.data.paperCitations.nonIeee));
+	private async _getCitations(url: string): Promise<IApiPaper[]> {
+		let citations: IApiPaper[] = [];
+		console.log(url);
+		let timeout = getRandomFromRange(30, 45);
+		//logger.info(`GoogleScholar: locally ratelimiting requests. Waiting ${timeout} seconds...`)
+		//await sleep(timeout);
+		let rawHtml = await this._rateLimitedScrapeRequest(`${this.url}${url}`);
+		let html: any = this._domParser.parseFromString(rawHtml.data, 'text/html');
+		let citationList = html.querySelector('#gs_res_ccl_mid');
+		//console.log(citationList);
+		citationList.childNodes.forEach((element: any) => {
+			console.log("child")
+			//console.log(element);
+			if (element instanceof Element) {
+				console.log("adding element")
+				let citation = this._transformScrapedData(element);
+				citations.push(this._parseResponse(citation));
+			}
+		});
+		return citations;
+	}
 
-	// 	return citations;
-	// }
-
-	// private _getCitationsTypeIeee(ieeeData: any): IApiPaper[] {
-	// 	let citations: IApiPaper[] = [];
-	// 	for (let c in ieeeData) {
-	// 		let year = ieeeData[c].displayText.match(this._citeRegexYear);
-	// 		let authors = ieeeData[c].displayText.split('\"')[0].match(this._citeRegexAuthors);
-	// 		//logger.debug(authors)
-	// 		let rawMetaData = {
-	// 			'title': ieeeData[c].title ? ieeeData[c].title : ieeeData[c].displayText.split('\"')[1],
-	// 			'authors': {
-	// 				'authors': authors ? authors.map((item: any) => { return { 'full_name': item } }) : []
-	// 			},
-	// 			'year': year ? year.slice(-1)[0] : undefined,
-	// 			'pdf_url': ieeeData[c].googleScholarLink ? ieeeData[c].googleScholarLink : undefined,
-	// 		};
-	// 		citations.push(this._parseResponse(rawMetaData));
-	// 	}
-	// 	return citations;
-	// }
-
-	// private _getCitationsTypeNonIeee(othersData: any): IApiPaper[] {
-	// 	let citations: IApiPaper[] = [];
-	// 	for (let c in othersData) {
-	// 		let year = othersData[c].displayText.match(this._citeRegexYear);
-	// 		let authors = othersData[c].displayText.split('<i>')[0].match(this._citeRegexAuthors);
-	// 		//logger.debug(authors)
-	// 		let rawMetaData = {
-	// 			'title': othersData[c].title ? othersData[c].title : othersData[c].displayText.match(this._citeRegexTitle)[0],
-	// 			'authors': {
-	// 				'authors': authors ? authors.map((item: any) => { return { 'full_name': item } }) : []
-	// 			},
-	// 			'year': year ? year.slice(-1)[0] : undefined,
-	// 			'pdf_url': othersData[c].googleScholarLink ? othersData[c].googleScholarLink : undefined,
-	// 		};
-	// 		citations.push(this._parseResponse(rawMetaData));
-	// 	}
-	// 	return citations;
-	// }
-
-	// private async _getReferencesFromHtml(url: string): Promise<IApiPaper[]> {
-	// 	//logger.debug(url);
-	// 	let references: IApiPaper[] = [];
-
-	// 	const response = await axiod.get(`${url.replace('document', 'rest/document')}references`, this._config);
-	// 	this._paperReferences = response.data.references ? response.data.references.length : 0;
-
-	// 	for (let r in response.data.references) {
-	// 		//logger.debug(r);
-	// 		//logger.debug(response.data.references[r]);
-	// 		let data = response.data.references[r];
-	// 		let regexAuthors = new RegExp(/([A-ZÀ-Ú]\. )+(([A-ZÀ-Ú][a-zà-ú]*)-*)+/g);
-	// 		let regexYear = new RegExp(/(?<!pp\. |-)[\d]{4}/g);
-	// 		let text = String(data.text).split(data.title);
-	// 		let replacement = ",";
-	// 		let rawMetadata = {};
-	// 		if (data.title) {
-	// 			let text = String(data.text).split(data.title);
-	// 			let authors = text[0].match(regexAuthors);
-	// 			let year = text[1].match(regexYear);
-	// 			rawMetadata = {
-	// 				'title': data.title,
-	// 				'authors': {
-	// 					'authors': authors ? authors.map((item: any) => { return { 'full_name': item } }) : []
-	// 				},
-	// 				'year': year ? year.slice(-1)[0] : undefined,
-	// 				'publisher': data.text[1].split(',') ? text[1].split(',')[0].trim() : undefined,
-	// 				'pdf_url': data.googleScholarLink ? data.googleScholarLink : undefined,
-	// 			}
-	// 		}
-	// 		else {
-	// 			rawMetadata = {
-	// 				'raw': data.text
-	// 			};
-	// 		}
-	// 		//logger.debug(rawMetadata);
-	// 		references.push(this._parseResponse(rawMetadata));
-	// 	}
-	// 	//logger.debug(references);
-	// 	return references;
-	// }
-
+	private _randomAxiodConfig(): Object {
+		return {
+			params: {},
+			headers: {
+				'Accept': 'application/json',
+				'User-Agent': HttpUserAgents[Math.floor(Math.random() * HttpUserAgents.length)],
+				//'Referer': json.articles[0].html_url
+			},
+			//validateStatus: status) => true
+		}
+	}
 
 	/**
-	 * Cast the response of a single paper return by the IEEE to a ApiPaper object
+	 * Cast the response of a single paper return by the Google Scholar to a ApiPaper object
 	 * Used to get normalized result of all apis.
 	 *
-	 * @param response - single object return for a single paper by the IEEE
+	 * @param response - single object return for a single paper by the Google Scholar api
 	 * @returns normalized ApiPaper object.
 	 */
 	private _parseResponse(response: any): IApiPaper {
+		let parsedAuthors: IApiAuthor[] = [];
+
+		for (let a of response.author.split(',')) {
+			let authorLinkText = this._domParser.parseFromString(a, 'text/html')!.querySelector('a');
+			let parsedAuthor: IApiAuthor = {
+				id: undefined,
+				orcid: [],
+				rawString: authorLinkText && authorLinkText.innerHTML ? [authorLinkText.innerHTML.trim()] : [a.trim()],
+				lastName: [],
+				firstName: [],
+			}
+			parsedAuthors.push(parsedAuthor);
+		}
 
 		let parsedResponse: IApiPaper = {
 			id: undefined,
 			title: response.title ? [response.title] : [],
-			author: response.author ? [response.author] : [],
+			author: parsedAuthors,
 			abstract: [],
 			numberOfReferences: [],
 			numberOfCitations: response.citationCount ? [Number(response.citationCount)] : [],
@@ -241,7 +196,7 @@ export class GoogleScholar implements IApiFetcher {
 	}
 
 	public async getDoi(query: IApiQuery): Promise<string | undefined> {
-		logger.warning(`IE: Not able to fetch without DOI`);
+		logger.warning(`GS: Not able to fetch without DOI`);
 		return undefined;
 	}
 }
