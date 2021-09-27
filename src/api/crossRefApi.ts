@@ -7,8 +7,7 @@ import { IApiAuthor } from "./iApiAuthor.ts";
 import { IApiUniqueId, idType } from "./iApiUniqueId.ts";
 import { sleep } from "https://deno.land/x/sleep/mod.ts";
 import { Cache } from "./cache.ts";
-import { assign } from "../helper/assign.ts";
-import { createHash } from "https://deno.land/std/hash/mod.ts";
+import { hashQuery } from "../helper/queryHasher.ts";
 
 export class CrossRefApi implements IApiFetcher {
 	url: string;
@@ -39,9 +38,7 @@ export class CrossRefApi implements IApiFetcher {
 		var citations: Promise<IApiPaper[]> | undefined;
 		var paper: IApiPaper = {} as IApiPaper;
 		var references: Promise<IApiPaper[]> | undefined;
-		let queryIdentifier = createHash("sha3-256");
-		queryIdentifier.update(JSON.stringify(query));
-		let queryString = queryIdentifier.toString();
+		let queryString = hashQuery(query);
 
 		try {
 			let get = this.cache!.get(queryString)
@@ -107,7 +104,7 @@ export class CrossRefApi implements IApiFetcher {
 			if (r.DOI) {
 				fetchableByDoi.push(r.DOI);
 			} else {
-	
+
 				fetchableByBibliographic.push(r.unstructured);
 			}
 		}
@@ -132,7 +129,7 @@ export class CrossRefApi implements IApiFetcher {
 				headers: this._headers,
 			});
 			let json = await response.json();
-		
+
 			let child = this._parseResponse(json);
 			return child;
 		}
