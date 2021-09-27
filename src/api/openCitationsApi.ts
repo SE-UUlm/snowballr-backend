@@ -6,7 +6,7 @@ import { logger } from "./logger.ts";
 import { IApiAuthor } from "./iApiAuthor.ts";
 import { IApiUniqueId, idType } from "./iApiUniqueId.ts";
 import { Cache } from "./cache.ts";
-import { createHash } from "https://deno.land/std/hash/mod.ts";
+import { hashQuery } from "../helper/queryHasher.ts";
 export class OpenCitationsApi implements IApiFetcher {
 	url: string;
 	cache: Cache<IApiResponse> | undefined;
@@ -30,9 +30,7 @@ export class OpenCitationsApi implements IApiFetcher {
 		var paper: IApiPaper = {} as IApiPaper;
 		var citations: Promise<IApiPaper[]> | undefined;
 		let references: Promise<IApiPaper[]> | undefined;
-		let queryIdentifier = createHash("sha3-256");
-		queryIdentifier.update(JSON.stringify(query));
-		let queryString = queryIdentifier.toString();
+		let queryString = hashQuery(query);
 		try {
 			let get = this.cache!.get(queryString);
 			if (this.cache && get) {

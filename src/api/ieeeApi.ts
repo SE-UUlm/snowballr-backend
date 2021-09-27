@@ -7,7 +7,8 @@ import { IApiAuthor } from "./iApiAuthor.ts";
 import { IApiUniqueId, idType } from "./iApiUniqueId.ts";
 import axiod from "https://deno.land/x/axiod/mod.ts";
 import { Cache } from "./cache.ts";
-import { createHash } from "https://deno.land/std/hash/mod.ts";
+import { hashQuery } from "../helper/queryHasher.ts";
+
 export class IeeeApi implements IApiFetcher {
 	url: string;
 	cache: Cache<IApiResponse> | undefined;
@@ -37,9 +38,7 @@ export class IeeeApi implements IApiFetcher {
 		var paper: IApiPaper = {} as IApiPaper;
 		let citations: Promise<IApiPaper[]> | undefined;
 		let references: Promise<IApiPaper[]> | undefined;
-		let queryIdentifier = createHash("sha3-256");
-		queryIdentifier.update(JSON.stringify(query));
-		let queryString = queryIdentifier.toString();
+		let queryString = hashQuery(query);
 		try {
 			let get = this.cache!.get(queryString);
 			if (this.cache && get) {
