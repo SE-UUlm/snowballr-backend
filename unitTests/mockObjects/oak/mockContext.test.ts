@@ -1,4 +1,4 @@
-import { Application, Context, Cookies } from "https://deno.land/x/oak/mod.ts";
+import { Application, Context, Cookies, Response } from "https://deno.land/x/oak/mod.ts";
 import { createMockRequest } from "./mockRequest.test.ts";
 import { createMockResponse } from "./mockResponse.test.ts";
 
@@ -27,7 +27,7 @@ export async function createMockContext<S extends Record<string | number | symbo
     }
     const request = await createMockRequest(standardHeader, requestBodyJsonString, path);
     const response = await createMockResponse(standardHeader);
-    const cookies = token ? new CookieMock(token) : new Cookies(request, response);
+    const cookies = token ? new CookieMock(token) : new Cookies(request, response as unknown as Response);
     return ({
         app,
         request: request,
