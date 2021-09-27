@@ -16,3 +16,8 @@ export const TestDoi = [
 
 // INFO: teilweise sind citation links nur in scholar findbar, teilweise gibts aber auch links zu den papern
 // INFO: elsevere (verlag hinter wos) taucht eher bei scholar auf
+// login vorteile für captcha?
+
+// headless chrome! selenium? kann man selenium überhaupt recaptcha umgehen?
+
+// 1. webOfScience? anschauen!

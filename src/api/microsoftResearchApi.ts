@@ -74,7 +74,7 @@ export class MicrosoftResearchApi implements IApiFetcher {
 			let get = this.cache!.get(queryString);
 			if (this.cache && get) {
 				logger.info(`MA: Loaded fetch from cache.`)
-				console.log(get)
+				//console.log(get)
 				return get;
 			}
 			let response = await fetch(this.url, {

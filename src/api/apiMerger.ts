@@ -322,11 +322,18 @@ export class ApiMerger implements IApiMerger {
 			if (key == "id" || (!first[key] && !second[key]) || key.includes("Source")) {
 				continue;
 			}
+			if (key == "source") {
+				resultingPaper[key] = concatWithoutDuplicates(first[key], second[key])
+				continue
+			}
 			if (first[key].length > 0 && !first[key + "Source"]) {
 				first[key + "Source"] = [first.source]
 			}
+			console.log(`length ${second[key].length > 0} ${!second[key + "Source"]}`)
 			if (second[key].length > 0 && !second[key + "Source"]) {
+				console.log("helluuuuu")
 				second[key + "Source"] = [second.source]
+				console.log(second[key + "Source"])
 			}
 			if (first[key].length === 0) {
 				resultingPaper[key] = second[key]
@@ -348,12 +355,15 @@ export class ApiMerger implements IApiMerger {
 				for (let i = 0; i < second[key].length; i++) {
 					let position = resultingPaper[key].indexOf(second[key][i])
 					if (Array.isArray(resultingPaper[key + "Source"][position])) {
+						console.log(key)
+						console.log(i)
+						console.log(second[key])
+						console.log(second[key + "Source"])
 						resultingPaper[key + "Source"][position].push(second[key + "Source"][i][0])
 					} else {
 						resultingPaper[key + "Source"][position] = second[key + "Source"][i]
 					}
 				}
-
 			} else if (key == "author") {
 				resultingPaper.author = this._mergeAuthors(first.author, second.author);
 			} else if (key == "uniqueId") {
@@ -389,21 +399,21 @@ export class ApiMerger implements IApiMerger {
 				first[key] = first[key].filter((item: string) => item)
 				//console.log(first[key + "Source"])
 				first[key + "Source"] = first[key + "Source"].filter((item: string) => item)
-				first[key + "Source"].forEach((item: any, index: number) => first[key + "Source"][index] = item.filter((i: string) => i))
+				//first[key + "Source"].forEach((item: any, index: number) => first[key + "Source"][index] = item.filter((i: string) => i))
 				//first = first.filter(String);
 				//second = second.filter(String)
-				console.log(key)
-				console.log('.')
-				console.log(first[key])
-				console.log(first[key + "Source"].filter((item: any) => { return item.filter((item2: string) => { return item2 }) }))
-				console.log(first[key + "Source"]) //.filter((item: string) => console.log(item))
-				console.log('.')
+				// console.log(key)
+				// console.log('.')
+				// console.log(first[key])
+				// console.log(first[key + "Source"].filter((item: any) => { return item.filter((item2: string) => { return item2 }) }))
+				// console.log(first[key + "Source"]) //.filter((item: string) => console.log(item))
+				// console.log('.')
 				//console.log(tst.length > 0 ? tst[0].filter((item: string) => item) : "empty")
 				//first[k]
 				for (let i = 0; i < first[key].length; i++) {
 					//console.log(i)
-					//console.log(resultingPaper[key + "Source"]);
-					console.log(first[key + "Source"][i])
+					// console.log(resultingPaper[key + "Source"]);
+					// console.log("What are you doin?" + first[key + "Source"][i])
 					resultingPaper[key + "Source"].push(first[key + "Source"][i].flat())
 
 				}
