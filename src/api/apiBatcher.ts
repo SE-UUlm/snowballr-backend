@@ -66,7 +66,7 @@ export class ApiBatcher implements IApiBatcher {
 	public constructor() {
 		this.activeBatches = []
 		for (let s in this._apiMapper) {
-			this.cache[s] = new Cache<IApiResponse>(CacheType.F, 10080, s.toString());
+			this.cache[s] = new Cache<IApiResponse>(CacheType.F, 10080000, s.toString());
 		}
 	}
 

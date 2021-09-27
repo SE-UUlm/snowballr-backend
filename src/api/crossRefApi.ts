@@ -107,7 +107,7 @@ export class CrossRefApi implements IApiFetcher {
 			if (r.DOI) {
 				fetchableByDoi.push(r.DOI);
 			} else {
-	
+
 				fetchableByBibliographic.push(r.unstructured);
 			}
 		}
@@ -119,6 +119,7 @@ export class CrossRefApi implements IApiFetcher {
 		}
 
 		for (let b in fetchableByBibliographic) {
+			if (fetchableByBibliographic[b] === undefined) { continue; }
 			let query: string = fetchableByBibliographic[b].replace(/ /g, '+');
 			await this._limitRequests();
 			fetches.push(this._fetchBibFromApi(query));
@@ -132,7 +133,7 @@ export class CrossRefApi implements IApiFetcher {
 				headers: this._headers,
 			});
 			let json = await response.json();
-		
+
 			let child = this._parseResponse(json);
 			return child;
 		}

@@ -387,10 +387,25 @@ export class ApiMerger implements IApiMerger {
 					}
 				}
 				first[key] = first[key].filter((item: string) => item)
+				//console.log(first[key + "Source"])
 				first[key + "Source"] = first[key + "Source"].filter((item: string) => item)
-
+				first[key + "Source"].forEach((item: any, index: number) => first[key + "Source"][index] = item.filter((i: string) => i))
+				//first = first.filter(String);
+				//second = second.filter(String)
+				console.log(key)
+				console.log('.')
+				console.log(first[key])
+				console.log(first[key + "Source"].filter((item: any) => { return item.filter((item2: string) => { return item2 }) }))
+				console.log(first[key + "Source"]) //.filter((item: string) => console.log(item))
+				console.log('.')
+				//console.log(tst.length > 0 ? tst[0].filter((item: string) => item) : "empty")
+				//first[k]
 				for (let i = 0; i < first[key].length; i++) {
+					//console.log(i)
+					//console.log(resultingPaper[key + "Source"]);
+					console.log(first[key + "Source"][i])
 					resultingPaper[key + "Source"].push(first[key + "Source"][i].flat())
+
 				}
 				for (let i = 0; i < second[key].length; i++) {
 					resultingPaper[key + "Source"].push(second[key + "Source"][i].flat())

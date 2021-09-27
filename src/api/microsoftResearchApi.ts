@@ -74,6 +74,7 @@ export class MicrosoftResearchApi implements IApiFetcher {
 			let get = this.cache!.get(queryString);
 			if (this.cache && get) {
 				logger.info(`MA: Loaded fetch from cache.`)
+				console.log(get)
 				return get;
 			}
 			let response = await fetch(this.url, {
@@ -190,7 +191,7 @@ export class MicrosoftResearchApi implements IApiFetcher {
 		if (!((query.title && query.title.trim().length > 0) || query.doi)) {
 			throw new Error("Neither a doi nor a title is given. We cannot search for anything.");
 		}
-		let urlQuery: string = `Or(DOI='${query.doi ? query.doi.toUpperCase() : ""}', Ti='${query.title!.toLowerCase()}')`
+		let urlQuery: string = `Or(DOI='${query.doi ? query.doi.toUpperCase() : ""}', Ti='${query.title ? query.title!.toLowerCase() : ""}')`
 
 		if (query.rawName && query.rawName.trim().length > 0 && query.title) {
 			urlQuery = `Or(DOI='${query.doi ? query.doi.toUpperCase() : ""}', And(Composite(AA.AuN='${query.rawName!.toLowerCase()}'), Ti='${query.title!.toLowerCase()}'))`
