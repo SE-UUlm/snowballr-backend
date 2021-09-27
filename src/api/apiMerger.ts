@@ -61,7 +61,7 @@ export class ApiMerger implements IApiMerger {
 			} else { finished.push(finalPaper.item) }
 		}
 		//console.error(JSON.stringify((await response[0]).references!.map((item) => item.author), null, 2))
-		if (response[0]) {
+		if (await response[0]) {
 			finished.push(await response[0]);
 		}
 		/** Merge dublicates coming from the same apis */

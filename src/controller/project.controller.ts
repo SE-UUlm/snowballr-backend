@@ -29,7 +29,7 @@ import { ReviewMessage } from "../model/messages/review.message.ts";
 import { getAllReviewsFromProjectPaper, getReview } from "./databaseFetcher/review.ts";
 import { CriteriaEvaluation } from "../model/db/criteriaEval.ts";
 import { writeCSV } from "https://deno.land/x/csv/mod.ts";
-import { sortIApiPapersByName, sortPapersByName } from "../../userTests/loggerHelper.ts";
+import { sortIApiPapersByName, sortPapersByName } from "../helper/loggerHelper.ts";
 import { Pdf } from "../model/db/pdf.ts";
 import { getAllAuthorsFromPaper } from "./databaseFetcher/author.ts";
 
