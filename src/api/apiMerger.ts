@@ -358,10 +358,6 @@ export class ApiMerger implements IApiMerger {
 				for (let i = 0; i < second[key].length; i++) {
 					let position = resultingPaper[key].indexOf(second[key][i])
 					if (Array.isArray(resultingPaper[key + "Source"][position])) {
-						console.log(key)
-						console.log(i)
-						console.log(second[key])
-						console.log(second[key + "Source"])
 						resultingPaper[key + "Source"][position].push(second[key + "Source"][i][0])
 					} else {
 						resultingPaper[key + "Source"][position] = second[key + "Source"][i]
