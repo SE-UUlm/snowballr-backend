@@ -12,6 +12,7 @@ import { ApiBatcher } from "../../src/api/apiBatcher.ts";
 import { SourceApi } from "../../src/api/iApiPaper.ts";
 import { IComparisonWeight } from "../../src/api/iComparisonWeight.ts";
 import { logResponse } from "../../src/helper/loggerHelper.ts"
+
 import { TestDoi } from "./testDoi.ts"
 
 
@@ -43,6 +44,7 @@ for (let i = 0; i < 1; i++) {
 	let batch = await BATCHER.startFetch(query);
 	logResponse(await batch.response);
 }
+
 
 BATCHER.kill();
 
