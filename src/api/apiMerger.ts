@@ -326,14 +326,17 @@ export class ApiMerger implements IApiMerger {
 				resultingPaper[key] = concatWithoutDuplicates(first[key], second[key])
 				continue
 			}
-			if (first[key].length > 0 && !first[key + "Source"]) {
-				first[key + "Source"] = [first.source]
+			if (!first[key + "Source"]) {
+				first[key + "Source"] = []
+				for(let i = 0; i < first[key].length; i++){
+					first[key + "Source"].push(first.source)
+				}
 			}
-			console.log(`length ${second[key].length > 0} ${!second[key + "Source"]}`)
-			if (second[key].length > 0 && !second[key + "Source"]) {
-				console.log("helluuuuu")
-				second[key + "Source"] = [second.source]
-				console.log(second[key + "Source"])
+			if (!second[key + "Source"]) {
+				second[key + "Source"] = []
+				for(let i = 0; i < second[key].length; i++){
+					second[key + "Source"].push(second.source)
+				}
 			}
 			if (first[key].length === 0) {
 				resultingPaper[key] = second[key]
