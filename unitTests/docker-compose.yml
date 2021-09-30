@@ -21,7 +21,7 @@ services:
       - run
       - db
   backend-test:
-    image: denoland/deno
+    image: denoland/deno:1.14.1
     command: bash -c "ls -a -l && deno test --allow-env --allow-read --allow-net --allow-write --coverage=cov_profile --unstable;
       deno --unstable coverage cov_profile --lcov > cov_profile.lcov;
       sed -i -e 's/\/app\/src/src/g' cov_profile.lcov"

@@ -17,7 +17,7 @@ export class Project extends Model {
         countDecisiveReviewers: { type: DataTypes.INTEGER },
         combinationOfReviewers: DataTypes.STRING,
         type: DataTypes.STRING,
-        evaluationFormula: { type: DataTypes.STRING },
+        evaluationFormula: { type: DataTypes.STRING},
     }
 
     static defaults = {

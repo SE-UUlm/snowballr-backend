@@ -217,7 +217,7 @@ Deno.test({
         assertEquals(source, undefined)
         await getAuthor(ctx, Number(author.id))
         answer = JSON.parse(ctx.response.body as string)
-        assertEquals(answer.status, "finished")
+        assertEquals(answer.status, "ready")
 
         await db.close();
         await client.end();
