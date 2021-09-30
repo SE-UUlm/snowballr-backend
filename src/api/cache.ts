@@ -47,7 +47,7 @@ export class Cache<V> {
 	public async add(key: string, value: V) {
 		if (this.memoryCache) { this.memoryCache.add(String(key), JSON.stringify(value)) };
 		if (this.fileCache) { await this.fileCache.add(key, JSON.stringify(value)) };
-
+		console.log("ADDING SOME CACHE")
 	}
 
 	/**

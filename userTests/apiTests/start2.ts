@@ -7,11 +7,14 @@ import { CrossRefApi } from "../../src/api/crossRefApi.ts";
 import { ApiMerger } from "../../src/api/apiMerger.ts";
 import { SemanticScholar } from "../../src/api/semanticScholar.ts"
 import { IeeeApi } from "../../src/api/ieeeApi.ts";
+import { GoogleScholar } from "../../src/api/googleScholar.ts";
 import { ApiBatcher } from "../../src/api/apiBatcher.ts";
 import { SourceApi } from "../../src/api/iApiPaper.ts";
 import { IComparisonWeight } from "../../src/api/iComparisonWeight.ts";
 import { logResponse } from "../../src/helper/loggerHelper.ts"
 import Thread from "https://deno.land/x/Thread@v3.0.0/Thread.ts";
+
+import { TestDoi } from "./testDoi.ts"
 
 
 export const BATCHER = new ApiBatcher();
@@ -26,35 +29,22 @@ const comparisonWeight = {
 	yearWeight: 2
 } as IComparisonWeight;
 
-const query: IApiQuery = {
-	id: "tst",
-	rawName: undefined,
-	doi: "10.1109/SEAA.2009.60",
-	title: "Translation of UML 2 Activity Diagrams into Finite State Machines for Model Checking",
-	enabledApis: [SourceApi.MA, SourceApi.OC, SourceApi.IE, SourceApi.CR, SourceApi.S2],
-	aggression: comparisonWeight
+
+/* TODO hash for cash out of query without enabled apis*/
+for (let i = 0; i < 1; i++) {
+	const query: IApiQuery = {
+		id: "tst",
+		rawName: undefined,
+		doi: TestDoi[i % 1],
+		title: undefined,
+		enabledApis: [SourceApi.GS, SourceApi.MA], //[SourceApi.GS, SourceApi.CR, SourceApi.IE, SourceApi.MA, SourceApi.OC, SourceApi.S2],
+		aggression: comparisonWeight
+	}
+	console.log(`Iteration ${i}`);
+	let batch = await BATCHER.startFetch(query);
+	logResponse(await batch.response);
 }
 
-// const worker = new Worker(new URL("../../src/api/batchWorker.ts", import.meta.url).href, {
-// 	type: "module",
-// 	deno: {
-// 		namespace: true,
-// 		permissions: {
-// 			env: true,
-// 			hrtime: true,
-// 			net: "inherit",
-// 			ffi: true,
-// 			read: true,
-// 			run: true,
-// 			write: true,
-// 		},
-// 	}
-// });
-// let value = await worker.postMessage({ filename: "./log.txt" });
-// await console.log(value);
-let batch = await BATCHER.startFetch(query);
-
-logResponse(await batch.response);
 
 BATCHER.kill();
 
