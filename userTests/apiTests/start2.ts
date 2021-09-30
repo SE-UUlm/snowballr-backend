@@ -11,10 +11,10 @@ import { ApiBatcher } from "../../src/api/apiBatcher.ts";
 import { SourceApi } from "../../src/api/iApiPaper.ts";
 import { IComparisonWeight } from "../../src/api/iComparisonWeight.ts";
 import { logResponse } from "../../src/helper/loggerHelper.ts"
+import Thread from "https://deno.land/x/Thread@v3.0.0/Thread.ts";
 
 
-
-const BATCHER = new ApiBatcher();
+export const BATCHER = new ApiBatcher();
 
 const comparisonWeight = {
 	titleWeight: 15,
@@ -35,9 +35,24 @@ const query: IApiQuery = {
 	aggression: comparisonWeight
 }
 
-let batch = await BATCHER.startFetch(query);
+new Worker(new URL("../../src/api/batchWorker.ts", import.meta.url).href, {
+	type: "module",
+	deno: {
+		namespace: true,
+		permissions: {
+			env: true,
+			hrtime: true,
+			net: "inherit",
+			ffi: true,
+			read: true,
+			run: true,
+			write: true,
+		},
+	}
+});
+//let batch = await BATCHER.startFetch(query);
 
-logResponse(await batch.response);
+//logResponse(await batch.response);
 
 BATCHER.kill();
 

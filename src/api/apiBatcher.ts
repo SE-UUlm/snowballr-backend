@@ -12,6 +12,7 @@ import { SemanticScholar } from "./semanticScholar.ts";
 import { ApiMerger } from "./apiMerger.ts";
 import { logger } from "./logger.ts";
 import { Cache, CacheType } from "./cache.ts";
+import Thread from "https://deno.land/x/Thread@v3.0.0/Thread.ts";
 
 
 /**
@@ -92,6 +93,30 @@ export class ApiBatcher implements IApiBatcher {
 		this.activeBatches.push(apiBatch);
 		return apiBatch;
 	}
+
+	public startFetchThreaded(query: IApiQuery): Promise<IApiBatch> {
+		let thread = new Thread<number>((e: MessageEvent) => {
+			console.log('Worker: Message received from main script');
+			const result = e.data[0] * e.data[1];
+			if (isNaN(result)) {
+				return 0;
+			} else {
+				console.log('Worker: Posting message back to main script');
+				return (result);
+			}
+		}, "module");
+		let result = 0;
+
+		thread.onMessage((e) => {
+			console.log(`back from thread: ${e}`)
+			result = e;
+		})
+		thread.postMessage([10, 12])
+		console.log(`---final result: ${result}`)
+
+		return this.startFetch(query);
+	}
+
 
 	/**
 	 * Try to prefetch a doi for the query objects by querying for the other variables. Only implemented on selected apis.
