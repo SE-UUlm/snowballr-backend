@@ -47,8 +47,9 @@ export const createProject = async (ctx: Context) => {
     if (validate) {
 
         let tresholds =  String(validate.combinationOfReviewers).split(",")
-        if(tresholds.length !== 2 || isNaN(Number(tresholds[0])) || isNaN(Number(tresholds[1]))|| tresholds[1] < tresholds[0]){
+        if(tresholds.length !== 2 || isNaN(Number(tresholds[0])) || isNaN(Number(tresholds[1]))|| Number(tresholds[1]) < Number(tresholds[0]) || Number(tresholds[0]) < 0 || Number(tresholds[1])> 10){
             makeErrorMessage(ctx, 409, "Before a review can happen, the combination of reviewers has to be well formed so a final decision of the paper can be evaluated. This is not the case")
+            return;
         }
         try {
             let project = await Project.create({
@@ -66,7 +67,9 @@ export const createProject = async (ctx: Context) => {
             ctx.response.body = JSON.stringify(project)
 
         } catch (error) {
-            makeErrorMessage(ctx, 422, "unable to process given data")
+            makeErrorMessage(ctx, 422, error)
+            console.error(error)
+            Deno.exit(0)
             return
         }
     }
@@ -1009,7 +1012,7 @@ export const getCritieriaEvalOfReview = async (ctx: Context, projectID: number, 
 export const deleteCritieriaEvalOfReview = async (ctx: Context, projectID: number, stageID: number, ppID: number, reviewID: number, criteriaEvalID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID, reviewID, criteriaEvalID], UserStatus.needsSameMemberOfProject, projectID, { needed: false, params: [] })
     if (validate) {
-        await Review.deleteById(criteriaEvalID)
+        await CriteriaEvaluation.deleteById(criteriaEvalID)
         ctx.response.status = 200;
     }
 }
