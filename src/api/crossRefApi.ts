@@ -116,6 +116,7 @@ export class CrossRefApi implements IApiFetcher {
 		}
 
 		for (let b in fetchableByBibliographic) {
+			if (fetchableByBibliographic[b] === undefined) { continue; }
 			let query: string = fetchableByBibliographic[b].replace(/ /g, '+');
 			await this._limitRequests();
 			fetches.push(this._fetchBibFromApi(query));
