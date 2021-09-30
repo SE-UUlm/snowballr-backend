@@ -45,6 +45,11 @@ const reducer = (accumulator: string, currentValue: string) => accumulator + " /
 export const createProject = async (ctx: Context) => {
     let validate = await validateUserEntry(ctx, [], UserStatus.needsPO, -1, { needed: true, params: ["name", "minCountReviewers", "countDecisiveReviewers", "type", "combinationOfReviewers"] })
     if (validate) {
+
+        let tresholds =  String(validate.combinationOfReviewers).split(",")
+        if(tresholds.length !== 2 || isNaN(Number(tresholds[0])) || isNaN(Number(tresholds[1]))|| tresholds[1] < tresholds[0]){
+            makeErrorMessage(ctx, 409, "Before a review can happen, the combination of reviewers has to be well formed so a final decision of the paper can be evaluated. This is not the case")
+        }
         try {
             let project = await Project.create({
                 name: validate.name,
@@ -408,9 +413,10 @@ export const makeStageCsv = async (ctx: Context, projectID: number, stageID: num
         let rows = [["authors", "title", "year", "publisher", "link", "doi"]]
         let project = await Project.find(projectID);
         let stage = await Stage.find(stageID);
-        for(let i = 1; i <= (Number(project.countDecisiveReviewers));i++){
+        for(let i = 1; i < (Number(project.countDecisiveReviewers));i++){
             rows[0].push(`SuggestedInclusion${i}`)
         }
+        rows[0].push("derivedDecision")
         rows[0].push("FinalDecision")
         rows = await papersToRow(papers, rows, true, project, stageID)
         const f = await Deno.open(`./${String(project.name)}_Stage${Number(stage.number)}.csv`, { write: true, create: true, truncate: true });
@@ -450,13 +456,15 @@ const papersToRow = async (papers: Paper[], rows: string[][], getReviews: boolea
                 let ppID = await getProjectPaperScope(stageID, Number(item.id))
                 if(ppID){
                     let reviews = await Review.where(Review.field("paper_id"), Number(ppID.id)).get()
-
                     if(Array.isArray(reviews)){
+                        if(reviews.length >= Number(project.countDecisiveReviewers)){
+                            reviews = reviews.slice(0,  Number(project.countDecisiveReviewers) - 1)
+                        }
                     for(let review of reviews){
                         row.push(review.overallEvaluation? String(review.overallEvaluation): "")
                     }
 
-                    for(let i = 0; i < (Number(project.countDecisiveReviewers)- reviews.length);i++){
+                    for(let i = 0; i < (Number(project.countDecisiveReviewers)- reviews.length -1);i++){
                         row.push("")
                     }
 
@@ -753,6 +761,13 @@ export const addReviewToPaper = async (ctx: Context, projectID: number, stageID:
         const payloadJson = await getPayloadFromJWT(ctx);
         let userID = await getUserID(payloadJson)
         const params = await jsonBodyToObject(ctx)
+        let project = await Project.find(projectID)
+        let tresholds =  String(project.combinationOfReviewers).split(",")
+        let pp = await PaperScopeForStage.find(ppID);
+        if(pp.finalDecision){
+            makeErrorMessage(ctx, 409, "already enough reviews for this paper")
+            return;
+        }
         if (userID) {
             try {
                 let review = await Review.create({
@@ -760,10 +775,33 @@ export const addReviewToPaper = async (ctx: Context, projectID: number, stageID:
                     userId: userID,
                     stageId: stageID
                 })
+
                 if (params.finished != undefined) { review.finished = params.finished }
                 if (params.overallEvaluation) { review.overallEvaluation = params.overallEvaluation }
                 if (params.finishDate) { review.finishDate = new Date(params.finishDate) }
                 await review.update();
+                let reviews = await getAllReviewsFromProjectPaper(ppID);
+                let finalDecision = getFinalDecisionOfPaper(reviews, project, ppID, Number(tresholds[0]), Number(tresholds[1]))
+                if(finalDecision){
+                    if(finalDecision === "maybe"){
+                        if(project.countDecisiveReviewers == reviews.length){
+                            if(params.overallEvaluation == "maybe"){
+                                makeErrorMessage(ctx, 409, "you made the last review of the paper. this one has to be yes or no")
+                                await review.delete()
+                                return;
+                            } else{
+                                pp.overallEvaluation = params.overallEvaluation
+                            }
+
+                    }
+
+                } else{
+                    pp.overallEvaluation = finalDecision;
+                }
+
+                await pp.update()
+                }
+
                 ctx.response.status = 201;
                 ctx.response.body = JSON.stringify(review)
             } catch (err) {
@@ -773,6 +811,27 @@ export const addReviewToPaper = async (ctx: Context, projectID: number, stageID:
     }
 }
 
+const getFinalDecisionOfPaper = (reviews: ReviewMessage[], project: Project, ppID: number, lowerTreshold: number, upperTreshold: number) => {
+
+    if(reviews.length >= Number(project.minCountReviewers)){
+        let decisionNumber = 0;
+        reviews.forEach(review => {if(review.overallEvaluation == "yes"){
+            decisionNumber += 10;
+        } else if(review.overallEvaluation == "maybe"){
+            decisionNumber += 5;
+        } 
+        })
+        decisionNumber = decisionNumber / reviews.length;
+
+        if(decisionNumber >= upperTreshold){
+            return "yes"
+        } else if(decisionNumber <= lowerTreshold){
+            return "no"
+        } else {
+            return "maybe"
+        }
+}
+}
 /**
  * Patches a review of a paper
  * @param ctx 
@@ -786,6 +845,11 @@ export const patchReviewOfPaper = async (ctx: Context, projectID: number, stageI
     if (validate) {
         delete validate.id;
         delete validate.userId;
+        let pp = await PaperScopeForStage.find(ppID);
+        if(pp.finalDecision){
+            makeErrorMessage(ctx, 409, "the paper has already been finally decided. review cannot be changed")
+            return;
+        }
         let review = await Review.find(reviewID)
         if (review) {
             Object.assign(review, validate)
@@ -828,6 +892,11 @@ export const getReviewOfPaper = async (ctx: Context, projectID: number, stageID:
 export const deleteReviewOfPaper = async (ctx: Context, projectID: number, stageID: number, ppID: number, reviewID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
     if (validate) {
+        let pp = await PaperScopeForStage.find(ppID);
+        if(pp.finalDecision){
+            makeErrorMessage(ctx, 409, "paper is already done with evaluation. delete of review not possible")
+            return;
+        }
         try {
             await Review.deleteById(reviewID)
             ctx.response.status = 200;
