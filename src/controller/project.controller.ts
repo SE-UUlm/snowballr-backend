@@ -67,9 +67,7 @@ export const createProject = async (ctx: Context) => {
             ctx.response.body = JSON.stringify(project)
 
         } catch (error) {
-            makeErrorMessage(ctx, 422, error)
-            console.error(error)
-            Deno.exit(0)
+            makeErrorMessage(ctx, 422, "given data is not processable")
             return
         }
     }
@@ -94,7 +92,7 @@ export const addMemberToProject = async (ctx: Context, id: number) => {
                 projectId: id
             })
         } catch (error) {
-            makeErrorMessage(ctx, 404, "User not found")
+            makeErrorMessage(ctx, 404, "User or project not found")
             return
         }
         ctx.response.status = 201;
@@ -346,7 +344,10 @@ export const patchPaperOfProjectStage = async (ctx: Context, projectID: number, 
             if(validate.finalDecision){
                 let paperScope = (await pp.get())
                 if(Array.isArray(paperScope)){
-                    paperScope[0].finalDecision = validate.finalDecision}
+                    paperScope[0].finalDecision = validate.finalDecision
+                    await paperScope[0].update()
+                }
+
                 }
             let paper = await pp.paper();
             if (paper) {

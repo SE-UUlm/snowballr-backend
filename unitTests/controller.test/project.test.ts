@@ -4,6 +4,8 @@ import { createMockApp } from "../mockObjects/oak/mockApp.test.ts";
 import { checkMemberOfProject, createJWT } from "../../src/controller/validation.controller.ts";
 import { createMockContext } from "../mockObjects/oak/mockContext.test.ts";
 import {
+    makeStageCsv,
+    makeRefCiteCsv,
     getReferencesOfProjectPaper,
     getCitationsOfProjectPaper,
     addCriteriaToProject,
@@ -281,7 +283,7 @@ Deno.test({
     name: "getProjectUnauthorized",
     async fn(): Promise<void> {
         await setup(true);
-        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+        let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
         await Project.create({
             name: "test",
             minCountReviewers: 1,
@@ -295,7 +297,7 @@ Deno.test({
         let ctx = await createMockContext(app, `{}`, [["Content-Type", "application/json"]], "/", token);
         await getProjects(ctx)
 
-        assertNotEquals(ctx.response.status, 422)
+        assertEquals(ctx.response.status, 401)
 
         await db.close();
         await client.end();
@@ -394,6 +396,40 @@ Deno.test({
     sanitizeResources: false,
     sanitizeOps: false,
 })
+Deno.test({
+    name: "addMember",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+        let user2 = await insertUser("test2@test", "ash2", false, "Test2", "Tester2", "active");
+        let project = await Project.create({
+            name: "test",
+            minCountReviewers: 1,
+            countDecisiveReviewers: 1,
+            combinationOfReviewers: 1,
+            type: ""
+        })
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, `{ "id": ${Number(user2.id)}}`, [["Content-Type", "application/json"]], "/", token);
+        await addMemberToProject(ctx, Number(project.id))
+        let worked = await checkMemberOfProject(Number(project.id), {
+            id: Number(user2.id),
+            isAdmin: false,
+            email: "fesffer",
+            firstName: "",
+            lastName: "",
+            status: "active"
+        })
+        assertEquals(worked, true)
+
+        await db.close();
+        await client.end();
+    },
+    sanitizeResources: false,
+    sanitizeOps: false,
+})
+
 
 Deno.test({
     name: "addMemberAsPO",
@@ -433,7 +469,36 @@ Deno.test({
     sanitizeResources: false,
     sanitizeOps: false,
 })
+Deno.test({
+    name: "addMemberWrongID",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
+        let user2 = await insertUser("test2@test", "ash2", false, "Test2", "Tester2", "active");
+        let project = await Project.create({
+            name: "test",
+            minCountReviewers: 1,
+            countDecisiveReviewers: 1,
+            combinationOfReviewers: 1,
+            type: ""
+        })
+        let bla = await UserIsPartOfProject.create({
+            projectId: Number(project.id),
+            userId: Number(user.id),
+            isOwner: true
+        })
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, `{ "id": "${Number(user2.id) + 1}", "isOwner": true}`, [["Content-Type", "application/json"]], "/", token);
+        await addMemberToProject(ctx, Number(project.id))
+        assertEquals(ctx.response.status, 404)
 
+        await db.close();
+        await client.end();
+    },
+    sanitizeResources: false,
+    sanitizeOps: false,
+})
 
 Deno.test({
     name: "addMemberUnauthorized",
@@ -603,6 +668,80 @@ Deno.test({
 })
 
 Deno.test({
+    name: "AddPaperToProjectPaperAlreadyExists",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+        let project = await Project.create({
+            name: "test",
+            minCountReviewers: 1,
+            countDecisiveReviewers: 1,
+            combinationOfReviewers: 1,
+            type: ""
+        })
+        let stage = await Stage.create({
+            name: "TestStage",
+            projectId: Number(project.id),
+            number: 0
+        })
+        let paper = await Paper.create({
+            doi: "10.1109/SEAA.2009.60"
+        })
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, `{"doi":"10.1109/SEAA.2009.60" }`, [["Content-Type", "application/json"]], "/", token);
+        let bla = await addPaperToProjectStage(ctx, Number(project.id), Number(stage.id), true)
+
+        assertEquals(ctx.response.status, 201)
+        paper = await Paper.find(Number(paper.id))
+        assertEquals(String(paper.title), "Translation of UML 2 Activity Diagrams into Finite State Machines for Model Checking")
+        paperCache.clear()
+        authorCache.clear()
+        Batcher.kill()
+        await db.close();
+        await client.end();
+
+    },
+    sanitizeResources: false,
+    sanitizeOps: false,
+})
+
+Deno.test({
+    name: "AddPaperToProjectNoTitleOfDoi",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+        let project = await Project.create({
+            name: "test",
+            minCountReviewers: 1,
+            countDecisiveReviewers: 1,
+            combinationOfReviewers: 1,
+            type: ""
+        })
+        let stage = await Stage.create({
+            name: "TestStage",
+            projectId: Number(project.id),
+            number: 0
+        })
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, `{}`, [["Content-Type", "application/json"]], "/", token);
+        let bla = await addPaperToProjectStage(ctx, Number(project.id), Number(stage.id), true)
+
+        assertEquals(ctx.response.status, 422)
+
+        paperCache.clear()
+        authorCache.clear()
+        Batcher.kill()
+        await db.close();
+        await client.end();
+
+    },
+    sanitizeResources: false,
+    sanitizeOps: false,
+})
+
+Deno.test({
     name: "GetPapersOfProjectStage",
     async fn(): Promise<void> {
         await setup(true);
@@ -703,6 +842,54 @@ Deno.test({
         assertEquals(answer.title, "nice title")
         assertEquals(answer.abstract, "hellu")
         assertEquals(answer.authors[0].rawString, "Awsome Name")
+        paperCache.clear()
+        authorCache.clear()
+        Batcher.kill()
+        await db.close();
+        await client.end();
+
+    },
+    sanitizeResources: false,
+    sanitizeOps: false,
+})
+
+Deno.test({
+    name: "GetPaperOfProjectStageWrongId",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+        let project = await Project.create({
+            name: "test",
+            minCountReviewers: 1,
+            countDecisiveReviewers: 1,
+            combinationOfReviewers: 1,
+            type: ""
+        })
+        let stage = await Stage.create({
+            name: "TestStage",
+            projectId: Number(project.id),
+            number: 0
+        })
+        let paper = await Paper.create({
+            doi: "fasfafraf",
+            title: "nice title",
+            abstract: "hellu"
+
+        })
+        let author = await Author.create({
+            rawString: "Awsome Name"
+        })
+        let pp = await PaperScopeForStage.create({
+            paperId: Number(paper.id),
+            stageId: Number(stage.id)
+        })
+        let wrote = await Wrote.create({ authorId: Number(author.id), paperId: Number(paper.id) })
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, `{"doi":"10.1109/SEAA.2009.60" }`, [["Content-Type", "application/json"]], "/", token);
+        let bla = await getPaperOfProjectStage(ctx, Number(project.id), Number(stage.id), Number(pp.id) + 1)
+
+        assertEquals(ctx.response.status, 404)
         paperCache.clear()
         authorCache.clear()
         Batcher.kill()
@@ -850,6 +1037,56 @@ Deno.test({
         assertEquals(ctx.response.status, 200)
         let paperFinal = await Paper.find(Number(paper.id))
         assertEquals(paperFinal.title, "New Title")
+        paperCache.clear()
+        authorCache.clear()
+        Batcher.kill()
+        await db.close();
+        await client.end();
+
+    },
+    sanitizeResources: false,
+    sanitizeOps: false,
+})
+
+Deno.test({
+    name: "PatchPaperOfProjectStageFinalDecicion",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+        let project = await Project.create({
+            name: "test",
+            minCountReviewers: 1,
+            countDecisiveReviewers: 1,
+            combinationOfReviewers: 1,
+            type: ""
+        })
+        let stage = await Stage.create({
+            name: "TestStage",
+            projectId: Number(project.id),
+            number: 0
+        })
+        let paper = await Paper.create({
+            doi: "fasfafraf",
+            title: "nice title",
+            abstract: "hellu"
+
+        })
+        let author = await Author.create({
+            rawString: "Awsome Name"
+        })
+        let pp = await PaperScopeForStage.create({
+            paperId: Number(paper.id),
+            stageId: Number(stage.id)
+        })
+        let wrote = await Wrote.create({ authorId: Number(author.id), paperId: Number(paper.id) })
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, `{"finalDecision":"YES" }`, [["Content-Type", "application/json"]], "/", token);
+        let bla = await patchPaperOfProjectStage(ctx, Number(project.id), Number(stage.id), Number(pp.id))
+
+        assertEquals(ctx.response.status, 200)
+        let paperFinal = await PaperScopeForStage.find(Number(pp.id))
+        assertEquals(paperFinal.finalDecision, "YES")
         paperCache.clear()
         authorCache.clear()
         Batcher.kill()
@@ -1105,6 +1342,141 @@ Deno.test({
         assertEquals(answer.papers[0].title, "Hi")
         assertEquals(answer.papers[0].abstract, "this abstract")
         assertEquals(answer.papers[0].id, Number(paper1.id))
+        await db.close();
+        await client.end();
+        Batcher.kill()
+    },
+    sanitizeResources: false,
+    sanitizeOps: false,
+})
+
+Deno.test({
+    name: "makeRefCiteCsv",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, ``, [["Content-Type", "application/json"]], "/", token);
+        let paper = await Paper.create({ title: "Hello there", abstract: "General Kenobi" })
+        let paper1 = await Paper.create({ title: "Hi", abstract: "this abstract" })
+        let paper2 = await Paper.create({ title: "mlem", abstract: "mlem mlem" })
+        let paper3 = await Paper.create({ title: "Hey", abstract: "other abstract" })
+        let paper4 = await Paper.create({ title: "miau", abstract: "mlem" })
+        let project = await Project.create({
+            name: "test",
+            minCountReviewers: 1,
+            countDecisiveReviewers: 1,
+            combinationOfReviewers: "3,8",
+            type: ""
+        })
+        let stage = await Stage.create({
+            name: "TestStage",
+            projectId: Number(project.id),
+            number: 0
+        })
+        let stage2 = await Stage.create({
+            name: "TestStage",
+            projectId: Number(project.id),
+            number: 1
+        })
+        let pp = await PaperScopeForStage.create({
+            paperId: Number(paper.id),
+            stageId: Number(stage.id)
+        })
+        let pp1 = await PaperScopeForStage.create({
+            paperId: Number(paper1.id),
+            stageId: Number(stage2.id)
+        })
+
+        let pp2 = await PaperScopeForStage.create({
+            paperId: Number(paper2.id),
+            stageId: Number(stage2.id)
+        })
+        let pp3 = await PaperScopeForStage.create({
+            paperId: Number(paper3.id),
+            stageId: Number(stage2.id)
+        })
+
+        let pp4 = await PaperScopeForStage.create({
+            paperId: Number(paper4.id),
+            stageId: Number(stage2.id)
+        })
+        await saveChildren("citedby", "papercitingid", "papercitedid", Number(paper.id), Number(paper1.id))
+        await saveChildren("citedby", "papercitingid", "papercitedid", Number(paper.id), Number(paper2.id))
+
+        await saveChildren("referencedby", "paperreferencedid", "paperreferencingid", Number(paper.id), Number(paper3.id))
+        await saveChildren("referencedby", "paperreferencedid", "paperreferencingid", Number(paper.id), Number(paper4.id))
+
+        await  makeRefCiteCsv(ctx, Number(project.id), Number(stage.id), Number(pp.id))
+        assertEquals(ctx.response.status, 200)
+        let answer = ctx.response.body as string
+        assertEquals(answer.includes("References"), true)
+        assertEquals(answer.includes("Citations"), true)
+        assertEquals(answer.includes("mlem"), true)
+        let lengthTest = answer.split(/\r?\n/).length >= 10 
+        assertEquals(lengthTest, true)
+        await db.close();
+        await client.end();
+        Batcher.kill()
+    },
+    sanitizeResources: false,
+    sanitizeOps: false,
+})
+
+Deno.test({
+    name: "makeStageCsv",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, ``, [["Content-Type", "application/json"]], "/", token);
+        let paper = await Paper.create({ title: "Hello there", abstract: "General Kenobi" })
+        let paper1 = await Paper.create({ title: "Hi", abstract: "this abstract" })
+        let paper2 = await Paper.create({ title: "mlem", abstract: "mlem mlem" })
+        let paper3 = await Paper.create({ title: "Hey", abstract: "other abstract" })
+        let paper4 = await Paper.create({ title: "miau", abstract: "mlem" })
+        let project = await Project.create({
+            name: "test",
+            minCountReviewers: 1,
+            countDecisiveReviewers: 1,
+            combinationOfReviewers: "3,8",
+            type: ""
+        })
+        let stage = await Stage.create({
+            name: "TestStage",
+            projectId: Number(project.id),
+            number: 0
+        })
+
+        let pp = await PaperScopeForStage.create({
+            paperId: Number(paper.id),
+            stageId: Number(stage.id)
+        })
+        let pp1 = await PaperScopeForStage.create({
+            paperId: Number(paper1.id),
+            stageId: Number(stage.id)
+        })
+
+        let pp3 = await PaperScopeForStage.create({
+            paperId: Number(paper3.id),
+            stageId: Number(stage.id)
+        })
+        let pp4 = await PaperScopeForStage.create({
+            paperId: Number(paper4.id),
+            stageId: Number(stage.id)
+        })
+
+
+        await  makeStageCsv(ctx, Number(project.id), Number(stage.id))
+        assertEquals(ctx.response.status, 200)
+        let answer = ctx.response.body as string
+        assertEquals(answer.includes("miau"), true)
+        let lengthTest = answer.split(/\r?\n/).length >= 5
+        assertEquals(lengthTest, true)
         await db.close();
         await client.end();
         Batcher.kill()
