@@ -35,24 +35,26 @@ const query: IApiQuery = {
 	aggression: comparisonWeight
 }
 
-new Worker(new URL("../../src/api/batchWorker.ts", import.meta.url).href, {
-	type: "module",
-	deno: {
-		namespace: true,
-		permissions: {
-			env: true,
-			hrtime: true,
-			net: "inherit",
-			ffi: true,
-			read: true,
-			run: true,
-			write: true,
-		},
-	}
-});
-//let batch = await BATCHER.startFetch(query);
+// const worker = new Worker(new URL("../../src/api/batchWorker.ts", import.meta.url).href, {
+// 	type: "module",
+// 	deno: {
+// 		namespace: true,
+// 		permissions: {
+// 			env: true,
+// 			hrtime: true,
+// 			net: "inherit",
+// 			ffi: true,
+// 			read: true,
+// 			run: true,
+// 			write: true,
+// 		},
+// 	}
+// });
+// let value = await worker.postMessage({ filename: "./log.txt" });
+// await console.log(value);
+let batch = await BATCHER.startFetch(query);
 
-//logResponse(await batch.response);
+logResponse(await batch.response);
 
 BATCHER.kill();
 
