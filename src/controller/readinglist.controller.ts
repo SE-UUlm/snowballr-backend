@@ -1,4 +1,4 @@
-import { Context } from "https://deno.land/x/oak@v9.0.0/context.ts";
+import { Context } from "https://deno.land/x/oak/context.ts";
 import { convertPapersToPaperMessage, convertPaperToPaperMessage } from "../helper/converter/paperConverter.ts";
 import { makeErrorMessage } from "../helper/error.ts";
 import { Paper } from "../model/db/paper.ts";
