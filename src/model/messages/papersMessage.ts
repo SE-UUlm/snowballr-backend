@@ -28,6 +28,7 @@ export interface PaperMessage {
 export enum Status {
     unfinished = "unfinished",
     ready = "ready",
-    partiallyEvaluated = "Partially Evaluated",
-    completelyEvaluated = "Completly Evaluated"
+    partiallyEvaluated = "partiallyEvaluated",
+    evaluatedByMyself = "evaluatedByMyself",
+    completelyEvaluated = "completlyEvaluated",
 }
