@@ -48,7 +48,12 @@ export const createProject = async (ctx: Context) => {
 
         let tresholds =  String(validate.combinationOfReviewers).split(",")
         if(tresholds.length !== 2 || isNaN(Number(tresholds[0])) || isNaN(Number(tresholds[1]))|| Number(tresholds[1]) < Number(tresholds[0]) || Number(tresholds[0]) < 0 || Number(tresholds[1])> 10){
-            makeErrorMessage(ctx, 409, "Before a review can happen, the combination of reviewers has to be well formed so a final decision of the paper can be evaluated. This is not the case")
+            makeErrorMessage(ctx, 409, "To create a project, the combination of reviewers has to be well formed so a final decision of the paper can be evaluated. This is not the case")
+            return;
+        }
+        tresholds =  String(validate.evaluationFormula).split(",")
+        if(tresholds.length !== 2 || isNaN(Number(tresholds[0])) || isNaN(Number(tresholds[1]))|| Number(tresholds[1]) < Number(tresholds[0]) || Number(tresholds[0]) < -5 || Number(tresholds[1])> 5){
+            makeErrorMessage(ctx, 409, "To create a project, the evaluation formula has to be well formed so a final decision of the paper can be evaluated. This is not the case")
             return;
         }
         try {
@@ -57,12 +62,10 @@ export const createProject = async (ctx: Context) => {
                 minCountReviewers: validate.minCountReviewers,
                 countDecisiveReviewers: validate.countDecisiveReviewers,
                 combinationOfReviewers: validate.combinationOfReviewers,
+                evaluationFormula: validate.evaluationFormula,
                 type: validate.type
             })
-            if (validate.evaluationFormula) {
-                project.evaluationFormula = validate.evaluationFormula;
-                await project.update();
-            }
+
             ctx.response.status = 201;
             ctx.response.body = JSON.stringify(project)
 
@@ -275,8 +278,7 @@ const savePaper = async (apiPaper: IApiPaper): Promise<Paper> => {
     let doi = getDOI(apiPaper)
 
     if (doi[0]) {
-        let dbPaper = await getPaperByDoi(doi[0])
-
+        let dbPaper = await getPaperByDoi(doi[0].toLowerCase())
         if (dbPaper) {
             await assignOnlyIfUnassignedPaper(dbPaper, apiPaper)
             return dbPaper.update()
@@ -301,7 +303,8 @@ export const getPapersOfProjectStage = async (ctx: Context, projectID: number, s
     let validate = await validateUserEntry(ctx, [projectID, stageID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
     if (validate) {
         ctx.response.status = 200;
-        let message: PapersMessage = { papers: await convertPapersToPaperMessage(await getAllPapersFromStage(stageID), stageID) }
+        let userID = await getUserID(await getPayloadFromJWT(ctx))
+        let message: PapersMessage = { papers: await convertPapersToPaperMessage(await getAllPapersFromStage(stageID), stageID, userID) }
         ctx.response.body = JSON.stringify(message)
     }
 }
@@ -340,21 +343,26 @@ export const patchPaperOfProjectStage = async (ctx: Context, projectID: number, 
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
     if (validate) {
         try {
-            let pp = await PaperScopeForStage.where("id", ppID);
-            if(validate.finalDecision){
-                let paperScope = (await pp.get())
+            let bodyJson = await jsonBodyToObject(ctx);
+            if (!bodyJson) {
+                return
+            }
+
+            if(bodyJson.finalDecision){
+                let paperScope = await PaperScopeForStage.where("id", ppID).get()
                 if(Array.isArray(paperScope)){
-                    paperScope[0].finalDecision = validate.finalDecision
+                    paperScope[0].finalDecision = bodyJson.finalDecision
                     await paperScope[0].update()
                 }
 
                 }
-            let paper = await pp.paper();
+            let paper = await  PaperScopeForStage.where("id", ppID).paper();
             if (paper) {
-                await paperUpdate(ctx, paper)
+
+                await paperUpdate(ctx, paper, bodyJson)
             }
         } catch (e) {
-            makeErrorMessage(ctx, 404, "paper does not exist")
+            makeErrorMessage(ctx, 404, "paper not found")
         }
     }
 }
@@ -768,7 +776,8 @@ export const addReviewToPaper = async (ctx: Context, projectID: number, stageID:
         let project = await Project.find(projectID)
         let tresholds =  String(project.combinationOfReviewers).split(",")
         let pp = await PaperScopeForStage.find(ppID);
-        if(pp.finalDecision){
+        let reviews = await getAllReviewsFromProjectPaper(ppID);
+        if(pp.finalDecision || reviews.length >= Number(project.minCountReviewers)){
             makeErrorMessage(ctx, 409, "already enough reviews for this paper")
             return;
         }
@@ -784,7 +793,7 @@ export const addReviewToPaper = async (ctx: Context, projectID: number, stageID:
                 if (params.overallEvaluation) { review.overallEvaluation = params.overallEvaluation }
                 if (params.finishDate) { review.finishDate = new Date(params.finishDate) }
                 await review.update();
-                let reviews = await getAllReviewsFromProjectPaper(ppID);
+                reviews = await getAllReviewsFromProjectPaper(ppID);
                 let finalDecision = getFinalDecisionOfPaper(reviews, project, ppID, Number(tresholds[0]), Number(tresholds[1]))
                 if(finalDecision){
                     if(finalDecision === "maybe"){
@@ -816,8 +825,8 @@ export const addReviewToPaper = async (ctx: Context, projectID: number, stageID:
 }
 
 const getFinalDecisionOfPaper = (reviews: ReviewMessage[], project: Project, ppID: number, lowerTreshold: number, upperTreshold: number) => {
-
-    if(reviews.length >= Number(project.minCountReviewers)){
+    let allReviewsFinished = !reviews.some(review => !review.finished)
+    if(allReviewsFinished && reviews.length >= Number(project.minCountReviewers)){
         let decisionNumber = 0;
         reviews.forEach(review => {if(review.overallEvaluation == "yes"){
             decisionNumber += 10;

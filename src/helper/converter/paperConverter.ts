@@ -17,19 +17,19 @@ import { getAllAuthorsFromPaper } from "../../controller/databaseFetcher/author.
 import { IApiAuthor } from "../../api/iApiAuthor.ts";
 import { isEqualAuthor } from "../../api/checkIsEqual.ts";
 import { convertAuthorToAuthorMessage } from "./authorConverter.ts"
-import { getAllReviewsFromProjectPaper } from "../../controller/databaseFetcher/review.ts";
+import { checkUserReviewOfProjectPaper, getAllReviewsFromProjectPaper } from "../../controller/databaseFetcher/review.ts";
 import { PaperScopeForStage } from "../../model/db/paperScopeForStage.ts";
 
-export const convertPapersToPaperMessage = async (papers: Paper[], stageId?: number) => {
+export const convertPapersToPaperMessage = async (papers: Paper[], stageId?: number, userId?: number) => {
     let paperMessages: PaperMessage[] = [];
     for (const item of papers) {
-        let paperMessage: PaperMessage = await convertPaperToPaperMessage(item, stageId)
+        let paperMessage: PaperMessage = await convertPaperToPaperMessage(item, stageId, userId)
         paperMessages.push(paperMessage)
     }
     return paperMessages;
 }
 
-export const convertPaperToPaperMessage = async (paper: Paper, stageId?: number) => {
+export const convertPaperToPaperMessage = async (paper: Paper, stageId?: number, userId?: number) => {
     let paperMessage: PaperMessage = { id: Number(paper.id), pdf: [], authors: [] }
     let pp: PaperScopeForStage | undefined;
     if (stageId) { 
@@ -45,6 +45,8 @@ export const convertPaperToPaperMessage = async (paper: Paper, stageId?: number)
         paperMessage.status = Status.completelyEvaluated
     } else if(paperMessage.ppid && (await getAllReviewsFromProjectPaper(paperMessage.ppid)).length > 0){
         paperMessage.status = Status.partiallyEvaluated
+    } else if(userId && paperMessage.ppid && await checkUserReviewOfProjectPaper(paperMessage.ppid, userId)){
+        paperMessage.status = Status.evaluatedByMyself
     } else {
         paperMessage.status = Status.ready
     }
@@ -56,6 +58,10 @@ export const convertPaperToPaperMessage = async (paper: Paper, stageId?: number)
     }
     let authors = await getAllAuthorsFromPaper(Number(paper.id))
     authors.forEach(author => paperMessage.authors.push(convertAuthorToAuthorMessage(author)))
+    let unfinishedAuthors = paperMessage.authors.some(author => author.status === Status.unfinished)
+    if(paperMessage.authors.length > 0 && unfinishedAuthors){
+        paperMessage.status = Status.unfinished
+    }
     assign(paperMessage, paper)
     return paperMessage;
 }

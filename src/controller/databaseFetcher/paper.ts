@@ -38,7 +38,7 @@ export const getProjectPaperScope = async (stageId: number, paperId: number) => 
 }
 
 export const getPaperByDoi = async (doi: string): Promise<Paper> => {
-    let paper = await Paper.where({ doi: doi[0] }).get()
+    let paper = await Paper.where({ doi: doi }).get()
     return Array.isArray(paper) ? paper[0] : paper
 }
 

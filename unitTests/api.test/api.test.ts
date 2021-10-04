@@ -6,6 +6,34 @@ import { idType } from "../../src/api/iApiUniqueId.ts";
 
 export const standardPaper: IApiPaper = { title: [], abstract: [], author: [], year: [], publisher: [], numberOfCitations: [], numberOfReferences: [], type: [], scope: [], scopeName: [], pdf: [], uniqueId: [], source: [], raw: [] }
 
+Deno.test({
+	name: "test author split firstname, lastname",
+	async fn(): Promise<void> {
+		let apiMerger = new ApiMerger({
+			titleWeight: 10,
+			titleLevenshtein: 10,
+			abstractWeight: 7,
+			abstractLevenshtein: 0,
+			authorWeight: 8,
+			overallWeight: 0.85,
+			yearWeight: 2
+		})
+		let firstPaper = {} as IApiPaper;
+		let secondPaper = {} as IApiPaper;
+		Object.assign(firstPaper, standardPaper)
+		Object.assign(firstPaper, { "title": ["awsome paper title"], "author": [{ "orcid": [], "rawString": ["samuel idowu"], "lastName": [], "firstName": [] }, { "orcid": [], "rawString": ["max muster"], "lastName": ["Muster"], "firstName": ["Max"] }] })
+		Object.assign(secondPaper, standardPaper)
+		Object.assign(secondPaper, { "title": ["awsome paper title"], "author": [{ "orcid": [], "rawString": ["Samuel Idowu"], "lastName": [], "firstName": [] }, { "orcid": [], "rawString": ["Max Muster"], "lastName": ["muster"], "firstName": ["max"] }] })
+		const firstApiResponseJustTitle: IApiResponse = { paper: firstPaper, citations: [], references: [] }
+		const secondApiResponseJustTitle: IApiResponse = { paper: secondPaper, citations: [], references: [] }
+		let merged = await apiMerger.compare([makePromise<IApiResponse>(firstApiResponseJustTitle), makePromise<IApiResponse>(secondApiResponseJustTitle)]);
+		assertEquals(merged.length, 1)
+		assertEquals(merged[0].paper.author![0]!.firstName!, ["Samuel"])
+		assertEquals(merged[0].paper.author![0]!.lastName!, ["Idowu"])
+		assertEquals(merged[0].paper.author![0]!.rawString!, ["Samuel Idowu"])
+	}
+
+})
 
 Deno.test({
 	name: "test 2 papers merge author",

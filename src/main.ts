@@ -17,6 +17,7 @@ import {
     deleteCritieriaEvalOfReview,
     deletePaperOfProjectStage,
     deleteReviewOfPaper,
+    getCitationsOfProjectPaper,
     getCites,
     getCriteriaEvalsOfCriteria,
     getCriteriasOfProject,
@@ -26,6 +27,7 @@ import {
     getPaperOfProjectStage,
     getPapersOfProjectStage,
     getProjects,
+    getReferencesOfProjectPaper,
     getRefs,
     getReviewOfPaper,
     getReviewsOfPaper,
@@ -137,7 +139,7 @@ router
         await deletePaperOfProjectStage(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))
     })
     .get("/projects/:id/stages/:id2/papers/:ppid/references", async (context) => {
-        await getRefs(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))
+        await getReferencesOfProjectPaper(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))
     })
     .get("/projects/:id/stages/:id2/papers/:ppid/csv", async (context) => {
         await makeRefCiteCsv(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))
@@ -146,7 +148,7 @@ router
         await postRefProject(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))
     })
     .get("/projects/:id/stages/:id2/papers/:ppid/citations", async (context) => {
-        await getCites(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))
+        await getCitationsOfProjectPaper(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))
     })
     .post("/projects/:id/stages/:id2/papers/:ppid/citations", async (context) => {
         await postCiteProject(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))

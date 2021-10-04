@@ -20,10 +20,6 @@ export class Project extends Model {
         evaluationFormula: { type: DataTypes.STRING},
     }
 
-    static defaults = {
-        evaluationFormula: ""
-    }
-
     static user() {
         return this.hasMany(UserIsPartOfProject);
     }

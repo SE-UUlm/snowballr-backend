@@ -90,7 +90,8 @@ Deno.test({
         let countDecRev = 5
         let comb = "3,8"
         let type = "type"
-        let ctx = await createMockContext(app, `{"name":"${name}", "minCountReviewers": ${minCount}, "countDecisiveReviewers":${countDecRev}, "combinationOfReviewers":"${comb}", "type": "${type}"}`, [["Content-Type", "application/json"]], "/", token);
+        let evalF = "-2,2"
+        let ctx = await createMockContext(app, `{"name":"${name}", "minCountReviewers": ${minCount}, "countDecisiveReviewers":${countDecRev}, "combinationOfReviewers":"${comb}", "type": "${type}", "evaluationFormula": "${evalF}"}`, [["Content-Type", "application/json"]], "/", token);
         await createProject(ctx)
         projects = await Project.all()
         let answer = JSON.parse(ctx.response.body as string)
@@ -102,6 +103,7 @@ Deno.test({
         assertEquals(answer.combinationOfReviewers, comb)
         assertEquals(answer.countDecisiveReviewers, countDecRev)
         assertEquals(answer.type, type)
+        assertEquals(answer.evaluationFormula, evalF)
         await db.close();
         await client.end();
     },
@@ -207,26 +209,6 @@ Deno.test({
     sanitizeResources: false,
     sanitizeOps: false,
 })
-Deno.test({
-    name: "createProjectEvalFormula",
-    async fn(): Promise<void> {
-        await setup(true);
-        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
-        let app = await createMockApp();
-        let token = await createJWT(user)
-
-        let evalFormula = "NoExampleKnownYet"
-        let ctx = await createMockContext(app, `{"name":"name", "minCountReviewers": 3, "countDecisiveReviewers":5, "evaluationFormula": "${evalFormula}","combinationOfReviewers":"3,8", "type": "type"}`, [["Content-Type", "application/json"]], "/", token);
-        await createProject(ctx)
-        let answer = JSON.parse(ctx.response.body as string)
-        assertEquals(answer.evaluationFormula, evalFormula)
-
-        await db.close();
-        await client.end();
-    },
-    sanitizeResources: false,
-    sanitizeOps: false,
-})
 
 Deno.test({
     name: "createProjectNoName",
@@ -262,6 +244,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: 1,
+            evaluationFormula: "",
             type: ""
         })
         let app = await createMockApp();
@@ -289,6 +272,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: 1,
+            evaluationFormula: "",
             type: ""
 
         })
@@ -317,6 +301,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: 1,
+            evaluationFormula: "",
             type: ""
         })
         await UserIsPartOfProject.create({
@@ -349,6 +334,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: 1,
+            evaluationFormula: "",
             type: ""
         })
         let id = Number((await UserIsPartOfProject.create({
@@ -381,6 +367,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: 1,
+            evaluationFormula: "",
             type: ""
         })
         let app = await createMockApp();
@@ -407,6 +394,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: 1,
+            evaluationFormula: "",
             type: ""
         })
         let app = await createMockApp();
@@ -442,6 +430,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: 1,
+            evaluationFormula: "",
             type: ""
         })
         let bla = await UserIsPartOfProject.create({
@@ -480,6 +469,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: 1,
+            evaluationFormula: "",
             type: ""
         })
         let bla = await UserIsPartOfProject.create({
@@ -511,6 +501,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: 1,
+            evaluationFormula: "",
             type: ""
         })
         await UserIsPartOfProject.create({
@@ -541,6 +532,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: 1,
+            evaluationFormula: "",
             type: ""
         })
         await UserIsPartOfProject.create({
@@ -572,6 +564,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: 1,
+            evaluationFormula: "",
             type: ""
         })
         await UserIsPartOfProject.create({
@@ -608,6 +601,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: 1,
+            evaluationFormula: "",
             type: ""
         })
         await UserIsPartOfProject.create({
@@ -639,6 +633,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: 1,
+            evaluationFormula: "",
             type: ""
         })
         let stage = await Stage.create({
@@ -677,6 +672,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: 1,
+            evaluationFormula: "",
             type: ""
         })
         let stage = await Stage.create({
@@ -685,7 +681,7 @@ Deno.test({
             number: 0
         })
         let paper = await Paper.create({
-            doi: "10.1109/SEAA.2009.60"
+            doi: "10.1109/seaa.2009.60"
         })
         let app = await createMockApp();
         let token = await createJWT(user)
@@ -694,7 +690,7 @@ Deno.test({
 
         assertEquals(ctx.response.status, 201)
         paper = await Paper.find(Number(paper.id))
-        assertEquals(String(paper.title), "Translation of UML 2 Activity Diagrams into Finite State Machines for Model Checking")
+        assertNotEquals(paper.title, null)
         paperCache.clear()
         authorCache.clear()
         Batcher.kill()
@@ -716,7 +712,8 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: 1,
-            type: ""
+            type: "",
+            evaluationFormula: "",
         })
         let stage = await Stage.create({
             name: "TestStage",
@@ -751,7 +748,8 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: 1,
-            type: ""
+            type: "",
+            evaluationFormula: "",
         })
         let stage = await Stage.create({
             name: "TestStage",
@@ -812,6 +810,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: 1,
+            evaluationFormula: "",
             type: ""
         })
         let stage = await Stage.create({
@@ -863,6 +862,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: 1,
+            evaluationFormula: "",
             type: ""
         })
         let stage = await Stage.create({
@@ -911,6 +911,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: 1,
+            evaluationFormula: "",
             type: ""
         })
         let stage = await Stage.create({
@@ -960,6 +961,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: 1,
+            evaluationFormula: "",
             type: ""
         })
         let stage = await Stage.create({
@@ -1008,6 +1010,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: 1,
+            evaluationFormula: "",
             type: ""
         })
         let stage = await Stage.create({
@@ -1058,6 +1061,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: 1,
+            evaluationFormula: "",
             type: ""
         })
         let stage = await Stage.create({
@@ -1108,6 +1112,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: 1,
+            evaluationFormula: "",
             type: ""
         })
         let stage = await Stage.create({
@@ -1156,6 +1161,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: 1,
+            evaluationFormula: "",
             type: ""
         })
         let stage = await Stage.create({
@@ -1204,6 +1210,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: 1,
+            evaluationFormula: "",
             type: ""
         })
         let stage = await Stage.create({
@@ -1257,6 +1264,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: "3,8",
+            evaluationFormula: "",
             type: ""
         })
         let stage = await Stage.create({
@@ -1312,6 +1320,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: "3,8",
+            evaluationFormula: "",
             type: ""
         })
         let stage = await Stage.create({
@@ -1369,6 +1378,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: "3,8",
+            evaluationFormula: "",
             type: ""
         })
         let stage = await Stage.create({
@@ -1444,6 +1454,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: "3,8",
+            evaluationFormula: "",
             type: ""
         })
         let stage = await Stage.create({
@@ -1502,6 +1513,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: "3,8",
+            evaluationFormula: "",
             type: ""
         })
         let stage = await Stage.create({
@@ -1551,6 +1563,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: "3,8",
+            evaluationFormula: "",
             type: ""
         })
         let stage = await Stage.create({
@@ -1598,6 +1611,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: 1,
+            evaluationFormula: "",
             type: ""
         })
 
@@ -1662,6 +1676,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: 1,
+            evaluationFormula: "",
             type: ""
         })
 
@@ -1704,6 +1719,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: 1,
+            evaluationFormula: "",
             type: ""
         })
 
@@ -1742,6 +1758,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: 1,
+            evaluationFormula: "",
             type: ""
         })
 
@@ -1779,6 +1796,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: 1,
+            evaluationFormula: "",
             type: ""
         })
 
@@ -1810,6 +1828,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: 1,
+            evaluationFormula: "",
             type: ""
         })
         let criteriaID = Number((await Criteria.create({
@@ -1843,6 +1862,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: 1,
+            evaluationFormula: "",
             type: ""
         })
         let criteriaID = Number((await Criteria.create({
@@ -1889,6 +1909,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: 1,
+            evaluationFormula: "",
             type: ""
         })
         let criteriaID = Number((await Criteria.create({
@@ -1933,6 +1954,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: 1,
+            evaluationFormula: "",
             type: ""
         })
         let criteriaID = Number((await Criteria.create({
@@ -1972,6 +1994,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: 1,
+            evaluationFormula: "",
             type: ""
         })
         let criteriaID = Number((await Criteria.create({
@@ -2007,6 +2030,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: 1,
+            evaluationFormula: "",
             type: ""
         })
 
@@ -2048,6 +2072,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: 1,
+            evaluationFormula: "",
             type: ""
         })
 
@@ -2130,6 +2155,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: 1,
+            evaluationFormula: "",
             type: ""
         })
 
@@ -2206,6 +2232,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: 1,
+            evaluationFormula: "",
             type: ""
         })
 
@@ -2263,6 +2290,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: 1,
+            evaluationFormula: "",
             type: ""
         })
 
@@ -2338,6 +2366,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: 1,
+            evaluationFormula: "",
             type: ""
         })
 
@@ -2398,6 +2427,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: "3,8",
+            evaluationFormula: "",
             type: ""
         })
         let paper = await Paper.create({
@@ -2471,6 +2501,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: "3,8",
+            evaluationFormula: "",
             type: ""
         })
         let paper = await Paper.create({
@@ -2544,6 +2575,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: "3,8",
+            evaluationFormula: "",
             type: ""
         })
         let paper = await Paper.create({
@@ -2611,6 +2643,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: "3,8",
+            evaluationFormula: "",
             type: ""
         })
         let paper = await Paper.create({
@@ -2678,6 +2711,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: "3,8",
+            evaluationFormula: "",
             type: ""
         })
         let paper = await Paper.create({
@@ -2746,6 +2780,7 @@ Deno.test({
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
             combinationOfReviewers: "3,8",
+            evaluationFormula: "",
             type: ""
         })
         let paper = await Paper.create({
