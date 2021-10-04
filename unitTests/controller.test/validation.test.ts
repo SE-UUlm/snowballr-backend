@@ -133,7 +133,7 @@ Deno.test({
         let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
         let app = await createMockApp();
         let token = await createJWT(user)
-        let project = await Project.create({ name: "Test", minCountReviewers: 1, countDecisiveReviewers: 1 })
+        let project = await Project.create({ name: "Test", minCountReviewers: 1, countDecisiveReviewers: 1,evaluationFormula: "", combinationOfReviewers: "" })
         let userIsPartOfProject = await UserIsPartOfProject.create({
             isOwner: true,
             userId: Number(user.id),
@@ -156,7 +156,7 @@ Deno.test({
         let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
         let app = await createMockApp();
         let token = await createJWT(user)
-        let project = await Project.create({ name: "Test", minCountReviewers: 1, countDecisiveReviewers: 1 })
+        let project = await Project.create({ name: "Test", minCountReviewers: 1, countDecisiveReviewers: 1,evaluationFormula: "", combinationOfReviewers: "" })
         let userIsPartOfProject = await UserIsPartOfProject.create({
             isOwner: false,
             userId: Number(user.id),

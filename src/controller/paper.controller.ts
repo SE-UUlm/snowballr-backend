@@ -121,7 +121,11 @@ export const patchPaper = async (ctx: Context, paperID: number) => {
     if (validate) {
         let paper: Paper = await Paper.find(paperID);
         if (paper) {
-            await paperUpdate(ctx, paper)
+            let bodyJson = await jsonBodyToObject(ctx);
+            if (!bodyJson) {
+                return
+            }
+            await paperUpdate(ctx, paper, bodyJson)
         } else {
             makeErrorMessage(ctx, 404, "paper does not exist")
         }
@@ -136,12 +140,9 @@ export const patchPaper = async (ctx: Context, paperID: number) => {
  * @param paper 
  * @returns 
  */
-export const paperUpdate = async (ctx: Context, paper: Paper) => {
+export const paperUpdate = async (ctx: Context, paper: Paper, bodyJson: any) => {
     let paperID = Number(paper.id)
-    let bodyJson = await jsonBodyToObject(ctx);
-    if (!bodyJson) {
-        return
-    }
+
     let sourcePaper: any = paperCache.get(String(paperID))
     if (sourcePaper) {
         for (let key in bodyJson) {
