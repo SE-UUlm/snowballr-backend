@@ -72,7 +72,7 @@ export class GoogleScholar implements IApiFetcher {
 
 			// use a random user-agent to make it harder to get rate limited.
 			let rawHtml = await this._rateLimitedScrapeRequest(`${this.url}/scholar?as_sdt=0,5&q=${query.doi}&hl=en`, true);
-			let html: any = this._domParser.parseFromString(rawHtml.data, 'text/html');
+			let html: any = this._domParser.parseFromString(rawHtml, 'text/html');
 
 			// if (html.querySelector('#gs_captcha_c')) {
 			// 	throw new Error("Captcha enabled by google scholar. Cannot fetch.");
@@ -130,7 +130,7 @@ export class GoogleScholar implements IApiFetcher {
 	}
 
 	private async _rateLimitedScrapeRequest(url: string, refererNeeded?: boolean) {
-		let axiodConfig = this._randomAxiodConfig();
+		let axiodConfig = this._randomFetchConfig();
 		let timeout = getRandomFromRange(30, 60);
 		let timeDelta = lastScrappingRun ? difference(lastScrappingRun, new Date()).seconds! : timeout;
 		var release = await semaphore.acquire();
@@ -138,28 +138,30 @@ export class GoogleScholar implements IApiFetcher {
 			logger.warning(`GoogleScholar: globally ratelimiting requests. Waiting ${timeout} seconds...`)
 			await sleep(timeout - timeDelta);
 		}
-		let html = await axiod.get(url, axiodConfig);
-		//console.log(html);
+		let html = await fetch(url, axiodConfig);
+		//console.log(await html.text());
+		let body = await html.text();
+
 		//console.log(html.headers.get('set-cookie'));
 		if (!this._currentCookie) { this._currentCookie = html.headers.get('set-cookie')!; }
 		if (refererNeeded) {
-			logger.info(`Setting referer for future requests: ${html.config.url}`)
-			this._lastRefererUrl = html.config.url!;
+			//logger.info(`Setting referer for future requests: ${html.config.url}`)
+			//this._lastRefererUrl = html.config.url!;
 		}
 		else {
 			this._lastRefererUrl = undefined;
 		}
 		lastScrappingRun = new Date();
 		release();
-		let parsed: any = this._domParser.parseFromString(html.data, 'text/html');
+		let parsed: any = this._domParser.parseFromString(body, 'text/html');
 
 		if (parsed.querySelector('#gs_captcha_c')) {
 			throw new Error("Captcha enabled by google scholar. Cannot fetch.");
 		}
-		return html;
+		return body;
 	}
 
-	private _randomAxiodConfig(): Object {
+	private _randomFetchConfig(): Object {
 		let config: any = {
 			params: {},
 			headers: {
@@ -174,6 +176,13 @@ export class GoogleScholar implements IApiFetcher {
 				"sec-fetch-user": "?1",
 				"upgrade-insecure-requests": 1
 			},
+			proxy: {
+				url: 'http://localhost:5000',
+				basicAuth: {
+					username: 'username1',
+					password: 'password1'
+				}
+			}
 			//validateStatus: status) => true
 		}
 		if (this._currentCookie) { config.headers['cookie'] = this._currentCookie; }
@@ -195,7 +204,7 @@ export class GoogleScholar implements IApiFetcher {
 			//await sleep(timeout);
 			let rawHtml = await this._rateLimitedScrapeRequest(`${this.url}${url}&num=20&start=${currentPage}`);
 			currentPage += 20;
-			let html: any = this._domParser.parseFromString(rawHtml.data, 'text/html');
+			let html: any = this._domParser.parseFromString(await rawHtml, 'text/html');
 			let citationList = html.querySelector('#gs_res_ccl_mid');
 			//console.log(citationList);
 			citationList.childNodes.forEach((element: any) => {
