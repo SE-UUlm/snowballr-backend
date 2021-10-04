@@ -1,0 +1,7 @@
+src:
+  api:
+    proxy: 
+      ports:
+      - 80
+      addresses:
+      - https://127.0.0.1

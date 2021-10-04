@@ -15,6 +15,7 @@ import { sleep } from "https://deno.land/x/sleep/mod.ts";
 import { getRandomFromRange } from "../helper/random.ts";
 import { Semaphore } from "https://deno.land/x/semaphore/mod.ts"
 import { difference } from 'https://deno.land/std/datetime/mod.ts'
+import { proxyPool, Proxy } from './proxyPool.ts'
 
 /*Captcha Google Scholar Rate Limits Enabled
 Fetching same Query, 30-45 sec: 3,3,4
@@ -40,6 +41,7 @@ export class GoogleScholar implements IApiFetcher {
 	private _lastRefererUrl: string | undefined;
 	private _userAgent: Object;
 	private _currentCookie: string | undefined = undefined;
+	private _proxy: Proxy | undefined;
 
 	public constructor(url: string, token: string, cache?: Cache<IApiResponse>) {
 		logger.info("GoogleScholar initialized");
@@ -130,7 +132,11 @@ export class GoogleScholar implements IApiFetcher {
 	}
 
 	private async _rateLimitedScrapeRequest(url: string, refererNeeded?: boolean) {
-		let axiodConfig = this._randomFetchConfig();
+		// if this is the first request for the class get a proxy
+		if (!this._proxy) {
+			this._proxy = proxyPool.acquire();
+		}
+		let fetchConfig = this._proxy!.randomFetchConfig();
 		let timeout = getRandomFromRange(30, 60);
 		let timeDelta = lastScrappingRun ? difference(lastScrappingRun, new Date()).seconds! : timeout;
 		var release = await semaphore.acquire();
@@ -138,7 +144,7 @@ export class GoogleScholar implements IApiFetcher {
 			logger.warning(`GoogleScholar: globally ratelimiting requests. Waiting ${timeout} seconds...`)
 			await sleep(timeout - timeDelta);
 		}
-		let html = await fetch(url, axiodConfig);
+		let html = await fetch(url, fetchConfig);
 		//console.log(await html.text());
 		let body = await html.text();
 
@@ -156,6 +162,7 @@ export class GoogleScholar implements IApiFetcher {
 		let parsed: any = this._domParser.parseFromString(body, 'text/html');
 
 		if (parsed.querySelector('#gs_captcha_c')) {
+			this._proxy = proxyPool.exchange(this._proxy!);
 			throw new Error("Captcha enabled by google scholar. Cannot fetch.");
 		}
 		return body;
