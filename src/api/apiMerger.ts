@@ -290,6 +290,25 @@ export class ApiMerger implements IApiMerger {
 				mergedAuthor.rawString = rawstring;
 			}
 		}
+
+		if(!mergedAuthor.firstName[0] && mergedAuthor.rawString[0]){
+			if(mergedAuthor.rawString[0].includes(",")){
+				mergedAuthor.firstName.push(mergedAuthor.rawString[0].split(",")[1])
+			} else if(mergedAuthor.rawString[0].includes(" ")){
+				mergedAuthor.firstName.push(mergedAuthor.rawString[0].split(" ")[0])
+			}
+		}
+
+		if(!mergedAuthor.lastName[0] && mergedAuthor.rawString[0]){
+			if(mergedAuthor.rawString[0].includes(",")){
+				mergedAuthor.lastName.push(mergedAuthor.rawString[0].split(",")[0])
+			} else if(mergedAuthor.rawString[0].includes(" ")){
+				mergedAuthor.lastName.push(mergedAuthor.rawString[0].split(" ")[1])
+			} else{
+				mergedAuthor.lastName.push(mergedAuthor.rawString[0])
+			}
+		}
+
 		return mergedAuthor as IApiAuthor;
 	}
 
