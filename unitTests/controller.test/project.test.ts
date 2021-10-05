@@ -2459,7 +2459,7 @@ Deno.test({
         }))
 
         let criteriaEval = await CriteriaEvaluation.create({
-            value: "maybe",
+            value: "MAYBE",
             reviewId: Number(review.id),
             criteriaId: Number(criteria.id)
         })
@@ -2475,7 +2475,7 @@ Deno.test({
         assertEquals(ctx.response.status, 200)
 
         assertEquals(answer.criteriaevaluations.length, 2)
-        assertEquals(answer.criteriaevaluations[0].value, "maybe")
+        assertEquals(answer.criteriaevaluations[0].value, "MAYBE")
         assertEquals(answer.criteriaevaluations[1].reviewId, Number(review.id))
         assertEquals(answer.criteriaevaluations[0].criteriaId, Number(criteria.id))
         await db.close();
@@ -2533,7 +2533,7 @@ Deno.test({
         }))
 
         let criteriaEval = await CriteriaEvaluation.create({
-            value: "maybe",
+            value: "MAYBE",
             reviewId: Number(review.id),
             criteriaId: Number(criteria.id)
         })
@@ -2549,7 +2549,7 @@ Deno.test({
         assertEquals(ctx.response.status, 200)
 
         assertEquals(answer.criteriaevaluations.length, 2)
-        assertEquals(answer.criteriaevaluations[0].value, "maybe")
+        assertEquals(answer.criteriaevaluations[0].value, "MAYBE")
         assertEquals(answer.criteriaevaluations[1].reviewId, Number(review.id))
         assertEquals(answer.criteriaevaluations[0].criteriaId, Number(criteria.id))
         await db.close();
@@ -2607,7 +2607,7 @@ Deno.test({
         }))
 
         let ctx = await createMockContext(app, `{
-                        "value": "maybe",
+                        "value": "MAYBE",
             "criteriaId": ${Number(criteria.id)}
         }`, [["Content-Type", "application/json"]], "/", token);
 
@@ -2617,7 +2617,7 @@ Deno.test({
         let answer = JSON.parse(ctx.response.body as string)
         assertNotEquals(answer.id, undefined)
         let ce = await CriteriaEvaluation.find(answer.id)
-        assertEquals(ce.value, "maybe")
+        assertEquals(ce.value,"MAYBE")
         assertEquals(Number(ce.criteriaId), Number(criteria.id))
         assertEquals(Number(ce.reviewId), Number(review.id))
 
@@ -2675,7 +2675,7 @@ Deno.test({
         }))
 
         let criteriaEval = await CriteriaEvaluation.create({
-            value: "maybe",
+            value: "MAYBE",
             reviewId: Number(review.id),
             criteriaId: Number(criteria.id)
         })
@@ -2685,7 +2685,7 @@ Deno.test({
         let answer = JSON.parse(ctx.response.body as string)
         assertEquals(ctx.response.status, 200)
 
-        assertEquals(answer.value, "maybe")
+        assertEquals(answer.value, "MAYBE")
         assertEquals(answer.reviewId, Number(review.id))
         assertEquals(answer.criteriaId, Number(criteria.id))
         await db.close();
@@ -2742,12 +2742,12 @@ Deno.test({
             short: "FG", abbreviation: "An abbrevation", inclusionExclusion: "inclusion", weight: 3, description: "a description"
         }))
         let criteriaEval = await CriteriaEvaluation.create({
-            value: "maybe",
+            value: "MAYBE",
             reviewId: Number(review.id),
             criteriaId: Number(criteria.id)
         })
         let ctx = await createMockContext(app, `{
-                        "value": "yes"
+                        "value": "YES"
         }`, [["Content-Type", "application/json"]], "/", token);
 
 
@@ -2755,7 +2755,7 @@ Deno.test({
         assertEquals(ctx.response.status, 200)
 
         review = await CriteriaEvaluation.find(Number(criteriaEval.id))
-        assertEquals(review.value, "yes")
+        assertEquals(review.value, "YES")
 
         await db.close();
         await client.end();
@@ -2811,7 +2811,7 @@ Deno.test({
             short: "FG", abbreviation: "An abbrevation", inclusionExclusion: "inclusion", weight: 3, description: "a description"
         }))
         let criteriaEvalId = Number((await CriteriaEvaluation.create({
-            value: "maybe",
+            value: "MAYBE",
             reviewId: Number(ce.id),
             criteriaId: Number(criteria.id)
         })).id)

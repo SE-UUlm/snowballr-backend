@@ -90,7 +90,7 @@ export const setup = async (dropDatabase: boolean) => {
         //TODO: only to showcase functionality, otherwise delete
         let admin2 = await insertUser("test.tester@uni-ulm.de", "$X3Ljv8Kq6&QgM", true, "admin", "admin", "active");
         let project = await Project.create({
-            name: "Test", minCountReviewers: 0, countDecisiveReviewers: 5, combinationOfReviewers: "",
+            name: "Test", minCountReviewers: 0, countDecisiveReviewers: 5, combinationOfReviewers: 0,
             type: "",
             evaluationFormula: ""
         })
