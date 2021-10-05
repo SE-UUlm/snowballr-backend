@@ -4,6 +4,9 @@ import { ApiBatcher } from "../api/apiBatcher.ts";
 import { SourceApi } from "../api/iApiPaper.ts";
 import { IComparisonWeight } from "../api/iComparisonWeight.ts";
 import { IApiBatch } from "../api/iApiBatcher.ts";
+import { Context } from "https://deno.land/x/oak/mod.ts";
+import { UserStatus } from "./validation.controller.ts";
+import { validateUserEntry } from "./validation.controller.ts";
 
 export const Batcher = new ApiBatcher();
 //TODO id
@@ -42,3 +45,7 @@ export const makeFetching = (doi?: string, title?: string, name?: string) => {
     return Batcher.startFetch(query);
 }
 
+export const getActiveBatchLength = (ctx: Context)=> {
+    ctx.response.status = 200;
+    ctx.response.body = JSON.stringify({activeBatchesCount: Batcher.activeBatchLength()})
+}

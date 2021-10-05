@@ -1,9 +1,12 @@
-import { assertEquals } from "https://deno.land/std@0.97.0/testing/asserts.ts";
+import { assertEquals } from "https://deno.land/std/testing/asserts.ts";
 import { getDOI } from "../../src/api/apiMerger.ts";
-import { Batcher, makeFetching } from "../../src/controller/fetch.controller.ts"
+import { Batcher, getActiveBatchLength, makeFetching } from "../../src/controller/fetch.controller.ts"
 import { insertUser } from "../../src/controller/databaseFetcher/user.ts";
 import { db, client } from "../../src/controller/database.controller.ts"
 import { setup } from "../../src/helper/setup.ts";
+import { createMockApp } from "../mockObjects/oak/mockApp.test.ts";
+import { createJWT } from "../../src/controller/validation.controller.ts";
+import { createMockContext } from "../mockObjects/oak/mockContext.test.ts";
 
 Deno.test({
     name: "GetDoiByTitleAndName",
@@ -19,3 +22,28 @@ Deno.test({
     sanitizeResources: false,
     sanitizeOps: false,
 })
+
+Deno.test({
+    name: "GetCurrentBatchSize",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, `{}`, [["Content-Type", "application/json"]], "/", token);
+
+        let batch = makeFetching(undefined, "Translation of UML 2 Activity Diagrams into Finite State Machines for Model Checking", "alexander raschke")
+        getActiveBatchLength(ctx)
+        let answer = JSON.parse(ctx.response.body as string)
+        assertEquals(ctx.response.status, 200)
+        assertEquals(answer.activeBatchesCount, 1)
+        await batch;
+        await db.close();
+        await client.end();
+        Batcher.kill()
+    },
+    sanitizeResources: false,
+    sanitizeOps: false,
+})
+

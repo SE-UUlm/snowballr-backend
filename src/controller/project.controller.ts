@@ -518,7 +518,8 @@ export const getCites = async (ctx: Context, projectID: number, stageID: number,
 
     try {
         let paper = await PaperScopeForStage.where("id", ppID).paper();
-        if (paper) {
+        let project = await Project.find(projectID)
+        if (paper && project) {
             let papers: Promise<Paper>[] = await getRefOrCiteList(ctx, "citedBy", "papercitingid", "papercitedid", Number(paper.id))
             let nextStage = await findNextStage(await Stage.find(stageID), projectID)
             for (let i = 0; i < papers.length; i++) {
@@ -528,6 +529,8 @@ export const getCites = async (ctx: Context, projectID: number, stageID: number,
             }
             return papers.filter(item => item)
 
+        } else{
+            makeErrorMessage(ctx, 404, "paper or project does not exist") 
         }
     } catch (e) {
         makeErrorMessage(ctx, 404, "paper does not exist")
