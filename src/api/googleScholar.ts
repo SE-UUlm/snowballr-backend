@@ -66,11 +66,11 @@ export class GoogleScholar implements IApiFetcher {
 		queryIdentifier.update(JSON.stringify(query));
 		let queryString = queryIdentifier.toString();
 		try {
-			let get = this.cache!.get(queryString);
-			if (this.cache && get) {
-				logger.info(`GS: Loaded fetch from cache.`)
-				return get;
-			}
+			// let get = this.cache!.get(queryString);
+			// if (this.cache && get) {
+			// 	logger.info(`GS: Loaded fetch from cache.`)
+			// 	return get;
+			// }
 
 			// use a random user-agent to make it harder to get rate limited.
 			let rawHtml = await this._rateLimitedScrapeRequest(`${this.url}/scholar?as_sdt=0,5&q=${query.doi}&hl=en`, true);
@@ -134,11 +134,14 @@ export class GoogleScholar implements IApiFetcher {
 	private async _rateLimitedScrapeRequest(url: string, refererNeeded?: boolean) {
 		// if this is the first request for the class get a proxy
 		if (!this._proxy) {
-			this._proxy = proxyPool.acquire();
+			console.log("_______________")
+			this._proxy = await proxyPool.acquire();
+			console.log(this._proxy)
 		}
-		let fetchConfig = this._proxy!.randomFetchConfig();
+		let fetchConfig = this._proxy!.randomFetchConfig(this._lastRefererUrl, this._currentCookie);
 		let timeout = getRandomFromRange(30, 60);
 		let timeDelta = lastScrappingRun ? difference(lastScrappingRun, new Date()).seconds! : timeout;
+		console.log(fetchConfig);
 		var release = await semaphore.acquire();
 		if (timeDelta < timeout) {
 			logger.warning(`GoogleScholar: globally ratelimiting requests. Waiting ${timeout} seconds...`)
@@ -162,7 +165,7 @@ export class GoogleScholar implements IApiFetcher {
 		let parsed: any = this._domParser.parseFromString(body, 'text/html');
 
 		if (parsed.querySelector('#gs_captcha_c')) {
-			this._proxy = proxyPool.exchange(this._proxy!);
+			this._proxy = await proxyPool.exchange(this._proxy!);
 			throw new Error("Captcha enabled by google scholar. Cannot fetch.");
 		}
 		return body;

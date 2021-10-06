@@ -1,7 +1,5 @@
-src:
-  api:
-    proxy: 
-      ports:
-      - 80
-      addresses:
-      - https://127.0.0.1
+googleScholar:
+  proxy:
+    enabled: false
+    pool: 
+      - http://mydomain:8080

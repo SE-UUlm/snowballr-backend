@@ -1,6 +1,7 @@
 import { HttpUserAgents } from './httpUserAgent.ts';
 import { parse } from "https://deno.land/std/encoding/yaml.ts";
-import { logger } from "./logger.ts";
+import { logger } from "./logger.ts"
+import { sleep } from "https://deno.land/x/sleep/mod.ts";
 
 export class Proxy {
 	private _userAgent: Object | undefined;
@@ -12,15 +13,27 @@ export class Proxy {
 	private _password: string | undefined;
 	public onCooldown: boolean = false;
 	public isCurrentlyUsed: boolean = false;
+	public isWorking: boolean = true;
+	public isDummy: boolean = false;
 
-	public constructor(address: string, user?: string, password?: string) {
+	public constructor(address: string, isDummy?: boolean, user?: string, password?: string) {
 		this._userAgent = HttpUserAgents[Math.floor(Math.random() * HttpUserAgents.length)];
 		this._address = address;
 		this._user = user ? user : undefined;
 		this._password = password ? password : undefined;
+		this.isDummy = isDummy ? isDummy : false;
 	}
 
-	public randomFetchConfig(): Object {
+	public randomFetchConfig(lastRefererUrl?: string, currentCookie?: string): Object {
+		if (!this.isDummy) {
+			let client = Deno.createHttpClient({
+				proxy: {
+					url: "http://84.155.36.194:8080",
+				}
+			})
+		}
+		else { let client = Deno.createHttpClient({}) }
+		//console.log("PROXY: " + client)
 		let config: any = {
 			params: {},
 			headers: {
@@ -28,23 +41,18 @@ export class Proxy {
 				'user-agent': this._userAgent,
 				"accept-encoding": "gzip, deflate, br",
 				"accept-language": "en-US,en;q=0.9,de;q=0.8",
-				'referer': this._lastRefererUrl ? this._lastRefererUrl : 'https://www.google.com/',
+				'referer': lastRefererUrl ? lastRefererUrl : 'https://www.google.com/',
 				"sec-fetch-dest": "document",
 				"sec-fetch-mode": "navigate",
 				"sec-fetch-site": "same-origin",
 				"sec-fetch-user": "?1",
 				"upgrade-insecure-requests": 1
 			},
-			proxy: {
-				url: this._address,
-				basicAuth: {
-					username: this._user,
-					password: this._password
-				}
-			}
+			client,
+
 			//validateStatus: status) => true
 		}
-		if (this._currentCookie) { config.headers['cookie'] = this._currentCookie; }
+		if (currentCookie) { config.headers['cookie'] = currentCookie; }
 		return config;
 	}
 
@@ -62,18 +70,18 @@ export class Proxy {
 class ProxyPool {
 	private static _instance: ProxyPool;
 	private _proxies: Proxy[] = [] as Proxy[];
+	private _settings: {};
 
 	//allows to pass addresses and ports otherwise takes them from the env
 	private constructor(proxyPorts?: number[], proxyAddresses?: number[]) {
 		const data: any = parse(Deno.readTextFileSync("../../config.yaml"));
-		console.log(data);
-		for (let a in data.src.api.proxy.addresses) {
-			for (let p in data.src.api.proxy.ports) {
-				let proxy = new Proxy(`${a}:${p}`)
-				this._proxies.push(proxy);
-			}
+		//console.log(data);
+		this._settings = data.googleScholar;
+		for (let p in data.googleScholar.proxy.pool) {
+			console.log(p)
+			let proxy = new Proxy(`${data.googleScholar.proxy.pool[p]}`)
+			this._proxies.push(proxy);
 		}
-
 	}
 
 	public static Instance(proxyPorts?: number[], proxyAddresses?: number[]) {
@@ -81,23 +89,27 @@ class ProxyPool {
 		return this._instance || (this._instance = new this(proxyPorts ? proxyPorts : undefined, proxyAddresses ? proxyAddresses : undefined));
 	}
 
-	public acquire(): Proxy | undefined {
-		console.debug("Trying to acquire Proxy")
+	public async acquire(): Promise<Proxy> {
+		console.debug("Trying to acquire Proxy");
+		//while (true) {
+		let proxy: Proxy = {} as Proxy;
 		this._proxies.forEach((p: any) => {
 			console.log(p.isCurrentlyUsed)
 			console.log(p.onCooldown)
 			if (!p.isCurrentlyUsed && !p.onCooldown) {
-				console.log("here")
 				p.isCurrentlyUsed = true;
-				console.log("there")
-				return p;
+				console.log(typeof p)
+				console.log(p)
+				proxy = p;
 			}
 		});
-		logger.error('All proxies currently in use or blocked! You need to wait')
-		return undefined;
+		await sleep(1);
+		//console.log("waiting for a free proxy")
+		return proxy;
+		//}
 	}
 
-	public exchange(blockingProxy: Proxy): Proxy | undefined {
+	public exchange(blockingProxy: Proxy): Promise<Proxy> | undefined {
 		console.debug("Trying to EXCHANGE Proxy")
 		blockingProxy.blocked();
 		return this.acquire();
