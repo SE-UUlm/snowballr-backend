@@ -3,6 +3,20 @@ import { parse } from "https://deno.land/std/encoding/yaml.ts";
 import { logger } from "./logger.ts"
 import { sleep } from "https://deno.land/x/sleep/mod.ts";
 
+
+// install polipo
+/*
+apt-get install tor
+sudo service tor start/stop
+
+wget http://archive.ubuntu.com/ubuntu/pool/universe/p/polipo/polipo_1.1.1-8_amd64.deb
+sudo dpkg -i polipo_1.1.1-8_amd64.deb
+
+/etc/polipo/config:
+socksParentProxy = localhost:9050
+diskCacheRoot=""
+
+*/
 export class Proxy {
 	private _userAgent: Object | undefined;
 	private _lastRefererUrl: string | undefined;
@@ -25,14 +39,15 @@ export class Proxy {
 	}
 
 	public randomFetchConfig(lastRefererUrl?: string, currentCookie?: string): Object {
+		let client = Deno.createHttpClient({})
+		console.log(this._address)
 		if (!this.isDummy) {
-			let client = Deno.createHttpClient({
+			client = Deno.createHttpClient({
 				proxy: {
-					url: "http://84.155.36.194:8080",
+					url: this._address,
 				}
 			})
 		}
-		else { let client = Deno.createHttpClient({}) }
 		//console.log("PROXY: " + client)
 		let config: any = {
 			params: {},
@@ -70,7 +85,7 @@ export class Proxy {
 class ProxyPool {
 	private static _instance: ProxyPool;
 	private _proxies: Proxy[] = [] as Proxy[];
-	private _settings: {};
+	private _settings: any;
 
 	//allows to pass addresses and ports otherwise takes them from the env
 	private constructor(proxyPorts?: number[], proxyAddresses?: number[]) {
@@ -90,8 +105,11 @@ class ProxyPool {
 	}
 
 	public async acquire(): Promise<Proxy> {
+		if (!this._settings.proxy.enabled) {
+			logger.info(`GS: Proxy is disabled via config.yaml. Generating dummmy for agent simulation`)
+			return new Proxy("", true);
+		}
 		console.debug("Trying to acquire Proxy");
-		//while (true) {
 		let proxy: Proxy = {} as Proxy;
 		this._proxies.forEach((p: any) => {
 			console.log(p.isCurrentlyUsed)

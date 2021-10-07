@@ -1,5 +1,5 @@
 googleScholar:
   proxy:
-    enabled: false
+    enabled: true
     pool: 
-      - http://mydomain:8080
+      - http://localhost:8123
