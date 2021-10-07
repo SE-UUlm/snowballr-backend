@@ -42,6 +42,7 @@ export class GoogleScholar implements IApiFetcher {
 	private _userAgent: Object;
 	private _currentCookie: string | undefined = undefined;
 	private _proxy: Proxy | undefined;
+	private _retries: number = 0;
 
 	public constructor(url: string, token: string, cache?: Cache<IApiResponse>) {
 		logger.info("GoogleScholar initialized");
@@ -131,17 +132,17 @@ export class GoogleScholar implements IApiFetcher {
 		}
 	}
 
-	private async _rateLimitedScrapeRequest(url: string, refererNeeded?: boolean) {
+	private async _rateLimitedScrapeRequest(url: string, refererNeeded?: boolean): Promise<string> {
 		// if this is the first request for the class get a proxy
 		if (!this._proxy) {
-			console.log("_______________")
+			//console.log("_______________")
 			this._proxy = await proxyPool.acquire();
-			console.log(this._proxy)
+			//console.log(this._proxy)
 		}
 		let fetchConfig = this._proxy!.randomFetchConfig(this._lastRefererUrl, this._currentCookie);
-		let timeout = getRandomFromRange(30, 60);
+		let timeout = getRandomFromRange(5, 10);
 		let timeDelta = lastScrappingRun ? difference(lastScrappingRun, new Date()).seconds! : timeout;
-		console.log(fetchConfig);
+		//console.log(fetchConfig);
 		var release = await semaphore.acquire();
 		if (timeDelta < timeout) {
 			logger.warning(`GoogleScholar: globally ratelimiting requests. Waiting ${timeout} seconds...`)
@@ -165,8 +166,16 @@ export class GoogleScholar implements IApiFetcher {
 		let parsed: any = this._domParser.parseFromString(body, 'text/html');
 
 		if (parsed.querySelector('#gs_captcha_c')) {
-			this._proxy = await proxyPool.exchange(this._proxy!);
-			throw new Error("Captcha enabled by google scholar. Cannot fetch.");
+
+			if (this._retries < 5) {
+				logger.warning(`GS: Detected Captcha. Retry #${this._retries}.`)
+				this._proxy = await proxyPool.exchange(this._proxy!);
+				this._retries++;
+				return this._rateLimitedScrapeRequest(url, refererNeeded ? refererNeeded : undefined)
+			}
+			else {
+				throw new Error("Captcha enabled by google scholar. Cannot fetch.");
+			}
 		}
 		return body;
 	}
