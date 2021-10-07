@@ -1,0 +1,104 @@
+[34mThu, 07 Oct 2021 21:28:23 GMT	INFO	Watchdog for fileCache started.[39m
+[34mThu, 07 Oct 2021 21:28:23 GMT	INFO	FileCache created. FolderName: microsoftAcademic[39m
+[34mThu, 07 Oct 2021 21:28:23 GMT	INFO	Watchdog for fileCache started.[39m
+[34mThu, 07 Oct 2021 21:28:23 GMT	INFO	FileCache created. FolderName: crossRef[39m
+[34mThu, 07 Oct 2021 21:28:23 GMT	INFO	Watchdog for fileCache started.[39m
+[34mThu, 07 Oct 2021 21:28:23 GMT	INFO	FileCache created. FolderName: openCitations[39m
+[34mThu, 07 Oct 2021 21:28:23 GMT	INFO	Watchdog for fileCache started.[39m
+[34mThu, 07 Oct 2021 21:28:23 GMT	INFO	FileCache created. FolderName: semanticScholar[39m
+[34mThu, 07 Oct 2021 21:28:23 GMT	INFO	Watchdog for fileCache started.[39m
+[34mThu, 07 Oct 2021 21:28:23 GMT	INFO	FileCache created. FolderName: IEEE[39m
+[34mThu, 07 Oct 2021 21:28:23 GMT	INFO	Watchdog for fileCache started.[39m
+[34mThu, 07 Oct 2021 21:28:23 GMT	INFO	FileCache created. FolderName: googleScholar[39m
+Iteration 0
+[34mThu, 07 Oct 2021 21:28:23 GMT	INFO	GoogleScholar initialized[39m
+[33m200[39m
+2216
+[34mThu, 07 Oct 2021 21:28:25 GMT	INFO	GoogleScholar: Got 2216 citations. This will need 110.8 fetches[39m
+[33m110.8[39m
+[33mThu, 07 Oct 2021 21:28:25 GMT	WARNING	GoogleScholar: globally ratelimiting requests. Waiting 8 seconds...[39m
+[33m200[39m
+[33m109.8[39m
+[33mThu, 07 Oct 2021 21:28:34 GMT	WARNING	GoogleScholar: globally ratelimiting requests. Waiting 6 seconds...[39m
+[33m200[39m
+[33m108.8[39m
+[33mThu, 07 Oct 2021 21:28:42 GMT	WARNING	GoogleScholar: globally ratelimiting requests. Waiting 7 seconds...[39m
+[33m200[39m
+[33m107.8[39m
+[33mThu, 07 Oct 2021 21:28:50 GMT	WARNING	GoogleScholar: globally ratelimiting requests. Waiting 5 seconds...[39m
+[33m200[39m
+[33m106.8[39m
+[33mThu, 07 Oct 2021 21:28:56 GMT	WARNING	GoogleScholar: globally ratelimiting requests. Waiting 7 seconds...[39m
+[33m200[39m
+[33m105.8[39m
+[33mThu, 07 Oct 2021 21:29:05 GMT	WARNING	GoogleScholar: globally ratelimiting requests. Waiting 6 seconds...[39m
+[33m200[39m
+[33m104.8[39m
+[33mThu, 07 Oct 2021 21:29:12 GMT	WARNING	GoogleScholar: globally ratelimiting requests. Waiting 8 seconds...[39m
+[33m200[39m
+[33m103.8[39m
+[33mThu, 07 Oct 2021 21:29:21 GMT	WARNING	GoogleScholar: globally ratelimiting requests. Waiting 6 seconds...[39m
+[33m200[39m
+[33m102.8[39m
+[33mThu, 07 Oct 2021 21:29:28 GMT	WARNING	GoogleScholar: globally ratelimiting requests. Waiting 10 seconds...[39m
+[33m200[39m
+[33m101.8[39m
+[33mThu, 07 Oct 2021 21:29:39 GMT	WARNING	GoogleScholar: globally ratelimiting requests. Waiting 7 seconds...[39m
+[33m200[39m
+[33m100.8[39m
+[33mThu, 07 Oct 2021 21:29:49 GMT	WARNING	GoogleScholar: globally ratelimiting requests. Waiting 7 seconds...[39m
+[33m200[39m
+[33m99.8[39m
+[33mThu, 07 Oct 2021 21:29:57 GMT	WARNING	GoogleScholar: globally ratelimiting requests. Waiting 7 seconds...[39m
+[33m200[39m
+[33m98.8[39m
+[33mThu, 07 Oct 2021 21:30:05 GMT	WARNING	GoogleScholar: globally ratelimiting requests. Waiting 10 seconds...[39m
+[33m200[39m
+[33mThu, 07 Oct 2021 21:30:17 GMT	WARNING	GS: Detected Captcha. Retry #0.[39m
+Thu, 07 Oct 2021 21:30:17 GMT	DEBUG	Trying to EXCHANGE Proxy
+[33mThu, 07 Oct 2021 21:30:17 GMT	WARNING	Tor Proxy got blocked. Reloading service to get new ip. Deno must be run as admin to do so!!!!![39m
+[33mThu, 07 Oct 2021 21:30:17 GMT	WARNING	GoogleScholar: globally ratelimiting requests. Waiting 5 seconds...[39m
+185.220.102.244
+
+ * Reloading tor daemon configuration...
+   ...done.
+
+[33m200[39m
+[33mThu, 07 Oct 2021 21:30:23 GMT	WARNING	GS: Detected Captcha. Retry #1.[39m
+Thu, 07 Oct 2021 21:30:23 GMT	DEBUG	Trying to EXCHANGE Proxy
+[33mThu, 07 Oct 2021 21:30:23 GMT	WARNING	Tor Proxy got blocked. Reloading service to get new ip. Deno must be run as admin to do so!!!!![39m
+[33mThu, 07 Oct 2021 21:30:23 GMT	WARNING	GoogleScholar: globally ratelimiting requests. Waiting 9 seconds...[39m
+109.70.100.27
+
+ * Reloading tor daemon configuration...
+   ...done.
+
+[33m200[39m
+[33mThu, 07 Oct 2021 21:30:33 GMT	WARNING	GS: Detected Captcha. Retry #2.[39m
+Thu, 07 Oct 2021 21:30:33 GMT	DEBUG	Trying to EXCHANGE Proxy
+[33mThu, 07 Oct 2021 21:30:33 GMT	WARNING	Tor Proxy got blocked. Reloading service to get new ip. Deno must be run as admin to do so!!!!![39m
+[33mThu, 07 Oct 2021 21:30:33 GMT	WARNING	GoogleScholar: globally ratelimiting requests. Waiting 8 seconds...[39m
+109.70.100.27
+
+ * Reloading tor daemon configuration...
+   ...done.
+
+[33m200[39m
+[33mThu, 07 Oct 2021 21:30:43 GMT	WARNING	GS: Detected Captcha. Retry #3.[39m
+Thu, 07 Oct 2021 21:30:43 GMT	DEBUG	Trying to EXCHANGE Proxy
+[33mThu, 07 Oct 2021 21:30:43 GMT	WARNING	Tor Proxy got blocked. Reloading service to get new ip. Deno must be run as admin to do so!!!!![39m
+[33mThu, 07 Oct 2021 21:30:43 GMT	WARNING	GoogleScholar: globally ratelimiting requests. Waiting 9 seconds...[39m
+5.2.72.226
+
+ * Reloading tor daemon configuration...
+   ...done.
+
+[33m403[39m
+[33mThu, 07 Oct 2021 21:30:52 GMT	WARNING	GS:Site blocked or not reachable. Http status code 403. Retry #4.[39m
+Thu, 07 Oct 2021 21:30:52 GMT	DEBUG	Trying to EXCHANGE Proxy
+[33mThu, 07 Oct 2021 21:30:52 GMT	WARNING	Tor Proxy got blocked. Reloading service to get new ip. Deno must be run as admin to do so!!!!![39m
+5.2.72.226
+
+ * Reloading tor daemon configuration...
+   ...done.
+

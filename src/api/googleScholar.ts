@@ -149,7 +149,20 @@ export class GoogleScholar implements IApiFetcher {
 			await sleep(timeout - timeDelta);
 		}
 		let html = await fetch(url, fetchConfig);
-		//console.log(await html.text());
+		console.log(html.status);
+		if (html.status !== 200) {
+			if (this._retries < 50) {
+				this._lastRefererUrl = undefined;
+				this._currentCookie = undefined;
+				logger.warning(`GS:Site blocked or not reachable. Http status code ${html.status}. Retry #${this._retries}.`)
+				this._proxy = await proxyPool.exchange(this._proxy!);
+				this._retries++;
+				return this._rateLimitedScrapeRequest(url, refererNeeded ? refererNeeded : undefined)
+			}
+			else {
+				throw new Error("Captcha enabled by google scholar. Cannot fetch.");
+			}
+		}
 		let body = await html.text();
 
 		//console.log(html.headers.get('set-cookie'));
@@ -167,7 +180,9 @@ export class GoogleScholar implements IApiFetcher {
 
 		if (parsed.querySelector('#gs_captcha_c')) {
 
-			if (this._retries < 5) {
+			if (this._retries < 50) {
+				this._lastRefererUrl = undefined;
+				this._currentCookie = undefined;
 				logger.warning(`GS: Detected Captcha. Retry #${this._retries}.`)
 				this._proxy = await proxyPool.exchange(this._proxy!);
 				this._retries++;
@@ -177,7 +192,12 @@ export class GoogleScholar implements IApiFetcher {
 				throw new Error("Captcha enabled by google scholar. Cannot fetch.");
 			}
 		}
+		this._retries = 0;
 		return body;
+	}
+
+	private _rotateProxy() {
+
 	}
 
 	private _randomFetchConfig(): Object {

@@ -23,7 +23,7 @@ curl --socks5 127.0.0.1:9050 http://checkip.amazonaws.com/
 
 */
 export class Proxy {
-	private _userAgent: Object | undefined;
+	protected _userAgent: Object | undefined;
 	private _lastRefererUrl: string | undefined;
 	private _currentCookie: string | undefined;
 	private _cooldown: number = 300;
@@ -89,7 +89,8 @@ export class Proxy {
 
 export class TorProxy extends Proxy {
 	public async blocked(): Promise<void> {
-		logger.warning("Tor Proxy got blocked. Reloading service to get new ip. Deno must be run as admin to do so!!!!!")
+		logger.warning("Tor Proxy got blocked. Reloading service to get new ip. Deno must be run as admin to do so!!!!!");
+		this._userAgent = HttpUserAgents[Math.floor(Math.random() * HttpUserAgents.length)];
 
 		// https://stackoverflow.com/questions/62142699/how-do-i-run-an-arbitrary-shell-command-from-deno
 		const process = Deno.run({
@@ -98,6 +99,15 @@ export class TorProxy extends Proxy {
 			stderr: "piped"
 		});
 
+		const debug = Deno.run({
+			cmd: ["curl", "--socks5", "127.0.0.1:9050", "http://checkip.amazonaws.com/"],
+			stdout: "piped",
+			stderr: "piped"
+		});
+		const debugOut = await debug.output();
+		const debugOutStr = new TextDecoder().decode(debugOut);
+		console.log(debugOutStr);
+		debug.close();
 
 		const output = await process.output() // "piped" must be set
 		const outStr = new TextDecoder().decode(output);
@@ -105,7 +115,7 @@ export class TorProxy extends Proxy {
 
 
 		const status: Deno.ProcessStatus = await process.status();
-		if (status.success !== false) {
+		if (status.success === false) {
 			process.close();
 			throw new Error("Error handling tor service. Run deno as admin and check for tor being installed.");
 		}
