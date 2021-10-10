@@ -13,6 +13,7 @@ import { ApiMerger } from "./apiMerger.ts";
 import { logger } from "./logger.ts";
 import { Cache, CacheType } from "./cache.ts";
 import { GoogleScholar } from "./googleScholar.ts";
+import { CONFIG } from "../helper/config.ts";
 
 
 /**

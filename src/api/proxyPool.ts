@@ -1,7 +1,9 @@
 import { HttpUserAgents } from './httpUserAgent.ts';
-import { parse } from "https://deno.land/std/encoding/yaml.ts";
 import { logger } from "./logger.ts"
 import { sleep } from "https://deno.land/x/sleep/mod.ts";
+import { IProxy } from "./iProxy.ts"
+import { genericFetchConfig } from "../helper/genericFetchConfig.ts";
+import { CONFIG } from "../helper/config.ts";
 
 
 // install polipo
@@ -21,62 +23,54 @@ diskCacheRoot=""
 CHECK TOR IP:
 curl --socks5 127.0.0.1:9050 http://checkip.amazonaws.com/
 
+
+DOCKER VERSION: 
+docker run -d -p 8118:8118 -p 9050:9050 -p 8123:8123 --name snowballr_proxy simonpure/tor-privoxy-polipo
+add to suders: <user> ALL = NOPASSWD: /usr/bin/docker restart snowballr_proxy
+
 */
-export class Proxy {
+
+export class Proxy implements IProxy {
 	protected _userAgent: Object | undefined;
 	private _lastRefererUrl: string | undefined;
 	private _currentCookie: string | undefined;
-	private _cooldown: number = 300;
-	private _address: string;
-	private _user: string | undefined;
-	private _password: string | undefined;
-	public onCooldown: boolean = false;
-	public isCurrentlyUsed: boolean = false;
-	public isWorking: boolean = true;
-	public isDummy: boolean = false;
+	protected _address: string;
+	protected _user: string | undefined;
+	protected _password: string | undefined;
 
-	public constructor(address: string, isDummy?: boolean, user?: string, password?: string) {
+
+	public constructor(address: string, user?: string, password?: string) {
 		this._userAgent = HttpUserAgents[Math.floor(Math.random() * HttpUserAgents.length)];
 		this._address = address;
 		this._user = user ? user : undefined;
 		this._password = password ? password : undefined;
-		this.isDummy = isDummy ? isDummy : false;
 	}
 
-	public randomFetchConfig(lastRefererUrl?: string, currentCookie?: string): Object {
-		let client = Deno.createHttpClient({})
-		//consoconsole.log(this._address)
-		if (!this.isDummy) {
-			client = Deno.createHttpClient({
-				proxy: {
-					url: this._address,
-				}
-			})
-		}
-		//console.log("PROXY: " + client)
-		let config: any = {
-			params: {},
-			headers: {
-				'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
-				'user-agent': this._userAgent,
-				"accept-encoding": "gzip, deflate, br",
-				"accept-language": "en-US,en;q=0.9,de;q=0.8",
-				'referer': lastRefererUrl ? lastRefererUrl : 'https://www.google.com/',
-				"sec-fetch-dest": "document",
-				"sec-fetch-mode": "navigate",
-				"sec-fetch-site": "same-origin",
-				"sec-fetch-user": "?1",
-				"upgrade-insecure-requests": 1
-			},
-			client,
-
-			//validateStatus: status) => true
-		}
+	public getFetchConfig(lastRefererUrl?: string, currentCookie?: string): Object {
+		let config: any = genericFetchConfig(this._userAgent!, lastRefererUrl);
+		const client = Deno.createHttpClient({
+			proxy: {
+				url: this._address,
+			}
+		})
+		config.client = client;
 		if (currentCookie) { config.headers['cookie'] = currentCookie; }
 		return config;
 	}
 
-	public async blocked(): Promise<void> {
+	public async block(): Promise<void> {
+		throw new Error('Proxy isnt working, is captchaed, or blocked. We cannot fetch with this config');
+	}
+}
+
+
+export class GoogleScholarProxy extends Proxy implements IProxy {
+	public onCooldown: boolean = false;
+	public isCurrentlyUsed: boolean = false;
+	public isWorking: boolean = true;
+	private _cooldown: number = 300;
+
+	public async block(): Promise<void> {
 		//this._cooldown = 200;
 		this.onCooldown = true;
 		this.isCurrentlyUsed = false;
@@ -87,8 +81,8 @@ export class Proxy {
 
 }
 
-export class TorProxy extends Proxy {
-	public async blocked(): Promise<void> {
+export class TorProxy extends Proxy implements IProxy {
+	public async block(): Promise<void> {
 		logger.warning("Tor Proxy got blocked. Reloading service to get new ip. Deno must be run as admin to do so!!!!!");
 		this._userAgent = HttpUserAgents[Math.floor(Math.random() * HttpUserAgents.length)];
 
@@ -100,7 +94,7 @@ export class TorProxy extends Proxy {
 		});
 
 		const debug = Deno.run({
-			cmd: ["curl", "--socks5", "127.0.0.1:9050", "http://checkip.amazonaws.com/"],
+			cmd: ["curl", "--socks5", "localhost:9050", "http://checkip.amazonaws.com/"],
 			stdout: "piped",
 			stderr: "piped"
 		});
@@ -134,22 +128,21 @@ class ProxyManager {
 
 		//console.log(data);
 		try {
-			var data: any = parse(Deno.readTextFileSync("../../config.yaml"));
-			this._mode = data.googleScholar.proxy.mode;
+			this._mode = CONFIG.googleScholar.proxy.mode;
 		}
 		catch (e) {
 			throw new Error("Cannot read config.yml from project source. Or config.yml isn't formatted correctly. Error: " + e.message);
 		}
 		if (this._mode === "pool") {
-			this._settings = data.googleScholar;
-			for (let p in data.googleScholar.proxy.pool) {
+			this._settings = CONFIG.googleScholar;
+			for (let p in CONFIG.googleScholar.proxy.urls) {
 				//console.log(p)
-				let proxy = new Proxy(`${data.googleScholar.proxy.pool[p]}`)
+				let proxy = new GoogleScholarProxy(`${CONFIG.googleScholar.proxy.urls[p]}`)
 				this._proxies.push(proxy);
 			}
 		}
 		else if (this._mode === "tor") {
-			this._proxies.push(new TorProxy(`${data.googleScholar.proxy.urls[0]}`));
+			this._proxies.push(new TorProxy(`${CONFIG.googleScholar.proxy.urls[0]}`));
 		}
 		else {
 			throw new Error("Invalid config.yaml config for googleScholar")
@@ -167,8 +160,8 @@ class ProxyManager {
 		}
 
 		if (!this._settings.proxy.enabled) {
-			logger.info(`GS: Proxy is disabled via config.yaml. Generating dummmy for agent simulation`)
-			return new Proxy("", true);
+			logger.info(`GS: Proxy is disabled via config.yaml. Trying to run without a proxy`)
+			throw new Error("Tried to acquire a proxy. But proxy is disabled via config.")
 		}
 		console.debug("Trying to acquire Proxy");
 		let proxy: Proxy = {} as Proxy;
@@ -187,9 +180,9 @@ class ProxyManager {
 		//}
 	}
 
-	public exchange(blockingProxy: Proxy): Promise<Proxy> | undefined {
+	public exchange(faultyProxy: Proxy): Promise<Proxy> | undefined {
 		logger.debug("Trying to EXCHANGE Proxy")
-		blockingProxy.blocked();
+		faultyProxy.block();
 		return this.acquire();
 	}
 

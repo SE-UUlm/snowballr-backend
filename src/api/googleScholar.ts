@@ -133,22 +133,17 @@ export class GoogleScholar implements IApiFetcher {
 	}
 
 	private async _rateLimitedScrapeRequest(url: string, refererNeeded?: boolean): Promise<string> {
-		// if this is the first request for the class get a proxy
 		if (!this._proxy) {
-			//console.log("_______________")
 			this._proxy = await proxyPool.acquire();
-			//console.log(this._proxy)
 		}
-		let fetchConfig = this._proxy!.randomFetchConfig(this._lastRefererUrl, this._currentCookie);
 		let timeout = getRandomFromRange(1, 3);
 		let timeDelta = lastScrappingRun ? difference(lastScrappingRun, new Date()).seconds! : timeout;
-		//console.log(fetchConfig);
 		var release = await semaphore.acquire();
 		if (timeDelta < timeout) {
 			logger.warning(`GoogleScholar: globally ratelimiting requests. Waiting ${timeout} seconds...`)
 			await sleep(timeout - timeDelta);
 		}
-		let html = await fetch(url, fetchConfig);
+		let html = await fetch(url, this._proxy!.getFetchConfig(this._lastRefererUrl, this._currentCookie));
 		console.log(html.status);
 		if (html.status !== 200) {
 			if (this._retries < 50) {
