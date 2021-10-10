@@ -140,7 +140,7 @@ export class GoogleScholar implements IApiFetcher {
 			//console.log(this._proxy)
 		}
 		let fetchConfig = this._proxy!.randomFetchConfig(this._lastRefererUrl, this._currentCookie);
-		let timeout = getRandomFromRange(5, 10);
+		let timeout = getRandomFromRange(1, 3);
 		let timeDelta = lastScrappingRun ? difference(lastScrappingRun, new Date()).seconds! : timeout;
 		//console.log(fetchConfig);
 		var release = await semaphore.acquire();

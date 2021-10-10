@@ -94,7 +94,7 @@ export class TorProxy extends Proxy {
 
 		// https://stackoverflow.com/questions/62142699/how-do-i-run-an-arbitrary-shell-command-from-deno
 		const process = Deno.run({
-			cmd: ["sudo", "service", "tor", "reload"],
+			cmd: ["sudo", "docker", "restart", "snowballr_proxy"],
 			stdout: "piped",
 			stderr: "piped"
 		});

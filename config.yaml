@@ -3,4 +3,4 @@ googleScholar:
     enabled: true
     mode: tor # tor | pool
     urls: # if pool list might contain as many as needed. if tor - user local polipo to tor proxy url -> read via netstat
-      - http://localhost:8123
+      - http://localhost:8118
