@@ -32,35 +32,23 @@ const comparisonWeight: IComparisonWeight = {
  * @param name a single rawname of on of the authors
  * @returns 
  */
-export const makeFetching = (doi?: string, title?: string, name?: string, newComparisonWeight?: IComparisonWeight, enabledApis?: SourceApi[]) => {
+export const makeFetching = (overallWeight: number, enabledApis: [SourceApi,string?][], doi?: string, title?: string, name?: string,) => {
     //TODO comparisons from logfile or settings
-
+    let comparison: IComparisonWeight = {} as IComparisonWeight;
+    Object.assign(comparison, comparisonWeight)
+    comparison.overallWeight = overallWeight;
 
     const query: IApiQuery = {
         id: String(id++),
         rawName: name ? name : "",
         title: title ? title : "",
         doi: doi ? doi : undefined,
-        enabledApis: enabledApis? enabledApis: [SourceApi.IE, SourceApi.MA, SourceApi.CR, SourceApi.OC, SourceApi.S2],
-        aggression: newComparisonWeight? newComparisonWeight: comparisonWeight
+        enabledApis: enabledApis,
+        aggression: comparison
     }
 
     return Batcher.startFetch(query);
 }
-
-export const startFetchFromProjectPaper = async (ppID: number) =>{
-    let paper = await PaperScopeForStage.where("id", ppID).paper();
-    let authors = await getAllAuthorsFromPaper(Number(paper.id))
-    let authorName: string| undefined = undefined;
-    if(Array.isArray(authors) && authors[0]){
-        authorName = String(authors[0].rawString)
-    }
-    makeFetching(
-        paper.doi? String(paper.doi): undefined,
-        paper.title? String(paper.title): undefined,
-        authorName
-        )
-    }
 
 
 export const getActiveBatchLength = (ctx: Context)=> {

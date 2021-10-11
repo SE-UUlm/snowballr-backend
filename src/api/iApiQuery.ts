@@ -13,6 +13,6 @@ export interface IApiQuery {
 	year?: number;
 	publisher?: string;
 	type?: string;
-	enabledApis?: SourceApi[];
+	enabledApis?: [SourceApi,string?][];
 	aggression: IComparisonWeight;
 }

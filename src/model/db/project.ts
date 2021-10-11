@@ -18,6 +18,7 @@ export class Project extends Model {
         combinationOfReviewers: DataTypes.STRING,
         type: DataTypes.STRING,
         evaluationFormula: { type: DataTypes.STRING},
+        mergeThreshold: DataTypes.DECIMAL
     }
 
     static user() {

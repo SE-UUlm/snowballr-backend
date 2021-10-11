@@ -9,7 +9,7 @@ export class SearchApi extends Model {
     static fields = {
         id: {primaryKey: true, autoIncrement: true, type: DataTypes.INTEGER},
         name: DataTypes.STRING,
-        credentials: {type: DataTypes.INTEGER, allowNull: true},
+        credentials: {type: DataTypes.STRING, allowNull: true},
     }
 
     static project() {

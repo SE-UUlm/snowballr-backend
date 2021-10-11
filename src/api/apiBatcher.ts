@@ -55,13 +55,14 @@ export class ApiBatcher implements IApiBatcher {
 
 	// Map a constructor parameters to the api type so it can be implemented in a loop. ADD NEW PARAMETES HERE IF NEW CLASS IMPLEMENTED TO BE APPLIED
 	private _apiParamMapper = {
-		[SourceApi.MA]: ["https://api.labs.cognitive.microsoft.com/academic/v1.0/evaluate", "9a02225751354cd29397eba3f5382101"],
-		[SourceApi.OC]: ["https://opencitations.net"],
-		[SourceApi.CR]: ["https://api.crossref.org/works", "luca999@web.de"],
-		[SourceApi.S2]: ["https://api.semanticscholar.org/v1/paper"],
-		[SourceApi.IE]: ["http://ieeexploreapi.ieee.org/api/v1/search/articles", "4yk5d9an52ejynjsmzqxe62r"],
-		[SourceApi.GS]: ["https://scholar.google.com"]
+		[SourceApi.MA]: "https://api.labs.cognitive.microsoft.com/academic/v1.0/evaluate",
+		[SourceApi.OC]: "https://opencitations.net",
+		[SourceApi.CR]: "https://api.crossref.org/works",
+		[SourceApi.S2]: "https://api.semanticscholar.org/v1/paper",
+		[SourceApi.IE]: "http://ieeexploreapi.ieee.org/api/v1/search/articles",
+		[SourceApi.GS]: "https://scholar.google.com"
 	}
+
 
 	public constructor() {
 		this.activeBatches = []
@@ -138,12 +139,12 @@ export class ApiBatcher implements IApiBatcher {
 	 * @param apis list of enabled api enums
 	 * @return list of IApiFetcher instances
 	 */
-	private _initializeEnabledApis(apis: SourceApi[]): IApiFetcher[] {
+	private _initializeEnabledApis(apis: [SourceApi,string?][]): IApiFetcher[] {
 		let initializedFetchers: IApiFetcher[] = [];
 		for (let a of apis) {
-			let ApiObject = this._apiMapper[a as SourceApi];
-			let params = this._apiParamMapper[a as SourceApi];
-			initializedFetchers.push(new ApiObject(params[0], params[1] ? params[1] : '', this.cache[a as SourceApi]));
+			let ApiObject = this._apiMapper[a[0] as SourceApi];
+			let params = [this._apiParamMapper[a[0] as SourceApi], a[1]];
+			initializedFetchers.push(new ApiObject(params[0]? params[0]: '', params[1] ? params[1] : '', this.cache[a[0] as SourceApi]));
 		}
 		return initializedFetchers;
 	}
