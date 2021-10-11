@@ -213,7 +213,7 @@ const fetchToDB = async (stageID: number, projectID: number, doi?: string, title
         if (element) {
             let parent = await savePaper(element.paper)
 
-            PaperScopeForStage.create({ stageId: stageID, paperId: Number(parent.id) })
+            PaperScopeForStage.create({ stageId: stageID, paperId: Number(parent.id), finalDecision: "YES" })
             let currentStage = await Stage.find(stageID)
 
             let nextStage: Stage = await findNextStage(currentStage, projectID)
