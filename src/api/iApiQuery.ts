@@ -15,4 +15,5 @@ export interface IApiQuery {
 	type?: string;
 	enabledApis?: [SourceApi,string?][];
 	aggression: IComparisonWeight;
+	projectName?: string
 }

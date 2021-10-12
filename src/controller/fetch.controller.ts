@@ -9,6 +9,7 @@ import { UserStatus } from "./validation.controller.ts";
 import { validateUserEntry } from "./validation.controller.ts";
 import { PaperScopeForStage } from "../model/db/paperScopeForStage.ts";
 import { getAllAuthorsFromPaper } from "./databaseFetcher/author.ts";
+import { assign } from "../helper/assign.ts";
 
 export const Batcher = new ApiBatcher();
 //TODO id
@@ -32,7 +33,7 @@ const comparisonWeight: IComparisonWeight = {
  * @param name a single rawname of on of the authors
  * @returns 
  */
-export const makeFetching = (overallWeight: number, enabledApis: [SourceApi,string?][], doi?: string, title?: string, name?: string,) => {
+export const makeFetching = (overallWeight: number, enabledApis: [SourceApi,string?][], doi?: string, title?: string, name?: string, projectName?: string) => {
     //TODO comparisons from logfile or settings
     let comparison: IComparisonWeight = {} as IComparisonWeight;
     Object.assign(comparison, comparisonWeight)
@@ -44,14 +45,27 @@ export const makeFetching = (overallWeight: number, enabledApis: [SourceApi,stri
         title: title ? title : "",
         doi: doi ? doi : undefined,
         enabledApis: enabledApis,
-        aggression: comparison
+        aggression: comparison,
+        projectName: projectName
+
     }
 
     return Batcher.startFetch(query);
 }
 
 
-export const getActiveBatchLength = (ctx: Context)=> {
+export const getActiveBatches = (ctx: Context)=> {
     ctx.response.status = 200;
-    ctx.response.body = JSON.stringify({activeBatchesCount: Batcher.activeBatchLength()})
+    let batches= JSON.parse(JSON.stringify(Batcher.activeBatches))
+    batches = batches.map((batch: IApiBatch) => {
+        batch.subscribers = batch.subscribers.map(subscriber => {
+            //removes credentials from the enabled apis
+            subscriber.enabledApis = subscriber.enabledApis!.map(eA =>{
+                return [eA[0]]
+            })
+            return subscriber
+           });
+        return batch
+    });
+    ctx.response.body = JSON.stringify({batches: batches})
 }

@@ -2564,7 +2564,7 @@ Deno.test({
             name: "test",
             minCountReviewers: 1,
             countDecisiveReviewers: 1,
-            combinationOfReviewers: 1,
+            combinationOfReviewers: 3,
             evaluationFormula: "",
             type: "",
             mergeThreshold: 0.8

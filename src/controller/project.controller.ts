@@ -309,7 +309,7 @@ const fetchToDB = async (stageID: number, projectID: number, doi?: string, title
     let sourceApi: [SourceApi,string?][]= (await Promise.all(apis)).map(item =>{
         return [String(item.name) as SourceApi, item.credentials? String(item.credentials): undefined]
     })
-    let fetch = await makeFetching(Number(project.mergeThreshold), sourceApi, doi, title, authorName);
+    let fetch = await makeFetching(Number(project.mergeThreshold), sourceApi, doi, title, authorName, String(project.name));
     let response = (await fetch.response)
 
 
@@ -1043,9 +1043,9 @@ const calculateFinalDecisionOfPaper = async (ctx: Context, overallEvaluation: st
     if(finalDecision == "YES"){
         await startFetchFromProjectPaper(Number(pp.id),Number(project.id), stageID)
     }
-    return true;
 
 }
+return true;
 }
 
 const startFetchFromProjectPaper = async (ppID: number, stageID: number, projectID: number) =>{

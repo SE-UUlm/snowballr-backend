@@ -92,10 +92,16 @@ export class ApiBatcher implements IApiBatcher {
 		apiBatch.id = crypto.randomUUID();
 		apiBatch.subscribers = [query];
 		apiBatch.status = BatcherStatus.R;
-		apiBatch.response = merger.compare(response);
+		apiBatch.response = merger.compare(response).then((data) =>{
+			apiBatch.status = BatcherStatus.F
+			this.stopFetch(apiBatch)
+			return data
+		})
 		this.activeBatches.push(apiBatch);
 		return apiBatch;
 	}
+
+
 
 	/**
 	 * Try to prefetch a doi for the query objects by querying for the other variables. Only implemented on selected apis.

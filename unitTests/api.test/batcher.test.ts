@@ -1,6 +1,6 @@
 import { assertEquals } from "https://deno.land/std/testing/asserts.ts";
 import { getDOI } from "../../src/api/apiMerger.ts";
-import { Batcher, getActiveBatchLength, makeFetching } from "../../src/controller/fetch.controller.ts"
+import { Batcher, getActiveBatches, makeFetching } from "../../src/controller/fetch.controller.ts"
 import { insertUser } from "../../src/controller/databaseFetcher/user.ts";
 import { db, client } from "../../src/controller/database.controller.ts"
 import { setup } from "../../src/helper/setup.ts";
@@ -25,7 +25,7 @@ Deno.test({
 })
 
 Deno.test({
-    name: "GetCurrentBatchSize",
+    name: "GetCurrentBatches",
     async fn(): Promise<void> {
         await setup(true);
         let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
@@ -34,11 +34,11 @@ Deno.test({
         let token = await createJWT(user)
         let ctx = await createMockContext(app, `{}`, [["Content-Type", "application/json"]], "/", token);
 
-        let batch = makeFetching(0.8, [[SourceApi.CR,"luca999@web.de"], [SourceApi.IE,"4yk5d9an52ejynjsmzqxe62r"], [SourceApi.MA,"9a02225751354cd29397eba3f5382101"], [SourceApi.OC], [SourceApi.S2]],undefined, "Translation of UML 2 Activity Diagrams into Finite State Machines for Model Checking", "alexander raschke")
-        getActiveBatchLength(ctx)
+        let batch = await makeFetching(0.8, [[SourceApi.CR,"luca999@web.de"], [SourceApi.IE,"4yk5d9an52ejynjsmzqxe62r"], [SourceApi.MA,"9a02225751354cd29397eba3f5382101"], [SourceApi.OC], [SourceApi.S2]],undefined, "Translation of UML 2 Activity Diagrams into Finite State Machines for Model Checking", "alexander raschke", "DAWDADW")
+        getActiveBatches(ctx)
         let answer = JSON.parse(ctx.response.body as string)
         assertEquals(ctx.response.status, 200)
-        assertEquals(answer.activeBatchesCount, 1)
+        assertEquals(answer.batches.length, 1)
         await batch;
         await db.close();
         await client.end();

@@ -49,15 +49,15 @@ getAllPapersCsv
 import { addAuthorToPaper, deleteAuthorOfPaper, deleteSourcePaper, getAuthors, getPaper, getPaperCitations, getPaperReferences, getPapers, getSourcePaper, patchPaper, postPaper, postPaperCitation, postPaperReference } from "./controller/paper.controller.ts";
 import { deleteSourceAuthor, getAuthor, getSourceAuthor, patchAuthor, postAuthor } from "./controller/author.controller.ts";
 import { addToReadingList, getReadingList, removeFromReadingList } from "./controller/readinglist.controller.ts";
-import { getActiveBatchLength } from "./controller/fetch.controller.ts";
+import { getActiveBatches } from "./controller/fetch.controller.ts";
 
 await setup(true);
 const client = new SmtpClient();
 
 const router = new Router();
 router
-    .get("/currentBatchCount", (context) => {
-       getActiveBatchLength(context)
+    .get("/currentBatches", (context) => {
+       getActiveBatches(context)
     })
     .get("/users", async (context) => {
         await getUsers(context)
