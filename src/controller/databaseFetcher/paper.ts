@@ -2,6 +2,7 @@ import { PaperScopeForStage } from "../../model/db/paperScopeForStage.ts";
 import { Paper } from "../../model/db/paper.ts";
 import { PaperID } from "../../model/db/paperID.ts";
 import { IApiUniqueId } from "../../api/iApiUniqueId.ts";
+import { getAllStagesFromProject } from "./stage.ts";
 
 export const getAllPapersFromStage = async (id: number) => {
     let paperScope = await PaperScopeForStage.where("stageId", id).get()
@@ -14,6 +15,15 @@ export const getAllPapersFromStage = async (id: number) => {
         return Promise.all(paperPromises)
     }
     return new Array<Paper>();
+}
+
+export const getAllPapersFromProject = async (id: number) => {
+    let stages = await getAllStagesFromProject(id)
+    let allPapers = []
+    for(let stage of stages){
+        allPapers.push({papers: await getAllPapersFromStage(Number(stage.id)), stage: stage})
+    }
+    return allPapers
 }
 
 export const getProjectPaperID = async (stageId: number, paperId: number) => {

@@ -32,14 +32,19 @@ import {
     getReviewOfPaper,
     getReviewsOfPaper,
     makeRefCiteCsv,
-    makeStageCsv,
+    getStageCsv,
     patchCriteriaOfProject,
     patchCritieriaEvalOfReview,
     patchPaperOfProjectStage,
     patchReviewOfPaper,
     postCiteProject,
     postRefProject,
-    removeMemberOfProject
+    removeMemberOfProject,
+setApiUse,
+getApis,
+replaceApi,
+makeReplicationPackage,
+getAllPapersCsv
 } from "./controller/project.controller.ts";
 import { addAuthorToPaper, deleteAuthorOfPaper, deleteSourcePaper, getAuthors, getPaper, getPaperCitations, getPaperReferences, getPapers, getSourcePaper, patchPaper, postPaper, postPaperCitation, postPaperReference } from "./controller/paper.controller.ts";
 import { deleteSourceAuthor, getAuthor, getSourceAuthor, patchAuthor, postAuthor } from "./controller/author.controller.ts";
@@ -121,6 +126,21 @@ router
     .post("/projects/:id/stages", async (context) => {
         await addStageToProject(context, Number(context.params.id))
     })
+    .get("/projects/:id/replication", async (context) => {
+        await makeReplicationPackage(context, Number(context.params.id))
+    })
+    .get("/projects/:id/csv", async (context) => {
+        await getAllPapersCsv(context, Number(context.params.id))
+    })
+    .get("/projects/:id/apis", async (context) => {
+        await getApis(context, Number(context.params.id))
+    })
+    .post("/projects/:id/apis", async (context) => {
+        await setApiUse(context, Number(context.params.id))
+    })
+    .post("/projects/:id/apis/:id2", async (context) => {
+        await replaceApi(context, Number(context.params.id), Number(context.params.id2))
+    })
     .post("/projects/:id/stages/:id2/papers", async (context) => {
         await addPaperToProjectStage(context, Number(context.params.id), Number(context.params.id2))
     })
@@ -128,7 +148,7 @@ router
         await getPapersOfProjectStage(context, Number(context.params.id), Number(context.params.id2))
     })
     .get("/projects/:id/stages/:id2/csv", async (context) => {
-        await makeStageCsv(context, Number(context.params.id), Number(context.params.id2))
+        await getStageCsv(context, Number(context.params.id), Number(context.params.id2))
     })
     .get("/projects/:id/stages/:id2/papers/:ppid", async (context) => {
         await getPaperOfProjectStage(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))

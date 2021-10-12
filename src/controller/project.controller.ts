@@ -9,7 +9,7 @@ import { convertProjectToProjectMessage } from "../helper/converter/projectConve
 import { Stage } from "../model/db/stage.ts";
 import { Paper } from "../model/db/paper.ts";
 import { getAllStagesFromProject } from "./databaseFetcher/stage.ts";
-import { checkPaperInProjectStage, getAllPapersFromStage, getPaperByDoi, getProjectPaperID, getProjectPaperScope } from "./databaseFetcher/paper.ts";
+import { checkPaperInProjectStage, getAllPapersFromProject, getAllPapersFromStage, getPaperByDoi, getProjectPaperID, getProjectPaperScope } from "./databaseFetcher/paper.ts";
 import { PapersMessage } from "../model/messages/papersMessage.ts";
 import { PaperScopeForStage } from "../model/db/paperScopeForStage.ts";
 import { assignOnlyIfUnassignedPaper, checkIApiPaper, convertIApiPaperToDBPaper, convertPapersToPaperMessage, convertPaperToPaperMessage } from "../helper/converter/paperConverter.ts";
@@ -35,6 +35,10 @@ import { getAllAuthorsFromPaper } from "./databaseFetcher/author.ts";
 import { ProjectUsesApi } from "../model/db/projectUsesApi.ts";
 import { IDOfApi } from "../helper/setup.ts";
 import { SearchApi } from "../model/db/searchApi.ts";
+import {
+    compress,
+    decompress
+  } from "https://deno.land/x/zip/mod.ts";
 
 export const paperCache = new Cache<IApiPaper>(CacheType.F, 0, "paperCache")
 export const authorCache = new Cache<IApiAuthor>(CacheType.F, 0, "authorCache")
@@ -97,6 +101,11 @@ export const createProject = async (ctx: Context) => {
     }
 }
 
+/**
+ * Sets the use of an api to true or false
+ * @param ctx 
+ * @param id 
+ */
 export const setApiUse = async (ctx: Context, id: number)=> {
     let validate = await validateUserEntry(ctx, [], UserStatus.needsPO, -1, { needed: true, params: [] })
     if (validate) {
@@ -117,10 +126,18 @@ export const setApiUse = async (ctx: Context, id: number)=> {
                     await Promise.all(items)
                 }
             
+            } else{
+                makeErrorMessage(ctx, 409, "for every api has to be a true/false value set")
             }
         }
         ctx.response.status = 200;
     }
+
+/**
+ * Gets all the apis of the project
+ * @param ctx 
+ * @param id 
+ */    
  export const getApis = async (ctx: Context, id: number)=> {
     let validate = await validateUserEntry(ctx, [], UserStatus.needsPO, -1, { needed: false, params: [] })
     if (validate) {
@@ -130,6 +147,12 @@ export const setApiUse = async (ctx: Context, id: number)=> {
     }
  }
 
+ /**
+  * Replaces current api with a new one for this project
+  * @param ctx 
+  * @param projectID 
+  * @param apiID 
+  */
  export const replaceApi = async (ctx: Context, projectID: number, apiID: number)=> {
     let validate = await validateUserEntry(ctx, [], UserStatus.needsPO, -1, { needed: true, params: ["credentials"] })
     if (validate) {
@@ -474,7 +497,13 @@ export const deletePaperOfProjectStage = async (ctx: Context, projectID: number,
     }
 }
 
-
+/**
+ * Makes a csv file with all the cites and refs of a paper
+ * @param ctx 
+ * @param projectID 
+ * @param stageID 
+ * @param ppID 
+ */
 export const makeRefCiteCsv = async (ctx: Context, projectID: number, stageID: number, ppID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
     if (validate) {
@@ -509,30 +538,101 @@ export const makeRefCiteCsv = async (ctx: Context, projectID: number, stageID: n
         }
     }
 }
+/**
+ * Makes the replication package of a project.
+ * It contains a zip file with all Papers in the project in one csv and also seperated by stage in different csv.
+ * @param ctx 
+ * @param projectID 
+ */
+export const makeReplicationPackage = async (ctx: Context, projectID: number) =>{
+    let validate = await validateUserEntry(ctx, [projectID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
+    if (validate) {
+    let allPapers = await getAllPapersFromProject(projectID)
+    let project = await Project.find(projectID);
+    let filepaths:Promise<string>[] = []
+    filepaths.push(makeAllPapersCsv(project, allPapers))
+    allPapers.forEach(async item =>{
+        filepaths.push(makeStageCsv(project, item.papers, item.stage))
+    })
 
-export const makeStageCsv = async (ctx: Context, projectID: number, stageID: number) =>{
+    let allFilepaths = await Promise.all(filepaths)
+
+    compress(allFilepaths,`${String(project.name)}_replicationPackage.zip`)
+    ctx.response.status = 200;
+    ctx.response.type = "application/zip";
+    ctx.response.body = await Deno.readFile(`${String(project.name)}_replicationPackage.zip`)
+    ctx.response.headers.set('Content-disposition', `attachment; filename=${String(project.name)}_replicationPackage.zip`);
+    }
+}
+/**
+ * Gets all papers of a project in a single csv file
+ * @param ctx 
+ * @param projectID 
+ */
+export const getAllPapersCsv = async (ctx: Context, projectID: number) =>{
+    let validate = await validateUserEntry(ctx, [projectID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
+        if (validate) {
+        let allPapers = await getAllPapersFromProject(projectID)
+
+        let project = await Project.find(projectID);
+
+        let filePath = await makeAllPapersCsv(project, allPapers)
+        const text = await Deno.readTextFile(filePath);
+        ctx.response.status = 200;
+        ctx.response.type = "text/csv";
+        ctx.response.body = text;
+        ctx.response.headers.set('Content-disposition', `attachment; filename=${filePath}`);
+    }
+}
+
+const makeAllPapersCsv = async (project: Project, allPapers: {papers:Paper[], stage:Stage}[])=> {
+    let rows = [["authors", "title", "year", "publisher", "link", "doi"]]
+    for(let i = 1; i < (Number(project.countDecisiveReviewers));i++){
+        rows[0].push(`SuggestedInclusion${i}`)
+    }
+    rows[0].push("derivedDecision")
+    rows[0].push("FinalDecision")
+    for(let papers of allPapers){
+        rows = await papersToRow(papers.papers, rows, true, project, Number(papers.stage.id))
+    }
+    let filePath = `./${String(project.name)}_allPapers.csv`
+    const f = await Deno.open(filePath, { write: true, create: true, truncate: true });
+
+    await writeCSV(f, rows);
+    f.close();
+    return filePath
+}
+
+export const getStageCsv = async (ctx: Context, projectID: number, stageID: number) =>{
     let validate = await validateUserEntry(ctx, [projectID, stageID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
         if (validate) {
         let papers = await getAllPapersFromStage(stageID)
-        let rows = [["authors", "title", "year", "publisher", "link", "doi"]]
+
         let project = await Project.find(projectID);
         let stage = await Stage.find(stageID);
-        for(let i = 1; i < (Number(project.countDecisiveReviewers));i++){
-            rows[0].push(`SuggestedInclusion${i}`)
-        }
-        rows[0].push("derivedDecision")
-        rows[0].push("FinalDecision")
-        rows = await papersToRow(papers, rows, true, project, stageID)
-        const f = await Deno.open(`./${String(project.name)}_Stage${Number(stage.number)}.csv`, { write: true, create: true, truncate: true });
-
-        await writeCSV(f, rows);
-        f.close();
+        let filePath = makeStageCsv(project, papers, stage)
         const text = await Deno.readTextFile(`./${String(project.name)}_Stage${Number(stage.number)}.csv`);
         ctx.response.status = 200;
         ctx.response.type = "text/csv";
         ctx.response.body = text;
         ctx.response.headers.set('Content-disposition', `attachment; filename=${String(project.name)}_Stage${Number(stage.number)}.csv`);
     }
+}
+
+const makeStageCsv = async(project: Project, papers: Paper[], stage: Stage) =>{
+    let rows = [["authors", "title", "year", "publisher", "link", "doi"]]
+    for(let i = 1; i < (Number(project.countDecisiveReviewers));i++){
+        rows[0].push(`SuggestedInclusion${i}`)
+    }
+    rows[0].push("derivedDecision")
+    rows[0].push("FinalDecision")
+    rows = await papersToRow(papers, rows, true, project, Number(stage.id))
+    let filePath = `./${String(project.name)}_Stage${Number(stage.number)}.csv`
+    const f = await Deno.open(filePath, { write: true, create: true, truncate: true });
+
+    await writeCSV(f, rows);
+    f.close();  
+    return filePath
 }
 
 const papersToRow = async (papers: Paper[], rows: string[][], getReviews: boolean, project?: Project, stageID?: number) => {
@@ -559,7 +659,7 @@ const papersToRow = async (papers: Paper[], rows: string[][], getReviews: boolea
             if(getReviews && project && stageID){
                 let ppID = await getProjectPaperScope(stageID, Number(item.id))
                 if(ppID){
-                    let reviews = await Review.where(Review.field("paper_id"), Number(ppID.id)).get()
+                    let reviews = await getAllReviewsFromProjectPaper(Number(ppID.id));
                     if(Array.isArray(reviews)){
                         if(reviews.length >= Number(project.countDecisiveReviewers)){
                             reviews = reviews.slice(0,  Number(project.countDecisiveReviewers) - 1)
@@ -571,7 +671,8 @@ const papersToRow = async (papers: Paper[], rows: string[][], getReviews: boolea
                     for(let i = 0; i < (Number(project.countDecisiveReviewers)- reviews.length -1);i++){
                         row.push("")
                     }
-
+                    let tresholds =  String(project.combinationOfReviewers).split(",")
+                    row.push(String(getFinalDecisionOfPaper(reviews, project, Number(ppID.id), Number(tresholds[0]), Number(tresholds[1]))))
                     row.push(ppID.finalDecision? String(ppID.finalDecision): "")
             }
             }
@@ -882,7 +983,7 @@ export const addReviewToPaper = async (ctx: Context, projectID: number, stageID:
         let reviews = await getAllReviewsFromProjectPaper(ppID);
 
 
-        if(pp.finalDecision || reviews.length >= Number(project.minCountReviewers)){
+        if(pp.finalDecision || reviews.length >= Number(project.countDecisiveReviewers)){
             makeErrorMessage(ctx, 409, "already enough reviews for this paper")
             return;
         }
@@ -905,10 +1006,11 @@ export const addReviewToPaper = async (ctx: Context, projectID: number, stageID:
                 if (params.overallEvaluation) { review.overallEvaluation = params.overallEvaluation }
                 if (params.finishDate) { review.finishDate = new Date(params.finishDate) }
                 await review.update();
-                await calculateFinalDecisionOfPaper(ctx, params.overallEvaluation,review, project, pp, Number(tresholds[0]), Number(tresholds[1]), stageID)
-
-                ctx.response.status = 201;
-                ctx.response.body = JSON.stringify(review)
+                let finished = await calculateFinalDecisionOfPaper(ctx, params.overallEvaluation,review, project, pp, Number(tresholds[0]), Number(tresholds[1]), stageID)
+                if(finished){
+                    ctx.response.status = 201;
+                    ctx.response.body = JSON.stringify(review)
+                }
             } catch (err) {
                 makeErrorMessage(ctx, 404, "stage or paper id not found")
             }
@@ -926,7 +1028,7 @@ const calculateFinalDecisionOfPaper = async (ctx: Context, overallEvaluation: st
                     makeErrorMessage(ctx, 409, "you made the last review of the paper. this one has to be YES or NO")
                     review.finished = false;
                     await review.update()
-                    return;
+                    return false;
                 } else{
                     pp.overallEvaluation = overallEvaluation
                 }
@@ -941,6 +1043,7 @@ const calculateFinalDecisionOfPaper = async (ctx: Context, overallEvaluation: st
     if(finalDecision == "YES"){
         await startFetchFromProjectPaper(Number(pp.id),Number(project.id), stageID)
     }
+    return true;
 
 }
 }

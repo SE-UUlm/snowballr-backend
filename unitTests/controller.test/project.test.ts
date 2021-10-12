@@ -4,7 +4,7 @@ import { createMockApp } from "../mockObjects/oak/mockApp.test.ts";
 import { checkMemberOfProject, createJWT } from "../../src/controller/validation.controller.ts";
 import { createMockContext } from "../mockObjects/oak/mockContext.test.ts";
 import {
-    makeStageCsv,
+    getStageCsv,
     makeRefCiteCsv,
     getReferencesOfProjectPaper,
     getCitationsOfProjectPaper,
@@ -1702,7 +1702,7 @@ Deno.test({
         })
 
 
-        await  makeStageCsv(ctx, Number(project.id), Number(stage.id))
+        await  getStageCsv(ctx, Number(project.id), Number(stage.id))
         assertEquals(ctx.response.status, 200)
         let answer = ctx.response.body as string
         assertEquals(answer.includes("miau"), true)
