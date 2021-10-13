@@ -15,7 +15,7 @@ export const Batcher = new ApiBatcher();
 //TODO id
 let id = 1;
 
-const comparisonWeight: IComparisonWeight = {
+export const comparisonWeight: IComparisonWeight = {
     titleWeight: 10,
     titleLevenshtein: 10,
     abstractWeight: 7,

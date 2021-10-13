@@ -847,6 +847,53 @@ Deno.test({
 })
 
 Deno.test({
+    name: "RefetchPaperOfProject",
+    async fn(): Promise<void> {
+        await setup(true);
+        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+        let project = await Project.create({
+            name: "test",
+            minCountReviewers: 1,
+            countDecisiveReviewers: 1,
+            combinationOfReviewers: 1,
+            evaluationFormula: "",
+            type: "",
+            mergeThreshold: 0.8
+        })
+        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
+        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
+        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
+        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
+        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
+        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+
+        let stage = await Stage.create({
+            name: "TestStage",
+            projectId: Number(project.id),
+            number: 0
+        })
+        let app = await createMockApp();
+        let token = await createJWT(user)
+        let ctx = await createMockContext(app, `{"doi":"10.1109/SEAA.2009.60" }`, [["Content-Type", "application/json"]], "/", token);
+        let bla = await addPaperToProjectStage(ctx, Number(project.id), Number(stage.id), true)
+
+        assertEquals(ctx.response.status, 201)
+
+        for (let i = 1; i < 30; i++) {
+            await getPaperCitations(ctx, i)
+        }
+        paperCache.clear()
+        authorCache.clear()
+        Batcher.kill()
+        await db.close();
+        await client.end();
+
+    },
+    sanitizeResources: false,
+    sanitizeOps: false,
+})
+
+Deno.test({
     name: "GetPapersOfProjectStage",
     async fn(): Promise<void> {
         await setup(true);

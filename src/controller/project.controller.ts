@@ -12,15 +12,15 @@ import { getAllStagesFromProject } from "./databaseFetcher/stage.ts";
 import { checkPaperInProjectStage, getAllPapersFromProject, getAllPapersFromStage, getPaperByDoi, getProjectPaperID, getProjectPaperScope } from "./databaseFetcher/paper.ts";
 import { PapersMessage } from "../model/messages/papersMessage.ts";
 import { PaperScopeForStage } from "../model/db/paperScopeForStage.ts";
-import { assignOnlyIfUnassignedPaper, checkIApiPaper, convertIApiPaperToDBPaper, convertPapersToPaperMessage, convertPaperToPaperMessage } from "../helper/converter/paperConverter.ts";
-import { assign } from "../helper/assign.ts"
+import { assignOnlyIfUnassignedPaper, checkIApiPaper, convertDBPaperToIApiPaper, convertIApiPaperToDBPaper, convertPapersToPaperMessage, convertPaperToPaperMessage } from "../helper/converter/paperConverter.ts";
+import { assign, isEqual } from "../helper/assign.ts"
 import { IApiPaper, SourceApi } from "../api/iApiPaper.ts";
-import { getDOI } from "../api/apiMerger.ts";
+import { ApiMerger, getDOI } from "../api/apiMerger.ts";
 import { Cache, CacheType } from "../api/cache.ts";
 import { logger } from "../api/logger.ts";
 import { IApiAuthor } from "../api/iApiAuthor.ts";
 import { checkAdmin, checkMemberOfProject, checkPO, checkPOofProject, getPayloadFromJWT, getUserID, UserStatus, validateUserEntry } from "./validation.controller.ts";
-import { makeFetching} from "./fetch.controller.ts";
+import { comparisonWeight, makeFetching} from "./fetch.controller.ts";
 import { saveChildren } from "./database.controller.ts";
 import { getPaperCitations, getPaperReferences, getRefOrCiteList, paperUpdate, postPaperCitation, postPaperReference } from "./paper.controller.ts";
 import { Criteria } from "../model/db/criteria.ts";
@@ -39,6 +39,8 @@ import {
     compress,
     decompress
   } from "https://deno.land/x/zip/mod.ts";
+import { isEqualPaper } from "../api/checkIsEqual.ts";
+import { IComparisonWeight } from "../api/iComparisonWeight.ts";
 
 export const paperCache = new Cache<IApiPaper>(CacheType.F, 0, "paperCache")
 export const authorCache = new Cache<IApiAuthor>(CacheType.F, 0, "authorCache")
@@ -288,6 +290,45 @@ export const addPaperToProjectStage = async (ctx: Context, projectID: number, st
 }
 
 /**
+ * Refetches the paper of a project that have been signed with a final Decision of YES
+ * @param ctx 
+ * @param projectID 
+ */
+export const refetchPaperOfProject = async (ctx: Context, projectID: number) =>{
+    let validate = await validateUserEntry(ctx, [projectID], UserStatus.needsPOOfProject, projectID, { needed: false, params: [] })
+    if (validate) {
+        let papersPackage = await getAllPapersFromProject(projectID);
+        papersPackage = papersPackage.map(items => {
+            items.papers = items.papers.filter(paper => String(paper.scope.finalDecision) == "YES")
+            return items;
+        })
+        papersPackage.forEach(paper =>{
+            let stage = paper.stage;
+            paper.papers.forEach(async item =>{
+                let authorName: string | undefined;
+                for(let author of (await item.authors)){
+                    if(author.rawString){
+                        authorName = String(author.rawString)
+                    }
+                }
+
+                fetchToDB(
+                    Number(stage.id), 
+                    projectID, 
+                    (await item.paper).doi? String((await item.paper).doi): undefined,
+                    (await item.paper).title? String((await item.paper).doi): undefined,
+                    authorName
+                )
+            })
+           
+        })
+        
+        
+        ctx.response.status = 200;
+    }
+}
+
+/**
  * Saves all paper that were fetched by the APIs to the db and corresponding stage.
  * @param stageID 
  * @param projectID 
@@ -298,6 +339,7 @@ export const addPaperToProjectStage = async (ctx: Context, projectID: number, st
 const fetchToDB = async (stageID: number, projectID: number, doi?: string, title?: string, authorName?: string) => {
     let project = await Project.find(projectID)
     let apis: Promise<SearchApi>[] = [];
+    let stage = await Stage.find(stageID)
     let poas = await ProjectUsesApi.where({projectId: projectID}).get()
     if(Array.isArray(poas)){
         poas.forEach(item =>{
@@ -326,7 +368,7 @@ const fetchToDB = async (stageID: number, projectID: number, doi?: string, title
     }
     for (let element of response) {
         if (element) {
-            let parent = await savePaper(element.paper)
+            let parent = await savePaper(element.paper, stage, Number(project.mergeThreshold))
 
             PaperScopeForStage.create({ stageId: stageID, paperId: Number(parent.id), finalDecision: "YES" })
             let currentStage = await Stage.find(stageID)
@@ -335,10 +377,10 @@ const fetchToDB = async (stageID: number, projectID: number, doi?: string, title
 
             let allChildren: Promise<Paper>[] = []
             for (let item of element.citations!) {
-                allChildren.push(createChildren(item, "citedBy", "papercitingid", "papercitedid", Number(parent.id), Number(nextStage.id)))
+                allChildren.push(createChildren(item, "citedBy", "papercitingid", "papercitedid", Number(parent.id), nextStage, project))
             }
             for (let item of element.references!) {
-                allChildren.push(createChildren(item, "referencedby", "paperreferencedid", "paperreferencingid", Number(parent.id), Number(nextStage.id)))
+                allChildren.push(createChildren(item, "referencedby", "paperreferencedid", "paperreferencingid", Number(parent.id), nextStage, project))
             }
             await Promise.all(allChildren)
         }
@@ -374,10 +416,10 @@ export const findNextStage = async (currentStage: Stage, projectID: number) => {
  * @param nextStageId 
  * @returns 
  */
-const createChildren = async (item: IApiPaper, into: string, column1: string, column2: string, firstId: number, nextStageId: number) => {
-    let child = await savePaper(item)
+const createChildren = async (item: IApiPaper, into: string, column1: string, column2: string, firstId: number, nextStage: Stage, project: Project) => {
+    let child = await savePaper(item, nextStage, Number(project.mergeThreshold))
     await saveChildren(into, column1, column2, firstId, Number(child.id))
-    await PaperScopeForStage.create({ stageId: Number(nextStageId), paperId: Number(child.id) })
+    await PaperScopeForStage.create({ stageId: Number(nextStage.id), paperId: Number(child.id) })
     return child;
 }
 
@@ -389,7 +431,7 @@ const createChildren = async (item: IApiPaper, into: string, column1: string, co
  * @param apiPaper 
  * @returns 
  */
-const savePaper = async (apiPaper: IApiPaper): Promise<Paper> => {
+const savePaper = async (apiPaper: IApiPaper, stage: Stage, overallWeight: number): Promise<Paper> => {
     let doi = getDOI(apiPaper)
 
     if (doi[0]) {
@@ -400,6 +442,23 @@ const savePaper = async (apiPaper: IApiPaper): Promise<Paper> => {
         }
 
     }
+
+
+    
+        let papers = await getAllPapersFromStage(Number(stage.id))
+        let comparison= {} as IComparisonWeight
+        Object.assign(comparison, comparisonWeight)
+        comparison.overallWeight = overallWeight
+        for(let paperStuff of papers){
+            let dbPaper = await paperStuff.paper
+            let equal = isEqualPaper(await convertDBPaperToIApiPaper(dbPaper), apiPaper, comparison)
+            if(equal){
+                await assignOnlyIfUnassignedPaper(dbPaper, apiPaper)
+                return dbPaper.update()
+            }
+        }
+    
+
     let paper = await convertIApiPaperToDBPaper(apiPaper)
 
     if (!checkIApiPaper(apiPaper)) {
@@ -419,7 +478,9 @@ export const getPapersOfProjectStage = async (ctx: Context, projectID: number, s
     if (validate) {
         ctx.response.status = 200;
         let userID = await getUserID(await getPayloadFromJWT(ctx))
-        let message: PapersMessage = { papers: await convertPapersToPaperMessage(await getAllPapersFromStage(stageID), stageID, userID) }
+        let paperInfo = await getAllPapersFromStage(stageID);
+        let papers = paperInfo.map(async item =>{ return await item.paper})
+        let message: PapersMessage = { papers: await convertPapersToPaperMessage(await Promise.all(papers), stageID, userID) }
         ctx.response.body = JSON.stringify(message)
     }
 }
@@ -548,11 +609,13 @@ export const makeReplicationPackage = async (ctx: Context, projectID: number) =>
     let validate = await validateUserEntry(ctx, [projectID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
     if (validate) {
     let allPapers = await getAllPapersFromProject(projectID)
+    let papers = allPapers.map(item =>{ return {papers: item.papers.map(paper => {return paper.paper})
+        , stage: item.stage}})
     let project = await Project.find(projectID);
     let filepaths:Promise<string>[] = []
-    filepaths.push(makeAllPapersCsv(project, allPapers))
-    allPapers.forEach(async item =>{
-        filepaths.push(makeStageCsv(project, item.papers, item.stage))
+    filepaths.push(makeAllPapersCsv(project, papers))
+    papers.forEach(async item =>{
+        filepaths.push(makeStageCsv(project,item.papers,item.stage));
     })
 
     let allFilepaths = await Promise.all(filepaths)
@@ -573,10 +636,11 @@ export const getAllPapersCsv = async (ctx: Context, projectID: number) =>{
     let validate = await validateUserEntry(ctx, [projectID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
         if (validate) {
         let allPapers = await getAllPapersFromProject(projectID)
-
+        let papers = allPapers.map(item =>{ return {papers: item.papers.map(paper => {return paper.paper})
+        , stage: item.stage}})
         let project = await Project.find(projectID);
 
-        let filePath = await makeAllPapersCsv(project, allPapers)
+        let filePath = await makeAllPapersCsv(project, papers)
         const text = await Deno.readTextFile(filePath);
         ctx.response.status = 200;
         ctx.response.type = "text/csv";
@@ -585,7 +649,7 @@ export const getAllPapersCsv = async (ctx: Context, projectID: number) =>{
     }
 }
 
-const makeAllPapersCsv = async (project: Project, allPapers: {papers:Paper[], stage:Stage}[])=> {
+const makeAllPapersCsv = async (project: Project, allPapers: {papers:Promise<Paper>[], stage:Stage}[])=> {
     let rows = [["authors", "title", "year", "publisher", "link", "doi"]]
     for(let i = 1; i < (Number(project.countDecisiveReviewers));i++){
         rows[0].push(`SuggestedInclusion${i}`)
@@ -593,7 +657,7 @@ const makeAllPapersCsv = async (project: Project, allPapers: {papers:Paper[], st
     rows[0].push("derivedDecision")
     rows[0].push("FinalDecision")
     for(let papers of allPapers){
-        rows = await papersToRow(papers.papers, rows, true, project, Number(papers.stage.id))
+        rows = await papersToRow(await Promise.all(papers.papers), rows, true, project, Number(papers.stage.id))
     }
     let filePath = `./${String(project.name)}_allPapers.csv`
     const f = await Deno.open(filePath, { write: true, create: true, truncate: true });
@@ -610,7 +674,7 @@ export const getStageCsv = async (ctx: Context, projectID: number, stageID: numb
 
         let project = await Project.find(projectID);
         let stage = await Stage.find(stageID);
-        let filePath = makeStageCsv(project, papers, stage)
+        let filePath = makeStageCsv(project, papers.map(paper => {return paper.paper}), stage)
         const text = await Deno.readTextFile(`./${String(project.name)}_Stage${Number(stage.number)}.csv`);
         ctx.response.status = 200;
         ctx.response.type = "text/csv";
@@ -619,14 +683,14 @@ export const getStageCsv = async (ctx: Context, projectID: number, stageID: numb
     }
 }
 
-const makeStageCsv = async(project: Project, papers: Paper[], stage: Stage) =>{
+const makeStageCsv = async(project: Project, papers: Promise<Paper>[], stage: Stage) =>{
     let rows = [["authors", "title", "year", "publisher", "link", "doi"]]
     for(let i = 1; i < (Number(project.countDecisiveReviewers));i++){
         rows[0].push(`SuggestedInclusion${i}`)
     }
     rows[0].push("derivedDecision")
     rows[0].push("FinalDecision")
-    rows = await papersToRow(papers, rows, true, project, Number(stage.id))
+    rows = await papersToRow(await Promise.all(papers), rows, true, project, Number(stage.id))
     let filePath = `./${String(project.name)}_Stage${Number(stage.number)}.csv`
     const f = await Deno.open(filePath, { write: true, create: true, truncate: true });
 

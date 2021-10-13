@@ -44,7 +44,8 @@ setApiUse,
 getApis,
 replaceApi,
 makeReplicationPackage,
-getAllPapersCsv
+getAllPapersCsv,
+refetchPaperOfProject
 } from "./controller/project.controller.ts";
 import { addAuthorToPaper, deleteAuthorOfPaper, deleteSourcePaper, getAuthors, getPaper, getPaperCitations, getPaperReferences, getPapers, getSourcePaper, patchPaper, postPaper, postPaperCitation, postPaperReference } from "./controller/paper.controller.ts";
 import { deleteSourceAuthor, getAuthor, getSourceAuthor, patchAuthor, postAuthor } from "./controller/author.controller.ts";
@@ -103,6 +104,9 @@ router
     })
     .get("/projects/:id/members", async (context) => {
         await getMembersOfProject(context, Number(context.params.id))
+    })
+    .post("/projects/:id/refetch", async (context) => {
+        await refetchPaperOfProject(context, Number(context.params.id))
     })
     .delete("/projects/:id/members/:id2", async (context) => {
         await removeMemberOfProject(context, Number(context.params.id), Number(context.params.id2))
