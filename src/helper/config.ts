@@ -15,6 +15,8 @@ export interface IGoogleScholarProxyConfig {
 	enabled: boolean;
 	mode: "tor" | "pool";
 	urls: string[];
+	cooldown: number;
 }
 
+// read in sync since config has to be parsed.
 export const CONFIG = parse(Deno.readTextFileSync("../../config.yaml")) as IConfig;

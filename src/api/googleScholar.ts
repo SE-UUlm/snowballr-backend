@@ -53,8 +53,8 @@ export class GoogleScholar implements IApiFetcher {
 	}
 
 	/**
-	 * Checks for a paper at the ieee research api via a query object.
-	 * Since IEEE is daily rate limited and we dont get any information or refs and cites we only use it to fetch metadata of the original paper searched.
+	 * Checks for a paper at the googlescholar website via a sequence of scrape requests.
+	 * Since google scholar is highly blocked for automated requests we use a proxy to hide our identity.
 	 *
 	 * @param query - Object defined by interface in IApiQuery to filter and query api calls.
 	 * @returns Object containing the fetched paper and all paperObjects from citations and references. Promise.
@@ -77,10 +77,6 @@ export class GoogleScholar implements IApiFetcher {
 			let rawHtml = await this._rateLimitedScrapeRequest(`${this.url}/scholar?as_sdt=0,5&q=${query.doi}&hl=en`, true);
 			let html: any = this._domParser.parseFromString(rawHtml, 'text/html');
 
-			// if (html.querySelector('#gs_captcha_c')) {
-			// 	throw new Error("Captcha enabled by google scholar. Cannot fetch.");
-			// }
-
 			paper = this._parseResponse(this._transformScrapedData(html.querySelector('#gs_res_ccl_mid > div')));
 
 			var apiReturn: IApiResponse = {
@@ -101,7 +97,6 @@ export class GoogleScholar implements IApiFetcher {
 				"references": references ? await references : []
 			}
 		}
-		//console.log(apiReturn);
 		return apiReturn;
 	}
 
@@ -119,8 +114,6 @@ export class GoogleScholar implements IApiFetcher {
 			var variousData = undefined;
 		}
 		let pdfUrl = dom.querySelector('div.gs_ggs.gs_fl > div > div > a');
-
-		//console.log(splittedInfo);
 
 		return {
 			'title': title ? title.innerHTML : undefined,
@@ -145,13 +138,11 @@ export class GoogleScholar implements IApiFetcher {
 		}
 		let html = await fetch(url, this._proxy!.getFetchConfig(this._lastRefererUrl, this._currentCookie));
 		console.log(html.status);
+
+		//detect connection problems like being blocked and exchange proxy if so
 		if (html.status !== 200) {
 			if (this._retries < 50) {
-				this._lastRefererUrl = undefined;
-				this._currentCookie = undefined;
-				logger.warning(`GS:Site blocked or not reachable. Http status code ${html.status}. Retry #${this._retries}.`)
-				this._proxy = await proxyPool.exchange(this._proxy!);
-				this._retries++;
+				await this._rotateProxy(`GS:Site blocked or not reachable. Http status code ${html.status}. Retry #${this._retries}.`);
 				return this._rateLimitedScrapeRequest(url, refererNeeded ? refererNeeded : undefined)
 			}
 			else {
@@ -160,12 +151,11 @@ export class GoogleScholar implements IApiFetcher {
 		}
 		let body = await html.text();
 
-		//console.log(html.headers.get('set-cookie'));
 		if (!this._currentCookie) { this._currentCookie = html.headers.get('set-cookie')!; }
-		if (refererNeeded) {
-			//logger.info(`Setting referer for future requests: ${html.config.url}`)
-			//this._lastRefererUrl = html.config.url!;
-		}
+		// if (refererNeeded) {
+		// 	//logger.info(`Setting referer for future requests: ${html.config.url}`)
+		// 	//this._lastRefererUrl = html.config.url!;
+		// }
 		else {
 			this._lastRefererUrl = undefined;
 		}
@@ -173,14 +163,10 @@ export class GoogleScholar implements IApiFetcher {
 		release();
 		let parsed: any = this._domParser.parseFromString(body, 'text/html');
 
+		// detect captcha and change proxy if so
 		if (parsed.querySelector('#gs_captcha_c')) {
-
 			if (this._retries < 50) {
-				this._lastRefererUrl = undefined;
-				this._currentCookie = undefined;
-				logger.warning(`GS: Detected Captcha. Retry #${this._retries}.`)
-				this._proxy = await proxyPool.exchange(this._proxy!);
-				this._retries++;
+				await this._rotateProxy(`GS: Detected Captcha. Retry #${this._retries}.`);
 				return this._rateLimitedScrapeRequest(url, refererNeeded ? refererNeeded : undefined)
 			}
 			else {
@@ -191,36 +177,12 @@ export class GoogleScholar implements IApiFetcher {
 		return body;
 	}
 
-	private _rotateProxy() {
-
-	}
-
-	private _randomFetchConfig(): Object {
-		let config: any = {
-			params: {},
-			headers: {
-				'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
-				'user-agent': this._userAgent,
-				"accept-encoding": "gzip, deflate, br",
-				"accept-language": "en-US,en;q=0.9,de;q=0.8",
-				'referer': this._lastRefererUrl ? this._lastRefererUrl : 'https://www.google.com/',
-				"sec-fetch-dest": "document",
-				"sec-fetch-mode": "navigate",
-				"sec-fetch-site": "same-origin",
-				"sec-fetch-user": "?1",
-				"upgrade-insecure-requests": 1
-			},
-			proxy: {
-				url: 'http://localhost:5000',
-				basicAuth: {
-					username: 'username1',
-					password: 'password1'
-				}
-			}
-			//validateStatus: status) => true
-		}
-		if (this._currentCookie) { config.headers['cookie'] = this._currentCookie; }
-		return config;
+	private async _rotateProxy(message: string) {
+		this._lastRefererUrl = undefined;
+		this._currentCookie = undefined;
+		logger.warning(message)
+		this._proxy = await proxyPool.exchange(this._proxy!);
+		this._retries++;
 	}
 
 	private async _getCitations(url: string, numberOfCitations: number): Promise<IApiPaper[]> {
@@ -228,6 +190,10 @@ export class GoogleScholar implements IApiFetcher {
 		let citations: IApiPaper[] = [];
 		let currentPage = 0;
 		//let mod = (numberOfCitations % 20) != 0 ? 1 : 0;
+		if (numberOfCitations > 1000) {
+			logger.warning("GS: Gound ${numberOfCitations} citations. But only shows 1000 citations in detailed view. We will ignore the rest.")
+			numberOfCitations = 1000;
+		}
 		let iterations = (numberOfCitations / 20);
 		logger.info(`GoogleScholar: Got ${numberOfCitations} citations. This will need ${iterations} fetches`)
 		while (iterations > 0) {

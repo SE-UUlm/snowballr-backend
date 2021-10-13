@@ -30,6 +30,13 @@ add to suders: <user> ALL = NOPASSWD: /usr/bin/docker restart snowballr_proxy
 
 */
 
+/**
+ * Base implementation of a proxy object able to return a proxied http_response
+ *
+ * @param address full address to the proxy. with protocol
+ * @param user username for auth at the proxy if needed
+ * @param password password for auth at the proxy if needed
+ */
 export class Proxy implements IProxy {
 	protected _userAgent: Object | undefined;
 	private _lastRefererUrl: string | undefined;
@@ -46,11 +53,28 @@ export class Proxy implements IProxy {
 		this._password = password ? password : undefined;
 	}
 
+	/**
+	 * Returns a fetch config with user-simultated, generic headers and a proxy client object. Can be used as a fetch param.
+	 *
+	 * @param lastRefererUrl can accept the url of the last fetch call to simulate some kind of user redirection
+	 * @param currentCookie can pass on set cookies from the website to its simulated that server set cookies will be passed again on subsequent requests.
+	 * @return a config object for the deno webapi fetch function
+	 */
 	public getFetchConfig(lastRefererUrl?: string, currentCookie?: string): Object {
 		let config: any = genericFetchConfig(this._userAgent!, lastRefererUrl);
+
+		let basicAuth = undefined;
+		if (this._user && this._password) {
+			basicAuth = {
+				username: this._user,
+				password: this._password
+			}
+		}
+
 		const client = Deno.createHttpClient({
 			proxy: {
 				url: this._address,
+				basicAuth: basicAuth ? basicAuth : undefined,
 			}
 		})
 		config.client = client;
@@ -58,6 +82,7 @@ export class Proxy implements IProxy {
 		return config;
 	}
 
+	// deno-lint-ignore require-await
 	public async block(): Promise<void> {
 		throw new Error('Proxy isnt working, is captchaed, or blocked. We cannot fetch with this config');
 	}
@@ -65,11 +90,17 @@ export class Proxy implements IProxy {
 
 
 export class GoogleScholarProxy extends Proxy implements IProxy {
-	public onCooldown: boolean = false;
-	public isCurrentlyUsed: boolean = false;
-	public isWorking: boolean = true;
-	private _cooldown: number = 300;
+	public onCooldown = false;
+	public isCurrentlyUsed = false;
+	public isWorking = true;
+	private _cooldown = CONFIG.googleScholar.proxy.cooldown;
 
+
+	/**
+	 *	Set this proxy on a cooldown
+	 *  Block this proxy instance for some time, so that it wont get banned or blocked by a webserver.
+	 */
+	// deno-lint-ignore require-await
 	public async block(): Promise<void> {
 		//this._cooldown = 200;
 		this.onCooldown = true;
@@ -82,8 +113,13 @@ export class GoogleScholarProxy extends Proxy implements IProxy {
 }
 
 export class TorProxy extends Proxy implements IProxy {
+
+	/**
+	 * Restart the tor docker container to the daemon gets restartet and a new ip gets assigned if the current tor ip got captched or blocked
+	 * Block this proxy instance for some time, so that it wont get banned or blocked by a webserver.
+	 */
 	public async block(): Promise<void> {
-		logger.warning("Tor Proxy got blocked. Reloading service to get new ip. Deno must be run as admin to do so!!!!!");
+		logger.warning("Tor Proxy got blocked. Reloading service to get new ip. Make sure the executing user is allowed to restart the tor docker container. See documentation for more info!");
 		this._userAgent = HttpUserAgents[Math.floor(Math.random() * HttpUserAgents.length)];
 
 		// https://stackoverflow.com/questions/62142699/how-do-i-run-an-arbitrary-shell-command-from-deno
@@ -117,6 +153,12 @@ export class TorProxy extends Proxy implements IProxy {
 	}
 }
 
+/**
+ * Singleton used in GoogleScholar Api to manage various proxies and not overload them, so they wont get blocked.
+ *
+ * @param proxyPorts list of ports for the proxy. if not given is read from CONFIG yaml
+ * @param proxyAddresses list of ips for the proxy. if not given is read from CONFIG yaml
+ */
 class ProxyManager {
 	private static _instance: ProxyManager;
 	private _proxies: Proxy[] = [] as Proxy[];
@@ -126,7 +168,6 @@ class ProxyManager {
 	//allows to pass addresses and ports otherwise takes them from the env
 	private constructor(proxyPorts?: number[], proxyAddresses?: number[]) {
 
-		//console.log(data);
 		try {
 			this._mode = CONFIG.googleScholar.proxy.mode;
 		}
@@ -136,7 +177,6 @@ class ProxyManager {
 		if (this._mode === "pool") {
 			this._settings = CONFIG.googleScholar;
 			for (let p in CONFIG.googleScholar.proxy.urls) {
-				//console.log(p)
 				let proxy = new GoogleScholarProxy(`${CONFIG.googleScholar.proxy.urls[p]}`)
 				this._proxies.push(proxy);
 			}
@@ -149,11 +189,16 @@ class ProxyManager {
 		}
 	}
 
+	// Make this object a singleton. The Deno way.
 	public static Instance(proxyPorts?: number[], proxyAddresses?: number[]) {
 		// Do you need arguments? Make it a regular static method instead.
 		return this._instance || (this._instance = new this(proxyPorts ? proxyPorts : undefined, proxyAddresses ? proxyAddresses : undefined));
 	}
 
+	/**
+	 * Try to get a free and working proxy config.
+	 * @return a proxy object depending on the CONFIG settings
+	 */
 	public async acquire(): Promise<Proxy> {
 		if (this._mode === "tor") {
 			return this._proxies[0];
@@ -180,6 +225,11 @@ class ProxyManager {
 		//}
 	}
 
+	/**
+	 * Exchange a proxy that isnt working any more. and get a new one
+	 * @param faultyProxy the proxy that is detected to not work anymore
+	 * @return a proxy object depending on the CONFIG settings
+	 */
 	public exchange(faultyProxy: Proxy): Promise<Proxy> | undefined {
 		logger.debug("Trying to EXCHANGE Proxy")
 		faultyProxy.block();

@@ -31,11 +31,11 @@ const comparisonWeight = {
 
 
 /* TODO hash for cash out of query without enabled apis*/
-for (let i = 0; i < 1; i++) {
+for (let i = 0; i < 12; i++) {
 	const query: IApiQuery = {
 		id: "tst",
 		rawName: undefined,
-		doi: TestDoi[i % 1],
+		doi: TestDoi[i],
 		title: undefined,
 		enabledApis: [SourceApi.GS], //[SourceApi.GS, SourceApi.CR, SourceApi.IE, SourceApi.MA, SourceApi.OC, SourceApi.S2],
 		aggression: comparisonWeight
