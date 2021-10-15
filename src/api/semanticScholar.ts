@@ -7,6 +7,7 @@ import { IApiAuthor } from "./iApiAuthor.ts";
 import { IApiUniqueId, idType } from "./iApiUniqueId.ts";
 import { Cache } from "./cache.ts";
 import { hashQuery } from "../helper/queryHasher.ts";
+import { CONFIG } from "../helper/config.ts";
 
 export class SemanticScholar implements IApiFetcher {
 	url: string;
@@ -31,7 +32,7 @@ export class SemanticScholar implements IApiFetcher {
 		let queryString = hashQuery(query);
 		try {
 			let get = this.cache!.get(queryString);
-			if (this.cache && get) {
+			if (CONFIG.semanticScholar.useCache && this.cache && get) {
 				logger.info(`S2: Loaded fetch from cache.`)
 				return get;
 			}

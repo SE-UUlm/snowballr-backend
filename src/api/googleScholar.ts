@@ -16,6 +16,7 @@ import { getRandomFromRange } from "../helper/random.ts";
 import { Semaphore } from "https://deno.land/x/semaphore/mod.ts"
 import { difference } from 'https://deno.land/std/datetime/mod.ts'
 import { proxyPool, Proxy } from './proxyPool.ts'
+import { CONFIG } from "../helper/config.ts";
 
 /*Captcha Google Scholar Rate Limits Enabled
 Fetching same Query, 30-45 sec: 3,3,4
@@ -53,7 +54,7 @@ export class GoogleScholar implements IApiFetcher {
 	}
 
 	/**
-	 * Checks for a paper at the googlescholar website via a sequence of scrape requests.
+	 * Checks for a paper at the googleScholar website via a sequence of scrape requests.
 	 * Since google scholar is highly blocked for automated requests we use a proxy to hide our identity.
 	 *
 	 * @param query - Object defined by interface in IApiQuery to filter and query api calls.
@@ -67,11 +68,11 @@ export class GoogleScholar implements IApiFetcher {
 		queryIdentifier.update(JSON.stringify(query));
 		let queryString = queryIdentifier.toString();
 		try {
-			// let get = this.cache!.get(queryString);
-			// if (this.cache && get) {
-			// 	logger.info(`GS: Loaded fetch from cache.`)
-			// 	return get;
-			// }
+			let get = this.cache!.get(queryString);
+			if (CONFIG.googleScholar.useCache && this.cache && get) {
+				logger.info(`GS: Loaded fetch from cache.`)
+				return get;
+			}
 
 			// use a random user-agent to make it harder to get rate limited.
 			let rawHtml = await this._rateLimitedScrapeRequest(`${this.url}/scholar?as_sdt=0,5&q=${query.doi}&hl=en`, true);
@@ -85,7 +86,7 @@ export class GoogleScholar implements IApiFetcher {
 				"references": []
 			}
 			if (this.cache) {
-				console.log('GS: Adding query to cache')
+				//console.log('GS: Adding query to cache')
 				await this.cache.add(queryString, apiReturn);
 			};
 		}
@@ -100,8 +101,13 @@ export class GoogleScholar implements IApiFetcher {
 		return apiReturn;
 	}
 
+	/**
+	 * Function to select relevant data for paper from a parsed dom tree to simulate som kind of json api return, which can be parsed to an IApiPaper with ease.
+	 *
+	 * @param dom - parsed subtree of a single paper or citation from the googleScholar scrap
+	 * @returns A json like object with all relevant metadata scrapable from googleScholar for a single paper
+	 */
 	private _transformScrapedData(dom: any) {
-		//console.log(dom);
 		let title = dom.querySelector('.gs_ri > h3 > a') ? dom.querySelector('.gs_ri > h3 > a') : dom.querySelector('.gs_ri > h3 > span:not(.gs_ctu)');
 		let info = dom.querySelector('.gs_a');
 		let citedLink = dom.querySelector('.gs_fl > a:nth-child(3)');
@@ -125,19 +131,30 @@ export class GoogleScholar implements IApiFetcher {
 		}
 	}
 
+	/**
+	 * Scrap google scholar via fetch call but only once at an interval to prevent bot detection.
+	 *
+	 * @param url - url to fetch google, might be more complex for citations
+	 * @param refererNeeded - if this side would be clicked from a previous http site we use the previous url as referer to simulate user interaction
+	 * @returns a raw html string, unparsed
+	 */
 	private async _rateLimitedScrapeRequest(url: string, refererNeeded?: boolean): Promise<string> {
 		if (!this._proxy) {
 			this._proxy = await proxyPool.acquire();
 		}
-		let timeout = getRandomFromRange(1, 3);
+		let timeout = getRandomFromRange(CONFIG.googleScholar.requestInterval.min, CONFIG.googleScholar.requestInterval.max);
 		let timeDelta = lastScrappingRun ? difference(lastScrappingRun, new Date()).seconds! : timeout;
+
+		// critical section. stop concurrency by locking with a mutex so that the ratelimiting works globally when multiple batches are running in parallel
 		var release = await semaphore.acquire();
 		if (timeDelta < timeout) {
 			logger.warning(`GoogleScholar: globally ratelimiting requests. Waiting ${timeout} seconds...`)
 			await sleep(timeout - timeDelta);
 		}
 		let html = await fetch(url, this._proxy!.getFetchConfig(this._lastRefererUrl, this._currentCookie));
-		console.log(html.status);
+		lastScrappingRun = new Date();
+		release();
+		// leave critical section
 
 		//detect connection problems like being blocked and exchange proxy if so
 		if (html.status !== 200) {
@@ -146,22 +163,20 @@ export class GoogleScholar implements IApiFetcher {
 				return this._rateLimitedScrapeRequest(url, refererNeeded ? refererNeeded : undefined)
 			}
 			else {
-				throw new Error("Captcha enabled by google scholar. Cannot fetch.");
+				throw new Error(`GS: Invalid http response from google ${html.status}`);
 			}
 		}
 		let body = await html.text();
+		let parsed: any = this._domParser.parseFromString(body, 'text/html');
 
 		if (!this._currentCookie) { this._currentCookie = html.headers.get('set-cookie')!; }
-		// if (refererNeeded) {
-		// 	//logger.info(`Setting referer for future requests: ${html.config.url}`)
-		// 	//this._lastRefererUrl = html.config.url!;
-		// }
+		if (refererNeeded) {
+			logger.info(`Setting referer for future requests: ${parsed.url}`)
+			this._lastRefererUrl = parsed.url!;
+		}
 		else {
 			this._lastRefererUrl = undefined;
 		}
-		lastScrappingRun = new Date();
-		release();
-		let parsed: any = this._domParser.parseFromString(body, 'text/html');
 
 		// detect captcha and change proxy if so
 		if (parsed.querySelector('#gs_captcha_c')) {
@@ -170,14 +185,21 @@ export class GoogleScholar implements IApiFetcher {
 				return this._rateLimitedScrapeRequest(url, refererNeeded ? refererNeeded : undefined)
 			}
 			else {
-				throw new Error("Captcha enabled by google scholar. Cannot fetch.");
+				throw new Error("GS: Captcha enabled by google scholar. Cannot fetch.");
 			}
 		}
+
+		// reset retry counter since the last scrap seemed to wort (200 and no captcha detected)
 		this._retries = 0;
 		return body;
 	}
 
-	private async _rotateProxy(message: string) {
+	/**
+	 * Exchange fetch config with proxy if proxy gets blocked or captchaed
+	 *
+	 * @param message - log message if proxy needs to be exchanged
+	 */
+	private async _rotateProxy(message: string): Promise<void> {
 		this._lastRefererUrl = undefined;
 		this._currentCookie = undefined;
 		logger.warning(message)
@@ -185,35 +207,40 @@ export class GoogleScholar implements IApiFetcher {
 		this._retries++;
 	}
 
+	/**
+	 * Get a citations into an parsed array by fetching every page of the googleScholar citations.
+	 *
+	 * @param url - url to the first citations page of a paper
+	 * @param numberOfCitations - numberOfCitations read from the initial paper page
+	 * @returns fully scraped and parsed citations to compare by merger
+	 */
 	private async _getCitations(url: string, numberOfCitations: number): Promise<IApiPaper[]> {
 		console.log(numberOfCitations);
 		let citations: IApiPaper[] = [];
 		let currentPage = 0;
-		//let mod = (numberOfCitations % 20) != 0 ? 1 : 0;
+
+		// Even as a user we cannot see more than 1000 citations per paper
 		if (numberOfCitations > 1000) {
-			logger.warning("GS: Gound ${numberOfCitations} citations. But only shows 1000 citations in detailed view. We will ignore the rest.")
+			logger.warning(`GS: Found ${numberOfCitations} citations.But only shows 1000 citations in detailed view.We will ignore the rest.`)
 			numberOfCitations = 1000;
 		}
 		let iterations = (numberOfCitations / 20);
-		logger.info(`GoogleScholar: Got ${numberOfCitations} citations. This will need ${iterations} fetches`)
+		logger.info(`GS: Got ${numberOfCitations} citations.This will need ${iterations} fetches`)
+
+		// get each citation paper meta of the paper currently iterated. iteration works via manipulating the urls "start" param
 		while (iterations > 0) {
-			console.log(iterations);
+			//console.log(iterations);
 			iterations--;
-			//let timeout = getRandomFromRange(30, 45);
-			//logger.info(`GoogleScholar: locally ratelimiting requests. Waiting ${timeout} seconds...`)
-			//await sleep(timeout);
 			let rawHtml = await this._rateLimitedScrapeRequest(`${this.url}${url}&num=20&start=${currentPage}`);
 			currentPage += 20;
-			let html: any = this._domParser.parseFromString(await rawHtml, 'text/html');
+			let html: any = this._domParser.parseFromString(rawHtml, 'text/html');
 			let citationList = html.querySelector('#gs_res_ccl_mid');
-			//console.log(citationList);
 			citationList.childNodes.forEach((element: any) => {
-				//console.log("child")
-				//console.log(element);
 				if (element instanceof Element) {
-					//console.log("adding element")
 					let citation = this._transformScrapedData(element);
-					citations.push(this._parseResponse(citation));
+					let cite = this._parseResponse(citation);
+					//console.log(cite)
+					citations.push(cite);
 				}
 			});
 		}
@@ -234,7 +261,6 @@ export class GoogleScholar implements IApiFetcher {
 
 		if (response.author) {
 			for (let a of response.author.split(',')) {
-				//let authorLinkText = this._domParser.parseFromString(a, 'text/html')!.querySelector('a');
 				if (a.replace(' ', '').length === 0) { continue; }
 				let parsedAuthor: IApiAuthor = {
 					id: undefined,

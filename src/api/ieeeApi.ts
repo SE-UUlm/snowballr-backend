@@ -8,6 +8,7 @@ import { IApiUniqueId, idType } from "./iApiUniqueId.ts";
 import axiod from "https://deno.land/x/axiod/mod.ts";
 import { Cache } from "./cache.ts";
 import { hashQuery } from "../helper/queryHasher.ts";
+import { CONFIG } from "../helper/config.ts";
 
 export class IeeeApi implements IApiFetcher {
 	url: string;
@@ -41,7 +42,7 @@ export class IeeeApi implements IApiFetcher {
 		let queryString = hashQuery(query);
 		try {
 			let get = this.cache!.get(queryString);
-			if (this.cache && get) {
+			if (CONFIG.ieee.useCache && this.cache && get) {
 				logger.info(`IEEE: Loaded fetch from cache.`)
 				return get;
 			}

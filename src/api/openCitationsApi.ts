@@ -7,6 +7,7 @@ import { IApiAuthor } from "./iApiAuthor.ts";
 import { IApiUniqueId, idType } from "./iApiUniqueId.ts";
 import { Cache } from "./cache.ts";
 import { hashQuery } from "../helper/queryHasher.ts";
+import { CONFIG } from "../helper/config.ts";
 export class OpenCitationsApi implements IApiFetcher {
 	url: string;
 	cache: Cache<IApiResponse> | undefined;
@@ -33,7 +34,7 @@ export class OpenCitationsApi implements IApiFetcher {
 		let queryString = hashQuery(query);
 		try {
 			let get = this.cache!.get(queryString);
-			if (this.cache && get) {
+			if (CONFIG.openCitations.useCache && this.cache && get) {
 				logger.info(`OC: Loaded fetch from cache.`)
 				return get;
 			}

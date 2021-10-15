@@ -7,6 +7,7 @@ import { IApiAuthor } from "./iApiAuthor.ts";
 import { IApiUniqueId, idType } from "./iApiUniqueId.ts";
 import { Cache } from "./cache.ts";
 import { hashQuery } from "../helper/queryHasher.ts";
+import { CONFIG } from "../helper/config.ts";
 
 export class MicrosoftResearchApi implements IApiFetcher {
 	url: string;
@@ -69,7 +70,7 @@ export class MicrosoftResearchApi implements IApiFetcher {
 		let queryString = hashQuery(query);
 		try {
 			let get = this.cache!.get(queryString);
-			if (this.cache && get) {
+			if (CONFIG.microsoftAcademic.useCache && this.cache && get) {
 				logger.info(`MA: Loaded fetch from cache.`)
 				//console.log(get)
 				return get;

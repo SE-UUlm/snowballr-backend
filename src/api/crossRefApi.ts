@@ -8,6 +8,7 @@ import { IApiUniqueId, idType } from "./iApiUniqueId.ts";
 import { sleep } from "https://deno.land/x/sleep/mod.ts";
 import { Cache } from "./cache.ts";
 import { hashQuery } from "../helper/queryHasher.ts";
+import { CONFIG } from "../helper/config.ts";
 
 export class CrossRefApi implements IApiFetcher {
 	url: string;
@@ -42,7 +43,7 @@ export class CrossRefApi implements IApiFetcher {
 
 		try {
 			let get = this.cache!.get(queryString)
-			if (this.cache && get) {
+			if (CONFIG.crossRef.useCache && this.cache && get) {
 				logger.info(`CR: Loaded fetch from cache.`);
 				return get;
 			}

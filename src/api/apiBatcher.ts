@@ -56,18 +56,18 @@ export class ApiBatcher implements IApiBatcher {
 
 	// Map a constructor parameters to the api type so it can be implemented in a loop. ADD NEW PARAMETES HERE IF NEW CLASS IMPLEMENTED TO BE APPLIED
 	private _apiParamMapper = {
-		[SourceApi.MA]: ["https://api.labs.cognitive.microsoft.com/academic/v1.0/evaluate", "9a02225751354cd29397eba3f5382101"],
-		[SourceApi.OC]: ["https://opencitations.net"],
-		[SourceApi.CR]: ["https://api.crossref.org/works", "luca999@web.de"],
-		[SourceApi.S2]: ["https://api.semanticscholar.org/v1/paper"],
-		[SourceApi.IE]: ["http://ieeexploreapi.ieee.org/api/v1/search/articles", "4yk5d9an52ejynjsmzqxe62r"],
-		[SourceApi.GS]: ["https://scholar.google.com"]
+		[SourceApi.MA]: [CONFIG.microsoftAcademic.baseUrl, "9a02225751354cd29397eba3f5382101"],
+		[SourceApi.OC]: [CONFIG.openCitations.baseUrl],
+		[SourceApi.CR]: [CONFIG.crossRef.baseUrl, "luca999@web.de"],
+		[SourceApi.S2]: [CONFIG.semanticScholar.baseUrl],
+		[SourceApi.IE]: [CONFIG.ieee.baseUrl, "4yk5d9an52ejynjsmzqxe62r"],
+		[SourceApi.GS]: [CONFIG.googleScholar.baseUrl]
 	}
 
 	public constructor() {
 		this.activeBatches = []
 		for (let s in this._apiMapper) {
-			this.cache[s] = new Cache<IApiResponse>(CacheType.F, 10080000, s.toString());
+			this.cache[s] = new Cache<IApiResponse>(CONFIG.cache.type, CONFIG.cache.timeToLiveInSeconds, s.toString());
 		}
 	}
 

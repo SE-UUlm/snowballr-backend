@@ -31,7 +31,7 @@ const comparisonWeight = {
 
 
 /* TODO hash for cash out of query without enabled apis*/
-for (let i = 0; i < 12; i++) {
+for (let i = 0; i < 1; i++) {
 	const query: IApiQuery = {
 		id: "tst",
 		rawName: undefined,

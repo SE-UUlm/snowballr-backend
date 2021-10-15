@@ -84,7 +84,7 @@ export class Proxy implements IProxy {
 
 	// deno-lint-ignore require-await
 	public async block(): Promise<void> {
-		throw new Error('Proxy isnt working, is captchaed, or blocked. We cannot fetch with this config');
+		throw new Error('GS: roxy isnt working, is captchaed, or blocked. We cannot fetch with this config');
 	}
 }
 
@@ -119,7 +119,7 @@ export class TorProxy extends Proxy implements IProxy {
 	 * Block this proxy instance for some time, so that it wont get banned or blocked by a webserver.
 	 */
 	public async block(): Promise<void> {
-		logger.warning("Tor Proxy got blocked. Reloading service to get new ip. Make sure the executing user is allowed to restart the tor docker container. See documentation for more info!");
+		logger.warning("GS: Tor Proxy got blocked. Reloading service to get new ip. Make sure the executing user is allowed to restart the tor docker container. See documentation for more info!");
 		this._userAgent = HttpUserAgents[Math.floor(Math.random() * HttpUserAgents.length)];
 
 		// https://stackoverflow.com/questions/62142699/how-do-i-run-an-arbitrary-shell-command-from-deno
@@ -129,25 +129,29 @@ export class TorProxy extends Proxy implements IProxy {
 			stderr: "piped"
 		});
 
-		const debug = Deno.run({
-			cmd: ["curl", "--socks5", "localhost:9050", "http://checkip.amazonaws.com/"],
-			stdout: "piped",
-			stderr: "piped"
-		});
-		const debugOut = await debug.output();
-		const debugOutStr = new TextDecoder().decode(debugOut);
-		console.log(debugOutStr);
-		debug.close();
-
-		const output = await process.output() // "piped" must be set
-		const outStr = new TextDecoder().decode(output);
-		console.log(outStr);
-
+		//const output = await process.output() // "piped" must be set
+		//const outStr = new TextDecoder().decode(output);
+		//console.log(outStr);
 
 		const status: Deno.ProcessStatus = await process.status();
 		if (status.success === false) {
 			process.close();
-			throw new Error("Error handling tor service. Run deno as admin and check for tor being installed.");
+			throw new Error("GS: Error handling tor service. Run deno as admin and check for tor being installed.");
+		}
+		let debugOutStr = "---"
+		try {
+			const debug = Deno.run({
+				cmd: ["curl", "--socks5", "localhost:9050", "http://checkip.amazonaws.com/"],
+				stdout: "piped",
+				stderr: "piped"
+			});
+			const debugOut = await debug.output();
+			debugOutStr = new TextDecoder().decode(debugOut);
+			//console.log(debugOutStr);
+			debug.close();
+		}
+		finally {
+			logger.info(`GS: Successfully restarted Tor Docker Container. New IP is ${debugOutStr}`);
 		}
 		process.close();
 	}
@@ -172,7 +176,7 @@ class ProxyManager {
 			this._mode = CONFIG.googleScholar.proxy.mode;
 		}
 		catch (e) {
-			throw new Error("Cannot read config.yml from project source. Or config.yml isn't formatted correctly. Error: " + e.message);
+			throw new Error("GS: Cannot read config.yml from project source. Or config.yml isn't formatted correctly. Error: " + e.message);
 		}
 		if (this._mode === "pool") {
 			this._settings = CONFIG.googleScholar;
@@ -185,7 +189,7 @@ class ProxyManager {
 			this._proxies.push(new TorProxy(`${CONFIG.googleScholar.proxy.urls[0]}`));
 		}
 		else {
-			throw new Error("Invalid config.yaml config for googleScholar")
+			throw new Error("GS: Invalid config.yaml config for googleScholar")
 		}
 	}
 
@@ -206,23 +210,18 @@ class ProxyManager {
 
 		if (!this._settings.proxy.enabled) {
 			logger.info(`GS: Proxy is disabled via config.yaml. Trying to run without a proxy`)
-			throw new Error("Tried to acquire a proxy. But proxy is disabled via config.")
+			throw new Error("GS: Tried to acquire a proxy. But proxy is disabled via config.")
 		}
-		console.debug("Trying to acquire Proxy");
+		console.debug("GS: Trying to acquire Proxy");
 		let proxy: Proxy = {} as Proxy;
 		this._proxies.forEach((p: any) => {
-			//console.log(p.isCurrentlyUsed)
-			//console.log(p.onCooldown)
 			if (!p.isCurrentlyUsed && !p.onCooldown) {
 				p.isCurrentlyUsed = true;
-				////console.log(p)
 				proxy = p;
 			}
 		});
 		await sleep(1);
-		//console.log("waiting for a free proxy")
 		return proxy;
-		//}
 	}
 
 	/**

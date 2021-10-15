@@ -99,8 +99,13 @@ export class FileCache {
 	}
 
 	public clear() {
-		clearInterval(this._watchDog);
-		logger.info(`Stopped watchdog for ttl`);
+		try {
+			clearInterval(this._watchDog);
+			logger.info(`Stopped watchdog for ttl`);
+		}
+		catch (e) {
+			logger.error(`Failed to stop watchdog. Might be stopped tho. ${e}`)
+		}
 	}
 
 	public empty(): boolean {
