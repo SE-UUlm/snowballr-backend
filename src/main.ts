@@ -1,6 +1,6 @@
 import { Application, RouteParams, Router, RouterContext } from 'https://deno.land/x/oak/mod.ts';
 import { validateContentType, validateJWTIfExists } from "./controller/validation.controller.ts";
-import { login } from "./controller/login.controller.ts";
+import { login, refresh } from "./controller/login.controller.ts";
 import { setup } from "./helper/setup.ts";
 import { createUser, getUser, getUserProjects, getUsers, patchUser, resetPassword } from "./controller/user.controller.ts";
 import { logout } from "./controller/logout.controller.ts";
@@ -86,6 +86,9 @@ router
     })
     .get("/logout", async (context) => {
         await logout(context)
+    })
+    .get("/refresh", async (context) => {
+        await refresh(context)
     })
     .post("/reset-password", async (context) => {
         await resetPassword(context, client)

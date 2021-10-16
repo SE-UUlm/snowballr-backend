@@ -1,11 +1,12 @@
 import { Context } from "https://deno.land/x/oak/mod.ts";
 import { create, decode, verify } from "https://deno.land/x/djwt@v2.3/mod.ts"
 import { User } from "../model/db/user.ts";
-import { createNumericTerminationDate } from "../helper/dateHelper.ts";
+import { createNumericTerminationDate, createTokenExpiration } from "../helper/dateHelper.ts";
 import { makeErrorMessage } from "../helper/error.ts";
 import { PayloadJson } from "../model/payloadJson.ts";
 import { UserIsPartOfProject } from "../model/db/userIsPartOfProject.ts";
 import { jsonBodyToObject } from "../helper/body.ts";
+import { getToken } from "./databaseFetcher/token.ts";
 
 const SECRET = String(Deno.env.get('SECRET'));
 const KEY = await crypto.subtle.generateKey(
@@ -73,12 +74,28 @@ const validateContent = async (ctx: Context): Promise<boolean> => {
 export const validateJWTIfExists = async (ctx: Context, next: () => Promise<unknown>) => {
     let token = ctx.request.headers.get("authenticationToken");
     if (token) {
-        return verifyJWT(ctx, next, token)
+        return verifyJWTAndContinue(ctx, next, token)
     } else {
         return allowedAddressesUnauthorized(ctx, next)
     }
 }
 
+
+/**
+ * Validates the refresh token and checks whether it is still in the database
+ * @param ctx 
+ * @param next 
+ */
+export const validateRefreshJWT = async(ctx: Context) => {
+    let token = await ctx.cookies.get("refreshToken");
+    if (token && await verifyJWT(token)) {
+        const payloadJson = await getPayloadFromJWTCookie(ctx);
+        if(payloadJson && await getToken(payloadJson.id, token)){
+            return {valid: true, payload: payloadJson};
+        }
+    }
+    return {valid: false};
+}
 /**
  * Creates a JWT and adds the userprofile in it
  * @param user
@@ -91,11 +108,22 @@ export const createJWT = async (user: User) => {
         lastName: user.lastName,
         firstName: user.firstName,
         status: user.status,
-        exp: createNumericTerminationDate()
+        exp: createTokenExpiration()
     }, KEY);
     return jwt;
 }
 
+/**
+ * Refresh token for login
+ * @returns 
+ */
+export const createRefreshJWT = async (userID: number) =>{
+    let jwt =  create({ alg: "HS512", typ: "JWT" }, {
+        id: userID,
+        exp: createNumericTerminationDate()
+    }, KEY);
+    return jwt;
+}
 /**
  * Extracts the userName from a JWT payload
  * @param payloadJson
@@ -200,7 +228,7 @@ export const getUserID = async (payloadJson?: PayloadJson) => {
  * Returns the payload from a JWT, if it exists
  * @param ctx
  */
-export const getPayloadFromJWT = async (ctx: Context): Promise<PayloadJson | undefined> => {
+export const getPayloadFromJWTHeader = async (ctx: Context): Promise<PayloadJson | undefined> => {
     let token = await ctx.request.headers.get("authenticationToken");
     if (token) {
         let [, payload,] = await decode(token)
@@ -208,30 +236,46 @@ export const getPayloadFromJWT = async (ctx: Context): Promise<PayloadJson | und
     }
 }
 
+export const getPayloadFromJWTCookie = async (ctx: Context): Promise<PayloadJson | undefined> => {
+    let token = await ctx.cookies.get("refreshToken");
+    if (token) {
+        let [, payload,] = await decode(token)
+        return <PayloadJson>payload;
+    }
+}
+
+
 /**
  * Verifies a token if it exists and isn't expired yet
  * @param ctx
  * @param next function to trigger if the token is valid
  * @param token
  */
-const verifyJWT = async (ctx: Context, next: () => Promise<unknown>, token: string) => {
-    let goingForward = true;
-    await verify(token, KEY).catch((err) => {
-        goingForward = false;
-        makeErrorMessage(ctx, 401, "token expired")
-    });
-    if (goingForward) {
+const verifyJWTAndContinue = async (ctx: Context, next: () => Promise<unknown>, token: string) => {
+
+    if (await verifyJWT(token)) {
         await next();
+    } else{
+        makeErrorMessage(ctx, 401, "token expired")
     }
 }
 
+const verifyJWT = async (token: string) => {
+    try{
+        await verify(token, KEY)
+        return true
+    }catch(err){
+        return false;
+    }
+
+}
 /**
  * Checks whether an unverified user is allowed to enter that path
  * @param ctx
  * @param next function to trigger if the path is allowed for unverified users
  */
 const allowedAddressesUnauthorized = async (ctx: Context, next: () => Promise<unknown>) => {
-    if (ctx.request.url.pathname === "/login/" || ctx.request.url.pathname === "/reset-password/" || (ctx.request.url.pathname.match(/\/users\/[0-9]+\//g) && ctx.request.method.toString() === "PATCH")) {
+    if (ctx.request.url.pathname === "/login/" || ctx.request.url.pathname === "/reset-password/" || ctx.request.url.pathname === "/refresh/" || (ctx.request.url.pathname.match(/\/users\/[0-9]+\//g) && ctx.request.method.toString() === "PATCH")) {
         ctx.response.status = 200;
         await next();
     } else {
@@ -272,7 +316,7 @@ export const validateUserEntry = async (ctx: Context, id: (number | undefined)[]
 }
 
 const checkAuthorization = async (ctx: Context, needed: UserStatus, projectID: number, userID?: number) => {
-    const payloadJson = await getPayloadFromJWT(ctx);
+    const payloadJson = await getPayloadFromJWTHeader(ctx);
     if(await checkAdmin(payloadJson)){
         return true
     }

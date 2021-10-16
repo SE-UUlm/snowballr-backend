@@ -3,7 +3,7 @@ import { createMockContext } from "../mockObjects/oak/mockContext.test.ts";
 import {
     checkPO,
     createJWT,
-    getPayloadFromJWT,
+    getPayloadFromJWTHeader,
     validateContentType,
     validateJWTIfExists
 } from "../../src/controller/validation.controller.ts";
@@ -141,7 +141,7 @@ Deno.test({
             projectId: Number(project.id)
         })
         let ctx = await createMockContext(app, undefined, [["Content-Type", "text"]], "/", token);
-        let payLoad = await getPayloadFromJWT(ctx);
+        let payLoad = await getPayloadFromJWTHeader(ctx);
         assertEquals(await checkPO(payLoad), true)
         await db.close();
         await client.end();
@@ -165,7 +165,7 @@ Deno.test({
             projectId: Number(project.id)
         })
         let ctx = await createMockContext(app, undefined, [["Content-Type", "text"]], "/", token);
-        let payLoad = await getPayloadFromJWT(ctx);
+        let payLoad = await getPayloadFromJWTHeader(ctx);
         assertEquals(await checkPO(payLoad), false)
 
         await db.close();

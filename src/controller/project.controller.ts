@@ -19,7 +19,7 @@ import { ApiMerger, getDOI } from "../api/apiMerger.ts";
 import { Cache, CacheType } from "../api/cache.ts";
 import { logger } from "../api/logger.ts";
 import { IApiAuthor } from "../api/iApiAuthor.ts";
-import { checkAdmin, checkMemberOfProject, checkPO, checkPOofProject, getPayloadFromJWT, getUserID, UserStatus, validateUserEntry } from "./validation.controller.ts";
+import { checkAdmin, checkMemberOfProject, checkPO, checkPOofProject, getPayloadFromJWTHeader, getUserID, UserStatus, validateUserEntry } from "./validation.controller.ts";
 import { comparisonWeight, makeFetching} from "./fetch.controller.ts";
 import { saveChildren } from "./database.controller.ts";
 import { getPaperCitations, getPaperReferences, getRefOrCiteList, paperUpdate, postPaperCitation, postPaperReference } from "./paper.controller.ts";
@@ -230,7 +230,7 @@ export const getMembersOfProject = async (ctx: Context, id: number) => {
  * @param ctx 
  */
 export const getProjects = async (ctx: Context) => {
-    const payloadJson = await getPayloadFromJWT(ctx);
+    const payloadJson = await getPayloadFromJWTHeader(ctx);
     if (await checkAdmin(payloadJson)) {
         let projects = await Project.all();
         let projectMessage = await convertProjectToProjectMessage(projects);
@@ -477,7 +477,7 @@ export const getPapersOfProjectStage = async (ctx: Context, projectID: number, s
     let validate = await validateUserEntry(ctx, [projectID, stageID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
     if (validate) {
         ctx.response.status = 200;
-        let userID = await getUserID(await getPayloadFromJWT(ctx))
+        let userID = await getUserID(await getPayloadFromJWTHeader(ctx))
         let paperInfo = await getAllPapersFromStage(stageID);
         let papers = paperInfo.map(async item =>{ return await item.paper})
         let message: PapersMessage = { papers: await convertPapersToPaperMessage(await Promise.all(papers), stageID, userID) }
@@ -1034,7 +1034,7 @@ export const getReviewsOfPaper = async (ctx: Context, projectID: number, stageID
 export const addReviewToPaper = async (ctx: Context, projectID: number, stageID: number, ppID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
     if (validate) {
-        const payloadJson = await getPayloadFromJWT(ctx);
+        const payloadJson = await getPayloadFromJWTHeader(ctx);
         let userID = await getUserID(payloadJson)
         if(userID && await checkUserReviewOfProjectPaper(ppID, userID)){
             makeErrorMessage(ctx, 409, "paper is already in review by you")

@@ -7,3 +7,7 @@ export const createNumericTerminationDate = () => {
     let days = Number(Deno.env.get('DAYS_UNTIL_VALIDATION_GONE'));
     return date.setDate(date.getDate() + days);
 }
+
+export const createTokenExpiration = () => {
+    return new Date(Date.now()+ 15*60*1000).getTime();
+}
