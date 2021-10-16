@@ -90,9 +90,15 @@ export const validateRefreshJWT = async(ctx: Context) => {
     let token = await ctx.cookies.get("refreshToken");
     if (token && await verifyJWT(token)) {
         const payloadJson = await getPayloadFromJWTCookie(ctx);
-        if(payloadJson && await getToken(payloadJson.id, token)){
+        if(payloadJson){
+        let oldJWT =  await getToken(payloadJson.id, token);
+        if(oldJWT){
+            let newJWT = await createRefreshJWT(payloadJson.id);
+            oldJWT.token = newJWT
+            oldJWT.update()
             return {valid: true, payload: payloadJson};
         }
+    }
     }
     return {valid: false};
 }
