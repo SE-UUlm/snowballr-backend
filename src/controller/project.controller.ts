@@ -87,7 +87,7 @@ export const createProject = async (ctx: Context) => {
 
                 await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
                 await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-                await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: true})
+                await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
                 await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
                 await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
                 await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
