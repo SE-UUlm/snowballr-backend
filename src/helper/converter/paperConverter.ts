@@ -210,8 +210,7 @@ const updateAuthorsOfPaper = async(target: Paper, source: IApiPaper) =>{
                         lastName: element.lastName ? [String(element.lastName)] : [],
                         firstName: element.firstName ? [String(element.firstName)] : []
                     }
-                    logger.error(source)
-                    for (let i = 0; i < source.author.length; source.author) {
+                    for (let i = 0; i < source.author.length; i++) {
                         //TODO hardcoded
                         if (isEqualAuthor(iAuthor, source.author[i]) > 0.9) {
                             source.author = source.author.slice(0, i).concat(source.author.slice(i + 1))
