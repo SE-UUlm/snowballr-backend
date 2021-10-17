@@ -443,8 +443,6 @@ const savePaper = async (apiPaper: IApiPaper, stage: Stage, overallWeight: numbe
 
     }
 
-
-    
         let papers = await getAllPapersFromStage(Number(stage.id))
         let comparison= {} as IComparisonWeight
         Object.assign(comparison, comparisonWeight)
