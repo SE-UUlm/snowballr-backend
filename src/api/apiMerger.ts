@@ -211,7 +211,7 @@ export class ApiMerger implements IApiMerger {
 			}
 		}
 		mergingAuthors = mergingAuthors.concat(firstAuthors.filter(item => item), secondAuthors);
-		return mergingAuthors;
+		return mergingAuthors.filter(value => Object.keys(value).length !== 0);
 	}
 
 	// wenn normalized(rawName) = normalized(lastName),normalized(firstName)
