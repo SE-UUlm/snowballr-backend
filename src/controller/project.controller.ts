@@ -1131,7 +1131,7 @@ const getFinalDecisionOfPaper = (reviews: ReviewMessage[], project: Project, ppI
     let allReviewsFinished = !reviews.some(review => !review.finished)
     if(allReviewsFinished && reviews.length >= Number(project.minCountReviewers)){
         let decisionNumber = 0;
-        reviews.forEach(review => {if(review.overallEvaluation == "yes"){
+        reviews.forEach(review => {if(review.overallEvaluation == "YES"){
             decisionNumber += 10;
         } else if(review.overallEvaluation == "MAYBE"){
             decisionNumber += 5;
