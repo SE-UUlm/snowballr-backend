@@ -23,7 +23,7 @@ SOFTWARE.
 */
 
 
-import EventEmitter from "https://deno.land/std@0.76.0/node/events.ts";
+import EventEmitter from "https://deno.land/std/node/events.ts";
 export type IndexSignatureKey = string | number;
 export type Map<V> = { [key: string]: V, [key: number]: V };
 export type MapEntry<K, V> = [key: K, value: V];

@@ -1,9 +1,9 @@
 import { ApiMerger } from "../../src/api/apiMerger.ts";
 import { IApiResponse } from "../../src/api/iApiResponse.ts";
 import { IApiPaper, SourceApi } from "../../src/api/iApiPaper.ts";
-import { assertEquals } from "https://deno.land/std@0.97.0/testing/asserts.ts"
+import { assertEquals } from "https://deno.land/std/testing/asserts.ts"
 import { CrossRefApi } from "../../src/api/crossRefApi.ts";
-import { Stub, stub } from "https://deno.land/x/mock@v0.10.0/stub.ts";
+import { Stub, stub } from "https://deno.land/x/mock/stub.ts";
 import { IApiQuery } from "../../src/api/iApiQuery.ts";
 import { IComparisonWeight } from "../../src/api/iComparisonWeight.ts";
 import * as Mock from "../mockObjects/fetch/crossRefMock.test.ts"
