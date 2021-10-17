@@ -12,15 +12,7 @@ import { isEqualPaper } from "./checkIsEqual.ts"
 
 
 export class ApiMerger implements IApiMerger {
-	public comparisonWeight = {
-		titleWeight: 15,
-		titleLevenshtein: 10,
-		abstractWeight: 7,
-		abstractLevenshtein: 0,
-		authorWeight: 8,
-		overallWeight: 0.8,
-		yearWeight: 2
-	} as IComparisonWeight;
+	public comparisonWeight;
 
 	public constructor(comparisonWeight: IComparisonWeight) {
 		this.comparisonWeight = comparisonWeight

@@ -1,5 +1,5 @@
 import { Context } from "https://deno.land/x/oak/mod.ts";
-import { checkAdmin, checkPO, createJWT, getPayloadFromJWT, getUserID, getUserName, UserStatus, validateUserEntry } from "./validation.controller.ts";
+import { checkAdmin, checkPO, createJWT, getPayloadFromJWTHeader, getUserID, getUserName, UserStatus, validateUserEntry } from "./validation.controller.ts";
 import { insertUserForRegistration, returnUserByEmail } from "./databaseFetcher/user.ts";
 import { User } from "../model/db/user.ts";
 import { convertCtxBodyToUser, convertUserToUserProfile } from "../helper/converter/userConverter.ts";
@@ -27,7 +27,7 @@ const URL = Deno.env.get("URL");
 export const createUser = async (ctx: Context, client: EMailClient) => {
     let validate = await validateUserEntry(ctx, [], UserStatus.needsPO, -1, { needed: true, params: ["email"] })
     if (validate) {
-        const payloadJson = await getPayloadFromJWT(ctx);
+        const payloadJson = await getPayloadFromJWTHeader(ctx);
 
         try {
             let user = await insertUserForRegistration(validate.email);
@@ -132,7 +132,7 @@ export const patchUser = async (ctx: Context, id: number | undefined) => {
         makeErrorMessage(ctx, 422, "no user id included")
         return;
     }
-    const payloadJson = await getPayloadFromJWT(ctx);
+    const payloadJson = await getPayloadFromJWTHeader(ctx);
     let userData = await convertCtxBodyToUser(ctx);
     let isAdmin = await checkAdmin(payloadJson);
     let isPO = await checkPO(payloadJson);

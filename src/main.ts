@@ -1,6 +1,6 @@
 import { Application, RouteParams, Router, RouterContext } from 'https://deno.land/x/oak/mod.ts';
 import { validateContentType, validateJWTIfExists } from "./controller/validation.controller.ts";
-import { login } from "./controller/login.controller.ts";
+import { login, refresh } from "./controller/login.controller.ts";
 import { setup } from "./helper/setup.ts";
 import { createUser, getUser, getUserProjects, getUsers, patchUser, resetPassword } from "./controller/user.controller.ts";
 import { logout } from "./controller/logout.controller.ts";
@@ -32,27 +32,33 @@ import {
     getReviewOfPaper,
     getReviewsOfPaper,
     makeRefCiteCsv,
-    makeStageCsv,
+    getStageCsv,
     patchCriteriaOfProject,
     patchCritieriaEvalOfReview,
     patchPaperOfProjectStage,
     patchReviewOfPaper,
     postCiteProject,
     postRefProject,
-    removeMemberOfProject
+    removeMemberOfProject,
+setApiUse,
+getApis,
+replaceApi,
+makeReplicationPackage,
+getAllPapersCsv,
+refetchPaperOfProject
 } from "./controller/project.controller.ts";
 import { addAuthorToPaper, deleteAuthorOfPaper, deleteSourcePaper, getAuthors, getPaper, getPaperCitations, getPaperReferences, getPapers, getSourcePaper, patchPaper, postPaper, postPaperCitation, postPaperReference } from "./controller/paper.controller.ts";
 import { deleteSourceAuthor, getAuthor, getSourceAuthor, patchAuthor, postAuthor } from "./controller/author.controller.ts";
 import { addToReadingList, getReadingList, removeFromReadingList } from "./controller/readinglist.controller.ts";
-import { getActiveBatchLength } from "./controller/fetch.controller.ts";
+import { getActiveBatches } from "./controller/fetch.controller.ts";
 
 await setup(true);
 const client = new SmtpClient();
 
 const router = new Router();
 router
-    .get("/currentBatchCount", (context) => {
-       getActiveBatchLength(context)
+    .get("/currentBatches", (context) => {
+       getActiveBatches(context)
     })
     .get("/users", async (context) => {
         await getUsers(context)
@@ -81,6 +87,9 @@ router
     .get("/logout", async (context) => {
         await logout(context)
     })
+    .get("/refresh", async (context) => {
+        await refresh(context)
+    })
     .post("/reset-password", async (context) => {
         await resetPassword(context, client)
     })
@@ -98,6 +107,9 @@ router
     })
     .get("/projects/:id/members", async (context) => {
         await getMembersOfProject(context, Number(context.params.id))
+    })
+    .post("/projects/:id/refetch", async (context) => {
+        await refetchPaperOfProject(context, Number(context.params.id))
     })
     .delete("/projects/:id/members/:id2", async (context) => {
         await removeMemberOfProject(context, Number(context.params.id), Number(context.params.id2))
@@ -121,6 +133,21 @@ router
     .post("/projects/:id/stages", async (context) => {
         await addStageToProject(context, Number(context.params.id))
     })
+    .get("/projects/:id/replication", async (context) => {
+        await makeReplicationPackage(context, Number(context.params.id))
+    })
+    .get("/projects/:id/csv", async (context) => {
+        await getAllPapersCsv(context, Number(context.params.id))
+    })
+    .get("/projects/:id/apis", async (context) => {
+        await getApis(context, Number(context.params.id))
+    })
+    .post("/projects/:id/apis", async (context) => {
+        await setApiUse(context, Number(context.params.id))
+    })
+    .post("/projects/:id/apis/:id2", async (context) => {
+        await replaceApi(context, Number(context.params.id), Number(context.params.id2))
+    })
     .post("/projects/:id/stages/:id2/papers", async (context) => {
         await addPaperToProjectStage(context, Number(context.params.id), Number(context.params.id2))
     })
@@ -128,7 +155,7 @@ router
         await getPapersOfProjectStage(context, Number(context.params.id), Number(context.params.id2))
     })
     .get("/projects/:id/stages/:id2/csv", async (context) => {
-        await makeStageCsv(context, Number(context.params.id), Number(context.params.id2))
+        await getStageCsv(context, Number(context.params.id), Number(context.params.id2))
     })
     .get("/projects/:id/stages/:id2/papers/:ppid", async (context) => {
         await getPaperOfProjectStage(context, Number(context.params.id), Number(context.params.id2), Number(context.params.ppid))

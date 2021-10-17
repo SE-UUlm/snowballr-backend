@@ -9,12 +9,13 @@ import { UserStatus } from "./validation.controller.ts";
 import { validateUserEntry } from "./validation.controller.ts";
 import { PaperScopeForStage } from "../model/db/paperScopeForStage.ts";
 import { getAllAuthorsFromPaper } from "./databaseFetcher/author.ts";
+import { assign } from "../helper/assign.ts";
 
 export const Batcher = new ApiBatcher();
 //TODO id
 let id = 1;
 
-const comparisonWeight: IComparisonWeight = {
+export const comparisonWeight: IComparisonWeight = {
     titleWeight: 10,
     titleLevenshtein: 10,
     abstractWeight: 7,
@@ -32,38 +33,39 @@ const comparisonWeight: IComparisonWeight = {
  * @param name a single rawname of on of the authors
  * @returns 
  */
-export const makeFetching = (doi?: string, title?: string, name?: string, newComparisonWeight?: IComparisonWeight, enabledApis?: SourceApi[]) => {
+export const makeFetching = (overallWeight: number, enabledApis: [SourceApi,string?][], doi?: string, title?: string, name?: string, projectName?: string) => {
     //TODO comparisons from logfile or settings
-
+    let comparison: IComparisonWeight = {} as IComparisonWeight;
+    Object.assign(comparison, comparisonWeight)
+    comparison.overallWeight = overallWeight;
 
     const query: IApiQuery = {
         id: String(id++),
         rawName: name ? name : "",
         title: title ? title : "",
         doi: doi ? doi : undefined,
-        enabledApis: enabledApis? enabledApis: [SourceApi.IE, SourceApi.MA, SourceApi.CR, SourceApi.OC, SourceApi.S2],
-        aggression: newComparisonWeight? newComparisonWeight: comparisonWeight
+        enabledApis: enabledApis,
+        aggression: comparison,
+        projectName: projectName
+
     }
 
     return Batcher.startFetch(query);
 }
 
-export const startFetchFromProjectPaper = async (ppID: number) =>{
-    let paper = await PaperScopeForStage.where("id", ppID).paper();
-    let authors = await getAllAuthorsFromPaper(Number(paper.id))
-    let authorName: string| undefined = undefined;
-    if(Array.isArray(authors) && authors[0]){
-        authorName = String(authors[0].rawString)
-    }
-    makeFetching(
-        paper.doi? String(paper.doi): undefined,
-        paper.title? String(paper.title): undefined,
-        authorName
-        )
-    }
 
-
-export const getActiveBatchLength = (ctx: Context)=> {
+export const getActiveBatches = (ctx: Context)=> {
     ctx.response.status = 200;
-    ctx.response.body = JSON.stringify({activeBatchesCount: Batcher.activeBatchLength()})
+    let batches= JSON.parse(JSON.stringify(Batcher.activeBatches))
+    batches = batches.map((batch: IApiBatch) => {
+        batch.subscribers = batch.subscribers.map(subscriber => {
+            //removes credentials from the enabled apis
+            subscriber.enabledApis = subscriber.enabledApis!.map(eA =>{
+                return [eA[0]]
+            })
+            return subscriber
+           });
+        return batch
+    });
+    ctx.response.body = JSON.stringify({batches: batches})
 }

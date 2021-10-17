@@ -243,7 +243,8 @@ Deno.test({
     fn: async function (): Promise<void> {
         await setup(true);
         let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
-        let project = await Project.create({ name: "Test", minCountReviewers: 1, countDecisiveReviewers: 1, evaluationFormula: "", combinationOfReviewers: "" })
+        let project = await Project.create({ name: "Test", minCountReviewers: 1, countDecisiveReviewers: 1, evaluationFormula: "", combinationOfReviewers: "" ,
+        mergeThreshold: 0.8})
         let userProject = await UserIsPartOfProject.create({
             isOwner: true,
             userId: Number(user.id),
@@ -274,7 +275,8 @@ Deno.test({
     fn: async function (): Promise<void> {
         await setup(true);
         let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
-        let project = await Project.create({ name: "Test", minCountReviewers: 1, countDecisiveReviewers: 1,evaluationFormula: "", combinationOfReviewers: ""})
+        let project = await Project.create({ name: "Test", minCountReviewers: 1, countDecisiveReviewers: 1,evaluationFormula: "", combinationOfReviewers: "",
+        mergeThreshold: 0.8})
         let userProject = await UserIsPartOfProject.create({
             isOwner: true,
             userId: Number(user.id),

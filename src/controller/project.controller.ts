@@ -9,18 +9,18 @@ import { convertProjectToProjectMessage } from "../helper/converter/projectConve
 import { Stage } from "../model/db/stage.ts";
 import { Paper } from "../model/db/paper.ts";
 import { getAllStagesFromProject } from "./databaseFetcher/stage.ts";
-import { checkPaperInProjectStage, getAllPapersFromStage, getPaperByDoi, getProjectPaperID, getProjectPaperScope } from "./databaseFetcher/paper.ts";
+import { checkPaperInProjectStage, getAllPapersFromProject, getAllPapersFromStage, getPaperByDoi, getProjectPaperID, getProjectPaperScope } from "./databaseFetcher/paper.ts";
 import { PapersMessage } from "../model/messages/papersMessage.ts";
 import { PaperScopeForStage } from "../model/db/paperScopeForStage.ts";
-import { assignOnlyIfUnassignedPaper, checkIApiPaper, convertIApiPaperToDBPaper, convertPapersToPaperMessage, convertPaperToPaperMessage } from "../helper/converter/paperConverter.ts";
-import { assign } from "../helper/assign.ts"
-import { IApiPaper } from "../api/iApiPaper.ts";
-import { getDOI } from "../api/apiMerger.ts";
+import { assignOnlyIfUnassignedPaper, checkIApiPaper, convertDBPaperToIApiPaper, convertIApiPaperToDBPaper, convertPapersToPaperMessage, convertPaperToPaperMessage } from "../helper/converter/paperConverter.ts";
+import { assign, isEqual } from "../helper/assign.ts"
+import { IApiPaper, SourceApi } from "../api/iApiPaper.ts";
+import { ApiMerger, getDOI } from "../api/apiMerger.ts";
 import { Cache, CacheType } from "../api/cache.ts";
 import { logger } from "../api/logger.ts";
 import { IApiAuthor } from "../api/iApiAuthor.ts";
-import { checkAdmin, checkMemberOfProject, checkPO, checkPOofProject, getPayloadFromJWT, getUserID, UserStatus, validateUserEntry } from "./validation.controller.ts";
-import { makeFetching, startFetchFromProjectPaper } from "./fetch.controller.ts";
+import { checkAdmin, checkMemberOfProject, checkPO, checkPOofProject, getPayloadFromJWTHeader, getUserID, UserStatus, validateUserEntry } from "./validation.controller.ts";
+import { comparisonWeight, makeFetching} from "./fetch.controller.ts";
 import { saveChildren } from "./database.controller.ts";
 import { getPaperCitations, getPaperReferences, getRefOrCiteList, paperUpdate, postPaperCitation, postPaperReference } from "./paper.controller.ts";
 import { Criteria } from "../model/db/criteria.ts";
@@ -32,6 +32,15 @@ import { writeCSV } from "https://deno.land/x/csv/mod.ts";
 import { sortIApiPapersByName, sortPapersByName } from "../helper/loggerHelper.ts";
 import { Pdf } from "../model/db/pdf.ts";
 import { getAllAuthorsFromPaper } from "./databaseFetcher/author.ts";
+import { ProjectUsesApi } from "../model/db/projectUsesApi.ts";
+import { IDOfApi } from "../helper/setup.ts";
+import { SearchApi } from "../model/db/searchApi.ts";
+import {
+    compress,
+    decompress
+  } from "https://deno.land/x/zip/mod.ts";
+import { isEqualPaper } from "../api/checkIsEqual.ts";
+import { IComparisonWeight } from "../api/iComparisonWeight.ts";
 
 export const paperCache = new Cache<IApiPaper>(CacheType.F, 0, "paperCache")
 export const authorCache = new Cache<IApiAuthor>(CacheType.F, 0, "authorCache")
@@ -56,7 +65,15 @@ export const createProject = async (ctx: Context) => {
             makeErrorMessage(ctx, 409, "To create a project, the evaluation formula has to be well formed so a final decision of the paper can be evaluated. This is not the case")
             return;
         }
-        
+        if(validate.type != "both" && validate.type != "forward" && validate.type != "backward"){
+            makeErrorMessage(ctx, 409, "The type of a project has to be either 'both', 'forward' or 'backward'")
+            return;
+        }
+        if(validate.mergeThreshold > 1 || validate.mergeThreshold<0.5){
+            makeErrorMessage(ctx, 409, "The mergeThreshold has to be between 0.5 and 1")
+            return;
+        }
+
         try {
             let project = await Project.create({
                 name: validate.name,
@@ -64,21 +81,96 @@ export const createProject = async (ctx: Context) => {
                 countDecisiveReviewers: validate.countDecisiveReviewers,
                 combinationOfReviewers: validate.combinationOfReviewers,
                 evaluationFormula: validate.evaluationFormula,
-                type: validate.type
+                type: validate.type,
+                mergeThreshold: validate.mergeThreshold
             })
+
+                await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
+                await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
+                await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: true})
+                await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
+                await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
+                await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
 
             ctx.response.status = 201;
             ctx.response.body = JSON.stringify(project)
-
         } catch (error) {
             makeErrorMessage(ctx, 422, "given data is not processable")
             return
         }
+
+      
     }
 }
 
+/**
+ * Sets the use of an api to true or false
+ * @param ctx 
+ * @param id 
+ */
+export const setApiUse = async (ctx: Context, id: number)=> {
+    let validate = await validateUserEntry(ctx, [], UserStatus.needsPO, -1, { needed: true, params: [] })
+    if (validate) {
+        if(typeof validate.crossRef === "boolean" && 
+        typeof validate.openCitations === "boolean" && 
+            typeof validate.googleScholar === "boolean" && 
+                typeof validate.IEEE === "boolean" && 
+                    typeof validate.semanticScholar === "boolean" && 
+                        typeof validate.microsoftAcademic === "boolean" ) {
+                let poas = await ProjectUsesApi.where({projectId: id}).get()
+                if(Array.isArray(poas)){
+                    let items: Promise<ProjectUsesApi>[] = []
+                    poas.forEach(item =>{
+                        item.inUse = validate[String(item.name)]
+                        items.push(item.update())
+                    })
 
+                    await Promise.all(items)
+                }
+            
+            } else{
+                makeErrorMessage(ctx, 409, "for every api has to be a true/false value set")
+            }
+        }
+        ctx.response.status = 200;
+    }
 
+/**
+ * Gets all the apis of the project
+ * @param ctx 
+ * @param id 
+ */    
+ export const getApis = async (ctx: Context, id: number)=> {
+    let validate = await validateUserEntry(ctx, [], UserStatus.needsPO, -1, { needed: false, params: [] })
+    if (validate) {
+        let poas = await ProjectUsesApi.where({projectId: id}).get()
+        ctx.response.status = 200;
+        ctx.response.body = JSON.stringify({apis: poas})
+    }
+ }
+
+ /**
+  * Replaces current api with a new one for this project
+  * @param ctx 
+  * @param projectID 
+  * @param apiID 
+  */
+ export const replaceApi = async (ctx: Context, projectID: number, apiID: number)=> {
+    let validate = await validateUserEntry(ctx, [], UserStatus.needsPO, -1, { needed: true, params: ["credentials"] })
+    if (validate) {
+        let poas = await ProjectUsesApi.where({projectId: projectID, searchapiId: apiID}).get()
+        if(Array.isArray(poas) && poas[0]){
+            let oldApi = await SearchApi.find(Number(poas[0].searchapiId))
+            
+            let newApi = await SearchApi.create({  name: String(oldApi.name),
+                credentials: validate.credentials})
+            await poas[0].delete()
+            await ProjectUsesApi.create({projectId: projectID, searchapiId: Number(newApi.id), inUse: true})
+        }
+        ctx.response.status = 200;
+        ctx.response.body = JSON.stringify({apis: poas})
+    }
+ }
 /**
  * Adds a person to a project
  *
@@ -138,7 +230,7 @@ export const getMembersOfProject = async (ctx: Context, id: number) => {
  * @param ctx 
  */
 export const getProjects = async (ctx: Context) => {
-    const payloadJson = await getPayloadFromJWT(ctx);
+    const payloadJson = await getPayloadFromJWTHeader(ctx);
     if (await checkAdmin(payloadJson)) {
         let projects = await Project.all();
         let projectMessage = await convertProjectToProjectMessage(projects);
@@ -198,6 +290,45 @@ export const addPaperToProjectStage = async (ctx: Context, projectID: number, st
 }
 
 /**
+ * Refetches the paper of a project that have been signed with a final Decision of YES
+ * @param ctx 
+ * @param projectID 
+ */
+export const refetchPaperOfProject = async (ctx: Context, projectID: number) =>{
+    let validate = await validateUserEntry(ctx, [projectID], UserStatus.needsPOOfProject, projectID, { needed: false, params: [] })
+    if (validate) {
+        let papersPackage = await getAllPapersFromProject(projectID);
+        papersPackage = papersPackage.map(items => {
+            items.papers = items.papers.filter(paper => String(paper.scope.finalDecision) == "YES")
+            return items;
+        })
+        papersPackage.forEach(paper =>{
+            let stage = paper.stage;
+            paper.papers.forEach(async item =>{
+                let authorName: string | undefined;
+                for(let author of (await item.authors)){
+                    if(author.rawString){
+                        authorName = String(author.rawString)
+                    }
+                }
+
+                fetchToDB(
+                    Number(stage.id), 
+                    projectID, 
+                    (await item.paper).doi? String((await item.paper).doi): undefined,
+                    (await item.paper).title? String((await item.paper).doi): undefined,
+                    authorName
+                )
+            })
+           
+        })
+        
+        
+        ctx.response.status = 200;
+    }
+}
+
+/**
  * Saves all paper that were fetched by the APIs to the db and corresponding stage.
  * @param stageID 
  * @param projectID 
@@ -206,13 +337,38 @@ export const addPaperToProjectStage = async (ctx: Context, projectID: number, st
  * @param authorName 
  */
 const fetchToDB = async (stageID: number, projectID: number, doi?: string, title?: string, authorName?: string) => {
-
-    let fetch = await makeFetching(doi, title, authorName);
+    let project = await Project.find(projectID)
+    let apis: Promise<SearchApi>[] = [];
+    let stage = await Stage.find(stageID)
+    let poas = await ProjectUsesApi.where({projectId: projectID}).get()
+    if(Array.isArray(poas)){
+        poas.forEach(item =>{
+            if(item.inUse){
+                apis.push(SearchApi.find(Number(item.searchapiId)))
+            }
+        })
+    }
+    let sourceApi: [SourceApi,string?][]= (await Promise.all(apis)).map(item =>{
+        return [String(item.name) as SourceApi, item.credentials? String(item.credentials): undefined]
+    })
+    let fetch = await makeFetching(Number(project.mergeThreshold), sourceApi, doi, title, authorName, String(project.name));
     let response = (await fetch.response)
 
+
+    if(String(project.kind) == "forward"){
+        response.forEach(item =>{
+            item.references = []
+        })
+    }
+
+    if(String(project.kind) == "backward"){
+        response.forEach(item =>{
+            item.citations = []
+        })
+    }
     for (let element of response) {
         if (element) {
-            let parent = await savePaper(element.paper)
+            let parent = await savePaper(element.paper, stage, Number(project.mergeThreshold))
 
             PaperScopeForStage.create({ stageId: stageID, paperId: Number(parent.id), finalDecision: "YES" })
             let currentStage = await Stage.find(stageID)
@@ -221,10 +377,10 @@ const fetchToDB = async (stageID: number, projectID: number, doi?: string, title
 
             let allChildren: Promise<Paper>[] = []
             for (let item of element.citations!) {
-                allChildren.push(createChildren(item, "citedBy", "papercitingid", "papercitedid", Number(parent.id), Number(nextStage.id)))
+                allChildren.push(createChildren(item, "citedBy", "papercitingid", "papercitedid", Number(parent.id), nextStage, project))
             }
             for (let item of element.references!) {
-                allChildren.push(createChildren(item, "referencedby", "paperreferencedid", "paperreferencingid", Number(parent.id), Number(nextStage.id)))
+                allChildren.push(createChildren(item, "referencedby", "paperreferencedid", "paperreferencingid", Number(parent.id), nextStage, project))
             }
             await Promise.all(allChildren)
         }
@@ -260,10 +416,10 @@ export const findNextStage = async (currentStage: Stage, projectID: number) => {
  * @param nextStageId 
  * @returns 
  */
-const createChildren = async (item: IApiPaper, into: string, column1: string, column2: string, firstId: number, nextStageId: number) => {
-    let child = await savePaper(item)
+const createChildren = async (item: IApiPaper, into: string, column1: string, column2: string, firstId: number, nextStage: Stage, project: Project) => {
+    let child = await savePaper(item, nextStage, Number(project.mergeThreshold))
     await saveChildren(into, column1, column2, firstId, Number(child.id))
-    await PaperScopeForStage.create({ stageId: Number(nextStageId), paperId: Number(child.id) })
+    await PaperScopeForStage.create({ stageId: Number(nextStage.id), paperId: Number(child.id) })
     return child;
 }
 
@@ -275,7 +431,7 @@ const createChildren = async (item: IApiPaper, into: string, column1: string, co
  * @param apiPaper 
  * @returns 
  */
-const savePaper = async (apiPaper: IApiPaper): Promise<Paper> => {
+const savePaper = async (apiPaper: IApiPaper, stage: Stage, overallWeight: number): Promise<Paper> => {
     let doi = getDOI(apiPaper)
 
     if (doi[0]) {
@@ -286,6 +442,23 @@ const savePaper = async (apiPaper: IApiPaper): Promise<Paper> => {
         }
 
     }
+
+
+    
+        let papers = await getAllPapersFromStage(Number(stage.id))
+        let comparison= {} as IComparisonWeight
+        Object.assign(comparison, comparisonWeight)
+        comparison.overallWeight = overallWeight
+        for(let paperStuff of papers){
+            let dbPaper = await paperStuff.paper
+            let equal = isEqualPaper(await convertDBPaperToIApiPaper(dbPaper), apiPaper, comparison)
+            if(equal){
+                await assignOnlyIfUnassignedPaper(dbPaper, apiPaper)
+                return dbPaper.update()
+            }
+        }
+    
+
     let paper = await convertIApiPaperToDBPaper(apiPaper)
 
     if (!checkIApiPaper(apiPaper)) {
@@ -304,8 +477,10 @@ export const getPapersOfProjectStage = async (ctx: Context, projectID: number, s
     let validate = await validateUserEntry(ctx, [projectID, stageID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
     if (validate) {
         ctx.response.status = 200;
-        let userID = await getUserID(await getPayloadFromJWT(ctx))
-        let message: PapersMessage = { papers: await convertPapersToPaperMessage(await getAllPapersFromStage(stageID), stageID, userID) }
+        let userID = await getUserID(await getPayloadFromJWTHeader(ctx))
+        let paperInfo = await getAllPapersFromStage(stageID);
+        let papers = paperInfo.map(async item =>{ return await item.paper})
+        let message: PapersMessage = { papers: await convertPapersToPaperMessage(await Promise.all(papers), stageID, userID) }
         ctx.response.body = JSON.stringify(message)
     }
 }
@@ -383,7 +558,13 @@ export const deletePaperOfProjectStage = async (ctx: Context, projectID: number,
     }
 }
 
-
+/**
+ * Makes a csv file with all the cites and refs of a paper
+ * @param ctx 
+ * @param projectID 
+ * @param stageID 
+ * @param ppID 
+ */
 export const makeRefCiteCsv = async (ctx: Context, projectID: number, stageID: number, ppID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
     if (validate) {
@@ -418,30 +599,104 @@ export const makeRefCiteCsv = async (ctx: Context, projectID: number, stageID: n
         }
     }
 }
+/**
+ * Makes the replication package of a project.
+ * It contains a zip file with all Papers in the project in one csv and also seperated by stage in different csv.
+ * @param ctx 
+ * @param projectID 
+ */
+export const makeReplicationPackage = async (ctx: Context, projectID: number) =>{
+    let validate = await validateUserEntry(ctx, [projectID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
+    if (validate) {
+    let allPapers = await getAllPapersFromProject(projectID)
+    let papers = allPapers.map(item =>{ return {papers: item.papers.map(paper => {return paper.paper})
+        , stage: item.stage}})
+    let project = await Project.find(projectID);
+    let filepaths:Promise<string>[] = []
+    filepaths.push(makeAllPapersCsv(project, papers))
+    papers.forEach(async item =>{
+        filepaths.push(makeStageCsv(project,item.papers,item.stage));
+    })
 
-export const makeStageCsv = async (ctx: Context, projectID: number, stageID: number) =>{
+    let allFilepaths = await Promise.all(filepaths)
+
+    compress(allFilepaths,`${String(project.name)}_replicationPackage.zip`)
+    ctx.response.status = 200;
+    ctx.response.type = "application/zip";
+    ctx.response.body = await Deno.readFile(`${String(project.name)}_replicationPackage.zip`)
+    ctx.response.headers.set('Content-disposition', `attachment; filename=${String(project.name)}_replicationPackage.zip`);
+    }
+}
+/**
+ * Gets all papers of a project in a single csv file
+ * @param ctx 
+ * @param projectID 
+ */
+export const getAllPapersCsv = async (ctx: Context, projectID: number) =>{
+    let validate = await validateUserEntry(ctx, [projectID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
+        if (validate) {
+        let allPapers = await getAllPapersFromProject(projectID)
+        let papers = allPapers.map(item =>{ return {papers: item.papers.map(paper => {return paper.paper})
+        , stage: item.stage}})
+        let project = await Project.find(projectID);
+
+        let filePath = await makeAllPapersCsv(project, papers)
+        const text = await Deno.readTextFile(filePath);
+        ctx.response.status = 200;
+        ctx.response.type = "text/csv";
+        ctx.response.body = text;
+        ctx.response.headers.set('Content-disposition', `attachment; filename=${filePath}`);
+    }
+}
+
+const makeAllPapersCsv = async (project: Project, allPapers: {papers:Promise<Paper>[], stage:Stage}[])=> {
+    let rows = [["authors", "title", "year", "publisher", "link", "doi"]]
+    for(let i = 1; i < (Number(project.countDecisiveReviewers));i++){
+        rows[0].push(`SuggestedInclusion${i}`)
+    }
+    rows[0].push("derivedDecision")
+    rows[0].push("FinalDecision")
+    for(let papers of allPapers){
+        rows = await papersToRow(await Promise.all(papers.papers), rows, true, project, Number(papers.stage.id))
+    }
+    let filePath = `./${String(project.name)}_allPapers.csv`
+    const f = await Deno.open(filePath, { write: true, create: true, truncate: true });
+
+    await writeCSV(f, rows);
+    f.close();
+    return filePath
+}
+
+export const getStageCsv = async (ctx: Context, projectID: number, stageID: number) =>{
     let validate = await validateUserEntry(ctx, [projectID, stageID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
         if (validate) {
         let papers = await getAllPapersFromStage(stageID)
-        let rows = [["authors", "title", "year", "publisher", "link", "doi"]]
+
         let project = await Project.find(projectID);
         let stage = await Stage.find(stageID);
-        for(let i = 1; i < (Number(project.countDecisiveReviewers));i++){
-            rows[0].push(`SuggestedInclusion${i}`)
-        }
-        rows[0].push("derivedDecision")
-        rows[0].push("FinalDecision")
-        rows = await papersToRow(papers, rows, true, project, stageID)
-        const f = await Deno.open(`./${String(project.name)}_Stage${Number(stage.number)}.csv`, { write: true, create: true, truncate: true });
-
-        await writeCSV(f, rows);
-        f.close();
+        let filePath = makeStageCsv(project, papers.map(paper => {return paper.paper}), stage)
         const text = await Deno.readTextFile(`./${String(project.name)}_Stage${Number(stage.number)}.csv`);
         ctx.response.status = 200;
         ctx.response.type = "text/csv";
         ctx.response.body = text;
         ctx.response.headers.set('Content-disposition', `attachment; filename=${String(project.name)}_Stage${Number(stage.number)}.csv`);
     }
+}
+
+const makeStageCsv = async(project: Project, papers: Promise<Paper>[], stage: Stage) =>{
+    let rows = [["authors", "title", "year", "publisher", "link", "doi"]]
+    for(let i = 1; i < (Number(project.countDecisiveReviewers));i++){
+        rows[0].push(`SuggestedInclusion${i}`)
+    }
+    rows[0].push("derivedDecision")
+    rows[0].push("FinalDecision")
+    rows = await papersToRow(await Promise.all(papers), rows, true, project, Number(stage.id))
+    let filePath = `./${String(project.name)}_Stage${Number(stage.number)}.csv`
+    const f = await Deno.open(filePath, { write: true, create: true, truncate: true });
+
+    await writeCSV(f, rows);
+    f.close();  
+    return filePath
 }
 
 const papersToRow = async (papers: Paper[], rows: string[][], getReviews: boolean, project?: Project, stageID?: number) => {
@@ -468,7 +723,7 @@ const papersToRow = async (papers: Paper[], rows: string[][], getReviews: boolea
             if(getReviews && project && stageID){
                 let ppID = await getProjectPaperScope(stageID, Number(item.id))
                 if(ppID){
-                    let reviews = await Review.where(Review.field("paper_id"), Number(ppID.id)).get()
+                    let reviews = await getAllReviewsFromProjectPaper(Number(ppID.id));
                     if(Array.isArray(reviews)){
                         if(reviews.length >= Number(project.countDecisiveReviewers)){
                             reviews = reviews.slice(0,  Number(project.countDecisiveReviewers) - 1)
@@ -480,7 +735,8 @@ const papersToRow = async (papers: Paper[], rows: string[][], getReviews: boolea
                     for(let i = 0; i < (Number(project.countDecisiveReviewers)- reviews.length -1);i++){
                         row.push("")
                     }
-
+                    let tresholds =  String(project.combinationOfReviewers).split(",")
+                    row.push(String(getFinalDecisionOfPaper(reviews, project, Number(ppID.id), Number(tresholds[0]), Number(tresholds[1]))))
                     row.push(ppID.finalDecision? String(ppID.finalDecision): "")
             }
             }
@@ -778,7 +1034,7 @@ export const getReviewsOfPaper = async (ctx: Context, projectID: number, stageID
 export const addReviewToPaper = async (ctx: Context, projectID: number, stageID: number, ppID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID, ppID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
     if (validate) {
-        const payloadJson = await getPayloadFromJWT(ctx);
+        const payloadJson = await getPayloadFromJWTHeader(ctx);
         let userID = await getUserID(payloadJson)
         if(userID && await checkUserReviewOfProjectPaper(ppID, userID)){
             makeErrorMessage(ctx, 409, "paper is already in review by you")
@@ -791,7 +1047,7 @@ export const addReviewToPaper = async (ctx: Context, projectID: number, stageID:
         let reviews = await getAllReviewsFromProjectPaper(ppID);
 
 
-        if(pp.finalDecision || reviews.length >= Number(project.minCountReviewers)){
+        if(pp.finalDecision || reviews.length >= Number(project.countDecisiveReviewers)){
             makeErrorMessage(ctx, 409, "already enough reviews for this paper")
             return;
         }
@@ -814,10 +1070,11 @@ export const addReviewToPaper = async (ctx: Context, projectID: number, stageID:
                 if (params.overallEvaluation) { review.overallEvaluation = params.overallEvaluation }
                 if (params.finishDate) { review.finishDate = new Date(params.finishDate) }
                 await review.update();
-                await calculateFinalDecisionOfPaper(ctx, params.overallEvaluation,review, project, pp, Number(tresholds[0]), Number(tresholds[1]))
-
-                ctx.response.status = 201;
-                ctx.response.body = JSON.stringify(review)
+                let finished = await calculateFinalDecisionOfPaper(ctx, params.overallEvaluation,review, project, pp, Number(tresholds[0]), Number(tresholds[1]), stageID)
+                if(finished){
+                    ctx.response.status = 201;
+                    ctx.response.body = JSON.stringify(review)
+                }
             } catch (err) {
                 makeErrorMessage(ctx, 404, "stage or paper id not found")
             }
@@ -825,7 +1082,7 @@ export const addReviewToPaper = async (ctx: Context, projectID: number, stageID:
     }
 }
 
-const calculateFinalDecisionOfPaper = async (ctx: Context, overallEvaluation: string, review: Review, pp: PaperScopeForStage,  project: Project, lowerTreshold:number, upperTreshold: number) =>{
+const calculateFinalDecisionOfPaper = async (ctx: Context, overallEvaluation: string, review: Review, pp: PaperScopeForStage,  project: Project, lowerTreshold:number, upperTreshold: number, stageID: number) =>{
     let reviews = await getAllReviewsFromProjectPaper(Number(pp.id));
     let finalDecision = getFinalDecisionOfPaper(reviews, project, Number(pp.id), lowerTreshold, upperTreshold)
     if(finalDecision){
@@ -835,7 +1092,7 @@ const calculateFinalDecisionOfPaper = async (ctx: Context, overallEvaluation: st
                     makeErrorMessage(ctx, 409, "you made the last review of the paper. this one has to be YES or NO")
                     review.finished = false;
                     await review.update()
-                    return;
+                    return false;
                 } else{
                     pp.overallEvaluation = overallEvaluation
                 }
@@ -847,15 +1104,34 @@ const calculateFinalDecisionOfPaper = async (ctx: Context, overallEvaluation: st
     }
 
     await pp.update()
-    await startFetchFromProjectPaper(Number(pp.id))
+    if(finalDecision == "YES"){
+        await startFetchFromProjectPaper(Number(pp.id),Number(project.id), stageID)
+    }
+
 }
+return true;
+}
+
+const startFetchFromProjectPaper = async (ppID: number, stageID: number, projectID: number) =>{
+    let paper = await PaperScopeForStage.where("id", ppID).paper();
+    let authors = await getAllAuthorsFromPaper(Number(paper.id))
+    let authorName: string| undefined = undefined;
+    if(Array.isArray(authors) && authors[0]){
+        authorName = String(authors[0].rawString)
+    }
+    await fetchToDB(stageID, projectID, 
+        paper.doi? String(paper.doi): undefined,
+        paper.title? String(paper.title): undefined,
+         authorName)
+
+
 }
 
 const getFinalDecisionOfPaper = (reviews: ReviewMessage[], project: Project, ppID: number, lowerTreshold: number, upperTreshold: number) => {
     let allReviewsFinished = !reviews.some(review => !review.finished)
     if(allReviewsFinished && reviews.length >= Number(project.minCountReviewers)){
         let decisionNumber = 0;
-        reviews.forEach(review => {if(review.overallEvaluation == "yes"){
+        reviews.forEach(review => {if(review.overallEvaluation == "YES"){
             decisionNumber += 10;
         } else if(review.overallEvaluation == "MAYBE"){
             decisionNumber += 5;
@@ -905,7 +1181,7 @@ export const patchReviewOfPaper = async (ctx: Context, projectID: number, stageI
             await review.update()
             ctx.response.status = 200;
             ctx.response.body = JSON.stringify(review)
-            await calculateFinalDecisionOfPaper(ctx, validate.overallEvaluation,review, project, pp, Number(tresholds[0]), Number(tresholds[1]))
+            await calculateFinalDecisionOfPaper(ctx, validate.overallEvaluation,review, project, pp, Number(tresholds[0]), Number(tresholds[1]), stageID)
         } else {
             makeErrorMessage(ctx, 404, "review not found")
         }
@@ -1062,7 +1338,4 @@ export const deleteCritieriaEvalOfReview = async (ctx: Context, projectID: numbe
         await CriteriaEvaluation.deleteById(criteriaEvalID)
         ctx.response.status = 200;
     }
-}
-export const getApis = async (ctx: Context, projectID: number) => {
-
 }

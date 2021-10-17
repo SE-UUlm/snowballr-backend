@@ -3,7 +3,7 @@ import { createMockContext } from "../mockObjects/oak/mockContext.test.ts";
 import {
     checkPO,
     createJWT,
-    getPayloadFromJWT,
+    getPayloadFromJWTHeader,
     validateContentType,
     validateJWTIfExists
 } from "../../src/controller/validation.controller.ts";
@@ -133,14 +133,15 @@ Deno.test({
         let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
         let app = await createMockApp();
         let token = await createJWT(user)
-        let project = await Project.create({ name: "Test", minCountReviewers: 1, countDecisiveReviewers: 1,evaluationFormula: "", combinationOfReviewers: "" })
+        let project = await Project.create({ name: "Test", minCountReviewers: 1, countDecisiveReviewers: 1,evaluationFormula: "", combinationOfReviewers: "",
+        mergeThreshold: 0.8 })
         let userIsPartOfProject = await UserIsPartOfProject.create({
             isOwner: true,
             userId: Number(user.id),
             projectId: Number(project.id)
         })
         let ctx = await createMockContext(app, undefined, [["Content-Type", "text"]], "/", token);
-        let payLoad = await getPayloadFromJWT(ctx);
+        let payLoad = await getPayloadFromJWTHeader(ctx);
         assertEquals(await checkPO(payLoad), true)
         await db.close();
         await client.end();
@@ -156,14 +157,15 @@ Deno.test({
         let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
         let app = await createMockApp();
         let token = await createJWT(user)
-        let project = await Project.create({ name: "Test", minCountReviewers: 1, countDecisiveReviewers: 1,evaluationFormula: "", combinationOfReviewers: "" })
+        let project = await Project.create({ name: "Test", minCountReviewers: 1, countDecisiveReviewers: 1,evaluationFormula: "", combinationOfReviewers: "" ,
+        mergeThreshold: 0.8})
         let userIsPartOfProject = await UserIsPartOfProject.create({
             isOwner: false,
             userId: Number(user.id),
             projectId: Number(project.id)
         })
         let ctx = await createMockContext(app, undefined, [["Content-Type", "text"]], "/", token);
-        let payLoad = await getPayloadFromJWT(ctx);
+        let payLoad = await getPayloadFromJWTHeader(ctx);
         assertEquals(await checkPO(payLoad), false)
 
         await db.close();

@@ -13,7 +13,7 @@ const query: IApiQuery = {
 	id: "tst",
 	rawName: "alexander raschke",
 	title: "Adaptive Exterior Light and Speed Control System",
-	enabledApis: [SourceApi.MA, SourceApi.CR],
+	enabledApis: [[SourceApi.CR,"luca999@web.de"], [SourceApi.MA,"9a02225751354cd29397eba3f5382101"]],
 	aggression: {} as IComparisonWeight
 }
 

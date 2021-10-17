@@ -7,7 +7,7 @@ import { getDOI } from "../../api/apiMerger.ts";
 import { logger, fileLogger } from "../../api/logger.ts";
 import { PaperID } from "../../model/db/paperID.ts";
 import { PaperHasID } from "../../model/db/paperHasID.ts";
-import { IApiUniqueId } from "../../api/iApiUniqueId.ts";
+import { IApiUniqueId, idType } from "../../api/iApiUniqueId.ts";
 import { Author } from "../../model/db/author.ts";
 import { Wrote } from "../../model/db/wrote.ts";
 import { Pdf } from "../../model/db/pdf.ts";
@@ -89,6 +89,45 @@ export const convertIApiPaperToDBPaper = async (paper: IApiPaper): Promise<Paper
     return newPaper.update()
 }
 
+export const convertDBPaperToIApiPaper = async (paper: Paper): Promise<IApiPaper> =>{
+    let pdfs: string[] = []
+    let pdf = await Pdf.where({ paperId: Number(paper.id) }).get()
+    if (Array.isArray(pdf)) {
+        pdf.forEach(url => {
+            pdfs.push(String(url.url))
+        })
+    }
+    let authors: IApiAuthor[] = [];
+    let dbAuthors = await getAllAuthorsFromPaper(Number(paper.id))
+    dbAuthors.forEach(author =>{
+        authors.push({
+            orcid: author.orcid? [String(author.orcid)]: [],
+            firstName: author.firstName? [String(author.firstName)]: [],
+            lastName: author.lastName? [String(author.lastName)]:[],
+            rawString: author.rawString? [String(author.rawString)]:[]
+        })
+    })
+    return {
+        title: paper.title ?[String(paper.title)]: [],
+        abstract: paper.abstract? [String(paper.abstract)]:[],
+        numberOfCitations:[],
+        numberOfReferences:[],
+        year: paper.year? [Number(paper.year)]: [],
+        type: paper.type? [String(paper.type)]: [],
+        scope: paper.scope? [String(paper.scope)]: [],
+        scopeName: paper.scopeName? [String(paper.scopeName)]: [],
+        publisher:paper.publisher? [String(paper.publisher)]: [],
+        uniqueId:paper.doi? [{type: idType.DOI, value: String(paper.doi)}]:[],
+        source: [],
+        raw: [],
+        pdf: pdfs,
+        author: authors
+
+
+    
+    
+    }
+}
 /**
  * First tries to find if an author is already there with the same orcid
  * Otherwise it will not be set as same author since author names can be equal but not the same person
@@ -123,7 +162,7 @@ export const assignOnlyIfUnassignedPaper = async (target: Paper, source: IApiPap
                     delete s[key]
                 }
             } else if (key == "uniqueId") {
-                target = await updateUniqueIDsOfPaper(target, source)
+                target =  updateUniqueIDsOfPaper(target, source)
             } else if (key == "author") {
                 target = await updateAuthorsOfPaper(target, source)
             } else if (key == "pdf") {
@@ -141,7 +180,7 @@ export const assignOnlyIfUnassignedPaper = async (target: Paper, source: IApiPap
  * @param source 
  * @returns 
  */
-const updateUniqueIDsOfPaper = async(target: Paper, source: IApiPaper) =>{
+const updateUniqueIDsOfPaper = (target: Paper, source: IApiPaper) =>{
     if (!target.doi) {
         target.doi = getDOI(source)[0]
     }

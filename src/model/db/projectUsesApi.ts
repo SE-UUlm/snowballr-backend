@@ -9,6 +9,7 @@ export class ProjectUsesApi extends Model {
 
     static fields = {
         id: { primaryKey: true, autoIncrement: true, type: DataTypes.INTEGER },
+        inUse: DataTypes.BOOLEAN
     }
 
     static api() {
