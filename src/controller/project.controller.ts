@@ -20,13 +20,13 @@ import { Cache, CacheType } from "../api/cache.ts";
 import { logger } from "../api/logger.ts";
 import { IApiAuthor } from "../api/iApiAuthor.ts";
 import { checkAdmin, checkMemberOfProject, checkPO, checkPOofProject, getPayloadFromJWT, getUserID, UserStatus, validateUserEntry } from "./validation.controller.ts";
-import { makeFetching } from "./fetch.controller.ts";
+import { makeFetching, startFetchFromProjectPaper } from "./fetch.controller.ts";
 import { saveChildren } from "./database.controller.ts";
 import { getPaperCitations, getPaperReferences, getRefOrCiteList, paperUpdate, postPaperCitation, postPaperReference } from "./paper.controller.ts";
 import { Criteria } from "../model/db/criteria.ts";
 import { Review } from "../model/db/review.ts";
 import { ReviewMessage } from "../model/messages/review.message.ts";
-import { getAllReviewsFromProjectPaper, getReview } from "./databaseFetcher/review.ts";
+import { checkUserReviewOfProjectPaper, getAllReviewsFromProjectPaper, getReview } from "./databaseFetcher/review.ts";
 import { CriteriaEvaluation } from "../model/db/criteriaEval.ts";
 import { writeCSV } from "https://deno.land/x/csv/mod.ts";
 import { sortIApiPapersByName, sortPapersByName } from "../helper/loggerHelper.ts";
@@ -213,7 +213,7 @@ const fetchToDB = async (stageID: number, projectID: number, doi?: string, title
         if (element) {
             let parent = await savePaper(element.paper)
 
-            PaperScopeForStage.create({ stageId: stageID, paperId: Number(parent.id) })
+            PaperScopeForStage.create({ stageId: stageID, paperId: Number(parent.id), finalDecision: "YES" })
             let currentStage = await Stage.find(stageID)
 
             let nextStage: Stage = await findNextStage(currentStage, projectID)
@@ -518,16 +518,21 @@ export const getCites = async (ctx: Context, projectID: number, stageID: number,
 
     try {
         let paper = await PaperScopeForStage.where("id", ppID).paper();
-        if (paper) {
+        let project = await Project.find(projectID)
+        if (paper && project) {
             let papers: Promise<Paper>[] = await getRefOrCiteList(ctx, "citedBy", "papercitingid", "papercitedid", Number(paper.id))
+            if(papers.length > 0){
             let nextStage = await findNextStage(await Stage.find(stageID), projectID)
             for (let i = 0; i < papers.length; i++) {
                 if (!await checkPaperInProjectStage(await papers[i], Number(nextStage.id))) {
                     delete papers[i]
                 }
             }
+        }
             return papers.filter(item => item)
 
+        } else{
+            makeErrorMessage(ctx, 404, "paper or project does not exist") 
         }
     } catch (e) {
         makeErrorMessage(ctx, 404, "paper does not exist")
@@ -567,12 +572,14 @@ export const getRefs = async (ctx: Context, projectID: number, stageID: number, 
         let paper = await PaperScopeForStage.where("id", ppID).paper();
         if (paper) {
             let papers = await getRefOrCiteList(ctx, "referencedby", "paperreferencedid", "paperreferencingid", Number(paper.id))
+            if(papers.length > 0){
             let nextStage = await findNextStage(await Stage.find(stageID), projectID)
             for (let i = 0; i < papers.length; i++) {
                 if (!await checkPaperInProjectStage(await papers[i], Number(nextStage.id))) {
                     delete papers[i]
                 }
             }
+        }
             return papers.filter(item => item)
 
         }
@@ -772,11 +779,17 @@ export const addReviewToPaper = async (ctx: Context, projectID: number, stageID:
     if (validate) {
         const payloadJson = await getPayloadFromJWT(ctx);
         let userID = await getUserID(payloadJson)
+        if(userID && await checkUserReviewOfProjectPaper(ppID, userID)){
+            makeErrorMessage(ctx, 409, "paper is already in review by you")
+            return;
+        }
         const params = await jsonBodyToObject(ctx)
         let project = await Project.find(projectID)
         let tresholds =  String(project.combinationOfReviewers).split(",")
         let pp = await PaperScopeForStage.find(ppID);
         let reviews = await getAllReviewsFromProjectPaper(ppID);
+
+
         if(pp.finalDecision || reviews.length >= Number(project.minCountReviewers)){
             makeErrorMessage(ctx, 409, "already enough reviews for this paper")
             return;
@@ -789,31 +802,18 @@ export const addReviewToPaper = async (ctx: Context, projectID: number, stageID:
                     stageId: stageID
                 })
 
+                if(params.finished === true && (
+                    params.overallEvaluation !== "YES" ||
+                    params.overallEvaluation !== "MAYBE" ||
+                    params.overallEvaluation !== "NO"
+                )){
+                    makeErrorMessage(ctx, 409, "When finishing a review, you have to set the overallEvaluation to 'YES', 'NO' or 'MAYBE'")
+                }
                 if (params.finished != undefined) { review.finished = params.finished }
                 if (params.overallEvaluation) { review.overallEvaluation = params.overallEvaluation }
                 if (params.finishDate) { review.finishDate = new Date(params.finishDate) }
                 await review.update();
-                reviews = await getAllReviewsFromProjectPaper(ppID);
-                let finalDecision = getFinalDecisionOfPaper(reviews, project, ppID, Number(tresholds[0]), Number(tresholds[1]))
-                if(finalDecision){
-                    if(finalDecision === "maybe"){
-                        if(project.countDecisiveReviewers == reviews.length){
-                            if(params.overallEvaluation == "maybe"){
-                                makeErrorMessage(ctx, 409, "you made the last review of the paper. this one has to be yes or no")
-                                await review.delete()
-                                return;
-                            } else{
-                                pp.overallEvaluation = params.overallEvaluation
-                            }
-
-                    }
-
-                } else{
-                    pp.overallEvaluation = finalDecision;
-                }
-
-                await pp.update()
-                }
+                await calculateFinalDecisionOfPaper(ctx, params.overallEvaluation,review, project, pp, Number(tresholds[0]), Number(tresholds[1]))
 
                 ctx.response.status = 201;
                 ctx.response.body = JSON.stringify(review)
@@ -824,24 +824,50 @@ export const addReviewToPaper = async (ctx: Context, projectID: number, stageID:
     }
 }
 
+const calculateFinalDecisionOfPaper = async (ctx: Context, overallEvaluation: string, review: Review, pp: PaperScopeForStage,  project: Project, lowerTreshold:number, upperTreshold: number) =>{
+    let reviews = await getAllReviewsFromProjectPaper(Number(pp.id));
+    let finalDecision = getFinalDecisionOfPaper(reviews, project, Number(pp.id), lowerTreshold, upperTreshold)
+    if(finalDecision){
+        if(finalDecision === "MAYBE"){
+            if(project.countDecisiveReviewers == reviews.length){
+                if(overallEvaluation == "MAYBE"){
+                    makeErrorMessage(ctx, 409, "you made the last review of the paper. this one has to be YES or NO")
+                    review.finished = false;
+                    await review.update()
+                    return;
+                } else{
+                    pp.overallEvaluation = overallEvaluation
+                }
+
+        }
+
+    } else{
+        pp.overallEvaluation = finalDecision;
+    }
+
+    await pp.update()
+    await startFetchFromProjectPaper(Number(pp.id))
+}
+}
+
 const getFinalDecisionOfPaper = (reviews: ReviewMessage[], project: Project, ppID: number, lowerTreshold: number, upperTreshold: number) => {
     let allReviewsFinished = !reviews.some(review => !review.finished)
     if(allReviewsFinished && reviews.length >= Number(project.minCountReviewers)){
         let decisionNumber = 0;
         reviews.forEach(review => {if(review.overallEvaluation == "yes"){
             decisionNumber += 10;
-        } else if(review.overallEvaluation == "maybe"){
+        } else if(review.overallEvaluation == "MAYBE"){
             decisionNumber += 5;
         } 
         })
         decisionNumber = decisionNumber / reviews.length;
 
         if(decisionNumber >= upperTreshold){
-            return "yes"
+            return "YES"
         } else if(decisionNumber <= lowerTreshold){
-            return "no"
+            return "NO"
         } else {
-            return "maybe"
+            return "MAYBE"
         }
 }
 }
@@ -863,12 +889,22 @@ export const patchReviewOfPaper = async (ctx: Context, projectID: number, stageI
             makeErrorMessage(ctx, 409, "the paper has already been finally decided. review cannot be changed")
             return;
         }
+        if(validate.finished === true && (
+            validate.overallEvaluation !== "YES" ||
+            validate.overallEvaluation !== "MAYBE" ||
+            validate.overallEvaluation !== "NO"
+        )){
+            makeErrorMessage(ctx, 409, "When finishing a review, you have to set the overallEvaluation to 'YES', 'NO' or 'MAYBE'")
+        }
         let review = await Review.find(reviewID)
         if (review) {
             Object.assign(review, validate)
+            let project = await Project.find(projectID)
+            let tresholds =  String(project.combinationOfReviewers).split(",")
             await review.update()
             ctx.response.status = 200;
             ctx.response.body = JSON.stringify(review)
+            await calculateFinalDecisionOfPaper(ctx, validate.overallEvaluation,review, project, pp, Number(tresholds[0]), Number(tresholds[1]))
         } else {
             makeErrorMessage(ctx, 404, "review not found")
         }

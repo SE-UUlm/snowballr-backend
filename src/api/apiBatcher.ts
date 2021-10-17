@@ -175,6 +175,10 @@ export class ApiBatcher implements IApiBatcher {
 		}
 	}
 
+	public activeBatchLength(){
+		return this.activeBatches.length
+	}
+
 	/**
 	 * Kills api batcher. InMemoryCache is deleted but fileCache is kept, yet it's ttl eventHandling is stopped.
 	 */
