@@ -56,6 +56,7 @@ export const createProject = async (ctx: Context) => {
             makeErrorMessage(ctx, 409, "To create a project, the evaluation formula has to be well formed so a final decision of the paper can be evaluated. This is not the case")
             return;
         }
+        
         try {
             let project = await Project.create({
                 name: validate.name,
