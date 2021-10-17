@@ -3,7 +3,7 @@ import { convertPapersToPaperMessage, convertPaperToPaperMessage } from "../help
 import { makeErrorMessage } from "../helper/error.ts";
 import { Paper } from "../model/db/paper.ts";
 import { ReadingList } from "../model/db/readingList.ts";
-import { validateUserEntry,UserStatus, getUserID, getPayloadFromJWT } from "./validation.controller.ts";
+import { validateUserEntry,UserStatus} from "./validation.controller.ts";
 
 
 
