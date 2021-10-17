@@ -22,4 +22,4 @@ WORKDIR /app/
 RUN cp /root/.deno/bin/deno /bin
 
 # command that executes deno
-CMD ["/bin/deno", "run", "--allow-net", "--allow-env", "--allow-read", "--allow-write", "main.ts"]
+CMD ["/bin/deno", "run", "--allow-net", "--allow-env", "--allow-read", "--allow-write", "--allow-write", "--unstable", "main.ts"]
