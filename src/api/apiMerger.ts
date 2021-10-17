@@ -350,10 +350,10 @@ export class ApiMerger implements IApiMerger {
 				}
 			}
 			if (first[key].length === 0) {
-				resultingPaper[key] = second[key] ? second[key].filter((value: any) => Object.keys(value).length !== 0): []
+				resultingPaper[key] = second[key]
 				resultingPaper[key + "Source"] = second[key + "Source"]
 			} else if (second[key].length === 0) {
-				resultingPaper[key] = first[key].filter((value: any) => Object.keys(value).length !== 0)
+				resultingPaper[key] = first[key]
 				resultingPaper[key + "Source"] = first[key + "Source"]
 			} else if (key == "pdf" || typeof first[key][0] == "number" || typeof second[key][0] == "number") {
 				resultingPaper[key] = concatWithoutDuplicates(first[key], second[key])
