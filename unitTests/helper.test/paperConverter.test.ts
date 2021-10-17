@@ -1,4 +1,4 @@
-import { assertEquals } from "https://deno.land/std@0.97.0/testing/asserts.ts";
+import { assertEquals } from "https://deno.land/std/testing/asserts.ts";
 import { IApiAuthor } from "../../src/api/iApiAuthor.ts";
 import { IApiPaper } from "../../src/api/iApiPaper.ts";
 import { idType } from "../../src/api/iApiUniqueId.ts";

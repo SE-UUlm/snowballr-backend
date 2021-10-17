@@ -7,7 +7,7 @@ import {
     validateContentType,
     validateJWTIfExists
 } from "../../src/controller/validation.controller.ts";
-import { assertEquals } from "https://deno.land/std@0.97.0/testing/asserts.ts"
+import { assertEquals } from "https://deno.land/std/testing/asserts.ts"
 import { emptyAsyncFunctionTest } from "../mockObjects/emptyAsyncFunction.test.ts";
 import { setup } from "../../src/helper/setup.ts";
 import { insertUser } from "../../src/controller/databaseFetcher/user.ts";

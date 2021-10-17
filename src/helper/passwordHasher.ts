@@ -1,4 +1,4 @@
-import {createHash} from "https://deno.land/std@0.95.0/hash/mod.ts";
+import {createHash} from "https://deno.land/std/hash/mod.ts";
 
 /**
  * Adds a salt to a users password and hashes it afterwards
