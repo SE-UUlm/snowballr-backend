@@ -8,6 +8,7 @@ import { IApiUniqueId, idType } from "./iApiUniqueId.ts";
 import { Cache } from "./cache.ts";
 import { hashQuery } from "../helper/queryHasher.ts";
 import { CONFIG } from "../helper/config.ts";
+import { warnApiDisabledByConfig } from "../helper/error.ts";
 export class OpenCitationsApi implements IApiFetcher {
 	url: string;
 	cache: Cache<IApiResponse> | undefined;
@@ -28,6 +29,7 @@ export class OpenCitationsApi implements IApiFetcher {
 	 * @returns Object containing the fetched paper and all paperObjects from citations and references. Promise.
 	 */
 	public async fetch(query: IApiQuery): Promise<IApiResponse> {
+		if (!CONFIG.openCitations.enabled) { return warnApiDisabledByConfig("OpenCitations"); }
 		var paper: IApiPaper = {} as IApiPaper;
 		var citations: Promise<IApiPaper[]> | undefined;
 		let references: Promise<IApiPaper[]> | undefined;
@@ -71,16 +73,28 @@ export class OpenCitationsApi implements IApiFetcher {
 	 * @returns Object List of IApiPaper with all metadata for the references or citations. Promise.
 	 */
 	private async _getLinkedDOIs(dois: string): Promise<IApiPaper[]> {
-		let urlQuery: string = dois.replace(/; /g, '__');
+		//let urlQuery: string = dois.replace(/; /g, '__');
+		let doilist = dois.split('; ')
+		console.log(doilist.length)
 		let children: Array<IApiPaper> = [];
 		//logger.debug(urlQuery)
 		try {
-			let response = await fetch(`${this.url}/index/api/v1/metadata/${urlQuery}`);
-			let json = await response.json();
+			while (doilist.length > 0) {
+				let currentDois = doilist.splice(0, 50);
+				let urlQuery = currentDois.join('__');
+				console.log("_____________")
+				console.log(doilist.length)
+				console.log(currentDois.length)
+				console.log(`${this.url}/index/api/v1/metadata/${urlQuery}`)
+				let response = await fetch(`${this.url}/index/api/v1/metadata/${urlQuery}`);
+				console.log(response)
+				let json = await response.json();
+				//console.log(json)
 
-			for (let value in json) {
-				let child = this._parseResponse(json[value]);
-				children.push(child);
+				for (let value in json) {
+					let child = this._parseResponse(json[value]);
+					children.push(child);
+				}
 			}
 		}
 		catch (e) {

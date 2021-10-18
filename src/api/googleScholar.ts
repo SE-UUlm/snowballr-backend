@@ -17,6 +17,7 @@ import { Semaphore } from "https://deno.land/x/semaphore/mod.ts"
 import { difference } from 'https://deno.land/std/datetime/mod.ts'
 import { proxyPool, Proxy } from './proxyPool.ts'
 import { CONFIG } from "../helper/config.ts";
+import { warnApiDisabledByConfig } from "../helper/error.ts";
 
 /*Captcha Google Scholar Rate Limits Enabled
 Fetching same Query, 30-45 sec: 3,3,4
@@ -61,6 +62,7 @@ export class GoogleScholar implements IApiFetcher {
 	 * @returns Object containing the fetched paper and all paperObjects from citations and references. Promise.
 	 */
 	public async fetch(query: IApiQuery): Promise<IApiResponse> {
+		if (!CONFIG.googleScholar.enabled) { return warnApiDisabledByConfig("GoogleScholar"); }
 		var paper: IApiPaper = {} as IApiPaper;
 		let citations: Promise<IApiPaper[]> | undefined;
 		let references: Promise<IApiPaper[]> | undefined;
@@ -220,8 +222,8 @@ export class GoogleScholar implements IApiFetcher {
 		let currentPage = 0;
 
 		// Even as a user we cannot see more than 1000 citations per paper
-		if (numberOfCitations > 1000) {
-			logger.warning(`GS: Found ${numberOfCitations} citations.But only shows 1000 citations in detailed view.We will ignore the rest.`)
+		if (numberOfCitations > (CONFIG.googleScholar.maxCitationCount >= 0 && CONFIG.googleScholar.maxCitationCount <= 1000 ? CONFIG.googleScholar.maxCitationCount : 1000)) {
+			logger.warning(`GS: Found ${numberOfCitations} citations.But only shows max 1000 citations in detailed view.We will ignore the rest.`)
 			numberOfCitations = 1000;
 		}
 		let iterations = (numberOfCitations / 20);

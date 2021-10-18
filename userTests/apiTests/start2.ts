@@ -37,7 +37,7 @@ for (let i = 0; i < 1; i++) {
 		rawName: undefined,
 		doi: TestDoi[i],
 		title: undefined,
-		enabledApis: [SourceApi.GS], //[SourceApi.GS, SourceApi.CR, SourceApi.IE, SourceApi.MA, SourceApi.OC, SourceApi.S2],
+		enabledApis: [SourceApi.OC], //, SourceApi.CR, SourceApi.IE, SourceApi.MA, SourceApi.OC, SourceApi.S2],
 		aggression: comparisonWeight
 	}
 	console.log(`Iteration ${i}`);

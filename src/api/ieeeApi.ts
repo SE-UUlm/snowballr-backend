@@ -9,6 +9,7 @@ import axiod from "https://deno.land/x/axiod/mod.ts";
 import { Cache } from "./cache.ts";
 import { hashQuery } from "../helper/queryHasher.ts";
 import { CONFIG } from "../helper/config.ts";
+import { warnApiDisabledByConfig } from "../helper/error.ts";
 
 export class IeeeApi implements IApiFetcher {
 	url: string;
@@ -36,6 +37,7 @@ export class IeeeApi implements IApiFetcher {
 	 * @returns Object containing the fetched paper and all paperObjects from citations and references. Promise.
 	 */
 	public async fetch(query: IApiQuery): Promise<IApiResponse> {
+		if (!CONFIG.ieee.enabled) { return warnApiDisabledByConfig("IEEE"); }
 		var paper: IApiPaper = {} as IApiPaper;
 		let citations: Promise<IApiPaper[]> | undefined;
 		let references: Promise<IApiPaper[]> | undefined;
@@ -48,11 +50,11 @@ export class IeeeApi implements IApiFetcher {
 			}
 			//logger.debug("here")
 			if (query.doi) {
-				logger.debug(`Fetching IEEE by DOI: ${query.doi}`);
+				//logger.debug(`Fetching IEEE by DOI: ${query.doi}`);
 				var response = await fetch(`${this.url}/?apikey=${this._token}&format=json&max_records=25&start_record=1&sort_order=asc&sort_field=article_title&doi=${query.doi}`);
 			}
 			else if (query.rawName && query.title) {
-				logger.debug(`Fetching IEEE by title and author: ${query.title} | ${query.rawName}`);
+				//logger.debug(`Fetching IEEE by title and author: ${query.title} | ${query.rawName}`);
 				var response = await fetch(`${this.url}/?apikey=${this._token}&format=json&max_records=25&start_record=1&sort_order=asc&sort_field=article_title&author=${query.rawName}&title=${query.title}`);
 			}
 			else {

@@ -21,36 +21,43 @@ export type IGoogleScholarConfig = {
 	requestInterval: IGoogleScholarRequestInterval;
 	useCache: boolean;
 	baseUrl: string;
+	maxCitationCount: number;
+	enabled: boolean;
 }
 
 //lvl 2
 export type IIeeeConfig = {
 	useCache: boolean;
 	baseUrl: string;
+	enabled: boolean;
 }
 
 //lvl 2
 export type ISemanticScholarConfig = {
 	useCache: boolean;
 	baseUrl: string;
+	enabled: boolean;
 }
 
 //lvl 2
 export type ICrossRefConfig = {
 	useCache: boolean;
 	baseUrl: string;
+	enabled: boolean;
 }
 
 //lvl 2
 export type IOpenCitationsConfig = {
 	useCache: boolean;
 	baseUrl: string;
+	enabled: boolean;
 }
 
 //lvl 2
 export type IMicrosoftAcademicConfig = {
 	useCache: boolean;
 	baseUrl: string;
+	enabled: boolean;
 }
 
 //lvl 2
@@ -77,18 +84,21 @@ export type IGoogleScholarRequestInterval = {
 
 const DEFAULTCONFIG: IConfig = {
 	googleScholar: {
-		proxy: { enabled: false, mode: "tor", urls: ["http://localhost:8118"], cooldown: 600 },
+		proxy: { enabled: false, mode: "tor", urls: ["http://localhost:8118"], cooldown: 600, maxCitationCount: 1000 },
 		requestInterval: { min: 30, max: 60 },
 		useCache: true,
-		baseUrl: "https://scholar.google.com"
+		baseUrl: "https://scholar.google.com",
+		enabled: true,
+		maxCitationCount: 1000
 	},
-	ieee: { baseUrl: "http://ieeexploreapi.ieee.org/api/v1/search/articles", useCache: true },
-	semanticScholar: { baseUrl: "https://api.semanticscholar.org/v1/paper", useCache: true },
-	crossRef: { baseUrl: "https://api.crossref.org/works", useCache: true },
-	openCitations: { baseUrl: "https://opencitations.net", useCache: true },
+	ieee: { baseUrl: "http://ieeexploreapi.ieee.org/api/v1/search/articles", useCache: true, enabled: true },
+	semanticScholar: { baseUrl: "https://api.semanticscholar.org/v1/paper", useCache: true, enabled: true },
+	crossRef: { baseUrl: "https://api.crossref.org/works", useCache: true, enabled: true },
+	openCitations: { baseUrl: "https://opencitations.net", useCache: true, enabled: true },
 	microsoftAcademic: {
 		baseUrl: "https://api.labs.cognitive.microsoft.com/academic/v1.0/evaluate",
-		useCache: true
+		useCache: true,
+		enabled: true
 	},
 	cache: { timeToLiveInSeconds: 10080000, type: "FileCache" }
 } as IConfig;
@@ -113,4 +123,4 @@ const LOADEDCONFIG = loadYaml();
 
 export const CONFIG = { ...DEFAULTCONFIG, ...LOADEDCONFIG as IConfig };
 
-console.log(CONFIG)
+//console.log(CONFIG)
