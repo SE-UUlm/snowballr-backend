@@ -28,3 +28,6 @@ microsoftAcademic:
 cache:
   timeToLiveInSeconds: 10080000
   type: FileCache # FileCache | MemoryCache
+
+
+# define google scholar max treffer. add to project settings with defautl 1000.

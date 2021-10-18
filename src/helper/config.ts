@@ -1,6 +1,9 @@
 import { parse, Type } from "https://deno.land/std/encoding/yaml.ts";
 import { CacheType } from "../api/cache.ts";
 
+
+// Complex interface structure to define a configuration
+
 //lvl 1
 export interface IConfig {
 	googleScholar: IGoogleScholarConfig;
@@ -13,7 +16,7 @@ export interface IConfig {
 }
 
 //lvl 2
-export interface IGoogleScholarConfig {
+export type IGoogleScholarConfig = {
 	proxy: IGoogleScholarProxyConfig;
 	requestInterval: IGoogleScholarRequestInterval;
 	useCache: boolean;
@@ -21,43 +24,43 @@ export interface IGoogleScholarConfig {
 }
 
 //lvl 2
-export interface IIeeeConfig {
+export type IIeeeConfig = {
 	useCache: boolean;
 	baseUrl: string;
 }
 
 //lvl 2
-export interface ISemanticScholarConfig {
+export type ISemanticScholarConfig = {
 	useCache: boolean;
 	baseUrl: string;
 }
 
 //lvl 2
-export interface ICrossRefConfig {
+export type ICrossRefConfig = {
 	useCache: boolean;
 	baseUrl: string;
 }
 
 //lvl 2
-export interface IOpenCitationsConfig {
+export type IOpenCitationsConfig = {
 	useCache: boolean;
 	baseUrl: string;
 }
 
 //lvl 2
-export interface IMicrosoftAcademicConfig {
+export type IMicrosoftAcademicConfig = {
 	useCache: boolean;
 	baseUrl: string;
 }
 
 //lvl 2
-export interface ICacheConfig {
+export type ICacheConfig = {
 	timeToLiveInSeconds: number;
 	type: CacheType;
 }
 
 //lvl 3
-export interface IGoogleScholarProxyConfig {
+export type IGoogleScholarProxyConfig = {
 	enabled: boolean;
 	mode: "tor" | "pool";
 	urls: string[];
@@ -65,21 +68,49 @@ export interface IGoogleScholarProxyConfig {
 }
 
 //lvl 3
-export interface IGoogleScholarRequestInterval {
+export type IGoogleScholarRequestInterval = {
 	min: number;
 	max: number;
 }
 
+// default configuration, to be overwritten by the loaded one, if a property is given there
+
+const DEFAULTCONFIG: IConfig = {
+	googleScholar: {
+		proxy: { enabled: false, mode: "tor", urls: ["http://localhost:8118"], cooldown: 600 },
+		requestInterval: { min: 30, max: 60 },
+		useCache: true,
+		baseUrl: "https://scholar.google.com"
+	},
+	ieee: { baseUrl: "http://ieeexploreapi.ieee.org/api/v1/search/articles", useCache: true },
+	semanticScholar: { baseUrl: "https://api.semanticscholar.org/v1/paper", useCache: true },
+	crossRef: { baseUrl: "https://api.crossref.org/works", useCache: true },
+	openCitations: { baseUrl: "https://opencitations.net", useCache: true },
+	microsoftAcademic: {
+		baseUrl: "https://api.labs.cognitive.microsoft.com/academic/v1.0/evaluate",
+		useCache: true
+	},
+	cache: { timeToLiveInSeconds: 10080000, type: "FileCache" }
+} as IConfig;
+
+
 //console.log("==============GETTING IMPORTED================")
-const loadYaml = (): IConfig => {
+const loadYaml = () => {
 	try {
 		const raw: string = Deno.readTextFileSync("../../config.yaml");
-		const yaml: unknown = parse(raw);
-		return <IConfig>yaml;
+		const yaml = parse(raw);
+		//console.log((yaml as IConfig).cache)
+		return yaml;
 	}
 	catch (e) {
 		throw new Error(`Couldnt load config.yaml: ${e}`);
 	}
 }
 
-export const CONFIG: IConfig = loadYaml();
+const LOADEDCONFIG = loadYaml();
+
+// merge and overwrite default config with custom config
+
+export const CONFIG = { ...DEFAULTCONFIG, ...LOADEDCONFIG as IConfig };
+
+console.log(CONFIG)
