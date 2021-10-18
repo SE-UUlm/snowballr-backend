@@ -152,6 +152,7 @@ const addAuthorToDatabase= async(paper: IApiPaper, newPaper: Paper) =>{
     }
 }
 export const assignOnlyIfUnassignedPaper = async (target: Paper, source: IApiPaper) => {
+    try{
     let s = <any>source
     for (const key in source) {
         const val = s[key];
@@ -171,6 +172,9 @@ export const assignOnlyIfUnassignedPaper = async (target: Paper, source: IApiPap
         }
     }
     return target;
+}catch(error){
+    logger.error(error)
+}
 }
 
 /**
