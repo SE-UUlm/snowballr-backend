@@ -7,6 +7,8 @@ import { IApiAuthor } from "./iApiAuthor.ts";
 import { IApiUniqueId, idType } from "./iApiUniqueId.ts";
 import { Cache } from "./cache.ts";
 import { hashQuery } from "../helper/queryHasher.ts";
+import { CONFIG } from "../helper/config.ts";
+import { warnApiDisabledByConfig } from "../helper/error.ts";
 export class OpenCitationsApi implements IApiFetcher {
 	url: string;
 	cache: Cache<IApiResponse> | undefined;
@@ -27,13 +29,14 @@ export class OpenCitationsApi implements IApiFetcher {
 	 * @returns Object containing the fetched paper and all paperObjects from citations and references. Promise.
 	 */
 	public async fetch(query: IApiQuery): Promise<IApiResponse> {
+		if (!CONFIG.openCitations.enabled) { return warnApiDisabledByConfig("OpenCitations"); }
 		var paper: IApiPaper = {} as IApiPaper;
 		var citations: Promise<IApiPaper[]> | undefined;
 		let references: Promise<IApiPaper[]> | undefined;
 		let queryString = hashQuery(query);
 		try {
 			let get = this.cache!.get(queryString);
-			if (this.cache && get) {
+			if (CONFIG.openCitations.useCache && this.cache && get) {
 				logger.info(`OC: Loaded fetch from cache.`)
 				return get;
 			}
@@ -70,22 +73,52 @@ export class OpenCitationsApi implements IApiFetcher {
 	 * @returns Object List of IApiPaper with all metadata for the references or citations. Promise.
 	 */
 	private async _getLinkedDOIs(dois: string): Promise<IApiPaper[]> {
-		let urlQuery: string = dois.replace(/; /g, '__');
+		//let urlQuery: string = dois.replace(/; /g, '__');
+		let doilist = dois.split('; ')
+		//console.log(doilist.length)
 		let children: Array<IApiPaper> = [];
 		//logger.debug(urlQuery)
+		let fetches: any = [];
 		try {
-			let response = await fetch(`${this.url}/index/api/v1/metadata/${urlQuery}`);
-			let json = await response.json();
-
-			for (let value in json) {
-				let child = this._parseResponse(json[value]);
-				children.push(child);
+			while (doilist.length > 0) {
+				let currentDois = doilist.splice(0, CONFIG.openCitations.linkedFetchSize);
+				let urlQuery = currentDois.join('__');
+				fetches.push(this._splittedRequest(urlQuery));
 			}
+			let promises = await Promise.all(fetches);
+
+
+			promises.forEach((json: any) => {
+				//console.log(json)
+				json.forEach((value: any) => {
+					//console.log(value)
+					let child = this._parseResponse(value);
+					children.push(child);
+				});
+			});
 		}
 		catch (e) {
 			logger.error(`OpenCitationsApi: Failed to fetch ChildObjects: ${e}`);
 		}
 		return children;
+	}
+
+	private async _splittedRequest(urlQuery: string) {
+		const maxRetries = 5;
+		let count = 0;
+		while (true) {
+			try {
+				var response = await fetch(`${this.url}/index/api/v1/metadata/${urlQuery}`);
+				if (response.status !== 200) {
+					throw new Error("OC: Failed to fetch batch of linkedDois");
+				}
+				break;
+			}
+			catch (e) {
+				if (++count === maxRetries) throw e;
+			}
+		}
+		return response.json();
 	}
 
 	/**

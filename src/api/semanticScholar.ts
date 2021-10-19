@@ -7,6 +7,8 @@ import { IApiAuthor } from "./iApiAuthor.ts";
 import { IApiUniqueId, idType } from "./iApiUniqueId.ts";
 import { Cache } from "./cache.ts";
 import { hashQuery } from "../helper/queryHasher.ts";
+import { CONFIG } from "../helper/config.ts";
+import { warnApiDisabledByConfig } from "../helper/error.ts";
 
 export class SemanticScholar implements IApiFetcher {
 	url: string;
@@ -25,13 +27,14 @@ export class SemanticScholar implements IApiFetcher {
 	 * @returns Object containing the fetched paper and all paperObjects from citations and references. Promise.
 	 */
 	public async fetch(query: IApiQuery): Promise<IApiResponse> {
-		var paper: IApiPaper = {} as IApiPaper;
+		if (!CONFIG.semanticScholar.enabled) { return warnApiDisabledByConfig("SemanticScholar"); }
+		let paper: IApiPaper = {} as IApiPaper;
 		let citations: Promise<IApiPaper[]> | undefined;
 		let references: Promise<IApiPaper[]> | undefined;
 		let queryString = hashQuery(query);
 		try {
 			let get = this.cache!.get(queryString);
-			if (this.cache && get) {
+			if (CONFIG.semanticScholar.useCache && this.cache && get) {
 				logger.info(`S2: Loaded fetch from cache.`)
 				return get;
 			}
@@ -137,6 +140,7 @@ export class SemanticScholar implements IApiFetcher {
 		return parsedResponse;
 	}
 
+	// deno-lint-ignore require-await
 	public async getDoi(query: IApiQuery): Promise<string | undefined> {
 		logger.warning(`S2: Not able to fetch without DOI`);
 		return undefined;

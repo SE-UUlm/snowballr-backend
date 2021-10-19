@@ -1,0 +1,95 @@
+[0m[32mCheck[0m file:///snowballR/backend/userTests/apiTests/start2.ts
+[34mThu, 07 Oct 2021 23:20:31 GMT	INFO	Watchdog for fileCache started.[39m
+[34mThu, 07 Oct 2021 23:20:31 GMT	INFO	FileCache created. FolderName: microsoftAcademic[39m
+[34mThu, 07 Oct 2021 23:20:31 GMT	INFO	Watchdog for fileCache started.[39m
+[34mThu, 07 Oct 2021 23:20:31 GMT	INFO	FileCache created. FolderName: crossRef[39m
+[34mThu, 07 Oct 2021 23:20:31 GMT	INFO	Watchdog for fileCache started.[39m
+[34mThu, 07 Oct 2021 23:20:31 GMT	INFO	FileCache created. FolderName: openCitations[39m
+[34mThu, 07 Oct 2021 23:20:31 GMT	INFO	Watchdog for fileCache started.[39m
+[34mThu, 07 Oct 2021 23:20:31 GMT	INFO	FileCache created. FolderName: semanticScholar[39m
+[34mThu, 07 Oct 2021 23:20:31 GMT	INFO	Watchdog for fileCache started.[39m
+[34mThu, 07 Oct 2021 23:20:31 GMT	INFO	FileCache created. FolderName: IEEE[39m
+[34mThu, 07 Oct 2021 23:20:31 GMT	INFO	Watchdog for fileCache started.[39m
+[34mThu, 07 Oct 2021 23:20:31 GMT	INFO	FileCache created. FolderName: googleScholar[39m
+Iteration 0
+[34mThu, 07 Oct 2021 23:20:31 GMT	INFO	GoogleScholar initialized[39m
+[33m200[39m
+403
+[34mThu, 07 Oct 2021 23:20:34 GMT	INFO	GoogleScholar: Got 403 citations. This will need 20.15 fetches[39m
+[33m20.15[39m
+[33mThu, 07 Oct 2021 23:20:34 GMT	WARNING	GoogleScholar: globally ratelimiting requests. Waiting 5 seconds...[39m
+[33m200[39m
+[33m19.15[39m
+[33mThu, 07 Oct 2021 23:20:41 GMT	WARNING	GoogleScholar: globally ratelimiting requests. Waiting 10 seconds...[39m
+[33m200[39m
+[33m18.15[39m
+[33mThu, 07 Oct 2021 23:20:53 GMT	WARNING	GoogleScholar: globally ratelimiting requests. Waiting 7 seconds...[39m
+[33m200[39m
+[33m17.15[39m
+[33mThu, 07 Oct 2021 23:21:02 GMT	WARNING	GoogleScholar: globally ratelimiting requests. Waiting 9 seconds...[39m
+[33m200[39m
+[33m16.15[39m
+[33mThu, 07 Oct 2021 23:21:13 GMT	WARNING	GoogleScholar: globally ratelimiting requests. Waiting 5 seconds...[39m
+[33m200[39m
+[33m15.149999999999999[39m
+[33mThu, 07 Oct 2021 23:21:20 GMT	WARNING	GoogleScholar: globally ratelimiting requests. Waiting 7 seconds...[39m
+[33m200[39m
+[33m14.149999999999999[39m
+[33mThu, 07 Oct 2021 23:21:28 GMT	WARNING	GoogleScholar: globally ratelimiting requests. Waiting 10 seconds...[39m
+[33m200[39m
+[33m13.149999999999999[39m
+[33mThu, 07 Oct 2021 23:21:40 GMT	WARNING	GoogleScholar: globally ratelimiting requests. Waiting 9 seconds...[39m
+[33m200[39m
+[33m12.149999999999999[39m
+[33mThu, 07 Oct 2021 23:21:51 GMT	WARNING	GoogleScholar: globally ratelimiting requests. Waiting 8 seconds...[39m
+[33m200[39m
+[33m11.149999999999999[39m
+[33mThu, 07 Oct 2021 23:22:01 GMT	WARNING	GoogleScholar: globally ratelimiting requests. Waiting 10 seconds...[39m
+[33m200[39m
+[33m10.149999999999999[39m
+[33mThu, 07 Oct 2021 23:22:13 GMT	WARNING	GoogleScholar: globally ratelimiting requests. Waiting 8 seconds...[39m
+[33m200[39m
+[33m9.149999999999999[39m
+[33mThu, 07 Oct 2021 23:22:22 GMT	WARNING	GoogleScholar: globally ratelimiting requests. Waiting 7 seconds...[39m
+[33m200[39m
+[33m8.149999999999999[39m
+[33mThu, 07 Oct 2021 23:22:31 GMT	WARNING	GoogleScholar: globally ratelimiting requests. Waiting 8 seconds...[39m
+[33m200[39m
+[33m7.149999999999999[39m
+[33mThu, 07 Oct 2021 23:22:42 GMT	WARNING	GoogleScholar: globally ratelimiting requests. Waiting 5 seconds...[39m
+[33m200[39m
+[33m6.149999999999999[39m
+[33mThu, 07 Oct 2021 23:22:49 GMT	WARNING	GoogleScholar: globally ratelimiting requests. Waiting 9 seconds...[39m
+[33m200[39m
+[33m5.149999999999999[39m
+[33mThu, 07 Oct 2021 23:22:59 GMT	WARNING	GoogleScholar: globally ratelimiting requests. Waiting 7 seconds...[39m
+[33m200[39m
+[33m4.149999999999999[39m
+[33mThu, 07 Oct 2021 23:23:08 GMT	WARNING	GoogleScholar: globally ratelimiting requests. Waiting 5 seconds...[39m
+[33m200[39m
+[33m3.1499999999999986[39m
+[33mThu, 07 Oct 2021 23:23:15 GMT	WARNING	GoogleScholar: globally ratelimiting requests. Waiting 7 seconds...[39m
+[33m200[39m
+[33m2.1499999999999986[39m
+[33mThu, 07 Oct 2021 23:23:24 GMT	WARNING	GoogleScholar: globally ratelimiting requests. Waiting 7 seconds...[39m
+[33m200[39m
+[33m1.1499999999999986[39m
+[33mThu, 07 Oct 2021 23:23:32 GMT	WARNING	GoogleScholar: globally ratelimiting requests. Waiting 7 seconds...[39m
+[33m200[39m
+[33m0.14999999999999858[39m
+[33mThu, 07 Oct 2021 23:23:40 GMT	WARNING	GoogleScholar: globally ratelimiting requests. Waiting 9 seconds...[39m
+[33m200[39m
+GS: Adding query to cache
+ADDING SOME CACHE
+[34mThu, 07 Oct 2021 23:23:52 GMT	INFO	CONCLUSIVE API paper merging:  // Transition to model-driven engineering <->  // Transition to model-driven engineering[39m
+[34mThu, 07 Oct 2021 23:23:53 GMT	INFO	CONCLUSIVE API paper merging:  // Aspects at the right time <->  // Aspects at the Right Time1[39m
+[34mThu, 07 Oct 2021 23:23:54 GMT	INFO	CONCLUSIVE API paper merging:  // Model-driven performance prediction of distributed real-time embedded defense systems <->  // Modeling scenarios for the performance prediction of distributed real-time embedded systems[39m
+[34mThu, 07 Oct 2021 23:23:57 GMT	INFO	CONCLUSIVE API paper merging:  // Evolution of model transformations by model refactoring <->  // Evolution of Model Transformations by Model Refactoring: Long Version[39m
+[34mThu, 07 Oct 2021 23:23:57 GMT	INFO	CONCLUSIVE API paper merging:  // A perspective on software engineering education with open source software <->  // A Perspective on Software Engineering Education with Open Source Software[39m
+[34mThu, 07 Oct 2021 23:23:59 GMT	INFO	Stopped watchdog for ttl[39m
+[34mThu, 07 Oct 2021 23:23:59 GMT	INFO	Stopped watchdog for ttl[39m
+[34mThu, 07 Oct 2021 23:23:59 GMT	INFO	Stopped watchdog for ttl[39m
+[34mThu, 07 Oct 2021 23:23:59 GMT	INFO	Stopped watchdog for ttl[39m
+[34mThu, 07 Oct 2021 23:23:59 GMT	INFO	Stopped watchdog for ttl[39m
+[34mThu, 07 Oct 2021 23:23:59 GMT	INFO	Stopped watchdog for ttl[39m
+[34mThu, 07 Oct 2021 23:23:59 GMT	INFO	Killed all Caches[39m

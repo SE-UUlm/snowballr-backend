@@ -13,6 +13,7 @@ import { ApiMerger } from "./apiMerger.ts";
 import { logger } from "./logger.ts";
 import { Cache, CacheType } from "./cache.ts";
 import { GoogleScholar } from "./googleScholar.ts";
+import { CONFIG } from "../helper/config.ts";
 
 
 /**
@@ -55,19 +56,19 @@ export class ApiBatcher implements IApiBatcher {
 
 	// Map a constructor parameters to the api type so it can be implemented in a loop. ADD NEW PARAMETES HERE IF NEW CLASS IMPLEMENTED TO BE APPLIED
 	private _apiParamMapper = {
-		[SourceApi.MA]: "https://api.labs.cognitive.microsoft.com/academic/v1.0/evaluate",
-		[SourceApi.OC]: "https://opencitations.net",
-		[SourceApi.CR]: "https://api.crossref.org/works",
-		[SourceApi.S2]: "https://api.semanticscholar.org/v1/paper",
-		[SourceApi.IE]: "http://ieeexploreapi.ieee.org/api/v1/search/articles",
-		[SourceApi.GS]: "https://scholar.google.com"
+		[SourceApi.MA]: CONFIG.microsoftAcademic.baseUrl,
+		[SourceApi.OC]: CONFIG.openCitations.baseUrl,
+		[SourceApi.CR]: CONFIG.crossRef.baseUrl,
+		[SourceApi.S2]: CONFIG.semanticScholar.baseUrl,
+		[SourceApi.IE]: CONFIG.ieee.baseUrl,
+		[SourceApi.GS]: CONFIG.googleScholar.baseUrl
 	}
 
 
 	public constructor() {
 		this.activeBatches = []
 		for (let s in this._apiMapper) {
-			this.cache[s] = new Cache<IApiResponse>(CacheType.F, 10080000, s.toString());
+			this.cache[s] = new Cache<IApiResponse>(CONFIG.cache.type, CONFIG.cache.timeToLiveInSeconds, s.toString());
 		}
 	}
 
@@ -92,7 +93,7 @@ export class ApiBatcher implements IApiBatcher {
 		apiBatch.id = crypto.randomUUID();
 		apiBatch.subscribers = [query];
 		apiBatch.status = BatcherStatus.R;
-		apiBatch.response = merger.compare(response).then((data) =>{
+		apiBatch.response = merger.compare(response).then((data) => {
 			apiBatch.status = BatcherStatus.F
 			this.stopFetch(apiBatch)
 			return data
@@ -145,12 +146,12 @@ export class ApiBatcher implements IApiBatcher {
 	 * @param apis list of enabled api enums
 	 * @return list of IApiFetcher instances
 	 */
-	private _initializeEnabledApis(apis: [SourceApi,string?][]): IApiFetcher[] {
+	private _initializeEnabledApis(apis: [SourceApi, string?][]): IApiFetcher[] {
 		let initializedFetchers: IApiFetcher[] = [];
 		for (let a of apis) {
 			let ApiObject = this._apiMapper[a[0] as SourceApi];
 			let params = [this._apiParamMapper[a[0] as SourceApi], a[1]];
-			initializedFetchers.push(new ApiObject(params[0]? params[0]: '', params[1] ? params[1] : '', this.cache[a[0] as SourceApi]));
+			initializedFetchers.push(new ApiObject(params[0] ? params[0] : '', params[1] ? params[1] : '', this.cache[a[0] as SourceApi]));
 		}
 		return initializedFetchers;
 	}
@@ -182,7 +183,7 @@ export class ApiBatcher implements IApiBatcher {
 		}
 	}
 
-	public activeBatchLength(){
+	public activeBatchLength() {
 		return this.activeBatches.length
 	}
 

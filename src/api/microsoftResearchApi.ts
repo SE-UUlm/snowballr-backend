@@ -7,6 +7,8 @@ import { IApiAuthor } from "./iApiAuthor.ts";
 import { IApiUniqueId, idType } from "./iApiUniqueId.ts";
 import { Cache } from "./cache.ts";
 import { hashQuery } from "../helper/queryHasher.ts";
+import { CONFIG } from "../helper/config.ts";
+import { warnApiDisabledByConfig } from "../helper/error.ts";
 
 export class MicrosoftResearchApi implements IApiFetcher {
 	url: string;
@@ -63,13 +65,14 @@ export class MicrosoftResearchApi implements IApiFetcher {
 	 * @returns Object containing the fetched paper and all paperObjects from citations and references. Promise.
 	 */
 	public async fetch(query: IApiQuery): Promise<IApiResponse> {
+		if (!CONFIG.microsoftAcademic.enabled) { return warnApiDisabledByConfig("MicrosoftAcademic"); }
 		var paper: IApiPaper = {} as IApiPaper;
 		var citations: Promise<IApiPaper[]> | undefined;
 		let references: Promise<IApiPaper[]> | undefined;
 		let queryString = hashQuery(query);
 		try {
 			let get = this.cache!.get(queryString);
-			if (this.cache && get) {
+			if (CONFIG.microsoftAcademic.useCache && this.cache && get) {
 				logger.info(`MA: Loaded fetch from cache.`)
 				//console.log(get)
 				return get;
