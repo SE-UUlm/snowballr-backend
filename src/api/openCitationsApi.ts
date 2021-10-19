@@ -75,7 +75,7 @@ export class OpenCitationsApi implements IApiFetcher {
 	private async _getLinkedDOIs(dois: string): Promise<IApiPaper[]> {
 		//let urlQuery: string = dois.replace(/; /g, '__');
 		let doilist = dois.split('; ')
-		console.log(doilist.length)
+		//console.log(doilist.length)
 		let children: Array<IApiPaper> = [];
 		//logger.debug(urlQuery)
 		let fetches: any = [];
