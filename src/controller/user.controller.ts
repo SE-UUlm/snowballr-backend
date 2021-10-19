@@ -136,11 +136,12 @@ export const patchUser = async (ctx: Context, id: number | undefined) => {
     let userData = await convertCtxBodyToUser(ctx);
     let isAdmin = await checkAdmin(payloadJson);
     let isPO = await checkPO(payloadJson);
+    let register = ctx.request.headers.get("invitationToken") !== undefined && ctx.request.headers.get("invitationToken") !== ""
     let isSameUser = (await getUserID(payloadJson)) === id || await checkToken(id, ctx, userData);
 
     if (isSameUser || isAdmin || isPO) {
 
-        let user = await changeUserData(ctx, id, isSameUser, isAdmin, userData)
+        let user = await changeUserData(ctx, id, isSameUser, isAdmin, userData, register)
         if(user){
             let userProfile = convertUserToUserProfile(user);
             ctx.response.body = JSON.stringify(userProfile);
@@ -153,7 +154,7 @@ export const patchUser = async (ctx: Context, id: number | undefined) => {
     }
 }
 
-const changeUserData = async (ctx: Context, id: number, isSameUser: boolean, isAdmin: boolean, userData: UserParameters) =>{
+const changeUserData = async (ctx: Context, id: number, isSameUser: boolean, isAdmin: boolean, userData: UserParameters, register: boolean) =>{
     let user = await User.find(id);
 
     if (!user) {
@@ -164,6 +165,10 @@ const changeUserData = async (ctx: Context, id: number, isSameUser: boolean, isA
         if (userData.password) {
             user.password = hashPassword(userData.password)
         }
+    }
+
+    if(register){
+        user.status = "active"
     }
     if (isAdmin) {
         if (userData.status) {
