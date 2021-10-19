@@ -136,9 +136,10 @@ export const patchUser = async (ctx: Context, id: number | undefined) => {
     let userData = await convertCtxBodyToUser(ctx);
     let isAdmin = await checkAdmin(payloadJson);
     let isPO = await checkPO(payloadJson);
-    let register = ctx.request.headers.get("invitationToken") !== undefined && ctx.request.headers.get("invitationToken") !== ""
-    let isSameUser = (await getUserID(payloadJson)) === id || await checkToken(id, ctx, userData);
-
+  
+    let checkedToken = await checkToken(id, ctx, userData);
+    let isSameUser = (await getUserID(payloadJson)) === id || checkedToken.valid
+    let register = checkedToken.kind === "invitation"
     if (isSameUser || isAdmin || isPO) {
 
         let user = await changeUserData(ctx, id, isSameUser, isAdmin, userData, register)
@@ -161,6 +162,7 @@ const changeUserData = async (ctx: Context, id: number, isSameUser: boolean, isA
         makeErrorMessage(ctx, 404, "User not Found")
         return;
     }
+
     if (isSameUser) {
         if (userData.password) {
             user.password = hashPassword(userData.password)
@@ -198,20 +200,20 @@ const changeUserData = async (ctx: Context, id: number, isSameUser: boolean, isA
  * @param userData the data sent to change the user data
  */
 const checkToken = async (id: number, ctx: Context, userData: UserParameters) => {
-    let validToken = false;
+    let validToken = {valid: false, kind: ""};
     let invitationToken = ctx.request.headers.get("invitationToken");
     let resetToken = ctx.request.headers.get("resetToken")
 
     if (invitationToken) {
         if (userData.password && userData.firstName) {
-            validToken = await checkInvitationToken(id, invitationToken, ctx);
+            validToken = {valid: await checkInvitationToken(id, invitationToken, ctx), kind:"invitation"};
         } else {
             makeErrorMessage(ctx, 400, "no password and/or firstName provided")
         }
     }
     if (resetToken) {
         if (userData.password) {
-            validToken = await checkResetToken(id, resetToken, ctx);
+            validToken = {valid: await checkResetToken(id, resetToken, ctx), kind:"reset"};
         } else {
             makeErrorMessage(ctx, 400, "no password provided")
         }
