@@ -55,6 +55,8 @@ Deno.test({
         await db.close();
         await client.end();
     },
+    sanitizeResources: false,
+    sanitizeOps: false,
 })
 
 Deno.test({
@@ -73,6 +75,8 @@ Deno.test({
         await db.close();
         await client.end();
     },
+    sanitizeResources: false,
+    sanitizeOps: false,
 })
 
 Deno.test({
@@ -91,6 +95,8 @@ Deno.test({
         await db.close();
         await client.end();
     },
+    sanitizeResources: false,
+    sanitizeOps: false,
 })
 
 Deno.test({
@@ -111,6 +117,8 @@ Deno.test({
         await db.close();
         await client.end();
     },
+    sanitizeResources: false,
+    sanitizeOps: false,
 })
 
 Deno.test({
@@ -128,6 +136,8 @@ Deno.test({
         await db.close();
         await client.end();
     },
+    sanitizeResources: false,
+    sanitizeOps: false,
 })
 
 Deno.test({
@@ -151,6 +161,8 @@ Deno.test({
         await db.close();
         await client.end();
     },
+    sanitizeResources: false,
+    sanitizeOps: false,
 })
 
 Deno.test({
@@ -158,16 +170,18 @@ Deno.test({
     fn: async function (): Promise<void> {
         await setup(true);
         let user = await insertUser("test2@test", "ash", false, "Test", "Tester", "active");
-        await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+        let user2 = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
         let app = await createMockApp();
         let token = await createJWT(user)
         let ctx = await createMockContext(app, undefined, [["Content-Type", "application/json"]], "/users/1", token);
-        await getUser(ctx, 3);
+        await getUser(ctx, Number(user2.id));
         assertEquals(ctx.response.status, 401)
 
         await db.close();
         await client.end();
     },
+    sanitizeResources: false,
+    sanitizeOps: false,
 })
 
 Deno.test({
@@ -184,6 +198,8 @@ Deno.test({
         await db.close();
         await client.end();
     },
+    sanitizeResources: false,
+    sanitizeOps: false,
 })
 
 Deno.test({
@@ -200,6 +216,8 @@ Deno.test({
         await db.close();
         await client.end();
     },
+    sanitizeResources: false,
+    sanitizeOps: false,
 })
 
 Deno.test({
@@ -216,6 +234,8 @@ Deno.test({
         await db.close();
         await client.end();
     },
+    sanitizeResources: false,
+    sanitizeOps: false,
 })
 
 Deno.test({
@@ -223,7 +243,8 @@ Deno.test({
     fn: async function (): Promise<void> {
         await setup(true);
         let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
-        let project = await Project.create({ name: "Test", minCountReviewers: 1, countDecisiveReviewers: 1 })
+        let project = await Project.create({ name: "Test", minCountReviewers: 1, countDecisiveReviewers: 1, evaluationFormula: "", combinationOfReviewers: "" ,
+        mergeThreshold: 0.8})
         let userProject = await UserIsPartOfProject.create({
             isOwner: true,
             userId: Number(user.id),
@@ -245,6 +266,8 @@ Deno.test({
         await db.close();
         await client.end();
     },
+    sanitizeResources: false,
+    sanitizeOps: false,
 })
 
 Deno.test({
@@ -252,7 +275,8 @@ Deno.test({
     fn: async function (): Promise<void> {
         await setup(true);
         let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
-        let project = await Project.create({ name: "Test", minCountReviewers: 1, countDecisiveReviewers: 1 })
+        let project = await Project.create({ name: "Test", minCountReviewers: 1, countDecisiveReviewers: 1,evaluationFormula: "", combinationOfReviewers: "",
+        mergeThreshold: 0.8})
         let userProject = await UserIsPartOfProject.create({
             isOwner: true,
             userId: Number(user.id),
@@ -269,6 +293,8 @@ Deno.test({
         await db.close();
         await client.end();
     },
+    sanitizeResources: false,
+    sanitizeOps: false,
 })
 
 Deno.test({
@@ -286,8 +312,8 @@ Deno.test({
         let app = await createMockApp();
         let token = await createJWT(user)
         let ctx = await createMockContext(app, `{"email":"hey@hey.to", "password":"meow","firstName":"Thomas","lastName":"Schmiddy","isAdmin":true,"status":"active"}`, [["Content-Type", "application/json"]], "/", token);
-        await patchUser(ctx, 3);
-        userToChange = await User.find("3");
+        await patchUser(ctx, Number(userToChange.id));
+        userToChange = await User.find(Number(userToChange.id));
         assertNotEquals("undefined", String(userToChange.eMail));
         assertNotEquals("undefined", String(userToChange.password));
         assertNotEquals("undefined", String(userToChange.firstName));
@@ -304,6 +330,8 @@ Deno.test({
         await db.close();
         await client.end();
     },
+    sanitizeResources: false,
+    sanitizeOps: false,
 })
 
 Deno.test({
@@ -320,8 +348,8 @@ Deno.test({
         let app = await createMockApp();
         let token = await createJWT(user)
         let ctx = await createMockContext(app, `{"email":"hey@hey.to", "password":"meow","firstName":"Thomas","lastName":"Schmiddy","isAdmin":true,"status":"blaaaaa"}`, [["Content-Type", "application/json"]], "/", token);
-        await patchUser(ctx, 2);
-        user = await User.find("2");
+        await patchUser(ctx, Number(user.id));
+        user = await User.find(Number(user.id));
         assertNotEquals("undefined", String(user.eMail));
         assertNotEquals("undefined", String(user.password));
         assertNotEquals("undefined", String(user.firstName));
@@ -337,6 +365,8 @@ Deno.test({
         await db.close();
         await client.end();
     },
+    sanitizeResources: false,
+    sanitizeOps: false,
 })
 
 Deno.test({
@@ -381,6 +411,8 @@ Deno.test({
         await db.close();
         await client.end();
     },
+    sanitizeResources: false,
+    sanitizeOps: false,
 })
 
 
@@ -416,6 +448,8 @@ Deno.test({
         await db.close();
         await client.end();
     },
+    sanitizeResources: false,
+    sanitizeOps: false,
 })
 
 Deno.test({
@@ -505,6 +539,8 @@ Deno.test({
         await client.end();
 
     },
+    sanitizeResources: false,
+    sanitizeOps: false,
 })
 
 Deno.test({
@@ -521,6 +557,8 @@ Deno.test({
 
         await db.close();
         await client.end();
-    }
+    },
+    sanitizeResources: false,
+    sanitizeOps: false,
 
 })

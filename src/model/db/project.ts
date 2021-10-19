@@ -18,10 +18,7 @@ export class Project extends Model {
         combinationOfReviewers: DataTypes.STRING,
         type: DataTypes.STRING,
         evaluationFormula: { type: DataTypes.STRING},
-    }
-
-    static defaults = {
-        evaluationFormula: ""
+        mergeThreshold: DataTypes.DECIMAL
     }
 
     static user() {

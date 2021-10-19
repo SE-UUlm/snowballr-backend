@@ -87,12 +87,30 @@ export const setup = async (dropDatabase: boolean) => {
     let admin = await returnUserByEmail(String(Deno.env.get("ADMIN_EMAIL")));
     if (!admin) {
         admin = await insertUser(String(Deno.env.get("ADMIN_EMAIL")), String(Deno.env.get("ADMIN_PASSWORD")), true, "admin", "admin", "active");
+       
+        await SearchApi.create({name: "crossRef", id: IDOfApi.crossRef, credentials: "luca999@web.de"})
+        await SearchApi.create({name: "openCitations", id: IDOfApi.openCitations})
+        await SearchApi.create({name: "semanticScholar", id: IDOfApi.semanticScholar})
+        await SearchApi.create({name: "IEEE", id: IDOfApi.IEEE,credentials:"4yk5d9an52ejynjsmzqxe62r"})
+        await SearchApi.create({name: "googleScholar", id: IDOfApi.googleScholar})
+        await SearchApi.create({name: "microsoftAcademic", id: IDOfApi.microsoftAcademic,credentials: "9a02225751354cd29397eba3f5382101"})
+        
+
         //TODO: only to showcase functionality, otherwise delete
-        let admin2 = await insertUser("test.tester@uni-ulm.de", "$X3Ljv8Kq6&QgM", true, "admin", "admin", "active");
+
         let project = await Project.create({
             name: "Test", minCountReviewers: 0, countDecisiveReviewers: 5, combinationOfReviewers: 0,
-            type: ""
+            type: "",
+            evaluationFormula: "",
+            mergeThreshold: 0.8
         })
+        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
+        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
+        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: true})
+        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
+        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
+        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+
         await UserIsPartOfProject.create({
             isOwner: true,
             userId: Number(admin.id),
@@ -123,11 +141,16 @@ export const setup = async (dropDatabase: boolean) => {
         await client.queryArray(`INSERT INTO citedby (papercitedid, papercitingid)
                 VALUES (${Number(paper01.id)}, ${Number(paper02.id)}),
                         (${Number(paper01.id)}, ${Number(paper03.id)})`)
-
-        let searchApi = await SearchApi.create({ name: "microsoft" })
-        await ProjectUsesApi.create({ searchapiId: Number(searchApi.id), projectId: Number(project.id) })
-
     }
 
 
+}
+
+export enum IDOfApi {
+	crossRef = 1,
+	openCitations = 2,
+	googleScholar = 3,
+	IEEE = 4,
+	semanticScholar = 5,
+    microsoftAcademic = 6,
 }

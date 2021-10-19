@@ -9,6 +9,15 @@ export const getAllReviewsFromProjectPaper = async (ppId: number): Promise<Revie
     return getReviews(reviews)
 }
 
+export const checkUserReviewOfProjectPaper = async (ppId: number, userId: number): Promise<boolean> => {
+
+    let reviews = await Review.where({paperId: ppId, userId: userId}).get()
+    if(Array.isArray(reviews) && reviews[0]){
+        return true;
+    }
+    return false;
+}
+
 export const getReview = async (reviewId: number): Promise<ReviewMessage[]> => {
     let review = await Review.find(reviewId)
     return getReviews([review])

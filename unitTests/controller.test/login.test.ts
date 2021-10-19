@@ -3,7 +3,7 @@ import { setup } from "../../src/helper/setup.ts";
 import { login } from "../../src/controller/login.controller.ts";
 import { createMockContext } from "../mockObjects/oak/mockContext.test.ts";
 import { createMockApp } from "../mockObjects/oak/mockApp.test.ts";
-import { assertEquals, assertNotEquals } from "https://deno.land/std@0.97.0/testing/asserts.ts"
+import { assertEquals, assertNotEquals } from "https://deno.land/std/testing/asserts.ts"
 import { client, db } from "../../src/controller/database.controller.ts";
 import { Batcher } from "../../src/controller/fetch.controller.ts";
 

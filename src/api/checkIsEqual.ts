@@ -96,6 +96,10 @@ const isEqualAuthors = (firstAuthors: IApiAuthor[], secondAuthors: IApiAuthor[])
 	return equalAuthors / (firstAuthors.length >= secondAuthors.length ? firstAuthors.length : secondAuthors.length);
 }
 export const isEqualAuthor = (firstAuthor: IApiAuthor, secondAuthor: IApiAuthor) => {
+	if(Object.keys(firstAuthor).length === 0 || Object.keys(secondAuthor).length === 0){
+		logger.error("one author value was not set")
+		return 0;
+	}
 	let fFirstName = firstAuthor.firstName!.map((item: string) => ApiMerger.normalizeString(item))
 	let sFirstName = secondAuthor.firstName!.map((item: string) => ApiMerger.normalizeString(item))
 	let fLastName = firstAuthor.lastName!.map((item: string) => ApiMerger.normalizeString(item))

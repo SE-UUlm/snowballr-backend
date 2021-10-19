@@ -1,6 +1,6 @@
 import { createMockApp } from "../mockObjects/oak/mockApp.test.ts";
 import { createMockContext } from "../mockObjects/oak/mockContext.test.ts";
-import { assertEquals } from "https://deno.land/std@0.97.0/testing/asserts.ts"
+import { assertEquals } from "https://deno.land/std/testing/asserts.ts"
 import { jsonBodyToObject } from "../../src/helper/body.ts";
 
 Deno.test({

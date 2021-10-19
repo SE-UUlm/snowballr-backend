@@ -12,15 +12,7 @@ import { isEqualPaper } from "./checkIsEqual.ts"
 
 
 export class ApiMerger implements IApiMerger {
-	public comparisonWeight = {
-		titleWeight: 15,
-		titleLevenshtein: 10,
-		abstractWeight: 7,
-		abstractLevenshtein: 0,
-		authorWeight: 8,
-		overallWeight: 0.8,
-		yearWeight: 2
-	} as IComparisonWeight;
+	public comparisonWeight;
 
 	public constructor(comparisonWeight: IComparisonWeight) {
 		this.comparisonWeight = comparisonWeight
@@ -219,7 +211,7 @@ export class ApiMerger implements IApiMerger {
 			}
 		}
 		mergingAuthors = mergingAuthors.concat(firstAuthors.filter(item => item), secondAuthors);
-		return mergingAuthors;
+		return mergingAuthors.filter(value => Object.keys(value).length !== 0);
 	}
 
 	// wenn normalized(rawName) = normalized(lastName),normalized(firstName)
@@ -290,6 +282,25 @@ export class ApiMerger implements IApiMerger {
 				mergedAuthor.rawString = rawstring;
 			}
 		}
+
+		if(!mergedAuthor.firstName[0] && mergedAuthor.rawString[0]){
+			if(mergedAuthor.rawString[0].includes(",")){
+				mergedAuthor.firstName.push(mergedAuthor.rawString[0].split(",")[1].trim())
+			} else if(mergedAuthor.rawString[0].includes(" ")){
+				mergedAuthor.firstName.push(mergedAuthor.rawString[0].split(" ")[0].trim())
+			}
+		}
+
+		if(!mergedAuthor.lastName[0] && mergedAuthor.rawString[0]){
+			if(mergedAuthor.rawString[0].includes(",")){
+				mergedAuthor.lastName.push(mergedAuthor.rawString[0].split(",")[0].trim())
+			} else if(mergedAuthor.rawString[0].includes(" ")){
+				mergedAuthor.lastName.push(mergedAuthor.rawString[0].split(" ")[1].trim())
+			} else{
+				mergedAuthor.lastName.push(mergedAuthor.rawString[0])
+			}
+		}
+
 		return mergedAuthor as IApiAuthor;
 	}
 

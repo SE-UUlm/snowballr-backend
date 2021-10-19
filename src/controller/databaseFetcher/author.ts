@@ -12,5 +12,5 @@ export const getAllAuthorsFromPaper = async (id: number) => {
         })
         return Promise.all(authorPromises)
     }
-    return new Array<Paper>();
+    return new Array<Author>();
 }

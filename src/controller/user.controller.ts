@@ -1,5 +1,5 @@
 import { Context } from "https://deno.land/x/oak/mod.ts";
-import { checkAdmin, checkPO, createJWT, getPayloadFromJWT, getUserID, getUserName, UserStatus, validateUserEntry } from "./validation.controller.ts";
+import { checkAdmin, checkPO, createJWT, getPayloadFromJWTHeader, getUserID, getUserName, UserStatus, validateUserEntry } from "./validation.controller.ts";
 import { insertUserForRegistration, returnUserByEmail } from "./databaseFetcher/user.ts";
 import { User } from "../model/db/user.ts";
 import { convertCtxBodyToUser, convertUserToUserProfile } from "../helper/converter/userConverter.ts";
@@ -27,7 +27,7 @@ const URL = Deno.env.get("URL");
 export const createUser = async (ctx: Context, client: EMailClient) => {
     let validate = await validateUserEntry(ctx, [], UserStatus.needsPO, -1, { needed: true, params: ["email"] })
     if (validate) {
-        const payloadJson = await getPayloadFromJWT(ctx);
+        const payloadJson = await getPayloadFromJWTHeader(ctx);
 
         try {
             let user = await insertUserForRegistration(validate.email);
@@ -132,15 +132,16 @@ export const patchUser = async (ctx: Context, id: number | undefined) => {
         makeErrorMessage(ctx, 422, "no user id included")
         return;
     }
-    const payloadJson = await getPayloadFromJWT(ctx);
+    const payloadJson = await getPayloadFromJWTHeader(ctx);
     let userData = await convertCtxBodyToUser(ctx);
     let isAdmin = await checkAdmin(payloadJson);
     let isPO = await checkPO(payloadJson);
+    let register = ctx.request.headers.get("invitationToken") !== undefined && ctx.request.headers.get("invitationToken") !== ""
     let isSameUser = (await getUserID(payloadJson)) === id || await checkToken(id, ctx, userData);
 
     if (isSameUser || isAdmin || isPO) {
 
-        let user = await changeUserData(ctx, id, isSameUser, isAdmin, userData)
+        let user = await changeUserData(ctx, id, isSameUser, isAdmin, userData, register)
         if(user){
             let userProfile = convertUserToUserProfile(user);
             ctx.response.body = JSON.stringify(userProfile);
@@ -153,7 +154,7 @@ export const patchUser = async (ctx: Context, id: number | undefined) => {
     }
 }
 
-const changeUserData = async (ctx: Context, id: number, isSameUser: boolean, isAdmin: boolean, userData: UserParameters) =>{
+const changeUserData = async (ctx: Context, id: number, isSameUser: boolean, isAdmin: boolean, userData: UserParameters, register: boolean) =>{
     let user = await User.find(id);
 
     if (!user) {
@@ -164,6 +165,10 @@ const changeUserData = async (ctx: Context, id: number, isSameUser: boolean, isA
         if (userData.password) {
             user.password = hashPassword(userData.password)
         }
+    }
+
+    if(register){
+        user.status = "active"
     }
     if (isAdmin) {
         if (userData.status) {

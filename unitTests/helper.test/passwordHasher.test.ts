@@ -1,6 +1,7 @@
-import { assertNotEquals } from "https://deno.land/std@0.97.0/testing/asserts.ts";
+import { assertNotEquals } from "https://deno.land/std/testing/asserts.ts";
+import { createHash } from "https://deno.land/std/hash/mod.ts";
 import { hashPassword } from "../../src/helper/passwordHasher.ts";
-import { createHash } from "https://deno.land/std@0.95.0/hash/mod.ts"
+
 
 Deno.test({
     name: "testSalt",
