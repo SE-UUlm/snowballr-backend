@@ -28,6 +28,7 @@ openCitations:
   enabled: true
   baseUrl: https://opencitations.net
   useCache: false
+  linkedFetchSize: 50
 microsoftAcademic:
   enabled: true
   baseUrl: https://api.labs.cognitive.microsoft.com/academic/v1.0/evaluate

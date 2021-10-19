@@ -51,6 +51,7 @@ export type IOpenCitationsConfig = {
 	useCache: boolean;
 	baseUrl: string;
 	enabled: boolean;
+	linkedFetchSize: number;
 }
 
 //lvl 2
@@ -94,7 +95,7 @@ const DEFAULTCONFIG: IConfig = {
 	ieee: { baseUrl: "http://ieeexploreapi.ieee.org/api/v1/search/articles", useCache: true, enabled: true },
 	semanticScholar: { baseUrl: "https://api.semanticscholar.org/v1/paper", useCache: true, enabled: true },
 	crossRef: { baseUrl: "https://api.crossref.org/works", useCache: true, enabled: true },
-	openCitations: { baseUrl: "https://opencitations.net", useCache: true, enabled: true },
+	openCitations: { baseUrl: "https://opencitations.net", useCache: true, enabled: true, linkedFetchSize: 50 },
 	microsoftAcademic: {
 		baseUrl: "https://api.labs.cognitive.microsoft.com/academic/v1.0/evaluate",
 		useCache: true,

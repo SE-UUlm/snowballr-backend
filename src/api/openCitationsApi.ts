@@ -81,7 +81,7 @@ export class OpenCitationsApi implements IApiFetcher {
 		let fetches: any = [];
 		try {
 			while (doilist.length > 0) {
-				let currentDois = doilist.splice(0, 50);
+				let currentDois = doilist.splice(0, CONFIG.openCitations.linkedFetchSize);
 				let urlQuery = currentDois.join('__');
 				fetches.push(this._splittedRequest(urlQuery));
 			}
