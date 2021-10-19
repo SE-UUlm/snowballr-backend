@@ -108,7 +108,7 @@ const DEFAULTCONFIG: IConfig = {
 //console.log("==============GETTING IMPORTED================")
 const loadYaml = () => {
 	try {
-		const raw: string = Deno.readTextFileSync("../../config.yaml");
+		const raw: string = Deno.readTextFileSync("../config.yaml");
 		const yaml = parse(raw);
 		//console.log((yaml as IConfig).cache)
 		return yaml;
