@@ -291,7 +291,7 @@ const allowedAddressesUnauthorized = async (ctx: Context, next: () => Promise<un
 
 export const validateUserEntry = async (ctx: Context, id: (number | undefined)[], needed: UserStatus, projectID: number, requestParameter: { needed: boolean, params: string[] }, userID?: number) => {
     for (let element in id) {
-        if (!Number(element) && Number(element) !== 0) {
+        if (isNaN(Number(element))) {
             console.error("path id wrong for" + element)
             makeErrorMessage(ctx, 422, "path ids must be numbers");
             return;
