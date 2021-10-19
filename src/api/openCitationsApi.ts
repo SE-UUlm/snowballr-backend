@@ -78,29 +78,47 @@ export class OpenCitationsApi implements IApiFetcher {
 		console.log(doilist.length)
 		let children: Array<IApiPaper> = [];
 		//logger.debug(urlQuery)
+		let fetches: any = [];
 		try {
 			while (doilist.length > 0) {
 				let currentDois = doilist.splice(0, 50);
 				let urlQuery = currentDois.join('__');
-				console.log("_____________")
-				console.log(doilist.length)
-				console.log(currentDois.length)
-				console.log(`${this.url}/index/api/v1/metadata/${urlQuery}`)
-				let response = await fetch(`${this.url}/index/api/v1/metadata/${urlQuery}`);
-				console.log(response)
-				let json = await response.json();
-				//console.log(json)
-
-				for (let value in json) {
-					let child = this._parseResponse(json[value]);
-					children.push(child);
-				}
+				fetches.push(this._splittedRequest(urlQuery));
 			}
+			let promises = await Promise.all(fetches);
+
+
+			promises.forEach((json: any) => {
+				//console.log(json)
+				json.forEach((value: any) => {
+					//console.log(value)
+					let child = this._parseResponse(value);
+					children.push(child);
+				});
+			});
 		}
 		catch (e) {
 			logger.error(`OpenCitationsApi: Failed to fetch ChildObjects: ${e}`);
 		}
 		return children;
+	}
+
+	private async _splittedRequest(urlQuery: string) {
+		const maxRetries = 5;
+		let count = 0;
+		while (true) {
+			try {
+				var response = await fetch(`${this.url}/index/api/v1/metadata/${urlQuery}`);
+				if (response.status !== 200) {
+					throw new Error("OC: Failed to fetch batch of linkedDois");
+				}
+				break;
+			}
+			catch (e) {
+				if (++count === maxRetries) throw e;
+			}
+		}
+		return response.json();
 	}
 
 	/**
