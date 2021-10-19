@@ -43,10 +43,10 @@ export const convertPaperToPaperMessage = async (paper: Paper, stageId?: number,
         paperMessage.status = Status.unfinished
     } else if(pp && pp.finalDecision){
         paperMessage.status = Status.completelyEvaluated
-    } else if(paperMessage.ppid && (await getAllReviewsFromProjectPaper(paperMessage.ppid)).length > 0){
-        paperMessage.status = Status.partiallyEvaluated
-    } else if(userId && paperMessage.ppid && await checkUserReviewOfProjectPaper(paperMessage.ppid, userId)){
+    }  else if(userId && paperMessage.ppid && await checkUserReviewOfProjectPaper(paperMessage.ppid, userId)){
         paperMessage.status = Status.evaluatedByMyself
+    }  else if(paperMessage.ppid && (await getAllReviewsFromProjectPaper(paperMessage.ppid)).length > 0){
+        paperMessage.status = Status.partiallyEvaluated
     } else {
         paperMessage.status = Status.ready
     }
