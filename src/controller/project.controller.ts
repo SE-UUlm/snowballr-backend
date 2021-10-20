@@ -1050,6 +1050,7 @@ export const addReviewToPaper = async (ctx: Context, projectID: number, stageID:
         }
         const params = await jsonBodyToObject(ctx)
         let project = await Project.find(projectID)
+        console.log(project)
         let tresholds = String(project.combinationOfReviewers).split(",")
         let pp = await PaperScopeForStage.find(ppID);
         let reviews = await getAllReviewsFromProjectPaper(ppID);
@@ -1139,6 +1140,8 @@ const startFetchFromProjectPaper = async (ppID: number, stageID: number, project
 const getFinalDecisionOfPaper = (reviews: ReviewMessage[], project: Project, ppID: number, lowerTreshold: number, upperTreshold: number) => {
     let allReviewsFinished = !reviews.some(review => !review.finished)
     console.log("finished reviews: " + allReviewsFinished)
+    console.log("project: " + JSON.stringify(project))
+    console.log("minCount" + project.minCountReviewers)
     console.log(`${reviews.length >= Number(project.minCountReviewers)} ${reviews.length} ${Number(project.minCountReviewers)}`)
     if (allReviewsFinished && reviews.length >= Number(project.minCountReviewers)) {
         let decisionNumber = 0;

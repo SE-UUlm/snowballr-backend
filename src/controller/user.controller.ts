@@ -133,7 +133,6 @@ export const patchUser = async (ctx: Context, id: number | undefined) => {
         makeErrorMessage(ctx, 422, "no user id included")
         return;
     }
-    logger.error("here")
     const payloadJson = await getPayloadFromJWTHeader(ctx);
     let userData = await convertCtxBodyToUser(ctx);
     let isAdmin = await checkAdmin(payloadJson);
@@ -142,7 +141,6 @@ export const patchUser = async (ctx: Context, id: number | undefined) => {
     let checkedToken = await checkToken(id, ctx, userData);
     let isSameUser = (await getUserID(payloadJson)) === id || checkedToken.valid
     let register = checkedToken.kind === "invitation"
-    logger.error(`is same: ${isSameUser} ${JSON.stringify(checkedToken)}, isAdmin: ${isAdmin}`)
     if (isSameUser || isAdmin || isPO) {
 
         let user = await changeUserData(ctx, id, isSameUser, isAdmin, userData, register)
@@ -152,7 +150,7 @@ export const patchUser = async (ctx: Context, id: number | undefined) => {
             ctx.response.status = 200;
         }
     } else {
-        logger.error(" in else with" + JSON.stringify(ctx.response))
+
         if (ctx.response.status !== 400) {
             makeErrorMessage(ctx, 401, "not authorized");
         }
