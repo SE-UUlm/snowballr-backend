@@ -6,11 +6,11 @@ export const getAllAuthorsFromPaper = async (id: number) => {
     let wrote = await Wrote.where("paperId", id).get()
 
     if (Array.isArray(wrote)) {
-        let authorPromises: Promise<Author>[] = [];
-        wrote.forEach((item: Wrote) => {
-            authorPromises.push(Author.find(Number(item.authorId)))
-        })
-        return Promise.all(authorPromises)
+        let authors: Author[] = [];
+        for (let item of wrote) {
+            authors.push(await Author.find(Number(item.authorId)))
+        }
+        return authors
     }
     return new Array<Author>();
 }
