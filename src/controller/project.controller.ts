@@ -338,7 +338,7 @@ export const refetchPaperOfProject = async (ctx: Context, projectID: number) => 
  * @param title 
  * @param authorName 
  */
-const fetchToDB = async (stageID: number, projectID: number, doi?: string, title?: string, authorName?: string) => {
+const fetchToDB = async (stageID: number, projectID: number, doi?: string, title?: string, authorName?: string, parentPaper?: Paper) => {
     let project = await Project.find(projectID)
     let apis: Promise<SearchApi>[] = [];
     let stage = await Stage.find(stageID)
@@ -370,7 +370,12 @@ const fetchToDB = async (stageID: number, projectID: number, doi?: string, title
     }
     for (let element of response) {
         if (element) {
-            let parent = await savePaper(element.paper, stage, Number(project.mergeThreshold))
+            let parent: Paper;
+            if (parentPaper) {
+                parent = parentPaper
+            } else {
+                parent = await savePaper(element.paper, stage, Number(project.mergeThreshold))
+            }
 
             PaperScopeForStage.create({ stageId: stageID, paperId: Number(parent.id), finalDecision: "YES" })
             let currentStage = await Stage.find(stageID)
@@ -1132,7 +1137,8 @@ const startFetchFromProjectPaper = async (ppID: number, stageID: number, project
     await fetchToDB(stageID, projectID,
         paper.doi ? String(paper.doi) : undefined,
         paper.title ? String(paper.title) : undefined,
-        authorName)
+        authorName,
+        paper)
 
 
 }
