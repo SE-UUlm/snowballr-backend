@@ -343,17 +343,17 @@ export const refetchPaperOfProject = async (ctx: Context, projectID: number) => 
 const fetchToDB = async (stageID: number, projectID: number, doi?: string, title?: string, authorName?: string, parentPaper?: Paper) => {
     try {
         let project = await Project.find(projectID)
-        let apis: Promise<SearchApi>[] = [];
+        let apis: SearchApi[] = [];
         let stage = await Stage.find(stageID)
         let poas = await ProjectUsesApi.where({ projectId: projectID }).get()
         if (Array.isArray(poas)) {
-            poas.forEach(item => {
+            for (let item of poas) {
                 if (item.inUse) {
-                    apis.push(SearchApi.find(Number(item.searchapiId)))
+                    apis.push(await SearchApi.find(Number(item.searchapiId)))
                 }
-            })
+            }
         }
-        let sourceApi: [SourceApi, string?][] = (await Promise.all(apis)).map(item => {
+        let sourceApi: [SourceApi, string?][] = (apis).map(item => {
             return [String(item.name) as SourceApi, item.credentials ? String(item.credentials) : undefined]
         })
 
@@ -595,8 +595,8 @@ export const makeRefCiteCsv = async (ctx: Context, projectID: number, stageID: n
             let finRef = await references;
             let finCite = await citations;
             if (finRef && finCite) {
-                let finishedRefs = (await Promise.all(finRef)).sort(sortPapersByName)
-                let finishedCites = (await Promise.all(finCite)).sort(sortPapersByName)
+                let finishedRefs = (finRef).sort(sortPapersByName)
+                let finishedCites = (finCite).sort(sortPapersByName)
                 let paper = await PaperScopeForStage.where("id", ppID).paper();
                 let rows = [["authors", "title", "year", "publisher", "link", "doi"], [], ["References"], []]
 
@@ -787,7 +787,7 @@ export const getCitationsOfProjectPaper = async (ctx: Context, projectID: number
         let citations = await getCites(ctx, projectID, stageID, ppID)
         if (citations) {
             ctx.response.status = 200;
-            let message: PapersMessage = { papers: await convertPapersToPaperMessage(await Promise.all(citations)) }
+            let message: PapersMessage = { papers: await convertPapersToPaperMessage(citations) }
             ctx.response.body = JSON.stringify(message)
         }
     }
@@ -805,7 +805,7 @@ export const getCites = async (ctx: Context, projectID: number, stageID: number,
         let paper = await PaperScopeForStage.where("id", ppID).paper();
         let project = await Project.find(projectID)
         if (paper && project) {
-            let papers: Promise<Paper>[] = await getRefOrCiteList(ctx, "citedBy", "papercitingid", "papercitedid", Number(paper.id))
+            let papers: Paper[] = await getRefOrCiteList(ctx, "citedBy", "papercitingid", "papercitedid", Number(paper.id))
             if (papers.length > 0) {
                 let nextStage = await findNextStage(await Stage.find(stageID), projectID)
                 for (let i = 0; i < papers.length; i++) {
