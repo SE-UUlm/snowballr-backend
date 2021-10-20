@@ -7,6 +7,7 @@ import { PayloadJson } from "../model/payloadJson.ts";
 import { UserIsPartOfProject } from "../model/db/userIsPartOfProject.ts";
 import { jsonBodyToObject } from "../helper/body.ts";
 import { getToken } from "./databaseFetcher/token.ts";
+import { logger } from "../api/logger.ts";
 
 const SECRET = String(Deno.env.get('SECRET'));
 const KEY = await crypto.subtle.generateKey(
@@ -86,21 +87,21 @@ export const validateJWTIfExists = async (ctx: Context, next: () => Promise<unkn
  * @param ctx 
  * @param next 
  */
-export const validateRefreshJWT = async(ctx: Context) => {
+export const validateRefreshJWT = async (ctx: Context) => {
     let token = await ctx.cookies.get("refreshToken");
     if (token && await verifyJWT(token)) {
         const payloadJson = await getPayloadFromJWTCookie(ctx);
-        if(payloadJson){
-        let oldJWT =  await getToken(payloadJson.id, token);
-        if(oldJWT){
-            let newJWT = await createRefreshJWT(payloadJson.id);
-            oldJWT.token = newJWT
-            oldJWT.update()
-            return {valid: true, payload: payloadJson};
+        if (payloadJson) {
+            let oldJWT = await getToken(payloadJson.id, token);
+            if (oldJWT) {
+                let newJWT = await createRefreshJWT(payloadJson.id);
+                oldJWT.token = newJWT
+                oldJWT.update()
+                return { valid: true, payload: payloadJson };
+            }
         }
     }
-    }
-    return {valid: false};
+    return { valid: false };
 }
 /**
  * Creates a JWT and adds the userprofile in it
@@ -123,8 +124,8 @@ export const createJWT = async (user: User) => {
  * Refresh token for login
  * @returns 
  */
-export const createRefreshJWT = async (userID: number) =>{
-    let jwt =  create({ alg: "HS512", typ: "JWT" }, {
+export const createRefreshJWT = async (userID: number) => {
+    let jwt = create({ alg: "HS512", typ: "JWT" }, {
         id: userID,
         exp: createNumericTerminationDate()
     }, KEY);
@@ -261,16 +262,16 @@ const verifyJWTAndContinue = async (ctx: Context, next: () => Promise<unknown>, 
 
     if (await verifyJWT(token)) {
         await next();
-    } else{
+    } else {
         makeErrorMessage(ctx, 401, "token expired")
     }
 }
 
 const verifyJWT = async (token: string) => {
-    try{
+    try {
         await verify(token, KEY)
         return true
-    }catch(err){
+    } catch (err) {
         return false;
     }
 
@@ -281,6 +282,7 @@ const verifyJWT = async (token: string) => {
  * @param next function to trigger if the path is allowed for unverified users
  */
 const allowedAddressesUnauthorized = async (ctx: Context, next: () => Promise<unknown>) => {
+
     if (ctx.request.url.pathname === "/login/" || ctx.request.url.pathname === "/reset-password/" || ctx.request.url.pathname === "/refresh/" || (ctx.request.url.pathname.match(/\/users\/[0-9]+\//g) && ctx.request.method.toString() === "PATCH")) {
         ctx.response.status = 200;
         await next();
@@ -323,7 +325,7 @@ export const validateUserEntry = async (ctx: Context, id: (number | undefined)[]
 
 const checkAuthorization = async (ctx: Context, needed: UserStatus, projectID: number, userID?: number) => {
     const payloadJson = await getPayloadFromJWTHeader(ctx);
-    if(await checkAdmin(payloadJson)){
+    if (await checkAdmin(payloadJson)) {
         return true
     }
 

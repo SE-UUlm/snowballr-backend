@@ -1050,6 +1050,7 @@ export const addReviewToPaper = async (ctx: Context, projectID: number, stageID:
         }
         const params = await jsonBodyToObject(ctx)
         let project = await Project.find(projectID)
+        console.log(project)
         let tresholds = String(project.combinationOfReviewers).split(",")
         let pp = await PaperScopeForStage.find(ppID);
         let reviews = await getAllReviewsFromProjectPaper(ppID);
