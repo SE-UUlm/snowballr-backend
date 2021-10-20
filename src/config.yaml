@@ -9,7 +9,7 @@ googleScholar:
   requestInterval:
     min: 1
     max: 2
-  useCache: true
+  useCache: false
   baseUrl: https://scholar.google.com
   maxCitationCount: 1000
 ieee:

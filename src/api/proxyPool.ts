@@ -44,6 +44,7 @@ export class Proxy implements IProxy {
 	protected _address: string;
 	protected _user: string | undefined;
 	protected _password: string | undefined;
+	protected _activeClient: Deno.HttpClient | undefined;
 
 
 	public constructor(address: string, user?: string, password?: string) {
@@ -78,6 +79,8 @@ export class Proxy implements IProxy {
 			}
 		})
 		config.client = client;
+		if (this._activeClient) this._activeClient.close();
+		this._activeClient = client;
 		if (currentCookie) { config.headers['cookie'] = currentCookie; }
 		return config;
 	}
@@ -85,6 +88,10 @@ export class Proxy implements IProxy {
 	// deno-lint-ignore require-await
 	public async block(): Promise<void> {
 		throw new Error('GS: roxy isnt working, is captchaed, or blocked. We cannot fetch with this config');
+	}
+
+	public close(): void {
+		this._activeClient?.close();
 	}
 }
 
