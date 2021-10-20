@@ -41,7 +41,7 @@ import {
 } from "https://deno.land/x/zip/mod.ts";
 import { isEqualPaper } from "../api/checkIsEqual.ts";
 import { IComparisonWeight } from "../api/iComparisonWeight.ts";
-import Mutex from "https://deno.land/x/awaitable_mutex/mod.ts"
+import { Mutex } from "https://deno.land/x/awaitable_mutex/mod.ts"
 
 export const paperCache = new Cache<IApiPaper>(CacheType.F, 0, "paperCache")
 export const authorCache = new Cache<IApiAuthor>(CacheType.F, 0, "authorCache")
