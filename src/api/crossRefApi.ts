@@ -115,16 +115,18 @@ export class CrossRefApi implements IApiFetcher {
 		for (let d in fetchableByDoi) {
 			////logger.debug("fetchableByDoi")
 			await this._limitRequests();
-			fetches.push(this._fetchDoiFromApi(fetchableByDoi[d]));
+			fetches.push(await this._fetchDoiFromApi(fetchableByDoi[d]));
 		}
 
 		for (let b in fetchableByBibliographic) {
 			if (fetchableByBibliographic[b] === undefined) { continue; }
 			let query: string = fetchableByBibliographic[b].replace(/ /g, '+');
 			await this._limitRequests();
-			fetches.push(this._fetchBibFromApi(query));
+			fetches.push(await this._fetchBibFromApi(query));
 		}
-		return await Promise.all(fetches);
+		//TODO HERE
+		//return await Promise.all(fetches);
+		return fetches
 	}
 
 	private async _fetchDoiFromApi(item: string): Promise<IApiPaper> {

@@ -113,12 +113,14 @@ export class ApiBatcher implements IApiBatcher {
 	private async _getDoiByFetching(query: IApiQuery, initializedFetchers: IApiFetcher[]): Promise<IApiQuery> {
 		try {
 			logger.info("Trying to fetch DOI for query without one");
-			let fetchedDois: Promise<string | undefined>[] = []
+			let fetchedDois: (string | undefined)[] = []
 			for (let i in initializedFetchers) {
-				fetchedDois.push(initializedFetchers[i].getDoi(query));
+				fetchedDois.push(await initializedFetchers[i].getDoi(query));
 			}
-			let fetchedQueries = await Promise.all(fetchedDois);
-			query.doi = this._compareDoisOfQueries(fetchedQueries);
+
+			//TODO HERE
+			// let fetchedQueries = await Promise.all(fetchedDois);
+			query.doi = this._compareDoisOfQueries(fetchedDois);
 			logger.info(`Fetched DOI ${query.doi} for title ${query.title}`);
 
 		}
