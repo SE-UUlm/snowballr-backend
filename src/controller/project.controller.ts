@@ -338,55 +338,64 @@ export const refetchPaperOfProject = async (ctx: Context, projectID: number) => 
  * @param title 
  * @param authorName 
  */
-const fetchToDB = async (stageID: number, projectID: number, doi?: string, title?: string, authorName?: string) => {
-    let project = await Project.find(projectID)
-    let apis: Promise<SearchApi>[] = [];
-    let stage = await Stage.find(stageID)
-    let poas = await ProjectUsesApi.where({ projectId: projectID }).get()
-    if (Array.isArray(poas)) {
-        poas.forEach(item => {
-            if (item.inUse) {
-                apis.push(SearchApi.find(Number(item.searchapiId)))
-            }
+const fetchToDB = async (stageID: number, projectID: number, doi?: string, title?: string, authorName?: string, parentPaper?: Paper) => {
+    try {
+        let project = await Project.find(projectID)
+        let apis: Promise<SearchApi>[] = [];
+        let stage = await Stage.find(stageID)
+        let poas = await ProjectUsesApi.where({ projectId: projectID }).get()
+        if (Array.isArray(poas)) {
+            poas.forEach(item => {
+                if (item.inUse) {
+                    apis.push(SearchApi.find(Number(item.searchapiId)))
+                }
+            })
+        }
+        let sourceApi: [SourceApi, string?][] = (await Promise.all(apis)).map(item => {
+            return [String(item.name) as SourceApi, item.credentials ? String(item.credentials) : undefined]
         })
-    }
-    let sourceApi: [SourceApi, string?][] = (await Promise.all(apis)).map(item => {
-        return [String(item.name) as SourceApi, item.credentials ? String(item.credentials) : undefined]
-    })
-    let fetch = await makeFetching(Number(project.mergeThreshold), sourceApi, doi, title, authorName, String(project.name));
-    let response = (await fetch.response)
+        let fetch = await makeFetching(Number(project.mergeThreshold), sourceApi, doi, title, authorName, String(project.name));
+        let response = (await fetch.response)
 
 
-    if (String(project.kind) == "forward") {
-        response.forEach(item => {
-            item.references = []
-        })
-    }
-
-    if (String(project.kind) == "backward") {
-        response.forEach(item => {
-            item.citations = []
-        })
-    }
-    for (let element of response) {
-        if (element) {
-            let parent = await savePaper(element.paper, stage, Number(project.mergeThreshold))
-
-            PaperScopeForStage.create({ stageId: stageID, paperId: Number(parent.id), finalDecision: "YES" })
-            let currentStage = await Stage.find(stageID)
-
-            let nextStage: Stage = await findNextStage(currentStage, projectID)
-
-            let allChildren: Promise<Paper>[] = []
-            for (let item of element.citations!) {
-                allChildren.push(createChildren(item, "citedBy", "papercitingid", "papercitedid", Number(parent.id), nextStage, project))
-            }
-            for (let item of element.references!) {
-                allChildren.push(createChildren(item, "referencedby", "paperreferencedid", "paperreferencingid", Number(parent.id), nextStage, project))
-            }
-            await Promise.all(allChildren)
+        if (String(project.kind) == "forward") {
+            response.forEach(item => {
+                item.references = []
+            })
         }
 
+        if (String(project.kind) == "backward") {
+            response.forEach(item => {
+                item.citations = []
+            })
+        }
+        for (let element of response) {
+            if (element) {
+                let parent: Paper;
+                if (parentPaper) {
+                    parent = parentPaper
+                } else {
+                    parent = await savePaper(element.paper, stage, Number(project.mergeThreshold))
+                }
+
+                PaperScopeForStage.create({ stageId: stageID, paperId: Number(parent.id), finalDecision: "YES" })
+                let currentStage = await Stage.find(stageID)
+
+                let nextStage: Stage = await findNextStage(currentStage, projectID)
+
+                let allChildren: Promise<Paper>[] = []
+                for (let item of element.citations!) {
+                    allChildren.push(createChildren(item, "citedBy", "papercitingid", "papercitedid", Number(parent.id), nextStage, project))
+                }
+                for (let item of element.references!) {
+                    allChildren.push(createChildren(item, "referencedby", "paperreferencedid", "paperreferencingid", Number(parent.id), nextStage, project))
+                }
+                await Promise.all(allChildren)
+            }
+        }
+
+    } catch (err) {
+        logger.error(err)
     }
 
 }
@@ -1132,7 +1141,8 @@ const startFetchFromProjectPaper = async (ppID: number, stageID: number, project
     await fetchToDB(stageID, projectID,
         paper.doi ? String(paper.doi) : undefined,
         paper.title ? String(paper.title) : undefined,
-        authorName)
+        authorName,
+        paper)
 
 
 }
