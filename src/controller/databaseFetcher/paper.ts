@@ -7,25 +7,25 @@ import { Stage } from "../../model/db/stage.ts";
 import { Author } from "../../model/db/author.ts";
 import { getAllAuthorsFromPaper } from "./author.ts";
 
-export const getAllPapersFromStage = async (id: number):Promise<{paper : Promise<Paper>, scope: PaperScopeForStage, authors: Promise<Author[]>}[]> => {
+export const getAllPapersFromStage = async (id: number): Promise<{ paper: Paper, scope: PaperScopeForStage, authors: Author[] }[]> => {
     let paperScopes = await PaperScopeForStage.where("stageId", id).get()
 
     if (Array.isArray(paperScopes)) {
-        let paperPromises: {paper : Promise<Paper>, scope: PaperScopeForStage, authors: Promise<Author[]>}[] = [];
-        paperScopes.forEach((item: PaperScopeForStage) => {
-            paperPromises.push({paper: (Paper.find(Number(item.paperId)) as Promise<Paper>), scope: item, authors:  getAllAuthorsFromPaper(Number(item.paperId))})
-        })
-        return Promise.all(paperPromises)
+        let paperPromises: { paper: Paper, scope: PaperScopeForStage, authors: Author[] }[] = [];
+        for (let item of paperScopes) {
+            paperPromises.push({ paper: (await Paper.find(Number(item.paperId))) as Paper, scope: item, authors: await getAllAuthorsFromPaper(Number(item.paperId)) })
+        }
+        return paperPromises
     }
-    return new Array<{paper : Promise<Paper>, scope: PaperScopeForStage, authors: Promise<Author[]>}>();
+    return new Array<{ paper: Paper, scope: PaperScopeForStage, authors: Author[] }>();
 }
 
-export const getAllPapersFromProject = async (id: number): Promise<{ papers: { paper: Promise<Paper>, scope: PaperScopeForStage , authors: Promise<Author[]>}[], stage: Stage }[]> => {
+export const getAllPapersFromProject = async (id: number): Promise<{ papers: { paper: Paper, scope: PaperScopeForStage, authors: Author[] }[], stage: Stage }[]> => {
     let stages = await getAllStagesFromProject(id)
-    let allPapers: { papers: { paper: Promise<Paper>, scope: PaperScopeForStage , authors: Promise<Author[]>}[], stage: Stage }[] = []
-    for(let stage of stages){
-        let papers = {papers: await getAllPapersFromStage(Number(stage.id)), stage: stage}
-        
+    let allPapers: { papers: { paper: Paper, scope: PaperScopeForStage, authors: Author[] }[], stage: Stage }[] = []
+    for (let stage of stages) {
+        let papers = { papers: await getAllPapersFromStage(Number(stage.id)), stage: stage }
+
         allPapers.push(papers)
     }
     return allPapers
