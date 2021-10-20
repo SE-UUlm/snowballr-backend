@@ -1115,7 +1115,7 @@ const calculateFinalDecisionOfPaper = async (ctx: Context, overallEvaluation: st
 
         await pp.update()
         if (finalDecision == "YES") {
-            await startFetchFromProjectPaper(Number(pp.id), Number(project.id), stageID)
+            await startFetchFromProjectPaper(Number(pp.id), stageID, Number(project.id),)
         }
 
     }
