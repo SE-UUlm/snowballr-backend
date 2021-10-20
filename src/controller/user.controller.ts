@@ -152,7 +152,7 @@ export const patchUser = async (ctx: Context, id: number | undefined) => {
             ctx.response.status = 200;
         }
     } else {
-        logger.error(" in else with" + JSON.stringify(ctx.response)
+        logger.error(" in else with" + JSON.stringify(ctx.response))
         if (ctx.response.status !== 400) {
             makeErrorMessage(ctx, 401, "not authorized");
         }
