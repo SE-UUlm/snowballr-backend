@@ -87,29 +87,29 @@ export const setup = async (dropDatabase: boolean) => {
     let admin = await returnUserByEmail(String(Deno.env.get("ADMIN_EMAIL")));
     if (!admin) {
         admin = await insertUser(String(Deno.env.get("ADMIN_EMAIL")), String(Deno.env.get("ADMIN_PASSWORD")), true, "admin", "admin", "active");
-       
-        await SearchApi.create({name: "crossRef", id: IDOfApi.crossRef, credentials: "luca999@web.de"})
-        await SearchApi.create({name: "openCitations", id: IDOfApi.openCitations})
-        await SearchApi.create({name: "semanticScholar", id: IDOfApi.semanticScholar})
-        await SearchApi.create({name: "IEEE", id: IDOfApi.IEEE,credentials:"4yk5d9an52ejynjsmzqxe62r"})
-        await SearchApi.create({name: "googleScholar", id: IDOfApi.googleScholar})
-        await SearchApi.create({name: "microsoftAcademic", id: IDOfApi.microsoftAcademic,credentials: "9a02225751354cd29397eba3f5382101"})
-        
+
+        await SearchApi.create({ name: "crossRef", id: IDOfApi.crossRef, credentials: "luca999@web.de" })
+        await SearchApi.create({ name: "openCitations", id: IDOfApi.openCitations })
+        await SearchApi.create({ name: "semanticScholar", id: IDOfApi.semanticScholar })
+        await SearchApi.create({ name: "IEEE", id: IDOfApi.IEEE, credentials: "4yk5d9an52ejynjsmzqxe62r" })
+        await SearchApi.create({ name: "googleScholar", id: IDOfApi.googleScholar })
+        await SearchApi.create({ name: "microsoftAcademic", id: IDOfApi.microsoftAcademic, credentials: "9a02225751354cd29397eba3f5382101" })
+
 
         //TODO: only to showcase functionality, otherwise delete
-
+        await insertUser("ad@test", "1234", false, "admin", "admin", "active");
         let project = await Project.create({
             name: "Test", minCountReviewers: 0, countDecisiveReviewers: 5, combinationOfReviewers: 0,
             type: "",
             evaluationFormula: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         await UserIsPartOfProject.create({
             isOwner: true,
@@ -121,23 +121,23 @@ export const setup = async (dropDatabase: boolean) => {
         let paper01 = await Paper.create({ title: "paper01" })
         let paper02 = await Paper.create({ title: "paper02" })
         let paper03 = await Paper.create({ title: "paper03" })
-        let author = await Author.create({rawString: "Author01"})
-        let author2 = await Author.create({rawString: "Author02"})
-        await Wrote.create({paperId: Number(paper01.id), authorId: Number(author.id)})
-        await Wrote.create({paperId: Number(paper02.id), authorId: Number(author2.id)})
+        let author = await Author.create({ rawString: "Author01" })
+        let author2 = await Author.create({ rawString: "Author02" })
+        await Wrote.create({ paperId: Number(paper01.id), authorId: Number(author.id) })
+        await Wrote.create({ paperId: Number(paper02.id), authorId: Number(author2.id) })
         await Paper.create({ title: "paper04" })
         let paper05 = await Paper.create({ title: "paper05" })
-        let pp01 = await PaperScopeForStage.create({ paperId: Number(paper01.id), stageId: Number(stage.id) ,finalDecision: "YES"})
-        let pp02 = await PaperScopeForStage.create({ paperId: Number(paper02.id), stageId: Number(stage.id) ,finalDecision: "NO"})
+        let pp01 = await PaperScopeForStage.create({ paperId: Number(paper01.id), stageId: Number(stage.id), finalDecision: "YES" })
+        let pp02 = await PaperScopeForStage.create({ paperId: Number(paper02.id), stageId: Number(stage.id), finalDecision: "NO" })
         await PaperScopeForStage.create({ paperId: Number(paper05.id), stageId: Number(stage.id) })
-        await Review.create({finished: true, overallEvaluation:"YES", userId: Number(admin.id), paperId: Number(pp01.id), stageId: Number(stage.id)})
-        await Review.create({finished: true, overallEvaluation:"YES", userId: Number(admin.id), paperId: Number(pp01.id), stageId: Number(stage.id)})
-        await Review.create({finished: true, overallEvaluation:"YES", userId: Number(admin.id), paperId: Number(pp01.id), stageId: Number(stage.id)})
-        await Review.create({finished: true, overallEvaluation:"MAYBE", userId: Number(admin.id), paperId: Number(pp02.id), stageId: Number(stage.id)})
-        await Review.create({finished: true, overallEvaluation:"MAYBE", userId: Number(admin.id), paperId: Number(pp02.id), stageId: Number(stage.id)})
-        await Review.create({finished: true, overallEvaluation:"MAYBE", userId: Number(admin.id), paperId: Number(pp02.id), stageId: Number(stage.id)})
-        await Review.create({finished: true, overallEvaluation:"MAYBE", userId: Number(admin.id), paperId: Number(pp02.id), stageId: Number(stage.id)})
-        await Review.create({finished: true, overallEvaluation:"NO", userId: Number(admin.id), paperId: Number(pp02.id), stageId: Number(stage.id)})
+        await Review.create({ finished: true, overallEvaluation: "YES", userId: Number(admin.id), paperId: Number(pp01.id), stageId: Number(stage.id) })
+        await Review.create({ finished: true, overallEvaluation: "YES", userId: Number(admin.id), paperId: Number(pp01.id), stageId: Number(stage.id) })
+        await Review.create({ finished: true, overallEvaluation: "YES", userId: Number(admin.id), paperId: Number(pp01.id), stageId: Number(stage.id) })
+        await Review.create({ finished: true, overallEvaluation: "MAYBE", userId: Number(admin.id), paperId: Number(pp02.id), stageId: Number(stage.id) })
+        await Review.create({ finished: true, overallEvaluation: "MAYBE", userId: Number(admin.id), paperId: Number(pp02.id), stageId: Number(stage.id) })
+        await Review.create({ finished: true, overallEvaluation: "MAYBE", userId: Number(admin.id), paperId: Number(pp02.id), stageId: Number(stage.id) })
+        await Review.create({ finished: true, overallEvaluation: "MAYBE", userId: Number(admin.id), paperId: Number(pp02.id), stageId: Number(stage.id) })
+        await Review.create({ finished: true, overallEvaluation: "NO", userId: Number(admin.id), paperId: Number(pp02.id), stageId: Number(stage.id) })
         await client.queryArray(`INSERT INTO citedby (papercitedid, papercitingid)
                 VALUES (${Number(paper01.id)}, ${Number(paper02.id)}),
                         (${Number(paper01.id)}, ${Number(paper03.id)})`)
@@ -147,10 +147,10 @@ export const setup = async (dropDatabase: boolean) => {
 }
 
 export enum IDOfApi {
-	crossRef = 1,
-	openCitations = 2,
-	googleScholar = 3,
-	IEEE = 4,
-	semanticScholar = 5,
+    crossRef = 1,
+    openCitations = 2,
+    googleScholar = 3,
+    IEEE = 4,
+    semanticScholar = 5,
     microsoftAcademic = 6,
 }

@@ -443,6 +443,8 @@ const createChildren = async (item: IApiPaper, into: string, column1: string, co
  * @returns 
  */
 const savePaper = async (apiPaper: IApiPaper, stage: Stage, overallWeight: number): Promise<Paper> => {
+
+    /*
     let doi = getDOI(apiPaper)
 
     if (doi[0]) {
@@ -466,7 +468,7 @@ const savePaper = async (apiPaper: IApiPaper, stage: Stage, overallWeight: numbe
             return dbPaper.update()
         }
     }
-
+    */
 
     let paper = await convertIApiPaperToDBPaper(apiPaper)
 
@@ -1124,7 +1126,7 @@ const calculateFinalDecisionOfPaper = async (ctx: Context, overallEvaluation: st
 
         await pp.update()
         if (finalDecision == "YES") {
-            await startFetchFromProjectPaper(Number(pp.id), stageID, Number(project.id),)
+            startFetchFromProjectPaper(Number(pp.id), stageID, Number(project.id))
         }
 
     }
