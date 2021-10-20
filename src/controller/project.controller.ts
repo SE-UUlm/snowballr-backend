@@ -744,7 +744,7 @@ const papersToRow = async (papers: Paper[], rows: string[][], getReviews: boolea
                         row.push("")
                     }
                     let tresholds = String(project.combinationOfReviewers).split(",")
-                    row.push(String(getFinalDecisionOfPaper(reviews, project, Number(ppID.id), Number(tresholds[0]), Number(tresholds[1]))))
+                    row.push(String(getFinalDecisionOfPaper(reviews, project, Number(tresholds[0]), Number(tresholds[1]))))
                     row.push(ppID.finalDecision ? String(ppID.finalDecision) : "")
                 }
             }
@@ -1079,7 +1079,7 @@ export const addReviewToPaper = async (ctx: Context, projectID: number, stageID:
                 if (params.overallEvaluation) { review.overallEvaluation = params.overallEvaluation }
                 if (params.finishDate) { review.finishDate = new Date(params.finishDate) }
                 await review.update();
-                let finished = await calculateFinalDecisionOfPaper(ctx, params.overallEvaluation, review, project, pp, Number(tresholds[0]), Number(tresholds[1]), stageID)
+                let finished = await calculateFinalDecisionOfPaper(ctx, params.overallEvaluation, review, pp, project, Number(tresholds[0]), Number(tresholds[1]), stageID)
                 if (finished) {
                     ctx.response.status = 201;
                     ctx.response.body = JSON.stringify(review)
@@ -1093,7 +1093,7 @@ export const addReviewToPaper = async (ctx: Context, projectID: number, stageID:
 
 const calculateFinalDecisionOfPaper = async (ctx: Context, overallEvaluation: string, review: Review, pp: PaperScopeForStage, project: Project, lowerTreshold: number, upperTreshold: number, stageID: number) => {
     let reviews = await getAllReviewsFromProjectPaper(Number(pp.id));
-    let finalDecision = getFinalDecisionOfPaper(reviews, project, Number(pp.id), lowerTreshold, upperTreshold)
+    let finalDecision = getFinalDecisionOfPaper(reviews, project, lowerTreshold, upperTreshold)
     if (finalDecision) {
         console.log("finalDecision: " + finalDecision)
         if (finalDecision === "MAYBE") {
@@ -1137,7 +1137,7 @@ const startFetchFromProjectPaper = async (ppID: number, stageID: number, project
 
 }
 
-const getFinalDecisionOfPaper = (reviews: ReviewMessage[], project: Project, ppID: number, lowerTreshold: number, upperTreshold: number) => {
+const getFinalDecisionOfPaper = (reviews: ReviewMessage[], project: Project, lowerTreshold: number, upperTreshold: number) => {
     let allReviewsFinished = !reviews.some(review => !review.finished)
     console.log("finished reviews: " + allReviewsFinished)
     console.log("project: " + JSON.stringify(project))
