@@ -319,7 +319,8 @@ export const refetchPaperOfProject = async (ctx: Context, projectID: number) => 
                     projectID,
                     (await item.paper).doi ? String((await item.paper).doi) : undefined,
                     (await item.paper).title ? String((await item.paper).doi) : undefined,
-                    authorName
+                    authorName,
+                    await item.paper
                 )
             })
 
@@ -354,7 +355,10 @@ const fetchToDB = async (stageID: number, projectID: number, doi?: string, title
         let sourceApi: [SourceApi, string?][] = (await Promise.all(apis)).map(item => {
             return [String(item.name) as SourceApi, item.credentials ? String(item.credentials) : undefined]
         })
+
+        console.log("before fetch")
         let fetch = await makeFetching(Number(project.mergeThreshold), sourceApi, doi, title, authorName, String(project.name));
+        console.log("after fetch")
         let response = (await fetch.response)
 
 
@@ -376,21 +380,21 @@ const fetchToDB = async (stageID: number, projectID: number, doi?: string, title
                     parent = parentPaper
                 } else {
                     parent = await savePaper(element.paper, stage, Number(project.mergeThreshold))
+                    await PaperScopeForStage.create({ stageId: stageID, paperId: Number(parent.id), finalDecision: "YES" })
                 }
 
-                PaperScopeForStage.create({ stageId: stageID, paperId: Number(parent.id), finalDecision: "YES" })
                 let currentStage = await Stage.find(stageID)
 
                 let nextStage: Stage = await findNextStage(currentStage, projectID)
 
                 let allChildren: Promise<Paper>[] = []
                 for (let item of element.citations!) {
-                    allChildren.push(createChildren(item, "citedBy", "papercitingid", "papercitedid", Number(parent.id), nextStage, project))
+                    await createChildren(item, "citedBy", "papercitingid", "papercitedid", Number(parent.id), nextStage, project)
                 }
                 for (let item of element.references!) {
-                    allChildren.push(createChildren(item, "referencedby", "paperreferencedid", "paperreferencingid", Number(parent.id), nextStage, project))
+                    await createChildren(item, "referencedby", "paperreferencedid", "paperreferencingid", Number(parent.id), nextStage, project)
                 }
-                await Promise.all(allChildren)
+
             }
         }
 
@@ -444,7 +448,6 @@ const createChildren = async (item: IApiPaper, into: string, column1: string, co
  */
 const savePaper = async (apiPaper: IApiPaper, stage: Stage, overallWeight: number): Promise<Paper> => {
 
-    /*
     let doi = getDOI(apiPaper)
 
     if (doi[0]) {
@@ -468,7 +471,7 @@ const savePaper = async (apiPaper: IApiPaper, stage: Stage, overallWeight: numbe
             return dbPaper.update()
         }
     }
-    */
+
 
     let paper = await convertIApiPaperToDBPaper(apiPaper)
 
@@ -1115,13 +1118,13 @@ const calculateFinalDecisionOfPaper = async (ctx: Context, overallEvaluation: st
                     await review.update()
                     return false;
                 } else {
-                    pp.overallEvaluation = overallEvaluation
+                    pp.finalDecision = overallEvaluation
                 }
 
             }
 
         } else {
-            pp.overallEvaluation = finalDecision;
+            pp.finalDecision = finalDecision;
         }
 
         await pp.update()
