@@ -14,6 +14,7 @@ import { hashPassword } from "../helper/passwordHasher.ts";
 import { UserParameters } from "../model/userProfile.ts";
 import { convertProjectToProjectMessage } from "../helper/converter/projectConverter.ts";
 import { UsersMessage } from "../model/messages/user.message.ts";
+import { logger } from "../api/logger.ts";
 
 const adminMail = Deno.env.get("ADMIN_EMAIL");
 const URL = Deno.env.get("URL");
@@ -132,6 +133,7 @@ export const patchUser = async (ctx: Context, id: number | undefined) => {
         makeErrorMessage(ctx, 422, "no user id included")
         return;
     }
+    logger.error("here")
     const payloadJson = await getPayloadFromJWTHeader(ctx);
     let userData = await convertCtxBodyToUser(ctx);
     let isAdmin = await checkAdmin(payloadJson);
@@ -140,7 +142,7 @@ export const patchUser = async (ctx: Context, id: number | undefined) => {
     let checkedToken = await checkToken(id, ctx, userData);
     let isSameUser = (await getUserID(payloadJson)) === id || checkedToken.valid
     let register = checkedToken.kind === "invitation"
-    console.log(`is same: ${isSameUser} ${checkedToken.valid}`)
+    logger.error(`is same: ${isSameUser} ${JSON.stringify(checkedToken)}, isAdmin: ${isAdmin}`)
     if (isSameUser || isAdmin || isPO) {
 
         let user = await changeUserData(ctx, id, isSameUser, isAdmin, userData, register)
@@ -150,6 +152,7 @@ export const patchUser = async (ctx: Context, id: number | undefined) => {
             ctx.response.status = 200;
         }
     } else {
+        logger.error(" in else with" + JSON.stringify(ctx.response)
         if (ctx.response.status !== 400) {
             makeErrorMessage(ctx, 401, "not authorized");
         }
@@ -204,7 +207,7 @@ const checkToken = async (id: number, ctx: Context, userData: UserParameters) =>
     let validToken = { valid: false, kind: "" };
     let invitationToken = ctx.request.headers.get("invitationToken");
     let resetToken = ctx.request.headers.get("resetToken")
-    console.log(`invitation: ${invitationToken}`)
+    logger.error(`invitation: ${JSON.stringify(invitationToken)}`)
     if (invitationToken) {
         if (userData.password && userData.firstName) {
             validToken = { valid: await checkInvitationToken(id, invitationToken, ctx), kind: "invitation" };
