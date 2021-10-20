@@ -41,7 +41,7 @@ import {
 } from "https://deno.land/x/zip/mod.ts";
 import { isEqualPaper } from "../api/checkIsEqual.ts";
 import { IComparisonWeight } from "../api/iComparisonWeight.ts";
-import { Mutex } from "https://deno.land/x/awaitable_mutex/mod.ts"
+import { Semaphore } from "https://deno.land/x/semaphore/mod.ts"
 
 export const paperCache = new Cache<IApiPaper>(CacheType.F, 0, "paperCache")
 export const authorCache = new Cache<IApiAuthor>(CacheType.F, 0, "authorCache")
@@ -405,7 +405,7 @@ const fetchToDB = async (stageID: number, projectID: number, doi?: string, title
 
 }
 
-const mutex = new Mutex();
+const semaphore = new Semaphore(1);
 
 /**
  * Returns next stage of project by either finding it or creating it
@@ -414,7 +414,7 @@ const mutex = new Mutex();
  * @returns 
  */
 export const findNextStage = async (currentStage: Stage, projectID: number) => {
-    const acquisitionId = await mutex.acquire();
+    var release = await semaphore.acquire();
     let stages = (await getAllStagesFromProject(projectID))
     let nextStage = stages.filter((item: Stage) => Number(item.number) == Number(currentStage.number) + 1)[0];
     if (!nextStage) {
@@ -424,7 +424,7 @@ export const findNextStage = async (currentStage: Stage, projectID: number) => {
             number: stages.length
         })
     }
-    mutex.release(acquisitionId);
+    release();
     return nextStage
 }
 /**
