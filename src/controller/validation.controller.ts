@@ -287,6 +287,7 @@ const allowedAddressesUnauthorized = async (ctx: Context, next: () => Promise<un
         ctx.response.status = 200;
         await next();
     } else {
+        logger.error("unautorized link used")
         makeErrorMessage(ctx, 401, "not authorized")
     }
 }
