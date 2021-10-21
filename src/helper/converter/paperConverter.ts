@@ -32,20 +32,20 @@ export const convertPapersToPaperMessage = async (papers: Paper[], stageId?: num
 export const convertPaperToPaperMessage = async (paper: Paper, stageId?: number, userId?: number) => {
     let paperMessage: PaperMessage = { id: Number(paper.id), pdf: [], authors: [] }
     let pp: PaperScopeForStage | undefined;
-    if (stageId) { 
+    if (stageId) {
         pp = await getProjectPaperScope(stageId, Number(paper.id))
-        if(pp){
-        paperMessage.ppid =  Number(pp.id) 
-        if(pp.finalDecision){paperMessage.finalDecision = String(pp.finalDecision)}
-    }
+        if (pp) {
+            paperMessage.ppid = Number(pp.id)
+            if (pp.finalDecision) { paperMessage.finalDecision = String(pp.finalDecision) }
+        }
     }
     if (paperCache.has(String(paper.id))) {
         paperMessage.status = Status.unfinished
-    } else if(pp && pp.finalDecision){
+    } else if (pp && pp.finalDecision) {
         paperMessage.status = Status.completelyEvaluated
-    }  else if(userId && paperMessage.ppid && await checkUserReviewOfProjectPaper(paperMessage.ppid, userId)){
+    } else if (userId && paperMessage.ppid && await checkUserReviewOfProjectPaper(paperMessage.ppid, userId)) {
         paperMessage.status = Status.evaluatedByMyself
-    }  else if(paperMessage.ppid && (await getAllReviewsFromProjectPaper(paperMessage.ppid)).length > 0){
+    } else if (paperMessage.ppid && (await getAllReviewsFromProjectPaper(paperMessage.ppid)).length > 0) {
         paperMessage.status = Status.partiallyEvaluated
     } else {
         paperMessage.status = Status.ready
@@ -59,7 +59,7 @@ export const convertPaperToPaperMessage = async (paper: Paper, stageId?: number,
     let authors = await getAllAuthorsFromPaper(Number(paper.id))
     authors.forEach(author => paperMessage.authors.push(convertAuthorToAuthorMessage(author)))
     let unfinishedAuthors = paperMessage.authors.some(author => author.status === Status.unfinished)
-    if(paperMessage.authors.length > 0 && unfinishedAuthors){
+    if (paperMessage.authors.length > 0 && unfinishedAuthors) {
         paperMessage.status = Status.unfinished
     }
     assign(paperMessage, paper)
@@ -89,7 +89,7 @@ export const convertIApiPaperToDBPaper = async (paper: IApiPaper): Promise<Paper
     return newPaper.update()
 }
 
-export const convertDBPaperToIApiPaper = async (paper: Paper): Promise<IApiPaper> =>{
+export const convertDBPaperToIApiPaper = async (paper: Paper): Promise<IApiPaper> => {
     let pdfs: string[] = []
     let pdf = await Pdf.where({ paperId: Number(paper.id) }).get()
     if (Array.isArray(pdf)) {
@@ -99,33 +99,33 @@ export const convertDBPaperToIApiPaper = async (paper: Paper): Promise<IApiPaper
     }
     let authors: IApiAuthor[] = [];
     let dbAuthors = await getAllAuthorsFromPaper(Number(paper.id))
-    dbAuthors.forEach(author =>{
+    dbAuthors.forEach(author => {
         authors.push({
-            orcid: author.orcid? [String(author.orcid)]: [],
-            firstName: author.firstName? [String(author.firstName)]: [],
-            lastName: author.lastName? [String(author.lastName)]:[],
-            rawString: author.rawString? [String(author.rawString)]:[]
+            orcid: author.orcid ? [String(author.orcid)] : [],
+            firstName: author.firstName ? [String(author.firstName)] : [],
+            lastName: author.lastName ? [String(author.lastName)] : [],
+            rawString: author.rawString ? [String(author.rawString)] : []
         })
     })
     return {
-        title: paper.title ?[String(paper.title)]: [],
-        abstract: paper.abstract? [String(paper.abstract)]:[],
-        numberOfCitations:[],
-        numberOfReferences:[],
-        year: paper.year? [Number(paper.year)]: [],
-        type: paper.type? [String(paper.type)]: [],
-        scope: paper.scope? [String(paper.scope)]: [],
-        scopeName: paper.scopeName? [String(paper.scopeName)]: [],
-        publisher:paper.publisher? [String(paper.publisher)]: [],
-        uniqueId:paper.doi? [{type: idType.DOI, value: String(paper.doi)}]:[],
+        title: paper.title ? [String(paper.title)] : [],
+        abstract: paper.abstract ? [String(paper.abstract)] : [],
+        numberOfCitations: [],
+        numberOfReferences: [],
+        year: paper.year ? [Number(paper.year)] : [],
+        type: paper.type ? [String(paper.type)] : [],
+        scope: paper.scope ? [String(paper.scope)] : [],
+        scopeName: paper.scopeName ? [String(paper.scopeName)] : [],
+        publisher: paper.publisher ? [String(paper.publisher)] : [],
+        uniqueId: paper.doi ? [{ type: idType.DOI, value: String(paper.doi) }] : [],
         source: [],
         raw: [],
         pdf: pdfs,
         author: authors
 
 
-    
-    
+
+
     }
 }
 /**
@@ -135,7 +135,7 @@ export const convertDBPaperToIApiPaper = async (paper: Paper): Promise<IApiPaper
  * @param paper 
  * @param newPaper 
  */
-const addAuthorToDatabase= async(paper: IApiPaper, newPaper: Paper) =>{
+const addAuthorToDatabase = async (paper: IApiPaper, newPaper: Paper) => {
     for (let item of paper.author) {
         let author: Author;
         if (item.orcid[0]) {
@@ -152,29 +152,29 @@ const addAuthorToDatabase= async(paper: IApiPaper, newPaper: Paper) =>{
     }
 }
 export const assignOnlyIfUnassignedPaper = async (target: Paper, source: IApiPaper) => {
-    try{
-    let s = <any>source
-    for (const key in source) {
-        const val = s[key];
-        if (val && !target[key]) {
-            if (["title", "abstract", "publisher", "type", "scope", "scopeName", "year"].includes(key)) {
-                target[key] = s[key][0]
-                if (s[key].length <= 1) {
-                    delete s[key]
+    try {
+        let s = <any>source
+        for (const key in source) {
+            const val = s[key];
+            if (val && !target[key]) {
+                if (["title", "abstract", "publisher", "type", "scope", "scopeName", "year"].includes(key)) {
+                    target[key] = s[key][0]
+                    if (s[key].length <= 1) {
+                        delete s[key]
+                    }
+                } else if (key == "uniqueId") {
+                    target = updateUniqueIDsOfPaper(target, source)
+                } else if (key == "author") {
+                    target = await updateAuthorsOfPaper(target, source)
+                } else if (key == "pdf") {
+                    target = await updatePdfOfPaper(target, source)
                 }
-            } else if (key == "uniqueId") {
-                target =  updateUniqueIDsOfPaper(target, source)
-            } else if (key == "author") {
-                target = await updateAuthorsOfPaper(target, source)
-            } else if (key == "pdf") {
-               target = await updatePdfOfPaper(target, source)
             }
         }
+        return target;
+    } catch (error) {
+        logger.error(error)
     }
-    return target;
-}catch(error){
-    logger.error(error)
-}
 }
 
 /**
@@ -184,7 +184,7 @@ export const assignOnlyIfUnassignedPaper = async (target: Paper, source: IApiPap
  * @param source 
  * @returns 
  */
-const updateUniqueIDsOfPaper = (target: Paper, source: IApiPaper) =>{
+const updateUniqueIDsOfPaper = (target: Paper, source: IApiPaper) => {
     if (!target.doi) {
         target.doi = getDOI(source)[0]
     }
@@ -205,29 +205,29 @@ const updateUniqueIDsOfPaper = (target: Paper, source: IApiPaper) =>{
  * @param target 
  * @param source 
  */
-const updateAuthorsOfPaper = async(target: Paper, source: IApiPaper) =>{
+const updateAuthorsOfPaper = async (target: Paper, source: IApiPaper) => {
     let authors = await getAllAuthorsFromPaper(Number(target.id))
-                for (let element of authors) {
-                    let iAuthor: IApiAuthor = {
-                        orcid: element.orcid ? [String(element.orcid)] : [],
-                        rawString: element.rawString ? [String(element.rawString)] : [],
-                        lastName: element.lastName ? [String(element.lastName)] : [],
-                        firstName: element.firstName ? [String(element.firstName)] : []
-                    }
-                    source.author = source.author.filter(value => Object.keys(value).length !== 0);      
-                    for (let i = 0; i < source.author.length; i++) {
-                        //TODO hardcoded
-                        if (isEqualAuthor(iAuthor, source.author[i]) > 0.9) {
-                            source.author = source.author.slice(0, i).concat(source.author.slice(i + 1))
-                            break;
-                        }
-                    }
-                    source.author = source.author.filter(value => Object.keys(value).length !== 0);
-                    for (let item of source.author) {
-                        await updateAuthorOfPaper(await Author.create({}), item, Number(target.id))
-                    }
-                }
-                return target
+    for (let element of authors) {
+        let iAuthor: IApiAuthor = {
+            orcid: element.orcid ? [String(element.orcid)] : [],
+            rawString: element.rawString ? [String(element.rawString)] : [],
+            lastName: element.lastName ? [String(element.lastName)] : [],
+            firstName: element.firstName ? [String(element.firstName)] : []
+        }
+        source.author = source.author.filter(value => Object.keys(value).length !== 0);
+        for (let i = 0; i < source.author.length; i++) {
+            //TODO hardcoded
+            if (isEqualAuthor(iAuthor, source.author[i]) > 0.9) {
+                source.author = source.author.slice(0, i).concat(source.author.slice(i + 1))
+                break;
+            }
+        }
+        source.author = source.author.filter(value => Object.keys(value).length !== 0);
+        for (let item of source.author) {
+            await updateAuthorOfPaper(await Author.create({}), item, Number(target.id))
+        }
+    }
+    return target
 }
 
 /**
@@ -235,7 +235,7 @@ const updateAuthorsOfPaper = async(target: Paper, source: IApiPaper) =>{
  * @param target 
  * @param source 
  */
-const updatePdfOfPaper = async(target: Paper, source: IApiPaper) =>{
+const updatePdfOfPaper = async (target: Paper, source: IApiPaper) => {
     let pdf = Pdf.where({ paperId: Number(target.id) }).get();
     if (Array.isArray(pdf)) {
         let urls: string[] = []
@@ -289,7 +289,7 @@ export const checkIApiPaper = (paper: { [index: string]: any }): boolean => {
 
         if (!["id", "uniqueId", "source", "author", "pdf", "numberOfCitations", "numberOfReferences"].includes(i)) {
 
-            if ((paper[i] && paper[i].length > 1) || (i === "raw" && paper[i].length >0)) {
+            if ((paper[i] && paper[i].length > 1) || (i === "raw" && paper[i].length > 0)) {
                 check = false;
             } else {
                 delete paper[i]

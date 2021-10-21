@@ -5,5 +5,6 @@ export interface ReviewMessage {
     finished: boolean,
     overallEvaluation?: string,
     finishDate?: Date,
+    userId?: number,
     criteriaEvaluations: CriteriaEvaluation[]
 }

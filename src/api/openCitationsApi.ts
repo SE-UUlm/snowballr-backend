@@ -83,10 +83,12 @@ export class OpenCitationsApi implements IApiFetcher {
 			while (doilist.length > 0) {
 				let currentDois = doilist.splice(0, CONFIG.openCitations.linkedFetchSize);
 				let urlQuery = currentDois.join('__');
-				fetches.push(this._splittedRequest(urlQuery));
+				fetches.push(await this._splittedRequest(urlQuery));
 			}
-			let promises = await Promise.all(fetches);
 
+			//TODO HERE
+			//let promises = await Promise.all(fetches);
+			let promises = fetches
 
 			promises.forEach((json: any) => {
 				//console.log(json)

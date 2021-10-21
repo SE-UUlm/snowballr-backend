@@ -1,5 +1,5 @@
 import { Context } from "https://deno.land/x/oak/mod.ts";
-import { checkAdmin, checkPO, createJWT, getPayloadFromJWTHeader, getUserID, getUserName, UserStatus, validateUserEntry } from "./validation.controller.ts";
+import { checkAdmin, checkPO, createJWT, createRefreshJWT, getPayloadFromJWTHeader, getUserID, getUserName, UserStatus, validateUserEntry } from "./validation.controller.ts";
 import { insertUserForRegistration, returnUserByEmail } from "./databaseFetcher/user.ts";
 import { User } from "../model/db/user.ts";
 import { convertCtxBodyToUser, convertUserToUserProfile } from "../helper/converter/userConverter.ts";
@@ -14,6 +14,7 @@ import { hashPassword } from "../helper/passwordHasher.ts";
 import { UserParameters } from "../model/userProfile.ts";
 import { convertProjectToProjectMessage } from "../helper/converter/projectConverter.ts";
 import { UsersMessage } from "../model/messages/user.message.ts";
+import { logger } from "../api/logger.ts";
 
 const adminMail = Deno.env.get("ADMIN_EMAIL");
 const URL = Deno.env.get("URL");
@@ -31,7 +32,7 @@ export const createUser = async (ctx: Context, client: EMailClient) => {
 
         try {
             let user = await insertUserForRegistration(validate.email);
-            let jwt = await createJWT(user)
+            let jwt = await createRefreshJWT(Number(user.id))
             await insertInvitation(user, jwt);
             let linkText = "snowballR"
 
@@ -136,26 +137,27 @@ export const patchUser = async (ctx: Context, id: number | undefined) => {
     let userData = await convertCtxBodyToUser(ctx);
     let isAdmin = await checkAdmin(payloadJson);
     let isPO = await checkPO(payloadJson);
-  
+
     let checkedToken = await checkToken(id, ctx, userData);
     let isSameUser = (await getUserID(payloadJson)) === id || checkedToken.valid
     let register = checkedToken.kind === "invitation"
     if (isSameUser || isAdmin || isPO) {
 
         let user = await changeUserData(ctx, id, isSameUser, isAdmin, userData, register)
-        if(user){
+        if (user) {
             let userProfile = convertUserToUserProfile(user);
             ctx.response.body = JSON.stringify(userProfile);
             ctx.response.status = 200;
         }
     } else {
+
         if (ctx.response.status !== 400) {
             makeErrorMessage(ctx, 401, "not authorized");
         }
     }
 }
 
-const changeUserData = async (ctx: Context, id: number, isSameUser: boolean, isAdmin: boolean, userData: UserParameters, register: boolean) =>{
+const changeUserData = async (ctx: Context, id: number, isSameUser: boolean, isAdmin: boolean, userData: UserParameters, register: boolean) => {
     let user = await User.find(id);
 
     if (!user) {
@@ -169,7 +171,7 @@ const changeUserData = async (ctx: Context, id: number, isSameUser: boolean, isA
         }
     }
 
-    if(register){
+    if (register) {
         user.status = "active"
     }
     if (isAdmin) {
@@ -200,20 +202,20 @@ const changeUserData = async (ctx: Context, id: number, isSameUser: boolean, isA
  * @param userData the data sent to change the user data
  */
 const checkToken = async (id: number, ctx: Context, userData: UserParameters) => {
-    let validToken = {valid: false, kind: ""};
+    let validToken = { valid: false, kind: "" };
     let invitationToken = ctx.request.headers.get("invitationToken");
     let resetToken = ctx.request.headers.get("resetToken")
-
+    logger.error(`invitation: ${JSON.stringify(invitationToken)}`)
     if (invitationToken) {
         if (userData.password && userData.firstName) {
-            validToken = {valid: await checkInvitationToken(id, invitationToken, ctx), kind:"invitation"};
+            validToken = { valid: await checkInvitationToken(id, invitationToken, ctx), kind: "invitation" };
         } else {
             makeErrorMessage(ctx, 400, "no password and/or firstName provided")
         }
     }
     if (resetToken) {
         if (userData.password) {
-            validToken = {valid: await checkResetToken(id, resetToken, ctx), kind:"reset"};
+            validToken = { valid: await checkResetToken(id, resetToken, ctx), kind: "reset" };
         } else {
             makeErrorMessage(ctx, 400, "no password provided")
         }
@@ -234,7 +236,7 @@ const checkInvitationToken = async (id: number, providedToken: string, ctx: Cont
         token.delete()
         return true;
     } else {
-        makeErrorMessage(ctx, 401, "not authorized")
+        makeErrorMessage(ctx, 401, "Invitation token not found")
         return false;
     }
 }
