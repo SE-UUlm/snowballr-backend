@@ -23,11 +23,11 @@ export const getAllPapersFromStage = async (id: number): Promise<{ paper: Paper,
     try {
         console.log(JSON.stringify(
             await PaperScopeForStage.where(PaperScopeForStage.field('stage_id'), id)
-                .join(Review, Review.field("paper_id"), PaperScopeForStage.field('id'))
-                .join(Paper, Paper.field('id'), PaperScopeForStage.field('paper_id'))
-                .join(Pdf, Pdf.field('paper_id'), Paper.field('id'))
-                .join(Wrote, Wrote.field('paper_id'), Paper.field('id'))
-                .join(Author, Author.field('id'), Wrote.field('author_id'))
+                .leftOuterJoin(Review, Review.field("paper_id"), PaperScopeForStage.field('id'))
+                .leftOuterJoin(Paper, Paper.field('id'), PaperScopeForStage.field('paper_id'))
+                .leftOuterJoin(Pdf, Pdf.field('paper_id'), Paper.field('id'))
+                .leftOuterJoin(Wrote, Wrote.field('paper_id'), Paper.field('id'))
+                .leftOuterJoin(Author, Author.field('id'), Wrote.field('author_id'))
                 .get()
         ))
 
@@ -38,7 +38,7 @@ export const getAllPapersFromStage = async (id: number): Promise<{ paper: Paper,
     if (Array.isArray(paperScopes)) {
         let paperPromises: { paper: Paper, scope: PaperScopeForStage, authors: Author[] }[] = [];
         for (let item of paperScopes) {
-            console.log(JSON.stringify(
+            console.log("paperscope: " + JSON.stringify(
                 await PaperScopeForStage.where(PaperScopeForStage.field('id'), Number(item.id))
                     .leftJoin(Review, Review.field("paper_id"), PaperScopeForStage.field('id')).get()
             ))
