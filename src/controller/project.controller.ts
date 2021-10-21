@@ -500,7 +500,7 @@ export const getPapersOfProjectStage = async (ctx: Context, projectID: number, s
         let userID = await getUserID(await getPayloadFromJWTHeader(ctx))
         let paperInfo = await getAllPapersFromStage(stageID);
         let papers = paperInfo.map(item => { return item.paper })
-        let message: PapersMessage = { papers: await convertPapersToPaperMessage(papers, stageID, userID) }
+        let message: PapersMessage = { papers: await getAllPaperMessagesJoin(stageID, ctx) }
         ctx.response.body = JSON.stringify(message)
     }
 }
@@ -787,7 +787,7 @@ export const getCitationsOfProjectPaper = async (ctx: Context, projectID: number
         let citations = await getCites(ctx, projectID, stageID, ppID)
         if (citations) {
             ctx.response.status = 200;
-            let message: PapersMessage = { papers: await getAllPaperMessagesJoin(stageID, ctx) }
+            let message: PapersMessage = { papers: await convertPapersToPaperMessage(citations) }
             ctx.response.body = JSON.stringify(message)
         }
     }
