@@ -29,6 +29,9 @@ export const convertPapersToPaperMessage = async (papers: Paper[], stageId?: num
     return paperMessages;
 }
 
+export const convertRowsToPaperMessage = async (answer: any) => {
+
+}
 export const convertPaperToPaperMessage = async (paper: Paper, stageId?: number, userId?: number) => {
     let paperMessage: PaperMessage = { id: Number(paper.id), pdf: [], authors: [] }
     let pp: PaperScopeForStage | undefined;

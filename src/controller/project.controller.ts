@@ -21,7 +21,7 @@ import { logger } from "../api/logger.ts";
 import { IApiAuthor } from "../api/iApiAuthor.ts";
 import { checkAdmin, checkMemberOfProject, checkPO, checkPOofProject, getPayloadFromJWTHeader, getUserID, UserStatus, validateUserEntry } from "./validation.controller.ts";
 import { comparisonWeight, makeFetching } from "./fetch.controller.ts";
-import { saveChildren } from "./database.controller.ts";
+import { getProjectStageStuff, saveChildren } from "./database.controller.ts";
 import { getPaperCitations, getPaperReferences, getRefOrCiteList, paperUpdate, postPaperCitation, postPaperReference } from "./paper.controller.ts";
 import { Criteria } from "../model/db/criteria.ts";
 import { Review } from "../model/db/review.ts";
@@ -506,9 +506,11 @@ export const getPapersOfProjectStage = async (ctx: Context, projectID: number, s
     }
 }
 
-export const getPapersOfProjectStageMessage = async (ctx: Context, projectID: number, stageID: number) => {
+export const getPapersOfProjectStageFast = async (ctx: Context, projectID: number, stageID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
     if (validate) {
+        let answer = (await getProjectStageStuff(stageID).rows)
+
         ctx.response.status = 200;
         let userID = await getUserID(await getPayloadFromJWTHeader(ctx))
         let paperInfo = await getAllPapersFromStage(stageID);
