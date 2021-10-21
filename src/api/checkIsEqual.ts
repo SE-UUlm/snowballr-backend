@@ -18,8 +18,8 @@ export const regexLetterFollowedByPoint = /^[a-zA-Z][\. ].*/g
  * @param secondResponse - paper similar to firstResponse. Most likely provided by another api
  * @returns boolean whether the papers are found out to be equal or not
  */
-export const isEqualPaper = async (firstResponse: IApiPaper, secondResponse: IApiPaper, comparisonWeight: IComparisonWeight): Promise<boolean> => {
-	let promise = new Promise<boolean>(resolve => {
+export const isEqualPaper = (firstResponse: IApiPaper, secondResponse: IApiPaper, comparisonWeight: IComparisonWeight): Promise<boolean> => {
+	return new Promise<boolean>(resolve => {
 		if (!firstResponse || !secondResponse) {
 			resolve(false)
 		}
@@ -85,8 +85,6 @@ export const isEqualPaper = async (firstResponse: IApiPaper, secondResponse: IAp
 		}
 		resolve(false);
 	})
-	return await promise
-
 }
 
 const isEqualAuthors = (firstAuthors: IApiAuthor[], secondAuthors: IApiAuthor[]): number => {
