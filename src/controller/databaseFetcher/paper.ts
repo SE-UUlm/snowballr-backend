@@ -11,7 +11,7 @@ import { PaperMessage, Status } from "../../model/messages/papersMessage.ts";
 import { AuthorMessage } from "../../model/messages/author.message.ts";
 import { Pdf } from "../../model/db/pdf.ts";
 import { paperCache } from "../project.controller.ts";
-import { checkUserReviewOfProjectPaper } from "./review.ts";
+import { checkUserReviewOfProjectPaper, getAllReviewsFromProjectPaper } from "./review.ts";
 import { Review } from "../../model/db/review.ts";
 import { getUserID } from "../validation.controller.ts";
 import { getPayloadFromJWTHeader } from "../validation.controller.ts";
@@ -48,7 +48,7 @@ export const getAllPapersFromStage = async (id: number): Promise<{ paper: Paper,
     return new Array<{ paper: Paper, scope: PaperScopeForStage, authors: Author[] }>();
 }
 
-export const test = async (id: number, ctx: Context) => {
+export const getAllPaperMessagesJoin = async (id: number, ctx: Context) => {
     let userID = await getUserID(await getPayloadFromJWTHeader(ctx))
     let object = await PaperScopeForStage.where(PaperScopeForStage.field('stage_id'), id)
         .leftOuterJoin(Paper, Paper.field('id'), PaperScopeForStage.field('paper_id'))
@@ -57,6 +57,7 @@ export const test = async (id: number, ctx: Context) => {
         .leftOuterJoin(Author, Author.field('id'), Wrote.field('author_id'))
         .get();
 
+    let paperMessage: PaperMessage[] = []
     let lastId = 0;
     if (Array.isArray(object)) {
         for (let item of object) {
@@ -64,11 +65,12 @@ export const test = async (id: number, ctx: Context) => {
 
             } else {
                 lastId = Number(item.paperId)
-                let pp = await PaperScopeForStage.where(PaperScopeForStage.field('id'), id)
-                    .leftOuterJoin(Review, Review.field("paper_id"), PaperScopeForStage.field('id')).get()
+                let pp = await PaperScopeForStage.where({ paperId: Number(item.paperId) }).get()
+
                 if (Array.isArray(pp)) {
+                    let review = await getAllReviewsFromProjectPaper(Number(pp[0].id))
                     let author: AuthorMessage = {
-                        id: Number(item.id),
+                        id: item.authorId ? Number(item.authorId) : undefined,
                         firstName: item.firstName ? String(item.firstName) : undefined,
                         lastName: item.lastName ? String(item.lastName) : undefined,
                         rawString: item.rawString ? String(item.rawString) : undefined,
@@ -88,15 +90,15 @@ export const test = async (id: number, ctx: Context) => {
                         scopeName: item.scopeName ? String() : undefined,
                         ppid: Number(pp[0].id),
                         finalDecision: pp[0].finalDecision ? String() : undefined,
-                        authors: [author],
-                        pdf: []
+                        authors: author.id ? [author] : [],
+                        pdf: item.url ? [String(item.url)] : []
                     }
 
                     if (paperCache.has(String(paper.id))) {
                         paper.status = Status.unfinished
                     } else if (pp[0].finalDecision) {
                         paper.status = Status.completelyEvaluated
-                    } else if (userID && pp.some(item => Number(item.userId) == userID)) {
+                    } else if (userID && review.some(item => Number(item.userId) == userID)) {
                         paper.status = Status.evaluatedByMyself
                     } else if (paper.ppid && pp[0].overallEvaluation) {
                         paper.status = Status.partiallyEvaluated
@@ -104,12 +106,13 @@ export const test = async (id: number, ctx: Context) => {
                         paper.status = Status.ready
                     }
 
-
+                    paperMessage.push(paper)
                 }
             }
 
         }
     }
+    return paperMessage
 }
 
 export const getAllPapersFromProject = async (id: number): Promise<{ papers: { paper: Paper, scope: PaperScopeForStage, authors: Author[] }[], stage: Stage }[]> => {
