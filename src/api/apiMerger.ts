@@ -167,7 +167,6 @@ export class ApiMerger implements IApiMerger {
 			/** Check for the same paper in other apis */
 			for (let j: number = 0; j < response2Citations.length; j++) {
 				let isEqual: boolean = await isEqualPaper(response1Citations[i], response2Citations[j], this.comparisonWeight);
-				console.log(isEqual + "compare Children")
 				if (isEqual) {
 					logger.info(`DIFFERENT API paper merging: ${response1Citations[i].uniqueId!.map(item => item.type == idType.DOI ? item.value : undefined)} // ${response1Citations[i].title} <-> ${response2Citations[j].uniqueId!.map(item => item.type == idType.DOI ? item.value : undefined)} // ${response2Citations[j].title}`);
 					response2Citations[j] = this.merge(response1Citations[i], response2Citations[j]);
