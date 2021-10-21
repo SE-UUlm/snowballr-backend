@@ -198,6 +198,7 @@ export class GoogleScholar implements IApiFetcher {
 
 		// detect captcha and change proxy if so
 		if (parsed.querySelector('#gs_captcha_c')) {
+			//console.log(body)
 			if (this._retries < 50) {
 				await this._rotateProxy(`GS: Detected Captcha. Retry #${this._retries}.`);
 				return this._rateLimitedScrapeRequest(url, refererNeeded ? refererNeeded : undefined)

@@ -100,7 +100,7 @@ export class FileCache {
 
 	public clear() {
 		try {
-			clearInterval(this._watchDog);
+			if (this._watchDog) clearInterval(this._watchDog);
 			logger.info(`Stopped watchdog for ttl`);
 		}
 		catch (e) {

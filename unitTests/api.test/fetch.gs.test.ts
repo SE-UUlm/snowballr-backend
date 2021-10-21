@@ -7,6 +7,7 @@ import { Stub, stub } from "https://deno.land/x/mock/stub.ts";
 import { IApiQuery } from "../../src/api/iApiQuery.ts";
 import { IComparisonWeight } from "../../src/api/iComparisonWeight.ts";
 import * as Mock from "../mockObjects/fetch/googleScholarMock.test.ts"
+import { logger } from "../../src/api/logger.ts";
 
 const GS = new GoogleScholar("https://scholar.google.com", "");
 const query: IApiQuery = {
@@ -67,6 +68,60 @@ Deno.test({
 	}
 })
 
+Deno.test({
+	name: "GoogleScholar: detect captcha and exchange proxy",
+	async fn(): Promise<void> {
+		let responseList = [Mock.captchaResponse];
+		let counter = 0;
+		stub(globalThis, "fetch", () => {
+			let body = new Blob([responseList[counter++]], { type: 'application/json' })
+			let response = new Response(body, { 'headers': Mock.headers });
+			return response;
+		});
+		let proxyExchanged = false
+		//stub(GS, "_getCitations", () => { logger.info("here"); throw new Error("") })
+		stub(GS, "_rotateProxy", () => { proxyExchanged = true; throw new Error("Cancelled by unittest") })
+
+
+		let res = await GS.fetch(query);
+		assertEquals(proxyExchanged, true);
+	}
+})
+
+Deno.test({
+	name: "GoogleScholar get blocked http call and exchange proxy",
+	async fn(): Promise<void> {
+
+		stub(globalThis, "fetch", () => {
+			let body = new Blob([""], { type: 'application/json' })
+			let response = new Response(body, { 'headers': Mock.headers, 'status': 503 });
+			return response;
+		});
+		let proxyExchanged = false
+		stub(GS, "_rotateProxy", () => { proxyExchanged = true; throw new Error("Cancelled by unittest") })
+
+		await GS.fetch(query);
+		assertEquals(proxyExchanged, true);
+	}
+})
+
+
+Deno.test({
+	name: "GoogleScholarProxy: Tor docker container exchange",
+	async fn(): Promise<void> {
+
+		stub(globalThis, "fetch", () => {
+			let body = new Blob([""], { type: 'application/json' })
+			let response = new Response(body, { 'headers': Mock.headers, 'status': 503 });
+			return response;
+		});
+		let proxyExchanged = false
+		stub(GS, "_rotateProxy", () => { proxyExchanged = true; throw new Error("Cancelled by unittest") })
+
+		await GS.fetch(query);
+		assertEquals(proxyExchanged, true);
+	}
+})
 // Deno.test({
 // 	name: "CrossRefApi valid paper, but no cites and refs",
 // 	async fn(): Promise<void> {

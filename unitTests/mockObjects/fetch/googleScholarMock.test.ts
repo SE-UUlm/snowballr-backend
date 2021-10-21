@@ -17,6 +17,8 @@ export const paperResponse: string = Deno.readTextFileSync(`${new URL('.', impor
 
 export const citationResponse: string = Deno.readTextFileSync(`${new URL('.', import.meta.url).pathname}/googleScholarHtmlMock2.txt`);
 
+export const captchaResponse: string = Deno.readTextFileSync(`${new URL('.', import.meta.url).pathname}/googleScholarHtmlMock3.txt`);
+
 export const parsedPaperNoCites = { "id": undefined, "title": ["Translation of UML 2 Activity Diagrams into finite state machines for model checking"], "author": [{ "orcid": [], "rawString": ["A Raschke"], "lastName": [], "firstName": [], "id": undefined, }], "abstract": [], "numberOfReferences": [], "numberOfCitations": [0], "year": [2009], "publisher": ["2009 35th Euromicro Conference on Software …"], "type": [], "scope": [], "scopeName": [], "pdf": [], "uniqueId": [], "source": ["googleScholar"], "raw": [] }
 
 export const parsedPaper = { "id": undefined, "title": ["Translation of UML 2 Activity Diagrams into finite state machines for model checking"], "author": [{ "orcid": [], "rawString": ["A Raschke"], "lastName": [], "firstName": [], "id": undefined, }], "abstract": [], "numberOfReferences": [], "numberOfCitations": [8], "year": [2009], "publisher": ["2009 35th Euromicro Conference on Software …"], "type": [], "scope": [], "scopeName": [], "pdf": [], "uniqueId": [], "source": ["googleScholar"], "raw": [] };
