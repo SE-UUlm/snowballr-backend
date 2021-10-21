@@ -6,6 +6,7 @@ import { getAllStagesFromProject } from "./stage.ts";
 import { Stage } from "../../model/db/stage.ts";
 import { Author } from "../../model/db/author.ts";
 import { getAllAuthorsFromPaper } from "./author.ts";
+import { Wrote } from "../../model/db/wrote.ts";
 
 export const getAllPapersFromStage = async (id: number): Promise<{ paper: Paper, scope: PaperScopeForStage, authors: Author[] }[]> => {
     let paperScopes = await PaperScopeForStage.where("stageId", id).get()
@@ -14,7 +15,8 @@ export const getAllPapersFromStage = async (id: number): Promise<{ paper: Paper,
         console.log(JSON.stringify(
             await PaperScopeForStage.where(PaperScopeForStage.field('stage_id'), id)
                 .join(Paper, Paper.field('id'), PaperScopeForStage.field('paper_id'))
-                .join(Author, Author.field('paper_id'), Paper.field('id'))
+                .join(Wrote, Wrote.field('paper_id'), Paper.field('id'))
+                .join(Author, Author.field('id'), Wrote.field('author_id'))
                 .get()
         ))
     } catch (error) {
