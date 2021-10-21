@@ -35,6 +35,7 @@ export const setup = async (dropDatabase: boolean) => {
     if (dropDatabase) {
         await client.queryArray("DROP TABLE IF EXISTS citedby")
         await client.queryArray("DROP TABLE IF EXISTS referencedby")
+        await client.queryArray("DROP TABLE IF EXISTS review")
         paperCache.fileCache!.purge()
         authorCache.fileCache!.purge()
         Batcher.purge()
