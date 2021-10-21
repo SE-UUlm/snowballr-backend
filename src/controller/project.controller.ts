@@ -12,7 +12,7 @@ import { getAllStagesFromProject } from "./databaseFetcher/stage.ts";
 import { checkPaperInProjectStage, getAllPaperMessagesJoin, getAllPapersFromProject, getAllPapersFromStage, getPaperByDoi, getProjectPaperID, getProjectPaperScope } from "./databaseFetcher/paper.ts";
 import { PapersMessage } from "../model/messages/papersMessage.ts";
 import { PaperScopeForStage } from "../model/db/paperScopeForStage.ts";
-import { assignOnlyIfUnassignedPaper, checkIApiPaper, convertDBPaperToIApiPaper, convertIApiPaperToDBPaper, convertPapersToPaperMessage, convertPaperToPaperMessage } from "../helper/converter/paperConverter.ts";
+import { assignOnlyIfUnassignedPaper, checkIApiPaper, convertDBPaperToIApiPaper, convertIApiPaperToDBPaper, convertPapersToPaperMessage, convertPaperToPaperMessage, convertRowsToPaperMessage } from "../helper/converter/paperConverter.ts";
 import { assign, isEqual } from "../helper/assign.ts"
 import { IApiPaper, SourceApi } from "../api/iApiPaper.ts";
 import { ApiMerger, getDOI } from "../api/apiMerger.ts";
@@ -510,12 +510,10 @@ export const getPapersOfProjectStageFast = async (ctx: Context, projectID: numbe
     let validate = await validateUserEntry(ctx, [projectID, stageID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
     if (validate) {
         let answer = (await getProjectStageStuff(stageID)).rows
-
-        ctx.response.status = 200;
         let userID = await getUserID(await getPayloadFromJWTHeader(ctx))
-        let paperInfo = await getAllPapersFromStage(stageID);
-        let papers = paperInfo.map(async item => { return await item.paper })
-        let message: PapersMessage = { papers: await convertPapersToPaperMessage(await Promise.all(papers), stageID, userID) }
+        ctx.response.status = 200;
+        let message: PapersMessage = { papers: await convertRowsToPaperMessage(answer, userID) }
+
 
         ctx.response.body = JSON.stringify(message)
     }
