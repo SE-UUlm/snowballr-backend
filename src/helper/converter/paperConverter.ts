@@ -19,6 +19,7 @@ import { isEqualAuthor } from "../../api/checkIsEqual.ts";
 import { convertAuthorToAuthorMessage } from "./authorConverter.ts"
 import { checkUserReviewOfProjectPaper, getAllReviewsFromProjectPaper } from "../../controller/databaseFetcher/review.ts";
 import { PaperScopeForStage } from "../../model/db/paperScopeForStage.ts";
+import { AuthorMessage } from "../../model/messages/author.message.ts";
 
 export const convertPapersToPaperMessage = async (papers: Paper[], stageId?: number, userId?: number) => {
     let paperMessages: PaperMessage[] = [];
@@ -29,11 +30,11 @@ export const convertPapersToPaperMessage = async (papers: Paper[], stageId?: num
     return paperMessages;
 }
 
-export const convertRowsToPaperMessage = (answer: any) => {
-    /*
+export const convertRowsToPaperMessage = (answer: any, userID: number) => {
+
     let paperMessage: PaperMessage[] = []
     let lastId = 0;
-    answer.forEach((element: any) => {
+    answer.forEach(async (element: any) => {
         if (lastId == Number(element[0])) {
             let paper = paperMessage[paperMessage.length - 1]
             if (element[13]) {
@@ -43,65 +44,65 @@ export const convertRowsToPaperMessage = (answer: any) => {
                 if (!paper.authors.some(author => author.id == Number(element[14]))) {
                     paper.authors.push({
                         id: element[14] ? Number(element[14]) : undefined,
-                        firstName: item.firstName ? String(item.firstName) : undefined,
-                        lastName: item.lastName ? String(item.lastName) : undefined,
+                        firstName: element[16] ? String(element[16]) : undefined,
+                        lastName: element[17] ? String(element[17]) : undefined,
                         rawString: element[15] ? String(element[15]) : undefined,
-                        orcid: item.orcid ? String(item.orcid) : undefined,
+                        orcid: element[18] ? String(element[118]) : undefined,
                     })
                 }
             }
 
         } else {
-            lastId = Number(item.paperId)
-            let pp = await PaperScopeForStage.where({ paperId: Number(item.paperId) }).get()
+            lastId = Number(element[0])
+            let author: AuthorMessage = {
+                id: element[14] ? Number(element[14]) : undefined,
+                firstName: element[16] ? String(element[16]) : undefined,
+                lastName: element[17] ? String(element[17]) : undefined,
+                rawString: element[15] ? String(element[15]) : undefined,
+                orcid: element[18] ? String(element[118]) : undefined,
 
-            if (Array.isArray(pp)) {
-                let review = await getAllReviewsFromProjectPaper(Number(pp[0].id))
-                let author: AuthorMessage = {
-                    id: item.authorId ? Number(item.authorId) : undefined,
-                    firstName: item.firstName ? String(item.firstName) : undefined,
-                    lastName: item.lastName ? String(item.lastName) : undefined,
-                    rawString: item.rawString ? String(item.rawString) : undefined,
-                    orcid: item.orcid ? String(item.orcid) : undefined,
+            }
 
-                }
+            let paper: PaperMessage = {
+                id: Number(element[4]),
+                doi: element[5] ? String(element[5]) : undefined,
+                title: element[6] ? String(element[6]) : undefined,
+                abstract: element[7] ? String(element[7]) : undefined,
+                year: element[8] ? Number(element[8]) : undefined,
+                publisher: element[9] ? String(element[9]) : undefined,
+                type: element[10] ? String(element[10]) : undefined,
+                scope: element[11] ? String(element[11]) : undefined,
+                scopeName: element[12] ? String(element[12]) : undefined,
+                ppid: Number(element[1]),
+                finalDecision: element[2] ? String(element[2]) : undefined,
+                authors: author.id ? [author] : [],
+                pdf: element[13] ? [String(element[13])] : []
+            }
 
-                let paper: PaperMessage = {
-                    id: Number(item.paperId),
-                    doi: item.doi ? String(item.doi) : undefined,
-                    title: item.title ? String() : undefined,
-                    abstract: item.abstract ? String() : undefined,
-                    year: item.year ? Number(item.year) : undefined,
-                    publisher: item.publisher ? String() : undefined,
-                    type: item.type ? String() : undefined,
-                    scope: item.scope ? String() : undefined,
-                    scopeName: item.scopeName ? String() : undefined,
-                    ppid: Number(pp[0].id),
-                    finalDecision: pp[0].finalDecision ? String() : undefined,
-                    authors: author.id ? [author] : [],
-                    pdf: item.url ? [String(item.url)] : []
-                }
+            if (paperCache.has(String(paper.id))) {
+                paper.status = Status.unfinished
+            } else if (paper.finalDecision) {
+                paper.status = Status.completelyEvaluated
+            } else {
+                let reviews = await getAllReviewsFromProjectPaper(Number(paper.ppid));
 
-                if (paperCache.has(String(paper.id))) {
-                    paper.status = Status.unfinished
-                } else if (pp[0].finalDecision) {
-                    paper.status = Status.completelyEvaluated
-                } else if (userID && review.some(item => Number(item.userId) == userID)) {
+                if (userID && reviews.some(item => Number(item.userId) == userID)) {
                     paper.status = Status.evaluatedByMyself
-                } else if (paper.ppid && pp[0].overallEvaluation) {
+                } else if (paper.ppid && reviews.length > 0) {
                     paper.status = Status.partiallyEvaluated
                 } else {
                     paper.status = Status.ready
                 }
-
-                paperMessage.push(paper)
             }
+
+            paperMessage.push(paper)
         }
+
 
     });
 
     return paperMessage
-    */
+
 }
 export const convertPaperToPaperMessage = async (paper: Paper, stageId?: number, userId?: number) => {
     let paperMessage: PaperMessage = { id: Number(paper.id), pdf: [], authors: [] }
