@@ -509,7 +509,7 @@ export const getPapersOfProjectStage = async (ctx: Context, projectID: number, s
 export const getPapersOfProjectStageFast = async (ctx: Context, projectID: number, stageID: number) => {
     let validate = await validateUserEntry(ctx, [projectID, stageID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
     if (validate) {
-        let answer = (await getProjectStageStuff(stageID).rows)
+        let answer = (await getProjectStageStuff(stageID)).rows
 
         ctx.response.status = 200;
         let userID = await getUserID(await getPayloadFromJWTHeader(ctx))
