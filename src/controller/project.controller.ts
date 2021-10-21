@@ -497,7 +497,11 @@ export const getPapersOfProjectStage = async (ctx: Context, projectID: number, s
     let validate = await validateUserEntry(ctx, [projectID, stageID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
     if (validate) {
         ctx.response.status = 200;
-        let message: PapersMessage = { papers: await getAllPaperMessagesJoin(stageID, ctx) }
+        let userID = await getUserID(await getPayloadFromJWTHeader(ctx))
+        let paperInfo = await getAllPapersFromStage(stageID);
+        let papers = paperInfo.map(async item => { return await item.paper })
+        let message: PapersMessage = { papers: await convertPapersToPaperMessage(await Promise.all(papers), stageID, userID) }
+
         ctx.response.body = JSON.stringify(message)
     }
 }

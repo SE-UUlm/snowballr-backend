@@ -16,31 +16,14 @@ import { Review } from "../../model/db/review.ts";
 import { getUserID } from "../validation.controller.ts";
 import { getPayloadFromJWTHeader } from "../validation.controller.ts";
 import { Context } from "https://deno.land/x/oak/mod.ts";
+import { concatWithoutDuplicates } from "../../helper/assign.ts";
 
 export const getAllPapersFromStage = async (id: number): Promise<{ paper: Paper, scope: PaperScopeForStage, authors: Author[] }[]> => {
     let paperScopes = await PaperScopeForStage.where("stageId", id).get()
 
-    try {
-        console.log(JSON.stringify(
-            await PaperScopeForStage.where(PaperScopeForStage.field('stage_id'), id)
-                .leftOuterJoin(Paper, Paper.field('id'), PaperScopeForStage.field('paper_id'))
-                .leftOuterJoin(Pdf, Pdf.field('paper_id'), Paper.field('id'))
-                .leftOuterJoin(Wrote, Wrote.field('paper_id'), Paper.field('id'))
-                .leftOuterJoin(Author, Author.field('id'), Wrote.field('author_id'))
-                .get()
-        ))
-
-    } catch (error) {
-        console.error("master " + JSON.stringify(error))
-    }
-
     if (Array.isArray(paperScopes)) {
         let paperPromises: { paper: Paper, scope: PaperScopeForStage, authors: Author[] }[] = [];
         for (let item of paperScopes) {
-            console.log("paperscope: " + JSON.stringify(
-                await PaperScopeForStage.where(PaperScopeForStage.field('id'), Number(item.id))
-                    .leftOuterJoin(Review, Review.field("paper_id"), PaperScopeForStage.field('id')).get()
-            ))
             paperPromises.push({ paper: (await Paper.find(Number(item.paperId))) as Paper, scope: item, authors: await getAllAuthorsFromPaper(Number(item.paperId)) })
         }
         return paperPromises
@@ -62,6 +45,21 @@ export const getAllPaperMessagesJoin = async (id: number, ctx: Context) => {
     if (Array.isArray(object)) {
         for (let item of object) {
             if (lastId == Number(item.paperId)) {
+                let paper = paperMessage[paperMessage.length - 1]
+                if (item.pdf) {
+                    paper.pdf = concatWithoutDuplicates(paper.pdf, [String(item.pdf)])
+                }
+                if (item.authorId) {
+                    if (!paper.authors.some(author => author.id == Number(item.authorId))) {
+                        paper.authors.push({
+                            id: item.authorId ? Number(item.authorId) : undefined,
+                            firstName: item.firstName ? String(item.firstName) : undefined,
+                            lastName: item.lastName ? String(item.lastName) : undefined,
+                            rawString: item.rawString ? String(item.rawString) : undefined,
+                            orcid: item.orcid ? String(item.orcid) : undefined,
+                        })
+                    }
+                }
 
             } else {
                 lastId = Number(item.paperId)
