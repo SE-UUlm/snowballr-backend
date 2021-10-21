@@ -68,7 +68,7 @@ export const isEqualPaper = (firstResponse: IApiPaper, secondResponse: IApiPaper
 		/** Compare of each of the authors is the same by normalizing them or using the orchid.
 		 * Weight is used to control the importance of the whole equality formula */
 		if (firstResponse.author && secondResponse.author && firstResponse.author.length > 0 && secondResponse.author.length > 0) { // 0.7 ->
-			sameAuthor = await isEqualAuthors(firstResponse.author, secondResponse.author) * comparison.authorWeight;
+			sameAuthor = isEqualAuthors(firstResponse.author, secondResponse.author) * comparison.authorWeight;
 
 			//TODO: if title and year are equal likely to be equal --> year might be shifted by one year
 			//TODO: Take Publisher into Account.
@@ -87,18 +87,18 @@ export const isEqualPaper = (firstResponse: IApiPaper, secondResponse: IApiPaper
 	})
 }
 
-const isEqualAuthors = (firstAuthors: IApiAuthor[], secondAuthors: IApiAuthor[]): Promise<number> => {
-	return new Promise<number>(resolve => {
+const isEqualAuthors = (firstAuthors: IApiAuthor[], secondAuthors: IApiAuthor[]): number => {
 
-		let equalAuthors: number = 0;
 
-		for (let a1 in firstAuthors) {
-			for (let a2 in secondAuthors) {
-				equalAuthors += isEqualAuthor(firstAuthors[a1], secondAuthors[a2])
-			}
+	let equalAuthors: number = 0;
+
+	for (let a1 in firstAuthors) {
+		for (let a2 in secondAuthors) {
+			equalAuthors += isEqualAuthor(firstAuthors[a1], secondAuthors[a2])
 		}
-		resolve(equalAuthors / (firstAuthors.length >= secondAuthors.length ? firstAuthors.length : secondAuthors.length))
-	})
+	}
+	return (equalAuthors / (firstAuthors.length >= secondAuthors.length ? firstAuthors.length : secondAuthors.length))
+
 }
 
 export const isEqualAuthor = (firstAuthor: IApiAuthor, secondAuthor: IApiAuthor) => {
