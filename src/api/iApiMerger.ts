@@ -1,6 +1,6 @@
-import {IApiResponse} from "./iApiResponse.ts";
-import {IComparisonWeight} from "./iComparisonWeight.ts";
-import {IApiPaper} from "./iApiPaper.ts";
+import { IApiResponse } from "./iApiResponse.ts";
+import { IComparisonWeight } from "./iComparisonWeight.ts";
+import { IApiPaper } from "./iApiPaper.ts";
 
 /**
  * merge function unites n objects identified as same into one reponse object
@@ -10,7 +10,7 @@ import {IApiPaper} from "./iApiPaper.ts";
 export interface IApiMerger {
     comparisonWeight: IComparisonWeight;
 
-    merge(firstResponse: IApiPaper, secondResponse: IApiPaper): IApiPaper;
+    merge(firstResponse: IApiPaper, secondResponse: IApiPaper): Promise<IApiPaper>;
 
     compare(response: Promise<IApiResponse>[]): Promise<IApiResponse[]>;
 }
