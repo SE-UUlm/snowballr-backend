@@ -507,15 +507,20 @@ export const getPapersOfProjectStage = async (ctx: Context, projectID: number, s
 }
 
 export const getPapersOfProjectStageFast = async (ctx: Context, projectID: number, stageID: number) => {
-    let validate = await validateUserEntry(ctx, [projectID, stageID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
-    if (validate) {
-        let answer = (await getProjectStageStuff(stageID)).rows
-        let userID = await getUserID(await getPayloadFromJWTHeader(ctx))
-        ctx.response.status = 200;
-        let message: PapersMessage = { papers: await convertRowsToPaperMessage(answer, userID) }
+    try {
+        let validate = await validateUserEntry(ctx, [projectID, stageID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
+        if (validate) {
+            let answer = (await getProjectStageStuff(stageID)).rows
+            let userID = await getUserID(await getPayloadFromJWTHeader(ctx))
+            ctx.response.status = 200;
+            let message: PapersMessage = { papers: await convertRowsToPaperMessage(answer, userID) }
 
 
-        ctx.response.body = JSON.stringify(message)
+            ctx.response.body = JSON.stringify(message)
+        }
+    } catch (e) {
+        console.log(e)
+        console.log("number " + stageID)
     }
 }
 
