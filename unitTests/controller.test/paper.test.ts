@@ -1,4 +1,4 @@
-import { assertEquals, assertNotEquals } from "https://deno.land/std@0.83.0/testing/asserts.ts";
+import { assertEquals, assertNotEquals } from "https://deno.land/std/testing/asserts.ts";
 import { IApiPaper } from "../../src/api/iApiPaper.ts";
 import { db, client, saveChildren } from "../../src/controller/database.controller.ts";
 import { insertUser } from "../../src/controller/databaseFetcher/user.ts";

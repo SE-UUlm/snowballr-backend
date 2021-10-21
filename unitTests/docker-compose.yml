@@ -44,8 +44,8 @@ services:
     profiles:
       - test
   backend:
-    image: denoland/deno
-    command: bash -c "ls -a -l && deno --version && deno run --allow-env --allow-read --allow-write --allow-net --unstable ./src/main.ts;"
+    image: denoland/deno:1.15.1
+    command: bash -c "ls -a -l && deno --version && deno run --no-check --allow-env --allow-read --allow-write --allow-net --unstable ./src/main.ts;"
     working_dir: /app
     volumes:
       - ../:/app
