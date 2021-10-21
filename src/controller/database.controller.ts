@@ -57,7 +57,7 @@ export const getChildren = (table: string, column1: string, column2: string, id:
 
 export const getProjectStageStuff = (id: number) => {
     return client.queryArray(`
-SELECT i.id, i.finalDecision, i.additionDate, p.id as paper_id, p.doi, p.title, p.abstract, p.year, p.publisher, p.type, p.scope, p.scopeName, pdf.url
+SELECT i.id, i.final_decision, i.addition_date, p.id as paper_id, p.doi, p.title, p.abstract, p.year, p.publisher, p.type, p.scope, p.scope_dame, pdf.url, a.raw_string, a.first_name, a.last_name, a.orcid
 FROM inscopefor as i JOIN paper as p ON i.paper_id = p.id
 LEFT OUTER JOIN pdf ON p.id = pdf.paper_id
 LEFT OUTER JOIN wrote as w ON w.paper_id = p.id
