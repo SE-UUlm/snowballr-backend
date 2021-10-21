@@ -62,7 +62,7 @@ FROM inscopefor as i JOIN paper as p ON i.paper_id = p.id
 LEFT OUTER JOIN pdf ON p.id = pdf.paper_id
 LEFT OUTER JOIN wrote as w ON w.paper_id = p.id
 LEFT OUTER JOIN author as a ON a.id = w.author_id
-WHERE i.id = ${id}
+WHERE i.stage_id = ${id}
 ORDER BY i.id
 
 `)
