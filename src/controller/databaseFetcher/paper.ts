@@ -10,6 +10,17 @@ import { getAllAuthorsFromPaper } from "./author.ts";
 export const getAllPapersFromStage = async (id: number): Promise<{ paper: Paper, scope: PaperScopeForStage, authors: Author[] }[]> => {
     let paperScopes = await PaperScopeForStage.where("stageId", id).get()
 
+    try {
+        console.log(JSON.stringify(
+            await PaperScopeForStage.where(PaperScopeForStage.field('stage_id'), id)
+                .join(Paper, Paper.field('id'), PaperScopeForStage.field('paper_id'))
+                .join(Author, Author.field('paper_id'), Paper.field('id'))
+                .get()
+        ))
+    } catch (error) {
+        console.error("master " + JSON.stringify(error))
+    }
+
     if (Array.isArray(paperScopes)) {
         let paperPromises: { paper: Paper, scope: PaperScopeForStage, authors: Author[] }[] = [];
         for (let item of paperScopes) {
