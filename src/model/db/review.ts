@@ -34,7 +34,7 @@ export class Review extends Model {
         return this.hasOne(Stage)
     }
 
-    static paperscope() {
+    static paper() {
         return this.hasOne(PaperScopeForStage)
     }
 }

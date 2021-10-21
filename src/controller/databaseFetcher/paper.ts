@@ -13,6 +13,9 @@ import { Pdf } from "../../model/db/pdf.ts";
 import { paperCache } from "../project.controller.ts";
 import { checkUserReviewOfProjectPaper } from "./review.ts";
 import { Review } from "../../model/db/review.ts";
+import { getUserID } from "../validation.controller.ts";
+import { getPayloadFromJWTHeader } from "../validation.controller.ts";
+import { Context } from "https://deno.land/x/oak/mod.ts";
 
 export const getAllPapersFromStage = async (id: number): Promise<{ paper: Paper, scope: PaperScopeForStage, authors: Author[] }[]> => {
     let paperScopes = await PaperScopeForStage.where("stageId", id).get()
@@ -20,13 +23,14 @@ export const getAllPapersFromStage = async (id: number): Promise<{ paper: Paper,
     try {
         console.log(JSON.stringify(
             await PaperScopeForStage.where(PaperScopeForStage.field('stage_id'), id)
-                .join(Review, Review.field("paperscope_id"), PaperScopeForStage.field('id'))
+                .join(Review, Review.field("paper_id"), PaperScopeForStage.field('id'))
                 .join(Paper, Paper.field('id'), PaperScopeForStage.field('paper_id'))
                 .join(Pdf, Pdf.field('paper_id'), Paper.field('id'))
                 .join(Wrote, Wrote.field('paper_id'), Paper.field('id'))
                 .join(Author, Author.field('id'), Wrote.field('author_id'))
                 .get()
         ))
+
     } catch (error) {
         console.error("master " + JSON.stringify(error))
     }
@@ -34,6 +38,10 @@ export const getAllPapersFromStage = async (id: number): Promise<{ paper: Paper,
     if (Array.isArray(paperScopes)) {
         let paperPromises: { paper: Paper, scope: PaperScopeForStage, authors: Author[] }[] = [];
         for (let item of paperScopes) {
+            console.log(JSON.stringify(
+                await PaperScopeForStage.where(PaperScopeForStage.field('id'), Number(item.id))
+                    .leftJoin(Review, Review.field("paper_id"), PaperScopeForStage.field('id')).get()
+            ))
             paperPromises.push({ paper: (await Paper.find(Number(item.paperId))) as Paper, scope: item, authors: await getAllAuthorsFromPaper(Number(item.paperId)) })
         }
         return paperPromises
@@ -41,24 +49,25 @@ export const getAllPapersFromStage = async (id: number): Promise<{ paper: Paper,
     return new Array<{ paper: Paper, scope: PaperScopeForStage, authors: Author[] }>();
 }
 
-export const test = async (id: number) => {
+export const test = async (id: number, ctx: Context) => {
+    let userID = await getUserID(await getPayloadFromJWTHeader(ctx))
     let object = await PaperScopeForStage.where(PaperScopeForStage.field('stage_id'), id)
-        .join(Review, Review.field("paperscope_id"), PaperScopeForStage.field('id'))
-        .join(Paper, Paper.field('id'), PaperScopeForStage.field('paper_id'))
-        .join(Pdf, Pdf.field('paper_id'), Paper.field('id'))
-        .join(Wrote, Wrote.field('paper_id'), Paper.field('id'))
-        .join(Author, Author.field('id'), Wrote.field('author_id'))
+        .leftJoin(Paper, Paper.field('id'), PaperScopeForStage.field('paper_id'))
+        .leftJoin(Pdf, Pdf.field('paper_id'), Paper.field('id'))
+        .leftJoin(Wrote, Wrote.field('paper_id'), Paper.field('id'))
+        .leftJoin(Author, Author.field('id'), Wrote.field('author_id'))
         .get();
 
     let lastId = 0;
     if (Array.isArray(object)) {
         for (let item of object) {
-            if (lastId = Number(item.paperId)) {
+            if (lastId == Number(item.paperId)) {
 
             } else {
                 lastId = Number(item.paperId)
-                let pp = await getProjectPaperScope(id, Number(item.paperId))
-                if (pp) {
+                let pp = await PaperScopeForStage.where(PaperScopeForStage.field('id'), id)
+                    .leftJoin(Review, Review.field("paper_id"), PaperScopeForStage.field('id')).get()
+                if (Array.isArray(pp)) {
                     let author: AuthorMessage = {
                         id: Number(item.id),
                         firstName: item.firstName ? String(item.firstName) : undefined,
@@ -78,24 +87,24 @@ export const test = async (id: number) => {
                         type: item.type ? String() : undefined,
                         scope: item.scope ? String() : undefined,
                         scopeName: item.scopeName ? String() : undefined,
-                        ppid: Number(pp.id),
-                        finalDecision: pp.finalDecision ? String() : undefined,
+                        ppid: Number(pp[0].id),
+                        finalDecision: pp[0].finalDecision ? String() : undefined,
                         authors: [author],
                         pdf: []
                     }
-                    /*
+
                     if (paperCache.has(String(paper.id))) {
                         paper.status = Status.unfinished
-                    } else if (pp.finalDecision) {
+                    } else if (pp[0].finalDecision) {
                         paper.status = Status.completelyEvaluated
-                    } else if (userId && paperMessage.ppid && await checkUserReviewOfProjectPaper(paperMessage.ppid, userId)) {
+                    } else if (userID && pp.some(item => Number(item.userId) == userID)) {
                         paper.status = Status.evaluatedByMyself
-                    } else if (paper.ppid && (await getAllReviewsFromProjectPaper(paperMessage.ppid)).length > 0) {
-                        paperMessage.status = Status.partiallyEvaluated
+                    } else if (paper.ppid && pp[0].overallEvaluation) {
+                        paper.status = Status.partiallyEvaluated
                     } else {
-                        paperMessage.status = Status.ready
+                        paper.status = Status.ready
                     }
-                    */
+
 
                 }
             }
