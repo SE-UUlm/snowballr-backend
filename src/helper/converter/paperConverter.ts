@@ -30,11 +30,11 @@ export const convertPapersToPaperMessage = async (papers: Paper[], stageId?: num
     return paperMessages;
 }
 
-export const convertRowsToPaperMessage = (answer: any, userID: number) => {
+export const convertRowsToPaperMessage = async (answer: any, userID: number | undefined) => {
 
     let paperMessage: PaperMessage[] = []
     let lastId = 0;
-    answer.forEach(async (element: any) => {
+    for (let element of answer) {
         if (lastId == Number(element[0])) {
             let paper = paperMessage[paperMessage.length - 1]
             if (element[13]) {
@@ -99,7 +99,7 @@ export const convertRowsToPaperMessage = (answer: any, userID: number) => {
         }
 
 
-    });
+    }
 
     return paperMessage
 
