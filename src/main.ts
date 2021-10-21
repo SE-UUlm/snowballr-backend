@@ -40,12 +40,13 @@ import {
     postCiteProject,
     postRefProject,
     removeMemberOfProject,
-setApiUse,
-getApis,
-replaceApi,
-makeReplicationPackage,
-getAllPapersCsv,
-refetchPaperOfProject
+    setApiUse,
+    getApis,
+    replaceApi,
+    makeReplicationPackage,
+    getAllPapersCsv,
+    refetchPaperOfProject,
+    getPapersOfProjectStageFast
 } from "./controller/project.controller.ts";
 import { addAuthorToPaper, deleteAuthorOfPaper, deleteSourcePaper, getAuthors, getPaper, getPaperCitations, getPaperReferences, getPapers, getSourcePaper, patchPaper, postPaper, postPaperCitation, postPaperReference } from "./controller/paper.controller.ts";
 import { deleteSourceAuthor, getAuthor, getSourceAuthor, patchAuthor, postAuthor } from "./controller/author.controller.ts";
@@ -58,7 +59,7 @@ const client = new SmtpClient();
 const router = new Router();
 router
     .get("/currentBatches", (context) => {
-       getActiveBatches(context)
+        getActiveBatches(context)
     })
     .get("/users", async (context) => {
         await getUsers(context)
@@ -79,7 +80,7 @@ router
         await addToReadingList(context, Number(context.params.id))
     })
     .delete("/users/:id/readinglist/:id2", async (context) => {
-        await removeFromReadingList(context, Number(context.params.id),Number(context.params.id2))
+        await removeFromReadingList(context, Number(context.params.id), Number(context.params.id2))
     })
     .post("/login", async (context) => {
         await login(context)
@@ -152,7 +153,7 @@ router
         await addPaperToProjectStage(context, Number(context.params.id), Number(context.params.id2))
     })
     .get("/projects/:id/stages/:id2/papers", async (context) => {
-        await getPapersOfProjectStage(context, Number(context.params.id), Number(context.params.id2))
+        await getPapersOfProjectStageFast(context, Number(context.params.id), Number(context.params.id2))
     })
     .get("/projects/:id/stages/:id2/csv", async (context) => {
         await getStageCsv(context, Number(context.params.id), Number(context.params.id2))
