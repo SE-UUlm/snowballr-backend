@@ -22,7 +22,7 @@ import { getProjectStageStuff } from "../database.controller.ts";
 export const getAllPapersFromStage = async (id: number): Promise<{ paper: Paper, scope: PaperScopeForStage, authors: Author[] }[]> => {
     let paperScopes = await PaperScopeForStage.where("stageId", id).get()
 
-    console.log("new item: " + JSON.stringify((await getProjectStageStuff(id).rows)))
+    console.log("new item: " + JSON.stringify((await getProjectStageStuff(id))))
     if (Array.isArray(paperScopes)) {
         let paperPromises: { paper: Paper, scope: PaperScopeForStage, authors: Author[] }[] = [];
         for (let item of paperScopes) {
