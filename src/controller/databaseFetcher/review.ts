@@ -11,8 +11,8 @@ export const getAllReviewsFromProjectPaper = async (ppId: number): Promise<Revie
 
 export const checkUserReviewOfProjectPaper = async (ppId: number, userId: number): Promise<boolean> => {
 
-    let reviews = await Review.where({paperId: ppId, userId: userId}).get()
-    if(Array.isArray(reviews) && reviews[0]){
+    let reviews = await Review.where({ paperId: ppId, userId: userId }).get()
+    if (Array.isArray(reviews) && reviews[0]) {
         return true;
     }
     return false;
@@ -38,13 +38,13 @@ export const getReviews = async (reviews: Review | Review[]) => {
     return new Array<ReviewMessage>();
 }
 
-const getCriteriaEvalsOfCriteria = async (reviewID: number, message: ReviewMessage) =>{
+const getCriteriaEvalsOfCriteria = async (reviewID: number, message: ReviewMessage) => {
     let ces = await CriteriaEvaluation.where(CriteriaEvaluation.field("review_id"), reviewID).get()
 
-            if (Array.isArray(ces)) {
-                for (let ce of ces) {
-                    message.criteriaEvaluations.push(ce)
-                }
-            }
+    if (Array.isArray(ces)) {
+        for (let ce of ces) {
+            message.criteriaEvaluations.push(ce)
+        }
+    }
     return message;
 }

@@ -9,7 +9,7 @@ import { convertProjectToProjectMessage } from "../helper/converter/projectConve
 import { Stage } from "../model/db/stage.ts";
 import { Paper } from "../model/db/paper.ts";
 import { getAllStagesFromProject } from "./databaseFetcher/stage.ts";
-import { checkPaperInProjectStage, getAllPapersFromProject, getAllPapersFromStage, getPaperByDoi, getProjectPaperID, getProjectPaperScope } from "./databaseFetcher/paper.ts";
+import { checkPaperInProjectStage, getAllPaperMessagesJoin, getAllPapersFromProject, getAllPapersFromStage, getPaperByDoi, getProjectPaperID, getProjectPaperScope } from "./databaseFetcher/paper.ts";
 import { PapersMessage } from "../model/messages/papersMessage.ts";
 import { PaperScopeForStage } from "../model/db/paperScopeForStage.ts";
 import { assignOnlyIfUnassignedPaper, checkIApiPaper, convertDBPaperToIApiPaper, convertIApiPaperToDBPaper, convertPapersToPaperMessage, convertPaperToPaperMessage } from "../helper/converter/paperConverter.ts";
@@ -787,7 +787,7 @@ export const getCitationsOfProjectPaper = async (ctx: Context, projectID: number
         let citations = await getCites(ctx, projectID, stageID, ppID)
         if (citations) {
             ctx.response.status = 200;
-            let message: PapersMessage = { papers: await convertPapersToPaperMessage(citations) }
+            let message: PapersMessage = { papers: await getAllPaperMessagesJoin(stageID, ctx) }
             ctx.response.body = JSON.stringify(message)
         }
     }
