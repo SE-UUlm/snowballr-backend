@@ -47,6 +47,8 @@ export const paperCache = new Cache<IApiPaper>(CacheType.F, 0, "paperCache")
 export const authorCache = new Cache<IApiAuthor>(CacheType.F, 0, "authorCache")
 
 const reducer = (accumulator: string, currentValue: string) => accumulator + " / " + currentValue;
+
+const fetchSemaphore = new Semaphore(3);
 /**
  * Creates a project
  *
@@ -341,6 +343,7 @@ export const refetchPaperOfProject = async (ctx: Context, projectID: number) => 
  * @param authorName 
  */
 const fetchToDB = async (stageID: number, projectID: number, doi?: string, title?: string, authorName?: string, parentPaper?: Paper) => {
+    var release = await fetchSemaphore.acquire();
     try {
         let project = await Project.find(projectID)
         let apis: SearchApi[] = [];
@@ -402,7 +405,7 @@ const fetchToDB = async (stageID: number, projectID: number, doi?: string, title
     } catch (err) {
         logger.error(err)
     }
-
+    release();
 }
 
 const semaphore = new Semaphore(1);
