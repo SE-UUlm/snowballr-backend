@@ -7,6 +7,12 @@ import { Stage } from "../../model/db/stage.ts";
 import { Author } from "../../model/db/author.ts";
 import { getAllAuthorsFromPaper } from "./author.ts";
 import { Wrote } from "../../model/db/wrote.ts";
+import { PaperMessage, Status } from "../../model/messages/papersMessage.ts";
+import { AuthorMessage } from "../../model/messages/author.message.ts";
+import { Pdf } from "../../model/db/pdf.ts";
+import { paperCache } from "../project.controller.ts";
+import { checkUserReviewOfProjectPaper } from "./review.ts";
+import { Review } from "../../model/db/review.ts";
 
 export const getAllPapersFromStage = async (id: number): Promise<{ paper: Paper, scope: PaperScopeForStage, authors: Author[] }[]> => {
     let paperScopes = await PaperScopeForStage.where("stageId", id).get()
@@ -14,7 +20,9 @@ export const getAllPapersFromStage = async (id: number): Promise<{ paper: Paper,
     try {
         console.log(JSON.stringify(
             await PaperScopeForStage.where(PaperScopeForStage.field('stage_id'), id)
+                .join(Review, Review.field("paperscope_id"), PaperScopeForStage.field('id'))
                 .join(Paper, Paper.field('id'), PaperScopeForStage.field('paper_id'))
+                .join(Pdf, Pdf.field('paper_id'), Paper.field('id'))
                 .join(Wrote, Wrote.field('paper_id'), Paper.field('id'))
                 .join(Author, Author.field('id'), Wrote.field('author_id'))
                 .get()
@@ -31,6 +39,69 @@ export const getAllPapersFromStage = async (id: number): Promise<{ paper: Paper,
         return paperPromises
     }
     return new Array<{ paper: Paper, scope: PaperScopeForStage, authors: Author[] }>();
+}
+
+export const test = async (id: number) => {
+    let object = await PaperScopeForStage.where(PaperScopeForStage.field('stage_id'), id)
+        .join(Review, Review.field("paperscope_id"), PaperScopeForStage.field('id'))
+        .join(Paper, Paper.field('id'), PaperScopeForStage.field('paper_id'))
+        .join(Pdf, Pdf.field('paper_id'), Paper.field('id'))
+        .join(Wrote, Wrote.field('paper_id'), Paper.field('id'))
+        .join(Author, Author.field('id'), Wrote.field('author_id'))
+        .get();
+
+    let lastId = 0;
+    if (Array.isArray(object)) {
+        for (let item of object) {
+            if (lastId = Number(item.paperId)) {
+
+            } else {
+                lastId = Number(item.paperId)
+                let pp = await getProjectPaperScope(id, Number(item.paperId))
+                if (pp) {
+                    let author: AuthorMessage = {
+                        id: Number(item.id),
+                        firstName: item.firstName ? String(item.firstName) : undefined,
+                        lastName: item.lastName ? String(item.lastName) : undefined,
+                        rawString: item.rawString ? String(item.rawString) : undefined,
+                        orcid: item.orcid ? String(item.orcid) : undefined,
+
+                    }
+
+                    let paper: PaperMessage = {
+                        id: Number(item.paperId),
+                        doi: item.doi ? String(item.doi) : undefined,
+                        title: item.title ? String() : undefined,
+                        abstract: item.abstract ? String() : undefined,
+                        year: item.year ? Number(item.year) : undefined,
+                        publisher: item.publisher ? String() : undefined,
+                        type: item.type ? String() : undefined,
+                        scope: item.scope ? String() : undefined,
+                        scopeName: item.scopeName ? String() : undefined,
+                        ppid: Number(pp.id),
+                        finalDecision: pp.finalDecision ? String() : undefined,
+                        authors: [author],
+                        pdf: []
+                    }
+                    /*
+                    if (paperCache.has(String(paper.id))) {
+                        paper.status = Status.unfinished
+                    } else if (pp.finalDecision) {
+                        paper.status = Status.completelyEvaluated
+                    } else if (userId && paperMessage.ppid && await checkUserReviewOfProjectPaper(paperMessage.ppid, userId)) {
+                        paper.status = Status.evaluatedByMyself
+                    } else if (paper.ppid && (await getAllReviewsFromProjectPaper(paperMessage.ppid)).length > 0) {
+                        paperMessage.status = Status.partiallyEvaluated
+                    } else {
+                        paperMessage.status = Status.ready
+                    }
+                    */
+
+                }
+            }
+
+        }
+    }
 }
 
 export const getAllPapersFromProject = async (id: number): Promise<{ papers: { paper: Paper, scope: PaperScopeForStage, authors: Author[] }[], stage: Stage }[]> => {

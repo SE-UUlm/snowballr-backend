@@ -11,7 +11,7 @@ export interface PaperMessage {
     doi?: string,
     title?: string,
     abstract?: string,
-    year?: Date,
+    year?: number,
     publisher?: string,
     type?: string,
     scope?: string,

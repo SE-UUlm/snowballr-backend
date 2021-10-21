@@ -1,6 +1,7 @@
-import {Status} from "./papersMessage.ts"
+import { Status } from "./papersMessage.ts"
 
-export interface AuthorMessage{
+export interface AuthorMessage {
+    id?: number
     firstName?: string,
     lastName?: string,
     rawString?: string,
