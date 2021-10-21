@@ -33,21 +33,21 @@ export const convertPapersToPaperMessage = async (papers: Paper[], stageId?: num
 export const convertRowsToPaperMessage = async (answer: any, userID: number | undefined) => {
 
     let paperMessage: PaperMessage[] = []
-    let lastId = 0;
+    let lastId = -1;
     for (let element of answer) {
         if (lastId == Number(element[0])) {
             let paper = paperMessage[paperMessage.length - 1]
-            if (element[13]) {
-                paper.pdf = concatWithoutDuplicates(paper.pdf, [element[13]])
+            if (element[12]) {
+                paper.pdf = concatWithoutDuplicates(paper.pdf, [element[12]])
             }
-            if (element[14]) {
-                if (!paper.authors.some(author => author.id == Number(element[14]))) {
+            if (element[13]) {
+                if (!paper.authors.some(author => author.id == Number(element[13]))) {
                     paper.authors.push({
-                        id: element[14] ? Number(element[14]) : undefined,
-                        firstName: element[16] ? String(element[16]) : undefined,
-                        lastName: element[17] ? String(element[17]) : undefined,
-                        rawString: element[15] ? String(element[15]) : undefined,
-                        orcid: element[18] ? String(element[118]) : undefined,
+                        id: element[13] ? Number(element[13]) : undefined,
+                        firstName: element[15] ? String(element[15]) : undefined,
+                        lastName: element[16] ? String(element[16]) : undefined,
+                        rawString: element[14] ? String(element[14]) : undefined,
+                        orcid: element[17] ? String(element[17]) : undefined,
                     })
                 }
             }
@@ -55,28 +55,28 @@ export const convertRowsToPaperMessage = async (answer: any, userID: number | un
         } else {
             lastId = Number(element[0])
             let author: AuthorMessage = {
-                id: element[14] ? Number(element[14]) : undefined,
-                firstName: element[16] ? String(element[16]) : undefined,
-                lastName: element[17] ? String(element[17]) : undefined,
-                rawString: element[15] ? String(element[15]) : undefined,
-                orcid: element[18] ? String(element[118]) : undefined,
+                id: element[13] ? Number(element[13]) : undefined,
+                firstName: element[15] ? String(element[15]) : undefined,
+                lastName: element[16] ? String(element[16]) : undefined,
+                rawString: element[14] ? String(element[14]) : undefined,
+                orcid: element[17] ? String(element[17]) : undefined,
 
             }
 
             let paper: PaperMessage = {
-                id: Number(element[4]),
-                doi: element[5] ? String(element[5]) : undefined,
-                title: element[6] ? String(element[6]) : undefined,
-                abstract: element[7] ? String(element[7]) : undefined,
-                year: element[8] ? Number(element[8]) : undefined,
-                publisher: element[9] ? String(element[9]) : undefined,
-                type: element[10] ? String(element[10]) : undefined,
-                scope: element[11] ? String(element[11]) : undefined,
-                scopeName: element[12] ? String(element[12]) : undefined,
-                ppid: Number(element[1]),
-                finalDecision: element[2] ? String(element[2]) : undefined,
+                id: Number(element[3]),
+                doi: element[4] ? String(element[4]) : undefined,
+                title: element[5] ? String(element[5]) : undefined,
+                abstract: element[6] ? String(element[6]) : undefined,
+                year: element[7] ? Number(element[7]) : undefined,
+                publisher: element[8] ? String(element[8]) : undefined,
+                type: element[9] ? String(element[9]) : undefined,
+                scope: element[10] ? String(element[10]) : undefined,
+                scopeName: element[11] ? String(element[11]) : undefined,
+                ppid: Number(element[0]),
+                finalDecision: element[1] ? String(element[1]) : undefined,
                 authors: author.id ? [author] : [],
-                pdf: element[13] ? [String(element[13])] : []
+                pdf: element[12] ? [String(element[12])] : []
             }
 
             if (paperCache.has(String(paper.id))) {
