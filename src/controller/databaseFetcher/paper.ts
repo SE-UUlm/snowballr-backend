@@ -23,7 +23,6 @@ export const getAllPapersFromStage = async (id: number): Promise<{ paper: Paper,
     try {
         console.log(JSON.stringify(
             await PaperScopeForStage.where(PaperScopeForStage.field('stage_id'), id)
-                .leftOuterJoin(Review, Review.field("paper_id"), PaperScopeForStage.field('id'))
                 .leftOuterJoin(Paper, Paper.field('id'), PaperScopeForStage.field('paper_id'))
                 .leftOuterJoin(Pdf, Pdf.field('paper_id'), Paper.field('id'))
                 .leftOuterJoin(Wrote, Wrote.field('paper_id'), Paper.field('id'))
@@ -40,7 +39,7 @@ export const getAllPapersFromStage = async (id: number): Promise<{ paper: Paper,
         for (let item of paperScopes) {
             console.log("paperscope: " + JSON.stringify(
                 await PaperScopeForStage.where(PaperScopeForStage.field('id'), Number(item.id))
-                    .leftJoin(Review, Review.field("paper_id"), PaperScopeForStage.field('id')).get()
+                    .leftOuterJoin(Review, Review.field("paper_id"), PaperScopeForStage.field('id')).get()
             ))
             paperPromises.push({ paper: (await Paper.find(Number(item.paperId))) as Paper, scope: item, authors: await getAllAuthorsFromPaper(Number(item.paperId)) })
         }
@@ -52,10 +51,10 @@ export const getAllPapersFromStage = async (id: number): Promise<{ paper: Paper,
 export const test = async (id: number, ctx: Context) => {
     let userID = await getUserID(await getPayloadFromJWTHeader(ctx))
     let object = await PaperScopeForStage.where(PaperScopeForStage.field('stage_id'), id)
-        .leftJoin(Paper, Paper.field('id'), PaperScopeForStage.field('paper_id'))
-        .leftJoin(Pdf, Pdf.field('paper_id'), Paper.field('id'))
-        .leftJoin(Wrote, Wrote.field('paper_id'), Paper.field('id'))
-        .leftJoin(Author, Author.field('id'), Wrote.field('author_id'))
+        .leftOuterJoin(Paper, Paper.field('id'), PaperScopeForStage.field('paper_id'))
+        .leftOuterJoin(Pdf, Pdf.field('paper_id'), Paper.field('id'))
+        .leftOuterJoin(Wrote, Wrote.field('paper_id'), Paper.field('id'))
+        .leftOuterJoin(Author, Author.field('id'), Wrote.field('author_id'))
         .get();
 
     let lastId = 0;
@@ -66,7 +65,7 @@ export const test = async (id: number, ctx: Context) => {
             } else {
                 lastId = Number(item.paperId)
                 let pp = await PaperScopeForStage.where(PaperScopeForStage.field('id'), id)
-                    .leftJoin(Review, Review.field("paper_id"), PaperScopeForStage.field('id')).get()
+                    .leftOuterJoin(Review, Review.field("paper_id"), PaperScopeForStage.field('id')).get()
                 if (Array.isArray(pp)) {
                     let author: AuthorMessage = {
                         id: Number(item.id),
