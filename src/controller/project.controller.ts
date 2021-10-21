@@ -506,6 +506,19 @@ export const getPapersOfProjectStage = async (ctx: Context, projectID: number, s
     }
 }
 
+export const getPapersOfProjectStageMessage = async (ctx: Context, projectID: number, stageID: number) => {
+    let validate = await validateUserEntry(ctx, [projectID, stageID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
+    if (validate) {
+        ctx.response.status = 200;
+        let userID = await getUserID(await getPayloadFromJWTHeader(ctx))
+        let paperInfo = await getAllPapersFromStage(stageID);
+        let papers = paperInfo.map(async item => { return await item.paper })
+        let message: PapersMessage = { papers: await convertPapersToPaperMessage(await Promise.all(papers), stageID, userID) }
+
+        ctx.response.body = JSON.stringify(message)
+    }
+}
+
 /**
  * Gets a single paper by using the project specific paper id (not the normal id of a paper!)
  *
