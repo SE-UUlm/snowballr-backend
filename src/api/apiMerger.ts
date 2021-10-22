@@ -15,7 +15,7 @@ export class ApiMerger implements IApiMerger {
 	public comparisonWeight;
 
 	public constructor(comparisonWeight: IComparisonWeight) {
-		this.comparisonWeight = comparisonWeight
+		this.comparisonWeight = comparisonWeight;
 	}
 
 	/**

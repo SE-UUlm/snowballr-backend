@@ -7,7 +7,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ${POSTGRES_PATH}:/var/lib/postgresql/
+      - ${POSTGRES_PATH}:/var/lib/postgresql
     environment:
       - POSTGRES_HOST=${POSTGRES_HOST}
       - POSTGRES_DN=${POSTGRES_DN}
