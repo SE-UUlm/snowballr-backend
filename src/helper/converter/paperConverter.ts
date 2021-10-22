@@ -84,6 +84,8 @@ export const convertRowsToPaperMessage = async (answer: any, userID: number | un
             } else if (paper.finalDecision) {
                 paper.status = Status.completelyEvaluated
             } else {
+                //TODO reviews
+                /*
                 let reviews = await getAllReviewsFromProjectPaper(Number(paper.ppid));
 
                 if (userID && reviews.some(item => Number(item.userId) == userID)) {
@@ -93,6 +95,7 @@ export const convertRowsToPaperMessage = async (answer: any, userID: number | un
                 } else {
                     paper.status = Status.ready
                 }
+                */
             }
 
             paperMessage.push(paper)

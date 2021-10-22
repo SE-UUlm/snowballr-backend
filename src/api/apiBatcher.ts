@@ -14,6 +14,7 @@ import { logger } from "./logger.ts";
 import { Cache, CacheType } from "./cache.ts";
 import { GoogleScholar } from "./googleScholar.ts";
 import { CONFIG } from "../helper/config.ts";
+import { sleep } from "https://deno.land/x/sleep@v1.2.0/sleep.ts";
 
 
 /**
@@ -79,30 +80,81 @@ export class ApiBatcher implements IApiBatcher {
 	 */
 	public async startFetch(query: IApiQuery): Promise<IApiBatch> {
 		let initializedFetchers: IApiFetcher[] = this._initializeEnabledApis(query.enabledApis!);
-		let response: Promise<IApiResponse>[] = [];
+		let response: IApiResponse[] = [];
 		// try to prefetch a doi for the query objects by querying for the other variables. Only implemented on selected apis.
 		if (!query.doi) {
 			query = await this._getDoiByFetching(query, initializedFetchers);
 		}
 		for (let i in initializedFetchers) {
-			response.push(initializedFetchers[i].fetch(query));
+			response.push(await initializedFetchers[i].fetch(query));
 		}
-		const merger = new ApiMerger(query.aggression);
+		//const merger = new ApiMerger(query.aggression);
 		let apiBatch = {} as IApiBatch;
 		assign(apiBatch, ApiBatch);
 		apiBatch.id = crypto.randomUUID();
 		apiBatch.subscribers = [query];
 		apiBatch.status = BatcherStatus.R;
-		apiBatch.response = merger.compare(response).then((data) => {
-			apiBatch.status = BatcherStatus.F
-			this.stopFetch(apiBatch)
-			return data
-		})
+		// apiBatch.response = merger.compare(response).then((data) => {
+		// 	apiBatch.status = BatcherStatus.F
+		// 	this.stopFetch(apiBatch)
+		// 	return data
+		// })
+		apiBatch.response = this._mergerWorker(query, response); //.then((data) => {
+		// 	apiBatch.status = BatcherStatus.F
+		// 	this.stopFetch(apiBatch)
+		// 	return data
+		// })
+		console.log(await apiBatch.response);
 		this.activeBatches.push(apiBatch);
 		return apiBatch;
 	}
 
+	private async _mergerWorker(query: IApiQuery, response: IApiResponse[]) {
+		let done = false;
+		let initialized = false;
+		let data: IApiResponse[];
 
+		const worker = new Worker(new URL("worker.ts", import.meta.url).href, { type: 'module', deno: { namespace: true, permissions: "inherit" } });
+		let mergedPapers: Promise<IApiResponse[]> = new Promise<IApiResponse[]>((resolve) => {
+			const checkIfDone = () => {
+				if (done) {
+					resolve(data)
+				}
+				else setTimeout(checkIfDone, CONFIG.batcher.workerPollingRateInMilSecs);
+			};
+			checkIfDone();
+		});
+		let workerInit: Promise<void> = new Promise<void>((resolve) => {
+			const checkIfDone = () => {
+				if (initialized) {
+					//console.log("WORKER START NOW")
+					resolve(worker.postMessage(JSON.stringify({ query: query, response: response })))
+				}
+				else {
+					//console.log("------------- WAITING FOR ANDREAS ------------")
+					setTimeout(checkIfDone, CONFIG.batcher.workerPollingRateInMilSecs);
+				}
+			};
+			checkIfDone();
+		});
+
+		worker.addEventListener('message', message => {
+			//console.log("INCOMING MESSAGE " + message.data.type)
+			switch (message.data.type) {
+				case 'finished':
+					data = JSON.parse(message.data.payload);
+					done = true;
+					break;
+				case 'initialized':
+					initialized = true;
+					break;
+			}
+		})
+
+		await workerInit;
+
+		return mergedPapers;
+	}
 
 	/**
 	 * Try to prefetch a doi for the query objects by querying for the other variables. Only implemented on selected apis.

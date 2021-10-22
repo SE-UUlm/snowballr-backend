@@ -70,7 +70,7 @@ export class GoogleScholar implements IApiFetcher {
 		queryIdentifier.update(JSON.stringify(query));
 		let queryString = queryIdentifier.toString();
 		try {
-			let get = this.cache!.get(queryString);
+			var get = this.cache?.get(queryString);
 			if (CONFIG.googleScholar.useCache && this.cache && get) {
 				logger.info(`GS: Loaded fetch from cache.`)
 				return get;
@@ -82,9 +82,20 @@ export class GoogleScholar implements IApiFetcher {
 
 			paper = this._parseResponse(this._transformScrapedData(html.querySelector('#gs_res_ccl_mid > div')));
 
+			try {
+				var citationUrl = html.querySelector('#gs_res_ccl_mid > div > div > div.gs_fl > a:nth-child(3)').attributes.href;
+				var citationCount = Number(html.querySelector('#gs_res_ccl_mid > div > div > div.gs_fl > a:nth-child(3)').innerHTML.replace('Cited by ', ''));
+			}
+			catch (e) {
+				var citationUrl = undefined;
+				var citationCount = 0;
+				logger.warning(`GS: Couldn't find any Citations!`);
+			}
+			let citations = this._getCitations(citationUrl, citationCount);
+			//console.log(JSON.stringify(await citations, function (k, v) { return v === undefined ? null : v; }, 2));
 			var apiReturn: IApiResponse = {
 				"paper": paper,
-				"citations": await this._getCitations(html.querySelector('#gs_res_ccl_mid > div > div > div.gs_fl > a:nth-child(3)').attributes.href, html.querySelector('#gs_res_ccl_mid > div > div > div.gs_fl > a:nth-child(3)').innerHTML.replace('Cited by ', '') as number),
+				"citations": citationUrl && citationCount ? await citations : [],
 				"references": []
 			}
 			if (this.cache) {
@@ -99,6 +110,9 @@ export class GoogleScholar implements IApiFetcher {
 				"citations": citations ? await citations : [],
 				"references": references ? await references : []
 			}
+		}
+		finally {
+			this._proxy?.close();
 		}
 		return apiReturn;
 	}
@@ -154,6 +168,7 @@ export class GoogleScholar implements IApiFetcher {
 			await sleep(timeout - timeDelta);
 		}
 		let html = await fetch(url, this._proxy!.getFetchConfig(this._lastRefererUrl, this._currentCookie));
+		//console.log(html)
 		lastScrappingRun = new Date();
 		release();
 		// leave critical section
@@ -169,6 +184,7 @@ export class GoogleScholar implements IApiFetcher {
 			}
 		}
 		let body = await html.text();
+		//console.log(body)
 		let parsed: any = this._domParser.parseFromString(body, 'text/html');
 
 		if (!this._currentCookie) { this._currentCookie = html.headers.get('set-cookie')!; }
@@ -182,6 +198,7 @@ export class GoogleScholar implements IApiFetcher {
 
 		// detect captcha and change proxy if so
 		if (parsed.querySelector('#gs_captcha_c')) {
+			//console.log(body)
 			if (this._retries < 50) {
 				await this._rotateProxy(`GS: Detected Captcha. Retry #${this._retries}.`);
 				return this._rateLimitedScrapeRequest(url, refererNeeded ? refererNeeded : undefined)
@@ -217,7 +234,7 @@ export class GoogleScholar implements IApiFetcher {
 	 * @returns fully scraped and parsed citations to compare by merger
 	 */
 	private async _getCitations(url: string, numberOfCitations: number): Promise<IApiPaper[]> {
-		console.log(numberOfCitations);
+		//console.log(numberOfCitations);
 		let citations: IApiPaper[] = [];
 		let currentPage = 0;
 

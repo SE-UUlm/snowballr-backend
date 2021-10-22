@@ -36,5 +36,7 @@ microsoftAcademic:
 cache:
   timeToLiveInSeconds: 10080000
   type: FileCache # FileCache | MemoryCache
+batcher:
+  workerPollingRateInMilSecs: 5000
 
 

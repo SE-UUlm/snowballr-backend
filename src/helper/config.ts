@@ -13,6 +13,11 @@ export interface IConfig {
 	openCitations: IOpenCitationsConfig;
 	microsoftAcademic: IMicrosoftAcademicConfig;
 	cache: ICacheConfig;
+	batcher: IBatcherConfig;
+}
+
+export type IBatcherConfig = {
+	workerPollingRateInMilSecs: number;
 }
 
 //lvl 2
@@ -101,7 +106,8 @@ const DEFAULTCONFIG: IConfig = {
 		useCache: true,
 		enabled: true
 	},
-	cache: { timeToLiveInSeconds: 10080000, type: "FileCache" }
+	cache: { timeToLiveInSeconds: 10080000, type: "FileCache" },
+	batcher: { workerPollingRateInMilSecs: 500 }
 } as IConfig;
 
 
