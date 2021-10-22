@@ -30,6 +30,7 @@ export const getReviews = async (reviews: Review | Review[]) => {
             let message: ReviewMessage = { id: Number(review.id), criteriaEvaluations: [], finished: Boolean(review.finished) }
             if (review.overallEvaluation) { message.overallEvaluation = String(review.overallEvaluation) }
             if (review.finishDate) { message.finishDate = new Date(String(review.finishDate)) }
+            if (review.userId) { message.userId = Number(review.userId) }
             message = await getCriteriaEvalsOfCriteria(Number(review.id), message)
             arr.push(message)
         }

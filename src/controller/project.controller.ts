@@ -48,7 +48,7 @@ export const authorCache = new Cache<IApiAuthor>(CacheType.F, 0, "authorCache")
 
 const reducer = (accumulator: string, currentValue: string) => accumulator + " / " + currentValue;
 
-const fetchSemaphore = new Semaphore(3);
+const fetchSemaphore = new Semaphore(1);
 /**
  * Creates a project
  *
