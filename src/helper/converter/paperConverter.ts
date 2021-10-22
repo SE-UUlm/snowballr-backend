@@ -96,6 +96,8 @@ export const convertRowsToPaperMessage = async (answer: any, userID: number | un
                     paper.status = Status.ready
                 }
                 */
+
+                paper.status = Status.ready
             }
 
             paperMessage.push(paper)
