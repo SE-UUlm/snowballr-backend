@@ -12,7 +12,7 @@ import { getAllStagesFromProject } from "./databaseFetcher/stage.ts";
 import { checkPaperInProjectStage, getAllPaperMessagesJoin, getAllPapersFromProject, getAllPapersFromStage, getPaperByDoi, getProjectPaperID, getProjectPaperScope } from "./databaseFetcher/paper.ts";
 import { PapersMessage } from "../model/messages/papersMessage.ts";
 import { PaperScopeForStage } from "../model/db/paperScopeForStage.ts";
-import { assignOnlyIfUnassignedPaper, checkIApiPaper, convertDBPaperToIApiPaper, convertIApiPaperToDBPaper, convertPapersToPaperMessage, convertPaperToPaperMessage } from "../helper/converter/paperConverter.ts";
+import { assignOnlyIfUnassignedPaper, checkIApiPaper, convertDBPaperToIApiPaper, convertIApiPaperToDBPaper, convertPapersToPaperMessage, convertPaperToPaperMessage, convertRowsToPaperMessage } from "../helper/converter/paperConverter.ts";
 import { assign, isEqual } from "../helper/assign.ts"
 import { IApiPaper, SourceApi } from "../api/iApiPaper.ts";
 import { ApiMerger, getDOI } from "../api/apiMerger.ts";
@@ -21,7 +21,7 @@ import { logger } from "../api/logger.ts";
 import { IApiAuthor } from "../api/iApiAuthor.ts";
 import { checkAdmin, checkMemberOfProject, checkPO, checkPOofProject, getPayloadFromJWTHeader, getUserID, UserStatus, validateUserEntry } from "./validation.controller.ts";
 import { comparisonWeight, makeFetching } from "./fetch.controller.ts";
-import { saveChildren } from "./database.controller.ts";
+import { getProjectStageStuff, saveChildren } from "./database.controller.ts";
 import { getPaperCitations, getPaperReferences, getRefOrCiteList, paperUpdate, postPaperCitation, postPaperReference } from "./paper.controller.ts";
 import { Criteria } from "../model/db/criteria.ts";
 import { Review } from "../model/db/review.ts";
@@ -47,6 +47,8 @@ export const paperCache = new Cache<IApiPaper>(CacheType.F, 0, "paperCache")
 export const authorCache = new Cache<IApiAuthor>(CacheType.F, 0, "authorCache")
 
 const reducer = (accumulator: string, currentValue: string) => accumulator + " / " + currentValue;
+
+const fetchSemaphore = new Semaphore(3);
 /**
  * Creates a project
  *
@@ -341,6 +343,7 @@ export const refetchPaperOfProject = async (ctx: Context, projectID: number) => 
  * @param authorName 
  */
 const fetchToDB = async (stageID: number, projectID: number, doi?: string, title?: string, authorName?: string, parentPaper?: Paper) => {
+    var release = await fetchSemaphore.acquire();
     try {
         let project = await Project.find(projectID)
         let apis: SearchApi[] = [];
@@ -402,7 +405,7 @@ const fetchToDB = async (stageID: number, projectID: number, doi?: string, title
     } catch (err) {
         logger.error(err)
     }
-
+    release();
 }
 
 const semaphore = new Semaphore(1);
@@ -503,6 +506,24 @@ export const getPapersOfProjectStage = async (ctx: Context, projectID: number, s
         let message: PapersMessage = { papers: await convertPapersToPaperMessage(await Promise.all(papers), stageID, userID) }
 
         ctx.response.body = JSON.stringify(message)
+    }
+}
+
+export const getPapersOfProjectStageFast = async (ctx: Context, projectID: number, stageID: number) => {
+    try {
+        let validate = await validateUserEntry(ctx, [projectID, stageID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
+        if (validate) {
+            let answer = (await getProjectStageStuff(stageID)).rows
+            let userID = await getUserID(await getPayloadFromJWTHeader(ctx))
+            ctx.response.status = 200;
+            let message: PapersMessage = { papers: await convertRowsToPaperMessage(answer, userID) }
+
+
+            ctx.response.body = JSON.stringify(message)
+        }
+    } catch (e) {
+        console.log(e)
+        console.log("number " + stageID)
     }
 }
 

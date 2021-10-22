@@ -105,7 +105,7 @@ export class ApiMerger implements IApiMerger {
 				return {
 					position: i,
 					item: {
-						paper: this.merge((await response).paper, (await otherResponses).paper),
+						paper: await this.merge((await response).paper, (await otherResponses).paper),
 						citations: await this._compareChildren(response1Citations, response2Citations),
 						references: await this._compareChildren(response1References, response2References)
 					}
@@ -130,8 +130,8 @@ export class ApiMerger implements IApiMerger {
 	 * @param secondResponse - paper similar to firstResponse. Most likely provided by another api
 	 * @returns IApiResponse that has all unique values and decidable values.
 	 */
-	public merge(firstResponse: IApiPaper, secondResponse: IApiPaper): IApiPaper {
-		let uniqueProperties = this._selectUniqueKey(firstResponse, secondResponse);
+	public async merge(firstResponse: IApiPaper, secondResponse: IApiPaper): Promise<IApiPaper> {
+		let uniqueProperties = await this._selectUniqueKey(firstResponse, secondResponse);
 		return uniqueProperties as IApiPaper;
 	}
 
@@ -144,7 +144,7 @@ export class ApiMerger implements IApiMerger {
 				let isEqual: boolean = await isEqualPaper(finalChildren[i], finalChildren[j], this.comparisonWeight);
 				if (isEqual) {
 					logger.info(`CONCLUSIVE API paper merging: ${finalChildren[i].uniqueId!.map(item => item.type == idType.DOI ? item.value : undefined)} // ${finalChildren[i].title} <-> ${finalChildren[j].uniqueId!.map(item => item.type == idType.DOI ? item.value : undefined)} // ${finalChildren[j].title}`);
-					finalChildren[j] = this.merge(finalChildren[i], finalChildren[j]);
+					finalChildren[j] = await this.merge(finalChildren[i], finalChildren[j]);
 					delete finalChildren[i]
 					break;
 				}
@@ -169,7 +169,7 @@ export class ApiMerger implements IApiMerger {
 				let isEqual: boolean = await isEqualPaper(response1Citations[i], response2Citations[j], this.comparisonWeight);
 				if (isEqual) {
 					logger.info(`DIFFERENT API paper merging: ${response1Citations[i].uniqueId!.map(item => item.type == idType.DOI ? item.value : undefined)} // ${response1Citations[i].title} <-> ${response2Citations[j].uniqueId!.map(item => item.type == idType.DOI ? item.value : undefined)} // ${response2Citations[j].title}`);
-					response2Citations[j] = this.merge(response1Citations[i], response2Citations[j]);
+					response2Citations[j] = await this.merge(response1Citations[i], response2Citations[j]);
 					response1Citations = response1Citations.slice(0, i).concat(response1Citations.slice(i + 1))
 					break;
 				}
@@ -325,121 +325,122 @@ export class ApiMerger implements IApiMerger {
 	 * @param secondPaper object to check properties of
 	 * @returns final paper resulting
 	 */
-	private _selectUniqueKey(firstPaper: Object, secondPaper: Object): IApiPaper {
-		let resultingPaper: any = {};
-		let first = <any>firstPaper;
-		let second = <any>secondPaper;
-		for (const key in Object.assign({}, firstPaper, secondPaper)) {
-			if (key == "id" || (!first[key] && !second[key]) || key.includes("Source")) {
-				continue;
-			}
-			if (key == "source") {
-				resultingPaper[key] = concatWithoutDuplicates(first[key], second[key])
-				continue
-			}
-			if (!first[key + "Source"]) {
-				first[key + "Source"] = []
-				for (let i = 0; i < first[key].length; i++) {
-					first[key + "Source"].push(first.source)
+	private _selectUniqueKey(firstPaper: Object, secondPaper: Object): Promise<IApiPaper> {
+		return new Promise<IApiPaper>(resolve => {
+			let resultingPaper: any = {};
+			let first = <any>firstPaper;
+			let second = <any>secondPaper;
+			for (const key in Object.assign({}, firstPaper, secondPaper)) {
+				if (key == "id" || (!first[key] && !second[key]) || key.includes("Source")) {
+					continue;
 				}
-			}
-			if (!second[key + "Source"]) {
-				second[key + "Source"] = []
-				for (let i = 0; i < second[key].length; i++) {
-					second[key + "Source"].push(second.source)
+				if (key == "source") {
+					resultingPaper[key] = concatWithoutDuplicates(first[key], second[key])
+					continue
 				}
-			}
-			if (first[key].length === 0) {
-				resultingPaper[key] = second[key]
-				resultingPaper[key + "Source"] = second[key + "Source"]
-			} else if (second[key].length === 0) {
-				resultingPaper[key] = first[key]
-				resultingPaper[key + "Source"] = first[key + "Source"]
-			} else if (key == "pdf" || typeof first[key][0] == "number" || typeof second[key][0] == "number") {
-				resultingPaper[key] = concatWithoutDuplicates(first[key], second[key])
-				resultingPaper[key + "Source"] = []
-				for (let i = 0; i < first[key].length; i++) {
-					let position = resultingPaper[key].indexOf(first[key][i])
-					if (Array.isArray(resultingPaper[key + "Source"][position])) {
-						resultingPaper[key + "Source"][position].push(first[key + "Source"][i][0])
-					} else {
-						resultingPaper[key + "Source"][position] = first[key + "Source"][i]
+				if (!first[key + "Source"]) {
+					first[key + "Source"] = []
+					for (let i = 0; i < first[key].length; i++) {
+						first[key + "Source"].push(first.source)
 					}
 				}
-				for (let i = 0; i < second[key].length; i++) {
-					let position = resultingPaper[key].indexOf(second[key][i])
-					if (Array.isArray(resultingPaper[key + "Source"][position])) {
-						resultingPaper[key + "Source"][position].push(second[key + "Source"][i][0])
-					} else {
-						resultingPaper[key + "Source"][position] = second[key + "Source"][i]
+				if (!second[key + "Source"]) {
+					second[key + "Source"] = []
+					for (let i = 0; i < second[key].length; i++) {
+						second[key + "Source"].push(second.source)
 					}
 				}
-			} else if (key == "author") {
-				resultingPaper.author = this._mergeAuthors(first.author, second.author);
-			} else if (key == "uniqueId") {
-				resultingPaper[key] = [];
-				for (let i = 0; i < first[key].length; i++) {
-					for (let j = 0; j < second[key].length; j++) {
-						if (ApiMerger.normalizeString(first[key][i].value) == ApiMerger.normalizeString(second[key][j].value)) {
-							resultingPaper[key].push(first[key][i]);
-							delete first[key][i]
-							second[key] = second[key].slice(0, j).concat(second[key].slice(j + 1))
-							break;
+				if (first[key].length === 0) {
+					resultingPaper[key] = second[key]
+					resultingPaper[key + "Source"] = second[key + "Source"]
+				} else if (second[key].length === 0) {
+					resultingPaper[key] = first[key]
+					resultingPaper[key + "Source"] = first[key + "Source"]
+				} else if (key == "pdf" || typeof first[key][0] == "number" || typeof second[key][0] == "number") {
+					resultingPaper[key] = concatWithoutDuplicates(first[key], second[key])
+					resultingPaper[key + "Source"] = []
+					for (let i = 0; i < first[key].length; i++) {
+						let position = resultingPaper[key].indexOf(first[key][i])
+						if (Array.isArray(resultingPaper[key + "Source"][position])) {
+							resultingPaper[key + "Source"][position].push(first[key + "Source"][i][0])
+						} else {
+							resultingPaper[key + "Source"][position] = first[key + "Source"][i]
 						}
 					}
-				}
-				resultingPaper[key] = resultingPaper[key].concat(first[key].filter((item: string) => item)).concat(second[key])
-
-			} else {
-				resultingPaper[key] = [];
-				resultingPaper[key + "Source"] = [];
-				for (let i = 0; i < first[key].length; i++) {
-					for (let j = 0; j < second[key].length; j++) {
-						if (ApiMerger.normalizeString(first[key][i]) == ApiMerger.normalizeString(second[key][j])) {
-							resultingPaper[key].push(this._deriveGenericProperty(first[key][i], second[key][j]));
-							resultingPaper[key + "Source"].push([first[key + "Source"][i], second[key + "Source"][j]].flat(2))
-							delete first[key][i]
-							delete first[key + "Source"][i]
-							second[key] = second[key].slice(0, j).concat(second[key].slice(j + 1))
-							second[key + "Source"] = second[key + "Source"].slice(0, j).concat(second[key + "Source"].slice(j + 1))
-							break;
+					for (let i = 0; i < second[key].length; i++) {
+						let position = resultingPaper[key].indexOf(second[key][i])
+						if (Array.isArray(resultingPaper[key + "Source"][position])) {
+							resultingPaper[key + "Source"][position].push(second[key + "Source"][i][0])
+						} else {
+							resultingPaper[key + "Source"][position] = second[key + "Source"][i]
 						}
 					}
-				}
-				first[key] = first[key].filter((item: string) => item)
-				//console.log(first[key + "Source"])
-				first[key + "Source"] = first[key + "Source"].filter((item: string) => item)
-				//first[key + "Source"].forEach((item: any, index: number) => first[key + "Source"][index] = item.filter((i: string) => i))
-				//first = first.filter(String);
-				//second = second.filter(String)
-				// console.log(key)
-				// console.log('.')
-				// console.log(first[key])
-				// console.log(first[key + "Source"].filter((item: any) => { return item.filter((item2: string) => { return item2 }) }))
-				// console.log(first[key + "Source"]) //.filter((item: string) => console.log(item))
-				// console.log('.')
-				//console.log(tst.length > 0 ? tst[0].filter((item: string) => item) : "empty")
-				//first[k]
-				for (let i = 0; i < first[key].length; i++) {
-					//console.log(i)
-					// console.log(resultingPaper[key + "Source"]);
-					// console.log("What are you doin?" + first[key + "Source"][i])
-					resultingPaper[key + "Source"].push(first[key + "Source"][i].flat())
+				} else if (key == "author") {
+					resultingPaper.author = this._mergeAuthors(first.author, second.author);
+				} else if (key == "uniqueId") {
+					resultingPaper[key] = [];
+					for (let i = 0; i < first[key].length; i++) {
+						for (let j = 0; j < second[key].length; j++) {
+							if (ApiMerger.normalizeString(first[key][i].value) == ApiMerger.normalizeString(second[key][j].value)) {
+								resultingPaper[key].push(first[key][i]);
+								delete first[key][i]
+								second[key] = second[key].slice(0, j).concat(second[key].slice(j + 1))
+								break;
+							}
+						}
+					}
+					resultingPaper[key] = resultingPaper[key].concat(first[key].filter((item: string) => item)).concat(second[key])
+
+				} else {
+					resultingPaper[key] = [];
+					resultingPaper[key + "Source"] = [];
+					for (let i = 0; i < first[key].length; i++) {
+						for (let j = 0; j < second[key].length; j++) {
+							if (ApiMerger.normalizeString(first[key][i]) == ApiMerger.normalizeString(second[key][j])) {
+								resultingPaper[key].push(this._deriveGenericProperty(first[key][i], second[key][j]));
+								resultingPaper[key + "Source"].push([first[key + "Source"][i], second[key + "Source"][j]].flat(2))
+								delete first[key][i]
+								delete first[key + "Source"][i]
+								second[key] = second[key].slice(0, j).concat(second[key].slice(j + 1))
+								second[key + "Source"] = second[key + "Source"].slice(0, j).concat(second[key + "Source"].slice(j + 1))
+								break;
+							}
+						}
+					}
+					first[key] = first[key].filter((item: string) => item)
+					//console.log(first[key + "Source"])
+					first[key + "Source"] = first[key + "Source"].filter((item: string) => item)
+					//first[key + "Source"].forEach((item: any, index: number) => first[key + "Source"][index] = item.filter((i: string) => i))
+					//first = first.filter(String);
+					//second = second.filter(String)
+					// console.log(key)
+					// console.log('.')
+					// console.log(first[key])
+					// console.log(first[key + "Source"].filter((item: any) => { return item.filter((item2: string) => { return item2 }) }))
+					// console.log(first[key + "Source"]) //.filter((item: string) => console.log(item))
+					// console.log('.')
+					//console.log(tst.length > 0 ? tst[0].filter((item: string) => item) : "empty")
+					//first[k]
+					for (let i = 0; i < first[key].length; i++) {
+						//console.log(i)
+						// console.log(resultingPaper[key + "Source"]);
+						// console.log("What are you doin?" + first[key + "Source"][i])
+						resultingPaper[key + "Source"].push(first[key + "Source"][i].flat())
+
+					}
+					for (let i = 0; i < second[key].length; i++) {
+						resultingPaper[key + "Source"].push(second[key + "Source"][i].flat())
+					}
+
+					resultingPaper[key] = resultingPaper[key].concat(first[key]).concat(second[key])
 
 				}
-				for (let i = 0; i < second[key].length; i++) {
-					resultingPaper[key + "Source"].push(second[key + "Source"][i].flat())
-				}
-
-				resultingPaper[key] = resultingPaper[key].concat(first[key]).concat(second[key])
 
 			}
-
-		}
-		return resultingPaper as IApiPaper;
+			resolve(resultingPaper as IApiPaper)
+		})
 	}
 }
-
 export const getDOI = (paper: { [index: string]: any }): string[] => {
 	let DOI: string[] = [];
 
@@ -455,3 +456,4 @@ export const getDOI = (paper: { [index: string]: any }): string[] => {
 	}
 	return DOI;
 }
+

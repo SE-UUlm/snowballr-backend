@@ -1,7 +1,7 @@
 import { Paper } from "../../model/db/paper.ts";
 import { PaperMessage, Status } from "../../model/messages/papersMessage.ts";
 import { checkUniqueVal, getProjectPaperID, getProjectPaperScope } from "../../controller/databaseFetcher/paper.ts";
-import { assign } from "../assign.ts"
+import { assign, concatWithoutDuplicates } from "../assign.ts"
 import { IApiPaper } from "../../api/iApiPaper.ts"
 import { getDOI } from "../../api/apiMerger.ts";
 import { logger, fileLogger } from "../../api/logger.ts";
@@ -19,6 +19,7 @@ import { isEqualAuthor } from "../../api/checkIsEqual.ts";
 import { convertAuthorToAuthorMessage } from "./authorConverter.ts"
 import { checkUserReviewOfProjectPaper, getAllReviewsFromProjectPaper } from "../../controller/databaseFetcher/review.ts";
 import { PaperScopeForStage } from "../../model/db/paperScopeForStage.ts";
+import { AuthorMessage } from "../../model/messages/author.message.ts";
 
 export const convertPapersToPaperMessage = async (papers: Paper[], stageId?: number, userId?: number) => {
     let paperMessages: PaperMessage[] = [];
@@ -29,6 +30,80 @@ export const convertPapersToPaperMessage = async (papers: Paper[], stageId?: num
     return paperMessages;
 }
 
+export const convertRowsToPaperMessage = async (answer: any, userID: number | undefined) => {
+
+    let paperMessage: PaperMessage[] = []
+    let lastId = -1;
+    for (let element of answer) {
+        if (lastId == Number(element[0])) {
+            let paper = paperMessage[paperMessage.length - 1]
+            if (element[12]) {
+                paper.pdf = concatWithoutDuplicates(paper.pdf, [element[12]])
+            }
+            if (element[13]) {
+                if (!paper.authors.some(author => author.id == Number(element[13]))) {
+                    paper.authors.push({
+                        id: element[13] ? Number(element[13]) : undefined,
+                        firstName: element[15] ? String(element[15]) : undefined,
+                        lastName: element[16] ? String(element[16]) : undefined,
+                        rawString: element[14] ? String(element[14]) : undefined,
+                        orcid: element[17] ? String(element[17]) : undefined,
+                    })
+                }
+            }
+
+        } else {
+            lastId = Number(element[0])
+            let author: AuthorMessage = {
+                id: element[13] ? Number(element[13]) : undefined,
+                firstName: element[15] ? String(element[15]) : undefined,
+                lastName: element[16] ? String(element[16]) : undefined,
+                rawString: element[14] ? String(element[14]) : undefined,
+                orcid: element[17] ? String(element[17]) : undefined,
+
+            }
+
+            let paper: PaperMessage = {
+                id: Number(element[3]),
+                doi: element[4] ? String(element[4]) : undefined,
+                title: element[5] ? String(element[5]) : undefined,
+                abstract: element[6] ? String(element[6]) : undefined,
+                year: element[7] ? Number(element[7]) : undefined,
+                publisher: element[8] ? String(element[8]) : undefined,
+                type: element[9] ? String(element[9]) : undefined,
+                scope: element[10] ? String(element[10]) : undefined,
+                scopeName: element[11] ? String(element[11]) : undefined,
+                ppid: Number(element[0]),
+                finalDecision: element[1] ? String(element[1]) : undefined,
+                authors: author.id ? [author] : [],
+                pdf: element[12] ? [String(element[12])] : []
+            }
+
+            if (paperCache.has(String(paper.id))) {
+                paper.status = Status.unfinished
+            } else if (paper.finalDecision) {
+                paper.status = Status.completelyEvaluated
+            } else {
+                let reviews = await getAllReviewsFromProjectPaper(Number(paper.ppid));
+
+                if (userID && reviews.some(item => Number(item.userId) == userID)) {
+                    paper.status = Status.evaluatedByMyself
+                } else if (paper.ppid && reviews.length > 0) {
+                    paper.status = Status.partiallyEvaluated
+                } else {
+                    paper.status = Status.ready
+                }
+            }
+
+            paperMessage.push(paper)
+        }
+
+
+    }
+
+    return paperMessage
+
+}
 export const convertPaperToPaperMessage = async (paper: Paper, stageId?: number, userId?: number) => {
     let paperMessage: PaperMessage = { id: Number(paper.id), pdf: [], authors: [] }
     let pp: PaperScopeForStage | undefined;

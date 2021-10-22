@@ -88,6 +88,8 @@ export const isEqualPaper = (firstResponse: IApiPaper, secondResponse: IApiPaper
 }
 
 const isEqualAuthors = (firstAuthors: IApiAuthor[], secondAuthors: IApiAuthor[]): number => {
+
+
 	let equalAuthors: number = 0;
 
 	for (let a1 in firstAuthors) {
@@ -95,8 +97,10 @@ const isEqualAuthors = (firstAuthors: IApiAuthor[], secondAuthors: IApiAuthor[])
 			equalAuthors += isEqualAuthor(firstAuthors[a1], secondAuthors[a2])
 		}
 	}
-	return equalAuthors / (firstAuthors.length >= secondAuthors.length ? firstAuthors.length : secondAuthors.length);
+	return (equalAuthors / (firstAuthors.length >= secondAuthors.length ? firstAuthors.length : secondAuthors.length))
+
 }
+
 export const isEqualAuthor = (firstAuthor: IApiAuthor, secondAuthor: IApiAuthor) => {
 	if (Object.keys(firstAuthor).length === 0 || Object.keys(secondAuthor).length === 0) {
 		logger.error("one author value was not set")
