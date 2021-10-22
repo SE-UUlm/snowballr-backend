@@ -18,73 +18,72 @@ export const regexLetterFollowedByPoint = /^[a-zA-Z][\. ].*/g
  * @param secondResponse - paper similar to firstResponse. Most likely provided by another api
  * @returns boolean whether the papers are found out to be equal or not
  */
-export const isEqualPaper = (firstResponse: IApiPaper, secondResponse: IApiPaper, comparisonWeight: IComparisonWeight): Promise<boolean> => {
-	return new Promise<boolean>(resolve => {
-		if (!firstResponse || !secondResponse) {
-			resolve(false)
-		}
-		let comparison: IComparisonWeight = {} as IComparisonWeight;
-		Object.assign(comparison, comparisonWeight)
-		let firstDOI: string[] = getDOI(firstResponse);
-		let secondDOI: string[] = getDOI(secondResponse);
+export const isEqualPaper = (firstResponse: IApiPaper, secondResponse: IApiPaper, comparisonWeight: IComparisonWeight): boolean => {
+	if (!firstResponse || !secondResponse) {
+		return false
+	}
+	let comparison: IComparisonWeight = {} as IComparisonWeight;
+	Object.assign(comparison, comparisonWeight)
+	let firstDOI: string[] = getDOI(firstResponse);
+	let secondDOI: string[] = getDOI(secondResponse);
 
 
-		/** if DOI of 2 paper is equal we can assume that its the same paper */
-		for (let i = 0; i < firstDOI.length; i++) {
-			for (let j = 0; j < secondDOI.length; j++) {
-				if (firstDOI[i] && secondDOI[j]) {
-					if (firstDOI[i] == secondDOI[j]) {
-						resolve(true)
-					} else {
-						resolve(false)
-					}
+	/** if DOI of 2 paper is equal we can assume that its the same paper */
+	for (let i = 0; i < firstDOI.length; i++) {
+		for (let j = 0; j < secondDOI.length; j++) {
+			if (firstDOI[i] && secondDOI[j]) {
+				if (firstDOI[i] == secondDOI[j]) {
+					return true
+				} else {
+					return false
 				}
 			}
 		}
+	}
 
-		let sameAuthor: number = 0;
-		let sameYear: number = 0;
+	let sameAuthor: number = 0;
+	let sameYear: number = 0;
 
-		/** Get the levenshtein distance for both titles and compare the in comparison to their length
-		 * Weight is used to control the importance of the whole equality formula */
-		const [sameTitle, worked1] = compareStringArrays(comparison.titleWeight, firstResponse.title, secondResponse.title);
-		if (!worked1) {
-			comparison.titleWeight = 0;
-		}
-		/** Get the levenshtein distance for both abstracts and compare the in comparison to their length
-		 * Weight is used to control the importance of the whole equality formula */
-		const [sameAbstract, worked2] = compareStringArrays(comparison.abstractWeight, firstResponse.abstract, secondResponse.abstract)
-		if (!worked2) {
-			comparison.abstractWeight = 0;
-		}
+	/** Get the levenshtein distance for both titles and compare the in comparison to their length
+	 * Weight is used to control the importance of the whole equality formula */
+	const [sameTitle, worked1] = compareStringArrays(comparison.titleWeight, firstResponse.title, secondResponse.title);
+	if (!worked1) {
+		comparison.titleWeight = 0;
+	}
+	/** Get the levenshtein distance for both abstracts and compare the in comparison to their length
+	 * Weight is used to control the importance of the whole equality formula */
+	const [sameAbstract, worked2] = compareStringArrays(comparison.abstractWeight, firstResponse.abstract, secondResponse.abstract)
+	if (!worked2) {
+		comparison.abstractWeight = 0;
+	}
 
-		/** Compare if papers have equal publication year. Year might differ by one for papers published on different platform at the end of the year */
-		if (firstResponse.year && secondResponse.year && firstResponse.year.length > 0 && secondResponse.year.length > 0) {
-			sameYear = compareYears(firstResponse.year, secondResponse.year) ? comparison.yearWeight : -comparison.yearWeight;
-		} else {
-			comparison.yearWeight = 0;
-		}
+	/** Compare if papers have equal publication year. Year might differ by one for papers published on different platform at the end of the year */
+	if (firstResponse.year && secondResponse.year && firstResponse.year.length > 0 && secondResponse.year.length > 0) {
+		sameYear = compareYears(firstResponse.year, secondResponse.year) ? comparison.yearWeight : -comparison.yearWeight;
+	} else {
+		comparison.yearWeight = 0;
+	}
 
-		/** Compare of each of the authors is the same by normalizing them or using the orchid.
-		 * Weight is used to control the importance of the whole equality formula */
-		if (firstResponse.author && secondResponse.author && firstResponse.author.length > 0 && secondResponse.author.length > 0) { // 0.7 ->
-			sameAuthor = isEqualAuthors(firstResponse.author, secondResponse.author) * comparison.authorWeight;
+	/** Compare of each of the authors is the same by normalizing them or using the orchid.
+	 * Weight is used to control the importance of the whole equality formula */
+	if (firstResponse.author && secondResponse.author && firstResponse.author.length > 0 && secondResponse.author.length > 0) { // 0.7 ->
+		sameAuthor = isEqualAuthors(firstResponse.author, secondResponse.author) * comparison.authorWeight;
 
-			//TODO: if title and year are equal likely to be equal --> year might be shifted by one year
-			//TODO: Take Publisher into Account.
-		} else {
-			comparison.authorWeight = 0;
-		}
-		if ((comparison.titleWeight + comparison.abstractWeight) === 0) {
-			resolve(false)
-		}
+		//TODO: if title and year are equal likely to be equal --> year might be shifted by one year
+		//TODO: Take Publisher into Account.
+	} else {
+		comparison.authorWeight = 0;
+	}
+	if ((comparison.titleWeight + comparison.abstractWeight) === 0) {
+		return false
+	}
 
-		/** Calculate the complete equality of 2 papers. OverallWeight is used to kinda control the aggressiveness of the algorithm */
-		if (((sameTitle + sameAbstract + sameAuthor + sameYear) / (comparison.titleWeight + comparison.abstractWeight + comparison.authorWeight + comparison.yearWeight)) > comparison.overallWeight) {
-			resolve(true);
-		}
-		resolve(false);
-	})
+	/** Calculate the complete equality of 2 papers. OverallWeight is used to kinda control the aggressiveness of the algorithm */
+	if (((sameTitle + sameAbstract + sameAuthor + sameYear) / (comparison.titleWeight + comparison.abstractWeight + comparison.authorWeight + comparison.yearWeight)) > comparison.overallWeight) {
+		return true;
+	}
+	return false;
+
 }
 
 const isEqualAuthors = (firstAuthors: IApiAuthor[], secondAuthors: IApiAuthor[]): number => {

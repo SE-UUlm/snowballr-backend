@@ -474,7 +474,7 @@ const savePaper = async (apiPaper: IApiPaper, stage: Stage, overallWeight: numbe
     comparison.overallWeight = overallWeight
     for (let paperStuff of papers) {
         let dbPaper = paperStuff.paper
-        let equal = await isEqualPaper(await convertDBPaperToIApiPaper(dbPaper), apiPaper, comparison)
+        let equal = isEqualPaper(await convertDBPaperToIApiPaper(dbPaper), apiPaper, comparison)
         if (equal) {
             await assignOnlyIfUnassignedPaper(dbPaper, apiPaper)
             return dbPaper.update()
