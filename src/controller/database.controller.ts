@@ -42,6 +42,7 @@ export const saveChildren = async (into: string, column1: string, column2: strin
                         VALUES (${firstId}, ${secondId})`);
 }
 
+
 /**
  * Returns the values of a many-to-many relationship table, currently written to retrieve papers from the citation/reference table.
  * @param table name of the table
