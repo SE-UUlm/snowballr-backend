@@ -18,7 +18,7 @@ export interface PaperMessage {
     scopeName?: string,
     createdAt?: Date,
     updatedAt?: Date
-    status?: Status
+    status?: Status | string
     finalDecision?: string
     pdf: string[]
     authors: AuthorMessage[]
@@ -30,5 +30,5 @@ export enum Status {
     ready = "ready",
     partiallyEvaluated = "partiallyEvaluated",
     evaluatedByMyself = "evaluatedByMyself",
-    completelyEvaluated = "completlyEvaluated",
+    completelyEvaluated = "completelyEvaluated",
 }
