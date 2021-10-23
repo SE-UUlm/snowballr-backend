@@ -30,7 +30,7 @@ export const convertPapersToPaperMessage = async (papers: Paper[], stageId?: num
     return paperMessages;
 }
 
-export const convertRowsToPaperMessage = (answer: any, userID: number) => {
+export const convertRowsToPaperMessage = (answer: any, userID: number, paperCacheUrls: string[]) => {
 
     let paperMessage: PaperMessage[] = []
     let lastId = -1;
@@ -82,7 +82,7 @@ export const convertRowsToPaperMessage = (answer: any, userID: number) => {
                 pdf: element[12] ? [String(element[12])] : []
             }
 
-            if (paperCache.has(String(paper.id))) {
+            if (paperCacheUrls.find(el => el == (String(paper.id)))) {
                 paper.status = Status.unfinished
             } else if (paper.finalDecision) {
                 paper.status = Status.completelyEvaluated
