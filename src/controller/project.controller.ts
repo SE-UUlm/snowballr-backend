@@ -42,6 +42,7 @@ import {
 import { isEqualPaper } from "../api/checkIsEqual.ts";
 import { IComparisonWeight } from "../api/iComparisonWeight.ts";
 import { Semaphore } from "https://deno.land/x/semaphore/mod.ts"
+import { parry } from "https://deno.land/x/parry/mod.ts";
 
 export const paperCache = new Cache<IApiPaper>(CacheType.F, 0, "paperCache")
 export const authorCache = new Cache<IApiAuthor>(CacheType.F, 0, "authorCache")
@@ -516,9 +517,9 @@ export const getPapersOfProjectStageFast = async (ctx: Context, projectID: numbe
             let answer = (await getProjectStageStuff(stageID)).rows
             let userID = await getUserID(await getPayloadFromJWTHeader(ctx))
             ctx.response.status = 200;
-            let message: PapersMessage = { papers: await convertRowsToPaperMessage(answer, userID) }
-
-
+            let thread = parry(convertRowsToPaperMessage)
+            let message: PapersMessage = { papers: await thread(answer, Number(userID)) }
+            parry.close()
             ctx.response.body = JSON.stringify(message)
         }
     } catch (e) {

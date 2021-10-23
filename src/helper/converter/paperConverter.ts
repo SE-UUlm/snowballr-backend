@@ -30,7 +30,7 @@ export const convertPapersToPaperMessage = async (papers: Paper[], stageId?: num
     return paperMessages;
 }
 
-export const convertRowsToPaperMessage = async (answer: any, userID: number | undefined) => {
+export const convertRowsToPaperMessage = (answer: any, userID: number) => {
 
     let paperMessage: PaperMessage[] = []
     let lastId = -1;
@@ -50,6 +50,9 @@ export const convertRowsToPaperMessage = async (answer: any, userID: number | un
                         orcid: element[17] ? String(element[17]) : undefined,
                     })
                 }
+            }
+            if (paper.status === Status.partiallyEvaluated && element[19] && Number(element[19]) == userID) {
+                paper.status = Status.evaluatedByMyself
             }
 
         } else {
@@ -83,22 +86,15 @@ export const convertRowsToPaperMessage = async (answer: any, userID: number | un
                 paper.status = Status.unfinished
             } else if (paper.finalDecision) {
                 paper.status = Status.completelyEvaluated
+            } else if (element[19] && Number(element[19]) == userID) {
+                paper.status = Status.evaluatedByMyself
+            } else if (paper.ppid && element[18]) {
+                paper.status = Status.partiallyEvaluated
             } else {
-                //TODO reviews
-                /*
-                let reviews = await getAllReviewsFromProjectPaper(Number(paper.ppid));
-
-                if (userID && reviews.some(item => Number(item.userId) == userID)) {
-                    paper.status = Status.evaluatedByMyself
-                } else if (paper.ppid && reviews.length > 0) {
-                    paper.status = Status.partiallyEvaluated
-                } else {
-                    paper.status = Status.ready
-                }
-                */
-
                 paper.status = Status.ready
             }
+
+
 
             paperMessage.push(paper)
         }
