@@ -51,8 +51,8 @@ export const convertRowsToPaperMessage = (answer: any, userID: number, paperCach
                     })
                 }
             }
-            if (paper.status === Status.partiallyEvaluated && element[19] && Number(element[19]) == userID) {
-                paper.status = Status.evaluatedByMyself
+            if (paper.status == "partiallyEvaluated" && element[19] && Number(element[19]) == userID) {
+                paper.status = "evaluatedByMyself",
             }
 
         } else {
@@ -83,15 +83,15 @@ export const convertRowsToPaperMessage = (answer: any, userID: number, paperCach
             }
 
             if (paperCacheUrls.find(el => el == (String(paper.id)))) {
-                paper.status = Status.unfinished
+                paper.status = "unfinished"
             } else if (paper.finalDecision) {
-                paper.status = Status.completelyEvaluated
+                paper.status = "completelyEvaluated"
             } else if (element[19] && Number(element[19]) == userID) {
-                paper.status = Status.evaluatedByMyself
+                paper.status = "evaluatedByMyself"
             } else if (paper.ppid && element[18]) {
-                paper.status = Status.partiallyEvaluated
+                paper.status = "partiallyEvaluated"
             } else {
-                paper.status = Status.ready
+                paper.status = "ready"
             }
 
 
