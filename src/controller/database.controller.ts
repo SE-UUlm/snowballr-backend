@@ -55,6 +55,11 @@ export const getChildren = (table: string, column1: string, column2: string, id:
 }
 
 
+/**
+ * Direct query for all info of a project paper
+ * @param id 
+ * @returns 
+ */
 export const getProjectStageStuff = (id: number) => {
     //0         1                   2           3                   4       5       6           7       8           9      10          11          12      13         14       15              16              17       18                  19
     return client.queryArray(`
