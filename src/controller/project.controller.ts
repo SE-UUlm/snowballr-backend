@@ -1128,6 +1128,7 @@ export const addReviewToPaper = async (ctx: Context, projectID: number, stageID:
                     ctx.response.body = JSON.stringify(review)
                 }
             } catch (err) {
+                console.log(err)
                 makeErrorMessage(ctx, 404, "stage or paper id not found")
             }
         }
