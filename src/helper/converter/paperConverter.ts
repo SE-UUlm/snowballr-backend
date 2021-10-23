@@ -52,7 +52,7 @@ export const convertRowsToPaperMessage = (answer: any, userID: number, paperCach
                 }
             }
             if (paper.status == "partiallyEvaluated" && element[19] && Number(element[19]) == userID) {
-                paper.status = "evaluatedByMyself",
+                paper.status = "evaluatedByMyself"
             }
 
         } else {
