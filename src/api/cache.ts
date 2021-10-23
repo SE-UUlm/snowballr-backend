@@ -85,6 +85,15 @@ export class Cache<V> {
 		return false;
 	}
 
+	public getAllKeys(): string[] {
+		if (this.memoryCache) {
+			return this.memoryCache.keys()
+		}
+		if (this.fileCache) { return Array.from(this.fileCache.fileCaches.keys()) };
+
+		return []
+	}
+
 	/**
 	 * Clears cache
 	 */
