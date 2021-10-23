@@ -23,7 +23,6 @@ const KEY = await crypto.subtle.generateKey(
  */
 export const validateContentType = async (ctx: Context, next: () => Promise<unknown>) => {
     ctx.response.type = "application/json";
-    ctx.response.headers.set('Cache-Control', 'no-cache')
     let contentType = ctx.request.headers.get("Content-Type");
     if (await emptyContent(ctx)) {
         await next();

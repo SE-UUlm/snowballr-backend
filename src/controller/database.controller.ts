@@ -56,7 +56,7 @@ export const getChildren = (table: string, column1: string, column2: string, id:
 
 
 export const getProjectStageStuff = (id: number) => {
-    //0         1                   2           3                   4       5       6           7       8           9      10          11          12      13         14       15              16              17      
+    //0         1                   2           3                   4       5       6           7       8           9      10          11          12      13         14       15              16              17       18                  19
     return client.queryArray(`
-SELECT i.id, i.final_decision, i.addition_date, p.id as paper_id, p.doi, p.title, p.abstract, p.year, p.publisher, p.type, p.scope, p.scope_name, pdf.url, a.id, a.raw_string, a.first_name, a.last_name, a.orcid FROM inscopefor as i JOIN paper as p ON i.paper_id = p.id LEFT OUTER JOIN pdf ON p.id = pdf.paper_id LEFT OUTER JOIN wrote as w ON w.paper_id = p.id LEFT OUTER JOIN author as a ON a.id = w.author_id WHERE i.stage_id = ${id} ORDER BY i.id`)
+SELECT i.id, i.final_decision, i.addition_date, p.id as paper_id, p.doi, p.title, p.abstract, p.year, p.publisher, p.type, p.scope, p.scope_name, pdf.url, a.id, a.raw_string, a.first_name, a.last_name, a.orcid , r.overallEvaluation, r.userId FROM inscopefor as i JOIN paper as p ON i.paper_id = p.id LEFT OUTER JOIN pdf ON p.id = pdf.paper_id LEFT OUTER JOIN wrote as w ON w.paper_id = p.id LEFT OUTER JOIN author as a ON a.id = w.author_id LEFT OUTER JOIN review as r ON r.paper_id = i.id WHERE i.stage_id = ${id} ORDER BY i.id`)
 }
