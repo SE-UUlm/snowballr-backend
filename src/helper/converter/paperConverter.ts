@@ -38,7 +38,7 @@ export const convertRowsToPaperMessage = (answer: any, userID: number, paperCach
         if (lastId == Number(element[0])) {
             let paper = paperMessage[paperMessage.length - 1]
             if (element[12]) {
-                paper.pdf = concatWithoutDuplicates(paper.pdf, [element[12]])
+                paper.pdf = paper.pdf.concat([element[12]].filter((item) => paper.pdf.indexOf(item) < 0))
             }
             if (element[13]) {
                 if (!paper.authors.some(author => author.id == Number(element[13]))) {
