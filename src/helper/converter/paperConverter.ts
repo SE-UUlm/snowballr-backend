@@ -82,7 +82,7 @@ export const convertRowsToPaperMessage = (answer: any, userID: number, paperCach
                 pdf: element[12] ? [String(element[12])] : []
             }
 
-            if (paperCacheUrls.filter(el => el == (String(paper.id))).length > 0) {
+            if (paperCacheUrls.find(el => el == (String(paper.id)))) {
                 paper.status = Status.unfinished
             } else if (paper.finalDecision) {
                 paper.status = Status.completelyEvaluated
