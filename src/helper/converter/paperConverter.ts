@@ -96,7 +96,7 @@ export const convertRowsToPaperMessage = (answer: any, userID: number, paperCach
 
 
 
-            paperMessage[--size]
+            paperMessage[--size] = paper
         }
 
 
