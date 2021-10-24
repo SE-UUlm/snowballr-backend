@@ -9,7 +9,7 @@ import { convertProjectToProjectMessage } from "../helper/converter/projectConve
 import { Stage } from "../model/db/stage.ts";
 import { Paper } from "../model/db/paper.ts";
 import { getAllStagesFromProject } from "./databaseFetcher/stage.ts";
-import { checkPaperInProjectStage, getAllPaperMessagesJoin, getAllPapersFromProject, getAllPapersFromStage, getPaperByDoi, getProjectPaperID, getProjectPaperScope } from "./databaseFetcher/paper.ts";
+import { checkPaperInProjectStage, getAllPaperMessagesJoin, getAllPapersFromProject, getAllPapersFromStage, getPaperByDoi, getPaperSizeOfStage, getProjectPaperID, getProjectPaperScope } from "./databaseFetcher/paper.ts";
 import { PapersMessage } from "../model/messages/papersMessage.ts";
 import { PaperScopeForStage } from "../model/db/paperScopeForStage.ts";
 import { assignOnlyIfUnassignedPaper, checkIApiPaper, convertDBPaperToIApiPaper, convertIApiPaperToDBPaper, convertPapersToPaperMessage, convertPaperToPaperMessage, convertRowsToPaperMessage } from "../helper/converter/paperConverter.ts";
@@ -516,10 +516,12 @@ export const getPapersOfProjectStageFast = async (ctx: Context, projectID: numbe
         if (validate) {
             let answer = (await getProjectStageStuff(stageID)).rows
             let userID = await getUserID(await getPayloadFromJWTHeader(ctx))
+            let size = await getPaperSizeOfStage(stageID)
             ctx.response.status = 200;
             let thread = parry(convertRowsToPaperMessage)
-            let message: PapersMessage = { papers: await thread(answer, Number(userID), paperCache.getAllKeys()) }
+            let message: PapersMessage = { papers: await thread(answer, Number(userID), paperCache.getAllKeys(), size) }
             parry.close()
+
             ctx.response.body = JSON.stringify(message)
         }
     } catch (e) {
@@ -1129,6 +1131,9 @@ export const addReviewToPaper = async (ctx: Context, projectID: number, stageID:
                 }
             } catch (err) {
                 console.log(err)
+                console.log("with ppID: " + ppID)
+                let pp = await PaperScopeForStage.find(ppID)
+                console.log(pp)
                 makeErrorMessage(ctx, 404, "stage or paper id not found")
             }
         }
