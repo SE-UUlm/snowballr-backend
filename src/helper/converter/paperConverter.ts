@@ -36,7 +36,7 @@ export const convertRowsToPaperMessage = (answer: any, userID: number, paperCach
     let lastId = -1;
     for (let element of answer) {
         if (lastId == Number(element[0])) {
-            let paper = paperMessage[paperMessage.length - 1]
+            let paper = paperMessage[size]
             if (element[12]) {
                 paper.pdf = paper.pdf.concat([element[12]].filter((item) => paper.pdf.indexOf(item) < 0))
             }
