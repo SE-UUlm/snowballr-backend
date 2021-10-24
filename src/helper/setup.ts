@@ -52,7 +52,7 @@ export const setup = async (dropDatabase: boolean) => {
     Relationships.belongsTo(Review, User)
     Relationships.belongsTo(Stage, Project)
     Relationships.belongsTo(Review, Stage)
-    Relationships.belongsTo(Review, Paper)
+    Relationships.belongsTo(Review, PaperScopeForStage)
     Relationships.belongsTo(ReadingList, Paper)
     Relationships.belongsTo(ReadingList, User)
     Relationships.belongsTo(PaperScopeForStage, Stage)
