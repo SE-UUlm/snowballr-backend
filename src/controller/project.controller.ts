@@ -1108,7 +1108,7 @@ export const addReviewToPaper = async (ctx: Context, projectID: number, stageID:
         if (userID) {
             try {
                 let review = await Review.create({
-                    paperId: ppID,
+                    paperscopeforstageId: ppID,
                     userId: userID,
                     stageId: stageID
                 })
