@@ -514,12 +514,12 @@ export const getPapersOfProjectStageFast = async (ctx: Context, projectID: numbe
     try {
         let validate = await validateUserEntry(ctx, [projectID, stageID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
         if (validate) {
-            let answer = (await getProjectStageStuff(stageID)).rows
+            let answer = getProjectStageStuff(stageID)
+            let size = getPaperSizeOfStage(stageID)
             let userID = await getUserID(await getPayloadFromJWTHeader(ctx))
-            let size = await getPaperSizeOfStage(stageID)
             ctx.response.status = 200;
             let thread = parry(convertRowsToPaperMessage)
-            let message: PapersMessage = { papers: await thread(answer, Number(userID), paperCache.getAllKeys(), size) }
+            let message: PapersMessage = { papers: await thread((await answer).rows, Number(userID), paperCache.getAllKeys(), (await size)) }
             parry.close()
 
             ctx.response.body = JSON.stringify(message)
