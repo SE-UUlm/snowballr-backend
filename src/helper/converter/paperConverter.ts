@@ -30,13 +30,13 @@ export const convertPapersToPaperMessage = async (papers: Paper[], stageId?: num
     return paperMessages;
 }
 
-export const convertRowsToPaperMessage = (answer: any, userID: number, paperCacheUrls: string[], size: number) => {
+export const convertRowsToPaperMessage = (answer: any, userID: number, paperCacheUrls: string[]) => {
 
-    let paperMessage: PaperMessage[] = new Array(size)
+    let paperMessage: PaperMessage[] = []
     let lastId = -1;
     for (let element of answer) {
         if (lastId == Number(element[0])) {
-            let paper = paperMessage[size]
+            let paper = paperMessage[paperMessage.length - 1]
             if (element[12]) {
                 paper.pdf = paper.pdf.concat([element[12]].filter((item) => paper.pdf.indexOf(item) < 0))
             }
@@ -96,7 +96,7 @@ export const convertRowsToPaperMessage = (answer: any, userID: number, paperCach
 
 
 
-            paperMessage[--size] = paper
+            paperMessage.push(paper)
         }
 
 
