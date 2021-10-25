@@ -10,7 +10,7 @@ export class Pdf extends Model {
 
     static fields = {
         id: { primaryKey: true, autoIncrement: true, type: DataTypes.INTEGER },
-        url: { type: DataTypes.STRING, allowNull: true },
+        url: { type: DataTypes.STRING, allowNull: true, length: 1024 },
     }
 
     static paper() {

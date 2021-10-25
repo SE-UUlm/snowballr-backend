@@ -458,37 +458,42 @@ const createChildren = async (item: IApiPaper, into: string, column1: string, co
  */
 const savePaper = async (apiPaper: IApiPaper, stage: Stage, overallWeight: number): Promise<Paper> => {
 
-    let doi = getDOI(apiPaper)
+    try {
+        let doi = getDOI(apiPaper)
 
-    if (doi[0]) {
-        let dbPaper = await getPaperByDoi(doi[0].toLowerCase())
-        if (dbPaper) {
-            await assignOnlyIfUnassignedPaper(dbPaper, apiPaper)
-            return dbPaper.update()
+        if (doi[0]) {
+            let dbPaper = await getPaperByDoi(doi[0].toLowerCase())
+            if (dbPaper) {
+                await assignOnlyIfUnassignedPaper(dbPaper, apiPaper)
+                return dbPaper.update()
+            }
+
         }
 
-    }
-
-    let papers = await getAllPapersFromStage(Number(stage.id))
-    let comparison = {} as IComparisonWeight
-    Object.assign(comparison, comparisonWeight)
-    comparison.overallWeight = overallWeight
-    for (let paperStuff of papers) {
-        let dbPaper = paperStuff.paper
-        let equal = isEqualPaper(await convertDBPaperToIApiPaper(dbPaper), apiPaper, comparison)
-        if (equal) {
-            await assignOnlyIfUnassignedPaper(dbPaper, apiPaper)
-            return dbPaper.update()
+        let papers = await getAllPapersFromStage(Number(stage.id))
+        let comparison = {} as IComparisonWeight
+        Object.assign(comparison, comparisonWeight)
+        comparison.overallWeight = overallWeight
+        for (let paperStuff of papers) {
+            let dbPaper = paperStuff.paper
+            let equal = isEqualPaper(await convertDBPaperToIApiPaper(dbPaper), apiPaper, comparison)
+            if (equal) {
+                await assignOnlyIfUnassignedPaper(dbPaper, apiPaper)
+                return dbPaper.update()
+            }
         }
+
+
+        let paper = await convertIApiPaperToDBPaper(apiPaper)
+
+        if (!checkIApiPaper(apiPaper)) {
+            paperCache.add(String(paper.id), (apiPaper))
+        }
+        return paper;
+    } catch (er) {
+        console.log(er)
+        return Paper.create({})
     }
-
-
-    let paper = await convertIApiPaperToDBPaper(apiPaper)
-
-    if (!checkIApiPaper(apiPaper)) {
-        paperCache.add(String(paper.id), (apiPaper))
-    }
-    return paper;
 
 }
 /**
