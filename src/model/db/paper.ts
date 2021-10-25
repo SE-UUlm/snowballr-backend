@@ -15,13 +15,13 @@ export class Paper extends Model {
         // !!!!!! ID has to stay as first value !!!!!
         id: { primaryKey: true, autoIncrement: true, type: DataTypes.INTEGER },
         doi: { type: DataTypes.STRING, allowNull: true },
-        title: { type: DataTypes.STRING, allowNull: true,length: 1024 },
-        abstract: { type: DataTypes.STRING, allowNull: true, length: 10240 },
+        title: { type: DataTypes.STRING, allowNull: true, length: 1024 },
+        abstract: { type: DataTypes.STRING, allowNull: true, length: 20480 },
         year: { type: DataTypes.INTEGER, allowNull: true },
-        publisher: { type: DataTypes.STRING, allowNull: true },
-        type: { type: DataTypes.STRING, allowNull: true },
-        scope: { type: DataTypes.STRING, allowNull: true },
-        scopeName: { type: DataTypes.STRING, allowNull: true },
+        publisher: { type: DataTypes.STRING, allowNull: true, length: 1024 },
+        type: { type: DataTypes.STRING, allowNull: true, length: 1024 },
+        scope: { type: DataTypes.STRING, allowNull: true, length: 1024 },
+        scopeName: { type: DataTypes.STRING, allowNull: true, length: 1024 },
 
 
     }
