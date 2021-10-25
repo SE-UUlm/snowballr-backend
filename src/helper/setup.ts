@@ -97,50 +97,7 @@ export const setup = async (dropDatabase: boolean) => {
 
 
         //TODO: only to showcase functionality, otherwise delete
-        await insertUser("ad@test", "1234", false, "admin2", "admin2", "active");
-        let project = await Project.create({
-            name: "Test", minCountReviewers: 0, countDecisiveReviewers: 5, combinationOfReviewers: 0,
-            type: "",
-            evaluationFormula: "",
-            mergeThreshold: 0.8
-        })
-        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
-        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
-        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: true })
-        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
-        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
-        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
-
-        await UserIsPartOfProject.create({
-            isOwner: true,
-            userId: Number(admin.id),
-            projectId: Number(project.id)
-        })
-        let stage = await Stage.create({ projectId: Number(project.id), name: "awesome Stage", number: 0 })
-        await Stage.create({ projectId: Number(project.id), name: "the next Stage", number: 1 })
-        let paper01 = await Paper.create({ title: "paper01" })
-        let paper02 = await Paper.create({ title: "paper02" })
-        let paper03 = await Paper.create({ title: "paper03" })
-        let author = await Author.create({ rawString: "Author01" })
-        let author2 = await Author.create({ rawString: "Author02" })
-        await Wrote.create({ paperId: Number(paper01.id), authorId: Number(author.id) })
-        await Wrote.create({ paperId: Number(paper02.id), authorId: Number(author2.id) })
-        await Paper.create({ title: "paper04" })
-        let paper05 = await Paper.create({ title: "paper05" })
-        let pp01 = await PaperScopeForStage.create({ paperId: Number(paper01.id), stageId: Number(stage.id), finalDecision: "YES" })
-        let pp02 = await PaperScopeForStage.create({ paperId: Number(paper02.id), stageId: Number(stage.id), finalDecision: "NO" })
-        await PaperScopeForStage.create({ paperId: Number(paper05.id), stageId: Number(stage.id) })
-        await Review.create({ finished: true, overallEvaluation: "YES", userId: Number(admin.id), paperscopeforstageId: Number(pp01.id), stageId: Number(stage.id) })
-        await Review.create({ finished: true, overallEvaluation: "YES", userId: Number(admin.id), paperscopeforstageId: Number(pp01.id), stageId: Number(stage.id) })
-        await Review.create({ finished: true, overallEvaluation: "YES", userId: Number(admin.id), paperscopeforstageId: Number(pp01.id), stageId: Number(stage.id) })
-        await Review.create({ finished: true, overallEvaluation: "MAYBE", userId: Number(admin.id), paperscopeforstageId: Number(pp02.id), stageId: Number(stage.id) })
-        await Review.create({ finished: true, overallEvaluation: "MAYBE", userId: Number(admin.id), paperscopeforstageId: Number(pp02.id), stageId: Number(stage.id) })
-        await Review.create({ finished: true, overallEvaluation: "MAYBE", userId: Number(admin.id), paperscopeforstageId: Number(pp02.id), stageId: Number(stage.id) })
-        await Review.create({ finished: true, overallEvaluation: "MAYBE", userId: Number(admin.id), paperscopeforstageId: Number(pp02.id), stageId: Number(stage.id) })
-        await Review.create({ finished: true, overallEvaluation: "NO", userId: Number(admin.id), paperscopeforstageId: Number(pp02.id), stageId: Number(stage.id) })
-        await client.queryArray(`INSERT INTO citedby (papercitedid, papercitingid)
-                VALUES (${Number(paper01.id)}, ${Number(paper02.id)}),
-                        (${Number(paper01.id)}, ${Number(paper03.id)})`)
+        await insertUser("test@test", "1234", true, "test", "user", "active");
     }
 
 
