@@ -21,7 +21,7 @@ import { logger } from "../api/logger.ts";
 import { IApiAuthor } from "../api/iApiAuthor.ts";
 import { checkAdmin, checkMemberOfProject, checkPO, checkPOofProject, getPayloadFromJWTHeader, getUserID, UserStatus, validateUserEntry } from "./validation.controller.ts";
 import { comparisonWeight, makeFetching } from "./fetch.controller.ts";
-import { getProjectStageStuff, saveChildren } from "./database.controller.ts";
+import { getProjectStageCount, getProjectStageStuff, saveChildren } from "./database.controller.ts";
 import { getPaperCitations, getPaperReferences, getRefOrCiteList, paperUpdate, postPaperCitation, postPaperReference } from "./paper.controller.ts";
 import { Criteria } from "../model/db/criteria.ts";
 import { Review } from "../model/db/review.ts";
@@ -392,7 +392,6 @@ const fetchToDB = async (stageID: number, projectID: number, doi?: string, title
 
                 let nextStage: Stage = await findNextStage(currentStage, projectID)
 
-                let allChildren: Promise<Paper>[] = []
                 for (let item of element.citations!) {
                     await createChildren(item, "citedBy", "papercitingid", "papercitedid", Number(parent.id), nextStage, project)
                 }
@@ -458,42 +457,38 @@ const createChildren = async (item: IApiPaper, into: string, column1: string, co
  */
 const savePaper = async (apiPaper: IApiPaper, stage: Stage, overallWeight: number): Promise<Paper> => {
 
-    try {
-        let doi = getDOI(apiPaper)
+    let doi = getDOI(apiPaper)
 
-        if (doi[0]) {
-            let dbPaper = await getPaperByDoi(doi[0].toLowerCase())
-            if (dbPaper) {
-                await assignOnlyIfUnassignedPaper(dbPaper, apiPaper)
-                return dbPaper.update()
-            }
-
+    if (doi[0]) {
+        let dbPaper = await getPaperByDoi(doi[0].toLowerCase())
+        if (dbPaper) {
+            await assignOnlyIfUnassignedPaper(dbPaper, apiPaper)
+            return dbPaper.update()
         }
 
-        let papers = await getAllPapersFromStage(Number(stage.id))
-        let comparison = {} as IComparisonWeight
-        Object.assign(comparison, comparisonWeight)
-        comparison.overallWeight = overallWeight
-        for (let paperStuff of papers) {
-            let dbPaper = paperStuff.paper
-            let equal = isEqualPaper(await convertDBPaperToIApiPaper(dbPaper), apiPaper, comparison)
-            if (equal) {
-                await assignOnlyIfUnassignedPaper(dbPaper, apiPaper)
-                return dbPaper.update()
-            }
-        }
-
-
-        let paper = await convertIApiPaperToDBPaper(apiPaper)
-
-        if (!checkIApiPaper(apiPaper)) {
-            paperCache.add(String(paper.id), (apiPaper))
-        }
-        return paper;
-    } catch (er) {
-        console.log(er)
-        return Paper.create({})
     }
+
+    let papers = await getAllPapersFromStage(Number(stage.id))
+    let comparison = {} as IComparisonWeight
+    Object.assign(comparison, comparisonWeight)
+    comparison.overallWeight = overallWeight
+    for (let paperStuff of papers) {
+        let dbPaper = paperStuff.paper
+        let equal = isEqualPaper(await convertDBPaperToIApiPaper(dbPaper), apiPaper, comparison)
+        if (equal) {
+            await assignOnlyIfUnassignedPaper(dbPaper, apiPaper)
+            return dbPaper.update()
+        }
+    }
+
+
+    let paper = await convertIApiPaperToDBPaper(apiPaper)
+
+    if (!checkIApiPaper(apiPaper)) {
+        paperCache.add(String(paper.id), (apiPaper))
+    }
+    return paper;
+
 
 }
 /**
@@ -508,7 +503,7 @@ export const getPapersOfProjectStage = async (ctx: Context, projectID: number, s
         ctx.response.status = 200;
         let userID = await getUserID(await getPayloadFromJWTHeader(ctx))
         let paperInfo = await getAllPapersFromStage(stageID);
-        let papers = paperInfo.map(async item => { return await item.paper })
+        let papers = paperInfo.map(item => { return item.paper })
         let message: PapersMessage = { papers: await convertPapersToPaperMessage(await Promise.all(papers), stageID, userID) }
 
         ctx.response.body = JSON.stringify(message)
@@ -520,11 +515,12 @@ export const getPapersOfProjectStageFast = async (ctx: Context, projectID: numbe
         let validate = await validateUserEntry(ctx, [projectID, stageID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
         if (validate) {
             let answer = getProjectStageStuff(stageID)
-            let size = getPaperSizeOfStage(stageID)
+            let size = getProjectStageCount(stageID)
             let userID = await getUserID(await getPayloadFromJWTHeader(ctx))
             ctx.response.status = 200;
             let finalAnswer = (await answer).rows
-            let finalSize = (await size)
+            console.log((await size).rows)
+            let finalSize = (await size).rows[0][1]
             let thread = parry(convertRowsToPaperMessage)
             let message: PapersMessage = { papers: await thread(finalAnswer, Number(userID), paperCache.getAllKeys(), finalSize) }
             parry.close()
