@@ -32,13 +32,8 @@ export const getAllPapersFromStage = async (id: number): Promise<{ paper: Paper,
     return new Array<{ paper: Paper, scope: PaperScopeForStage, authors: Author[] }>();
 }
 
-export const getPaperSizeOfStage = async (id: number): Promise<number> => {
-    let paperScopes = await PaperScopeForStage.where("stageId", id).get()
-    if (Array.isArray(paperScopes)) {
-        return paperScopes.length
-    }
-
-    return 0
+export const getPaperSizeOfStage = (id: number): Promise<number> => {
+    return PaperScopeForStage.where("stageId", id).count()
 }
 
 export const getAllPapersFromProject = async (id: number): Promise<{ papers: { paper: Paper, scope: PaperScopeForStage, authors: Author[] }[], stage: Stage }[]> => {
