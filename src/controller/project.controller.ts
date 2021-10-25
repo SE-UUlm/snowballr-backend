@@ -521,7 +521,7 @@ export const getPapersOfProjectStageFast = async (ctx: Context, projectID: numbe
             let finalAnswer = (await answer).rows
             console.log((await size).rows)
             console.log((await size).rows[0][0])
-            let finalSize = (await size).rows[0][0]
+            let finalSize = Number((await size).rows[0][0])
             let thread = parry(convertRowsToPaperMessage)
             let message: PapersMessage = { papers: await thread(finalAnswer, Number(userID), paperCache.getAllKeys(), finalSize) }
             parry.close()
