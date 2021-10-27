@@ -13,14 +13,14 @@ import { warnApiDisabledByConfig } from "../helper/error.ts";
 
 export class CrossRefApi implements IApiFetcher {
 	url: string;
-	cache: Cache<IApiResponse> | undefined;
+	cache: Cache | undefined;
 	private _headers: {};
 	private _rateLimit: number = 50;
 	private _rateInterval: number = 1;
 	private _iterations: number = 0;
 	private _mail: string = "";
 
-	public constructor(url: string, mail?: string, cache?: Cache<IApiResponse>) {
+	public constructor(url: string, mail?: string, cache?: Cache) {
 		logger.info("CrossRefApi initialized");
 		this.url = url;
 		//this._headers = { 'User-Agent': `GroovyBib/1.1 (https://example.org/GroovyBib/; mailto:GroovyBib@example.org) BasedOnFunkyLib/1.4` };
@@ -44,7 +44,7 @@ export class CrossRefApi implements IApiFetcher {
 		let queryString = hashQuery(query);
 
 		try {
-			let get = this.cache!.get(queryString)
+			let get = this.cache?.get(queryString)
 			if (CONFIG.crossRef.useCache && this.cache && get) {
 				logger.info(`CR: Loaded fetch from cache.`);
 				return get;

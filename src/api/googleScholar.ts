@@ -36,7 +36,7 @@ var lastScrappingRun: Date;
 
 export class GoogleScholar implements IApiFetcher {
 	url: string;
-	cache: Cache<IApiResponse> | undefined;
+	cache: Cache | undefined;
 	//private _rateInterval:  = new Range();
 	private _paperReferences: number = 0;
 	private _domParser: DOMParser;
@@ -46,7 +46,7 @@ export class GoogleScholar implements IApiFetcher {
 	private _proxy: Proxy | undefined;
 	private _retries: number = 0;
 
-	public constructor(url: string, token: string, cache?: Cache<IApiResponse>) {
+	public constructor(url: string, token: string, cache?: Cache) {
 		logger.info("GoogleScholar initialized");
 		this.url = url;
 		this.cache = cache;

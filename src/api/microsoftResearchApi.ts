@@ -12,14 +12,14 @@ import { warnApiDisabledByConfig } from "../helper/error.ts";
 
 export class MicrosoftResearchApi implements IApiFetcher {
 	url: string;
-	cache: Cache<IApiResponse> | undefined;
+	cache: Cache | undefined;
 	private _authToken: string;
 	private _headers: {};
 	private _attributes: string;
 	private _paperTypeMapper: string[];
 	private _queryAttributeMapper: {};
 
-	public constructor(url: string, authToken: string, cache?: Cache<IApiResponse>) {
+	public constructor(url: string, authToken: string, cache?: Cache) {
 		logger.info("MicrosoftResearchApi initialized");
 		this.url = url;
 		this._authToken = authToken;
@@ -71,7 +71,7 @@ export class MicrosoftResearchApi implements IApiFetcher {
 		let references: Promise<IApiPaper[]> | undefined;
 		let queryString = hashQuery(query);
 		try {
-			let get = this.cache!.get(queryString);
+			let get = this.cache?.get(queryString);
 			if (CONFIG.microsoftAcademic.useCache && this.cache && get) {
 				logger.info(`MA: Loaded fetch from cache.`)
 				//console.log(get)

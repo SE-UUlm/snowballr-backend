@@ -12,8 +12,8 @@ import { warnApiDisabledByConfig } from "../helper/error.ts";
 
 export class SemanticScholar implements IApiFetcher {
 	url: string;
-	cache: Cache<IApiResponse> | undefined;
-	public constructor(url: string, token: string, cache?: Cache<IApiResponse>) {
+	cache: Cache | undefined;
+	public constructor(url: string, token: string, cache?: Cache) {
 		logger.info("SemanticScholar initialized");
 		this.url = url;
 		this.cache = cache;
@@ -33,7 +33,7 @@ export class SemanticScholar implements IApiFetcher {
 		let references: Promise<IApiPaper[]> | undefined;
 		let queryString = hashQuery(query);
 		try {
-			let get = this.cache!.get(queryString);
+			let get = this.cache?.get(queryString);
 			if (CONFIG.semanticScholar.useCache && this.cache && get) {
 				logger.info(`S2: Loaded fetch from cache.`)
 				return get;

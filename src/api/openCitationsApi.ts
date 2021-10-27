@@ -11,10 +11,10 @@ import { CONFIG } from "../helper/config.ts";
 import { warnApiDisabledByConfig } from "../helper/error.ts";
 export class OpenCitationsApi implements IApiFetcher {
 	url: string;
-	cache: Cache<IApiResponse> | undefined;
+	cache: Cache | undefined;
 	private _headers: {};
 
-	public constructor(url: string, token: string, cache?: Cache<IApiResponse>) {
+	public constructor(url: string, token: string, cache?: Cache) {
 		logger.info("OpenCitationsApi initialized");
 		this.url = url;
 		this._headers = { "Content-Type": "application/json" };
@@ -35,7 +35,7 @@ export class OpenCitationsApi implements IApiFetcher {
 		let references: Promise<IApiPaper[]> | undefined;
 		let queryString = hashQuery(query);
 		try {
-			let get = this.cache!.get(queryString);
+			let get = this.cache?.get(queryString);
 			if (CONFIG.openCitations.useCache && this.cache && get) {
 				logger.info(`OC: Loaded fetch from cache.`)
 				return get;

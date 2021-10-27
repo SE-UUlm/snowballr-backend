@@ -13,7 +13,7 @@ import { warnApiDisabledByConfig } from "../helper/error.ts";
 
 export class IeeeApi implements IApiFetcher {
 	url: string;
-	cache: Cache<IApiResponse> | undefined;
+	cache: Cache | undefined;
 	private _token: string;
 	private _config: {} = {};
 	private _paperReferences: number = 0;
@@ -22,7 +22,7 @@ export class IeeeApi implements IApiFetcher {
 	private _citeRegexAuthors: RegExp = new RegExp(/([A-ZÀ-Ú][a-zà-ú]* [A-ZÀ-Ú][a-zà-ú.\-]*)/g);
 	private _citeRegexTitle: RegExp = new RegExp(/(?<=\<i\>)(.*?)(?=\<\/i\>)/g);
 
-	public constructor(url: string, token: string, cache?: Cache<IApiResponse>) {
+	public constructor(url: string, token: string, cache?: Cache) {
 		logger.info("IEEE initialized");
 		this.url = url;
 		this._token = token;
@@ -43,7 +43,7 @@ export class IeeeApi implements IApiFetcher {
 		let references: Promise<IApiPaper[]> | undefined;
 		let queryString = hashQuery(query);
 		try {
-			let get = this.cache!.get(queryString);
+			let get = this.cache?.get(queryString);
 			if (CONFIG.ieee.useCache && this.cache && get) {
 				logger.info(`IEEE: Loaded fetch from cache.`)
 				return get;

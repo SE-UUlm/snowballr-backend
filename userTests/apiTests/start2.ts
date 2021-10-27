@@ -37,11 +37,12 @@ for (let i = 0; i < 1; i++) {
 		rawName: undefined,
 		doi: TestDoi[i],
 		title: undefined,
-		enabledApis: [[SourceApi.MA, "9a02225751354cd29397eba3f5382101"]], //"luca999@web.de"], [SourceApi.IE, "4yk5d9an52ejynjsmzqxe62r"], [SourceApi.MA, "9a02225751354cd29397eba3f5382101"], [SourceApi.OC], [SourceApi.S2], [SourceApi.GS]],
+		enabledApis: [[SourceApi.MA, "9a02225751354cd29397eba3f5382101"]], //[SourceApi.CR, "luca999@web.de"], [SourceApi.IE, "4yk5d9an52ejynjsmzqxe62r"], [SourceApi.MA, "9a02225751354cd29397eba3f5382101"], [SourceApi.OC], [SourceApi.S2], [SourceApi.GS]],
 		aggression: comparisonWeight
 	}
 	console.log(`Iteration ${i}`);
 	let batch = await BATCHER.startFetch(query);
+	let batch2 = await BATCHER.startFetch(query);
 	logResponse(await batch.response);
 }
 

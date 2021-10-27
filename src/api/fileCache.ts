@@ -73,7 +73,8 @@ export class FileCache {
 	}
 
 	public async add(key: string, value: string) {
-		await Deno.writeTextFile(`${this.path}/${key}`, value);
+		const options: Deno.WriteFileOptions = { mode: 777 };
+		await Deno.writeTextFile(`${this.path}/${key}`, value, options);
 		this.fileCaches.set(key, value);
 	}
 

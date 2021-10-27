@@ -3,6 +3,8 @@ import { logger, fileLogger } from "./logger.ts";
 import { difference } from "https://deno.land/std/datetime/mod.ts";
 import { FileCache } from "./fileCache.ts";
 import { idType } from "./iApiUniqueId.ts";
+import { IApiResponse } from "./iApiResponse.ts";
+import { CONFIG } from "../helper/config.ts";
 
 
 export enum CacheType {
@@ -14,10 +16,11 @@ export enum CacheType {
  * Allows to cache IApiResponse objects previously fetched to minimize time to wait and dont overload the apis.
  * @template V 
  */
-export class Cache<V> {
+export class Cache {
 	memoryCache: RemoteCache.Cache<string, string> | undefined;
 	fileCache: FileCache | undefined;
 	uuid: string = "";
+	private static instance: Cache;
 
 	/**
 	 * Creates an instance of cache.
@@ -27,16 +30,23 @@ export class Cache<V> {
 	 * @param [ttlOfFileCacheInSec] 
 	 * @param [folderName] 
 	 */
-	public constructor(type: CacheType, ttl?: number, folderName?: string, checkInterval?: number) {
+	private constructor() {
 		this.uuid = crypto.randomUUID();
-		if (type === CacheType.IM) { this.memoryCache = new RemoteCache.Cache<string, string>(ttl! * 1000); }
-		else if (type === CacheType.F) {
-			this.fileCache = new FileCache(`${new URL('.', import.meta.url).pathname}/../../fileCache/${folderName}`, ttl, checkInterval);
-			logger.info(`FileCache created. FolderName: ${folderName}`)
+		if (CONFIG.cache.type === CacheType.IM) { this.memoryCache = new RemoteCache.Cache<string, string>(10800! * 1000); }
+		else if (CONFIG.cache.type === CacheType.F) {
+			this.fileCache = new FileCache(`${new URL('.', import.meta.url).pathname}/../../fileCache`, 10800, 500);
+			logger.info(`FileCache created.`)
 		}
 		else {
 			throw new Error("Invalid Constructor")
 		};
+	}
+
+	public static getInstance() {
+		if (!Cache.instance) {
+			Cache.instance = new Cache();
+		}
+		return Cache.instance;
 	}
 
 	/**
@@ -44,10 +54,10 @@ export class Cache<V> {
 	 * @param key 
 	 * @param value 
 	 */
-	public async add(key: string, value: V) {
+	public async add(key: string, value: IApiResponse) {
 		if (this.memoryCache) { this.memoryCache.add(String(key), JSON.stringify(value)) };
 		if (this.fileCache) { await this.fileCache.add(key, JSON.stringify(value)) };
-		console.log("ADDING SOME CACHE")
+		console.log("ADDING SOME CACHE");
 	}
 
 	/**
@@ -64,7 +74,7 @@ export class Cache<V> {
 	 * @param key 
 	 * @returns get 
 	 */
-	public get(key: string): V | undefined {
+	public get(key: string): IApiResponse | undefined {
 		if (this.memoryCache) {
 			let result = this.memoryCache.get(String(key));
 			if (result) { return JSON.parse(result) }
