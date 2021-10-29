@@ -37,9 +37,6 @@ export const convertRowsToPaperMessage = (answer: any, userID: number, paperCach
     for (let element of answer) {
         if (lastId == Number(element[0])) {
             let paper = paperMessage[size]
-            if (element[12]) {
-                paper.pdf = paper.pdf.concat([element[12]].filter((item) => paper.pdf.indexOf(item) < 0))
-            }
             if (element[13]) {
                 if (!paper.authors.some(author => author.id == Number(element[13]))) {
                     paper.authors.push({
@@ -79,7 +76,7 @@ export const convertRowsToPaperMessage = (answer: any, userID: number, paperCach
                 ppid: Number(element[0]),
                 finalDecision: element[1] ? String(element[1]) : undefined,
                 authors: author.id ? [author] : [],
-                pdf: element[12] ? [String(element[12])] : []
+                pdf: element[12] ? String(element[12]).split(" ") : []
             }
 
             if (paperCacheUrls.find(el => el == (String(paper.id)))) {
