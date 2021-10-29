@@ -32,25 +32,19 @@ export const convertPapersToPaperMessage = async (papers: Paper[], stageId?: num
 
 export const convertRowsToPaperMessage = (answer: any, userID: number, paperCacheUrls: string[], size: number) => {
 
-    let paperMessage: PaperMessage[] = new Array(size)
+    let paperMessage: PaperMessage[] = new Array(Number(size))
     let lastId = -1;
     for (let element of answer) {
         if (lastId == Number(element[0])) {
             let paper = paperMessage[size]
-            if (element[13]) {
-                if (!paper.authors.some(author => author.id == Number(element[13]))) {
-                    paper.authors.push({
-                        id: element[13] ? Number(element[13]) : undefined,
-                        firstName: element[15] ? String(element[15]) : undefined,
-                        lastName: element[16] ? String(element[16]) : undefined,
-                        rawString: element[14] ? String(element[14]) : undefined,
-                        orcid: element[17] ? String(element[17]) : undefined,
-                    })
-                }
-            }
-            if (paper.status == "partiallyEvaluated" && element[19] && Number(element[19]) == userID) {
-                paper.status = "evaluatedByMyself"
-            }
+
+            paper.authors.push({
+                id: element[13] ? Number(element[13]) : undefined,
+                firstName: element[15] ? String(element[15]) : undefined,
+                lastName: element[16] ? String(element[16]) : undefined,
+                rawString: element[14] ? String(element[14]) : undefined,
+                orcid: element[17] ? String(element[17]) : undefined,
+            })
 
         } else {
             lastId = Number(element[0])
@@ -83,10 +77,14 @@ export const convertRowsToPaperMessage = (answer: any, userID: number, paperCach
                 paper.status = "unfinished"
             } else if (paper.finalDecision) {
                 paper.status = "completelyEvaluated"
-            } else if (element[19] && Number(element[19]) == userID) {
-                paper.status = "evaluatedByMyself"
-            } else if (paper.ppid && element[18]) {
-                paper.status = "partiallyEvaluated"
+            }
+            else if (paper.ppid && element[18]) {
+                if (element[18].split(" ").some((el: any) => Number(el) == userID)) {
+                    paper.status = "evaluatedByMyself"
+                } else {
+                    paper.status = "partiallyEvaluated"
+                }
+
             } else {
                 paper.status = "ready"
             }
