@@ -1,6 +1,6 @@
 export const TestDoi = [
 	"10.1109/SEAA.2009.60",
-	//"10.1007/978-3-319-02654-1_11",
+	"10.1007/978-3-319-02654-1_11",
 	// "10.1007/s10009-010-0142-1",
 	// "10.1109/SEAA.2009.60",  // --> 2 more citations found by scholar: "A Unified Modeling Language Framework for Specifying and Analyzing Temporal Properties", "Hybrid model checking approach to analysing rule conformance applied to HIPAA privacy rules, A"
 	// "10.1109/RCIS.2011.6006870", // "Derivation of event-based state machines from business processes"

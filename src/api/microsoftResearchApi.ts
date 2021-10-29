@@ -9,6 +9,7 @@ import { Cache } from "./cache.ts";
 import { hashQuery } from "../helper/queryHasher.ts";
 import { CONFIG } from "../helper/config.ts";
 import { warnApiDisabledByConfig } from "../helper/error.ts";
+import { addCache, getCache } from "../helper/workerHelper.ts";
 
 export class MicrosoftResearchApi implements IApiFetcher {
 	url: string;
@@ -71,11 +72,13 @@ export class MicrosoftResearchApi implements IApiFetcher {
 		let references: Promise<IApiPaper[]> | undefined;
 		let queryString = hashQuery(query);
 		try {
-			let get = this.cache!.get(queryString);
-			if (CONFIG.microsoftAcademic.useCache && this.cache && get) {
-				logger.info(`MA: Loaded fetch from cache.`)
-				//console.log(get)
-				return get;
+			if (CONFIG.microsoftAcademic.useCache) {
+				let get = await getCache(queryString, SourceApi.MA);
+				if (get) {
+					logger.info(`MA: Loaded fetch from cache.`)
+					//console.log(get)
+					return get;
+				}
 			}
 			let response = await fetch(this.url, {
 				method: 'POST',
@@ -92,23 +95,26 @@ export class MicrosoftResearchApi implements IApiFetcher {
 			citations = json.entities[0] && json.entities[0].Id ? this._getCitations(json.entities[0].Id) : new Promise((resolve) => { resolve([]); });
 			references = json.entities[0] && json.entities[0].RId ? this._getReferences(json.entities[0].RId) : new Promise((resolve) => { resolve([]); });
 
+			// deno-lint-ignore no-var no-inner-declarations
 			var apiReturn: IApiResponse = {
 				"paper": paper,
 				"citations": await citations,
 				"references": await references
 			}
-			if (this.cache) {
-				this.cache.add(queryString, apiReturn);
-			};
+			if (this.cache || CONFIG.microsoftAcademic.useCache) {
+				addCache(queryString, SourceApi.MA, apiReturn);
+			}
 		}
 		catch (e) {
 			logger.warning(`MicrosoftResearchApi: Failed to fetch Query: ${e}`);
+			// deno-lint-ignore no-var no-inner-declarations
 			var apiReturn: IApiResponse = {
 				"paper": paper,
 				"citations": citations ? await citations : [],
 				"references": references ? await references : []
 			}
 		}
+		logger.info("MA: DONE");
 		return apiReturn;
 	}
 

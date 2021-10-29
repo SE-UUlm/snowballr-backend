@@ -9,6 +9,7 @@ import { Cache } from "./cache.ts";
 import { hashQuery } from "../helper/queryHasher.ts";
 import { CONFIG } from "../helper/config.ts";
 import { warnApiDisabledByConfig } from "../helper/error.ts";
+import { addCache, getCache } from "../helper/workerHelper.ts";
 export class OpenCitationsApi implements IApiFetcher {
 	url: string;
 	cache: Cache<IApiResponse> | undefined;
@@ -35,11 +36,16 @@ export class OpenCitationsApi implements IApiFetcher {
 		let references: Promise<IApiPaper[]> | undefined;
 		let queryString = hashQuery(query);
 		try {
-			let get = this.cache!.get(queryString);
-			if (CONFIG.openCitations.useCache && this.cache && get) {
-				logger.info(`OC: Loaded fetch from cache.`)
-				return get;
+			console.log("here")
+			if (CONFIG.openCitations.useCache) {
+				let get = await getCache(queryString, SourceApi.OC);
+				if (get) {
+					logger.info(`OC: Loaded fetch from cache.`)
+					//console.log(get)
+					return get;
+				}
 			}
+			console.log("there")
 			let response = await fetch(`${this.url}/index/api/v1/metadata/${query.doi}`);
 			let json = await response.json();
 			paper = this._parseResponse(json[0]);
@@ -50,9 +56,10 @@ export class OpenCitationsApi implements IApiFetcher {
 				"citations": await citations,
 				"references": await references
 			}
-			if (this.cache) {
-				this.cache.add(queryString, apiReturn);
-			};
+			if (this.cache || CONFIG.openCitations.useCache) {
+				console.log("OC TRY CACHE ADD")
+				addCache(queryString, SourceApi.OC, apiReturn);
+			}
 		}
 		catch (e) {
 			logger.critical(`OpenCitationsApi: Failed to fetch Query: ${e}`);
@@ -62,6 +69,7 @@ export class OpenCitationsApi implements IApiFetcher {
 				"references": references ? await references : []
 			}
 		}
+		logger.info("OC: DONE");
 		return apiReturn;
 	}
 
@@ -110,6 +118,7 @@ export class OpenCitationsApi implements IApiFetcher {
 		let count = 0;
 		while (true) {
 			try {
+				console.log(urlQuery)
 				var response = await fetch(`${this.url}/index/api/v1/metadata/${urlQuery}`);
 				if (response.status !== 200) {
 					throw new Error("OC: Failed to fetch batch of linkedDois");

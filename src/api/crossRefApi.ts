@@ -10,6 +10,7 @@ import { Cache } from "./cache.ts";
 import { hashQuery } from "../helper/queryHasher.ts";
 import { CONFIG } from "../helper/config.ts";
 import { warnApiDisabledByConfig } from "../helper/error.ts";
+import { addCache, getCache } from "../helper/workerHelper.ts";
 
 export class CrossRefApi implements IApiFetcher {
 	url: string;
@@ -44,10 +45,13 @@ export class CrossRefApi implements IApiFetcher {
 		let queryString = hashQuery(query);
 
 		try {
-			let get = this.cache!.get(queryString)
-			if (CONFIG.crossRef.useCache && this.cache && get) {
-				logger.info(`CR: Loaded fetch from cache.`);
-				return get;
+			if (CONFIG.crossRef.useCache) {
+				let get = await getCache(queryString, SourceApi.CR);
+				if (get) {
+					logger.info(`CR: Loaded fetch from cache.`)
+					//console.log(get)
+					return get;
+				}
 			}
 
 			let response = await fetch(this._parseQuery(query), {
@@ -66,10 +70,9 @@ export class CrossRefApi implements IApiFetcher {
 				"citations": await citations,
 				"references": await references
 			}
-			if (this.cache) {
-				this.cache.add(queryString, apiReturn);
-			};
-
+			if (this.cache || CONFIG.crossRef.useCache) {
+				addCache(queryString, SourceApi.CR, apiReturn);
+			}
 		}
 		catch (e) {
 			logger.warning(`CrossRef: Failed to fetch Query: ${e}`);
@@ -79,7 +82,7 @@ export class CrossRefApi implements IApiFetcher {
 				"references": references ? await references : []
 			}
 		}
-
+		logger.info("CR: DONE");
 		return apiReturn;
 	}
 

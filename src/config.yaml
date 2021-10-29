@@ -27,7 +27,7 @@ crossRef:
 openCitations:
   enabled: true
   baseUrl: https://opencitations.net
-  useCache: false
+  useCache: true
   linkedFetchSize: 50
 microsoftAcademic:
   enabled: true
@@ -37,6 +37,6 @@ cache:
   timeToLiveInSeconds: 10080000
   type: FileCache # FileCache | MemoryCache
 batcher:
-  workerPollingRateInMilSecs: 5000
+  workerPollingRateInMilSecs: 500
 
 

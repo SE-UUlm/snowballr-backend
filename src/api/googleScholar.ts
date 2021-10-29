@@ -18,6 +18,7 @@ import { difference } from 'https://deno.land/std/datetime/mod.ts'
 import { proxyPool, Proxy } from './proxyPool.ts'
 import { CONFIG } from "../helper/config.ts";
 import { warnApiDisabledByConfig } from "../helper/error.ts";
+import { addCache, getCache } from "../helper/workerHelper.ts";
 
 /*Captcha Google Scholar Rate Limits Enabled
 Fetching same Query, 30-45 sec: 3,3,4
@@ -70,11 +71,19 @@ export class GoogleScholar implements IApiFetcher {
 		queryIdentifier.update(JSON.stringify(query));
 		let queryString = queryIdentifier.toString();
 		try {
-			var get = this.cache?.get(queryString);
-			if (CONFIG.googleScholar.useCache && this.cache && get) {
-				logger.info(`GS: Loaded fetch from cache.`)
-				return get;
+			if (CONFIG.googleScholar.useCache) {
+				let get = await getCache(queryString, SourceApi.GS);
+				if (get) {
+					logger.info(`GS: Loaded fetch from cache.`)
+					//console.log(get)
+					return get;
+				}
 			}
+			// var get = this.cache?.get(queryString);
+			// if (CONFIG.googleScholar.useCache && this.cache && get) {
+			// 	logger.info(`GS: Loaded fetch from cache.`)
+			// 	return get;
+			// }
 
 			// use a random user-agent to make it harder to get rate limited.
 			let rawHtml = await this._rateLimitedScrapeRequest(`${this.url}/scholar?as_sdt=0,5&q=${query.doi}&hl=en`, true);
@@ -98,9 +107,8 @@ export class GoogleScholar implements IApiFetcher {
 				"citations": citationUrl && citationCount ? await citations : [],
 				"references": []
 			}
-			if (this.cache) {
-				//console.log('GS: Adding query to cache')
-				await this.cache.add(queryString, apiReturn);
+			if (this.cache || CONFIG.googleScholar.useCache) {
+				addCache(queryString, SourceApi.GS, apiReturn);
 			};
 		}
 		catch (e) {
@@ -114,6 +122,7 @@ export class GoogleScholar implements IApiFetcher {
 		finally {
 			this._proxy?.close();
 		}
+		logger.info("GS: DONE");
 		return apiReturn;
 	}
 

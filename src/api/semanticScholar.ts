@@ -9,6 +9,7 @@ import { Cache } from "./cache.ts";
 import { hashQuery } from "../helper/queryHasher.ts";
 import { CONFIG } from "../helper/config.ts";
 import { warnApiDisabledByConfig } from "../helper/error.ts";
+import { addCache, getCache } from "../helper/workerHelper.ts";
 
 export class SemanticScholar implements IApiFetcher {
 	url: string;
@@ -33,10 +34,13 @@ export class SemanticScholar implements IApiFetcher {
 		let references: Promise<IApiPaper[]> | undefined;
 		let queryString = hashQuery(query);
 		try {
-			let get = this.cache!.get(queryString);
-			if (CONFIG.semanticScholar.useCache && this.cache && get) {
-				logger.info(`S2: Loaded fetch from cache.`)
-				return get;
+			if (CONFIG.semanticScholar.useCache) {
+				let get = await getCache(queryString, SourceApi.S2);
+				if (get) {
+					logger.info(`S2: Loaded fetch from cache.`)
+					//console.log(get)
+					return get;
+				}
 			}
 			//logger.debug("here")
 			let response = await fetch(`${this.url}/${query.doi}`);
@@ -51,9 +55,9 @@ export class SemanticScholar implements IApiFetcher {
 				"citations": await citations,
 				"references": await references
 			}
-			if (this.cache) {
-				this.cache.add(queryString, apiReturn);
-			};
+			if (this.cache || CONFIG.semanticScholar.useCache) {
+				addCache(queryString, SourceApi.S2, apiReturn);
+			}
 		}
 		catch (e) {
 			logger.critical(`SemanticScholarApi: Failed to fetch Query: ${e}`);
@@ -63,6 +67,7 @@ export class SemanticScholar implements IApiFetcher {
 				"references": references ? await references : []
 			}
 		}
+		logger.info("S2: DONE");
 		return apiReturn;
 	}
 

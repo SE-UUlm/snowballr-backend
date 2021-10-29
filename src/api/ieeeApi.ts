@@ -10,6 +10,7 @@ import { Cache } from "./cache.ts";
 import { hashQuery } from "../helper/queryHasher.ts";
 import { CONFIG } from "../helper/config.ts";
 import { warnApiDisabledByConfig } from "../helper/error.ts";
+import { addCache, getCache } from "../helper/workerHelper.ts";
 
 export class IeeeApi implements IApiFetcher {
 	url: string;
@@ -43,10 +44,13 @@ export class IeeeApi implements IApiFetcher {
 		let references: Promise<IApiPaper[]> | undefined;
 		let queryString = hashQuery(query);
 		try {
-			let get = this.cache!.get(queryString);
-			if (CONFIG.ieee.useCache && this.cache && get) {
-				logger.info(`IEEE: Loaded fetch from cache.`)
-				return get;
+			if (CONFIG.ieee.useCache) {
+				let get = await getCache(queryString, SourceApi.IE);
+				if (get) {
+					logger.info(`IE: Loaded fetch from cache.`)
+					//console.log(get)
+					return get;
+				}
 			}
 			//logger.debug("here")
 			if (query.doi) {
@@ -83,9 +87,9 @@ export class IeeeApi implements IApiFetcher {
 				"citations": await this._getCitationsFromHtml(json.articles[0].html_url),
 				"references": await this._getReferencesFromHtml(json.articles[0].html_url)
 			}
-			if (this.cache) {
-				this.cache.add(queryString, apiReturn);
-			};
+			if (this.cache || CONFIG.ieee.useCache) {
+				addCache(queryString, SourceApi.IE, apiReturn);
+			}
 		}
 		catch (e) {
 			logger.critical(`IEEE - Failed to fetch Query | ${e}`);
@@ -95,6 +99,7 @@ export class IeeeApi implements IApiFetcher {
 				"references": references ? await references : []
 			}
 		}
+		logger.info("IE: DONE");
 		return apiReturn;
 	}
 

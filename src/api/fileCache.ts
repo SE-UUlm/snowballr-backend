@@ -73,7 +73,12 @@ export class FileCache {
 	}
 
 	public async add(key: string, value: string) {
-		await Deno.writeTextFile(`${this.path}/${key}`, value, { mode: 777 });
+		try {
+			await Deno.writeTextFile(`${this.path}/${key}`, value, { mode: 777 });
+		}
+		catch (e) {
+			throw new Error(`Cannot write file ${this.path}/${key}. Error ${e}`)
+		}
 		this.fileCaches.set(key, value);
 	}
 
