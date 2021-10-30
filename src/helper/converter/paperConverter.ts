@@ -98,7 +98,7 @@ export const convertRowsToPaperMessage = (answer: any, userID: number, paperCach
 
     }
 
-    return paperMessage.slice(0, ++i)
+    return paperMessage.slice(0, i)
 
 }
 export const convertPaperToPaperMessage = async (paper: Paper, stageId?: number, userId?: number) => {
