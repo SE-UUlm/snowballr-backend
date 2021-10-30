@@ -518,9 +518,8 @@ export const getPapersOfProjectStageFast = async (ctx: Context, projectID: numbe
             let userID = await getUserID(await getPayloadFromJWTHeader(ctx))
             ctx.response.status = 200;
             let finalAnswer = (await answer).rows
-            let finalSize = (await getProjectStageCount(stageID)).rows[0][0]
             let thread = parry(convertRowsToPaperMessage)
-            let message: PapersMessage = { papers: await thread(finalAnswer, Number(userID), paperCache.getAllKeys(), finalSize) }
+            let message: PapersMessage = { papers: await thread(finalAnswer, Number(userID), paperCache.getAllKeys()) }
             parry.close()
 
             ctx.response.body = JSON.stringify(message)
