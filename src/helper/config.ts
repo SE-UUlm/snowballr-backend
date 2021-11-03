@@ -18,6 +18,7 @@ export interface IConfig {
 
 export type IBatcherConfig = {
 	workerPollingRateInMilSecs: number;
+	maxWorkers: number;
 }
 
 //lvl 2
@@ -72,6 +73,10 @@ export type ICacheConfig = {
 	type: CacheType;
 }
 
+export type IThreadConfig = {
+	maxWorkers: number;
+}
+
 //lvl 3
 export type IGoogleScholarProxyConfig = {
 	enabled: boolean;
@@ -107,7 +112,7 @@ const DEFAULTCONFIG: IConfig = {
 		enabled: true
 	},
 	cache: { timeToLiveInSeconds: 10080000, type: "FileCache" },
-	batcher: { workerPollingRateInMilSecs: 500 }
+	batcher: { workerPollingRateInMilSecs: 500, maxWorkers: 8 },
 } as IConfig;
 
 

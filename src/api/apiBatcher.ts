@@ -15,6 +15,7 @@ import { Cache, CacheType } from "./cache.ts";
 import { GoogleScholar } from "./googleScholar.ts";
 import { CONFIG } from "../helper/config.ts";
 import { sleep } from "https://deno.land/x/sleep@v1.2.0/sleep.ts";
+import { WorkerThread } from "./thread.ts";
 
 
 /**
@@ -57,6 +58,9 @@ export const APIPARAMMAPPER = {
 	[SourceApi.GS]: CONFIG.googleScholar.baseUrl
 }
 
+
+
+
 /**
  * Singleton managing all active fetches. Allowing to return the same request fetch to multiple queries. 
  * Eg if diffent users in the frontend look for the same paper at the same time 
@@ -92,64 +96,13 @@ export class ApiBatcher implements IApiBatcher {
 	}
 
 	private async _mergerWorker(query: IApiQuery): Promise<IApiResponse[]> {
-		let done = false;
-		let initialized = false;
-		let data: IApiResponse[];
 
-		const worker = new Worker(new URL("worker.ts", import.meta.url).href, { type: 'module', deno: { namespace: true, permissions: "inherit" } });
-		let mergedPapers: Promise<IApiResponse[]> = new Promise<IApiResponse[]>((resolve) => {
-			const checkIfDone = () => {
-				if (done) {
-					resolve(data)
-				}
-				else setTimeout(checkIfDone, CONFIG.batcher.workerPollingRateInMilSecs);
-			};
-			checkIfDone();
-		});
-		let workerInit: Promise<void> = new Promise<void>((resolve) => {
-			const checkIfDone = () => {
-				if (initialized) {
-					resolve(worker.postMessage({ query: JSON.stringify(query), type: 'run' }))
-				}
-				else {
-					setTimeout(checkIfDone, CONFIG.batcher.workerPollingRateInMilSecs);
-				}
-			};
-			checkIfDone();
-		});
+		const worker = new WorkerThread(query);
+		worker.init(this.cache);
 
-		worker.addEventListener('message', message => {
-			//console.log("INCOMING MESSAGE " + message.data.type)
-			switch (message.data.type) {
-				case 'finished':
-					data = JSON.parse(message.data.payload);
-					done = true;
-					break;
-				case 'initialized':
-					initialized = true;
-					break;
-				case 'getCache': {
-					const cacheName: SourceApi = message.data.cacheName;
-					const queryHash: string = message.data.queryHash;
-					//console.log("-----QUERYHASH: " + queryHash);
-					const res: IApiResponse | undefined = this.cache[cacheName].get(queryHash);
-					//console.log("-----RES: " + res);
-					worker.postMessage({ type: 'returningCache', cacheName: cacheName, queryHash: queryHash, cachePayload: JSON.stringify(res) });
-					break;
-				}
-				case 'addCache': {
-					const cacheName = message.data.cacheName;
-					const queryHash: string = message.data.queryHash;
-					const cachePayload = JSON.parse(message.data.cachePayload);
-					this.cache[cacheName].add(queryHash, cachePayload);
-					break;
-				}
-			}
-		})
+		await worker.getWorkerInit();
 
-		await workerInit;
-
-		return mergedPapers;
+		return worker.getMergedPapers()!;
 	}
 
 	/**

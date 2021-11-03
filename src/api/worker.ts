@@ -6,7 +6,11 @@ import { IApiFetcher } from "./iApiFetcher.ts";
 import { SourceApi } from "./iApiPaper.ts";
 import { IApiQuery } from "./iApiQuery.ts";
 import { IApiResponse } from "./iApiResponse.ts";
+import { ILimitedWorkers } from "./iLimitedWorkers.ts";
+//import { ILimitedWorkers } from "./iLimitedWorkers.ts";
 import { logger } from "./logger.ts";
+
+export let currentRateLimit: ILimitedWorkers = { googleScholar: 1, crossRef: 1 };
 
 function initializeEnabledApis(apis: [SourceApi, string?][]): IApiFetcher[] {
 	let initializedFetchers: IApiFetcher[] = [];
@@ -92,6 +96,11 @@ self.onmessage = async (e) => {
 			}
 			loadingCaches.set(data.queryHash + data.cacheName as string, cachePayload);
 			//console.log(loadingCaches)
+			break;
+		}
+		case 'updateRateLimit': {
+			console.log("-------------Rate limit updated------------ " + data.newRateLimit);
+			currentRateLimit = data.newRateLimit;
 			break;
 		}
 	}

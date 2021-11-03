@@ -16,7 +16,7 @@ import { logResponse } from "../../src/helper/loggerHelper.ts"
 import { TestDoi } from "./testDoi.ts"
 
 
-
+console.log("hello")
 const BATCHER = new ApiBatcher();
 
 const comparisonWeight = {
@@ -37,7 +37,7 @@ for (let i = 0; i < 1; i++) {
 		rawName: undefined,
 		doi: TestDoi[i],
 		title: undefined,
-		enabledApis: [[SourceApi.CR, "luca999@web.de"], [SourceApi.IE, "4yk5d9an52ejynjsmzqxe62r"], [SourceApi.MA, "9a02225751354cd29397eba3f5382101"], [SourceApi.S2], [SourceApi.GS], [SourceApi.OC]],
+		enabledApis: [[SourceApi.CR, "luca999@web.de"], [SourceApi.GS]], //[SourceApi.IE, "4yk5d9an52ejynjsmzqxe62r"], [SourceApi.MA, "9a02225751354cd29397eba3f5382101"], [SourceApi.S2], [SourceApi.GS], [SourceApi.OC]],
 		aggression: comparisonWeight
 	}
 	const query2: IApiQuery = {
@@ -45,7 +45,7 @@ for (let i = 0; i < 1; i++) {
 		rawName: undefined,
 		doi: TestDoi[i + 1],
 		title: undefined,
-		enabledApis: [[SourceApi.CR, "luca999@web.de"], [SourceApi.IE, "4yk5d9an52ejynjsmzqxe62r"], [SourceApi.MA, "9a02225751354cd29397eba3f5382101"], [SourceApi.S2], [SourceApi.GS], [SourceApi.OC]],
+		enabledApis: [[SourceApi.CR, "luca999@web.de"], [SourceApi.GS]], //[SourceApi.IE, "4yk5d9an52ejynjsmzqxe62r"], [SourceApi.MA, "9a02225751354cd29397eba3f5382101"], [SourceApi.S2], [SourceApi.GS], [SourceApi.OC]],
 		aggression: comparisonWeight
 	}
 	console.log(`Iteration ${i}`);

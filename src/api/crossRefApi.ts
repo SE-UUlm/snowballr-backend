@@ -11,6 +11,7 @@ import { hashQuery } from "../helper/queryHasher.ts";
 import { CONFIG } from "../helper/config.ts";
 import { warnApiDisabledByConfig } from "../helper/error.ts";
 import { addCache, getCache } from "../helper/workerHelper.ts";
+//import { currentRateLimit } from "./worker.ts";
 
 export class CrossRefApi implements IApiFetcher {
 	url: string;
@@ -20,6 +21,7 @@ export class CrossRefApi implements IApiFetcher {
 	private _rateInterval: number = 1;
 	private _iterations: number = 0;
 	private _mail: string = "";
+	public rateLimit: number = 1;
 
 	public constructor(url: string, mail?: string, cache?: Cache<IApiResponse>) {
 		logger.info("CrossRefApi initialized");
@@ -167,7 +169,8 @@ export class CrossRefApi implements IApiFetcher {
 		this._iterations++;
 		////logger.warning(this._iterations);
 		if (this._iterations === this._rateLimit) {
-			await sleep(this._rateInterval * 2);
+			// for each concurrent fetch increase crossRef fetching limit
+			await sleep(this._rateInterval * 2 * this._rateLimit);
 			this._iterations = 0;
 			logger.warning(`Limiting Crossref Api due to following Restricitons: rateLimit=${this._rateLimit}; rateInterval=${this._rateInterval}`);
 		}
