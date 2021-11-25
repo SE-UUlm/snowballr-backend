@@ -309,12 +309,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         await UserIsPartOfProject.create({
             projectId: Number(project.id),
@@ -350,12 +350,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let id = Number((await UserIsPartOfProject.create({
             projectId: Number(project.id),
@@ -391,12 +391,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let app = await createMockApp();
         let token = await createJWT(user)
@@ -426,12 +426,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let app = await createMockApp();
         let token = await createJWT(user)
@@ -470,12 +470,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let bla = await UserIsPartOfProject.create({
             projectId: Number(project.id),
@@ -517,12 +517,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let bla = await UserIsPartOfProject.create({
             projectId: Number(project.id),
@@ -557,12 +557,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         await UserIsPartOfProject.create({
             projectId: Number(project.id),
@@ -596,12 +596,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         await UserIsPartOfProject.create({
             projectId: Number(project.id),
@@ -636,12 +636,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         await UserIsPartOfProject.create({
             projectId: Number(project.id),
@@ -681,12 +681,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         await UserIsPartOfProject.create({
             projectId: Number(project.id),
@@ -721,12 +721,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let stage = await Stage.create({
             name: "TestStage",
@@ -768,12 +768,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let stage = await Stage.create({
             name: "TestStage",
@@ -816,12 +816,12 @@ Deno.test({
             evaluationFormula: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let stage = await Stage.create({
             name: "TestStage",
@@ -860,12 +860,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let stage = await Stage.create({
             name: "TestStage",
@@ -907,12 +907,12 @@ Deno.test({
             evaluationFormula: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let stage = await Stage.create({
             name: "TestStage",
@@ -977,12 +977,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let stage = await Stage.create({
             name: "TestStage",
@@ -1037,12 +1037,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let stage = await Stage.create({
             name: "TestStage",
@@ -1094,12 +1094,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let stage = await Stage.create({
             name: "TestStage",
@@ -1152,12 +1152,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let stage = await Stage.create({
             name: "TestStage",
@@ -1209,12 +1209,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let stage = await Stage.create({
             name: "TestStage",
@@ -1268,12 +1268,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let stage = await Stage.create({
             name: "TestStage",
@@ -1327,12 +1327,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let stage = await Stage.create({
             name: "TestStage",
@@ -1384,12 +1384,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let stage = await Stage.create({
             name: "TestStage",
@@ -1441,12 +1441,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let stage = await Stage.create({
             name: "TestStage",
@@ -1503,12 +1503,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let stage = await Stage.create({
             name: "TestStage",
@@ -1567,12 +1567,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let stage = await Stage.create({
             name: "TestStage",
@@ -1633,12 +1633,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let stage = await Stage.create({
             name: "TestStage",
@@ -1678,13 +1678,13 @@ Deno.test({
         await saveChildren("referencedby", "paperreferencedid", "paperreferencingid", Number(paper.id), Number(paper3.id))
         await saveChildren("referencedby", "paperreferencedid", "paperreferencingid", Number(paper.id), Number(paper4.id))
 
-        await  makeRefCiteCsv(ctx, Number(project.id), Number(stage.id), Number(pp.id))
+        await makeRefCiteCsv(ctx, Number(project.id), Number(stage.id), Number(pp.id))
         assertEquals(ctx.response.status, 200)
         let answer = ctx.response.body as string
         assertEquals(answer.includes("References"), true)
         assertEquals(answer.includes("Citations"), true)
         assertEquals(answer.includes("mlem"), true)
-        let lengthTest = answer.split(/\r?\n/).length >= 10 
+        let lengthTest = answer.split(/\r?\n/).length >= 10
         assertEquals(lengthTest, true)
         await db.close();
         await client.end();
@@ -1717,12 +1717,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let stage = await Stage.create({
             name: "TestStage",
@@ -1749,7 +1749,7 @@ Deno.test({
         })
 
 
-        await  getStageCsv(ctx, Number(project.id), Number(stage.id))
+        await getStageCsv(ctx, Number(project.id), Number(stage.id))
         assertEquals(ctx.response.status, 200)
         let answer = ctx.response.body as string
         assertEquals(answer.includes("miau"), true)
@@ -1784,12 +1784,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let stage = await Stage.create({
             name: "TestStage",
@@ -1842,12 +1842,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let stage = await Stage.create({
             name: "TestStage",
@@ -1898,12 +1898,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let criteria = (await Criteria.create({
             projectId: Number(project.id),
@@ -1970,12 +1970,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         await addCriteriaToProject(ctx, Number(project.id))
         let answer = JSON.parse(ctx.response.body as string)
@@ -2020,12 +2020,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         await addCriteriaToProject(ctx, Number(project.id))
         let answer = JSON.parse(ctx.response.body as string)
@@ -2066,12 +2066,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         await addCriteriaToProject(ctx, Number(project.id))
 
@@ -2111,12 +2111,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         await addCriteriaToProject(ctx, Number(project.id) + 1)
         let answer = JSON.parse(ctx.response.body as string)
@@ -2151,12 +2151,12 @@ Deno.test({
             mergeThreshold: 0.8
         })
 
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let criteriaID = Number((await Criteria.create({
             projectId: Number(project.id),
@@ -2193,12 +2193,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let criteriaID = Number((await Criteria.create({
             projectId: Number(project.id),
@@ -2210,7 +2210,7 @@ Deno.test({
             number: 0
         })
         let paper = await Paper.create({})
-        let review = await Review.create({ userId: Number(user.id), stageId: Number(stage.id), paperId: Number(paper.id) })
+        let review = await Review.create({ userId: Number(user.id), stageId: Number(stage.id), paperscopeforstageId: Number(paper.id) })
         await CriteriaEvaluation.create({ criteriaId: criteriaID, reviewId: Number(review.id), value: "yes" })
         await deleteCriteriaOfProject(ctx, Number(project.id), criteriaID)
         assertEquals(ctx.response.status, 200)
@@ -2248,12 +2248,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let criteriaID = Number((await Criteria.create({
             projectId: Number(project.id),
@@ -2301,12 +2301,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let criteriaID = Number((await Criteria.create({
             projectId: Number(project.id),
@@ -2349,12 +2349,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let criteriaID = Number((await Criteria.create({
             projectId: Number(project.id),
@@ -2393,12 +2393,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let criteria = (await Criteria.create({
             projectId: Number(project.id),
@@ -2442,12 +2442,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let stage = await Stage.create({
             name: "TestStage",
@@ -2469,14 +2469,14 @@ Deno.test({
 
         let review = await Review.create({
             finished: true,
-            paperId: Number(pp.id),
+            paperscopeforstageId: Number(pp.id),
             userId: Number(user.id),
             stageId: Number(stage.id)
         })
 
         let review2 = await Review.create({
             finished: false,
-            paperId: Number(pp.id),
+            paperscopeforstageId: Number(pp.id),
             userId: Number(user.id),
             stageId: Number(stage.id)
         })
@@ -2532,12 +2532,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let stage = await Stage.create({
             name: "TestStage",
@@ -2559,7 +2559,7 @@ Deno.test({
 
         let review = await Review.create({
             finished: true,
-            paperId: Number(pp.id),
+            paperscopeforstageId: Number(pp.id),
             userId: Number(user.id),
             stageId: Number(stage.id)
         })
@@ -2616,12 +2616,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let stage = await Stage.create({
             name: "TestStage",
@@ -2652,7 +2652,7 @@ Deno.test({
         assertNotEquals(answer.id, undefined)
         let review = await Review.find(answer.id)
         assertEquals(review.userId, user.id)
-        assertEquals(review.paperId, pp.id)
+        assertEquals(review.paperscopeforstage, pp.id)
         assertEquals(review.stageId, stage.id)
         await db.close();
         await client.end();
@@ -2681,12 +2681,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let stage = await Stage.create({
             name: "TestStage",
@@ -2719,7 +2719,7 @@ Deno.test({
 
 
         let review = await Review.create({
-            paperId: Number(pp.id),
+            paperscopeforstageId: Number(pp.id),
             userId: Number(user.id),
             stageId: Number(stage.id)
         })
@@ -2736,7 +2736,7 @@ Deno.test({
         review = await Review.find(answer.id)
         assertEquals(review.finished, true)
         assertEquals(review.userId, user.id)
-        assertEquals(review.paperId, pp2.id)
+        assertEquals(review.paperscopeforstage, pp2.id)
         assertEquals(review.stageId, stage.id)
         await db.close();
         await client.end();
@@ -2764,12 +2764,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let stage = await Stage.create({
             name: "TestStage",
@@ -2791,7 +2791,7 @@ Deno.test({
 
 
         let review = await Review.create({
-            paperId: Number(pp.id),
+            paperscopeforstageId: Number(pp.id),
             userId: Number(user.id),
             stageId: Number(stage.id)
         })
@@ -2832,12 +2832,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let paper = await Paper.create({
             doi: "fasfafraf",
@@ -2858,7 +2858,7 @@ Deno.test({
 
         let review = await Review.create({
             finished: true,
-            paperId: Number(pp.id),
+            paperscopeforstageId: Number(pp.id),
             userId: Number(user.id),
             stageId: Number(stage.id)
         })
@@ -2933,7 +2933,7 @@ Deno.test({
 
         let review = await Review.create({
             finished: true,
-            paperId: Number(pp.id),
+            paperscopeforstageId: Number(pp.id),
             userId: Number(user.id),
             stageId: Number(stage.id)
         })
@@ -2989,12 +2989,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let paper = await Paper.create({
             doi: "fasfafraf",
@@ -3015,7 +3015,7 @@ Deno.test({
 
         let review = await Review.create({
             finished: true,
-            paperId: Number(pp.id),
+            paperscopeforstageId: Number(pp.id),
             userId: Number(user.id),
             stageId: Number(stage.id)
         })
@@ -3035,7 +3035,7 @@ Deno.test({
         let answer = JSON.parse(ctx.response.body as string)
         assertNotEquals(answer.id, undefined)
         let ce = await CriteriaEvaluation.find(answer.id)
-        assertEquals(ce.value,"MAYBE")
+        assertEquals(ce.value, "MAYBE")
         assertEquals(Number(ce.criteriaId), Number(criteria.id))
         assertEquals(Number(ce.reviewId), Number(review.id))
 
@@ -3065,12 +3065,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let paper = await Paper.create({
             doi: "fasfafraf",
@@ -3091,7 +3091,7 @@ Deno.test({
 
         let review = await Review.create({
             finished: true,
-            paperId: Number(pp.id),
+            paperscopeforstageId: Number(pp.id),
             userId: Number(user.id),
             stageId: Number(stage.id)
         })
@@ -3141,12 +3141,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let paper = await Paper.create({
             doi: "fasfafraf",
@@ -3167,7 +3167,7 @@ Deno.test({
 
         let review = await Review.create({
             finished: true,
-            paperId: Number(pp.id),
+            paperscopeforstageId: Number(pp.id),
             userId: Number(user.id),
             stageId: Number(stage.id)
         })
@@ -3218,12 +3218,12 @@ Deno.test({
             type: "",
             mergeThreshold: 0.8
         })
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true})
-        await ProjectUsesApi.create({projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true})
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+        await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
 
         let paper = await Paper.create({
             doi: "fasfafraf",
@@ -3244,7 +3244,7 @@ Deno.test({
 
         let ce = await Review.create({
             finished: true,
-            paperId: Number(pp.id),
+            paperscopeforstageId: Number(pp.id),
             userId: Number(user.id),
             stageId: Number(stage.id)
         })

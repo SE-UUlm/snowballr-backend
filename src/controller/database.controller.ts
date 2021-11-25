@@ -18,6 +18,7 @@ const connection = new PostgresConnector({
 });
 
 export const db = new Database(connection)
+
 /**
  * Database for native SQL (currently used for Selfjoins, since denodb can't use it)
  */
@@ -42,6 +43,7 @@ export const saveChildren = async (into: string, column1: string, column2: strin
                         VALUES (${firstId}, ${secondId})`);
 }
 
+
 /**
  * Returns the values of a many-to-many relationship table, currently written to retrieve papers from the citation/reference table.
  * @param table name of the table
@@ -55,8 +57,18 @@ export const getChildren = (table: string, column1: string, column2: string, id:
 }
 
 
+/**
+ * Direct query for all info of a project paper
+ * @param id 
+ * @returns 
+ */
 export const getProjectStageStuff = (id: number) => {
-    //0         1                   2           3                   4       5       6           7       8           9      10          11          12      13         14       15              16              17      
+    //      0         1                   2                      3                   4               5           6           7                   8           9              10          11                12          13         14       15              16              17       18                 
     return client.queryArray(`
-SELECT i.id, i.final_decision, i.addition_date, p.id as paper_id, p.doi, p.title, p.abstract, p.year, p.publisher, p.type, p.scope, p.scope_name, pdf.url, a.id, a.raw_string, a.first_name, a.last_name, a.orcid FROM inscopefor as i JOIN paper as p ON i.paper_id = p.id LEFT OUTER JOIN pdf ON p.id = pdf.paper_id LEFT OUTER JOIN wrote as w ON w.paper_id = p.id LEFT OUTER JOIN author as a ON a.id = w.author_id WHERE i.stage_id = ${id} ORDER BY i.id`)
+SELECT result.id, result.final_decision, result.addition_date, result.paper_id, result.doi, result.title, result.abstract, result.year, result.publisher, result.type, result.scope, result.scope_name, result.pdf, a.id, a.raw_string, a.first_name, a.last_name, a.orcid , reviewresult.ids FROM (SELECT i.id, i.final_decision, i.addition_date, p.id as paper_id, p.doi, p.title, p.abstract, p.year, p.publisher, p.type, p.scope, p.scope_name, STRING_AGG(pdf.url, ' ') pdf FROM inscopefor as i JOIN paper as p ON i.paper_id = p.id LEFT OUTER JOIN pdf ON p.id = pdf.paper_id WHERE i.stage_id = ${id} GROUP BY i.id,p.id) AS result LEFT OUTER JOIN (SELECT i.id, STRING_AGG(r.user_id::character varying, ' ') ids FROM inscopefor as i JOIN review as r ON r.paperscopeforstage_id = i.id GROUP BY i.id) as reviewresult ON result.id = reviewresult.id LEFT OUTER JOIN wrote as w ON w.paper_id = result.paper_id LEFT JOIN author as a ON a.id = w.author_id ORDER BY result.id`)
+}
+
+export const getProjectStageCount = (id: number) => {
+    return client.queryArray(`
+    SELECT COUNT(*) FROM inscopefor as i WHERE i.stage_id = ${id}`)
 }

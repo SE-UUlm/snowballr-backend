@@ -30,27 +30,21 @@ export const convertPapersToPaperMessage = async (papers: Paper[], stageId?: num
     return paperMessages;
 }
 
-export const convertRowsToPaperMessage = async (answer: any, userID: number | undefined) => {
+export const convertRowsToPaperMessage = (answer: any, userID: number, paperCacheUrls: string[]) => {
 
     let paperMessage: PaperMessage[] = []
     let lastId = -1;
     for (let element of answer) {
         if (lastId == Number(element[0])) {
             let paper = paperMessage[paperMessage.length - 1]
-            if (element[12]) {
-                paper.pdf = concatWithoutDuplicates(paper.pdf, [element[12]])
-            }
-            if (element[13]) {
-                if (!paper.authors.some(author => author.id == Number(element[13]))) {
-                    paper.authors.push({
-                        id: element[13] ? Number(element[13]) : undefined,
-                        firstName: element[15] ? String(element[15]) : undefined,
-                        lastName: element[16] ? String(element[16]) : undefined,
-                        rawString: element[14] ? String(element[14]) : undefined,
-                        orcid: element[17] ? String(element[17]) : undefined,
-                    })
-                }
-            }
+
+            paper.authors.push({
+                id: element[13] ? Number(element[13]) : undefined,
+                firstName: element[15] ? String(element[15]) : undefined,
+                lastName: element[16] ? String(element[16]) : undefined,
+                rawString: element[14] ? String(element[14]) : undefined,
+                orcid: element[17] ? String(element[17]) : undefined,
+            })
 
         } else {
             lastId = Number(element[0])
@@ -76,31 +70,29 @@ export const convertRowsToPaperMessage = async (answer: any, userID: number | un
                 ppid: Number(element[0]),
                 finalDecision: element[1] ? String(element[1]) : undefined,
                 authors: author.id ? [author] : [],
-                pdf: element[12] ? [String(element[12])] : []
+                pdf: element[12] ? String(element[12]).split(" ") : []
             }
 
-            if (paperCache.has(String(paper.id))) {
-                paper.status = Status.unfinished
+            if (paperCacheUrls.find(el => el == (String(paper.id)))) {
+                paper.status = "unfinished"
             } else if (paper.finalDecision) {
-                paper.status = Status.completelyEvaluated
-            } else {
-                //TODO reviews
-                /*
-                let reviews = await getAllReviewsFromProjectPaper(Number(paper.ppid));
-
-                if (userID && reviews.some(item => Number(item.userId) == userID)) {
-                    paper.status = Status.evaluatedByMyself
-                } else if (paper.ppid && reviews.length > 0) {
-                    paper.status = Status.partiallyEvaluated
-                } else {
-                    paper.status = Status.ready
-                }
-                */
+                paper.status = "completelyEvaluated"
             }
+            else if (paper.ppid && element[18]) {
+                if (element[18].split(" ").some((el: any) => Number(el) == userID)) {
+                    paper.status = "evaluatedByMyself"
+                } else {
+                    paper.status = "partiallyEvaluated"
+                }
+
+            } else {
+                paper.status = "ready"
+            }
+
+
 
             paperMessage.push(paper)
         }
-
 
     }
 

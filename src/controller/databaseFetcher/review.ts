@@ -5,13 +5,13 @@ import { ReviewMessage } from "../../model/messages/review.message.ts";
 
 export const getAllReviewsFromProjectPaper = async (ppId: number): Promise<ReviewMessage[]> => {
 
-    let reviews = await Review.where(Review.field("paper_id"), ppId).get()
+    let reviews = await Review.where(Review.field("paperscopeforstage_id"), ppId).get()
     return getReviews(reviews)
 }
 
 export const checkUserReviewOfProjectPaper = async (ppId: number, userId: number): Promise<boolean> => {
 
-    let reviews = await Review.where({ paperId: ppId, userId: userId }).get()
+    let reviews = await Review.where({ paperscopeforstageId: ppId, userId: userId }).get()
     if (Array.isArray(reviews) && reviews[0]) {
         return true;
     }

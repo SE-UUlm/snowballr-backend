@@ -58,8 +58,8 @@ export class ApiMerger implements IApiMerger {
 		}
 		/** Merge dublicates coming from the same apis */
 		for (let res in finished) {
-			finished[res].citations = await this.reviewPaper(finished[res].citations!);
-			finished[res].references = await this.reviewPaper(finished[res].references!);
+			finished[res].citations = this.reviewPaper(finished[res].citations!);
+			finished[res].references = this.reviewPaper(finished[res].references!);
 		}
 
 		return finished.filter(item => Array.isArray(item.paper.title));
@@ -88,7 +88,7 @@ export class ApiMerger implements IApiMerger {
 		/** Iterate over all other apiresponses expecpt for the first one to compare them each */
 		for (let i: number = 0; i < others.length; i++) {
 			//logger.debug("OTHERS: " + (await others[i]).paper)
-			let isEqual: boolean = await isEqualPaper((await response).paper, (await others[i]).paper, this.comparisonWeight);
+			let isEqual: boolean = isEqualPaper((await response).paper, (await others[i]).paper, this.comparisonWeight);
 			if (isEqual) {
 				let otherResponses = others[i];
 
@@ -105,9 +105,9 @@ export class ApiMerger implements IApiMerger {
 				return {
 					position: i,
 					item: {
-						paper: await this.merge((await response).paper, (await otherResponses).paper),
-						citations: await this._compareChildren(response1Citations, response2Citations),
-						references: await this._compareChildren(response1References, response2References)
+						paper: this.merge((await response).paper, (await otherResponses).paper),
+						citations: this._compareChildren(response1Citations, response2Citations),
+						references: this._compareChildren(response1References, response2References)
 					}
 				};
 			}
@@ -130,21 +130,21 @@ export class ApiMerger implements IApiMerger {
 	 * @param secondResponse - paper similar to firstResponse. Most likely provided by another api
 	 * @returns IApiResponse that has all unique values and decidable values.
 	 */
-	public async merge(firstResponse: IApiPaper, secondResponse: IApiPaper): Promise<IApiPaper> {
-		let uniqueProperties = await this._selectUniqueKey(firstResponse, secondResponse);
+	public merge(firstResponse: IApiPaper, secondResponse: IApiPaper): IApiPaper {
+		let uniqueProperties = this._selectUniqueKey(firstResponse, secondResponse);
 		return uniqueProperties as IApiPaper;
 	}
 
-	private async reviewPaper(finalChildren: IApiPaper[]) {
+	private reviewPaper(finalChildren: IApiPaper[]) {
 		finalChildren = finalChildren.filter(item => item);
 		for (let i: number = 0; i < finalChildren.length; i++) {
 			/** Check if paper is in childpapers of the same api. Since the same paper could return with a different DOI */
 			for (let j: number = i + 1; j < finalChildren.length; j++) {
 
-				let isEqual: boolean = await isEqualPaper(finalChildren[i], finalChildren[j], this.comparisonWeight);
+				let isEqual: boolean = isEqualPaper(finalChildren[i], finalChildren[j], this.comparisonWeight);
 				if (isEqual) {
 					logger.info(`CONCLUSIVE API paper merging: ${finalChildren[i].uniqueId!.map(item => item.type == idType.DOI ? item.value : undefined)} // ${finalChildren[i].title} <-> ${finalChildren[j].uniqueId!.map(item => item.type == idType.DOI ? item.value : undefined)} // ${finalChildren[j].title}`);
-					finalChildren[j] = await this.merge(finalChildren[i], finalChildren[j]);
+					finalChildren[j] = this.merge(finalChildren[i], finalChildren[j]);
 					delete finalChildren[i]
 					break;
 				}
@@ -162,14 +162,14 @@ export class ApiMerger implements IApiMerger {
 	 * @param response2Citations - child paper of an api response like reference or citation
 	 * @returns IApiResponse only unique paper child objkects
 	 */
-	private async _compareChildren(response1Citations: IApiPaper[], response2Citations: IApiPaper[]) {
+	private _compareChildren(response1Citations: IApiPaper[], response2Citations: IApiPaper[]) {
 		for (let i: number = 0; i < response1Citations.length; i++) {
 			/** Check for the same paper in other apis */
 			for (let j: number = 0; j < response2Citations.length; j++) {
-				let isEqual: boolean = await isEqualPaper(response1Citations[i], response2Citations[j], this.comparisonWeight);
+				let isEqual: boolean = isEqualPaper(response1Citations[i], response2Citations[j], this.comparisonWeight);
 				if (isEqual) {
 					logger.info(`DIFFERENT API paper merging: ${response1Citations[i].uniqueId!.map(item => item.type == idType.DOI ? item.value : undefined)} // ${response1Citations[i].title} <-> ${response2Citations[j].uniqueId!.map(item => item.type == idType.DOI ? item.value : undefined)} // ${response2Citations[j].title}`);
-					response2Citations[j] = await this.merge(response1Citations[i], response2Citations[j]);
+					response2Citations[j] = this.merge(response1Citations[i], response2Citations[j]);
 					response1Citations = response1Citations.slice(0, i).concat(response1Citations.slice(i + 1))
 					break;
 				}
@@ -325,11 +325,12 @@ export class ApiMerger implements IApiMerger {
 	 * @param secondPaper object to check properties of
 	 * @returns final paper resulting
 	 */
-	private _selectUniqueKey(firstPaper: Object, secondPaper: Object): Promise<IApiPaper> {
-		return new Promise<IApiPaper>(resolve => {
-			let resultingPaper: any = {};
-			let first = <any>firstPaper;
-			let second = <any>secondPaper;
+	private _selectUniqueKey(firstPaper: Object, secondPaper: Object): IApiPaper {
+
+		let resultingPaper: any = {};
+		let first = <any>firstPaper;
+		let second = <any>secondPaper;
+		try {
 			for (const key in Object.assign({}, firstPaper, secondPaper)) {
 				if (key == "id" || (!first[key] && !second[key]) || key.includes("Source")) {
 					continue;
@@ -437,8 +438,13 @@ export class ApiMerger implements IApiMerger {
 				}
 
 			}
-			resolve(resultingPaper as IApiPaper)
-		})
+		} catch (er) {
+			resultingPaper = firstPaper
+			console.log(er)
+			console.log(JSON.stringify(first))
+		}
+		return resultingPaper as IApiPaper
+
 	}
 }
 export const getDOI = (paper: { [index: string]: any }): string[] => {

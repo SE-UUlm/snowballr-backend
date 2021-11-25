@@ -9,7 +9,7 @@ import { convertProjectToProjectMessage } from "../helper/converter/projectConve
 import { Stage } from "../model/db/stage.ts";
 import { Paper } from "../model/db/paper.ts";
 import { getAllStagesFromProject } from "./databaseFetcher/stage.ts";
-import { checkPaperInProjectStage, getAllPaperMessagesJoin, getAllPapersFromProject, getAllPapersFromStage, getPaperByDoi, getProjectPaperID, getProjectPaperScope } from "./databaseFetcher/paper.ts";
+import { checkPaperInProjectStage, getAllPaperMessagesJoin, getAllPapersFromProject, getAllPapersFromStage, getPaperByDoi, getPaperSizeOfStage, getProjectPaperID, getProjectPaperScope } from "./databaseFetcher/paper.ts";
 import { PapersMessage } from "../model/messages/papersMessage.ts";
 import { PaperScopeForStage } from "../model/db/paperScopeForStage.ts";
 import { assignOnlyIfUnassignedPaper, checkIApiPaper, convertDBPaperToIApiPaper, convertIApiPaperToDBPaper, convertPapersToPaperMessage, convertPaperToPaperMessage, convertRowsToPaperMessage } from "../helper/converter/paperConverter.ts";
@@ -21,7 +21,7 @@ import { logger } from "../api/logger.ts";
 import { IApiAuthor } from "../api/iApiAuthor.ts";
 import { checkAdmin, checkMemberOfProject, checkPO, checkPOofProject, getPayloadFromJWTHeader, getUserID, UserStatus, validateUserEntry } from "./validation.controller.ts";
 import { comparisonWeight, makeFetching } from "./fetch.controller.ts";
-import { getProjectStageStuff, saveChildren } from "./database.controller.ts";
+import { getProjectStageCount, getProjectStageStuff, saveChildren } from "./database.controller.ts";
 import { getPaperCitations, getPaperReferences, getRefOrCiteList, paperUpdate, postPaperCitation, postPaperReference } from "./paper.controller.ts";
 import { Criteria } from "../model/db/criteria.ts";
 import { Review } from "../model/db/review.ts";
@@ -42,6 +42,7 @@ import {
 import { isEqualPaper } from "../api/checkIsEqual.ts";
 import { IComparisonWeight } from "../api/iComparisonWeight.ts";
 import { Semaphore } from "https://deno.land/x/semaphore/mod.ts"
+import { parry } from "https://deno.land/x/parry/mod.ts";
 
 export const paperCache = new Cache<IApiPaper>(CacheType.F, 0, "paperCache")
 export const authorCache = new Cache<IApiAuthor>(CacheType.F, 0, "authorCache")
@@ -391,7 +392,6 @@ const fetchToDB = async (stageID: number, projectID: number, doi?: string, title
 
                 let nextStage: Stage = await findNextStage(currentStage, projectID)
 
-                let allChildren: Promise<Paper>[] = []
                 for (let item of element.citations!) {
                     await createChildren(item, "citedBy", "papercitingid", "papercitedid", Number(parent.id), nextStage, project)
                 }
@@ -466,21 +466,20 @@ const savePaper = async (apiPaper: IApiPaper, stage: Stage, overallWeight: numbe
             return dbPaper.update()
         }
 
-    }
-
-    let papers = await getAllPapersFromStage(Number(stage.id))
-    let comparison = {} as IComparisonWeight
-    Object.assign(comparison, comparisonWeight)
-    comparison.overallWeight = overallWeight
-    for (let paperStuff of papers) {
-        let dbPaper = paperStuff.paper
-        let equal = await isEqualPaper(await convertDBPaperToIApiPaper(dbPaper), apiPaper, comparison)
-        if (equal) {
-            await assignOnlyIfUnassignedPaper(dbPaper, apiPaper)
-            return dbPaper.update()
+    } else {
+        let papers = await getAllPapersFromStage(Number(stage.id))
+        let comparison = {} as IComparisonWeight
+        Object.assign(comparison, comparisonWeight)
+        comparison.overallWeight = overallWeight
+        for (let paperStuff of papers) {
+            let dbPaper = paperStuff.paper
+            let equal = isEqualPaper(await convertDBPaperToIApiPaper(dbPaper), apiPaper, comparison)
+            if (equal) {
+                await assignOnlyIfUnassignedPaper(dbPaper, apiPaper)
+                return dbPaper.update()
+            }
         }
     }
-
 
     let paper = await convertIApiPaperToDBPaper(apiPaper)
 
@@ -488,6 +487,7 @@ const savePaper = async (apiPaper: IApiPaper, stage: Stage, overallWeight: numbe
         paperCache.add(String(paper.id), (apiPaper))
     }
     return paper;
+
 
 }
 /**
@@ -502,7 +502,7 @@ export const getPapersOfProjectStage = async (ctx: Context, projectID: number, s
         ctx.response.status = 200;
         let userID = await getUserID(await getPayloadFromJWTHeader(ctx))
         let paperInfo = await getAllPapersFromStage(stageID);
-        let papers = paperInfo.map(async item => { return await item.paper })
+        let papers = paperInfo.map(item => { return item.paper })
         let message: PapersMessage = { papers: await convertPapersToPaperMessage(await Promise.all(papers), stageID, userID) }
 
         ctx.response.body = JSON.stringify(message)
@@ -513,11 +513,13 @@ export const getPapersOfProjectStageFast = async (ctx: Context, projectID: numbe
     try {
         let validate = await validateUserEntry(ctx, [projectID, stageID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
         if (validate) {
-            let answer = (await getProjectStageStuff(stageID)).rows
+            let answer = getProjectStageStuff(stageID)
             let userID = await getUserID(await getPayloadFromJWTHeader(ctx))
             ctx.response.status = 200;
-            let message: PapersMessage = { papers: await convertRowsToPaperMessage(answer, userID) }
-
+            let finalAnswer = (await answer).rows
+            let thread = parry(convertRowsToPaperMessage)
+            let message: PapersMessage = { papers: await thread(finalAnswer, Number(userID), paperCache.getAllKeys()) }
+            parry.close()
 
             ctx.response.body = JSON.stringify(message)
         }
@@ -1105,7 +1107,7 @@ export const addReviewToPaper = async (ctx: Context, projectID: number, stageID:
         if (userID) {
             try {
                 let review = await Review.create({
-                    paperId: ppID,
+                    paperscopeforstageId: ppID,
                     userId: userID,
                     stageId: stageID
                 })
@@ -1127,6 +1129,10 @@ export const addReviewToPaper = async (ctx: Context, projectID: number, stageID:
                     ctx.response.body = JSON.stringify(review)
                 }
             } catch (err) {
+                console.log(err)
+                console.log("with ppID: " + ppID)
+                let pp = await PaperScopeForStage.find(ppID)
+                console.log(pp)
                 makeErrorMessage(ctx, 404, "stage or paper id not found")
             }
         }
