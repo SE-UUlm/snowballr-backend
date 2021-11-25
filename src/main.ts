@@ -53,7 +53,7 @@ import { deleteSourceAuthor, getAuthor, getSourceAuthor, patchAuthor, postAuthor
 import { addToReadingList, getReadingList, removeFromReadingList } from "./controller/readinglist.controller.ts";
 import { getActiveBatches } from "./controller/fetch.controller.ts";
 
-await setup(true);
+await setup(false);
 const client = new SmtpClient();
 
 const router = new Router();
