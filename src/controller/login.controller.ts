@@ -14,31 +14,32 @@ import { User } from "../model/db/user.ts";
  * @returns login successfull or not
  */
 export const login = async (ctx: Context): Promise<boolean> => {
-    let validate = await validateUserEntry(ctx, [], UserStatus.none, -1, { needed: true, params: ["email", "password"] })
-    if (validate) {
+	let validate = await validateUserEntry(ctx, [], UserStatus.none, -1, { needed: true, params: ["email", "password"] })
+	if (validate) {
 
-        let user = await returnUserByEmailAndPassword(validate.email, validate.password);
-        if (user) {
-            if (checkActive(String(user.status))) {
-                let token = await authToken(user);
-                let refreshToken = await createRefreshJWT(Number(user.id));
-                ctx.cookies.set("refreshToken", refreshToken)
-                let loginMessage: LoginMessage = { token: token, user: convertUserToUserProfile(user) }
-                ctx.response.body = JSON.stringify(loginMessage)
+		let user = await returnUserByEmailAndPassword(validate.email, validate.password);
+		if (user) {
+			if (checkActive(String(user.status))) {
+				let token = await authToken(user);
+				let refreshToken = await createRefreshJWT(Number(user.id));
+				ctx.cookies.set("refreshToken", refreshToken)
+				let loginMessage: LoginMessage = { token: token, user: convertUserToUserProfile(user) }
+				ctx.response.body = JSON.stringify(loginMessage)
+				ctx.response.headers["content-encoding"] = "deflate"
 
-                return true;
-            } else {
-                makeErrorMessage(ctx, 401, "not an active profile")
-                return false;
-            }
-        } else {
-            makeErrorMessage(ctx, 400, "wrong username or password provided")
-            return false;
-        }
+				return true;
+			} else {
+				makeErrorMessage(ctx, 401, "not an active profile")
+				return false;
+			}
+		} else {
+			makeErrorMessage(ctx, 400, "wrong username or password provided")
+			return false;
+		}
 
-    }
+	}
 
-    return false
+	return false
 
 }
 
@@ -47,14 +48,14 @@ export const login = async (ctx: Context): Promise<boolean> => {
  * @param ctx 
  */
 export const refresh = async (ctx: Context) => {
-    let token =await validateRefreshJWT(ctx);
-    if(token.valid && token.payload){
-        let user = await User.find(token.payload.id)
-        let authenticationToken = await authToken(user);
-        let loginMessage: LoginMessage = { token: authenticationToken, user: convertUserToUserProfile(user) }
-        ctx.response.body = JSON.stringify(loginMessage)
-        ctx.response.status = 200;
-    } else{
-        makeErrorMessage(ctx, 401, "not authorized")
-    }
+	let token = await validateRefreshJWT(ctx);
+	if (token.valid && token.payload) {
+		let user = await User.find(token.payload.id)
+		let authenticationToken = await authToken(user);
+		let loginMessage: LoginMessage = { token: authenticationToken, user: convertUserToUserProfile(user) }
+		ctx.response.body = JSON.stringify(loginMessage)
+		ctx.response.status = 200;
+	} else {
+		makeErrorMessage(ctx, 401, "not authorized")
+	}
 }
