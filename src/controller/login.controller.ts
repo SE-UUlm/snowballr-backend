@@ -25,7 +25,7 @@ export const login = async (ctx: Context): Promise<boolean> => {
 				ctx.cookies.set("refreshToken", refreshToken)
 				let loginMessage: LoginMessage = { token: token, user: convertUserToUserProfile(user) }
 				ctx.response.body = JSON.stringify(loginMessage)
-				ctx.response.headers.set("content-encoding", "deflate");
+				ctx.response.headers.set("content-encoding", "");
 
 				return true;
 			} else {
