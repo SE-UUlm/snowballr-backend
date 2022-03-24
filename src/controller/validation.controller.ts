@@ -19,9 +19,10 @@ const KEY = await crypto.subtle.generateKey(
  * Validates, whether the provided request has either an empty content or a right set content type with valid json.
  *
  * @param ctx
- * @param next function to start next, if the validation is successful
+ * @param next function to start next, if the validation is successful 
  */
 export const validateContentType = async (ctx: Context, next: () => Promise<unknown>) => {
+    ctx.response.headers.set("content-encoding", "");
     ctx.response.type = "application/json";
     let contentType = ctx.request.headers.get("Content-Type");
     if (await emptyContent(ctx)) {
@@ -35,7 +36,6 @@ export const validateContentType = async (ctx: Context, next: () => Promise<unkn
     } else {
         makeErrorMessage(ctx, 415, "Only application/json is allowed")
     }
-
 }
 
 /**
