@@ -269,8 +269,12 @@ router
     })
 
 const app = new Application();
-app.use(await validateContentType)
-app.use(await validateJWTIfExists)
+app.use(await validateContentType);
+app.use(await validateJWTIfExists);
+app.use(async (ctx, next) => {
+    //await next(); 
+    ctx.response.headers.set("content-encoding", "");
+});
 app.use(router.routes());
 app.use(router.allowedMethods());
 
