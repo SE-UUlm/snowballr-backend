@@ -274,15 +274,17 @@ const sendInvitationMail = async (jwt: string, linkText: string, email: string, 
         url += "/register?id=" + userId + "&token=" + jwt;
         let finalText = linkText.link(url);
         const content = `Welcome, </br>
-        to finalize your registration for snowballR, please visit: ${finalText}.</br>
+		you were invited to join snowballR by ${name ? name : `your snowballR Team`}</br>
+        to finalize your registration for snowballR, please visit: ${url}.</br>
         Best Regards, </br>
         Your SnowballR Team`
         const html = ` <h3> Welcome, </h3>
-        <p> to finalize your registration for snowballR, please visit <a href = "${url}" > snowballR </a></p>
+		<p> you were invited to join snowballR by ${name ? name : `your snowballR Team`} </p>
+        <p> to finalize your registration for snowballR, please visit <a href = "${url}" > ${url} </a></p>
         <p>Best Regards, </p>` +
             (name ? `<p>${name}</p>` : `<p>your snowballR Team</p>`)
 
-        await sendMail(email, client, html, content, "Invitation to join SnowballR", name)
+        await sendMail(email, client, html, content, "Invitation to join SnowballR", "SnowballR")
     } else {
         console.error("no URL in env!")
     }
@@ -296,7 +298,7 @@ const sendInvitationMail = async (jwt: string, linkText: string, email: string, 
  * @param url
  * @param email email of the person wanting to reset his password
  * @param userId
- * @param client email client to send the email with
+ * @param client email client to send the email with 
  */
 const sendResetMail = async (jwt: string, linkText: string, email: string, userId: number, client: EMailClient) => {
     if (URL) {
@@ -304,15 +306,15 @@ const sendResetMail = async (jwt: string, linkText: string, email: string, userI
         url += "/resetpassword?id=" + userId + "&token=" + jwt;
         let finalText = linkText.link(url);
         const content = `Hello, </br>
-                to reset your password for snowballR, please visit: ${finalText}. </br>
+                to reset your password for snowballR, please visit: ${url}. </br>
                 Best Regards, </br>
                 Your SnowballR Team`
         const html = `<h3>Welcome, </h3>
-        <p> to reset your password for snowballR, please visit <a href="${url}">snowballR</a></p>
+        <p> to reset your password for snowballR, please visit <a href="${url}">${url}</a></p>
         <p>Best Regards,</p>
         <p>your snowballR Team</p>`
 
-        await sendMail(email, client, html, content, "Password reset for SnowballR")
+        await sendMail(email, client, html, content, "Password reset for SnowballR", "SnowballR")
     } else {
         console.error("no URL in env!")
     }
