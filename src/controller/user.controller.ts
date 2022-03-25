@@ -15,6 +15,7 @@ import { UserParameters } from "../model/userProfile.ts";
 import { convertProjectToProjectMessage } from "../helper/converter/projectConverter.ts";
 import { UsersMessage } from "../model/messages/user.message.ts";
 import { logger } from "../api/logger.ts";
+import { getProjectMessage } from "../helper/converter/projectConverter";
 
 const adminMail = Deno.env.get("ADMIN_EMAIL");
 const URL = Deno.env.get("URL");
@@ -115,6 +116,22 @@ export const getUserProjects = async (ctx: Context, id: number) => {
     let validate = await validateUserEntry(ctx, [id], UserStatus.needsSameUser, -1, { needed: false, params: [] }, id)
     if (validate) {
         let userProjects = await getAllProjectsByUser(id)
+        if (userProjects) {
+            ctx.response.body = JSON.stringify(await convertProjectToProjectMessage(userProjects))
+            ctx.response.status = 200;
+        }
+    }
+}
+
+/**
+ * Get all projects of a user
+ * @param ctx
+ * @param id
+ */
+export const getUserProject = async (ctx: Context, id: number, projectId: number) => {
+    let validate = await validateUserEntry(ctx, [id], UserStatus.needsSameUser, -1, { needed: false, params: [] }, id)
+    if (validate) {
+        let userProjects = getProjectMessage(projectId)
         if (userProjects) {
             ctx.response.body = JSON.stringify(await convertProjectToProjectMessage(userProjects))
             ctx.response.status = 200;

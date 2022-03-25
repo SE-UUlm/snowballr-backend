@@ -6,6 +6,7 @@ import { getAllStagesFromProject } from "../../controller/databaseFetcher/stage.
 import { Stage } from "../../model/db/stage.ts";
 import { StageMessage } from "../../model/messages/stage.message.ts";
 
+
 export const convertProjectToProjectMessage = async (projects: Project[]) => {
     let project: ProjectMessage = { projects: [] };
     for (const item of projects) {
@@ -21,6 +22,13 @@ export const convertProjectToProjectMessage = async (projects: Project[]) => {
     }
     return project;
 
+}
+
+export const getProjectMessage = async (id: number) => {
+    let project: Project = Project.find(id);
+    let stages = await getAllStagesFromProject(id);
+    project.stages = stages;
+    return project;
 }
 
 const convertStages = (stages: Stage[]): StageMessage[] => {

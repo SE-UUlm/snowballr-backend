@@ -248,26 +248,6 @@ export const getProjects = async (ctx: Context) => {
 }
 
 /**
- * Get single project criteria by id 
- *
- * @param ctx
- * @param id id of project
- */
-export const getProject = async (ctx: Context, id: number) => {
-    const payloadJson = await getPayloadFromJWTHeader(ctx);
-    if (await checkAdmin(payloadJson)) {
-        let project = await Project.find(id);
-        let stages = await getAllStagesFromProject(Number(project.id));
-        project.stages = convertStages(stages);
-        //let projectMessage = await convertProjectToProjectMessage(project);
-        ctx.response.status = 200;
-        ctx.response.body = JSON.stringify(project)
-    } else {
-        makeErrorMessage(ctx, 401, "not authorized");
-    }
-}
-
-/**
  * Adds a nextStage to a project
  *
  * @param ctx
