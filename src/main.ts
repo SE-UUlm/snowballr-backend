@@ -52,6 +52,7 @@ import { addAuthorToPaper, deleteAuthorOfPaper, deleteSourcePaper, getAuthors, g
 import { deleteSourceAuthor, getAuthor, getSourceAuthor, patchAuthor, postAuthor } from "./controller/author.controller.ts";
 import { addToReadingList, getReadingList, removeFromReadingList } from "./controller/readinglist.controller.ts";
 import { getActiveBatches } from "./controller/fetch.controller.ts";
+import { getProject } from './controller/project.controller';
 
 await setup(true);
 const client = new SmtpClient();
@@ -99,6 +100,9 @@ router
     })
     .get("/projects", async (context) => {
         await getProjects(context)
+    })
+    .get("/projects/:id", async (context) => {
+        await getProject(context, Number(context.params.id))
     })
     .post("/projects", async (context) => {
         await createProject(context)
@@ -267,6 +271,7 @@ router
     .delete("/sourceAuthors/:id", async (context) => {
         await deleteSourceAuthor(context, Number(context.params.id))
     })
+
 
 const app = new Application();
 app.use(await validateContentType);
