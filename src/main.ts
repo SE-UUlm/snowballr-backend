@@ -2,7 +2,7 @@ import { Application, RouteParams, Router, RouterContext } from 'https://deno.la
 import { validateContentType, validateJWTIfExists } from "./controller/validation.controller.ts";
 import { login, refresh } from "./controller/login.controller.ts";
 import { setup } from "./helper/setup.ts";
-import { createUser, getUser, getUserProjects, getUsers, patchUser, resetPassword, getUserProject } from "./controller/user.controller.ts";
+import { createUser, getUser, getUserProjects, getUsers, patchUser, resetPassword } from "./controller/user.controller.ts";
 import { logout } from "./controller/logout.controller.ts";
 import { SmtpClient } from "https://deno.land/x/smtp/mod.ts";
 import {
@@ -52,6 +52,7 @@ import { addAuthorToPaper, deleteAuthorOfPaper, deleteSourcePaper, getAuthors, g
 import { deleteSourceAuthor, getAuthor, getSourceAuthor, patchAuthor, postAuthor } from "./controller/author.controller.ts";
 import { addToReadingList, getReadingList, removeFromReadingList } from "./controller/readinglist.controller.ts";
 import { getActiveBatches } from "./controller/fetch.controller.ts";
+import { getProject } from './controller/project.controller';
 
 await setup(true);
 const client = new SmtpClient();
@@ -100,8 +101,8 @@ router
     .get("/projects", async (context) => {
         await getProjects(context)
     })
-    .get("/users/:id/projects/:id2", async (context) => {
-        await getUserProject(context, Number(context.params.id), Number(context.params.id2))
+    .get("/projects/:id", async (context) => {
+        await getProject(context, Number(context.params.id))
     })
     .post("/projects", async (context) => {
         await createProject(context)
