@@ -9,9 +9,9 @@ import { StageMessage } from "../../model/messages/stage.message.ts";
 export const convertProjectToProjectMessage = async (projects: Project[]) => {
 	let project: ProjectMessage = { projects: [] };
 	for (const item of projects) {
+		console.log(item)
 		let projectItem: ProjectMessageItem = makeProjectMessage(item)
 		project.projects.push(projectItem)
-
 	}
 	return project;
 
@@ -20,7 +20,6 @@ export const convertProjectToProjectMessage = async (projects: Project[]) => {
 export const makeProjectMessage = async (project: ProjectMessageItem): Promise<ProjectMessageItem> => {
 	let stages = await getAllStagesFromProject(Number(project.id))
 	return {
-
 		id: Number(project.id),
 		name: String(project.name),
 		minCountReviewers: Number(project.minCountReviewers),
