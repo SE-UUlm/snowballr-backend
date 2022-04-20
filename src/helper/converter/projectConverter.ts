@@ -6,11 +6,11 @@ import { getAllStagesFromProject } from "../../controller/databaseFetcher/stage.
 import { Stage } from "../../model/db/stage.ts";
 import { StageMessage } from "../../model/messages/stage.message.ts";
 
-export const convertProjectToProjectMessage = async (projects: Project[]) => {
+export const convertProjectToProjectMessage = async (projects: Project[]): Promise<ProjectMessage> => {
 	let project: ProjectMessage = { projects: [] };
 	for (const item of projects) {
 		console.log(item)
-		let projectItem: ProjectMessageItem = makeProjectMessage(item)
+		let projectItem: ProjectMessageItem = await makeProjectMessage(item)
 		project.projects.push(projectItem)
 	}
 	return project;

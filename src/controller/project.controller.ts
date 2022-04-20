@@ -44,6 +44,7 @@ import { IComparisonWeight } from "../api/iComparisonWeight.ts";
 import { Semaphore } from "https://deno.land/x/semaphore/mod.ts"
 import { parry } from "https://deno.land/x/parry/mod.ts";
 import { makeProjectMessage } from "../helper/converter/projectConverter.ts";
+import { ProjectMessage } from "../model/messages/project.message";
 
 export const paperCache = new Cache<IApiPaper>(CacheType.F, 0, "paperCache")
 export const authorCache = new Cache<IApiAuthor>(CacheType.F, 0, "authorCache")
@@ -242,7 +243,7 @@ export const getProjects = async (ctx: Context) => {
 	if (await checkAdmin(payloadJson)) {
 		let projects = await Project.all();
 		console.log(projects);
-		let projectMessage = await convertProjectToProjectMessage(projects);
+		let projectMessage: ProjectMessage = await convertProjectToProjectMessage(projects);
 		ctx.response.status = 200;
 		console.log("----------PROJECT MESSAGE-----------");
 		console.log(projectMessage);
