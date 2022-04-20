@@ -44,7 +44,7 @@ import { IComparisonWeight } from "../api/iComparisonWeight.ts";
 import { Semaphore } from "https://deno.land/x/semaphore/mod.ts"
 import { parry } from "https://deno.land/x/parry/mod.ts";
 import { makeProjectMessage } from "../helper/converter/projectConverter.ts";
-import { ProjectMessage } from "../model/messages/project.message";
+import { ProjectMessage } from "../model/messages/project.message.ts";
 
 export const paperCache = new Cache<IApiPaper>(CacheType.F, 0, "paperCache")
 export const authorCache = new Cache<IApiAuthor>(CacheType.F, 0, "authorCache")
