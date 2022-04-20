@@ -244,6 +244,8 @@ export const getProjects = async (ctx: Context) => {
 		console.log(projects);
 		let projectMessage = await convertProjectToProjectMessage(projects);
 		ctx.response.status = 200;
+		console.log("----------PROJECT MESSAGE-----------");
+		console.log(projectMessage);
 		ctx.response.body = JSON.stringify(projectMessage)
 	} else {
 		makeErrorMessage(ctx, 401, "not authorized");
