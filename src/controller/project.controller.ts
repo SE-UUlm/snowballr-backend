@@ -43,6 +43,7 @@ import { isEqualPaper } from "../api/checkIsEqual.ts";
 import { IComparisonWeight } from "../api/iComparisonWeight.ts";
 import { Semaphore } from "https://deno.land/x/semaphore/mod.ts"
 import { parry } from "https://deno.land/x/parry/mod.ts";
+import { makeProjectMessage } from "../helper/converter/projectConverter";
 
 export const paperCache = new Cache<IApiPaper>(CacheType.F, 0, "paperCache")
 export const authorCache = new Cache<IApiAuthor>(CacheType.F, 0, "authorCache")
@@ -242,6 +243,27 @@ export const getProjects = async (ctx: Context) => {
         let projectMessage = await convertProjectToProjectMessage(projects);
         ctx.response.status = 200;
         ctx.response.body = JSON.stringify(projectMessage)
+    } else {
+        makeErrorMessage(ctx, 401, "not authorized");
+    }
+}
+
+/**
+ * Gets single project by id
+ * @param ctx 
+ */
+export const getProject = async (ctx: Context, id: number) => {
+    const payloadJson = await getPayloadFromJWTHeader(ctx);
+    if (await checkAdmin(payloadJson)) {
+        let project = await Project.find(id);
+        if (project) {
+            let projectMessage = await makeProjectMessage(project);
+            ctx.response.status = 200;
+            ctx.response.body = JSON.stringify(projectMessage)
+        }
+        else {
+            makeErrorMessage(ctx, 404, "Project not found")
+        }
     } else {
         makeErrorMessage(ctx, 401, "not authorized");
     }
