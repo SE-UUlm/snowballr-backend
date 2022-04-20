@@ -52,7 +52,7 @@ import { addAuthorToPaper, deleteAuthorOfPaper, deleteSourcePaper, getAuthors, g
 import { deleteSourceAuthor, getAuthor, getSourceAuthor, patchAuthor, postAuthor } from "./controller/author.controller.ts";
 import { addToReadingList, getReadingList, removeFromReadingList } from "./controller/readinglist.controller.ts";
 import { getActiveBatches } from "./controller/fetch.controller.ts";
-import { getProject } from './controller/project.controller';
+import { getProject } from './controller/project.controller.ts';
 
 await setup(true);
 const client = new SmtpClient();
