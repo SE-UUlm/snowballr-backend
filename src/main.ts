@@ -54,7 +54,7 @@ import { addToReadingList, getReadingList, removeFromReadingList } from "./contr
 import { getActiveBatches } from "./controller/fetch.controller.ts";
 import { getProject } from './controller/project.controller.ts';
 
-await setup(true);
+await setup(false); // when true then drop the database 
 const client = new SmtpClient();
 
 const router = new Router();
