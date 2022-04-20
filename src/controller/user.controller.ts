@@ -309,7 +309,7 @@ const sendResetMail = async (jwt: string, linkText: string, email: string, userI
                 to reset your password for snowballR, please visit: ${url}. </br>
                 Best Regards, </br>
                 Your SnowballR Team`
-        const html = `<h3>Welcome, </h3>
+        const html = `<h3>Hello, </h3>
         <p> to reset your password for snowballR, please visit <a href="${url}">${url}</a></p>
         <p>Best Regards,</p>
         <p>your snowballR Team</p>`
