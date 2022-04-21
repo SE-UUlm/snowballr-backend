@@ -57,6 +57,7 @@ export const updateProject = async (ctx: Context, projectID: number) => {
 	let validate = await validateUserEntry(ctx, [], UserStatus.needsPO, -1, { needed: true, params: ["name", "minCountReviewers", "countDecisiveReviewers", "type", "combinationOfReviewers"] })
 
 	if (validate) {
+		console.log("UPDATING: " + projectID)
 		let project = await Project.find(projectID);
 
 		if (!project) {
@@ -291,14 +292,14 @@ export const getMembersOfProject = async (ctx: Context, id: number) => {
  */
 export const getProjects = async (ctx: Context) => {
 	const payloadJson = await getPayloadFromJWTHeader(ctx);
-	console.log("Fetching all projects")
+	//console.log("Fetching all projects")
 	if (await checkAdmin(payloadJson)) {
 		let projects = await Project.all();
-		console.log(projects);
+		//console.log(projects);
 		let projectMessage: ProjectMessage = await convertProjectToProjectMessage(projects);
 		ctx.response.status = 200;
-		console.log("----------PROJECT MESSAGE-----------");
-		console.log(projectMessage);
+		//console.log("----------PROJECT MESSAGE-----------");
+		//console.log(projectMessage);
 		ctx.response.body = JSON.stringify(projectMessage)
 	} else {
 		makeErrorMessage(ctx, 401, "not authorized");
