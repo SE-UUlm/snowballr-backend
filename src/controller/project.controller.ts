@@ -52,6 +52,58 @@ export const authorCache = new Cache<IApiAuthor>(CacheType.F, 0, "authorCache")
 const reducer = (accumulator: string, currentValue: string) => accumulator + " / " + currentValue;
 
 const fetchSemaphore = new Semaphore(1);
+
+export const updateProject = async (ctx: Context, projectID: number) => {
+	let validate = await validateUserEntry(ctx, [], UserStatus.needsPO, -1, { needed: true, params: ["name", "minCountReviewers", "countDecisiveReviewers", "type", "combinationOfReviewers"] })
+
+	if (validate) {
+		let project = await Project.find(projectID);
+
+		if (!project) {
+			makeErrorMessage(ctx, 404, "Project not Found")
+			return;
+		}
+
+		let tresholds = String(validate.combinationOfReviewers).split(",")
+		if (tresholds.length !== 2 || isNaN(Number(tresholds[0])) || isNaN(Number(tresholds[1])) || Number(tresholds[1]) < Number(tresholds[0]) || Number(tresholds[0]) < 0 || Number(tresholds[1]) > 10) {
+			makeErrorMessage(ctx, 409, "To update a project, the combination of reviewers has to be well formed so a final decision of the paper can be evaluated. This is not the case")
+			return;
+		}
+		tresholds = String(validate.evaluationFormula).split(",")
+		if (tresholds.length !== 2 || isNaN(Number(tresholds[0])) || isNaN(Number(tresholds[1])) || Number(tresholds[1]) < Number(tresholds[0]) || Number(tresholds[0]) < -5 || Number(tresholds[1]) > 5) {
+			makeErrorMessage(ctx, 409, "To update a project, the evaluation formula has to be well formed so a final decision of the paper can be evaluated. This is not the case")
+			return;
+		}
+		if (validate.type != "both" && validate.type != "forward" && validate.type != "backward") {
+			makeErrorMessage(ctx, 409, "The type of a project has to be either 'both', 'forward' or 'backward'")
+			return;
+		}
+		if (validate.mergeThreshold > 1 || validate.mergeThreshold < 0.5) {
+			makeErrorMessage(ctx, 409, "The mergeThreshold has to be between 0.5 and 1")
+			return;
+		}
+
+		try {
+			Object.assign(project, {
+				name: validate.name,
+				minCountReviewers: validate.minCountReviewers,
+				countDecisiveReviewers: validate.countDecisiveReviewers,
+				combinationOfReviewers: validate.combinationOfReviewers,
+				evaluationFormula: validate.evaluationFormula,
+				type: validate.type,
+				mergeThreshold: validate.mergeThreshold
+			})
+			project.update()
+			ctx.response.status = 200;
+			ctx.response.body = JSON.stringify(project)
+		} catch (error) {
+			makeErrorMessage(ctx, 422, "given data is not processable")
+			return
+		}
+	}
+}
+
+
 /**
  * Creates a project
  *
