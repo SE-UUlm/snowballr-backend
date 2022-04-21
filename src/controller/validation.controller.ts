@@ -45,12 +45,12 @@ export const validateContentType = async (ctx: Context, next: () => Promise<unkn
 const emptyContent = async (ctx: Context): Promise<boolean> => {
 	try {
 		console.log("--------------INCOMING BODY--------------")
-		console.log(await ctx.request.body)
+		console.log(await ctx.request.method)
 		await ctx.request.body({ type: "undefined" }).value
 		return true;
 	} catch (error) {
 		try {
-			if (await ctx.request.body({ type: "json" }).value.length === 0) {
+			if (await ctx.request.method === "DELETE") {
 				return true
 			}
 			return false
