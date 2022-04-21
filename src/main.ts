@@ -105,7 +105,7 @@ router
 	.post("/projects", async (context) => {
 		await createProject(context)
 	})
-	.post("/projects/:id/update", async (context) => {
+	.patch("/projects/:id", async (context) => {
 		await updateProject(context, Number(context.params.id))
 	})
 	.get("/projects/:id", async (context) => {
