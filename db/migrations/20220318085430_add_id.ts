@@ -5,7 +5,7 @@ export default class extends AbstractMigration<ClientPostgreSQL> {
 	/** Runs on migrate */
 	async up(info: Info): Promise<void> {
 		// add auto unique key id to papers table
-		this.client.query("ALTER TABLE papers ADD COLUMN custom_id SERIAL;");
+		this.client.query("ALTER TABLE papers ADD COLUMN IF NOT EXISTS custom_id VARCHAR;");
 	}
 
 	/** Runs on rollback */
