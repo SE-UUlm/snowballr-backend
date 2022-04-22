@@ -1,13 +1,13 @@
 FROM ubuntu
 
 # install required packages
-RUN apt-get -qq update && apt-get -qq install -y ca-certificates curl unzip --no-install-recommends
+RUN apt-get -qq update && apt-get -qq install -y ca-certificates curl unzip --no-install-recommends --allow-unauthenticated --allow-insecure-repositories
 
 # installing deno
 RUN curl -fsSL https://deno.land/x/install/install.sh | sh
 
 # clean installed packages
-RUN apt-get -qq remove -y --purge --allow-unauthenticated --allow-insecure-repositories ca-certificates curl unzip  && apt-get clean
+RUN apt-get -qq remove -y --purge ca-certificates curl unzip  && apt-get clean
 
 # expose the port of deno 80 to the external world
 EXPOSE 80
