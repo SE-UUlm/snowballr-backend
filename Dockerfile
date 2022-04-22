@@ -15,6 +15,11 @@ EXPOSE 80
 # copying all files of the repository into the /app folder to execute deno there
 COPY ./src/ /app
 
+# copying nessie stuff
+COPY ./nessie.config.ts /nessie
+COPY ./db/migrations/ /nessie/db/migrations
+COPY ./db/seeds /nessie/db/seeds
+
 # change to the /app directory
 WORKDIR /app/
 
