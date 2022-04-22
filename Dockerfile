@@ -1,7 +1,7 @@
 FROM ubuntu:focal
 
 # install required packages
-RUN apt-get -qq update && apt-get -qq install -y ca-certificates curl unzip --no-install-recommends --allow-unauthenticated --allow-insecure-repositories
+RUN apt-get -qq update && apt-get -qq install -y ca-certificates curl unzip --no-install-recommends
 
 # installing deno
 RUN curl -fsSL https://deno.land/x/install/install.sh | sh
