@@ -22,8 +22,7 @@ export class Paper extends Model {
         type: { type: DataTypes.STRING, allowNull: true, length: 1024 },
         scope: { type: DataTypes.STRING, allowNull: true, length: 1024 },
         scopeName: { type: DataTypes.STRING, allowNull: true, length: 1024 },
-
-
+        // custom_id: { type: DataTypes.STRING, allowNull: true, length: 1024 },
     }
 
     static review() {
