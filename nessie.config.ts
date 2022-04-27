@@ -11,7 +11,7 @@ const PostgresPassword = String(Deno.env.get("POSTGRES_PASSWORD"));
 const PostgresHost = String(Deno.env.get("POSTGRES_HOST"));
 
 /** Select one of the supported clients */
-const client = new ClientPostgreSQL({
+const clientPg = new ClientPostgreSQL({
 	database: PostgresDB,
 	hostname: PostgresHost,
 	port: 5432,
@@ -19,21 +19,16 @@ const client = new ClientPostgreSQL({
 	password: PostgresPassword,
 });
 
-// const client = new ClientMySQL({
-//     hostname: "localhost",
-//     port: 3306,
-//     username: "root",
-//     // password: "pwd", // uncomment this line for <8
-//     db: "nessie",
-// });
-
-// const client = new ClientSQLite("./sqlite.db");
-
-/** This is the final config object */
 const config: NessieConfig = {
-	client,
+	client: clientPg,
 	migrationFolders: ["./db/migrations"],
 	seedFolders: ["./db/seeds"],
+	additionalMigrationFiles: [],
+	additionalSeedFiles: [],
+	migrationTemplate: undefined,
+	seedTemplate: undefined,
+	debug: false,
 };
 
 export default config;
+
