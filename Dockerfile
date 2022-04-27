@@ -16,9 +16,9 @@ EXPOSE 80
 COPY ./src/ /app
 
 # copying nessie stuff for db migrations
-COPY ./nessie.config.ts /nessie
-COPY ./db/migrations/ /nessie/db/migrations
-COPY ./db/seeds /nessie/db/seeds
+COPY ./nessie.config.ts /nessie/
+COPY ./db/migrations/ /nessie/db/migrations/
+COPY ./db/seeds /nessie/db/seeds/
 
 # change to the /app directory
 WORKDIR /app/
