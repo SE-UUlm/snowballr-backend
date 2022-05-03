@@ -63,7 +63,7 @@ export const resetPassword = async (ctx: Context, client: EMailClient) => {
             let jwt = await createJWT(user)
             await insertResetToken(user, jwt);
             let linkText = "snowballR"
-            await sendResetMail(jwt, linkText, validate.email, Number(user.id), client);
+            await sendResetMail(jwt, linkText, validate.email, user, client);
             ctx.response.status = 200;
         } else {
             makeErrorMessage(ctx, 400, "wrong email provided")
@@ -300,16 +300,16 @@ const sendInvitationMail = async (jwt: string, linkText: string, email: string, 
  * @param userId
  * @param client email client to send the email with 
  */
-const sendResetMail = async (jwt: string, linkText: string, email: string, userId: number, client: EMailClient) => {
+const sendResetMail = async (jwt: string, linkText: string, email: string, user: User, client: EMailClient) => {
     if (URL) {
         let url = urlSanitizer(URL);
-        url += "/resetpassword?id=" + userId + "&token=" + jwt;
+        url += "/resetpassword?id=" + Number(user.id) + "&token=" + jwt;
         let finalText = linkText.link(url);
-        const content = `Hello, </br>
+        const content = `Hello ${String(user.firstName)} ${String(user.lastName)}, </br>
                 to reset your password for snowballR, please visit: ${url}. </br>
                 Best Regards, </br>
                 Your SnowballR Team`
-        const html = `<h3>Hello, </h3>
+        const html = `<h3>Hello ${String(user.firstName)} ${String(user.lastName)}, </h3>
         <p> to reset your password for snowballR, please visit <a href="${url}">${url}</a></p>
         <p>Best Regards,</p>
         <p>your snowballR Team</p>`
