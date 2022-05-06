@@ -622,9 +622,10 @@ export const getPaperOfProjectStage = async (ctx: Context, projectID: number, st
 	if (validate) {
 		try {
 			let paper = await PaperScopeForStage.where("id", ppID).paper();
+			let userID = await getUserID(await getPayloadFromJWTHeader(ctx))
 			if (paper) {
 				ctx.response.status = 200;
-				ctx.response.body = JSON.stringify(await convertPaperToPaperMessage(paper, stageID));
+				ctx.response.body = JSON.stringify(await convertPaperToPaperMessage(paper, stageID, userID));
 			}
 		} catch (e) {
 			makeErrorMessage(ctx, 404, "paper does not exist")
