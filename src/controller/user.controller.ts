@@ -269,6 +269,7 @@ class MailingError extends Error {
 	constructor(message: string) {
 		super(message);
 		this.name = "MailingError";
+		Object.setPrototypeOf(this, MailingError.prototype);
 	}
 }
 
