@@ -47,7 +47,7 @@ export const createUser = async (ctx: Context, client: EMailClient) => {
 			}
 		} catch (err) {
 			console.log("-------- MAIL ERROR --------------------");
-			console.log(typeof (err))
+			console.log(typeof err)
 			console.log(err);
 			makeErrorMessage(ctx, 422, "email already exists")
 		}
