@@ -1,6 +1,6 @@
 import { Context } from "https://deno.land/x/oak/mod.ts";
 import { checkAdmin, checkPO, createJWT, createRefreshJWT, getPayloadFromJWTHeader, getUserID, getUserName, UserStatus, validateUserEntry } from "./validation.controller.ts";
-import { insertUserForRegistration, returnUserByEmail } from "./databaseFetcher/user.ts";
+import { insertUserForRegistration, removeUser, returnUserByEmail } from "./databaseFetcher/user.ts";
 import { User } from "../model/db/user.ts";
 import { convertCtxBodyToUser, convertUserToUserProfile } from "../helper/converter/userConverter.ts";
 import { EMailClient } from "../model/eMailClient.ts";
@@ -39,9 +39,9 @@ export const createUser = async (ctx: Context, client: EMailClient) => {
 	let validate = await validateUserEntry(ctx, [], UserStatus.needsPO, -1, { needed: true, params: ["email"] })
 	if (validate) {
 		const payloadJson = await getPayloadFromJWTHeader(ctx);
-
+		let user = null;
 		try {
-			let user = await insertUserForRegistration(validate.email);
+			user = await insertUserForRegistration(validate.email);
 			let jwt = await createRefreshJWT(Number(user.id))
 			await insertInvitation(user, jwt);
 			let linkText = "snowballR"
@@ -60,6 +60,7 @@ export const createUser = async (ctx: Context, client: EMailClient) => {
 			console.log(typeof err);
 			console.log(err);
 			if (err instanceof Deno.errors.AddrNotAvailable) {
+				if (user) removeUser(user.id);
 				makeErrorMessage(ctx, 423, "couldn't send mail. might be invalid!");
 			}
 			else {
