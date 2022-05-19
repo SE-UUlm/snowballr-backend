@@ -19,6 +19,16 @@ import { logger } from "../api/logger.ts";
 const adminMail = Deno.env.get("ADMIN_EMAIL");
 const URL = Deno.env.get("URL");
 
+class MailingError extends Error {
+	constructor(message: string) {
+		super(message);
+		this.name = "MailingError";
+	}
+}
+
+Deno.errors.MailingError = MailingError;
+Object.freeze(Deno.errors);
+
 /**
  * Creates a user for registration
  *
@@ -265,13 +275,6 @@ const checkResetToken = async (id: number, providedToken: string, ctx: Context) 
 	}
 }
 
-class MailingError extends Error {
-	constructor(message: string) {
-		super(message);
-		this.name = "MailingError";
-		Object.setPrototypeOf(this, MailingError.prototype);
-	}
-}
 
 /**
  * Forms the invitation mail
@@ -302,7 +305,7 @@ const sendInvitationMail = async (jwt: string, linkText: string, email: string, 
 			await sendMail(email, client, html, content, "Invitation to join SnowballR", "SnowballR")
 		}
 		catch (err) {
-			throw new MailingError(err);
+			throw new Deno.errors.MailingError(err);
 		}
 	} else {
 		console.error("no URL in env!")
