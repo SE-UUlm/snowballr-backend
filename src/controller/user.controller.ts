@@ -62,7 +62,9 @@ export const createUser = async (ctx: Context, client: EMailClient) => {
 			if (err instanceof Deno.errors.AddrNotAvailable) {
 				makeErrorMessage(ctx, 423, "couldn't send mail. might be invalid!");
 			}
-			makeErrorMessage(ctx, 422, "email already exists");
+			else {
+				makeErrorMessage(ctx, 422, "email already exists");
+			}
 		}
 	}
 }
