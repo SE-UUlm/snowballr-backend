@@ -59,7 +59,7 @@ export const createUser = async (ctx: Context, client: EMailClient) => {
 			console.log("-------- MAIL ERROR --------------------");
 			console.log(typeof err);
 			console.log(err);
-			if (err instanceof MailingError) {
+			if (err instanceof Deno.errors.AddrNotAvailable) {
 				makeErrorMessage(ctx, 423, "couldn't send mail. might be invalid!");
 			}
 			makeErrorMessage(ctx, 422, "email already exists");
@@ -305,7 +305,7 @@ const sendInvitationMail = async (jwt: string, linkText: string, email: string, 
 			await sendMail(email, client, html, content, "Invitation to join SnowballR", "SnowballR")
 		}
 		catch (err) {
-			throw new Deno.errors.MailingError(err);
+			throw new Deno.errors.AddrNotAvailable(err);
 		}
 	} else {
 		console.error("no URL in env!")
