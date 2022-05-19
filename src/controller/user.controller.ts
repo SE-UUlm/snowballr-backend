@@ -37,6 +37,7 @@ export const createUser = async (ctx: Context, client: EMailClient) => {
 			let linkText = "snowballR"
 
 			if (adminMail) {
+				console.log(adminMail)
 				await sendInvitationMail(jwt, linkText, validate.email, Number(user.id), client, await getUserName(payloadJson));
 				ctx.response.status = 201;
 				ctx.response.body = JSON.stringify(convertUserToUserProfile(user))
@@ -337,13 +338,15 @@ const sendMail = async (mailTo: string, client: EMailClient, html: string, conte
 		hostname: "mail.uni-ulm.de",
 		port: 25,
 	});
-	await client.send({
+	let response = await client.send({
 		from: name ? `${name} <${adminMail}>` : adminMail,
 		to: mailTo,
 		subject: header,
 		content: content,
 		html: html
 	})
+	console.log("---------RESPONSE---------")
+	console.log(response)
 
 	await client.close();
 }
