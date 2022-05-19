@@ -47,9 +47,12 @@ export const createUser = async (ctx: Context, client: EMailClient) => {
 			}
 		} catch (err) {
 			console.log("-------- MAIL ERROR --------------------");
-			console.log(typeof err)
+			console.log(typeof err);
 			console.log(err);
-			makeErrorMessage(ctx, 422, "email already exists")
+			if (err instanceof MailingError) {
+				makeErrorMessage(ctx, 423, "couldn't send mail. might be invalid!");
+			}
+			makeErrorMessage(ctx, 422, "email already exists");
 		}
 	}
 }
@@ -262,6 +265,13 @@ const checkResetToken = async (id: number, providedToken: string, ctx: Context) 
 	}
 }
 
+class MailingError extends Error {
+	constructor(message: string) {
+		super(message);
+		this.name = "MailingError";
+	}
+}
+
 /**
  * Forms the invitation mail
  * @param jwt token the user has to have to be allowed to make a registering patch
@@ -287,8 +297,12 @@ const sendInvitationMail = async (jwt: string, linkText: string, email: string, 
         <p> to finalize your registration for snowballR, please visit <a href = "${url}" > ${url} </a></p>
         <p>Best Regards, </p>` +
 			(name ? `<p>${name}</p>` : `<p>your snowballR Team</p>`)
-
-		await sendMail(email, client, html, content, "Invitation to join SnowballR", "SnowballR")
+		try {
+			await sendMail(email, client, html, content, "Invitation to join SnowballR", "SnowballR")
+		}
+		catch (err) {
+			throw new MailingError(err);
+		}
 	} else {
 		console.error("no URL in env!")
 	}
