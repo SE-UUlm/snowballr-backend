@@ -1,6 +1,6 @@
 import { Context } from "https://deno.land/x/oak/mod.ts";
 import { checkAdmin, checkPO, createJWT, createRefreshJWT, getPayloadFromJWTHeader, getUserID, getUserName, UserStatus, validateUserEntry } from "./validation.controller.ts";
-import { insertUserForRegistration, returnUserByEmail } from "./databaseFetcher/user.ts";
+import { insertUserForRegistration, removeUser, returnUserByEmail } from "./databaseFetcher/user.ts";
 import { User } from "../model/db/user.ts";
 import { convertCtxBodyToUser, convertUserToUserProfile } from "../helper/converter/userConverter.ts";
 import { EMailClient } from "../model/eMailClient.ts";
@@ -19,6 +19,16 @@ import { logger } from "../api/logger.ts";
 const adminMail = Deno.env.get("ADMIN_EMAIL");
 const URL = Deno.env.get("URL");
 
+class MailingError extends Error {
+	constructor(message: string) {
+		super(message);
+		this.name = "MailingError";
+	}
+}
+
+Deno.errors.MailingError = MailingError;
+Object.freeze(Deno.errors);
+
 /**
  * Creates a user for registration
  *
@@ -29,14 +39,15 @@ export const createUser = async (ctx: Context, client: EMailClient) => {
 	let validate = await validateUserEntry(ctx, [], UserStatus.needsPO, -1, { needed: true, params: ["email", "sender"] })
 	if (validate) {
 		const payloadJson = await getPayloadFromJWTHeader(ctx);
-
+		let user = null;
 		try {
-			let user = await insertUserForRegistration(validate.email);
+			user = await insertUserForRegistration(validate.email);
 			let jwt = await createRefreshJWT(Number(user.id))
 			await insertInvitation(user, jwt);
 			let linkText = "snowballR"
 
 			if (adminMail) {
+				console.log(adminMail)
 				await sendInvitationMail(jwt, linkText, validate.email, Number(user.id), client, await getUserName(payloadJson));
 				ctx.response.status = 201;
 				ctx.response.body = JSON.stringify(convertUserToUserProfile(user))
@@ -47,8 +58,15 @@ export const createUser = async (ctx: Context, client: EMailClient) => {
 			}
 		} catch (err) {
 			console.log("-------- MAIL ERROR --------------------");
+			console.log(typeof err);
 			console.log(err);
-			makeErrorMessage(ctx, 422, "email already exists")
+			if (err instanceof Deno.errors.AddrNotAvailable) {
+				if (user) removeUser(user.id);
+				makeErrorMessage(ctx, 423, "couldn't send mail. might be invalid!");
+			}
+			else {
+				makeErrorMessage(ctx, 422, "email already exists");
+			}
 		}
 	}
 }
@@ -261,6 +279,7 @@ const checkResetToken = async (id: number, providedToken: string, ctx: Context) 
 	}
 }
 
+
 /**
  * Forms the invitation mail
  * @param jwt token the user has to have to be allowed to make a registering patch
@@ -286,8 +305,12 @@ const sendInvitationMail = async (jwt: string, linkText: string, email: string, 
         <p> to finalize your registration for snowballR, please visit <a href = "${url}" > ${url} </a></p>
         <p>Best Regards, </p>` +
 			(name ? `<p>${name}</p>` : `<p>your snowballR Team</p>`)
-
-		await sendMail(email, client, html, content, "Invitation to join SnowballR", "SnowballR")
+		try {
+			await sendMail(email, client, html, content, "Invitation to join SnowballR", "SnowballR")
+		}
+		catch (err) {
+			throw new Deno.errors.AddrNotAvailable(err);
+		}
 	} else {
 		console.error("no URL in env!")
 	}
@@ -358,13 +381,15 @@ const sendMail = async (mailTo: string, client: EMailClient, html: string, conte
 		hostname: "mail.uni-ulm.de",
 		port: 25,
 	});
-	await client.send({
+	let response = await client.send({
 		from: name ? `${name} <${adminMail}>` : adminMail,
 		to: mailTo,
 		subject: header,
 		content: content,
 		html: html
 	})
+	console.log("---------RESPONSE---------")
+	console.log(response)
 
 	await client.close();
 }
