@@ -53,7 +53,7 @@ export const createUser = async (ctx: Context, client: EMailClient) => {
 				ctx.response.body = JSON.stringify(convertUserToUserProfile(user))
 			} else {
 				console.error("no email in env!")
-				sendInvitationFailedMail(validate.email, validate.sender, client)
+
 				makeErrorMessage(ctx, 401, "not authorized")
 			}
 		} catch (err) {
@@ -62,6 +62,11 @@ export const createUser = async (ctx: Context, client: EMailClient) => {
 			console.log(err);
 			if (err instanceof Deno.errors.AddrNotAvailable) {
 				if (user) removeUser(user.id);
+				try {
+					sendInvitationFailedMail(validate.email, validate.sender, client);
+				} catch (e) {
+					makeErrorMessage(ctx, 424, "couldn't send mail and couldn't alert you via mail.");
+				}
 				makeErrorMessage(ctx, 423, "couldn't send mail. might be invalid!");
 			}
 			else {
