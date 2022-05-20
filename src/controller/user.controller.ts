@@ -26,7 +26,7 @@ const URL = Deno.env.get("URL");
  * @param client Only necessary to throw in an empty mock to not send mails during tests
  */
 export const createUser = async (ctx: Context, client: EMailClient) => {
-	let validate = await validateUserEntry(ctx, [], UserStatus.needsPO, -1, { needed: true, params: ["email"] })
+	let validate = await validateUserEntry(ctx, [], UserStatus.needsPO, -1, { needed: true, params: ["email", "sender"] })
 	if (validate) {
 		const payloadJson = await getPayloadFromJWTHeader(ctx);
 
@@ -42,6 +42,7 @@ export const createUser = async (ctx: Context, client: EMailClient) => {
 				ctx.response.body = JSON.stringify(convertUserToUserProfile(user))
 			} else {
 				console.error("no email in env!")
+				sendInvitationFailedMail(validate.email, validate.sender, client)
 				makeErrorMessage(ctx, 401, "not authorized")
 			}
 		} catch (err) {
@@ -292,6 +293,26 @@ const sendInvitationMail = async (jwt: string, linkText: string, email: string, 
 	}
 
 }
+
+const sendInvitationFailedMail = async (invitationMail: string, senderMail: string, client: EMailClient, name?: string) => {
+	if (URL) {
+		//let url = urlSanitizer(URL);
+		//url += "/register?id=" + userId + "&token=" + jwt;
+		//let finalText = linkText.link(url);
+		const content = `Your invitation of given e-mail ${invitationMail} failed!</br>
+        Best Regards, </br>
+        Your SnowballR Team`
+		const html = `<p>Your invitation of given e-mail ${invitationMail} failed!</p>
+        <p>Best Regards, </p>` +
+			(name ? `<p>${name}</p>` : `<p>your snowballR Team</p>`)
+
+		await sendMail(senderMail, client, html, content, "Couldn't send InvitationFailed mail", "SnowballR")
+	} else {
+		console.error("no URL in env!")
+	}
+
+}
+
 
 /**
  * Formats the email for resetting a password
