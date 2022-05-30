@@ -21,7 +21,7 @@ import { logger } from "../api/logger.ts";
 import { IApiAuthor } from "../api/iApiAuthor.ts";
 import { checkAdmin, checkMemberOfProject, checkPO, checkPOofProject, getPayloadFromJWTHeader, getUserID, UserStatus, validateUserEntry } from "./validation.controller.ts";
 import { comparisonWeight, makeFetching } from "./fetch.controller.ts";
-import { getProjectStageCount, getProjectStageStuff, saveChildren } from "./database.controller.ts";
+import { client, getProjectStageCount, getProjectStageStuff, saveChildren } from "./database.controller.ts";
 import { getPaperCitations, getPaperReferences, getRefOrCiteList, paperUpdate, postPaperCitation, postPaperReference } from "./paper.controller.ts";
 import { Criteria } from "../model/db/criteria.ts";
 import { Review } from "../model/db/review.ts";
@@ -466,6 +466,7 @@ const fetchToDB = async (stageID: number, projectID: number, doi?: string, title
 				} else {
 					parent = await savePaper(element.paper, stage, Number(project.mergeThreshold))
 					await PaperScopeForStage.create({ stageId: stageID, paperId: Number(parent.id), finalDecision: "YES" })
+
 				}
 
 				let currentStage = await Stage.find(stageID)
@@ -521,10 +522,24 @@ export const findNextStage = async (currentStage: Stage, projectID: number) => {
  * @returns 
  */
 const createChildren = async (item: IApiPaper, into: string, column1: string, column2: string, firstId: number, nextStage: Stage, project: Project) => {
-	let child = await savePaper(item, nextStage, Number(project.mergeThreshold))
-	await saveChildren(into, column1, column2, firstId, Number(child.id))
-	await PaperScopeForStage.create({ stageId: Number(nextStage.id), paperId: Number(child.id) })
+	let child = await savePaper(item, nextStage, Number(project.mergeThreshold));
+	await saveChildren(into, column1, column2, firstId, Number(child.id));
+	await PaperScopeForStage.create({ stageId: Number(nextStage.id), paperId: Number(child.id) });
+	let existingReview = getExistingReview(Number(project.id), Number(child.id));
+	console.log("#############EXISTING REVIEW#################")
+	console.log(existingReview)
+	if (existingReview) {
+		existingReview.stage_id = Number(nextStage.id);
+		Review.create(existingReview);
+		console.log("################COPIED EXISTING REVIEW INTO NEW STAGE##########################")
+	}
+
 	return child;
+}
+
+const getExistingReview = (projectId: number, paperId: number) => {
+	return client.queryArray(`
+    SELECT review.* FROM review JOIN stage ON review.stage_id = stage.id WHERE stage.project_id = ${projectId} AND review.paperscopeforstage_id = (SELECT id FROM inscopefor WHERE paper_id = ${paperId});`)
 }
 
 
