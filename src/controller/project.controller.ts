@@ -528,9 +528,10 @@ const createChildren = async (item: IApiPaper, into: string, column1: string, co
 	let existingReview = await getExistingReview(Number(project.id), Number(child.id));
 	console.log("#############EXISTING REVIEW#################")
 	console.log(existingReview)
-	if (existingReview) {
-		existingReview.stage_id = Number(nextStage.id);
-		Review.create(existingReview);
+	if (existingReview.rows.length > 0) {
+		let reviewCopy = existingReview.rows[0]
+		reviewCopy.stage_id = Number(nextStage.id);
+		Review.create(reviewCopy);
 		console.log("################COPIED EXISTING REVIEW INTO NEW STAGE##########################")
 	}
 
