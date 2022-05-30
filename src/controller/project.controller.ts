@@ -543,6 +543,10 @@ const savePaper = async (apiPaper: IApiPaper, stage: Stage, overallWeight: numbe
 		let dbPaper = await getPaperByDoi(doi[0].toLowerCase())
 		if (dbPaper) {
 			await assignOnlyIfUnassignedPaper(dbPaper, apiPaper)
+			let existingReviews = await Paper.where("id", "1").review();
+			for (let review in existingReviews) {
+				let existingReviewFromSameProject = await Review.find(review)
+			}
 			return dbPaper.update()
 		}
 
