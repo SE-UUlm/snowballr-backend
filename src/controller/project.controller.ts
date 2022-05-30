@@ -525,7 +525,7 @@ const createChildren = async (item: IApiPaper, into: string, column1: string, co
 	let child = await savePaper(item, nextStage, Number(project.mergeThreshold));
 	await saveChildren(into, column1, column2, firstId, Number(child.id));
 	await PaperScopeForStage.create({ stageId: Number(nextStage.id), paperId: Number(child.id) });
-	let existingReview = getExistingReview(Number(project.id), Number(child.id));
+	let existingReview = await getExistingReview(Number(project.id), Number(child.id));
 	console.log("#############EXISTING REVIEW#################")
 	console.log(existingReview)
 	if (existingReview) {
