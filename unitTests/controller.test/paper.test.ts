@@ -61,20 +61,14 @@ Deno.test({
 
 
 		let review = await Review.create({ userId: 1, stageId: Number(stage.id) })
-		let paperScopeForStage = await PaperScopeForStage.create({ stageId: Number(stage.id), paperId: Number(paper.id), reviewId: Number(review.id) })
+		await PaperScopeForStage.create({ stageId: Number(stage.id), paperId: Number(paper.id), reviewId: Number(review.id) })
 		await CriteriaEvaluation.create({ criteriaId: criteriaID, reviewId: Number(review.id), value: "yes" })
 
-		// CREATE REVIEW for same Paper in Another Stage
-		// await createChildren(source, "citedBy", "papercitingid", "papercitedid", Number(1), stage, project)
-
-		// HERE A THE REVIEW SHOULD BE COPIED
-		// console.log(await Review.all())
-		// console.log(await Stage.all())
-		// console.log(await PaperScopeForStage.all())
-		//console.log(await Paper.all())
 		await savePaper(source, nextStage, Number(project.mergeThreshold));
 
 		let reviewCount = await Review.count();
+		let projectCount = await Project.count();
+		let paperCount = await Paper.count();
 		let paperScopeForStageCount = await PaperScopeForStage.count();
 		let firstPsfsc = await PaperScopeForStage.find(1);
 		let secondPsfsc = await PaperScopeForStage.find(2);
@@ -84,13 +78,180 @@ Deno.test({
 		console.log("-----------------------------" + Number(review.id))
 		console.log(await Review.where("id", Number(review.id)).paper())
 
+		assertEquals(reviewCount, 1);
+		assertEquals(projectCount, 1);
+		assertEquals(paperCount, 1);
 		assertEquals(paperScopeForStageCount, 2);
 		assertEquals(firstPsfsc.reviewId, 1);
 		assertEquals(secondPsfsc.reviewId, 1);
 		assertEquals(firstPsfsc.stageId, 1);
 		assertEquals(secondPsfsc.stageId, 2);
+		assertEquals(firstPsfsc.paperId, 1);
 		assertEquals(secondPsfsc.paperId, 1);
-		assertEquals(secondPsfsc.paperId, 1);
+
+		await client.end();
+		Batcher.kill()
+	},
+	sanitizeResources: false,
+	sanitizeOps: false,
+})
+
+Deno.test({
+	name: "dontCopyReviewInProject",
+	async fn(): Promise<void> {
+		await setup(true);
+
+		let project = await Project.create({
+			name: "test",
+			minCountReviewers: 1,
+			countDecisiveReviewers: 1,
+			combinationOfReviewers: 1,
+			evaluationFormula: "",
+			type: "",
+			mergeThreshold: 0.8
+		})
+		await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+		await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+		await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+		await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+		await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+		await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
+
+		let criteriaID = Number((await Criteria.create({
+			projectId: Number(project.id),
+			short: "AD", abbreviation: "An abbrevation", inclusionExclusion: "inclusion", weight: 3, description: "desc"
+		})).id)
+		let stage = await Stage.create({
+			name: "TestStage",
+			projectId: Number(project.id),
+			number: 0
+		})
+		let nextStage = await Stage.create({
+			name: "NextStage",
+			projectId: Number(project.id),
+			number: 1
+		})
+		let source: IApiPaper = { title: ["Another Paper"], abstract: ["General Griveous"], uniqueId: [{ type: idType.DOI, value: "456" }] } as IApiPaper
+		let paper = await Paper.create({ title: "Hello there", abstract: "General Kenobi", doi: "123" })
+
+
+		let review = await Review.create({ userId: 1, stageId: Number(stage.id) })
+		let paperScopeForStage = await PaperScopeForStage.create({ stageId: Number(stage.id), paperId: Number(paper.id), reviewId: Number(review.id) })
+		await CriteriaEvaluation.create({ criteriaId: criteriaID, reviewId: Number(review.id), value: "yes" })
+
+		await savePaper(source, nextStage, Number(project.mergeThreshold));
+
+		let reviewCount = await Review.count();
+		let projectCount = await Project.count();
+		let paperCount = await Paper.count();
+		let paperScopeForStageCount = await PaperScopeForStage.count();
+		let firstPsfsc = await PaperScopeForStage.find(1);
+		//let secondPsfsc = await PaperScopeForStage.find(2);
+
+		console.log(await Review.all())
+		console.log(await PaperScopeForStage.all())
+		console.log("-----------------------------" + Number(review.id))
+		console.log(await Review.where("id", Number(review.id)).paper())
+
+		assertEquals(reviewCount, 1);
+		assertEquals(projectCount, 1);
+		assertEquals(paperCount, 2);
+		assertEquals(paperScopeForStageCount, 1);
+		assertEquals(firstPsfsc.reviewId, 1);
+		assertEquals(firstPsfsc.stageId, 1);
+		assertEquals(firstPsfsc.paperId, 1);
+
+		await client.end();
+		Batcher.kill()
+	},
+	sanitizeResources: false,
+	sanitizeOps: false,
+})
+
+Deno.test({
+	name: "dontCopyExistingReviewFromAnotherProject",
+	async fn(): Promise<void> {
+		await setup(true);
+
+		let project = await Project.create({
+			name: "test",
+			minCountReviewers: 1,
+			countDecisiveReviewers: 1,
+			combinationOfReviewers: 1,
+			evaluationFormula: "",
+			type: "",
+			mergeThreshold: 0.8
+		})
+		await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.crossRef, inUse: true })
+		await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.openCitations, inUse: true })
+		await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+		await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.IEEE, inUse: true })
+		await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+		await ProjectUsesApi.create({ projectId: Number(project.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
+
+		let anotherProject = await Project.create({
+			name: "another",
+			minCountReviewers: 1,
+			countDecisiveReviewers: 1,
+			combinationOfReviewers: 1,
+			evaluationFormula: "",
+			type: "",
+			mergeThreshold: 0.8
+		})
+		await ProjectUsesApi.create({ projectId: Number(anotherProject.id), searchapiId: IDOfApi.crossRef, inUse: true })
+		await ProjectUsesApi.create({ projectId: Number(anotherProject.id), searchapiId: IDOfApi.openCitations, inUse: true })
+		await ProjectUsesApi.create({ projectId: Number(anotherProject.id), searchapiId: IDOfApi.googleScholar, inUse: false })
+		await ProjectUsesApi.create({ projectId: Number(anotherProject.id), searchapiId: IDOfApi.IEEE, inUse: true })
+		await ProjectUsesApi.create({ projectId: Number(anotherProject.id), searchapiId: IDOfApi.semanticScholar, inUse: true })
+		await ProjectUsesApi.create({ projectId: Number(anotherProject.id), searchapiId: IDOfApi.microsoftAcademic, inUse: true })
+
+		let criteriaID = Number((await Criteria.create({
+			projectId: Number(project.id),
+			short: "AD", abbreviation: "An abbrevation", inclusionExclusion: "inclusion", weight: 3, description: "desc"
+		})).id)
+		let anotherCriteriaID = Number((await Criteria.create({
+			projectId: Number(project.id),
+			short: "AD", abbreviation: "Another abbrevation", inclusionExclusion: "inclusion", weight: 3, description: "desc"
+		})).id)
+		let stage = await Stage.create({
+			name: "TestStage",
+			projectId: Number(project.id),
+			number: 0
+		})
+		let nextStage = await Stage.create({
+			name: "NextStage",
+			projectId: Number(anotherProject.id),
+			number: 1
+		})
+		let source: IApiPaper = { title: ["Hello there"], abstract: ["General Kenobi"], uniqueId: [{ type: idType.DOI, value: "123" }] } as IApiPaper
+		let paper = await Paper.create({ title: "Hello there", abstract: "General Kenobi", doi: "123" })
+
+
+		let review = await Review.create({ userId: 1, stageId: Number(stage.id) })
+		let paperScopeForStage = await PaperScopeForStage.create({ stageId: Number(stage.id), paperId: Number(paper.id), reviewId: Number(review.id) })
+		await CriteriaEvaluation.create({ criteriaId: criteriaID, reviewId: Number(review.id), value: "yes" })
+
+		await savePaper(source, nextStage, Number(anotherProject.mergeThreshold));
+
+		let reviewCount = await Review.count();
+		let paperScopeForStageCount = await PaperScopeForStage.count();
+		let projectCount = await Project.count();
+		let paperCount = await Paper.count();
+		let firstPsfsc = await PaperScopeForStage.find(1);
+		//let secondPsfsc = await PaperScopeForStage.find(2);
+
+		console.log(await Review.all())
+		console.log(await PaperScopeForStage.all())
+		console.log("-----------------------------" + Number(review.id))
+		console.log(await Review.where("id", Number(review.id)).paper())
+
+		assertEquals(reviewCount, 1);
+		assertEquals(projectCount, 2);
+		assertEquals(paperCount, 1);
+		assertEquals(paperScopeForStageCount, 1);
+		assertEquals(firstPsfsc.reviewId, 1);
+		assertEquals(firstPsfsc.stageId, 1);
+		assertEquals(firstPsfsc.paperId, 1);
 
 		await client.end();
 		Batcher.kill()

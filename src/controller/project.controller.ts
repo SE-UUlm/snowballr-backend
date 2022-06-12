@@ -556,21 +556,22 @@ export const savePaper = async (apiPaper: IApiPaper, stage: Stage, overallWeight
 		if (dbPaper) {
 			await assignOnlyIfUnassignedPaper(dbPaper, apiPaper)
 
-			let existingReview = await getExistingReview(Number(stage.projectId), Number(dbPaper.id));
-			console.log(existingReview)
-			let copyId = String(existingReview.rows[0][0]);
-			let existingReviewObject = await Review.find(copyId);
-			console.log("------------here----------------")
-			console.log(existingReviewObject)
-			let existingScopeObject = await PaperScopeForStage.find(Number(existingReviewObject.stageId))
-			existingScopeObject.stageId = stage.id;
-			delete existingScopeObject.id;
-			let newScopeObejct = PaperScopeForStage.create(Object(existingScopeObject));
-			//existingReviewObject.stage();
-			// reviewCopy.stageId = Number(stage.id);
-			// delete reviewCopy.id; 
-			// let reviewCopyObject = Object(reviewCopy);
-			// Review.create(reviewCopyObject);
+
+			try {
+				let existingReview = await getExistingReview(Number(stage.projectId), Number(dbPaper.id));
+				console.log(existingReview)
+				let copyId = String(existingReview.rows[0][0]);
+				let existingReviewObject = await Review.find(copyId);
+				console.log("------------here----------------")
+				console.log(existingReviewObject)
+				let existingScopeObject = await PaperScopeForStage.find(Number(existingReviewObject.stageId))
+				existingScopeObject.stageId = stage.id;
+				delete existingScopeObject.id;
+				let newScopeObejct = PaperScopeForStage.create(Object(existingScopeObject));
+			}
+			catch (e) {
+				console.log(e)
+			}
 
 
 			return dbPaper.update()
