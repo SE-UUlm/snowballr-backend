@@ -67,13 +67,13 @@ export class FileCache {
 			//logger.info(`Directory already existing for fileCache ${this.path}`)
 		}
 		catch (e) {
-			Deno.mkdirSync(path, { mode: 0o777 });
+			Deno.mkdirSync(path, { mode: 777 });
 			logger.info(`Created directory for fileCacher ${this.path}`)
 		}
 	}
 
 	public async add(key: string, value: string) {
-		await Deno.writeTextFile(`${this.path}/${key}`, value, { mode: 0o777 });
+		await Deno.writeTextFile(`${this.path}/${key}`, value, { mode: 777 });
 		this.fileCaches.set(key, value);
 	}
 
