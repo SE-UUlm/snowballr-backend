@@ -5,7 +5,7 @@ import { ReviewMessage } from "../../model/messages/review.message.ts";
 
 export const getAllReviewsFromProjectPaper = async (ppId: number): Promise<ReviewMessage[]> => {
 	// let reviews = await Review.where(Review.field("paperscopeforstage_id"), ppId).get()
-	let reviews = await PaperScopeForStage.where(PaperScopeForStage.field("id"), ppId).review();
+	let reviews = await PaperScopeForStage.where('id', ppId).review();
 	return getReviews(reviews)
 }
 
