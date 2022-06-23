@@ -35,7 +35,7 @@ export const setup = async (dropDatabase: boolean) => {
 	if (dropDatabase) {
 		await client.queryArray("DROP TABLE IF EXISTS citedby")
 		await client.queryArray("DROP TABLE IF EXISTS inscopefor")
-		await client.queryArray("DROP TABLE IF EXISTS criteria-evaluation")
+		await client.queryArray("DROP TABLE IF EXISTS 'criteria-evaluation'")
 		await client.queryArray("DROP TABLE IF EXISTS review")
 		await client.queryArray("DROP TABLE IF EXISTS referencedby")
 
