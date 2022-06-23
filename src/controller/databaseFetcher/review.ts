@@ -14,7 +14,7 @@ export const getAllReviewsFromProjectPaper = async (ppId: number): Promise<Revie
 		console.log(JSON.stringify(scope, null, 2))
 		if (Array.isArray(scope)) {
 			for (let s of scope) {
-				reviews.push(await Review.find(Number(s.review_id)));
+				reviews.push(await Review.find(Number(s.reviewId)));
 			}
 		}
 	} catch (err) {
@@ -32,7 +32,7 @@ export const checkUserReviewOfProjectPaper = async (ppId: number, userId: number
 
 		if (Array.isArray(scope)) {
 			for (let s of scope) {
-				reviews.push(((await Review.where({ id: Number(s.review_id), userId: userId }).get()) as Review[])[0]);
+				reviews.push(((await Review.where({ id: Number(s.reviewId), userId: userId }).get()) as Review[])[0]);
 			}
 		}
 	} catch (err) {
