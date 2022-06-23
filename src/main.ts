@@ -55,7 +55,7 @@ import { getActiveBatches } from "./controller/fetch.controller.ts";
 import { getProject } from './controller/project.controller.ts';
 import { updateProject } from './controller/project.controller.ts';
 
-await setup(true); // when true then drop the database 
+await setup(false); // when true then drop the database 
 const client = new SmtpClient();
 
 const router = new Router();
