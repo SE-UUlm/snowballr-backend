@@ -1260,7 +1260,6 @@ export const addReviewToPaper = async (ctx: Context, projectID: number, stageID:
 		}
 	}
 }
-}
 
 const calculateFinalDecisionOfPaper = async (ctx: Context, overallEvaluation: string, review: Review, pp: PaperScopeForStage, project: Project, lowerTreshold: number, upperTreshold: number, stageID: number) => {
 	let reviews = await getAllReviewsFromProjectPaper(Number(pp.id));
