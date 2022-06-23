@@ -3,7 +3,7 @@ import {
 	ClientPostgreSQL,
 	ClientSQLite,
 	NessieConfig,
-} from "https://deno.land/x/nessie@2.0.5/mod.ts";
+} from "https://deno.land/x/nessie/mod.ts";
 
 const PostgresDB = String(Deno.env.get("POSTGRES_DB"));
 const PostgresUser = String(Deno.env.get("POSTGRES_USER"));
