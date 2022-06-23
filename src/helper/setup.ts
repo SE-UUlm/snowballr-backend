@@ -35,7 +35,7 @@ export const setup = async (dropDatabase: boolean) => {
 	if (dropDatabase) {
 		await client.queryArray("DROP SCHEMA public CASCADE")
 		await client.queryArray("CREATE SCHEMA public")
-		await client.queryArray("GRANT ALL ON SCHEMA public TO postgres")
+		//await client.queryArray("GRANT ALL ON SCHEMA public TO postgres")
 		await client.queryArray("GRANT ALL ON SCHEMA public TO public")
 		await client.queryArray(`COMMENT ON SCHEMA public IS 'standard public schema'`)
 
