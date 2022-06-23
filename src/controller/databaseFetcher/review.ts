@@ -1,11 +1,12 @@
 import { CriteriaEvaluation } from "../../model/db/criteriaEval.ts";
 import { PaperScopeForStage } from "../../model/db/paperScopeForStage.ts";
 import { Review } from "../../model/db/review.ts";
+import { ReviewToPaperScope } from "../../model/db/reviewToPaperScope.ts";
 import { ReviewMessage } from "../../model/messages/review.message.ts";
 
 export const getAllReviewsFromProjectPaper = async (ppId: number): Promise<ReviewMessage[]> => {
 	// let reviews = await Review.where(Review.field("paperscopeforstage_id"), ppId).get()
-	let scope = await PaperScopeForStage.where('id', ppId).get();
+	let scope = await ReviewToPaperScope.where({ paperscopeforstageId: ppId }).get();
 	let reviews = [];
 	if (Array.isArray(scope)) {
 		for (let s of scope) {

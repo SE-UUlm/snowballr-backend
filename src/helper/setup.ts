@@ -25,6 +25,7 @@ import { ResetToken } from "../model/db/resetToken.ts";
 import { Pdf } from "../model/db/pdf.ts";
 import { authorCache, paperCache } from "../controller/project.controller.ts";
 import { Batcher } from "../controller/fetch.controller.ts";
+import { ReviewToPaperScope } from "../model/db/reviewToPaperScope.ts";
 
 /**
  * Links all model files to the database and inserts the first admin, if he doesn't exist yet
@@ -56,19 +57,20 @@ export const setup = async (dropDatabase: boolean) => {
 	Relationships.belongsTo(Review, User)
 	Relationships.belongsTo(Stage, Project)
 	Relationships.belongsTo(Review, Stage)
-	const PaperScopeForStageAndReview = Relationships.manyToMany(PaperScopeForStage, Review)
 	Relationships.belongsTo(ReadingList, Paper)
 	Relationships.belongsTo(ReadingList, User)
 	Relationships.belongsTo(PaperScopeForStage, Stage)
 	Relationships.belongsTo(PaperScopeForStage, Paper)
 	Relationships.belongsTo(Wrote, Paper)
 	Relationships.belongsTo(Wrote, Author)
+	Relationships.belongsTo(ReviewToPaperScope, Review)
+	Relationships.belongsTo(ReviewToPaperScope, PaperScopeForStage)
 	Relationships.belongsTo(Pdf, Paper)
 	Relationships.belongsTo(PaperHasID, Paper)
 	Relationships.belongsTo(PaperHasID, PaperID)
 	Relationships.belongsTo(AuthorHasID, Author)
 	Relationships.belongsTo(AuthorHasID, AuthorID)
-	db.link([User, Invitation, ResetToken, Paper, Pdf, Token, Author, AuthorID, Wrote, Project, Stage, SearchApi, ReadingList, Criteria, Review, PaperScopeForStage, PaperScopeForStageAndReview, PaperID, CriteriaEvaluation, UserIsPartOfProject, ProjectUsesApi, PaperHasID, AuthorHasID]);
+	db.link([User, Invitation, ResetToken, Paper, Pdf, Token, Author, AuthorID, Wrote, Project, Stage, SearchApi, ReadingList, Criteria, Review, PaperScopeForStage, PaperID, CriteriaEvaluation, UserIsPartOfProject, ProjectUsesApi, PaperHasID, AuthorHasID, ReviewToPaperScope]);
 	//console.log("1111111111111111111111111111111")
 	await db.sync({ drop: dropDatabase }).catch(err => {
 		//TODO fix for https://github.com/eveningkid/denodb/issues/258
