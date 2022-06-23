@@ -1,4 +1,4 @@
-import { Database, PostgresConnector } from "https://deno.land/x/denodb/mod.ts";
+import { Database, PostgresConnector } from "https://deno.land/x/denodb@v1.0.39/mod.ts";
 import { Client } from "https://deno.land/x/postgres/mod.ts";
 
 const PostgresDB = String(Deno.env.get("POSTGRES_DB"));
