@@ -45,6 +45,7 @@ import { Semaphore } from "https://deno.land/x/semaphore/mod.ts"
 import { parry } from "https://deno.land/x/parry/mod.ts";
 import { makeProjectMessage } from "../helper/converter/projectConverter.ts";
 import { ProjectMessage } from "../model/messages/project.message.ts";
+import { ReviewToPaperScope } from "../model/db/reviewToPaperScope.ts";
 
 export const paperCache = new Cache<IApiPaper>(CacheType.F, 0, "paperCache")
 export const authorCache = new Cache<IApiAuthor>(CacheType.F, 0, "authorCache")
@@ -1222,10 +1223,15 @@ export const addReviewToPaper = async (ctx: Context, projectID: number, stageID:
 		}
 		if (userID) {
 			try {
+
 				let review = await Review.create({
 					paperscopeforstageId: ppID,
 					userId: userID,
 					stageId: stageID
+				})
+				let reviewToPaperScope = await ReviewToPaperScope.create({
+					paperscopeforstageId: ppID,
+					reviewId: Number(review.id)
 				})
 
 				if (params.finished === true && (
@@ -1253,6 +1259,7 @@ export const addReviewToPaper = async (ctx: Context, projectID: number, stageID:
 			}
 		}
 	}
+}
 }
 
 const calculateFinalDecisionOfPaper = async (ctx: Context, overallEvaluation: string, review: Review, pp: PaperScopeForStage, project: Project, lowerTreshold: number, upperTreshold: number, stageID: number) => {
