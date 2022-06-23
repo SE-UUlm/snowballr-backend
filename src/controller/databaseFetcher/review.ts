@@ -10,7 +10,6 @@ export const getAllReviewsFromProjectPaper = async (ppId: number): Promise<Revie
 	let reviews: Review[] = [];
 	try {
 		let scope = await ReviewToPaperScope.where({ paperscopeforstageId: ppId }).get();
-		console.log("what the fuck")
 		console.log(JSON.stringify(scope, null, 2))
 		if (Array.isArray(scope)) {
 			for (let s of scope) {
