@@ -33,11 +33,11 @@ import { Batcher } from "../controller/fetch.controller.ts";
 export const setup = async (dropDatabase: boolean) => {
 	await client.connect();
 	if (dropDatabase) {
-		await client.queryArray("DROP TABLE IF EXISTS citedby")
-		await client.queryArray("DROP TABLE IF EXISTS inscopefor")
-		await client.queryArray("DROP TABLE IF EXISTS 'criteria-evaluation'")
-		await client.queryArray("DROP TABLE IF EXISTS review")
-		await client.queryArray("DROP TABLE IF EXISTS referencedby")
+		await client.queryArray("DROP SCHEMA public CASCADE")
+		await client.queryArray("CREATE SCHEMA public")
+		await client.queryArray("GRANT ALL ON SCHEMA public TO postgres")
+		await client.queryArray("GRANT ALL ON SCHEMA public TO public")
+		await client.queryArray(`COMMENT ON SCHEMA public IS 'standard public schema'`)
 
 		paperCache.fileCache!.purge()
 		authorCache.fileCache!.purge()
