@@ -474,7 +474,6 @@ const fetchToDB = async (stageID: number, projectID: number, doi?: string, title
 				let nextStage: Stage = await findNextStage(currentStage, projectID)
 
 				for (let item of element.citations!) {
-					t
 					await createChildren(item, "citedBy", "papercitingid", "papercitedid", Number(parent.id), nextStage, project)
 				}
 				for (let item of element.references!) {
