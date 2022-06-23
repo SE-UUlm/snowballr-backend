@@ -24,7 +24,7 @@ import { createMockContext } from "../mockObjects/oak/mockContext.test.ts";
 Deno.test({
 	name: "getExistingReviewInProject",
 	async fn(): Promise<void> {
-		await setup(true);
+		await setup(false);
 
 		let project = await Project.create({
 			name: "test",
