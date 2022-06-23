@@ -97,7 +97,7 @@ export const setup = async (dropDatabase: boolean) => {
 
 
 		//TODO: only to showcase functionality, otherwise delete
-		await insertUser("test@test", "1234", true, "test", "user", "active");
+		//await insertUser("test@test", "1234", true, "test", "user", "active");
 	}
 
 
