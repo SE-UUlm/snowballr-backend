@@ -6,13 +6,14 @@ import { ReviewMessage } from "../../model/messages/review.message.ts";
 
 export const getAllReviewsFromProjectPaper = async (ppId: number): Promise<ReviewMessage[]> => {
 	// let reviews = await Review.where(Review.field("paperscopeforstage_id"), ppId).get()
+	console.log("HEREREREREREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
 	let reviews: Review[] = [];
 	try {
 		let scope = await ReviewToPaperScope.where({ paperscopeforstageId: ppId }).get();
 
 		if (Array.isArray(scope)) {
 			for (let s of scope) {
-				//reviews.push(await Review.find(Number(s.review_id)));
+				reviews.push(await Review.find(Number(s.review_id)));
 			}
 		}
 	} catch (err) {
