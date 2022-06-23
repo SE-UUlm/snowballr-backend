@@ -14,7 +14,7 @@ import { logger } from "./logger.ts";
 import { Cache, CacheType } from "./cache.ts";
 import { GoogleScholar } from "./googleScholar.ts";
 import { CONFIG } from "../helper/config.ts";
-import { sleep } from "https://deno.land/x/sleep@v1.2.0/sleep.ts";
+import { sleep } from "https://deno.land/x/sleep/sleep.ts";
 
 
 /**
