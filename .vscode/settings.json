@@ -1,0 +1,12 @@
+{
+  "deno.suggest.imports.hosts": {
+    "https://deno.land": true
+  },
+  "deno.enable": true,
+  "deno.lint": true,
+  "deno.importMap" : "/snowballR/backend/importmap.json",
+"deno.unstable": true,
+"cSpell.words": [
+	"axiod"
+]
+}

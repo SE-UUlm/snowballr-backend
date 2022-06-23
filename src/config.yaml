@@ -1,0 +1,42 @@
+googleScholar:
+  enabled: true
+  proxy:
+    enabled: true
+    mode: tor # tor | pool
+    urls: # if pool list might contain as many as needed. if tor - user local polipo to tor proxy url -> read via netstat
+      - http://localhost:8118
+    cooldown: 600
+  requestInterval:
+    min: 1
+    max: 2
+  useCache: true
+  baseUrl: https://scholar.google.com
+  maxCitationCount: 1000
+ieee:
+  enabled: true
+  baseUrl: http://ieeexploreapi.ieee.org/api/v1/search/articles
+  useCache: true
+semanticScholar:
+  enabled: true
+  baseUrl: https://api.semanticscholar.org/v1/paper
+  useCache: true
+crossRef:
+  enabled: true
+  baseUrl: https://api.crossref.org/works
+  useCache: true
+openCitations:
+  enabled: true
+  baseUrl: https://opencitations.net
+  useCache: false
+  linkedFetchSize: 50
+microsoftAcademic:
+  enabled: true
+  baseUrl: https://api.labs.cognitive.microsoft.com/academic/v1.0/evaluate
+  useCache: true
+cache:
+  timeToLiveInSeconds: 10080000
+  type: FileCache # FileCache | MemoryCache
+batcher:
+  workerPollingRateInMilSecs: 5000
+
+
