@@ -1,0 +1,71 @@
+version: '3.9'
+
+services:
+  postgresdb:
+    image: postgres
+    container_name: postgresdb-${TAG}
+    expose:
+      - "5432"
+    volumes:
+      - ${POSTGRES_PATH}:/var/lib/postgresql/
+    environment:
+      - POSTGRES_DN=${POSTGRES_DN}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    logging:
+      driver: ${POSTGRES_LOGGING}
+    networks:
+      - network
+    profiles:
+      - all
+      - backend
+      - test
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin-${TAG}
+    ports:
+      - "5555:80"
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${POSTGRES_PASSWORD}
+    depends_on:
+      - postgresdb
+    logging:
+      driver: ${PGADMIN_LOGGING}
+    networks:
+      - network
+    profiles:
+      - all
+      - backend
+
+  backend:
+    image: backend-image
+    container_name: backend-${TAG}
+    environment:
+      - URL=${DOMAIN}
+      - PORT=${HTTPS_PORT}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - ADMIN_EMAIL=${ADMIN_EMAIL}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - SALT=${SALT}
+      - DAYS_UNTIL_VALIDATION_GONE=${DAYS_UNTIL_VALIDATION_GONE}
+      - SECRET=${SECRET}
+    depends_on:
+      - postgresdb
+      - pgadmin
+    networks:
+      - network
+    profiles:
+      - all
+      - test
+      - backend
+
+networks:
+  network:
+    name: network-${TAG}
+    driver: bridge

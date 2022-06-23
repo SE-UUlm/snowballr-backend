@@ -23,6 +23,7 @@ export const db = new Database(connection)
  * Database for native SQL (currently used for Selfjoins, since denodb can't use it)
  */
 console.log(PostgresHost)
+console.log(PostgresPassword)
 export const client = new Client({
 	user: PostgresUser,
 	database: PostgresDB,
