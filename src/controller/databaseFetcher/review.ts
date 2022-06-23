@@ -5,8 +5,14 @@ import { ReviewMessage } from "../../model/messages/review.message.ts";
 
 export const getAllReviewsFromProjectPaper = async (ppId: number): Promise<ReviewMessage[]> => {
 	// let reviews = await Review.where(Review.field("paperscopeforstage_id"), ppId).get()
-	let reviews = await PaperScopeForStage.where('id', ppId).review();
-	return getReviews(reviews)
+	let scope = await PaperScopeForStage.where('id', ppId).get();
+	let reviews = [];
+	if (Array.isArray(scope)) {
+		for (let s of scope) {
+			reviews.push(await Review.find(Number(s.review_id)));
+		}
+	}
+	return getReviews(reviews);
 }
 
 export const checkUserReviewOfProjectPaper = async (ppId: number, userId: number): Promise<boolean> => {
