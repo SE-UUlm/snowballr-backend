@@ -30,12 +30,12 @@ export class Review extends Model {
 		return this.hasOne(User)
 	}
 
-	// static stage() {
-	// 	return this.hasOne(Stage)
-	// }
+	static stage() {
+		return this.hasOne(Stage)
+	}
 
 	static paper() {
-		return this.hasMany(PaperScopeForStage)
+		return this.hasOne(PaperScopeForStage)
 	}
 }
 

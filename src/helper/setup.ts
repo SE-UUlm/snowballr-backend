@@ -56,7 +56,7 @@ export const setup = async (dropDatabase: boolean) => {
 	Relationships.belongsTo(Review, User)
 	Relationships.belongsTo(Stage, Project)
 	Relationships.belongsTo(Review, Stage)
-	const PaperScopeForStageAndReview = Relationships.manyToMany(PaperScopeForStage, Review)
+	Relationships.belongsTo(Review, PaperScopeForStage)
 	Relationships.belongsTo(ReadingList, Paper)
 	Relationships.belongsTo(ReadingList, User)
 	Relationships.belongsTo(PaperScopeForStage, Stage)
@@ -68,9 +68,7 @@ export const setup = async (dropDatabase: boolean) => {
 	Relationships.belongsTo(PaperHasID, PaperID)
 	Relationships.belongsTo(AuthorHasID, Author)
 	Relationships.belongsTo(AuthorHasID, AuthorID)
-	db.link([User, Invitation, ResetToken, Paper, Pdf, Token, Author, AuthorID, Wrote, Project, Stage, SearchApi, ReadingList, Criteria, Review, PaperScopeForStage, PaperScopeForStageAndReview, PaperID, CriteriaEvaluation, UserIsPartOfProject, ProjectUsesApi, PaperHasID, AuthorHasID]);
-	//console.log("1111111111111111111111111111111")
-	await db.sync({ drop: dropDatabase }).catch(err => {
+	db.link([User, Invitation, ResetToken, Paper, Pdf, Token, Author, AuthorID, Wrote, Project, Stage, PaperScopeForStage, SearchApi, ReadingList, Criteria, Review, PaperID, CriteriaEvaluation, UserIsPartOfProject, ProjectUsesApi, PaperHasID, AuthorHasID]); await db.sync({ drop: dropDatabase }).catch(err => {
 		//TODO fix for https://github.com/eveningkid/denodb/issues/258
 		console.log(err)
 		console.log("Entering workaround for: https://github.com/eveningkid/denodb/issues/258")

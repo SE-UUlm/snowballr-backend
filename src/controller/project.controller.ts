@@ -551,27 +551,27 @@ export const savePaper = async (apiPaper: IApiPaper, stage: Stage, overallWeight
 
 	if (doi[0]) {
 		let dbPaper = await getPaperByDoi(doi[0].toLowerCase())
-		console.log("--->FOUND SAME DOI: ")
-		console.log(dbPaper)
+		// console.log("--->FOUND SAME DOI: ")
+		// console.log(dbPaper)
 		if (dbPaper) {
 			await assignOnlyIfUnassignedPaper(dbPaper, apiPaper)
 
 
-			try {
-				let existingReview = await getExistingReview(Number(stage.projectId), Number(dbPaper.id));
-				console.log(existingReview)
-				let copyId = String(existingReview.rows[0][0]);
-				let existingReviewObject = await Review.find(copyId);
-				console.log("------------here----------------")
-				console.log(existingReviewObject)
-				let existingScopeObject = await PaperScopeForStage.find(Number(existingReviewObject.stageId))
-				existingScopeObject.stageId = stage.id;
-				delete existingScopeObject.id;
-				let newScopeObejct = PaperScopeForStage.create(Object(existingScopeObject));
-			}
-			catch (e) {
-				console.log(e)
-			}
+			// try {
+			// 	let existingReview = await getExistingReview(Number(stage.projectId), Number(dbPaper.id));
+			// 	console.log(existingReview)
+			// 	let copyId = String(existingReview.rows[0][0]);
+			// 	let existingReviewObject = await Review.find(copyId);
+			// 	console.log("------------here----------------")
+			// 	console.log(existingReviewObject)
+			// 	let existingScopeObject = await PaperScopeForStage.find(Number(existingReviewObject.stageId))
+			// 	existingScopeObject.stageId = stage.id;
+			// 	delete existingScopeObject.id;
+			// 	let newScopeObejct = PaperScopeForStage.create(Object(existingScopeObject));
+			// }
+			// catch (e) {
+			// 	console.log(e)
+			// }
 
 
 			return dbPaper.update()

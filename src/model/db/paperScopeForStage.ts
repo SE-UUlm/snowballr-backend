@@ -22,11 +22,5 @@ export class PaperScopeForStage extends Model {
 	static paper() {
 		return this.hasOne(Paper);
 	}
-
-	static review() {
-		return this.hasMany(Review);
-	}
-
-
 }
 
