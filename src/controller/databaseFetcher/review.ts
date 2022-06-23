@@ -13,7 +13,7 @@ export const getAllReviewsFromProjectPaper = async (ppId: number): Promise<Revie
 
 		if (Array.isArray(scope)) {
 			for (let s of scope) {
-				reviews.push(await Review.find(Number(s.review_id)));
+				//reviews.push(await Review.find(Number(s.review_id)));
 			}
 		}
 	} catch (err) {

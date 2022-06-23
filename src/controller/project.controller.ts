@@ -651,6 +651,7 @@ export const getPapersOfProjectStageFast = async (ctx: Context, projectID: numbe
  * @param ppID project specific paper id
  */
 export const getPaperOfProjectStage = async (ctx: Context, projectID: number, stageID: number, ppID: number) => {
+	console.log("GETTING PAPERS");
 	let validate = await validateUserEntry(ctx, [projectID, stageID, ppID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
 	if (validate) {
 		try {
@@ -661,6 +662,7 @@ export const getPaperOfProjectStage = async (ctx: Context, projectID: number, st
 				ctx.response.body = JSON.stringify(await convertPaperToPaperMessage(paper, stageID, userID));
 			}
 		} catch (e) {
+			console.log(e);
 			makeErrorMessage(ctx, 404, "paper does not exist")
 		}
 	}
