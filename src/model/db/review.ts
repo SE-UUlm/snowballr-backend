@@ -4,6 +4,7 @@ import { User } from "./user.ts";
 import { Stage } from "./stage.ts";
 import { Paper } from "./paper.ts";
 import { PaperScopeForStage } from "./paperScopeForStage.ts";
+import { ReviewToPaperScope } from "./reviewToPaperScope.ts";
 
 
 export class Review extends Model {
@@ -34,8 +35,8 @@ export class Review extends Model {
 	// 	return this.hasOne(Stage)
 	// }
 
-	static paper() {
-		return this.hasMany(PaperScopeForStage)
+	static reviewToPaperScope() {
+		return this.hasMany(ReviewToPaperScope)
 	}
 }
 

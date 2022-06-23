@@ -45,6 +45,7 @@ import { Semaphore } from "https://deno.land/x/semaphore/mod.ts"
 import { parry } from "https://deno.land/x/parry/mod.ts";
 import { makeProjectMessage } from "../helper/converter/projectConverter.ts";
 import { ProjectMessage } from "../model/messages/project.message.ts";
+import { ReviewToPaperScope } from "../model/db/reviewToPaperScope.ts";
 
 export const paperCache = new Cache<IApiPaper>(CacheType.F, 0, "paperCache")
 export const authorCache = new Cache<IApiAuthor>(CacheType.F, 0, "authorCache")
@@ -465,7 +466,7 @@ const fetchToDB = async (stageID: number, projectID: number, doi?: string, title
 					parent = parentPaper
 				} else {
 					parent = await savePaper(element.paper, stage, Number(project.mergeThreshold))
-					await PaperScopeForStage.create({ stageId: stageID, paperId: Number(parent.id), finalDecision: "YES", review: null })
+					await PaperScopeForStage.create({ stageId: stageID, paperId: Number(parent.id), finalDecision: "YES" })
 
 				}
 
@@ -651,6 +652,7 @@ export const getPapersOfProjectStageFast = async (ctx: Context, projectID: numbe
  * @param ppID project specific paper id
  */
 export const getPaperOfProjectStage = async (ctx: Context, projectID: number, stageID: number, ppID: number) => {
+	console.log("GETTING PAPERS");
 	let validate = await validateUserEntry(ctx, [projectID, stageID, ppID], UserStatus.needsMemberOfProject, projectID, { needed: false, params: [] })
 	if (validate) {
 		try {
@@ -661,6 +663,7 @@ export const getPaperOfProjectStage = async (ctx: Context, projectID: number, st
 				ctx.response.body = JSON.stringify(await convertPaperToPaperMessage(paper, stageID, userID));
 			}
 		} catch (e) {
+			console.log(e);
 			makeErrorMessage(ctx, 404, "paper does not exist")
 		}
 	}
@@ -1220,10 +1223,14 @@ export const addReviewToPaper = async (ctx: Context, projectID: number, stageID:
 		}
 		if (userID) {
 			try {
+
 				let review = await Review.create({
-					paperscopeforstageId: ppID,
 					userId: userID,
 					stageId: stageID
+				})
+				let reviewToPaperScope = await ReviewToPaperScope.create({
+					paperscopeforstageId: ppID,
+					reviewId: Number(review.id)
 				})
 
 				if (params.finished === true && (
