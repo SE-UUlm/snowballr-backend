@@ -83,12 +83,15 @@ export const setup = async (dropDatabase: boolean) => {
                                                         PRIMARY KEY (id))`);
 	await client.queryArray(`CREATE TABLE IF NOT EXISTS referencedby(
                                                         id SERIAL,
-                                                        paperreferencedid int NOT NULL,
+                                                  
+														paperreferencedid int NOT NULL,
                                                         paperreferencingid int NOT NULL,
                                                         FOREIGN KEY (paperreferencedid) REFERENCES paper (id),
                                                         FOREIGN KEY (paperreferencingid) REFERENCES paper (id),
                                                         PRIMARY KEY (id))`);
 	let admin = await returnUserByEmail(String(Deno.env.get("ADMIN_EMAIL")));
+	console.log("--------------------ADM;IN---------------------------")
+	console.log(admin);
 	if (!admin) {
 		admin = await insertUser(String(Deno.env.get("ADMIN_EMAIL")), String(Deno.env.get("ADMIN_PASSWORD")), true, "admin", "admin", "active");
 
