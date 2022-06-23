@@ -31,83 +31,83 @@ import { Batcher } from "../controller/fetch.controller.ts";
  * @param dropDatabase dropsDatabase during the setup
  */
 export const setup = async (dropDatabase: boolean) => {
-    await client.connect();
-    if (dropDatabase) {
-        await client.queryArray("DROP TABLE IF EXISTS citedby")
-        await client.queryArray("DROP TABLE IF EXISTS referencedby")
-        paperCache.fileCache!.purge()
-        authorCache.fileCache!.purge()
-        Batcher.purge()
-    }
-    Relationships.belongsTo(Invitation, User);
-    Relationships.belongsTo(ResetToken, User);
-    Relationships.belongsTo(Token, User);
-    Relationships.belongsTo(UserIsPartOfProject, User)
-    Relationships.belongsTo(UserIsPartOfProject, Project)
-    Relationships.belongsTo(ProjectUsesApi, SearchApi)
-    Relationships.belongsTo(ProjectUsesApi, Project)
-    Relationships.belongsTo(Criteria, Project)
-    Relationships.belongsTo(CriteriaEvaluation, Criteria)
-    Relationships.belongsTo(CriteriaEvaluation, Review)
-    Relationships.belongsTo(Review, User)
-    Relationships.belongsTo(Stage, Project)
-    Relationships.belongsTo(Review, Stage)
-    Relationships.belongsTo(Review, PaperScopeForStage)
-    Relationships.belongsTo(ReadingList, Paper)
-    Relationships.belongsTo(ReadingList, User)
-    Relationships.belongsTo(PaperScopeForStage, Stage)
-    Relationships.belongsTo(PaperScopeForStage, Paper)
-    Relationships.belongsTo(Wrote, Paper)
-    Relationships.belongsTo(Wrote, Author)
-    Relationships.belongsTo(Pdf, Paper)
-    Relationships.belongsTo(PaperHasID, Paper)
-    Relationships.belongsTo(PaperHasID, PaperID)
-    Relationships.belongsTo(AuthorHasID, Author)
-    Relationships.belongsTo(AuthorHasID, AuthorID)
-    db.link([User, Invitation, ResetToken, Paper, Pdf, Token, Author, AuthorID, Wrote, Project, Stage, PaperScopeForStage, SearchApi, ReadingList, Criteria, Review, PaperID, CriteriaEvaluation, UserIsPartOfProject, ProjectUsesApi, PaperHasID, AuthorHasID]);
-    await db.sync({ drop: dropDatabase }).catch(err => {
-        //TODO fix for https://github.com/eveningkid/denodb/issues/258
-        console.log(err)
-        console.log("Entering workaround for: https://github.com/eveningkid/denodb/issues/258")
-    });
-    await client.queryArray(`CREATE TABLE IF NOT EXISTS citedby(
+	await client.connect();
+	if (dropDatabase) {
+		await client.queryArray("DROP TABLE IF EXISTS citedby")
+		await client.queryArray("DROP TABLE IF EXISTS referencedby")
+		paperCache.fileCache!.purge()
+		authorCache.fileCache!.purge()
+		Batcher.purge()
+	}
+	Relationships.belongsTo(Invitation, User);
+	Relationships.belongsTo(ResetToken, User);
+	Relationships.belongsTo(Token, User);
+	Relationships.belongsTo(UserIsPartOfProject, User)
+	Relationships.belongsTo(UserIsPartOfProject, Project)
+	Relationships.belongsTo(ProjectUsesApi, SearchApi)
+	Relationships.belongsTo(ProjectUsesApi, Project)
+	Relationships.belongsTo(Criteria, Project)
+	Relationships.belongsTo(CriteriaEvaluation, Criteria)
+	Relationships.belongsTo(CriteriaEvaluation, Review)
+	Relationships.belongsTo(Review, User)
+	Relationships.belongsTo(Stage, Project)
+	Relationships.belongsTo(Review, Stage)
+	Relationships.belongsTo(Review, PaperScopeForStage)
+	Relationships.belongsTo(ReadingList, Paper)
+	Relationships.belongsTo(ReadingList, User)
+	Relationships.belongsTo(PaperScopeForStage, Stage)
+	Relationships.belongsTo(PaperScopeForStage, Paper)
+	Relationships.belongsTo(Wrote, Paper)
+	Relationships.belongsTo(Wrote, Author)
+	Relationships.belongsTo(Pdf, Paper)
+	Relationships.belongsTo(PaperHasID, Paper)
+	Relationships.belongsTo(PaperHasID, PaperID)
+	Relationships.belongsTo(AuthorHasID, Author)
+	Relationships.belongsTo(AuthorHasID, AuthorID)
+	db.link([User, Invitation, ResetToken, Paper, Pdf, Token, Author, AuthorID, Wrote, Project, Stage, PaperScopeForStage, SearchApi, ReadingList, Criteria, Review, PaperID, CriteriaEvaluation, UserIsPartOfProject, ProjectUsesApi, PaperHasID, AuthorHasID]);
+	await db.sync({ drop: dropDatabase }).catch(err => {
+		//TODO fix for https://github.com/eveningkid/denodb/issues/258
+		console.log(err)
+		console.log("Entering workaround for: https://github.com/eveningkid/denodb/issues/258")
+	});
+	await client.queryArray(`CREATE TABLE IF NOT EXISTS citedby(
                                                         id SERIAL,
                                                         papercitedid int NOT NULL,
                                                         papercitingid int NOT NULL,
                                                         FOREIGN KEY (papercitedid) REFERENCES paper (id),
                                                         FOREIGN KEY (papercitingid) REFERENCES paper (id),
                                                         PRIMARY KEY (id))`);
-    await client.queryArray(`CREATE TABLE IF NOT EXISTS referencedby(
+	await client.queryArray(`CREATE TABLE IF NOT EXISTS referencedby(
                                                         id SERIAL,
                                                         paperreferencedid int NOT NULL,
                                                         paperreferencingid int NOT NULL,
                                                         FOREIGN KEY (paperreferencedid) REFERENCES paper (id),
                                                         FOREIGN KEY (paperreferencingid) REFERENCES paper (id),
                                                         PRIMARY KEY (id))`);
-    let admin = await returnUserByEmail(String(Deno.env.get("ADMIN_EMAIL")));
-    if (!admin) {
-        admin = await insertUser(String(Deno.env.get("ADMIN_EMAIL")), String(Deno.env.get("ADMIN_PASSWORD")), true, "admin", "admin", "active");
+	let admin = await returnUserByEmail(String(Deno.env.get("ADMIN_EMAIL")));
+	if (!admin) {
+		admin = await insertUser(String(Deno.env.get("ADMIN_EMAIL")), String(Deno.env.get("ADMIN_PASSWORD")), true, "admin", "admin", "active");
 
-        await SearchApi.create({ name: "crossRef", id: IDOfApi.crossRef, credentials: "luca999@web.de" })
-        await SearchApi.create({ name: "openCitations", id: IDOfApi.openCitations })
-        await SearchApi.create({ name: "semanticScholar", id: IDOfApi.semanticScholar })
-        await SearchApi.create({ name: "IEEE", id: IDOfApi.IEEE, credentials: "4yk5d9an52ejynjsmzqxe62r" })
-        await SearchApi.create({ name: "googleScholar", id: IDOfApi.googleScholar })
-        await SearchApi.create({ name: "microsoftAcademic", id: IDOfApi.microsoftAcademic, credentials: "9a02225751354cd29397eba3f5382101" })
+		await SearchApi.create({ name: "crossRef", id: IDOfApi.crossRef, credentials: "luca999@web.de" })
+		await SearchApi.create({ name: "openCitations", id: IDOfApi.openCitations })
+		await SearchApi.create({ name: "semanticScholar", id: IDOfApi.semanticScholar })
+		await SearchApi.create({ name: "IEEE", id: IDOfApi.IEEE, credentials: "4yk5d9an52ejynjsmzqxe62r" })
+		await SearchApi.create({ name: "googleScholar", id: IDOfApi.googleScholar })
+		await SearchApi.create({ name: "microsoftAcademic", id: IDOfApi.microsoftAcademic, credentials: "9a02225751354cd29397eba3f5382101" })
 
 
-        //TODO: only to showcase functionality, otherwise delete
-        await insertUser("test@test", "1234", true, "test", "user", "active");
-    }
+		//TODO: only to showcase functionality, otherwise delete
+		//await insertUser("test@test", "1234", true, "test", "user", "active");
+	}
 
 
 }
 
 export enum IDOfApi {
-    crossRef = 1,
-    openCitations = 2,
-    googleScholar = 3,
-    IEEE = 4,
-    semanticScholar = 5,
-    microsoftAcademic = 6,
+	crossRef = 1,
+	openCitations = 2,
+	googleScholar = 3,
+	IEEE = 4,
+	semanticScholar = 5,
+	microsoftAcademic = 6,
 }
