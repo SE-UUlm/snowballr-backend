@@ -14,14 +14,14 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-    logging:
-      driver: ${POSTGRES_LOGGING}
+    # logging:
+    #   driver: ${POSTGRES_LOGGING}
     profiles:
       - test
       - run
       - db
   backend-test:
-    image: denoland/deno:1.15.1
+    image: denoland/deno:latest
     command: bash -c "ls -a -l && deno test --allow-env --allow-read --allow-net --allow-write --coverage=cov_profile --unstable;
       deno --unstable coverage cov_profile --lcov > cov_profile.lcov;
       sed -i -e 's/\/app\/src/src/g' cov_profile.lcov"
@@ -44,7 +44,7 @@ services:
     profiles:
       - test
   backend:
-    image: denoland/deno:1.15.1
+    image: denoland/deno:latest
     command: bash -c "ls -a -l && deno --version && deno run --no-check --allow-env --allow-read --allow-write --allow-net --unstable ./src/main.ts;"
     working_dir: /app
     volumes:
