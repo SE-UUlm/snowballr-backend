@@ -465,7 +465,7 @@ const fetchToDB = async (stageID: number, projectID: number, doi?: string, title
 					parent = parentPaper
 				} else {
 					parent = await savePaper(element.paper, stage, Number(project.mergeThreshold))
-					await PaperScopeForStage.create({ stageId: stageID, paperId: Number(parent.id), finalDecision: "YES" })
+					await PaperScopeForStage.create({ stageId: stageID, paperId: Number(parent.id), finalDecision: "YES", review: null })
 
 				}
 

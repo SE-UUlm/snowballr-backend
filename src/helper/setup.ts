@@ -69,11 +69,13 @@ export const setup = async (dropDatabase: boolean) => {
 	Relationships.belongsTo(AuthorHasID, Author)
 	Relationships.belongsTo(AuthorHasID, AuthorID)
 	db.link([User, Invitation, ResetToken, Paper, Pdf, Token, Author, AuthorID, Wrote, Project, Stage, SearchApi, ReadingList, Criteria, Review, PaperScopeForStage, PaperID, CriteriaEvaluation, UserIsPartOfProject, ProjectUsesApi, PaperHasID, AuthorHasID]);
+	//console.log("1111111111111111111111111111111")
 	await db.sync({ drop: dropDatabase }).catch(err => {
 		//TODO fix for https://github.com/eveningkid/denodb/issues/258
 		console.log(err)
 		console.log("Entering workaround for: https://github.com/eveningkid/denodb/issues/258")
 	});
+	//console.log("222222222222222222222222222222")
 	await client.queryArray(`CREATE TABLE IF NOT EXISTS citedby(
                                                         id SERIAL,
                                                         papercitedid int NOT NULL,
@@ -90,8 +92,8 @@ export const setup = async (dropDatabase: boolean) => {
                                                         FOREIGN KEY (paperreferencingid) REFERENCES paper (id),
                                                         PRIMARY KEY (id))`);
 	let admin = await returnUserByEmail(String(Deno.env.get("ADMIN_EMAIL")));
-	console.log("--------------------ADM;IN---------------------------")
-	console.log(admin);
+	//console.log("--------------------ADM;IN---------------------------")
+	//console.log(admin);
 	if (!admin) {
 		admin = await insertUser(String(Deno.env.get("ADMIN_EMAIL")), String(Deno.env.get("ADMIN_PASSWORD")), true, "admin", "admin", "active");
 
