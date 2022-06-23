@@ -1,7 +1,7 @@
 import { insertUser, returnUserByEmail } from "../controller/databaseFetcher/user.ts";
 import { User } from "../model/db/user.ts";
 import { Invitation } from "../model/db/invitation.ts";
-import { Relationships } from 'https://deno.land/x/denodb/mod.ts';
+import { Relationships } from 'https://deno.land/x/denodb@v1.0.39/mod.ts';
 import { client, db } from "../controller/database.controller.ts";
 import { Token } from "../model/db/token.ts";
 import { Project } from "../model/db/project.ts";
