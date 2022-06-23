@@ -13,7 +13,7 @@ export const getAllReviewsFromProjectPaper = async (ppId: number): Promise<Revie
 
 		if (Array.isArray(scope)) {
 			for (let s of scope) {
-				//reviews.push(await Review.find(Number(s.review_id)));
+				reviews.push(await Review.find(Number(s.review_id)));
 			}
 		}
 	} catch (err) {
@@ -24,7 +24,19 @@ export const getAllReviewsFromProjectPaper = async (ppId: number): Promise<Revie
 
 export const checkUserReviewOfProjectPaper = async (ppId: number, userId: number): Promise<boolean> => {
 
-	let reviews = await Review.where({ paperscopeforstageId: ppId, userId: userId }).get()
+	//let reviews = await Review.where({ paperscopeforstageId: ppId, userId: userId }).get()
+	let reviews: Review[] = [];
+	try {
+		let scope = await ReviewToPaperScope.where({ paperscopeforstageId: ppId }).get();
+
+		if (Array.isArray(scope)) {
+			for (let s of scope) {
+				reviews.push(((await Review.where({ id: Number(s.review_id), userId: userId }).get()) as Review[])[0]);
+			}
+		}
+	} catch (err) {
+		console.log(err)
+	}
 	if (Array.isArray(reviews) && reviews[0]) {
 		return true;
 	}
