@@ -1,7 +1,7 @@
 import { ApiMerger } from "../../src/api/apiMerger.ts";
 import { IApiResponse } from "../../src/api/iApiResponse.ts";
 import { IApiPaper, SourceApi } from "../../src/api/iApiPaper.ts";
-import { assertEquals } from "https://deno.land/std/testing/asserts.ts"
+import { assertEquals } from "https://deno.land/std@0.150.0/testing/asserts.ts"
 import { idType } from "../../src/api/iApiUniqueId.ts";
 
 export const standardPaper: IApiPaper = { title: [], abstract: [], author: [], year: [], publisher: [], numberOfCitations: [], numberOfReferences: [], type: [], scope: [], scopeName: [], pdf: [], uniqueId: [], source: [], raw: [] }

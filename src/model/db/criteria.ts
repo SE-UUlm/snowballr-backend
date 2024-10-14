@@ -1,4 +1,4 @@
-import { DataTypes, Model } from "https://deno.land/x/denodb@v1.0.39/mod.ts";
+import { DataTypes, Model } from "https://deno.land/x/denodb@v1.4.0/mod.ts";
 import { Project } from "./project.ts";
 import { CriteriaEvaluation } from "./criteriaEval.ts";
 

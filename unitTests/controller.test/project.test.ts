@@ -43,7 +43,7 @@ import {
     removeMemberOfProject
 } from "../../src/controller/project.controller.ts";
 import { Project } from "../../src/model/db/project.ts";
-import { assertEquals, assertNotEquals } from "https://deno.land/std/testing/asserts.ts"
+import { assertEquals, assertNotEquals } from "https://deno.land/std@0.150.0/testing/asserts.ts"
 import { UserIsPartOfProject } from "../../src/model/db/userIsPartOfProject.ts";
 import { client, db, saveChildren } from "../../src/controller/database.controller.ts";
 import { Stage } from "../../src/model/db/stage.ts";

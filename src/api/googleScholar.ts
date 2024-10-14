@@ -6,15 +6,15 @@ import { IApiPaper, SourceApi } from './iApiPaper.ts';
 import { logger } from "./logger.ts";
 import { IApiAuthor } from "./iApiAuthor.ts";
 import { IApiUniqueId, idType } from "./iApiUniqueId.ts";
-import axiod from "https://deno.land/x/axiod/mod.ts";
+import axiod from "https://deno.land/x/axiod@0.26.2/mod.ts";
 import { Cache } from "./cache.ts";
-import { createHash } from "https://deno.land/std/hash/mod.ts";
-import { DOMParser, Element } from 'https://deno.land/x/deno_dom/deno-dom-wasm.ts';
+import { createHash } from "https://deno.land/std@0.150.0/hash/mod.ts";
+import { DOMParser, Element } from 'https://deno.land/x/deno_dom@v0.1.37/deno-dom-wasm.ts';
 import { HttpUserAgents } from './httpUserAgent.ts';
-import { sleep } from "https://deno.land/x/sleep/mod.ts";
+import { sleep } from "https://deno.land/x/sleep@v1.2.1/mod.ts";
 import { getRandomFromRange } from "../helper/random.ts";
-import { Semaphore } from "https://deno.land/x/semaphore/mod.ts"
-import { difference } from 'https://deno.land/std/datetime/mod.ts'
+import { Semaphore } from "https://deno.land/x/semaphore@v1.1.2/mod.ts"
+import { difference } from 'https://deno.land/std@0.150.0/datetime/mod.ts'
 import { proxyPool, Proxy } from './proxyPool.ts'
 import { CONFIG } from "../helper/config.ts";
 import { warnApiDisabledByConfig } from "../helper/error.ts";

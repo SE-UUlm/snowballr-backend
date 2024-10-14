@@ -1,8 +1,8 @@
 import { Cache, CacheType } from "../../src/api/cache.ts";
 import { IApiResponse } from "../../src/api/iApiResponse.ts";
 import * as Mock from "../mockObjects/mockCache.test.ts"
-import { assertEquals, assertNotEquals } from "https://deno.land/std/testing/asserts.ts"
-import { sleep } from "https://deno.land/x/sleep/mod.ts";
+import { assertEquals, assertNotEquals } from "https://deno.land/std@0.150.0/testing/asserts.ts"
+import { sleep } from "https://deno.land/x/sleep@v1.2.1/mod.ts";
 Deno.test({
 	name: "InMemoryCache: Put Cache",
 	async fn(): Promise<void> {

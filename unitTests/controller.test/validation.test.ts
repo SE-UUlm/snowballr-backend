@@ -7,7 +7,7 @@ import {
     validateContentType,
     validateJWTIfExists
 } from "../../src/controller/validation.controller.ts";
-import { assertEquals } from "https://deno.land/std/testing/asserts.ts"
+import { assertEquals } from "https://deno.land/std@0.150.0/testing/asserts.ts"
 import { emptyAsyncFunctionTest } from "../mockObjects/emptyAsyncFunction.test.ts";
 import { setup } from "../../src/helper/setup.ts";
 import { insertUser } from "../../src/controller/databaseFetcher/user.ts";
@@ -133,8 +133,10 @@ Deno.test({
         let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
         let app = await createMockApp();
         let token = await createJWT(user)
-        let project = await Project.create({ name: "Test", minCountReviewers: 1, countDecisiveReviewers: 1,evaluationFormula: "", combinationOfReviewers: "",
-        mergeThreshold: 0.8 })
+        let project = await Project.create({
+            name: "Test", minCountReviewers: 1, countDecisiveReviewers: 1, evaluationFormula: "", combinationOfReviewers: "",
+            mergeThreshold: 0.8
+        })
         let userIsPartOfProject = await UserIsPartOfProject.create({
             isOwner: true,
             userId: Number(user.id),
@@ -157,8 +159,10 @@ Deno.test({
         let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
         let app = await createMockApp();
         let token = await createJWT(user)
-        let project = await Project.create({ name: "Test", minCountReviewers: 1, countDecisiveReviewers: 1,evaluationFormula: "", combinationOfReviewers: "" ,
-        mergeThreshold: 0.8})
+        let project = await Project.create({
+            name: "Test", minCountReviewers: 1, countDecisiveReviewers: 1, evaluationFormula: "", combinationOfReviewers: "",
+            mergeThreshold: 0.8
+        })
         let userIsPartOfProject = await UserIsPartOfProject.create({
             isOwner: false,
             userId: Number(user.id),

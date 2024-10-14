@@ -4,7 +4,7 @@ import { ApiBatcher } from "../api/apiBatcher.ts";
 import { SourceApi } from "../api/iApiPaper.ts";
 import { IComparisonWeight } from "../api/iComparisonWeight.ts";
 import { IApiBatch } from "../api/iApiBatcher.ts";
-import { Context } from "https://deno.land/x/oak/mod.ts";
+import { Context } from "https://deno.land/x/oak@v11.1.0/mod.ts";
 import { UserStatus } from "./validation.controller.ts";
 import { validateUserEntry } from "./validation.controller.ts";
 import { PaperScopeForStage } from "../model/db/paperScopeForStage.ts";

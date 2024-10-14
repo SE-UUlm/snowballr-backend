@@ -1,4 +1,4 @@
-import { Context, send } from "https://deno.land/x/oak/mod.ts";
+import { Context, send } from "https://deno.land/x/oak@v11.1.0/mod.ts";
 import { makeErrorMessage } from "../helper/error.ts";
 import { jsonBodyToObject } from "../helper/body.ts";
 import { Project } from "../model/db/project.ts";
@@ -28,7 +28,7 @@ import { Review } from "../model/db/review.ts";
 import { ReviewMessage } from "../model/messages/review.message.ts";
 import { checkUserReviewOfProjectPaper, getAllReviewsFromProjectPaper, getReview } from "./databaseFetcher/review.ts";
 import { CriteriaEvaluation } from "../model/db/criteriaEval.ts";
-import { writeCSV } from "https://deno.land/x/csv/mod.ts";
+import { writeCSV } from "https://deno.land/x/csv@v0.8.0/mod.ts";
 import { sortIApiPapersByName, sortPapersByName } from "../helper/loggerHelper.ts";
 import { Pdf } from "../model/db/pdf.ts";
 import { getAllAuthorsFromPaper } from "./databaseFetcher/author.ts";
@@ -38,11 +38,11 @@ import { SearchApi } from "../model/db/searchApi.ts";
 import {
 	compress,
 	decompress
-} from "https://deno.land/x/zip/mod.ts";
+} from "https://deno.land/x/zip@v1.2.5/mod.ts";
 import { isEqualPaper } from "../api/checkIsEqual.ts";
 import { IComparisonWeight } from "../api/iComparisonWeight.ts";
-import { Semaphore } from "https://deno.land/x/semaphore/mod.ts"
-import { parry } from "https://deno.land/x/parry/mod.ts";
+import { Semaphore } from "https://deno.land/x/semaphore@v1.1.2/mod.ts"
+import { parry } from "https://deno.land/x/parry@0.1.6/mod.ts";
 import { makeProjectMessage } from "../helper/converter/projectConverter.ts";
 import { ProjectMessage } from "../model/messages/project.message.ts";
 import { ReviewToPaperScope } from "../model/db/reviewToPaperScope.ts";

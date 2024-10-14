@@ -1,6 +1,6 @@
 import { getPayloadFromJWTHeader} from "./validation.controller.ts";
 import { getToken } from "./databaseFetcher/token.ts";
-import { Context } from "https://deno.land/x/oak/mod.ts";
+import { Context } from "https://deno.land/x/oak@v11.1.0/mod.ts";
 
 /**
  * Logs out a user by deleting the token in the database and from the cookies.

@@ -1,10 +1,10 @@
-import { Application, RouteParams, Router, RouterContext } from 'https://deno.land/x/oak/mod.ts';
+import { Application, RouteParams, Router, RouterContext } from 'https://deno.land/x/oak@v11.1.0/mod.ts';
 import { validateContentType, validateJWTIfExists } from "./controller/validation.controller.ts";
 import { login, refresh } from "./controller/login.controller.ts";
 import { setup } from "./helper/setup.ts";
 import { createUser, getUser, getUserProjects, getUsers, patchUser, resetPassword } from "./controller/user.controller.ts";
 import { logout } from "./controller/logout.controller.ts";
-import { SmtpClient } from "https://deno.land/x/smtp/mod.ts";
+import { SmtpClient } from "https://deno.land/x/smtp@v0.7.0/mod.ts";
 import {
 	addCriteriaToProject,
 	addCrtieriaEvalToReview,
