@@ -1,6 +1,6 @@
 import { HttpUserAgents } from './httpUserAgent.ts';
 import { logger } from "./logger.ts"
-import { sleep } from "https://deno.land/x/sleep/mod.ts";
+import { sleep } from "https://deno.land/x/sleep@v1.2.1/mod.ts";
 import { IProxy } from "./iProxy.ts"
 import { genericFetchConfig } from "../helper/genericFetchConfig.ts";
 import { CONFIG } from "../helper/config.ts";

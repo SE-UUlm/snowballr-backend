@@ -1,0 +1,7 @@
+{
+  "scopes": {
+    "https://raw.githubusercontent.com/Zhomart/dex/": {
+      "https://deno.land/std/": "https://deno.land/std@0.177.0/"
+    }
+  }
+}

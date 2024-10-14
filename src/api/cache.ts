@@ -1,6 +1,6 @@
 import * as RemoteCache from "./local_cache/mod.ts";
 import { logger, fileLogger } from "./logger.ts";
-import { difference } from "https://deno.land/std/datetime/mod.ts";
+import { difference } from "https://deno.land/std@0.150.0/datetime/mod.ts";
 import { FileCache } from "./fileCache.ts";
 import { idType } from "./iApiUniqueId.ts";
 

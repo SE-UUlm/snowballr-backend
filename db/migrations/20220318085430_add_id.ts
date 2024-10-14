@@ -2,7 +2,7 @@ import {
 	AbstractMigration,
 	ClientPostgreSQL,
 	Info,
-} from "https://deno.land/x/nessie/mod.ts";
+} from "https://deno.land/x/nessie@2.0.10/mod.ts";
 
 export default class extends AbstractMigration<ClientPostgreSQL> {
 	async up({ dialect }: Info): Promise<void> {

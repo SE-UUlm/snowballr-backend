@@ -3,7 +3,7 @@ import { insertUser } from "../../src/controller/databaseFetcher/user.ts";
 import { createMockApp } from "../mockObjects/oak/mockApp.test.ts";
 import { createJWT } from "../../src/controller/validation.controller.ts";
 import { createMockContext } from "../mockObjects/oak/mockContext.test.ts";
-import { assertEquals, assertNotEquals } from "https://deno.land/std/testing/asserts.ts"
+import { assertEquals, assertNotEquals } from "https://deno.land/std@0.150.0/testing/asserts.ts"
 import { createUser, getUser, getUserProjects, getUsers, patchUser, resetPassword } from "../../src/controller/user.controller.ts";
 import { User } from "../../src/model/db/user.ts";
 import { MockEmailClient } from "../mockObjects/mockEmailClient.test.ts";
@@ -243,8 +243,10 @@ Deno.test({
     fn: async function (): Promise<void> {
         await setup(true);
         let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
-        let project = await Project.create({ name: "Test", minCountReviewers: 1, countDecisiveReviewers: 1, evaluationFormula: "", combinationOfReviewers: "" ,
-        mergeThreshold: 0.8})
+        let project = await Project.create({
+            name: "Test", minCountReviewers: 1, countDecisiveReviewers: 1, evaluationFormula: "", combinationOfReviewers: "",
+            mergeThreshold: 0.8
+        })
         let userProject = await UserIsPartOfProject.create({
             isOwner: true,
             userId: Number(user.id),
@@ -275,8 +277,10 @@ Deno.test({
     fn: async function (): Promise<void> {
         await setup(true);
         let user = await insertUser("test@test", "ash", false, "Test", "Tester", "active");
-        let project = await Project.create({ name: "Test", minCountReviewers: 1, countDecisiveReviewers: 1,evaluationFormula: "", combinationOfReviewers: "",
-        mergeThreshold: 0.8})
+        let project = await Project.create({
+            name: "Test", minCountReviewers: 1, countDecisiveReviewers: 1, evaluationFormula: "", combinationOfReviewers: "",
+            mergeThreshold: 0.8
+        })
         let userProject = await UserIsPartOfProject.create({
             isOwner: true,
             userId: Number(user.id),

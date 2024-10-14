@@ -1,4 +1,4 @@
-import { Application } from "https://deno.land/x/oak/mod.ts";
+import { Application } from "https://deno.land/x/oak@v11.1.0/mod.ts";
 
 /**
  * This class is used to mock the basic functionality of an app, to use it for a test

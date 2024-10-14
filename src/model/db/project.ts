@@ -1,4 +1,4 @@
-import { DataTypes, Model } from "https://deno.land/x/denodb@v1.0.39/mod.ts";
+import { DataTypes, Model } from "https://deno.land/x/denodb@v1.4.0/mod.ts";
 import { UserIsPartOfProject } from "./userIsPartOfProject.ts";
 import { SearchApi } from "./searchApi.ts";
 import { Criteria } from "./criteria.ts";

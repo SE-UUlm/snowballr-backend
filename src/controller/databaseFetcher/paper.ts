@@ -15,7 +15,7 @@ import { checkUserReviewOfProjectPaper, getAllReviewsFromProjectPaper } from "./
 import { Review } from "../../model/db/review.ts";
 import { getUserID } from "../validation.controller.ts";
 import { getPayloadFromJWTHeader } from "../validation.controller.ts";
-import { Context } from "https://deno.land/x/oak/mod.ts";
+import { Context } from "https://deno.land/x/oak@v11.1.0/mod.ts";
 import { concatWithoutDuplicates } from "../../helper/assign.ts";
 import { getProjectStageStuff } from "../database.controller.ts";
 

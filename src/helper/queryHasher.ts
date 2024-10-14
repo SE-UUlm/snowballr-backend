@@ -1,4 +1,4 @@
-import { createHash } from "https://deno.land/std/hash/mod.ts";
+import { createHash } from "https://deno.land/std@0.150.0/hash/mod.ts";
 import { IApiQuery } from "../api/iApiQuery.ts";
 import { assign } from "./assign.ts";
 

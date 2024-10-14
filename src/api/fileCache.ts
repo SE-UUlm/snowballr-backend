@@ -1,7 +1,7 @@
 import { logger } from "./logger.ts";
 import { IApiQuery } from "./iApiQuery.ts";
 import { IApiResponse } from "./iApiResponse.ts";
-import { difference } from "https://deno.land/std/datetime/mod.ts";
+import { difference } from "https://deno.land/std@0.150.0/datetime/mod.ts";
 
 export class FileCache {
 	path: string;

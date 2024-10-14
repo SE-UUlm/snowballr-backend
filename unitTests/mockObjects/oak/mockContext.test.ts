@@ -1,4 +1,4 @@
-import { Application, Context, Cookies, Response } from "https://deno.land/x/oak/mod.ts";
+import { Application, Context, Cookies, Response } from "https://deno.land/x/oak@v11.1.0/mod.ts";
 import { createMockRequest } from "./mockRequest.test.ts";
 import { createMockResponse } from "./mockResponse.test.ts";
 

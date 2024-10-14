@@ -1,4 +1,4 @@
-import { Context } from "https://deno.land/x/oak/mod.ts";
+import { Context } from "https://deno.land/x/oak@v11.1.0/mod.ts";
 import { IApiPaper } from "../api/iApiPaper.ts";
 import { IApiResponse } from "../api/iApiResponse.ts";
 import { logger } from "../api/logger.ts";

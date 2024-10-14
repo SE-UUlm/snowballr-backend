@@ -1,5 +1,5 @@
-import * as log from "https://deno.land/std/log/mod.ts";
-import { toIMF } from "https://deno.land/std/datetime/mod.ts";
+import * as log from "https://deno.land/std@0.150.0/log/mod.ts";
+import { toIMF } from "https://deno.land/std@0.150.0/datetime/mod.ts";
 
 await log.setup({
 	handlers: {
