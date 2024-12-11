@@ -1,11 +1,23 @@
 import { Database, PostgresConnector } from "https://deno.land/x/denodb@v1.4.0/mod.ts";
 import { Client } from "https://deno.land/x/postgres@v0.17.0/mod.ts";
 
-const PostgresDB = String(Deno.env.get("POSTGRES_DB"));
-const PostgresUser = String(Deno.env.get("POSTGRES_USER"));
-const PostgresPassword = String(Deno.env.get("POSTGRES_PASSWORD"));
-const PostgresHost = String(Deno.env.get("POSTGRES_HOST"));
+const PostgresDB = Deno.env.get("POSTGRES_DB");
+const PostgresUser = Deno.env.get("POSTGRES_USER");
+const PostgresPassword = Deno.env.get("POSTGRES_PASSWORD");
+const PostgresHost = Deno.env.get("POSTGRES_HOST");
 
+if (!PostgresDB || !PostgresUser || !PostgresPassword || !PostgresHost) {
+  throw new Error(
+    "Please define POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD and POSTGRES_HOST in your .env file",
+  );
+}
+
+console.log("Postgres Env", {
+  PostgresDB,
+  PostgresUser,
+  PostgresPassword,
+  PostgresHost,
+});
 
 /**
  * Database for DENODB
@@ -22,8 +34,6 @@ export const db = new Database(connection)
 /**
  * Database for native SQL (currently used for Selfjoins, since denodb can't use it)
  */
-console.log(PostgresHost)
-console.log(PostgresPassword)
 export const client = new Client({
 	user: PostgresUser,
 	database: PostgresDB,

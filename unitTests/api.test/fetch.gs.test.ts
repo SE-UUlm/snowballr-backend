@@ -3,7 +3,7 @@ import { IApiResponse } from "../../src/api/iApiResponse.ts";
 import { IApiPaper, SourceApi } from "../../src/api/iApiPaper.ts";
 import { assertEquals } from "https://deno.land/std@0.150.0/testing/asserts.ts"
 import { GoogleScholar } from "../../src/api/googleScholar.ts";
-import { Stub, stub } from "https://deno.land/x/mock@0.15.2/stub.ts";
+import { stub } from "https://deno.land/x/mock@0.15.2/mock.ts";
 import { IApiQuery } from "../../src/api/iApiQuery.ts";
 import { IComparisonWeight } from "../../src/api/iComparisonWeight.ts";
 import * as Mock from "../mockObjects/fetch/googleScholarMock.test.ts"
