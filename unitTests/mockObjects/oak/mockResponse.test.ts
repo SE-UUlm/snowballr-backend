@@ -1,5 +1,3 @@
-import { Context } from "https://deno.land/x/oak@v11.1.0/mod.ts";
-
 /**
  * Mocks a response.
  * To lower functionality, the body if the response isn't defined as an object.
@@ -8,7 +6,7 @@ import { Context } from "https://deno.land/x/oak@v11.1.0/mod.ts";
  * @param headersInit
  */
 export function createMockResponse(headersInit: string[][]): Response {
-    let response = {
+    const response = {
         headers: new Headers(headersInit),
         status: 999,
         body: undefined,

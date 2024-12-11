@@ -10,7 +10,7 @@ import { makeErrorMessage } from "./error.ts";
 export const jsonBodyToObject = (ctx: Context) => {
     try {
         return ctx.request.body({ type: "json" }).value;
-    } catch (err) {
+    } catch (_) {
         makeErrorMessage(ctx, 422, "noBodyProvided")
     }
     return makePromise(undefined)

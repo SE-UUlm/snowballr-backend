@@ -6,7 +6,6 @@ import { convertCtxBodyToUser, convertUserToUserProfile } from "../helper/conver
 import { EMailClient } from "../model/eMailClient.ts";
 import { makeErrorMessage } from "../helper/error.ts";
 import { urlSanitizer } from "../helper/url.ts";
-import { jsonBodyToObject } from "../helper/body.ts";
 import { getInvitation, insertInvitation } from "./databaseFetcher/invitation.ts";
 import { getResetToken, insertResetToken } from "./databaseFetcher/resetToken.ts";
 import { getAllProjectsByUser } from "./databaseFetcher/userProject.ts";
@@ -36,15 +35,15 @@ Object.freeze(Deno.errors);
  * @param client Only necessary to throw in an empty mock to not send mails during tests
  */
 export const createUser = async (ctx: Context, client: EMailClient) => {
-	let validate = await validateUserEntry(ctx, [], UserStatus.needsPO, -1, { needed: true, params: ["email", "sender"] })
+	const validate = await validateUserEntry(ctx, [], UserStatus.needsPO, -1, { needed: true, params: ["email", "sender"] })
 	if (validate) {
 		const payloadJson = await getPayloadFromJWTHeader(ctx);
 		let user = null;
 		try {
 			user = await insertUserForRegistration(validate.email);
-			let jwt = await createRefreshJWT(Number(user.id))
+			const jwt = await createRefreshJWT(Number(user.id))
 			await insertInvitation(user, jwt);
-			let linkText = "snowballR"
+			const linkText = "snowballR"
 
 			if (adminMail) {
 				console.log(adminMail)
@@ -83,13 +82,13 @@ export const createUser = async (ctx: Context, client: EMailClient) => {
  * @param client
  */
 export const resetPassword = async (ctx: Context, client: EMailClient) => {
-	let validate = await validateUserEntry(ctx, [], UserStatus.none, -1, { needed: true, params: ["email"] })
+	const validate = await validateUserEntry(ctx, [], UserStatus.none, -1, { needed: true, params: ["email"] })
 	if (validate) {
-		let user = await returnUserByEmail(validate.email)
+		const user = await returnUserByEmail(validate.email)
 		if (user && URL) {
-			let jwt = await createJWT(user)
+			const jwt = await createJWT(user)
 			await insertResetToken(user, jwt);
-			let linkText = "snowballR"
+			const linkText = "snowballR"
 			await sendResetMail(jwt, linkText, validate.email, user, client);
 			ctx.response.status = 200;
 		} else {
@@ -103,11 +102,11 @@ export const resetPassword = async (ctx: Context, client: EMailClient) => {
  * @param ctx
  */
 export const getUsers = async (ctx: Context) => {
-	let validate = await validateUserEntry(ctx, [], UserStatus.needsPO, -1, { needed: false, params: [] })
+	const validate = await validateUserEntry(ctx, [], UserStatus.needsPO, -1, { needed: false, params: [] })
 	if (validate) {
-		let users = await User.all();
-		let userProfile = users.map(user => convertUserToUserProfile(user));
-		let userMessage: UsersMessage = { users: userProfile }
+		const users = await User.all();
+		const userProfile = users.map(user => convertUserToUserProfile(user));
+		const userMessage: UsersMessage = { users: userProfile }
 		ctx.response.body = JSON.stringify(userMessage)
 		ctx.response.status = 200;
 	}
@@ -120,11 +119,11 @@ export const getUsers = async (ctx: Context) => {
  * @param id
  */
 export const getUser = async (ctx: Context, id: number) => {
-	let validate = await validateUserEntry(ctx, [id], UserStatus.needsSameUserOrPO, -1, { needed: false, params: [] }, id)
+	const validate = await validateUserEntry(ctx, [id], UserStatus.needsSameUserOrPO, -1, { needed: false, params: [] }, id)
 	if (validate) {
-		let user = await User.find(id);
+		const user = await User.find(id);
 		if (user) {
-			let userProfile = convertUserToUserProfile(user);
+			const userProfile = convertUserToUserProfile(user);
 			ctx.response.body = JSON.stringify(userProfile);
 			ctx.response.status = 200;
 		} else {
@@ -139,9 +138,9 @@ export const getUser = async (ctx: Context, id: number) => {
  * @param id
  */
 export const getUserProjects = async (ctx: Context, id: number) => {
-	let validate = await validateUserEntry(ctx, [id], UserStatus.needsSameUser, -1, { needed: false, params: [] }, id)
+	const validate = await validateUserEntry(ctx, [id], UserStatus.needsSameUser, -1, { needed: false, params: [] }, id)
 	if (validate) {
-		let userProjects = await getAllProjectsByUser(id)
+		const userProjects = await getAllProjectsByUser(id)
 		if (userProjects) {
 			ctx.response.body = JSON.stringify(await convertProjectToProjectMessage(userProjects))
 			ctx.response.status = 200;
@@ -161,18 +160,18 @@ export const patchUser = async (ctx: Context, id: number | undefined) => {
 		return;
 	}
 	const payloadJson = await getPayloadFromJWTHeader(ctx);
-	let userData = await convertCtxBodyToUser(ctx);
-	let isAdmin = await checkAdmin(payloadJson);
-	let isPO = await checkPO(payloadJson);
+	const userData = await convertCtxBodyToUser(ctx);
+	const isAdmin = await checkAdmin(payloadJson);
+	const isPO = await checkPO(payloadJson);
 
-	let checkedToken = await checkToken(id, ctx, userData);
-	let isSameUser = (await getUserID(payloadJson)) === id || checkedToken.valid
-	let register = checkedToken.kind === "invitation"
+	const checkedToken = await checkToken(id, ctx, userData);
+	const isSameUser = (await getUserID(payloadJson)) === id || checkedToken.valid
+	const register = checkedToken.kind === "invitation"
 	if (isSameUser || isAdmin || isPO) {
 
-		let user = await changeUserData(ctx, id, isSameUser, isAdmin, userData, register)
+		const user = await changeUserData(ctx, id, isSameUser, isAdmin, userData, register)
 		if (user) {
-			let userProfile = convertUserToUserProfile(user);
+			const userProfile = convertUserToUserProfile(user);
 			ctx.response.body = JSON.stringify(userProfile);
 			ctx.response.status = 200;
 		}
@@ -185,7 +184,7 @@ export const patchUser = async (ctx: Context, id: number | undefined) => {
 }
 
 const changeUserData = async (ctx: Context, id: number, isSameUser: boolean, isAdmin: boolean, userData: UserParameters, register: boolean) => {
-	let user = await User.find(id);
+	const user = await User.find(id);
 
 	if (!user) {
 		makeErrorMessage(ctx, 404, "User not Found")
@@ -230,8 +229,8 @@ const changeUserData = async (ctx: Context, id: number, isSameUser: boolean, isA
  */
 const checkToken = async (id: number, ctx: Context, userData: UserParameters) => {
 	let validToken = { valid: false, kind: "" };
-	let invitationToken = ctx.request.headers.get("invitationToken");
-	let resetToken = ctx.request.headers.get("resetToken")
+	const invitationToken = ctx.request.headers.get("invitationToken");
+	const resetToken = ctx.request.headers.get("resetToken")
 	logger.error(`invitation: ${JSON.stringify(invitationToken)}`)
 	if (invitationToken) {
 		if (userData.password && userData.firstName) {
@@ -258,7 +257,7 @@ const checkToken = async (id: number, ctx: Context, userData: UserParameters) =>
  * @param ctx
  */
 const checkInvitationToken = async (id: number, providedToken: string, ctx: Context) => {
-	let token = await getInvitation(id, providedToken)
+	const token = await getInvitation(id, providedToken)
 	if (token) {
 		token.delete()
 		return true;
@@ -275,7 +274,7 @@ const checkInvitationToken = async (id: number, providedToken: string, ctx: Cont
  * @param ctx
  */
 const checkResetToken = async (id: number, providedToken: string, ctx: Context) => {
-	let token = await getResetToken(id, providedToken)
+	const token = await getResetToken(id, providedToken)
 	if (token) {
 		token.delete()
 		return true;
@@ -300,7 +299,7 @@ const sendInvitationMail = async (jwt: string, linkText: string, email: string, 
 	if (URL) {
 		let url = urlSanitizer(URL);
 		url += "/register?id=" + userId + "&token=" + jwt;
-		let finalText = linkText.link(url);
+		// let finalText = linkText.link(url);
 		const content = `Welcome, </br>
 		you were invited to join snowballR by ${name ? name : `your snowballR Team`}</br>
         to finalize your registration for snowballR, please visit: ${url}.</br>
@@ -356,7 +355,7 @@ const sendResetMail = async (jwt: string, linkText: string, email: string, user:
 	if (URL) {
 		let url = urlSanitizer(URL);
 		url += "/resetpassword?id=" + Number(user.id) + "&token=" + jwt;
-		let finalText = linkText.link(url);
+		// let finalText = linkText.link(url);
 		const content = `Hello ${String(user.firstName)} ${String(user.lastName)}, </br>
                 to reset your password for snowballR, please visit: ${url}. </br>
                 Best Regards, </br>
@@ -387,7 +386,7 @@ const sendMail = async (mailTo: string, client: EMailClient, html: string, conte
 		hostname: "mail.uni-ulm.de",
 		port: 25,
 	});
-	let response = await client.send({
+	const response = await client.send({
 		from: name ? `${name} <${adminMail}>` : adminMail,
 		to: mailTo,
 		subject: header,

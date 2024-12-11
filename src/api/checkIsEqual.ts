@@ -22,10 +22,10 @@ export const isEqualPaper = (firstResponse: IApiPaper, secondResponse: IApiPaper
 	if (!firstResponse || !secondResponse) {
 		return false
 	}
-	let comparison: IComparisonWeight = {} as IComparisonWeight;
+	const comparison: IComparisonWeight = {} as IComparisonWeight;
 	Object.assign(comparison, comparisonWeight)
-	let firstDOI: string[] = getDOI(firstResponse);
-	let secondDOI: string[] = getDOI(secondResponse);
+	const firstDOI: string[] = getDOI(firstResponse);
+	const secondDOI: string[] = getDOI(secondResponse);
 
 
 	/** if DOI of 2 paper is equal we can assume that its the same paper */
@@ -91,8 +91,8 @@ const isEqualAuthors = (firstAuthors: IApiAuthor[], secondAuthors: IApiAuthor[])
 
 	let equalAuthors: number = 0;
 
-	for (let a1 in firstAuthors) {
-		for (let a2 in secondAuthors) {
+	for (const a1 in firstAuthors) {
+		for (const a2 in secondAuthors) {
 			equalAuthors += isEqualAuthor(firstAuthors[a1], secondAuthors[a2])
 		}
 	}
@@ -105,10 +105,10 @@ export const isEqualAuthor = (firstAuthor: IApiAuthor, secondAuthor: IApiAuthor)
 		logger.error("one author value was not set")
 		return 0;
 	}
-	let fFirstName = firstAuthor.firstName!.map((item: string) => ApiMerger.normalizeString(item))
-	let sFirstName = secondAuthor.firstName!.map((item: string) => ApiMerger.normalizeString(item))
-	let fLastName = firstAuthor.lastName!.map((item: string) => ApiMerger.normalizeString(item))
-	let sLastName = secondAuthor.lastName!.map((item: string) => ApiMerger.normalizeString(item))
+	const fFirstName = firstAuthor.firstName!.map((item: string) => ApiMerger.normalizeString(item))
+	const sFirstName = secondAuthor.firstName!.map((item: string) => ApiMerger.normalizeString(item))
+	const fLastName = firstAuthor.lastName!.map((item: string) => ApiMerger.normalizeString(item))
+	const sLastName = secondAuthor.lastName!.map((item: string) => ApiMerger.normalizeString(item))
 
 	if (fFirstName.some((item: string) => sFirstName.includes(item)) && fLastName.some((item: string) => sLastName.includes(item))) {
 		return 1;
@@ -136,8 +136,8 @@ export const isEqualAuthor = (firstAuthor: IApiAuthor, secondAuthor: IApiAuthor)
 
 export const isEqualRawAuthorString = (firstRawString: string, secondRawString: string): number => {
 	let equalParts: number = 0;
-	let firstNormalizedItems: string[] = ApiMerger.normalizeString(firstRawString).split(" ");
-	let secondNormalizedItems: string[] = ApiMerger.normalizeString(secondRawString).split(" ");
+	const firstNormalizedItems: string[] = ApiMerger.normalizeString(firstRawString).split(" ");
+	const secondNormalizedItems: string[] = ApiMerger.normalizeString(secondRawString).split(" ");
 
 
 	//Special case a name is given like M. Muster or M Muster
@@ -146,12 +146,12 @@ export const isEqualRawAuthorString = (firstRawString: string, secondRawString: 
 		if (firstNormalizedItems[0].charAt(0) == secondNormalizedItems[0].charAt(0)) {
 
 			// TODO hardcoded
-			let lev = Levenshtein(firstNormalizedItems[firstNormalizedItems.length - 1], secondNormalizedItems[secondNormalizedItems.length - 1]);
+			const lev = Levenshtein(firstNormalizedItems[firstNormalizedItems.length - 1], secondNormalizedItems[secondNormalizedItems.length - 1]);
 			return ((secondNormalizedItems[secondNormalizedItems.length - 1].length - lev) / secondNormalizedItems[secondNormalizedItems.length - 1].length)
 
 		}
 	} else {
-		for (let i in firstNormalizedItems) {
+		for (const i in firstNormalizedItems) {
 			if (secondNormalizedItems.includes(firstNormalizedItems[i])) {
 				equalParts++;
 			}
@@ -161,8 +161,8 @@ export const isEqualRawAuthorString = (firstRawString: string, secondRawString: 
 }
 
 const compareYears = (firstYear: number[], secondYear: number[]): boolean => {
-	for (let i in firstYear) {
-		for (let j in secondYear) {
+	for (const i in firstYear) {
+		for (const j in secondYear) {
 			if (firstYear[i] - secondYear[j] in [-1, 0, 1]) {
 				return true;
 			}
@@ -174,9 +174,9 @@ const compareYears = (firstYear: number[], secondYear: number[]): boolean => {
 
 const compareStringArrays = (weight: number, first?: string[], second?: string[]): [number, boolean] => {
 	if (first && second && first[0] && second[0]) {
-		let title = second[0];
+		const title = second[0];
 
-		let lev = Math.max.apply(null, first.map((item) => {
+		const lev = Math.max.apply(null, first.map((item) => {
 			return Levenshtein(ApiMerger.normalizeString(item), ApiMerger.normalizeString(title));
 		}));
 

@@ -24,7 +24,7 @@ const KEY = await crypto.subtle.generateKey(
 export const validateContentType = async (ctx: Context, next: () => Promise<unknown>) => {
 	//ctx.response.headers.set("content-encoding", "");
 	ctx.response.type = "application/json";
-	let contentType = ctx.request.headers.get("Content-Type");
+	const contentType = ctx.request.headers.get("Content-Type");
 	if (await emptyContent(ctx)) {
 		await next();
 	} else if (contentType && contentType.startsWith("application/json")) {
@@ -48,14 +48,14 @@ const emptyContent = async (ctx: Context): Promise<boolean> => {
 		console.log(await ctx.request.method)
 		await ctx.request.body({ type: "undefined" }).value
 		return true;
-	} catch (error) {
+	} catch (_) {
 		try {
 			if (await ctx.request.method === "DELETE") {
 				return true
 			}
 			return false
 		}
-		catch (error) {
+		catch (_) {
 			return false;
 		}
 	}
@@ -69,7 +69,7 @@ const emptyContent = async (ctx: Context): Promise<boolean> => {
 const validateContent = async (ctx: Context): Promise<boolean> => {
 	try {
 		await ctx.request.body({ type: "json" }).value
-	} catch (error) {
+	} catch (_) {
 		return false;
 	}
 	return true;
@@ -83,7 +83,7 @@ const validateContent = async (ctx: Context): Promise<boolean> => {
  * @param next
  */
 export const validateJWTIfExists = async (ctx: Context, next: () => Promise<unknown>) => {
-	let token = ctx.request.headers.get("authenticationToken");
+	const token = ctx.request.headers.get("authenticationToken");
 	if (token) {
 		return verifyJWTAndContinue(ctx, next, token)
 	} else {
@@ -98,13 +98,13 @@ export const validateJWTIfExists = async (ctx: Context, next: () => Promise<unkn
  * @param next 
  */
 export const validateRefreshJWT = async (ctx: Context) => {
-	let token = await ctx.cookies.get("refreshToken");
+	const token = await ctx.cookies.get("refreshToken");
 	if (token && await verifyJWT(token)) {
 		const payloadJson = await getPayloadFromJWTCookie(ctx);
 		if (payloadJson) {
-			let oldJWT = await getToken(payloadJson.id, token);
+			const oldJWT = await getToken(payloadJson.id, token);
 			if (oldJWT) {
-				let newJWT = await createRefreshJWT(payloadJson.id);
+				const newJWT = await createRefreshJWT(payloadJson.id);
 				oldJWT.token = newJWT
 				oldJWT.update()
 				return { valid: true, payload: payloadJson };
@@ -118,7 +118,7 @@ export const validateRefreshJWT = async (ctx: Context) => {
  * @param user
  */
 export const createJWT = async (user: User) => {
-	let jwt = create({ alg: "HS512", typ: "JWT" }, {
+	const jwt = create({ alg: "HS512", typ: "JWT" }, {
 		id: user.id,
 		eMail: user.email,
 		isAdmin: user.isAdmin,
@@ -135,7 +135,7 @@ export const createJWT = async (user: User) => {
  * @returns 
  */
 export const createRefreshJWT = async (userID: number) => {
-	let jwt = create({ alg: "HS512", typ: "JWT" }, {
+	const jwt = create({ alg: "HS512", typ: "JWT" }, {
 		id: userID,
 		exp: createNumericTerminationDate()
 	}, KEY);
@@ -172,7 +172,7 @@ export const checkAdmin = async (payloadJson?: PayloadJson) => {
  */
 export const checkPO = async (payloadJson?: PayloadJson) => {
 	if (payloadJson) {
-		let projects = await User.where('id', payloadJson.id).project();
+		const projects = await User.where('id', payloadJson.id).project();
 		if (Array.isArray(projects)) {
 			return !(projects.every((userIsPartOfProject) => {
 				return !userIsPartOfProject.isOwner;
@@ -191,9 +191,9 @@ export const checkPO = async (payloadJson?: PayloadJson) => {
  */
 export const checkPOofProject = async (projectID: number, payloadJson?: PayloadJson) => {
 	if (payloadJson) {
-		let userProject = await UserIsPartOfProject.where({ userId: payloadJson.id, projectId: projectID }).get()
+		const userProject = await UserIsPartOfProject.where({ userId: payloadJson.id, projectId: projectID }).get()
 		if (Array.isArray(userProject)) {
-			let value: boolean = Boolean(userProject[0].isOwner)
+			const value: boolean = Boolean(userProject[0].isOwner)
 			return value
 		}
 
@@ -209,7 +209,7 @@ export const checkPOofProject = async (projectID: number, payloadJson?: PayloadJ
  */
 export const checkMemberOfProject = async (projectID: number, payloadJson?: PayloadJson) => {
 	if (payloadJson) {
-		let userProject = await UserIsPartOfProject.where({ userId: payloadJson.id, projectId: projectID }).get()
+		const userProject = await UserIsPartOfProject.where({ userId: payloadJson.id, projectId: projectID }).get()
 
 
 		if (Array.isArray(userProject) && userProject[0]) {
@@ -246,17 +246,17 @@ export const getUserID = async (payloadJson?: PayloadJson) => {
  * @param ctx
  */
 export const getPayloadFromJWTHeader = async (ctx: Context): Promise<PayloadJson | undefined> => {
-	let token = await ctx.request.headers.get("authenticationToken");
+	const token = await ctx.request.headers.get("authenticationToken");
 	if (token) {
-		let [, payload,] = await decode(token)
+		const [, payload,] = await decode(token)
 		return <PayloadJson>payload;
 	}
 }
 
 export const getPayloadFromJWTCookie = async (ctx: Context): Promise<PayloadJson | undefined> => {
-	let token = await ctx.cookies.get("refreshToken");
+	const token = await ctx.cookies.get("refreshToken");
 	if (token) {
-		let [, payload,] = await decode(token)
+		const [, payload,] = await decode(token)
 		return <PayloadJson>payload;
 	}
 }
@@ -281,7 +281,7 @@ const verifyJWT = async (token: string) => {
 	try {
 		await verify(token, KEY)
 		return true
-	} catch (err) {
+	} catch (_) {
 		return false;
 	}
 
@@ -303,7 +303,7 @@ const allowedAddressesUnauthorized = async (ctx: Context, next: () => Promise<un
 }
 
 export const validateUserEntry = async (ctx: Context, id: (number | undefined)[], needed: UserStatus, projectID: number, requestParameter: { needed: boolean, params: string[] }, userID?: number) => {
-	for (let element in id) {
+	for (const element in id) {
 		if (isNaN(Number(element))) {
 			console.error("path id wrong for" + element)
 			makeErrorMessage(ctx, 422, "path ids must be numbers");
@@ -320,7 +320,7 @@ export const validateUserEntry = async (ctx: Context, id: (number | undefined)[]
 		if (!params) {
 			return
 		}
-		for (let param of requestParameter.params) {
+		for (const param of requestParameter.params) {
 			if (params[param] === undefined) {
 				console.error(`Request doesn't include parameter ${param}`)
 				makeErrorMessage(ctx, 422, `Request doesn't include parameter ${param}`)

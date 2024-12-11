@@ -3,13 +3,12 @@ import { assign } from "../helper/assign.ts";
 import { jsonBodyToObject } from "../helper/body.ts";
 import { makeErrorMessage } from "../helper/error.ts";
 import { Paper } from "../model/db/paper.ts";
-import { PaperMessage, PapersMessage, Status } from "../model/messages/papersMessage.ts";
+import { PapersMessage } from "../model/messages/papersMessage.ts";
 import { paperCache } from "./project.controller.ts";
 import { convertPapersToPaperMessage, convertPaperToPaperMessage } from "../helper/converter/paperConverter.ts"
-import { client, getChildren, saveChildren } from "./database.controller.ts";
+import { getChildren, saveChildren } from "./database.controller.ts";
 import { UserStatus, validateUserEntry } from "./validation.controller.ts";
 import { getAllAuthorsFromPaper } from "./databaseFetcher/author.ts";
-import { AuthorMessage } from "../model/messages/author.message.ts";
 import { convertAuthorToAuthorMessage } from "../helper/converter/authorConverter.ts";
 import { Wrote } from "../model/db/wrote.ts";
 
@@ -19,7 +18,7 @@ import { Wrote } from "../model/db/wrote.ts";
  */
 export const getPapers = async (ctx: Context) => {
     ctx.response.status = 200;
-    let message: PapersMessage = { papers: await convertPapersToPaperMessage(await Paper.all()) }
+    const message: PapersMessage = { papers: await convertPapersToPaperMessage(await Paper.all()) }
     ctx.response.body = JSON.stringify(message)
 }
 
@@ -28,10 +27,10 @@ export const getPapers = async (ctx: Context) => {
  * @param ctx 
  */
 export const postPaper = async (ctx: Context) => {
-    let validate = await validateUserEntry(ctx, [], UserStatus.none, -1, { needed: true, params: [] })
+    const validate = await validateUserEntry(ctx, [], UserStatus.none, -1, { needed: true, params: [] })
     if (validate) {
         if (validate.id) { delete validate.id }
-        let paper = await Paper.create({})
+        const paper = await Paper.create({})
         Object.assign(paper, validate)
         await paper.update()
         ctx.response.status = 200;
@@ -47,10 +46,10 @@ export const postPaper = async (ctx: Context) => {
  * @returns 
  */
 export const getPaper = async (ctx: Context, paperID: number) => {
-    let validate = await validateUserEntry(ctx, [paperID], UserStatus.none, -1, { needed: false, params: [] })
+    const validate = await validateUserEntry(ctx, [paperID], UserStatus.none, -1, { needed: false, params: [] })
     if (validate) {
 
-        let paper: Paper = await Paper.find(paperID)
+        const paper: Paper = await Paper.find(paperID)
         if (paper) {
             ctx.response.status = 200;
             ctx.response.body = JSON.stringify(await convertPaperToPaperMessage(paper))
@@ -67,11 +66,11 @@ export const getPaper = async (ctx: Context, paperID: number) => {
  * @returns 
  */
 export const getPaperReferences = async (ctx: Context, paperID: number) => {
-    let validate = await validateUserEntry(ctx, [paperID], UserStatus.none, -1, { needed: false, params: [] })
+    const validate = await validateUserEntry(ctx, [paperID], UserStatus.none, -1, { needed: false, params: [] })
     if (validate) {
-        let papers = await getRefOrCiteList(ctx, "referencedby", "paperreferencedid", "paperreferencingid", paperID)
+        const papers = await getRefOrCiteList(ctx, "referencedby", "paperreferencedid", "paperreferencingid", paperID)
         ctx.response.status = 200;
-        let message: PapersMessage = { papers: await convertPapersToPaperMessage(papers) }
+        const message: PapersMessage = { papers: await convertPapersToPaperMessage(papers) }
         ctx.response.body = JSON.stringify(message)
     }
 }
@@ -83,11 +82,11 @@ export const getPaperReferences = async (ctx: Context, paperID: number) => {
  * @returns 
  */
 export const getPaperCitations = async (ctx: Context, paperID: number) => {
-    let validate = await validateUserEntry(ctx, [paperID], UserStatus.none, -1, { needed: false, params: [] })
+    const validate = await validateUserEntry(ctx, [paperID], UserStatus.none, -1, { needed: false, params: [] })
     if (validate) {
-        let papers = await getRefOrCiteList(ctx, "citedBy", "papercitingid", "papercitedid", paperID)
+        const papers = await getRefOrCiteList(ctx, "citedBy", "papercitingid", "papercitedid", paperID)
         ctx.response.status = 200;
-        let message: PapersMessage = { papers: await convertPapersToPaperMessage(await Promise.all(papers)) }
+        const message: PapersMessage = { papers: await convertPapersToPaperMessage(await Promise.all(papers)) }
         ctx.response.body = JSON.stringify(message)
     }
 }
@@ -104,9 +103,9 @@ export const getPaperCitations = async (ctx: Context, paperID: number) => {
  * @param id 
  */
 export const getRefOrCiteList = async (ctx: Context, table: string, column1: string, column2: string, id: number) => {
-    let children = await getChildren(table, column1, column2, id)
-    let papersToBe: Paper[] = []
-    for (let item of children.rows) { papersToBe.push(await Paper.find(Number(item[0]))) };
+    const children = await getChildren(table, column1, column2, id)
+    const papersToBe: Paper[] = []
+    for (const item of children.rows) { papersToBe.push(await Paper.find(Number(item[0]))) };
     return papersToBe
 }
 
@@ -117,11 +116,11 @@ export const getRefOrCiteList = async (ctx: Context, table: string, column1: str
  * @returns 
  */
 export const patchPaper = async (ctx: Context, paperID: number) => {
-    let validate = await validateUserEntry(ctx, [paperID], UserStatus.none, -1, { needed: false, params: [] })
+    const validate = await validateUserEntry(ctx, [paperID], UserStatus.none, -1, { needed: false, params: [] })
     if (validate) {
-        let paper: Paper = await Paper.find(paperID);
+        const paper: Paper = await Paper.find(paperID);
         if (paper) {
-            let bodyJson = await jsonBodyToObject(ctx);
+            const bodyJson = await jsonBodyToObject(ctx);
             if (!bodyJson) {
                 return
             }
@@ -141,11 +140,11 @@ export const patchPaper = async (ctx: Context, paperID: number) => {
  * @returns 
  */
 export const paperUpdate = async (ctx: Context, paper: Paper, bodyJson: any) => {
-    let paperID = Number(paper.id)
+    const paperID = Number(paper.id)
 
-    let sourcePaper: any = paperCache.get(String(paperID))
+    const sourcePaper: any = paperCache.get(String(paperID))
     if (sourcePaper) {
-        for (let key in bodyJson) {
+        for (const key in bodyJson) {
             delete sourcePaper[key]
             delete sourcePaper[key + "Source"]
         }
@@ -169,10 +168,10 @@ export const paperUpdate = async (ctx: Context, paper: Paper, bodyJson: any) => 
  * @returns 
  */
 export const getSourcePaper = async (ctx: Context, paperID: number) => {
-    let validate = await validateUserEntry(ctx, [paperID], UserStatus.none, -1, { needed: false, params: [] })
+    const validate = await validateUserEntry(ctx, [paperID], UserStatus.none, -1, { needed: false, params: [] })
     if (validate) {
         ctx.response.status = 200;
-        let paper = paperCache.get(String(paperID))
+        const paper = paperCache.get(String(paperID))
         if (paper) {
             ctx.response.body = JSON.stringify(paper)
         } else {
@@ -189,7 +188,7 @@ export const getSourcePaper = async (ctx: Context, paperID: number) => {
  * @returns 
  */
 export const deleteSourcePaper = async (ctx: Context, paperID: number) => {
-    let validate = await validateUserEntry(ctx, [paperID], UserStatus.none, -1, { needed: false, params: [] })
+    const validate = await validateUserEntry(ctx, [paperID], UserStatus.none, -1, { needed: false, params: [] })
     if (validate) {
         ctx.response.status = 200;
         paperCache.delete(String(paperID))
@@ -204,13 +203,10 @@ export const deleteSourcePaper = async (ctx: Context, paperID: number) => {
  * @returns 
  */
 export const postPaperCitation = async (ctx: Context, id: number) => {
-    let validate = await validateUserEntry(ctx, [id], UserStatus.none, -1, { needed: true, params: ["id"] })
+    const validate = await validateUserEntry(ctx, [id], UserStatus.none, -1, { needed: true, params: ["id"] })
     if (validate) {
-        let paper;
-        let paper2;
-
-        paper = await Paper.find(id)
-        paper2 = await Paper.find(validate.id)
+        const paper = await Paper.find(id)
+        const paper2 = await Paper.find(validate.id)
         if (paper && paper2) {
             await saveChildren("citedby", "papercitedid", "papercitingid", Number(paper2.id), Number(paper.id));
             ctx.response.status = 200
@@ -227,10 +223,10 @@ export const postPaperCitation = async (ctx: Context, id: number) => {
  * @returns 
  */
 export const postPaperReference = async (ctx: Context, id: number) => {
-    let validate = await validateUserEntry(ctx, [id], UserStatus.none, -1, { needed: true, params: ["id"] })
+    const validate = await validateUserEntry(ctx, [id], UserStatus.none, -1, { needed: true, params: ["id"] })
     if (validate) {
-        let paper = await Paper.find(id)
-        let paper2 = await Paper.find(validate.id)
+        const paper = await Paper.find(id)
+        const paper2 = await Paper.find(validate.id)
         if (paper && paper2) {
             await saveChildren("referencedby", "paperreferencedid", "paperreferencingid", Number(paper.id), Number(paper2.id));
             return paper2;
@@ -248,10 +244,10 @@ export const postPaperReference = async (ctx: Context, id: number) => {
  * @returns 
  */
 export const getAuthors = async (ctx: Context, id: number) => {
-    let validate = await validateUserEntry(ctx, [id], UserStatus.none, -1, { needed: false, params: [] })
+    const validate = await validateUserEntry(ctx, [id], UserStatus.none, -1, { needed: false, params: [] })
     if (validate) {
-        let authors = await getAllAuthorsFromPaper(id)
-        let message = { authors: authors.map(item => convertAuthorToAuthorMessage(item)) }
+        const authors = await getAllAuthorsFromPaper(id)
+        const message = { authors: authors.map(item => convertAuthorToAuthorMessage(item)) }
         ctx.response.body = JSON.stringify(message)
         ctx.response.status = 200
     }
@@ -264,12 +260,12 @@ export const getAuthors = async (ctx: Context, id: number) => {
  * @returns 
  */
 export const addAuthorToPaper = async (ctx: Context, id: number) => {
-    let validate = await validateUserEntry(ctx, [id], UserStatus.none, -1, { needed: true, params: ["id"] })
+    const validate = await validateUserEntry(ctx, [id], UserStatus.none, -1, { needed: true, params: ["id"] })
     if (validate) {
         try {
             await Wrote.create({ paperId: id, authorId: validate.id })
             ctx.response.status = 200
-        } catch (error) {
+        } catch (_) {
             makeErrorMessage(ctx, 404, "Paper or Author not found")
         }
     }
@@ -282,7 +278,7 @@ export const addAuthorToPaper = async (ctx: Context, id: number) => {
  * @returns 
  */
 export const deleteAuthorOfPaper = async (ctx: Context, paperID: number, authorID: number) => {
-    let validate = await validateUserEntry(ctx, [paperID, authorID], UserStatus.none, -1, { needed: false, params: [] })
+    const validate = await validateUserEntry(ctx, [paperID, authorID], UserStatus.none, -1, { needed: false, params: [] })
     if (validate) {
         await Wrote.where({ paperId: paperID, authorId: authorID }).delete()
         ctx.response.status = 200

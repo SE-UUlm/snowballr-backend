@@ -6,7 +6,7 @@ export const insertToken = async (user: User, token: string) => {
 }
 
 export const getToken = async (userId: number, token: string) => {
-    let foundToken = await Token.where({userId: userId, token: token}).get()
+    const foundToken = await Token.where({userId: userId, token: token}).get()
     if (Array.isArray(foundToken)) {
         return foundToken[0];
     }
@@ -14,7 +14,7 @@ export const getToken = async (userId: number, token: string) => {
 }
 
 export const getTokens = async (userId: number) => {
-    let foundToken = await Token.where({userId: userId}).get()
+    const foundToken = await Token.where({userId: userId}).get()
     if (Array.isArray(foundToken)) {
         return foundToken;
     }

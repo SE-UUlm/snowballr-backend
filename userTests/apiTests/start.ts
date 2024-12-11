@@ -1,8 +1,3 @@
-import { ApiMerger } from "../../src/api/apiMerger.ts";
-import { IApiPaper } from "../../src/api/iApiPaper.ts";
-import { IApiQuery } from "../../src/api/iApiQuery.ts";
-import { IeeeApi } from "../../src/api/ieeeApi.ts";
-import { fileLogger } from "../../src/api/logger.ts";
 import { getAllApisFromProject } from "../../src/controller/databaseFetcher/searchApi.ts";
 import { setup } from "../../src/helper/setup.ts";
 

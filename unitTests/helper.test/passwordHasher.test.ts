@@ -6,13 +6,13 @@ import { hashPassword } from "../../src/helper/passwordHasher.ts";
 Deno.test({
     name: "testSalt",
     fn(): void | Promise<void> {
-        let password = "test";
+        const password = "test";
 
         const hash = createHash("sha3-512");
         hash.update(password)
 
-        let hashedPassword = hashPassword(password)
-        let hashedPassword2 = hash.toString();
+        const hashedPassword = hashPassword(password)
+        const hashedPassword2 = hash.toString();
 
         assertNotEquals(hashedPassword, hashedPassword2);
     }

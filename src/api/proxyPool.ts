@@ -62,7 +62,7 @@ export class Proxy implements IProxy {
 	 * @return a config object for the deno webapi fetch function
 	 */
 	public getFetchConfig(lastRefererUrl?: string, currentCookie?: string): Object {
-		let config: any = genericFetchConfig(this._userAgent!, lastRefererUrl);
+		const config: any = genericFetchConfig(this._userAgent!, lastRefererUrl);
 
 		let basicAuth = undefined;
 		if (this._user && this._password) {
@@ -187,8 +187,8 @@ class ProxyManager {
 		}
 		if (this._mode === "pool") {
 			this._settings = CONFIG.googleScholar;
-			for (let p in CONFIG.googleScholar.proxy.urls) {
-				let proxy = new GoogleScholarProxy(`${CONFIG.googleScholar.proxy.urls[p]}`)
+			for (const p in CONFIG.googleScholar.proxy.urls) {
+				const proxy = new GoogleScholarProxy(`${CONFIG.googleScholar.proxy.urls[p]}`)
 				this._proxies.push(proxy);
 			}
 		}

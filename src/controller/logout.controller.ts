@@ -8,8 +8,8 @@ import { Context } from "https://deno.land/x/oak@v11.1.0/mod.ts";
  * @param ctx
  */
 export const logout = async (ctx: Context) => {
-    let payload = await getPayloadFromJWTHeader(ctx);
-    let token = ctx.request.headers.get("authenticationToken");
+    const payload = await getPayloadFromJWTHeader(ctx);
+    const token = ctx.request.headers.get("authenticationToken");
     if (token && payload) {
         await getToken(payload.id, token).then(async loginToken => loginToken ? loginToken.delete() : undefined);
     }

@@ -7,12 +7,12 @@ import { User } from "../model/db/user.ts";
  * @param user
  */
 export const authToken = async (user: User) => {
-    let jwt = await createJWT(user);
+    const jwt = await createJWT(user);
     return jwt;
 }
 
 export const refreshToken = async (user: User) => {
-    let jwt = await createJWT(user);
+    const jwt = await createJWT(user);
     await insertToken(user, jwt);
     return jwt;
 }

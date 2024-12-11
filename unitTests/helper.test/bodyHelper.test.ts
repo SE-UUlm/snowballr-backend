@@ -6,8 +6,8 @@ import { jsonBodyToObject } from "../../src/helper/body.ts";
 Deno.test({
     name: "testEmptyBody",
     async fn(): Promise<void> {
-        let app = await createMockApp();
-        let ctx = await createMockContext(app, undefined);
+        const app = await createMockApp();
+        const ctx = await createMockContext(app, undefined);
         await jsonBodyToObject(ctx)
 
         assertEquals(ctx.response.status, 422)

@@ -1,15 +1,9 @@
 import { IApiQuery } from "../api/iApiQuery.ts";
-import { ApiMerger } from "../api/apiMerger.ts";
 import { ApiBatcher } from "../api/apiBatcher.ts";
 import { SourceApi } from "../api/iApiPaper.ts";
 import { IComparisonWeight } from "../api/iComparisonWeight.ts";
 import { IApiBatch } from "../api/iApiBatcher.ts";
 import { Context } from "https://deno.land/x/oak@v11.1.0/mod.ts";
-import { UserStatus } from "./validation.controller.ts";
-import { validateUserEntry } from "./validation.controller.ts";
-import { PaperScopeForStage } from "../model/db/paperScopeForStage.ts";
-import { getAllAuthorsFromPaper } from "./databaseFetcher/author.ts";
-import { assign } from "../helper/assign.ts";
 
 export const Batcher = new ApiBatcher();
 //TODO id
@@ -35,7 +29,7 @@ export const comparisonWeight: IComparisonWeight = {
  */
 export const makeFetching = (overallWeight: number, enabledApis: [SourceApi,string?][], doi?: string, title?: string, name?: string, projectName?: string) => {
     //TODO comparisons from logfile or settings
-    let comparison: IComparisonWeight = {} as IComparisonWeight;
+    const comparison: IComparisonWeight = {} as IComparisonWeight;
     Object.assign(comparison, comparisonWeight)
     comparison.overallWeight = overallWeight;
 

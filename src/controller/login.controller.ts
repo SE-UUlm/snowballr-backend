@@ -3,8 +3,7 @@ import { Context } from "https://deno.land/x/oak@v11.1.0/mod.ts";
 import { convertUserToUserProfile } from "../helper/converter/userConverter.ts";
 import { authToken } from "./session.controller.ts";
 import { makeErrorMessage } from "../helper/error.ts";
-import { jsonBodyToObject } from "../helper/body.ts";
-import { checkActive, createRefreshJWT, getPayloadFromJWTCookie, getPayloadFromJWTHeader, UserStatus, validateRefreshJWT, validateUserEntry } from "./validation.controller.ts";
+import { checkActive, createRefreshJWT, UserStatus, validateRefreshJWT, validateUserEntry } from "./validation.controller.ts";
 import { LoginMessage } from "../model/messages/login.message.ts";
 import { User } from "../model/db/user.ts";
 
@@ -14,16 +13,16 @@ import { User } from "../model/db/user.ts";
  * @returns login successfull or not
  */
 export const login = async (ctx: Context): Promise<boolean> => {
-	let validate = await validateUserEntry(ctx, [], UserStatus.none, -1, { needed: true, params: ["email", "password"] })
+	const validate = await validateUserEntry(ctx, [], UserStatus.none, -1, { needed: true, params: ["email", "password"] })
 	if (validate) {
 
-		let user = await returnUserByEmailAndPassword(validate.email, validate.password);
+		const user = await returnUserByEmailAndPassword(validate.email, validate.password);
 		if (user) {
 			if (checkActive(String(user.status))) {
-				let token = await authToken(user);
-				let refreshToken = await createRefreshJWT(Number(user.id));
+				const token = await authToken(user);
+				const refreshToken = await createRefreshJWT(Number(user.id));
 				ctx.cookies.set("refreshToken", refreshToken)
-				let loginMessage: LoginMessage = { token: token, user: convertUserToUserProfile(user) }
+				const loginMessage: LoginMessage = { token: token, user: convertUserToUserProfile(user) }
 				ctx.response.body = JSON.stringify(loginMessage)
 				//ctx.response.headers.set("content-encoding", "");
 
@@ -48,11 +47,11 @@ export const login = async (ctx: Context): Promise<boolean> => {
  * @param ctx 
  */
 export const refresh = async (ctx: Context) => {
-	let token = await validateRefreshJWT(ctx);
+	const token = await validateRefreshJWT(ctx);
 	if (token.valid && token.payload) {
-		let user = await User.find(token.payload.id)
-		let authenticationToken = await authToken(user);
-		let loginMessage: LoginMessage = { token: authenticationToken, user: convertUserToUserProfile(user) }
+		const user = await User.find(token.payload.id)
+		const authenticationToken = await authToken(user);
+		const loginMessage: LoginMessage = { token: authenticationToken, user: convertUserToUserProfile(user) }
 		ctx.response.body = JSON.stringify(loginMessage)
 		ctx.response.status = 200;
 	} else {

@@ -13,13 +13,13 @@ Deno.test({
         await setup(true);
         await insertUser("test@test", "ash", true, "Test", "Tester", "active");
 
-        let app = await createMockApp();
-        let ctx = await createMockContext(app, `{"email": "test@test", "password":"ash"}`);
+        const app = await createMockApp();
+        const ctx = await createMockContext(app, `{"email": "test@test", "password":"ash"}`);
 
-        let loginWorked: boolean = await login(ctx);
+        const loginWorked: boolean = await login(ctx);
 
         assertEquals(true, loginWorked);
-        let answer = JSON.parse(ctx.response.body as string)
+        const answer = JSON.parse(ctx.response.body as string)
         assertEquals(answer.user.email, "test@test")
         assertEquals(answer.user.isAdmin, true)
         assertEquals(answer.user.firstName, "Test")
@@ -44,10 +44,10 @@ Deno.test({
         await setup(true);
         await insertUser("test@test", "ash", true, "Test", "Tester", "active");
 
-        let app = await createMockApp();
-        let ctx = await createMockContext(app, `{"email": "test@test12", "password":"ash"}`);
+        const app = await createMockApp();
+        const ctx = await createMockContext(app, `{"email": "test@test12", "password":"ash"}`);
 
-        let loginWorked: boolean = await login(ctx);
+        const loginWorked: boolean = await login(ctx);
 
         assertEquals(loginWorked, false);
         Batcher.kill()
@@ -66,10 +66,10 @@ Deno.test({
         await setup(true);
         await insertUser("test@test", "ash", true, "Test", "Tester", "registered");
 
-        let app = await createMockApp();
-        let ctx = await createMockContext(app, `{"email": "test@test"}`);
+        const app = await createMockApp();
+        const ctx = await createMockContext(app, `{"email": "test@test"}`);
 
-        let loginWorked: boolean = await login(ctx);
+        const loginWorked: boolean = await login(ctx);
 
         assertEquals(loginWorked, false);
         Batcher.kill()

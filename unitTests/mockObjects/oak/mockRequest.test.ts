@@ -1,7 +1,7 @@
 import { Request, ServerResponse } from "https://deno.land/x/oak@v11.1.0/mod.ts";
 import { RequestBodyMock } from './mockBody.test.ts'
 
-let requestResponseStack: ServerResponse[] = [];
+const requestResponseStack: ServerResponse[] = [];
 
 /**
  * Creates a request that is set in the context.
@@ -20,7 +20,7 @@ export function createMockRequest(
     proto = "HTTP/1.1",
     host = "localhost",
 ): Promise<Request> {
-    let request = {
+    const request = {
         url: {
             pathname: pathname
         },

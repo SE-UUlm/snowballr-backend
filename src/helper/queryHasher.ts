@@ -9,9 +9,9 @@ import { assign } from "./assign.ts";
 	 * @returns hash-string identifing a specific fetch
 	 */
 export const hashQuery = (query: IApiQuery) => {
-	let newQuery = {} as IApiQuery;
+	const newQuery = {} as IApiQuery;
 	assign(newQuery, query)
-	let queryIdentifier = createHash("sha3-256");
+	const queryIdentifier = createHash("sha3-256");
 	// unset enabled apis, since the hash is only dependant on a single api and is valid and independent of the other fetches
 	newQuery.enabledApis = undefined;
 	newQuery.projectName = undefined;

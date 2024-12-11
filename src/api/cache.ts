@@ -1,9 +1,6 @@
 import * as RemoteCache from "./local_cache/mod.ts";
-import { logger, fileLogger } from "./logger.ts";
-import { difference } from "https://deno.land/std@0.150.0/datetime/mod.ts";
+import { logger } from "./logger.ts";
 import { FileCache } from "./fileCache.ts";
-import { idType } from "./iApiUniqueId.ts";
-
 
 export enum CacheType {
 	IM = "InMemoryCache",
@@ -66,10 +63,10 @@ export class Cache<V> {
 	 */
 	public get(key: string): V | undefined {
 		if (this.memoryCache) {
-			let result = this.memoryCache.get(String(key));
+			const result = this.memoryCache.get(String(key));
 			if (result) { return JSON.parse(result) }
 		}
-		if (this.fileCache) { let result = this.fileCache.get(key); if (result) { return JSON.parse(result) } };
+		if (this.fileCache) { const result = this.fileCache.get(key); if (result) { return JSON.parse(result) } };
 	}
 
 	/**

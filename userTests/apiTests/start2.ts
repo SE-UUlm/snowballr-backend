@@ -1,13 +1,4 @@
 import { IApiQuery } from "../../src/api/iApiQuery.ts";
-import { IApiResponse } from "../../src/api/iApiResponse.ts";
-import { MicrosoftResearchApi } from "../../src/api/microsoftResearchApi.ts";
-import { OpenCitationsApi } from "../../src/api/openCitationsApi.ts";
-import { logger, fileLogger } from "../../src/api/logger.ts";
-import { CrossRefApi } from "../../src/api/crossRefApi.ts";
-import { ApiMerger } from "../../src/api/apiMerger.ts";
-import { SemanticScholar } from "../../src/api/semanticScholar.ts"
-import { IeeeApi } from "../../src/api/ieeeApi.ts";
-import { GoogleScholar } from "../../src/api/googleScholar.ts";
 import { ApiBatcher } from "../../src/api/apiBatcher.ts";
 import { SourceApi } from "../../src/api/iApiPaper.ts";
 import { IComparisonWeight } from "../../src/api/iComparisonWeight.ts";
@@ -41,7 +32,7 @@ for (let i = 0; i < 1; i++) {
 		aggression: comparisonWeight
 	}
 	console.log(`Iteration ${i}`);
-	let batch = await BATCHER.startFetch(query);
+	const batch = await BATCHER.startFetch(query);
 	logResponse(await batch.response);
 }
 

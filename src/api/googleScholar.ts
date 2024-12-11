@@ -5,8 +5,6 @@ import { IApiFetcher } from "./iApiFetcher.ts";
 import { IApiPaper, SourceApi } from './iApiPaper.ts';
 import { logger } from "./logger.ts";
 import { IApiAuthor } from "./iApiAuthor.ts";
-import { IApiUniqueId, idType } from "./iApiUniqueId.ts";
-import axiod from "https://deno.land/x/axiod@0.26.2/mod.ts";
 import { Cache } from "./cache.ts";
 import { createHash } from "https://deno.land/std@0.150.0/hash/mod.ts";
 import { DOMParser, Element } from 'https://deno.land/x/deno_dom@v0.1.37/deno-dom-wasm.ts';

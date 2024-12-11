@@ -14,9 +14,9 @@ import { UserStatus, validateUserEntry } from "./validation.controller.ts";
  * @returns 
  */
 export const postAuthor = async (ctx: Context) => {
-    let validate = await validateUserEntry(ctx, [], UserStatus.none, -1, { needed: true, params: [] })
+    const validate = await validateUserEntry(ctx, [], UserStatus.none, -1, { needed: true, params: [] })
     if (validate) {
-        let author = await Author.create({});
+        const author = await Author.create({});
         if (validate.rawString) { author.rawString = validate.rawString }
         if (validate.orcid) { author.orcid = validate.orcid }
         if (validate.lastName) { author.lastName = validate.lastName }
@@ -37,9 +37,9 @@ export const postAuthor = async (ctx: Context) => {
  *
  */
 export const getAuthor = async (ctx: Context, authorID: number) => {
-    let validate = await validateUserEntry(ctx, [], UserStatus.none, -1, { needed: false, params: [] })
+    const validate = await validateUserEntry(ctx, [], UserStatus.none, -1, { needed: false, params: [] })
     if (validate) {
-        let author: Author = await Author.find(authorID)
+        const author: Author = await Author.find(authorID)
         if (author) {
             ctx.response.status = 200;
             ctx.response.body = JSON.stringify(convertAuthorToAuthorMessage(author))
@@ -58,11 +58,11 @@ export const getAuthor = async (ctx: Context, authorID: number) => {
  * @returns 
  */
 export const patchAuthor = async (ctx: Context, authorID: number) => {
-    let validate = await validateUserEntry(ctx, [], UserStatus.none, -1, { needed: false, params: [] })
+    const validate = await validateUserEntry(ctx, [], UserStatus.none, -1, { needed: false, params: [] })
     if (validate) {
-        let author: Author = await Author.find(authorID);
+        const author: Author = await Author.find(authorID);
         if (author) {
-            let bodyJson = await jsonBodyToObject(ctx);
+            const bodyJson = await jsonBodyToObject(ctx);
             if (!bodyJson) {
                 return
             }
@@ -84,10 +84,10 @@ export const patchAuthor = async (ctx: Context, authorID: number) => {
  * @param bodyJson 
  */
 const deleteKeyOfAuthorSourceFile = async (authorID: number, bodyJson: any) =>{
-    let sourceAuthor: any = authorCache.get(String(authorID))
+    const sourceAuthor: any = authorCache.get(String(authorID))
     if (sourceAuthor) {
 
-        for (let key in bodyJson) {
+        for (const key in bodyJson) {
             delete sourceAuthor[key]
         }
         if (Object.keys(sourceAuthor).length > 0) {
@@ -106,10 +106,10 @@ const deleteKeyOfAuthorSourceFile = async (authorID: number, bodyJson: any) =>{
  * @returns 
  */
 export const getSourceAuthor = async (ctx: Context, authorID: number | undefined) => {
-    let validate = await validateUserEntry(ctx, [], UserStatus.none, -1, { needed: false, params: [] })
+    const validate = await validateUserEntry(ctx, [], UserStatus.none, -1, { needed: false, params: [] })
     if (validate) {
         ctx.response.status = 200;
-        let author = authorCache.get(String(authorID))
+        const author = authorCache.get(String(authorID))
         if (author) {
             ctx.response.body = JSON.stringify(author)
         } else {
@@ -125,7 +125,7 @@ export const getSourceAuthor = async (ctx: Context, authorID: number | undefined
  * @returns 
  */
  export const deleteSourceAuthor = async (ctx: Context,authorID: number) => {
-    let validate = await validateUserEntry(ctx, [authorID], UserStatus.none, -1, { needed: false, params: [] })
+    const validate = await validateUserEntry(ctx, [authorID], UserStatus.none, -1, { needed: false, params: [] })
     if (validate) {
         ctx.response.status = 200;
         authorCache.delete(String(authorID))

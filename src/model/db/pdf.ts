@@ -1,6 +1,4 @@
 import { DataTypes, Model } from "https://deno.land/x/denodb@v1.4.0/mod.ts";
-import { Wrote } from "./wrote.ts";
-import { AuthorHasID } from "./authorHasID.ts";
 import { Paper } from "./paper.ts";
 
 

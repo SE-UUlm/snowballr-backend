@@ -1,6 +1,4 @@
 import { logger } from "./logger.ts";
-import { IApiQuery } from "./iApiQuery.ts";
-import { IApiResponse } from "./iApiResponse.ts";
 import { difference } from "https://deno.land/std@0.150.0/datetime/mod.ts";
 
 export class FileCache {
@@ -25,17 +23,17 @@ export class FileCache {
 	private _initializeCache() {
 		this._ensureDir(this.path.slice(0, this.path.lastIndexOf("/")))
 		this._ensureDir(this.path);
-		let files = Deno.readDirSync(this.path);
+		const files = Deno.readDirSync(this.path);
 		for (const dirEntry of files) {
 			if (!dirEntry.isFile) {
 				continue;
 			}
 			try {
-				let fileContent = Deno.readTextFileSync(`${this.path}/${dirEntry.name}`);
+				const fileContent = Deno.readTextFileSync(`${this.path}/${dirEntry.name}`);
 				JSON.parse(fileContent);
 				this.fileCaches.set(dirEntry.name, fileContent);
 			}
-			catch (e) {
+			catch (_) {
 				logger.warning(`Couldn't load fileCache ${dirEntry.name}`);
 			}
 		}
@@ -44,9 +42,9 @@ export class FileCache {
 	private _watchTTL() {
 		try {
 			this._watchDog = setInterval(async () => {
-				let files = Deno.readDir(this.path);
+				const files = Deno.readDir(this.path);
 				for await (const dirEntry of files) {
-					let birth = (await Deno.stat(`${this.path}/${dirEntry.name}`)).birthtime;
+					const birth = (await Deno.stat(`${this.path}/${dirEntry.name}`)).birthtime;
 					//logger.debug(`${new Date()} - ${birth!} = ${difference(new Date(), birth!, { units: ["minutes"] })}`)
 					if (birth && difference(new Date(), birth, { units: ["seconds"] }).seconds! > this.ttl!) {
 						Deno.remove(`${this.path}/${dirEntry.name}`);
@@ -66,7 +64,7 @@ export class FileCache {
 			Deno.readDirSync(path);
 			//logger.info(`Directory already existing for fileCache ${this.path}`)
 		}
-		catch (e) {
+		catch (_) {
 			Deno.mkdirSync(path, { mode: 0o777 });
 			logger.info(`Created directory for fileCacher ${this.path}`)
 		}

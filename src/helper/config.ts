@@ -1,6 +1,5 @@
-import { parse, Type } from "https://deno.land/std@0.150.0/encoding/yaml.ts";
+import { parse } from "https://deno.land/std@0.150.0/encoding/yaml.ts";
 import { CacheType } from "../api/cache.ts";
-
 
 // Complex interface structure to define a configuration
 

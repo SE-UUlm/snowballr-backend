@@ -38,30 +38,33 @@ export class IeeeApi implements IApiFetcher {
 	 */
 	public async fetch(query: IApiQuery): Promise<IApiResponse> {
 		if (!CONFIG.ieee.enabled) { return warnApiDisabledByConfig("IEEE"); }
-		var paper: IApiPaper = {} as IApiPaper;
+		let paper: IApiPaper = {} as IApiPaper;
 		let citations: Promise<IApiPaper[]> | undefined;
 		let references: Promise<IApiPaper[]> | undefined;
-		let queryString = hashQuery(query);
+		const queryString = hashQuery(query);
+		let apiReturn: IApiResponse;
+
 		try {
-			let get = this.cache!.get(queryString);
+			const get = this.cache!.get(queryString);
 			if (CONFIG.ieee.useCache && this.cache && get) {
 				logger.info(`IEEE: Loaded fetch from cache.`)
 				return get;
 			}
+			let response: Response;
 			//logger.debug("here")
 			if (query.doi) {
 				//logger.debug(`Fetching IEEE by DOI: ${query.doi}`);
-				var response = await fetch(`${this.url}/?apikey=${this._token}&format=json&max_records=25&start_record=1&sort_order=asc&sort_field=article_title&doi=${query.doi}`);
+				response = await fetch(`${this.url}/?apikey=${this._token}&format=json&max_records=25&start_record=1&sort_order=asc&sort_field=article_title&doi=${query.doi}`);
 			}
 			else if (query.rawName && query.title) {
 				//logger.debug(`Fetching IEEE by title and author: ${query.title} | ${query.rawName}`);
-				var response = await fetch(`${this.url}/?apikey=${this._token}&format=json&max_records=25&start_record=1&sort_order=asc&sort_field=article_title&author=${query.rawName}&title=${query.title}`);
+				response = await fetch(`${this.url}/?apikey=${this._token}&format=json&max_records=25&start_record=1&sort_order=asc&sort_field=article_title&author=${query.rawName}&title=${query.title}`);
 			}
 			else {
 				logger.critical("Query not fetchable by IEEE. Need either the DOI or (title and author).");
 				return {} as IApiResponse;
 			}
-			let json = await response.json();
+			const json = await response.json();
 			if (!json.articles) {
 				throw new Error("Paper not found by IEEE");
 			}
@@ -78,7 +81,7 @@ export class IeeeApi implements IApiFetcher {
 
 			paper = this._parseResponse(json.articles[0]);
 
-			var apiReturn: IApiResponse = {
+			apiReturn = {
 				"paper": paper,
 				"citations": await this._getCitationsFromHtml(json.articles[0].html_url),
 				"references": await this._getReferencesFromHtml(json.articles[0].html_url)
@@ -89,7 +92,7 @@ export class IeeeApi implements IApiFetcher {
 		}
 		catch (e) {
 			logger.critical(`IEEE - Failed to fetch Query | ${e}`);
-			var apiReturn: IApiResponse = {
+			apiReturn = {
 				"paper": paper,
 				"citations": citations ? await citations : [],
 				"references": references ? await references : []
@@ -100,11 +103,11 @@ export class IeeeApi implements IApiFetcher {
 
 	private async _getCitationsFromHtml(url: string): Promise<IApiPaper[]> {
 		//logger.debug(url);
-		let citations: IApiPaper[] = [];
+		const citations: IApiPaper[] = [];
 		const response = await axiod.get(`${url.replace('document', 'rest/document')}citations`, this._config);
 		//logger.debug(response.data);
 
-		let citationIDs = response.data.paperCitations.ieee.map((item: any) => item.links.documentLink.replace("/document/", ''));
+		// const citationIDs = response.data.paperCitations.ieee.map((item: any) => item.links.documentLink.replace("/document/", ''));
 		//logger.debug(citationIDs);
 		citations.push.apply(citations, this._getCitationsTypeIeee(response.data.paperCitations.ieee));
 		citations.push.apply(citations, this._getCitationsTypeNonIeee(response.data.paperCitations.nonIeee));
@@ -113,12 +116,12 @@ export class IeeeApi implements IApiFetcher {
 	}
 
 	private _getCitationsTypeIeee(ieeeData: any): IApiPaper[] {
-		let citations: IApiPaper[] = [];
-		for (let c in ieeeData) {
-			let year = ieeeData[c].displayText.match(this._citeRegexYear);
-			let authors = ieeeData[c].displayText.split('\"')[0].match(this._citeRegexAuthors);
+		const citations: IApiPaper[] = [];
+		for (const c in ieeeData) {
+			const year = ieeeData[c].displayText.match(this._citeRegexYear);
+			const authors = ieeeData[c].displayText.split('\"')[0].match(this._citeRegexAuthors);
 			//logger.debug(authors)
-			let rawMetaData = {
+			const rawMetaData = {
 				'title': ieeeData[c].title ? ieeeData[c].title : ieeeData[c].displayText.split('\"')[1],
 				'authors': {
 					'authors': authors ? authors.map((item: any) => { return { 'full_name': item } }) : []
@@ -132,12 +135,12 @@ export class IeeeApi implements IApiFetcher {
 	}
 
 	private _getCitationsTypeNonIeee(othersData: any): IApiPaper[] {
-		let citations: IApiPaper[] = [];
-		for (let c in othersData) {
-			let year = othersData[c].displayText.match(this._citeRegexYear);
-			let authors = othersData[c].displayText.split('<i>')[0].match(this._citeRegexAuthors);
+		const citations: IApiPaper[] = [];
+		for (const c in othersData) {
+			const year = othersData[c].displayText.match(this._citeRegexYear);
+			const authors = othersData[c].displayText.split('<i>')[0].match(this._citeRegexAuthors);
 			//logger.debug(authors)
-			let rawMetaData = {
+			const rawMetaData = {
 				'title': othersData[c].title ? othersData[c].title : othersData[c].displayText.match(this._citeRegexTitle)[0],
 				'authors': {
 					'authors': authors ? authors.map((item: any) => { return { 'full_name': item } }) : []
@@ -152,24 +155,24 @@ export class IeeeApi implements IApiFetcher {
 
 	private async _getReferencesFromHtml(url: string): Promise<IApiPaper[]> {
 		//logger.debug(url);
-		let references: IApiPaper[] = [];
+		const references: IApiPaper[] = [];
 
 		const response = await axiod.get(`${url.replace('document', 'rest/document')}references`, this._config);
 		this._paperReferences = response.data.references ? response.data.references.length : 0;
 
-		for (let r in response.data.references) {
+		for (const r in response.data.references) {
 			//logger.debug(r);
 			//logger.debug(response.data.references[r]);
-			let data = response.data.references[r];
-			let regexAuthors = new RegExp(/([A-ZÀ-Ú]\. )+(([A-ZÀ-Ú][a-zà-ú]*)-*)+/g);
-			let regexYear = new RegExp(/(?<!pp\. |-)[\d]{4}/g);
-			let text = String(data.text).split(data.title);
-			let replacement = ",";
+			const data = response.data.references[r];
+			const regexAuthors = new RegExp(/([A-ZÀ-Ú]\. )+(([A-ZÀ-Ú][a-zà-ú]*)-*)+/g);
+			const regexYear = new RegExp(/(?<!pp\. |-)[\d]{4}/g);
+			// const text = String(data.text).split(data.title);
+			// const replacement = ",";
 			let rawMetadata = {};
 			if (data.title) {
-				let text = String(data.text).split(data.title);
-				let authors = text[0].match(regexAuthors);
-				let year = text[1].match(regexYear);
+				const text = String(data.text).split(data.title);
+				const authors = text[0].match(regexAuthors);
+				const year = text[1].match(regexYear);
 				rawMetadata = {
 					'title': data.title,
 					'authors': {
@@ -202,10 +205,10 @@ export class IeeeApi implements IApiFetcher {
 	 */
 	private _parseResponse(response: any): IApiPaper {
 
-		let parsedAuthors: IApiAuthor[] = [];
+		const parsedAuthors: IApiAuthor[] = [];
 		if (response.authors && response.authors.authors) {
-			for (let a of response.authors.authors) {
-				let parsedAuthor: IApiAuthor = {
+			for (const a of response.authors.authors) {
+				const parsedAuthor: IApiAuthor = {
 					id: undefined,
 					orcid: [],
 					rawString: [a.full_name],
@@ -216,7 +219,7 @@ export class IeeeApi implements IApiFetcher {
 			}
 		}
 
-		let parsedUniqueIds: IApiUniqueId[] = [];
+		const parsedUniqueIds: IApiUniqueId[] = [];
 		response.doi && parsedUniqueIds.push(
 			{
 				id: undefined,
@@ -248,7 +251,7 @@ export class IeeeApi implements IApiFetcher {
 			} as IApiUniqueId
 		)
 
-		let parsedResponse: IApiPaper = {
+		const parsedResponse: IApiPaper = {
 			id: undefined,
 			title: response.title ? [response.title] : [],
 			author: parsedAuthors,

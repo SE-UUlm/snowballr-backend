@@ -18,7 +18,7 @@ export const Levenshtein = (first: string, second: string): number => {
         if(first.length == 0) return second.length;
         if(second.length == 0) return first.length;
 
-        let matrix = [];
+        const matrix = [];
 
         // increment along the first column of each row
         let i: number;

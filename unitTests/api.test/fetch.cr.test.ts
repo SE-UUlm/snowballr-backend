@@ -1,5 +1,3 @@
-import { ApiMerger } from "../../src/api/apiMerger.ts";
-import { IApiResponse } from "../../src/api/iApiResponse.ts";
 import { IApiPaper, SourceApi } from "../../src/api/iApiPaper.ts";
 import { assertEquals } from "https://deno.land/std@0.150.0/testing/asserts.ts"
 import { CrossRefApi } from "../../src/api/crossRefApi.ts";
@@ -17,17 +15,17 @@ const query: IApiQuery = {
 	aggression: {} as IComparisonWeight
 }
 
-let body = new Blob([JSON.stringify(Mock.paperResponse, null, 2)], { type: 'application/json' })
-let response = new Response(body, { 'headers': Mock.headers });
+const body = new Blob([JSON.stringify(Mock.paperResponse, null, 2)], { type: 'application/json' })
+const response = new Response(body, { 'headers': Mock.headers });
 
 Deno.test({
 	name: "CrossRefApi empty request",
 	async fn(): Promise<void> {
-		let bodyValues = {} as any;
-		let body = new Blob([bodyValues], { type: 'application/json' })
-		let response = new Response(body, { 'headers': Mock.headers });
+		const bodyValues = {} as any;
+		const body = new Blob([bodyValues], { type: 'application/json' })
+		const response = new Response(body, { 'headers': Mock.headers });
 		stub(globalThis, "fetch", () => { return response });
-		let res = await CR.fetch(query);
+		const res = await CR.fetch(query);
 		assertEquals(res, { "paper": {}, "citations": [], "references": [] });
 	}
 })
@@ -37,7 +35,7 @@ Deno.test({
 	async fn(): Promise<void> {
 		stub(globalThis, "fetch", () => { return response });
 
-		let res = await CR.fetch(query);
+		const res = await CR.fetch(query);
 		assertEquals(res, {
 			"paper": Mock.parsedPaper, "citations": [], "references": []
 		});
@@ -49,7 +47,7 @@ Deno.test({
 	async fn(): Promise<void> {
 		stub(globalThis, "fetch", () => { return {} as Response });
 
-		let res = await CR.getChildObjects([Mock.referenceRequest]);
+		const res = await CR.getChildObjects([Mock.referenceRequest]);
 		assertEquals(res, [{} as IApiPaper]);
 	}
 })
@@ -57,11 +55,11 @@ Deno.test({
 Deno.test({
 	name: "CrossRefApi valid references",
 	async fn(): Promise<void> {
-		let body = new Blob([JSON.stringify(Mock.referenceResponse, null, 2)], { type: 'application/json' })
-		let response = new Response(body, { 'headers': Mock.headers });
+		const body = new Blob([JSON.stringify(Mock.referenceResponse, null, 2)], { type: 'application/json' })
+		const response = new Response(body, { 'headers': Mock.headers });
 		stub(globalThis, "fetch", () => { return response });
 
-		let res = await CR.getChildObjects([Mock.referenceRequest]);
+		const res = await CR.getChildObjects([Mock.referenceRequest]);
 		assertEquals(res, [Mock.parsedReference]);
 	}
 })
@@ -71,7 +69,7 @@ Deno.test({
 	async fn(): Promise<void> {
 		stub(globalThis, "fetch", () => { return {} as Response });
 
-		let res = await CR.getChildObjects([Mock.referenceRequest]);
+		const res = await CR.getChildObjects([Mock.referenceRequest]);
 		assertEquals(res, [{} as IApiPaper]);
 	}
 })

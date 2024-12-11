@@ -1,5 +1,5 @@
 import { IApiMerger } from "./iApiMerger.ts";
-import { logger, fileLogger } from "./logger.ts";
+import { logger } from "./logger.ts";
 import { IApiResponse } from "./iApiResponse.ts";
 import { idType } from "./iApiUniqueId.ts";
 import { IApiPaper } from "./iApiPaper.ts";
@@ -39,11 +39,11 @@ export class ApiMerger implements IApiMerger {
 	 * @returns list of api responses without dublicates either by merging them or declaring them different
 	 */
 	public async compare(response: Promise<IApiResponse>[]): Promise<IApiResponse[]> {
-		let finished: IApiResponse[] = [];
+		const finished: IApiResponse[] = [];
 		while (response.length > 1) {
 
 			logger.debug("next round!")
-			let finalPaper = await this.comparePaperWithPapers(response.shift()!, response)
+			const finalPaper = await this.comparePaperWithPapers(response.shift()!, response)
 			if (finalPaper.position != -1) {
 				response[finalPaper.position] = this.makePromise<IApiResponse>({
 					paper: finalPaper.item.paper,
@@ -57,7 +57,7 @@ export class ApiMerger implements IApiMerger {
 			finished.push(await response[0]);
 		}
 		/** Merge dublicates coming from the same apis */
-		for (let res in finished) {
+		for (const res in finished) {
 			finished[res].citations = this.reviewPaper(finished[res].citations!);
 			finished[res].references = this.reviewPaper(finished[res].references!);
 		}
@@ -88,18 +88,18 @@ export class ApiMerger implements IApiMerger {
 		/** Iterate over all other apiresponses expecpt for the first one to compare them each */
 		for (let i: number = 0; i < others.length; i++) {
 			//logger.debug("OTHERS: " + (await others[i]).paper)
-			let isEqual: boolean = isEqualPaper((await response).paper, (await others[i]).paper, this.comparisonWeight);
+			const isEqual: boolean = isEqualPaper((await response).paper, (await others[i]).paper, this.comparisonWeight);
 			if (isEqual) {
-				let otherResponses = others[i];
+				const otherResponses = others[i];
 
 				/** Comparison for each citation with the citations of the other paper*/
 				/** Comparison for each citation with the citations of the other paper*/
-				let response1Citations = this._getCiteOrRefList((await response).citations);
-				let response2Citations = this._getCiteOrRefList((await others[i]).citations);
+				const response1Citations = this._getCiteOrRefList((await response).citations);
+				const response2Citations = this._getCiteOrRefList((await others[i]).citations);
 
 				/** Same for references*/
-				let response1References = this._getCiteOrRefList((await response).references);
-				let response2References = this._getCiteOrRefList((await others[i]).references);
+				const response1References = this._getCiteOrRefList((await response).references);
+				const response2References = this._getCiteOrRefList((await others[i]).references);
 
 
 				return {
@@ -131,7 +131,7 @@ export class ApiMerger implements IApiMerger {
 	 * @returns IApiResponse that has all unique values and decidable values.
 	 */
 	public merge(firstResponse: IApiPaper, secondResponse: IApiPaper): IApiPaper {
-		let uniqueProperties = this._selectUniqueKey(firstResponse, secondResponse);
+		const uniqueProperties = this._selectUniqueKey(firstResponse, secondResponse);
 		return uniqueProperties as IApiPaper;
 	}
 
@@ -141,7 +141,7 @@ export class ApiMerger implements IApiMerger {
 			/** Check if paper is in childpapers of the same api. Since the same paper could return with a different DOI */
 			for (let j: number = i + 1; j < finalChildren.length; j++) {
 
-				let isEqual: boolean = isEqualPaper(finalChildren[i], finalChildren[j], this.comparisonWeight);
+				const isEqual: boolean = isEqualPaper(finalChildren[i], finalChildren[j], this.comparisonWeight);
 				if (isEqual) {
 					logger.info(`CONCLUSIVE API paper merging: ${finalChildren[i].uniqueId!.map(item => item.type == idType.DOI ? item.value : undefined)} // ${finalChildren[i].title} <-> ${finalChildren[j].uniqueId!.map(item => item.type == idType.DOI ? item.value : undefined)} // ${finalChildren[j].title}`);
 					finalChildren[j] = this.merge(finalChildren[i], finalChildren[j]);
@@ -166,7 +166,7 @@ export class ApiMerger implements IApiMerger {
 		for (let i: number = 0; i < response1Citations.length; i++) {
 			/** Check for the same paper in other apis */
 			for (let j: number = 0; j < response2Citations.length; j++) {
-				let isEqual: boolean = isEqualPaper(response1Citations[i], response2Citations[j], this.comparisonWeight);
+				const isEqual: boolean = isEqualPaper(response1Citations[i], response2Citations[j], this.comparisonWeight);
 				if (isEqual) {
 					logger.info(`DIFFERENT API paper merging: ${response1Citations[i].uniqueId!.map(item => item.type == idType.DOI ? item.value : undefined)} // ${response1Citations[i].title} <-> ${response2Citations[j].uniqueId!.map(item => item.type == idType.DOI ? item.value : undefined)} // ${response2Citations[j].title}`);
 					response2Citations[j] = this.merge(response1Citations[i], response2Citations[j]);
@@ -200,7 +200,7 @@ export class ApiMerger implements IApiMerger {
 		for (let f1 = 0; f1 < firstAuthors.length; f1++) {
 			for (let s1 = 0; s1 < secondAuthors.length; s1++) {
 
-				let val = isEqualAuthor(firstAuthors[f1], secondAuthors[s1]);
+				const val = isEqualAuthor(firstAuthors[f1], secondAuthors[s1]);
 				if (val > this.comparisonWeight.overallWeight) {
 					mergingAuthors.push(this._mergeAuthor(firstAuthors[f1], secondAuthors[s1]));
 					delete firstAuthors[f1]
@@ -226,9 +226,9 @@ export class ApiMerger implements IApiMerger {
 	 * @returns IApiAuthor which contains optionals or the most fitting values
 	 */
 	private _mergeAuthor(firstAuthor: IApiAuthor, secondAuthor: IApiAuthor): IApiAuthor {
-		let mergedAuthor: any = {};
-		let first = <any>firstAuthor;
-		let second = <any>secondAuthor;
+		const mergedAuthor: any = {};
+		const first = <any>firstAuthor;
+		const second = <any>secondAuthor;
 
 		/** take the value which is more normalized if the key are equal*/
 		for (const key in Object.assign({}, firstAuthor, secondAuthor)) {
@@ -239,9 +239,9 @@ export class ApiMerger implements IApiMerger {
 
 			/** Check if a value of an author property is existing in both AuthorObjects. If so merge, else append. */
 			mergedAuthor[key] = [];
-			FIRSTLOOP: for (let i in first[key]) {
+			FIRSTLOOP: for (const i in first[key]) {
 				second[key] = second[key].filter((item: string) => item)
-				for (let j in second[key]) {
+				for (const j in second[key]) {
 					if (first[key][i] && second[key][j]) {
 						if (ApiMerger.normalizeString(first[key][i]) === ApiMerger.normalizeString(second[key][j])) {
 							mergedAuthor[key].push(this._deriveGenericProperty(first[key][i], second[key][j]));
@@ -266,8 +266,8 @@ export class ApiMerger implements IApiMerger {
 	 * @returns 
 	 */
 	private _deriveGenericProperty(first: string, second: string): string {
-		let distance = Levenshtein(first, ApiMerger.normalizeString(first))
-		let distance2 = Levenshtein(second, ApiMerger.normalizeString(second))
+		const distance = Levenshtein(first, ApiMerger.normalizeString(first))
+		const distance2 = Levenshtein(second, ApiMerger.normalizeString(second))
 		return distance > distance2 ? first : second;
 	}
 
@@ -277,7 +277,7 @@ export class ApiMerger implements IApiMerger {
 			mergedAuthor.rawString = [`${mergedAuthor.firstName![0]} ${mergedAuthor.lastName![0]}`]
 		} else if (mergedAuthor.rawString!.length > 1) {
 			//only leaves rawstrings that have a full name, not names like M. Muster
-			let rawstring = mergedAuthor.rawString!.filter((item: string) => !item.match(regexLetterFollowedByPoint))
+			const rawstring = mergedAuthor.rawString!.filter((item: string) => !item.match(regexLetterFollowedByPoint))
 			if (rawstring.length > 0) {
 				mergedAuthor.rawString = rawstring;
 			}
@@ -328,8 +328,8 @@ export class ApiMerger implements IApiMerger {
 	private _selectUniqueKey(firstPaper: Object, secondPaper: Object): IApiPaper {
 
 		let resultingPaper: any = {};
-		let first = <any>firstPaper;
-		let second = <any>secondPaper;
+		const first = <any>firstPaper;
+		const second = <any>secondPaper;
 		try {
 			for (const key in Object.assign({}, firstPaper, secondPaper)) {
 				if (key == "id" || (!first[key] && !second[key]) || key.includes("Source")) {
@@ -361,7 +361,7 @@ export class ApiMerger implements IApiMerger {
 					resultingPaper[key] = concatWithoutDuplicates(first[key], second[key])
 					resultingPaper[key + "Source"] = []
 					for (let i = 0; i < first[key].length; i++) {
-						let position = resultingPaper[key].indexOf(first[key][i])
+						const position = resultingPaper[key].indexOf(first[key][i])
 						if (Array.isArray(resultingPaper[key + "Source"][position])) {
 							resultingPaper[key + "Source"][position].push(first[key + "Source"][i][0])
 						} else {
@@ -369,7 +369,7 @@ export class ApiMerger implements IApiMerger {
 						}
 					}
 					for (let i = 0; i < second[key].length; i++) {
-						let position = resultingPaper[key].indexOf(second[key][i])
+						const position = resultingPaper[key].indexOf(second[key][i])
 						if (Array.isArray(resultingPaper[key + "Source"][position])) {
 							resultingPaper[key + "Source"][position].push(second[key + "Source"][i][0])
 						} else {
@@ -448,12 +448,12 @@ export class ApiMerger implements IApiMerger {
 	}
 }
 export const getDOI = (paper: { [index: string]: any }): string[] => {
-	let DOI: string[] = [];
+	const DOI: string[] = [];
 
 	if (paper && paper.uniqueId) {
 		for (let i: number = 0; i < paper.uniqueId.length; i++) {
 			if (paper.uniqueId[i].type == idType.DOI) {
-				let s = paper.uniqueId[i].value;
+				const s = paper.uniqueId[i].value;
 				if (s) {
 					DOI.push(s.toLowerCase());
 				}

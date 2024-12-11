@@ -27,7 +27,7 @@ Deno.test({
             let pdf: string[] = ["www.randomurl.com"]
             let uniqueId: IApiUniqueId[] = [{ type: idType.DOI, value: "awr23r23tr2r//" }]
 
-            let iApiPaper: IApiPaper = {
+            const iApiPaper: IApiPaper = {
                 title: title,
                 author: author,
                 abstract: abstract,
@@ -43,8 +43,8 @@ Deno.test({
                 source: [],
                 raw: []
             }
-            let dbPaper = await convertIApiPaperToDBPaper(iApiPaper)
-            let authors = await getAllAuthorsFromPaper(Number(dbPaper.id))
+            const dbPaper = await convertIApiPaperToDBPaper(iApiPaper)
+            const authors = await getAllAuthorsFromPaper(Number(dbPaper.id))
 
             author = [{ rawString: ["This Author"], orcid: [], firstName: [], lastName: [] }, { rawString: ["Other Author"], orcid: [], firstName: [], lastName: [] }]
             uniqueId = [{ type: idType.DOI, value: "awr23r23tr2r//" }]
@@ -87,20 +87,20 @@ Deno.test({
     async fn() {
         try {
             await setup(true)
-            let oldAuthor = await Author.create({ orcid: "1234", rawString: "this author" })
-            let size = (await Author.all()).length
-            let title = ["a very good title"];
+            const oldAuthor = await Author.create({ orcid: "1234", rawString: "this author" })
+            const size = (await Author.all()).length
+            const title = ["a very good title"];
             let author: IApiAuthor[] = [{ rawString: ["This Author"], orcid: ["1234"], firstName: ["This"], lastName: ["Author"] }]
-            let abstract: string[] = ["a good abstract"]
-            let year: number[] = [2009];
-            let publisher: string[] = ["IEEE"];
-            let type: string[] = ["proceeding"]
-            let scope: string[] = ["a scope"]
-            let scopeName: string[] = ["scopje"]
-            let pdf: string[] = ["www.randomurl.com"]
-            let uniqueId: IApiUniqueId[] = [{ type: idType.DOI, value: "awr23r23tr2r//" }]
+            const abstract: string[] = ["a good abstract"]
+            const year: number[] = [2009];
+            const publisher: string[] = ["IEEE"];
+            const type: string[] = ["proceeding"]
+            const scope: string[] = ["a scope"]
+            const scopeName: string[] = ["scopje"]
+            const pdf: string[] = ["www.randomurl.com"]
+            const uniqueId: IApiUniqueId[] = [{ type: idType.DOI, value: "awr23r23tr2r//" }]
 
-            let iApiPaper: IApiPaper = {
+            const iApiPaper: IApiPaper = {
                 title: title,
                 author: author,
                 abstract: abstract,
@@ -116,9 +116,9 @@ Deno.test({
                 source: [],
                 raw: []
             }
-            let dbPaper = await convertIApiPaperToDBPaper(iApiPaper)
-            let updatedAuthor = await Author.find(Number(oldAuthor.id))
-            let newSize = (await Author.all()).length
+            /*const dbPaper = */await convertIApiPaperToDBPaper(iApiPaper)
+            const updatedAuthor = await Author.find(Number(oldAuthor.id))
+            const newSize = (await Author.all()).length
             author = [{ rawString: ["This Author"], orcid: ["1234"], firstName: ["This"], lastName: ["Author"] }]
             assertEquals(String(updatedAuthor.rawString), "this author")
             assertEquals(String(updatedAuthor.firstName), author[0].firstName[0])

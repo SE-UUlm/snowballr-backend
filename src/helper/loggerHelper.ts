@@ -1,4 +1,3 @@
-import { ApiMerger } from "../api/apiMerger.ts";
 import { IApiPaper } from "../api/iApiPaper.ts";
 import { IApiResponse } from "../api/iApiResponse.ts";
 import { fileLogger } from "../api/logger.ts";
@@ -15,7 +14,7 @@ export const logResponse = (response: IApiResponse[]): void => {
         if (citeOriginal) {
             citeOriginal = citeOriginal.sort(sortIApiPapersByName)
         }
-        for (let cite in citeOriginal) {
+        for (const cite in citeOriginal) {
             fileLogger.info((citeOriginal as any)[cite])
         }
 
@@ -25,7 +24,7 @@ export const logResponse = (response: IApiResponse[]): void => {
             refOriginal = refOriginal.sort(sortIApiPapersByName)
         }
         fileLogger.info("REFERENCES:");
-        for (let ref in refOriginal) {
+        for (const ref in refOriginal) {
             fileLogger.info((refOriginal as any)[ref]);
         }
     }

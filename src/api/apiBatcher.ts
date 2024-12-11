@@ -9,13 +9,10 @@ import { IeeeApi } from "./ieeeApi.ts";
 import { MicrosoftResearchApi } from "./microsoftResearchApi.ts";
 import { OpenCitationsApi } from "./openCitationsApi.ts";
 import { SemanticScholar } from "./semanticScholar.ts";
-import { ApiMerger } from "./apiMerger.ts";
 import { logger } from "./logger.ts";
-import { Cache, CacheType } from "./cache.ts";
+import { Cache } from "./cache.ts";
 import { GoogleScholar } from "./googleScholar.ts";
 import { CONFIG } from "../helper/config.ts";
-import { sleep } from "https://deno.land/x/sleep@v1.2.1/sleep.ts";
-
 
 /**
  * Contains all data for a single batch fetching a query.
@@ -68,7 +65,7 @@ export class ApiBatcher implements IApiBatcher {
 
 	public constructor() {
 		this.activeBatches = []
-		for (let s in this._apiMapper) {
+		for (const s in this._apiMapper) {
 			this.cache[s] = new Cache<IApiResponse>(CONFIG.cache.type, CONFIG.cache.timeToLiveInSeconds, s.toString());
 		}
 	}
@@ -79,17 +76,17 @@ export class ApiBatcher implements IApiBatcher {
 	 * @return apiBatch An open apiBatch object with the open, subscribable fetch promise of the apis 
 	 */
 	public async startFetch(query: IApiQuery): Promise<IApiBatch> {
-		let initializedFetchers: IApiFetcher[] = this._initializeEnabledApis(query.enabledApis!);
-		let response: IApiResponse[] = [];
+		const initializedFetchers: IApiFetcher[] = this._initializeEnabledApis(query.enabledApis!);
+		const response: IApiResponse[] = [];
 		// try to prefetch a doi for the query objects by querying for the other variables. Only implemented on selected apis.
 		if (!query.doi) {
 			query = await this._getDoiByFetching(query, initializedFetchers);
 		}
-		for (let i in initializedFetchers) {
+		for (const i in initializedFetchers) {
 			response.push(await initializedFetchers[i].fetch(query));
 		}
 		//const merger = new ApiMerger(query.aggression);
-		let apiBatch = {} as IApiBatch;
+		const apiBatch = {} as IApiBatch;
 		assign(apiBatch, ApiBatch);
 		apiBatch.id = crypto.randomUUID();
 		apiBatch.subscribers = [query];
@@ -115,7 +112,7 @@ export class ApiBatcher implements IApiBatcher {
 		let data: IApiResponse[];
 
 		const worker = new Worker(new URL("worker.ts", import.meta.url).href, { type: 'module', deno: { namespace: true, permissions: "inherit" } });
-		let mergedPapers: Promise<IApiResponse[]> = new Promise<IApiResponse[]>((resolve) => {
+		const mergedPapers: Promise<IApiResponse[]> = new Promise<IApiResponse[]>((resolve) => {
 			const checkIfDone = () => {
 				if (done) {
 					resolve(data)
@@ -124,7 +121,7 @@ export class ApiBatcher implements IApiBatcher {
 			};
 			checkIfDone();
 		});
-		let workerInit: Promise<void> = new Promise<void>((resolve) => {
+		const workerInit: Promise<void> = new Promise<void>((resolve) => {
 			const checkIfDone = () => {
 				if (initialized) {
 					//console.log("WORKER START NOW")
@@ -165,8 +162,8 @@ export class ApiBatcher implements IApiBatcher {
 	private async _getDoiByFetching(query: IApiQuery, initializedFetchers: IApiFetcher[]): Promise<IApiQuery> {
 		try {
 			logger.info("Trying to fetch DOI for query without one");
-			let fetchedDois: (string | undefined)[] = []
-			for (let i in initializedFetchers) {
+			const fetchedDois: (string | undefined)[] = []
+			for (const i in initializedFetchers) {
 				fetchedDois.push(await initializedFetchers[i].getDoi(query));
 			}
 
@@ -191,7 +188,7 @@ export class ApiBatcher implements IApiBatcher {
 	 */
 	private _compareDoisOfQueries(dois: (string | undefined)[]): string {
 		logger.info(`List of DOIS for paper: ${dois}`)
-		let validDois = dois.filter(item => item);
+		const validDois = dois.filter(item => item);
 		return validDois[0]!;
 	}
 
@@ -201,10 +198,10 @@ export class ApiBatcher implements IApiBatcher {
 	 * @return list of IApiFetcher instances
 	 */
 	private _initializeEnabledApis(apis: [SourceApi, string?][]): IApiFetcher[] {
-		let initializedFetchers: IApiFetcher[] = [];
-		for (let a of apis) {
-			let ApiObject = this._apiMapper[a[0] as SourceApi];
-			let params = [this._apiParamMapper[a[0] as SourceApi], a[1]];
+		const initializedFetchers: IApiFetcher[] = [];
+		for (const a of apis) {
+			const ApiObject = this._apiMapper[a[0] as SourceApi];
+			const params = [this._apiParamMapper[a[0] as SourceApi], a[1]];
 			initializedFetchers.push(new ApiObject(params[0] ? params[0] : '', params[1] ? params[1] : '', this.cache[a[0] as SourceApi]));
 		}
 		return initializedFetchers;
@@ -216,7 +213,7 @@ export class ApiBatcher implements IApiBatcher {
 	 * @return list of IApiFetcher instances
 	 */
 	public stopFetch(batch: IApiBatch): boolean {
-		let included = this.activeBatches.some(item => item.id === batch.id)
+		const included = this.activeBatches.some(item => item.id === batch.id)
 		if (included) {
 			this.activeBatches = this.activeBatches.filter(item => !(item.id === batch.id))
 			return true;
@@ -230,7 +227,7 @@ export class ApiBatcher implements IApiBatcher {
 	 * @returns the batch instance thq query is subscribed to now. if there is no fitting active fetch undefined is returned.
 	 */
 	public subscribeActiveFetch(query: IApiQuery): IApiBatch | undefined {
-		let included = this.activeBatches.filter(item => isEqual(item, query))
+		const included = this.activeBatches.filter(item => isEqual(item, query))
 		if (included.length > 0) {
 			included[0].addSubscriber(query)
 			return included[0]
@@ -256,7 +253,7 @@ export class ApiBatcher implements IApiBatcher {
 		logger.info("Killed all Caches");
 	}
 	public async register(query: IApiQuery): Promise<IApiBatch> {
-		let active = this.subscribeActiveFetch(query);
+		const active = this.subscribeActiveFetch(query);
 		if (active) { return makePromise(active) }
 		return await this.startFetch(query);
 	}

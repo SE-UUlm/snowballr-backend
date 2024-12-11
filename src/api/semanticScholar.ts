@@ -31,22 +31,24 @@ export class SemanticScholar implements IApiFetcher {
 		let paper: IApiPaper = {} as IApiPaper;
 		let citations: Promise<IApiPaper[]> | undefined;
 		let references: Promise<IApiPaper[]> | undefined;
-		let queryString = hashQuery(query);
+		const queryString = hashQuery(query);
+		let apiReturn: IApiResponse;
+
 		try {
-			let get = this.cache!.get(queryString);
+			const get = this.cache!.get(queryString);
 			if (CONFIG.semanticScholar.useCache && this.cache && get) {
 				logger.info(`S2: Loaded fetch from cache.`)
 				return get;
 			}
 			//logger.debug("here")
-			let response = await fetch(`${this.url}/${query.doi}`);
-			let json = await response.json();
+			const response = await fetch(`${this.url}/${query.doi}`);
+			const json = await response.json();
 			paper = this._parseResponse(json);
 			//logger.critical(json.citations)
 			citations = json.citations && this._getChildren(json.citations);
 			references = json.references && this._getChildren(json.references);
 			//logger.debug(await citations)
-			var apiReturn: IApiResponse = {
+			apiReturn = {
 				"paper": paper,
 				"citations": await citations,
 				"references": await references
@@ -57,7 +59,7 @@ export class SemanticScholar implements IApiFetcher {
 		}
 		catch (e) {
 			logger.critical(`SemanticScholarApi: Failed to fetch Query: ${e}`);
-			var apiReturn: IApiResponse = {
+			apiReturn = {
 				"paper": paper,
 				"citations": citations ? await citations : [],
 				"references": references ? await references : []
@@ -74,9 +76,9 @@ export class SemanticScholar implements IApiFetcher {
 	 */
 	private async _getChildren(children: []): Promise<IApiPaper[]> {
 		//logger.debug(children)
-		let parsedChildren: IApiPaper[] = [];
-		for (let child in children) {
-			let parsedChild = this._parseResponse(children[child]);
+		const parsedChildren: IApiPaper[] = [];
+		for (const child in children) {
+			const parsedChild = this._parseResponse(children[child]);
 			parsedChildren.push(parsedChild);
 		}
 		return parsedChildren;
@@ -92,9 +94,9 @@ export class SemanticScholar implements IApiFetcher {
 	private _parseResponse(response: any): IApiPaper {
 		//logger.debug(response);
 
-		let parsedAuthors: IApiAuthor[] = [];
-		for (let a of response.authors) {
-			let parsedAuthor: IApiAuthor = {
+		const parsedAuthors: IApiAuthor[] = [];
+		for (const a of response.authors) {
+			const parsedAuthor: IApiAuthor = {
 				id: undefined,
 				orcid: [],
 				rawString: [a.name],
@@ -104,7 +106,7 @@ export class SemanticScholar implements IApiFetcher {
 			parsedAuthors.push(parsedAuthor);
 		}
 
-		let parsedUniqueIds: IApiUniqueId[] = [];
+		const parsedUniqueIds: IApiUniqueId[] = [];
 		response.doi && parsedUniqueIds.push(
 			{
 				id: undefined,
@@ -120,7 +122,7 @@ export class SemanticScholar implements IApiFetcher {
 			} as IApiUniqueId
 		)
 
-		let parsedResponse: IApiPaper = {
+		const parsedResponse: IApiPaper = {
 			id: undefined,
 			title: response.title ? [response.title] : [],
 			author: parsedAuthors,

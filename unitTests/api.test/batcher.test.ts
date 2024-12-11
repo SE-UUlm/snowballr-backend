@@ -13,7 +13,7 @@ Deno.test({
     name: "GetDoiByTitleAndName",
     async fn(): Promise<void> {
         await setup(true);
-        let batch = await makeFetching(0.8, [[SourceApi.CR, "luca999@web.de"], [SourceApi.IE, "4yk5d9an52ejynjsmzqxe62r"], [SourceApi.MA, "9a02225751354cd29397eba3f5382101"], [SourceApi.OC], [SourceApi.S2]], undefined, "Translation of UML 2 Activity Diagrams into Finite State Machines for Model Checking", "alexander raschke")
+        const batch = await makeFetching(0.8, [[SourceApi.CR, "luca999@web.de"], [SourceApi.IE, "4yk5d9an52ejynjsmzqxe62r"], [SourceApi.MA, "9a02225751354cd29397eba3f5382101"], [SourceApi.OC], [SourceApi.S2]], undefined, "Translation of UML 2 Activity Diagrams into Finite State Machines for Model Checking", "alexander raschke")
         assertEquals(getDOI((await batch.response)[0].paper)[0].toUpperCase(), "10.1109/SEAA.2009.60")
 
         await db.close();
@@ -28,15 +28,15 @@ Deno.test({
     name: "GetCurrentBatches",
     async fn(): Promise<void> {
         await setup(true);
-        let user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
+        const user = await insertUser("test@test", "ash", true, "Test", "Tester", "active");
 
-        let app = await createMockApp();
-        let token = await createJWT(user)
-        let ctx = await createMockContext(app, `{}`, [["Content-Type", "application/json"]], "/", token);
+        const app = await createMockApp();
+        const token = await createJWT(user)
+        const ctx = await createMockContext(app, `{}`, [["Content-Type", "application/json"]], "/", token);
 
-        let batch = await makeFetching(0.8, [[SourceApi.CR, "luca999@web.de"], [SourceApi.IE, "4yk5d9an52ejynjsmzqxe62r"], [SourceApi.MA, "9a02225751354cd29397eba3f5382101"], [SourceApi.OC], [SourceApi.S2]], undefined, "Translation of UML 2 Activity Diagrams into Finite State Machines for Model Checking", "alexander raschke", "DAWDADW")
+        const batch = await makeFetching(0.8, [[SourceApi.CR, "luca999@web.de"], [SourceApi.IE, "4yk5d9an52ejynjsmzqxe62r"], [SourceApi.MA, "9a02225751354cd29397eba3f5382101"], [SourceApi.OC], [SourceApi.S2]], undefined, "Translation of UML 2 Activity Diagrams into Finite State Machines for Model Checking", "alexander raschke", "DAWDADW")
         getActiveBatches(ctx)
-        let answer = JSON.parse(ctx.response.body as string)
+        const answer = JSON.parse(ctx.response.body as string)
         assertEquals(ctx.response.status, 200)
         assertEquals(answer.batches.length, 1)
         await batch;

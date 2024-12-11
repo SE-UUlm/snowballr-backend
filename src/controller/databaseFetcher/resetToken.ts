@@ -6,7 +6,7 @@ export const insertResetToken = async (user: User, token: string) => {
 }
 
 export const getResetToken = async (userId: number, token: string) => {
-    let foundResetToken = await ResetToken.where({userId: userId, token: token}).get()
+    const foundResetToken = await ResetToken.where({userId: userId, token: token}).get()
     if (Array.isArray(foundResetToken)) {
         return foundResetToken[0];
     }
@@ -14,7 +14,7 @@ export const getResetToken = async (userId: number, token: string) => {
 }
 
 export const getResetTokens = async (userId: number) => {
-    let foundResetToken = await ResetToken.where({userId: userId}).get()
+    const foundResetToken = await ResetToken.where({userId: userId}).get()
     if (Array.isArray(foundResetToken)) {
         return foundResetToken;
     }

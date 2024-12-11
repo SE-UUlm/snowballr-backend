@@ -1,13 +1,10 @@
-import { ApiMerger } from "../../src/api/apiMerger.ts";
-import { IApiResponse } from "../../src/api/iApiResponse.ts";
-import { IApiPaper, SourceApi } from "../../src/api/iApiPaper.ts";
+import { SourceApi } from "../../src/api/iApiPaper.ts";
 import { assertEquals } from "https://deno.land/std@0.150.0/testing/asserts.ts"
 import { GoogleScholar } from "../../src/api/googleScholar.ts";
 import { stub } from "https://deno.land/x/mock@0.15.2/mock.ts";
 import { IApiQuery } from "../../src/api/iApiQuery.ts";
 import { IComparisonWeight } from "../../src/api/iComparisonWeight.ts";
 import * as Mock from "../mockObjects/fetch/googleScholarMock.test.ts"
-import { logger } from "../../src/api/logger.ts";
 
 const GS = new GoogleScholar("https://scholar.google.com", "");
 const query: IApiQuery = {
@@ -27,9 +24,9 @@ Deno.test({
 	async fn(): Promise<void> {
 		const bodyValues = {} as any;
 		const body = new Blob([bodyValues], { type: 'text/html' })
-		let response = new Response(body, { 'headers': Mock.headers });
+		const response = new Response(body, { 'headers': Mock.headers });
 		stub(globalThis, "fetch", () => { return response });
-		let res = await GS.fetch(query);
+		const res = await GS.fetch(query);
 
 		assertEquals(res, { "paper": {}, "citations": [], "references": [] });
 	}
@@ -38,11 +35,11 @@ Deno.test({
 Deno.test({
 	name: "GoogleScholar valid paper, but no cites and refs",
 	async fn(): Promise<void> {
-		let noCites = Mock.paperResponse.replace("Cited by 8", "Cited by 0");
+		const noCites = Mock.paperResponse.replace("Cited by 8", "Cited by 0");
 		body = new Blob([noCites], { type: 'application/json' });
 		response = new Response(body, { 'headers': Mock.headers });
 		stub(globalThis, "fetch", () => { return response });
-		let res = await GS.fetch(query);
+		const res = await GS.fetch(query);
 		assertEquals(res, {
 			"paper": Mock.parsedPaperNoCites, "citations": [], "references": []
 		});
@@ -53,15 +50,15 @@ Deno.test({
 Deno.test({
 	name: "GoogleScholar valid citations",
 	async fn(): Promise<void> {
-		let responseList = [Mock.paperResponse, Mock.citationResponse];
+		const responseList = [Mock.paperResponse, Mock.citationResponse];
 		let counter = 0;
 		stub(globalThis, "fetch", () => {
-			let body = new Blob([responseList[counter++]], { type: 'application/json' })
-			let response = new Response(body, { 'headers': Mock.headers });
+			const body = new Blob([responseList[counter++]], { type: 'application/json' })
+			const response = new Response(body, { 'headers': Mock.headers });
 			return response;
 		});
 
-		let res = await GS.fetch(query);
+		const res = await GS.fetch(query);
 		assertEquals(res, {
 			"paper": Mock.parsedPaper, "citations": Mock.parsedCitations, "references": []
 		});
@@ -71,11 +68,11 @@ Deno.test({
 Deno.test({
 	name: "GoogleScholar: detect captcha and exchange proxy",
 	async fn(): Promise<void> {
-		let responseList = [Mock.captchaResponse];
+		const responseList = [Mock.captchaResponse];
 		let counter = 0;
 		stub(globalThis, "fetch", () => {
-			let body = new Blob([responseList[counter++]], { type: 'application/json' })
-			let response = new Response(body, { 'headers': Mock.headers });
+			const body = new Blob([responseList[counter++]], { type: 'application/json' })
+			const response = new Response(body, { 'headers': Mock.headers });
 			return response;
 		});
 		let proxyExchanged = false
@@ -83,7 +80,7 @@ Deno.test({
 		stub(GS, "_rotateProxy", () => { proxyExchanged = true; throw new Error("Cancelled by unittest") })
 
 
-		let res = await GS.fetch(query);
+		const res = await GS.fetch(query);
 		assertEquals(proxyExchanged, true);
 	}
 })
@@ -93,8 +90,8 @@ Deno.test({
 	async fn(): Promise<void> {
 
 		stub(globalThis, "fetch", () => {
-			let body = new Blob([""], { type: 'application/json' })
-			let response = new Response(body, { 'headers': Mock.headers, 'status': 503 });
+			const body = new Blob([""], { type: 'application/json' })
+			const response = new Response(body, { 'headers': Mock.headers, 'status': 503 });
 			return response;
 		});
 		let proxyExchanged = false
@@ -111,8 +108,8 @@ Deno.test({
 	async fn(): Promise<void> {
 
 		stub(globalThis, "fetch", () => {
-			let body = new Blob([""], { type: 'application/json' })
-			let response = new Response(body, { 'headers': Mock.headers, 'status': 503 });
+			const body = new Blob([""], { type: 'application/json' })
+			const response = new Response(body, { 'headers': Mock.headers, 'status': 503 });
 			return response;
 		});
 		let proxyExchanged = false

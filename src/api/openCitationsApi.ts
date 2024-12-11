@@ -30,22 +30,24 @@ export class OpenCitationsApi implements IApiFetcher {
 	 */
 	public async fetch(query: IApiQuery): Promise<IApiResponse> {
 		if (!CONFIG.openCitations.enabled) { return warnApiDisabledByConfig("OpenCitations"); }
-		var paper: IApiPaper = {} as IApiPaper;
-		var citations: Promise<IApiPaper[]> | undefined;
+		let paper: IApiPaper = {} as IApiPaper;
+		let citations: Promise<IApiPaper[]> | undefined;
 		let references: Promise<IApiPaper[]> | undefined;
-		let queryString = hashQuery(query);
+		const queryString = hashQuery(query);
+		let apiReturn: IApiResponse;
+
 		try {
-			let get = this.cache!.get(queryString);
+			const get = this.cache!.get(queryString);
 			if (CONFIG.openCitations.useCache && this.cache && get) {
 				logger.info(`OC: Loaded fetch from cache.`)
 				return get;
 			}
-			let response = await fetch(`${this.url}/index/api/v1/metadata/${query.doi}`);
-			let json = await response.json();
+			const response = await fetch(`${this.url}/index/api/v1/metadata/${query.doi}`);
+			const json = await response.json();
 			paper = this._parseResponse(json[0]);
 			citations = this._getLinkedDOIs(json[0].citation);
 			references = this._getLinkedDOIs(json[0].reference);
-			var apiReturn: IApiResponse = {
+			apiReturn = {
 				"paper": paper,
 				"citations": await citations,
 				"references": await references
@@ -56,7 +58,7 @@ export class OpenCitationsApi implements IApiFetcher {
 		}
 		catch (e) {
 			logger.critical(`OpenCitationsApi: Failed to fetch Query: ${e}`);
-			var apiReturn: IApiResponse = {
+			apiReturn = {
 				"paper": paper,
 				"citations": citations ? await citations : [],
 				"references": references ? await references : []
@@ -74,27 +76,27 @@ export class OpenCitationsApi implements IApiFetcher {
 	 */
 	private async _getLinkedDOIs(dois: string): Promise<IApiPaper[]> {
 		//let urlQuery: string = dois.replace(/; /g, '__');
-		let doilist = dois.split('; ')
+		const doilist = dois.split('; ')
 		//console.log(doilist.length)
-		let children: Array<IApiPaper> = [];
+		const children: Array<IApiPaper> = [];
 		//logger.debug(urlQuery)
-		let fetches: any = [];
+		const fetches: any = [];
 		try {
 			while (doilist.length > 0) {
-				let currentDois = doilist.splice(0, CONFIG.openCitations.linkedFetchSize);
-				let urlQuery = currentDois.join('__');
+				const currentDois = doilist.splice(0, CONFIG.openCitations.linkedFetchSize);
+				const urlQuery = currentDois.join('__');
 				fetches.push(await this._splittedRequest(urlQuery));
 			}
 
 			//TODO HERE
 			//let promises = await Promise.all(fetches);
-			let promises = fetches
+			const promises = fetches
 
 			promises.forEach((json: any) => {
 				//console.log(json)
 				json.forEach((value: any) => {
 					//console.log(value)
-					let child = this._parseResponse(value);
+					const child = this._parseResponse(value);
 					children.push(child);
 				});
 			});
@@ -108,9 +110,10 @@ export class OpenCitationsApi implements IApiFetcher {
 	private async _splittedRequest(urlQuery: string) {
 		const maxRetries = 5;
 		let count = 0;
+		let response: Response;
 		while (true) {
 			try {
-				var response = await fetch(`${this.url}/index/api/v1/metadata/${urlQuery}`);
+				response = await fetch(`${this.url}/index/api/v1/metadata/${urlQuery}`);
 				if (response.status !== 200) {
 					throw new Error("OC: Failed to fetch batch of linkedDois");
 				}
@@ -130,7 +133,7 @@ export class OpenCitationsApi implements IApiFetcher {
 	 * @returns Object Single IApiPaper object which represents metadata of such
 	 */
 	private _parseResponse(response: any): IApiPaper {
-		var refCount: any;
+		let refCount: any;
 
 		//logger.debug(response);
 		try {
@@ -141,13 +144,13 @@ export class OpenCitationsApi implements IApiFetcher {
 			} else {
 				refCount = 0;
 			}
-		} catch (e) {
+		} catch (_) {
 			refCount = 0;
 		}
 
-		let parsedAuthors: IApiAuthor[] = [];
-		for (let a of response.author.split(';')) {
-			let parsedAuthor: IApiAuthor = {
+		const parsedAuthors: IApiAuthor[] = [];
+		for (const a of response.author.split(';')) {
+			const parsedAuthor: IApiAuthor = {
 				id: undefined,
 				orcid: a.split(',').length > 2 ? [a.split(',')[2].trim()] : [],
 				rawString: a.split(',').length > 1 ? [`${a.split(',')[0]},${a.split(',')[1]}`.trim()] : [a.split(',')[0].trim()],
@@ -157,7 +160,7 @@ export class OpenCitationsApi implements IApiFetcher {
 			parsedAuthors.push(parsedAuthor);
 		}
 
-		let parsedUniqueIds: IApiUniqueId[] = [];
+		const parsedUniqueIds: IApiUniqueId[] = [];
 		response.doi && parsedUniqueIds.push(
 			{
 				id: undefined,
@@ -166,7 +169,7 @@ export class OpenCitationsApi implements IApiFetcher {
 			} as IApiUniqueId
 		)
 
-		let parsedResponse: IApiPaper = {
+		const parsedResponse: IApiPaper = {
 			id: undefined,
 			title: response.title ? [response.title] : [],
 			author: parsedAuthors,

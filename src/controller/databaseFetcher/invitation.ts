@@ -6,7 +6,7 @@ export const insertInvitation = async (user: User, token: string) => {
 }
 
 export const getInvitation = async (userId: number, token: string) => {
-    let foundInvitation = await Invitation.where({userId: userId, token: token}).get()
+    const foundInvitation = await Invitation.where({userId: userId, token: token}).get()
     if (Array.isArray(foundInvitation)) {
         return foundInvitation[0];
     }
@@ -14,7 +14,7 @@ export const getInvitation = async (userId: number, token: string) => {
 }
 
 export const getInvitations = async (userId: number) => {
-    let foundInvitations = await Invitation.where({userId: userId}).get()
+    const foundInvitations = await Invitation.where({userId: userId}).get()
     if (Array.isArray(foundInvitations)) {
         return foundInvitations;
     }

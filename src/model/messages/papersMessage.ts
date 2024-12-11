@@ -1,4 +1,3 @@
-import { Author } from "../db/author.ts";
 import { AuthorMessage } from "./author.message.ts";
 
 export interface PapersMessage {

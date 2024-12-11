@@ -46,7 +46,7 @@ export class MicrosoftResearchApi implements IApiFetcher {
 	private static _convertInvertedAbstract(iA: any): string[] {
 		let abstr: string = "";
 		try {
-			for (let key in iA.InvertedIndex) {
+			for (const key in iA.InvertedIndex) {
 				abstr += " " + key;
 			}
 			return [abstr.trim()];
@@ -66,18 +66,20 @@ export class MicrosoftResearchApi implements IApiFetcher {
 	 */
 	public async fetch(query: IApiQuery): Promise<IApiResponse> {
 		if (!CONFIG.microsoftAcademic.enabled) { return warnApiDisabledByConfig("MicrosoftAcademic"); }
-		var paper: IApiPaper = {} as IApiPaper;
-		var citations: Promise<IApiPaper[]> | undefined;
+		let paper: IApiPaper = {} as IApiPaper;
+		let citations: Promise<IApiPaper[]> | undefined;
 		let references: Promise<IApiPaper[]> | undefined;
-		let queryString = hashQuery(query);
+		const queryString = hashQuery(query);
+		let apiReturn: IApiResponse;
+
 		try {
-			let get = this.cache!.get(queryString);
+			const get = this.cache!.get(queryString);
 			if (CONFIG.microsoftAcademic.useCache && this.cache && get) {
 				logger.info(`MA: Loaded fetch from cache.`)
 				//console.log(get)
 				return get;
 			}
-			let response = await fetch(this.url, {
+			const response = await fetch(this.url, {
 				method: 'POST',
 				headers: this._headers,
 				body: JSON.stringify({
@@ -85,14 +87,14 @@ export class MicrosoftResearchApi implements IApiFetcher {
 					attributes: this._attributes
 				})
 			})
-			let json = await response.json();
+			const json = await response.json();
 
 			// --> DB
 			paper = this._parseResponse(json.entities[0]);
 			citations = json.entities[0] && json.entities[0].Id ? this._getCitations(json.entities[0].Id) : new Promise((resolve) => { resolve([]); });
 			references = json.entities[0] && json.entities[0].RId ? this._getReferences(json.entities[0].RId) : new Promise((resolve) => { resolve([]); });
 
-			var apiReturn: IApiResponse = {
+			apiReturn = {
 				"paper": paper,
 				"citations": await citations,
 				"references": await references
@@ -103,7 +105,7 @@ export class MicrosoftResearchApi implements IApiFetcher {
 		}
 		catch (e) {
 			logger.warning(`MicrosoftResearchApi: Failed to fetch Query: ${e}`);
-			var apiReturn: IApiResponse = {
+			apiReturn = {
 				"paper": paper,
 				"citations": citations ? await citations : [],
 				"references": references ? await references : []
@@ -121,13 +123,13 @@ export class MicrosoftResearchApi implements IApiFetcher {
 	 */
 	private async _getReferences(microsoftIds: number[]): Promise<IApiPaper[]> {
 		let convertedIds: string[] = microsoftIds.map(String);
-		let references: Array<IApiPaper> = [];
+		const references: Array<IApiPaper> = [];
 		//logger.debug(microsoftIds);
 		try {
 			convertedIds = convertedIds.map(i => 'Id=' + i);
-			let queryPattern = convertedIds.join(',');
+			const queryPattern = convertedIds.join(',');
 
-			let response = await fetch(this.url, {
+			const response = await fetch(this.url, {
 				method: 'POST',
 				headers: this._headers,
 				body: JSON.stringify({
@@ -136,10 +138,10 @@ export class MicrosoftResearchApi implements IApiFetcher {
 					attributes: this._attributes
 				})
 			})
-			let json = await response.json();
+			const json = await response.json();
 			//logger.debug(json);
-			for (let value in json.entities) {
-				let cit = this._parseResponse(json.entities[value]);
+			for (const value in json.entities) {
+				const cit = this._parseResponse(json.entities[value]);
 				references.push(cit);
 			}
 		}
@@ -157,9 +159,9 @@ export class MicrosoftResearchApi implements IApiFetcher {
 	 * @returns list of paperObjects containing the citations. Promise.
 	 */
 	private async _getCitations(microsoftId: string): Promise<IApiPaper[]> {
-		var citations: Array<IApiPaper> = [];
+		const citations: Array<IApiPaper> = [];
 		try {
-			let response = await fetch(this.url, {
+			const response = await fetch(this.url, {
 				method: 'POST',
 				headers: this._headers,
 				body: JSON.stringify({
@@ -168,9 +170,9 @@ export class MicrosoftResearchApi implements IApiFetcher {
 					attributes: this._attributes
 				})
 			})
-			let json = await response.json();
-			for (let value in json.entities) {
-				let cit = this._parseResponse(json.entities[value]);
+			const json = await response.json();
+			for (const value in json.entities) {
+				const cit = this._parseResponse(json.entities[value]);
 				citations.push(cit);
 			}
 		}
@@ -208,11 +210,11 @@ export class MicrosoftResearchApi implements IApiFetcher {
 	 */
 	private _parseResponse(response: any): IApiPaper {
 		//logger.debug(response);
-		let refLength: number = (response.RId ? response.RId.length : 0);
+		const refLength: number = (response.RId ? response.RId.length : 0);
 
-		let parsedAuthors: IApiAuthor[] = [];
-		for (let a of response.AA) {
-			let parsedAuthor: IApiAuthor = {
+		const parsedAuthors: IApiAuthor[] = [];
+		for (const a of response.AA) {
+			const parsedAuthor: IApiAuthor = {
 				id: undefined,
 				orcid: [],
 				rawString: [a.AuN],
@@ -222,7 +224,7 @@ export class MicrosoftResearchApi implements IApiFetcher {
 			parsedAuthors.push(parsedAuthor);
 		}
 
-		let parsedUniqueIds: IApiUniqueId[] = [];
+		const parsedUniqueIds: IApiUniqueId[] = [];
 		response.DOI && parsedUniqueIds.push(
 			{
 				id: undefined,
@@ -238,7 +240,7 @@ export class MicrosoftResearchApi implements IApiFetcher {
 			} as IApiUniqueId
 		)
 
-		let parsedResponse: IApiPaper = {
+		const parsedResponse: IApiPaper = {
 			id: undefined,
 			title: response.Ti ? [response.Ti] : [],
 			author: parsedAuthors,
@@ -267,7 +269,7 @@ export class MicrosoftResearchApi implements IApiFetcher {
 			if (query.rawName) {
 				urlQuery = `And(Composite(AA.AuN='${query.rawName!.toLowerCase()}'), Ti='${query.title!.toLowerCase()}')`;
 			}
-			let response = await fetch(this.url, {
+			const response = await fetch(this.url, {
 				method: 'POST',
 				headers: this._headers,
 				body: JSON.stringify({
@@ -275,7 +277,7 @@ export class MicrosoftResearchApi implements IApiFetcher {
 					attributes: this._attributes
 				})
 			})
-			let json = await response.json();
+			const json = await response.json();
 			//logger.debug(json);
 			//logger.debug(json.entities[0].DOI)
 			if (json.entities[0].DOI) {

@@ -1,6 +1,6 @@
 export const assign = (target: Object, source: Object) => {
-	let t = <any>target
-	let s = <any>source
+	const t = <any>target
+	const s = <any>source
 	for (const key in source) {
 		const val = s[key];
 		if (val) {
@@ -19,16 +19,16 @@ export const assign = (target: Object, source: Object) => {
 
 
 export const isEqual = (first: Object, second: Object) => {
-	let firstProbs = Object.getOwnPropertyNames(first)
-	let secondProbs = Object.getOwnPropertyNames(second)
+	const firstProbs = Object.getOwnPropertyNames(first)
+	const secondProbs = Object.getOwnPropertyNames(second)
 
 	if (firstProbs.length != secondProbs.length) {
 		return false;
 	}
 
-	for (let i of firstProbs) {
+	for (const i of firstProbs) {
 		if (typeof (first as any)[i] === "object") {
-			let answer = isEqual((first as any)[i], (second as any)[i])
+			const answer = isEqual((first as any)[i], (second as any)[i])
 			if (!answer) {
 				return false
 			}

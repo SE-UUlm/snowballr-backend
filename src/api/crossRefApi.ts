@@ -41,27 +41,28 @@ export class CrossRefApi implements IApiFetcher {
 		let citations: Promise<IApiPaper[]> | undefined;
 		let paper: IApiPaper = {} as IApiPaper;
 		let references: Promise<IApiPaper[]> | undefined;
-		let queryString = hashQuery(query);
+		const queryString = hashQuery(query);
+		let apiReturn: IApiResponse;
 
 		try {
-			let get = this.cache!.get(queryString)
+			const get = this.cache!.get(queryString)
 			if (CONFIG.crossRef.useCache && this.cache && get) {
 				logger.info(`CR: Loaded fetch from cache.`);
 				return get;
 			}
 
-			let response = await fetch(this._parseQuery(query), {
+			const response = await fetch(this._parseQuery(query), {
 				headers: this._headers,
 			})
 
 			/** Get rate limit from api to apply it dynamically since it can change from time to time */
 			this._rateInterval = Number(response.headers.get("x-rate-limit-interval")) ? Number(response.headers.get("x-rate-limit-interval")!.replace('s', '')) : this._rateInterval;
 			this._rateLimit = Number(response.headers.get("x-rate-limit-limit")) ? Number(response.headers.get("x-rate-limit-limit")!.replace('s', '')) : this._rateInterval;
-			let json = await response.json();
+			const json = await response.json();
 			paper = this._parseResponse(json);
 			references = json.message.reference ? this.getChildObjects(json.message.reference) : new Promise((resolve) => { resolve([]); });
 			citations = json.message.relation && json.message.relation.cites ? this.getChildObjects(json.message.relation.cites) : new Promise((resolve) => { resolve([]); });
-			var apiReturn: IApiResponse = {
+			apiReturn = {
 				"paper": paper,
 				"citations": await citations,
 				"references": await references
@@ -73,7 +74,7 @@ export class CrossRefApi implements IApiFetcher {
 		}
 		catch (e) {
 			logger.warning(`CrossRef: Failed to fetch Query: ${e}`);
-			var apiReturn: IApiResponse = {
+		 	apiReturn = {
 				"paper": paper,
 				"citations": citations ? await citations : [],
 				"references": references ? await references : []
@@ -98,12 +99,11 @@ export class CrossRefApi implements IApiFetcher {
 	 * @returns Object list of citations or references implemented via IApiPaper
 	 */
 	public async getChildObjects(rawChildren: any): Promise<IApiPaper[]> {
-		var fetchableByDoi: string[] = [];
-		var fetchableByBibliographic: string[] = [];
-		var children: Array<IApiPaper> = [];
-		var fetches = [];
+		const fetchableByDoi: string[] = [];
+		const fetchableByBibliographic: string[] = [];
+		const fetches = [];
 
-		for (let r of rawChildren) {
+		for (const r of rawChildren) {
 			if (r.DOI) {
 				fetchableByDoi.push(r.DOI);
 			} else {
@@ -112,15 +112,15 @@ export class CrossRefApi implements IApiFetcher {
 			}
 		}
 
-		for (let d in fetchableByDoi) {
+		for (const d in fetchableByDoi) {
 			////logger.debug("fetchableByDoi")
 			await this._limitRequests();
 			fetches.push(await this._fetchDoiFromApi(fetchableByDoi[d]));
 		}
 
-		for (let b in fetchableByBibliographic) {
+		for (const b in fetchableByBibliographic) {
 			if (fetchableByBibliographic[b] === undefined) { continue; }
-			let query: string = fetchableByBibliographic[b].replace(/ /g, '+');
+			const query: string = fetchableByBibliographic[b].replace(/ /g, '+');
 			await this._limitRequests();
 			fetches.push(await this._fetchBibFromApi(query));
 		}
@@ -131,12 +131,12 @@ export class CrossRefApi implements IApiFetcher {
 
 	private async _fetchDoiFromApi(item: string): Promise<IApiPaper> {
 		try {
-			let response = await fetch(`${this.url}/${item}`, {
+			const response = await fetch(`${this.url}/${item}`, {
 				headers: this._headers,
 			});
-			let json = await response.json();
+			const json = await response.json();
 
-			let child = this._parseResponse(json);
+			const child = this._parseResponse(json);
 			return child;
 		}
 		catch (e) {
@@ -147,11 +147,11 @@ export class CrossRefApi implements IApiFetcher {
 
 	private async _fetchBibFromApi(item: string): Promise<IApiPaper> {
 		try {
-			let response = await fetch(`${this.url}?query.bibliographic=${item.replace(/\s/g, '+')}&rows=1`, {
+			const response = await fetch(`${this.url}?query.bibliographic=${item.replace(/\s/g, '+')}&rows=1`, {
 				headers: this._headers,
 			});
-			let json = await response.json();
-			let child = this._parseResponse({ 'message': json.message.items[0] });
+			const json = await response.json();
+			const child = this._parseResponse({ 'message': json.message.items[0] });
 			return child;
 		}
 		catch (e) {
@@ -179,10 +179,10 @@ export class CrossRefApi implements IApiFetcher {
 	private _parseResponse(response: any): IApiPaper {
 		////logger.debug(JSON.stringify(response, null, 2));
 
-		let parsedAuthors: IApiAuthor[] = [];
+		const parsedAuthors: IApiAuthor[] = [];
 		if (response.message.author) {
-			for (let a of response.message.author) {
-				let parsedAuthor: IApiAuthor = {
+			for (const a of response.message.author) {
+				const parsedAuthor: IApiAuthor = {
 					id: undefined,
 					orcid: [],
 					rawString: a.given && a.family ? [`${a.given}, ${a.family}`] : [],
@@ -193,7 +193,7 @@ export class CrossRefApi implements IApiFetcher {
 			}
 		}
 
-		let parsedUniqueIds: IApiUniqueId[] = [];
+		const parsedUniqueIds: IApiUniqueId[] = [];
 		response.message.ISSN && parsedUniqueIds.push(
 			{
 				id: undefined,
@@ -216,7 +216,7 @@ export class CrossRefApi implements IApiFetcher {
 			} as IApiUniqueId
 		)
 
-		let parsedResponse: IApiPaper = {
+		const parsedResponse: IApiPaper = {
 			id: undefined,
 			title: response.message.title[0] ? [response.message.title[0]] : [],
 			author: parsedAuthors,
@@ -238,14 +238,14 @@ export class CrossRefApi implements IApiFetcher {
 
 	public async getDoi(query: IApiQuery): Promise<string | undefined> {
 		try {
-			let url = `${this.url}?query.bibliographic=${query.title!.replace(/\s/g, '+')}&rows=1`;
-			let response = await fetch(url, {
+			const url = `${this.url}?query.bibliographic=${query.title!.replace(/\s/g, '+')}&rows=1`;
+			const response = await fetch(url, {
 				headers: this._headers,
 			});
-			let json = await response.json();
+			const json = await response.json();
 			return json.message.items[0].DOI;
 		}
-		catch (e) {
+		catch (_) {
 			//logger.warning(`CR: Couldnt fetch DOI for the following query: ${JSON.stringify(query, null, 2)}`);
 			//logger.warning(e);
 		}

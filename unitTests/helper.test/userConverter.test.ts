@@ -3,20 +3,18 @@ import { convertCtxBodyToUser, convertUserToUserProfile } from "../../src/helper
 import { assertEquals } from "https://deno.land/std@0.150.0/testing/asserts.ts";
 import { createMockApp } from "../mockObjects/oak/mockApp.test.ts";
 import { createMockContext } from "../mockObjects/oak/mockContext.test.ts";
-import { validateContentType } from "../../src/controller/validation.controller.ts";
-import { emptyAsyncFunctionTest } from "../mockObjects/emptyAsyncFunction.test.ts";
 
 Deno.test({
     name: "testNoPasswordDelivery",
     fn(): void | Promise<void> {
-        let user: User = new User();
-        let firstName = "Martin"
-        let lastName = "Tester"
+        const user: User = new User();
+        const firstName = "Martin"
+        const lastName = "Tester"
         user.password = "124";
         user.firstName = firstName;
         user.lastName = lastName;
 
-        let userProfile: any = convertUserToUserProfile(user);
+        const userProfile: any = convertUserToUserProfile(user);
 
         assertEquals(userProfile.password, undefined);
         assertEquals(userProfile.firstName, firstName);
@@ -28,16 +26,16 @@ Deno.test({
 Deno.test({
     name: "testConvertCtxBoxyToUser",
     async fn(): Promise<void> {
-        let email = "martin.tester@test.de"
-        let firstName = "Martin"
-        let lastName = "Tester"
-        let password = "124";
-        let status = "registered"
-        let isAdmin = true;
+        const email = "martin.tester@test.de"
+        const firstName = "Martin"
+        const lastName = "Tester"
+        const password = "124";
+        const status = "registered"
+        const isAdmin = true;
 
-        let app = await createMockApp();
-        let ctx = await createMockContext(app, `{"email": "${email}", "password":"${password}", "firstName":"${firstName}", "lastName": "${lastName}", "status": "${status}", "isAdmin": ${isAdmin}}`);
-        let user = await convertCtxBodyToUser(ctx);
+        const app = await createMockApp();
+        const ctx = await createMockContext(app, `{"email": "${email}", "password":"${password}", "firstName":"${firstName}", "lastName": "${lastName}", "status": "${status}", "isAdmin": ${isAdmin}}`);
+        const user = await convertCtxBodyToUser(ctx);
 
         assertEquals(user.email, email)
         assertEquals(user.firstName, firstName)

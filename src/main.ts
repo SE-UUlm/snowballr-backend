@@ -1,4 +1,4 @@
-import { Application, RouteParams, Router, RouterContext } from 'https://deno.land/x/oak@v11.1.0/mod.ts';
+import { Application, Router } from 'https://deno.land/x/oak@v11.1.0/mod.ts';
 import { validateContentType, validateJWTIfExists } from "./controller/validation.controller.ts";
 import { login, refresh } from "./controller/login.controller.ts";
 import { setup } from "./helper/setup.ts";
@@ -18,17 +18,14 @@ import {
 	deletePaperOfProjectStage,
 	deleteReviewOfPaper,
 	getCitationsOfProjectPaper,
-	getCites,
 	getCriteriaEvalsOfCriteria,
 	getCriteriasOfProject,
 	getCritieriaEvalOfReview,
 	getCrtieriaEvalsOfReview,
 	getMembersOfProject,
 	getPaperOfProjectStage,
-	getPapersOfProjectStage,
 	getProjects,
 	getReferencesOfProjectPaper,
-	getRefs,
 	getReviewOfPaper,
 	getReviewsOfPaper,
 	makeRefCiteCsv,

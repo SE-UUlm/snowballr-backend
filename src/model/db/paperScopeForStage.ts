@@ -1,7 +1,6 @@
 import { DataTypes, Model } from "https://deno.land/x/denodb@v1.4.0/mod.ts";
 import { Stage } from "./stage.ts";
 import { Paper } from "./paper.ts";
-import { Review } from "./review.ts";
 import { ReviewToPaperScope } from "./reviewToPaperScope.ts";
 
 

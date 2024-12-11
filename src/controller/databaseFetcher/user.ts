@@ -3,7 +3,7 @@ import { hashPassword } from '../../helper/passwordHasher.ts';
 
 
 export const returnUserByEmailAndPassword = async (eMail: string, password: string): Promise<User | undefined> => {
-	let user = await User.where({ eMail: eMail, password: hashPassword(password) }).get();
+	const user = await User.where({ eMail: eMail, password: hashPassword(password) }).get();
 	if (Array.isArray(user)) {
 		return user[0];
 	}
@@ -11,7 +11,7 @@ export const returnUserByEmailAndPassword = async (eMail: string, password: stri
 }
 
 export const returnUserByEmail = async (eMail: string): Promise<User | undefined> => {
-	let user = await User.where({ eMail: eMail }).get()
+	const user = await User.where({ eMail: eMail }).get()
 
 	if (Array.isArray(user)) {
 		return user[0];

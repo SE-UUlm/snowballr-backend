@@ -116,12 +116,12 @@ export class Cache<K extends IndexSignatureKey, V> extends EventEmitter {
 	public clone(): Cache<K, V> { return Cache.valueOf(this.map, this.ttl); }
 
 	public randomValue(): V {
-		let index: number = Math.floor(Math.random() * this.size);
+		const index: number = Math.floor(Math.random() * this.size);
 		return this.values()[index];
 	}
 
 	public randomKey(): K {
-		let index: number = Math.floor(Math.random() * this.size);
+		const index: number = Math.floor(Math.random() * this.size);
 		return this.keys()[index];
 	}
 

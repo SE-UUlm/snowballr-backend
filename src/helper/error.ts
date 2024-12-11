@@ -19,7 +19,7 @@ export const makeErrorMessage = (ctx: Context, httpStatusCode: number, message?:
 export const warnApiDisabledByConfig = (apiName: string): IApiResponse => {
 	logger.warning(`${apiName} is disbaled via config.yaml. There wont be any results coming in!!!`)
 
-	let apiReturn: IApiResponse = {
+	const apiReturn: IApiResponse = {
 		"paper": {} as IApiPaper,
 		"citations": [],
 		"references": []

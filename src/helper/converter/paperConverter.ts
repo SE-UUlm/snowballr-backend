@@ -1,10 +1,10 @@
 import { Paper } from "../../model/db/paper.ts";
 import { PaperMessage, Status } from "../../model/messages/papersMessage.ts";
-import { checkUniqueVal, getProjectPaperID, getProjectPaperScope } from "../../controller/databaseFetcher/paper.ts";
-import { assign, concatWithoutDuplicates } from "../assign.ts"
+import { checkUniqueVal, getProjectPaperScope } from "../../controller/databaseFetcher/paper.ts";
+import { assign } from "../assign.ts"
 import { IApiPaper } from "../../api/iApiPaper.ts"
 import { getDOI } from "../../api/apiMerger.ts";
-import { logger, fileLogger } from "../../api/logger.ts";
+import { logger } from "../../api/logger.ts";
 import { PaperID } from "../../model/db/paperID.ts";
 import { PaperHasID } from "../../model/db/paperHasID.ts";
 import { IApiUniqueId, idType } from "../../api/iApiUniqueId.ts";
@@ -22,9 +22,9 @@ import { PaperScopeForStage } from "../../model/db/paperScopeForStage.ts";
 import { AuthorMessage } from "../../model/messages/author.message.ts";
 
 export const convertPapersToPaperMessage = async (papers: Paper[], stageId?: number, userId?: number) => {
-	let paperMessages: PaperMessage[] = [];
+	const paperMessages: PaperMessage[] = [];
 	for (const item of papers) {
-		let paperMessage: PaperMessage = await convertPaperToPaperMessage(item, stageId, userId)
+		const paperMessage: PaperMessage = await convertPaperToPaperMessage(item, stageId, userId)
 		paperMessages.push(paperMessage)
 	}
 	return paperMessages;
@@ -32,11 +32,11 @@ export const convertPapersToPaperMessage = async (papers: Paper[], stageId?: num
 
 export const convertRowsToPaperMessage = (answer: any, userID: number, paperCacheUrls: string[]) => {
 
-	let paperMessage: PaperMessage[] = []
+	const paperMessage: PaperMessage[] = []
 	let lastId = -1;
-	for (let element of answer) {
+	for (const element of answer) {
 		if (lastId == Number(element[0])) {
-			let paper = paperMessage[paperMessage.length - 1]
+			const paper = paperMessage[paperMessage.length - 1]
 
 			paper.authors.push({
 				id: element[13] ? Number(element[13]) : undefined,
@@ -48,7 +48,7 @@ export const convertRowsToPaperMessage = (answer: any, userID: number, paperCach
 
 		} else {
 			lastId = Number(element[0])
-			let author: AuthorMessage = {
+			const author: AuthorMessage = {
 				id: element[13] ? Number(element[13]) : undefined,
 				firstName: element[15] ? String(element[15]) : undefined,
 				lastName: element[16] ? String(element[16]) : undefined,
@@ -57,7 +57,7 @@ export const convertRowsToPaperMessage = (answer: any, userID: number, paperCach
 
 			}
 
-			let paper: PaperMessage = {
+			const paper: PaperMessage = {
 				id: Number(element[3]),
 				doi: element[4] ? String(element[4]) : undefined,
 				title: element[5] ? String(element[5]) : undefined,
@@ -101,7 +101,7 @@ export const convertRowsToPaperMessage = (answer: any, userID: number, paperCach
 }
 export const convertPaperToPaperMessage = async (paper: Paper, stageId?: number, userId?: number) => {
 	console.log("--------------------ABSTRACT: " + paper.abstract);
-	let paperMessage: PaperMessage = { id: Number(paper.id), pdf: [], authors: [] }
+	const paperMessage: PaperMessage = { id: Number(paper.id), pdf: [], authors: [] }
 	let pp: PaperScopeForStage | undefined;
 	if (stageId) {
 		pp = await getProjectPaperScope(stageId, Number(paper.id))
@@ -121,15 +121,15 @@ export const convertPaperToPaperMessage = async (paper: Paper, stageId?: number,
 	} else {
 		paperMessage.status = Status.ready
 	}
-	let pdf = await Pdf.where({ paperId: Number(paper.id) }).get()
+	const pdf = await Pdf.where({ paperId: Number(paper.id) }).get()
 	if (Array.isArray(pdf)) {
 		pdf.forEach(url => {
 			paperMessage.pdf.push(String(url.url))
 		})
 	}
-	let authors = await getAllAuthorsFromPaper(Number(paper.id))
+	const authors = await getAllAuthorsFromPaper(Number(paper.id))
 	authors.forEach(author => paperMessage.authors.push(convertAuthorToAuthorMessage(author)))
-	let unfinishedAuthors = paperMessage.authors.some(author => author.status === Status.unfinished)
+	const unfinishedAuthors = paperMessage.authors.some(author => author.status === Status.unfinished)
 	if (paperMessage.authors.length > 0 && unfinishedAuthors) {
 		paperMessage.status = Status.unfinished
 	}
@@ -139,14 +139,14 @@ export const convertPaperToPaperMessage = async (paper: Paper, stageId?: number,
 
 export const convertIApiPaperToDBPaper = async (paper: IApiPaper): Promise<Paper> => {
 
-	let newPaper = await Paper.create({})
-	let p: any = paper;
-	for (let i in paper) {
+	const newPaper = await Paper.create({})
+	const p: any = paper;
+	for (const i in paper) {
 		if (["title", "abstract", "publisher", "type", "scope", "scopeName", "year"].includes(i)) {
 			newPaper[i] = p[i][0]
 		} else if (i == "uniqueId") {
 			newPaper.doi = getDOI(paper)[0]
-			let uniqueId = paper.uniqueId.filter((item: IApiUniqueId) => item.type !== "DOI")
+			const uniqueId = paper.uniqueId.filter((item: IApiUniqueId) => item.type !== "DOI")
 			addUniqueToPaper(uniqueId, Number(newPaper.id))
 
 		} else if (i == "author") {
@@ -161,15 +161,15 @@ export const convertIApiPaperToDBPaper = async (paper: IApiPaper): Promise<Paper
 }
 
 export const convertDBPaperToIApiPaper = async (paper: Paper): Promise<IApiPaper> => {
-	let pdfs: string[] = []
-	let pdf = await Pdf.where({ paperId: Number(paper.id) }).get()
+	const pdfs: string[] = []
+	const pdf = await Pdf.where({ paperId: Number(paper.id) }).get()
 	if (Array.isArray(pdf)) {
 		pdf.forEach(url => {
 			pdfs.push(String(url.url))
 		})
 	}
-	let authors: IApiAuthor[] = [];
-	let dbAuthors = await getAllAuthorsFromPaper(Number(paper.id))
+	const authors: IApiAuthor[] = [];
+	const dbAuthors = await getAllAuthorsFromPaper(Number(paper.id))
 	dbAuthors.forEach(author => {
 		authors.push({
 			orcid: author.orcid ? [String(author.orcid)] : [],
@@ -207,10 +207,10 @@ export const convertDBPaperToIApiPaper = async (paper: Paper): Promise<IApiPaper
  * @param newPaper 
  */
 const addAuthorToDatabase = async (paper: IApiPaper, newPaper: Paper) => {
-	for (let item of paper.author) {
+	for (const item of paper.author) {
 		let author: Author;
 		if (item.orcid[0]) {
-			let oldAuthor = await Author.where({ orcid: item.orcid[0] }).get()
+			const oldAuthor = await Author.where({ orcid: item.orcid[0] }).get()
 			if (Array.isArray(oldAuthor) && oldAuthor[0]) {
 				author = oldAuthor[0]
 			} else {
@@ -224,7 +224,7 @@ const addAuthorToDatabase = async (paper: IApiPaper, newPaper: Paper) => {
 }
 export const assignOnlyIfUnassignedPaper = async (target: Paper, source: IApiPaper) => {
 	try {
-		let s = <any>source
+		const s = <any>source
 		for (const key in source) {
 			const val = s[key];
 			if (val && !target[key]) {
@@ -277,9 +277,9 @@ const updateUniqueIDsOfPaper = (target: Paper, source: IApiPaper) => {
  * @param source 
  */
 const updateAuthorsOfPaper = async (target: Paper, source: IApiPaper) => {
-	let authors = await getAllAuthorsFromPaper(Number(target.id))
-	for (let element of authors) {
-		let iAuthor: IApiAuthor = {
+	const authors = await getAllAuthorsFromPaper(Number(target.id))
+	for (const element of authors) {
+		const iAuthor: IApiAuthor = {
 			orcid: element.orcid ? [String(element.orcid)] : [],
 			rawString: element.rawString ? [String(element.rawString)] : [],
 			lastName: element.lastName ? [String(element.lastName)] : [],
@@ -294,7 +294,7 @@ const updateAuthorsOfPaper = async (target: Paper, source: IApiPaper) => {
 			}
 		}
 		source.author = source.author.filter(value => Object.keys(value).length !== 0);
-		for (let item of source.author) {
+		for (const item of source.author) {
 			await updateAuthorOfPaper(await Author.create({}), item, Number(target.id))
 		}
 	}
@@ -307,13 +307,13 @@ const updateAuthorsOfPaper = async (target: Paper, source: IApiPaper) => {
  * @param source 
  */
 const updatePdfOfPaper = async (target: Paper, source: IApiPaper) => {
-	let pdf = Pdf.where({ paperId: Number(target.id) }).get();
+	const pdf = Pdf.where({ paperId: Number(target.id) }).get();
 	if (Array.isArray(pdf)) {
-		let urls: string[] = []
+		const urls: string[] = []
 		pdf.forEach(item => {
 			urls.push(String(item.url))
 		})
-		for (let item of source.pdf) {
+		for (const item of source.pdf) {
 			if (!urls.includes(item)) {
 				await Pdf.create({ paperId: Number(target.id), url: item })
 			}
@@ -327,8 +327,8 @@ const updatePdfOfPaper = async (target: Paper, source: IApiPaper) => {
  * @param newPaperId 
  */
 const addUniqueToPaper = async (uniqueId: IApiUniqueId[], newPaperId: number) => {
-	for (let item of uniqueId) {
-		let paperId = await PaperID.create({});
+	for (const item of uniqueId) {
+		const paperId = await PaperID.create({});
 		if (item.type) { paperId.type = item.type }
 		if (item.value) { paperId.value = item.value }
 		PaperHasID.create({ paperId: newPaperId, paperidId: Number(paperId.id) })
@@ -353,7 +353,7 @@ const updateAuthorOfPaper = async (author: Author, item: IApiAuthor, paperId: nu
 }
 export const checkIApiPaper = (paper: { [index: string]: any }): boolean => {
 	let check = true;
-	for (let i in paper) {
+	for (const i in paper) {
 		if (i.includes("Source")) {
 			continue;
 		}

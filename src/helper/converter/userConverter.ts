@@ -8,7 +8,7 @@ import { assign } from "../assign.ts"
  * @param user
  */
 export const convertUserToUserProfile = (user: User) => {
-    let userProfile: UserProfile = {
+    const userProfile: UserProfile = {
         id: Number(user.id),
         email: String(user.eMail),
         isAdmin: Boolean(user.isAdmin),
@@ -27,7 +27,7 @@ export const convertUserToUserProfile = (user: User) => {
 
 export const convertCtxBodyToUser = async (ctx: Context): Promise<UserParameters> => {
     const bodyJson = await ctx.request.body({ type: "json" }).value;
-    let userData: UserParameters = {};
+    const userData: UserParameters = {};
     assign(userData, bodyJson)
     return userData;
 }
