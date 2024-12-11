@@ -1,5 +1,5 @@
-import {UserProfile} from "../userProfile.ts";
+import { UserProfile } from "../userProfile.ts";
 
 export interface ProjectMembersMessage {
-    members: UserProfile[]
+  members: UserProfile[];
 }

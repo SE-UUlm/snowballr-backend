@@ -4,17 +4,17 @@
  * @param url
  */
 export const urlSanitizer = (url: string) => {
-    const port = Number(Deno.env.get("PORT"));
-    if (port) {
-        if (port !== 443) {
-            url += `:${port}`;
-        }
+  const port = Number(Deno.env.get("PORT"));
+  if (port) {
+    if (port !== 443) {
+      url += `:${port}`;
     }
-    if (url.startsWith("http://")) {
-        url = url.replace("http://", "https://");
-    }
-    if (!url.startsWith("https://")) {
-        url = "https://" + url;
-    }
-    return url;
-}
+  }
+  if (url.startsWith("http://")) {
+    url = url.replace("http://", "https://");
+  }
+  if (!url.startsWith("https://")) {
+    url = "https://" + url;
+  }
+  return url;
+};

@@ -10,56 +10,61 @@ export const Batcher = new ApiBatcher();
 let id = 1;
 
 export const comparisonWeight: IComparisonWeight = {
-    titleWeight: 10,
-    titleLevenshtein: 10,
-    abstractWeight: 7,
-    abstractLevenshtein: 10,
-    authorWeight: 8,
-    overallWeight: 0.8,
-    yearWeight: 2
-}
+  titleWeight: 10,
+  titleLevenshtein: 10,
+  abstractWeight: 7,
+  abstractLevenshtein: 10,
+  authorWeight: 8,
+  overallWeight: 0.8,
+  yearWeight: 2,
+};
 
 /**
  * starts a fetch by the given info of a paper.
  * To work either a DOI or a title + authorname is needed.
- * @param doi 
- * @param title 
+ * @param doi
+ * @param title
  * @param name a single rawname of on of the authors
- * @returns 
+ * @returns
  */
-export const makeFetching = (overallWeight: number, enabledApis: [SourceApi,string?][], doi?: string, title?: string, name?: string, projectName?: string) => {
-    //TODO comparisons from logfile or settings
-    const comparison: IComparisonWeight = {} as IComparisonWeight;
-    Object.assign(comparison, comparisonWeight)
-    comparison.overallWeight = overallWeight;
+export const makeFetching = (
+  overallWeight: number,
+  enabledApis: [SourceApi, string?][],
+  doi?: string,
+  title?: string,
+  name?: string,
+  projectName?: string,
+) => {
+  //TODO comparisons from logfile or settings
+  const comparison: IComparisonWeight = {} as IComparisonWeight;
+  Object.assign(comparison, comparisonWeight);
+  comparison.overallWeight = overallWeight;
 
-    const query: IApiQuery = {
-        id: String(id++),
-        rawName: name ? name : "",
-        title: title ? title : "",
-        doi: doi ? doi : undefined,
-        enabledApis: enabledApis,
-        aggression: comparison,
-        projectName: projectName
+  const query: IApiQuery = {
+    id: String(id++),
+    rawName: name ? name : "",
+    title: title ? title : "",
+    doi: doi ? doi : undefined,
+    enabledApis: enabledApis,
+    aggression: comparison,
+    projectName: projectName,
+  };
 
-    }
+  return Batcher.startFetch(query);
+};
 
-    return Batcher.startFetch(query);
-}
-
-
-export const getActiveBatches = (ctx: Context)=> {
-    ctx.response.status = 200;
-    let batches= JSON.parse(JSON.stringify(Batcher.activeBatches))
-    batches = batches.map((batch: IApiBatch) => {
-        batch.subscribers = batch.subscribers.map(subscriber => {
-            //removes credentials from the enabled apis
-            subscriber.enabledApis = subscriber.enabledApis!.map(eA =>{
-                return [eA[0]]
-            })
-            return subscriber
-           });
-        return batch
+export const getActiveBatches = (ctx: Context) => {
+  ctx.response.status = 200;
+  let batches = JSON.parse(JSON.stringify(Batcher.activeBatches));
+  batches = batches.map((batch: IApiBatch) => {
+    batch.subscribers = batch.subscribers.map((subscriber) => {
+      //removes credentials from the enabled apis
+      subscriber.enabledApis = subscriber.enabledApis!.map((eA) => {
+        return [eA[0]];
+      });
+      return subscriber;
     });
-    ctx.response.body = JSON.stringify({batches: batches})
-}
+    return batch;
+  });
+  ctx.response.body = JSON.stringify({ batches: batches });
+};

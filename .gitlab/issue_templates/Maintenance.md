@@ -1,16 +1,15 @@
 <!-- If it is a bug, please create a bug report! -->
 
-**Describe the object of maintenance:**  
+**Describe the object of maintenance:**
 
+**What is the reason for the change?**
 
-**What is the reason for the change?** 
-
-
-**Impact of Change | Which system components might be affected? *(optional)***  
-
+**Impact of Change | Which system components might be affected? _(optional)_**
 
 <!-- Add default labels -->
+
 /label ~"scope: backend" ~"P3" ~"step: ready"
+
 <!-- Please consider to adapt the label "P3" to higher priorities P1 or P2 if necessary -->
 
 <!-- Which type has the issue? -->

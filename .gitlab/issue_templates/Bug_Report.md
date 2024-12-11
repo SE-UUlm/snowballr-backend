@@ -1,26 +1,26 @@
-**Describe the bug:**  
+**Describe the bug:**
 
+**Describe the expected behavior:**
 
-**Describe the expected behavior:**  
+**Steps to reproduce:**
 
+1. Goto ...
+2. Click on ...
+3. See bug
 
-**Steps to reproduce:**  
-1.  Goto ...
-2.  Click on ...
-3.  See bug
+**Possible solutions: _(optional)_**
 
-**Possible solutions: *(optional)***  
+**Further information**\
+This can be anything from system information to further sources or a link to a
+forum post.
 
-
-**Further information**  
-This can be anything from system information to further sources or a link to a forum post.
-
-**Screenshots**  
+**Screenshots**\
 If you like to attach screenshots, please add them here.
 
-
 <!-- Add default labels -->
+
 /label ~"scope: backend" ~"type: bug" ~"P3" ~"step: ready"
+
 <!-- Please consider to adapt the label "P3" to higher priorities P1 or P2 if necessary -->
 
 <!-- Add the scope -->

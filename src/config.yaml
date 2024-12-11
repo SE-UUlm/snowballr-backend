@@ -38,5 +38,3 @@ cache:
   type: FileCache # FileCache | MemoryCache
 batcher:
   workerPollingRateInMilSecs: 5000
-
-

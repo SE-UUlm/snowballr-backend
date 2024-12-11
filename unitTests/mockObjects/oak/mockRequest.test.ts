@@ -1,5 +1,8 @@
-import { Request, ServerResponse } from "https://deno.land/x/oak@v11.1.0/mod.ts";
-import { RequestBodyMock } from './mockBody.test.ts'
+import {
+  Request,
+  ServerResponse,
+} from "https://deno.land/x/oak@v11.1.0/mod.ts";
+import { RequestBodyMock } from "./mockBody.test.ts";
 
 const requestResponseStack: ServerResponse[] = [];
 
@@ -14,31 +17,30 @@ const requestResponseStack: ServerResponse[] = [];
  * @param host
  */
 export function createMockRequest(
-    headersInit: string[][],
-    requestBodyJsonString?: string,
-    pathname = "/index.html",
-    proto = "HTTP/1.1",
-    host = "localhost",
+  headersInit: string[][],
+  requestBodyJsonString?: string,
+  pathname = "/index.html",
+  proto = "HTTP/1.1",
+  host = "localhost",
 ): Promise<Request> {
-    const request = {
-        url: {
-            pathname: pathname
-        },
-        headers: new Headers(headersInit),
-        respond(response: ServerResponse) {
-            requestResponseStack.push(response);
-            return Promise.resolve();
-        },
-        proto,
-        body: new RequestBodyMock(requestBodyJsonString).json,
-        method: "GET",
-        accepts: (_contentType: string) => {
-            return true;
-        },
-        serverRequest: {
-            headers: [["token", "blaaaaaa"]]
-        }
-
-    }
-    return request as any;
+  const request = {
+    url: {
+      pathname: pathname,
+    },
+    headers: new Headers(headersInit),
+    respond(response: ServerResponse) {
+      requestResponseStack.push(response);
+      return Promise.resolve();
+    },
+    proto,
+    body: new RequestBodyMock(requestBodyJsonString).json,
+    method: "GET",
+    accepts: (_contentType: string) => {
+      return true;
+    },
+    serverRequest: {
+      headers: [["token", "blaaaaaa"]],
+    },
+  };
+  return request as any;
 }

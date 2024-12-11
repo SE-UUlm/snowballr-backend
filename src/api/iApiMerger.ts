@@ -8,9 +8,9 @@ import { IApiPaper } from "./iApiPaper.ts";
  */
 
 export interface IApiMerger {
-    comparisonWeight: IComparisonWeight;
+  comparisonWeight: IComparisonWeight;
 
-    merge(firstResponse: IApiPaper, secondResponse: IApiPaper): IApiPaper;
+  merge(firstResponse: IApiPaper, secondResponse: IApiPaper): IApiPaper;
 
-    compare(response: Promise<IApiResponse>[]): Promise<IApiResponse[]>;
+  compare(response: Promise<IApiResponse>[]): Promise<IApiResponse[]>;
 }

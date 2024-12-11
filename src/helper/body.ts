@@ -8,10 +8,10 @@ import { makeErrorMessage } from "./error.ts";
  * @param ctx oak context with request/response
  */
 export const jsonBodyToObject = (ctx: Context) => {
-    try {
-        return ctx.request.body({ type: "json" }).value;
-    } catch (_) {
-        makeErrorMessage(ctx, 422, "noBodyProvided")
-    }
-    return makePromise(undefined)
-}
+  try {
+    return ctx.request.body({ type: "json" }).value;
+  } catch (_) {
+    makeErrorMessage(ctx, 422, "noBodyProvided");
+  }
+  return makePromise(undefined);
+};

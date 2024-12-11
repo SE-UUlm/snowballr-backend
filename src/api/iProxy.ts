@@ -1,4 +1,4 @@
 export interface IProxy {
-	block(): Promise<void>,
-	getFetchConfig(): Object
+  block(): Promise<void>;
+  getFetchConfig(): Object;
 }

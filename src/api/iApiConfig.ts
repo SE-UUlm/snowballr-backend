@@ -3,7 +3,7 @@
  */
 
 export interface IApiConfig {
-    timeout?: number;
-    sleep?: number;
-    authentication?: string;
+  timeout?: number;
+  sleep?: number;
+  authentication?: string;
 }

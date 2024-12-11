@@ -2,27 +2,24 @@ import { DataTypes, Model } from "https://deno.land/x/denodb@v1.4.0/mod.ts";
 import { User } from "./user.ts";
 import { Project } from "./project.ts";
 
-
 export class UserIsPartOfProject extends Model {
-	static table = 'ispartof';
-	static timestamps = true;
+  static table = "ispartof";
+  static timestamps = true;
 
-	static fields = {
-		id: { primaryKey: true, autoIncrement: true, type: DataTypes.INTEGER },
-		isOwner: DataTypes.BOOLEAN,
+  static fields = {
+    id: { primaryKey: true, autoIncrement: true, type: DataTypes.INTEGER },
+    isOwner: DataTypes.BOOLEAN,
+  };
 
-	}
+  static defaults = {
+    isOwner: false,
+  };
 
-	static defaults = {
-		isOwner: false,
-	}
+  static user() {
+    return this.hasOne(User);
+  }
 
-	static user() {
-		return this.hasOne(User);
-	}
-
-	static project() {
-		return this.hasOne(Project);
-	}
+  static project() {
+    return this.hasOne(Project);
+  }
 }
-

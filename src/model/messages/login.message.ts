@@ -1,6 +1,6 @@
-import {UserProfile} from "../userProfile.ts";
+import { UserProfile } from "../userProfile.ts";
 
 export interface LoginMessage {
-    token: string,
-    user: UserProfile
+  token: string;
+  user: UserProfile;
 }

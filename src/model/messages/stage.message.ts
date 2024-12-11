@@ -1,5 +1,5 @@
-export interface StageMessage{
-    id: number,
-    name: string,
-    number: number
+export interface StageMessage {
+  id: number;
+  name: string;
+  number: number;
 }
