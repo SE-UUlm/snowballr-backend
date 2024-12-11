@@ -1,0 +1,55 @@
+name: Code Quality Checks
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+  workflow_dispatch:
+
+env:
+  deno_version: ${{ vars.DENO_VERSION }}
+
+jobs:
+  linting:
+    name: Linting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: ${{ env.deno_version }}
+
+      - name: Run Linter
+        run: deno lint
+
+  formatting:
+    name: Formatting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: ${{ env.deno_version }}
+
+      - name: Run Formatter
+        run: deno fmt --check
+
+  check:
+    name: Type Checking
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: ${{ env.deno_version }}
+
+      - name: Run Checker
+        run: deno check -all --allow-import .
