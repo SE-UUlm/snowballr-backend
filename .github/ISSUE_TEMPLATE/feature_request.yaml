@@ -1,5 +1,5 @@
 name: Feature request
-description: Suggest an idea for this project
+description: Suggest a feature or improvement for the backend
 title: "[Feature]: <title>"
 labels: ["enhancement"]
 projects: ["SE-UUlm/2"]
@@ -8,7 +8,7 @@ body:
     - type: input
       id: use-case
       attributes:
-          label: To which use case does your feature request relate?
+          label: Which use case does this feature request relate to?
           placeholder: "#1"
       validations:
           required: false
@@ -16,9 +16,9 @@ body:
     - type: textarea
       id: description
       attributes:
-          label: Is your feature request related to a problem? Please describe
-          description: A clear and concise description of what the problem is.
-          placeholder: I'm always frustrated when [...]
+          label: Is your request related to a problem? Please describe.
+          description: A clear description of what problem you're trying to solve.
+          placeholder: I'm frustrated when I can't [...]
       validations:
           required: true
 
@@ -26,8 +26,8 @@ body:
       id: solution
       attributes:
           label: Describe the solution you'd like
-          description: A clear and concise description of what you want to happen.
-          placeholder: When I click the button [...]
+          description: What should the backend do or support?
+          placeholder: I want the backend to provide an endpoint that [...]
       validations:
           required: true
 
@@ -35,7 +35,7 @@ body:
       id: alternatives
       attributes:
           label: Describe alternatives you've considered
-          description: A clear and concise description of any alternative solutions or features you've considered.
+          description: Any other solutions or workarounds you've thought about.
       validations:
           required: false
 
@@ -44,8 +44,8 @@ body:
       attributes:
           label: Anything else?
           description: |
-              Links? References? Anything that will give us more context about the feature you want us to add!
+              Any extra context, mockups, or examples that help us understand your request.
 
-              Tip: You can attach images or log files by clicking this area to highlight it and then dragging files in.
+              Tip: You can drag and drop files here.
       validations:
           required: false

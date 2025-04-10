@@ -1,5 +1,5 @@
 name: Use Case
-description: Describe a use case for this project
+description: Describe a use case for this backend project
 title: "[Use Case]: <title>"
 labels: ["use case"]
 projects: ["SE-UUlm/2"]
@@ -8,9 +8,9 @@ body:
     - type: input
       id: actor
       attributes:
-          label: Who is the primary actor in this use case?
-          description: The primary actor is the person or system that interacts with the system to achieve a goal.
-          placeholder: e.g. "Project member"
+          label: Who is the primary actor?
+          description: The person or system interacting with the backend to achieve a goal.
+          placeholder: e.g. "Authenticated API client"
       validations:
           required: true
 
@@ -18,8 +18,8 @@ body:
       id: description
       attributes:
           label: Describe the use case
-          description: A clear and concise description of the use case.
-          placeholder: e.g. "As a project member, I want to [...]"
+          description: A clear description of what the actor wants to achieve.
+          placeholder: e.g. "As a client, I want to retrieve all items created in the last 24 hours."
       validations:
           required: true
 
@@ -27,8 +27,8 @@ body:
       id: acceptance-criteria
       attributes:
           label: Acceptance criteria
-          description: A clear and concise description of the acceptance criteria for this use case.
-          placeholder: e.g. "When I [...], then [...]"
+          description: How will we know the use case is correctly implemented?
+          placeholder: e.g. "When I call the endpoint with query X, I get result Y."
       validations:
           required: true
 
@@ -37,8 +37,8 @@ body:
       attributes:
           label: Anything else?
           description: |
-              Links? References? Anything that will give us more context about the use case!
+              Links, diagrams, or other information that helps us understand the use case.
 
-              Tip: You can attach images or log files by clicking this area to highlight it and then dragging files in.
+              Tip: You can drag and drop files here.
       validations:
           required: false

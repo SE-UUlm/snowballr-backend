@@ -1,5 +1,5 @@
 name: Bug report
-description: Create a bug report to help us improve the project
+description: Report a bug in the backend
 title: "[Bug]: <title>"
 labels: ["bug"]
 projects: ["SE-UUlm/2"]
@@ -9,7 +9,7 @@ body:
       id: existing-issue
       attributes:
           label: Is there an existing issue for this?
-          description: Please search to see if an issue already exists for the bug you encountered.
+          description: Please check whether this bug has already been reported.
           options:
               - label: I have searched the existing issues
                 required: true
@@ -17,7 +17,7 @@ body:
     - type: input
       id: use-case
       attributes:
-          label: To which use case does your bug report relate?
+          label: Which use case does this bug relate to?
           placeholder: "#1"
       validations:
           required: false
@@ -27,7 +27,7 @@ body:
       attributes:
           label: What happened?
           description: A clear and concise description of what the bug is.
-          placeholder: e.g. "When a button is pressed, the application crashes."
+          placeholder: e.g. "When submitting a POST request, the server responds with a 500 error."
       validations:
           required: true
 
@@ -35,21 +35,20 @@ body:
       id: steps-to-reproduce
       attributes:
           label: Steps to reproduce
-          description: Steps to reproduce the behavior.
+          description: Steps to reproduce the issue.
           placeholder: |
-              1. Go to '...'
-              2. Click on '....'
-              3. Scroll down to '....'
-              4. See error
-      validations:
-          required: true
+              1. Send a request to '...'
+              2. Use payload '...'
+              3. Observe response '...'
+          validations:
+              required: true
 
     - type: textarea
       id: expected-behavior
       attributes:
           label: What did you expect?
-          description: A clear and concise description of what you expected to happen.
-          placeholder: e.g. "The application should not crash."
+          description: What behavior did you expect instead?
+          placeholder: e.g. "The server should respond with a 201 Created."
       validations:
           required: true
 
@@ -58,8 +57,8 @@ body:
       attributes:
           label: Anything else?
           description: |
-              Links? References? Anything that will give us more context about the issue you are encountering!
+              Logs, request examples, links, or any other context that helps us debug the issue.
 
-              Tip: You can attach images or log files by clicking this area to highlight it and then dragging files in.
-      validations:
-          required: false
+              Tip: You can drag and drop files here.
+          validations:
+              required: false
