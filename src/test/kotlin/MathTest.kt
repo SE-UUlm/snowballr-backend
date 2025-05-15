@@ -1,8 +1,8 @@
+package se.uulm.snowballr.backend
+
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import se_uulm.snowballr.backend.add
-import se_uulm.snowballr.backend.subtract
 
 class MathTest {
     @Nested

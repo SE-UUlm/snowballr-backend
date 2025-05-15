@@ -1,9 +1,11 @@
-package se_uulm.snowballr.backend
+package se.uulm.snowballr.backend
 
-fun add(a: Int, b: Int): Int {
-    return a + b
-}
+fun add(
+    a: Int,
+    b: Int,
+): Int = a + b
 
-fun subtract(a: Int, b: Int): Int {
-    return a - b
-}
+fun subtract(
+    a: Int,
+    b: Int,
+): Int = a - b

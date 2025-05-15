@@ -4,10 +4,12 @@ import kotlinx.kover.gradle.plugin.dsl.GroupingEntityType
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.detekt)
     alias(libs.plugins.kotlinx.kover)
+    alias(libs.plugins.kotlinter)
 }
 
-group = "se_uulm.snowballr.backend"
+group = "se.uulm.snowballr.backend"
 version = "0.1.0"
 
 repositories {
@@ -50,7 +52,7 @@ kover {
             excludes {
                 // Excluding packages from the coverage by listing them in the packages list
 //                  packages(
-//                      "se_uulm.snowballr.backend.example",
+//                      "se.uulm.snowballr.backend.example",
 //                  )
             }
         }
@@ -94,4 +96,16 @@ kover {
             }
         }
     }
+}
+
+tasks.withType<LintTask> {
+    this.source = this.source.minus(fileTree("build")).asFileTree
+}
+
+tasks.withType<FormatTask> {
+    this.source = this.source.minus(fileTree("build")).asFileTree
+}
+
+detekt {
+    config.from("detekt.yml")
 }
