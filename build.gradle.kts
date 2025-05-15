@@ -20,6 +20,8 @@ repositories {
 }
 
 dependencies {
+    implementation(libs.dotenv.kotlin)
+
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.kotlin.test.junit)
     testImplementation(libs.assertj.core)

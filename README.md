@@ -32,3 +32,9 @@ SnowballR Backend
 ./gradlew jar
 # Jar can be found in build/libs/snowballr-backend-<version>.jar
 ```
+
+## Environment Variables
+
+| Variable | Description                          |
+|----------|--------------------------------------|
+| `PORT`   | The port where the backend is served |
