@@ -1,0 +1,89 @@
+name: Code Quality Checks
+
+on:
+    push:
+        branches:
+            - main
+            - develop
+    pull_request:
+    workflow_dispatch:
+
+env:
+    java_version: ${{ vars.JAVA_VERSION }}
+    java_distribution: ${{ vars.JAVA_DISTRIBUTION }}
+
+jobs:
+    formatting:
+        name: Check for valid formatting
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Setup Java
+              uses: actions/setup-java@v4
+              with:
+                  distribution: ${{ env.java_distribution }}
+                  java-version: ${{ env.java_version }}
+                  cache: "gradle"
+
+            - name: Check formatting
+              run: ./gradlew lintKotlin
+
+    linting:
+        name: Check for linting errors
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Setup Java
+              uses: actions/setup-java@v4
+              with:
+                  distribution: ${{ env.java_distribution }}
+                  java-version: ${{ env.java_version }}
+                  cache: "gradle"
+
+            - name: Check linting
+              run: ./gradlew detekt
+
+    testing:
+        name: Run tests
+        runs-on: ubuntu-latest
+        permissions:
+            pull-requests: write
+            contents: read
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Setup Java
+              uses: actions/setup-java@v4
+              with:
+                  distribution: ${{ env.java_distribution }}
+                  java-version: ${{ env.java_version }}
+                  cache: "gradle"
+
+            - name: Run tests and collect coverage
+              run: |
+                  ./gradlew test
+                  ./gradlew koverPrintCoverage
+
+            - name: Upload report
+              if: failure() || success()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: test-report
+                  path: |
+                      build/testReportHtml
+                      build/coverageHtml
+                  if-no-files-found: error
+
+            - name: Add coverage to PR
+              if: failure() || success()
+              uses: madrapps/jacoco-report@v1.7.1
+              with:
+                  paths: ${{ github.workspace }}/build/coverageXml/report.xml
+                  token: ${{ secrets.GITHUB_TOKEN }}
+                  title: Code Coverage
+                  update-comment: true
