@@ -1,12 +1,15 @@
 import kotlinx.kover.gradle.plugin.dsl.AggregationType
 import kotlinx.kover.gradle.plugin.dsl.CoverageUnit
 import kotlinx.kover.gradle.plugin.dsl.GroupingEntityType
+import org.jmailen.gradle.kotlinter.tasks.FormatTask
+import org.jmailen.gradle.kotlinter.tasks.LintTask
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.detekt)
     alias(libs.plugins.kotlinx.kover)
     alias(libs.plugins.kotlinter)
+    alias(libs.plugins.protobuf)
 }
 
 group = "se.uulm.snowballr.backend"
@@ -17,12 +20,19 @@ repositories {
 }
 
 dependencies {
+    testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.kotlin.test.junit)
     testImplementation(libs.assertj.core)
     testImplementation(libs.mockk)
     testImplementation(libs.junit.jupiter.api)
     testImplementation(libs.junit.jupiter.params)
     testRuntimeOnly(libs.junit.jupiter.engine)
+
+    implementation(libs.grpc.kotlin)
+    implementation(libs.grpc.protobuf)
+    implementation(libs.protobuf.kotlin)
+
+    runtimeOnly(libs.grpc.netty)
 }
 
 kotlin {
@@ -50,10 +60,9 @@ kover {
     reports {
         filters {
             excludes {
-                // Excluding packages from the coverage by listing them in the packages list
-//                  packages(
-//                      "se.uulm.snowballr.backend.example",
-//                  )
+                packages(
+                    "snowballr", // generated grpc server
+                )
             }
         }
 
@@ -106,6 +115,48 @@ tasks.withType<FormatTask> {
     this.source = this.source.minus(fileTree("build")).asFileTree
 }
 
+tasks.withType<LintTask> {
+    this.source = this.source.minus(fileTree("build")).asFileTree
+}
+
+tasks.withType<FormatTask> {
+    this.source = this.source.minus(fileTree("build")).asFileTree
+}
+
 detekt {
     config.from("detekt.yml")
+}
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:${libs.versions.protobuf.kotlin.version.get()}"
+    }
+    plugins {
+        create("grpc") {
+            artifact = "io.grpc:protoc-gen-grpc-java:${libs.versions.grpc.protobuf.version.get()}"
+        }
+        create("grpckt") {
+            artifact = "io.grpc:protoc-gen-grpc-kotlin:${libs.versions.grpc.kotlin.version.get()}:jdk8@jar"
+        }
+    }
+    generateProtoTasks {
+        all().forEach {
+            it.plugins {
+                create("grpc")
+                create("grpckt")
+            }
+            it.builtins {
+                create("kotlin")
+            }
+        }
+    }
+}
+
+sourceSets {
+    main {
+        proto {
+            srcDir("api/proto")
+            include("*.proto")
+        }
+    }
 }
