@@ -1,0 +1,19 @@
+services:
+    db:
+        image: postgres:16.1-alpine3.19
+        restart: always
+        environment:
+            POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+            POSTGRES_DB: ${DATABASE_NAME}
+        ports:
+            - "5432:5432"
+        volumes:
+            - ./db-data:/var/lib/postgresql/data
+        networks:
+            - db
+        healthcheck:
+            test: "pg_isready -U postgres"
+
+networks:
+    db:
+        driver: bridge

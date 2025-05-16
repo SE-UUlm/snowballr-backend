@@ -3,9 +3,13 @@ kotlin-version = "2.1.21"
 kotlinx-coroutines-version = "1.10.2"
 logback-version = "1.5.16"
 logger-version = "7.0.7"
+exposed-version = "0.59.0"
 junit-version = "5.11.4"
+hikari-cp-version = "6.2.1"
+postgresql-version = "42.7.5"
 dotenv-version = "6.5.1"
 assertj-version = "3.27.3"
+h2-version = "2.3.232"
 mockk-version = "1.14.2"
 detekt-version = "1.23.8"
 kotlinx-kover-version = "0.9.1"
@@ -23,13 +27,22 @@ kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-t
 logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback-version" }
 kotlin-logging = { module = "io.github.oshai:kotlin-logging-jvm", version.ref = "logger-version" }
 
+exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed-version" }
+exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "exposed-version" }
+
 junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junit-version" }
 junit-jupiter-params = { module = "org.junit.jupiter:junit-jupiter-params", version.ref = "junit-version" }
 junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit-version" }
 
+hikaricp = { module = "com.zaxxer:HikariCP", version.ref = "hikari-cp-version" }
+
+postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql-version" }
+
 dotenv-kotlin = { module = "io.github.cdimascio:dotenv-kotlin", version.ref = "dotenv-version" }
 
 assertj-core = { module = "org.assertj:assertj-core", version.ref = "assertj-version" }
+
+h2 = { module = "com.h2database:h2", version.ref = "h2-version" }
 
 mockk = { module = "io.mockk:mockk", version.ref = "mockk-version" }
 

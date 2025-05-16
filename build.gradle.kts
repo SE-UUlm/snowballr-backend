@@ -23,12 +23,19 @@ dependencies {
     implementation(libs.logback)
     implementation(libs.kotlin.logging)
 
+    implementation(libs.exposed.core)
+    implementation(libs.exposed.jdbc)
+    implementation(libs.postgresql)
+    implementation(libs.hikaricp)
+
     implementation(libs.dotenv.kotlin)
 
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.kotlin.test.junit)
     testImplementation(libs.assertj.core)
+    testImplementation(libs.h2)
     testImplementation(libs.mockk)
+
     testImplementation(libs.junit.jupiter.api)
     testImplementation(libs.junit.jupiter.params)
     testRuntimeOnly(libs.junit.jupiter.engine)
