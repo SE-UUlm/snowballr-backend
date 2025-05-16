@@ -2,16 +2,27 @@ package se.uulm.snowballr.backend.env
 
 import io.github.cdimascio.dotenv.dotenv
 
+// Default values
+public const val DEFAULT_LOG_LEVEL = "DEBUG"
+
 // Http
 private const val PORT = "PORT"
+
+// Miscellaneous
+private const val LOG_LEVEL = "LOG_LEVEL"
 
 private val envService = EnvService()
 
 data class Env(
     val http: Http = Http(),
+    val miscellaneous: Miscellaneous = Miscellaneous(),
 ) {
     data class Http(
         val port: Int = envService[PORT].toInt(),
+    )
+
+    data class Miscellaneous(
+        val logLevel: String = envService.getOrDefault(LOG_LEVEL, DEFAULT_LOG_LEVEL),
     )
 }
 
