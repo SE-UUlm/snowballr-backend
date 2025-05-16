@@ -8,6 +8,12 @@ import io.grpc.ServerInterceptor
 
 private val logger = KotlinLogging.logger {}
 
+/**
+ * A [ServerInterceptor] implementation that logs the method name of incoming gRPC calls.
+ *
+ * This interceptor logs the full method name of every gRPC call received by the server,
+ * providing insight into the service interaction and helping with debugging or monitoring purposes.
+ */
 val loggingInterceptor =
     object : ServerInterceptor {
         override fun <ReqT : Any?, RespT : Any?> interceptCall(

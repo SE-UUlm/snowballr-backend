@@ -18,6 +18,14 @@ fun main() {
     server.blockUntilShutdown()
 }
 
+/**
+ * Configures the root logger's log level. This sets the level for all other logger instances unless they don't set
+ * their own log level.
+ *
+ * @param logLevel The desired log level for the root logger. Acceptable values are one of
+ * [io.github.oshai.kotlinlogging.Level] as string such as `DEBUG` or `INFO`.
+ * If an invalid log level is provided, the default log level [DEFAULT_LOG_LEVEL] will be used.
+ */
 fun configureRootLogger(logLevel: String) {
     val context = LoggerFactory.getILoggerFactory() as LoggerContext
     val rootLogger = context.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME)
