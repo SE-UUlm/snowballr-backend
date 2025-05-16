@@ -20,6 +20,9 @@ repositories {
 }
 
 dependencies {
+    implementation(libs.logback)
+    implementation(libs.kotlin.logging)
+
     implementation(libs.dotenv.kotlin)
 
     testImplementation(libs.kotlinx.coroutines.test)

@@ -1,6 +1,8 @@
 [versions]
 kotlin-version = "2.1.21"
 kotlinx-coroutines-version = "1.10.2"
+logback-version = "1.5.16"
+logger-version = "7.0.7"
 junit-version = "5.11.4"
 dotenv-version = "6.5.1"
 assertj-version = "3.27.3"
@@ -17,6 +19,9 @@ protobuf-kotlin-version = "4.31.0"
 kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin-version" }
 
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines-version" }
+
+logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback-version" }
+kotlin-logging = { module = "io.github.oshai:kotlin-logging-jvm", version.ref = "logger-version" }
 
 junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junit-version" }
 junit-jupiter-params = { module = "org.junit.jupiter:junit-jupiter-params", version.ref = "junit-version" }

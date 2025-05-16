@@ -1,5 +1,6 @@
-package se.uulm.snowballr.backend
+package se.uulm.snowballr.backend.grpc
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.grpc.Server
 import io.grpc.ServerBuilder
 import snowballr.Authentication
@@ -14,6 +15,8 @@ import snowballr.SnowballRGrpcKt
 import snowballr.UserOuterClass
 import snowballr.UserSettingsOuterClass
 
+private val logger = KotlinLogging.logger {}
+
 class SnowballRServer(
     private val port: Int,
 ) {
@@ -21,16 +24,17 @@ class SnowballRServer(
         ServerBuilder
             .forPort(port)
             .addService(SnowballRService())
+            .intercept(loggingInterceptor)
             .build()
 
     fun start() {
         server.start()
-        println("Server started, listening on $port")
+        logger.info { "Server started, listening on $port" }
         Runtime.getRuntime().addShutdownHook(
             Thread {
-                println("*** shutting down gRPC server since JVM is shutting down")
+                logger.info { "*** shutting down gRPC server since JVM is shutting down" }
                 this@SnowballRServer.stop()
-                println("*** server shut down")
+                logger.info { "*** server shut down" }
             },
         )
     }
