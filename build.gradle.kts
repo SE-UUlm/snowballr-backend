@@ -1,0 +1,164 @@
+import kotlinx.kover.gradle.plugin.dsl.AggregationType
+import kotlinx.kover.gradle.plugin.dsl.CoverageUnit
+import kotlinx.kover.gradle.plugin.dsl.GroupingEntityType
+import org.jmailen.gradle.kotlinter.tasks.FormatTask
+import org.jmailen.gradle.kotlinter.tasks.LintTask
+
+plugins {
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.detekt)
+    alias(libs.plugins.kotlinx.kover)
+    alias(libs.plugins.kotlinter)
+    alias(libs.plugins.protobuf)
+}
+
+group = "se.uulm.snowballr.backend"
+version = "0.1.0"
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation(libs.dotenv.kotlin)
+
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.kotlin.test.junit)
+    testImplementation(libs.assertj.core)
+    testImplementation(libs.mockk)
+    testImplementation(libs.junit.jupiter.api)
+    testImplementation(libs.junit.jupiter.params)
+    testRuntimeOnly(libs.junit.jupiter.engine)
+
+    implementation(libs.grpc.kotlin)
+    implementation(libs.grpc.protobuf)
+    implementation(libs.protobuf.kotlin)
+
+    runtimeOnly(libs.grpc.netty)
+}
+
+kotlin {
+    jvmToolchain(21)
+}
+
+tasks.test {
+    useJUnitPlatform()
+    reports.html.required.set(true)
+    reports.html.outputLocation.set(layout.buildDirectory.dir("testReportHtml"))
+    reports.junitXml.required.set(false)
+    finalizedBy(tasks.koverHtmlReport)
+    finalizedBy(tasks.koverXmlReport)
+}
+
+tasks.koverHtmlReport {
+    dependsOn(tasks.test)
+}
+
+tasks.koverXmlReport {
+    dependsOn(tasks.test)
+}
+
+kover {
+    reports {
+        filters {
+            excludes {
+                packages(
+                    "snowballr", // generated grpc server
+                )
+            }
+        }
+
+        verify {
+            rule {
+                disabled.set(false)
+                groupBy.set(GroupingEntityType.APPLICATION)
+
+                bound {
+                    minValue.set(1)
+                    maxValue.set(99)
+                    coverageUnits.set(CoverageUnit.INSTRUCTION)
+                    aggregationForGroup.set(AggregationType.COVERED_PERCENTAGE)
+                }
+
+                minBound(1)
+                maxBound(99)
+            }
+        }
+
+        total {
+            xml {
+                onCheck.set(false)
+                xmlFile.set(layout.buildDirectory.file("coverageXml/report.xml"))
+            }
+            html {
+                onCheck.set(false)
+                htmlDir.set(layout.buildDirectory.dir("coverageHtml"))
+            }
+            verify {
+                onCheck.set(true)
+            }
+            log {
+                onCheck.set(true)
+                header.set(null as String?)
+                format.set("<entity> line coverage: <value>%")
+                groupBy.set(GroupingEntityType.APPLICATION)
+                coverageUnits.set(CoverageUnit.INSTRUCTION)
+                aggregationForGroup.set(AggregationType.COVERED_PERCENTAGE)
+            }
+        }
+    }
+}
+
+tasks.withType<LintTask> {
+    this.source = this.source.minus(fileTree("build")).asFileTree
+}
+
+tasks.withType<FormatTask> {
+    this.source = this.source.minus(fileTree("build")).asFileTree
+}
+
+tasks.withType<LintTask> {
+    this.source = this.source.minus(fileTree("build")).asFileTree
+}
+
+tasks.withType<FormatTask> {
+    this.source = this.source.minus(fileTree("build")).asFileTree
+}
+
+detekt {
+    config.from("detekt.yml")
+}
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:${libs.versions.protobuf.kotlin.version.get()}"
+    }
+    plugins {
+        create("grpc") {
+            artifact = "io.grpc:protoc-gen-grpc-java:${libs.versions.grpc.protobuf.version.get()}"
+        }
+        create("grpckt") {
+            artifact = "io.grpc:protoc-gen-grpc-kotlin:${libs.versions.grpc.kotlin.version.get()}:jdk8@jar"
+        }
+    }
+    generateProtoTasks {
+        all().forEach {
+            it.plugins {
+                create("grpc")
+                create("grpckt")
+            }
+            it.builtins {
+                create("kotlin")
+            }
+        }
+    }
+}
+
+sourceSets {
+    main {
+        proto {
+            srcDir("api/proto")
+            include("*.proto")
+        }
+    }
+}

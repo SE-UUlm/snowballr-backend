@@ -1,0 +1,41 @@
+[versions]
+kotlin-version = "2.1.20"
+kotlinx-coroutines-version = "1.10.1"
+junit-version = "5.11.4"
+dotenv-version = "6.5.1"
+assertj-version = "3.27.3"
+mockk-version = "1.13.16"
+detekt-version = "1.23.8"
+kotlinx-kover-version = "0.9.1"
+kotlinter-version = "5.0.1"
+protobuf-version = "0.9.4"
+grpc-kotlin-version = "1.4.3"
+grpc-protobuf-version = "1.72.0"
+protobuf-kotlin-version = "4.31.0"
+
+[libraries]
+kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin-version" }
+
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines-version" }
+
+junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junit-version" }
+junit-jupiter-params = { module = "org.junit.jupiter:junit-jupiter-params", version.ref = "junit-version" }
+junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit-version" }
+
+dotenv-kotlin = { module = "io.github.cdimascio:dotenv-kotlin", version.ref = "dotenv-version" }
+
+assertj-core = { module = "org.assertj:assertj-core", version.ref = "assertj-version" }
+
+mockk = { module = "io.mockk:mockk", version.ref = "mockk-version" }
+
+grpc-kotlin = { module = "io.grpc:grpc-kotlin-stub", version.ref = "grpc-kotlin-version" }
+grpc-protobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc-protobuf-version" }
+grpc-netty = { module = "io.grpc:grpc-netty-shaded", version.ref = "grpc-protobuf-version" }
+protobuf-kotlin = { module = "com.google.protobuf:protobuf-kotlin", version.ref = "protobuf-kotlin-version" }
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin-version" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt-version" }
+kotlinx-kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kotlinx-kover-version" }
+kotlinter = { id = "org.jmailen.kotlinter", version.ref = "kotlinter-version" }
+protobuf = { id = "com.google.protobuf", version.ref = "protobuf-version" }
