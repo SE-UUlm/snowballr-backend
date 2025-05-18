@@ -23,6 +23,10 @@ dependencies {
     implementation(libs.logback)
     implementation(libs.kotlin.logging)
 
+    implementation(platform(libs.koin.bom))
+    implementation(libs.koin.core)
+    testImplementation(libs.koin.test)
+
     implementation(libs.exposed.core)
     implementation(libs.exposed.jdbc)
     implementation(libs.postgresql)

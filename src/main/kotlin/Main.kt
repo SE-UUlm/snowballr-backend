@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend
 import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.LoggerContext
 import io.github.oshai.kotlinlogging.KotlinLogging
+import org.koin.core.context.startKoin
 import org.slf4j.LoggerFactory
 import se.uulm.snowballr.backend.env.DEFAULT_LOG_LEVEL
 import se.uulm.snowballr.backend.env.Env
@@ -11,8 +12,17 @@ import se.uulm.snowballr.backend.grpc.SnowballRServer
 private val logger = KotlinLogging.logger {}
 
 fun main() {
+    // Start Dependency Injection
+    startKoin {
+        modules(snowballRModule)
+    }
+
     val env = Env()
+
+    // Configure Logger
     configureRootLogger(env.miscellaneous.logLevel)
+
+    // Create and run the server
     val server = SnowballRServer(env.http.port)
     server.start()
     server.blockUntilShutdown()

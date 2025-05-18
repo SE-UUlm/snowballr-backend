@@ -1,6 +1,7 @@
 [versions]
 kotlin-version = "2.1.21"
 kotlinx-coroutines-version = "1.10.2"
+koin-version = "4.0.2"
 logback-version = "1.5.16"
 logger-version = "7.0.7"
 exposed-version = "0.59.0"
@@ -21,6 +22,10 @@ protobuf-kotlin-version = "4.31.0"
 
 [libraries]
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines-version" }
+
+koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin-version" }
+koin-core = { module = "io.insert-koin:koin-core" }
+koin-test = { module = "io.insert-koin:koin-test" }
 
 logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback-version" }
 kotlin-logging = { module = "io.github.oshai:kotlin-logging-jvm", version.ref = "logger-version" }
