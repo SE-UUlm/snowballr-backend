@@ -31,14 +31,12 @@ dependencies {
     implementation(libs.dotenv.kotlin)
 
     testImplementation(libs.kotlinx.coroutines.test)
-    testImplementation(libs.kotlin.test.junit)
     testImplementation(libs.assertj.core)
     testImplementation(libs.h2)
     testImplementation(libs.mockk)
 
-    testImplementation(libs.junit.jupiter.api)
-    testImplementation(libs.junit.jupiter.params)
-    testRuntimeOnly(libs.junit.jupiter.engine)
+    testImplementation(platform(libs.junit.bom))
+    testImplementation(libs.junit.jupiter)
 
     implementation(libs.grpc.kotlin)
     implementation(libs.grpc.protobuf)

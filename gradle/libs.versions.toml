@@ -20,8 +20,6 @@ grpc-protobuf-version = "1.72.0"
 protobuf-kotlin-version = "4.31.0"
 
 [libraries]
-kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin-version" }
-
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines-version" }
 
 logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback-version" }
@@ -30,9 +28,8 @@ kotlin-logging = { module = "io.github.oshai:kotlin-logging-jvm", version.ref = 
 exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed-version" }
 exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "exposed-version" }
 
-junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junit-version" }
-junit-jupiter-params = { module = "org.junit.jupiter:junit-jupiter-params", version.ref = "junit-version" }
-junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit-version" }
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junit-version" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
 
 hikaricp = { module = "com.zaxxer:HikariCP", version.ref = "hikari-cp-version" }
 
