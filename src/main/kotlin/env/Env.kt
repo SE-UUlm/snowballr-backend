@@ -2,18 +2,41 @@ package se.uulm.snowballr.backend.env
 
 import io.github.cdimascio.dotenv.dotenv
 
+// Default values
+const val DEFAULT_LOG_LEVEL = "DEBUG"
+
 // Http
 private const val PORT = "PORT"
 
+// Miscellaneous
+private const val LOG_LEVEL = "LOG_LEVEL"
+
 private val envService = EnvService()
 
+/**
+ * Represents the environment configuration for the application.
+ *
+ * @property http Configuration related to the HTTP server, such as the port number.
+ * @property miscellaneous Miscellaneous configuration, such as the logging level.
+ */
 data class Env(
     val http: Http = Http(),
+    val miscellaneous: Miscellaneous = Miscellaneous(),
 ) {
     data class Http(
         val port: Int = envService[PORT].toInt(),
     )
+
+    data class Miscellaneous(
+        val logLevel: String = envService.getOrDefault(LOG_LEVEL, DEFAULT_LOG_LEVEL),
+    )
 }
+
+class EnvVariableNotFoundException(
+    key: String,
+) : Exception(
+        "The env variable with key '$key' could not be found. Please check the variables.",
+    )
 
 interface IEnvService {
     @kotlin.jvm.Throws(EnvVariableNotFoundException::class)
@@ -25,14 +48,8 @@ interface IEnvService {
     ): String
 }
 
-class EnvVariableNotFoundException(
-    key: String,
-) : Exception(
-        "The env variable with key '$key' could not be found. Please check the variables.",
-    )
-
 /**
- * Responsible to read data from the .env file
+ * Service responsible for reading environment variables from the .env file
  */
 class EnvService : IEnvService {
     private val dotenv = getEnv()

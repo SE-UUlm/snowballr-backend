@@ -1,5 +1,6 @@
-package se.uulm.snowballr.backend
+package se.uulm.snowballr.backend.grpc
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.grpc.Server
 import io.grpc.ServerBuilder
 import snowballr.Authentication
@@ -14,35 +15,85 @@ import snowballr.SnowballRGrpcKt
 import snowballr.UserOuterClass
 import snowballr.UserSettingsOuterClass
 
+private val logger = KotlinLogging.logger {}
+
+/**
+ * Represents a gRPC server to handle requests and responses for the SnowballR application.
+ *
+ * @param port The port on which the server should run.
+ */
 class SnowballRServer(
     private val port: Int,
 ) {
-    val server: Server =
+    /**
+     * Represents the gRPC server instance used for handling incoming requests.
+     *
+     * This server is configured to:
+     * - Listen on the specified port.
+     * - Register the gRPC service implementation [SnowballRService].
+     * - Apply a logging interceptor to intercept and log incoming and outgoing requests.
+     */
+    private val server: Server =
         ServerBuilder
             .forPort(port)
             .addService(SnowballRService())
+            .intercept(loggingInterceptor)
             .build()
 
+    /**
+     * Starts the gRPC server and adds a shutdown hook to cleanly stop the server when the JVM shuts down.
+     *
+     * This method performs the following operations:
+     * - Starts the gRPC server, making it listen on the specified port.
+     * - Registers a shutdown hook to handle the server shutdown process when the JVM is shutting down.
+     *   The shutdown hook stops the server and confirms the server has been shut down.
+     */
     fun start() {
         server.start()
-        println("Server started, listening on $port")
+        logger.info { "Server started, listening on $port" }
         Runtime.getRuntime().addShutdownHook(
             Thread {
-                println("*** shutting down gRPC server since JVM is shutting down")
+                logger.info { "*** shutting down gRPC server since JVM is shutting down" }
                 this@SnowballRServer.stop()
-                println("*** server shut down")
+                logger.info { "*** server shut down" }
             },
         )
     }
 
+    /**
+     * Stops the gRPC server.
+     *
+     * This method shuts down the server instance to release resources and
+     * terminate any ongoing server operations. It is typically invoked
+     * during application shutdown or in a dedicated cleanup process.
+     */
     fun stop() {
         server.shutdown()
     }
 
+    /**
+     * Blocks the current thread until the gRPC server is terminated.
+     *
+     * This method waits for the gRPC server instance to shut down, effectively
+     * keeping the application running until the server stops. It is typically used
+     * in the main application entry point to ensure that the server stays alive and
+     * processes incoming requests until explicitly stopped.
+     */
     fun blockUntilShutdown() {
         server.awaitTermination()
     }
 
+    /**
+     * Service implementation for handling SnowballR operations.
+     *
+     * This class extends [SnowballRGrpcKt.SnowballRCoroutineImplBase] and provides coroutine-based
+     * implementations for various SnowballR service methods. These methods cover functionalities like
+     * user management, project management, settings management, paper management, review management,
+     * and criterion management.
+     *
+     * Note: Each method corresponds to a gRPC endpoint, taking specific request types and returning
+     * appropriate response types as defined by the respective protocol buffers.
+     */
     @Suppress("TooManyFunctions")
     internal class SnowballRService : SnowballRGrpcKt.SnowballRCoroutineImplBase() {
         override suspend fun getAvailableFetcherApis(request: Base.Nothing): Main.AvailableFetcherApis =

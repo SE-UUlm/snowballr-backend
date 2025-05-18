@@ -35,6 +35,7 @@ SnowballR Backend
 
 ## Environment Variables
 
-| Variable | Description                          |
-|----------|--------------------------------------|
-| `PORT`   | The port where the backend is served |
+| Variable    |      Required      | Default | Description                                                                      |
+|-------------|:------------------:|:-------:|----------------------------------------------------------------------------------|
+| `PORT`      | :white_check_mark: |    -    | The port where the backend is served                                             |
+| `LOG_LEVEL` |        :x:         | `DEBUG` | The log level to use. One of `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`, or `OFF` |
