@@ -129,14 +129,6 @@ tasks.withType<FormatTask> {
     this.source = this.source.minus(fileTree("build")).asFileTree
 }
 
-tasks.withType<LintTask> {
-    this.source = this.source.minus(fileTree("build")).asFileTree
-}
-
-tasks.withType<FormatTask> {
-    this.source = this.source.minus(fileTree("build")).asFileTree
-}
-
 detekt {
     config.from("detekt.yml")
 }
