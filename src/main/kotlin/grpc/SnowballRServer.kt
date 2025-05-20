@@ -3,6 +3,9 @@ package se.uulm.snowballr.backend.grpc
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.grpc.Server
 import io.grpc.ServerBuilder
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
+import se.uulm.snowballr.backend.service.IMainService
 import snowballr.Authentication
 import snowballr.Base
 import snowballr.CriterionOuterClass
@@ -95,7 +98,11 @@ class SnowballRServer(
      * appropriate response types as defined by the respective protocol buffers.
      */
     @Suppress("TooManyFunctions")
-    internal class SnowballRService : SnowballRGrpcKt.SnowballRCoroutineImplBase() {
+    internal class SnowballRService :
+        SnowballRGrpcKt.SnowballRCoroutineImplBase(),
+        KoinComponent {
+        private val mainService: IMainService by inject()
+
         override suspend fun getAvailableFetcherApis(request: Base.Nothing): Main.AvailableFetcherApis =
             super.getAvailableFetcherApis(request)
 
@@ -194,7 +201,7 @@ class SnowballRServer(
             super.getAllArchivedProjectsForUser(request)
 
         override suspend fun createProject(request: ProjectOuterClass.Project.Create): ProjectOuterClass.Project =
-            super.createProject(request)
+            mainService.createProject(request)
 
         override suspend fun getProjectById(request: Base.Id): ProjectOuterClass.Project = super.getProjectById(request)
 
@@ -226,7 +233,7 @@ class SnowballRServer(
 
         override suspend fun createCriterion(
             request: CriterionOuterClass.Criterion.Create,
-        ): CriterionOuterClass.Criterion = super.createCriterion(request)
+        ): CriterionOuterClass.Criterion = mainService.createCriterion(request)
 
         override suspend fun updateCriterion(
             request: CriterionOuterClass.Criterion.Update,

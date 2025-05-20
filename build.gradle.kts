@@ -78,6 +78,9 @@ kover {
             excludes {
                 packages(
                     "snowballr", // generated grpc server
+                    "se.uulm.snowballr.backend.db", // production database
+                    "se.uulm.snowballr.backend.env", // environment variables
+                    "se.uulm.snowballr.backend.grpc", // grpc server implementation
                 )
             }
         }
