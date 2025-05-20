@@ -91,7 +91,7 @@ class SnowballRServer(
      * user management, project management, settings management, paper management, review management,
      * and criterion management.
      *
-     * Note: Each method corresponds to a gRPC endpoint, taking specific request types and returning
+     * **Note:** Each method corresponds to a gRPC endpoint, taking specific request types and returning
      * appropriate response types as defined by the respective protocol buffers.
      */
     @Suppress("TooManyFunctions")
