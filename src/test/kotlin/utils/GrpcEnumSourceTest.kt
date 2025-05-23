@@ -51,6 +51,7 @@ class GenericEnumProvider : ArgumentsProvider {
         val enumClass = annotation.value.java
         require(enumClass.isEnum) { "Provided class ${enumClass.name} is not an enum." }
 
+        @Suppress("UNCHECKED_CAST")
         val values = enumClass.enumConstants as Array<Enum<*>>
         // Filter out UNRECOGNIZED, since it is not a valid value for the enum
         return values.filter { it.toString() !== "UNRECOGNIZED" }.map { Arguments.of(it) }.stream()
