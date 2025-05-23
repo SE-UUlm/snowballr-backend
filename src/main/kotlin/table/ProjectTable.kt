@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.table
 
+import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.EnumerationColumnType
 import org.jetbrains.exposed.sql.ResultRow
@@ -102,8 +103,13 @@ object ProjectTable : IntIdTable("project") {
 
     /**
      * Returns the entity ID of the project with the given [id] or `null` if no such project exists.
+     * This can be used to reference the entity in other table rows.
+     *
+     * Example:
+     * Table A stores a reference to [ProjectTable] as `project_id`. To create a row in table A, we can use this method
+     * to get the [EntityID] and then pass it to the `project_id` column of table A.
      */
-    fun ProjectTable.getEntityId(id: String) =
+    fun ProjectTable.getEntityId(id: String): EntityID<Int>? =
         this
             .select(ProjectTable.id)
             .where { ProjectTable.id eq id.toInt() }
