@@ -1,0 +1,25 @@
+package se.uulm.snowballr.backend.service
+
+import se.uulm.snowballr.backend.repository.ICriterionTableRepo
+import snowballr.CriterionOuterClass
+
+interface ICriterionService {
+    suspend fun createCriterion(request: CriterionOuterClass.Criterion.Create): CriterionOuterClass.Criterion
+}
+
+/**
+ * The [CriterionService] class handles operations for criteria by providing
+ * an implementation of the [ICriterionService] interface.
+ *
+ * This class serves as a layer that abstracts the responsibility of criterion CRUD operations,
+ * delegating the actual persistence operations to the [ICriterionTableRepo] repository.
+ *
+ * @constructor Initializes the [CriterionService] with a criterion repository.
+ * @param repo The repository responsible for handling persistence operations related to criteria.
+ */
+class CriterionService(
+    private val repo: ICriterionTableRepo,
+) : ICriterionService {
+    override suspend fun createCriterion(request: CriterionOuterClass.Criterion.Create): CriterionOuterClass.Criterion =
+        repo.createCriterion(request)
+}

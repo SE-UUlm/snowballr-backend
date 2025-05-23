@@ -2,10 +2,6 @@ package se.uulm.snowballr.backend.service
 
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
-import se.uulm.snowballr.backend.service.criterion.CreateCriterion
-import se.uulm.snowballr.backend.service.project.CreateProject
-import snowballr.CriterionOuterClass
-import snowballr.ProjectOuterClass
 
 /**
  * The [IMainService] interface provides a unified contract that combines the responsibilities of all sub-services. It
@@ -17,23 +13,13 @@ import snowballr.ProjectOuterClass
  * service layer functionality.
  */
 interface IMainService :
-    ICreateProject,
-    ICreateCriterion
-
-// Sub-Service Interfaces
-
-fun interface ICreateProject {
-    suspend fun createProject(request: ProjectOuterClass.Project.Create): ProjectOuterClass.Project
-}
-
-fun interface ICreateCriterion {
-    suspend fun createCriterion(request: CriterionOuterClass.Criterion.Create): CriterionOuterClass.Criterion
-}
+    IProjectService,
+    ICriterionService
 
 /**
  * The [MainService] class serves as the primary service implementation layer that aggregates multiple sub-services.
  * This class implements the [IMainService] interface and delegates the execution of specific functionality to the
- * sub-service implementations, e.g. [CreateProject].
+ * sub-service implementations, e.g. [ProjectService].
  *
  * @constructor Initializes the [MainService] with the required repositories.
  * @param projectRepo The repository responsible for handling persistence operations related to projects.
@@ -43,5 +29,5 @@ class MainService(
     private val projectRepo: IProjectTableRepo,
     private val criterionRepo: ICriterionTableRepo,
 ) : IMainService,
-    ICreateProject by CreateProject(projectRepo),
-    ICreateCriterion by CreateCriterion(criterionRepo)
+    IProjectService by ProjectService(projectRepo),
+    ICriterionService by CriterionService(criterionRepo)
