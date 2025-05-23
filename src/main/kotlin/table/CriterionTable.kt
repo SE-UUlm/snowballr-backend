@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.table
 import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.ResultRow
+import org.jetbrains.exposed.sql.kotlin.datetime.timestampWithTimeZone
 import snowballr.CriterionOuterClass
 import java.time.OffsetDateTime
 
@@ -25,7 +26,7 @@ object CriterionTable : UUIDTable("criterion") {
     val name = text("name")
     val description = text("description")
     val category = enumeration("status", CriterionOuterClass.CriterionCategory::class)
-//    val createdAt = timestampWithTimeZone("created_at").clientDefault { OffsetDateTime.now() }
+    val createdAt = timestampWithTimeZone("created_at").clientDefault { OffsetDateTime.now() }
 
     /**
      * Reference to the project, to which the criterion belongs to.

@@ -3,9 +3,11 @@ package se.uulm.snowballr.backend.table
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.EnumerationColumnType
 import org.jetbrains.exposed.sql.ResultRow
+import org.jetbrains.exposed.sql.kotlin.datetime.timestampWithTimeZone
 import se.uulm.snowballr.backend.model.FetcherApi
 import snowballr.ProjectOuterClass
 import snowballr.ReviewOuterClass
+import java.time.OffsetDateTime
 
 /**
  * Represents the database table "project" and provides a mapping for managing project-related entities in the database.
@@ -23,13 +25,13 @@ import snowballr.ReviewOuterClass
  * - [reviewDecisionMatrixBinary]: Represents the decision matrix on how the [ProjectOuterClass.PaperDecision] for a
  * paper should be determined as binary data.
  * - [fetcherApis]: Represents the fetcher APIs used by the project as a list of [FetcherApi] values.
- * - [createdBy]: A foreign key referencing the user table, representing the user who created the project.
  * - [createdAt]: Represents the timestamp of when the project was created as a [OffsetDateTime].
- * - [lastStageStartedAt]: Represents the timestamp of when the last stage of the project was started as a
+ * - [currentStageStartedAt]: Represents the timestamp of when the current stage of the project was started as a
  * [OffsetDateTime].
  * - [archivedAt]: Represents the timestamp of when the project was archived as a [OffsetDateTime].
- * - [archivedBy]: A nullable foreign key referencing the user table, representing the user who archived the project.
  * - [deletedAt]: Represents the timestamp of when the project was deleted as a [OffsetDateTime].
+ * - [archivedBy]: A nullable foreign key referencing the user table, representing the user who archived the project.
+ * - [createdBy]: A foreign key referencing the user table, representing the user who created the project.
  * - [deletedBy]: A nullable foreign key referencing the user table, representing the user who deleted the project.
  */
 object ProjectTable : IntIdTable("project") {
@@ -42,10 +44,10 @@ object ProjectTable : IntIdTable("project") {
     val reviewMaybeAllowed = bool("review_maybe_allowed")
     val reviewDecisionMatrixBinary = binary("review_decision_matrix")
     val fetcherApis = array("fetcher_apis", EnumerationColumnType(FetcherApi::class))
-//    val createdAt = timestampWithTimeZone("created_at").clientDefault { OffsetDateTime.now() }
-//    val lastStageStartedAt = timestampWithTimeZone("last_stage_started_at").clientDefault { OffsetDateTime.now() }
-//    val archivedAt = timestampWithTimeZone("archived_at").nullable()
-//    val deletedAt = timestampWithTimeZone("deleted_at").nullable()
+    val createdAt = timestampWithTimeZone("created_at").clientDefault { OffsetDateTime.now() }
+    val currentStageStartedAt = timestampWithTimeZone("last_stage_started_at").clientDefault { OffsetDateTime.now() }
+    val archivedAt = timestampWithTimeZone("archived_at").nullable()
+    val deletedAt = timestampWithTimeZone("deleted_at").nullable()
 
 //    /**
 //     * Reference to the user who created the project.

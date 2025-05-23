@@ -2,7 +2,9 @@ package se.uulm.snowballr.backend.table
 
 import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.ResultRow
+import org.jetbrains.exposed.sql.kotlin.datetime.timestampWithTimeZone
 import snowballr.UserOuterClass
+import java.time.OffsetDateTime
 
 /**
  * Represents the database table "user" and provides a mapping for managing user-related entities in the database.
@@ -18,6 +20,7 @@ import snowballr.UserOuterClass
  * - [status]: Represents the status of the user as an enumeration value from [UserOuterClass.UserStatus].
  * - [createdAt]: Represents the timestamp of when the user was created as a [OffsetDateTime].
  * - [modifiedAt]: Represents the timestamp of when the user was last modified as a [OffsetDateTime].
+ * - [deletedAt]: Represents the timestamp of when the user was last deleted as a [OffsetDateTime].
  */
 object UserTable : UUIDTable("user") {
     val email = text("email")
@@ -29,8 +32,9 @@ object UserTable : UUIDTable("user") {
 //    val refreshToken = bar
     val role = enumeration("role", UserOuterClass.UserRole::class)
     val status = enumeration("status", UserOuterClass.UserStatus::class)
-//    val createdAt = timestampWithTimeZone("created_at").clientDefault { OffsetDateTime.now() }
-//    val modifiedAt = timestampWithTimeZone("modified_at").nullable()
+    val createdAt = timestampWithTimeZone("created_at").clientDefault { OffsetDateTime.now() }
+    val modifiedAt = timestampWithTimeZone("modified_at").nullable()
+    val deletedAt = timestampWithTimeZone("deleted_at").nullable()
 
     @Suppress("unused")
     fun ResultRow.toUser(): UserOuterClass.User =
