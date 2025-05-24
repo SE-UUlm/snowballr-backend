@@ -10,10 +10,15 @@ plugins {
     alias(libs.plugins.kotlinx.kover)
     alias(libs.plugins.kotlinter)
     alias(libs.plugins.protobuf)
+    application
 }
 
 group = "se.uulm.snowballr.backend"
 version = "0.1.0"
+
+application {
+    mainClass.set("se.uulm.snowballr.backend.MainKt")
+}
 
 repositories {
     mavenCentral()
@@ -53,6 +58,12 @@ dependencies {
 
 kotlin {
     jvmToolchain(21)
+}
+
+tasks.withType<Jar> {
+    manifest {
+        attributes["Main-Class"] = "se.uulm.snowballr.backend.MainKt"
+    }
 }
 
 tasks.test {
