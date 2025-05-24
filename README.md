@@ -1,8 +1,26 @@
-# snowballr-backend
+# SnowballR Backend
 
-SnowballR Backend
+This is the backend of the SnowballR application.
 
 ## Commands
+
+### Starting the server
+
+First, provide a `.env` file with all required environment variables shown in the section below.
+
+As the server assumes a database to be running, we first need to start the database.
+The best way to do this is to use the docker compose file. Run it with `docker compose up`.
+If the database is up and running, we can start the server. This can either be done by executing the built JAR file or
+by using the Gradle command:
+
+```bash
+java -jar build/libs/snowballr-backend-<version>.jar
+# or
+./gradlew run
+```
+
+If you're using IntelliJ IDEA, you can use the added run configuration "Run Backend", which does the same as executing
+`./gradlew run`.
 
 ### Formatting
 
