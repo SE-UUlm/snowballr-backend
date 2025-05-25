@@ -11,6 +11,9 @@ private const val PORT = "PORT"
 // Miscellaneous
 private const val LOG_LEVEL = "LOG_LEVEL"
 
+// Database
+private const val DATABASE_PASSWORD = "DATABASE_PASSWORD"
+
 private val envService = EnvService()
 
 /**
@@ -18,10 +21,12 @@ private val envService = EnvService()
  *
  * @property http Configuration related to the HTTP server, such as the port number.
  * @property miscellaneous Miscellaneous configuration, such as the logging level.
+ * @property database Configuration related to the database connection, including user credentials.
  */
 data class Env(
     val http: Http = Http(),
     val miscellaneous: Miscellaneous = Miscellaneous(),
+    val database: Database = Database(),
 ) {
     data class Http(
         val port: Int = envService[PORT].toInt(),
@@ -29,6 +34,10 @@ data class Env(
 
     data class Miscellaneous(
         val logLevel: String = envService.getOrDefault(LOG_LEVEL, DEFAULT_LOG_LEVEL),
+    )
+
+    data class Database(
+        val password: String = envService[DATABASE_PASSWORD],
     )
 }
 

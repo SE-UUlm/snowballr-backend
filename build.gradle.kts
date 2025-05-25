@@ -10,10 +10,15 @@ plugins {
     alias(libs.plugins.kotlinx.kover)
     alias(libs.plugins.kotlinter)
     alias(libs.plugins.protobuf)
+    application
 }
 
 group = "se.uulm.snowballr.backend"
 version = "0.1.0"
+
+application {
+    mainClass.set("se.uulm.snowballr.backend.MainKt")
+}
 
 repositories {
     mavenCentral()
@@ -23,15 +28,26 @@ dependencies {
     implementation(libs.logback)
     implementation(libs.kotlin.logging)
 
+    implementation(platform(libs.koin.bom))
+    implementation(libs.koin.core)
+    testImplementation(libs.koin.test)
+
+    implementation(libs.exposed.core)
+    implementation(libs.exposed.jdbc)
+    implementation(libs.exposed.datetime)
+    implementation(libs.exposed.json)
+    implementation(libs.postgresql)
+    implementation(libs.hikaricp)
+
     implementation(libs.dotenv.kotlin)
 
     testImplementation(libs.kotlinx.coroutines.test)
-    testImplementation(libs.kotlin.test.junit)
     testImplementation(libs.assertj.core)
+    testImplementation(libs.h2)
     testImplementation(libs.mockk)
-    testImplementation(libs.junit.jupiter.api)
-    testImplementation(libs.junit.jupiter.params)
-    testRuntimeOnly(libs.junit.jupiter.engine)
+
+    testImplementation(platform(libs.junit.bom))
+    testImplementation(libs.junit.jupiter)
 
     implementation(libs.grpc.kotlin)
     implementation(libs.grpc.protobuf)
@@ -42,6 +58,12 @@ dependencies {
 
 kotlin {
     jvmToolchain(21)
+}
+
+tasks.withType<Jar> {
+    manifest {
+        attributes["Main-Class"] = "se.uulm.snowballr.backend.MainKt"
+    }
 }
 
 tasks.test {
@@ -67,6 +89,9 @@ kover {
             excludes {
                 packages(
                     "snowballr", // generated grpc server
+                    "se.uulm.snowballr.backend.db", // production database
+                    "se.uulm.snowballr.backend.env", // environment variables
+                    "se.uulm.snowballr.backend.grpc", // grpc server implementation
                 )
             }
         }
@@ -110,14 +135,6 @@ kover {
             }
         }
     }
-}
-
-tasks.withType<LintTask> {
-    this.source = this.source.minus(fileTree("build")).asFileTree
-}
-
-tasks.withType<FormatTask> {
-    this.source = this.source.minus(fileTree("build")).asFileTree
 }
 
 tasks.withType<LintTask> {

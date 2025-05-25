@@ -47,3 +47,6 @@ bin/
 
 ### Env ###
 .env
+
+### Database ###
+db-data
