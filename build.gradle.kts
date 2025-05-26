@@ -153,6 +153,7 @@ detekt {
     config.from("detekt.yml")
 }
 
+// https://github.com/grpc/grpc-kotlin/tree/master/compiler
 protobuf {
     protoc {
         artifact = "com.google.protobuf:protoc:${libs.versions.protobuf.kotlin.version.get()}"

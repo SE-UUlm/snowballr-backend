@@ -1,4 +1,20 @@
 services:
+    # Use local backend
+    backend:
+        build:
+            context: .
+        environment:
+            PORT: ${PORT:-8080}
+            LOG_LEVEL: ${LOG_LEVEL:-DEBUG}
+            DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+        ports:
+            - ${PORT:-8080}:${PORT:-8080}
+        depends_on:
+            db:
+                condition: service_healthy
+        profiles: [""]
+
+    # PostgreSQL Database
     db:
         image: postgres:16.1-alpine3.19
         restart: always
@@ -8,11 +24,36 @@ services:
             - "5432:5432"
         volumes:
             - ./db-data:/var/lib/postgresql/data
-        networks:
-            - db
         healthcheck:
             test: "pg_isready -U postgres"
+            start_period: 2s   # wait 2s to let db get ready for accepting connections
+            start_interval: 2s # start first healthcheck after 2s
+        profiles: ["", "db-only", "latest", "latest-dev"]
 
-networks:
-    db:
-        driver: bridge
+    # Use the published backend with the 'latest' tag
+    backend-latest:
+        image: ghcr.io/se-uulm/snowballr-backend:latest
+        environment:
+            PORT: ${PORT:-8080}
+            LOG_LEVEL: ${LOG_LEVEL:-DEBUG}
+            DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+        ports:
+            - ${PORT:-8080}:${PORT:-8080}
+        depends_on:
+            db:
+                condition: service_healthy
+        profiles: ["latest"]
+
+    # Use the published backend with the 'latest-dev' tag
+    backend-latest-dev:
+        image: ghcr.io/se-uulm/snowballr-backend:latest-dev
+        environment:
+            PORT: ${PORT:-8080}
+            LOG_LEVEL: ${LOG_LEVEL:-DEBUG}
+            DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+        ports:
+            - ${PORT:-8080}:${PORT:-8080}
+        depends_on:
+            db:
+                condition: service_healthy
+        profiles: ["latest-dev"]
