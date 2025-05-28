@@ -43,11 +43,14 @@ dependencies {
 
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.assertj.core)
+    testImplementation(libs.assertj.arrow.core)
     testImplementation(libs.h2)
     testImplementation(libs.mockk)
 
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)
+
+    implementation(libs.arrow.core)
 
     implementation(libs.grpc.kotlin)
     implementation(libs.grpc.protobuf)
@@ -92,6 +95,7 @@ kover {
                     "se.uulm.snowballr.backend.db", // production database
                     "se.uulm.snowballr.backend.env", // environment variables
                     "se.uulm.snowballr.backend.grpc", // grpc server implementation
+                    "se.uulm.snowballr.backend.model", // model classes, no logic
                 )
             }
         }
