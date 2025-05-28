@@ -40,6 +40,7 @@ class SnowballRServer(
         ServerBuilder
             .forPort(port)
             .intercept(loggingInterceptor)
+            .intercept(validationInterceptor)
             .addService(SnowballRService())
             .build()
 
