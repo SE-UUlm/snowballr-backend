@@ -12,6 +12,8 @@ dotenv-version = "6.5.1"
 assertj-version = "3.27.3"
 h2-version = "2.3.232"
 mockk-version = "1.14.2"
+arrow-version = "2.0.1"
+assertj-arrow-core-version = "1.2.0"
 detekt-version = "1.23.8"
 kotlinx-kover-version = "0.9.1"
 kotlinter-version = "5.1.0"
@@ -49,6 +51,10 @@ assertj-core = { module = "org.assertj:assertj-core", version.ref = "assertj-ver
 h2 = { module = "com.h2database:h2", version.ref = "h2-version" }
 
 mockk = { module = "io.mockk:mockk", version.ref = "mockk-version" }
+
+arrow-core = { module = "io.arrow-kt:arrow-core", version.ref = "arrow-version" }
+
+assertj-arrow-core = { module = "in.rcard:assertj-arrow-core", version.ref = "assertj-arrow-core-version" }
 
 grpc-kotlin = { module = "io.grpc:grpc-kotlin-stub", version.ref = "grpc-kotlin-version" }
 grpc-protobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc-protobuf-version" }

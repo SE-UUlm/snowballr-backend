@@ -39,8 +39,9 @@ class SnowballRServer(
     private val server: Server =
         ServerBuilder
             .forPort(port)
-            .addService(SnowballRService())
             .intercept(loggingInterceptor)
+            .intercept(validationInterceptor)
+            .addService(SnowballRService())
             .build()
 
     /**
