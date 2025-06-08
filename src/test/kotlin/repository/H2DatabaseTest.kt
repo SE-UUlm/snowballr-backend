@@ -32,6 +32,8 @@ import java.sql.Connection
  *
  * Example usage:
  * ```kotlin
+ * @ExperimentalCoroutinesApi
+ * @DelicateCoroutinesApi
  * class ExampleTest : H2DatabaseTest(arrayOf(ExampleTable)) {
  *     private val repo = ExampleTableRepo(db)
  *
