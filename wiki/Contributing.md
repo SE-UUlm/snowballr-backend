@@ -69,7 +69,8 @@ Follow these few conventions when creating or modifying a table:
     * this only stores the ordinal value
     * as gRPC enforces unique enum ordinals, even if some are removed, we can ensure that this doesn't mess up our
       migration
-    * ensure ordinal consistency for non-gRPC enums using hard-coded tests
+    * ensure ordinal consistency for non-gRPC enums using hard-coded tests (see
+      [EnumOrdinalTest.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/test/kotlin/model/EnumOrdinalTest.kt))
 * use `uniqueIndex()` for [natural keys](https://en.wikipedia.org/wiki/Natural_key), such as the users' email
 * if there's a foreign key, provide reference options, such as `RESTRICT` or `CASCADE` for `onDelete` and `onUpdate`and
   provide a comment which describes why the reference option was chosen
