@@ -23,7 +23,7 @@ import java.time.OffsetDateTime
  * - [deletedAt]: Represents the timestamp of when the user was last deleted as a [OffsetDateTime].
  */
 object UserTable : UUIDTable("user") {
-    val email = text("email")
+    val email = text("email").uniqueIndex()
     val firstName = text("first_name")
     val lastName = text("last_name")
 

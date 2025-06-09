@@ -28,6 +28,8 @@ import se.uulm.snowballr.backend.service.criterion.CreateCriterionTest
  *
  * Example usage:
  * ```kotlin
+ * @ExperimentalCoroutinesApi
+ * @DelicateCoroutinesApi
  * class CreateExampleTest : MainServiceTest() {
  *     @Test
  *     fun `When an example is correctly created, then no exception is thrown`() =
