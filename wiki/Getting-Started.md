@@ -10,7 +10,14 @@ docker compose up
 Be sure to have the environment variables set or create a `.env` file in the root directory of the project (see
 [below](#environment-variables)).
 
-TODO: more information about the Docker setup.
+We provide several docker compose profiles for different setups.
+
+- \<no-arguments\>: Starts the backend together with the database.
+- `db-only`: Only starts the database (for local development)
+- `latest`: Starts the published backend image with the 'latest' tag together with the database.
+- `latest-dev`: Starts the published backend image with the 'latest-dev' tag together with the database.
+
+Use `docker compose --profile <profile> up` to start the frontend with the desired profile.
 
 ## Environment Variables
 
@@ -50,6 +57,8 @@ The JAR file can be executed with the following command:
 ```bash
 java -jar build/libs/snowballr-backend-<version>.jar
 ```
+
+Remember to provide the environment variables either via a `.env` file or by writing them in front of the command.
 
 If you want to run the project in an IDE, you can import it as a Gradle project. The Gradle wrapper is included, so you
 can run Gradle commands directly from the project root directory. For example, to run the server, you can use:
