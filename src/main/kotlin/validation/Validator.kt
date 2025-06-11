@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.validation
 import arrow.core.Either
 import arrow.core.EitherNel
 import arrow.core.nonEmptyListOf
+import io.grpc.health.v1.HealthCheckRequest
 import se.uulm.snowballr.backend.model.UnknownRequest
 import se.uulm.snowballr.backend.model.ValidationIssue
 import snowballr.CriterionOuterClass
@@ -22,6 +23,8 @@ import snowballr.ProjectOuterClass
  */
 fun <T> validateRequest(request: T): EitherNel<ValidationIssue, Unit> =
     when (request) {
+        // Healthcheck
+        is HealthCheckRequest -> Either.Right(Unit)
         // Project
         is ProjectOuterClass.Project.Create -> ProjectValidator.validateCreateRequest(request)
         // Criterion

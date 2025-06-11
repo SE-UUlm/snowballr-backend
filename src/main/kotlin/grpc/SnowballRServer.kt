@@ -3,6 +3,8 @@ package se.uulm.snowballr.backend.grpc
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.grpc.Server
 import io.grpc.ServerBuilder
+import io.grpc.health.v1.HealthCheckResponse.ServingStatus
+import io.grpc.protobuf.services.HealthStatusManager
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import se.uulm.snowballr.backend.service.IMainService
@@ -17,8 +19,19 @@ import snowballr.ReviewOuterClass
 import snowballr.SnowballRGrpcKt
 import snowballr.UserOuterClass
 import snowballr.UserSettingsOuterClass
+import java.util.concurrent.TimeUnit
 
 private val logger = KotlinLogging.logger {}
+
+/**
+ * Name of the main gRPC service.
+ */
+private const val SERVICE_NAME = "snowballr.SnowballR"
+
+/**
+ * The maximum time to wait for the termination of the server in seconds.
+ */
+private const val TERMINATION_TIMEOUT_SECONDS = 30L
 
 /**
  * Represents a gRPC server to handle requests and responses for the SnowballR application.
@@ -28,6 +41,16 @@ private val logger = KotlinLogging.logger {}
 class SnowballRServer(
     private val port: Int,
 ) {
+    /**
+     * Manages the health status of the gRPC server.
+     *
+     * This manager is responsible for tracking and updating the health status
+     * of the server to ensure proper monitoring and diagnostics. It interacts
+     * with gRPC health checks to report the server's state, such as
+     * [ServingStatus.SERVING] and [ServingStatus.NOT_SERVING].
+     */
+    private val healthManager: HealthStatusManager = HealthStatusManager()
+
     /**
      * Represents the gRPC server instance used for handling incoming requests.
      *
@@ -42,6 +65,7 @@ class SnowballRServer(
             .intercept(loggingInterceptor)
             .intercept(validationInterceptor)
             .addService(SnowballRService())
+            .addService(healthManager.healthService)
             .build()
 
     /**
@@ -58,10 +82,13 @@ class SnowballRServer(
         Runtime.getRuntime().addShutdownHook(
             Thread {
                 logger.info { "*** shutting down gRPC server since JVM is shutting down" }
+                healthManager.enterTerminalState()
                 this@SnowballRServer.stop()
                 logger.info { "*** server shut down" }
             },
         )
+
+        healthManager.setStatus(SERVICE_NAME, ServingStatus.SERVING)
     }
 
     /**
@@ -72,7 +99,7 @@ class SnowballRServer(
      * during application shutdown or in a dedicated cleanup process.
      */
     fun stop() {
-        server.shutdown()
+        server.shutdown().awaitTermination(TERMINATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
     }
 
     /**

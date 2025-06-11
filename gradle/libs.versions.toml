@@ -19,7 +19,7 @@ kotlinx-kover-version = "0.9.1"
 kotlinter-version = "5.1.0"
 protobuf-version = "0.9.4"
 grpc-kotlin-version = "1.4.3"
-grpc-protobuf-version = "1.73.0"
+grpc-version = "1.73.0"
 protobuf-kotlin-version = "4.31.1"
 shadow-jar-version = "8.3.6"
 
@@ -58,8 +58,9 @@ arrow-core = { module = "io.arrow-kt:arrow-core", version.ref = "arrow-version" 
 assertj-arrow-core = { module = "in.rcard:assertj-arrow-core", version.ref = "assertj-arrow-core-version" }
 
 grpc-kotlin = { module = "io.grpc:grpc-kotlin-stub", version.ref = "grpc-kotlin-version" }
-grpc-protobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc-protobuf-version" }
-grpc-netty = { module = "io.grpc:grpc-netty-shaded", version.ref = "grpc-protobuf-version" }
+grpc-protobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc-version" }
+grpc-services = { module = "io.grpc:grpc-services", version.ref = "grpc-version" }
+grpc-netty = { module = "io.grpc:grpc-netty-shaded", version.ref = "grpc-version" }
 protobuf-kotlin = { module = "com.google.protobuf:protobuf-kotlin", version.ref = "protobuf-kotlin-version" }
 
 [plugins]
