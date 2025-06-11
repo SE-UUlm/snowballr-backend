@@ -31,7 +31,7 @@ jobs:
                   java_distribution: ${{ env.java_distribution }}
 
             - name: Build the jar file
-              run: ./gradlew jar --stacktrace
+              run: ./gradlew shadowJar --stacktrace
 
             - name: Upload jar file
               uses: actions/upload-artifact@v4

@@ -15,7 +15,7 @@ COPY api/proto api/proto
 
 # Grant execution rights to the Gradle wrapper script and build the jar file
 RUN chmod +x gradlew \
-    && ./gradlew jar --no-daemon --stacktrace
+    && ./gradlew shadowJar --no-daemon --stacktrace
 
 # Stage 2: Run the application
 FROM eclipse-temurin:21-jre-alpine-3.21 AS final

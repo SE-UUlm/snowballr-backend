@@ -10,6 +10,7 @@ plugins {
     alias(libs.plugins.kotlinx.kover)
     alias(libs.plugins.kotlinter)
     alias(libs.plugins.protobuf)
+    alias(libs.plugins.shadow.jar)
     application
 }
 
@@ -63,14 +64,8 @@ kotlin {
     jvmToolchain(21)
 }
 
-tasks.withType<Jar> {
-    manifest {
-        attributes["Main-Class"] = "se.uulm.snowballr.backend.MainKt"
-    }
-
-    // Include all runtime dependencies in the JAR file
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
+tasks.shadowJar {
+    archiveClassifier.set("") // omit the "all" suffix
 }
 
 tasks.test {

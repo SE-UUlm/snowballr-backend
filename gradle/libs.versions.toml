@@ -21,6 +21,7 @@ protobuf-version = "0.9.4"
 grpc-kotlin-version = "1.4.3"
 grpc-protobuf-version = "1.73.0"
 protobuf-kotlin-version = "4.31.1"
+shadow-jar-version = "8.3.6"
 
 [libraries]
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines-version" }
@@ -67,3 +68,4 @@ detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt-version" }
 kotlinx-kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kotlinx-kover-version" }
 kotlinter = { id = "org.jmailen.kotlinter", version.ref = "kotlinter-version" }
 protobuf = { id = "com.google.protobuf", version.ref = "protobuf-version" }
+shadow-jar = { id = "com.gradleup.shadow", version.ref = "shadow-jar-version" }

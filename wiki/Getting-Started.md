@@ -45,7 +45,7 @@ To build the project from source, run the following commands:
 git clone git@github.com:SE-UUlm/snowballr-backend.git
 cd snowballr-backend
 git submodule update --init --recursive
-./gradlew jar
+./gradlew shadowJar
 ```
 
 The built JAR file can be found in the `build/libs` directory, named `snowballr-backend-<version>.jar`.
