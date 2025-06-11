@@ -33,6 +33,25 @@ services:
                 condition: service_healthy
         networks:
             - db_network
+            - grpc_network
+        profiles: [""]
+
+    proxy-local:
+        build:
+            context: .
+            dockerfile: Dockerfile.proxy
+        ports:
+            - "${WEB_PORT:-8081}:${WEB_PORT:-8081}"
+        command:
+            # Point to the backend service name within the Docker network
+            - --backend_addr=backend-local:${PORT:-8080}
+            - --allow_all_origins # Crucial for local dev where frontend is on different origin
+            - --run_tls_server=false # Don't require TLS
+            - --server_http_debug_port=${WEB_PORT:-8081} # Proxy listens on this port inside the container
+        depends_on:
+            - backend-local
+        networks:
+            - grpc_network
         profiles: [""]
 
     # Use the published backend with the specified tag
@@ -50,8 +69,29 @@ services:
                 condition: service_healthy
         networks:
             - db_network
+            - grpc_network
+        profiles: ["registry"]
+
+    proxy-registry:
+        build:
+            context: .
+            dockerfile: Dockerfile.proxy
+        ports:
+            - "${WEB_PORT:-8081}:${WEB_PORT:-8081}"
+        command:
+            # Point to the backend service name within the Docker network
+            - --backend_addr=backend-registry:${PORT:-8080}
+            - --allow_all_origins # Crucial for local dev where frontend is on different origin
+            - --run_tls_server=false # Don't require TLS
+            - --server_http_debug_port=${WEB_PORT:-8081} # Proxy listens on this port inside the container
+        depends_on:
+            - backend-registry
+        networks:
+            - grpc_network
         profiles: ["registry"]
 
 networks:
     db_network:
+        driver: bridge
+    grpc_network:
         driver: bridge
