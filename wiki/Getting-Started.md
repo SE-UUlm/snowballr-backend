@@ -12,12 +12,15 @@ Be sure to have the environment variables set or create a `.env` file in the roo
 
 We provide several docker compose profiles for different setups.
 
-- \<no-arguments\>: Starts the backend together with the database.
+- \<no-arguments\>: Starts the backend, its proxy and the database.
 - `db-only`: Only starts the database (for local development)
-- `registry`: Starts the published backend image with the specified tag together with the database (use the BACKEND_TAG
+- `registry`: Starts the published backend image with the specified tag, its proxy and the database (use the BACKEND_TAG
   env variable).
 
 Use `docker compose --profile <profile> up` to start the frontend with the desired profile.
+
+The proxy is used to enable gRPC-Web support for the backend. It listens on the port specified by the `WEB_PORT`
+environment variable (default: `8081`).
 
 ## Environment Variables
 
@@ -33,10 +36,13 @@ The environment variables are as follows:
 | Variable            |      Required      |   Default    | Description                                                                      |
 |---------------------|:------------------:|:------------:|----------------------------------------------------------------------------------|
 | `PORT`              | :white_check_mark: |      -       | The port where the backend is served                                             |
+| `WEB_PORT`          |        :x:*        |     8081     | The port where the proxy is served (used for gRPC-Web)                           |
 | `LOG_LEVEL`         |        :x:         |   `DEBUG`    | The log level to use. One of `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`, or `OFF` |
 | `DATABASE_PASSWORD` | :white_check_mark: |      -       | Password for the database e.g. `postgres_password`                               |
 | `DATABASE_HOST`     |        :x:         | `localhost`  | Hostname of database connection                                                  |
-| `BACKEND_TAG`       |        :x:         | `latest-dev` | Tag of registry backend image to use for `registry` docker compose profile       |
+| `BACKEND_TAG`       |        :x:*        | `latest-dev` | Tag of registry backend image to use for `registry` docker compose profile       |
+
+\* only used when using the docker compose profiles.
 
 ## Building from Source
 
