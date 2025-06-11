@@ -1,20 +1,4 @@
 services:
-    # Use local backend
-    backend:
-        build:
-            context: .
-        environment:
-            PORT: ${PORT:-8080}
-            LOG_LEVEL: ${LOG_LEVEL:-DEBUG}
-            DATABASE_PASSWORD: ${DATABASE_PASSWORD}
-            DATABASE_HOST: db # use db service as db host
-        ports:
-            - ${PORT:-8080}:${PORT:-8080}
-        depends_on:
-            db:
-                condition: service_healthy
-        profiles: [""]
-
     # PostgreSQL Database
     db:
         image: postgres:16.1-alpine3.19
@@ -27,13 +11,16 @@ services:
             - ./db-data:/var/lib/postgresql/data
         healthcheck:
             test: "pg_isready -U postgres"
-            start_period: 2s   # wait 2s to let db get ready for accepting connections
+            start_period: 2s # wait 2s to let db get ready for accepting connections
             start_interval: 2s # start first healthcheck after 2s
-        profiles: ["", "db-only", "latest", "latest-dev"]
+        networks:
+            - db_network
+        profiles: ["", "db-only", "registry"]
 
-    # Use the published backend with the 'latest' tag
-    backend-latest:
-        image: ghcr.io/se-uulm/snowballr-backend:latest
+    # Use local backend
+    backend-local:
+        build:
+            context: .
         environment:
             PORT: ${PORT:-8080}
             LOG_LEVEL: ${LOG_LEVEL:-DEBUG}
@@ -44,11 +31,13 @@ services:
         depends_on:
             db:
                 condition: service_healthy
-        profiles: ["latest"]
+        networks:
+            - db_network
+        profiles: [""]
 
-    # Use the published backend with the 'latest-dev' tag
-    backend-latest-dev:
-        image: ghcr.io/se-uulm/snowballr-backend:latest-dev
+    # Use the published backend with the specified tag
+    backend-registry:
+        image: ghcr.io/se-uulm/snowballr-backend:${BACKEND_TAG:-latest-dev}
         environment:
             PORT: ${PORT:-8080}
             LOG_LEVEL: ${LOG_LEVEL:-DEBUG}
@@ -59,4 +48,10 @@ services:
         depends_on:
             db:
                 condition: service_healthy
-        profiles: ["latest-dev"]
+        networks:
+            - db_network
+        profiles: ["registry"]
+
+networks:
+    db_network:
+        driver: bridge

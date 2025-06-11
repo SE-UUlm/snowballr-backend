@@ -14,8 +14,8 @@ We provide several docker compose profiles for different setups.
 
 - \<no-arguments\>: Starts the backend together with the database.
 - `db-only`: Only starts the database (for local development)
-- `latest`: Starts the published backend image with the 'latest' tag together with the database.
-- `latest-dev`: Starts the published backend image with the 'latest-dev' tag together with the database.
+- `registry`: Starts the published backend image with the specified tag together with the database (use the BACKEND_TAG
+  env variable).
 
 Use `docker compose --profile <profile> up` to start the frontend with the desired profile.
 
@@ -30,12 +30,13 @@ cp .env.example .env
 
 The environment variables are as follows:
 
-| Variable            |      Required      |   Default   | Description                                                                      |
-|---------------------|:------------------:|:-----------:|----------------------------------------------------------------------------------|
-| `PORT`              | :white_check_mark: |      -      | The port where the backend is served                                             |
-| `LOG_LEVEL`         |        :x:         |   `DEBUG`   | The log level to use. One of `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`, or `OFF` |
-| `DATABASE_PASSWORD` | :white_check_mark: |      -      | Password for the database e.g. `postgres_password`                               |
-| `DATABASE_HOST`     |        :x:         | `localhost` | Hostname of database connection                                                  |
+| Variable            |      Required      |   Default    | Description                                                                      |
+|---------------------|:------------------:|:------------:|----------------------------------------------------------------------------------|
+| `PORT`              | :white_check_mark: |      -       | The port where the backend is served                                             |
+| `LOG_LEVEL`         |        :x:         |   `DEBUG`    | The log level to use. One of `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`, or `OFF` |
+| `DATABASE_PASSWORD` | :white_check_mark: |      -       | Password for the database e.g. `postgres_password`                               |
+| `DATABASE_HOST`     |        :x:         | `localhost`  | Hostname of database connection                                                  |
+| `BACKEND_TAG`       |        :x:         | `latest-dev` | Tag of registry backend image to use for `registry` docker compose profile       |
 
 ## Building from Source
 
