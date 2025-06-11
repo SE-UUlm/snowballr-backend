@@ -12,7 +12,6 @@ env:
     java_distribution: ${{ vars.JAVA_DISTRIBUTION }}
     REGISTRY: ghcr.io
     IMAGE_NAME: ${{github.repository}}
-    CONTAINER_NAME: ${{ github.event.repository.name }} # only repository name
 
 jobs:
     build-jar:

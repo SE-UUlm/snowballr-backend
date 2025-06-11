@@ -230,7 +230,7 @@ class, which provides several predefined conditions that might be used more freq
 
 ## Testing
 
-For information about our testing setup, see [Testing](https://github.com/SE-UUlm/snowballr-frontend/wiki/Testing).
+For information about our testing setup, see [Testing](https://github.com/SE-UUlm/snowballr-backend/wiki/Testing).
 
 ## Miscellaneous Commands
 
