@@ -11,7 +11,7 @@ services:
             - ./db-data:/var/lib/postgresql/data
         healthcheck:
             test: "pg_isready -U postgres"
-            start_period: 2s # wait 2s to let db get ready for accepting connections
+            start_period: 4s # wait 4s to let db get ready for accepting connections
             start_interval: 2s # start first healthcheck after 2s
         networks:
             - db_network
@@ -31,6 +31,9 @@ services:
         depends_on:
             db:
                 condition: service_healthy
+        healthcheck:
+            start_period: 4s # wait 4s to let backend get ready for accepting connections
+            start_interval: 2s # start first healthcheck after 2s
         networks:
             - db_network
             - grpc_network
@@ -49,7 +52,8 @@ services:
             - --run_tls_server=false # Don't require TLS
             - --server_http_debug_port=${WEB_PORT:-8081} # Proxy listens on this port inside the container
         depends_on:
-            - backend-local
+            backend-local:
+                condition: service_healthy
         networks:
             - grpc_network
         profiles: [""]
@@ -67,6 +71,9 @@ services:
         depends_on:
             db:
                 condition: service_healthy
+        healthcheck:
+            start_period: 4s # wait 4s to let backend get ready for accepting connections
+            start_interval: 2s # start first healthcheck after 2s
         networks:
             - db_network
             - grpc_network
@@ -85,7 +92,8 @@ services:
             - --run_tls_server=false # Don't require TLS
             - --server_http_debug_port=${WEB_PORT:-8081} # Proxy listens on this port inside the container
         depends_on:
-            - backend-registry
+            backend-registry:
+                condition: service_healthy
         networks:
             - grpc_network
         profiles: ["registry"]
