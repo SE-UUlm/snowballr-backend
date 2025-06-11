@@ -13,6 +13,9 @@ On this page, we explain how to contribute to the SnowballR backend project. We 
     * [Service](#service)
     * [Input Validation](#input-validation)
   * [Testing](#testing)
+  * [Miscellaneous Commands](#miscellaneous-commands)
+    * [Formatting](#formatting)
+    * [Linting](#linting)
 <!-- TOC -->
 <!-- markdownlint-enable MD007 -->
 
@@ -227,4 +230,22 @@ class, which provides several predefined conditions that might be used more freq
 
 ## Testing
 
-For information about our testing setup, see [Testing](https://github.com/SE-UUlm/snowballr-frontend/wiki/Testing).
+For information about our testing setup, see [Testing](https://github.com/SE-UUlm/snowballr-backend/wiki/Testing).
+
+## Miscellaneous Commands
+
+### Formatting
+
+```bash
+# Format files
+./gradlew formatKotlin
+
+# Verify formatting
+./gradlew lintKotlin
+```
+
+### Linting
+
+```bash
+./gradlew detekt
+```

@@ -4,6 +4,7 @@ import io.github.cdimascio.dotenv.dotenv
 
 // Default values
 const val DEFAULT_LOG_LEVEL = "DEBUG"
+const val DEFAULT_DATABASE_HOST = "localhost"
 
 // Http
 private const val PORT = "PORT"
@@ -13,6 +14,7 @@ private const val LOG_LEVEL = "LOG_LEVEL"
 
 // Database
 private const val DATABASE_PASSWORD = "DATABASE_PASSWORD"
+private const val DATABASE_HOST = "DATABASE_HOST"
 
 private val envService = EnvService()
 
@@ -38,6 +40,7 @@ data class Env(
 
     data class Database(
         val password: String = envService[DATABASE_PASSWORD],
+        val host: String = envService.getOrDefault(DATABASE_HOST, DEFAULT_DATABASE_HOST),
     )
 }
 

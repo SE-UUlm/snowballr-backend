@@ -10,6 +10,7 @@ plugins {
     alias(libs.plugins.kotlinx.kover)
     alias(libs.plugins.kotlinter)
     alias(libs.plugins.protobuf)
+    alias(libs.plugins.shadow.jar)
     application
 }
 
@@ -63,10 +64,8 @@ kotlin {
     jvmToolchain(21)
 }
 
-tasks.withType<Jar> {
-    manifest {
-        attributes["Main-Class"] = "se.uulm.snowballr.backend.MainKt"
-    }
+tasks.shadowJar {
+    archiveClassifier.set("") // omit the "all" suffix
 }
 
 tasks.test {
@@ -153,6 +152,7 @@ detekt {
     config.from("detekt.yml")
 }
 
+// https://github.com/grpc/grpc-kotlin/tree/master/compiler
 protobuf {
     protoc {
         artifact = "com.google.protobuf:protoc:${libs.versions.protobuf.kotlin.version.get()}"

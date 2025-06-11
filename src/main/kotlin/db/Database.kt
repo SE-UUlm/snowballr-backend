@@ -75,6 +75,7 @@ class Database(
                 schema = SCHEMA_NAME
                 transactionIsolation = ISOLATION_LEVEL.toString()
                 dataSourceClassName = "org.postgresql.ds.PGSimpleDataSource"
+                addDataSourceProperty("serverName", data.host)
                 validate()
             }
         return HikariDataSource(config)

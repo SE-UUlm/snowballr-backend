@@ -12,15 +12,15 @@ import se.uulm.snowballr.backend.grpc.SnowballRServer
 private val logger = KotlinLogging.logger {}
 
 fun main() {
-    // Start Dependency Injection
-    startKoin {
-        modules(snowballRModule)
-    }
-
     val env = Env()
 
     // Configure Logger
     configureRootLogger(env.miscellaneous.logLevel)
+
+    // Start Dependency Injection
+    startKoin {
+        modules(snowballRModule)
+    }
 
     // Create and run the server
     val server = SnowballRServer(env.http.port)

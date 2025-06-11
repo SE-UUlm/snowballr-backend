@@ -22,12 +22,11 @@ jobs:
               with:
                   submodules: "recursive"
 
-            - name: Setup Java
-              uses: actions/setup-java@v4
+            - name: Setup
+              uses: ./.github/workflows/setup/
               with:
-                  distribution: ${{ env.java_distribution }}
-                  java-version: ${{ env.java_version }}
-                  cache: "gradle"
+                  java_version: ${{ env.java_version }}
+                  java_distribution: ${{ env.java_distribution }}
 
             - name: Check formatting
               run: ./gradlew lintKotlin
@@ -41,12 +40,11 @@ jobs:
               with:
                   submodules: "recursive"
 
-            - name: Setup Java
-              uses: actions/setup-java@v4
+            - name: Setup
+              uses: ./.github/workflows/setup/
               with:
-                  distribution: ${{ env.java_distribution }}
-                  java-version: ${{ env.java_version }}
-                  cache: "gradle"
+                  java_version: ${{ env.java_version }}
+                  java_distribution: ${{ env.java_distribution }}
 
             - name: Check linting
               run: ./gradlew detekt
@@ -63,12 +61,11 @@ jobs:
               with:
                   submodules: "recursive"
 
-            - name: Setup Java
-              uses: actions/setup-java@v4
+            - name: Setup
+              uses: ./.github/workflows/setup/
               with:
-                  distribution: ${{ env.java_distribution }}
-                  java-version: ${{ env.java_version }}
-                  cache: "gradle"
+                  java_version: ${{ env.java_version }}
+                  java_distribution: ${{ env.java_distribution }}
 
             - name: Run tests and collect coverage
               run: |
