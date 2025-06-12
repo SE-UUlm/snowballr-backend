@@ -1,12 +1,12 @@
 package se.uulm.snowballr.backend.repository
 
-import io.grpc.StatusException
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import se.uulm.snowballr.backend.model.SnowballRException
 import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.testCoroutine
@@ -67,7 +67,7 @@ class CriterionTableRepoTest : H2DatabaseTest(arrayOf(CriterionTable, ProjectTab
                     .setProjectId("0")
                     .build()
 
-            assertThrows<StatusException> { repo.createCriterion(request) }
+            assertThrows<SnowballRException.NotFoundException.Project> { repo.createCriterion(request) }
         }
 
         @Test

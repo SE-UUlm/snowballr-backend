@@ -1,11 +1,10 @@
 package se.uulm.snowballr.backend.repository
 
-import io.grpc.Status
-import io.grpc.StatusException
 import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
+import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.CriterionTable.toCriterion
 import se.uulm.snowballr.backend.table.ProjectTable
@@ -39,7 +38,8 @@ class CriterionTableRepo(
     override suspend fun createCriterion(request: CriterionOuterClass.Criterion.Create): CriterionOuterClass.Criterion =
         db.dbQuery {
             // Get project reference
-            val projectEntityId = ProjectTable.getEntityId(request.projectId) ?: throw StatusException(Status.NOT_FOUND)
+            val projectEntityId =
+                ProjectTable.getEntityId(request.projectId) ?: throw NotFoundException.Project(request.projectId)
 
             // Create criterion
             val criterionId =

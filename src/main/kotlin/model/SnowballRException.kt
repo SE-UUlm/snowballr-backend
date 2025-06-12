@@ -1,0 +1,36 @@
+package se.uulm.snowballr.backend.model
+
+/**
+ * Base class for all exceptions in the SnowballR application.
+ *
+ * Used to encapsulate specific error details and provide a consistent exception structure.
+ * Can be extended to create more detailed exceptions specific to various error scenarios.
+ *
+ * @constructor Creates an instance of [SnowballRException] with an optional message and cause.
+ * @param message Detailed message describing the reason for the exception, or null if not provided.
+ * @param cause The cause of the exception, which can be another exception, or null if not provided.
+ */
+sealed class SnowballRException(
+    message: String? = null,
+    cause: Throwable? = null,
+) : RuntimeException(message, cause) {
+    /**
+     * Represents a specific type of exception that occurs when an entity cannot be found.
+     *
+     * This exception is intended to provide a clear and structured way to handle
+     * scenarios where a particular entity, identified by its name and ID, is not found.
+     * It serves as a base class to define more specific "not found" exceptions for various entities.
+     *
+     * @constructor Creates a [NotFoundException] with the name and ID of the missing entity.
+     * @param entityName The name of the entity that could not be found.
+     * @param entityId The unique identifier of the missing entity.
+     */
+    sealed class NotFoundException(
+        entityName: String,
+        entityId: String,
+    ) : SnowballRException("$entityName #$entityId not found.") {
+        class Project(
+            projectId: String,
+        ) : NotFoundException("Project", projectId)
+    }
+}

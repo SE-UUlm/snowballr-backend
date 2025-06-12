@@ -76,7 +76,8 @@ Follow these few conventions when creating or modifying a table:
       [EnumOrdinalTest.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/test/kotlin/model/EnumOrdinalTest.kt))
 * use `uniqueIndex()` for [natural keys](https://en.wikipedia.org/wiki/Natural_key), such as the users' email
 * if there's a foreign key, provide reference options, such as `RESTRICT` or `CASCADE` for `onDelete` and `onUpdate`and
-  provide a comment which describes why the reference option was chosen
+  provide a comment which describes why the reference option was chosen (read more in
+  [this post](https://stackoverflow.com/questions/6720050/foreign-key-constraints-when-to-use-on-update-and-on-delete/6720458#6720458))
 
 As each entity is represented by a class in this project, always provide a mapping method:
 
