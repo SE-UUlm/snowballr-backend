@@ -183,6 +183,8 @@ private class NamingConventions {
             .resideInAPackage("$BASE_PACKAGE.table..")
             .should()
             .haveSimpleNameEndingWith("Table")
+            .orShould(haveSimpleNameEndingWith("ColumnHelperKt")) // exception
+            .orShould(haveSimpleName("TableHelperKt")) // exception
             .because("All tables should have the 'Table' suffix")
             .check(classes)
     }
