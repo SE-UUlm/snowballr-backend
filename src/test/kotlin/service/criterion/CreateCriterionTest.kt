@@ -19,7 +19,7 @@ internal class CreateCriterionTest : MainServiceTest() {
             val request = CriterionOuterClass.Criterion.Create.getDefaultInstance()
             val criterion = CriterionOuterClass.Criterion.getDefaultInstance()
 
-            coEvery { criterionRepoMock.createCriterion(any()) } returns criterion
+            coEvery { criterionRepoMock.createCriterion(any(), any()) } returns criterion
 
             assertDoesNotThrow { mainService.createCriterion(request) }
         }
@@ -29,7 +29,7 @@ internal class CreateCriterionTest : MainServiceTest() {
         testCoroutine {
             val request = CriterionOuterClass.Criterion.Create.getDefaultInstance()
 
-            coEvery { criterionRepoMock.createCriterion(any()) } throws Exception("Failed to create criterion")
+            coEvery { criterionRepoMock.createCriterion(any(), any()) } throws Exception("Failed to create criterion")
 
             assertThrows<Exception> { mainService.createCriterion(request) }
         }

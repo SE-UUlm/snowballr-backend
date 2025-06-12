@@ -19,7 +19,7 @@ internal class CreateProjectTest : MainServiceTest() {
             val request = ProjectOuterClass.Project.Create.getDefaultInstance()
             val project = ProjectOuterClass.Project.getDefaultInstance()
 
-            coEvery { projectRepoMock.createProject(any()) } returns project
+            coEvery { projectRepoMock.createProject(any(), any()) } returns project
 
             assertDoesNotThrow { mainService.createProject(request) }
         }
@@ -29,7 +29,7 @@ internal class CreateProjectTest : MainServiceTest() {
         testCoroutine {
             val request = ProjectOuterClass.Project.Create.getDefaultInstance()
 
-            coEvery { projectRepoMock.createProject(any()) } throws Exception("Failed to create project")
+            coEvery { projectRepoMock.createProject(any(), any()) } throws Exception("Failed to create project")
 
             assertThrows<Exception> { mainService.createProject(request) }
         }

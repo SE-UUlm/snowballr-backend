@@ -5,8 +5,11 @@ import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.FetcherApi
+import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.ProjectTable.toProject
+import se.uulm.snowballr.backend.table.UserTable
+import se.uulm.snowballr.backend.table.getEntityId
 import snowballr.ProjectOuterClass
 
 /**
@@ -17,7 +20,10 @@ import snowballr.ProjectOuterClass
  * for creating and managing projects can remain decoupled from the specifics of the database layer.
  */
 interface IProjectTableRepo {
-    suspend fun createProject(request: ProjectOuterClass.Project.Create): ProjectOuterClass.Project
+    suspend fun createProject(
+        request: ProjectOuterClass.Project.Create,
+        userId: String,
+    ): ProjectOuterClass.Project
 }
 
 /**
@@ -32,8 +38,14 @@ interface IProjectTableRepo {
 class ProjectTableRepo(
     private val db: IDatabase,
 ) : IProjectTableRepo {
-    override suspend fun createProject(request: ProjectOuterClass.Project.Create): ProjectOuterClass.Project =
+    override suspend fun createProject(
+        request: ProjectOuterClass.Project.Create,
+        userId: String,
+    ): ProjectOuterClass.Project =
         db.dbQuery {
+            // Get user reference
+            val userEntityId = UserTable.getEntityId(userId) ?: throw NotFoundException.User(userId)
+
             // Create project
             val projectId =
                 ProjectTable
@@ -49,6 +61,7 @@ class ProjectTableRepo(
                         it[reviewDecisionMatrixBinary] =
                             ProjectOuterClass.ReviewDecisionMatrix.getDefaultInstance().toByteArray()
                         it[fetcherApis] = FetcherApi.entries.toList()
+                        it[createdBy] = userEntityId
                     }.value
 
             // Return created project

@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.service
 
+import se.uulm.snowballr.backend.db.dummyUserId
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import snowballr.CriterionOuterClass
 
@@ -21,5 +22,6 @@ class CriterionService(
     private val repo: ICriterionTableRepo,
 ) : ICriterionService {
     override suspend fun createCriterion(request: CriterionOuterClass.Criterion.Create): CriterionOuterClass.Criterion =
-        repo.createCriterion(request)
+        // TODO: remove dummy user when user management is implemented
+        repo.createCriterion(request, dummyUserId!!)
 }

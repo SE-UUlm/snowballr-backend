@@ -6,17 +6,18 @@ import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import se.uulm.snowballr.backend.model.SnowballRException
+import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.testCoroutine
 import se.uulm.snowballr.backend.utils.GrpcEnumSourceTest
 import snowballr.CriterionOuterClass
 import snowballr.ProjectOuterClass
+import java.util.UUID
 
 @ExperimentalCoroutinesApi
 @DelicateCoroutinesApi
-class CriterionTableRepoTest : H2DatabaseTest(arrayOf(CriterionTable, ProjectTable)) {
+class CriterionTableRepoTest : H2DatabaseTest(arrayOf(CriterionTable, ProjectTable), true) {
     private val repo = CriterionTableRepo(db)
     private val projectRepo = ProjectTableRepo(db)
 
@@ -25,7 +26,7 @@ class CriterionTableRepoTest : H2DatabaseTest(arrayOf(CriterionTable, ProjectTab
             ProjectOuterClass.Project.Create
                 .newBuilder()
                 .build()
-        return projectRepo.createProject(request)
+        return projectRepo.createProject(request, testUserId)
     }
 
     @Nested
@@ -45,7 +46,7 @@ class CriterionTableRepoTest : H2DatabaseTest(arrayOf(CriterionTable, ProjectTab
                     .setCategory(category)
                     .setProjectId(project.id)
                     .build()
-            val criterion = repo.createCriterion(request)
+            val criterion = repo.createCriterion(request, testUserId)
 
             Assertions.assertThat(criterion.tag).isEqualTo("Test Tag")
             Assertions.assertThat(criterion.name).isEqualTo("Test Criterion")
@@ -67,7 +68,7 @@ class CriterionTableRepoTest : H2DatabaseTest(arrayOf(CriterionTable, ProjectTab
                     .setProjectId("0")
                     .build()
 
-            assertThrows<SnowballRException.NotFoundException.Project> { repo.createCriterion(request) }
+            assertThrows<NotFoundException.Project> { repo.createCriterion(request, testUserId) }
         }
 
         @Test
@@ -84,10 +85,27 @@ class CriterionTableRepoTest : H2DatabaseTest(arrayOf(CriterionTable, ProjectTab
                         .setCategory(CriterionOuterClass.CriterionCategory.CRITERION_CATEGORY_EXCLUSION)
                         .setProjectId(project.id)
                         .build()
-                val criterion1 = repo.createCriterion(request)
-                val criterion2 = repo.createCriterion(request)
+                val criterion1 = repo.createCriterion(request, testUserId)
+                val criterion2 = repo.createCriterion(request, testUserId)
 
                 Assertions.assertThat(criterion1.id).isNotEqualTo(criterion2.id)
             }
+
+        @GrpcEnumSourceTest(CriterionOuterClass.CriterionCategory::class)
+        fun `When a criterion is created, but the assigned user doesn't exist, then an exception is thrown`(
+            category: CriterionOuterClass.CriterionCategory,
+        ) = testCoroutine {
+            val request =
+                CriterionOuterClass.Criterion.Create
+                    .newBuilder()
+                    .setTag("Test Tag")
+                    .setName("Test Criterion")
+                    .setDescription("Test Description")
+                    .setCategory(category)
+                    .setProjectId("0")
+                    .build()
+
+            assertThrows<NotFoundException.User> { repo.createCriterion(request, UUID.randomUUID().toString()) }
+        }
     }
 }

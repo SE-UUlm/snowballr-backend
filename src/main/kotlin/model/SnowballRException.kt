@@ -32,5 +32,9 @@ sealed class SnowballRException(
         class Project(
             projectId: String,
         ) : NotFoundException("Project", projectId)
+
+        class User(
+            userId: String,
+        ) : NotFoundException("User", userId)
     }
 }

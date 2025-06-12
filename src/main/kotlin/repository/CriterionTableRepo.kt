@@ -8,7 +8,8 @@ import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.CriterionTable.toCriterion
 import se.uulm.snowballr.backend.table.ProjectTable
-import se.uulm.snowballr.backend.table.ProjectTable.getEntityId
+import se.uulm.snowballr.backend.table.UserTable
+import se.uulm.snowballr.backend.table.getEntityId
 import snowballr.CriterionOuterClass
 
 /**
@@ -19,7 +20,10 @@ import snowballr.CriterionOuterClass
  * criteria can remain decoupled from the specifics of the database layer.
  */
 interface ICriterionTableRepo {
-    suspend fun createCriterion(request: CriterionOuterClass.Criterion.Create): CriterionOuterClass.Criterion
+    suspend fun createCriterion(
+        request: CriterionOuterClass.Criterion.Create,
+        userId: String,
+    ): CriterionOuterClass.Criterion
 }
 
 /**
@@ -35,8 +39,14 @@ interface ICriterionTableRepo {
 class CriterionTableRepo(
     private val db: IDatabase,
 ) : ICriterionTableRepo {
-    override suspend fun createCriterion(request: CriterionOuterClass.Criterion.Create): CriterionOuterClass.Criterion =
+    override suspend fun createCriterion(
+        request: CriterionOuterClass.Criterion.Create,
+        userId: String,
+    ): CriterionOuterClass.Criterion =
         db.dbQuery {
+            // Get user reference
+            val userEntityId = UserTable.getEntityId(userId) ?: throw NotFoundException.User(userId)
+
             // Get project reference
             val projectEntityId =
                 ProjectTable.getEntityId(request.projectId) ?: throw NotFoundException.Project(request.projectId)
@@ -50,6 +60,7 @@ class CriterionTableRepo(
                         it[description] = request.description
                         it[category] = request.category
                         it[projectId] = projectEntityId
+                        it[createdBy] = userEntityId
                     }
 
             // Return created criterion

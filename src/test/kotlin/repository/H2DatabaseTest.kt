@@ -12,6 +12,7 @@ import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.Transaction
+import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.junit.jupiter.api.AfterAll
@@ -20,6 +21,8 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.TestInstance
 import se.uulm.snowballr.backend.db.IDatabase
+import se.uulm.snowballr.backend.table.UserTable
+import snowballr.UserOuterClass
 import java.sql.Connection
 
 /**
@@ -56,16 +59,21 @@ import java.sql.Connection
  * ```
  *
  * @property tables An array of database tables to be managed during the test lifecycle.
+ * @property useTestUser Whether a test user should be created, which can be used in a test in the form of [testUserId].
  */
 @ExperimentalCoroutinesApi
 @DelicateCoroutinesApi
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 open class H2DatabaseTest(
     val tables: Array<Table> = emptyArray(),
+    val useTestUser: Boolean = false,
 ) {
     private val threadContext = newSingleThreadContext("Coroutine thread")
     private val connection = Database.connect("jdbc:h2:mem:test_db;DB_CLOSE_DELAY=-1;IGNORECASE=true;")
     protected val db = TestDatabase()
+
+    /** User for testing. This prevents having to create a user for each test. */
+    protected var testUserId: String = ""
 
     /**
      * Implementation of [IDatabase] providing a suspension-friendly context for database transactions.
@@ -96,6 +104,21 @@ open class H2DatabaseTest(
         runBlocking {
             db.dbQuery {
                 SchemaUtils.create(*tables)
+
+                // Create the user table and a test entity if requested
+                if (useTestUser) {
+                    SchemaUtils.create(UserTable)
+                    // Create the test user
+                    val userId =
+                        UserTable.insertAndGetId {
+                            it[email] = "test.user@example.com"
+                            it[firstName] = "Test"
+                            it[lastName] = "User"
+                            it[role] = UserOuterClass.UserRole.USER_ROLE_ADMIN
+                            it[status] = UserOuterClass.UserStatus.USER_STATUS_ACTIVE
+                        }
+                    testUserId = userId.value.toString()
+                }
             }
         }
     }
@@ -105,6 +128,9 @@ open class H2DatabaseTest(
         runBlocking {
             db.dbQuery {
                 SchemaUtils.drop(*tables)
+                if (useTestUser) {
+                    SchemaUtils.drop(UserTable)
+                }
             }
         }
         clearAllMocks()
