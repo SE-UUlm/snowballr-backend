@@ -46,7 +46,7 @@ private class ValidationCallListener<ReqT, RespT>(
         // Return `INVALID_ARGUMENT` status if input validation failed
         if (result is Either.Left) {
             val reasons = result.value.toList().map { it.toString() }
-            logger.debug { "Received invalid request: $reasons" }
+            logger.debug { "Received invalid request: ${message?.javaClass} - $reasons" }
             call?.close(
                 Status.INVALID_ARGUMENT
                     .withDescription("Request validation failed: $reasons"),

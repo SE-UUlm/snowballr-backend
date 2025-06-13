@@ -55,6 +55,7 @@ dependencies {
 
     implementation(libs.grpc.kotlin)
     implementation(libs.grpc.protobuf)
+    implementation(libs.grpc.services)
     implementation(libs.protobuf.kotlin)
 
     runtimeOnly(libs.grpc.netty)
@@ -159,7 +160,7 @@ protobuf {
     }
     plugins {
         create("grpc") {
-            artifact = "io.grpc:protoc-gen-grpc-java:${libs.versions.grpc.protobuf.version.get()}"
+            artifact = "io.grpc:protoc-gen-grpc-java:${libs.versions.grpc.version.get()}"
         }
         create("grpckt") {
             artifact = "io.grpc:protoc-gen-grpc-kotlin:${libs.versions.grpc.kotlin.version.get()}:jdk8@jar"
