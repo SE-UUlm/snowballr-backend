@@ -176,6 +176,15 @@ class SnowballRServer(
         override suspend fun getPapersToReviewForProject(request: Base.Id): ProjectOuterClass.Project.Paper.List =
             super.getPapersToReviewForProject(request)
 
+        override suspend fun getNextPaper(request: Base.Id): ProjectOuterClass.Project.Paper =
+            super.getNextPaper(request)
+
+        override suspend fun getNextPaperToReview(request: Base.Id): ProjectOuterClass.Project.Paper =
+            super.getNextPaperToReview(request)
+
+        override suspend fun getPreviousPaper(request: Base.Id): ProjectOuterClass.Project.Paper =
+            super.getPreviousPaper(request)
+
         override suspend fun getUserSettings(request: Base.Nothing): UserSettingsOuterClass.UserSettings =
             super.getUserSettings(request)
 
