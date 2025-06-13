@@ -22,6 +22,7 @@ grpc-kotlin-version = "1.4.3"
 grpc-version = "1.73.0"
 protobuf-kotlin-version = "4.31.1"
 shadow-jar-version = "8.3.6"
+archunit-version = "1.4.1"
 
 [libraries]
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines-version" }
@@ -40,6 +41,7 @@ exposed-json = { module = "org.jetbrains.exposed:exposed-json", version.ref = "e
 
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit-version" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+junit-platform = { module = "org.junit.platform:junit-platform-launcher" }
 
 hikaricp = { module = "com.zaxxer:HikariCP", version.ref = "hikari-cp-version" }
 
@@ -62,6 +64,9 @@ grpc-protobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc-version"
 grpc-services = { module = "io.grpc:grpc-services", version.ref = "grpc-version" }
 grpc-netty = { module = "io.grpc:grpc-netty-shaded", version.ref = "grpc-version" }
 protobuf-kotlin = { module = "com.google.protobuf:protobuf-kotlin", version.ref = "protobuf-kotlin-version" }
+
+archunit = { module = "com.tngtech.archunit:archunit", version.ref = "archunit-version"}
+archunit-junit5 = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit-version"}
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin-version" }

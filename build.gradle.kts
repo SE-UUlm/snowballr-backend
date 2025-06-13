@@ -50,6 +50,10 @@ dependencies {
 
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)
+    testRuntimeOnly(libs.junit.platform)
+
+    testImplementation(libs.archunit)
+    testImplementation(libs.archunit.junit5)
 
     implementation(libs.arrow.core)
 
