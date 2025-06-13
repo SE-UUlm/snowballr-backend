@@ -25,9 +25,6 @@ if (args.length !== 1) {
 const targetBranch = args[0];
 console.log(`Replacing GitHub URLs from "develop" to "${targetBranch}"...`);
 
-// GitHub URL regex pattern - matches URLs pointing to the develop branch
-const githubUrlRegex = /https:\/\/github\.com\/SE-UUlm\/snowballr-backend\/blob\/develop\//g;
-
 /**
  * Recursively get all files in a directory.
  *
@@ -69,10 +66,16 @@ async function processFile(filePath) {
         // Read file content
         const content = await fs.readFile(filePath, "utf-8");
 
-        // Replace GitHub URLs
-        const updatedContent = content.replace(
-            githubUrlRegex,
+        // Replace GitHub Blob URLs
+        let updatedContent = content.replace(
+            /https:\/\/github\.com\/SE-UUlm\/snowballr-backend\/blob\/develop\//g,
             `https://github.com/SE-UUlm/snowballr-backend/blob/${targetBranch}/`,
+        );
+
+        // Replace GitHub Tree URLs
+        updatedContent = updatedContent.replace(
+            /https:\/\/github\.com\/SE-UUlm\/snowballr-backend\/tree\/develop\//g,
+            `https://github.com/SE-UUlm/snowballr-backend/tree/${targetBranch}/`,
         );
 
         // If content was updated, write it back to file
