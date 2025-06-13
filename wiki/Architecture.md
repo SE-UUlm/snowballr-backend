@@ -129,3 +129,8 @@ When an unexpected error occurs at any time in this diagram, an `INTERNAL` statu
 - Implementation of the [Repository Pattern](https://medium.com/@pererikbergman/repository-design-pattern-e28c0f3e4a30)
 - Works as direct abstraction layer above the database
 - Uses DSL to execute CRUD operations
+
+## Architecture Tests
+
+To enforce our architecture, we conduct architecture tests using [ArchUnit](https://www.archunit.org/). You can find
+them in [`src/test/kotlin/arch`](https://github.com/SE-UUlm/snowballr-backend/tree/develop/src/test/kotlin/arch).
