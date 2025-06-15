@@ -67,7 +67,7 @@ Follow these few conventions when creating or modifying a table:
 
 * always use `text(...)` for properties that contain a text
     * there's also `varchar(...)`, which requires a maximum length
-    * [as PostgreSQL uses the same C data type for each text-related type, we can simply use the one that causes the least headache](https://www.depesz.com/index.php/2010/03/02/charx-vs-varcharx-vs-varchar-vs-text/)
+    * [as PostgreSQL uses the same C data type for each text-related type, we can simply use the one that causes the least headache](https://www.depesz.com/2010/03/02/charx-vs-varcharx-vs-varchar-vs-text/)
 * always use `enumeration(...)` for enums
     * this only stores the ordinal value
     * as gRPC enforces unique enum ordinals, even if some are removed, we can ensure that this doesn't mess up our
