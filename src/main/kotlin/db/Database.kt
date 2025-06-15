@@ -12,9 +12,20 @@ import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
 import se.uulm.snowballr.backend.env.Env
+import se.uulm.snowballr.backend.table.AuthorTable
 import se.uulm.snowballr.backend.table.CriterionTable
+import se.uulm.snowballr.backend.table.PaperTable
+import se.uulm.snowballr.backend.table.PdfTable
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.UserTable
+import se.uulm.snowballr.backend.table.association.AuthorOfPaperTable
+import se.uulm.snowballr.backend.table.association.CitationTable
+import se.uulm.snowballr.backend.table.association.InvitationTable
+import se.uulm.snowballr.backend.table.association.ProjectMemberTable
+import se.uulm.snowballr.backend.table.association.ProjectPaperTable
+import se.uulm.snowballr.backend.table.association.ReadingListTable
+import se.uulm.snowballr.backend.table.association.ReviewHasCriterionTable
+import se.uulm.snowballr.backend.table.association.ReviewTable
 import snowballr.UserOuterClass
 import java.sql.Connection
 
@@ -67,7 +78,24 @@ class Database(
             val schema = Schema(SCHEMA_NAME, DB_USER)
             SchemaUtils.createSchema(schema)
             SchemaUtils.setSchema(schema)
-            SchemaUtils.create(UserTable, ProjectTable, CriterionTable)
+            SchemaUtils.create(
+                // Non-many-to-many tables
+                UserTable,
+                PdfTable,
+                ProjectTable,
+                PaperTable,
+                AuthorTable,
+                CriterionTable,
+                // Many-to-many tables
+                ProjectPaperTable,
+                AuthorOfPaperTable,
+                CitationTable,
+                ReadingListTable,
+                ProjectMemberTable,
+                InvitationTable,
+                ReviewTable,
+                ReviewHasCriterionTable,
+            )
 
             // Create dummy user until user management is implemented
             // TODO: remove dummy user when user management is implemented

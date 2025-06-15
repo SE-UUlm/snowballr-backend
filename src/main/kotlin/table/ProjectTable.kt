@@ -47,7 +47,7 @@ object ProjectTable : IntIdTable("project") {
     val reviewMaybeAllowed = bool("review_maybe_allowed")
     val reviewDecisionMatrixBinary = binary("review_decision_matrix")
     val fetcherApis = array("fetcher_apis", EnumerationColumnType(FetcherApi::class))
-    val currentStageStartedAt = timestampWithTimeZone("last_stage_started_at").clientDefault { OffsetDateTime.now() }
+    val currentStageStartedAt = timestampWithTimeZone("current_stage_started_at").clientDefault { OffsetDateTime.now() }
 
     // Metadata
 
