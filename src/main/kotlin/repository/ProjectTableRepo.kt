@@ -6,6 +6,7 @@ import org.jetbrains.exposed.sql.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.FetcherApi
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
+import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.ProjectTable.toProject
 import se.uulm.snowballr.backend.table.UserTable
@@ -23,7 +24,7 @@ interface IProjectTableRepo {
     suspend fun createProject(
         request: ProjectOuterClass.Project.Create,
         userId: String,
-    ): ProjectOuterClass.Project
+    ): Project
 }
 
 /**
@@ -41,7 +42,7 @@ class ProjectTableRepo(
     override suspend fun createProject(
         request: ProjectOuterClass.Project.Create,
         userId: String,
-    ): ProjectOuterClass.Project =
+    ): Project =
         db.dbQuery {
             // Get user reference
             val userEntityId = UserTable.getEntityId(userId) ?: throw NotFoundException.User(userId)

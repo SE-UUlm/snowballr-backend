@@ -5,6 +5,7 @@ import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
+import se.uulm.snowballr.backend.model.dto.Criterion
 import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.CriterionTable.toCriterion
 import se.uulm.snowballr.backend.table.ProjectTable
@@ -23,7 +24,7 @@ interface ICriterionTableRepo {
     suspend fun createCriterion(
         request: CriterionOuterClass.Criterion.Create,
         userId: String,
-    ): CriterionOuterClass.Criterion
+    ): Criterion
 }
 
 /**
@@ -42,7 +43,7 @@ class CriterionTableRepo(
     override suspend fun createCriterion(
         request: CriterionOuterClass.Criterion.Create,
         userId: String,
-    ): CriterionOuterClass.Criterion =
+    ): Criterion =
         db.dbQuery {
             // Get user reference
             val userEntityId = UserTable.getEntityId(userId) ?: throw NotFoundException.User(userId)

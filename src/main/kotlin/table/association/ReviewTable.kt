@@ -2,6 +2,8 @@ package se.uulm.snowballr.backend.table.association
 
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
+import org.jetbrains.exposed.sql.ResultRow
+import se.uulm.snowballr.backend.model.dto.Review
 import se.uulm.snowballr.backend.table.createdAt
 import se.uulm.snowballr.backend.table.modifiedAt
 import se.uulm.snowballr.backend.table.userReference
@@ -45,4 +47,19 @@ object ReviewTable : IntIdTable("review") {
 
     val createdAt = createdAt()
     val modifiedAt = modifiedAt()
+
+    // Methods
+
+    /**
+     * Creates a [Review] from this [ResultRow].
+     */
+    fun ResultRow.toReview() =
+        Review(
+            id = this[id].value,
+            projectPaperId = this[projectPaperId].value,
+            userId = this[userId].value,
+            decision = this[decision],
+            createdAt = this[createdAt],
+            modifiedAt = this[modifiedAt],
+        )
 }

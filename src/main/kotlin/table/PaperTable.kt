@@ -2,7 +2,9 @@ package se.uulm.snowballr.backend.table
 
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
+import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.kotlin.datetime.timestamp
+import se.uulm.snowballr.backend.model.dto.Paper
 import java.time.Instant
 import java.time.OffsetDateTime
 
@@ -44,4 +46,25 @@ object PaperTable : IntIdTable("paper") {
     val createdAt = createdAt()
     val modifiedAt = modifiedAt()
     val modifiedBy = modifiedBy()
+
+    // Methods
+
+    /**
+     * Creates a [Paper] from this [ResultRow].
+     */
+    fun ResultRow.toPaper() =
+        Paper(
+            id = this[id].value,
+            title = this[title],
+            externalId = this[externalId],
+            abstract = this[abstract],
+            publishedAt = this[publishedAt],
+            publisher = this[publisher],
+            publicationType = this[publicationType],
+            publicationName = this[publicationName],
+            pdfId = this[pdfId]?.value,
+            createdAt = this[createdAt],
+            modifiedAt = this[modifiedAt],
+            modifiedBy = this[modifiedBy]?.value,
+        )
 }

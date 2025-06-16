@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.table
 import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.ResultRow
+import se.uulm.snowballr.backend.model.dto.Criterion
 import snowballr.CriterionOuterClass
 import java.time.OffsetDateTime
 
@@ -42,15 +43,17 @@ object CriterionTable : UUIDTable("criterion") {
     // Methods
 
     /**
-     * Creates a [CriterionOuterClass.Criterion] object from a database [ResultRow].
+     * Creates a [Criterion] from this [ResultRow].
      */
-    fun ResultRow.toCriterion(): CriterionOuterClass.Criterion =
-        CriterionOuterClass.Criterion
-            .newBuilder()
-            .setId(this[id].value.toString())
-            .setTag(this[tag])
-            .setName(this[name])
-            .setDescription(this[description])
-            .setCategory(this[category])
-            .build()
+    fun ResultRow.toCriterion() =
+        Criterion(
+            id = this[id].value,
+            tag = this[tag],
+            name = this[name],
+            description = this[description],
+            category = this[category],
+            projectId = this[projectId].value,
+            createdAt = this[createdAt],
+            createdBy = this[createdBy].value,
+        )
 }

@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
+import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.testCoroutine
@@ -21,7 +22,7 @@ class CriterionTableRepoTest : H2DatabaseTest(arrayOf(CriterionTable, ProjectTab
     private val repo = CriterionTableRepo(db)
     private val projectRepo = ProjectTableRepo(db)
 
-    private suspend fun createExampleProject(): ProjectOuterClass.Project {
+    private suspend fun createExampleProject(): Project {
         val request =
             ProjectOuterClass.Project.Create
                 .newBuilder()
@@ -44,7 +45,7 @@ class CriterionTableRepoTest : H2DatabaseTest(arrayOf(CriterionTable, ProjectTab
                     .setName("Test Criterion")
                     .setDescription("Test Description")
                     .setCategory(category)
-                    .setProjectId(project.id)
+                    .setProjectId(project.id.toString())
                     .build()
             val criterion = repo.createCriterion(request, testUserId)
 
@@ -83,7 +84,7 @@ class CriterionTableRepoTest : H2DatabaseTest(arrayOf(CriterionTable, ProjectTab
                         .setName("Test Criterion")
                         .setDescription("Test Description")
                         .setCategory(CriterionOuterClass.CriterionCategory.CRITERION_CATEGORY_EXCLUSION)
-                        .setProjectId(project.id)
+                        .setProjectId(project.id.toString())
                         .build()
                 val criterion1 = repo.createCriterion(request, testUserId)
                 val criterion2 = repo.createCriterion(request, testUserId)

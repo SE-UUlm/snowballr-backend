@@ -2,6 +2,8 @@ package se.uulm.snowballr.backend.table.association
 
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
+import org.jetbrains.exposed.sql.ResultRow
+import se.uulm.snowballr.backend.model.dto.ProjectMember
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.createdAt
@@ -48,4 +50,19 @@ object ProjectMemberTable : IntIdTable("project_member") {
 
     val createdAt = createdAt()
     val modifiedAt = modifiedAt()
+
+    // Methods
+
+    /**
+     * Creates a [ProjectMember] from this [ResultRow].
+     */
+    fun ResultRow.toProjectMember() =
+        ProjectMember(
+            id = this[id].value,
+            projectId = this[projectId].value,
+            userId = this[userId].value,
+            role = this[role],
+            createdAt = this[createdAt],
+            modifiedAt = this[modifiedAt],
+        )
 }

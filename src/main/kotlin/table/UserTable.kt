@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.table
 
 import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.ResultRow
+import se.uulm.snowballr.backend.model.dto.User
 import snowballr.UserOuterClass
 import java.time.OffsetDateTime
 
@@ -40,15 +41,19 @@ object UserTable : UUIDTable("user") {
 
     // Methods
 
-    @Suppress("unused")
-    fun ResultRow.toUser(): UserOuterClass.User =
-        UserOuterClass.User
-            .newBuilder()
-            .setId(this[id].value.toString())
-            .setEmail(this[email])
-            .setFirstName(this[firstName])
-            .setLastName(this[lastName])
-            .setRole(this[role])
-            .setStatus(this[status])
-            .build()
+    /**
+     * Creates a [User] from this [ResultRow].
+     */
+    fun ResultRow.toUser() =
+        User(
+            id = this[id].value,
+            email = this[email],
+            firstName = this[firstName],
+            lastName = this[lastName],
+            role = this[role],
+            status = this[status],
+            createdAt = this[createdAt],
+            modifiedAt = this[modifiedAt],
+            deletedAt = this[deletedAt],
+        )
 }

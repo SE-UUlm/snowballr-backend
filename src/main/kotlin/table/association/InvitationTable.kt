@@ -2,7 +2,9 @@ package se.uulm.snowballr.backend.table.association
 
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
+import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.kotlin.datetime.timestamp
+import se.uulm.snowballr.backend.model.dto.Invitation
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.userReference
@@ -40,4 +42,18 @@ object InvitationTable : IntIdTable("invitation") {
 
     val token = text("token")
     val validUntil = timestamp("valid_until")
+
+    // Methods
+
+    /**
+     * Creates an [Invitation] from this [ResultRow].
+     */
+    fun ResultRow.toInvitation() =
+        Invitation(
+            id = this[id].value,
+            projectId = this[projectId].value,
+            userId = this[userId].value,
+            token = this[token],
+            validUntil = this[validUntil],
+        )
 }

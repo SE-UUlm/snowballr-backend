@@ -35,15 +35,14 @@ class ProjectTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable), true) {
                 assertThat(project.currentStage).isEqualTo(0)
                 assertThat(project.maxStage).isEqualTo(0)
                 // Assert default settings from user
-                val settings = project.settings
-                assertThat(settings.similarityThreshold).isEqualTo(0F)
-                assertThat(settings.snowballingType).isEqualTo(ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_BOTH)
-                assertThat(settings.reviewMaybeAllowed).isTrue()
+                assertThat(project.similarityThreshold).isEqualTo(0F)
+                assertThat(project.snowballingType).isEqualTo(ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_BOTH)
+                assertThat(project.reviewMaybeAllowed).isTrue()
                 assertThat(
-                    settings.decisionMatrix,
+                    project.reviewDecisionMatrix,
                 ).isEqualTo(ProjectOuterClass.ReviewDecisionMatrix.getDefaultInstance())
                 FetcherApi.entries.forEach {
-                    assertThat(settings.fetcherApisList).contains(it.name)
+                    assertThat(project.fetcherApis).contains(it)
                 }
             }
 

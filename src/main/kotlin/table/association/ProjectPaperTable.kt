@@ -2,6 +2,8 @@ package se.uulm.snowballr.backend.table.association
 
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
+import org.jetbrains.exposed.sql.ResultRow
+import se.uulm.snowballr.backend.model.dto.ProjectPaper
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.createdAt
@@ -56,4 +58,23 @@ object ProjectPaperTable : IntIdTable("project_paper") {
     val createdBy = createdBy()
     val modifiedAt = modifiedAt()
     val modifiedBy = modifiedBy()
+
+    // Methods
+
+    /**
+     * Creates a [ProjectPaper] from this [ResultRow].
+     */
+    fun ResultRow.toProjectPaper() =
+        ProjectPaper(
+            id = this[id].value,
+            paperId = this[paperId].value,
+            projectId = this[projectId].value,
+            localPaperId = this[localPaperId],
+            stage = this[stage],
+            decision = this[decision],
+            createdAt = this[createdAt],
+            createdBy = this[createdBy].value,
+            modifiedAt = this[modifiedAt],
+            modifiedBy = this[modifiedBy]?.value,
+        )
 }

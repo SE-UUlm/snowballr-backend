@@ -1,6 +1,7 @@
 package se.uulm.snowballr.backend.service
 
 import se.uulm.snowballr.backend.db.dummyUserId
+import se.uulm.snowballr.backend.model.dto.toGrpcProject
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import snowballr.ProjectOuterClass
 
@@ -22,5 +23,5 @@ class ProjectService(
 ) : IProjectService {
     override suspend fun createProject(request: ProjectOuterClass.Project.Create): ProjectOuterClass.Project =
         // TODO: remove dummy user when user management is implemented
-        repo.createProject(request, dummyUserId!!)
+        repo.createProject(request, dummyUserId!!).toGrpcProject()
 }

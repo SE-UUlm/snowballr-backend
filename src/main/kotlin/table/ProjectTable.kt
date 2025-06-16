@@ -6,6 +6,7 @@ import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.kotlin.datetime.timestampWithTimeZone
 import se.uulm.snowballr.backend.model.FetcherApi
+import se.uulm.snowballr.backend.model.dto.Project
 import snowballr.ProjectOuterClass
 import snowballr.ReviewOuterClass
 import java.time.OffsetDateTime
@@ -70,29 +71,28 @@ object ProjectTable : IntIdTable("project") {
     // Methods
 
     /**
-     * Creates a [ProjectOuterClass.Project] object from a database [ResultRow].
+     * Creates a [Project] from this [ResultRow].
      */
-    fun ResultRow.toProject(): ProjectOuterClass.Project {
-        val settingsBuilder =
-            ProjectOuterClass.Project.Settings
-                .newBuilder()
-                .setSimilarityThreshold(this[similarityThreshold])
-                .setDecisionMatrix(ProjectOuterClass.ReviewDecisionMatrix.parseFrom(this[reviewDecisionMatrixBinary]))
-                .setSnowballingType(this[snowballingType])
-                .setReviewMaybeAllowed(this[reviewMaybeAllowed])
-        for (api in this[fetcherApis]) {
-            settingsBuilder.addFetcherApis(api.name)
-        }
-        val settings = settingsBuilder.build()
-
-        return ProjectOuterClass.Project
-            .newBuilder()
-            .setId(this[id].value.toString())
-            .setName(this[name])
-            .setStatus(this[status])
-            .setCurrentStage(this[currentStage])
-            .setMaxStage(this[maxStage])
-            .setSettings(settings)
-            .build()
-    }
+    fun ResultRow.toProject() =
+        Project(
+            id = this[id].value,
+            name = this[name],
+            status = this[status],
+            currentStage = this[currentStage],
+            maxStage = this[maxStage],
+            similarityThreshold = this[similarityThreshold],
+            snowballingType = this[snowballingType],
+            reviewMaybeAllowed = this[reviewMaybeAllowed],
+            reviewDecisionMatrix = ProjectOuterClass.ReviewDecisionMatrix.parseFrom(this[reviewDecisionMatrixBinary]),
+            fetcherApis = this[fetcherApis],
+            currentStageStartedAt = this[currentStageStartedAt],
+            createdAt = this[createdAt],
+            createdBy = this[createdBy].value,
+            modifiedAt = this[modifiedAt],
+            modifiedBy = this[modifiedBy]?.value,
+            deletedAt = this[deletedAt],
+            deletedBy = this[deletedBy]?.value,
+            archivedAt = this[archivedAt],
+            archivedBy = this[archivedBy]?.value,
+        )
 }

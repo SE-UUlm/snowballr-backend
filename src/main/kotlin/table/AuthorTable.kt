@@ -1,6 +1,8 @@
 package se.uulm.snowballr.backend.table
 
 import org.jetbrains.exposed.dao.id.UUIDTable
+import org.jetbrains.exposed.sql.ResultRow
+import se.uulm.snowballr.backend.model.dto.Author
 import java.time.OffsetDateTime
 
 /**
@@ -22,4 +24,19 @@ object AuthorTable : UUIDTable("author") {
 
     val createdAt = createdAt()
     val modifiedAt = modifiedAt()
+
+    // Methods
+
+    /**
+     * Creates an [Author] from this [ResultRow].
+     */
+    fun ResultRow.toAuthor() =
+        Author(
+            id = this[id].value,
+            firstName = this[firstName],
+            lastName = this[lastName],
+            orcid = this[orcid],
+            createdAt = this[createdAt],
+            modifiedAt = this[modifiedAt],
+        )
 }
