@@ -1,13 +1,12 @@
 package se.uulm.snowballr.backend.validation
 
-import arrow.core.Either
 import `in`.rcard.assertj.arrowcore.EitherAssert
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.ValueSource
+import se.uulm.snowballr.backend.assertInvalidResult
 import se.uulm.snowballr.backend.model.BlankField
 import se.uulm.snowballr.backend.model.EnumUnspecified
 import se.uulm.snowballr.backend.model.TooLongField
@@ -43,11 +42,7 @@ class CriterionValidatorTest {
                     .build()
             val result = validateRequest(request)
 
-            EitherAssert.assertThat(result).isLeft()
-            val value = (result as Either.Left).value
-            assertThat(value.size).isEqualTo(1)
-            val issue = value.first()
-            assertThat(issue).isInstanceOf(BlankField::class.java)
+            assertInvalidResult(result, BlankField::class.java)
         }
 
         @ParameterizedTest
@@ -69,11 +64,7 @@ class CriterionValidatorTest {
                     .build()
             val result = validateRequest(request)
 
-            EitherAssert.assertThat(result).isLeft()
-            val value = (result as Either.Left).value
-            assertThat(value.size).isEqualTo(1)
-            val issue = value.first()
-            assertThat(issue).isInstanceOf(TooLongField::class.java)
+            assertInvalidResult(result, TooLongField::class.java)
         }
 
         @Test
@@ -84,11 +75,7 @@ class CriterionValidatorTest {
                     .build()
             val result = validateRequest(request)
 
-            EitherAssert.assertThat(result).isLeft()
-            val value = (result as Either.Left).value
-            assertThat(value.size).isEqualTo(1)
-            val issue = value.first()
-            assertThat(issue).isInstanceOf(EnumUnspecified::class.java)
+            assertInvalidResult(result, EnumUnspecified::class.java)
         }
     }
 }
