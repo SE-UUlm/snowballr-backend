@@ -32,6 +32,7 @@ fun <T> validateRequest(request: T): EitherNel<ValidationIssue, Unit> =
         is CriterionOuterClass.Criterion.Create -> CriterionValidator.validateCreateRequest(request)
         // Base
         is Base.Id -> BaseValidator.validateId(request)
+        is Base.Nothing -> Either.Right(Unit)
         else -> Either.Left(nonEmptyListOf(UnknownRequest))
     }
 

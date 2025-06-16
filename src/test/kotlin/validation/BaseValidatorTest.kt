@@ -34,4 +34,15 @@ class BaseValidatorTest {
             assertInvalidResult(result, BlankField::class.java)
         }
     }
+
+    @Nested
+    inner class NothingRequest {
+        @Test
+        fun `When a valid nothing request is validated, then no issue is returned`() {
+            val request = Base.Nothing.getDefaultInstance()
+            val result = validateRequest(request)
+
+            EitherAssert.assertThat(result).isRight()
+        }
+    }
 }
