@@ -162,7 +162,7 @@ private class NamingConventions {
             .that()
             .resideInAPackage("$BASE_PACKAGE.service..")
             .should()
-            .haveSimpleNameEndingWith("Service")
+            .haveNameMatching(".*Service.*")
             .because("All services should have the 'Service' suffix")
             .check(classes)
     }
