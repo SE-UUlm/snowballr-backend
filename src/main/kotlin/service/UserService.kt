@@ -7,6 +7,8 @@ import snowballr.UserOuterClass
 
 interface IUserService {
     suspend fun getUserById(id: Base.Id): UserOuterClass.User
+
+    suspend fun getUserByEmail(email: Base.Id): UserOuterClass.User
 }
 
 /**
@@ -24,4 +26,21 @@ class UserService(
     override suspend fun getUserById(id: Base.Id): UserOuterClass.User =
         // TODO: think about who can request each user by ID
         repo.getUserById(id.id).toGrpcUser()
+
+    override suspend fun getUserByEmail(email: Base.Id): UserOuterClass.User {
+        // TODO: move this validation to validation layer by using separate Email type
+        EMAIL_REGEX.matches(email.id) || throw IllegalArgumentException("Invalid email: ${email.id}")
+        return repo.getUserByEmail(email.id).toGrpcUser()
+    }
 }
+
+/**
+ * Email regex.
+ *
+ * See: https://stackoverflow.com/questions/201323/how-can-i-validate-an-email-address-using-a-regular-expression/201378#201378
+ */
+@Suppress("MaxLineLength", "StringShouldBeRawString")
+val EMAIL_REGEX =
+    Regex(
+        "(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21\\x23-\\x5b\\x5d-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21-\\x5a\\x53-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])+)])",
+    )
