@@ -165,7 +165,7 @@ class SnowballRServer(
 
         override suspend fun getCurrentUser(request: Base.Nothing): UserOuterClass.User = super.getCurrentUser(request)
 
-        override suspend fun getUserById(request: Base.Id): UserOuterClass.User = super.getUserById(request)
+        override suspend fun getUserById(request: Base.Id): UserOuterClass.User = mainService.getUserById(request)
 
         override suspend fun getUserByEmail(request: Base.Id): UserOuterClass.User = super.getUserByEmail(request)
 

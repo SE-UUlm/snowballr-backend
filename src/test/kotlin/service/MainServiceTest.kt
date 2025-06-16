@@ -15,6 +15,7 @@ import org.junit.jupiter.api.TestInstance
 import se.uulm.snowballr.backend.db.dummyUserId
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
+import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.service.criterion.CreateCriterionTest
 
 /**
@@ -67,10 +68,12 @@ internal open class MainServiceTest {
 
     val projectRepoMock = mockk<IProjectTableRepo>(relaxed = true)
     val criterionRepoMock = mockk<ICriterionTableRepo>(relaxed = true)
+    val userRepoMock = mockk<IUserTableRepo>(relaxed = true)
     val mainService =
         MainService(
             projectRepoMock,
             criterionRepoMock,
+            userRepoMock,
         )
 
     @BeforeAll

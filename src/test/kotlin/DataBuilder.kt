@@ -3,10 +3,13 @@ package se.uulm.snowballr.backend
 import se.uulm.snowballr.backend.model.FetcherApi
 import se.uulm.snowballr.backend.model.dto.Criterion
 import se.uulm.snowballr.backend.model.dto.Project
+import se.uulm.snowballr.backend.model.dto.User
 import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
 import snowballr.ProjectOuterClass.SnowballingType
+import snowballr.UserOuterClass.UserRole
+import snowballr.UserOuterClass.UserStatus
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -75,5 +78,27 @@ object DataBuilder {
         projectId = projectId,
         createdAt = createdAt,
         createdBy = createdBy,
+    )
+
+    fun createExampleUser(
+        id: UUID = UUID.randomUUID(),
+        email: String = "test.email@example.com",
+        firstName: String = "Test",
+        lastName: String = "User",
+        role: UserRole = UserRole.USER_ROLE_UNSPECIFIED,
+        status: UserStatus = UserStatus.USER_STATUS_UNSPECIFIED,
+        createdAt: OffsetDateTime = OffsetDateTime.now(),
+        modifiedAt: OffsetDateTime? = null,
+        deletedAt: OffsetDateTime? = null,
+    ) = User(
+        id = id,
+        email = email,
+        firstName = firstName,
+        lastName = lastName,
+        role = role,
+        status = status,
+        createdAt = createdAt,
+        modifiedAt = modifiedAt,
+        deletedAt = deletedAt,
     )
 }
