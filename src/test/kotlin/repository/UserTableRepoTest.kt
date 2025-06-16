@@ -54,7 +54,7 @@ class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
     }
 
     @Nested
-    inner class GerUserByEmail {
+    inner class GetUserByEmail {
         @Test
         fun `When a user is found, then the correct user is returned`() =
             testCoroutine {
@@ -84,6 +84,44 @@ class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
         fun `When a user is not found, then an exception is thrown`() =
             testCoroutine {
                 assertThrows<NotFoundException.User> { repo.getUserByEmail("non-existing email") }
+            }
+    }
+
+    @Nested
+    inner class GetAllUsers {
+        @Test
+        fun `When users are found, then all users are returned`() =
+            testCoroutine {
+                val userId1 =
+                    db
+                        .dbQuery {
+                            UserTable.insertAndGetId {
+                                it[email] = "test.user1@example.com"
+                                it[firstName] = "Test"
+                                it[lastName] = "User 2"
+                                it[role] = UserRole.USER_ROLE_DEFAULT
+                                it[status] = UserStatus.USER_STATUS_ACTIVE
+                            }
+                        }.value
+
+                val userId2 =
+                    db
+                        .dbQuery {
+                            UserTable.insertAndGetId {
+                                it[email] = "test.user2@example.com"
+                                it[firstName] = "Test"
+                                it[lastName] = "User 1"
+                                it[role] = UserRole.USER_ROLE_DEFAULT
+                                it[status] = UserStatus.USER_STATUS_ACTIVE
+                            }
+                        }.value
+
+                val users = repo.getAllUsers()
+                assertThat(users).hasSize(2)
+                val firstUser = users.find { it.id == userId1 }
+                assertThat(firstUser).isNotNull
+                val secondUser = users.find { it.id == userId2 }
+                assertThat(secondUser).isNotNull
             }
     }
 }

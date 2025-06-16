@@ -19,6 +19,8 @@ interface IUserTableRepo {
     suspend fun getUserById(id: String): User
 
     suspend fun getUserByEmail(email: String): User
+
+    suspend fun getAllUsers(): List<User>
 }
 
 /**
@@ -35,31 +37,28 @@ class UserTableRepo(
 ) : IUserTableRepo {
     override suspend fun getUserById(id: String): User =
         db.dbQuery {
-            val user =
-                UserTable
-                    .selectAll()
-                    .where { UserTable.id eq UUID.fromString(id) }
-                    .singleOrNull()
-
-            if (user == null) {
-                throw NotFoundException.User(id)
-            }
-
-            user.toUser()
+            UserTable
+                .selectAll()
+                .where { UserTable.id eq UUID.fromString(id) }
+                .map { it.toUser() }
+                .singleOrNull()
+                ?: throw NotFoundException.User(id)
         }
 
     override suspend fun getUserByEmail(email: String): User =
         db.dbQuery {
-            val user =
-                UserTable
-                    .selectAll()
-                    .where { UserTable.email eq email }
-                    .singleOrNull()
+            UserTable
+                .selectAll()
+                .where { UserTable.email eq email }
+                .map { it.toUser() }
+                .singleOrNull()
+                ?: throw NotFoundException.User(email, "email")
+        }
 
-            if (user == null) {
-                throw NotFoundException.User(email, "email")
-            }
-
-            user.toUser()
+    override suspend fun getAllUsers(): List<User> =
+        db.dbQuery {
+            UserTable
+                .selectAll()
+                .map { it.toUser() }
         }
 }
