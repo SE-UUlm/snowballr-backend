@@ -61,4 +61,41 @@ sealed class SnowballRException(
             criterionId: String,
         ) : EntityNotPersistedException("Criterion", criterionId)
     }
+
+    /**
+     * Represents a specific type of exception that occurs when an entity is accessed by
+     * the current user, but they are not authorized.
+     *
+     * This exception is intended to provide a clear and structured way to handle
+     * scenarios where a particular entity is accessed, but the current user is not
+     * authorized to do so.
+     * It serves as a base class to define more specific "unauthorized" exceptions for
+     * various entities.
+     *
+     * @constructor Creates an [UnauthorizedException] with the current user's ID, the
+     * name and ID of the accessed entity.
+     * @param currentUserId The ID of the user that is accessing the entity.
+     * @param accessedEntityMessage The message of what is accessed.
+     */
+    sealed class UnauthorizedException(
+        currentUserId: String,
+        accessedEntityMessage: String,
+    ) : SnowballRException("User with ID '$currentUserId' is not authorized to access $accessedEntityMessage") {
+        sealed class Single(
+            currentUserId: String,
+            accessedEntityName: String,
+            accessedEntityId: String,
+        ) : UnauthorizedException(currentUserId, "$accessedEntityName with ID '$accessedEntityId'.") {
+            class Project
+        }
+
+        sealed class All(
+            currentUserId: String,
+            accessedEntityName: String,
+        ) : UnauthorizedException(currentUserId, "all $accessedEntityName.") {
+            class User(
+                currentUserId: String,
+            ) : UnauthorizedException(currentUserId, "user")
+        }
+    }
 }

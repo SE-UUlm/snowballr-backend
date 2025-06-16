@@ -161,7 +161,7 @@ class SnowballRServer(
         override suspend fun changePassword(request: Authentication.PasswordChangeRequest): Base.Nothing =
             super.changePassword(request)
 
-        override suspend fun getAllUsers(request: Base.Nothing): UserOuterClass.User.List = super.getAllUsers(request)
+        override suspend fun getAllUsers(request: Base.Nothing): UserOuterClass.User.List = mainService.getAllUsers()
 
         override suspend fun getCurrentUser(request: Base.Nothing): UserOuterClass.User = super.getCurrentUser(request)
 
