@@ -6,6 +6,7 @@ import arrow.core.nonEmptyListOf
 import io.grpc.health.v1.HealthCheckRequest
 import se.uulm.snowballr.backend.model.UnknownRequest
 import se.uulm.snowballr.backend.model.ValidationIssue
+import snowballr.Base
 import snowballr.CriterionOuterClass
 import snowballr.ProjectOuterClass
 
@@ -29,6 +30,8 @@ fun <T> validateRequest(request: T): EitherNel<ValidationIssue, Unit> =
         is ProjectOuterClass.Project.Create -> ProjectValidator.validateCreateRequest(request)
         // Criterion
         is CriterionOuterClass.Criterion.Create -> CriterionValidator.validateCreateRequest(request)
+        // Base
+        is Base.Id -> BaseValidator.validateId(request)
         else -> Either.Left(nonEmptyListOf(UnknownRequest))
     }
 
