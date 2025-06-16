@@ -17,6 +17,8 @@ import java.util.UUID
  */
 interface IUserTableRepo {
     suspend fun getUserById(id: String): User
+
+    suspend fun getUserByEmail(email: String): User
 }
 
 /**
@@ -41,6 +43,21 @@ class UserTableRepo(
 
             if (user == null) {
                 throw NotFoundException.User(id)
+            }
+
+            user.toUser()
+        }
+
+    override suspend fun getUserByEmail(email: String): User =
+        db.dbQuery {
+            val user =
+                UserTable
+                    .selectAll()
+                    .where { UserTable.email eq email }
+                    .singleOrNull()
+
+            if (user == null) {
+                throw NotFoundException.User(email, "email")
             }
 
             user.toUser()

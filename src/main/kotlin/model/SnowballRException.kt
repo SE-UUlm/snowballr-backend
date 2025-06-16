@@ -24,18 +24,21 @@ sealed class SnowballRException(
      * @constructor Creates a [NotFoundException] with the name and ID of the missing entity.
      * @param entityName The name of the entity that could not be found.
      * @param entityId The unique identifier of the missing entity.
+     * @param identifier The name of the identifier. Defaults to 'ID'.
      */
     sealed class NotFoundException(
         entityName: String,
         entityId: String,
-    ) : SnowballRException("$entityName with ID '$entityId' not found.") {
+        identifier: String? = "ID",
+    ) : SnowballRException("$entityName with $identifier '$entityId' not found.") {
         class Project(
             projectId: String,
         ) : NotFoundException("Project", projectId)
 
         class User(
             userId: String,
-        ) : NotFoundException("User", userId)
+            identifier: String? = null,
+        ) : NotFoundException("User", userId, identifier)
     }
 
     /**

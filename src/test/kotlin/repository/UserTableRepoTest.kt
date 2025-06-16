@@ -52,4 +52,38 @@ class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
                 assertThrows<NotFoundException.User> { repo.getUserById(UUID.randomUUID().toString()) }
             }
     }
+
+    @Nested
+    inner class GerUserByEmail {
+        @Test
+        fun `When a user is found, then the correct user is returned`() =
+            testCoroutine {
+                val userId =
+                    db
+                        .dbQuery {
+                            UserTable.insertAndGetId {
+                                it[email] = "test.user@example.com"
+                                it[firstName] = "Test"
+                                it[lastName] = "User"
+                                it[role] = UserRole.USER_ROLE_DEFAULT
+                                it[status] = UserStatus.USER_STATUS_ACTIVE
+                            }
+                        }.value
+
+                val user = repo.getUserByEmail("test.user@example.com")
+
+                assertThat(user.id).isEqualTo(userId)
+                assertThat(user.email).isEqualTo("test.user@example.com")
+                assertThat(user.firstName).isEqualTo("Test")
+                assertThat(user.lastName).isEqualTo("User")
+                assertThat(user.role).isEqualTo(UserRole.USER_ROLE_DEFAULT)
+                assertThat(user.status).isEqualTo(UserStatus.USER_STATUS_ACTIVE)
+            }
+
+        @Test
+        fun `When a user is not found, then an exception is thrown`() =
+            testCoroutine {
+                assertThrows<NotFoundException.User> { repo.getUserByEmail("non-existing email") }
+            }
+    }
 }
