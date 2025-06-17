@@ -98,6 +98,21 @@ services:
             - grpc_network
         profiles: ["registry"]
 
+    # Proxy that listens to localhost instead of a service; can be used for local development
+    proxy:
+        build:
+            context: .
+            dockerfile: Dockerfile.proxy
+        ports:
+            - "${WEB_PORT:-8081}:${WEB_PORT:-8081}"
+        command:
+            # Point to the backend on the machine's host
+            - --backend_addr=host.docker.internal:${PORT:-8080}
+            - --allow_all_origins # Crucial for local dev where frontend is on different origin
+            - --run_tls_server=false # Don't require TLS
+            - --server_http_debug_port=${WEB_PORT:-8081} # Proxy listens on this port inside the container
+        profiles: ["proxy-only"]
+
 networks:
     db_network:
         driver: bridge

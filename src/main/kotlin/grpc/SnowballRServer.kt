@@ -56,14 +56,20 @@ class SnowballRServer(
      *
      * This server is configured to:
      * - Listen on the specified port.
+     * - Apply a logging interceptor to intercept and log incoming requests.
+     * - Apply a validation interceptor to intercept and validate incoming requests.
+     * - Apply an exception interceptor to catch exceptions and provide appropriate status codes.
      * - Register the gRPC service implementation [SnowballRService].
-     * - Apply a logging interceptor to intercept and log incoming and outgoing requests.
+     * - Register the gRPC health service implementation [HealthStatusManager.healthService].
      */
     private val server: Server =
         ServerBuilder
             .forPort(port)
-            .intercept(loggingInterceptor)
+            // Interceptors in reverse order of execution
+            .intercept(exceptionInterceptor)
             .intercept(validationInterceptor)
+            .intercept(loggingInterceptor)
+            // Services
             .addService(SnowballRService())
             .addService(healthManager.healthService)
             .build()
@@ -175,6 +181,15 @@ class SnowballRServer(
 
         override suspend fun getPapersToReviewForProject(request: Base.Id): ProjectOuterClass.Project.Paper.List =
             super.getPapersToReviewForProject(request)
+
+        override suspend fun getNextPaper(request: Base.Id): ProjectOuterClass.Project.Paper =
+            super.getNextPaper(request)
+
+        override suspend fun getNextPaperToReview(request: Base.Id): ProjectOuterClass.Project.Paper =
+            super.getNextPaperToReview(request)
+
+        override suspend fun getPreviousPaper(request: Base.Id): ProjectOuterClass.Project.Paper =
+            super.getPreviousPaper(request)
 
         override suspend fun getUserSettings(request: Base.Nothing): UserSettingsOuterClass.UserSettings =
             super.getUserSettings(request)

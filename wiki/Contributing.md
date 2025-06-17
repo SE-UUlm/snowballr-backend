@@ -67,7 +67,7 @@ Follow these few conventions when creating or modifying a table:
 
 * always use `text(...)` for properties that contain a text
     * there's also `varchar(...)`, which requires a maximum length
-    * [as PostgreSQL uses the same C data type for each text-related type, we can simply use the one that causes the least headache](https://www.depesz.com/index.php/2010/03/02/charx-vs-varcharx-vs-varchar-vs-text/)
+    * [as PostgreSQL uses the same C data type for each text-related type, we can simply use the one that causes the least headache](https://www.depesz.com/2010/03/02/charx-vs-varcharx-vs-varchar-vs-text/)
 * always use `enumeration(...)` for enums
     * this only stores the ordinal value
     * as gRPC enforces unique enum ordinals, even if some are removed, we can ensure that this doesn't mess up our
@@ -76,7 +76,8 @@ Follow these few conventions when creating or modifying a table:
       [EnumOrdinalTest.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/test/kotlin/model/EnumOrdinalTest.kt))
 * use `uniqueIndex()` for [natural keys](https://en.wikipedia.org/wiki/Natural_key), such as the users' email
 * if there's a foreign key, provide reference options, such as `RESTRICT` or `CASCADE` for `onDelete` and `onUpdate`and
-  provide a comment which describes why the reference option was chosen
+  provide a comment which describes why the reference option was chosen (read more in
+  [this post](https://stackoverflow.com/questions/6720050/foreign-key-constraints-when-to-use-on-update-and-on-delete/6720458#6720458))
 
 As each entity is represented by a class in this project, always provide a mapping method:
 
