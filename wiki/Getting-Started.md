@@ -16,8 +16,9 @@ We provide several docker compose profiles for different setups.
 - `db-only`: Only starts the database (for local development)
 - `registry`: Starts the published backend image with the specified tag, its proxy and the database (use the BACKEND_TAG
   env variable).
+- `proxy-only`: Only starts the proxy (for local development)
 
-Use `docker compose --profile <profile> up` to start the frontend with the desired profile.
+Use `docker compose --profile <profile> up` to start the backend with the desired profile.
 
 The proxy is used to enable gRPC-Web support for the backend. It listens on the port specified by the `WEB_PORT`
 environment variable (default: `8081`).
