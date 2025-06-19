@@ -10,6 +10,9 @@ import snowballr.ProjectOuterClass.SnowballingType
 import java.time.OffsetDateTime
 import java.util.UUID
 
+/**
+ * This class acts as a collection of builder methods to create DTOs for testing purposes.
+ */
 @Suppress("LongParameterList")
 object DataBuilder {
     fun createExampleProject(

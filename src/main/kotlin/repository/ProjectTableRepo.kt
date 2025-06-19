@@ -55,7 +55,7 @@ class ProjectTableRepo(
                         it[status] = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE
                         it[currentStage] = 0
                         it[maxStage] = 0
-                        // Fetch default settings from user
+                        // TODO: Fetch default settings from user
                         it[similarityThreshold] = 0F
                         it[snowballingType] = ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_BOTH
                         it[reviewMaybeAllowed] = true
