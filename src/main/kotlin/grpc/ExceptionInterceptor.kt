@@ -82,6 +82,7 @@ private class ExceptionCall<ReqT, RespT>(
         val status =
             when (e) {
                 is SnowballRException.NotFoundException -> Status.NOT_FOUND
+                is SnowballRException.EntityNotPersistedException -> Status.INTERNAL
             }.withDescription(e.message).withCause(e.cause)
 
         logger.debug {

@@ -83,12 +83,11 @@ As each entity is represented by a class in this project, always provide a mappi
 
 ```kotlin
 fun ResultRow.toExample(): Example =
-    Example
-        .newBuilder()
-        .setId(this[id].value.toString())
-        .setExampleProperty(this[exampleProperty])
-        .setOtherExampleProperty(this[otherExampleProperty])
-        .build()
+    Example(
+        id = this[id].value.toString(),
+        exampleProperty = this[exampleProperty],
+        otherExampleProperty = this[otherExampleProperty],
+    )
 ```
 
 See [ProjectTable.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/table/ProjectTable.kt)

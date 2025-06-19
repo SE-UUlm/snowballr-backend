@@ -6,6 +6,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
+import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.service.MainServiceTest
 import se.uulm.snowballr.backend.testCoroutine
 import snowballr.ProjectOuterClass
@@ -17,9 +18,9 @@ internal class CreateProjectTest : MainServiceTest() {
     fun `When a project is correctly created, then no exception is thrown`() =
         testCoroutine {
             val request = ProjectOuterClass.Project.Create.getDefaultInstance()
-            val project = ProjectOuterClass.Project.getDefaultInstance()
+            val project = DataBuilder.createExampleProject()
 
-            coEvery { projectRepoMock.createProject(any()) } returns project
+            coEvery { projectRepoMock.createProject(any(), any()) } returns project
 
             assertDoesNotThrow { mainService.createProject(request) }
         }
@@ -29,7 +30,7 @@ internal class CreateProjectTest : MainServiceTest() {
         testCoroutine {
             val request = ProjectOuterClass.Project.Create.getDefaultInstance()
 
-            coEvery { projectRepoMock.createProject(any()) } throws Exception("Failed to create project")
+            coEvery { projectRepoMock.createProject(any(), any()) } throws Exception("Failed to create project")
 
             assertThrows<Exception> { mainService.createProject(request) }
         }

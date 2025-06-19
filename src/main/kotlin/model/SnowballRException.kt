@@ -28,9 +28,34 @@ sealed class SnowballRException(
     sealed class NotFoundException(
         entityName: String,
         entityId: String,
-    ) : SnowballRException("$entityName #$entityId not found.") {
+    ) : SnowballRException("$entityName with ID '$entityId' not found.") {
         class Project(
             projectId: String,
         ) : NotFoundException("Project", projectId)
+
+        class User(
+            userId: String,
+        ) : NotFoundException("User", userId)
+    }
+
+    /**
+     * Represents a specific type of exception that occurs when an entity creation was triggered, but it couldn't be
+     * fetched afterward.
+     *
+     * @constructor Creates a [EntityNotPersistedException] with the name and ID of the not persisted entity.
+     * @param entityName The name of the entity that was not persisted.
+     * @param entityId The unique identifier of the not persisted entity.
+     */
+    sealed class EntityNotPersistedException(
+        entityName: String,
+        entityId: String,
+    ) : SnowballRException("$entityName with ID '$entityId' was not persisted.") {
+        class Project(
+            projectId: String,
+        ) : EntityNotPersistedException("Project", projectId)
+
+        class Criterion(
+            criterionId: String,
+        ) : EntityNotPersistedException("Criterion", criterionId)
     }
 }

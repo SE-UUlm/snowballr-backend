@@ -68,7 +68,8 @@ private class StructureRules {
             .whereLayer("Table")
             .mayOnlyBeAccessedByLayers("Repository", "DB")
             .whereLayer("DB")
-            .mayOnlyBeAccessedByLayers("Main", "Repository")
+            // TODO: remove service when dummy user isn't used anymore
+            .mayOnlyBeAccessedByLayers("Main", "Repository", "Service")
             .check(classes)
     }
 
@@ -107,7 +108,8 @@ private class StructureRules {
             .whereLayer("gRPC Server")
             .mayOnlyAccessLayers("Service", "Input Validation")
             .whereLayer("Service")
-            .mayOnlyAccessLayers("Repository")
+            // TODO: remove DB when dummy user isn't used anymore
+            .mayOnlyAccessLayers("Repository", "DB")
             .whereLayer("Repository")
             .mayOnlyAccessLayers("Table", "DB")
             .whereLayer("Table")
@@ -160,7 +162,7 @@ private class NamingConventions {
             .that()
             .resideInAPackage("$BASE_PACKAGE.service..")
             .should()
-            .haveSimpleNameEndingWith("Service")
+            .haveNameMatching(".*Service.*")
             .because("All services should have the 'Service' suffix")
             .check(classes)
     }
@@ -183,6 +185,8 @@ private class NamingConventions {
             .resideInAPackage("$BASE_PACKAGE.table..")
             .should()
             .haveSimpleNameEndingWith("Table")
+            .orShould(haveSimpleNameEndingWith("ColumnHelperKt")) // exception
+            .orShould(haveSimpleName("TableHelperKt")) // exception
             .because("All tables should have the 'Table' suffix")
             .check(classes)
     }

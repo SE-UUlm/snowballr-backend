@@ -12,6 +12,7 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.TestInstance
+import se.uulm.snowballr.backend.db.dummyUserId
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.service.criterion.CreateCriterionTest
@@ -75,6 +76,8 @@ internal open class MainServiceTest {
     @BeforeAll
     fun setUp() {
         Dispatchers.setMain(threadContext)
+        // TODO: remove when user management is implemented
+        dummyUserId = "test_user_id"
     }
 
     @AfterEach

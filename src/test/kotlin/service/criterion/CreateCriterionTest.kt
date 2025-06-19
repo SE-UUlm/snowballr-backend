@@ -6,6 +6,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
+import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.service.MainServiceTest
 import se.uulm.snowballr.backend.testCoroutine
 import snowballr.CriterionOuterClass
@@ -17,9 +18,9 @@ internal class CreateCriterionTest : MainServiceTest() {
     fun `When a criterion is correctly created, then no exception is thrown`() =
         testCoroutine {
             val request = CriterionOuterClass.Criterion.Create.getDefaultInstance()
-            val criterion = CriterionOuterClass.Criterion.getDefaultInstance()
+            val criterion = DataBuilder.createExampleCriterion()
 
-            coEvery { criterionRepoMock.createCriterion(any()) } returns criterion
+            coEvery { criterionRepoMock.createCriterion(any(), any()) } returns criterion
 
             assertDoesNotThrow { mainService.createCriterion(request) }
         }
@@ -29,7 +30,7 @@ internal class CreateCriterionTest : MainServiceTest() {
         testCoroutine {
             val request = CriterionOuterClass.Criterion.Create.getDefaultInstance()
 
-            coEvery { criterionRepoMock.createCriterion(any()) } throws Exception("Failed to create criterion")
+            coEvery { criterionRepoMock.createCriterion(any(), any()) } throws Exception("Failed to create criterion")
 
             assertThrows<Exception> { mainService.createCriterion(request) }
         }
