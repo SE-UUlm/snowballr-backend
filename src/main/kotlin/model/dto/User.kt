@@ -19,3 +19,17 @@ data class User(
     val modifiedAt: OffsetDateTime?,
     val deletedAt: OffsetDateTime?,
 )
+
+/**
+ * Creates a [UserOuterClass.User] from this [User].
+ */
+fun User.toGrpcUser(): UserOuterClass.User =
+    UserOuterClass.User
+        .newBuilder()
+        .setId(this.id.toString())
+        .setEmail(this.email)
+        .setFirstName(this.firstName)
+        .setLastName(this.lastName)
+        .setRole(this.role)
+        .setStatus(this.status)
+        .build()
