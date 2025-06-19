@@ -1,6 +1,6 @@
 package se.uulm.snowballr.backend.table.association
 
-import org.jetbrains.exposed.dao.id.IntIdTable
+import org.jetbrains.exposed.dao.id.CompositeIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
 import se.uulm.snowballr.backend.table.AuthorTable
 import se.uulm.snowballr.backend.table.PaperTable
@@ -17,7 +17,7 @@ import se.uulm.snowballr.backend.table.PaperTable
  * Primary Key:
  * - Composite primary key consisting of [paperId] and [authorId].
  */
-object AuthorOfPaperTable : IntIdTable("author_of_paper") {
+object AuthorOfPaperTable : CompositeIdTable("author_of_paper") {
     /**
      * Reference to the associated paper.
      *
@@ -33,4 +33,11 @@ object AuthorOfPaperTable : IntIdTable("author_of_paper") {
      * - `onUpdate=CASCADE` so that when the author ID is updated, the foreign key ID is updated too
      */
     val authorId = reference("author_id", AuthorTable, ReferenceOption.RESTRICT, ReferenceOption.CASCADE)
+
+    init {
+        addIdColumn(paperId)
+        addIdColumn(authorId)
+    }
+
+    override val primaryKey = PrimaryKey(paperId, authorId)
 }

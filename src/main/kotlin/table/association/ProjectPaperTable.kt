@@ -1,6 +1,6 @@
 package se.uulm.snowballr.backend.table.association
 
-import org.jetbrains.exposed.dao.id.IntIdTable
+import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.ResultRow
 import se.uulm.snowballr.backend.model.dto.ProjectPaper
@@ -31,7 +31,7 @@ import java.time.OffsetDateTime
  * Primary Key:
  * - Composite primary key consisting of [paperId] and [projectId].
  */
-object ProjectPaperTable : IntIdTable("project_paper") {
+object ProjectPaperTable : UUIDTable("project_paper") {
     /**
      * Reference to the associated paper.
      *
@@ -47,6 +47,10 @@ object ProjectPaperTable : IntIdTable("project_paper") {
      * - `onUpdate=CASCADE` so that when the project ID is updated, the foreign key ID is updated too
      */
     val projectId = reference("project_id", ProjectTable, ReferenceOption.CASCADE, ReferenceOption.CASCADE)
+
+    init {
+        uniqueIndex(paperId, projectId)
+    }
 
     val localPaperId = long("local_paper_id")
     val stage = long("stage")

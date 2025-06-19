@@ -9,8 +9,8 @@ import java.util.UUID
  * DTO of [ReviewTable].
  */
 data class Review(
-    val id: Int,
-    val projectPaperId: Int,
+    val id: UUID,
+    val projectPaperId: String,
     val userId: UUID,
     val decision: ReviewOuterClass.ReviewDecision,
     val createdAt: OffsetDateTime,

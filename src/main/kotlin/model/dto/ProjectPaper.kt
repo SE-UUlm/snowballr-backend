@@ -9,7 +9,7 @@ import java.util.UUID
  * DTO of [ProjectPaperTable].
  */
 data class ProjectPaper(
-    val id: Int,
+    val id: UUID,
     val paperId: Int,
     val projectId: Int,
     val localPaperId: Long,

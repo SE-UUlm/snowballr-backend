@@ -1,6 +1,6 @@
 package se.uulm.snowballr.backend.table.association
 
-import org.jetbrains.exposed.dao.id.IntIdTable
+import org.jetbrains.exposed.dao.id.CompositeIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.ResultRow
 import se.uulm.snowballr.backend.model.dto.ProjectMember
@@ -27,7 +27,7 @@ import java.time.OffsetDateTime
  * Primary Key:
  * - Composite primary key consisting of [projectId] and [userId].
  */
-object ProjectMemberTable : IntIdTable("project_member") {
+object ProjectMemberTable : CompositeIdTable("project_member") {
     /**
      * Reference to the associated project.
      *
@@ -43,6 +43,13 @@ object ProjectMemberTable : IntIdTable("project_member") {
      * - `onUpdate=CASCADE` so that when the user ID is updated, the foreign key ID is updated too
      */
     val userId = userReference("user_id", ReferenceOption.RESTRICT, ReferenceOption.CASCADE)
+
+    init {
+        addIdColumn(projectId)
+        addIdColumn(userId)
+    }
+
+    override val primaryKey = PrimaryKey(projectId, userId)
 
     val role = enumeration<ProjectOuterClass.MemberRole>("role")
 

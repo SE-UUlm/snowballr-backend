@@ -1,6 +1,6 @@
 package se.uulm.snowballr.backend.table.association
 
-import org.jetbrains.exposed.dao.id.IntIdTable
+import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.ResultRow
 import se.uulm.snowballr.backend.model.dto.Review
@@ -19,11 +19,8 @@ import java.time.OffsetDateTime
  * - [userId]: Foreign key referencing the user, with cascade delete and nullify on update, representing the reviewer.
  * - [createdAt]: Represents the timestamp of when the review was created as an [OffsetDateTime].
  * - [modifiedAt]: Represents the timestamp of when the review was last modified as an [OffsetDateTime].
- *
- * Primary Key:
- * - Composite primary key consisting of [projectPaperId] and [userId].
  */
-object ReviewTable : IntIdTable("review") {
+object ReviewTable : UUIDTable("review") {
     /**
      * Reference to the associated project paper.
      *
@@ -41,6 +38,10 @@ object ReviewTable : IntIdTable("review") {
      */
     val userId = userReference("user_id", ReferenceOption.RESTRICT, ReferenceOption.CASCADE)
 
+    init {
+        uniqueIndex(projectPaperId, userId)
+    }
+
     val decision = enumeration<ReviewOuterClass.ReviewDecision>("decision")
 
     // Metadata
@@ -56,7 +57,7 @@ object ReviewTable : IntIdTable("review") {
     fun ResultRow.toReview() =
         Review(
             id = this[id].value,
-            projectPaperId = this[projectPaperId].value,
+            projectPaperId = this[projectPaperId].toString(),
             userId = this[userId].value,
             decision = this[decision],
             createdAt = this[createdAt],
