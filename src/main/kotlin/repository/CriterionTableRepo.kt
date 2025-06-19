@@ -4,6 +4,7 @@ import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
+import se.uulm.snowballr.backend.model.SnowballRException.EntityNotPersistedException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.Criterion
 import se.uulm.snowballr.backend.table.CriterionTable
@@ -68,7 +69,8 @@ class CriterionTableRepo(
             CriterionTable
                 .selectAll()
                 .andWhere { CriterionTable.id eq criterionId }
-                .single()
-                .toCriterion()
+                .map { it.toCriterion() }
+                .singleOrNull()
+                ?: throw EntityNotPersistedException.Criterion(criterionId.toString())
         }
 }

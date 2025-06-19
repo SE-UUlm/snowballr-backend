@@ -5,6 +5,7 @@ import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.FetcherApi
+import se.uulm.snowballr.backend.model.SnowballRException.EntityNotPersistedException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.table.ProjectTable
@@ -69,7 +70,8 @@ class ProjectTableRepo(
             ProjectTable
                 .selectAll()
                 .andWhere { ProjectTable.id eq projectId }
-                .single()
-                .toProject()
+                .map { it.toProject() }
+                .singleOrNull()
+                ?: throw EntityNotPersistedException.Project(projectId.toString())
         }
 }
