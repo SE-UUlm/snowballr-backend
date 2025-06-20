@@ -55,6 +55,9 @@ jobs:
               with:
                   args: --ignore-links "https://stackoverflow.com/questions/6720050/foreign-key-constraints-when-to-use-on-update-and-on-delete/6720458#6720458" wiki/
 
+            - name: Calculate implementation progress (dry run)
+              run: node scripts/calc-impl-progress.js
+
     publish-wiki:
         name: Publish Wiki
         if: github.ref_name == 'develop' && github.ref_type == 'branch'
@@ -68,6 +71,9 @@ jobs:
 
             - name: Add auto-generated hint to wiki markdown files
               run: bash scripts/add_auto_gen_wiki_hint.sh
+
+            - name: Calculate implementation progress
+              run: node scripts/calc-impl-progress.js
 
             - name: Publish the Wiki
               uses: Andrew-Chen-Wang/github-wiki-action@v4
