@@ -2,7 +2,7 @@
  * Script to replace GitHub URLs pointing to the "develop" branch with a specified branch name
  * in all wiki files and the README.md file.
  *
- * Usage: node wiki-replace-github-urls.js <branch-name>
+ * Usage: node scripts/wiki-replace-github-urls.js <branch-name>
  */
 
 import fs from "fs/promises";

@@ -1,6 +1,8 @@
 First, we recommend you to read the [Architecture page](https://github.com/SE-UUlm/snowballr-backend/wiki/Architecture)
 to understand the overall structure of our project.
 
+<!-- @add-progress -->
+
 On this page, we explain how to contribute to the SnowballR backend project. We cover the following topics:
 
 <!-- markdownlint-disable MD007 -->
