@@ -6,7 +6,7 @@ import se.uulm.snowballr.backend.model.ValidationIssue
 import snowballr.Base
 
 /**
- * An object that validates the [Base] requests.
+ * A validator for [Base] related requests.
  */
 object BaseValidator {
     fun validateId(request: Base.Id): EitherNel<ValidationIssue, Unit> =
