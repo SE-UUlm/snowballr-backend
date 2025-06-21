@@ -3,6 +3,9 @@ package se.uulm.snowballr.backend.table
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.dao.id.UUIDTable
+import se.uulm.snowballr.backend.model.SnowballRException.InvalidIdException
+import se.uulm.snowballr.backend.model.parseIntId
+import se.uulm.snowballr.backend.model.parseUUID
 import java.util.UUID
 
 /**
@@ -14,10 +17,11 @@ import java.util.UUID
  * to get the [EntityID] and then pass it to the `entity_id` column of table A.
  *
  * @param id The ID of the entity as [String].
- * @return The ID of the entity as [EntityID], or null if no entity exists or the [id] couldn't be parsed to an [Int].
+ * @return The ID of the entity as [EntityID], or null if no entity exists.
+ * @throws InvalidIdException.IntId If [id] cannot be parsed to an integer.
  */
 fun IntIdTable.getEntityId(id: String): EntityID<Int>? {
-    val intId = id.toIntOrNull() ?: return null
+    val intId = parseIntId(id, "user")
 
     return this
         .select(this.id)
@@ -32,10 +36,11 @@ fun IntIdTable.getEntityId(id: String): EntityID<Int>? {
  * @see IntIdTable.getEntityId
  *
  * @param id The ID of the entity as [String].
- * @return The ID of the entity as [EntityID], or null if no entity exists or the [id] couldn't be parsed to a [UUID].
+ * @return The ID of the entity as [EntityID], or null if no entity exists.
+ * @throws InvalidIdException.UUID If [id] cannot be parsed to a UUID.
  */
 fun UUIDTable.getEntityId(id: String): EntityID<UUID>? {
-    val uuid = runCatching { UUID.fromString(id) }.getOrNull() ?: return null
+    val uuid = parseUUID(id, "user")
 
     return this
         .select(this.id)

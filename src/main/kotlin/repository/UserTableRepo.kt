@@ -4,9 +4,9 @@ import org.jetbrains.exposed.sql.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.User
+import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.UserTable.toUser
-import java.util.UUID
 
 /**
  * Defines an interface for repository operations related to the [UserTable].
@@ -37,9 +37,11 @@ class UserTableRepo(
 ) : IUserTableRepo {
     override suspend fun getUserById(id: String): User =
         db.dbQuery {
+            val uuid = parseUUID(id, "user")
+
             UserTable
                 .selectAll()
-                .where { UserTable.id eq UUID.fromString(id) }
+                .where { UserTable.id eq uuid }
                 .map { it.toUser() }
                 .singleOrNull()
                 ?: throw NotFoundException.User(id)

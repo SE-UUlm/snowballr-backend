@@ -95,4 +95,28 @@ sealed class SnowballRException(
             ) : All(currentUserId, "user")
         }
     }
+
+    /**
+     * Represents a specific type of exception that occurs when an ID is in an invalid format.
+     *
+     * @constructor Creates an [InvalidIdException] with the value and format of the invalid ID.
+     * @param id The value of the invalid ID.
+     * @param entityType The type of the entity to which the ID belongs to.
+     * @param format The format that the ID should've had.
+     */
+    sealed class InvalidIdException(
+        id: String,
+        entityType: String,
+        format: String,
+    ) : SnowballRException("The ID '$id' of the $entityType is not a valid $format.") {
+        class UUID(
+            id: String,
+            entityType: String,
+        ) : InvalidIdException(id, entityType, "UUID")
+
+        class IntId(
+            id: String,
+            entityType: String,
+        ) : InvalidIdException(id, entityType, "numerical ID")
+    }
 }
