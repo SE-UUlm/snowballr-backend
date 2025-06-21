@@ -1,8 +1,8 @@
 package se.uulm.snowballr.backend.service
 
 import se.uulm.snowballr.backend.db.dummyUserId
+import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
-import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.toGrpcUser
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import snowballr.Base
@@ -10,10 +10,19 @@ import snowballr.UserOuterClass
 import snowballr.UserOuterClass.UserRole
 
 interface IUserService {
+    /**
+     * Service implementation of [SnowballRService.getUserById].
+     */
     suspend fun getUserById(id: Base.Id): UserOuterClass.User
 
+    /**
+     * Service implementation of [SnowballRService.getUserByEmail].
+     */
     suspend fun getUserByEmail(email: Base.Id): UserOuterClass.User
 
+    /**
+     * Service implementation of [SnowballRService.getAllUsers].
+     */
     suspend fun getAllUsers(): UserOuterClass.User.List
 }
 
