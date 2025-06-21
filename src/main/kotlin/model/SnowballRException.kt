@@ -18,19 +18,19 @@ sealed class SnowballRException(
      * Represents a specific type of exception that occurs when an entity cannot be found.
      *
      * This exception is intended to provide a clear and structured way to handle
-     * scenarios where a particular entity, identified by its name and ID, is not found.
+     * scenarios where a particular entity, identified by its type and ID, is not found.
      * It serves as a base class to define more specific "not found" exceptions for various entities.
      *
-     * @constructor Creates a [NotFoundException] with the name and ID of the missing entity.
-     * @param entityName The name of the entity that could not be found.
+     * @constructor Creates a [NotFoundException] with the type and ID of the missing entity.
+     * @param entityType The type of the entity that could not be found.
      * @param entityId The unique identifier of the missing entity.
      * @param identifier The name of the identifier. Defaults to 'ID'.
      */
     sealed class NotFoundException(
-        entityName: String,
+        entityType: String,
         entityId: String,
         identifier: String? = "ID",
-    ) : SnowballRException("$entityName with $identifier '$entityId' not found.") {
+    ) : SnowballRException("$entityType with $identifier '$entityId' not found.") {
         class Project(
             projectId: String,
         ) : NotFoundException("Project", projectId)
@@ -45,14 +45,14 @@ sealed class SnowballRException(
      * Represents a specific type of exception that occurs when an entity creation was triggered, but it couldn't be
      * fetched afterward.
      *
-     * @constructor Creates a [EntityNotPersistedException] with the name and ID of the not persisted entity.
-     * @param entityName The name of the entity that was not persisted.
+     * @constructor Creates a [EntityNotPersistedException] with the type and ID of the not persisted entity.
+     * @param entityType The type of the entity that was not persisted.
      * @param entityId The unique identifier of the not persisted entity.
      */
     sealed class EntityNotPersistedException(
-        entityName: String,
+        entityType: String,
         entityId: String,
-    ) : SnowballRException("$entityName with ID '$entityId' was not persisted.") {
+    ) : SnowballRException("$entityType with ID '$entityId' was not persisted.") {
         class Project(
             projectId: String,
         ) : EntityNotPersistedException("Project", projectId)
@@ -67,13 +67,12 @@ sealed class SnowballRException(
      * the current user, but they are not authorized.
      *
      * This exception is intended to provide a clear and structured way to handle
-     * scenarios where a particular entity is accessed, but the current user is not
-     * authorized to do so.
+     * scenarios where a particular entity is accessed without permission.
      * It serves as a base class to define more specific "unauthorized" exceptions for
      * various entities.
      *
      * @constructor Creates an [UnauthorizedException] with the current user's ID, the
-     * name and ID of the accessed entity.
+     * type and ID of the accessed entity.
      * @param currentUserId The ID of the user that is accessing the entity.
      * @param accessedEntityMessage The message of what is accessed.
      */
@@ -83,19 +82,17 @@ sealed class SnowballRException(
     ) : SnowballRException("User with ID '$currentUserId' is not authorized to access $accessedEntityMessage") {
         sealed class Single(
             currentUserId: String,
-            accessedEntityName: String,
+            accessedEntityType: String,
             accessedEntityId: String,
-        ) : UnauthorizedException(currentUserId, "$accessedEntityName with ID '$accessedEntityId'.") {
-            class Project
-        }
+        ) : UnauthorizedException(currentUserId, "$accessedEntityType with ID '$accessedEntityId'.")
 
         sealed class All(
             currentUserId: String,
-            accessedEntityName: String,
-        ) : UnauthorizedException(currentUserId, "all $accessedEntityName.") {
+            accessedEntityType: String,
+        ) : UnauthorizedException(currentUserId, "all $accessedEntityType.") {
             class User(
                 currentUserId: String,
-            ) : UnauthorizedException(currentUserId, "user")
+            ) : All(currentUserId, "user")
         }
     }
 }
