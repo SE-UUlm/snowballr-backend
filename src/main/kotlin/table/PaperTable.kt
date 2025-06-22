@@ -1,6 +1,6 @@
 package se.uulm.snowballr.backend.table
 
-import org.jetbrains.exposed.dao.id.IntIdTable
+import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.kotlin.datetime.timestamp
@@ -24,7 +24,7 @@ import java.time.OffsetDateTime
  * - [modifiedAt]: Represents the timestamp of when the paper was last modified as an [OffsetDateTime].
  * - [modifiedBy]: A foreign key referencing the user table, representing the user who last modified the paper.
  */
-object PaperTable : IntIdTable("paper") {
+object PaperTable : UUIDTable("paper") {
     val title = text("title")
     val externalId = text("external_id").uniqueIndex().nullable()
     val abstract = text("abstract")

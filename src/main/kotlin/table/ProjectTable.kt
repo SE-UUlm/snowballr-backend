@@ -1,6 +1,6 @@
 package se.uulm.snowballr.backend.table
 
-import org.jetbrains.exposed.dao.id.IntIdTable
+import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.EnumerationColumnType
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.ResultRow
@@ -38,7 +38,7 @@ import java.time.OffsetDateTime
  * - [archivedAt]: Represents the timestamp of when the project was archived as an [OffsetDateTime].
  * - [archivedBy]: A nullable foreign key referencing the user table, representing the user who archived the project.
  */
-object ProjectTable : IntIdTable("project") {
+object ProjectTable : UUIDTable("project") {
     val name = text("name")
     val status = enumeration<ProjectOuterClass.ProjectStatus>("status")
     val currentStage = long("current_stage")

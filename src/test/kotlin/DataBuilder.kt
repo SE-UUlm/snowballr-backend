@@ -19,7 +19,7 @@ import java.util.UUID
 @Suppress("LongParameterList")
 object DataBuilder {
     fun createExampleProject(
-        id: Int = 0,
+        id: UUID = UUID.randomUUID(),
         name: String = "Test Project",
         status: ProjectStatus = ProjectStatus.PROJECT_STATUS_ACTIVE,
         currentStage: Long = 0,
@@ -66,7 +66,7 @@ object DataBuilder {
         name: String = "Test Criterion",
         description: String = "Test Description",
         category: CriterionCategory = CriterionCategory.CRITERION_CATEGORY_UNSPECIFIED,
-        projectId: Int = 0,
+        projectId: UUID = UUID.randomUUID(),
         createdAt: OffsetDateTime = OffsetDateTime.now(),
         createdBy: UUID? = null,
     ) = Criterion(

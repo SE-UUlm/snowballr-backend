@@ -10,8 +10,8 @@ import java.util.UUID
  */
 data class ProjectPaper(
     val id: UUID,
-    val paperId: Int,
-    val projectId: Int,
+    val paperId: UUID,
+    val projectId: UUID,
     val localPaperId: Long,
     val stage: Long,
     val decision: ProjectOuterClass.PaperDecision,
