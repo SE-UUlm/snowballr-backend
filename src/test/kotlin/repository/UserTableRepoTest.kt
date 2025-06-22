@@ -7,6 +7,7 @@ import org.jetbrains.exposed.sql.insertAndGetId
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import se.uulm.snowballr.backend.model.SnowballRException.InvalidIdException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.testCoroutine
@@ -50,6 +51,12 @@ class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
         fun `When a user is not found, then an exception is thrown`() =
             testCoroutine {
                 assertThrows<NotFoundException.User> { repo.getUserById(UUID.randomUUID().toString()) }
+            }
+
+        @Test
+        fun `When the uuid is invalid, then an exception is thrown`() =
+            testCoroutine {
+                assertThrows<InvalidIdException.UUID> { repo.getUserById("invalid uuid") }
             }
     }
 

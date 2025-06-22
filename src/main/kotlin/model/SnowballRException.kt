@@ -37,7 +37,7 @@ sealed class SnowballRException(
 
         class User(
             userId: String,
-            identifier: String? = null,
+            identifier: String? = "ID",
         ) : NotFoundException("User", userId, identifier)
     }
 

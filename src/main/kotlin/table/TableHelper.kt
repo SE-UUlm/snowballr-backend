@@ -18,7 +18,7 @@ import java.util.UUID
  *
  * @param id The ID of the entity as [String].
  * @return The ID of the entity as [EntityID], or null if no entity exists.
- * @throws InvalidIdException.IntId If [id] cannot be parsed to an integer.
+ * @throws InvalidIdException.IntId If [id] cannot be parsed to an integer ID.
  */
 fun IntIdTable.getEntityId(id: String): EntityID<Int>? {
     val intId = parseIntId(id, "user")
