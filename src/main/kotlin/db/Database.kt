@@ -99,14 +99,24 @@ class Database(
 
             // Create dummy user until user management is implemented
             // TODO: remove dummy user when user management is implemented
-            val userId =
-                UserTable.insertAndGetId {
-                    it[email] = "alice.smith@example.com"
-                    it[firstName] = "Alice"
-                    it[lastName] = "Smith"
-                    it[role] = UserOuterClass.UserRole.USER_ROLE_ADMIN
-                    it[status] = UserOuterClass.UserStatus.USER_STATUS_ACTIVE
-                }
+            // Fetch existing user
+            var userId =
+                UserTable
+                    .select(UserTable.id)
+                    .where { UserTable.email eq "alice.smith@example.com" }
+                    .map { it[UserTable.id] }
+                    .singleOrNull()
+            // Create a new dummy user if they don't already exist
+            if (userId == null) {
+                userId =
+                    UserTable.insertAndGetId {
+                        it[email] = "alice.smith@example.com"
+                        it[firstName] = "Alice"
+                        it[lastName] = "Smith"
+                        it[role] = UserOuterClass.UserRole.USER_ROLE_ADMIN
+                        it[status] = UserOuterClass.UserStatus.USER_STATUS_ACTIVE
+                    }
+            }
             dummyUserId = userId.value.toString()
         }
         logger.info { "Database connection established" }
