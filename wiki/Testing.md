@@ -132,10 +132,10 @@ class CreateExampleTest : MainServiceTest() {
             val request = ExampleOuterClass.Example.Create.getDefaultInstance()
 
             // Mock the behavior of the repositories
-            coEvery { exampleRepoMock.createExample(any()) } throws Exception("Example creation failed")
+            coEvery { exampleRepoMock.createExample(any()) } throws TestSpecificException()
 
             // Assert service behavior
-            assertThrows<Exception> { mainService.createExample(request) }
+            assertThrows<TestSpecificException> { mainService.createExample(request) }
         }
 }
 ```

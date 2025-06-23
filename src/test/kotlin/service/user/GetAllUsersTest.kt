@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
+import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.db.dummyUserId
 import se.uulm.snowballr.backend.model.SnowballRException.InvalidIdException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
@@ -45,10 +46,10 @@ internal class GetAllUsersTest : MainServiceTest() {
 
     @Test
     fun `When retrieving the current user fails, then an exception is thrown`() = testCoroutine {
-        coEvery { userRepoMock.getUserById(dummyUserUUID) } throws Exception("Failed to retrieve user")
+        coEvery { userRepoMock.getUserById(dummyUserUUID) } throws TestSpecificException()
         coEvery { userRepoMock.getAllUsers() } returns emptyList()
 
-        assertThrows<Exception> { mainService.getAllUsers() }
+        assertThrows<TestSpecificException> { mainService.getAllUsers() }
     }
 
     @Test
@@ -66,8 +67,8 @@ internal class GetAllUsersTest : MainServiceTest() {
         val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
 
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns adminUser
-        coEvery { userRepoMock.getAllUsers() } throws Exception("Failed to retrieve users")
+        coEvery { userRepoMock.getAllUsers() } throws TestSpecificException()
 
-        assertThrows<Exception> { mainService.getAllUsers() }
+        assertThrows<TestSpecificException> { mainService.getAllUsers() }
     }
 }

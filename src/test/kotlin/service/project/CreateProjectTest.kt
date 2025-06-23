@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
+import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.db.dummyUserId
 import se.uulm.snowballr.backend.model.SnowballRException.InvalidIdException
 import se.uulm.snowballr.backend.service.MainServiceTest
@@ -39,8 +40,8 @@ internal class CreateProjectTest : MainServiceTest() {
     fun `When an error occurs while a project is created, then an exception is thrown`() = testCoroutine {
         val request = ProjectOuterClass.Project.Create.getDefaultInstance()
 
-        coEvery { projectRepoMock.createProject(any(), any()) } throws Exception("Failed to create project")
+        coEvery { projectRepoMock.createProject(any(), any()) } throws TestSpecificException()
 
-        assertThrows<Exception> { mainService.createProject(request) }
+        assertThrows<TestSpecificException> { mainService.createProject(request) }
     }
 }

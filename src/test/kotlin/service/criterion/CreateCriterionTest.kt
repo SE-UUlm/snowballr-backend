@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
+import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.db.dummyUserId
 import se.uulm.snowballr.backend.model.SnowballRException.InvalidIdException
 import se.uulm.snowballr.backend.service.MainServiceTest
@@ -42,10 +43,10 @@ internal class CreateCriterionTest : MainServiceTest() {
     fun `When an error occurs while a criterion is created, then an exception is thrown`() = testCoroutine {
         val request = CriterionOuterClass.Criterion.Create.getDefaultInstance()
 
-        coEvery { criterionRepoMock.createCriterion(any(), any()) } throws Exception("Failed to create criterion")
+        coEvery { criterionRepoMock.createCriterion(any(), any()) } throws TestSpecificException()
 
         dummyUserId = UUID.randomUUID().toString()
 
-        assertThrows<Exception> { mainService.createCriterion(request) }
+        assertThrows<TestSpecificException> { mainService.createCriterion(request) }
     }
 }
