@@ -79,6 +79,10 @@ internal open class MainServiceTest {
     @BeforeAll
     fun setUp() {
         Dispatchers.setMain(threadContext)
+    }
+
+    @BeforeEach
+    fun setUpTest() {
         // TODO: remove when user management is implemented
         dummyUserId = "test_user_id"
     }
