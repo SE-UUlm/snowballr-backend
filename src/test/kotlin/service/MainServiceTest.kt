@@ -11,11 +11,13 @@ import kotlinx.coroutines.test.setMain
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.TestInstance
 import se.uulm.snowballr.backend.db.dummyUserId
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
+import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.service.criterion.CreateCriterionTest
 
 /**
@@ -69,11 +71,13 @@ internal open class MainServiceTest {
     val projectRepoMock = mockk<IProjectTableRepo>(relaxed = true)
     val criterionRepoMock = mockk<ICriterionTableRepo>(relaxed = true)
     val userRepoMock = mockk<IUserTableRepo>(relaxed = true)
+    val projectMemberRepoMock = mockk<IProjectMemberTableRepo>(relaxed = true)
     val mainService =
         MainService(
             projectRepoMock,
             criterionRepoMock,
             userRepoMock,
+            projectMemberRepoMock,
         )
 
     @BeforeAll
