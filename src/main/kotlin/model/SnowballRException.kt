@@ -92,7 +92,7 @@ sealed class SnowballRException(
         ) : UnauthorizedException(currentUserId, "all $accessedEntityType.") {
             class User(
                 currentUserId: String,
-            ) : All(currentUserId, "user")
+            ) : All(currentUserId, "users")
         }
     }
 
