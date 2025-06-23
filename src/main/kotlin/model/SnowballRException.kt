@@ -60,6 +60,10 @@ sealed class SnowballRException(
         class Criterion(
             criterionId: String,
         ) : EntityNotPersistedException("Criterion", criterionId)
+
+        class ProjectMember(
+            projectMemberId: String,
+        ) : EntityNotPersistedException("ProjectMember", projectMemberId)
     }
 
     /**
