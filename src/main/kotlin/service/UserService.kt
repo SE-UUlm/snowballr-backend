@@ -42,11 +42,7 @@ class UserService(
     private val userRepo: IUserTableRepo,
     private val projectMemberRepo: IProjectMemberTableRepo,
 ) : IUserService {
-    private suspend fun verifyUserAccess(
-        currentUser: User,
-        requestedUserId: String,
-        identifier: String,
-    ) {
+    private suspend fun verifyUserAccess(currentUser: User, requestedUserId: String, identifier: String) {
         // Check whether requesting user is server admin
         if (currentUser.role == UserRole.USER_ROLE_ADMIN) return
 

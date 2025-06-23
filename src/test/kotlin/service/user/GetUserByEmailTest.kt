@@ -7,28 +7,108 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
+import se.uulm.snowballr.backend.db.dummyUserId
+import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import se.uulm.snowballr.backend.testCoroutine
 import snowballr.Base
+import snowballr.UserOuterClass
+import java.util.UUID
 
 @ExperimentalCoroutinesApi
 @DelicateCoroutinesApi
 internal class GetUserByEmailTest : MainServiceTest() {
-    @Test
-    fun `When a user is correctly retrieved, then no exception is thrown`() = testCoroutine {
-        val request = Base.Email.newBuilder().build()
-        val user = DataBuilder.createExampleUser()
+    private val requestEmail = "test.user@example.com"
 
-        coEvery { userRepoMock.getUserByEmail(any()) } returns user
+    @Test
+    fun `When the requesting the current user fails, then an exception is thrown`() = testCoroutine {
+        val request = Base.Email.newBuilder().build()
+
+        coEvery { userRepoMock.getUserById(dummyUserId!!) } throws Exception("Failed to retrieve user")
+
+        assertThrows<Exception> { mainService.getUserByEmail(request) }
+    }
+
+    @Test
+    fun `When the requesting user has no access, then an exception is thrown`() = testCoroutine {
+        val request =
+            Base.Email
+                .newBuilder()
+                .setEmail(requestEmail)
+                .build()
+
+        val noAccessUser = DataBuilder.createExampleUser()
+        coEvery { userRepoMock.getUserById(dummyUserId!!) } returns noAccessUser
+        coEvery { userRepoMock.getUserByEmail(dummyUserId!!) } returns DataBuilder.createExampleUser()
+        coEvery { projectMemberRepoMock.getProjectMembersInSameProjectsAsUser(any()) } returns listOf()
+
+        assertThrows<UnauthorizedException.Single.User> { mainService.getUserByEmail(request) }
+    }
+
+    @Test
+    fun `When the requesting user is a server admin, then the user can be retrieved`() = testCoroutine {
+        val request =
+            Base.Email
+                .newBuilder()
+                .setEmail(requestEmail)
+                .build()
+
+        val adminUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_ADMIN)
+        coEvery { userRepoMock.getUserById(dummyUserId!!) } returns adminUser
+        coEvery { userRepoMock.getUserByEmail(requestEmail) } returns DataBuilder.createExampleUser()
+        coEvery { projectMemberRepoMock.getProjectMembersInSameProjectsAsUser(any()) } returns listOf()
 
         assertDoesNotThrow { mainService.getUserByEmail(request) }
     }
 
     @Test
-    fun `When an error occurs while a user is retrieved, then an exception is thrown`() = testCoroutine {
-        val request = Base.Email.newBuilder().build()
+    fun `When the requesting user is the requested user, then the user can be retrieved`() = testCoroutine {
+        dummyUserId = UUID.randomUUID().toString()
 
-        coEvery { userRepoMock.getUserByEmail(any()) } throws Exception("Failed to retrieve user")
+        val request =
+            Base.Email
+                .newBuilder()
+                .setEmail(requestEmail)
+                .build()
+
+        val requestingUser = DataBuilder.createExampleUser(id = UUID.fromString(dummyUserId))
+        coEvery { userRepoMock.getUserById(dummyUserId!!) } returns requestingUser
+        coEvery { userRepoMock.getUserByEmail(requestEmail) } returns requestingUser
+        coEvery { projectMemberRepoMock.getProjectMembersInSameProjectsAsUser(any()) } returns listOf()
+
+        assertDoesNotThrow { mainService.getUserByEmail(request) }
+    }
+
+    @Test
+    fun `When the requesting user is in the same project as requested user, then the user can be retrieved`() =
+        testCoroutine {
+            val request =
+                Base.Email
+                    .newBuilder()
+                    .setEmail(requestEmail)
+                    .build()
+
+            val otherUser = DataBuilder.createExampleUser()
+            val member = DataBuilder.createExampleProjectMember(userId = otherUser.id)
+
+            coEvery { userRepoMock.getUserById(dummyUserId!!) } returns otherUser
+            coEvery { userRepoMock.getUserByEmail(requestEmail) } returns DataBuilder.createExampleUser()
+            coEvery { projectMemberRepoMock.getProjectMembersInSameProjectsAsUser(any()) } returns listOf(member)
+
+            assertDoesNotThrow { mainService.getUserByEmail(request) }
+        }
+
+    @Test
+    fun `When an error occurs while the user is retrieved, then an exception is thrown`() = testCoroutine {
+        val request =
+            Base.Email
+                .newBuilder()
+                .setEmail(requestEmail)
+                .build()
+
+        val adminUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_ADMIN)
+        coEvery { userRepoMock.getUserById(dummyUserId!!) } returns adminUser
+        coEvery { userRepoMock.getUserByEmail(requestEmail) } throws Exception("Failed to retrieve user")
 
         assertThrows<Exception> { mainService.getUserByEmail(request) }
     }
