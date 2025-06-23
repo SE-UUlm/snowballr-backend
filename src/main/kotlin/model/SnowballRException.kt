@@ -88,7 +88,12 @@ sealed class SnowballRException(
             currentUserId: String,
             accessedEntityType: String,
             accessedEntityId: String,
-        ) : UnauthorizedException(currentUserId, "$accessedEntityType with ID '$accessedEntityId'.")
+        ) : UnauthorizedException(currentUserId, "$accessedEntityType with ID '$accessedEntityId'.") {
+            class User(
+                currentUserId: String,
+                accessedUserId: String,
+            ) : Single(currentUserId, "user", accessedUserId)
+        }
 
         sealed class All(
             currentUserId: String,

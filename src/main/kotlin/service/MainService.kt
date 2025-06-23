@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.service
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
+import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 
 /**
  * The [IMainService] interface provides a unified contract that combines the responsibilities of all sub-services. It
@@ -27,12 +28,14 @@ interface IMainService :
  * @param projectRepo The repository responsible for handling persistence operations related to projects.
  * @param criterionRepo The repository responsible for handling persistence operations related to criteria.
  * @param userRepo The repository responsible for handling persistence operations related to users.
+ * @param projectMemberRepo The repository responsible for handling persistence operations related to project members.
  */
 class MainService(
     private val projectRepo: IProjectTableRepo,
     private val criterionRepo: ICriterionTableRepo,
     private val userRepo: IUserTableRepo,
+    private val projectMemberRepo: IProjectMemberTableRepo,
 ) : IMainService,
     IProjectService by ProjectService(projectRepo),
     ICriterionService by CriterionService(criterionRepo),
-    IUserService by UserService(userRepo)
+    IUserService by UserService(userRepo, projectMemberRepo)
