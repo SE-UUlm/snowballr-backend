@@ -42,7 +42,11 @@ class UserService(
     private val userRepo: IUserTableRepo,
     private val projectMemberRepo: IProjectMemberTableRepo,
 ) : IUserService {
-    private suspend fun verifyUserAccess(currentUser: User, requestedUserId: String) {
+    private suspend fun verifyUserAccess(
+        currentUser: User,
+        requestedUserId: String,
+        identifier: String,
+    ) {
         // Check whether requesting user is server admin
         if (currentUser.role == UserRole.USER_ROLE_ADMIN) return
 
@@ -57,13 +61,13 @@ class UserService(
         if (isInSameProject) return
 
         // Requesting user is not authorized
-        throw UnauthorizedException.Single.User(currentUser.id.toString(), requestedUserId)
+        throw UnauthorizedException.Single.User(currentUser.id.toString(), identifier, requestedUserId)
     }
 
     override suspend fun getUserById(request: Base.Id): UserOuterClass.User {
         val currentUser = userRepo.getUserById(dummyUserId!!)
 
-        verifyUserAccess(currentUser, request.id)
+        verifyUserAccess(currentUser, request.id, "ID")
 
         val isRequestedUser = request.id == currentUser.id.toString()
 
@@ -75,9 +79,16 @@ class UserService(
         }
     }
 
-    override suspend fun getUserByEmail(request: Base.Email): UserOuterClass.User =
-        // TODO: think about who can request each user by email
-        userRepo.getUserByEmail(request.email).toGrpcUser()
+    override suspend fun getUserByEmail(request: Base.Email): UserOuterClass.User {
+        val currentUser = userRepo.getUserById(dummyUserId!!)
+
+        // We have to request the user first to get the ID for the access checks
+        val requestedUser = userRepo.getUserByEmail(request.email)
+
+        verifyUserAccess(currentUser, requestedUser.id.toString(), "email")
+
+        return requestedUser.toGrpcUser()
+    }
 
     override suspend fun getAllUsers(): UserOuterClass.User.List {
         val currentUser = userRepo.getUserById(dummyUserId!!)
