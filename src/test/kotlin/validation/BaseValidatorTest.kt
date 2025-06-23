@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import se.uulm.snowballr.backend.assertInvalidResult
 import se.uulm.snowballr.backend.model.BlankField
+import se.uulm.snowballr.backend.model.InvalidEmail
 import snowballr.Base
 
 class BaseValidatorTest {
@@ -32,6 +33,33 @@ class BaseValidatorTest {
             val result = validateRequest(request)
 
             assertInvalidResult(result, BlankField::class.java)
+        }
+    }
+
+    @Nested
+    inner class EmailRequest {
+        @Test
+        fun `When a valid email request is validated, then no issue is returned`() {
+            val request =
+                Base.Email
+                    .newBuilder()
+                    .setEmail("test-user@example.com")
+                    .build()
+            val result = validateRequest(request)
+
+            EitherAssert.assertThat(result).isRight()
+        }
+
+        @Test
+        fun `When an invalid email request is validated, then the 'InvalidEmail' issue is returned`() {
+            val request =
+                Base.Email
+                    .newBuilder()
+                    .setEmail("invalid-email")
+                    .build()
+            val result = validateRequest(request)
+
+            assertInvalidResult(result, InvalidEmail::class.java)
         }
     }
 

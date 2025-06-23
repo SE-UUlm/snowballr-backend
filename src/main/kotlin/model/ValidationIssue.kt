@@ -57,3 +57,14 @@ data class EnumUnspecified(
 ) : ValidationIssue {
     override fun toString(): String = "The enum field '$name' must not have the `UNSPECIFIED` value."
 }
+
+/**
+ * Represents a validation issue where an email has an invalid format.
+ *
+ * @property email The email that has an invalid format.
+ */
+data class InvalidEmail(
+    val email: String,
+) : ValidationIssue {
+    override fun toString(): String = "The email address '$email' is invalid."
+}

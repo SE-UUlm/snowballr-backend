@@ -17,11 +17,7 @@ internal class GetUserByEmailTest : MainServiceTest() {
     @Test
     fun `When a user is correctly retrieved, then no exception is thrown`() =
         testCoroutine {
-            val request =
-                Base.Id
-                    .newBuilder()
-                    .setId("test.user@example.com")
-                    .build()
+            val request = Base.Email.newBuilder().build()
             val user = DataBuilder.createExampleUser()
 
             coEvery { userRepoMock.getUserByEmail(any()) } returns user
@@ -32,26 +28,10 @@ internal class GetUserByEmailTest : MainServiceTest() {
     @Test
     fun `When an error occurs while a user is retrieved, then an exception is thrown`() =
         testCoroutine {
-            val request =
-                Base.Id
-                    .newBuilder()
-                    .setId("test.user@example.com")
-                    .build()
+            val request = Base.Email.newBuilder().build()
 
             coEvery { userRepoMock.getUserByEmail(any()) } throws Exception("Failed to retrieve user")
 
             assertThrows<Exception> { mainService.getUserByEmail(request) }
-        }
-
-    @Test
-    fun `When the passed email is invalid, then an exception is thrown`() =
-        testCoroutine {
-            val request =
-                Base.Id
-                    .newBuilder()
-                    .setId("invalid-email")
-                    .build()
-
-            assertThrows<IllegalArgumentException> { mainService.getUserByEmail(request) }
         }
 }
