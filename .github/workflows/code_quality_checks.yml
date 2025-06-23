@@ -90,3 +90,36 @@ jobs:
                   token: ${{ secrets.GITHUB_TOKEN }}
                   title: Code Coverage
                   update-comment: true
+
+            # We have to trigger this job on "pull_request" so that the coverage is commented in the PR,
+            # but Teamscale requires a revision. Therefore, we retrieve the latest commit and set the revision manually.
+            - name: Retrieve latest commit of PR
+              if: ${{ github.event_name == 'pull_request' }}
+              run: |
+                  # Fetch commits of PR
+                  response=$(curl --request GET \
+                      --url 'https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/commits' \
+                      --header 'Accept: application/vnd.github.v3+json' \
+                      --header 'Content-Type: application/json')
+                  # Store response in JSON file and retrieve SHA of latest commit
+                  echo $response > response.json
+                  length=$(jq 'length' response.json)
+                  index=$(($length - 1))
+                  latest_commit=$(jq --argjson index $index '.[$index]' response.json)
+                  latest_commit_sha=$(echo "$latest_commit" | jq -r '.sha')
+                  echo "Latest Commit SHA: $latest_commit_sha"
+                  echo "LATEST_COMMIT_SHA=$latest_commit_sha" >> $GITHUB_ENV
+
+            - name: Teamscale Upload
+              uses: cqse/teamscale-upload-action@v2.9.6
+              with:
+                  server: "https://exia.informatik.uni-ulm.de/teamscale"
+                  project: "29382a84-6015-4ecd-b7dd-7f578cae4040"
+                  user: "slartibartfass2"
+                  accesskey: ${{ secrets.TEAMSCALE_ACCESS_KEY }}
+                  partition: "Github Action > ${{ github.ref_name }} ${{ github.run_id }}"
+                  format: JACOCO
+                  message: "Code coverage from GitHub Actions"
+                  files: ${{ github.workspace }}/build/coverageXml/report.xml
+                  # When the event is a PR, use the previously defined env variable; otherwise the `github.sha` is fine.
+                  revision: ${{ github.event_name == 'pull_request' && env.LATEST_COMMIT_SHA || github.sha }}
