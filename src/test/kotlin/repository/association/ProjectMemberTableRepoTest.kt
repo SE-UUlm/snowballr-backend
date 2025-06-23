@@ -7,7 +7,6 @@ import org.jetbrains.exposed.sql.insertAndGetId
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import se.uulm.snowballr.backend.model.SnowballRException.InvalidIdException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.ProjectMember
@@ -37,7 +36,7 @@ class ProjectMemberTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectM
         return projectRepo.createProject(request, testUserId)
     }
 
-    suspend fun addTestMember(index: Int, projectId: String): ProjectMember {
+    suspend fun addTestMember(index: Int, projectId: UUID): ProjectMember {
         val userId =
             db.dbQuery {
                 UserTable
@@ -49,12 +48,12 @@ class ProjectMemberTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectM
                         it[status] = UserOuterClass.UserStatus.USER_STATUS_ACTIVE
                     }.value
             }
-        return repo.addUserToProject(userId.toString(), projectId)
+        return repo.addUserToProject(userId, projectId)
     }
 
     suspend fun setupProject(): Project {
         val project = createExampleProject()
-        repo.addUserToProject(testUserId, project.id.toString())
+        repo.addUserToProject(testUserId, project.id)
 
         return project
     }
@@ -65,12 +64,12 @@ class ProjectMemberTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectM
         fun `When a user is added to a project, then they can be retrieved as project member`() = testCoroutine {
             val project = createExampleProject()
 
-            val member = repo.addUserToProject(testUserId, project.id.toString())
+            val member = repo.addUserToProject(testUserId, project.id)
 
-            assertThat(member.userId.toString()).isEqualTo(testUserId)
+            assertThat(member.userId).isEqualTo(testUserId)
             assertThat(member.projectId).isEqualTo(project.id)
             assertThat(member.role).isEqualTo(MemberRole.MEMBER_ROLE_DEFAULT)
-            val members = repo.getProjectMembersOfProject(project.id.toString())
+            val members = repo.getProjectMembersOfProject(project.id)
             assertThat(members).hasSize(1)
             assertThat(members).containsExactly(member)
         }
@@ -79,11 +78,11 @@ class ProjectMemberTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectM
         fun `When a user is added to a project twice, then only one member is created`() = testCoroutine {
             val project = createExampleProject()
 
-            val member = repo.addUserToProject(testUserId, project.id.toString())
-            val member1 = repo.addUserToProject(testUserId, project.id.toString())
+            val member = repo.addUserToProject(testUserId, project.id)
+            val member1 = repo.addUserToProject(testUserId, project.id)
 
             assertThat(member).isEqualTo(member1)
-            val members = repo.getProjectMembersOfProject(project.id.toString())
+            val members = repo.getProjectMembersOfProject(project.id)
             assertThat(members).hasSize(1)
             assertThat(members).containsExactly(member)
         }
@@ -91,117 +90,91 @@ class ProjectMemberTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectM
         @Test
         fun `When a user is added to a non-existing project, then an exception is thrown`() = testCoroutine {
             assertThrows<NotFoundException.Project> {
-                repo.addUserToProject(testUserId, UUID.randomUUID().toString())
-            }
-        }
-
-        @Test
-        fun `When a user is added with an invalid project ID, then an exception is thrown`() = testCoroutine {
-            assertThrows<InvalidIdException.UUID> {
-                repo.addUserToProject(testUserId, "invalid project id")
-            }
-        }
-
-        @Test
-        fun `When a non-existing user is added to a project, then an exception is thrown`() = testCoroutine {
-            val project = createExampleProject()
-
-            assertThrows<NotFoundException.User> {
-                repo.addUserToProject(UUID.randomUUID().toString(), project.id.toString())
-            }
-        }
-
-        @Test
-        fun `When a user with invalid ID is added to a project, then an exception is thrown`() = testCoroutine {
-            val project = createExampleProject()
-
-            assertThrows<InvalidIdException.UUID> {
-                repo.addUserToProject("invalid user id", project.id.toString())
+                repo.addUserToProject(testUserId, UUID.randomUUID())
             }
         }
     }
 
-    @Nested
-    inner class GetProjectMembersOfProject {
-        @Test
-        fun `When no members are in a project, then the list is empty`() = testCoroutine {
-            val project = createExampleProject()
+    @Test
+    fun `When a non-existing user is added to a project, then an exception is thrown`() = testCoroutine {
+        val project = createExampleProject()
 
-            val members = repo.getProjectMembersOfProject(project.id.toString())
-
-            assertThat(members).isEmpty()
-        }
-
-        @Test
-        fun `When a member is in a project, then they are part of the list`() = testCoroutine {
-            val project = setupProject()
-            val member1 = addTestMember(1, project.id.toString())
-            val member2 = addTestMember(2, project.id.toString())
-
-            val members = repo.getProjectMembersOfProject(project.id.toString())
-
-            assertThat(members).hasSize(3)
-            val member = members.first()
-            assertThat(member.userId.toString()).isEqualTo(testUserId)
-            assertThat(member1).isEqualTo(members[1])
-            assertThat(member2).isEqualTo(members[2])
-        }
-
-        @Test
-        fun `When several members are in a project, then they are part of the list`() = testCoroutine {
-            val project = setupProject()
-
-            val members = repo.getProjectMembersOfProject(project.id.toString())
-
-            assertThat(members).hasSize(1)
-            val member = members.first()
-            assertThat(member.userId.toString()).isEqualTo(testUserId)
-        }
-
-        @Test
-        fun `When the members of a project with an invalid ID is fetched, then an exception is thrown`() =
-            testCoroutine {
-                assertThrows<InvalidIdException.UUID> { repo.getProjectMembersOfProject("invalid project id") }
-            }
-    }
-
-    @Nested
-    inner class GetProjectMembersInSameProjectsAsUser {
-        @Test
-        fun `When the user is in no projects, then the list of members is empty`() = testCoroutine {
-            val result = repo.getProjectMembersInSameProjectsAsUser(testUserId)
-
-            assertThat(result).isEmpty()
-        }
-
-        @Test
-        fun `When the user is in a project, then they are not part of the list of members`() = testCoroutine {
-            setupProject()
-
-            val result = repo.getProjectMembersInSameProjectsAsUser(testUserId)
-
-            assertThat(result).isEmpty()
-        }
-
-        @Test
-        fun `When the user is in projects with other users, then all members are part of the list`() = testCoroutine {
-            val project1 = setupProject()
-            val project2 = setupProject()
-            val project3 = setupProject()
-
-            val member1 = addTestMember(1, project1.id.toString())
-            val member2 = addTestMember(2, project2.id.toString())
-            val member3 = addTestMember(3, project3.id.toString())
-
-            val result = repo.getProjectMembersInSameProjectsAsUser(testUserId)
-
-            assertThat(result).hasSize(3)
-            assertThat(result).containsExactlyInAnyOrder(member1, member2, member3)
-        }
-
-        @Test
-        fun `When the passed userId is invalid, then an exception is thrown`() = testCoroutine {
-            assertThrows<InvalidIdException.UUID> { repo.getProjectMembersInSameProjectsAsUser("invalid uuid") }
+        assertThrows<NotFoundException.User> {
+            repo.addUserToProject(UUID.randomUUID(), project.id)
         }
     }
+}
+
+@Nested
+inner class GetProjectMembersOfProject {
+    @Test
+    fun `When no members are in a project, then the list is empty`() = testCoroutine {
+        val project = createExampleProject()
+
+        val members = repo.getProjectMembersOfProject(project.id)
+
+        assertThat(members).isEmpty()
+    }
+
+    @Test
+    fun `When a member is in a project, then they are part of the list`() = testCoroutine {
+        val project = setupProject()
+        val member1 = addTestMember(1, project.id)
+        val member2 = addTestMember(2, project.id)
+
+        val members = repo.getProjectMembersOfProject(project.id)
+
+        assertThat(members).hasSize(3)
+        val member = members.first()
+        assertThat(member.userId).isEqualTo(testUserId)
+        assertThat(member1).isEqualTo(members[1])
+        assertThat(member2).isEqualTo(members[2])
+    }
+
+    @Test
+    fun `When several members are in a project, then they are part of the list`() = testCoroutine {
+        val project = setupProject()
+
+        val members = repo.getProjectMembersOfProject(project.id)
+
+        assertThat(members).hasSize(1)
+        val member = members.first()
+        assertThat(member.userId).isEqualTo(testUserId)
+    }
+}
+
+@Nested
+inner class GetProjectMembersInSameProjectsAsUser {
+    @Test
+    fun `When the user is in no projects, then the list of members is empty`() = testCoroutine {
+        val result = repo.getProjectMembersInSameProjectsAsUser(testUserId)
+
+        assertThat(result).isEmpty()
+    }
+
+    @Test
+    fun `When the user is in a project, then they are not part of the list of members`() = testCoroutine {
+        setupProject()
+
+        val result = repo.getProjectMembersInSameProjectsAsUser(testUserId)
+
+        assertThat(result).isEmpty()
+    }
+
+    @Test
+    fun `When the user is in projects with other users, then all members are part of the list`() = testCoroutine {
+        val project1 = setupProject()
+        val project2 = setupProject()
+        val project3 = setupProject()
+
+        val member1 = addTestMember(1, project1.id)
+        val member2 = addTestMember(2, project2.id)
+        val member3 = addTestMember(3, project3.id)
+
+        val result = repo.getProjectMembersInSameProjectsAsUser(testUserId)
+
+        assertThat(result).hasSize(3)
+        assertThat(result).containsExactlyInAnyOrder(member1, member2, member3)
+    }
+}
 }

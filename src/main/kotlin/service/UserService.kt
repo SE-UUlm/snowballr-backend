@@ -5,11 +5,13 @@ import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.toGrpcUser
+import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import snowballr.Base
 import snowballr.UserOuterClass
 import snowballr.UserOuterClass.UserRole
+import java.util.UUID
 
 interface IUserService {
     /**
@@ -42,52 +44,57 @@ class UserService(
     private val userRepo: IUserTableRepo,
     private val projectMemberRepo: IProjectMemberTableRepo,
 ) : IUserService {
-    private suspend fun verifyUserAccess(currentUser: User, requestedUserId: String, identifier: String) {
+    private suspend fun verifyUserAccess(currentUser: User, requestedUserId: UUID, identifier: String) {
         // Check whether requesting user is server admin
         if (currentUser.role == UserRole.USER_ROLE_ADMIN) return
 
         // Check whether requesting user is requested user
-        if (requestedUserId == currentUser.id.toString()) return
+        if (requestedUserId == currentUser.id) return
 
         // Check whether requesting user is in a same project as the requested user
         val isInSameProject =
             projectMemberRepo
-                .getProjectMembersInSameProjectsAsUser(currentUser.id.toString())
+                .getProjectMembersInSameProjectsAsUser(currentUser.id)
                 .any { it.userId == currentUser.id }
         if (isInSameProject) return
 
         // Requesting user is not authorized
-        throw UnauthorizedException.Single.User(currentUser.id.toString(), identifier, requestedUserId)
+        throw UnauthorizedException.Single.User(currentUser.id.toString(), identifier, requestedUserId.toString())
     }
 
     override suspend fun getUserById(request: Base.Id): UserOuterClass.User {
-        val currentUser = userRepo.getUserById(dummyUserId!!)
+        val requestingUserId = parseUUID(dummyUserId!!, "user")
+        val requestedUserId = parseUUID(request.id, "user")
+        val currentUser = userRepo.getUserById(requestingUserId)
 
-        verifyUserAccess(currentUser, request.id, "ID")
+        verifyUserAccess(currentUser, requestingUserId, "ID")
 
-        val isRequestedUser = request.id == currentUser.id.toString()
+        val isRequestedUser = requestingUserId == currentUser.id
 
         // Don't rerequest the user if it is the current user itself
         return if (isRequestedUser) {
             currentUser.toGrpcUser()
         } else {
-            userRepo.getUserById(request.id).toGrpcUser()
+            userRepo.getUserById(requestedUserId).toGrpcUser()
         }
     }
 
     override suspend fun getUserByEmail(request: Base.Email): UserOuterClass.User {
-        val currentUser = userRepo.getUserById(dummyUserId!!)
+        val requestingUserId = parseUUID(dummyUserId!!, "user")
+        val currentUser = userRepo.getUserById(requestingUserId)
 
         // We have to request the user first to get the ID for the access checks
         val requestedUser = userRepo.getUserByEmail(request.email)
 
-        verifyUserAccess(currentUser, requestedUser.id.toString(), "email")
+        verifyUserAccess(currentUser, requestingUserId, "email")
 
         return requestedUser.toGrpcUser()
     }
 
     override suspend fun getAllUsers(): UserOuterClass.User.List {
-        val currentUser = userRepo.getUserById(dummyUserId!!)
+        val requestingUserId = parseUUID(dummyUserId!!, "user")
+        val currentUser = userRepo.getUserById(requestingUserId)
+
         // Check whether the current user has access to retrieve all users
         // TODO: remove dummy user when user management is implemented
         if (currentUser.role != UserRole.USER_ROLE_ADMIN) {

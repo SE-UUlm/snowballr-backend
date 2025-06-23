@@ -6,11 +6,13 @@ import org.jetbrains.exposed.sql.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.SnowballRException.EntityNotPersistedException
 import se.uulm.snowballr.backend.model.dto.Criterion
+import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.CriterionTable.toCriterion
 import se.uulm.snowballr.backend.table.getProjectEntityId
 import se.uulm.snowballr.backend.table.getUserEntityId
 import snowballr.CriterionOuterClass
+import java.util.UUID
 
 /**
  * Defines an interface for repository operations related to the [CriterionTable].
@@ -20,7 +22,10 @@ import snowballr.CriterionOuterClass
  * criteria can remain decoupled from the specifics of the database layer.
  */
 interface ICriterionTableRepo {
-    suspend fun createCriterion(request: CriterionOuterClass.Criterion.Create, userId: String): Criterion
+    /**
+     * Creates a criterion for the user with the passed [userId].
+     */
+    suspend fun createCriterion(request: CriterionOuterClass.Criterion.Create, userId: UUID): Criterion
 }
 
 /**
@@ -36,13 +41,15 @@ interface ICriterionTableRepo {
 class CriterionTableRepo(
     private val db: IDatabase,
 ) : ICriterionTableRepo {
-    override suspend fun createCriterion(request: CriterionOuterClass.Criterion.Create, userId: String): Criterion =
+    override suspend fun createCriterion(request: CriterionOuterClass.Criterion.Create, userId: UUID): Criterion =
         db.dbQuery {
+            val projectUUID = parseUUID(request.projectId, "project")
+
             // Get user reference
             val userEntityId = getUserEntityId(userId)
 
             // Get project reference
-            val projectEntityId = getProjectEntityId(request.projectId)
+            val projectEntityId = getProjectEntityId(projectUUID)
 
             // Create criterion
             val criterionId =

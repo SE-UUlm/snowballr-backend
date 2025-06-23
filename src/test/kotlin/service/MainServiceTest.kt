@@ -19,6 +19,7 @@ import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.service.criterion.CreateCriterionTest
+import java.util.UUID
 
 /**
  * Unit test class for the [MainService] class.
@@ -88,7 +89,7 @@ internal open class MainServiceTest {
     @BeforeEach
     fun setUpTest() {
         // TODO: remove when user management is implemented
-        dummyUserId = "test_user_id"
+        dummyUserId = UUID.randomUUID().toString()
     }
 
     @AfterEach

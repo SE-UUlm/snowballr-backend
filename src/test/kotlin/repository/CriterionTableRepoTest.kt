@@ -105,7 +105,7 @@ class CriterionTableRepoTest : H2DatabaseTest(arrayOf(CriterionTable, ProjectTab
                     .setProjectId(UUID.randomUUID().toString())
                     .build()
 
-            assertThrows<NotFoundException.User> { repo.createCriterion(request, UUID.randomUUID().toString()) }
+            assertThrows<NotFoundException.User> { repo.createCriterion(request, UUID.randomUUID()) }
         }
     }
 }
