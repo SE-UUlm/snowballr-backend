@@ -64,7 +64,7 @@ object ProjectMemberTable : CompositeIdTable("project_member") {
      * Creates a [ProjectMember] from this [ResultRow].
      */
     fun ResultRow.toProjectMember() = ProjectMember(
-        id = this[id].value,
+        id = this[id].toString(),
         projectId = this[projectId].value,
         userId = this[userId].value,
         role = this[role],
