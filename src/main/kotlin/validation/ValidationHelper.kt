@@ -4,8 +4,10 @@ import arrow.core.raise.Raise
 import arrow.core.raise.ensure
 import se.uulm.snowballr.backend.model.BlankField
 import se.uulm.snowballr.backend.model.EnumUnspecified
+import se.uulm.snowballr.backend.model.InvalidId
 import se.uulm.snowballr.backend.model.TooLongField
 import se.uulm.snowballr.backend.model.ValidationIssue
+import java.util.UUID
 
 /**
  * Ensures that the given field value is not blank (i.e., it contains at least one non-whitespace character).
@@ -46,3 +48,14 @@ fun Raise<ValidationIssue>.ensureEnumNotUnspecified(
     name: String,
     value: Enum<*>,
 ) = ensure(value.ordinal > 0) { EnumUnspecified(name) }
+
+/**
+ * Ensures that the provided [id] of field [name] has an invalid format.
+ *
+ * @param name The name of the field being validated.
+ * @param id The ID to check for validity.
+ */
+fun Raise<ValidationIssue>.ensureIdValidity(
+    name: String,
+    id: String,
+) = ensure(runCatching { UUID.fromString(id) }.isSuccess) { InvalidId(name, id) }

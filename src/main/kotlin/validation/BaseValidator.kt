@@ -13,7 +13,7 @@ import snowballr.Base
 object BaseValidator {
     fun validateId(request: Base.Id): EitherNel<ValidationIssue, Unit> =
         either {
-            ensureFieldNonBlank("id", request.id)
+            ensureIdValidity("id", request.id)
         }.toEitherNel()
 
     fun validateEmail(request: Base.Email): EitherNel<ValidationIssue, Unit> =

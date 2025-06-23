@@ -9,9 +9,11 @@ import org.junit.jupiter.params.provider.ValueSource
 import se.uulm.snowballr.backend.assertInvalidResult
 import se.uulm.snowballr.backend.model.BlankField
 import se.uulm.snowballr.backend.model.EnumUnspecified
+import se.uulm.snowballr.backend.model.InvalidId
 import se.uulm.snowballr.backend.model.TooLongField
 import snowballr.CriterionOuterClass.Criterion.Create
 import snowballr.CriterionOuterClass.CriterionCategory
+import java.util.UUID
 
 class CriterionValidatorTest {
     @Nested
@@ -19,7 +21,7 @@ class CriterionValidatorTest {
         private val validCreateRequestBuilder: Create.Builder =
             Create
                 .newBuilder()
-                .setProjectId("1")
+                .setProjectId(UUID.randomUUID().toString())
                 .setTag("C1")
                 .setName("Valid Criterion")
                 .setDescription("A valid criterion")
@@ -33,8 +35,16 @@ class CriterionValidatorTest {
             EitherAssert.assertThat(result).isRight()
         }
 
+        @Test
+        fun `When a request with an invalid project ID is validated, then the 'InvalidId' issue is returned`() {
+            val request = validCreateRequestBuilder.setProjectId("invalid-id").build()
+            val result = validateRequest(request)
+
+            assertInvalidResult(result, InvalidId::class.java)
+        }
+
         @ParameterizedTest
-        @ValueSource(strings = ["project_id", "tag", "name", "description"])
+        @ValueSource(strings = ["tag", "name", "description"])
         fun `When a blank field is validated, then the 'BlankField' issue is returned`(fieldName: String) {
             val request =
                 validCreateRequestBuilder

@@ -113,10 +113,5 @@ sealed class SnowballRException(
             id: String,
             entityType: String,
         ) : InvalidIdException(id, entityType, "UUID")
-
-        class IntId(
-            id: String,
-            entityType: String,
-        ) : InvalidIdException(id, entityType, "numerical ID")
     }
 }

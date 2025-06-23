@@ -4,9 +4,10 @@ import `in`.rcard.assertj.arrowcore.EitherAssert
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import se.uulm.snowballr.backend.assertInvalidResult
-import se.uulm.snowballr.backend.model.BlankField
 import se.uulm.snowballr.backend.model.InvalidEmail
+import se.uulm.snowballr.backend.model.InvalidId
 import snowballr.Base
+import java.util.UUID
 
 class BaseValidatorTest {
     @Nested
@@ -16,7 +17,7 @@ class BaseValidatorTest {
             val request =
                 Base.Id
                     .newBuilder()
-                    .setId("1")
+                    .setId(UUID.randomUUID().toString())
                     .build()
             val result = validateRequest(request)
 
@@ -24,15 +25,15 @@ class BaseValidatorTest {
         }
 
         @Test
-        fun `When a blank ID request is validated, then the 'BlankField' issue is returned`() {
+        fun `When an invalid ID request is validated, then the 'InvalidId' issue is returned`() {
             val request =
                 Base.Id
                     .newBuilder()
-                    .setId("")
+                    .setId("12345")
                     .build()
             val result = validateRequest(request)
 
-            assertInvalidResult(result, BlankField::class.java)
+            assertInvalidResult(result, InvalidId::class.java)
         }
     }
 

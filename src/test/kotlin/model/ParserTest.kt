@@ -20,25 +20,4 @@ class ParserTest {
             assertThrows<SnowballRException.InvalidIdException.UUID> { parseUUID(uuid, "test") }
         }
     }
-
-    @Nested
-    inner class ParseIntId {
-        @Test
-        fun `When a valid integer ID is passed, then it is correctly parsed`() {
-            val int = "123"
-            assertDoesNotThrow { parseIntId(int, "test") }
-        }
-
-        @Test
-        fun `When a non-integer string is parsed as integer ID, then an exception is thrown`() {
-            val string = "this is a string"
-            assertThrows<SnowballRException.InvalidIdException.IntId> { parseIntId(string, "test") }
-        }
-
-        @Test
-        fun `When a negative integer value string is parsed as integer ID, then an exception is thrown`() {
-            val negativeValue = "-1"
-            assertThrows<SnowballRException.InvalidIdException.IntId> { parseIntId(negativeValue, "test") }
-        }
-    }
 }

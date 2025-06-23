@@ -17,7 +17,7 @@ object CriterionValidator {
     fun validateCreateRequest(request: Criterion.Create): EitherNel<ValidationIssue, Unit> =
         either {
             zipOrAccumulate(
-                { ensureFieldNonBlank("project_id", request.projectId) },
+                { ensureIdValidity("project_id", request.projectId) },
                 {
                     ensureFieldNonBlank("tag", request.tag)
                     ensureFieldLength("tag", request.tag, CRITERION_TAG_MAX_LENGTH)
