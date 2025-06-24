@@ -57,7 +57,7 @@ object ReviewTable : UUIDTable("review") {
     fun ResultRow.toReview() =
         Review(
             id = this[id].value,
-            projectPaperId = this[projectPaperId].toString(),
+            projectPaperId = this[projectPaperId].value,
             userId = this[userId].value,
             decision = this[decision],
             createdAt = this[createdAt],

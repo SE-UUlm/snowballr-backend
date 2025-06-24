@@ -10,7 +10,7 @@ import java.util.UUID
  * DTO of [ProjectTable].
  */
 data class Project(
-    val id: Int,
+    val id: UUID,
     val name: String,
     val status: ProjectOuterClass.ProjectStatus,
     val currentStage: Long,

@@ -1,18 +1,19 @@
 package se.uulm.snowballr.backend.validation
 
-import arrow.core.Either
 import `in`.rcard.assertj.arrowcore.EitherAssert
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.ValueSource
+import se.uulm.snowballr.backend.assertInvalidResult
 import se.uulm.snowballr.backend.model.BlankField
 import se.uulm.snowballr.backend.model.EnumUnspecified
+import se.uulm.snowballr.backend.model.InvalidId
 import se.uulm.snowballr.backend.model.TooLongField
 import snowballr.CriterionOuterClass.Criterion.Create
 import snowballr.CriterionOuterClass.CriterionCategory
+import java.util.UUID
 
 class CriterionValidatorTest {
     @Nested
@@ -20,7 +21,7 @@ class CriterionValidatorTest {
         private val validCreateRequestBuilder: Create.Builder =
             Create
                 .newBuilder()
-                .setProjectId("1")
+                .setProjectId(UUID.randomUUID().toString())
                 .setTag("C1")
                 .setName("Valid Criterion")
                 .setDescription("A valid criterion")
@@ -34,8 +35,16 @@ class CriterionValidatorTest {
             EitherAssert.assertThat(result).isRight()
         }
 
+        @Test
+        fun `When a request with an invalid project ID is validated, then the 'InvalidId' issue is returned`() {
+            val request = validCreateRequestBuilder.setProjectId("invalid-id").build()
+            val result = validateRequest(request)
+
+            assertInvalidResult(result, InvalidId::class.java)
+        }
+
         @ParameterizedTest
-        @ValueSource(strings = ["project_id", "tag", "name", "description"])
+        @ValueSource(strings = ["tag", "name", "description"])
         fun `When a blank field is validated, then the 'BlankField' issue is returned`(fieldName: String) {
             val request =
                 validCreateRequestBuilder
@@ -43,11 +52,7 @@ class CriterionValidatorTest {
                     .build()
             val result = validateRequest(request)
 
-            EitherAssert.assertThat(result).isLeft()
-            val value = (result as Either.Left).value
-            assertThat(value.size).isEqualTo(1)
-            val issue = value.first()
-            assertThat(issue).isInstanceOf(BlankField::class.java)
+            assertInvalidResult(result, BlankField::class.java)
         }
 
         @ParameterizedTest
@@ -69,11 +74,7 @@ class CriterionValidatorTest {
                     .build()
             val result = validateRequest(request)
 
-            EitherAssert.assertThat(result).isLeft()
-            val value = (result as Either.Left).value
-            assertThat(value.size).isEqualTo(1)
-            val issue = value.first()
-            assertThat(issue).isInstanceOf(TooLongField::class.java)
+            assertInvalidResult(result, TooLongField::class.java)
         }
 
         @Test
@@ -84,11 +85,7 @@ class CriterionValidatorTest {
                     .build()
             val result = validateRequest(request)
 
-            EitherAssert.assertThat(result).isLeft()
-            val value = (result as Either.Left).value
-            assertThat(value.size).isEqualTo(1)
-            val issue = value.first()
-            assertThat(issue).isInstanceOf(EnumUnspecified::class.java)
+            assertInvalidResult(result, EnumUnspecified::class.java)
         }
     }
 }

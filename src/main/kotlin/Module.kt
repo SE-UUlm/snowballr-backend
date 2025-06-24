@@ -9,7 +9,9 @@ import se.uulm.snowballr.backend.env.Env
 import se.uulm.snowballr.backend.repository.CriterionTableRepo
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
+import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.ProjectTableRepo
+import se.uulm.snowballr.backend.repository.UserTableRepo
 import se.uulm.snowballr.backend.service.IMainService
 import se.uulm.snowballr.backend.service.MainService
 
@@ -30,6 +32,7 @@ val snowballRModule =
         // Here come all repos and other definitions, e.g., the http client
         singleOf(::ProjectTableRepo) { bind<IProjectTableRepo>() }
         singleOf(::CriterionTableRepo) { bind<ICriterionTableRepo>() }
+        singleOf(::UserTableRepo) { bind<IUserTableRepo>() }
         // The main service comes last
         singleOf(::MainService) { bind<IMainService>() }
     }

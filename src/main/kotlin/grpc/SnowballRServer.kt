@@ -161,13 +161,14 @@ class SnowballRServer(
         override suspend fun changePassword(request: Authentication.PasswordChangeRequest): Base.Nothing =
             super.changePassword(request)
 
-        override suspend fun getAllUsers(request: Base.Nothing): UserOuterClass.User.List = super.getAllUsers(request)
+        override suspend fun getAllUsers(request: Base.Nothing): UserOuterClass.User.List = mainService.getAllUsers()
 
         override suspend fun getCurrentUser(request: Base.Nothing): UserOuterClass.User = super.getCurrentUser(request)
 
-        override suspend fun getUserById(request: Base.Id): UserOuterClass.User = super.getUserById(request)
+        override suspend fun getUserById(request: Base.Id): UserOuterClass.User = mainService.getUserById(request)
 
-        override suspend fun getUserByEmail(request: Base.Id): UserOuterClass.User = super.getUserByEmail(request)
+        override suspend fun getUserByEmail(request: Base.Email): UserOuterClass.User =
+            mainService.getUserByEmail(request)
 
         override suspend fun updateUser(request: UserOuterClass.User.Update): UserOuterClass.User =
             super.updateUser(request)
@@ -212,6 +213,9 @@ class SnowballRServer(
 
         override suspend fun getPendingInvitationsForUser(request: Base.Id): ProjectOuterClass.Project.List =
             super.getPendingInvitationsForUser(request)
+
+        override suspend fun getInviteCandidates(request: UserOuterClass.User.SearchQuery): UserOuterClass.User.List =
+            super.getInviteCandidates(request)
 
         override suspend fun inviteUserToProject(request: ProjectOuterClass.Project.Member.Invite): Base.Nothing =
             super.inviteUserToProject(request)

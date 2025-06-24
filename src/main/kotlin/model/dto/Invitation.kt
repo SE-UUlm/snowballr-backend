@@ -10,7 +10,7 @@ import java.util.UUID
  */
 data class Invitation(
     val id: CompositeID,
-    val projectId: Int,
+    val projectId: UUID,
     val userId: UUID,
     val token: String,
     val validUntil: Instant,

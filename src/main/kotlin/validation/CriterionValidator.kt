@@ -11,13 +11,13 @@ const val CRITERION_NAME_MAX_LENGTH = 50
 const val CRITERION_DESCRIPTION_MAX_LENGTH = 200
 
 /**
- * An object that validates the requests for [Criterion] objects.
+ * A validator for [Criterion] related requests.
  */
 object CriterionValidator {
     fun validateCreateRequest(request: Criterion.Create): EitherNel<ValidationIssue, Unit> =
         either {
             zipOrAccumulate(
-                { ensureFieldNonBlank("project_id", request.projectId) },
+                { ensureIdValidity("project_id", request.projectId) },
                 {
                     ensureFieldNonBlank("tag", request.tag)
                     ensureFieldLength("tag", request.tag, CRITERION_TAG_MAX_LENGTH)

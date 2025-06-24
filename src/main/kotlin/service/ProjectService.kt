@@ -1,11 +1,15 @@
 package se.uulm.snowballr.backend.service
 
 import se.uulm.snowballr.backend.db.dummyUserId
+import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.dto.toGrpcProject
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import snowballr.ProjectOuterClass
 
 interface IProjectService {
+    /**
+     * Service implementation of [SnowballRService.createProject].
+     */
     suspend fun createProject(request: ProjectOuterClass.Project.Create): ProjectOuterClass.Project
 }
 

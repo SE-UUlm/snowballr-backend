@@ -1,11 +1,15 @@
 package se.uulm.snowballr.backend.service
 
 import se.uulm.snowballr.backend.db.dummyUserId
+import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.dto.toGrpcCriterion
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import snowballr.CriterionOuterClass
 
 interface ICriterionService {
+    /**
+     * Service implementation of [SnowballRService.createCriterion].
+     */
     suspend fun createCriterion(request: CriterionOuterClass.Criterion.Create): CriterionOuterClass.Criterion
 }
 

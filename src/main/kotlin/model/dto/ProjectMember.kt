@@ -11,7 +11,7 @@ import java.util.UUID
  */
 data class ProjectMember(
     val id: CompositeID,
-    val projectId: Int,
+    val projectId: UUID,
     val userId: UUID,
     val role: ProjectOuterClass.MemberRole,
     val createdAt: OffsetDateTime,

@@ -10,7 +10,7 @@ import java.util.UUID
  */
 data class Review(
     val id: UUID,
-    val projectPaperId: String,
+    val projectPaperId: UUID,
     val userId: UUID,
     val decision: ReviewOuterClass.ReviewDecision,
     val createdAt: OffsetDateTime,

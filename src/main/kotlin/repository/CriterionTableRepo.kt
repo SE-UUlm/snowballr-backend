@@ -5,13 +5,11 @@ import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.SnowballRException.EntityNotPersistedException
-import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.Criterion
 import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.CriterionTable.toCriterion
-import se.uulm.snowballr.backend.table.ProjectTable
-import se.uulm.snowballr.backend.table.UserTable
-import se.uulm.snowballr.backend.table.getEntityId
+import se.uulm.snowballr.backend.table.getProjectEntityId
+import se.uulm.snowballr.backend.table.getUserEntityId
 import snowballr.CriterionOuterClass
 
 /**
@@ -47,11 +45,10 @@ class CriterionTableRepo(
     ): Criterion =
         db.dbQuery {
             // Get user reference
-            val userEntityId = UserTable.getEntityId(userId) ?: throw NotFoundException.User(userId)
+            val userEntityId = getUserEntityId(userId)
 
             // Get project reference
-            val projectEntityId =
-                ProjectTable.getEntityId(request.projectId) ?: throw NotFoundException.Project(request.projectId)
+            val projectEntityId = getProjectEntityId(request.projectId)
 
             // Create criterion
             val criterionId =

@@ -10,7 +10,7 @@ import java.util.UUID
  * DTO of [PaperTable].
  */
 data class Paper(
-    val id: Int,
+    val id: UUID,
     val title: String,
     val externalId: String?,
     val abstract: String,
