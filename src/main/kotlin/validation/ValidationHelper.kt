@@ -50,7 +50,7 @@ fun Raise<ValidationIssue>.ensureEnumNotUnspecified(
 ) = ensure(value.ordinal > 0) { EnumUnspecified(name) }
 
 /**
- * Ensures that the provided [id] of field [name] has an invalid format.
+ * Ensures that the provided [id] of field [name] has a valid format.
  *
  * @param name The name of the field being validated.
  * @param id The ID to check for validity.
