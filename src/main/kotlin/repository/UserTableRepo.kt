@@ -10,6 +10,7 @@ import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.UserTable.toUser
 import snowballr.UserOuterClass
 import java.time.OffsetDateTime
+import java.util.UUID
 
 /**
  * Defines an interface for repository operations related to the [UserTable].
@@ -25,7 +26,11 @@ interface IUserTableRepo {
 
     suspend fun getAllUsers(): List<User>
 
-    suspend fun softDeleteUser(id: String): Int
+    /**
+     * Performs a soft delete meaning the user with the given [id] is not removed from the database, but only the
+     * status is set to [UserOuterClass.UserStatus.USER_STATUS_DELETED].
+     */
+    suspend fun softDeleteUser(id: UUID)
 }
 
 /**
@@ -60,20 +65,17 @@ class UserTableRepo(
             ?: throw NotFoundException.User(email, "email")
     }
 
-    override suspend fun getAllUsers(): List<User> =
-        db.dbQuery {
-            UserTable
-                .selectAll()
-                .map { it.toUser() }
-        }
+    override suspend fun getAllUsers(): List<User> = db.dbQuery {
+        UserTable
+            .selectAll()
+            .map { it.toUser() }
+    }
 
-    override suspend fun softDeleteUser(id: String) =
-        db.dbQuery {
-            val uuid = parseUUID(id, "user")
-
-            UserTable.update({ UserTable.id eq uuid }) {
-                it[status] = UserOuterClass.UserStatus.USER_STATUS_DELETED
-                it[deletedAt] = OffsetDateTime.now()
-            }
+    override suspend fun softDeleteUser(id: UUID) = db.dbQuery {
+        UserTable.update({ UserTable.id eq id }) {
+            it[status] = UserOuterClass.UserStatus.USER_STATUS_DELETED
+            it[deletedAt] = OffsetDateTime.now()
         }
+        return@dbQuery
+    }
 }

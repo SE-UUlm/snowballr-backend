@@ -13,6 +13,7 @@ import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.testCoroutine
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
+import java.time.OffsetDateTime
 import java.util.UUID
 
 @ExperimentalCoroutinesApi
@@ -129,46 +130,29 @@ class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
     @Nested
     inner class DeleteUser {
         @Test
-        fun `When the user is found, then the status of the user is set to USER_STATUS_DELETED`() =
-            testCoroutine {
-                val userId1 =
-                    db
-                        .dbQuery {
-                            UserTable.insertAndGetId {
-                                it[email] = "test.user@example.com"
-                                it[firstName] = "Test"
-                                it[lastName] = "User"
-                                it[role] = UserRole.USER_ROLE_DEFAULT
-                                it[status] = UserStatus.USER_STATUS_ACTIVE
-                            }
-                        }.value
+        fun `When the user is found, then the status of the user is set to USER_STATUS_DELETED`() = testCoroutine {
+            val userId1 =
+                db
+                    .dbQuery {
+                        UserTable.insertAndGetId {
+                            it[email] = "test.user@example.com"
+                            it[firstName] = "Test"
+                            it[lastName] = "User"
+                            it[role] = UserRole.USER_ROLE_DEFAULT
+                            it[status] = UserStatus.USER_STATUS_ACTIVE
+                        }
+                    }.value
+            val before = OffsetDateTime.now()
+            repo.softDeleteUser(userId1)
+            val after = OffsetDateTime.now()
+            val deletedUser = repo.getUserById(userId1.toString())
+            assertThat(deletedUser.status).isEqualTo(UserStatus.USER_STATUS_DELETED)
+            assertThat(deletedUser.deletedAt).isBetween(before, after)
+        }
 
-                repo.softDeleteUser(userId1.toString())
-                val deletedUser = repo.getUserById(userId1.toString())
-                assertThat(deletedUser.status).isEqualTo(UserStatus.USER_STATUS_DELETED)
-            }
-    }
-
-    @Nested
-    inner class DeleteUser {
         @Test
-        fun `When the user is found, then the status of the user is set to USER_STATUS_DELETED`() =
-            testCoroutine {
-                val userId1 =
-                    db
-                        .dbQuery {
-                            UserTable.insertAndGetId {
-                                it[email] = "test.user@example.com"
-                                it[firstName] = "Test"
-                                it[lastName] = "User"
-                                it[role] = UserRole.USER_ROLE_DEFAULT
-                                it[status] = UserStatus.USER_STATUS_ACTIVE
-                            }
-                        }.value
-
-                repo.softDeleteUser(userId1.toString())
-                val deletedUser = repo.getUserById(userId1.toString())
-                assertThat(deletedUser.status).isEqualTo(UserStatus.USER_STATUS_DELETED)
-            }
+        fun `When a user is not found, then an exception is thrown`() = testCoroutine {
+            assertThrows<NotFoundException.User> { repo.getUserById(UUID.randomUUID().toString()) }
+        }
     }
 }

@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.service
 
 import se.uulm.snowballr.backend.db.dummyUserId
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
+import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.toGrpcUser
 import se.uulm.snowballr.backend.repository.IUserTableRepo
@@ -25,7 +26,10 @@ interface IUserService {
      */
     suspend fun getAllUsers(): UserOuterClass.User.List
 
-    suspend fun softDeleteUser(id: Base.Id): Base.Nothing
+    /**
+     * Service implementation of [SnowballRService.softDeleteUser].
+     */
+    suspend fun softDeleteUser(request: Base.Id): Base.Nothing
 }
 
 /**
@@ -63,14 +67,25 @@ class UserService(
         return builder.build()
     }
 
-    override suspend fun softDeleteUser(id: Base.Id): Base.Nothing {
+    override suspend fun softDeleteUser(request: Base.Id): Base.Nothing {
         val currentUser = repo.getUserById(dummyUserId!!)
+        val userToDelete = repo.getUserById(request.id)
+        val isSameUser = currentUser.id == userToDelete.id
 
-        if (currentUser.role != UserRole.USER_ROLE_ADMIN && currentUser.id.toString() != id.id) {
+        // Checks, if the user tries to delete another user without being an admin
+        if (currentUser.role != UserRole.USER_ROLE_ADMIN && !isSameUser) {
             throw UnauthorizedException.All.User(dummyUserId!!)
         }
+        // Checks, if the user tries to delete another user that is an admin (not possible even if the current user is
+        // an admin)
+        if (userToDelete.role == UserRole.USER_ROLE_ADMIN && !isSameUser) {
+            throw FailedPreconditionException(
+                "The user with the id ${userToDelete.id} can not be deleted " +
+                    "because he is an admin.",
+            )
+        }
 
-        repo.softDeleteUser(id.id)
+        repo.softDeleteUser(userToDelete.id)
         return Base.Nothing.getDefaultInstance()
     }
 }
