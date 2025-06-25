@@ -174,6 +174,7 @@ complexity:
         ignoreDeprecated: false
         ignorePrivate: false
         ignoreOverridden: false
+        ignoreAnnotatedFunctions: [ ]
 
 coroutines:
     active: true
@@ -694,6 +695,8 @@ style:
         active: true
         max: 2
         excludeGuardClauses: false
+    TrailingWhitespace:
+        active: true
     TrimMultilineRawString:
         active: true
         trimmingMethods:
@@ -780,4 +783,3 @@ style:
         active: true
         excludeImports:
             - 'java.util.*'
-            - 'io.ktor.*'
