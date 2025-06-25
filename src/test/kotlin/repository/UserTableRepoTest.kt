@@ -148,4 +148,27 @@ class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
                 assertThat(deletedUser.status).isEqualTo(UserStatus.USER_STATUS_DELETED)
             }
     }
+
+    @Nested
+    inner class DeleteUser {
+        @Test
+        fun `When the user is found, then the status of the user is set to USER_STATUS_DELETED`() =
+            testCoroutine {
+                val userId1 =
+                    db
+                        .dbQuery {
+                            UserTable.insertAndGetId {
+                                it[email] = "test.user@example.com"
+                                it[firstName] = "Test"
+                                it[lastName] = "User"
+                                it[role] = UserRole.USER_ROLE_DEFAULT
+                                it[status] = UserStatus.USER_STATUS_ACTIVE
+                            }
+                        }.value
+
+                repo.softDeleteUser(userId1.toString())
+                val deletedUser = repo.getUserById(userId1.toString())
+                assertThat(deletedUser.status).isEqualTo(UserStatus.USER_STATUS_DELETED)
+            }
+    }
 }
