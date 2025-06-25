@@ -47,8 +47,8 @@ data class Env(
 class EnvVariableNotFoundException(
     key: String,
 ) : Exception(
-        "The env variable with key '$key' could not be found. Please check the variables.",
-    )
+    "The env variable with key '$key' could not be found. Please check the variables.",
+)
 
 interface IEnvService {
     @kotlin.jvm.Throws(EnvVariableNotFoundException::class)
