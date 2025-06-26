@@ -35,7 +35,7 @@ val exceptionInterceptor =
 private class ExceptionCall<ReqT, RespT>(
     delegate: ServerCall<ReqT, RespT>,
 ) : ForwardingServerCall.SimpleForwardingServerCall<ReqT, RespT>(delegate) {
-    override fun close(status: Status?, trailers: Metadata?,) {
+    override fun close(status: Status?, trailers: Metadata?) {
         var newStatus = status
         if (status == null) {
             logger.error { "gRPC call closed with null status." }
@@ -94,7 +94,7 @@ private class ExceptionCall<ReqT, RespT>(
      * Specific unexpected exceptions point to missing exception handling in this application.
      * They are logged as warning so that they can be handled in the future.
      */
-    private fun getStatusForSpecificUnexpectedException(status: Status, e: Exception,): Status {
+    private fun getStatusForSpecificUnexpectedException(status: Status, e: Exception): Status {
         logger.warn(e) { "gRPC call failed due to unexpected ${e::class.simpleName} with message: ${e.message}" }
         return status
     }

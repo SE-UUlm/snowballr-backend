@@ -20,7 +20,7 @@ import snowballr.CriterionOuterClass
  * criteria can remain decoupled from the specifics of the database layer.
  */
 interface ICriterionTableRepo {
-    suspend fun createCriterion(request: CriterionOuterClass.Criterion.Create, userId: String,): Criterion
+    suspend fun createCriterion(request: CriterionOuterClass.Criterion.Create, userId: String): Criterion
 }
 
 /**
@@ -36,7 +36,7 @@ interface ICriterionTableRepo {
 class CriterionTableRepo(
     private val db: IDatabase,
 ) : ICriterionTableRepo {
-    override suspend fun createCriterion(request: CriterionOuterClass.Criterion.Create, userId: String,): Criterion =
+    override suspend fun createCriterion(request: CriterionOuterClass.Criterion.Create, userId: String): Criterion =
         db.dbQuery {
             // Get user reference
             val userEntityId = getUserEntityId(userId)

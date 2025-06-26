@@ -27,7 +27,7 @@ fun testCoroutine(testFunction: suspend () -> Unit) {
  *
  * **Note:** This assumes that the validation result only contains one validation issue.
  */
-fun <T> assertInvalidResult(result: EitherNel<ValidationIssue, Unit>, issueType: Class<T>,) {
+fun <T> assertInvalidResult(result: EitherNel<ValidationIssue, Unit>, issueType: Class<T>) {
     EitherAssert.assertThat(result).isLeft()
     val value = (result as Either.Left).value
     assertThat(value.size).isEqualTo(1)

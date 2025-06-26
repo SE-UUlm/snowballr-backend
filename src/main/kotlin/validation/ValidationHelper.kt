@@ -16,7 +16,7 @@ import java.util.UUID
  * @param name The name of the field being validated.
  * @param value The value of the field to check for blankness.
  */
-fun Raise<ValidationIssue>.ensureFieldNonBlank(name: String, value: String,) =
+fun Raise<ValidationIssue>.ensureFieldNonBlank(name: String, value: String) =
     ensure(value.isNotBlank()) { BlankField(name) }
 
 /**
@@ -27,7 +27,7 @@ fun Raise<ValidationIssue>.ensureFieldNonBlank(name: String, value: String,) =
  * @param value The value of the field to check for its length.
  * @param maxLength The maximum allowed length for the field value.
  */
-fun Raise<ValidationIssue>.ensureFieldLength(name: String, value: String, maxLength: Int,) =
+fun Raise<ValidationIssue>.ensureFieldLength(name: String, value: String, maxLength: Int) =
     ensure(value.length <= maxLength) { TooLongField(name, maxLength) }
 
 /**
@@ -39,7 +39,7 @@ fun Raise<ValidationIssue>.ensureFieldLength(name: String, value: String, maxLen
  * @param name The name of the enum field being validated.
  * @param value The enum value to check for being `UNSPECIFIED`.
  */
-fun Raise<ValidationIssue>.ensureEnumNotUnspecified(name: String, value: Enum<*>,) =
+fun Raise<ValidationIssue>.ensureEnumNotUnspecified(name: String, value: Enum<*>) =
     ensure(value.ordinal > 0) { EnumUnspecified(name) }
 
 /**
@@ -48,5 +48,5 @@ fun Raise<ValidationIssue>.ensureEnumNotUnspecified(name: String, value: Enum<*>
  * @param name The name of the field being validated.
  * @param id The ID to check for validity.
  */
-fun Raise<ValidationIssue>.ensureIdValidity(name: String, id: String,) =
+fun Raise<ValidationIssue>.ensureIdValidity(name: String, id: String) =
     ensure(runCatching { UUID.fromString(id) }.isSuccess) { InvalidId(name, id) }
