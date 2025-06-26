@@ -325,7 +325,7 @@ formatting:
         autoCorrect: true
         indentSize: 4
     ClassName:
-        active: false
+        active: true
         autoCorrect: true
     CommentSpacing:
         active: true
@@ -340,12 +340,12 @@ formatting:
         maxLineLength: 120
         indentSize: 4
     DiscouragedCommentLocation:
-        active: false
+        active: true
     EnumEntryNameCase:
         active: true
         autoCorrect: true
     EnumWrapping:
-        active: false
+        active: true
         autoCorrect: true
         indentSize: 4
     Filename:
@@ -379,11 +379,11 @@ formatting:
         active: true
         autoCorrect: true
     IfElseBracing:
-        active: false
+        active: true
         autoCorrect: true
         indentSize: 4
     IfElseWrapping:
-        active: false
+        active: true
         autoCorrect: true
         indentSize: 4
     ImportOrdering:
@@ -421,7 +421,7 @@ formatting:
         active: true
         autoCorrect: true
     NoBlankLineInList:
-        active: false
+        active: true
         autoCorrect: true
     NoBlankLinesInChainedMethodCalls:
         active: true
@@ -430,13 +430,13 @@ formatting:
         active: true
         autoCorrect: true
     NoConsecutiveComments:
-        active: false
+        active: true
         autoCorrect: true
     NoEmptyClassBody:
         active: true
         autoCorrect: true
     NoEmptyFirstLineInClassBody:
-        active: false
+        active: true
         autoCorrect: true
         indentSize: 4
     NoEmptyFirstLineInMethodBlock:
@@ -455,7 +455,7 @@ formatting:
         active: true
         autoCorrect: true
     NoSingleLineBlockComment:
-        active: false
+        active: true
         autoCorrect: true
         indentSize: 4
     NoTrailingSpaces:
@@ -478,7 +478,7 @@ formatting:
         active: true
         autoCorrect: true
     ParameterListSpacing:
-        active: false
+        active: true
         autoCorrect: true
     ParameterListWrapping:
         active: true
@@ -543,7 +543,7 @@ formatting:
         active: true
         autoCorrect: true
     StringTemplateIndent:
-        active: false
+        active: true
         autoCorrect: true
         indentSize: 4
     TrailingCommaOnCallSite:
@@ -555,15 +555,15 @@ formatting:
         autoCorrect: true
         useTrailingCommaOnDeclarationSite: true
     TryCatchFinallySpacing:
-        active: false
+        active: true
         autoCorrect: true
         indentSize: 4
     TypeArgumentListSpacing:
-        active: false
+        active: true
         autoCorrect: true
         indentSize: 4
     TypeParameterListSpacing:
-        active: false
+        active: true
         autoCorrect: true
         indentSize: 4
     UnnecessaryParenthesesBeforeTrailingLambda:
