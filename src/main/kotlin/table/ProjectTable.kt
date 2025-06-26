@@ -73,26 +73,25 @@ object ProjectTable : UUIDTable("project") {
     /**
      * Creates a [Project] from this [ResultRow].
      */
-    fun ResultRow.toProject() =
-        Project(
-            id = this[id].value,
-            name = this[name],
-            status = this[status],
-            currentStage = this[currentStage],
-            maxStage = this[maxStage],
-            similarityThreshold = this[similarityThreshold],
-            snowballingType = this[snowballingType],
-            reviewMaybeAllowed = this[reviewMaybeAllowed],
-            reviewDecisionMatrix = ProjectOuterClass.ReviewDecisionMatrix.parseFrom(this[reviewDecisionMatrixBinary]),
-            fetcherApis = this[fetcherApis],
-            currentStageStartedAt = this[currentStageStartedAt],
-            createdAt = this[createdAt],
-            createdBy = this[createdBy].value,
-            modifiedAt = this[modifiedAt],
-            modifiedBy = this[modifiedBy]?.value,
-            deletedAt = this[deletedAt],
-            deletedBy = this[deletedBy]?.value,
-            archivedAt = this[archivedAt],
-            archivedBy = this[archivedBy]?.value,
-        )
+    fun ResultRow.toProject() = Project(
+        id = this[id].value,
+        name = this[name],
+        status = this[status],
+        currentStage = this[currentStage],
+        maxStage = this[maxStage],
+        similarityThreshold = this[similarityThreshold],
+        snowballingType = this[snowballingType],
+        reviewMaybeAllowed = this[reviewMaybeAllowed],
+        reviewDecisionMatrix = ProjectOuterClass.ReviewDecisionMatrix.parseFrom(this[reviewDecisionMatrixBinary]),
+        fetcherApis = this[fetcherApis],
+        currentStageStartedAt = this[currentStageStartedAt],
+        createdAt = this[createdAt],
+        createdBy = this[createdBy].value,
+        modifiedAt = this[modifiedAt],
+        modifiedBy = this[modifiedBy]?.value,
+        deletedAt = this[deletedAt],
+        deletedBy = this[deletedBy]?.value,
+        archivedAt = this[archivedAt],
+        archivedBy = this[archivedBy]?.value,
+    )
 }

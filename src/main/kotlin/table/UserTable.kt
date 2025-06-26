@@ -44,16 +44,15 @@ object UserTable : UUIDTable("user") {
     /**
      * Creates a [User] from this [ResultRow].
      */
-    fun ResultRow.toUser() =
-        User(
-            id = this[id].value,
-            email = this[email],
-            firstName = this[firstName],
-            lastName = this[lastName],
-            role = this[role],
-            status = this[status],
-            createdAt = this[createdAt],
-            modifiedAt = this[modifiedAt],
-            deletedAt = this[deletedAt],
-        )
+    fun ResultRow.toUser() = User(
+        id = this[id].value,
+        email = this[email],
+        firstName = this[firstName],
+        lastName = this[lastName],
+        role = this[role],
+        status = this[status],
+        createdAt = this[createdAt],
+        modifiedAt = this[modifiedAt],
+        deletedAt = this[deletedAt],
+    )
 }

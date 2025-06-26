@@ -15,23 +15,21 @@ import snowballr.ProjectOuterClass
 @DelicateCoroutinesApi
 internal class CreateProjectTest : MainServiceTest() {
     @Test
-    fun `When a project is correctly created, then no exception is thrown`() =
-        testCoroutine {
-            val request = ProjectOuterClass.Project.Create.getDefaultInstance()
-            val project = DataBuilder.createExampleProject()
+    fun `When a project is correctly created, then no exception is thrown`() = testCoroutine {
+        val request = ProjectOuterClass.Project.Create.getDefaultInstance()
+        val project = DataBuilder.createExampleProject()
 
-            coEvery { projectRepoMock.createProject(any(), any()) } returns project
+        coEvery { projectRepoMock.createProject(any(), any()) } returns project
 
-            assertDoesNotThrow { mainService.createProject(request) }
-        }
+        assertDoesNotThrow { mainService.createProject(request) }
+    }
 
     @Test
-    fun `When an error occurs while a project is created, then an exception is thrown`() =
-        testCoroutine {
-            val request = ProjectOuterClass.Project.Create.getDefaultInstance()
+    fun `When an error occurs while a project is created, then an exception is thrown`() = testCoroutine {
+        val request = ProjectOuterClass.Project.Create.getDefaultInstance()
 
-            coEvery { projectRepoMock.createProject(any(), any()) } throws Exception("Failed to create project")
+        coEvery { projectRepoMock.createProject(any(), any()) } throws Exception("Failed to create project")
 
-            assertThrows<Exception> { mainService.createProject(request) }
-        }
+        assertThrows<Exception> { mainService.createProject(request) }
+    }
 }

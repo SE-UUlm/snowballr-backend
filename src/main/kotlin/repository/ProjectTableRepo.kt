@@ -20,10 +20,7 @@ import snowballr.ProjectOuterClass
  * for creating and managing projects can remain decoupled from the specifics of the database layer.
  */
 interface IProjectTableRepo {
-    suspend fun createProject(
-        request: ProjectOuterClass.Project.Create,
-        userId: String,
-    ): Project
+    suspend fun createProject(request: ProjectOuterClass.Project.Create, userId: String,): Project
 }
 
 /**
@@ -38,10 +35,7 @@ interface IProjectTableRepo {
 class ProjectTableRepo(
     private val db: IDatabase,
 ) : IProjectTableRepo {
-    override suspend fun createProject(
-        request: ProjectOuterClass.Project.Create,
-        userId: String,
-    ): Project =
+    override suspend fun createProject(request: ProjectOuterClass.Project.Create, userId: String,): Project =
         db.dbQuery {
             // Get user reference
             val userEntityId = getUserEntityId(userId)

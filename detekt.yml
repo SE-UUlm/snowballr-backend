@@ -366,7 +366,7 @@ formatting:
         autoCorrect: true
         maxLineLength: 120
     FunctionSignature:
-        active: false
+        active: true
         autoCorrect: true
         forceMultilineWhenParameterCountGreaterOrEqualThan: 2147483647
         functionBodyExpressionWrapping: 'default'

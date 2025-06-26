@@ -19,9 +19,8 @@ object PdfTable : UUIDTable("pdf") {
     /**
      * Creates a [Pdf] from this [ResultRow].
      */
-    fun ResultRow.toPdf() =
-        Pdf(
-            this[id].value,
-            this[data].bytes,
-        )
+    fun ResultRow.toPdf() = Pdf(
+        this[id].value,
+        this[data].bytes,
+    )
 }

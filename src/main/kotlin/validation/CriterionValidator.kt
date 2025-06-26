@@ -14,25 +14,24 @@ const val CRITERION_DESCRIPTION_MAX_LENGTH = 200
  * A validator for [Criterion] related requests.
  */
 object CriterionValidator {
-    fun validateCreateRequest(request: Criterion.Create): EitherNel<ValidationIssue, Unit> =
-        either {
-            zipOrAccumulate(
-                { ensureIdValidity("project_id", request.projectId) },
-                {
-                    ensureFieldNonBlank("tag", request.tag)
-                    ensureFieldLength("tag", request.tag, CRITERION_TAG_MAX_LENGTH)
-                },
-                {
-                    ensureFieldNonBlank("name", request.name)
-                    ensureFieldLength("name", request.name, CRITERION_NAME_MAX_LENGTH)
-                },
-                {
-                    ensureFieldNonBlank("description", request.description)
-                    ensureFieldLength("description", request.description, CRITERION_DESCRIPTION_MAX_LENGTH)
-                },
-                {
-                    ensureEnumNotUnspecified("category", request.category)
-                },
-            ) { _, _, _, _, _ -> }
-        }
+    fun validateCreateRequest(request: Criterion.Create): EitherNel<ValidationIssue, Unit> = either {
+        zipOrAccumulate(
+            { ensureIdValidity("project_id", request.projectId) },
+            {
+                ensureFieldNonBlank("tag", request.tag)
+                ensureFieldLength("tag", request.tag, CRITERION_TAG_MAX_LENGTH)
+            },
+            {
+                ensureFieldNonBlank("name", request.name)
+                ensureFieldLength("name", request.name, CRITERION_NAME_MAX_LENGTH)
+            },
+            {
+                ensureFieldNonBlank("description", request.description)
+                ensureFieldLength("description", request.description, CRITERION_DESCRIPTION_MAX_LENGTH)
+            },
+            {
+                ensureEnumNotUnspecified("category", request.category)
+            },
+        ) { _, _, _, _, _ -> }
+    }
 }

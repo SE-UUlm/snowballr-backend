@@ -25,21 +25,17 @@ val exceptionInterceptor =
             call: ServerCall<ReqT?, RespT?>,
             headers: Metadata?,
             next: ServerCallHandler<ReqT?, RespT?>,
-        ): ServerCall.Listener<ReqT?> =
-            next.startCall(
-                ExceptionCall(call),
-                headers,
-            )
+        ): ServerCall.Listener<ReqT?> = next.startCall(
+            ExceptionCall(call),
+            headers,
+        )
     }
 
 @Suppress("TooGenericExceptionCaught")
 private class ExceptionCall<ReqT, RespT>(
     delegate: ServerCall<ReqT, RespT>,
 ) : ForwardingServerCall.SimpleForwardingServerCall<ReqT, RespT>(delegate) {
-    override fun close(
-        status: Status?,
-        trailers: Metadata?,
-    ) {
+    override fun close(status: Status?, trailers: Metadata?,) {
         var newStatus = status
         if (status == null) {
             logger.error { "gRPC call closed with null status." }
@@ -61,19 +57,18 @@ private class ExceptionCall<ReqT, RespT>(
     /**
      * Returns a status for the passed [Throwable], which then can be returned to the user.
      */
-    private fun handleException(e: Throwable): Status =
-        when (e) {
-            // Handle all specific application exceptions
-            is SnowballRException -> getStatusForSnowballRException(e)
+    private fun handleException(e: Throwable): Status = when (e) {
+        // Handle all specific application exceptions
+        is SnowballRException -> getStatusForSnowballRException(e)
 
-            // Handle specific unexpected exceptions
-            is IllegalArgumentException -> getStatusForSpecificUnexpectedException(Status.INVALID_ARGUMENT, e)
-            is NoSuchElementException -> getStatusForSpecificUnexpectedException(Status.NOT_FOUND, e)
-            is IllegalStateException -> getStatusForSpecificUnexpectedException(Status.FAILED_PRECONDITION, e)
+        // Handle specific unexpected exceptions
+        is IllegalArgumentException -> getStatusForSpecificUnexpectedException(Status.INVALID_ARGUMENT, e)
+        is NoSuchElementException -> getStatusForSpecificUnexpectedException(Status.NOT_FOUND, e)
+        is IllegalStateException -> getStatusForSpecificUnexpectedException(Status.FAILED_PRECONDITION, e)
 
-            // Handle the rest of unexpected exceptions
-            else -> getStatusForUnexpectedException(e)
-        }
+        // Handle the rest of unexpected exceptions
+        else -> getStatusForUnexpectedException(e)
+    }
 
     /**
      * The [SnowballRException]s are deliberately thrown in this application, e.g., when preconditions aren't met.
@@ -99,10 +94,7 @@ private class ExceptionCall<ReqT, RespT>(
      * Specific unexpected exceptions point to missing exception handling in this application.
      * They are logged as warning so that they can be handled in the future.
      */
-    private fun getStatusForSpecificUnexpectedException(
-        status: Status,
-        e: Exception,
-    ): Status {
+    private fun getStatusForSpecificUnexpectedException(status: Status, e: Exception,): Status {
         logger.warn(e) { "gRPC call failed due to unexpected ${e::class.simpleName} with message: ${e.message}" }
         return status
     }

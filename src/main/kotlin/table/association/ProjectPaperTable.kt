@@ -68,17 +68,16 @@ object ProjectPaperTable : UUIDTable("project_paper") {
     /**
      * Creates a [ProjectPaper] from this [ResultRow].
      */
-    fun ResultRow.toProjectPaper() =
-        ProjectPaper(
-            id = this[id].value,
-            paperId = this[paperId].value,
-            projectId = this[projectId].value,
-            localPaperId = this[localPaperId],
-            stage = this[stage],
-            decision = this[decision],
-            createdAt = this[createdAt],
-            createdBy = this[createdBy].value,
-            modifiedAt = this[modifiedAt],
-            modifiedBy = this[modifiedBy]?.value,
-        )
+    fun ResultRow.toProjectPaper() = ProjectPaper(
+        id = this[id].value,
+        paperId = this[paperId].value,
+        projectId = this[projectId].value,
+        localPaperId = this[localPaperId],
+        stage = this[stage],
+        decision = this[decision],
+        createdAt = this[createdAt],
+        createdBy = this[createdBy].value,
+        modifiedAt = this[modifiedAt],
+        modifiedBy = this[modifiedBy]?.value,
+    )
 }

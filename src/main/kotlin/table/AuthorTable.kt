@@ -30,13 +30,12 @@ object AuthorTable : UUIDTable("author") {
     /**
      * Creates an [Author] from this [ResultRow].
      */
-    fun ResultRow.toAuthor() =
-        Author(
-            id = this[id].value,
-            firstName = this[firstName],
-            lastName = this[lastName],
-            orcid = this[orcid],
-            createdAt = this[createdAt],
-            modifiedAt = this[modifiedAt],
-        )
+    fun ResultRow.toAuthor() = Author(
+        id = this[id].value,
+        firstName = this[firstName],
+        lastName = this[lastName],
+        orcid = this[orcid],
+        createdAt = this[createdAt],
+        modifiedAt = this[modifiedAt],
+    )
 }

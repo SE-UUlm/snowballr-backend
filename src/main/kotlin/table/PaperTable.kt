@@ -52,19 +52,18 @@ object PaperTable : UUIDTable("paper") {
     /**
      * Creates a [Paper] from this [ResultRow].
      */
-    fun ResultRow.toPaper() =
-        Paper(
-            id = this[id].value,
-            title = this[title],
-            externalId = this[externalId],
-            abstract = this[abstract],
-            publishedAt = this[publishedAt],
-            publisher = this[publisher],
-            publicationType = this[publicationType],
-            publicationName = this[publicationName],
-            pdfId = this[pdfId]?.value,
-            createdAt = this[createdAt],
-            modifiedAt = this[modifiedAt],
-            modifiedBy = this[modifiedBy]?.value,
-        )
+    fun ResultRow.toPaper() = Paper(
+        id = this[id].value,
+        title = this[title],
+        externalId = this[externalId],
+        abstract = this[abstract],
+        publishedAt = this[publishedAt],
+        publisher = this[publisher],
+        publicationType = this[publicationType],
+        publicationName = this[publicationName],
+        pdfId = this[pdfId]?.value,
+        createdAt = this[createdAt],
+        modifiedAt = this[modifiedAt],
+        modifiedBy = this[modifiedBy]?.value,
+    )
 }

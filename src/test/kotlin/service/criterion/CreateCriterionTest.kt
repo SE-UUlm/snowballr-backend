@@ -15,23 +15,21 @@ import snowballr.CriterionOuterClass
 @DelicateCoroutinesApi
 internal class CreateCriterionTest : MainServiceTest() {
     @Test
-    fun `When a criterion is correctly created, then no exception is thrown`() =
-        testCoroutine {
-            val request = CriterionOuterClass.Criterion.Create.getDefaultInstance()
-            val criterion = DataBuilder.createExampleCriterion()
+    fun `When a criterion is correctly created, then no exception is thrown`() = testCoroutine {
+        val request = CriterionOuterClass.Criterion.Create.getDefaultInstance()
+        val criterion = DataBuilder.createExampleCriterion()
 
-            coEvery { criterionRepoMock.createCriterion(any(), any()) } returns criterion
+        coEvery { criterionRepoMock.createCriterion(any(), any()) } returns criterion
 
-            assertDoesNotThrow { mainService.createCriterion(request) }
-        }
+        assertDoesNotThrow { mainService.createCriterion(request) }
+    }
 
     @Test
-    fun `When an error occurs while a criterion is created, then an exception is thrown`() =
-        testCoroutine {
-            val request = CriterionOuterClass.Criterion.Create.getDefaultInstance()
+    fun `When an error occurs while a criterion is created, then an exception is thrown`() = testCoroutine {
+        val request = CriterionOuterClass.Criterion.Create.getDefaultInstance()
 
-            coEvery { criterionRepoMock.createCriterion(any(), any()) } throws Exception("Failed to create criterion")
+        coEvery { criterionRepoMock.createCriterion(any(), any()) } throws Exception("Failed to create criterion")
 
-            assertThrows<Exception> { mainService.createCriterion(request) }
-        }
+        assertThrows<Exception> { mainService.createCriterion(request) }
+    }
 }
