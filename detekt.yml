@@ -359,7 +359,7 @@ formatting:
         active: true
         autoCorrect: true
     FunctionName:
-        active: false
+        active: true
         autoCorrect: true
     FunctionReturnTypeSpacing:
         active: true
