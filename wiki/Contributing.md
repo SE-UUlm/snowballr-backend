@@ -242,17 +242,13 @@ For information about our testing setup, see [Testing](https://github.com/SE-UUl
 ### Formatting
 
 ```bash
-# Format files
-./gradlew formatKotlin
-
-# Verify formatting
-./gradlew lintKotlin
+./gradlew format
 ```
 
 ### Linting
 
 ```bash
-./gradlew detekt
+./gradlew lint
 ```
 
 ## Teamscale Integration

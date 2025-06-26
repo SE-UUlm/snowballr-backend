@@ -182,3 +182,24 @@ sourceSets {
         }
     }
 }
+
+// Alias for regular detekt lint check
+tasks.register("lint") {
+    group = "verification"
+    description = "Runs Detekt linter"
+    dependsOn("detekt")
+}
+
+// Custom format task as alias for "detekt --auto-correct"
+tasks.register<io.gitlab.arturbosch.detekt.Detekt>("format") {
+    group = "verification"
+    description = "Runs Detekt with the auto-correct flag to format the code."
+
+    config.setFrom(files("detekt.yml"))
+    autoCorrect = true
+
+    setSource(files("src"))
+
+    include("**/*.kt", "**/*.kts")
+    exclude("**/build/**")
+}

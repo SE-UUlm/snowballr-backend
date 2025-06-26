@@ -13,24 +13,6 @@ env:
     java_distribution: ${{ vars.JAVA_DISTRIBUTION }}
 
 jobs:
-    formatting:
-        name: Check for valid formatting
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout repository
-              uses: actions/checkout@v4
-              with:
-                  submodules: "recursive"
-
-            - name: Setup
-              uses: ./.github/workflows/setup/
-              with:
-                  java_version: ${{ env.java_version }}
-                  java_distribution: ${{ env.java_distribution }}
-
-            - name: Check formatting
-              run: ./gradlew lintKotlin
-
     linting:
         name: Check for linting errors
         runs-on: ubuntu-latest
@@ -47,7 +29,7 @@ jobs:
                   java_distribution: ${{ env.java_distribution }}
 
             - name: Check linting
-              run: ./gradlew detekt
+              run: ./gradlew lint
 
     testing:
         name: Run tests
