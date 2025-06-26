@@ -470,7 +470,7 @@ formatting:
     NoWildcardImports:
         active: true
         autoCorrect: true
-        packagesToUseImportOnDemandProperty: 'java.util.*,kotlinx.android.synthetic.**'
+        packagesToUseImportOnDemandProperty: ''
     NullableTypeSpacing:
         active: true
         autoCorrect: true
@@ -1053,5 +1053,4 @@ style:
         ignoreLateinitVar: false
     WildcardImport:
         active: true
-        excludeImports:
-            - 'java.util.*'
+        excludeImports: [ ]
