@@ -402,7 +402,7 @@ formatting:
         active: true
         autoCorrect: true
         maxLineLength: 120
-        ignoreBackTickedIdentifier: false
+        ignoreBackTickedIdentifier: true
     ModifierListSpacing:
         active: true
         autoCorrect: true
