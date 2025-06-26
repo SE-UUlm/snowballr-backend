@@ -10,6 +10,7 @@ The coverage report is located at `./build/coverageHtml/index.html` and the test
 On this page, we cover the following topics:
 
 <!-- markdownlint-disable MD007 -->
+<!-- @formatter:off -->
 <!-- TOC -->
   * [Conventions](#conventions)
   * [Testing Layers](#testing-layers)
@@ -17,6 +18,7 @@ On this page, we cover the following topics:
     * [Service](#service)
     * [Input Validation](#input-validation)
 <!-- TOC -->
+<!-- @formatter:on -->
 <!-- markdownlint-enable MD007 -->
 
 ## Conventions
