@@ -17,24 +17,16 @@ sealed class SnowballRException(
      * Represents an exception that occurs when an entity cannot be found by its identifier.
      *
      * @param entityType The type of the entity that could not be found.
-     * @param entityId The unique identifier of the missing entity.
+     * @param entityIds The list missing entity IDs.
      * @param identifierType The type of the [identifierType] field. Default to [IdentifierType.ID].
      */
     open class NotFoundException(
         entityType: EntityType,
-        entityId: String,
+        vararg entityIds: String,
         identifierType: IdentifierType = IdentifierType.ID,
-    ) : SnowballRException("${entityType.singularUpper()} with ${identifierType.displayName} '$entityId' not found.") {
-        class ComposedId(
-            entityType: EntityType,
-            firstEntityId: String,
-            secondEntityId: String,
-            identifierType: IdentifierType = IdentifierType.ID,
-        ) : SnowballRException(
-            "${entityType.singularUpper()} with ${identifierType.displayName} '$firstEntityId' and " +
-                "'$secondEntityId' not found.",
-        )
-    }
+    ) : SnowballRException(
+        "${entityType.singularUpper()} ${displayEntityIds(entityIds.toList(), identifierType)} not found.",
+    )
 
     /**
      * Represents an exception that occurs when an entity already exists in the system

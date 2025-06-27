@@ -77,7 +77,6 @@ private class ExceptionCall<ReqT, RespT>(
         val status =
             when (e) {
                 is SnowballRException.NotFoundException -> Status.NOT_FOUND
-                is SnowballRException.NotFoundException.ComposedId -> Status.NOT_FOUND
                 is SnowballRException.DuplicateEntityException -> Status.ALREADY_EXISTS
                 is SnowballRException.EntityNotPersistedException -> Status.INTERNAL
                 is SnowballRException.EntityNotPersistedException.ComposedId -> Status.INTERNAL

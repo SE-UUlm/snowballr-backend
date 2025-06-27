@@ -91,8 +91,11 @@ data class InvalidId(
 data class InvalidThreshold(
     val name: String,
     val threshold: Float,
+    val from: Float,
+    val to: Float,
 ) : ValidationIssue {
-    override fun toString(): String = "The threshold '$threshold' is invalid for the field '$name'."
+    override fun toString(): String =
+        "The value '$threshold' is not in the allowed range [$from-$to] for the field '$name'."
 }
 
 /**
