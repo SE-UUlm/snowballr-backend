@@ -1,3 +1,6 @@
+// Suppress the 'FunctionName' rule because it cannot detect that this is a test file.
+@file:Suppress("FunctionName")
+
 package se.uulm.snowballr.backend.arch
 
 import com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage
@@ -29,7 +32,6 @@ class LayerArchitectureTest {
     val metrics: ArchTests = ArchTests.`in`(Metrics::class.java)
 }
 
-@Suppress("ktlint:standard:function-naming")
 private class StructureRules {
     @ArchTest
     fun `When the layer architecture is violated, then this test should fail (all deps)`(classes: JavaClasses) {
@@ -141,7 +143,6 @@ private class StructureRules {
     }
 }
 
-@Suppress("ktlint:standard:function-naming")
 private class NamingConventions {
     @ArchTest
     fun `When a class is in the validation package, then it should have the 'Validator' suffix`(classes: JavaClasses) {
@@ -192,7 +193,6 @@ private class NamingConventions {
     }
 }
 
-@Suppress("ktlint:standard:function-naming")
 private class Metrics {
     @ArchTest
     fun `Print Lakos Metrics`(classes: JavaClasses) {

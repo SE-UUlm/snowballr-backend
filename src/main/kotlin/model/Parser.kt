@@ -6,7 +6,5 @@ import java.util.UUID
 /**
  * Parses the passed [uuid] string to a UUID. If the parsing fails an [InvalidIdException.UUID] is thrown.
  */
-fun parseUUID(
-    uuid: String,
-    entityType: String,
-): UUID = runCatching { UUID.fromString(uuid) }.getOrNull() ?: throw InvalidIdException.UUID(uuid, entityType)
+fun parseUUID(uuid: String, entityType: String): UUID =
+    runCatching { UUID.fromString(uuid) }.getOrNull() ?: throw InvalidIdException.UUID(uuid, entityType)

@@ -54,13 +54,12 @@ object ReviewTable : UUIDTable("review") {
     /**
      * Creates a [Review] from this [ResultRow].
      */
-    fun ResultRow.toReview() =
-        Review(
-            id = this[id].value,
-            projectPaperId = this[projectPaperId].value,
-            userId = this[userId].value,
-            decision = this[decision],
-            createdAt = this[createdAt],
-            modifiedAt = this[modifiedAt],
-        )
+    fun ResultRow.toReview() = Review(
+        id = this[id].value,
+        projectPaperId = this[projectPaperId].value,
+        userId = this[userId].value,
+        decision = this[decision],
+        createdAt = this[createdAt],
+        modifiedAt = this[modifiedAt],
+    )
 }

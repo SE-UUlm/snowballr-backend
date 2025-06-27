@@ -136,12 +136,11 @@ class Database(
         return HikariDataSource(config)
     }
 
-    override suspend fun <T> dbQuery(block: suspend Transaction.() -> T): T =
-        newSuspendedTransaction(
-            Dispatchers.IO,
-            Database.connect(dataSource),
-            Connection.TRANSACTION_SERIALIZABLE,
-        ) {
-            block()
-        }
+    override suspend fun <T> dbQuery(block: suspend Transaction.() -> T): T = newSuspendedTransaction(
+        Dispatchers.IO,
+        Database.connect(dataSource),
+        Connection.TRANSACTION_SERIALIZABLE,
+    ) {
+        block()
+    }
 }

@@ -1,14 +1,11 @@
 import kotlinx.kover.gradle.plugin.dsl.AggregationType
 import kotlinx.kover.gradle.plugin.dsl.CoverageUnit
 import kotlinx.kover.gradle.plugin.dsl.GroupingEntityType
-import org.jmailen.gradle.kotlinter.tasks.FormatTask
-import org.jmailen.gradle.kotlinter.tasks.LintTask
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.detekt)
     alias(libs.plugins.kotlinx.kover)
-    alias(libs.plugins.kotlinter)
     alias(libs.plugins.protobuf)
     alias(libs.plugins.shadow.jar)
     application
@@ -63,6 +60,8 @@ dependencies {
     implementation(libs.protobuf.kotlin)
 
     runtimeOnly(libs.grpc.netty)
+
+    detektPlugins(libs.detekt.formatting)
 }
 
 kotlin {
@@ -145,14 +144,6 @@ kover {
     }
 }
 
-tasks.withType<LintTask> {
-    this.source = this.source.minus(fileTree("build")).asFileTree
-}
-
-tasks.withType<FormatTask> {
-    this.source = this.source.minus(fileTree("build")).asFileTree
-}
-
 detekt {
     config.from("detekt.yml")
 }
@@ -190,4 +181,25 @@ sourceSets {
             include("*.proto")
         }
     }
+}
+
+// Alias for regular detekt lint check
+tasks.register("lint") {
+    group = "verification"
+    description = "Runs Detekt linter"
+    dependsOn("detekt")
+}
+
+// Custom format task as alias for "detekt --auto-correct"
+tasks.register<io.gitlab.arturbosch.detekt.Detekt>("format") {
+    group = "verification"
+    description = "Runs Detekt with the auto-correct flag to format the code."
+
+    config.setFrom(files("detekt.yml"))
+    autoCorrect = true
+
+    setSource(files("src"))
+
+    include("**/*.kt", "**/*.kts")
+    exclude("**/build/**")
 }

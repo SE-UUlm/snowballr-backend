@@ -11,13 +11,11 @@ import snowballr.Base
  * A validator for [Base] related requests.
  */
 object BaseValidator {
-    fun validateId(request: Base.Id): EitherNel<ValidationIssue, Unit> =
-        either {
-            ensureIdValidity("id", request.id)
-        }.toEitherNel()
+    fun validateId(request: Base.Id): EitherNel<ValidationIssue, Unit> = either {
+        ensureIdValidity("id", request.id)
+    }.toEitherNel()
 
-    fun validateEmail(request: Base.Email): EitherNel<ValidationIssue, Unit> =
-        either {
-            ensure(EMAIL_REGEX.matches(request.email)) { InvalidEmail(request.email) }
-        }.toEitherNel()
+    fun validateEmail(request: Base.Email): EitherNel<ValidationIssue, Unit> = either {
+        ensure(EMAIL_REGEX.matches(request.email)) { InvalidEmail(request.email) }
+    }.toEitherNel()
 }

@@ -33,20 +33,19 @@ val EMAIL_REGEX =
  * @return An [EitherNel] containing a collection of [ValidationIssue] objects if validation issues are found,
  *         or `Unit` if the validation is successful.
  */
-fun <T> validateRequest(request: T): EitherNel<ValidationIssue, Unit> =
-    when (request) {
-        // Healthcheck
-        is HealthCheckRequest -> Either.Right(Unit)
-        // Project
-        is ProjectOuterClass.Project.Create -> ProjectValidator.validateCreateRequest(request)
-        // Criterion
-        is CriterionOuterClass.Criterion.Create -> CriterionValidator.validateCreateRequest(request)
-        // Base
-        is Base.Id -> BaseValidator.validateId(request)
-        is Base.Email -> BaseValidator.validateEmail(request)
-        is Base.Nothing -> Either.Right(Unit)
-        else -> Either.Left(nonEmptyListOf(UnknownRequest))
-    }
+fun <T> validateRequest(request: T): EitherNel<ValidationIssue, Unit> = when (request) {
+    // Healthcheck
+    is HealthCheckRequest -> Either.Right(Unit)
+    // Project
+    is ProjectOuterClass.Project.Create -> ProjectValidator.validateCreateRequest(request)
+    // Criterion
+    is CriterionOuterClass.Criterion.Create -> CriterionValidator.validateCreateRequest(request)
+    // Base
+    is Base.Id -> BaseValidator.validateId(request)
+    is Base.Email -> BaseValidator.validateEmail(request)
+    is Base.Nothing -> Either.Right(Unit)
+    else -> Either.Left(nonEmptyListOf(UnknownRequest))
+}
 
 /**
  * Creates a [arrow.core.NonEmptyList] from this [Either].
@@ -56,8 +55,7 @@ fun <T> validateRequest(request: T): EitherNel<ValidationIssue, Unit> =
  * For the latter, one can use this method to create a [arrow.core.NonEmptyList] to get the same data type as the other
  * methods that accumulate the validation results.
  */
-fun Either<ValidationIssue, Unit>.toEitherNel() =
-    when (this) {
-        is Either.Left -> Either.Left(nonEmptyListOf(this.value))
-        is Either.Right -> Either.Right(Unit)
-    }
+fun Either<ValidationIssue, Unit>.toEitherNel() = when (this) {
+    is Either.Left -> Either.Left(nonEmptyListOf(this.value))
+    is Either.Right -> Either.Right(Unit)
+}

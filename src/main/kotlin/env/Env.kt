@@ -47,17 +47,14 @@ data class Env(
 class EnvVariableNotFoundException(
     key: String,
 ) : Exception(
-        "The env variable with key '$key' could not be found. Please check the variables.",
-    )
+    "The env variable with key '$key' could not be found. Please check the variables.",
+)
 
 interface IEnvService {
     @kotlin.jvm.Throws(EnvVariableNotFoundException::class)
     operator fun get(key: String): String
 
-    fun getOrDefault(
-        key: String,
-        default: String,
-    ): String
+    fun getOrDefault(key: String, default: String): String
 }
 
 /**
@@ -69,16 +66,12 @@ class EnvService : IEnvService {
     @kotlin.jvm.Throws(EnvVariableNotFoundException::class)
     override fun get(key: String): String = dotenv[key] ?: throw EnvVariableNotFoundException(key)
 
-    override fun getOrDefault(
-        key: String,
-        default: String,
-    ): String = dotenv[key] ?: default
+    override fun getOrDefault(key: String, default: String): String = dotenv[key] ?: default
 
     companion object {
-        private fun getEnv() =
-            dotenv {
-                ignoreIfMissing = true
-                ignoreIfMalformed = true
-            }
+        private fun getEnv() = dotenv {
+            ignoreIfMissing = true
+            ignoreIfMalformed = true
+        }
     }
 }

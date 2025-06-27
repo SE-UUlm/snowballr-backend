@@ -73,24 +73,23 @@ class CriterionTableRepoTest : H2DatabaseTest(arrayOf(CriterionTable, ProjectTab
         }
 
         @Test
-        fun `When two criteria are created, then they have different IDs`() =
-            testCoroutine {
-                val project = createExampleProject()
+        fun `When two criteria are created, then they have different IDs`() = testCoroutine {
+            val project = createExampleProject()
 
-                val request =
-                    CriterionOuterClass.Criterion.Create
-                        .newBuilder()
-                        .setTag("Test Tag")
-                        .setName("Test Criterion")
-                        .setDescription("Test Description")
-                        .setCategory(CriterionOuterClass.CriterionCategory.CRITERION_CATEGORY_EXCLUSION)
-                        .setProjectId(project.id.toString())
-                        .build()
-                val criterion1 = repo.createCriterion(request, testUserId)
-                val criterion2 = repo.createCriterion(request, testUserId)
+            val request =
+                CriterionOuterClass.Criterion.Create
+                    .newBuilder()
+                    .setTag("Test Tag")
+                    .setName("Test Criterion")
+                    .setDescription("Test Description")
+                    .setCategory(CriterionOuterClass.CriterionCategory.CRITERION_CATEGORY_EXCLUSION)
+                    .setProjectId(project.id.toString())
+                    .build()
+            val criterion1 = repo.createCriterion(request, testUserId)
+            val criterion2 = repo.createCriterion(request, testUserId)
 
-                Assertions.assertThat(criterion1.id).isNotEqualTo(criterion2.id)
-            }
+            Assertions.assertThat(criterion1.id).isNotEqualTo(criterion2.id)
+        }
 
         @GrpcEnumSourceTest(CriterionOuterClass.CriterionCategory::class)
         fun `When a criterion is created, but the assigned user doesn't exist, then an exception is thrown`(

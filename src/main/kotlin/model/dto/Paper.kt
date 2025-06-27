@@ -27,10 +27,7 @@ data class Paper(
 /**
  * Creates a [PaperOuterClass.Paper] from this [Paper].
  */
-fun Paper.toGrpcPaper(
-    authors: List<PaperOuterClass.Author>,
-    backwardReferencedIds: List<Int>,
-): PaperOuterClass.Paper =
+fun Paper.toGrpcPaper(authors: List<PaperOuterClass.Author>, backwardReferencedIds: List<Int>): PaperOuterClass.Paper =
     PaperOuterClass.Paper
         .newBuilder()
         .setId(this.id.toString())

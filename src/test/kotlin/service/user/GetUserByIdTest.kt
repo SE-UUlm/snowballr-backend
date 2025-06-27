@@ -15,23 +15,21 @@ import snowballr.Base
 @DelicateCoroutinesApi
 internal class GetUserByIdTest : MainServiceTest() {
     @Test
-    fun `When a user is correctly retrieved, then no exception is thrown`() =
-        testCoroutine {
-            val request = Base.Id.newBuilder().build()
-            val user = DataBuilder.createExampleUser()
+    fun `When a user is correctly retrieved, then no exception is thrown`() = testCoroutine {
+        val request = Base.Id.newBuilder().build()
+        val user = DataBuilder.createExampleUser()
 
-            coEvery { userRepoMock.getUserById(any()) } returns user
+        coEvery { userRepoMock.getUserById(any()) } returns user
 
-            assertDoesNotThrow { mainService.getUserById(request) }
-        }
+        assertDoesNotThrow { mainService.getUserById(request) }
+    }
 
     @Test
-    fun `When an error occurs while a user is retrieved, then an exception is thrown`() =
-        testCoroutine {
-            val request = Base.Id.newBuilder().build()
+    fun `When an error occurs while a user is retrieved, then an exception is thrown`() = testCoroutine {
+        val request = Base.Id.newBuilder().build()
 
-            coEvery { userRepoMock.getUserById(any()) } throws Exception("Failed to retrieve user")
+        coEvery { userRepoMock.getUserById(any()) } throws Exception("Failed to retrieve user")
 
-            assertThrows<Exception> { mainService.getUserById(request) }
-        }
+        assertThrows<Exception> { mainService.getUserById(request) }
+    }
 }

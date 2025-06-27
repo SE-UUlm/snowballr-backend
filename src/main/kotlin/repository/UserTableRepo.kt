@@ -35,32 +35,29 @@ interface IUserTableRepo {
 class UserTableRepo(
     private val db: IDatabase,
 ) : IUserTableRepo {
-    override suspend fun getUserById(id: String): User =
-        db.dbQuery {
-            val uuid = parseUUID(id, "user")
+    override suspend fun getUserById(id: String): User = db.dbQuery {
+        val uuid = parseUUID(id, "user")
 
-            UserTable
-                .selectAll()
-                .where { UserTable.id eq uuid }
-                .map { it.toUser() }
-                .singleOrNull()
-                ?: throw NotFoundException.User(id)
-        }
+        UserTable
+            .selectAll()
+            .where { UserTable.id eq uuid }
+            .map { it.toUser() }
+            .singleOrNull()
+            ?: throw NotFoundException.User(id)
+    }
 
-    override suspend fun getUserByEmail(email: String): User =
-        db.dbQuery {
-            UserTable
-                .selectAll()
-                .where { UserTable.email eq email }
-                .map { it.toUser() }
-                .singleOrNull()
-                ?: throw NotFoundException.User(email, "email")
-        }
+    override suspend fun getUserByEmail(email: String): User = db.dbQuery {
+        UserTable
+            .selectAll()
+            .where { UserTable.email eq email }
+            .map { it.toUser() }
+            .singleOrNull()
+            ?: throw NotFoundException.User(email, "email")
+    }
 
-    override suspend fun getAllUsers(): List<User> =
-        db.dbQuery {
-            UserTable
-                .selectAll()
-                .map { it.toUser() }
-        }
+    override suspend fun getAllUsers(): List<User> = db.dbQuery {
+        UserTable
+            .selectAll()
+            .map { it.toUser() }
+    }
 }

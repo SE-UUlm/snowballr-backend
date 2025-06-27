@@ -20,10 +20,7 @@ import java.util.UUID
  * @return The ID of the entity as [EntityID], or null if no entity exists.
  * @throws InvalidIdException.UUID If [id] cannot be parsed to a UUID.
  */
-private fun UUIDTable.getEntityId(
-    id: String,
-    entityType: String,
-): EntityID<UUID>? {
+private fun UUIDTable.getEntityId(id: String, entityType: String): EntityID<UUID>? {
     val uuid = parseUUID(id, entityType)
 
     return this

@@ -15,23 +15,21 @@ import snowballr.Base
 @DelicateCoroutinesApi
 internal class GetUserByEmailTest : MainServiceTest() {
     @Test
-    fun `When a user is correctly retrieved, then no exception is thrown`() =
-        testCoroutine {
-            val request = Base.Email.newBuilder().build()
-            val user = DataBuilder.createExampleUser()
+    fun `When a user is correctly retrieved, then no exception is thrown`() = testCoroutine {
+        val request = Base.Email.newBuilder().build()
+        val user = DataBuilder.createExampleUser()
 
-            coEvery { userRepoMock.getUserByEmail(any()) } returns user
+        coEvery { userRepoMock.getUserByEmail(any()) } returns user
 
-            assertDoesNotThrow { mainService.getUserByEmail(request) }
-        }
+        assertDoesNotThrow { mainService.getUserByEmail(request) }
+    }
 
     @Test
-    fun `When an error occurs while a user is retrieved, then an exception is thrown`() =
-        testCoroutine {
-            val request = Base.Email.newBuilder().build()
+    fun `When an error occurs while a user is retrieved, then an exception is thrown`() = testCoroutine {
+        val request = Base.Email.newBuilder().build()
 
-            coEvery { userRepoMock.getUserByEmail(any()) } throws Exception("Failed to retrieve user")
+        coEvery { userRepoMock.getUserByEmail(any()) } throws Exception("Failed to retrieve user")
 
-            assertThrows<Exception> { mainService.getUserByEmail(request) }
-        }
+        assertThrows<Exception> { mainService.getUserByEmail(request) }
+    }
 }

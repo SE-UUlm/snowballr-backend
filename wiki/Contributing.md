@@ -6,6 +6,7 @@ to understand the overall structure of our project.
 On this page, we explain how to contribute to the SnowballR backend project. We cover the following topics:
 
 <!-- markdownlint-disable MD007 -->
+<!-- @formatter:off -->
 <!-- TOC -->
   * [Contribution Workflow & Conventions](#contribution-workflow--conventions)
   * [Project Layout](#project-layout)
@@ -20,6 +21,7 @@ On this page, we explain how to contribute to the SnowballR backend project. We 
     * [Linting](#linting)
   * [Teamscale Integration](#teamscale-integration)
 <!-- TOC -->
+<!-- @formatter:on -->
 <!-- markdownlint-enable MD007 -->
 
 To set up the development environment, follow the steps in
@@ -240,17 +242,13 @@ For information about our testing setup, see [Testing](https://github.com/SE-UUl
 ### Formatting
 
 ```bash
-# Format files
-./gradlew formatKotlin
-
-# Verify formatting
-./gradlew lintKotlin
+./gradlew format
 ```
 
 ### Linting
 
 ```bash
-./gradlew detekt
+./gradlew lint
 ```
 
 ## Teamscale Integration

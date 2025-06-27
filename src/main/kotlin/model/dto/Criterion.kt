@@ -22,12 +22,11 @@ data class Criterion(
 /**
  * Creates a [CriterionOuterClass.Criterion] from this [Criterion].
  */
-fun Criterion.toGrpcCriterion(): CriterionOuterClass.Criterion =
-    CriterionOuterClass.Criterion
-        .newBuilder()
-        .setId(this.id.toString())
-        .setTag(this.tag)
-        .setName(this.name)
-        .setDescription(this.description)
-        .setCategory(this.category)
-        .build()
+fun Criterion.toGrpcCriterion(): CriterionOuterClass.Criterion = CriterionOuterClass.Criterion
+    .newBuilder()
+    .setId(this.id.toString())
+    .setTag(this.tag)
+    .setName(this.name)
+    .setDescription(this.description)
+    .setCategory(this.category)
+    .build()

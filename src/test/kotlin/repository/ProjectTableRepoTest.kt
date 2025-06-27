@@ -21,44 +21,42 @@ class ProjectTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable), true) {
     @Nested
     inner class CreateProject {
         @Test
-        fun `When a project is created, then the passed values are correctly assigned`() =
-            testCoroutine {
-                val request =
-                    ProjectOuterClass.Project.Create
-                        .newBuilder()
-                        .setName("Test Project")
-                        .build()
-                val project = repo.createProject(request, testUserId)
+        fun `When a project is created, then the passed values are correctly assigned`() = testCoroutine {
+            val request =
+                ProjectOuterClass.Project.Create
+                    .newBuilder()
+                    .setName("Test Project")
+                    .build()
+            val project = repo.createProject(request, testUserId)
 
-                assertThat(project.name).isEqualTo("Test Project")
-                assertThat(project.status).isEqualTo(ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE)
-                assertThat(project.currentStage).isEqualTo(0)
-                assertThat(project.maxStage).isEqualTo(0)
-                // Assert default settings from user
-                assertThat(project.similarityThreshold).isEqualTo(0F)
-                assertThat(project.snowballingType).isEqualTo(ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_BOTH)
-                assertThat(project.reviewMaybeAllowed).isTrue()
-                assertThat(
-                    project.reviewDecisionMatrix,
-                ).isEqualTo(ProjectOuterClass.ReviewDecisionMatrix.getDefaultInstance())
-                FetcherApi.entries.forEach {
-                    assertThat(project.fetcherApis).contains(it)
-                }
+            assertThat(project.name).isEqualTo("Test Project")
+            assertThat(project.status).isEqualTo(ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE)
+            assertThat(project.currentStage).isEqualTo(0)
+            assertThat(project.maxStage).isEqualTo(0)
+            // Assert default settings from user
+            assertThat(project.similarityThreshold).isEqualTo(0F)
+            assertThat(project.snowballingType).isEqualTo(ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_BOTH)
+            assertThat(project.reviewMaybeAllowed).isTrue()
+            assertThat(
+                project.reviewDecisionMatrix,
+            ).isEqualTo(ProjectOuterClass.ReviewDecisionMatrix.getDefaultInstance())
+            FetcherApi.entries.forEach {
+                assertThat(project.fetcherApis).contains(it)
             }
+        }
 
         @Test
-        fun `When two projects are created, then they have different IDs`() =
-            testCoroutine {
-                val request =
-                    ProjectOuterClass.Project.Create
-                        .newBuilder()
-                        .setName("Test Project")
-                        .build()
-                val project1 = repo.createProject(request, testUserId)
-                val project2 = repo.createProject(request, testUserId)
+        fun `When two projects are created, then they have different IDs`() = testCoroutine {
+            val request =
+                ProjectOuterClass.Project.Create
+                    .newBuilder()
+                    .setName("Test Project")
+                    .build()
+            val project1 = repo.createProject(request, testUserId)
+            val project2 = repo.createProject(request, testUserId)
 
-                assertThat(project1.id).isNotEqualTo(project2.id)
-            }
+            assertThat(project1.id).isNotEqualTo(project2.id)
+        }
 
         @Test
         fun `When a project is created, but the assigned user doesn't exist, then an exception is thrown`() =
