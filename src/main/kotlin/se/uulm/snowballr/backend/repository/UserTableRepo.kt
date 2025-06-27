@@ -117,7 +117,7 @@ class UserTableRepo(
             .where { UserTable.email eq email }
             .map { it.toUser() }
             .singleOrNull()
-            ?: throw NotFoundException(EntityType.USER, email, IdentifierType.EMAIL)
+            ?: throw NotFoundException(EntityType.USER, email, identifierType = IdentifierType.EMAIL)
     }
 
     override suspend fun doesUserExistByEmail(email: String): Boolean = db.dbQuery {

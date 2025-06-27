@@ -1,13 +1,19 @@
 package se.uulm.snowballr.backend.repository
 
+import com.google.protobuf.util.FieldMaskUtil
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.statements.UpdateStatement
+import org.jetbrains.exposed.sql.update
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.SnowballRException.EntityNotPersistedException
+import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.Project
+import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.table.getUserEntityId
@@ -16,6 +22,7 @@ import snowballr.ProjectOuterClass
 import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
 import snowballr.ProjectOuterClass.SnowballingType
+import java.time.OffsetDateTime
 import java.util.UUID
 
 /**
@@ -26,6 +33,11 @@ import java.util.UUID
  * for creating and managing projects can remain decoupled from the specifics of the database layer.
  */
 interface IProjectTableRepo {
+    /**
+     * Returns a project by its ID or throws a [NotFoundException] if the project with the passed [id] doesn't exist.
+     */
+    suspend fun getProjectById(id: UUID): Project
+
     /**
      * Creates a new project in the database with the provided project creation request and user ID.
      *
@@ -62,6 +74,21 @@ interface IProjectTableRepo {
             ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED,
         ),
     ): List<Project>
+
+    /**
+     * Updates an existing project in the database with the provided new information.
+     * The following fields can be updated:
+     * - name
+     * - status
+     * - similarity_threshold
+     * - snowballing_type
+     * - review_maybe_allowed
+     *
+     * @param request The update request containing the new project details, such as the new name.
+     * @param isActiveLocked True, if the project is of status [ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED] (only the name and status can be updated then).
+     * @return The updated [Project] object reflecting the changes from the [request].
+     */
+    suspend fun updateProject(request: ProjectOuterClass.Project.Update, isActiveLocked: Boolean): Project
 }
 
 /**
@@ -76,6 +103,22 @@ interface IProjectTableRepo {
 class ProjectTableRepo(
     private val db: IDatabase,
 ) : IProjectTableRepo {
+    /**
+     * Requesting a project from the database.
+     *
+     * @param id The ID of the requested project.
+     * @return The [Project] object or null, if no project with the given [id] was found.
+     */
+    private fun getProjectByIdOrNull(id: UUID): Project? = ProjectTable
+        .selectAll()
+        .where { ProjectTable.id eq id }
+        .map { it.toProject() }
+        .singleOrNull()
+
+    override suspend fun getProjectById(id: UUID): Project = db.dbQuery {
+        getProjectByIdOrNull(id) ?: throw NotFoundException(EntityType.PROJECT, id.toString())
+    }
+
     override suspend fun createProject(request: ProjectOuterClass.Project.Create, userId: UUID): Project = db.dbQuery {
         // Get user reference
         val userEntityId = getUserEntityId(userId)
@@ -121,5 +164,47 @@ class ProjectTableRepo(
             .where { ProjectMemberTable.userId eq userId }
             .andWhere { projectFilter }
             .map { it.toProject() }
+    }
+
+    override suspend fun updateProject(request: ProjectOuterClass.Project.Update, isActiveLocked: Boolean): Project =
+        db.dbQuery {
+            val projectId = parseUUID(request.project.id, EntityType.PROJECT)
+            val fieldMaskPaths = FieldMaskUtil.normalize(request.mask).pathsList.toSet()
+
+            ProjectTable.update({ ProjectTable.id eq projectId }) {
+                it.applyBasicProjectUpdates(request.project, fieldMaskPaths)
+                if (!isActiveLocked) {
+                    it.applySlrProjectUpdates(request.project.settings, fieldMaskPaths)
+                }
+                it[modifiedAt] = OffsetDateTime.now()
+            }
+
+            // Return updated project
+            getProjectByIdOrNull(projectId)
+                ?: throw EntityNotPersistedException(EntityType.PROJECT, projectId.toString())
+        }
+
+    private fun UpdateStatement.applyBasicProjectUpdates(project: ProjectOuterClass.Project, paths: Set<String>) {
+        if ("project.name" in paths) {
+            this[ProjectTable.name] = project.name
+        }
+        if ("project.status" in paths) {
+            this[ProjectTable.status] = project.status
+        }
+    }
+
+    private fun UpdateStatement.applySlrProjectUpdates(
+        settings: ProjectOuterClass.Project.Settings,
+        paths: Set<String>,
+    ) {
+        if ("project.settings.similarity_threshold" in paths) {
+            this[ProjectTable.similarityThreshold] = settings.similarityThreshold
+        }
+        if ("project.settings.snowballing_type" in paths) {
+            this[ProjectTable.snowballingType] = settings.snowballingType
+        }
+        if ("project.settings.review_maybe_allowed" in paths) {
+            this[ProjectTable.reviewMaybeAllowed] = settings.reviewMaybeAllowed
+        }
     }
 }

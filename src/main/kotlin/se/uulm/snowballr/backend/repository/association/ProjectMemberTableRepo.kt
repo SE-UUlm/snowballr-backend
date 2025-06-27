@@ -3,9 +3,13 @@ package se.uulm.snowballr.backend.repository.association
 import org.jetbrains.exposed.sql.JoinType
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.alias
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.update
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.SnowballRException.EntityNotPersistedException
+import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.ProjectMember
 import se.uulm.snowballr.backend.repository.insertAndGet
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
@@ -24,6 +28,11 @@ import java.util.UUID
  */
 interface IProjectMemberTableRepo {
     /**
+     * Returns a project member by its composed ID or throws a [NotFoundException] if the project with the passed [projectId] and [userId] doesn't exist.
+     */
+    suspend fun getProjectMemberByComposedId(projectId: UUID, userId: UUID): ProjectMember
+
+    /**
      * Adds a user with the passed [userId] as member to the project with the passed [projectId].
      *
      * @return The added [ProjectMember].
@@ -41,6 +50,20 @@ interface IProjectMemberTableRepo {
      * The user itself is not part of the resulting list.
      */
     suspend fun getMembersInSameProjectsAsUser(userId: UUID): List<ProjectMember>
+
+    /**
+     * Returns the [List] of all [ProjectMember] with the role admin.
+     */
+    suspend fun getAllProjectAdmins(projectId: UUID): List<ProjectMember>
+
+    /**
+     * Promotes a project member to an admin role in the specified project.
+     *
+     * @param projectId The unique identifier of the project to which the member belongs.
+     * @param userId The unique identifier of the user to be promoted to admin.
+     * @return The updated [ProjectMember] including the new role as an admin.
+     */
+    suspend fun promoteProjectMemberToAdmin(projectId: UUID, userId: UUID): ProjectMember
 }
 
 /**
@@ -56,6 +79,27 @@ interface IProjectMemberTableRepo {
 class ProjectMemberTableRepo(
     private val db: IDatabase,
 ) : IProjectMemberTableRepo {
+    /**
+     * Requesting a project member from the database.
+     *
+     * @param projectId The id of the requested project.
+     * @param userId The id of the requested user.
+     * @return The [ProjectMember] object or null, if no project with the given [projectId] and [userId] was found.
+     */
+    private fun getProjectMemberByComposedIdOrNull(projectId: UUID, userId: UUID): ProjectMember? = ProjectMemberTable
+        .selectAll()
+        .where {
+            (ProjectMemberTable.projectId eq projectId) and
+                (ProjectMemberTable.userId eq userId)
+        }
+        .map { it.toProjectMember() }
+        .singleOrNull()
+
+    override suspend fun getProjectMemberByComposedId(projectId: UUID, userId: UUID): ProjectMember = db.dbQuery {
+        getProjectMemberByComposedIdOrNull(projectId, userId)
+            ?: throw NotFoundException(EntityType.PROJECT_MEMBER, projectId.toString(), userId.toString())
+    }
+
     override suspend fun addUserToProject(userId: UUID, projectId: UUID) = db.dbQuery {
         // Get user reference
         val userEntityId = getUserEntityId(userId)
@@ -101,5 +145,32 @@ class ProjectMemberTableRepo(
             // Filter out the calling user
             .where { ProjectMemberTable.userId neq userId }
             .map { it.toProjectMember() }
+    }
+
+    override suspend fun getAllProjectAdmins(projectId: UUID): List<ProjectMember> = db.dbQuery {
+        ProjectMemberTable
+            .selectAll()
+            .where {
+                (ProjectMemberTable.projectId eq projectId) and
+                    (ProjectMemberTable.role eq ProjectOuterClass.MemberRole.MEMBER_ROLE_ADMIN)
+            }
+            .map { it.toProjectMember() }
+    }
+
+    override suspend fun promoteProjectMemberToAdmin(projectId: UUID, userId: UUID): ProjectMember = db.dbQuery {
+        ProjectMemberTable.update(
+            {
+                (ProjectMemberTable.projectId eq projectId) and
+                    (ProjectMemberTable.userId eq userId)
+            },
+        ) {
+            it[role] = ProjectOuterClass.MemberRole.MEMBER_ROLE_ADMIN
+        }
+
+        getProjectMemberByComposedIdOrNull(projectId, userId) ?: throw EntityNotPersistedException.ComposedId(
+            EntityType.PROJECT_MEMBER,
+            projectId.toString(),
+            userId.toString(),
+        )
     }
 }
