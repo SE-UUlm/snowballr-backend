@@ -24,7 +24,17 @@ sealed class SnowballRException(
         entityType: EntityType,
         entityId: String,
         identifierType: IdentifierType = IdentifierType.ID,
-    ) : SnowballRException("${entityType.singularUpper()} with ${identifierType.displayName} '$entityId' not found.")
+    ) : SnowballRException("${entityType.singularUpper()} with ${identifierType.displayName} '$entityId' not found.") {
+        class ComposedId(
+            entityType: EntityType,
+            firstEntityId: String,
+            secondEntityId: String,
+            identifierType: IdentifierType = IdentifierType.ID,
+        ) : SnowballRException(
+            "${entityType.singularUpper()} with ${identifierType.displayName} '$firstEntityId' and " +
+                "'$secondEntityId' not found.",
+        )
+    }
 
     /**
      * Represents an exception that occurs when an entity already exists in the system
@@ -51,7 +61,16 @@ sealed class SnowballRException(
     class EntityNotPersistedException(
         entityType: EntityType,
         entityId: String,
-    ) : SnowballRException("${entityType.singularUpper()} with ID '$entityId' was not persisted.")
+    ) : SnowballRException("${entityType.singularUpper()} with ID '$entityId' was not persisted.") {
+        class ComposedId(
+            entityType: EntityType,
+            firstEntityId: String,
+            secondEntityId: String,
+        ) : SnowballRException(
+            "${entityType.singularUpper()} with the composed ID '$firstEntityId' and '$secondEntityId' " +
+                "was not persisted.",
+        )
+    }
 
     /**
      * Represents an exception that occurs when the current user accesses one or more entities without permission.

@@ -4,17 +4,24 @@ import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.SnowballRException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.toGrpcProject
 import se.uulm.snowballr.backend.model.dto.toGrpcProjects
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
+import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import snowballr.Base
 import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.ProjectOuterClass.Project as GrpcProject
 
 interface IProjectService {
+    /**
+     * Service implementation of [SnowballRService.getProjectById].
+     */
+    suspend fun getProjectById(projectId: Base.Id): GrpcProject
+
     /**
      * Service implementation of [SnowballRService.createProject].
      */
@@ -39,6 +46,14 @@ interface IProjectService {
      * Service implementation of [SnowballRService.getAllDeletedProjectsForUser].
      */
     suspend fun getAllDeletedProjectsForUser(request: Base.Id): GrpcProject.List
+
+    /**
+     * Service implementation of [SnowballRService.updateProject].
+     *
+     * @param request The update request containing the project details to be modified.
+     * @return The updated project after the changes have been applied.
+     */
+    suspend fun updateProject(request: GrpcProject.Update): GrpcProject
 }
 
 /**
@@ -50,11 +65,32 @@ interface IProjectService {
  * @constructor Initializes the [ProjectService] with a project repository.
  * @param repo The repository responsible for managing persistence operations for projects.
  * @param userRepo The repository responsible for managing persistence operations for users.
+ * @param projectMemberRepo The repository responsible for managing persistence operations for project members.
  */
 class ProjectService(
     private val repo: IProjectTableRepo,
     private val userRepo: IUserTableRepo,
+    private val projectMemberRepo: IProjectMemberTableRepo,
 ) : IProjectService {
+    override suspend fun getProjectById(projectId: Base.Id): GrpcProject {
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
+        val projectId = parseUUID(projectId.id, EntityType.PROJECT)
+        val isInProject = projectMemberRepo.getMembersOfProject(projectId)
+            .any { it.userId == currentUser.id }
+
+        if (!isInProject) {
+            verifyServerAdminRole(currentUser) {
+                throw UnauthorizedException.Single(
+                    EntityType.PROJECT,
+                    projectId.toString(),
+                    AccessType.READ,
+                    it,
+                )
+            }
+        }
+        return repo.getProjectById(projectId).toGrpcProject()
+    }
+
     override suspend fun createProject(request: GrpcProject.Create): GrpcProject =
         repo.createProject(request, GrpcContext.getUserIdFromContext()).toGrpcProject()
 
@@ -89,5 +125,31 @@ class ProjectService(
 
         val deletedUserProjects = repo.getUserProjects(requestedUserId, setOf(ProjectStatus.PROJECT_STATUS_DELETED))
         return deletedUserProjects.toGrpcProjects()
+    }
+
+    override suspend fun updateProject(request: GrpcProject.Update): GrpcProject {
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
+        val projectId = parseUUID(request.project.id, EntityType.PROJECT)
+        val project = repo.getProjectById(projectId)
+        val isProjectAdmin = projectMemberRepo.getAllProjectAdmins(projectId).any { it.userId == currentUser.id }
+        val isProjectActiveLocked = project.status == ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED
+
+        if (!isProjectAdmin) {
+            verifyServerAdminRole(currentUser) {
+                throw UnauthorizedException.Single(
+                    EntityType.PROJECT,
+                    request.project.id,
+                    AccessType.UPDATE,
+                    it,
+                )
+            }
+        }
+        if (project.status != ProjectStatus.PROJECT_STATUS_ACTIVE && !isProjectActiveLocked) {
+            throw SnowballRException.FailedPreconditionException(
+                "The project with the id ${request.project.id} is not active.",
+            )
+        }
+
+        return repo.updateProject(request, isProjectActiveLocked).toGrpcProject()
     }
 }

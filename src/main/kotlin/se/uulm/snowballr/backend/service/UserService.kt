@@ -138,7 +138,7 @@ class UserService(
         if (targetUser.status != UserStatus.USER_STATUS_ACTIVE &&
             targetUser.status != UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED
         ) {
-            throw NotFoundException(EntityType.USER, request.email, IdentifierType.EMAIL)
+            throw NotFoundException(EntityType.USER, request.email, identifierType = IdentifierType.EMAIL)
         }
 
         return targetUser.toGrpcUser()
