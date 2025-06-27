@@ -88,6 +88,13 @@ data class InvalidId(
     override fun toString(): String = "The ID '$id' is invalid for the field '$name'."
 }
 
+data class InvalidThreshold(
+    val name: String,
+    val threshold: Float,
+) : ValidationIssue {
+    override fun toString(): String = "The threshold '$threshold' is invalid for the field '$name'."
+}
+
 /**
  * Represents a validation issue where a password does not meet the required criteria.
  *
