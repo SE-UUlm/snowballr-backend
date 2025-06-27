@@ -18,6 +18,7 @@ On this page, we explain how to contribute to the SnowballR backend project. We 
   * [Miscellaneous Commands](#miscellaneous-commands)
     * [Formatting](#formatting)
     * [Linting](#linting)
+  * [Teamscale Integration](#teamscale-integration)
 <!-- TOC -->
 <!-- markdownlint-enable MD007 -->
 
@@ -251,3 +252,13 @@ For information about our testing setup, see [Testing](https://github.com/SE-UUl
 ```bash
 ./gradlew detekt
 ```
+
+## Teamscale Integration
+
+We use Teamscale for analyzing, monitoring and improving the quality of our project.
+To set up the integration with your IDE follow the instructions online:
+
+* [IntelliJ IDEA](https://docs.teamscale.com/howto/integrating-with-your-ide/intellij/)
+* [VS Code](https://docs.teamscale.com/howto/integrating-with-your-ide/visual-studio-code/)
+
+Note that the configuration file was already added, and you only have to connect the plugin to the server.
