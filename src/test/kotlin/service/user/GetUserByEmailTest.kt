@@ -44,7 +44,7 @@ internal class GetUserByEmailTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the requesting the current user fails, then an exception is thrown`() = testCoroutine {
+    fun `When requesting the current user fails, then an exception is thrown`() = testCoroutine {
         val request = getExampleRequest()
 
         coEvery { userRepoMock.getUserById(dummyUserUUID) } throws TestSpecificException()
@@ -86,7 +86,6 @@ internal class GetUserByEmailTest : MainServiceTest() {
         val requestingUser = DataBuilder.createExampleUser(id = UUID.fromString(dummyUserId))
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns requestingUser
         coEvery { userRepoMock.getUserByEmail(requestEmail) } returns requestingUser
-        coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(any()) } returns listOf()
 
         assertDoesNotThrow { mainService.getUserByEmail(request) }
     }

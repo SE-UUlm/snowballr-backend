@@ -71,7 +71,7 @@ class UserService(
 
         val isRequestedUser = requestingUserId == currentUser.id
 
-        // Don't rerequest the user if it is the current user itself
+        // Don't re-request the user if it is the current user itself
         return if (isRequestedUser) {
             currentUser.toGrpcUser()
         } else {

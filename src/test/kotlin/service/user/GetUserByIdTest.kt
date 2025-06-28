@@ -55,7 +55,7 @@ internal class GetUserByIdTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the requesting the current user fails, then an exception is thrown`() = testCoroutine {
+    fun `When requesting the current user fails, then an exception is thrown`() = testCoroutine {
         val request = getExampleRequest()
 
         coEvery { userRepoMock.getUserById(dummyUserUUID) } throws TestSpecificException()
