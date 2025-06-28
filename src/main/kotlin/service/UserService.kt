@@ -54,7 +54,7 @@ class UserService(
         // Check whether requesting user is in a same project as the requested user
         val isInSameProject =
             projectMemberRepo
-                .getProjectMembersInSameProjectsAsUser(currentUser.id)
+                .getMembersInSameProjectsAsUser(currentUser.id)
                 .any { it.userId == currentUser.id }
         if (isInSameProject) return
 

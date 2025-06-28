@@ -69,7 +69,7 @@ internal class GetUserByIdTest : MainServiceTest() {
 
         val noAccessUser = DataBuilder.createExampleUser()
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns noAccessUser
-        coEvery { projectMemberRepoMock.getProjectMembersInSameProjectsAsUser(any()) } returns listOf()
+        coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(any()) } returns listOf()
 
         assertThrows<UnauthorizedException.Single.User> { mainService.getUserById(request) }
     }
@@ -81,7 +81,7 @@ internal class GetUserByIdTest : MainServiceTest() {
         // Mock access check
         val adminUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_ADMIN)
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns adminUser
-        coEvery { projectMemberRepoMock.getProjectMembersInSameProjectsAsUser(any()) } returns listOf()
+        coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(any()) } returns listOf()
 
         // Mock user retrieval
         coEvery { userRepoMock.getUserById(requestId) } returns DataBuilder.createExampleUser()
@@ -103,7 +103,7 @@ internal class GetUserByIdTest : MainServiceTest() {
         // Mock access check
         val requestingUser = DataBuilder.createExampleUser(id = UUID.fromString(dummyUserId))
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns requestingUser
-        coEvery { projectMemberRepoMock.getProjectMembersInSameProjectsAsUser(any()) } returns listOf()
+        coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(any()) } returns listOf()
 
         // Mock user retrieval
         coEvery { userRepoMock.getUserById(requestId) } returns requestingUser
@@ -121,7 +121,7 @@ internal class GetUserByIdTest : MainServiceTest() {
 
             // Mock access check
             coEvery { userRepoMock.getUserById(dummyUserUUID) } returns otherUser
-            coEvery { projectMemberRepoMock.getProjectMembersInSameProjectsAsUser(any()) } returns listOf(member)
+            coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(any()) } returns listOf(member)
 
             // Mock user retrieval
             coEvery { userRepoMock.getUserById(requestId) } returns DataBuilder.createExampleUser()
@@ -136,7 +136,7 @@ internal class GetUserByIdTest : MainServiceTest() {
         // Mock access check
         val adminUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_ADMIN)
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns adminUser
-        coEvery { projectMemberRepoMock.getProjectMembersInSameProjectsAsUser(any()) } returns listOf()
+        coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(any()) } returns listOf()
 
         // Mock user retrieval
         coEvery { userRepoMock.getUserById(requestId) } throws TestSpecificException()

@@ -69,7 +69,7 @@ class ProjectMemberTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectM
             assertThat(member.userId).isEqualTo(testUserId)
             assertThat(member.projectId).isEqualTo(project.id)
             assertThat(member.role).isEqualTo(MemberRole.MEMBER_ROLE_DEFAULT)
-            val members = repo.getProjectMembersOfProject(project.id)
+            val members = repo.getMembersOfProject(project.id)
             assertThat(members).hasSize(1)
             assertThat(members).containsExactly(member)
         }
@@ -82,7 +82,7 @@ class ProjectMemberTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectM
             val member1 = repo.addUserToProject(testUserId, project.id)
 
             assertThat(member).isEqualTo(member1)
-            val members = repo.getProjectMembersOfProject(project.id)
+            val members = repo.getMembersOfProject(project.id)
             assertThat(members).hasSize(1)
             assertThat(members).containsExactly(member)
         }
@@ -106,12 +106,12 @@ class ProjectMemberTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectM
 }
 
 @Nested
-inner class GetProjectMembersOfProject {
+inner class GetMembersOfProject {
     @Test
     fun `When no members are in a project, then the list is empty`() = testCoroutine {
         val project = createExampleProject()
 
-        val members = repo.getProjectMembersOfProject(project.id)
+        val members = repo.getMembersOfProject(project.id)
 
         assertThat(members).isEmpty()
     }
@@ -122,7 +122,7 @@ inner class GetProjectMembersOfProject {
         val member1 = addTestMember(1, project.id)
         val member2 = addTestMember(2, project.id)
 
-        val members = repo.getProjectMembersOfProject(project.id)
+        val members = repo.getMembersOfProject(project.id)
 
         assertThat(members).hasSize(3)
         val member = members.first()
@@ -135,7 +135,7 @@ inner class GetProjectMembersOfProject {
     fun `When several members are in a project, then they are part of the list`() = testCoroutine {
         val project = setupProject()
 
-        val members = repo.getProjectMembersOfProject(project.id)
+        val members = repo.getMembersOfProject(project.id)
 
         assertThat(members).hasSize(1)
         val member = members.first()
@@ -144,10 +144,10 @@ inner class GetProjectMembersOfProject {
 }
 
 @Nested
-inner class GetProjectMembersInSameProjectsAsUser {
+inner class GetMembersInSameProjectsAsUser {
     @Test
     fun `When the user is in no projects, then the list of members is empty`() = testCoroutine {
-        val result = repo.getProjectMembersInSameProjectsAsUser(testUserId)
+        val result = repo.getMembersInSameProjectsAsUser(testUserId)
 
         assertThat(result).isEmpty()
     }
@@ -156,7 +156,7 @@ inner class GetProjectMembersInSameProjectsAsUser {
     fun `When the user is in a project, then they are not part of the list of members`() = testCoroutine {
         setupProject()
 
-        val result = repo.getProjectMembersInSameProjectsAsUser(testUserId)
+        val result = repo.getMembersInSameProjectsAsUser(testUserId)
 
         assertThat(result).isEmpty()
     }
@@ -171,7 +171,7 @@ inner class GetProjectMembersInSameProjectsAsUser {
         val member2 = addTestMember(2, project2.id)
         val member3 = addTestMember(3, project3.id)
 
-        val result = repo.getProjectMembersInSameProjectsAsUser(testUserId)
+        val result = repo.getMembersInSameProjectsAsUser(testUserId)
 
         assertThat(result).hasSize(3)
         assertThat(result).containsExactlyInAnyOrder(member1, member2, member3)

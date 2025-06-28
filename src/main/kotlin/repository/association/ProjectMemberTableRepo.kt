@@ -32,14 +32,14 @@ interface IProjectMemberTableRepo {
     /**
      * Returns all project members of the project with the passed [projectId].
      */
-    suspend fun getProjectMembersOfProject(projectId: UUID): List<ProjectMember>
+    suspend fun getMembersOfProject(projectId: UUID): List<ProjectMember>
 
     /**
      * Returns all project members, which are in the same projects as the user with the passed [userId].
      *
      * The user itself is not part of the resulting list.
      */
-    suspend fun getProjectMembersInSameProjectsAsUser(userId: UUID): List<ProjectMember>
+    suspend fun getMembersInSameProjectsAsUser(userId: UUID): List<ProjectMember>
 }
 
 /**
@@ -63,7 +63,7 @@ class ProjectMemberTableRepo(
         val projectEntityId = getProjectEntityId(projectId)
 
         // Return when the user is already a project member
-        val projectMembers = getProjectMembersOfProject(projectId)
+        val projectMembers = getMembersOfProject(projectId)
         val existingMember = projectMembers.find { it.userId == userEntityId.value }
         if (existingMember != null) {
             return@dbQuery existingMember
@@ -85,14 +85,14 @@ class ProjectMemberTableRepo(
             ?: throw EntityNotPersistedException.ProjectMember(projectMemberId.toString())
     }
 
-    override suspend fun getProjectMembersOfProject(projectId: UUID): List<ProjectMember> = db.dbQuery {
+    override suspend fun getMembersOfProject(projectId: UUID): List<ProjectMember> = db.dbQuery {
         ProjectMemberTable
             .selectAll()
             .where { ProjectMemberTable.projectId eq projectId }
             .map { it.toProjectMember() }
     }
 
-    override suspend fun getProjectMembersInSameProjectsAsUser(userId: UUID): List<ProjectMember> = db.dbQuery {
+    override suspend fun getMembersInSameProjectsAsUser(userId: UUID): List<ProjectMember> = db.dbQuery {
         // We join the ProjectMemberTable with itself but aliasing one instance to represent the user's membership.
         val userMembership = ProjectMemberTable.alias("userMembership")
 

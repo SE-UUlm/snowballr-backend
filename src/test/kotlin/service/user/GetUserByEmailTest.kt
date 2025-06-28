@@ -59,7 +59,7 @@ internal class GetUserByEmailTest : MainServiceTest() {
         val noAccessUser = DataBuilder.createExampleUser()
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns noAccessUser
         coEvery { userRepoMock.getUserByEmail(requestEmail) } returns DataBuilder.createExampleUser()
-        coEvery { projectMemberRepoMock.getProjectMembersInSameProjectsAsUser(any()) } returns listOf()
+        coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(any()) } returns listOf()
 
         assertThrows<UnauthorizedException.Single.User> { mainService.getUserByEmail(request) }
     }
@@ -71,7 +71,7 @@ internal class GetUserByEmailTest : MainServiceTest() {
         val adminUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_ADMIN)
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns adminUser
         coEvery { userRepoMock.getUserByEmail(requestEmail) } returns DataBuilder.createExampleUser()
-        coEvery { projectMemberRepoMock.getProjectMembersInSameProjectsAsUser(any()) } returns listOf()
+        coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(any()) } returns listOf()
 
         assertDoesNotThrow { mainService.getUserByEmail(request) }
     }
@@ -86,7 +86,7 @@ internal class GetUserByEmailTest : MainServiceTest() {
         val requestingUser = DataBuilder.createExampleUser(id = UUID.fromString(dummyUserId))
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns requestingUser
         coEvery { userRepoMock.getUserByEmail(requestEmail) } returns requestingUser
-        coEvery { projectMemberRepoMock.getProjectMembersInSameProjectsAsUser(any()) } returns listOf()
+        coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(any()) } returns listOf()
 
         assertDoesNotThrow { mainService.getUserByEmail(request) }
     }
@@ -101,7 +101,7 @@ internal class GetUserByEmailTest : MainServiceTest() {
 
             coEvery { userRepoMock.getUserById(dummyUserUUID) } returns otherUser
             coEvery { userRepoMock.getUserByEmail(requestEmail) } returns DataBuilder.createExampleUser()
-            coEvery { projectMemberRepoMock.getProjectMembersInSameProjectsAsUser(any()) } returns listOf(member)
+            coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(any()) } returns listOf(member)
 
             assertDoesNotThrow { mainService.getUserByEmail(request) }
         }
