@@ -1,12 +1,13 @@
 package se.uulm.snowballr.backend.repository.association
 
 import org.jetbrains.exposed.sql.JoinType
+import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.alias
-import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.SnowballRException.EntityNotPersistedException
 import se.uulm.snowballr.backend.model.dto.ProjectMember
+import se.uulm.snowballr.backend.repository.insertAndGet
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.table.association.toProjectMember
 import se.uulm.snowballr.backend.table.getProjectEntityId
@@ -69,20 +70,11 @@ class ProjectMemberTableRepo(
             return@dbQuery existingMember
         }
 
-        val projectMemberId =
-            ProjectMemberTable
-                .insertAndGetId {
-                    it[this.userId] = userEntityId
-                    it[this.projectId] = projectEntityId
-                    it[role] = ProjectOuterClass.MemberRole.MEMBER_ROLE_DEFAULT
-                }
-
-        ProjectMemberTable
-            .selectAll()
-            .where { ProjectMemberTable.id eq projectMemberId }
-            .map { it.toProjectMember() }
-            .singleOrNull()
-            ?: throw EntityNotPersistedException.ProjectMember(projectMemberId.toString())
+        ProjectMemberTable.insertAndGet(ResultRow::toProjectMember, { EntityNotPersistedException.ProjectMember(it) }) {
+            it[this.userId] = userEntityId
+            it[this.projectId] = projectEntityId
+            it[role] = ProjectOuterClass.MemberRole.MEMBER_ROLE_DEFAULT
+        }
     }
 
     override suspend fun getMembersOfProject(projectId: UUID): List<ProjectMember> = db.dbQuery {
