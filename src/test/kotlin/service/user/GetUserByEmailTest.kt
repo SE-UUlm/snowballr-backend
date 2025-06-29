@@ -11,11 +11,13 @@ import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.db.dummyUserId
 import se.uulm.snowballr.backend.model.SnowballRException.InvalidIdException
+import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import se.uulm.snowballr.backend.testCoroutine
 import snowballr.Base
-import snowballr.UserOuterClass
+import snowballr.UserOuterClass.UserRole
+import snowballr.UserOuterClass.UserStatus
 import java.util.UUID
 
 @ExperimentalCoroutinesApi
@@ -68,9 +70,10 @@ internal class GetUserByEmailTest : MainServiceTest() {
     fun `When the requesting user is a server admin, then the user can be retrieved`() = testCoroutine {
         val request = getExampleRequest()
 
-        val adminUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_ADMIN)
+        val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns adminUser
-        coEvery { userRepoMock.getUserByEmail(requestEmail) } returns DataBuilder.createExampleUser()
+        val user = DataBuilder.createExampleUser(status = UserStatus.USER_STATUS_ACTIVE)
+        coEvery { userRepoMock.getUserByEmail(requestEmail) } returns user
         coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(any()) } returns listOf()
 
         assertDoesNotThrow { mainService.getUserByEmail(request) }
@@ -83,7 +86,11 @@ internal class GetUserByEmailTest : MainServiceTest() {
 
         val request = getExampleRequest()
 
-        val requestingUser = DataBuilder.createExampleUser(id = UUID.fromString(dummyUserId))
+        val requestingUser =
+            DataBuilder.createExampleUser(
+                id = UUID.fromString(dummyUserId),
+                status = UserStatus.USER_STATUS_ACTIVE,
+            )
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns requestingUser
         coEvery { userRepoMock.getUserByEmail(requestEmail) } returns requestingUser
 
@@ -99,7 +106,8 @@ internal class GetUserByEmailTest : MainServiceTest() {
             val member = DataBuilder.createExampleProjectMember(userId = otherUser.id)
 
             coEvery { userRepoMock.getUserById(dummyUserUUID) } returns otherUser
-            coEvery { userRepoMock.getUserByEmail(requestEmail) } returns DataBuilder.createExampleUser()
+            val user = DataBuilder.createExampleUser(status = UserStatus.USER_STATUS_ACTIVE)
+            coEvery { userRepoMock.getUserByEmail(requestEmail) } returns user
             coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(any()) } returns listOf(member)
 
             assertDoesNotThrow { mainService.getUserByEmail(request) }
@@ -109,10 +117,43 @@ internal class GetUserByEmailTest : MainServiceTest() {
     fun `When an error occurs while the user is retrieved, then an exception is thrown`() = testCoroutine {
         val request = getExampleRequest()
 
-        val adminUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_ADMIN)
+        val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns adminUser
         coEvery { userRepoMock.getUserByEmail(requestEmail) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getUserByEmail(request) }
+    }
+
+    @Test
+    fun `When the requested user is active unconfirmed, then they can be retrieved`() = testCoroutine {
+        val request = getExampleRequest()
+
+        val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+        coEvery { userRepoMock.getUserById(dummyUserUUID) } returns adminUser
+        val user = DataBuilder.createExampleUser(status = UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED)
+        coEvery { userRepoMock.getUserByEmail(requestEmail) } returns user
+        coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(any()) } returns listOf()
+
+        assertDoesNotThrow { mainService.getUserByEmail(request) }
+    }
+
+    @Test
+    fun `When the requested user is inactive, then an exception is thrown`() = testCoroutine {
+        val values =
+            UserStatus.entries.filter {
+                it != UserStatus.USER_STATUS_ACTIVE &&
+                    it != UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED
+            }
+        for (status in values) {
+            val request = getExampleRequest()
+
+            val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+            coEvery { userRepoMock.getUserById(dummyUserUUID) } returns adminUser
+            val user = DataBuilder.createExampleUser(status = status)
+            coEvery { userRepoMock.getUserByEmail(requestEmail) } returns user
+            coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(any()) } returns listOf()
+
+            assertThrows<NotFoundException.User> { mainService.getUserByEmail(request) }
+        }
     }
 }

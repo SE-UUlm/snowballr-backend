@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.service
 
 import se.uulm.snowballr.backend.db.dummyUserId
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
+import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.toGrpcUser
@@ -11,6 +12,7 @@ import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import snowballr.Base
 import snowballr.UserOuterClass
 import snowballr.UserOuterClass.UserRole
+import snowballr.UserOuterClass.UserStatus
 import java.util.UUID
 
 interface IUserService {
@@ -72,11 +74,21 @@ class UserService(
         val isRequestedUser = requestingUserId == currentUser.id
 
         // Don't re-request the user if it is the current user itself
-        return if (isRequestedUser) {
-            currentUser.toGrpcUser()
-        } else {
-            userRepo.getUserById(requestedUserId).toGrpcUser()
+        val result =
+            if (isRequestedUser) {
+                currentUser
+            } else {
+                userRepo.getUserById(requestedUserId)
+            }
+
+        // Only active or active unconfirmed users can be retrieved
+        if (result.status != UserStatus.USER_STATUS_ACTIVE &&
+            result.status != UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED
+        ) {
+            throw NotFoundException.User(request.id)
         }
+
+        return result.toGrpcUser()
     }
 
     override suspend fun getUserByEmail(request: Base.Email): UserOuterClass.User {
@@ -87,6 +99,13 @@ class UserService(
         val requestedUser = userRepo.getUserByEmail(request.email)
 
         verifyUserAccess(currentUser, requestingUserId, "email")
+
+        // Only active or active unconfirmed users can be retrieved
+        if (requestedUser.status != UserStatus.USER_STATUS_ACTIVE &&
+            requestedUser.status != UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED
+        ) {
+            throw NotFoundException.User(request.email, "email")
+        }
 
         return requestedUser.toGrpcUser()
     }
