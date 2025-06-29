@@ -8,9 +8,9 @@ import se.uulm.snowballr.backend.model.SnowballRException.EntityNotPersistedExce
 import se.uulm.snowballr.backend.model.dto.Criterion
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.table.CriterionTable
-import se.uulm.snowballr.backend.table.CriterionTable.toCriterion
 import se.uulm.snowballr.backend.table.getProjectEntityId
 import se.uulm.snowballr.backend.table.getUserEntityId
+import se.uulm.snowballr.backend.table.toCriterion
 import snowballr.CriterionOuterClass
 import java.util.UUID
 

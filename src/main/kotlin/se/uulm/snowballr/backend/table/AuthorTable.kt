@@ -24,18 +24,16 @@ object AuthorTable : UUIDTable("author") {
 
     val createdAt = createdAt()
     val modifiedAt = modifiedAt()
-
-    // Methods
-
-    /**
-     * Creates an [Author] from this [ResultRow].
-     */
-    fun ResultRow.toAuthor() = Author(
-        id = this[id].value,
-        firstName = this[firstName],
-        lastName = this[lastName],
-        orcid = this[orcid],
-        createdAt = this[createdAt],
-        modifiedAt = this[modifiedAt],
-    )
 }
+
+/**
+ * Creates an [Author] from this [ResultRow].
+ */
+fun ResultRow.toAuthor() = Author(
+    id = this[AuthorTable.id].value,
+    firstName = this[AuthorTable.firstName],
+    lastName = this[AuthorTable.lastName],
+    orcid = this[AuthorTable.orcid],
+    createdAt = this[AuthorTable.createdAt],
+    modifiedAt = this[AuthorTable.modifiedAt],
+)

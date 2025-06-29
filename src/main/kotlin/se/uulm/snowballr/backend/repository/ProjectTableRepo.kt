@@ -9,8 +9,8 @@ import se.uulm.snowballr.backend.model.FetcherApi
 import se.uulm.snowballr.backend.model.SnowballRException.EntityNotPersistedException
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.table.ProjectTable
-import se.uulm.snowballr.backend.table.ProjectTable.toProject
 import se.uulm.snowballr.backend.table.getUserEntityId
+import se.uulm.snowballr.backend.table.toProject
 import snowballr.ProjectOuterClass
 import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix

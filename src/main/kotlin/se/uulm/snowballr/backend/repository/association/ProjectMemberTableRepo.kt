@@ -8,7 +8,7 @@ import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.SnowballRException.EntityNotPersistedException
 import se.uulm.snowballr.backend.model.dto.ProjectMember
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
-import se.uulm.snowballr.backend.table.association.ProjectMemberTable.toProjectMember
+import se.uulm.snowballr.backend.table.association.toProjectMember
 import se.uulm.snowballr.backend.table.getProjectEntityId
 import se.uulm.snowballr.backend.table.getUserEntityId
 import snowballr.ProjectOuterClass

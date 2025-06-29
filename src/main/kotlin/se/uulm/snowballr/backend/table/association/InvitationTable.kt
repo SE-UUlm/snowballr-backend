@@ -49,17 +49,15 @@ object InvitationTable : CompositeIdTable("invitation") {
 
     val token = text("token")
     val validUntil = timestamp("valid_until")
-
-    // Methods
-
-    /**
-     * Creates an [Invitation] from this [ResultRow].
-     */
-    fun ResultRow.toInvitation() = Invitation(
-        id = this[id].toString(),
-        projectId = this[projectId].value,
-        userId = this[userId].value,
-        token = this[token],
-        validUntil = this[validUntil],
-    )
 }
+
+/**
+ * Creates an [Invitation] from this [ResultRow].
+ */
+fun ResultRow.toInvitation() = Invitation(
+    id = this[InvitationTable.id].toString(),
+    projectId = this[InvitationTable.projectId].value,
+    userId = this[InvitationTable.userId].value,
+    token = this[InvitationTable.token],
+    validUntil = this[InvitationTable.validUntil],
+)

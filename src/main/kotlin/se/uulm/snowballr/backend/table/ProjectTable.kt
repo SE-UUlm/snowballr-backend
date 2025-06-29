@@ -8,6 +8,7 @@ import org.jetbrains.exposed.sql.kotlin.datetime.timestampWithTimeZone
 import se.uulm.snowballr.backend.model.FetcherApi
 import se.uulm.snowballr.backend.model.dto.Project
 import snowballr.ProjectOuterClass
+import snowballr.ProjectOuterClass.ReviewDecisionMatrix
 import snowballr.ReviewOuterClass
 import java.time.OffsetDateTime
 
@@ -67,31 +68,29 @@ object ProjectTable : UUIDTable("project") {
      * - `onUpdate=CASCADE` so that when the user ID is updated, the foreign key ID is updated too
      */
     val archivedBy = userReference("archived_by", ReferenceOption.RESTRICT, ReferenceOption.CASCADE).nullable()
-
-    // Methods
-
-    /**
-     * Creates a [Project] from this [ResultRow].
-     */
-    fun ResultRow.toProject() = Project(
-        id = this[id].value,
-        name = this[name],
-        status = this[status],
-        currentStage = this[currentStage],
-        maxStage = this[maxStage],
-        similarityThreshold = this[similarityThreshold],
-        snowballingType = this[snowballingType],
-        reviewMaybeAllowed = this[reviewMaybeAllowed],
-        reviewDecisionMatrix = ProjectOuterClass.ReviewDecisionMatrix.parseFrom(this[reviewDecisionMatrixBinary]),
-        fetcherApis = this[fetcherApis],
-        currentStageStartedAt = this[currentStageStartedAt],
-        createdAt = this[createdAt],
-        createdBy = this[createdBy].value,
-        modifiedAt = this[modifiedAt],
-        modifiedBy = this[modifiedBy]?.value,
-        deletedAt = this[deletedAt],
-        deletedBy = this[deletedBy]?.value,
-        archivedAt = this[archivedAt],
-        archivedBy = this[archivedBy]?.value,
-    )
 }
+
+/**
+ * Creates a [Project] from this [ResultRow].
+ */
+fun ResultRow.toProject() = Project(
+    id = this[ProjectTable.id].value,
+    name = this[ProjectTable.name],
+    status = this[ProjectTable.status],
+    currentStage = this[ProjectTable.currentStage],
+    maxStage = this[ProjectTable.maxStage],
+    similarityThreshold = this[ProjectTable.similarityThreshold],
+    snowballingType = this[ProjectTable.snowballingType],
+    reviewMaybeAllowed = this[ProjectTable.reviewMaybeAllowed],
+    reviewDecisionMatrix = ReviewDecisionMatrix.parseFrom(this[ProjectTable.reviewDecisionMatrixBinary]),
+    fetcherApis = this[ProjectTable.fetcherApis],
+    currentStageStartedAt = this[ProjectTable.currentStageStartedAt],
+    createdAt = this[ProjectTable.createdAt],
+    createdBy = this[ProjectTable.createdBy].value,
+    modifiedAt = this[ProjectTable.modifiedAt],
+    modifiedBy = this[ProjectTable.modifiedBy]?.value,
+    deletedAt = this[ProjectTable.deletedAt],
+    deletedBy = this[ProjectTable.deletedBy]?.value,
+    archivedAt = this[ProjectTable.archivedAt],
+    archivedBy = this[ProjectTable.archivedBy]?.value,
+)

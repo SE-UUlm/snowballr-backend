@@ -33,21 +33,19 @@ object UserTable : UUIDTable("user") {
     val createdAt = createdAt()
     val modifiedAt = modifiedAt()
     val deletedAt = deletedAt()
-
-    // Methods
-
-    /**
-     * Creates a [User] from this [ResultRow].
-     */
-    fun ResultRow.toUser() = User(
-        id = this[id].value,
-        email = this[email],
-        firstName = this[firstName],
-        lastName = this[lastName],
-        role = this[role],
-        status = this[status],
-        createdAt = this[createdAt],
-        modifiedAt = this[modifiedAt],
-        deletedAt = this[deletedAt],
-    )
 }
+
+/**
+ * Creates a [User] from this [ResultRow].
+ */
+fun ResultRow.toUser() = User(
+    id = this[UserTable.id].value,
+    email = this[UserTable.email],
+    firstName = this[UserTable.firstName],
+    lastName = this[UserTable.lastName],
+    role = this[UserTable.role],
+    status = this[UserTable.status],
+    createdAt = this[UserTable.createdAt],
+    modifiedAt = this[UserTable.modifiedAt],
+    deletedAt = this[UserTable.deletedAt],
+)

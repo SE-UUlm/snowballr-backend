@@ -13,14 +13,12 @@ import se.uulm.snowballr.backend.model.dto.Pdf
  */
 object PdfTable : UUIDTable("pdf") {
     val data = blob("data")
-
-    // Methods
-
-    /**
-     * Creates a [Pdf] from this [ResultRow].
-     */
-    fun ResultRow.toPdf() = Pdf(
-        this[id].value,
-        this[data].bytes,
-    )
 }
+
+/**
+ * Creates a [Pdf] from this [ResultRow].
+ */
+fun ResultRow.toPdf() = Pdf(
+    this[PdfTable.id].value,
+    this[PdfTable.data].bytes,
+)

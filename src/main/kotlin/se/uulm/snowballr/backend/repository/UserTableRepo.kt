@@ -7,7 +7,7 @@ import se.uulm.snowballr.backend.model.SnowballRException.EntityNotPersistedExce
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.table.UserTable
-import se.uulm.snowballr.backend.table.UserTable.toUser
+import se.uulm.snowballr.backend.table.toUser
 import snowballr.Authentication
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus

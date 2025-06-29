@@ -57,18 +57,16 @@ object ProjectMemberTable : CompositeIdTable("project_member") {
 
     val createdAt = createdAt()
     val modifiedAt = modifiedAt()
-
-    // Methods
-
-    /**
-     * Creates a [ProjectMember] from this [ResultRow].
-     */
-    fun ResultRow.toProjectMember() = ProjectMember(
-        id = this[id].toString(),
-        projectId = this[projectId].value,
-        userId = this[userId].value,
-        role = this[role],
-        createdAt = this[createdAt],
-        modifiedAt = this[modifiedAt],
-    )
 }
+
+/**
+ * Creates a [ProjectMember] from this [ResultRow].
+ */
+fun ResultRow.toProjectMember() = ProjectMember(
+    id = this[ProjectMemberTable.id].toString(),
+    projectId = this[ProjectMemberTable.projectId].value,
+    userId = this[ProjectMemberTable.userId].value,
+    role = this[ProjectMemberTable.role],
+    createdAt = this[ProjectMemberTable.createdAt],
+    modifiedAt = this[ProjectMemberTable.modifiedAt],
+)
