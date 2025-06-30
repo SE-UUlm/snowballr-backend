@@ -1,7 +1,5 @@
 package se.uulm.snowballr.backend.env
 
-import io.github.cdimascio.dotenv.dotenv
-
 // Default values
 const val DEFAULT_LOG_LEVEL = "DEBUG"
 const val DEFAULT_DATABASE_HOST = "localhost"
@@ -53,36 +51,4 @@ data class Env(
         val jwtPrivateKeyBase64: String = envService[JWT_PRIVATE_KEY_BASE64],
         val jwtPublicKeyBase64: String = envService[JWT_PUBLIC_KEY_BASE64],
     )
-}
-
-class EnvVariableNotFoundException(
-    key: String,
-) : Exception(
-    "The env variable with key '$key' could not be found. Please check the variables.",
-)
-
-interface IEnvService {
-    @kotlin.jvm.Throws(EnvVariableNotFoundException::class)
-    operator fun get(key: String): String
-
-    fun getOrDefault(key: String, default: String): String
-}
-
-/**
- * Service responsible for reading environment variables from the .env file
- */
-class EnvService : IEnvService {
-    private val dotenv = getEnv()
-
-    @kotlin.jvm.Throws(EnvVariableNotFoundException::class)
-    override fun get(key: String): String = dotenv[key] ?: throw EnvVariableNotFoundException(key)
-
-    override fun getOrDefault(key: String, default: String): String = dotenv[key] ?: default
-
-    companion object {
-        private fun getEnv() = dotenv {
-            ignoreIfMissing = true
-            ignoreIfMalformed = true
-        }
-    }
 }
