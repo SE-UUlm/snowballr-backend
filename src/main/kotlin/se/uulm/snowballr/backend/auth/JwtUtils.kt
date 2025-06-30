@@ -27,7 +27,7 @@ private val logger = KotlinLogging.logger {}
  * parsing, and validation.
  */
 object JwtUtils : KoinComponent {
-    private const val KEY_ALGORITHM = "RSA"
+    const val KEY_ALGORITHM = "RSA"
     private const val ACCESS_TOKEN_EXPIRATION_MS = 15 * 60 * 1000L // 15 minutes
     private const val REFRESH_TOKEN_EXPIRATION_MS = 7 * 24 * 60 * 60 * 1000L // 7 days
     private const val ISSUER = "SnowballR"
