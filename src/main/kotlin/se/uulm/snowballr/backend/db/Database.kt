@@ -12,6 +12,7 @@ import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
 import se.uulm.snowballr.backend.env.Env
+import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.table.AuthorTable
 import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.PaperTable
@@ -64,16 +65,16 @@ interface IDatabase {
  * Handles the database connection, schema initialization, and provides a mechanism for executing
  * database queries within a transactional context.
  *
- * @param data Configuration details for the database, i.e., the password.
+ * @param envReader Env var reader to retrieve configuration details for the database, e.g., the password.
  */
 class Database(
-    private val data: Env.Database,
+    private val envReader: EnvReader,
 ) : IDatabase {
     private val dataSource: HikariDataSource
 
     init {
         logger.info { "Connecting to database" }
-        dataSource = initDataSource(data)
+        dataSource = initDataSource(envReader.env.database)
         transaction(Database.connect(dataSource)) {
             val schema = Schema(SCHEMA_NAME, DB_USER)
             SchemaUtils.createSchema(schema)

@@ -1,11 +1,14 @@
 package se.uulm.snowballr.backend
 
 import org.koin.core.module.dsl.bind
+import org.koin.core.module.dsl.createdAtStart
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 import se.uulm.snowballr.backend.db.Database
 import se.uulm.snowballr.backend.db.IDatabase
-import se.uulm.snowballr.backend.env.Env
+import se.uulm.snowballr.backend.env.EnvReader
+import se.uulm.snowballr.backend.env.EnvService
+import se.uulm.snowballr.backend.env.IEnvService
 import se.uulm.snowballr.backend.repository.CriterionTableRepo
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
@@ -29,8 +32,14 @@ import se.uulm.snowballr.backend.service.MainService
  */
 val snowballRModule =
     module {
-        // First comes the database as it has no dependencies
-        single<IDatabase>(createdAtStart = true) { Database(Env().database) }
+        // First come the env service and reader
+        single<IEnvService> { EnvService() }
+        singleOf(::EnvReader)
+        // Then the database, which only needs access to some env variables
+        singleOf(::Database) {
+            createdAtStart()
+            bind<IDatabase>()
+        }
         // Here come all repos and other definitions, e.g., the http client
         singleOf(::ProjectTableRepo) { bind<IProjectTableRepo>() }
         singleOf(::CriterionTableRepo) { bind<ICriterionTableRepo>() }
