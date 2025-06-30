@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.repository
 
 import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.insertAndGetId
+import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.FetcherApi
@@ -11,6 +12,9 @@ import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.ProjectTable.toProject
 import se.uulm.snowballr.backend.table.getUserEntityId
 import snowballr.ProjectOuterClass
+import snowballr.ProjectOuterClass.ProjectStatus
+import snowballr.ProjectOuterClass.ReviewDecisionMatrix
+import snowballr.ProjectOuterClass.SnowballingType
 import java.util.UUID
 
 /**
@@ -29,6 +33,11 @@ interface IProjectTableRepo {
      * @return The created [Project] object representing the newly created project.
      */
     suspend fun createProject(request: ProjectOuterClass.Project.Create, userId: UUID): Project
+
+    /**
+     * Returns all active projects stored in the database.
+     */
+    suspend fun getAllProjects(): List<Project>
 }
 
 /**
@@ -52,15 +61,14 @@ class ProjectTableRepo(
             ProjectTable
                 .insertAndGetId {
                     it[name] = request.name
-                    it[status] = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE
+                    it[status] = ProjectStatus.PROJECT_STATUS_ACTIVE
                     it[currentStage] = 0
                     it[maxStage] = 0
                     // TODO: Fetch default settings from user
                     it[similarityThreshold] = 0F
-                    it[snowballingType] = ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_BOTH
+                    it[snowballingType] = SnowballingType.SNOWBALLING_TYPE_BOTH
                     it[reviewMaybeAllowed] = true
-                    it[reviewDecisionMatrixBinary] =
-                        ProjectOuterClass.ReviewDecisionMatrix.getDefaultInstance().toByteArray()
+                    it[reviewDecisionMatrixBinary] = ReviewDecisionMatrix.getDefaultInstance().toByteArray()
                     it[fetcherApis] = FetcherApi.entries.toList()
                     it[createdBy] = userEntityId
                 }.value
@@ -72,5 +80,15 @@ class ProjectTableRepo(
             .map { it.toProject() }
             .singleOrNull()
             ?: throw EntityNotPersistedException.Project(projectId.toString())
+    }
+
+    override suspend fun getAllProjects(): List<Project> = db.dbQuery {
+        ProjectTable
+            .selectAll()
+            .where {
+                (ProjectTable.status eq ProjectStatus.PROJECT_STATUS_ACTIVE) or
+                    (ProjectTable.status eq ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
+            }
+            .map { it.toProject() }
     }
 }
