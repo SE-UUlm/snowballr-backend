@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.service
 import se.uulm.snowballr.backend.db.dummyUserId
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.dto.toGrpcCriterion
+import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import snowballr.CriterionOuterClass
 
@@ -26,7 +27,9 @@ interface ICriterionService {
 class CriterionService(
     private val repo: ICriterionTableRepo,
 ) : ICriterionService {
-    override suspend fun createCriterion(request: CriterionOuterClass.Criterion.Create): CriterionOuterClass.Criterion =
+    override suspend fun createCriterion(request: CriterionOuterClass.Criterion.Create): CriterionOuterClass.Criterion {
         // TODO: remove dummy user when user management is implemented
-        repo.createCriterion(request, dummyUserId!!).toGrpcCriterion()
+        val requestingUserId = parseUUID(dummyUserId!!, "user")
+        return repo.createCriterion(request, requestingUserId).toGrpcCriterion()
+    }
 }

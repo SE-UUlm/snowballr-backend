@@ -56,7 +56,7 @@ object InvitationTable : CompositeIdTable("invitation") {
      * Creates an [Invitation] from this [ResultRow].
      */
     fun ResultRow.toInvitation() = Invitation(
-        id = this[id].value,
+        id = this[id].toString(),
         projectId = this[projectId].value,
         userId = this[userId].value,
         token = this[token],

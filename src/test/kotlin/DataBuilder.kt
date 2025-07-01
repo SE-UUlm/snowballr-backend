@@ -3,8 +3,10 @@ package se.uulm.snowballr.backend
 import se.uulm.snowballr.backend.model.FetcherApi
 import se.uulm.snowballr.backend.model.dto.Criterion
 import se.uulm.snowballr.backend.model.dto.Project
+import se.uulm.snowballr.backend.model.dto.ProjectMember
 import se.uulm.snowballr.backend.model.dto.User
 import snowballr.CriterionOuterClass.CriterionCategory
+import snowballr.ProjectOuterClass.MemberRole
 import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
 import snowballr.ProjectOuterClass.SnowballingType
@@ -100,5 +102,21 @@ object DataBuilder {
         createdAt = createdAt,
         modifiedAt = modifiedAt,
         deletedAt = deletedAt,
+    )
+
+    fun createExampleProjectMember(
+        projectId: UUID = UUID.randomUUID(),
+        userId: UUID = UUID.randomUUID(),
+        id: String = "$projectId-$userId",
+        role: MemberRole = MemberRole.MEMBER_ROLE_UNSPECIFIED,
+        createdAt: OffsetDateTime = OffsetDateTime.now(),
+        modifiedAt: OffsetDateTime? = null,
+    ) = ProjectMember(
+        id = id,
+        projectId = projectId,
+        userId = userId,
+        role = role,
+        createdAt = createdAt,
+        modifiedAt = modifiedAt,
     )
 }

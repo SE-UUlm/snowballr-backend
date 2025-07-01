@@ -2,9 +2,7 @@ package se.uulm.snowballr.backend.table
 
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.UUIDTable
-import se.uulm.snowballr.backend.model.SnowballRException.InvalidIdException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
-import se.uulm.snowballr.backend.model.parseUUID
 import java.util.UUID
 
 /**
@@ -16,19 +14,13 @@ import java.util.UUID
  * to get the [EntityID] and then pass it to the `entity_id` column of table A.
  *
  * @param id The ID of the entity as [String].
- * @param entityType The type of the entity.
  * @return The ID of the entity as [EntityID], or null if no entity exists.
- * @throws InvalidIdException.UUID If [id] cannot be parsed to a UUID.
  */
-private fun UUIDTable.getEntityId(id: String, entityType: String): EntityID<UUID>? {
-    val uuid = parseUUID(id, entityType)
-
-    return this
-        .select(this.id)
-        .where { this@getEntityId.id eq uuid }
-        .map { it[this.id] }
-        .singleOrNull()
-}
+fun UUIDTable.getEntityId(id: UUID): EntityID<UUID>? = this
+    .select(this.id)
+    .where { this@getEntityId.id eq id }
+    .map { it[this.id] }
+    .singleOrNull()
 
 /**
  * Returns the entity ID of the user with the passed [id] or throws a [NotFoundException.User] if the user doesn't
@@ -36,7 +28,7 @@ private fun UUIDTable.getEntityId(id: String, entityType: String): EntityID<UUID
  *
  * @see getEntityId
  */
-fun getUserEntityId(id: String): EntityID<UUID> = UserTable.getEntityId(id, "user") ?: throw NotFoundException.User(id)
+fun getUserEntityId(id: UUID): EntityID<UUID> = UserTable.getEntityId(id) ?: throw NotFoundException.User(id.toString())
 
 /**
  * Returns the entity ID of the project with the passed [id] or throws a [NotFoundException.Project] if the project
@@ -44,5 +36,5 @@ fun getUserEntityId(id: String): EntityID<UUID> = UserTable.getEntityId(id, "use
  *
  * @see getEntityId
  */
-fun getProjectEntityId(id: String): EntityID<UUID> =
-    ProjectTable.getEntityId(id, "project") ?: throw NotFoundException.Project(id)
+fun getProjectEntityId(id: UUID): EntityID<UUID> =
+    ProjectTable.getEntityId(id) ?: throw NotFoundException.Project(id.toString())

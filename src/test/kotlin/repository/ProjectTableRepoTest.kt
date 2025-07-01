@@ -67,7 +67,7 @@ class ProjectTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable), true) {
                         .setName("Test Project")
                         .build()
 
-                assertThrows<NotFoundException.User> { repo.createProject(request, UUID.randomUUID().toString()) }
+                assertThrows<NotFoundException.User> { repo.createProject(request, UUID.randomUUID()) }
             }
     }
 }

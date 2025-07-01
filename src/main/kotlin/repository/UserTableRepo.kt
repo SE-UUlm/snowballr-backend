@@ -4,9 +4,9 @@ import org.jetbrains.exposed.sql.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.User
-import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.UserTable.toUser
+import java.util.UUID
 
 /**
  * Defines an interface for repository operations related to the [UserTable].
@@ -16,10 +16,20 @@ import se.uulm.snowballr.backend.table.UserTable.toUser
  * for creating and managing users can remain decoupled from the specifics of the database layer.
  */
 interface IUserTableRepo {
-    suspend fun getUserById(id: String): User
+    /**
+     * Returns a user by its id or throws a [NotFoundException.User] if the user with the passed [id] doesn't exist.
+     */
+    suspend fun getUserById(id: UUID): User
 
+    /**
+     * Returns a user by its email or throws a [NotFoundException.User] if the user with the passed [email] doesn't
+     * exist.
+     */
     suspend fun getUserByEmail(email: String): User
 
+    /**
+     * Returns all users stored on the server.
+     */
     suspend fun getAllUsers(): List<User>
 }
 
@@ -35,15 +45,13 @@ interface IUserTableRepo {
 class UserTableRepo(
     private val db: IDatabase,
 ) : IUserTableRepo {
-    override suspend fun getUserById(id: String): User = db.dbQuery {
-        val uuid = parseUUID(id, "user")
-
+    override suspend fun getUserById(id: UUID): User = db.dbQuery {
         UserTable
             .selectAll()
-            .where { UserTable.id eq uuid }
+            .where { UserTable.id eq id }
             .map { it.toUser() }
             .singleOrNull()
-            ?: throw NotFoundException.User(id)
+            ?: throw NotFoundException.User(id.toString())
     }
 
     override suspend fun getUserByEmail(email: String): User = db.dbQuery {

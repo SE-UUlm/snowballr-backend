@@ -60,6 +60,10 @@ sealed class SnowballRException(
         class Criterion(
             criterionId: String,
         ) : EntityNotPersistedException("Criterion", criterionId)
+
+        class ProjectMember(
+            projectMemberId: String,
+        ) : EntityNotPersistedException("ProjectMember", projectMemberId)
     }
 
     /**
@@ -84,7 +88,14 @@ sealed class SnowballRException(
             currentUserId: String,
             accessedEntityType: String,
             accessedEntityId: String,
-        ) : UnauthorizedException(currentUserId, "$accessedEntityType with ID '$accessedEntityId'.")
+            identifier: String? = "ID",
+        ) : UnauthorizedException(currentUserId, "$accessedEntityType with $identifier '$accessedEntityId'.") {
+            class User(
+                currentUserId: String,
+                identifier: String? = "ID",
+                accessedUserId: String,
+            ) : Single(currentUserId, "user", accessedUserId, identifier)
+        }
 
         sealed class All(
             currentUserId: String,

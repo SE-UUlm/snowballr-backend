@@ -11,6 +11,7 @@ import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.ProjectTable.toProject
 import se.uulm.snowballr.backend.table.getUserEntityId
 import snowballr.ProjectOuterClass
+import java.util.UUID
 
 /**
  * Defines an interface for repository operations related to the [ProjectTable].
@@ -20,7 +21,7 @@ import snowballr.ProjectOuterClass
  * for creating and managing projects can remain decoupled from the specifics of the database layer.
  */
 interface IProjectTableRepo {
-    suspend fun createProject(request: ProjectOuterClass.Project.Create, userId: String): Project
+    suspend fun createProject(request: ProjectOuterClass.Project.Create, userId: UUID): Project
 }
 
 /**
@@ -35,35 +36,34 @@ interface IProjectTableRepo {
 class ProjectTableRepo(
     private val db: IDatabase,
 ) : IProjectTableRepo {
-    override suspend fun createProject(request: ProjectOuterClass.Project.Create, userId: String): Project =
-        db.dbQuery {
-            // Get user reference
-            val userEntityId = getUserEntityId(userId)
+    override suspend fun createProject(request: ProjectOuterClass.Project.Create, userId: UUID): Project = db.dbQuery {
+        // Get user reference
+        val userEntityId = getUserEntityId(userId)
 
-            // Create project
-            val projectId =
-                ProjectTable
-                    .insertAndGetId {
-                        it[name] = request.name
-                        it[status] = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE
-                        it[currentStage] = 0
-                        it[maxStage] = 0
-                        // TODO: Fetch default settings from user
-                        it[similarityThreshold] = 0F
-                        it[snowballingType] = ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_BOTH
-                        it[reviewMaybeAllowed] = true
-                        it[reviewDecisionMatrixBinary] =
-                            ProjectOuterClass.ReviewDecisionMatrix.getDefaultInstance().toByteArray()
-                        it[fetcherApis] = FetcherApi.entries.toList()
-                        it[createdBy] = userEntityId
-                    }.value
-
-            // Return created project
+        // Create project
+        val projectId =
             ProjectTable
-                .selectAll()
-                .andWhere { ProjectTable.id eq projectId }
-                .map { it.toProject() }
-                .singleOrNull()
-                ?: throw EntityNotPersistedException.Project(projectId.toString())
-        }
+                .insertAndGetId {
+                    it[name] = request.name
+                    it[status] = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE
+                    it[currentStage] = 0
+                    it[maxStage] = 0
+                    // TODO: Fetch default settings from user
+                    it[similarityThreshold] = 0F
+                    it[snowballingType] = ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_BOTH
+                    it[reviewMaybeAllowed] = true
+                    it[reviewDecisionMatrixBinary] =
+                        ProjectOuterClass.ReviewDecisionMatrix.getDefaultInstance().toByteArray()
+                    it[fetcherApis] = FetcherApi.entries.toList()
+                    it[createdBy] = userEntityId
+                }.value
+
+        // Return created project
+        ProjectTable
+            .selectAll()
+            .andWhere { ProjectTable.id eq projectId }
+            .map { it.toProject() }
+            .singleOrNull()
+            ?: throw EntityNotPersistedException.Project(projectId.toString())
+    }
 }

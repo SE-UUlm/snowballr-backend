@@ -2,23 +2,29 @@ package se.uulm.snowballr.backend.service
 
 import se.uulm.snowballr.backend.db.dummyUserId
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
+import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
+import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.toGrpcUser
+import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.IUserTableRepo
+import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import snowballr.Base
 import snowballr.UserOuterClass
 import snowballr.UserOuterClass.UserRole
+import snowballr.UserOuterClass.UserStatus
+import java.util.UUID
 
 interface IUserService {
     /**
      * Service implementation of [SnowballRService.getUserById].
      */
-    suspend fun getUserById(id: Base.Id): UserOuterClass.User
+    suspend fun getUserById(request: Base.Id): UserOuterClass.User
 
     /**
      * Service implementation of [SnowballRService.getUserByEmail].
      */
-    suspend fun getUserByEmail(email: Base.Email): UserOuterClass.User
+    suspend fun getUserByEmail(request: Base.Email): UserOuterClass.User
 
     /**
      * Service implementation of [SnowballRService.getAllUsers].
@@ -33,28 +39,88 @@ interface IUserService {
  * delegating the actual persistence operations to the [IUserTableRepo] repository.
  *
  * @constructor Initializes the [UserService] with a user repository.
- * @param repo The repository responsible for managing persistence operations for users.
+ * @param userRepo The repository responsible for managing persistence operations for users.
+ * @param projectMemberRepo The repository responsible for managing persistence operations for project members.
  */
 class UserService(
-    private val repo: IUserTableRepo,
+    private val userRepo: IUserTableRepo,
+    private val projectMemberRepo: IProjectMemberTableRepo,
 ) : IUserService {
-    override suspend fun getUserById(id: Base.Id): UserOuterClass.User =
-        // TODO: think about who can request each user by ID
-        repo.getUserById(id.id).toGrpcUser()
+    private suspend fun verifyUserAccess(currentUser: User, requestedUserId: UUID, identifier: String) {
+        // Check whether requesting user is server admin
+        if (currentUser.role == UserRole.USER_ROLE_ADMIN) return
 
-    override suspend fun getUserByEmail(email: Base.Email): UserOuterClass.User =
-        // TODO: think about who can request each user by email
-        repo.getUserByEmail(email.email).toGrpcUser()
+        // Check whether requesting user is requested user
+        if (requestedUserId == currentUser.id) return
+
+        // Check whether requesting user is in a same project as the requested user
+        val isInSameProject =
+            projectMemberRepo
+                .getMembersInSameProjectsAsUser(requestedUserId)
+                .any { it.userId == currentUser.id }
+        if (isInSameProject) return
+
+        // Requesting user is not authorized
+        throw UnauthorizedException.Single.User(currentUser.id.toString(), identifier, requestedUserId.toString())
+    }
+
+    override suspend fun getUserById(request: Base.Id): UserOuterClass.User {
+        val requestingUserId = parseUUID(dummyUserId!!, "user")
+        val requestedUserId = parseUUID(request.id, "user")
+        val currentUser = userRepo.getUserById(requestingUserId)
+
+        verifyUserAccess(currentUser, requestingUserId, "ID")
+
+        val isRequestedUser = requestingUserId == currentUser.id
+
+        // Don't re-request the user if it is the current user itself
+        val result =
+            if (isRequestedUser) {
+                currentUser
+            } else {
+                userRepo.getUserById(requestedUserId)
+            }
+
+        // Only active or active unconfirmed users can be retrieved
+        if (result.status != UserStatus.USER_STATUS_ACTIVE &&
+            result.status != UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED
+        ) {
+            throw NotFoundException.User(request.id)
+        }
+
+        return result.toGrpcUser()
+    }
+
+    override suspend fun getUserByEmail(request: Base.Email): UserOuterClass.User {
+        val requestingUserId = parseUUID(dummyUserId!!, "user")
+        val currentUser = userRepo.getUserById(requestingUserId)
+
+        // We have to request the user first to get the ID for the access checks
+        val requestedUser = userRepo.getUserByEmail(request.email)
+
+        verifyUserAccess(currentUser, requestingUserId, "email")
+
+        // Only active or active unconfirmed users can be retrieved
+        if (requestedUser.status != UserStatus.USER_STATUS_ACTIVE &&
+            requestedUser.status != UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED
+        ) {
+            throw NotFoundException.User(request.email, "email")
+        }
+
+        return requestedUser.toGrpcUser()
+    }
 
     override suspend fun getAllUsers(): UserOuterClass.User.List {
-        val currentUser = repo.getUserById(dummyUserId!!)
+        val requestingUserId = parseUUID(dummyUserId!!, "user")
+        val currentUser = userRepo.getUserById(requestingUserId)
+
         // Check whether the current user has access to retrieve all users
         // TODO: remove dummy user when user management is implemented
         if (currentUser.role != UserRole.USER_ROLE_ADMIN) {
             throw UnauthorizedException.All.User(dummyUserId!!)
         }
 
-        val users = repo.getAllUsers()
+        val users = userRepo.getAllUsers()
 
         val builder = UserOuterClass.User.List.newBuilder()
         users.forEach { builder.addUsers(it.toGrpcUser()) }

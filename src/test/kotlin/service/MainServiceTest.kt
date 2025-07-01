@@ -11,12 +11,15 @@ import kotlinx.coroutines.test.setMain
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.TestInstance
 import se.uulm.snowballr.backend.db.dummyUserId
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
+import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.service.criterion.CreateCriterionTest
+import java.util.UUID
 
 /**
  * Unit test class for the [MainService] class.
@@ -52,10 +55,10 @@ import se.uulm.snowballr.backend.service.criterion.CreateCriterionTest
  *             val request = ExampleOuterClass.Example.Create.getDefaultInstance()
  *
  *             // Mock the behavior of the repositories
- *             coEvery { exampleRepoMock.createExample(any()) } throws Exception("Example creation failed")
+ *             coEvery { exampleRepoMock.createExample(any()) } throws TestSpecificException()
  *
  *             // Assert service behavior
- *             assertThrows<Exception> { mainService.createExample(request) }
+ *             assertThrows<TestSpecificException> { mainService.createExample(request) }
  *         }
  * }
  * ```
@@ -69,18 +72,24 @@ internal open class MainServiceTest {
     val projectRepoMock = mockk<IProjectTableRepo>(relaxed = true)
     val criterionRepoMock = mockk<ICriterionTableRepo>(relaxed = true)
     val userRepoMock = mockk<IUserTableRepo>(relaxed = true)
+    val projectMemberRepoMock = mockk<IProjectMemberTableRepo>(relaxed = true)
     val mainService =
         MainService(
             projectRepoMock,
             criterionRepoMock,
             userRepoMock,
+            projectMemberRepoMock,
         )
 
     @BeforeAll
     fun setUp() {
         Dispatchers.setMain(threadContext)
+    }
+
+    @BeforeEach
+    fun setUpTest() {
         // TODO: remove when user management is implemented
-        dummyUserId = "test_user_id"
+        dummyUserId = UUID.randomUUID().toString()
     }
 
     @AfterEach

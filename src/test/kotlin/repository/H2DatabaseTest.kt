@@ -24,6 +24,7 @@ import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.table.UserTable
 import snowballr.UserOuterClass
 import java.sql.Connection
+import java.util.UUID
 
 /**
  * Base class for unit tests that interact with the in-memory H2 database.
@@ -73,7 +74,7 @@ open class H2DatabaseTest(
     protected val db = TestDatabase()
 
     /** User for testing. This prevents having to create a user for each test. */
-    protected var testUserId: String = ""
+    protected var testUserId: UUID = UUID.randomUUID()
 
     /**
      * Implementation of [IDatabase] providing a suspension-friendly context for database transactions.
@@ -116,7 +117,7 @@ open class H2DatabaseTest(
                             it[role] = UserOuterClass.UserRole.USER_ROLE_ADMIN
                             it[status] = UserOuterClass.UserStatus.USER_STATUS_ACTIVE
                         }
-                    testUserId = userId.value.toString()
+                    testUserId = userId.value
                 }
             }
         }
