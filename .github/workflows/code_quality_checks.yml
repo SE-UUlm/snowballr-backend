@@ -94,7 +94,7 @@ jobs:
 
             - name: Teamscale Upload
               if: github.actor != 'dependabot[bot]'
-              uses: cqse/teamscale-upload-action@v2.9.6
+              uses: cqse/teamscale-upload-action@v9.2.1
               with:
                   server: "https://exia.informatik.uni-ulm.de/teamscale"
                   project: "29382a84-6015-4ecd-b7dd-7f578cae4040"
