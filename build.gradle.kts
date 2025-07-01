@@ -63,6 +63,7 @@ dependencies {
     implementation(libs.grpc.protobuf)
     implementation(libs.grpc.services)
     implementation(libs.protobuf.kotlin)
+    implementation(libs.protobuf.java.util)
 
     runtimeOnly(libs.grpc.netty)
 
