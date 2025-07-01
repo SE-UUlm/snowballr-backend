@@ -93,6 +93,7 @@ jobs:
                   echo "LATEST_COMMIT_SHA=$latest_commit_sha" >> $GITHUB_ENV
 
             - name: Teamscale Upload
+              if: github.actor != 'dependabot[bot]'
               uses: cqse/teamscale-upload-action@v2.9.6
               with:
                   server: "https://exia.informatik.uni-ulm.de/teamscale"
