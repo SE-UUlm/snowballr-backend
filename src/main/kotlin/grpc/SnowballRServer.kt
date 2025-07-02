@@ -26,7 +26,7 @@ private val logger = KotlinLogging.logger {}
 /**
  * Name of the main gRPC service.
  */
-private const val SERVICE_NAME = "snowballr.SnowballR"
+private val SERVICE_NAME = SnowballRGrpcKt.serviceDescriptor.name
 
 /**
  * The maximum time to wait for the termination of the server in seconds.

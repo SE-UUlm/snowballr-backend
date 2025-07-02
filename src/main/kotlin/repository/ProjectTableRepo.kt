@@ -21,6 +21,13 @@ import java.util.UUID
  * for creating and managing projects can remain decoupled from the specifics of the database layer.
  */
 interface IProjectTableRepo {
+    /**
+     * Creates a new project in the database with the provided project creation request and user ID.
+     *
+     * @param request The project creation request containing project details
+     * @param userId The ID of the user creating the project.
+     * @return The created [Project] object representing the newly created project.
+     */
     suspend fun createProject(request: ProjectOuterClass.Project.Create, userId: UUID): Project
 }
 

@@ -23,7 +23,11 @@ import java.util.UUID
  */
 interface ICriterionTableRepo {
     /**
-     * Creates a criterion for the user with the passed [userId].
+     * Creates a new criterion in the database based on the provided request and user ID.
+     *
+     * @param request The creation request containing details for the new criterion.
+     * @param userId The ID of the user creating the criterion.
+     * @return The created [Criterion] object representing the newly created criterion.
      */
     suspend fun createCriterion(request: CriterionOuterClass.Criterion.Create, userId: UUID): Criterion
 }
