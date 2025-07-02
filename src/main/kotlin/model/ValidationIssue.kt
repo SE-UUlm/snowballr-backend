@@ -1,5 +1,11 @@
 package se.uulm.snowballr.backend.model
 
+import se.uulm.snowballr.backend.validation.PASSWORD_MIN_LENGTH
+import se.uulm.snowballr.backend.validation.PASSWORD_MIN_NUMBER_DIGITS
+import se.uulm.snowballr.backend.validation.PASSWORD_MIN_NUMBER_LOWERCASE_LETTERS
+import se.uulm.snowballr.backend.validation.PASSWORD_MIN_NUMBER_SPECIAL_CHARS
+import se.uulm.snowballr.backend.validation.PASSWORD_MIN_NUMBER_UPPERCASE_LETTERS
+
 /**
  * Represents a validation issue that can occur during the validation process.
  *
@@ -80,4 +86,32 @@ data class InvalidId(
     val id: String,
 ) : ValidationIssue {
     override fun toString(): String = "The ID '$id' is invalid for the field '$name'."
+}
+
+/**
+ * Represents a validation issue where a password does not meet the required criteria.
+ *
+ * @property password The password that is invalid.
+ * @property reason The specific reason why the password is invalid.
+ */
+data class InvalidPassword(
+    val password: String,
+    val reason: Reason,
+) : ValidationIssue {
+    override fun toString(): String = "The password is invalid: ${reason.message}"
+
+    /**
+     * Lists possible reasons for password invalidity.
+     */
+    enum class Reason(val message: String) {
+        TOO_SHORT("Password contains less than $PASSWORD_MIN_LENGTH characters"),
+        NOT_ENOUGH_LOWERCASE_CHARS(
+            "Password contains less than $PASSWORD_MIN_NUMBER_LOWERCASE_LETTERS lowercase letters",
+        ),
+        NOT_ENOUGH_UPPERCASE_CHARS(
+            "Password contains less than $PASSWORD_MIN_NUMBER_UPPERCASE_LETTERS uppercase letters",
+        ),
+        NOT_ENOUGH_DIGITS("Password contains less than $PASSWORD_MIN_NUMBER_DIGITS digits"),
+        NOT_ENOUGH_SPECIAL_CHARS("Password contains less than $PASSWORD_MIN_NUMBER_SPECIAL_CHARS special characters"),
+    }
 }
