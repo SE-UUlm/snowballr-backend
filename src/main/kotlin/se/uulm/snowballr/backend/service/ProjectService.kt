@@ -8,7 +8,6 @@ import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import snowballr.ProjectOuterClass
-import snowballr.UserOuterClass.UserRole
 
 interface IProjectService {
     /**
@@ -45,11 +44,8 @@ class ProjectService(
     override suspend fun getAllProjects(): ProjectOuterClass.Project.List {
         val requestingUserId = parseUUID(dummyUserId!!, "user")
         val currentUser = userRepo.getUserById(requestingUserId)
-        // Check whether the current user has access to retrieve all projects
-        // TODO: remove dummy user when user management is implemented
-        if (currentUser.role != UserRole.USER_ROLE_ADMIN) {
-            throw UnauthorizedException.All.Project(dummyUserId!!)
-        }
+
+        verifyServerAdminRole(currentUser) { UnauthorizedException.All.Project(it) }
 
         val projects = repo.getAllProjects()
 
