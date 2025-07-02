@@ -1,6 +1,5 @@
 package se.uulm.snowballr.backend.auth
 
-import se.uulm.snowballr.backend.grpc.GrpcContext
 import se.uulm.snowballr.backend.model.auth.CookieConfig
 
 /**
