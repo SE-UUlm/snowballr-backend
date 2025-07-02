@@ -57,6 +57,7 @@ class SnowballRServer(
      * This server is configured to:
      * - Listen on the specified port.
      * - Apply a logging interceptor to intercept and log incoming requests.
+     * - Apply an authentication interceptor to handle user authentication.
      * - Apply a validation interceptor to intercept and validate incoming requests.
      * - Apply an exception interceptor to catch exceptions and provide appropriate status codes.
      * - Register the gRPC service implementation [SnowballRService].
@@ -68,6 +69,7 @@ class SnowballRServer(
             // Interceptors in reverse order of execution
             .intercept(exceptionInterceptor)
             .intercept(validationInterceptor)
+            .intercept(authenticationInterceptor)
             .intercept(loggingInterceptor)
             // Services
             .addService(SnowballRService())
@@ -140,7 +142,13 @@ class SnowballRServer(
         override suspend fun getAvailableFetcherApis(request: Base.Nothing): Main.AvailableFetcherApis =
             super.getAvailableFetcherApis(request)
 
-        override suspend fun register(request: Authentication.RegisterRequest): Base.Nothing = super.register(request)
+        override suspend fun register(request: Authentication.RegisterRequest): Base.Nothing {
+            val (accessToken, refreshToken) = mainService.register(request)
+
+            GrpcContext.setAuthCookiesInContext(accessToken, refreshToken)
+
+            return Base.Nothing.getDefaultInstance()
+        }
 
         override suspend fun login(request: Authentication.LoginRequest): Base.Nothing = super.login(request)
 

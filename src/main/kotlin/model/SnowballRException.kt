@@ -148,4 +148,21 @@ sealed class SnowballRException(
             entityType: String,
         ) : InvalidIdException(id, entityType, "UUID")
     }
+
+    /**
+     * Represents an exception that occurs when expected gRPC context data is missing.
+     *
+     * This may indicate a misconfigured interceptor, a bug in the server flow,
+     * or a misuse of context propagation.
+     *
+     * @constructor Creates a [MissingContextException] with a description of the missing value.
+     * @param keyDescription A human-readable description of the missing key or context value.
+     */
+    sealed class MissingContextException(
+        keyDescription: String,
+    ) : SnowballRException("Missing context value: $keyDescription") {
+        class MissingUserId : MissingContextException("Authenticated user ID")
+
+        class MissingCookiesMap : MissingContextException("Cookie map")
+    }
 }
