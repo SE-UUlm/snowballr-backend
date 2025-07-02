@@ -64,6 +64,10 @@ sealed class SnowballRException(
         class ProjectMember(
             projectMemberId: String,
         ) : EntityNotPersistedException("ProjectMember", projectMemberId)
+
+        class User(
+            userId: String,
+        ) : EntityNotPersistedException("User", userId)
     }
 
     /**
