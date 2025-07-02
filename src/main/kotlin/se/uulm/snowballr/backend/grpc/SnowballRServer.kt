@@ -144,7 +144,10 @@ class SnowballRServer(
         private val mainService: IMainService by inject()
 
         override suspend fun getAvailableFetcherApis(request: Base.Nothing): Main.AvailableFetcherApis =
-            super.getAvailableFetcherApis(request)
+            Main.AvailableFetcherApis
+                .newBuilder()
+                .addAllFetcherApis(mainService.getAvailableFetchers())
+                .build()
 
         override suspend fun register(request: Authentication.RegisterRequest): Base.Nothing {
             val (accessToken, refreshToken) = mainService.register(request)
