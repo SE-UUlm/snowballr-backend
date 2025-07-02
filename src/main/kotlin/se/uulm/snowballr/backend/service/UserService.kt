@@ -4,6 +4,7 @@ import se.uulm.snowballr.backend.auth.JwtUtils
 import se.uulm.snowballr.backend.auth.PasswordUtils
 import se.uulm.snowballr.backend.db.dummyUserId
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
+import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.IdentifierType
 import se.uulm.snowballr.backend.model.SnowballRException.DuplicateEntityException
@@ -76,6 +77,7 @@ class UserService(
         throw UnauthorizedException.Single(
             EntityType.USER,
             requestedUserId.toString(),
+            AccessType.READ,
             currentUser.id.toString(),
             identifierType,
         )

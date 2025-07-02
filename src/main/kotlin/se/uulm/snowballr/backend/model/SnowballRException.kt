@@ -58,28 +58,33 @@ sealed class SnowballRException(
      *
      * @param currentUserId The ID of the user that is accessing the entity/entities.
      * @param accessedEntityMessage The message of what is accessed.
+     * @param accessType The type of access, i.e., an update, read access, ...
      */
     sealed class UnauthorizedException(
         currentUserId: String,
         accessedEntityMessage: String,
-    ) : SnowballRException("User with ID '$currentUserId' is not authorized to access $accessedEntityMessage") {
+        accessType: AccessType,
+    ) : SnowballRException("User with ID '$currentUserId' is not authorized to $accessType $accessedEntityMessage") {
         /**
          * Represents an [UnauthorizedException] that occurs when the current user accesses a single entity without
          * permission.
          *
          * @param accessedEntityType The type of the entity that was accessed without permission.
          * @param accessedEntityId The ID of the entity that was accessed without permission.
+         * @param accessType The type of access (@see [AccessType] for possible types).
          * @param currentUserId The ID of the user that is accessing the entity.
          * @param identifierType The type of the identifier used to access the entity.
          */
         class Single(
             accessedEntityType: EntityType,
             accessedEntityId: String,
+            accessType: AccessType = AccessType.READ,
             currentUserId: String,
             identifierType: IdentifierType = IdentifierType.ID,
         ) : UnauthorizedException(
             currentUserId,
             "${accessedEntityType.singular} with ${identifierType.displayName} '$accessedEntityId'.",
+            accessType,
         )
 
         /**
@@ -87,12 +92,14 @@ sealed class SnowballRException(
          * permission.
          *
          * @param accessedEntityType The type of the entities that were accessed without permission.
+         * @param accessType The type of access (@see [AccessType] for possible types).
          * @param currentUserId The ID of the user that is accessing the entities.
          */
         class All(
             accessedEntityType: EntityType,
+            accessType: AccessType = AccessType.READ,
             currentUserId: String,
-        ) : UnauthorizedException(currentUserId, "all ${accessedEntityType.plural}.")
+        ) : UnauthorizedException(currentUserId, "all ${accessedEntityType.plural}.", accessType)
     }
 
     /**
