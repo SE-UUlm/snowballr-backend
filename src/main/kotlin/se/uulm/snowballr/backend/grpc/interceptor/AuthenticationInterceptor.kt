@@ -13,8 +13,8 @@ import io.grpc.reflection.v1alpha.ServerReflectionGrpc
 import io.jsonwebtoken.JwtException
 import se.uulm.snowballr.backend.auth.CookieUtils
 import se.uulm.snowballr.backend.auth.CookieUtils.parseCookies
+import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.auth.JwtUtils
-import se.uulm.snowballr.backend.grpc.GrpcContext
 import se.uulm.snowballr.backend.model.auth.AuthRequestState
 import se.uulm.snowballr.backend.model.jwt.ParsedJwtClaims
 import snowballr.SnowballRGrpcKt
