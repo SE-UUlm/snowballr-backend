@@ -4,6 +4,7 @@ import arrow.core.raise.Raise
 import arrow.core.raise.ensure
 import se.uulm.snowballr.backend.model.BlankField
 import se.uulm.snowballr.backend.model.EnumUnspecified
+import se.uulm.snowballr.backend.model.InvalidEmail
 import se.uulm.snowballr.backend.model.InvalidId
 import se.uulm.snowballr.backend.model.TooLongField
 import se.uulm.snowballr.backend.model.ValidationIssue
@@ -50,3 +51,12 @@ fun Raise<ValidationIssue>.ensureEnumNotUnspecified(name: String, value: Enum<*>
  */
 fun Raise<ValidationIssue>.ensureIdValidity(name: String, id: String) =
     ensure(runCatching { UUID.fromString(id) }.isSuccess) { InvalidId(name, id) }
+
+/**
+ * Ensures that the provided email has a valid format.
+ * If the email does not match the [EMAIL_REGEX], an [InvalidEmail] validation issue is raised.
+ *
+ * @param email The email address to validate.
+ */
+fun Raise<ValidationIssue>.ensureEmailValidity(email: String) =
+    ensure(EMAIL_REGEX.matches(email)) { InvalidEmail(email) }

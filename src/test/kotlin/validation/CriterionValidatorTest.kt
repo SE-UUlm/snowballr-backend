@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.ValueSource
-import se.uulm.snowballr.backend.assertInvalidResult
 import se.uulm.snowballr.backend.model.BlankField
 import se.uulm.snowballr.backend.model.EnumUnspecified
 import se.uulm.snowballr.backend.model.InvalidId
@@ -40,7 +39,7 @@ class CriterionValidatorTest {
             val request = validCreateRequestBuilder.setProjectId("invalid-id").build()
             val result = validateRequest(request)
 
-            assertInvalidResult(result, InvalidId::class.java)
+            assertInvalidResult<InvalidId>(result)
         }
 
         @ParameterizedTest
@@ -52,7 +51,7 @@ class CriterionValidatorTest {
                     .build()
             val result = validateRequest(request)
 
-            assertInvalidResult(result, BlankField::class.java)
+            assertInvalidResult<BlankField>(result)
         }
 
         @ParameterizedTest
@@ -74,7 +73,7 @@ class CriterionValidatorTest {
                     .build()
             val result = validateRequest(request)
 
-            assertInvalidResult(result, TooLongField::class.java)
+            assertInvalidResult<TooLongField>(result)
         }
 
         @Test
@@ -85,7 +84,7 @@ class CriterionValidatorTest {
                     .build()
             val result = validateRequest(request)
 
-            assertInvalidResult(result, EnumUnspecified::class.java)
+            assertInvalidResult<EnumUnspecified>(result)
         }
     }
 }

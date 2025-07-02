@@ -3,7 +3,6 @@ package se.uulm.snowballr.backend.validation
 import `in`.rcard.assertj.arrowcore.EitherAssert
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import se.uulm.snowballr.backend.assertInvalidResult
 import se.uulm.snowballr.backend.model.BlankField
 import se.uulm.snowballr.backend.model.TooLongField
 import snowballr.ProjectOuterClass.Project.Create
@@ -32,7 +31,7 @@ class ProjectValidatorTest {
                     .build()
             val result = validateRequest(request)
 
-            assertInvalidResult(result, BlankField::class.java)
+            assertInvalidResult<BlankField>(result)
         }
 
         @Test
@@ -43,7 +42,7 @@ class ProjectValidatorTest {
                     .build()
             val result = validateRequest(request)
 
-            assertInvalidResult(result, TooLongField::class.java)
+            assertInvalidResult<TooLongField>(result)
         }
     }
 }
