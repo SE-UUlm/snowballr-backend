@@ -16,7 +16,7 @@ import snowballr.ProjectOuterClass
 
 @ExperimentalCoroutinesApi
 @DelicateCoroutinesApi
-internal class CreateProjectTest : MainServiceTest() {
+class CreateProjectTest : MainServiceTest() {
     @Test
     fun `When the requesting user has an invalid ID, then an exception is thrown`() = testCoroutine {
         val request = ProjectOuterClass.Project.Create.getDefaultInstance()

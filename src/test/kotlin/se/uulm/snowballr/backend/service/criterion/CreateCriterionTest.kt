@@ -17,7 +17,7 @@ import java.util.UUID
 
 @ExperimentalCoroutinesApi
 @DelicateCoroutinesApi
-internal class CreateCriterionTest : MainServiceTest() {
+class CreateCriterionTest : MainServiceTest() {
     @Test
     fun `When the requesting user has an invalid ID, then an exception is thrown`() = testCoroutine {
         val request = CriterionOuterClass.Criterion.Create.getDefaultInstance()

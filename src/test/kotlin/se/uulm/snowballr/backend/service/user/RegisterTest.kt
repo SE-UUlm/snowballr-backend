@@ -14,7 +14,7 @@ import snowballr.Authentication
 
 @ExperimentalCoroutinesApi
 @DelicateCoroutinesApi
-internal class RegisterTest : MainServiceTest() {
+class RegisterTest : MainServiceTest() {
     @Test
     fun `When a user is registered, then no exception is thrown`() = testCoroutine {
         val request = Authentication.RegisterRequest.newBuilder().build()

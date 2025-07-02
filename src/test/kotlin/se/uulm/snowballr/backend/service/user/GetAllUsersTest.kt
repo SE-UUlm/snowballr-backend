@@ -19,7 +19,7 @@ import java.util.UUID
 
 @ExperimentalCoroutinesApi
 @DelicateCoroutinesApi
-internal class GetAllUsersTest : MainServiceTest() {
+class GetAllUsersTest : MainServiceTest() {
     private var dummyUserUUID: UUID = UUID.randomUUID()
 
     @BeforeEach
