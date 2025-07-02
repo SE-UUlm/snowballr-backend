@@ -1,6 +1,7 @@
 package se.uulm.snowballr.backend.service
 
 import se.uulm.snowballr.backend.auth.IJwtService
+import se.uulm.snowballr.backend.fetcher.FetcherManager
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
@@ -18,7 +19,8 @@ import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 interface IMainService :
     IProjectService,
     ICriterionService,
-    IUserService
+    IUserService,
+    IFetcherService
 
 /**
  * The [MainService] class serves as the primary service implementation layer that aggregates multiple sub-services.
@@ -31,6 +33,7 @@ interface IMainService :
  * @param userRepo The repository responsible for handling persistence operations related to users.
  * @param projectMemberRepo The repository responsible for handling persistence operations related to project members.
  * @param jwtService The utility for handling JWT operations, such as token parsing and validation.
+ * @param fetcherManager The manager responsible for making fetchers available for use.
  */
 class MainService(
     private val projectRepo: IProjectTableRepo,
@@ -38,7 +41,9 @@ class MainService(
     private val userRepo: IUserTableRepo,
     private val projectMemberRepo: IProjectMemberTableRepo,
     private val jwtService: IJwtService,
+    private val fetcherManager: FetcherManager,
 ) : IMainService,
     IProjectService by ProjectService(projectRepo, userRepo, projectMemberRepo),
     ICriterionService by CriterionService(criterionRepo, userRepo, projectRepo, projectMemberRepo),
-    IUserService by UserService(userRepo, projectMemberRepo, jwtService)
+    IUserService by UserService(userRepo, projectMemberRepo, jwtService),
+    IFetcherService by FetcherService(fetcherManager)
