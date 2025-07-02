@@ -73,12 +73,14 @@ internal open class MainServiceTest {
     val criterionRepoMock = mockk<ICriterionTableRepo>(relaxed = true)
     val userRepoMock = mockk<IUserTableRepo>(relaxed = true)
     val projectMemberRepoMock = mockk<IProjectMemberTableRepo>(relaxed = true)
+    val fetcherServiceMock = mockk<IFetcherService>(relaxed = true)
     val mainService =
         MainService(
             projectRepoMock,
             criterionRepoMock,
             userRepoMock,
             projectMemberRepoMock,
+            fetcherServiceMock,
         )
 
     @BeforeAll

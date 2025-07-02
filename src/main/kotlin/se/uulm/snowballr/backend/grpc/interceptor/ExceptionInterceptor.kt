@@ -82,6 +82,7 @@ private class ExceptionCall<ReqT, RespT>(
                 is SnowballRException.UnauthorizedException -> Status.PERMISSION_DENIED
                 is SnowballRException.InvalidIdException -> Status.INVALID_ARGUMENT
                 is SnowballRException.MissingContextException -> Status.INTERNAL
+                is SnowballRException.FetcherException -> Status.INVALID_ARGUMENT
             }.withDescription(e.message).withCause(e.cause)
 
         logger.debug {

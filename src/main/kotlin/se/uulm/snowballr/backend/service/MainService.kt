@@ -17,7 +17,8 @@ import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 interface IMainService :
     IProjectService,
     ICriterionService,
-    IUserService
+    IUserService,
+    IFetcherService
 
 /**
  * The [MainService] class serves as the primary service implementation layer that aggregates multiple sub-services.
@@ -29,13 +30,16 @@ interface IMainService :
  * @param criterionRepo The repository responsible for handling persistence operations related to criteria.
  * @param userRepo The repository responsible for handling persistence operations related to users.
  * @param projectMemberRepo The repository responsible for handling persistence operations related to project members.
+ * @param fetcherService The service responsible for managing and providing fetchers.
  */
 class MainService(
     private val projectRepo: IProjectTableRepo,
     private val criterionRepo: ICriterionTableRepo,
     private val userRepo: IUserTableRepo,
     private val projectMemberRepo: IProjectMemberTableRepo,
+    private val fetcherService: IFetcherService,
 ) : IMainService,
     IProjectService by ProjectService(projectRepo),
     ICriterionService by CriterionService(criterionRepo),
-    IUserService by UserService(userRepo, projectMemberRepo)
+    IUserService by UserService(userRepo, projectMemberRepo),
+    IFetcherService by fetcherService

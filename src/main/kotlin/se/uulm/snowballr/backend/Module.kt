@@ -14,6 +14,8 @@ import se.uulm.snowballr.backend.repository.ProjectTableRepo
 import se.uulm.snowballr.backend.repository.UserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.ProjectMemberTableRepo
+import se.uulm.snowballr.backend.service.FetcherService
+import se.uulm.snowballr.backend.service.IFetcherService
 import se.uulm.snowballr.backend.service.IMainService
 import se.uulm.snowballr.backend.service.MainService
 
@@ -36,6 +38,7 @@ val snowballRModule =
         singleOf(::CriterionTableRepo) { bind<ICriterionTableRepo>() }
         singleOf(::UserTableRepo) { bind<IUserTableRepo>() }
         singleOf(::ProjectMemberTableRepo) { bind<IProjectMemberTableRepo>() }
+        singleOf(::FetcherService) { bind<IFetcherService>() }
         // The main service comes last
         singleOf(::MainService) { bind<IMainService>() }
     }
