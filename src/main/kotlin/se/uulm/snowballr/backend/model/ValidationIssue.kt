@@ -115,3 +115,21 @@ data class InvalidPassword(
         NOT_ENOUGH_SPECIAL_CHARS("Password contains less than $PASSWORD_MIN_NUMBER_SPECIAL_CHARS special characters"),
     }
 }
+
+/**
+ * Represents an issue where a provided field mask contains invalid fields or is blank.
+ *
+ * This class is utilized to indicate that some fields in the provided field mask
+ * are not valid, i.e., do not exist in the generated gRPC class or the field mask is blank
+ * and the entire object would be overwritten. If this is intended, every field should be specified
+ * instead of leaving the field mask blank.
+ *
+ * @property fieldMask The invalid field mask causing the issue.
+ */
+data class InvalidFieldMask(val fieldMask: String?) : ValidationIssue {
+    override fun toString(): String = if (fieldMask.isNullOrBlank()) {
+        "Field mask must be not blank."
+    } else {
+        "Field mask contains invalid fields: $fieldMask."
+    }
+}

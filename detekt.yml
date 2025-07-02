@@ -95,6 +95,8 @@ complexity:
     CognitiveComplexMethod:
         active: true
         threshold: 15
+        excludes:
+            - '**/test/**'
     ComplexCondition:
         active: true
         threshold: 4
