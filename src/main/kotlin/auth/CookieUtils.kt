@@ -1,0 +1,95 @@
+package se.uulm.snowballr.backend.auth
+
+import se.uulm.snowballr.backend.grpc.GrpcContext
+import se.uulm.snowballr.backend.model.auth.CookieConfig
+
+/**
+ * Utility object for parsing and constructing HTTP cookie headers.
+ */
+object CookieUtils {
+    /**
+     * Parses a `Cookie` header string into a map of key-value pairs.
+     *
+     * Example:
+     * ```
+     * Input:  "key1=value1; key2=value2"
+     * Output: mapOf("key1" to "value1", "key2" to "value2")
+     * ```
+     *
+     * @param cookieHeader The string value of the `Cookie` header, or null if no cookie is present.
+     * @return A map of cookie names to cookie values. Returns an empty map if the header is null or blank.
+     */
+    fun parseCookies(cookieHeader: String?): Map<String, String> {
+        if (cookieHeader.isNullOrBlank()) return emptyMap()
+        return cookieHeader
+            .split(";")
+            .map { it.trim() }
+            .filter { it.contains("=") }
+            .associate {
+                val parts = it.split("=", limit = 2)
+                parts[0] to parts[1]
+            }
+    }
+
+    /**
+     * Builds a complete `Set-Cookie` string for a specific authentication cookie.
+     *
+     * This is a specialized helper that uses strict security settings (`SameSite=Strict`, etc.)
+     * and automatically determines the correct Max-Age for access and refresh tokens.
+     *
+     * @param name The name of the auth cookie (e.g., "access_token").
+     * @param value The token value. A null or empty value signals that the cookie should be expired.
+     * @return A formatted `Set-Cookie` string, or null if the name is not a recognized auth cookie.
+     */
+    fun buildAuthCookieString(name: String, value: String?): String? {
+        val ttl =
+            when (name) {
+                GrpcContext.ACCESS_TOKEN_COOKIE_NAME ->
+                    if (value.isNullOrEmpty()) 0 else JwtUtils.getAccessTokenTTL()
+
+                GrpcContext.REFRESH_TOKEN_COOKIE_NAME ->
+                    if (value.isNullOrEmpty()) 0 else JwtUtils.getRefreshTokenTTL()
+
+                else -> return null // Not a recognized authentication cookie.
+            }
+
+        val authCookieConfig = CookieConfig(
+            name = name,
+            value = value ?: "", // Use empty string for expiration
+            maxAgeSeconds = ttl,
+            path = "/",
+            sameSite = "Strict", // Stricter policy for auth tokens
+            httpOnly = true,
+            secure = true,
+        )
+
+        return createCookieString(authCookieConfig)
+    }
+
+    /**
+     * Creates a general-purpose `Set-Cookie` header string from the provided [CookieConfig].
+     *
+     * Example:
+     * ```
+     * val config = CookieConfig(name = "theme", value = "dark", maxAgeSeconds = 31536000)
+     * val cookieHeader = CookieUtils.createCookieString(config)
+     * // "theme=dark; Max-Age=31536000; Path=/; SameSite=Lax; HttpOnly; Secure"
+     * ```
+     *
+     * @param config The cookie configuration.
+     * @return A formatted `Set-Cookie` string.
+     */
+    fun createCookieString(config: CookieConfig): String {
+        val parts = mutableListOf(
+            "${config.name}=${config.value}",
+            "Max-Age=${config.maxAgeSeconds}",
+            "Path=${config.path}",
+            "SameSite=${config.sameSite}",
+        )
+        if (config.domain != null) parts.add("Domain=${config.domain}")
+        if (config.httpOnly) parts.add("HttpOnly")
+        if (config.secure) parts.add("Secure")
+
+        return parts.joinToString("; ")
+    }
+}

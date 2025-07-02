@@ -1,4 +1,4 @@
-package se.uulm.snowballr.backend.grpc
+package se.uulm.snowballr.backend.grpc.interceptor
 
 import arrow.core.Either
 import io.github.oshai.kotlinlogging.KotlinLogging

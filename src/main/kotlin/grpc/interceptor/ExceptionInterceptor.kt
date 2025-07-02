@@ -1,4 +1,4 @@
-package se.uulm.snowballr.backend.grpc
+package se.uulm.snowballr.backend.grpc.interceptor
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.grpc.ForwardingServerCall
@@ -77,9 +77,11 @@ private class ExceptionCall<ReqT, RespT>(
         val status =
             when (e) {
                 is SnowballRException.NotFoundException -> Status.NOT_FOUND
+                is SnowballRException.DuplicateEntityException -> Status.ALREADY_EXISTS
                 is SnowballRException.EntityNotPersistedException -> Status.INTERNAL
                 is SnowballRException.UnauthorizedException -> Status.PERMISSION_DENIED
                 is SnowballRException.InvalidIdException -> Status.INVALID_ARGUMENT
+                is SnowballRException.MissingContextException -> Status.INTERNAL
             }.withDescription(e.message).withCause(e.cause)
 
         logger.debug {

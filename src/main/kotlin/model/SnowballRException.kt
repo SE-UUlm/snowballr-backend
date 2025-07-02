@@ -42,6 +42,25 @@ sealed class SnowballRException(
     }
 
     /**
+     * Represents an exception that occurs when an entity already exists in the system
+     * and creation is not allowed.
+     *
+     * @constructor Creates a [DuplicateEntityException] with a message about the entity.
+     * @param entityType The type of the duplicated entity.
+     * @param identifier The identifying value (e.g., email, username).
+     * @param identifierName The name of the identifier field (defaults to "ID").
+     */
+    sealed class DuplicateEntityException(
+        entityType: String,
+        identifier: String,
+        identifierName: String = "ID",
+    ) : SnowballRException("$entityType with $identifierName '$identifier' already exists.") {
+        class UserEmail(
+            email: String,
+        ) : DuplicateEntityException("User", email, "email")
+    }
+
+    /**
      * Represents a specific type of exception that occurs when an entity creation was triggered, but it couldn't be
      * fetched afterward.
      *
@@ -64,6 +83,10 @@ sealed class SnowballRException(
         class ProjectMember(
             projectMemberId: String,
         ) : EntityNotPersistedException("ProjectMember", projectMemberId)
+
+        class User(
+            userId: String,
+        ) : EntityNotPersistedException("User", userId)
     }
 
     /**
@@ -124,5 +147,22 @@ sealed class SnowballRException(
             id: String,
             entityType: String,
         ) : InvalidIdException(id, entityType, "UUID")
+    }
+
+    /**
+     * Represents an exception that occurs when expected gRPC context data is missing.
+     *
+     * This may indicate a misconfigured interceptor, a bug in the server flow,
+     * or a misuse of context propagation.
+     *
+     * @constructor Creates a [MissingContextException] with a description of the missing value.
+     * @param keyDescription A human-readable description of the missing key or context value.
+     */
+    sealed class MissingContextException(
+        keyDescription: String,
+    ) : SnowballRException("Missing context value: $keyDescription") {
+        class MissingUserId : MissingContextException("Authenticated user ID")
+
+        class MissingCookiesMap : MissingContextException("Cookie map")
     }
 }

@@ -3,7 +3,6 @@ package se.uulm.snowballr.backend.validation
 import `in`.rcard.assertj.arrowcore.EitherAssert
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import se.uulm.snowballr.backend.assertInvalidResult
 import se.uulm.snowballr.backend.model.InvalidEmail
 import se.uulm.snowballr.backend.model.InvalidId
 import snowballr.Base
@@ -33,7 +32,7 @@ class BaseValidatorTest {
                     .build()
             val result = validateRequest(request)
 
-            assertInvalidResult(result, InvalidId::class.java)
+            assertInvalidResult<InvalidId>(result)
         }
     }
 
@@ -60,7 +59,7 @@ class BaseValidatorTest {
                     .build()
             val result = validateRequest(request)
 
-            assertInvalidResult(result, InvalidEmail::class.java)
+            assertInvalidResult<InvalidEmail>(result)
         }
     }
 

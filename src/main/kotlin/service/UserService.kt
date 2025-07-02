@@ -1,14 +1,19 @@
 package se.uulm.snowballr.backend.service
 
+import se.uulm.snowballr.backend.auth.JwtUtils
+import se.uulm.snowballr.backend.auth.PasswordUtils
 import se.uulm.snowballr.backend.db.dummyUserId
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
+import se.uulm.snowballr.backend.model.SnowballRException.DuplicateEntityException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.toGrpcUser
+import se.uulm.snowballr.backend.model.jwt.JwtTokens
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
+import snowballr.Authentication
 import snowballr.Base
 import snowballr.UserOuterClass
 import snowballr.UserOuterClass.UserRole
@@ -30,6 +35,11 @@ interface IUserService {
      * Service implementation of [SnowballRService.getAllUsers].
      */
     suspend fun getAllUsers(): UserOuterClass.User.List
+
+    /**
+     * Service implementation of [SnowballRService.register].
+     */
+    suspend fun register(request: Authentication.RegisterRequest): JwtTokens
 }
 
 /**
@@ -125,5 +135,21 @@ class UserService(
         val builder = UserOuterClass.User.List.newBuilder()
         users.forEach { builder.addUsers(it.toGrpcUser()) }
         return builder.build()
+    }
+
+    override suspend fun register(request: Authentication.RegisterRequest): JwtTokens {
+        // Check whether a user with the given email already exists
+        if (userRepo.doesUserExistByEmail(request.email)) {
+            throw DuplicateEntityException.UserEmail(request.email)
+        }
+
+        // Hash the password and create the user
+        val passwordHash = PasswordUtils.hashPassword(request.password)
+        val user = userRepo.createUser(request, passwordHash)
+
+        // Generate JWT tokens
+        val tokens = JwtUtils.generateTokens(user.id)
+
+        return tokens
     }
 }

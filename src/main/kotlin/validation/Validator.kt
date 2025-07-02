@@ -6,6 +6,7 @@ import arrow.core.nonEmptyListOf
 import io.grpc.health.v1.HealthCheckRequest
 import se.uulm.snowballr.backend.model.UnknownRequest
 import se.uulm.snowballr.backend.model.ValidationIssue
+import snowballr.Authentication
 import snowballr.Base
 import snowballr.CriterionOuterClass
 import snowballr.ProjectOuterClass
@@ -20,6 +21,14 @@ val EMAIL_REGEX =
     Regex(
         "(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21\\x23-\\x5b\\x5d-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21-\\x5a\\x53-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])+)])",
     )
+val SPECIAL_CHAR_REGEX = Regex("[" + Regex.escape("#$%&@^`~.,:;\"'/|_-<>*+!?={[()]}ß") + "]")
+const val PASSWORD_MIN_NUMBER_LOWERCASE_LETTERS = 2
+const val PASSWORD_MIN_NUMBER_UPPERCASE_LETTERS = 2
+const val PASSWORD_MIN_NUMBER_DIGITS = 2
+const val PASSWORD_MIN_NUMBER_SPECIAL_CHARS = 2
+const val PASSWORD_MIN_LENGTH = 8
+const val FIRST_NAME_MAX_LENGTH = 100
+const val LAST_NAME_MAX_LENGTH = 100
 
 /**
  * Validates a given request object and returns either a collection of validation issues
@@ -36,6 +45,8 @@ val EMAIL_REGEX =
 fun <T> validateRequest(request: T): EitherNel<ValidationIssue, Unit> = when (request) {
     // Healthcheck
     is HealthCheckRequest -> Either.Right(Unit)
+    // Authentication
+    is Authentication.RegisterRequest -> AuthenticationValidator.validateRegisterRequest(request)
     // Project
     is ProjectOuterClass.Project.Create -> ProjectValidator.validateCreateRequest(request)
     // Criterion

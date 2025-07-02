@@ -22,6 +22,8 @@ grpc-version = "1.73.0"
 protobuf-kotlin-version = "4.31.1"
 shadow-jar-version = "8.3.6"
 archunit-version = "1.4.1"
+password4j-version = "1.8.3"
+jjwt-version = "0.12.6"
 
 [libraries]
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines-version" }
@@ -37,6 +39,12 @@ exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "e
 exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "exposed-version" }
 exposed-datetime = { module = "org.jetbrains.exposed:exposed-kotlin-datetime", version.ref = "exposed-version" }
 exposed-json = { module = "org.jetbrains.exposed:exposed-json", version.ref = "exposed-version" }
+
+password4j = { module = "com.password4j:password4j", version.ref = "password4j-version" }
+
+jjwt-api = { module = "io.jsonwebtoken:jjwt-api", version.ref = "jjwt-version" }
+jjwt-impl = { module = "io.jsonwebtoken:jjwt-impl", version.ref = "jjwt-version" }
+jjwt-jackson = { module = "io.jsonwebtoken:jjwt-jackson", version.ref = "jjwt-version" }
 
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit-version" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }

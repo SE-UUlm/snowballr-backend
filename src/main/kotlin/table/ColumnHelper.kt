@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.table
 
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.Table
+import org.jetbrains.exposed.sql.TextColumnType
 import org.jetbrains.exposed.sql.kotlin.datetime.timestampWithTimeZone
 import java.time.OffsetDateTime
 
@@ -41,3 +42,9 @@ fun Table.deletedAt() = timestampWithTimeZone("deleted_at").nullable()
  * - `onUpdate=CASCADE` so that when the user ID is updated, the foreign key ID is updated too
  */
 fun Table.deletedBy() = userReference("deleted_by", ReferenceOption.RESTRICT, ReferenceOption.CASCADE).nullable()
+
+/**
+ * Same as [Table.text], but with the [ObfuscatedTextColumnType] instead of the [TextColumnType].
+ */
+fun Table.obfuscatedText(name: String, collate: String? = null, eagerLoading: Boolean = false) =
+    registerColumn(name, ObfuscatedTextColumnType(collate, eagerLoading))

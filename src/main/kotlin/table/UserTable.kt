@@ -13,9 +13,7 @@ import java.time.OffsetDateTime
  * - [email]: Represents the email address of the user as a [String].
  * - [firstName]: Represents the first name of the user as a [String].
  * - [lastName]: Represents the last name of the user as a [String].
- * - [password]: Represents the password of the user as a text.
- * - [accessToken]: Represents the access token of the user as a text.
- * - [refreshToken]: Represents the refresh token of the user as a text.
+ * - [passwordHash]: Represents the hashed password of the user as a [String].
  * - [role]: Represents the role of the user as an enumeration value from [UserOuterClass.UserRole].
  * - [status]: Represents the status of the user as an enumeration value from [UserOuterClass.UserStatus].
  * - [createdAt]: Represents the timestamp of when the user was created as an [OffsetDateTime].
@@ -26,10 +24,7 @@ object UserTable : UUIDTable("user") {
     val email = text("email").uniqueIndex()
     val firstName = text("first_name")
     val lastName = text("last_name")
-
-//    val password = use exposed-crypt
-//    val accessToken = foo
-//    val refreshToken = bar
+    val passwordHash = obfuscatedText("password_hash")
     val role = enumeration<UserOuterClass.UserRole>("role")
     val status = enumeration<UserOuterClass.UserStatus>("status")
 

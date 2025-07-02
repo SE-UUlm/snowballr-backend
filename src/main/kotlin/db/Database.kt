@@ -113,6 +113,7 @@ class Database(
                         it[email] = "alice.smith@example.com"
                         it[firstName] = "Alice"
                         it[lastName] = "Smith"
+                        it[passwordHash] = "passwordHash"
                         it[role] = UserOuterClass.UserRole.USER_ROLE_ADMIN
                         it[status] = UserOuterClass.UserStatus.USER_STATUS_ACTIVE
                     }
