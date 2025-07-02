@@ -197,7 +197,7 @@ class SnowballRServer(
             mainService.getUserByEmail(request)
 
         override suspend fun updateUser(request: UserOuterClass.User.Update): UserOuterClass.User =
-            super.updateUser(request)
+            mainService.updateUser(request)
 
         override suspend fun softDeleteUser(request: Base.Id): Base.Nothing = super.softDeleteUser(request)
 

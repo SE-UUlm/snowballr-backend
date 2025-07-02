@@ -6,6 +6,7 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import se.uulm.snowballr.backend.DataBuilder
+import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.utils.GrpcEnumSourceTest
@@ -18,13 +19,21 @@ class ServiceChecksTest {
         @GrpcEnumSourceTest(UserRole::class, excludes = ["USER_ROLE_ADMIN"])
         fun `When the user is not a server admin, then an exception is thrown`(role: UserRole) {
             val user = DataBuilder.createExampleUser(role = role)
-            assertThrows<UnauthorizedException.All> { verifyServerAdminRole(user, EntityType.PROJECT) }
+            assertThrows<UnauthorizedException.All> {
+                verifyServerAdminRole(
+                    user,
+                ) { UnauthorizedException.All(EntityType.PROJECT, AccessType.READ, user.id.toString()) }
+            }
         }
 
         @Test
         fun `When the user is a server admin, then no exception is thrown`() {
             val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-            assertDoesNotThrow { verifyServerAdminRole(user, EntityType.PROJECT) }
+            assertDoesNotThrow {
+                verifyServerAdminRole(
+                    user,
+                ) { UnauthorizedException.All(EntityType.PROJECT, AccessType.READ, user.id.toString()) }
+            }
         }
     }
 }

@@ -1,7 +1,10 @@
 package se.uulm.snowballr.backend.service
 
 import io.mockk.clearAllMocks
+import io.mockk.coEvery
 import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.unmockkObject
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -14,6 +17,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.TestInstance
 import se.uulm.snowballr.backend.db.dummyUserId
+import se.uulm.snowballr.backend.grpc.GrpcContext
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
@@ -84,12 +88,15 @@ open class MainServiceTest {
     @BeforeAll
     fun setUp() {
         Dispatchers.setMain(threadContext)
+        mockkObject(GrpcContext)
     }
 
     @BeforeEach
     open fun setUpTest() {
+        val userId = UUID.randomUUID()
+        coEvery { GrpcContext.getUserIdFromContext() } returns userId
         // TODO: remove when user management is implemented
-        dummyUserId = UUID.randomUUID().toString()
+        dummyUserId = userId.toString()
     }
 
     @AfterEach
@@ -101,5 +108,6 @@ open class MainServiceTest {
     fun tearDown() {
         Dispatchers.resetMain()
         threadContext.close()
+        unmockkObject(GrpcContext)
     }
 }
