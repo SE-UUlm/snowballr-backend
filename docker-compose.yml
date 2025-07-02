@@ -26,6 +26,8 @@ services:
             LOG_LEVEL: ${LOG_LEVEL:-DEBUG}
             DATABASE_PASSWORD: ${DATABASE_PASSWORD}
             DATABASE_HOST: db # use db service as db host
+            JWT_PRIVATE_KEY_BASE64: ${JWT_PRIVATE_KEY_BASE64}
+            JWT_PUBLIC_KEY_BASE64: ${JWT_PUBLIC_KEY_BASE64}
         ports:
             - ${PORT:-8080}:${PORT:-8080}
         depends_on:

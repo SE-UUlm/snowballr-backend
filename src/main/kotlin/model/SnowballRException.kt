@@ -42,6 +42,25 @@ sealed class SnowballRException(
     }
 
     /**
+     * Represents an exception that occurs when an entity already exists in the system
+     * and creation is not allowed.
+     *
+     * @constructor Creates a [DuplicateEntityException] with a message about the entity.
+     * @param entityType The type of the duplicated entity.
+     * @param identifier The identifying value (e.g., email, username).
+     * @param identifierName The name of the identifier field (defaults to "ID").
+     */
+    sealed class DuplicateEntityException(
+        entityType: String,
+        identifier: String,
+        identifierName: String = "ID",
+    ) : SnowballRException("$entityType with $identifierName '$identifier' already exists.") {
+        class UserEmail(
+            email: String,
+        ) : DuplicateEntityException("User", email, "email")
+    }
+
+    /**
      * Represents a specific type of exception that occurs when an entity creation was triggered, but it couldn't be
      * fetched afterward.
      *

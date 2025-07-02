@@ -37,6 +37,11 @@ dependencies {
     implementation(libs.postgresql)
     implementation(libs.hikaricp)
 
+    implementation(libs.password4j)
+    implementation(libs.jjwt.api)
+    runtimeOnly(libs.jjwt.impl)
+    runtimeOnly(libs.jjwt.jackson)
+
     implementation(libs.dotenv.kotlin)
 
     testImplementation(libs.kotlinx.coroutines.test)
