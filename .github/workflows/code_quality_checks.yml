@@ -49,11 +49,6 @@ jobs:
                   java_version: ${{ env.java_version }}
                   java_distribution: ${{ env.java_distribution }}
 
-            - name: Set JWT keys
-              run: |
-                  echo "JWT_PRIVATE_KEY_BASE64=${{ secrets.JWT_PRIVATE_KEY_BASE64 }}" >> .env
-                  echo "JWT_PUBLIC_KEY_BASE64=${{ secrets.JWT_PUBLIC_KEY_BASE64 }}" >> .env
-
             - name: Run tests and collect coverage
               run: |
                   ./gradlew test
