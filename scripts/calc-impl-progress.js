@@ -7,7 +7,7 @@
 import assert from "assert";
 import fs from "fs";
 
-const serverPath = "src/main/kotlin/grpc/SnowballRServer.kt";
+const serverPath = "src/main/kotlin/se/uulm/snowballr/backend/grpc/SnowballRServer.kt";
 const wikiPath = "wiki/Contributing.md";
 const replacePattern = "<!-- @add-progress -->";
 
