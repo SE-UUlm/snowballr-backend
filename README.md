@@ -25,6 +25,7 @@ We provide several docker compose profiles for different setups.
 - `db-only`: Only starts the database (for local development)
 - `registry`: Starts the published backend image with the specified tag, its proxy and the database (use the BACKEND_TAG
   env variable).
+- `proxy-only`: Only starts the proxy (for local development)
 
 Use `docker compose --profile <profile> up` to start the backend with the desired profile.
 
@@ -42,16 +43,54 @@ cp .env.example .env
 
 The environment variables are as follows:
 
-| Variable            |      Required      |   Default    | Description                                                                      |
-|---------------------|:------------------:|:------------:|----------------------------------------------------------------------------------|
-| `PORT`              | :white_check_mark: |      -       | The port where the backend is served                                             |
-| `WEB_PORT`          |        :x:*        |     8081     | The port where the proxy is served (used for gRPC-Web)                           |
-| `LOG_LEVEL`         |        :x:         |   `DEBUG`    | The log level to use. One of `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`, or `OFF` |
-| `DATABASE_PASSWORD` | :white_check_mark: |      -       | Password for the database e.g. `postgres_password`                               |
-| `DATABASE_HOST`     |        :x:         | `localhost`  | Hostname of database connection                                                  |
-| `BACKEND_TAG`       |        :x:*        | `latest-dev` | Tag of registry backend image to use for `registry` docker compose profile       |
+| Variable                 |      Required      |   Default    | Description                                                                      |
+|--------------------------|:------------------:|:------------:|----------------------------------------------------------------------------------|
+| `PORT`                   | :white_check_mark: |      -       | The port where the backend is served                                             |
+| `WEB_PORT`               |        :x:*        |     8081     | The port where the proxy is served (used for gRPC-Web)                           |
+| `LOG_LEVEL`              |        :x:         |   `DEBUG`    | The log level to use. One of `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`, or `OFF` |
+| `DATABASE_PASSWORD`      | :white_check_mark: |      -       | Password for the database e.g. `postgres_password`                               |
+| `DATABASE_HOST`          |        :x:         | `localhost`  | Hostname of database connection                                                  |
+| `BACKEND_TAG`            |        :x:*        | `latest-dev` | Tag of registry backend image to use for `registry` docker compose profile       |
+| `JWT_PRIVATE_KEY_BASE64` | :white_check_mark: |      -       | Base64 encoded private key for JWT authentication                                |
+| `JWT_PUBLIC_KEY_BASE64`  | :white_check_mark: |      -       | Base64 encoded public key for JWT authentication                                 |
 
 \* only used when using the docker compose profiles.
+
+### JWT Private/Public Key
+
+To generate a **Base64-encoded RSA private/public key pair** for use in the `.env` file, follow these steps:
+
+1. Generate a 2048-bit RSA private key
+
+   ```bash
+   openssl genpkey -algorithm RSA -out private_key.pem -pkeyopt rsa_keygen_bits:2048
+   ```
+
+2. Extract the corresponding public key
+
+    ```bash
+   openssl rsa -pubout -in private_key.pem -out public_key.pem
+    ```
+
+3. Encode the private key in Base64 (single line)
+
+    ```bash
+   echo "JWT_PRIVATE_KEY_BASE64=$(grep -v -- "-----" private_key.pem | tr -d '\n')" >> .env
+    ```
+
+4. Encode the public key in Base64 (single line)
+
+    ```bash
+    echo "JWT_PUBLIC_KEY_BASE64=$(grep -v -- "-----" public_key.pem | tr -d '\n')" >> .env
+    ```
+
+> **Attention**
+>
+> The `JWT_PRIVATE_KEY_BASE64` and `JWT_PUBLIC_KEY_BASE64` environment variables must **always remain the same** across
+> deployments, unless a proper key rotation process is implemented.
+>
+> These keys are used to **sign and verify JWTs**. If you change them, any existing JWTs signed with the old private key
+> will become invalid, and users will be forced to re-authenticate because the system can no longer verify their tokens.
 
 ## Building from Source
 
