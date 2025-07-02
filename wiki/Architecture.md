@@ -133,4 +133,4 @@ When an unexpected error occurs at any time in this diagram, an `INTERNAL` statu
 ## Architecture Tests
 
 To enforce our architecture, we conduct architecture tests using [ArchUnit](https://www.archunit.org/). You can find
-them in [`src/test/kotlin/arch`](https://github.com/SE-UUlm/snowballr-backend/tree/develop/src/test/kotlin/arch).
+them in [`src/test/kotlin/se/uulm/snowballr/backend/arch`](https://github.com/SE-UUlm/snowballr-backend/tree/develop/src/test/kotlin/se/uulm/snowballr/backend/arch).

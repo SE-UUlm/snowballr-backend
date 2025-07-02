@@ -58,7 +58,7 @@ find the according test class. The service test classes break this convention as
 ### Repository
 
 The base class of each repository test class is
-[H2DatabaseTest](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/test/kotlin/repository/H2DatabaseTest.kt),
+[H2DatabaseTest](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/test/kotlin/se/uulm/snowballr/backend/repository/H2DatabaseTest.kt),
 which uses the in-memory database H2. A repository test class has the following structure:
 
 ```kotlin
@@ -95,13 +95,13 @@ For parameterized tests using gRPC enums, we provide the custom `GrpcEnumSourceT
 `UNRECOGNIZED` value because using this value to create an object will lead to an exception being thrown.
 
 See
-[CriterionTableRepoTest.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/test/kotlin/repository/CriterionTableRepoTest.kt)
+[CriterionTableRepoTest.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/test/kotlin/se/uulm/snowballr/backend/repository/CriterionTableRepoTest.kt)
 for an example.
 
 ### Service
 
 Similar to the repository tests, the service tests use the base class
-[MainServiceTest](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/test/kotlin/service/MainServiceTest.kt).
+[MainServiceTest](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/test/kotlin/se/uulm/snowballr/backend/service/MainServiceTest.kt).
 In there, the mocks for all repositories are declared. If the mock of the repo you are working on is not already added,
 add it below the existing mocks with the pattern `[Repository Name]Mock = mockk<I[Repository Name]>(relaxed = true)`.
 Furthermore, pass it to the `MainService` constructor because we use the `mainService` object to call the methods we
@@ -182,5 +182,5 @@ val request =
 ```
 
 See
-[CriterionValidatorTest](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/test/kotlin/validation/CriterionValidatorTest.kt)
+[CriterionValidatorTest](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/test/kotlin/se/uulm/snowballr/backend/validation/CriterionValidatorTest.kt)
 for an example.

@@ -78,7 +78,7 @@ Follow these few conventions when creating or modifying a table:
     * as gRPC enforces unique enum ordinals, even if some are removed, we can ensure that this doesn't mess up our
       migration
     * ensure ordinal consistency for non-gRPC enums using hard-coded tests (see
-      [EnumOrdinalTest.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/test/kotlin/model/EnumOrdinalTest.kt))
+      [EnumOrdinalTest.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/test/kotlin/se/uulm/snowballr/backend/model/EnumOrdinalTest.kt))
 * use `uniqueIndex()` for [natural keys](https://en.wikipedia.org/wiki/Natural_key), such as the users' email
 * if there's a foreign key, provide reference options, such as `RESTRICT` or `CASCADE` for `onDelete` and `onUpdate`and
   provide a comment which describes why the reference option was chosen (read more in
@@ -95,7 +95,7 @@ fun ResultRow.toExample(): Example =
     )
 ```
 
-See [ProjectTable.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/table/ProjectTable.kt)
+See [ProjectTable.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/table/ProjectTable.kt)
 for an example.
 
 ### Repository
@@ -125,19 +125,19 @@ val entity = ExampleTable
 ```
 
 See
-[ProjectTableRepo.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/repository/ProjectTableRepo.kt)
+[ProjectTableRepo.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/repository/ProjectTableRepo.kt)
 for an example.
 
 ### Service
 
 The service layer is the layer where the actual business logic happens. This includes access checks and checking whether
 associated entities exist. We group the service layer according to the entities in our system, such as the
-[ProjectService](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/service/ProjectService.kt).
+[ProjectService](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend//service/ProjectService.kt).
 A service always has an interface, which defines its methods and an implementation, which uses said interface. As there
 exists a 1-to-1 mapping of incoming requests to service methods, the service handles all requests of its associated
 entity.
 
-The [MainService](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/service/MainService.kt)
+The [MainService](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/service/MainService.kt)
 combines all services in one class, which can then be used in the gRPC server to invoke the according method for each
 request. If there isn't already a service for the entity associated with your use case, add another one with the pattern
 `[Entity Name]Service`. Furthermore, let `IMainService` inherit its interface and inject the implementation:
@@ -154,7 +154,7 @@ class MainService(
 
 Dependencies are one or more repositories, another service, or whatever the service requires to execute its logic. For
 the dependency injection to work, add all repositories to the `snowballRModule` in
-[Module.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/Module.kt).
+[Module.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/Module.kt).
 Build the service method implementation in a way that preconditions are checked first. We want to fail as fast as
 possible, and if the associated entity doesn't exist or the user doesn't even have access to the operation, we don't
 want to have already persisted data. Only if every precondition is met, make changes to the persisted data and finish
@@ -166,7 +166,7 @@ no real business logic is executed. This will change in the future and this sect
 ### Input Validation
 
 The entry point for the input validation is the `validateRequest` method in
-[Validator.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/validation/Validator.kt).
+[Validator.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend//validation/Validator.kt).
 To add another validation for a new request, add a new `is ...` statement for the request class you want to validate.
 If no field of the request requires any validation, map the statement to `Either.Right(Unit)`:
 
@@ -199,7 +199,7 @@ either {
 
 We list the exclusive conditions in the `either` block and provide specific validation issues. For an example, see
 `validateCreateRequest` in
-[ProjectValidator.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/validation/ProjectValidator.kt).
+[ProjectValidator.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend//validation/ProjectValidator.kt).
 
 Case 2:
 
@@ -224,13 +224,13 @@ are mutually exclusive. For instance, each field would be validated in a separat
 independent of each other. The second last line might look weird, but this is only for a use case we don't need. The
 number of comma-separated underscores equals the number of validation groups. For an example, see
 `validateCreateRequest` in
-[CriterionValidator.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/validation/CriterionValidator.kt).
+[CriterionValidator.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend//validation/CriterionValidator.kt).
 
 With validation issues, we provide a common interface for reasons why the input validation failed. The interface is
 defined in
-[ValidationIssue.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/model/ValidationIssue.kt).
+[ValidationIssue.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/model/ValidationIssue.kt).
 Use the existing issues or add a new one that matches your requirements. There's also a
-[ValidationHelper.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/validation/ValidationHelper.kt)
+[ValidationHelper.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/validation/ValidationHelper.kt)
 class, which provides several predefined conditions that might be used more frequently.
 
 ## Testing
