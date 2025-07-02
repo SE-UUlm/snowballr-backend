@@ -7,6 +7,10 @@ import io.grpc.health.v1.HealthCheckResponse.ServingStatus
 import io.grpc.protobuf.services.HealthStatusManager
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import se.uulm.snowballr.backend.grpc.interceptor.authenticationInterceptor
+import se.uulm.snowballr.backend.grpc.interceptor.exceptionInterceptor
+import se.uulm.snowballr.backend.grpc.interceptor.loggingInterceptor
+import se.uulm.snowballr.backend.grpc.interceptor.validationInterceptor
 import se.uulm.snowballr.backend.service.IMainService
 import snowballr.Authentication
 import snowballr.Base
