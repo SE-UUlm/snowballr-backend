@@ -114,6 +114,7 @@ open class H2DatabaseTest(
                             it[email] = "test.user@example.com"
                             it[firstName] = "Test"
                             it[lastName] = "User"
+                            it[passwordHash] = "hashedPassword"
                             it[role] = UserOuterClass.UserRole.USER_ROLE_ADMIN
                             it[status] = UserOuterClass.UserStatus.USER_STATUS_ACTIVE
                         }

@@ -30,8 +30,9 @@ class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
                             it[email] = "test.user@example.com"
                             it[firstName] = "Test"
                             it[lastName] = "User"
+                            it[passwordHash] = "hashedPassword"
                             it[role] = UserRole.USER_ROLE_DEFAULT
-                            it[status] = UserStatus.USER_STATUS_ACTIVE
+                            it[status] = UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED
                         }
                     }.value
 
@@ -42,7 +43,7 @@ class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
             assertThat(user.firstName).isEqualTo("Test")
             assertThat(user.lastName).isEqualTo("User")
             assertThat(user.role).isEqualTo(UserRole.USER_ROLE_DEFAULT)
-            assertThat(user.status).isEqualTo(UserStatus.USER_STATUS_ACTIVE)
+            assertThat(user.status).isEqualTo(UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED)
         }
 
         @Test
@@ -62,6 +63,7 @@ class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
                             it[email] = "test.user@example.com"
                             it[firstName] = "Test"
                             it[lastName] = "User"
+                            it[passwordHash] = "hashedPassword"
                             it[role] = UserRole.USER_ROLE_DEFAULT
                             it[status] = UserStatus.USER_STATUS_ACTIVE
                         }
@@ -94,6 +96,7 @@ class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
                             it[email] = "test.user1@example.com"
                             it[firstName] = "Test"
                             it[lastName] = "User 2"
+                            it[passwordHash] = "hashedPassword"
                             it[role] = UserRole.USER_ROLE_DEFAULT
                             it[status] = UserStatus.USER_STATUS_ACTIVE
                         }
@@ -106,6 +109,7 @@ class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
                             it[email] = "test.user2@example.com"
                             it[firstName] = "Test"
                             it[lastName] = "User 1"
+                            it[passwordHash] = "hashedPassword"
                             it[role] = UserRole.USER_ROLE_DEFAULT
                             it[status] = UserStatus.USER_STATUS_ACTIVE
                         }

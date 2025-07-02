@@ -44,6 +44,7 @@ class ProjectMemberTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectM
                         it[email] = "test.user.$index@example.com"
                         it[firstName] = "Test"
                         it[lastName] = "User"
+                        it[passwordHash] = "hashedPassword"
                         it[role] = UserOuterClass.UserRole.USER_ROLE_DEFAULT
                         it[status] = UserOuterClass.UserStatus.USER_STATUS_ACTIVE
                     }.value
