@@ -175,4 +175,20 @@ sealed class SnowballRException(
     class FailedPreconditionException(
         description: String,
     ) : SnowballRException(description)
+
+    /**
+     * Represents an exception that occurs when there is an issue with the fetchers.
+     *
+     * This could indicate invalid project settings, missing/changed fetcher
+     * implementations, or a misconfiguration of the backend.
+     *
+     * @constructor Creates a [FetcherException] with a specific description.
+     * @param description The description of the specific issue with a fetcher.
+     */
+    sealed class FetcherException(
+        description: String,
+    ) : SnowballRException(description) {
+        class UnknownFetcher(fetcher: String) : FetcherException("The fetcher '$fetcher' is not known.")
+        class AlreadyRegistered(fetcher: String) : FetcherException("The fetcher '$fetcher' is already registered.")
+    }
 }

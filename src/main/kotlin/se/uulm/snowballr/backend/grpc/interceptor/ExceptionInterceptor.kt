@@ -84,6 +84,7 @@ private class ExceptionCall<ReqT, RespT>(
                 is SnowballRException.MissingContextException -> Status.INTERNAL
                 is SnowballRException.UnauthenticatedException -> Status.UNAUTHENTICATED
                 is SnowballRException.FailedPreconditionException -> Status.FAILED_PRECONDITION
+                is SnowballRException.FetcherException -> Status.INVALID_ARGUMENT
             }.withDescription(e.message).withCause(e.cause)
 
         logger.debug {
