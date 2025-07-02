@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.service
 
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
+import se.uulm.snowballr.backend.repository.ISessionTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 
@@ -17,7 +18,8 @@ import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 interface IMainService :
     IProjectService,
     ICriterionService,
-    IUserService
+    IUserService,
+    ISessionService
 
 /**
  * The [MainService] class serves as the primary service implementation layer that aggregates multiple sub-services.
@@ -28,14 +30,17 @@ interface IMainService :
  * @param projectRepo The repository responsible for handling persistence operations related to projects.
  * @param criterionRepo The repository responsible for handling persistence operations related to criteria.
  * @param userRepo The repository responsible for handling persistence operations related to users.
+ * @param sessionRepo The repository responsible for handling persistence operations related to sessions.
  * @param projectMemberRepo The repository responsible for handling persistence operations related to project members.
  */
 class MainService(
     private val projectRepo: IProjectTableRepo,
     private val criterionRepo: ICriterionTableRepo,
     private val userRepo: IUserTableRepo,
+    private val sessionRepo: ISessionTableRepo,
     private val projectMemberRepo: IProjectMemberTableRepo,
 ) : IMainService,
     IProjectService by ProjectService(projectRepo, userRepo),
     ICriterionService by CriterionService(criterionRepo),
-    IUserService by UserService(userRepo, projectMemberRepo)
+    IUserService by UserService(userRepo, projectMemberRepo),
+    ISessionService by SessionService(sessionRepo)

@@ -4,6 +4,7 @@ import se.uulm.snowballr.backend.model.FetcherApi
 import se.uulm.snowballr.backend.model.dto.Criterion
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.ProjectMember
+import se.uulm.snowballr.backend.model.dto.Session
 import se.uulm.snowballr.backend.model.dto.User
 import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass.MemberRole
@@ -102,6 +103,22 @@ object DataBuilder {
         createdAt = createdAt,
         modifiedAt = modifiedAt,
         deletedAt = deletedAt,
+    )
+
+    fun createExampleSession(
+        id: UUID = UUID.randomUUID(),
+        userId: UUID = UUID.randomUUID(),
+        revoked: Boolean = false,
+        expiresAt: OffsetDateTime = OffsetDateTime.now().plusDays(7),
+        createdAt: OffsetDateTime = OffsetDateTime.now(),
+        modifiedAt: OffsetDateTime? = null,
+    ) = Session(
+        id = id,
+        userId = userId,
+        revoked = revoked,
+        expiresAt = expiresAt,
+        createdAt = createdAt,
+        modifiedAt = modifiedAt,
     )
 
     fun createExampleProjectMember(
