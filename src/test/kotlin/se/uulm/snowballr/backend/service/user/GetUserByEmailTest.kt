@@ -153,7 +153,7 @@ class GetUserByEmailTest : MainServiceTest() {
             coEvery { userRepoMock.getUserByEmail(requestEmail) } returns user
             coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(any()) } returns listOf()
 
-            assertThrows<NotFoundException.User> { mainService.getUserByEmail(request) }
+            assertThrows<NotFoundException> { mainService.getUserByEmail(request) }
         }
     }
 }

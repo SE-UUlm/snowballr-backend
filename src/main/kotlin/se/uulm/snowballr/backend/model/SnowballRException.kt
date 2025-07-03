@@ -15,31 +15,18 @@ sealed class SnowballRException(
     cause: Throwable? = null,
 ) : RuntimeException(message, cause) {
     /**
-     * Represents a specific type of exception that occurs when an entity cannot be found.
-     *
-     * This exception is intended to provide a clear and structured way to handle
-     * scenarios where a particular entity, identified by its type and ID, is not found.
-     * It serves as a base class to define more specific "not found" exceptions for various entities.
+     * Represents an exception that occurs when an entity cannot be found by its identifier.
      *
      * @constructor Creates a [NotFoundException] with the type and ID of the missing entity.
      * @param entityType The type of the entity that could not be found.
      * @param entityId The unique identifier of the missing entity.
      * @param identifier The name of the identifier. Defaults to 'ID'.
      */
-    sealed class NotFoundException(
+    open class NotFoundException(
         entityType: EntityType,
         entityId: String,
         identifier: String? = "ID",
-    ) : SnowballRException("${entityType.singularUpper()} with $identifier '$entityId' not found.") {
-        class Project(
-            projectId: String,
-        ) : NotFoundException(EntityType.PROJECT, projectId)
-
-        class User(
-            userId: String,
-            identifier: String? = "ID",
-        ) : NotFoundException(EntityType.USER, userId, identifier)
-    }
+    ) : SnowballRException("${entityType.singularUpper()} with $identifier '$entityId' not found.")
 
     /**
      * Represents an exception that occurs when an entity already exists in the system

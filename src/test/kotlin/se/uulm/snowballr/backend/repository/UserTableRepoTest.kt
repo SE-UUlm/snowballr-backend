@@ -52,7 +52,7 @@ class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
 
         @Test
         fun `When a user is not found, then an exception is thrown`() = testCoroutine {
-            assertThrows<NotFoundException.User> { repo.getUserById(UUID.randomUUID()) }
+            assertThrows<NotFoundException> { repo.getUserById(UUID.randomUUID()) }
         }
     }
 
@@ -85,7 +85,7 @@ class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
 
         @Test
         fun `When a user is not found, then an exception is thrown`() = testCoroutine {
-            assertThrows<NotFoundException.User> { repo.getUserByEmail("non-existing email") }
+            assertThrows<NotFoundException> { repo.getUserByEmail("non-existing email") }
         }
     }
 

@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.repository
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
+import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.EntityNotPersistedException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.User
@@ -22,12 +23,12 @@ import java.util.UUID
  */
 interface IUserTableRepo {
     /**
-     * Returns a user by its id or throws a [NotFoundException.User] if the user with the passed [id] doesn't exist.
+     * Returns a user by its id or throws a [NotFoundException] if the user with the passed [id] doesn't exist.
      */
     suspend fun getUserById(id: UUID): User
 
     /**
-     * Returns a user by its email or throws a [NotFoundException.User] if the user with the passed [email] doesn't
+     * Returns a user by its email or throws a [NotFoundException] if the user with the passed [email] doesn't
      * exist.
      */
     suspend fun getUserByEmail(email: String): User
@@ -73,7 +74,7 @@ class UserTableRepo(
             .where { UserTable.id eq id }
             .map { it.toUser() }
             .singleOrNull()
-            ?: throw NotFoundException.User(id.toString())
+            ?: throw NotFoundException(EntityType.USER, id.toString())
     }
 
     override suspend fun getUserByEmail(email: String): User = db.dbQuery {
@@ -82,7 +83,7 @@ class UserTableRepo(
             .where { UserTable.email eq email }
             .map { it.toUser() }
             .singleOrNull()
-            ?: throw NotFoundException.User(email, "email")
+            ?: throw NotFoundException(EntityType.USER, email, "email")
     }
 
     override suspend fun doesUserExistByEmail(email: String): Boolean = db.dbQuery {

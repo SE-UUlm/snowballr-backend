@@ -101,7 +101,7 @@ class ProjectMemberTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectM
 
         @Test
         fun `When a user is added to a non-existing project, then an exception is thrown`() = testCoroutine {
-            assertThrows<NotFoundException.Project> {
+            assertThrows<NotFoundException> {
                 repo.addUserToProject(testUserId, UUID.randomUUID())
             }
         }
@@ -110,7 +110,7 @@ class ProjectMemberTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectM
         fun `When a non-existing user is added to a project, then an exception is thrown`() = testCoroutine {
             val project = createExampleProject()
 
-            assertThrows<NotFoundException.User> {
+            assertThrows<NotFoundException> {
                 repo.addUserToProject(UUID.randomUUID(), project.id)
             }
         }

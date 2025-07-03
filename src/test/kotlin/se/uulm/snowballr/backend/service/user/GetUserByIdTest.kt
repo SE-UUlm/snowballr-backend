@@ -187,7 +187,7 @@ class GetUserByIdTest : MainServiceTest() {
             val user = DataBuilder.createExampleUser(status = status)
             coEvery { userRepoMock.getUserById(requestId) } returns user
 
-            assertThrows<NotFoundException.User> { mainService.getUserById(request) }
+            assertThrows<NotFoundException> { mainService.getUserById(request) }
         }
     }
 }

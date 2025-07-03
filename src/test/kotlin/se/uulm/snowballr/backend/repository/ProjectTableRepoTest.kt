@@ -72,7 +72,7 @@ class ProjectTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable), true) {
         fun `When a project is created, but the assigned user doesn't exist, then an exception is thrown`() =
             testCoroutine {
                 val request = Project.Create.newBuilder().setName("Test Project").build()
-                assertThrows<NotFoundException.User> { repo.createProject(request, UUID.randomUUID()) }
+                assertThrows<NotFoundException> { repo.createProject(request, UUID.randomUUID()) }
             }
     }
 

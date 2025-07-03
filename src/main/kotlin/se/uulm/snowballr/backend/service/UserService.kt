@@ -96,7 +96,7 @@ class UserService(
         if (result.status != UserStatus.USER_STATUS_ACTIVE &&
             result.status != UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED
         ) {
-            throw NotFoundException.User(request.id)
+            throw NotFoundException(EntityType.USER, request.id)
         }
 
         return result.toGrpcUser()
@@ -115,7 +115,7 @@ class UserService(
         if (requestedUser.status != UserStatus.USER_STATUS_ACTIVE &&
             requestedUser.status != UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED
         ) {
-            throw NotFoundException.User(request.email, "email")
+            throw NotFoundException(EntityType.USER, request.email, "email")
         }
 
         return requestedUser.toGrpcUser()
