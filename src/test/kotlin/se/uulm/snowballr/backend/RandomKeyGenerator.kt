@@ -4,9 +4,15 @@ import io.jsonwebtoken.io.Encoders
 import se.uulm.snowballr.backend.auth.JwtUtils
 import java.security.KeyPairGenerator
 
+/**
+ * Helper object for generating keys that can be used for tests.
+ */
 object RandomKeyGenerator {
     /**
      * Generates a key pair with the specified [keySize] and returns their base64 representation.
+     *
+     * @param keySize The size of the keys in bytes.
+     * @return A [Pair] with the private key in the first element and the public key in the second one.
      */
     fun generateKeyPair(keySize: Int = 2048): Pair<String, String> {
         val keyGen = KeyPairGenerator.getInstance(JwtUtils.KEY_ALGORITHM)

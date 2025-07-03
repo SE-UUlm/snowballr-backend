@@ -18,6 +18,12 @@ private const val DATABASE_HOST = "DATABASE_HOST"
 private const val JWT_PRIVATE_KEY_BASE64 = "JWT_PRIVATE_KEY_BASE64"
 private const val JWT_PUBLIC_KEY_BASE64 = "JWT_PUBLIC_KEY_BASE64"
 
+/**
+ * The entrypoint for accessing environment variables. All registered variables can be accessed using this reader class.
+ * Use the [env] property to access the environment variables in their respective group objects.
+ *
+ * @param envService The underlying service that provides methods to access variables by their key.
+ */
 class EnvReader(
     envService: IEnvService,
 ) {
