@@ -4,6 +4,7 @@ import se.uulm.snowballr.backend.auth.JwtUtils
 import se.uulm.snowballr.backend.auth.PasswordUtils
 import se.uulm.snowballr.backend.db.dummyUserId
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
+import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.DuplicateEntityException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
@@ -75,8 +76,8 @@ class UserService(
     }
 
     override suspend fun getUserById(request: Base.Id): UserOuterClass.User {
-        val requestingUserId = parseUUID(dummyUserId!!, "user")
-        val requestedUserId = parseUUID(request.id, "user")
+        val requestingUserId = parseUUID(dummyUserId!!, EntityType.USER)
+        val requestedUserId = parseUUID(request.id, EntityType.USER)
         val currentUser = userRepo.getUserById(requestingUserId)
 
         verifyUserAccess(currentUser, requestingUserId, "ID")
@@ -102,7 +103,7 @@ class UserService(
     }
 
     override suspend fun getUserByEmail(request: Base.Email): UserOuterClass.User {
-        val requestingUserId = parseUUID(dummyUserId!!, "user")
+        val requestingUserId = parseUUID(dummyUserId!!, EntityType.USER)
         val currentUser = userRepo.getUserById(requestingUserId)
 
         // We have to request the user first to get the ID for the access checks
@@ -121,7 +122,7 @@ class UserService(
     }
 
     override suspend fun getAllUsers(): UserOuterClass.User.List {
-        val requestingUserId = parseUUID(dummyUserId!!, "user")
+        val requestingUserId = parseUUID(dummyUserId!!, EntityType.USER)
         val currentUser = userRepo.getUserById(requestingUserId)
 
         verifyServerAdminRole(currentUser) { UnauthorizedException.All.User(it) }

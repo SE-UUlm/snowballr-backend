@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.repository
 
 import org.jetbrains.exposed.sql.ResultRow
 import se.uulm.snowballr.backend.db.IDatabase
+import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.EntityNotPersistedException
 import se.uulm.snowballr.backend.model.dto.Criterion
 import se.uulm.snowballr.backend.model.parseUUID
@@ -45,7 +46,7 @@ class CriterionTableRepo(
 ) : ICriterionTableRepo {
     override suspend fun createCriterion(request: CriterionOuterClass.Criterion.Create, userId: UUID): Criterion =
         db.dbQuery {
-            val projectUUID = parseUUID(request.projectId, "project")
+            val projectUUID = parseUUID(request.projectId, EntityType.PROJECT)
 
             // Get user reference
             val userEntityId = getUserEntityId(userId)

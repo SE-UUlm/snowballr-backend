@@ -27,18 +27,18 @@ sealed class SnowballRException(
      * @param identifier The name of the identifier. Defaults to 'ID'.
      */
     sealed class NotFoundException(
-        entityType: String,
+        entityType: EntityType,
         entityId: String,
         identifier: String? = "ID",
-    ) : SnowballRException("$entityType with $identifier '$entityId' not found.") {
+    ) : SnowballRException("${entityType.singularUpper()} with $identifier '$entityId' not found.") {
         class Project(
             projectId: String,
-        ) : NotFoundException("Project", projectId)
+        ) : NotFoundException(EntityType.PROJECT, projectId)
 
         class User(
             userId: String,
             identifier: String? = "ID",
-        ) : NotFoundException("User", userId, identifier)
+        ) : NotFoundException(EntityType.USER, userId, identifier)
     }
 
     /**
@@ -51,13 +51,13 @@ sealed class SnowballRException(
      * @param identifierName The name of the identifier field (defaults to "ID").
      */
     sealed class DuplicateEntityException(
-        entityType: String,
+        entityType: EntityType,
         identifier: String,
         identifierName: String = "ID",
-    ) : SnowballRException("$entityType with $identifierName '$identifier' already exists.") {
+    ) : SnowballRException("${entityType.singularUpper()} with $identifierName '$identifier' already exists.") {
         class UserEmail(
             email: String,
-        ) : DuplicateEntityException("User", email, "email")
+        ) : DuplicateEntityException(EntityType.USER, email, "email")
     }
 
     /**
@@ -69,24 +69,24 @@ sealed class SnowballRException(
      * @param entityId The unique identifier of the not persisted entity.
      */
     sealed class EntityNotPersistedException(
-        entityType: String,
+        entityType: EntityType,
         entityId: String,
-    ) : SnowballRException("$entityType with ID '$entityId' was not persisted.") {
+    ) : SnowballRException("${entityType.singularUpper()} with ID '$entityId' was not persisted.") {
         class Project(
             projectId: String,
-        ) : EntityNotPersistedException("Project", projectId)
+        ) : EntityNotPersistedException(EntityType.PROJECT, projectId)
 
         class Criterion(
             criterionId: String,
-        ) : EntityNotPersistedException("Criterion", criterionId)
+        ) : EntityNotPersistedException(EntityType.CRITERION, criterionId)
 
         class ProjectMember(
             projectMemberId: String,
-        ) : EntityNotPersistedException("ProjectMember", projectMemberId)
+        ) : EntityNotPersistedException(EntityType.PROJECT_MEMBER, projectMemberId)
 
         class User(
             userId: String,
-        ) : EntityNotPersistedException("User", userId)
+        ) : EntityNotPersistedException(EntityType.USER, userId)
     }
 
     /**
@@ -109,28 +109,31 @@ sealed class SnowballRException(
     ) : SnowballRException("User with ID '$currentUserId' is not authorized to access $accessedEntityMessage") {
         sealed class Single(
             currentUserId: String,
-            accessedEntityType: String,
+            accessedEntityType: EntityType,
             accessedEntityId: String,
             identifier: String? = "ID",
-        ) : UnauthorizedException(currentUserId, "$accessedEntityType with $identifier '$accessedEntityId'.") {
+        ) : UnauthorizedException(
+            currentUserId,
+            "${accessedEntityType.singular} with $identifier '$accessedEntityId'.",
+        ) {
             class User(
                 currentUserId: String,
                 identifier: String? = "ID",
                 accessedUserId: String,
-            ) : Single(currentUserId, "user", accessedUserId, identifier)
+            ) : Single(currentUserId, EntityType.USER, accessedUserId, identifier)
         }
 
         sealed class All(
             currentUserId: String,
-            accessedEntityType: String,
-        ) : UnauthorizedException(currentUserId, "all $accessedEntityType.") {
+            accessedEntityType: EntityType,
+        ) : UnauthorizedException(currentUserId, "all ${accessedEntityType.plural}.") {
             class User(
                 currentUserId: String,
-            ) : All(currentUserId, "users")
+            ) : All(currentUserId, EntityType.USER)
 
             class Project(
                 currentUserId: String,
-            ) : All(currentUserId, "projects")
+            ) : All(currentUserId, EntityType.PROJECT)
         }
     }
 
@@ -144,12 +147,12 @@ sealed class SnowballRException(
      */
     sealed class InvalidIdException(
         id: String,
-        entityType: String,
+        entityType: EntityType,
         format: String,
-    ) : SnowballRException("The ID '$id' of the $entityType is not a valid $format.") {
+    ) : SnowballRException("The ID '$id' of the ${entityType.singular} is not a valid $format.") {
         class UUID(
             id: String,
-            entityType: String,
+            entityType: EntityType,
         ) : InvalidIdException(id, entityType, "UUID")
     }
 
