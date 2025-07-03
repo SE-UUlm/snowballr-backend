@@ -6,7 +6,6 @@ package se.uulm.snowballr.backend.model
  * Used to encapsulate specific error details and provide a consistent exception structure.
  * Can be extended to create more detailed exceptions specific to various error scenarios.
  *
- * @constructor Creates an instance of [SnowballRException] with an optional message and cause.
  * @param message Detailed message describing the reason for the exception, or null if not provided.
  * @param cause The cause of the exception, which can be another exception, or null if not provided.
  */
@@ -17,7 +16,6 @@ sealed class SnowballRException(
     /**
      * Represents an exception that occurs when an entity cannot be found by its identifier.
      *
-     * @constructor Creates a [NotFoundException] with the type and ID of the missing entity.
      * @param entityType The type of the entity that could not be found.
      * @param entityId The unique identifier of the missing entity.
      * @param identifierType The type of the [identifierType] field. Default to [IdentifierType.ID].
@@ -32,7 +30,6 @@ sealed class SnowballRException(
      * Represents an exception that occurs when an entity already exists in the system
      * and creation is not allowed.
      *
-     * @constructor Creates a [DuplicateEntityException] with a message about the entity.
      * @param entityType The type of the duplicated entity.
      * @param identifier The identifying value (e.g., email, username).
      * @param identifierType The type of the [identifier] field. Default to [IdentifierType.ID].
@@ -48,7 +45,6 @@ sealed class SnowballRException(
     /**
      * Represents an exception that occurs when an entity creation was triggered, but it couldn't be fetched afterward.
      *
-     * @constructor Creates a [EntityNotPersistedException] with the type and ID of the not persisted entity.
      * @param entityType The type of the entity that was not persisted.
      * @param entityId The unique identifier of the not persisted entity.
      */
@@ -58,18 +54,24 @@ sealed class SnowballRException(
     ) : SnowballRException("${entityType.singularUpper()} with ID '$entityId' was not persisted.")
 
     /**
-     * Represents an exception that occurs when the current user accesses one or more entities, but they don't have the
-     * required permission.
+     * Represents an exception that occurs when the current user accesses one or more entities without permission.
      *
-     * @constructor Creates an [UnauthorizedException] with the current user's ID, the type and ID of the accessed
-     * entity.
-     * @param currentUserId The ID of the user that is accessing the entity.
+     * @param currentUserId The ID of the user that is accessing the entity/entities.
      * @param accessedEntityMessage The message of what is accessed.
      */
     sealed class UnauthorizedException(
         currentUserId: String,
         accessedEntityMessage: String,
     ) : SnowballRException("User with ID '$currentUserId' is not authorized to access $accessedEntityMessage") {
+        /**
+         * Represents an [UnauthorizedException] that occurs when the current user accesses a single entity without
+         * permission.
+         *
+         * @param currentUserId The ID of the user that is accessing the entity.
+         * @param accessedEntityType The type of the entity that was accessed without permission.
+         * @param accessedEntityId The ID of the entity that was accessed without permission.
+         * @param identifierType The type of the identifier used to access the entity.
+         */
         class Single(
             currentUserId: String,
             accessedEntityType: EntityType,
@@ -80,6 +82,13 @@ sealed class SnowballRException(
             "${accessedEntityType.singular} with ${identifierType.displayName} '$accessedEntityId'.",
         )
 
+        /**
+         * Represents an [UnauthorizedException] that occurs when the current user accesses several entities without
+         * permission.
+         *
+         * @param currentUserId The ID of the user that is accessing the entities.
+         * @param accessedEntityType The type of the entities that were accessed without permission.
+         */
         class All(
             currentUserId: String,
             accessedEntityType: EntityType,
@@ -87,9 +96,8 @@ sealed class SnowballRException(
     }
 
     /**
-     * Represents a specific type of exception that occurs when an ID is in an invalid format.
+     * Represents an exception that occurs when an ID is in an invalid format.
      *
-     * @constructor Creates an [InvalidIdException] with the value and format of the invalid ID.
      * @param id The value of the invalid ID.
      * @param entityType The type of the entity to which the ID belongs to.
      * @param format The format that the ID should've had.
@@ -99,6 +107,12 @@ sealed class SnowballRException(
         entityType: EntityType,
         format: String,
     ) : SnowballRException("The ID '$id' of the ${entityType.singular} is not a valid $format.") {
+        /**
+         * Represents an [InvalidIdException] that occurs when a [UUID] is in an invalid format.
+         *
+         * @param id The value of the invalid [UUID].
+         * @param entityType The type of the entity to which the [UUID] belongs to.
+         */
         class UUID(
             id: String,
             entityType: EntityType,
@@ -111,14 +125,19 @@ sealed class SnowballRException(
      * This may indicate a misconfigured interceptor, a bug in the server flow,
      * or a misuse of context propagation.
      *
-     * @constructor Creates a [MissingContextException] with a description of the missing value.
      * @param keyDescription A human-readable description of the missing key or context value.
      */
     sealed class MissingContextException(
         keyDescription: String,
     ) : SnowballRException("Missing context value: $keyDescription") {
+        /**
+         * Represents a [MissingContextException] that occurs when the user ID is missing in the context.
+         */
         class MissingUserId : MissingContextException("Authenticated user ID")
 
+        /**
+         * Represents a [MissingContextException] that occurs when the cookies map is missing in the context.
+         */
         class MissingCookiesMap : MissingContextException("Cookie map")
     }
 }
