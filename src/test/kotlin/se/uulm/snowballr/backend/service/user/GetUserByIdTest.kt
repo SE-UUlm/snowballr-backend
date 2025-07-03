@@ -22,7 +22,7 @@ import java.util.UUID
 
 @ExperimentalCoroutinesApi
 @DelicateCoroutinesApi
-internal class GetUserByIdTest : MainServiceTest() {
+class GetUserByIdTest : MainServiceTest() {
     private val requestId = UUID.randomUUID()
     private var dummyUserUUID = UUID.randomUUID()
 

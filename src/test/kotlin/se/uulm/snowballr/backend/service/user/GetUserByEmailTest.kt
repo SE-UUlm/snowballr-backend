@@ -22,7 +22,7 @@ import java.util.UUID
 
 @ExperimentalCoroutinesApi
 @DelicateCoroutinesApi
-internal class GetUserByEmailTest : MainServiceTest() {
+class GetUserByEmailTest : MainServiceTest() {
     private val requestEmail = "test.user@example.com"
     private var dummyUserUUID = UUID.randomUUID()
 

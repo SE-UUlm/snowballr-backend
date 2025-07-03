@@ -66,7 +66,7 @@ import java.util.UUID
 @ExperimentalCoroutinesApi
 @DelicateCoroutinesApi
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-internal open class MainServiceTest {
+open class MainServiceTest {
     private val threadContext = newSingleThreadContext("Test thread")
 
     val projectRepoMock = mockk<IProjectTableRepo>(relaxed = true)

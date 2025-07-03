@@ -138,7 +138,7 @@ class SnowballRServer(
      * appropriate response types as defined by the respective protocol buffers.
      */
     @Suppress("TooManyFunctions")
-    internal class SnowballRService :
+    class SnowballRService :
         SnowballRGrpcKt.SnowballRCoroutineImplBase(),
         KoinComponent {
         private val mainService: IMainService by inject()
