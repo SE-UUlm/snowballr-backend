@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.service
 
+import kotlinx.coroutines.runBlocking
 import se.uulm.snowballr.backend.model.dto.Session
 import se.uulm.snowballr.backend.repository.ISessionTableRepo
 import java.util.UUID
@@ -57,4 +58,6 @@ class SessionService(
     override suspend fun revokeSession(id: UUID) {
         repo.revokeSessionById(id)
     }
+
+    override fun isSessionRevoked(id: UUID): Boolean = runBlocking { getSessionById(id).revoked }
 }

@@ -11,12 +11,15 @@ import io.grpc.Status
 import io.grpc.health.v1.HealthGrpc
 import io.grpc.reflection.v1alpha.ServerReflectionGrpc
 import io.jsonwebtoken.JwtException
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 import se.uulm.snowballr.backend.auth.CookieUtils
 import se.uulm.snowballr.backend.auth.CookieUtils.parseCookies
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.auth.JwtUtils
 import se.uulm.snowballr.backend.model.auth.AuthRequestState
 import se.uulm.snowballr.backend.model.jwt.ParsedJwtClaims
+import se.uulm.snowballr.backend.service.ISessionService
 import snowballr.SnowballRGrpcKt
 
 private val logger = KotlinLogging.logger {}
@@ -64,8 +67,10 @@ private val PUBLIC_METHODS =
  * Note: Only methods listed in PUBLIC_METHODS or starting with the health check service name bypass authentication.
  */
 @Suppress("ReturnCount")
-val authenticationInterceptor =
-    object : ServerInterceptor {
+val authenticationInterceptor: ServerInterceptor =
+    object : ServerInterceptor, KoinComponent {
+        private val sessionService: ISessionService by inject()
+
         /**
          * Returns a no-op listener. Used when the call chain cannot proceed.
          */
@@ -135,6 +140,17 @@ val authenticationInterceptor =
             try {
                 // Try access token first
                 val parsedAccessToken = JwtUtils.parseToken(accessToken)
+
+                if (sessionService.isSessionRevoked(parsedAccessToken.sessionId)) {
+                    // Clear cookies if the session is revoked
+                    GrpcContext.COOKIES_TO_SET_CONTEXT_KEY.get().apply {
+                        this[GrpcContext.ACCESS_TOKEN_COOKIE_NAME] = null
+                        this[GrpcContext.REFRESH_TOKEN_COOKIE_NAME] = null
+                    }
+                    authState.call.close(Status.UNAUTHENTICATED.withDescription("Session is revoked"), Metadata())
+                    return emptyListener()
+                }
+
                 val context =
                     Context.current().withValue(
                         GrpcContext.USER_ID_CONTEXT_KEY,

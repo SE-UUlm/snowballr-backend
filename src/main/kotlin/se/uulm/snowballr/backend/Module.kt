@@ -20,7 +20,9 @@ import se.uulm.snowballr.backend.repository.UserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.ProjectMemberTableRepo
 import se.uulm.snowballr.backend.service.IMainService
+import se.uulm.snowballr.backend.service.ISessionService
 import se.uulm.snowballr.backend.service.MainService
+import se.uulm.snowballr.backend.service.SessionService
 
 /**
  * Defines the Koin dependency injection module for the application.
@@ -48,6 +50,7 @@ val snowballRModule =
         singleOf(::UserTableRepo) { bind<IUserTableRepo>() }
         singleOf(::SessionTableRepo) { bind<ISessionTableRepo>() }
         singleOf(::ProjectMemberTableRepo) { bind<IProjectMemberTableRepo>() }
+        single<ISessionService> { SessionService(get()) }
         // The main service comes last
         singleOf(::MainService) { bind<IMainService>() }
     }
