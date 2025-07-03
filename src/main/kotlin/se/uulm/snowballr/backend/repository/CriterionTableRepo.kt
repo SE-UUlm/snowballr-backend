@@ -3,7 +3,6 @@ package se.uulm.snowballr.backend.repository
 import org.jetbrains.exposed.sql.ResultRow
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.SnowballRException.EntityNotPersistedException
 import se.uulm.snowballr.backend.model.dto.Criterion
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.table.CriterionTable
@@ -54,7 +53,7 @@ class CriterionTableRepo(
             // Get project reference
             val projectEntityId = getProjectEntityId(projectUUID)
 
-            CriterionTable.insertAndGet(ResultRow::toCriterion, { EntityNotPersistedException.Criterion(it) }) {
+            CriterionTable.insertAndGet(ResultRow::toCriterion, EntityType.CRITERION) {
                 it[tag] = request.tag
                 it[name] = request.name
                 it[description] = request.description

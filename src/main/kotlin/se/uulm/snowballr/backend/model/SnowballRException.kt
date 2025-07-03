@@ -48,33 +48,16 @@ sealed class SnowballRException(
     }
 
     /**
-     * Represents a specific type of exception that occurs when an entity creation was triggered, but it couldn't be
-     * fetched afterward.
+     * Represents an exception that occurs when an entity creation was triggered, but it couldn't be fetched afterward.
      *
      * @constructor Creates a [EntityNotPersistedException] with the type and ID of the not persisted entity.
      * @param entityType The type of the entity that was not persisted.
      * @param entityId The unique identifier of the not persisted entity.
      */
-    sealed class EntityNotPersistedException(
+    class EntityNotPersistedException(
         entityType: EntityType,
         entityId: String,
-    ) : SnowballRException("${entityType.singularUpper()} with ID '$entityId' was not persisted.") {
-        class Project(
-            projectId: String,
-        ) : EntityNotPersistedException(EntityType.PROJECT, projectId)
-
-        class Criterion(
-            criterionId: String,
-        ) : EntityNotPersistedException(EntityType.CRITERION, criterionId)
-
-        class ProjectMember(
-            projectMemberId: String,
-        ) : EntityNotPersistedException(EntityType.PROJECT_MEMBER, projectMemberId)
-
-        class User(
-            userId: String,
-        ) : EntityNotPersistedException(EntityType.USER, userId)
-    }
+    ) : SnowballRException("${entityType.singularUpper()} with ID '$entityId' was not persisted.")
 
     /**
      * Represents a specific type of exception that occurs when an entity is accessed by

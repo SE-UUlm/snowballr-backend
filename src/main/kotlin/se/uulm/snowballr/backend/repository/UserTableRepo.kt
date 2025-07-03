@@ -4,7 +4,6 @@ import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.SnowballRException.EntityNotPersistedException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.table.UserTable
@@ -101,7 +100,7 @@ class UserTableRepo(
     }
 
     override suspend fun createUser(request: Authentication.RegisterRequest, passwordHash: String): User = db.dbQuery {
-        UserTable.insertAndGet(ResultRow::toUser, { EntityNotPersistedException.User(it) }) {
+        UserTable.insertAndGet(ResultRow::toUser, EntityType.USER) {
             it[email] = request.email
             it[firstName] = request.firstName
             it[lastName] = request.lastName
