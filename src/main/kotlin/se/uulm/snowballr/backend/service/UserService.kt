@@ -5,6 +5,7 @@ import se.uulm.snowballr.backend.auth.PasswordUtils
 import se.uulm.snowballr.backend.db.dummyUserId
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.IdentifierType
 import se.uulm.snowballr.backend.model.SnowballRException.DuplicateEntityException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
@@ -57,7 +58,7 @@ class UserService(
     private val userRepo: IUserTableRepo,
     private val projectMemberRepo: IProjectMemberTableRepo,
 ) : IUserService {
-    private suspend fun verifyUserAccess(currentUser: User, requestedUserId: UUID, identifier: String) {
+    private suspend fun verifyUserAccess(currentUser: User, requestedUserId: UUID, identifierType: IdentifierType) {
         // Check whether requesting user is server admin
         if (currentUser.role == UserRole.USER_ROLE_ADMIN) return
 
@@ -75,8 +76,8 @@ class UserService(
         throw UnauthorizedException.Single(
             currentUser.id.toString(),
             EntityType.USER,
-            identifier,
             requestedUserId.toString(),
+            identifierType,
         )
     }
 
@@ -85,7 +86,7 @@ class UserService(
         val requestedUserId = parseUUID(request.id, EntityType.USER)
         val currentUser = userRepo.getUserById(requestingUserId)
 
-        verifyUserAccess(currentUser, requestingUserId, "ID")
+        verifyUserAccess(currentUser, requestingUserId, IdentifierType.ID)
 
         val isRequestedUser = requestingUserId == currentUser.id
 
@@ -114,13 +115,13 @@ class UserService(
         // We have to request the user first to get the ID for the access checks
         val requestedUser = userRepo.getUserByEmail(request.email)
 
-        verifyUserAccess(currentUser, requestingUserId, "email")
+        verifyUserAccess(currentUser, requestingUserId, IdentifierType.EMAIL)
 
         // Only active or active unconfirmed users can be retrieved
         if (requestedUser.status != UserStatus.USER_STATUS_ACTIVE &&
             requestedUser.status != UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED
         ) {
-            throw NotFoundException(EntityType.USER, request.email, "email")
+            throw NotFoundException(EntityType.USER, request.email, IdentifierType.EMAIL)
         }
 
         return requestedUser.toGrpcUser()

@@ -4,6 +4,7 @@ import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.IdentifierType
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.table.UserTable
@@ -82,7 +83,7 @@ class UserTableRepo(
             .where { UserTable.email eq email }
             .map { it.toUser() }
             .singleOrNull()
-            ?: throw NotFoundException(EntityType.USER, email, "email")
+            ?: throw NotFoundException(EntityType.USER, email, IdentifierType.EMAIL)
     }
 
     override suspend fun doesUserExistByEmail(email: String): Boolean = db.dbQuery {

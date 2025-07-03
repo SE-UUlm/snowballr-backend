@@ -20,13 +20,13 @@ sealed class SnowballRException(
      * @constructor Creates a [NotFoundException] with the type and ID of the missing entity.
      * @param entityType The type of the entity that could not be found.
      * @param entityId The unique identifier of the missing entity.
-     * @param identifier The name of the identifier. Defaults to 'ID'.
+     * @param identifierType The type of the [identifierType] field. Default to [IdentifierType.ID].
      */
     open class NotFoundException(
         entityType: EntityType,
         entityId: String,
-        identifier: String? = "ID",
-    ) : SnowballRException("${entityType.singularUpper()} with $identifier '$entityId' not found.")
+        identifierType: IdentifierType = IdentifierType.ID,
+    ) : SnowballRException("${entityType.singularUpper()} with ${identifierType.displayName} '$entityId' not found.")
 
     /**
      * Represents an exception that occurs when an entity already exists in the system
@@ -35,16 +35,18 @@ sealed class SnowballRException(
      * @constructor Creates a [DuplicateEntityException] with a message about the entity.
      * @param entityType The type of the duplicated entity.
      * @param identifier The identifying value (e.g., email, username).
-     * @param identifierName The name of the identifier field (defaults to "ID").
+     * @param identifierType The type of the [identifier] field. Default to [IdentifierType.ID].
      */
     sealed class DuplicateEntityException(
         entityType: EntityType,
         identifier: String,
-        identifierName: String = "ID",
-    ) : SnowballRException("${entityType.singularUpper()} with $identifierName '$identifier' already exists.") {
+        identifierType: IdentifierType = IdentifierType.ID,
+    ) : SnowballRException(
+        "${entityType.singularUpper()} with ${identifierType.displayName} '$identifier' already exists.",
+    ) {
         class UserEmail(
             email: String,
-        ) : DuplicateEntityException(EntityType.USER, email, "email")
+        ) : DuplicateEntityException(EntityType.USER, email, IdentifierType.EMAIL)
     }
 
     /**
@@ -76,10 +78,10 @@ sealed class SnowballRException(
             currentUserId: String,
             accessedEntityType: EntityType,
             accessedEntityId: String,
-            identifier: String? = "ID",
+            identifierType: IdentifierType = IdentifierType.ID,
         ) : UnauthorizedException(
             currentUserId,
-            "${accessedEntityType.singular} with $identifier '$accessedEntityId'.",
+            "${accessedEntityType.singular} with ${identifierType.displayName} '$accessedEntityId'.",
         )
 
         class All(
