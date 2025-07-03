@@ -143,7 +143,7 @@ class UserService(
     override suspend fun register(request: Authentication.RegisterRequest): JwtTokens {
         // Check whether a user with the given email already exists
         if (userRepo.doesUserExistByEmail(request.email)) {
-            throw DuplicateEntityException.UserEmail(request.email)
+            throw DuplicateEntityException(EntityType.USER, request.email, IdentifierType.EMAIL)
         }
 
         // Hash the password and create the user

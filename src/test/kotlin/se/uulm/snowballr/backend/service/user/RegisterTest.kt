@@ -71,7 +71,7 @@ class RegisterTest : MainServiceTest(), KoinTest {
 
         coEvery { userRepoMock.doesUserExistByEmail(any()) } returns true
 
-        assertThrows<SnowballRException.DuplicateEntityException.UserEmail> { mainService.register(request) }
+        assertThrows<SnowballRException.DuplicateEntityException> { mainService.register(request) }
     }
 
     @Test

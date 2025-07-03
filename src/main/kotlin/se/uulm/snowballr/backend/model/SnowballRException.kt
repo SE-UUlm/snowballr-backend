@@ -37,17 +37,13 @@ sealed class SnowballRException(
      * @param identifier The identifying value (e.g., email, username).
      * @param identifierType The type of the [identifier] field. Default to [IdentifierType.ID].
      */
-    sealed class DuplicateEntityException(
+    class DuplicateEntityException(
         entityType: EntityType,
         identifier: String,
         identifierType: IdentifierType = IdentifierType.ID,
     ) : SnowballRException(
         "${entityType.singularUpper()} with ${identifierType.displayName} '$identifier' already exists.",
-    ) {
-        class UserEmail(
-            email: String,
-        ) : DuplicateEntityException(EntityType.USER, email, IdentifierType.EMAIL)
-    }
+    )
 
     /**
      * Represents an exception that occurs when an entity creation was triggered, but it couldn't be fetched afterward.
