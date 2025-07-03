@@ -60,7 +60,8 @@ sealed class SnowballRException(
     ) : SnowballRException("${entityType.singularUpper()} with ID '$entityId' was not persisted.")
 
     /**
-     * Represents an exception that occurs when an entity is accessed by the current user, but they are not authorized.
+     * Represents an exception that occurs when the current user accesses one or more entities, but they don't have the
+     * required permission.
      *
      * @constructor Creates an [UnauthorizedException] with the current user's ID, the type and ID of the accessed
      * entity.
@@ -81,18 +82,10 @@ sealed class SnowballRException(
             "${accessedEntityType.singular} with $identifier '$accessedEntityId'.",
         )
 
-        sealed class All(
+        class All(
             currentUserId: String,
             accessedEntityType: EntityType,
-        ) : UnauthorizedException(currentUserId, "all ${accessedEntityType.plural}.") {
-            class User(
-                currentUserId: String,
-            ) : All(currentUserId, EntityType.USER)
-
-            class Project(
-                currentUserId: String,
-            ) : All(currentUserId, EntityType.PROJECT)
-        }
+        ) : UnauthorizedException(currentUserId, "all ${accessedEntityType.plural}.")
     }
 
     /**

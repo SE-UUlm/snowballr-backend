@@ -130,7 +130,7 @@ class UserService(
         val requestingUserId = parseUUID(dummyUserId!!, EntityType.USER)
         val currentUser = userRepo.getUserById(requestingUserId)
 
-        verifyServerAdminRole(currentUser) { UnauthorizedException.All.User(it) }
+        verifyServerAdminRole(currentUser, EntityType.USER)
 
         val users = userRepo.getAllUsers()
 

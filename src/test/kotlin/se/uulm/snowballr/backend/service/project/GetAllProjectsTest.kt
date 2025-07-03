@@ -41,7 +41,7 @@ internal class GetAllProjectsTest : MainServiceTest() {
         coEvery { userRepoMock.getUserById(any()) } returns nonAdminUser
         coEvery { projectRepoMock.getAllProjects() } returns emptyList()
 
-        assertThrows<UnauthorizedException.All.Project> { mainService.getAllProjects() }
+        assertThrows<UnauthorizedException.All> { mainService.getAllProjects() }
     }
 
     @Test
