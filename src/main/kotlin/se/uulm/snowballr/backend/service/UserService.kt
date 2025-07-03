@@ -72,7 +72,12 @@ class UserService(
         if (isInSameProject) return
 
         // Requesting user is not authorized
-        throw UnauthorizedException.Single.User(currentUser.id.toString(), identifier, requestedUserId.toString())
+        throw UnauthorizedException.Single(
+            currentUser.id.toString(),
+            EntityType.USER,
+            identifier,
+            requestedUserId.toString(),
+        )
     }
 
     override suspend fun getUserById(request: Base.Id): UserOuterClass.User {

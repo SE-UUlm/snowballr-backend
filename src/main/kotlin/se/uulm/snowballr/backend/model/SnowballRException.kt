@@ -60,16 +60,10 @@ sealed class SnowballRException(
     ) : SnowballRException("${entityType.singularUpper()} with ID '$entityId' was not persisted.")
 
     /**
-     * Represents a specific type of exception that occurs when an entity is accessed by
-     * the current user, but they are not authorized.
+     * Represents an exception that occurs when an entity is accessed by the current user, but they are not authorized.
      *
-     * This exception is intended to provide a clear and structured way to handle
-     * scenarios where a particular entity is accessed without permission.
-     * It serves as a base class to define more specific "unauthorized" exceptions for
-     * various entities.
-     *
-     * @constructor Creates an [UnauthorizedException] with the current user's ID, the
-     * type and ID of the accessed entity.
+     * @constructor Creates an [UnauthorizedException] with the current user's ID, the type and ID of the accessed
+     * entity.
      * @param currentUserId The ID of the user that is accessing the entity.
      * @param accessedEntityMessage The message of what is accessed.
      */
@@ -77,7 +71,7 @@ sealed class SnowballRException(
         currentUserId: String,
         accessedEntityMessage: String,
     ) : SnowballRException("User with ID '$currentUserId' is not authorized to access $accessedEntityMessage") {
-        sealed class Single(
+        class Single(
             currentUserId: String,
             accessedEntityType: EntityType,
             accessedEntityId: String,
@@ -85,13 +79,7 @@ sealed class SnowballRException(
         ) : UnauthorizedException(
             currentUserId,
             "${accessedEntityType.singular} with $identifier '$accessedEntityId'.",
-        ) {
-            class User(
-                currentUserId: String,
-                identifier: String? = "ID",
-                accessedUserId: String,
-            ) : Single(currentUserId, EntityType.USER, accessedUserId, identifier)
-        }
+        )
 
         sealed class All(
             currentUserId: String,
