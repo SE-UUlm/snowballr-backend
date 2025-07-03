@@ -38,7 +38,7 @@ val snowballRModule =
         singleOf(::CriterionTableRepo) { bind<ICriterionTableRepo>() }
         singleOf(::UserTableRepo) { bind<IUserTableRepo>() }
         singleOf(::ProjectMemberTableRepo) { bind<IProjectMemberTableRepo>() }
-        singleOf(::FetcherService) { bind<IFetcherService>() }
+        single<IFetcherService>(createdAtStart = true) { FetcherService(Env().fetcher) }
         // The main service comes last
         singleOf(::MainService) { bind<IMainService>() }
     }

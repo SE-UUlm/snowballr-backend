@@ -1,9 +1,17 @@
 package se.uulm.snowballr.backend.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import se.uulm.snowballr.backend.env.Env
 import se.uulm.snowballr.backend.fetcher.IFetcher
+import se.uulm.snowballr.backend.fetcher.LuaPluginFetcher
 import se.uulm.snowballr.backend.model.SnowballRException
 import se.uulm.snowballr.backend.model.dto.Paper
+import java.nio.file.Path
+import kotlin.io.path.createDirectories
+import kotlin.io.path.extension
+import kotlin.io.path.isDirectory
+import kotlin.io.path.listDirectoryEntries
+import kotlin.io.path.name
 
 private val logger = KotlinLogging.logger {}
 
@@ -71,8 +79,14 @@ interface IFetcherService {
     suspend fun fetchCitations(fetcher: String, paper: Paper, options: Map<String, String>): Set<Paper>
 }
 
-class FetcherService : IFetcherService {
+class FetcherService(
+    private val data: Env.Fetcher,
+) : IFetcherService {
     private val fetchers: HashMap<String, IFetcher> = HashMap()
+
+    init {
+        loadLuaFetcherPlugins()
+    }
 
     private fun ensureFetcher(name: String) {
         if (!fetchers.containsKey(name)) {
@@ -82,8 +96,7 @@ class FetcherService : IFetcherService {
 
     override suspend fun getAvailableFetchers(): Set<String> = fetchers.keys.toSet()
 
-    @Suppress("TooGenericExceptionCaught")
-    override suspend fun registerFetcher(name: String, impl: IFetcher) {
+    fun registerFetcherSync(name: String, impl: IFetcher) {
         if (fetchers.containsKey(name)) {
             throw SnowballRException.FetcherException.AlreadyRegistered("Fetcher with name '$name' already registered")
         }
@@ -92,6 +105,8 @@ class FetcherService : IFetcherService {
 
         fetchers.put(name, impl)
     }
+
+    override suspend fun registerFetcher(name: String, impl: IFetcher) = registerFetcherSync(name, impl)
 
     override suspend fun getAvailableOptions(fetcher: String): Set<String> {
         ensureFetcher(fetcher)
@@ -111,5 +126,55 @@ class FetcherService : IFetcherService {
     override suspend fun fetchCitations(fetcher: String, paper: Paper, options: Map<String, String>): Set<Paper> {
         ensureFetcher(fetcher)
         return fetchers.get(fetcher)!!.fetchCitations(paper, options)
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun loadLuaFetcherPlugins() {
+        val pluginFiles = discoverLuaFetcherPluginFiles()
+        logger.info { "Trying to load ${pluginFiles.size} lua fetcher plugins" }
+        var successfulCount = 0
+        pluginFiles.forEach { path ->
+            val basename = path.name
+                .subSequence(0, path.name.length - ".lua".length)
+                .toString()
+
+            try {
+                registerFetcherSync(basename, LuaPluginFetcher.fromFile(path))
+                successfulCount += 1
+            } catch (e: Exception) {
+                logger.atError {
+                    message = "A lua fetcher plugin could not be loaded: ${path.name}"
+                    cause = e
+                }
+            }
+        }
+        logger.info { "Successfully loaded ${pluginFiles.size} lua fetcher plugins" }
+    }
+
+    @Suppress("TooGenericExceptionCaught", "SwallowedException")
+    private fun discoverLuaFetcherPluginFiles(): List<Path> {
+        if (!data.pluginDirectory.isDirectory()) {
+            logger.warn { "Fetcher plugin directory could not be found" }
+
+            try {
+                data.pluginDirectory.createDirectories()
+                logger.info { "Created fetcher plugin directory" }
+                return data.pluginDirectory.listDirectoryEntries()
+            } catch (e: Exception) {
+                logger.error { "Could not create fetcher plugin directory. Continuing without fetchers" }
+            }
+        }
+
+        return data
+            .pluginDirectory
+            .listDirectoryEntries()
+            .filter {
+                if (it.extension == "lua") {
+                    true
+                } else {
+                    logger.warn { "Ignoring unknown file in lua fetcher plugins directory: $it" }
+                    false
+                }
+            }
     }
 }

@@ -180,5 +180,8 @@ sealed class SnowballRException(
     ) : SnowballRException(description) {
         class UnknownFetcher(fetcher: String) : FetcherException("The fetcher '$fetcher' is not known.")
         class AlreadyRegistered(fetcher: String) : FetcherException("The fetcher '$fetcher' is already registered.")
+        class LuaInternal(reason: String) : FetcherException(
+            "A lua fetcher plugin experienced an interanl issue: $reason",
+        )
     }
 }

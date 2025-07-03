@@ -21,6 +21,8 @@ services:
     backend-local:
         build:
             context: .
+        volumes:
+            - ./fetcher-plugins:/fetcher-plugins
         environment:
             PORT: ${PORT:-8080}
             LOG_LEVEL: ${LOG_LEVEL:-DEBUG}
@@ -28,6 +30,7 @@ services:
             DATABASE_HOST: db # use db service as db host
             JWT_PRIVATE_KEY_BASE64: ${JWT_PRIVATE_KEY_BASE64}
             JWT_PUBLIC_KEY_BASE64: ${JWT_PUBLIC_KEY_BASE64}
+            FETCHER_PLUGIN_DIRECTORY: "/fetcher-plugins"
         ports:
             - ${PORT:-8080}:${PORT:-8080}
         depends_on:

@@ -50,3 +50,6 @@ bin/
 
 ### Database ###
 db-data
+
+### Local Lua Fetcher Plugins ###
+fetcher-plugins

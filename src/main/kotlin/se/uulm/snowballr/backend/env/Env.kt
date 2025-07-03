@@ -1,6 +1,7 @@
 package se.uulm.snowballr.backend.env
 
 import io.github.cdimascio.dotenv.dotenv
+import java.nio.file.Path
 
 // Default values
 const val DEFAULT_LOG_LEVEL = "DEBUG"
@@ -20,6 +21,9 @@ private const val DATABASE_HOST = "DATABASE_HOST"
 private const val JWT_PRIVATE_KEY_BASE64 = "JWT_PRIVATE_KEY_BASE64"
 private const val JWT_PUBLIC_KEY_BASE64 = "JWT_PUBLIC_KEY_BASE64"
 
+// Fetcher
+private const val FETCHER_PLUGIN_DIRECTORY = "FETCHER_PLUGIN_DIRECTORY"
+
 private val envService = EnvService()
 
 /**
@@ -29,12 +33,14 @@ private val envService = EnvService()
  * @property miscellaneous Miscellaneous configuration, such as the logging level.
  * @property database Configuration related to the database connection, including user credentials.
  * @property encryption Configuration for encryption keys used in the application, such as JWT keys.
+ * @property fetcher Configuration for fetcher plugin loading.
  */
 data class Env(
     val http: Http = Http(),
     val miscellaneous: Miscellaneous = Miscellaneous(),
     val database: Database = Database(),
     val encryption: Encryption = Encryption(),
+    val fetcher: Fetcher = Fetcher(),
 ) {
     data class Http(
         val port: Int = envService[PORT].toInt(),
@@ -52,6 +58,10 @@ data class Env(
     data class Encryption(
         val jwtPrivateKeyBase64: String = envService[JWT_PRIVATE_KEY_BASE64],
         val jwtPublicKeyBase64: String = envService[JWT_PUBLIC_KEY_BASE64],
+    )
+
+    data class Fetcher(
+        val pluginDirectory: Path = Path.of(envService.getOrDefault(FETCHER_PLUGIN_DIRECTORY, "./plugins/fetchers/")),
     )
 }
 
