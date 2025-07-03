@@ -36,6 +36,6 @@ class MainService(
     private val userRepo: IUserTableRepo,
     private val projectMemberRepo: IProjectMemberTableRepo,
 ) : IMainService,
-    IProjectService by ProjectService(projectRepo),
+    IProjectService by ProjectService(projectRepo, userRepo),
     ICriterionService by CriterionService(criterionRepo),
     IUserService by UserService(userRepo, projectMemberRepo)

@@ -127,6 +127,10 @@ sealed class SnowballRException(
             class User(
                 currentUserId: String,
             ) : All(currentUserId, "users")
+
+            class Project(
+                currentUserId: String,
+            ) : All(currentUserId, "projects")
         }
     }
 

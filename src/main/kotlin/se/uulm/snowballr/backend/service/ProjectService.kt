@@ -2,9 +2,11 @@ package se.uulm.snowballr.backend.service
 
 import se.uulm.snowballr.backend.db.dummyUserId
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
+import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.toGrpcProject
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
+import se.uulm.snowballr.backend.repository.IUserTableRepo
 import snowballr.ProjectOuterClass
 
 interface IProjectService {
@@ -12,6 +14,11 @@ interface IProjectService {
      * Service implementation of [SnowballRService.createProject].
      */
     suspend fun createProject(request: ProjectOuterClass.Project.Create): ProjectOuterClass.Project
+
+    /**
+     * Service implementation of [SnowballRService.getAllProjects].
+     */
+    suspend fun getAllProjects(): ProjectOuterClass.Project.List
 }
 
 /**
@@ -22,13 +29,28 @@ interface IProjectService {
  *
  * @constructor Initializes the [ProjectService] with a project repository.
  * @param repo The repository responsible for managing persistence operations for projects.
+ * @param userRepo The repository responsible for managing persistence operations for users.
  */
 class ProjectService(
     private val repo: IProjectTableRepo,
+    private val userRepo: IUserTableRepo,
 ) : IProjectService {
     override suspend fun createProject(request: ProjectOuterClass.Project.Create): ProjectOuterClass.Project {
         // TODO: remove dummy user when user management is implemented
         val requestingUserId = parseUUID(dummyUserId!!, "user")
         return repo.createProject(request, requestingUserId).toGrpcProject()
+    }
+
+    override suspend fun getAllProjects(): ProjectOuterClass.Project.List {
+        val requestingUserId = parseUUID(dummyUserId!!, "user")
+        val currentUser = userRepo.getUserById(requestingUserId)
+
+        verifyServerAdminRole(currentUser) { UnauthorizedException.All.Project(it) }
+
+        val projects = repo.getAllProjects()
+
+        val builder = ProjectOuterClass.Project.List.newBuilder()
+        projects.forEach { builder.addProjects(it.toGrpcProject()) }
+        return builder.build()
     }
 }

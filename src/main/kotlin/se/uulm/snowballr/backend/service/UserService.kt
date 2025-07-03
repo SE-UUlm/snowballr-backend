@@ -124,11 +124,7 @@ class UserService(
         val requestingUserId = parseUUID(dummyUserId!!, "user")
         val currentUser = userRepo.getUserById(requestingUserId)
 
-        // Check whether the current user has access to retrieve all users
-        // TODO: remove dummy user when user management is implemented
-        if (currentUser.role != UserRole.USER_ROLE_ADMIN) {
-            throw UnauthorizedException.All.User(dummyUserId!!)
-        }
+        verifyServerAdminRole(currentUser) { UnauthorizedException.All.User(it) }
 
         val users = userRepo.getAllUsers()
 
