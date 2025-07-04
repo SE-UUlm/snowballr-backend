@@ -66,7 +66,7 @@ class UserValidatorTest {
         }
 
         @Test
-        fun `When an invalid id is validated, then the 'InvalidId' issue is returned`() {
+        fun `When an invalid ID is validated, then the 'InvalidId' issue is returned`() {
             val user = validUpdatedUser.setId("invalid-id").build()
             val request = validUpdateRequestBuilder
                 .setUser(user)
@@ -150,7 +150,7 @@ class UserValidatorTest {
         }
 
         @Test
-        fun `When an invalid role is provided and specified in the field mask, then the 'InvalidEmail' issue is returned`() {
+        fun `When an invalid role is provided and specified in the field mask, then the 'EnumUnspecified' issue is returned`() {
             val user = validUpdatedUser.setRole(UserRole.USER_ROLE_UNSPECIFIED).build()
             val request = validUpdateRequestBuilder
                 .setUser(user)

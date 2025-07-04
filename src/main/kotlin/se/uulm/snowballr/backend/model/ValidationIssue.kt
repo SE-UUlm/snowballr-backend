@@ -117,7 +117,7 @@ data class InvalidPassword(
 }
 
 /**
- * Represents an issue where a provided field mask contains invalid fields or is blank.
+ * Represents a validation issue where a provided field mask contains invalid fields or is blank.
  *
  * This class is utilized to indicate that some fields in the provided field mask
  * are not valid, i.e., do not exist in the generated gRPC class or the field mask is blank

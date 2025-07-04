@@ -14,7 +14,7 @@ import snowballr.UserOuterClass.User
  */
 object UserValidator {
     fun validateUpdateRequest(request: User.Update): EitherNel<ValidationIssue, Unit> = either {
-        // validate the field mask
+        // Validate the field mask
         val fieldMaskResult = either {
             ensureFieldMaskIsValid(request.mask, User.Update.getDescriptor())
         }
@@ -46,7 +46,7 @@ object UserValidator {
             },
             {
                 if ("user.role" in selectedFields) {
-                    ensureEnumNotUnspecified("userRole", request.user.role)
+                    ensureEnumNotUnspecified("role", request.user.role)
                 }
             },
         ) { _, _, _, _, _ -> }

@@ -20,7 +20,7 @@ import snowballr.UserOuterClass.UserRole
 @DelicateCoroutinesApi
 class UpdateUserTest : MainServiceTest() {
     @Test
-    fun `When a user updates its own information successfully, then no exception is thrown`() = testCoroutine {
+    fun `When a user updates their own information successfully, then no exception is thrown`() = testCoroutine {
         val nonAdminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val updatedUser = DataBuilder.createExampleUser(
             id = nonAdminUser.id,
@@ -52,7 +52,7 @@ class UpdateUserTest : MainServiceTest() {
     }
 
     @Test
-    fun `When a user wants to change its email to an existing email, then an exception is thrown`() = testCoroutine {
+    fun `When a user wants to change their email to an existing email, then an exception is thrown`() = testCoroutine {
         val request = User.Update.newBuilder().setMask(FieldMaskUtil.fromString("email")).build()
 
         coEvery { userRepoMock.doesUserExistByEmail(any()) } returns true
