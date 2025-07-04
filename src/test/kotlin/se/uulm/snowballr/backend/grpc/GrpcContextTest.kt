@@ -33,6 +33,29 @@ class GrpcContextTest {
     }
 
     @Nested
+    inner class GetSessionIdFromContext {
+        @Test
+        fun `When sessionId is set in the context, then getSessionIdFromContext returns the sessionId`() {
+            val testSessionId = UUID.randomUUID()
+            val context = Context.current().withValue(GrpcContext.SESSION_ID_CONTEXT_KEY, testSessionId)
+
+            context.run {
+                val result = GrpcContext.getSessionIdFromContext()
+                assertEquals(testSessionId, result)
+            }
+        }
+
+        @Test
+        fun `When sessionId is not set in the context, then getSessionIdFromContext throws MissingSessionId`() {
+            val context = Context.current().fork() // ensure a clean context
+
+            context.run {
+                assertThrows<MissingContextException.MissingSessionId> { GrpcContext.getSessionIdFromContext() }
+            }
+        }
+    }
+
+    @Nested
     inner class SetAuthCookiesInContext {
         @Test
         fun `When setting auth cookies with a cookies map in context, then both access and refresh tokens are added`() {

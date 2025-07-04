@@ -136,6 +136,11 @@ sealed class SnowballRException(
         class MissingUserId : MissingContextException("Authenticated user ID")
 
         /**
+         * Represents a [MissingContextException] that occurs when the session ID is missing in the context.
+         */
+        class MissingSessionId : MissingContextException("Session ID")
+
+        /**
          * Represents a [MissingContextException] that occurs when the cookies map is missing in the context.
          */
         class MissingCookiesMap : MissingContextException("Cookie map")

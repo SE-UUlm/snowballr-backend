@@ -135,7 +135,14 @@ val authenticationInterceptor =
             try {
                 // Try access token first
                 val parsedAccessToken = JwtUtils.parseToken(accessToken)
-                val context = Context.current().withValue(GrpcContext.USER_ID_CONTEXT_KEY, parsedAccessToken.userId)
+                val context =
+                    Context.current().withValue(
+                        GrpcContext.USER_ID_CONTEXT_KEY,
+                        parsedAccessToken.userId,
+                    ).withValue(
+                        GrpcContext.SESSION_ID_CONTEXT_KEY,
+                        parsedAccessToken.sessionId,
+                    )
 
                 // Proceed with forwarding call, no new cookies to set
                 return context.call { authState.next?.startCall(authState.call, authState.headers) }
@@ -145,7 +152,14 @@ val authenticationInterceptor =
                 return if (refreshResult.isSuccess) {
                     // Refresh succeeded, proceed with the call. The forwarding call will send the new cookie.
                     val claims = refreshResult.getOrThrow()
-                    val context = Context.current().withValue(GrpcContext.USER_ID_CONTEXT_KEY, claims.userId)
+                    val context =
+                        Context.current().withValue(
+                            GrpcContext.USER_ID_CONTEXT_KEY,
+                            claims.userId,
+                        ).withValue(
+                            GrpcContext.SESSION_ID_CONTEXT_KEY,
+                            claims.sessionId,
+                        )
 
                     context.call { authState.next?.startCall(authState.call, authState.headers) }
                 } else {

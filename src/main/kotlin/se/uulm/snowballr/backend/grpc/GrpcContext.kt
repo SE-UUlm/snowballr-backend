@@ -18,6 +18,11 @@ object GrpcContext {
     val USER_ID_CONTEXT_KEY: Context.Key<UUID> = Context.key("userId")
 
     /**
+     * Context key to store the session ID for the authenticated user.
+     */
+    val SESSION_ID_CONTEXT_KEY: Context.Key<UUID> = Context.key("sessionId")
+
+    /**
      * Context key to store cookies that need to be set in the response.
      */
     val COOKIES_TO_SET_CONTEXT_KEY: Context.Key<MutableMap<String, String?>> = Context.key("cookiesToSet")
@@ -46,6 +51,22 @@ object GrpcContext {
         }
 
         return userId
+    }
+
+    /**
+     * Retrieves the session ID from the gRPC context.
+     *
+     * @throws MissingContextException.MissingSessionId if the session ID is not in the context.
+     * @return The session ID as a [UUID].
+     */
+    fun getSessionIdFromContext(): UUID {
+        val sessionId = SESSION_ID_CONTEXT_KEY.get()
+        if (sessionId == null) {
+            logger.error { "Session ID is missing from the gRPC context." }
+            throw MissingContextException.MissingSessionId()
+        }
+
+        return sessionId
     }
 
     /**
