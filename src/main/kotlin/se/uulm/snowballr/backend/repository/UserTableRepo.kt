@@ -143,7 +143,7 @@ class UserTableRepo(
         val fieldMask = FieldMaskUtil.normalize(request.mask)
 
         // Update user
-        val updatedRowCount = UserTable.update({ UserTable.id eq uuid }) {
+        UserTable.update({ UserTable.id eq uuid }) {
             for (field in fieldMask.pathsList) {
                 when (field) {
                     "user.email" -> it[email] = request.user.email
@@ -156,10 +156,6 @@ class UserTableRepo(
             it[modifiedAt] = OffsetDateTime.now()
         }
 
-        if (updatedRowCount == 0) {
-            // If no row was updated, then the user with the given id does not exist
-            throw NotFoundException(EntityType.USER, uuid.toString())
-        }
         // Return updated user
         getUserByIdOrNull(uuid) ?: throw EntityNotPersistedException(EntityType.USER, uuid.toString())
     }

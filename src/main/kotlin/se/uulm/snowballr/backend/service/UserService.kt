@@ -1,9 +1,9 @@
 package se.uulm.snowballr.backend.service
 
+import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.auth.JwtUtils
 import se.uulm.snowballr.backend.auth.PasswordUtils
 import se.uulm.snowballr.backend.db.dummyUserId
-import se.uulm.snowballr.backend.grpc.GrpcContext
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
@@ -167,20 +167,29 @@ class UserService(
 
     override suspend fun updateUser(request: UserOuterClass.User.Update): UserOuterClass.User {
         val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
-        val currentUserId = currentUser.id.toString()
-        val updatedUserId = request.user.id
+
+        // Check that user to update exists in the database
+        val requestedUserId = parseUUID(request.user.id, EntityType.USER)
+        val requestedUser = userRepo.getUserById(requestedUserId)
+
+        // Check whether the current user is a server admin if the role is changed or the requested user is different
+        // from the current user
+        if (request.mask.pathsList.contains("role") || currentUser.id != requestedUser.id) {
+            verifyServerAdminRole(
+                currentUser,
+            ) {
+                UnauthorizedException.Single(
+                    EntityType.USER,
+                    requestedUser.id.toString(),
+                    AccessType.UPDATE,
+                    currentUser.id.toString(),
+                )
+            }
+        }
 
         // Check whether a user with the given email already exists if the email should be changed
         if (request.mask.pathsList.contains("email") && userRepo.doesUserExistByEmail(request.user.email)) {
             throw DuplicateEntityException(EntityType.USER, request.user.email, IdentifierType.EMAIL)
-        }
-
-        // Check whether the current user is a server admin if the role is changed or the requested user is different
-        // from the current user
-        if (request.mask.pathsList.contains("role") || currentUserId != updatedUserId) {
-            verifyServerAdminRole(
-                currentUser,
-            ) { UnauthorizedException.Single(EntityType.USER, updatedUserId, AccessType.UPDATE, currentUserId) }
         }
 
         val updatedUser = userRepo.updateUser(request)

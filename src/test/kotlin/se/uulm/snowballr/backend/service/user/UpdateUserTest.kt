@@ -53,8 +53,12 @@ class UpdateUserTest : MainServiceTest() {
 
     @Test
     fun `When a user wants to change their email to an existing email, then an exception is thrown`() = testCoroutine {
-        val request = User.Update.newBuilder().setMask(FieldMaskUtil.fromString("email")).build()
+        val user = DataBuilder.createExampleUser()
+        val request = User.Update.newBuilder().setUser(
+            user.toGrpcUser(),
+        ).setMask(FieldMaskUtil.fromString("email")).build()
 
+        coEvery { userRepoMock.getUserById(any()) } returns user
         coEvery { userRepoMock.doesUserExistByEmail(any()) } returns true
 
         assertThrows<SnowballRException.DuplicateEntityException> { mainService.updateUser(request) }
@@ -63,7 +67,8 @@ class UpdateUserTest : MainServiceTest() {
     @Test
     fun `When a non-admin user wants to change the user role, then an exception is thrown`() = testCoroutine {
         val nonAdminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-        val request = User.Update.newBuilder().setMask(FieldMaskUtil.fromString("role")).build()
+        val updatedUser = DataBuilder.createExampleUser().toGrpcUser()
+        val request = User.Update.newBuilder().setUser(updatedUser).setMask(FieldMaskUtil.fromString("role")).build()
 
         coEvery { userRepoMock.getUserById(any()) } returns nonAdminUser
 
@@ -74,11 +79,12 @@ class UpdateUserTest : MainServiceTest() {
     fun `When a non-admin user wants to change the user information from another user, then an exception is thrown`() =
         testCoroutine {
             val anotherUser = DataBuilder.createExampleUser()
-            val updatedUser = DataBuilder.createExampleUser().toGrpcUser()
+            val updatedUser = DataBuilder.createExampleUser()
             val updateFieldMask = FieldMaskUtil.fromString("first_name")
-            val request = User.Update.newBuilder().setUser(updatedUser).setMask(updateFieldMask).build()
+            val request = User.Update.newBuilder().setUser(updatedUser.toGrpcUser()).setMask(updateFieldMask).build()
 
-            coEvery { userRepoMock.getUserById(any()) } returns anotherUser
+            coEvery { userRepoMock.getUserById(anotherUser.id) } returns anotherUser
+            coEvery { userRepoMock.getUserById(updatedUser.id) } returns updatedUser
 
             assertThrows<SnowballRException.UnauthorizedException.Single> { mainService.updateUser(request) }
         }
@@ -86,7 +92,8 @@ class UpdateUserTest : MainServiceTest() {
     @Test
     fun `When an error occurs while updating a user, then an exception is thrown`() = testCoroutine {
         val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-        val request = User.Update.newBuilder().build()
+        val updatedUser = DataBuilder.createExampleUser().toGrpcUser()
+        val request = User.Update.newBuilder().setUser(updatedUser).build()
 
         coEvery { userRepoMock.getUserById(any()) } returns adminUser
         coEvery { userRepoMock.updateUser(any()) } throws TestSpecificException()

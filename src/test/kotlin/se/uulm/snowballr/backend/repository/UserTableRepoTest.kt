@@ -14,7 +14,6 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
-import se.uulm.snowballr.backend.DataBuilder.createExampleUser
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.toGrpcUser
 import se.uulm.snowballr.backend.table.UserTable
@@ -257,17 +256,5 @@ class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
                     repo.updateUser(updateRequest)
                 }
             }
-
-        @Test
-        fun `When the user that should be updated does not exist, then an exception is thrown`() = testCoroutine {
-            val request =
-                User.Update
-                    .newBuilder()
-                    .setUser(createExampleUser().toGrpcUser())
-                    .setMask(FieldMaskUtil.fromString("user.email"))
-                    .build()
-
-            assertThrows<NotFoundException> { repo.updateUser(request) }
-        }
     }
 }
