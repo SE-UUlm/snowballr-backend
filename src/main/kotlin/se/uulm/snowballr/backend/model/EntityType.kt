@@ -8,6 +8,7 @@ package se.uulm.snowballr.backend.model
  */
 enum class EntityType(val singular: String, val plural: String) {
     USER("user", "users"),
+    SESSION("session", "sessions"),
     PROJECT("project", "projects"),
     CRITERION("criterion", "criteria"),
     PROJECT_MEMBER("project member", "project members"),
