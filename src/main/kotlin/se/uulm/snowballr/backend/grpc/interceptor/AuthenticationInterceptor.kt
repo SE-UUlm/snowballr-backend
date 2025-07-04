@@ -21,6 +21,12 @@ import snowballr.SnowballRGrpcKt
 private val logger = KotlinLogging.logger {}
 
 /**
+ * A set of gRPC service names that are excluded from certain processing within the application.
+ */
+private val PUBLIC_SERVICES =
+    setOf(HealthGrpc.SERVICE_NAME)
+
+/**
  * A set of public gRPC methods that do not require authentication.
  */
 private val PUBLIC_METHODS =
@@ -74,18 +80,23 @@ val authenticationInterceptor =
                 return emptyListener()
             }
 
+            if (methodName in PUBLIC_SERVICES) {
+                logger.trace { "Method $methodName is a public service, bypassing authentication." }
+                return next?.startCall(call, headers)
+            }
+
             // This map will be captured by the forwarding call's closure
             val cookiesToSet = mutableMapOf<String, String?>()
-            val forwardingCall = AuthForwardingCall(call)
+            val forwardingCall = AuthForwardingCall(call, cookiesToSet)
             val contextWithCookies = Context.current().withValue(
                 GrpcContext.COOKIES_TO_SET_CONTEXT_KEY,
                 cookiesToSet,
             )
 
             return contextWithCookies.call {
-                // Bypass authentication for public methods / health checks
-                if (methodName in PUBLIC_METHODS || methodName.startsWith(HealthGrpc.SERVICE_NAME)) {
-                    logger.trace { "Method $methodName is public or a health check, bypassing authentication." }
+                // Bypass authentication for public methods
+                if (methodName in PUBLIC_METHODS) {
+                    logger.trace { "Method $methodName is public, bypassing authentication." }
                     next?.startCall(forwardingCall, headers)
                 } else {
                     logger.trace { "Method $methodName requires authentication." }
@@ -180,13 +191,13 @@ val authenticationInterceptor =
  * @param ReqT The type of the request.
  * @param RespT The type of the response.
  * @param delegate The original server call to forward to.
+ * @param cookiesToSet The map of cookies that should be set in the response headers.
  */
 private class AuthForwardingCall<ReqT, RespT>(
     delegate: ServerCall<ReqT, RespT>?,
+    private val cookiesToSet: Map<String, String?>,
 ) : ForwardingServerCall.SimpleForwardingServerCall<ReqT, RespT>(delegate) {
     override fun sendHeaders(headers: Metadata) {
-        val cookiesToSet = GrpcContext.COOKIES_TO_SET_CONTEXT_KEY.get()
-
         if (cookiesToSet.isNotEmpty()) {
             cookiesToSet.entries
                 .mapNotNull { (name, value) -> CookieUtils.buildAuthCookieString(name, value) }
