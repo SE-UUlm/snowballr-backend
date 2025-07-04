@@ -18,6 +18,7 @@ import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.PdfTable
 import se.uulm.snowballr.backend.table.ProjectTable
+import se.uulm.snowballr.backend.table.SessionTable
 import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.association.AuthorOfPaperTable
 import se.uulm.snowballr.backend.table.association.CitationTable
@@ -82,6 +83,7 @@ class Database(
             SchemaUtils.create(
                 // Non-many-to-many tables
                 UserTable,
+                SessionTable,
                 PdfTable,
                 ProjectTable,
                 PaperTable,
