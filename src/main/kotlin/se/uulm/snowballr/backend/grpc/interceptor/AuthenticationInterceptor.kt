@@ -9,6 +9,7 @@ import io.grpc.ServerCallHandler
 import io.grpc.ServerInterceptor
 import io.grpc.Status
 import io.grpc.health.v1.HealthGrpc
+import io.grpc.reflection.v1alpha.ServerReflectionGrpc
 import io.jsonwebtoken.JwtException
 import se.uulm.snowballr.backend.auth.CookieUtils
 import se.uulm.snowballr.backend.auth.CookieUtils.parseCookies
@@ -24,7 +25,10 @@ private val logger = KotlinLogging.logger {}
  * A set of gRPC service names that are excluded from certain processing within the application.
  */
 private val PUBLIC_SERVICES =
-    setOf(HealthGrpc.SERVICE_NAME)
+    setOf(
+        HealthGrpc.SERVICE_NAME,
+        ServerReflectionGrpc.SERVICE_NAME,
+    )
 
 /**
  * A set of public gRPC methods that do not require authentication.

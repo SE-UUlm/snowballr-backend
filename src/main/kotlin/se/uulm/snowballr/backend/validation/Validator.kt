@@ -45,6 +45,8 @@ const val LAST_NAME_MAX_LENGTH = 100
 fun <T> validateRequest(request: T): EitherNel<ValidationIssue, Unit> = when (request) {
     // Healthcheck
     is HealthCheckRequest -> Either.Right(Unit)
+    // Reflection
+    is io.grpc.reflection.v1.ServerReflectionRequest -> Either.Right(Unit)
     // Authentication
     is Authentication.RegisterRequest -> AuthenticationValidator.validateRegisterRequest(request)
     // Project

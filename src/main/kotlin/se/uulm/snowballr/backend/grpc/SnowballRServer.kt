@@ -5,6 +5,7 @@ import io.grpc.Server
 import io.grpc.ServerBuilder
 import io.grpc.health.v1.HealthCheckResponse.ServingStatus
 import io.grpc.protobuf.services.HealthStatusManager
+import io.grpc.protobuf.services.ProtoReflectionService
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import se.uulm.snowballr.backend.grpc.interceptor.authenticationInterceptor
@@ -56,6 +57,18 @@ class SnowballRServer(
     private val healthManager: HealthStatusManager = HealthStatusManager()
 
     /**
+     * Enables and provides gRPC reflection for the server.
+     *
+     * gRPC reflection allows clients and tools to dynamically discover the API of the server at runtime,
+     * providing metadata about the available services, methods, and message types. This is particularly useful
+     * for debugging, development, and command-line tools that interact with gRPC servers without requiring
+     * precompiled service definitions.
+     *
+     * **Note:** ProtoReflectionServiceV1 does not work - calls are not registered by the server.
+     */
+    private val reflectionService = ProtoReflectionService.newInstance()
+
+    /**
      * Represents the gRPC server instance used for handling incoming requests.
      *
      * This server is configured to:
@@ -78,6 +91,7 @@ class SnowballRServer(
             // Services
             .addService(SnowballRService())
             .addService(healthManager.healthService)
+            .addService(reflectionService)
             .build()
 
     /**
