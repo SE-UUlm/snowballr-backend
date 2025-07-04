@@ -17,7 +17,8 @@ import java.util.UUID
  * @param T The table type as a subtype of [IdTable].
  * @param EntT The result entity type.
  * @param mapper Mapping function of the [ResultRow] to the entity type [EntT].
- * @param entityType The [EntityNotPersistedException], which is thrown when the entity cannot be retrieved by its ID.
+ * @param entityType The entity type used for the [EntityNotPersistedException], which is thrown when the entity cannot
+ * be retrieved by its ID.
  * @param body The body that is passed to [insertAndGetId].
  */
 inline fun <Key : Any, T : IdTable<Key>, EntT : Any> T.insertAndGet(
