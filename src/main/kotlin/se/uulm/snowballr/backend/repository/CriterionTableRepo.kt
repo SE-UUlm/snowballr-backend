@@ -1,16 +1,14 @@
 package se.uulm.snowballr.backend.repository
 
-import org.jetbrains.exposed.sql.andWhere
-import org.jetbrains.exposed.sql.insertAndGetId
-import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.ResultRow
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.SnowballRException.EntityNotPersistedException
 import se.uulm.snowballr.backend.model.dto.Criterion
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.table.CriterionTable
-import se.uulm.snowballr.backend.table.CriterionTable.toCriterion
 import se.uulm.snowballr.backend.table.getProjectEntityId
 import se.uulm.snowballr.backend.table.getUserEntityId
+import se.uulm.snowballr.backend.table.toCriterion
 import snowballr.CriterionOuterClass
 import java.util.UUID
 
@@ -55,24 +53,13 @@ class CriterionTableRepo(
             // Get project reference
             val projectEntityId = getProjectEntityId(projectUUID)
 
-            // Create criterion
-            val criterionId =
-                CriterionTable
-                    .insertAndGetId {
-                        it[tag] = request.tag
-                        it[name] = request.name
-                        it[description] = request.description
-                        it[category] = request.category
-                        it[projectId] = projectEntityId
-                        it[createdBy] = userEntityId
-                    }
-
-            // Return created criterion
-            CriterionTable
-                .selectAll()
-                .andWhere { CriterionTable.id eq criterionId }
-                .map { it.toCriterion() }
-                .singleOrNull()
-                ?: throw EntityNotPersistedException.Criterion(criterionId.toString())
+            CriterionTable.insertAndGet(ResultRow::toCriterion, { EntityNotPersistedException.Criterion(it) }) {
+                it[tag] = request.tag
+                it[name] = request.name
+                it[description] = request.description
+                it[category] = request.category
+                it[projectId] = projectEntityId
+                it[createdBy] = userEntityId
+            }
         }
 }

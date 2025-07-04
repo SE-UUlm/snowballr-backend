@@ -39,20 +39,18 @@ object CriterionTable : UUIDTable("criterion") {
 
     val createdAt = createdAt()
     val createdBy = createdBy()
-
-    // Methods
-
-    /**
-     * Creates a [Criterion] from this [ResultRow].
-     */
-    fun ResultRow.toCriterion() = Criterion(
-        id = this[id].value,
-        tag = this[tag],
-        name = this[name],
-        description = this[description],
-        category = this[category],
-        projectId = this[projectId].value,
-        createdAt = this[createdAt],
-        createdBy = this[createdBy].value,
-    )
 }
+
+/**
+ * Creates a [Criterion] from this [ResultRow].
+ */
+fun ResultRow.toCriterion() = Criterion(
+    id = this[CriterionTable.id].value,
+    tag = this[CriterionTable.tag],
+    name = this[CriterionTable.name],
+    description = this[CriterionTable.description],
+    category = this[CriterionTable.category],
+    projectId = this[CriterionTable.projectId].value,
+    createdAt = this[CriterionTable.createdAt],
+    createdBy = this[CriterionTable.createdBy].value,
+)

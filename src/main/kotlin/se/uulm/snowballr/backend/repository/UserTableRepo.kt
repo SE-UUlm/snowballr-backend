@@ -1,13 +1,13 @@
 package se.uulm.snowballr.backend.repository
 
-import org.jetbrains.exposed.sql.insertAndGetId
+import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.SnowballRException.EntityNotPersistedException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.table.UserTable
-import se.uulm.snowballr.backend.table.UserTable.toUser
+import se.uulm.snowballr.backend.table.toUser
 import snowballr.Authentication
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
@@ -100,24 +100,13 @@ class UserTableRepo(
     }
 
     override suspend fun createUser(request: Authentication.RegisterRequest, passwordHash: String): User = db.dbQuery {
-        // Create user
-        val userId =
-            UserTable
-                .insertAndGetId {
-                    it[email] = request.email
-                    it[firstName] = request.firstName
-                    it[lastName] = request.lastName
-                    it[UserTable.passwordHash] = passwordHash
-                    it[role] = UserRole.USER_ROLE_DEFAULT
-                    it[status] = UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED
-                }.value
-
-        // Return created user
-        UserTable
-            .selectAll()
-            .where { UserTable.id eq userId }
-            .map { it.toUser() }
-            .singleOrNull()
-            ?: throw EntityNotPersistedException.User(userId.toString())
+        UserTable.insertAndGet(ResultRow::toUser, { EntityNotPersistedException.User(it) }) {
+            it[email] = request.email
+            it[firstName] = request.firstName
+            it[lastName] = request.lastName
+            it[UserTable.passwordHash] = passwordHash
+            it[role] = UserRole.USER_ROLE_DEFAULT
+            it[status] = UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED
+        }
     }
 }

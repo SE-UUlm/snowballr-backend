@@ -9,6 +9,7 @@ import com.tngtech.archunit.core.importer.ImportOption
 import com.tngtech.archunit.junit.AnalyzeClasses
 import com.tngtech.archunit.junit.ArchTest
 import com.tngtech.archunit.junit.ArchTests
+import com.tngtech.archunit.lang.conditions.ArchConditions.haveNameMatching
 import com.tngtech.archunit.lang.conditions.ArchConditions.haveSimpleName
 import com.tngtech.archunit.lang.conditions.ArchConditions.haveSimpleNameEndingWith
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes
@@ -175,6 +176,7 @@ private class NamingConventions {
             .resideInAPackage("$BASE_PACKAGE.repository..")
             .should()
             .haveNameMatching(".*TableRepo.*")
+            .orShould(haveNameMatching(".*RepoHelperKt.*")) // exception
             .because("All repositories should have the 'TableRepo' suffix")
             .check(classes)
     }
@@ -186,6 +188,7 @@ private class NamingConventions {
             .resideInAPackage("$BASE_PACKAGE.table..")
             .should()
             .haveSimpleNameEndingWith("Table")
+            .orShould(haveSimpleNameEndingWith("TableKt")) // kotlin class
             .orShould(haveSimpleNameEndingWith("ColumnHelperKt")) // exception
             .orShould(haveSimpleName("TableHelperKt")) // exception
             .orShould(haveSimpleNameEndingWith("ObfuscatedTextColumnType")) // exception

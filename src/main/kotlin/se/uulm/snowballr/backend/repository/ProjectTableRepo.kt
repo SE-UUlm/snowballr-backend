@@ -1,7 +1,6 @@
 package se.uulm.snowballr.backend.repository
 
-import org.jetbrains.exposed.sql.andWhere
-import org.jetbrains.exposed.sql.insertAndGetId
+import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
@@ -9,8 +8,8 @@ import se.uulm.snowballr.backend.model.FetcherApi
 import se.uulm.snowballr.backend.model.SnowballRException.EntityNotPersistedException
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.table.ProjectTable
-import se.uulm.snowballr.backend.table.ProjectTable.toProject
 import se.uulm.snowballr.backend.table.getUserEntityId
+import se.uulm.snowballr.backend.table.toProject
 import snowballr.ProjectOuterClass
 import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
@@ -56,30 +55,19 @@ class ProjectTableRepo(
         // Get user reference
         val userEntityId = getUserEntityId(userId)
 
-        // Create project
-        val projectId =
-            ProjectTable
-                .insertAndGetId {
-                    it[name] = request.name
-                    it[status] = ProjectStatus.PROJECT_STATUS_ACTIVE
-                    it[currentStage] = 0
-                    it[maxStage] = 0
-                    // TODO: Fetch default settings from user
-                    it[similarityThreshold] = 0F
-                    it[snowballingType] = SnowballingType.SNOWBALLING_TYPE_BOTH
-                    it[reviewMaybeAllowed] = true
-                    it[reviewDecisionMatrixBinary] = ReviewDecisionMatrix.getDefaultInstance().toByteArray()
-                    it[fetcherApis] = FetcherApi.entries.toList()
-                    it[createdBy] = userEntityId
-                }.value
-
-        // Return created project
-        ProjectTable
-            .selectAll()
-            .andWhere { ProjectTable.id eq projectId }
-            .map { it.toProject() }
-            .singleOrNull()
-            ?: throw EntityNotPersistedException.Project(projectId.toString())
+        ProjectTable.insertAndGet(ResultRow::toProject, { EntityNotPersistedException.Project(it) }) {
+            it[name] = request.name
+            it[status] = ProjectStatus.PROJECT_STATUS_ACTIVE
+            it[currentStage] = 0
+            it[maxStage] = 0
+            // TODO: Fetch default settings from user
+            it[similarityThreshold] = 0F
+            it[snowballingType] = SnowballingType.SNOWBALLING_TYPE_BOTH
+            it[reviewMaybeAllowed] = true
+            it[reviewDecisionMatrixBinary] = ReviewDecisionMatrix.getDefaultInstance().toByteArray()
+            it[fetcherApis] = FetcherApi.entries.toList()
+            it[createdBy] = userEntityId
+        }
     }
 
     override suspend fun getAllProjects(): List<Project> = db.dbQuery {

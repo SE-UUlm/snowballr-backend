@@ -48,18 +48,16 @@ object ReviewTable : UUIDTable("review") {
 
     val createdAt = createdAt()
     val modifiedAt = modifiedAt()
-
-    // Methods
-
-    /**
-     * Creates a [Review] from this [ResultRow].
-     */
-    fun ResultRow.toReview() = Review(
-        id = this[id].value,
-        projectPaperId = this[projectPaperId].value,
-        userId = this[userId].value,
-        decision = this[decision],
-        createdAt = this[createdAt],
-        modifiedAt = this[modifiedAt],
-    )
 }
+
+/**
+ * Creates a [Review] from this [ResultRow].
+ */
+fun ResultRow.toReview() = Review(
+    id = this[ReviewTable.id].value,
+    projectPaperId = this[ReviewTable.projectPaperId].value,
+    userId = this[ReviewTable.userId].value,
+    decision = this[ReviewTable.decision],
+    createdAt = this[ReviewTable.createdAt],
+    modifiedAt = this[ReviewTable.modifiedAt],
+)

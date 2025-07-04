@@ -62,22 +62,20 @@ object ProjectPaperTable : UUIDTable("project_paper") {
     val createdBy = createdBy()
     val modifiedAt = modifiedAt()
     val modifiedBy = modifiedBy()
-
-    // Methods
-
-    /**
-     * Creates a [ProjectPaper] from this [ResultRow].
-     */
-    fun ResultRow.toProjectPaper() = ProjectPaper(
-        id = this[id].value,
-        paperId = this[paperId].value,
-        projectId = this[projectId].value,
-        localPaperId = this[localPaperId],
-        stage = this[stage],
-        decision = this[decision],
-        createdAt = this[createdAt],
-        createdBy = this[createdBy].value,
-        modifiedAt = this[modifiedAt],
-        modifiedBy = this[modifiedBy]?.value,
-    )
 }
+
+/**
+ * Creates a [ProjectPaper] from this [ResultRow].
+ */
+fun ResultRow.toProjectPaper() = ProjectPaper(
+    id = this[ProjectPaperTable.id].value,
+    paperId = this[ProjectPaperTable.paperId].value,
+    projectId = this[ProjectPaperTable.projectId].value,
+    localPaperId = this[ProjectPaperTable.localPaperId],
+    stage = this[ProjectPaperTable.stage],
+    decision = this[ProjectPaperTable.decision],
+    createdAt = this[ProjectPaperTable.createdAt],
+    createdBy = this[ProjectPaperTable.createdBy].value,
+    modifiedAt = this[ProjectPaperTable.modifiedAt],
+    modifiedBy = this[ProjectPaperTable.modifiedBy]?.value,
+)
