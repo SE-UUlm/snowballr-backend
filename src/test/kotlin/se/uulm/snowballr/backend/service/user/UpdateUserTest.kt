@@ -56,8 +56,9 @@ class UpdateUserTest : MainServiceTest() {
             email = "john@doe.com",
             firstName = "John",
             lastName = "Doe",
+            role = UserRole.USER_ROLE_ADMIN,
         )
-        val updateFieldMask = FieldMaskUtil.fromStringList(listOf("email", "first_name", "last_name"))
+        val updateFieldMask = FieldMaskUtil.fromStringList(listOf("email", "first_name", "last_name", "role"))
         val request = User.Update.newBuilder().setUser(updatedUser.toGrpcUser()).setMask(updateFieldMask).build()
 
         coEvery { userRepoMock.getUserById(any()) } returns adminUser
