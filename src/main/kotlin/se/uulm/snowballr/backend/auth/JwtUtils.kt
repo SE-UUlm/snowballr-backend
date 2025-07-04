@@ -6,7 +6,9 @@ import io.jsonwebtoken.Jws
 import io.jsonwebtoken.JwtException
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.io.Decoders
-import se.uulm.snowballr.backend.env.Env
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
+import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.model.jwt.JwtTokens
 import se.uulm.snowballr.backend.model.jwt.ParsedJwtClaims
 import java.security.KeyFactory
@@ -24,13 +26,15 @@ private val logger = KotlinLogging.logger {}
  * Utility object for handling JWT (JSON Web Token) operations, including token generation,
  * parsing, and validation.
  */
-object JwtUtils {
-    private const val KEY_ALGORITHM = "RSA"
+object JwtUtils : KoinComponent {
+    const val KEY_ALGORITHM = "RSA"
     private const val ACCESS_TOKEN_EXPIRATION_MS = 15 * 60 * 1000L // 15 minutes
     private const val REFRESH_TOKEN_EXPIRATION_MS = 7 * 24 * 60 * 60 * 1000L // 7 days
     private const val ISSUER = "SnowballR"
     private const val AUDIENCE = "snowballr-backend"
     private const val CLOCK_SKEW_SECONDS = 180L
+
+    private val envReader: EnvReader by inject()
 
     private val privateKey: PrivateKey
     private val publicKey: PublicKey
@@ -38,13 +42,15 @@ object JwtUtils {
     init {
         logger.debug { "Initializing JWT private and public keys" }
 
+        val env = envReader.env
+
         // Private Key
-        val privateKeyBytes = Decoders.BASE64.decode(Env.Encryption().jwtPrivateKeyBase64)
+        val privateKeyBytes = Decoders.BASE64.decode(env.encryption.jwtPrivateKeyBase64)
         val privateKeySpec = PKCS8EncodedKeySpec(privateKeyBytes)
         privateKey = KeyFactory.getInstance(KEY_ALGORITHM).generatePrivate(privateKeySpec)
 
         // Public Key
-        val publicKeyBytes = Decoders.BASE64.decode(Env.Encryption().jwtPublicKeyBase64)
+        val publicKeyBytes = Decoders.BASE64.decode(env.encryption.jwtPublicKeyBase64)
         val publicKeySpec = X509EncodedKeySpec(publicKeyBytes)
         publicKey = KeyFactory.getInstance(KEY_ALGORITHM).generatePublic(publicKeySpec)
 

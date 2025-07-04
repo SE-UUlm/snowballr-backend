@@ -7,13 +7,15 @@ import org.koin.core.context.startKoin
 import org.slf4j.LoggerFactory
 import se.uulm.snowballr.backend.auth.JwtUtils
 import se.uulm.snowballr.backend.env.DEFAULT_LOG_LEVEL
-import se.uulm.snowballr.backend.env.Env
+import se.uulm.snowballr.backend.env.EnvReader
+import se.uulm.snowballr.backend.env.EnvService
 import se.uulm.snowballr.backend.grpc.SnowballRServer
 
 private val logger = KotlinLogging.logger {}
 
 fun main() {
-    val env = Env()
+    val envReader = EnvReader(EnvService())
+    val env = envReader.env
 
     // Configure Logger
     configureRootLogger(env.miscellaneous.logLevel)

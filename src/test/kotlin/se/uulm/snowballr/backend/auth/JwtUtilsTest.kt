@@ -1,15 +1,52 @@
 package se.uulm.snowballr.backend.auth
 
 import io.jsonwebtoken.JwtException
+import io.mockk.every
+import io.mockk.mockk
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.koin.core.context.startKoin
+import org.koin.core.context.stopKoin
+import org.koin.dsl.module
+import org.koin.test.KoinTest
+import se.uulm.snowballr.backend.RandomKeyGenerator
+import se.uulm.snowballr.backend.env.EnvReader
 import java.util.UUID
 
-class JwtUtilsTest {
+class JwtUtilsTest : KoinTest {
+    private val envReaderMock = mockk<EnvReader>()
+
+    @BeforeEach
+    fun setUpTest() {
+        // Stop any existing Koin context
+        stopKoin()
+
+        // Start Koin context with a mock module
+        startKoin {
+            modules(
+                module {
+                    single { envReaderMock }
+                },
+            )
+        }
+
+        // Mock JWT key pair
+        val (privateKeyBase64, publicKeyBase64) = RandomKeyGenerator.generateKeyPair()
+        every { envReaderMock.env.encryption.jwtPrivateKeyBase64 } returns privateKeyBase64
+        every { envReaderMock.env.encryption.jwtPublicKeyBase64 } returns publicKeyBase64
+    }
+
+    @AfterEach
+    fun tearDownTest() {
+        stopKoin()
+    }
+
     @Nested
     inner class GenerateTokens {
         @Test

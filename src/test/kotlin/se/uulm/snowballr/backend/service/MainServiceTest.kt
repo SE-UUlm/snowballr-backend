@@ -87,13 +87,13 @@ open class MainServiceTest {
     }
 
     @BeforeEach
-    fun setUpTest() {
+    open fun setUpTest() {
         // TODO: remove when user management is implemented
         dummyUserId = UUID.randomUUID().toString()
     }
 
     @AfterEach
-    fun tearDownTest() {
+    open fun tearDownTest() {
         clearAllMocks()
     }
 
