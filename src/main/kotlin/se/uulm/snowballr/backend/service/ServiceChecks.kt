@@ -15,6 +15,6 @@ import snowballr.UserOuterClass.UserRole
  */
 fun verifyServerAdminRole(user: User, entityType: EntityType) {
     if (user.role != UserRole.USER_ROLE_ADMIN) {
-        throw SnowballRException.UnauthorizedException.All(user.id.toString(), entityType)
+        throw SnowballRException.UnauthorizedException.All(entityType, user.id.toString())
     }
 }

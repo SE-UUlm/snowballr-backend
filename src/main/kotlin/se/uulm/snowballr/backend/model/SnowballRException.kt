@@ -67,15 +67,15 @@ sealed class SnowballRException(
          * Represents an [UnauthorizedException] that occurs when the current user accesses a single entity without
          * permission.
          *
-         * @param currentUserId The ID of the user that is accessing the entity.
          * @param accessedEntityType The type of the entity that was accessed without permission.
          * @param accessedEntityId The ID of the entity that was accessed without permission.
+         * @param currentUserId The ID of the user that is accessing the entity.
          * @param identifierType The type of the identifier used to access the entity.
          */
         class Single(
-            currentUserId: String,
             accessedEntityType: EntityType,
             accessedEntityId: String,
+            currentUserId: String,
             identifierType: IdentifierType = IdentifierType.ID,
         ) : UnauthorizedException(
             currentUserId,
@@ -86,37 +86,37 @@ sealed class SnowballRException(
          * Represents an [UnauthorizedException] that occurs when the current user accesses several entities without
          * permission.
          *
-         * @param currentUserId The ID of the user that is accessing the entities.
          * @param accessedEntityType The type of the entities that were accessed without permission.
+         * @param currentUserId The ID of the user that is accessing the entities.
          */
         class All(
-            currentUserId: String,
             accessedEntityType: EntityType,
+            currentUserId: String,
         ) : UnauthorizedException(currentUserId, "all ${accessedEntityType.plural}.")
     }
 
     /**
      * Represents an exception that occurs when an ID is in an invalid format.
      *
-     * @param id The value of the invalid ID.
      * @param entityType The type of the entity to which the ID belongs to.
+     * @param entityId The value of the invalid ID.
      * @param format The format that the ID should've had.
      */
     sealed class InvalidIdException(
-        id: String,
         entityType: EntityType,
+        entityId: String,
         format: String,
-    ) : SnowballRException("The ID '$id' of the ${entityType.singular} is not a valid $format.") {
+    ) : SnowballRException("The ID '$entityId' of the ${entityType.singular} is not a valid $format.") {
         /**
          * Represents an [InvalidIdException] that occurs when a [UUID] is in an invalid format.
          *
-         * @param id The value of the invalid [UUID].
          * @param entityType The type of the entity to which the [UUID] belongs to.
+         * @param id The value of the invalid [UUID].
          */
         class UUID(
-            id: String,
             entityType: EntityType,
-        ) : InvalidIdException(id, entityType, "UUID")
+            id: String,
+        ) : InvalidIdException(entityType, id, "UUID")
     }
 
     /**

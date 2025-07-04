@@ -74,9 +74,9 @@ class UserService(
 
         // Requesting user is not authorized
         throw UnauthorizedException.Single(
-            currentUser.id.toString(),
             EntityType.USER,
             requestedUserId.toString(),
+            currentUser.id.toString(),
             identifierType,
         )
     }

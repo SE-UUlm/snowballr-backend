@@ -11,4 +11,4 @@ import java.util.UUID
  * @throws [InvalidIdException.UUID] If the [uuid] has not the UUID format.
  */
 fun parseUUID(uuid: String, entityType: EntityType): UUID =
-    runCatching { UUID.fromString(uuid) }.getOrNull() ?: throw InvalidIdException.UUID(uuid, entityType)
+    runCatching { UUID.fromString(uuid) }.getOrNull() ?: throw InvalidIdException.UUID(entityType, uuid)
