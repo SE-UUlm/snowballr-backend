@@ -8,6 +8,7 @@ import java.util.UUID
  */
 data class ParsedJwtClaims(
     val userId: UUID,
+    val sessionId: UUID,
     val issuedAt: Date?,
     val expiration: Date?,
 )

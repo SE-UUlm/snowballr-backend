@@ -65,11 +65,12 @@ object JwtUtils : KoinComponent {
      * Generates a signed access and refresh token for the given user ID.
      *
      * @param userId The unique identifier of the user for whom the tokens are generated.
+     * @param sessionId The unique identifier for the session, used as a JWT ID (jti).
      * @return A [JwtTokens] object containing the generated access and refresh tokens.
      */
-    fun generateTokens(userId: UUID): JwtTokens {
-        val accessToken = generateToken(userId, ACCESS_TOKEN_EXPIRATION_MS)
-        val refreshToken = generateToken(userId, REFRESH_TOKEN_EXPIRATION_MS)
+    fun generateTokens(userId: UUID, sessionId: UUID): JwtTokens {
+        val accessToken = generateToken(userId, sessionId, ACCESS_TOKEN_EXPIRATION_MS)
+        val refreshToken = generateToken(userId, sessionId, REFRESH_TOKEN_EXPIRATION_MS)
         return JwtTokens(accessToken, refreshToken)
     }
 
@@ -77,10 +78,11 @@ object JwtUtils : KoinComponent {
      * Generates a signed JWT token for the given user ID and expiration time.
      *
      * @param userId The user ID for the token subject.
+     * @param sessionId The session ID to be included in the token as a JWT ID (jti).
      * @param expirationMs The expiration time in milliseconds from now.
      * @return The signed JWT token as a string.
      */
-    private fun generateToken(userId: UUID, expirationMs: Long): String {
+    private fun generateToken(userId: UUID, sessionId: UUID, expirationMs: Long): String {
         val now = Date()
         return Jwts
             .builder()
@@ -91,7 +93,7 @@ object JwtUtils : KoinComponent {
             .and()
             .issuedAt(now)
             .expiration(Date(now.time + expirationMs))
-            .claim("jti", UUID.randomUUID().toString())
+            .claim("jti", sessionId.toString())
             .signWith(privateKey)
             .compact()
     }
@@ -119,6 +121,7 @@ object JwtUtils : KoinComponent {
 
         return ParsedJwtClaims(
             userId = UUID.fromString(claims.subject),
+            sessionId = UUID.fromString(claims["jti"] as String),
             issuedAt = claims.issuedAt,
             expiration = claims.expiration,
         )
@@ -134,7 +137,7 @@ object JwtUtils : KoinComponent {
      * @return A new access token as a string.
      */
     fun refreshAccessToken(refreshTokenClaims: ParsedJwtClaims): String =
-        generateToken(refreshTokenClaims.userId, ACCESS_TOKEN_EXPIRATION_MS)
+        generateToken(refreshTokenClaims.userId, refreshTokenClaims.sessionId, ACCESS_TOKEN_EXPIRATION_MS)
 
     /**
      * Returns the configured time-to-live (TTL) for an access token in seconds.

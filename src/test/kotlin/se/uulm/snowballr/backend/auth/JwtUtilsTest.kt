@@ -52,7 +52,8 @@ class JwtUtilsTest : KoinTest {
         @Test
         fun `When generating tokens for a user, then non-blank access and refresh tokens are returned`() {
             val userId = UUID.randomUUID()
-            val tokens = JwtUtils.generateTokens(userId)
+            val sessionId = UUID.randomUUID()
+            val tokens = JwtUtils.generateTokens(userId, sessionId)
 
             assertTrue(tokens.accessToken.isNotBlank())
             assertTrue(tokens.refreshToken.isNotBlank())
@@ -62,9 +63,10 @@ class JwtUtilsTest : KoinTest {
     @Nested
     inner class ParseToken {
         @Test
-        fun `When parsing an access token, then the correct userId and timestamps are extracted`() {
+        fun `When parsing an access token, then the correct information is extracted`() {
             val userId = UUID.randomUUID()
-            val tokens = JwtUtils.generateTokens(userId)
+            val sessionId = UUID.randomUUID()
+            val tokens = JwtUtils.generateTokens(userId, sessionId)
 
             val parsedToken = JwtUtils.parseToken(tokens.accessToken)
 
@@ -94,7 +96,8 @@ class JwtUtilsTest : KoinTest {
         @Test
         fun `When refreshing an access token with a valid refresh token, then a new valid access token is issued`() {
             val userId = UUID.randomUUID()
-            val tokens = JwtUtils.generateTokens(userId)
+            val sessionId = UUID.randomUUID()
+            val tokens = JwtUtils.generateTokens(userId, sessionId)
             val parsedToken = JwtUtils.parseToken(tokens.accessToken)
 
             val newAccessToken = JwtUtils.refreshAccessToken(parsedToken)

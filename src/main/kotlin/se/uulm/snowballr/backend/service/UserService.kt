@@ -13,6 +13,7 @@ import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.toGrpcUser
 import se.uulm.snowballr.backend.model.jwt.JwtTokens
 import se.uulm.snowballr.backend.model.parseUUID
+import se.uulm.snowballr.backend.repository.ISessionTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import snowballr.Authentication
@@ -52,10 +53,12 @@ interface IUserService {
  *
  * @constructor Initializes the [UserService] with a user repository.
  * @param userRepo The repository responsible for managing persistence operations for users.
+ * @param sessionRepo The repository responsible for managing persistence operations for user sessions.
  * @param projectMemberRepo The repository responsible for managing persistence operations for project members.
  */
 class UserService(
     private val userRepo: IUserTableRepo,
+    private val sessionRepo: ISessionTableRepo,
     private val projectMemberRepo: IProjectMemberTableRepo,
 ) : IUserService {
     private suspend fun verifyUserAccess(currentUser: User, requestedUserId: UUID, identifierType: IdentifierType) {
@@ -150,8 +153,11 @@ class UserService(
         val passwordHash = PasswordUtils.hashPassword(request.password)
         val user = userRepo.createUser(request, passwordHash)
 
+        // Create a new session
+        val session = sessionRepo.createSession(user.id)
+
         // Generate JWT tokens
-        val tokens = JwtUtils.generateTokens(user.id)
+        val tokens = JwtUtils.generateTokens(user.id, session.id)
 
         return tokens
     }

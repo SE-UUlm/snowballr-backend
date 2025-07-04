@@ -42,5 +42,5 @@ class MainService(
 ) : IMainService,
     IProjectService by ProjectService(projectRepo, userRepo),
     ICriterionService by CriterionService(criterionRepo),
-    IUserService by UserService(userRepo, projectMemberRepo),
+    IUserService by UserService(userRepo, sessionRepo, projectMemberRepo),
     ISessionService by SessionService(sessionRepo)
