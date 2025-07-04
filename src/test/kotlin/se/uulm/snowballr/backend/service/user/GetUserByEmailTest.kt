@@ -63,7 +63,7 @@ class GetUserByEmailTest : MainServiceTest() {
         coEvery { userRepoMock.getUserByEmail(requestEmail) } returns DataBuilder.createExampleUser()
         coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(any()) } returns listOf()
 
-        assertThrows<UnauthorizedException.Single.User> { mainService.getUserByEmail(request) }
+        assertThrows<UnauthorizedException.Single> { mainService.getUserByEmail(request) }
     }
 
     @Test
@@ -153,7 +153,7 @@ class GetUserByEmailTest : MainServiceTest() {
             coEvery { userRepoMock.getUserByEmail(requestEmail) } returns user
             coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(any()) } returns listOf()
 
-            assertThrows<NotFoundException.User> { mainService.getUserByEmail(request) }
+            assertThrows<NotFoundException> { mainService.getUserByEmail(request) }
         }
     }
 }

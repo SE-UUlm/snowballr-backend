@@ -11,13 +11,13 @@ class ParserTest {
         @Test
         fun `When a valid UUID is passed, then it is correctly parsed`() {
             val uuid = "123e4567-e89b-12d3-a456-426614174000"
-            assertDoesNotThrow { parseUUID(uuid, "test") }
+            assertDoesNotThrow { parseUUID(uuid, EntityType.USER) }
         }
 
         @Test
         fun `When an invalid UUID is passed, then an exception is thrown`() {
             val uuid = "invalid-uuid"
-            assertThrows<SnowballRException.InvalidIdException.UUID> { parseUUID(uuid, "test") }
+            assertThrows<SnowballRException.InvalidIdException.UUID> { parseUUID(uuid, EntityType.USER) }
         }
     }
 }

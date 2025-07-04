@@ -73,7 +73,7 @@ class GetUserByIdTest : MainServiceTest() {
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns noAccessUser
         coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(any()) } returns listOf()
 
-        assertThrows<UnauthorizedException.Single.User> { mainService.getUserById(request) }
+        assertThrows<UnauthorizedException.Single> { mainService.getUserById(request) }
     }
 
     @Test
@@ -187,7 +187,7 @@ class GetUserByIdTest : MainServiceTest() {
             val user = DataBuilder.createExampleUser(status = status)
             coEvery { userRepoMock.getUserById(requestId) } returns user
 
-            assertThrows<NotFoundException.User> { mainService.getUserById(request) }
+            assertThrows<NotFoundException> { mainService.getUserById(request) }
         }
     }
 }

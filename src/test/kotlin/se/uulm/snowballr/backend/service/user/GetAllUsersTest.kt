@@ -59,7 +59,7 @@ class GetAllUsersTest : MainServiceTest() {
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns nonAdminUser
         coEvery { userRepoMock.getAllUsers() } returns emptyList()
 
-        assertThrows<UnauthorizedException.All.User> { mainService.getAllUsers() }
+        assertThrows<UnauthorizedException.All> { mainService.getAllUsers() }
     }
 
     @Test

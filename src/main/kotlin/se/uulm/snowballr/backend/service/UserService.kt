@@ -4,6 +4,8 @@ import se.uulm.snowballr.backend.auth.JwtUtils
 import se.uulm.snowballr.backend.auth.PasswordUtils
 import se.uulm.snowballr.backend.db.dummyUserId
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
+import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.IdentifierType
 import se.uulm.snowballr.backend.model.SnowballRException.DuplicateEntityException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
@@ -56,7 +58,7 @@ class UserService(
     private val userRepo: IUserTableRepo,
     private val projectMemberRepo: IProjectMemberTableRepo,
 ) : IUserService {
-    private suspend fun verifyUserAccess(currentUser: User, requestedUserId: UUID, identifier: String) {
+    private suspend fun verifyUserAccess(currentUser: User, requestedUserId: UUID, identifierType: IdentifierType) {
         // Check whether requesting user is server admin
         if (currentUser.role == UserRole.USER_ROLE_ADMIN) return
 
@@ -71,15 +73,20 @@ class UserService(
         if (isInSameProject) return
 
         // Requesting user is not authorized
-        throw UnauthorizedException.Single.User(currentUser.id.toString(), identifier, requestedUserId.toString())
+        throw UnauthorizedException.Single(
+            EntityType.USER,
+            requestedUserId.toString(),
+            currentUser.id.toString(),
+            identifierType,
+        )
     }
 
     override suspend fun getUserById(request: Base.Id): UserOuterClass.User {
-        val requestingUserId = parseUUID(dummyUserId!!, "user")
-        val requestedUserId = parseUUID(request.id, "user")
+        val requestingUserId = parseUUID(dummyUserId!!, EntityType.USER)
+        val requestedUserId = parseUUID(request.id, EntityType.USER)
         val currentUser = userRepo.getUserById(requestingUserId)
 
-        verifyUserAccess(currentUser, requestingUserId, "ID")
+        verifyUserAccess(currentUser, requestingUserId, IdentifierType.ID)
 
         val isRequestedUser = requestingUserId == currentUser.id
 
@@ -95,36 +102,36 @@ class UserService(
         if (result.status != UserStatus.USER_STATUS_ACTIVE &&
             result.status != UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED
         ) {
-            throw NotFoundException.User(request.id)
+            throw NotFoundException(EntityType.USER, request.id)
         }
 
         return result.toGrpcUser()
     }
 
     override suspend fun getUserByEmail(request: Base.Email): UserOuterClass.User {
-        val requestingUserId = parseUUID(dummyUserId!!, "user")
+        val requestingUserId = parseUUID(dummyUserId!!, EntityType.USER)
         val currentUser = userRepo.getUserById(requestingUserId)
 
         // We have to request the user first to get the ID for the access checks
         val requestedUser = userRepo.getUserByEmail(request.email)
 
-        verifyUserAccess(currentUser, requestingUserId, "email")
+        verifyUserAccess(currentUser, requestingUserId, IdentifierType.EMAIL)
 
         // Only active or active unconfirmed users can be retrieved
         if (requestedUser.status != UserStatus.USER_STATUS_ACTIVE &&
             requestedUser.status != UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED
         ) {
-            throw NotFoundException.User(request.email, "email")
+            throw NotFoundException(EntityType.USER, request.email, IdentifierType.EMAIL)
         }
 
         return requestedUser.toGrpcUser()
     }
 
     override suspend fun getAllUsers(): UserOuterClass.User.List {
-        val requestingUserId = parseUUID(dummyUserId!!, "user")
+        val requestingUserId = parseUUID(dummyUserId!!, EntityType.USER)
         val currentUser = userRepo.getUserById(requestingUserId)
 
-        verifyServerAdminRole(currentUser) { UnauthorizedException.All.User(it) }
+        verifyServerAdminRole(currentUser, EntityType.USER)
 
         val users = userRepo.getAllUsers()
 
@@ -136,7 +143,7 @@ class UserService(
     override suspend fun register(request: Authentication.RegisterRequest): JwtTokens {
         // Check whether a user with the given email already exists
         if (userRepo.doesUserExistByEmail(request.email)) {
-            throw DuplicateEntityException.UserEmail(request.email)
+            throw DuplicateEntityException(EntityType.USER, request.email, IdentifierType.EMAIL)
         }
 
         // Hash the password and create the user

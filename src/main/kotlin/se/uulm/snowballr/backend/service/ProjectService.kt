@@ -2,7 +2,7 @@ package se.uulm.snowballr.backend.service
 
 import se.uulm.snowballr.backend.db.dummyUserId
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
-import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
+import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.toGrpcProject
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
@@ -37,15 +37,15 @@ class ProjectService(
 ) : IProjectService {
     override suspend fun createProject(request: ProjectOuterClass.Project.Create): ProjectOuterClass.Project {
         // TODO: remove dummy user when user management is implemented
-        val requestingUserId = parseUUID(dummyUserId!!, "user")
+        val requestingUserId = parseUUID(dummyUserId!!, EntityType.USER)
         return repo.createProject(request, requestingUserId).toGrpcProject()
     }
 
     override suspend fun getAllProjects(): ProjectOuterClass.Project.List {
-        val requestingUserId = parseUUID(dummyUserId!!, "user")
+        val requestingUserId = parseUUID(dummyUserId!!, EntityType.USER)
         val currentUser = userRepo.getUserById(requestingUserId)
 
-        verifyServerAdminRole(currentUser) { UnauthorizedException.All.Project(it) }
+        verifyServerAdminRole(currentUser, EntityType.PROJECT)
 
         val projects = repo.getAllProjects()
 

@@ -5,7 +5,7 @@ import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.alias
 import org.jetbrains.exposed.sql.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
-import se.uulm.snowballr.backend.model.SnowballRException.EntityNotPersistedException
+import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.ProjectMember
 import se.uulm.snowballr.backend.repository.insertAndGet
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
@@ -70,7 +70,7 @@ class ProjectMemberTableRepo(
             return@dbQuery existingMember
         }
 
-        ProjectMemberTable.insertAndGet(ResultRow::toProjectMember, { EntityNotPersistedException.ProjectMember(it) }) {
+        ProjectMemberTable.insertAndGet(ResultRow::toProjectMember, EntityType.PROJECT_MEMBER) {
             it[this.userId] = userEntityId
             it[this.projectId] = projectEntityId
             it[role] = ProjectOuterClass.MemberRole.MEMBER_ROLE_DEFAULT

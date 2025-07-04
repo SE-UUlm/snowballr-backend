@@ -4,8 +4,8 @@ import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
+import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.FetcherApi
-import se.uulm.snowballr.backend.model.SnowballRException.EntityNotPersistedException
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.getUserEntityId
@@ -55,7 +55,7 @@ class ProjectTableRepo(
         // Get user reference
         val userEntityId = getUserEntityId(userId)
 
-        ProjectTable.insertAndGet(ResultRow::toProject, { EntityNotPersistedException.Project(it) }) {
+        ProjectTable.insertAndGet(ResultRow::toProject, EntityType.PROJECT) {
             it[name] = request.name
             it[status] = ProjectStatus.PROJECT_STATUS_ACTIVE
             it[currentStage] = 0
