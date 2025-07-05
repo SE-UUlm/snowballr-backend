@@ -8,6 +8,7 @@ import io.grpc.protobuf.services.HealthStatusManager
 import io.grpc.protobuf.services.ProtoReflectionService
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.grpc.interceptor.authenticationInterceptor
 import se.uulm.snowballr.backend.grpc.interceptor.exceptionInterceptor
 import se.uulm.snowballr.backend.grpc.interceptor.loggingInterceptor
@@ -197,7 +198,7 @@ class SnowballRServer(
             mainService.getUserByEmail(request)
 
         override suspend fun updateUser(request: UserOuterClass.User.Update): UserOuterClass.User =
-            super.updateUser(request)
+            mainService.updateUser(request)
 
         override suspend fun softDeleteUser(request: Base.Id): Base.Nothing = super.softDeleteUser(request)
 

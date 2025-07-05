@@ -1,6 +1,5 @@
 package se.uulm.snowballr.backend.service
 
-import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException
 import se.uulm.snowballr.backend.model.dto.User
 import snowballr.UserOuterClass.UserRole
@@ -8,13 +7,14 @@ import snowballr.UserOuterClass.UserRole
 /**
  * Verifies that the [user] has the role [UserRole.USER_ROLE_ADMIN].
  *
- * If the user is not a server admin, a [SnowballRException.UnauthorizedException.All] is thrown.
+ * If the user is not a server admin, a [SnowballRException.UnauthorizedException] is thrown.
  *
  * @param user The user to verify
- * @param entityType The entity type of the accessed entity.
+ * @param getException Getter method for the subtype of [SnowballRException.UnauthorizedException], which is thrown
+ * when the user is not a server admin.
  */
-fun verifyServerAdminRole(user: User, entityType: EntityType) {
+fun verifyServerAdminRole(user: User, getException: (String) -> SnowballRException.UnauthorizedException) {
     if (user.role != UserRole.USER_ROLE_ADMIN) {
-        throw SnowballRException.UnauthorizedException.All(entityType, user.id.toString())
+        throw getException(user.id.toString())
     }
 }

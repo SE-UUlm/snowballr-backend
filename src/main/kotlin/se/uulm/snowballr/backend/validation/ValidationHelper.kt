@@ -4,9 +4,13 @@ import arrow.core.raise.Raise
 import arrow.core.raise.either
 import arrow.core.raise.ensure
 import arrow.core.raise.zipOrAccumulate
+import com.google.protobuf.Descriptors.Descriptor
+import com.google.protobuf.FieldMask
+import com.google.protobuf.util.FieldMaskUtil
 import se.uulm.snowballr.backend.model.BlankField
 import se.uulm.snowballr.backend.model.EnumUnspecified
 import se.uulm.snowballr.backend.model.InvalidEmail
+import se.uulm.snowballr.backend.model.InvalidFieldMask
 import se.uulm.snowballr.backend.model.InvalidId
 import se.uulm.snowballr.backend.model.InvalidPassword
 import se.uulm.snowballr.backend.model.InvalidPassword.Reason
@@ -140,4 +144,18 @@ fun Raise<ValidationIssue>.ensureFirstNameValidity(firstName: String) {
 fun Raise<ValidationIssue>.ensureLastNameValidity(lastName: String) {
     ensureFieldNonBlank("last_name", lastName)
     ensureFieldLength("last_name", lastName, LAST_NAME_MAX_LENGTH)
+}
+
+/**
+ * Ensures that the provided field mask contains only valid fields for the given object type and
+ * is non-blank.
+ *
+ * @param fieldMask The [FieldMask] to validate.
+ * @param descriptor The object descriptor to validate against.
+ */
+fun Raise<ValidationIssue>.ensureFieldMaskIsValid(fieldMask: FieldMask, descriptor: Descriptor) {
+    ensure(fieldMask.pathsList.isNotEmpty()) { InvalidFieldMask(null) }
+    ensure(FieldMaskUtil.isValid(descriptor, fieldMask)) {
+        InvalidFieldMask(fieldMask.toString())
+    }
 }

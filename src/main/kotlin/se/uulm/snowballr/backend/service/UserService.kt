@@ -1,9 +1,11 @@
 package se.uulm.snowballr.backend.service
 
+import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.auth.JwtUtils
 import se.uulm.snowballr.backend.auth.PasswordUtils
 import se.uulm.snowballr.backend.db.dummyUserId
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
+import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.IdentifierType
 import se.uulm.snowballr.backend.model.SnowballRException.DuplicateEntityException
@@ -42,6 +44,11 @@ interface IUserService {
      * Service implementation of [SnowballRService.register].
      */
     suspend fun register(request: Authentication.RegisterRequest): JwtTokens
+
+    /**
+     * Service implementation of [SnowballRService.updateUser].
+     */
+    suspend fun updateUser(request: UserOuterClass.User.Update): UserOuterClass.User
 }
 
 /**
@@ -76,6 +83,7 @@ class UserService(
         throw UnauthorizedException.Single(
             EntityType.USER,
             requestedUserId.toString(),
+            AccessType.READ,
             currentUser.id.toString(),
             identifierType,
         )
@@ -131,7 +139,7 @@ class UserService(
         val requestingUserId = parseUUID(dummyUserId!!, EntityType.USER)
         val currentUser = userRepo.getUserById(requestingUserId)
 
-        verifyServerAdminRole(currentUser, EntityType.USER)
+        verifyServerAdminRole(currentUser) { UnauthorizedException.All(EntityType.USER, AccessType.READ, it) }
 
         val users = userRepo.getAllUsers()
 
@@ -154,5 +162,29 @@ class UserService(
         val tokens = JwtUtils.generateTokens(user.id)
 
         return tokens
+    }
+
+    override suspend fun updateUser(request: UserOuterClass.User.Update): UserOuterClass.User {
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
+
+        // Check that user to update exists in the database
+        val requestedUserId = parseUUID(request.user.id, EntityType.USER)
+        val requestedUser = userRepo.getUserById(requestedUserId)
+
+        // Check whether the current user is a server admin if the role is changed or the requested user is different
+        // from the current user
+        if (request.mask.pathsList.contains("role") || currentUser.id != requestedUser.id) {
+            verifyServerAdminRole(currentUser) {
+                UnauthorizedException.Single(EntityType.USER, requestedUser.id.toString(), AccessType.UPDATE, it)
+            }
+        }
+
+        // Check whether a user with the given email already exists if the email should be changed
+        if (request.mask.pathsList.contains("email") && userRepo.doesUserExistByEmail(request.user.email)) {
+            throw DuplicateEntityException(EntityType.USER, request.user.email, IdentifierType.EMAIL)
+        }
+
+        val updatedUser = userRepo.updateUser(request)
+        return updatedUser.toGrpcUser()
     }
 }

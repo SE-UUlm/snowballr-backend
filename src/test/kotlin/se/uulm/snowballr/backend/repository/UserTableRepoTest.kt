@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.repository
 
+import com.google.protobuf.util.FieldMaskUtil
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.assertj.core.api.Assertions.assertThat
@@ -10,10 +11,15 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
+import se.uulm.snowballr.backend.model.dto.toGrpcUser
 import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.testCoroutine
 import snowballr.Authentication
+import snowballr.UserOuterClass.User
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
 import java.util.UUID
@@ -23,23 +29,37 @@ import java.util.UUID
 class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
     private val repo = UserTableRepo(db)
 
+    private suspend fun insertTestUserAndGetId(
+        email: String = "test.user@example.com",
+        firstName: String = "Test",
+        lastName: String = "User",
+        role: UserRole = UserRole.USER_ROLE_DEFAULT,
+        status: UserStatus = UserStatus.USER_STATUS_ACTIVE,
+    ): UUID = db.dbQuery {
+        UserTable.insertAndGetId {
+            it[UserTable.email] = email
+            it[UserTable.firstName] = firstName
+            it[UserTable.lastName] = lastName
+            it[UserTable.passwordHash] = "hashedPassword"
+            it[UserTable.role] = role
+            it[UserTable.status] = status
+        }.value
+    }
+
+    companion object {
+        @JvmStatic
+        fun validFieldMasks(): List<Arguments> = listOf(
+            Arguments.of(listOf("user.email")),
+            Arguments.of(listOf("user.first_name", "user.last_name")),
+            Arguments.of(listOf("user.role")),
+        )
+    }
+
     @Nested
     inner class GetUserById {
         @Test
         fun `When a user is found, then the correct user is returned`() = testCoroutine {
-            val userId =
-                db
-                    .dbQuery {
-                        UserTable.insertAndGetId {
-                            it[email] = "test.user@example.com"
-                            it[firstName] = "Test"
-                            it[lastName] = "User"
-                            it[passwordHash] = "hashedPassword"
-                            it[role] = UserRole.USER_ROLE_DEFAULT
-                            it[status] = UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED
-                        }
-                    }.value
-
+            val userId = insertTestUserAndGetId()
             val user = repo.getUserById(userId)
 
             assertThat(user.id).isEqualTo(userId)
@@ -47,7 +67,7 @@ class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
             assertThat(user.firstName).isEqualTo("Test")
             assertThat(user.lastName).isEqualTo("User")
             assertThat(user.role).isEqualTo(UserRole.USER_ROLE_DEFAULT)
-            assertThat(user.status).isEqualTo(UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED)
+            assertThat(user.status).isEqualTo(UserStatus.USER_STATUS_ACTIVE)
         }
 
         @Test
@@ -60,19 +80,7 @@ class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
     inner class GetUserByEmail {
         @Test
         fun `When a user is found, then the correct user is returned`() = testCoroutine {
-            val userId =
-                db
-                    .dbQuery {
-                        UserTable.insertAndGetId {
-                            it[email] = "test.user@example.com"
-                            it[firstName] = "Test"
-                            it[lastName] = "User"
-                            it[passwordHash] = "hashedPassword"
-                            it[role] = UserRole.USER_ROLE_DEFAULT
-                            it[status] = UserStatus.USER_STATUS_ACTIVE
-                        }
-                    }.value
-
+            val userId = insertTestUserAndGetId()
             val user = repo.getUserByEmail("test.user@example.com")
 
             assertThat(user.id).isEqualTo(userId)
@@ -93,16 +101,7 @@ class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
     inner class DoesUserExistByEmail {
         @Test
         fun `When a user with the given email exists, then true is returned`() = testCoroutine {
-            db.dbQuery {
-                UserTable.insertAndGetId {
-                    it[email] = "test.user@example.com"
-                    it[firstName] = "Test"
-                    it[lastName] = "User"
-                    it[passwordHash] = "hashedPassword"
-                    it[role] = UserRole.USER_ROLE_DEFAULT
-                    it[status] = UserStatus.USER_STATUS_ACTIVE
-                }
-            }
+            insertTestUserAndGetId()
 
             assertTrue(repo.doesUserExistByEmail("test.user@example.com"))
         }
@@ -117,31 +116,8 @@ class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
     inner class GetAllUsers {
         @Test
         fun `When users are found, then all users are returned`() = testCoroutine {
-            val userId1 =
-                db
-                    .dbQuery {
-                        UserTable.insertAndGetId {
-                            it[email] = "test.user1@example.com"
-                            it[firstName] = "Test"
-                            it[lastName] = "User 2"
-                            it[passwordHash] = "hashedPassword"
-                            it[role] = UserRole.USER_ROLE_DEFAULT
-                            it[status] = UserStatus.USER_STATUS_ACTIVE
-                        }
-                    }.value
-
-            val userId2 =
-                db
-                    .dbQuery {
-                        UserTable.insertAndGetId {
-                            it[email] = "test.user2@example.com"
-                            it[firstName] = "Test"
-                            it[lastName] = "User 1"
-                            it[passwordHash] = "hashedPassword"
-                            it[role] = UserRole.USER_ROLE_DEFAULT
-                            it[status] = UserStatus.USER_STATUS_ACTIVE
-                        }
-                    }.value
+            val userId1 = insertTestUserAndGetId(email = "test.user1@example.com", lastName = "User 2")
+            val userId2 = insertTestUserAndGetId(email = "test.user2@example.com", lastName = "User 1")
 
             val users = repo.getAllUsers()
             assertThat(users).hasSize(2)
@@ -213,5 +189,72 @@ class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
 
             assertThat(user1.id).isNotEqualTo(user2.id)
         }
+    }
+
+    @Nested
+    inner class UpdateUser {
+        @ParameterizedTest(name = "Update the fields {0}")
+        @MethodSource("se.uulm.snowballr.backend.repository.UserTableRepoTest#validFieldMasks")
+        fun `When a user is updated, then only the fields specified in the field mask are updated and the updated user is returned`(
+            fieldMask: List<String>,
+        ) = testCoroutine {
+            val userId = insertTestUserAndGetId(email = "test.user@example.com")
+            val originalUser = repo.getUserById(userId)
+
+            val updatedUserDetails = originalUser.toGrpcUser().toBuilder()
+                .setEmail("updated.user@example.com")
+                .setFirstName("John")
+                .setLastName("Doe")
+                .setRole(UserRole.USER_ROLE_ADMIN)
+                .build()
+
+            val request = User.Update.newBuilder()
+                .setUser(updatedUserDetails)
+                .setMask(FieldMaskUtil.fromStringList(fieldMask))
+                .build()
+
+            val updatedUser = repo.updateUser(request)
+
+            if ("user.email" in fieldMask) {
+                assertThat(updatedUser.email).isEqualTo("updated.user@example.com")
+            } else {
+                assertThat(updatedUser.email).isEqualTo("test.user@example.com")
+            }
+            if ("user.first_name" in fieldMask) {
+                assertThat(updatedUser.firstName).isEqualTo("John")
+            } else {
+                assertThat(updatedUser.firstName).isEqualTo("Test")
+            }
+            if ("user.last_name" in fieldMask) {
+                assertThat(updatedUser.lastName).isEqualTo("Doe")
+            } else {
+                assertThat(updatedUser.lastName).isEqualTo("User")
+            }
+            if ("user.role" in fieldMask) {
+                assertThat(updatedUser.role).isEqualTo(UserRole.USER_ROLE_ADMIN)
+            } else {
+                assertThat(updatedUser.role).isEqualTo(UserRole.USER_ROLE_DEFAULT)
+            }
+        }
+
+        @Test
+        fun `When a user's email should be updated to an existing email, then an exception is thrown`() =
+            testCoroutine {
+                insertTestUserAndGetId(email = "alice.smith@example.com")
+
+                val user2Id = insertTestUserAndGetId(email = "bob.smith@example.com")
+                val user2Builder = repo.getUserById(user2Id).toGrpcUser().toBuilder()
+
+                val updateRequest =
+                    User.Update
+                        .newBuilder()
+                        .setUser(user2Builder.setEmail("alice.smith@example.com").build())
+                        .setMask(FieldMaskUtil.fromString("user.email"))
+                        .build()
+
+                assertThrows<ExposedSQLException> {
+                    repo.updateUser(updateRequest)
+                }
+            }
     }
 }

@@ -2,7 +2,9 @@ package se.uulm.snowballr.backend.service
 
 import se.uulm.snowballr.backend.db.dummyUserId
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
+import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.toGrpcProject
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
@@ -45,7 +47,7 @@ class ProjectService(
         val requestingUserId = parseUUID(dummyUserId!!, EntityType.USER)
         val currentUser = userRepo.getUserById(requestingUserId)
 
-        verifyServerAdminRole(currentUser, EntityType.PROJECT)
+        verifyServerAdminRole(currentUser) { UnauthorizedException.All(EntityType.PROJECT, AccessType.READ, it) }
 
         val projects = repo.getAllProjects()
 

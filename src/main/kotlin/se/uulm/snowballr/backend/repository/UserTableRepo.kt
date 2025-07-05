@@ -1,17 +1,23 @@
 package se.uulm.snowballr.backend.repository
 
+import com.google.protobuf.util.FieldMaskUtil
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.update
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.IdentifierType
+import se.uulm.snowballr.backend.model.SnowballRException.EntityNotPersistedException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.User
+import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.toUser
 import snowballr.Authentication
+import snowballr.UserOuterClass
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
+import java.time.OffsetDateTime
 import java.util.UUID
 
 /**
@@ -54,6 +60,19 @@ interface IUserTableRepo {
      * @return The created [User] object representing the newly registered user.
      */
     suspend fun createUser(request: Authentication.RegisterRequest, passwordHash: String): User
+
+    /**
+     * Updates an existing user in the database with the provided new information.
+     * The following fields can be updated:
+     * - first name
+     * - last name
+     * - email
+     * - role
+     *
+     * @param request The update request containing the new user details, such as the new first name.
+     * @return The updated [User] object reflecting the changes from the [request].
+     */
+    suspend fun updateUser(request: UserOuterClass.User.Update): User
 }
 
 /**
@@ -68,13 +87,20 @@ interface IUserTableRepo {
 class UserTableRepo(
     private val db: IDatabase,
 ) : IUserTableRepo {
+    /**
+     * Requesting a user from the database.
+     *
+     * @param id The id of the requested user.
+     * @return The [User] object or null, if no user with the given [id] was found.
+     */
+    private fun getUserByIdOrNull(id: UUID): User? = UserTable
+        .selectAll()
+        .where { UserTable.id eq id }
+        .map { it.toUser() }
+        .singleOrNull()
+
     override suspend fun getUserById(id: UUID): User = db.dbQuery {
-        UserTable
-            .selectAll()
-            .where { UserTable.id eq id }
-            .map { it.toUser() }
-            .singleOrNull()
-            ?: throw NotFoundException(EntityType.USER, id.toString())
+        getUserByIdOrNull(id) ?: throw NotFoundException(EntityType.USER, id.toString())
     }
 
     override suspend fun getUserByEmail(email: String): User = db.dbQuery {
@@ -109,5 +135,27 @@ class UserTableRepo(
             it[role] = UserRole.USER_ROLE_DEFAULT
             it[status] = UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED
         }
+    }
+
+    override suspend fun updateUser(request: UserOuterClass.User.Update): User = db.dbQuery {
+        val uuid = parseUUID(request.user.id, EntityType.USER)
+        val fieldMask = FieldMaskUtil.normalize(request.mask)
+
+        // Update user
+        UserTable.update({ UserTable.id eq uuid }) {
+            for (field in fieldMask.pathsList) {
+                when (field) {
+                    "user.email" -> it[email] = request.user.email
+                    "user.first_name" -> it[firstName] = request.user.firstName
+                    "user.last_name" -> it[lastName] = request.user.lastName
+                    "user.role" -> it[role] = request.user.role
+                }
+            }
+
+            it[modifiedAt] = OffsetDateTime.now()
+        }
+
+        // Return updated user
+        getUserByIdOrNull(uuid) ?: throw EntityNotPersistedException(EntityType.USER, uuid.toString())
     }
 }

@@ -71,6 +71,7 @@ grpc-protobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc-version"
 grpc-services = { module = "io.grpc:grpc-services", version.ref = "grpc-version" }
 grpc-netty = { module = "io.grpc:grpc-netty-shaded", version.ref = "grpc-version" }
 protobuf-kotlin = { module = "com.google.protobuf:protobuf-kotlin", version.ref = "protobuf-kotlin-version" }
+protobuf-java-util = { module = "com.google.protobuf:protobuf-java-util", version.ref = "protobuf-kotlin-version" }
 
 archunit = { module = "com.tngtech.archunit:archunit", version.ref = "archunit-version" }
 archunit-junit5 = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit-version" }

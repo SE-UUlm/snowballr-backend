@@ -10,6 +10,7 @@ import snowballr.Authentication
 import snowballr.Base
 import snowballr.CriterionOuterClass
 import snowballr.ProjectOuterClass
+import snowballr.UserOuterClass
 
 /**
  * Email regex.
@@ -49,6 +50,8 @@ fun <T> validateRequest(request: T): EitherNel<ValidationIssue, Unit> = when (re
     is io.grpc.reflection.v1.ServerReflectionRequest -> Either.Right(Unit)
     // Authentication
     is Authentication.RegisterRequest -> AuthenticationValidator.validateRegisterRequest(request)
+    // User
+    is UserOuterClass.User.Update -> UserValidator.validateUpdateRequest(request)
     // Project
     is ProjectOuterClass.Project.Create -> ProjectValidator.validateCreateRequest(request)
     // Criterion
