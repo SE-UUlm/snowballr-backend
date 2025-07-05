@@ -123,7 +123,6 @@ class UserService(
         // We have to request the user first to get the ID for the access checks
         val requestedUser = userRepo.getUserByEmail(request.email)
 
-        @Suppress("StringLiteralDuplication")
         verifyUserAccess(currentUser, requestingUserId, IdentifierType.EMAIL)
 
         // Only active or active unconfirmed users can be retrieved
@@ -175,15 +174,8 @@ class UserService(
         // Check whether the current user is a server admin if the role is changed or the requested user is different
         // from the current user
         if (request.mask.pathsList.contains("role") || currentUser.id != requestedUser.id) {
-            verifyServerAdminRole(
-                currentUser,
-            ) {
-                UnauthorizedException.Single(
-                    EntityType.USER,
-                    requestedUser.id.toString(),
-                    AccessType.UPDATE,
-                    currentUser.id.toString(),
-                )
+            verifyServerAdminRole(currentUser) {
+                UnauthorizedException.Single(EntityType.USER, requestedUser.id.toString(), AccessType.UPDATE, it)
             }
         }
 

@@ -68,7 +68,6 @@ interface IUserTableRepo {
      * - last name
      * - email
      * - role
-     * - password hash
      *
      * @param request The update request containing the new user details, such as the new first name.
      * @return The updated [User] object reflecting the changes from the [request].

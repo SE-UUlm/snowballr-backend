@@ -71,7 +71,7 @@ sealed class SnowballRException(
          *
          * @param accessedEntityType The type of the entity that was accessed without permission.
          * @param accessedEntityId The ID of the entity that was accessed without permission.
-         * @param accessType The type of access (@see [AccessType] for possible types).
+         * @param accessType The type of access (see [AccessType] for possible types).
          * @param currentUserId The ID of the user that is accessing the entity.
          * @param identifierType The type of the identifier used to access the entity.
          */
@@ -92,7 +92,7 @@ sealed class SnowballRException(
          * permission.
          *
          * @param accessedEntityType The type of the entities that were accessed without permission.
-         * @param accessType The type of access (@see [AccessType] for possible types).
+         * @param accessType The type of access (see [AccessType] for possible types).
          * @param currentUserId The ID of the user that is accessing the entities.
          */
         class All(
