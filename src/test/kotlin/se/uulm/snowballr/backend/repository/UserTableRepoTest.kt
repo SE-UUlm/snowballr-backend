@@ -5,9 +5,11 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.exposed.exceptions.ExposedSQLException
+import org.jetbrains.exposed.sql.deleteAll
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -22,12 +24,20 @@ import snowballr.Authentication
 import snowballr.UserOuterClass.User
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
+import java.time.OffsetDateTime
 import java.util.UUID
 
 @ExperimentalCoroutinesApi
 @DelicateCoroutinesApi
 class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
     private val repo = UserTableRepo(db)
+
+    @BeforeEach
+    fun cleanupDatabase() = testCoroutine {
+        db.dbQuery {
+            UserTable.deleteAll()
+        }
+    }
 
     private suspend fun insertTestUserAndGetId(
         email: String = "test.user@example.com",
@@ -256,5 +266,24 @@ class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
                     repo.updateUser(updateRequest)
                 }
             }
+    }
+
+    @Nested
+    inner class DeleteUser {
+        @Test
+        fun `When the user is found, then the status of the user is set to USER_STATUS_DELETED`() = testCoroutine {
+            val userId1 = insertTestUserAndGetId()
+            val before = OffsetDateTime.now()
+            repo.softDeleteUser(userId1)
+            val after = OffsetDateTime.now()
+            val deletedUser = repo.getUserById(userId1)
+            assertThat(deletedUser.status).isEqualTo(UserStatus.USER_STATUS_DELETED)
+            assertThat(deletedUser.deletedAt).isBetween(before, after)
+        }
+
+        @Test
+        fun `When a user is not found, then an exception is thrown`() = testCoroutine {
+            assertThrows<NotFoundException> { repo.getUserById(UUID.randomUUID()) }
+        }
     }
 }

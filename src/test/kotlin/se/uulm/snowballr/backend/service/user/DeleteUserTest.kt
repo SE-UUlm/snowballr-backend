@@ -3,21 +3,32 @@ package se.uulm.snowballr.backend.service.user
 import io.mockk.coEvery
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.db.dummyUserId
+import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
+import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.service.MainServiceTest
 import se.uulm.snowballr.backend.testCoroutine
 import snowballr.Base
 import snowballr.UserOuterClass.UserRole
+import java.util.UUID
 
 @ExperimentalCoroutinesApi
 @DelicateCoroutinesApi
 internal class DeleteUserTest : MainServiceTest() {
+    private var dummyUserUUID: UUID = UUID.randomUUID()
+
+    @BeforeEach
+    fun setup() {
+        dummyUserUUID = UUID.fromString(dummyUserId!!)
+    }
+
     @Test
     fun `When a user who is not an admin tries to delete another user, then an unauthorized exception is thrown`() =
         testCoroutine {
@@ -29,10 +40,10 @@ internal class DeleteUserTest : MainServiceTest() {
                     .build()
             val secondUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
 
-            coEvery { userRepoMock.getUserById(dummyUserId!!) } returns secondUser
-            coEvery { userRepoMock.getUserById(request.id) } returns firstUser
+            coEvery { userRepoMock.getUserById(dummyUserUUID) } returns secondUser
+            coEvery { userRepoMock.getUserById(parseUUID(request.id, EntityType.USER)) } returns firstUser
 
-            assertThrows<UnauthorizedException.All.User> { mainService.softDeleteUser(request) }
+            assertThrows<UnauthorizedException.Single> { mainService.softDeleteUser(request) }
         }
 
     @Test
@@ -47,7 +58,7 @@ internal class DeleteUserTest : MainServiceTest() {
             val secondUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
 
             coEvery { userRepoMock.getUserById(any()) } returns firstUser
-            coEvery { userRepoMock.getUserById(dummyUserId!!) } returns secondUser
+            coEvery { userRepoMock.getUserById(dummyUserUUID) } returns secondUser
 
             assertThrows<SnowballRException.FailedPreconditionException> { mainService.softDeleteUser(request) }
         }
@@ -62,8 +73,8 @@ internal class DeleteUserTest : MainServiceTest() {
                 .setId(userToDelete.id.toString())
                 .build()
 
-        coEvery { userRepoMock.getUserById(dummyUserId!!) } returns adminUser
-        coEvery { userRepoMock.getUserById(request.id) } returns userToDelete
+        coEvery { userRepoMock.getUserById(dummyUserUUID) } returns adminUser
+        coEvery { userRepoMock.getUserById(parseUUID(request.id, EntityType.USER)) } returns userToDelete
 
         assertDoesNotThrow { mainService.softDeleteUser(request) }
     }
@@ -78,10 +89,12 @@ internal class DeleteUserTest : MainServiceTest() {
                 .setId(adminUser.id.toString())
                 .build()
 
-        coEvery { userRepoMock.getUserById(request.id) } returns adminUser
-        coEvery { userRepoMock.getUserById(dummyUserId!!) } returns normalUser
+        print("Holla: " + parseUUID(request.id, EntityType.USER))
+        print("Hallo: $dummyUserUUID")
+        coEvery { userRepoMock.getUserById(parseUUID(request.id, EntityType.USER)) } returns adminUser
+        coEvery { userRepoMock.getUserById(dummyUserUUID) } returns normalUser
 
-        assertThrows<UnauthorizedException.All.User> { mainService.softDeleteUser(request) }
+        assertThrows<UnauthorizedException.Single> { mainService.softDeleteUser(request) }
     }
 
     @Test
@@ -93,7 +106,7 @@ internal class DeleteUserTest : MainServiceTest() {
                 .setId(dummyUserId)
                 .build()
 
-        coEvery { userRepoMock.getUserById(dummyUserId!!) } returns user
+        coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
 
         assertDoesNotThrow { mainService.softDeleteUser(request) }
     }

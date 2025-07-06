@@ -147,4 +147,14 @@ sealed class SnowballRException(
          */
         class MissingCookiesMap : MissingContextException("Cookie map")
     }
+
+    /**
+     * Represents a specific type of exception that occurs when a call has the wrong preconditions.
+     *
+     * @constructor Creates a [FailedPreconditionException] with the description of the failed precondition.
+     * @param description The description of the failed precondition.
+     */
+    class FailedPreconditionException(
+        description: String,
+    ) : SnowballRException(description)
 }
