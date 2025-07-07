@@ -200,14 +200,10 @@ class UserService(
         val isSameUser = currentUser.id == userToDelete.id
 
         // Checks, if the user tries to delete another user without being an admin
-        if (currentUser.role != UserRole.USER_ROLE_ADMIN && !isSameUser) {
-            throw UnauthorizedException.Single(
-                EntityType.USER,
-                userToDelete.id.toString(),
-                AccessType.DELETE,
-                currentUser.id.toString(),
-                IdentifierType.ID,
-            )
+        if (!isSameUser) {
+            verifyServerAdminRole(currentUser) {
+                UnauthorizedException.Single(EntityType.USER, userToDelete.id.toString(), AccessType.DELETE, it)
+            }
         }
         // Checks, if the user tries to delete another user that is an admin (not possible even if the current user is
         // an admin)
