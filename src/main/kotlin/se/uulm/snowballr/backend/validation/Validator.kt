@@ -44,6 +44,7 @@ const val PROJECT_NAME_MAX_LENGTH = 100
  * @return An [EitherNel] containing a collection of [ValidationIssue] objects if validation issues are found,
  *         or `Unit` if the validation is successful.
  */
+@Suppress("CyclomaticComplexMethod")
 fun <T> validateRequest(request: T): EitherNel<ValidationIssue, Unit> = when (request) {
     // Healthcheck
     is HealthCheckRequest -> Either.Right(Unit)
@@ -57,6 +58,7 @@ fun <T> validateRequest(request: T): EitherNel<ValidationIssue, Unit> = when (re
     // Project
     is ProjectOuterClass.Project.Create -> ProjectValidator.validateCreateRequest(request)
     is ProjectOuterClass.Project.Update -> ProjectValidator.validateUpdateRequest(request)
+    is ProjectOuterClass.Project.InviteCandidatesRequest -> Either.Right(Unit)
     // Criterion
     is CriterionOuterClass.Criterion.Create -> CriterionValidator.validateCreateRequest(request)
     is CriterionOuterClass.Criterion.Update -> CriterionValidator.validateUpdateRequest(request)
