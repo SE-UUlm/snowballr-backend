@@ -127,6 +127,19 @@ class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
             val secondUser = users.find { it.id == userId2 }
             assertThat(secondUser).isNotNull
         }
+
+        @Test
+        fun `When permanently deleted users exist, then only the existing users are returned`() = testCoroutine {
+            val userId1 = insertTestUserAndGetId(email = "test.user1@example.com", lastName = "User 1")
+            val userId2 = insertTestUserAndGetId(email = "", firstName = "", lastName = "")
+
+            val users = repo.getAllUsers()
+            assertThat(users).hasSize(1)
+            val firstUser = users.find { it.id == userId1 }
+            assertThat(firstUser).isNotNull
+            val secondUser = users.find { it.id == userId2 }
+            assertThat(secondUser).isNull()
+        }
     }
 
     @Nested
