@@ -2,7 +2,10 @@ package se.uulm.snowballr.backend.repository
 
 import com.google.protobuf.util.FieldMaskUtil
 import org.jetbrains.exposed.sql.ResultRow
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.neq
+import org.jetbrains.exposed.sql.andWhere
+import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.update
 import se.uulm.snowballr.backend.db.IDatabase
@@ -53,6 +56,16 @@ interface IUserTableRepo {
     suspend fun getAllUsers(): List<User>
 
     /**
+     * Returns users whose names and / or emails (partially) match the [searchQuery].
+     *
+     * A maximum of 10 matching users is returned. The matching users must still be active and not deleted or
+     * marked to be deleted.
+     *
+     * @param searchQuery The query against which the firstnames, lastnames, and emails of the users are checked.
+     */
+    suspend fun getUsersMatchingSearchQuery(searchQuery: String): List<User>
+
+    /**
      * Creates a new user in the database with the provided registration request and password hash.
      *
      * @param request The registration request containing user details such as email, first name, and last name.
@@ -101,6 +114,16 @@ interface IUserTableRepo {
 class UserTableRepo(
     private val db: IDatabase,
 ) : IUserTableRepo {
+    companion object {
+        const val MAXIMUM_NUMBER_OF_INVITE_CANDIDATES = 10
+    }
+
+    /**
+     * Requesting a user from the database.
+     *
+     * @param id The id of the requested user.
+     * @return The [User] object or null, if no user with the given [id] was found.
+     */
     private fun getUserByIdOrNull(id: UUID): User? = UserTable.getEntityByIdOrNull(id, ResultRow::toUser)
 
     override suspend fun getUserById(id: UUID): User = db.query {
@@ -128,6 +151,20 @@ class UserTableRepo(
         UserTable
             .selectAll()
             .where(UserTable.email neq "")
+            .map { it.toUser() }
+    }
+
+    override suspend fun getUsersMatchingSearchQuery(searchQuery: String): List<User> = db.dbQuery {
+        val query = "%$searchQuery%"
+
+        UserTable
+            .selectAll()
+            .where((UserTable.firstName like query) or (UserTable.lastName like query) or (UserTable.email like query))
+            .andWhere {
+                (UserTable.status eq UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED) or
+                    (UserTable.status eq UserStatus.USER_STATUS_ACTIVE)
+            }
+            .limit(MAXIMUM_NUMBER_OF_INVITE_CANDIDATES)
             .map { it.toUser() }
     }
 

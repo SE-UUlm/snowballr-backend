@@ -20,6 +20,7 @@ import snowballr.Authentication
 import snowballr.UserOuterClass.User
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
+import snowballr.email
 import java.time.OffsetDateTime
 import java.util.UUID
 import kotlin.test.assertEquals
@@ -307,5 +308,53 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
         fun `When a user is not found, then an exception is thrown`() = runTest {
             assertThrows<NotFoundException> { repo.getPasswordHashByEmail("non-existing email") }
         }
+    }
+
+    @Nested
+    inner class GetUsersMatchingSearchQuery {
+        @Test
+        fun `When a user is matching the search query, then this user is returned`() = runTest {
+            val userId1 = insertTestUserAndGetId(firstName = "Johnathan", email = "jonathan.doe@example.com")
+            val userId2 = insertTestUserAndGetId(lastName = "John", email = "doe.john@example.com")
+            val userId3 = insertTestUserAndGetId(email = "john.doe@example.com")
+
+            val matchingUsers = repo.getUsersMatchingSearchQuery("john")
+
+            assertEquals(3, matchingUsers.size)
+
+            assertThat(matchingUsers.find { it.id == userId1 }).isNotNull
+            assertThat(matchingUsers.find { it.id == userId2 }).isNotNull
+            assertThat(matchingUsers.find { it.id == userId3 }).isNotNull
+        }
+
+        @Test
+        fun `When a deleted user is matching the search query, then this user is not returned`() = runTest {
+            insertTestUserAndGetId(firstName = "john", lastName = "doe", status = UserStatus.USER_STATUS_DELETED)
+
+            val matchingUsers = repo.getUsersMatchingSearchQuery("john")
+
+            assertEquals(0, matchingUsers.size)
+        }
+
+        @Test
+        fun `When no user is matching the search query, then an empty list is returned`() = runTest {
+            insertTestUserAndGetId(firstName = "johnathan")
+
+            val matchingUsers = repo.getUsersMatchingSearchQuery("non-existing")
+
+            assertEquals(0, matchingUsers.size)
+        }
+
+        @Test
+        fun `When more than 10 users match the search query, then only the first 10 matching users are returned`() =
+            runTest {
+                for (i in 1..15) {
+                    insertTestUserAndGetId(firstName = "John the $i-th", email = "john$i@example.com")
+                }
+
+                val matchingUsers = repo.getUsersMatchingSearchQuery("john")
+
+                assertEquals(10, matchingUsers.size)
+            }
     }
 }
