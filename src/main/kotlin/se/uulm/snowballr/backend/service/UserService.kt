@@ -9,6 +9,7 @@ import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.IdentifierType
 import se.uulm.snowballr.backend.model.SnowballRException.DuplicateEntityException
+import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.User
@@ -49,6 +50,11 @@ interface IUserService {
      * Service implementation of [SnowballRService.updateUser].
      */
     suspend fun updateUser(request: UserOuterClass.User.Update): UserOuterClass.User
+
+    /**
+     * Service implementation of [SnowballRService.softDeleteUser].
+     */
+    suspend fun softDeleteUser(request: Base.Id): Base.Nothing
 }
 
 /**
@@ -186,5 +192,29 @@ class UserService(
 
         val updatedUser = userRepo.updateUser(request)
         return updatedUser.toGrpcUser()
+    }
+
+    override suspend fun softDeleteUser(request: Base.Id): Base.Nothing {
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
+        val userToDelete = userRepo.getUserById(parseUUID(request.id, EntityType.USER))
+        val isSameUser = currentUser.id == userToDelete.id
+
+        // Checks, if the user tries to delete another user without being an admin
+        if (!isSameUser) {
+            verifyServerAdminRole(currentUser) {
+                UnauthorizedException.Single(EntityType.USER, userToDelete.id.toString(), AccessType.DELETE, it)
+            }
+        }
+        // Checks, if the user tries to delete another user that is an admin (not possible even if the current user is
+        // an admin)
+        if (userToDelete.role == UserRole.USER_ROLE_ADMIN && !isSameUser) {
+            throw FailedPreconditionException(
+                "The user with the id ${userToDelete.id} can not be deleted " +
+                    "because he is an admin.",
+            )
+        }
+
+        userRepo.softDeleteUser(userToDelete.id)
+        return Base.Nothing.getDefaultInstance()
     }
 }

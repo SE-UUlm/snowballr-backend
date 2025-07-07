@@ -22,6 +22,7 @@ import snowballr.Authentication
 import snowballr.UserOuterClass.User
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
+import java.time.OffsetDateTime
 import java.util.UUID
 
 @ExperimentalCoroutinesApi
@@ -256,5 +257,24 @@ class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
                     repo.updateUser(updateRequest)
                 }
             }
+    }
+
+    @Nested
+    inner class DeleteUser {
+        @Test
+        fun `When the user is found, then the status of the user is set to USER_STATUS_DELETED`() = testCoroutine {
+            val userId1 = insertTestUserAndGetId()
+            val before = OffsetDateTime.now()
+            repo.softDeleteUser(userId1)
+            val after = OffsetDateTime.now()
+            val deletedUser = repo.getUserById(userId1)
+            assertThat(deletedUser.status).isEqualTo(UserStatus.USER_STATUS_DELETED)
+            assertThat(deletedUser.deletedAt).isBetween(before, after)
+        }
+
+        @Test
+        fun `When a user is not found, then an exception is thrown`() = testCoroutine {
+            assertThrows<NotFoundException> { repo.getUserById(UUID.randomUUID()) }
+        }
     }
 }

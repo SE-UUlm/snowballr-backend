@@ -73,6 +73,12 @@ interface IUserTableRepo {
      * @return The updated [User] object reflecting the changes from the [request].
      */
     suspend fun updateUser(request: UserOuterClass.User.Update): User
+
+    /**
+     * Performs a soft delete meaning the user with the given [id] is not removed from the database, but only the
+     * status is set to [UserOuterClass.UserStatus.USER_STATUS_DELETED].
+     */
+    suspend fun softDeleteUser(id: UUID)
 }
 
 /**
@@ -157,5 +163,13 @@ class UserTableRepo(
 
         // Return updated user
         getUserByIdOrNull(uuid) ?: throw EntityNotPersistedException(EntityType.USER, uuid.toString())
+    }
+
+    override suspend fun softDeleteUser(id: UUID) = db.dbQuery {
+        UserTable.update({ UserTable.id eq id }) {
+            it[status] = UserStatus.USER_STATUS_DELETED
+            it[deletedAt] = OffsetDateTime.now()
+        }
+        return@dbQuery
     }
 }
