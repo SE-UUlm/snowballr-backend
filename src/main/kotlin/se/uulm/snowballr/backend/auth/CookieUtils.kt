@@ -48,7 +48,7 @@ interface ICookieUtils {
 /**
  * Utility object for parsing and constructing HTTP cookie headers.
  */
-class CookieUtils(private val jwtUtils: IJwtUtils) : ICookieUtils {
+class CookieUtils(private val jwtService: IJwtService) : ICookieUtils {
     override fun parseCookies(cookieHeader: String?): Map<String, String> {
         if (cookieHeader.isNullOrBlank()) return emptyMap()
         return cookieHeader
@@ -65,10 +65,10 @@ class CookieUtils(private val jwtUtils: IJwtUtils) : ICookieUtils {
         val ttl =
             when (name) {
                 GrpcContext.ACCESS_TOKEN_COOKIE_NAME ->
-                    if (value.isNullOrEmpty()) 0 else jwtUtils.getAccessTokenTTL()
+                    if (value.isNullOrEmpty()) 0 else jwtService.getAccessTokenTTL()
 
                 GrpcContext.REFRESH_TOKEN_COOKIE_NAME ->
-                    if (value.isNullOrEmpty()) 0 else jwtUtils.getRefreshTokenTTL()
+                    if (value.isNullOrEmpty()) 0 else jwtService.getRefreshTokenTTL()
 
                 else -> return null // Not a recognized authentication cookie.
             }

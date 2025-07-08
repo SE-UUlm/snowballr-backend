@@ -4,7 +4,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.grpc.Context
 import io.jsonwebtoken.JwtException
 import se.uulm.snowballr.backend.auth.GrpcContext
-import se.uulm.snowballr.backend.auth.IJwtUtils
+import se.uulm.snowballr.backend.auth.IJwtService
 import se.uulm.snowballr.backend.model.auth.AuthenticationResult
 import se.uulm.snowballr.backend.model.jwt.ParsedJwtClaims
 import snowballr.Authentication.AuthenticationStatus
@@ -37,13 +37,13 @@ interface IAuthenticationService {
 /**
  * Default implementation of [IAuthenticationService].
  */
-class AuthenticationService(private val jwtUtils: IJwtUtils) : IAuthenticationService {
+class AuthenticationService(private val jwtService: IJwtService) : IAuthenticationService {
     override fun authenticate(accessToken: String?, refreshToken: String?, skipRefresh: Boolean): AuthenticationResult {
         val contextBuilder = Context.current()
         val cookiesToSet = GrpcContext.COOKIES_TO_SET_CONTEXT_KEY.get()
 
         val parsedAccessTokenResult = runCatching {
-            jwtUtils.parseToken(accessToken)
+            jwtService.parseToken(accessToken)
         }
 
         val (status, result) = if (parsedAccessTokenResult.isSuccess) {
@@ -82,10 +82,10 @@ class AuthenticationService(private val jwtUtils: IJwtUtils) : IAuthenticationSe
         }
 
         return runCatching {
-            val parsedRefreshToken = jwtUtils.parseToken(refreshToken)
+            val parsedRefreshToken = jwtService.parseToken(refreshToken)
 
             if (!skipRefresh) {
-                val newAccessToken = jwtUtils.refreshAccessToken(parsedRefreshToken)
+                val newAccessToken = jwtService.refreshAccessToken(parsedRefreshToken)
                 cookiesToSet[GrpcContext.ACCESS_TOKEN_COOKIE_NAME] = newAccessToken
             }
 

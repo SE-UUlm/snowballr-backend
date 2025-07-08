@@ -6,8 +6,8 @@ import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 import se.uulm.snowballr.backend.auth.CookieUtils
 import se.uulm.snowballr.backend.auth.ICookieUtils
-import se.uulm.snowballr.backend.auth.IJwtUtils
-import se.uulm.snowballr.backend.auth.JwtUtils
+import se.uulm.snowballr.backend.auth.IJwtService
+import se.uulm.snowballr.backend.auth.JwtService
 import se.uulm.snowballr.backend.db.Database
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.env.EnvReader
@@ -32,8 +32,8 @@ import se.uulm.snowballr.backend.service.MainService
  * This module includes the following components in a defined order of initialization:
  * - The environment service ([IEnvService]) and its reader ([EnvReader]), which are initialized first to provide
  *  access to environment variables.
- * - The JWT utility ([IJwtUtils]), which depends on the environment reader to access necessary environment variables.
- * - The cookie utility ([ICookieUtils]), which relies on the JWT utility for token handling.
+ * - The JWT service ([IJwtService]), which depends on the environment reader to access necessary environment variables.
+ * - The cookie utility ([ICookieUtils]), which relies on the JWT service for token handling.
  * - The database implementation ([IDatabase]), which is initialized with no external dependencies.
  * - The repository layer (e.g. [IProjectTableRepo]), which uses the [IDatabase] implementation for database operations.
  * - The [IAuthenticationService] is also included to handle authentication logic, which may be used by the main service.
@@ -46,9 +46,9 @@ val snowballRModule =
         // First come the env service and reader
         single<IEnvService> { EnvService() }
         singleOf(::EnvReader)
-        // Then the JWT utils, which depend on the env reader
-        singleOf(::JwtUtils) { bind<IJwtUtils>() }
-        // Then the cookie utils, which depend on the JWT utils
+        // Then the JWT service, which depend on the env reader
+        singleOf(::JwtService) { bind<IJwtService>() }
+        // Then the cookie utils, which depend on the JWT service
         singleOf(::CookieUtils) { bind<ICookieUtils>() }
         // Then the database, which only needs access to some env variables
         singleOf(::Database) {

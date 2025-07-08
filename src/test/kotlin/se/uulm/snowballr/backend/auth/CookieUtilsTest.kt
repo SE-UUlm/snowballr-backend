@@ -10,11 +10,11 @@ import org.junit.jupiter.api.Test
 import se.uulm.snowballr.backend.model.auth.CookieConfig
 
 class CookieUtilsTest {
-    private val jwtUtilsMock = mockk<IJwtUtils> {
-        every { getAccessTokenTTL() } returns JwtUtils.ACCESS_TOKEN_EXPIRATION_MS
-        every { getRefreshTokenTTL() } returns JwtUtils.REFRESH_TOKEN_EXPIRATION_MS
+    private val jwtServiceMock = mockk<IJwtService> {
+        every { getAccessTokenTTL() } returns JwtService.ACCESS_TOKEN_EXPIRATION_MS
+        every { getRefreshTokenTTL() } returns JwtService.REFRESH_TOKEN_EXPIRATION_MS
     }
-    private val cookieUtils = CookieUtils(jwtUtilsMock)
+    private val cookieUtils = CookieUtils(jwtServiceMock)
 
     @Nested
     inner class ParseCookies {

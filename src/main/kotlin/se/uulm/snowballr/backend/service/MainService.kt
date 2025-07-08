@@ -1,6 +1,6 @@
 package se.uulm.snowballr.backend.service
 
-import se.uulm.snowballr.backend.auth.IJwtUtils
+import se.uulm.snowballr.backend.auth.IJwtService
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
@@ -30,15 +30,15 @@ interface IMainService :
  * @param criterionRepo The repository responsible for handling persistence operations related to criteria.
  * @param userRepo The repository responsible for handling persistence operations related to users.
  * @param projectMemberRepo The repository responsible for handling persistence operations related to project members.
- * @param jwtUtils The utility for handling JWT operations, such as token parsing and validation.
+ * @param jwtService The utility for handling JWT operations, such as token parsing and validation.
  */
 class MainService(
     private val projectRepo: IProjectTableRepo,
     private val criterionRepo: ICriterionTableRepo,
     private val userRepo: IUserTableRepo,
     private val projectMemberRepo: IProjectMemberTableRepo,
-    private val jwtUtils: IJwtUtils,
+    private val jwtService: IJwtService,
 ) : IMainService,
     IProjectService by ProjectService(projectRepo, userRepo),
     ICriterionService by CriterionService(criterionRepo),
-    IUserService by UserService(userRepo, projectMemberRepo, jwtUtils)
+    IUserService by UserService(userRepo, projectMemberRepo, jwtService)
