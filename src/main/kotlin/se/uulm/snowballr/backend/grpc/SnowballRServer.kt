@@ -162,9 +162,7 @@ class SnowballRServer(
             super.getAvailableFetcherApis(request)
 
         override suspend fun register(request: Authentication.RegisterRequest): Base.Nothing {
-            val (accessToken, refreshToken) = mainService.register(request)
-
-            GrpcContext.setAuthCookiesInContext(accessToken, refreshToken)
+            mainService.register(request)
 
             return Base.Nothing.getDefaultInstance()
         }
