@@ -27,17 +27,17 @@ interface IProjectService {
     suspend fun getAllProjects(): GrpcProject.List
 
     /**
-     * Service implementation of [SnowballRService.getAllProjectsForUser]
+     * Service implementation of [SnowballRService.getAllProjectsForUser].
      */
     suspend fun getAllProjectsForUser(request: Base.Id): GrpcProject.List
 
     /**
-     * Service implementation of [SnowballRService.getAllArchivedProjectsForUser]
+     * Service implementation of [SnowballRService.getAllArchivedProjectsForUser].
      */
     suspend fun getAllArchivedProjectsForUser(request: Base.Id): GrpcProject.List
 
     /**
-     * Service implementation of [SnowballRService.getAllDeletedProjectsForUser]
+     * Service implementation of [SnowballRService.getAllDeletedProjectsForUser].
      */
     suspend fun getAllDeletedProjectsForUser(request: Base.Id): GrpcProject.List
 }
