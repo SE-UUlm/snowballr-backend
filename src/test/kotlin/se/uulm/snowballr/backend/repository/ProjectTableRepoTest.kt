@@ -7,7 +7,6 @@ import org.jetbrains.exposed.sql.insertAndGetId
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import se.uulm.snowballr.backend.model.FetcherApi
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.repository.RepositoryHelper.assignUserToProject
 import se.uulm.snowballr.backend.repository.RepositoryHelper.createExampleUser
@@ -36,7 +35,7 @@ class ProjectTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectMemberT
                 it[snowballingType] = SnowballingType.SNOWBALLING_TYPE_BOTH
                 it[reviewMaybeAllowed] = true
                 it[reviewDecisionMatrixBinary] = ReviewDecisionMatrix.getDefaultInstance().toByteArray()
-                it[fetcherApis] = FetcherApi.entries.toList()
+                it[fetcherApis] = emptyList()
                 it[createdBy] = testUserId
             }.value
     }
@@ -57,9 +56,7 @@ class ProjectTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectMemberT
             assertThat(project.snowballingType).isEqualTo(SnowballingType.SNOWBALLING_TYPE_BOTH)
             assertThat(project.reviewMaybeAllowed).isTrue()
             assertThat(project.reviewDecisionMatrix).isEqualTo(ReviewDecisionMatrix.getDefaultInstance())
-            FetcherApi.entries.forEach {
-                assertThat(project.fetcherApis).contains(it)
-            }
+            assertThat(project.fetcherApis).isEmpty()
         }
 
         @Test
