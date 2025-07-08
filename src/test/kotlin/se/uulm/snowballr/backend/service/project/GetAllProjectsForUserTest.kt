@@ -47,7 +47,7 @@ class GetAllProjectsForUserTest : MainServiceTest() {
             assertThrows<UnauthorizedException.Single> { mainService.getAllProjectsForUser(getExampleRequest()) }
         }
 
-    fun `When a user retrieve its own projects, then all projects are returned successfully`() = testCoroutine {
+    fun `When a user retrieves its own projects, then all projects are returned successfully`() = testCoroutine {
         val userWithProjects = DataBuilder.createExampleUser(id = UUID.fromString(dummyUserId))
 
         coEvery { userRepoMock.getUserById(UUID.fromString(dummyUserId)) } returns userWithProjects

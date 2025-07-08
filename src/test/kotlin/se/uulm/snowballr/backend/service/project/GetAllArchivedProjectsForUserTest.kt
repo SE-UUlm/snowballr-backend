@@ -54,7 +54,7 @@ class GetAllArchivedProjectsForUserTest : MainServiceTest() {
             }
         }
 
-    fun `When a user retrieve its own archived projects, then all projects are returned successfully`() =
+    fun `When a user retrieves its own archived projects, then all projects are returned successfully`() =
         testCoroutine {
             val userWithProjects = DataBuilder.createExampleUser(id = UUID.fromString(dummyUserId))
 
