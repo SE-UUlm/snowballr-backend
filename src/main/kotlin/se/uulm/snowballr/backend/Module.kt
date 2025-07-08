@@ -30,6 +30,8 @@ import se.uulm.snowballr.backend.service.MainService
  * Defines the Koin dependency injection module for the application.
  *
  * This module includes the following components in a defined order of initialization:
+ * - The environment service ([IEnvService]) and its reader ([EnvReader]), which are initialized first to provide
+ *  access to environment variables.
  * - The JWT utility ([IJwtUtils]), which depends on the environment reader to access necessary environment variables.
  * - The cookie utility ([ICookieUtils]), which relies on the JWT utility for token handling.
  * - The database implementation ([IDatabase]), which is initialized with no external dependencies.
