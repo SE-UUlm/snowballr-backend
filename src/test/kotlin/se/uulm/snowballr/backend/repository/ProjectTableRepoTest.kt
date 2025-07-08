@@ -172,7 +172,7 @@ class ProjectTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectMemberT
                 assignUserToProject(userId, project2Id)
                 assignUserToProject(userId, project3Id)
 
-                val archivedUserProjects = repo.getUserProjects(userId, ProjectStatus.PROJECT_STATUS_ARCHIVED)
+                val archivedUserProjects = repo.getUserProjects(userId, setOf(ProjectStatus.PROJECT_STATUS_ARCHIVED))
                 assertThat(archivedUserProjects).hasSize(1)
 
                 assertThat(archivedUserProjects.find { it.id == project1Id }).isNull()
@@ -195,7 +195,7 @@ class ProjectTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectMemberT
                 assignUserToProject(userId, project2Id)
                 assignUserToProject(userId, project3Id)
 
-                val deletedUserProjects = repo.getUserProjects(userId, ProjectStatus.PROJECT_STATUS_DELETED)
+                val deletedUserProjects = repo.getUserProjects(userId, setOf(ProjectStatus.PROJECT_STATUS_DELETED))
                 assertThat(deletedUserProjects).hasSize(1)
 
                 assertThat(deletedUserProjects.find { it.id == project1Id }).isNull()
@@ -214,7 +214,7 @@ class ProjectTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectMemberT
             assignUserToProject(userId, project1Id)
             assignUserToProject(userId, project2Id)
 
-            val activeUserProjects = repo.getUserProjects(userId, ProjectStatus.PROJECT_STATUS_ACTIVE)
+            val activeUserProjects = repo.getUserProjects(userId, setOf(ProjectStatus.PROJECT_STATUS_ACTIVE))
             assertThat(activeUserProjects).hasSize(0)
 
             assertThat(activeUserProjects.find { it.id == project1Id }).isNull()
@@ -229,7 +229,7 @@ class ProjectTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectMemberT
                 assertThrows<IllegalArgumentException> {
                     repo.getUserProjects(
                         userId,
-                        ProjectStatus.PROJECT_STATUS_UNSPECIFIED,
+                        setOf(ProjectStatus.PROJECT_STATUS_UNSPECIFIED),
                     )
                 }
             }

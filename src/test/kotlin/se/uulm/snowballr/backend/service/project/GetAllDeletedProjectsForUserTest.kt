@@ -44,23 +44,24 @@ class GetAllDeletedProjectsForUserTest : MainServiceTest() {
             coEvery { userRepoMock.getUserById(UUID.fromString(dummyUserId)) } returns anotherUser
             coEvery { userRepoMock.getUserById(userWithProjects.id) } returns userWithProjects
             coEvery {
-                projectRepoMock.getUserProjects(any(), ProjectStatus.PROJECT_STATUS_DELETED)
+                projectRepoMock.getUserProjects(any(), setOf(ProjectStatus.PROJECT_STATUS_DELETED))
             } returns emptyList()
 
             assertThrows<UnauthorizedException.Single> { mainService.getAllDeletedProjectsForUser(getExampleRequest()) }
         }
 
-    fun `When a user retrieves its own deleted projects, then all projects are returned successfully`() = testCoroutine {
-        val userWithProjects = DataBuilder.createExampleUser(id = UUID.fromString(dummyUserId))
+    fun `When a user retrieves its own deleted projects, then all projects are returned successfully`() =
+        testCoroutine {
+            val userWithProjects = DataBuilder.createExampleUser(id = UUID.fromString(dummyUserId))
 
-        coEvery { userRepoMock.getUserById(UUID.fromString(dummyUserId)) } returns userWithProjects
-        coEvery { userRepoMock.getUserById(userWithProjects.id) } returns userWithProjects
-        coEvery {
-            projectRepoMock.getUserProjects(any(), ProjectStatus.PROJECT_STATUS_DELETED)
-        } returns emptyList()
+            coEvery { userRepoMock.getUserById(UUID.fromString(dummyUserId)) } returns userWithProjects
+            coEvery { userRepoMock.getUserById(userWithProjects.id) } returns userWithProjects
+            coEvery {
+                projectRepoMock.getUserProjects(any(), setOf(ProjectStatus.PROJECT_STATUS_DELETED))
+            } returns emptyList()
 
-        assertDoesNotThrow { mainService.getAllDeletedProjectsForUser(getExampleRequest()) }
-    }
+            assertDoesNotThrow { mainService.getAllDeletedProjectsForUser(getExampleRequest()) }
+        }
 
     @Test
     fun `When the user's deleted projects are retrieved by an admin, then all user projects are returned successfully`() =
@@ -69,7 +70,7 @@ class GetAllDeletedProjectsForUserTest : MainServiceTest() {
 
             coEvery { userRepoMock.getUserById(any()) } returns adminUser
             coEvery {
-                projectRepoMock.getUserProjects(any(), ProjectStatus.PROJECT_STATUS_DELETED)
+                projectRepoMock.getUserProjects(any(), setOf(ProjectStatus.PROJECT_STATUS_DELETED))
             } returns emptyList()
 
             assertDoesNotThrow { mainService.getAllDeletedProjectsForUser(getExampleRequest()) }
@@ -88,7 +89,7 @@ class GetAllDeletedProjectsForUserTest : MainServiceTest() {
 
         coEvery { userRepoMock.getUserById(any()) } returns adminUser
         coEvery {
-            projectRepoMock.getUserProjects(any(), ProjectStatus.PROJECT_STATUS_DELETED)
+            projectRepoMock.getUserProjects(any(), setOf(ProjectStatus.PROJECT_STATUS_DELETED))
         } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getAllDeletedProjectsForUser(getExampleRequest()) }

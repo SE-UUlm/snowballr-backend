@@ -1,6 +1,7 @@
 package se.uulm.snowballr.backend.repository
 
 import org.jetbrains.exposed.sql.ResultRow
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.selectAll
@@ -43,18 +44,24 @@ interface IProjectTableRepo {
     /**
      * Retrieves a list of projects from the database in which the user with the specified [userId] is a member.
      *
-     * @param userId The unique identifier of the user whose associated projects are to be fetched.
-     * @param statusFilter (optional) Filter to specify which project status the fetched projects should have.
-     *        By default, [ProjectStatus.PROJECT_STATUS_ACTIVE] is used, which includes both active
-     *        and active-locked projects.
-     *        If set to another value (e.g., [ProjectStatus.PROJECT_STATUS_DELETED]), only projects
-     *        matching that (e.g., deleted) status will be returned.
+     * These projects can be filtered by their status, e.g., this function can be used to retrieve all archived
+     * and deleted projects of a user.
      *
-     * @return A list of [Project] objects matching the specified filter where the given user is member of.
+     * @param userId The unique identifier of the user whose associated projects are to be fetched.
+     * @param statusFilters (optional) Set of filters to specify which project status the fetched projects should have.
+     * By default, [ProjectStatus.PROJECT_STATUS_ACTIVE] and [ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED] are used,
+     * which includes both active and active-locked projects, i.e., projects where settings cannot be changed anymore.
+     * If set to another value (e.g., [ProjectStatus.PROJECT_STATUS_DELETED]), only projects
+     * matching one of the statuses (e.g., deleted) will be returned.
+     *
+     * @return A list of [Project] objects matching the specified filters where the given user is member of.
      */
     suspend fun getUserProjects(
         userId: UUID,
-        statusFilter: ProjectStatus = ProjectStatus.PROJECT_STATUS_ACTIVE,
+        statusFilters: Set<ProjectStatus> = setOf(
+            ProjectStatus.PROJECT_STATUS_ACTIVE,
+            ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED,
+        ),
     ): List<Project>
 }
 
@@ -99,26 +106,21 @@ class ProjectTableRepo(
             .map { it.toProject() }
     }
 
-    override suspend fun getUserProjects(userId: UUID, statusFilter: ProjectStatus): List<Project> = db.dbQuery {
-        // TODO (question for reviewer too): Check whether library automatically optimize this and first filter ProjectTable and afterwards joins
+    override suspend fun getUserProjects(userId: UUID, statusFilters: Set<ProjectStatus>): List<Project> = db.dbQuery {
+        val excludedStatuses = listOf(ProjectStatus.PROJECT_STATUS_UNSPECIFIED)
+        val projectFilter = statusFilters
+            .filterNot { it in excludedStatuses }
+            .map { ProjectTable.status eq it }
+            .reduceOrNull { acc, filter -> acc or filter }
+
+        require(
+            projectFilter != null,
+        ) { "Unsupported filter statuses: ${statusFilters.joinToString(", ") { it.name }}." }
+
         (ProjectTable innerJoin ProjectMemberTable)
             .select(ProjectTable.columns)
             .where { ProjectMemberTable.userId eq userId }
-            .andWhere {
-                when (statusFilter) {
-                    ProjectStatus.PROJECT_STATUS_ACTIVE, ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED ->
-                        (ProjectTable.status eq ProjectStatus.PROJECT_STATUS_ACTIVE) or
-                            (ProjectTable.status eq ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
-
-                    ProjectStatus.PROJECT_STATUS_ARCHIVED ->
-                        ProjectTable.status eq ProjectStatus.PROJECT_STATUS_ARCHIVED
-
-                    ProjectStatus.PROJECT_STATUS_DELETED ->
-                        ProjectTable.status eq ProjectStatus.PROJECT_STATUS_DELETED
-
-                    else -> throw IllegalArgumentException("Unsupported status: $statusFilter")
-                }
-            }
+            .andWhere { projectFilter }
             .map { it.toProject() }
     }
 }

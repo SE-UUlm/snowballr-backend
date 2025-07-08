@@ -44,7 +44,7 @@ class GetAllArchivedProjectsForUserTest : MainServiceTest() {
             coEvery { userRepoMock.getUserById(UUID.fromString(dummyUserId)) } returns anotherUser
             coEvery { userRepoMock.getUserById(userWithProjects.id) } returns userWithProjects
             coEvery {
-                projectRepoMock.getUserProjects(any(), ProjectStatus.PROJECT_STATUS_ARCHIVED)
+                projectRepoMock.getUserProjects(any(), setOf(ProjectStatus.PROJECT_STATUS_ARCHIVED))
             } returns emptyList()
 
             assertThrows<UnauthorizedException.Single> {
@@ -61,7 +61,7 @@ class GetAllArchivedProjectsForUserTest : MainServiceTest() {
             coEvery { userRepoMock.getUserById(UUID.fromString(dummyUserId)) } returns userWithProjects
             coEvery { userRepoMock.getUserById(userWithProjects.id) } returns userWithProjects
             coEvery {
-                projectRepoMock.getUserProjects(any(), ProjectStatus.PROJECT_STATUS_ARCHIVED)
+                projectRepoMock.getUserProjects(any(), setOf(ProjectStatus.PROJECT_STATUS_ARCHIVED))
             } returns emptyList()
 
             assertDoesNotThrow { mainService.getAllArchivedProjectsForUser(getExampleRequest()) }
@@ -74,7 +74,7 @@ class GetAllArchivedProjectsForUserTest : MainServiceTest() {
 
             coEvery { userRepoMock.getUserById(any()) } returns adminUser
             coEvery {
-                projectRepoMock.getUserProjects(any(), ProjectStatus.PROJECT_STATUS_ARCHIVED)
+                projectRepoMock.getUserProjects(any(), setOf(ProjectStatus.PROJECT_STATUS_ARCHIVED))
             } returns emptyList()
 
             assertDoesNotThrow { mainService.getAllArchivedProjectsForUser(getExampleRequest()) }
@@ -93,7 +93,7 @@ class GetAllArchivedProjectsForUserTest : MainServiceTest() {
 
         coEvery { userRepoMock.getUserById(any()) } returns adminUser
         coEvery {
-            projectRepoMock.getUserProjects(any(), ProjectStatus.PROJECT_STATUS_ARCHIVED)
+            projectRepoMock.getUserProjects(any(), setOf(ProjectStatus.PROJECT_STATUS_ARCHIVED))
         } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getAllArchivedProjectsForUser(getExampleRequest()) }

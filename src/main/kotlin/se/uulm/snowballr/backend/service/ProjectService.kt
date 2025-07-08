@@ -89,7 +89,7 @@ class ProjectService(
         val requestedUserId = parseUUID(request.id, EntityType.USER)
         authorizeAccessTo(requestedUserId, userRepo, AccessType.READ)
 
-        val archivedUserProjects = repo.getUserProjects(requestedUserId, ProjectStatus.PROJECT_STATUS_ARCHIVED)
+        val archivedUserProjects = repo.getUserProjects(requestedUserId, setOf(ProjectStatus.PROJECT_STATUS_ARCHIVED))
         return toGrpcProjects(archivedUserProjects)
     }
 
@@ -97,7 +97,7 @@ class ProjectService(
         val requestedUserId = parseUUID(request.id, EntityType.USER)
         authorizeAccessTo(requestedUserId, userRepo, AccessType.READ)
 
-        val deletedUserProjects = repo.getUserProjects(requestedUserId, ProjectStatus.PROJECT_STATUS_DELETED)
+        val deletedUserProjects = repo.getUserProjects(requestedUserId, setOf(ProjectStatus.PROJECT_STATUS_DELETED))
         return toGrpcProjects(deletedUserProjects)
     }
 }
