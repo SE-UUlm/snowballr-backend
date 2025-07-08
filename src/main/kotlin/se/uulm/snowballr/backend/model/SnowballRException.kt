@@ -138,6 +138,11 @@ sealed class SnowballRException(
         keyDescription: String,
     ) : SnowballRException("Missing context value: $keyDescription") {
         /**
+         * Represents a [MissingContextException] that occurs when the authentication status is missing in the context.
+         */
+        class MissingAuthenticationStatus : MissingContextException("Authentication status")
+
+        /**
          * Represents a [MissingContextException] that occurs when the user ID is missing in the context.
          */
         class MissingUserId : MissingContextException("Authenticated user ID")
