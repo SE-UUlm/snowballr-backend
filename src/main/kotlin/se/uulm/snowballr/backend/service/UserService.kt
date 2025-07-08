@@ -10,6 +10,7 @@ import se.uulm.snowballr.backend.model.IdentifierType
 import se.uulm.snowballr.backend.model.SnowballRException.DuplicateEntityException
 import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
+import se.uulm.snowballr.backend.model.SnowballRException.UnauthenticatedException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.toGrpcUser
@@ -48,6 +49,11 @@ interface IUserService {
      * Service implementation of [SnowballRService.logout].
      */
     suspend fun logout(): Base.Nothing
+
+    /**
+     * Service implementation of [SnowballRService.login].
+     */
+    suspend fun login(request: Authentication.LoginRequest): Base.Nothing
 
     /**
      * Service implementation of [SnowballRService.updateUser].
@@ -175,6 +181,33 @@ class UserService(
 
     override suspend fun logout(): Base.Nothing {
         GrpcContext.setAuthCookiesInContext("", "")
+
+        return Base.Nothing.getDefaultInstance()
+    }
+
+    override suspend fun login(request: Authentication.LoginRequest): Base.Nothing {
+        // Check whether a user with the given email exists
+        val user =
+            try {
+                userRepo.getUserByEmail(request.email)
+            } catch (_: NotFoundException) {
+                throw UnauthenticatedException()
+            }
+
+        // Verify the password against the stored hash
+        val storedPasswordHash = try {
+            userRepo.getPasswordHashByEmail(request.email)
+        } catch (_: NotFoundException) {
+            throw UnauthenticatedException()
+        }
+
+        if (!PasswordUtils.verifyPassword(request.password, storedPasswordHash)) {
+            throw UnauthenticatedException()
+        }
+
+        // Generate JWT tokens
+        val (accessToken, refreshToken) = jwtService.generateTokens(user.id)
+        GrpcContext.setAuthCookiesInContext(accessToken, refreshToken)
 
         return Base.Nothing.getDefaultInstance()
     }

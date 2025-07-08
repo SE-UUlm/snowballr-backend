@@ -165,7 +165,7 @@ class SnowballRServer(
         override suspend fun register(request: Authentication.RegisterRequest): Base.Nothing =
             mainService.register(request)
 
-        override suspend fun login(request: Authentication.LoginRequest): Base.Nothing = super.login(request)
+        override suspend fun login(request: Authentication.LoginRequest): Base.Nothing = mainService.login(request)
 
         override suspend fun logout(request: Base.Nothing): Base.Nothing = mainService.logout()
 
