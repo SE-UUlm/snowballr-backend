@@ -11,10 +11,11 @@ import io.grpc.Status
 import io.grpc.health.v1.HealthGrpc
 import io.grpc.reflection.v1alpha.ServerReflectionGrpc
 import io.jsonwebtoken.JwtException
-import se.uulm.snowballr.backend.auth.CookieUtils
-import se.uulm.snowballr.backend.auth.CookieUtils.parseCookies
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 import se.uulm.snowballr.backend.auth.GrpcContext
-import se.uulm.snowballr.backend.auth.JwtUtils
+import se.uulm.snowballr.backend.auth.ICookieUtils
+import se.uulm.snowballr.backend.auth.IJwtUtils
 import se.uulm.snowballr.backend.model.auth.AuthRequestState
 import se.uulm.snowballr.backend.model.jwt.ParsedJwtClaims
 import snowballr.SnowballRGrpcKt
@@ -64,8 +65,11 @@ private val PUBLIC_METHODS =
  * Note: Only methods listed in PUBLIC_METHODS or starting with the health check service name bypass authentication.
  */
 @Suppress("ReturnCount")
-val authenticationInterceptor =
-    object : ServerInterceptor {
+val authenticationInterceptor: ServerInterceptor =
+    object : ServerInterceptor, KoinComponent {
+        private val cookieUtils: ICookieUtils by inject()
+        private val jwtUtils: IJwtUtils by inject()
+
         /**
          * Returns a no-op listener. Used when the call chain cannot proceed.
          */
@@ -91,7 +95,7 @@ val authenticationInterceptor =
 
             // This map will be captured by the forwarding call's closure
             val cookiesToSet = mutableMapOf<String, String?>()
-            val forwardingCall = AuthForwardingCall(call, cookiesToSet)
+            val forwardingCall = AuthForwardingCall(call, cookieUtils, cookiesToSet)
             val contextWithCookies = Context.current().withValue(
                 GrpcContext.COOKIES_TO_SET_CONTEXT_KEY,
                 cookiesToSet,
@@ -128,13 +132,13 @@ val authenticationInterceptor =
             authState: AuthRequestState<ReqT, RespT>,
         ): ServerCall.Listener<ReqT?>? {
             val cookieHeader = authState.headers?.get(GrpcContext.COOKIE_METADATA_KEY)
-            val cookies = parseCookies(cookieHeader)
+            val cookies = cookieUtils.parseCookies(cookieHeader)
             val accessToken = cookies[GrpcContext.ACCESS_TOKEN_COOKIE_NAME]
             val refreshToken = cookies[GrpcContext.REFRESH_TOKEN_COOKIE_NAME]
 
             try {
                 // Try access token first
-                val parsedAccessToken = JwtUtils.parseToken(accessToken)
+                val parsedAccessToken = jwtUtils.parseToken(accessToken)
                 val context = Context.current().withValue(GrpcContext.USER_ID_CONTEXT_KEY, parsedAccessToken.userId)
 
                 // Proceed with forwarding call, no new cookies to set
@@ -173,8 +177,8 @@ val authenticationInterceptor =
             val cookiesToSet = GrpcContext.COOKIES_TO_SET_CONTEXT_KEY.get()
 
             return try {
-                val parsedRefreshToken = JwtUtils.parseToken(refreshToken)
-                val newAccessToken = JwtUtils.refreshAccessToken(parsedRefreshToken)
+                val parsedRefreshToken = jwtUtils.parseToken(refreshToken)
+                val newAccessToken = jwtUtils.refreshAccessToken(parsedRefreshToken)
                 cookiesToSet[GrpcContext.ACCESS_TOKEN_COOKIE_NAME] = newAccessToken
                 Result.success(parsedRefreshToken)
             } catch (e: JwtException) {
@@ -195,16 +199,18 @@ val authenticationInterceptor =
  * @param ReqT The type of the request.
  * @param RespT The type of the response.
  * @param delegate The original server call to forward to.
+ * @param cookieUtils The cookie utils instance.
  * @param cookiesToSet The map of cookies that should be set in the response headers.
  */
 private class AuthForwardingCall<ReqT, RespT>(
     delegate: ServerCall<ReqT, RespT>?,
+    private val cookieUtils: ICookieUtils,
     private val cookiesToSet: Map<String, String?>,
 ) : ForwardingServerCall.SimpleForwardingServerCall<ReqT, RespT>(delegate) {
     override fun sendHeaders(headers: Metadata) {
         if (cookiesToSet.isNotEmpty()) {
             cookiesToSet.entries
-                .mapNotNull { (name, value) -> CookieUtils.buildAuthCookieString(name, value) }
+                .mapNotNull { (name, value) -> cookieUtils.buildAuthCookieString(name, value) }
                 .forEach { headers.put(GrpcContext.SET_COOKIE_METADATA_KEY, it) }
         }
         super.sendHeaders(headers)

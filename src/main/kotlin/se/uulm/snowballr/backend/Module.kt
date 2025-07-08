@@ -4,6 +4,10 @@ import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.createdAtStart
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
+import se.uulm.snowballr.backend.auth.CookieUtils
+import se.uulm.snowballr.backend.auth.ICookieUtils
+import se.uulm.snowballr.backend.auth.IJwtUtils
+import se.uulm.snowballr.backend.auth.JwtUtils
 import se.uulm.snowballr.backend.db.Database
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.env.EnvReader
@@ -24,6 +28,8 @@ import se.uulm.snowballr.backend.service.MainService
  * Defines the Koin dependency injection module for the application.
  *
  * This module includes the following components in a defined order of initialization:
+ * - The JWT utility ([IJwtUtils]), which depends on the environment reader to access necessary environment variables.
+ * - The cookie utility ([ICookieUtils]), which relies on the JWT utility for token handling.
  * - The database implementation ([IDatabase]), which is initialized with no external dependencies.
  * - The repository layer (e.g. [IProjectTableRepo]), which uses the [IDatabase] implementation for database operations.
  * - The main service ([IMainService]), which depends on the repository layer to provide higher-level functionality.
@@ -35,6 +41,10 @@ val snowballRModule =
         // First come the env service and reader
         single<IEnvService> { EnvService() }
         singleOf(::EnvReader)
+        // Then the JWT utils, which depend on the env reader
+        singleOf(::JwtUtils) { bind<IJwtUtils>() }
+        // Then the cookie utils, which depend on the JWT utils
+        singleOf(::CookieUtils) { bind<ICookieUtils>() }
         // Then the database, which only needs access to some env variables
         singleOf(::Database) {
             createdAtStart()

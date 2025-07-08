@@ -5,7 +5,6 @@ import ch.qos.logback.classic.LoggerContext
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.koin.core.context.startKoin
 import org.slf4j.LoggerFactory
-import se.uulm.snowballr.backend.auth.JwtUtils
 import se.uulm.snowballr.backend.env.DEFAULT_LOG_LEVEL
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.env.EnvService
@@ -24,9 +23,6 @@ fun main() {
     startKoin {
         modules(snowballRModule)
     }
-
-    // Initialize JWT Keys
-    JwtUtils.init()
 
     // Create and run the server
     val server = SnowballRServer(env.http.port)

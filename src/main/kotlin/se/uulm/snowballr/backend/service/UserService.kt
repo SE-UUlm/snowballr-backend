@@ -1,7 +1,7 @@
 package se.uulm.snowballr.backend.service
 
 import se.uulm.snowballr.backend.auth.GrpcContext
-import se.uulm.snowballr.backend.auth.JwtUtils
+import se.uulm.snowballr.backend.auth.IJwtUtils
 import se.uulm.snowballr.backend.auth.PasswordUtils
 import se.uulm.snowballr.backend.db.dummyUserId
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
@@ -66,10 +66,12 @@ interface IUserService {
  * @constructor Initializes the [UserService] with a user repository.
  * @param userRepo The repository responsible for managing persistence operations for users.
  * @param projectMemberRepo The repository responsible for managing persistence operations for project members.
+ * @param jwtUtils The utility for handling JWT operations, such as token parsing and validation.
  */
 class UserService(
     private val userRepo: IUserTableRepo,
     private val projectMemberRepo: IProjectMemberTableRepo,
+    private val jwtUtils: IJwtUtils,
 ) : IUserService {
     private suspend fun verifyUserAccess(currentUser: User, requestedUserId: UUID, identifierType: IdentifierType) {
         // Check whether requesting user is server admin
@@ -165,7 +167,7 @@ class UserService(
         val user = userRepo.createUser(request, passwordHash)
 
         // Generate JWT tokens
-        val tokens = JwtUtils.generateTokens(user.id)
+        val tokens = jwtUtils.generateTokens(user.id)
 
         return tokens
     }

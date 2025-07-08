@@ -17,6 +17,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.TestInstance
 import se.uulm.snowballr.backend.auth.GrpcContext
+import se.uulm.snowballr.backend.auth.IJwtUtils
 import se.uulm.snowballr.backend.db.dummyUserId
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
@@ -77,12 +78,14 @@ open class MainServiceTest {
     val criterionRepoMock = mockk<ICriterionTableRepo>(relaxed = true)
     val userRepoMock = mockk<IUserTableRepo>(relaxed = true)
     val projectMemberRepoMock = mockk<IProjectMemberTableRepo>(relaxed = true)
+    val jwtUtilsMock = mockk<IJwtUtils>(relaxed = true)
     val mainService =
         MainService(
             projectRepoMock,
             criterionRepoMock,
             userRepoMock,
             projectMemberRepoMock,
+            jwtUtilsMock,
         )
 
     @BeforeAll
