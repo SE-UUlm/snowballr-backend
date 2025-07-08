@@ -13,7 +13,7 @@ import io.grpc.reflection.v1alpha.ServerReflectionGrpc
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import se.uulm.snowballr.backend.auth.GrpcContext
-import se.uulm.snowballr.backend.auth.ICookieUtils
+import se.uulm.snowballr.backend.auth.ICookieService
 import se.uulm.snowballr.backend.model.auth.AuthRequestState
 import se.uulm.snowballr.backend.service.AuthenticationService
 import se.uulm.snowballr.backend.service.IAuthenticationService
@@ -71,7 +71,7 @@ private val PUBLIC_METHODS =
 val authenticationInterceptor: ServerInterceptor =
     object : ServerInterceptor, KoinComponent {
         private val authService: IAuthenticationService by inject()
-        private val cookieUtils: ICookieUtils by inject()
+        private val cookieService: ICookieService by inject()
 
         /**
          * Returns a no-op listener. Used when the call chain cannot proceed.
@@ -98,7 +98,7 @@ val authenticationInterceptor: ServerInterceptor =
 
             // This map will be captured by the forwarding call's closure
             val cookiesToSet = mutableMapOf<String, String?>()
-            val forwardingCall = AuthForwardingCall(call, cookieUtils, cookiesToSet)
+            val forwardingCall = AuthForwardingCall(call, cookieService, cookiesToSet)
             val initialContext = Context.current()
                 .withValue(
                     GrpcContext.COOKIES_TO_SET_CONTEXT_KEY,
@@ -155,7 +155,7 @@ val authenticationInterceptor: ServerInterceptor =
             skipRefresh: Boolean,
         ): ServerCall.Listener<ReqT?>? {
             val cookieHeader = authState.headers?.get(GrpcContext.COOKIE_METADATA_KEY)
-            val cookies = cookieUtils.parseCookies(cookieHeader)
+            val cookies = cookieService.parseCookies(cookieHeader)
             val accessToken = cookies[GrpcContext.ACCESS_TOKEN_COOKIE_NAME]
             val refreshToken = cookies[GrpcContext.REFRESH_TOKEN_COOKIE_NAME]
 
@@ -182,18 +182,18 @@ val authenticationInterceptor: ServerInterceptor =
  * @param ReqT The type of the request.
  * @param RespT The type of the response.
  * @param delegate The original server call to forward to.
- * @param cookieUtils The cookie utils instance.
+ * @param cookieService The cookie service instance.
  * @param cookiesToSet The map of cookies that should be set in the response headers.
  */
 private class AuthForwardingCall<ReqT, RespT>(
     delegate: ServerCall<ReqT, RespT>?,
-    private val cookieUtils: ICookieUtils,
+    private val cookieService: ICookieService,
     private val cookiesToSet: Map<String, String?>,
 ) : ForwardingServerCall.SimpleForwardingServerCall<ReqT, RespT>(delegate) {
     override fun sendHeaders(headers: Metadata) {
         if (cookiesToSet.isNotEmpty()) {
             cookiesToSet.entries
-                .mapNotNull { (name, value) -> cookieUtils.buildAuthCookieString(name, value) }
+                .mapNotNull { (name, value) -> cookieService.buildAuthCookieString(name, value) }
                 .forEach { headers.put(GrpcContext.SET_COOKIE_METADATA_KEY, it) }
         }
         super.sendHeaders(headers)

@@ -2,7 +2,7 @@ package se.uulm.snowballr.backend.auth
 
 import se.uulm.snowballr.backend.model.auth.CookieConfig
 
-interface ICookieUtils {
+interface ICookieService {
     /**
      * Parses a `Cookie` header string into a map of key-value pairs.
      *
@@ -35,7 +35,7 @@ interface ICookieUtils {
      * Example:
      * ```
      * val config = CookieConfig(name = "theme", value = "dark", maxAgeSeconds = 31536000)
-     * val cookieHeader = CookieUtils.createCookieString(config)
+     * val cookieHeader = cookieService.createCookieString(config)
      * // "theme=dark; Max-Age=31536000; Path=/; SameSite=Lax; HttpOnly; Secure"
      * ```
      *
@@ -48,7 +48,7 @@ interface ICookieUtils {
 /**
  * Utility object for parsing and constructing HTTP cookie headers.
  */
-class CookieUtils(private val jwtService: IJwtService) : ICookieUtils {
+class CookieService(private val jwtService: IJwtService) : ICookieService {
     override fun parseCookies(cookieHeader: String?): Map<String, String> {
         if (cookieHeader.isNullOrBlank()) return emptyMap()
         return cookieHeader
