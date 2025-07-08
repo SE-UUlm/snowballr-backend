@@ -19,6 +19,7 @@ class ServiceChecksTest {
         @GrpcEnumSourceTest(UserRole::class, excludes = ["USER_ROLE_ADMIN"])
         fun `When the user is not a server admin, then an exception is thrown`(role: UserRole) {
             val user = DataBuilder.createExampleUser(role = role)
+
             assertThrows<UnauthorizedException.All> {
                 verifyServerAdminRole(
                     user,
@@ -29,6 +30,7 @@ class ServiceChecksTest {
         @Test
         fun `When the user is a server admin, then no exception is thrown`() {
             val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+
             assertDoesNotThrow {
                 verifyServerAdminRole(
                     user,
