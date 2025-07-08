@@ -10,14 +10,14 @@ import io.grpc.ServerInterceptor
 import io.grpc.Status
 import io.grpc.health.v1.HealthGrpc
 import io.grpc.reflection.v1alpha.ServerReflectionGrpc
-import io.jsonwebtoken.JwtException
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.auth.ICookieUtils
-import se.uulm.snowballr.backend.auth.IJwtUtils
 import se.uulm.snowballr.backend.model.auth.AuthRequestState
-import se.uulm.snowballr.backend.model.jwt.ParsedJwtClaims
+import se.uulm.snowballr.backend.service.AuthenticationService
+import se.uulm.snowballr.backend.service.IAuthenticationService
+import snowballr.Authentication.AuthenticationStatus
 import snowballr.SnowballRGrpcKt
 
 private val logger = KotlinLogging.logger {}
@@ -33,10 +33,14 @@ private val PUBLIC_SERVICES =
 
 /**
  * A set of public gRPC methods that do not require authentication.
+ *
+ * **Note:**
+ * [SnowballRGrpcKt.getAuthenticationStatusMethod] is intentionally excluded from this list, since it is used to
+ * check the authentication status of the user. Although it does not require authentication, this method needs to be
+ * processed by the authentication interceptor to determine if the user is authenticated or not.
  */
 private val PUBLIC_METHODS =
     setOf(
-        SnowballRGrpcKt.getAuthenticationStatusMethod.fullMethodName,
         SnowballRGrpcKt.registerMethod.fullMethodName,
         SnowballRGrpcKt.loginMethod.fullMethodName,
         SnowballRGrpcKt.requestPasswordResetMethod.fullMethodName,
@@ -62,13 +66,12 @@ private val PUBLIC_METHODS =
  * This design supports browser-based gRPC clients using cookies for authentication and avoids an extra round-trip
  * by performing pre-emptive refresh. If the refresh token is also invalid or expired, the session is terminated.
  *
- * Note: Only methods listed in PUBLIC_METHODS or starting with the health check service name bypass authentication.
+ * Note: Only methods listed in [PUBLIC_METHODS] or [PUBLIC_SERVICES] bypass authentication.
  */
-@Suppress("ReturnCount")
 val authenticationInterceptor: ServerInterceptor =
     object : ServerInterceptor, KoinComponent {
+        private val authService: IAuthenticationService by inject()
         private val cookieUtils: ICookieUtils by inject()
-        private val jwtUtils: IJwtUtils by inject()
 
         /**
          * Returns a no-op listener. Used when the call chain cannot proceed.
@@ -96,97 +99,77 @@ val authenticationInterceptor: ServerInterceptor =
             // This map will be captured by the forwarding call's closure
             val cookiesToSet = mutableMapOf<String, String?>()
             val forwardingCall = AuthForwardingCall(call, cookieUtils, cookiesToSet)
-            val contextWithCookies = Context.current().withValue(
-                GrpcContext.COOKIES_TO_SET_CONTEXT_KEY,
-                cookiesToSet,
-            )
+            val initialContext = Context.current()
+                .withValue(
+                    GrpcContext.COOKIES_TO_SET_CONTEXT_KEY,
+                    cookiesToSet,
+                ).withValue(
+                    GrpcContext.AUTHENTICATION_STATUS,
+                    AuthenticationStatus.AUTHENTICATION_STATUS_UNSPECIFIED,
+                )
 
-            return contextWithCookies.call {
-                // Bypass authentication for public methods
-                if (methodName in PUBLIC_METHODS) {
-                    logger.trace { "Method $methodName is public, bypassing authentication." }
-                    next?.startCall(forwardingCall, headers)
-                } else {
-                    logger.trace { "Method $methodName requires authentication." }
-                    val authState = AuthRequestState(forwardingCall, headers, next)
-                    handleAuthentication(authState)
+            return initialContext.call {
+                when (methodName) {
+                    in PUBLIC_METHODS -> {
+                        logger.trace { "Method $methodName is public, bypassing authentication." }
+                        next?.startCall(forwardingCall, headers)
+                    }
+
+                    SnowballRGrpcKt.getAuthenticationStatusMethod.fullMethodName -> {
+                        logger.trace {
+                            "Method $methodName is for checking authentication status, " +
+                                "processing authentication status."
+                        }
+                        val authState = AuthRequestState(forwardingCall, headers, next)
+                        handleAuthentication(authState, true)
+                    }
+
+                    else -> {
+                        logger.trace { "Method $methodName requires authentication." }
+                        val authState = AuthRequestState(forwardingCall, headers, next)
+                        handleAuthentication(authState, false)
+                    }
                 }
             }
         }
 
         /**
          * Handles the authentication process for a gRPC call.
-         * This method checks the provided [AuthRequestState] for access and refresh tokens,
-         * validates the access token, and attempts to refresh it if necessary.
-         * If the access token is valid, it proceeds with the call, attaching the user ID to the
-         * gRPC context.
-         * If the access token is invalid and the refresh token is also invalid or expired,
-         * it closes the call with an UNAUTHENTICATED status.
+         *
+         * This method retrieves the access and refresh tokens from the request cookies and delegates
+         * authentication to the [AuthenticationService]. If the access token is valid or successfully
+         * refreshed using the refresh token, it proceeds with the call and attaches the user ID to the gRPC
+         * context.
+         *
+         * If authentication fails (i.e., both the access and refresh tokens are invalid or expired), the
+         * call is closed with an UNAUTHENTICATED status and an empty listener is returned.
          *
          * @param ReqT The type of the request.
          * @param RespT The type of the response.
          * @param authState The [AuthRequestState] containing the call, headers, and next handler.
+         * @param skipRefresh If true, skips the refresh token logic and only validates the access token.
          * @return A [ServerCall.Listener] that will handle the call, or an empty listener if authentication fails.
          */
         private fun <ReqT : Any?, RespT : Any?> handleAuthentication(
             authState: AuthRequestState<ReqT, RespT>,
+            skipRefresh: Boolean,
         ): ServerCall.Listener<ReqT?>? {
             val cookieHeader = authState.headers?.get(GrpcContext.COOKIE_METADATA_KEY)
             val cookies = cookieUtils.parseCookies(cookieHeader)
             val accessToken = cookies[GrpcContext.ACCESS_TOKEN_COOKIE_NAME]
             val refreshToken = cookies[GrpcContext.REFRESH_TOKEN_COOKIE_NAME]
 
-            try {
-                // Try access token first
-                val parsedAccessToken = jwtUtils.parseToken(accessToken)
-                val context = Context.current().withValue(GrpcContext.USER_ID_CONTEXT_KEY, parsedAccessToken.userId)
-
-                // Proceed with forwarding call, no new cookies to set
-                return context.call { authState.next?.startCall(authState.call, authState.headers) }
-            } catch (_: JwtException) {
-                val refreshResult = preEmptiveTokenRefresh(refreshToken)
-
-                return if (refreshResult.isSuccess) {
-                    // Refresh succeeded, proceed with the call. The forwarding call will send the new cookie.
-                    val claims = refreshResult.getOrThrow()
-                    val context = Context.current().withValue(GrpcContext.USER_ID_CONTEXT_KEY, claims.userId)
-
+            val authResult = authService.authenticate(accessToken, refreshToken, skipRefresh)
+            return authResult.parsedJwtClaimsResult.fold(
+                onSuccess = { claims ->
+                    val context = authResult.updatedContext.withValue(GrpcContext.USER_ID_CONTEXT_KEY, claims.userId)
                     context.call { authState.next?.startCall(authState.call, authState.headers) }
-                } else {
-                    // Refresh failed, terminate the call.
-                    // The forwarding call will still be used to send the cookie-clearing headers.
+                },
+                onFailure = {
                     authState.call.close(Status.UNAUTHENTICATED.withDescription("Session is invalid"), Metadata())
                     emptyListener()
-                }
-            }
-        }
-
-        /**
-         * Attempts to refresh the access token using the provided refresh token.
-         * If successful, it updates the cookies to set in the context.
-         * If the refresh token is invalid or expired, it clears the cookies and returns an error.
-         *
-         * @param refreshToken The refresh token to use for refreshing the access token.
-         * @return A [Result] containing the parsed JWT claims if successful, or an error if the refresh fails.
-         */
-        private fun preEmptiveTokenRefresh(refreshToken: String?): Result<ParsedJwtClaims> {
-            if (refreshToken == null) {
-                return Result.failure(JwtException("Refresh token is missing"))
-            }
-
-            val cookiesToSet = GrpcContext.COOKIES_TO_SET_CONTEXT_KEY.get()
-
-            return try {
-                val parsedRefreshToken = jwtUtils.parseToken(refreshToken)
-                val newAccessToken = jwtUtils.refreshAccessToken(parsedRefreshToken)
-                cookiesToSet[GrpcContext.ACCESS_TOKEN_COOKIE_NAME] = newAccessToken
-                Result.success(parsedRefreshToken)
-            } catch (e: JwtException) {
-                logger.debug { "Refresh token is invalid of expired. Clearing cookies." }
-                cookiesToSet[GrpcContext.ACCESS_TOKEN_COOKIE_NAME] = null
-                cookiesToSet[GrpcContext.REFRESH_TOKEN_COOKIE_NAME] = null
-                return Result.failure(e)
-            }
+                },
+            )
         }
     }
 

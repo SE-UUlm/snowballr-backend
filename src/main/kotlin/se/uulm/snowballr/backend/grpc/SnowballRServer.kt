@@ -175,7 +175,8 @@ class SnowballRServer(
 
         override suspend fun getAuthenticationStatus(
             request: Base.Nothing,
-        ): Authentication.AuthenticationStatusResponse = super.getAuthenticationStatus(request)
+        ): Authentication.AuthenticationStatusResponse = Authentication.AuthenticationStatusResponse.newBuilder()
+            .setAuthenticationStatus(GrpcContext.getAuthenticationStatusFromContext()).build()
 
         override suspend fun renewSession(request: Base.Nothing): Base.Nothing = super.renewSession(request)
 
@@ -190,7 +191,11 @@ class SnowballRServer(
 
         override suspend fun getAllUsers(request: Base.Nothing): UserOuterClass.User.List = mainService.getAllUsers()
 
-        override suspend fun getCurrentUser(request: Base.Nothing): UserOuterClass.User = super.getCurrentUser(request)
+        // TODO: Remove dummy implementation!
+        //   This is currently needed to not get redirected to the Sign-In page in the frontend,
+        //   because the returned user would be `null`.
+        override suspend fun getCurrentUser(request: Base.Nothing): UserOuterClass.User =
+            UserOuterClass.User.newBuilder().build()
 
         override suspend fun getUserById(request: Base.Id): UserOuterClass.User = mainService.getUserById(request)
 
