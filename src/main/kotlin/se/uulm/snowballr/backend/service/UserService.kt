@@ -46,6 +46,11 @@ interface IUserService {
     suspend fun register(request: Authentication.RegisterRequest): Base.Nothing
 
     /**
+     * Service implementation of [SnowballRService.logout].
+     */
+    suspend fun logout(): Base.Nothing
+
+    /**
      * Service implementation of [SnowballRService.updateUser].
      */
     suspend fun updateUser(request: UserOuterClass.User.Update): UserOuterClass.User
@@ -168,6 +173,12 @@ class UserService(
         // Generate JWT tokens
         val (accessToken, refreshToken) = jwtService.generateTokens(user.id)
         GrpcContext.setAuthCookiesInContext(accessToken, refreshToken)
+
+        return Base.Nothing.getDefaultInstance()
+    }
+
+    override suspend fun logout(): Base.Nothing {
+        GrpcContext.setAuthCookiesInContext("", "")
 
         return Base.Nothing.getDefaultInstance()
     }
