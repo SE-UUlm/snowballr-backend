@@ -3,28 +3,26 @@ package se.uulm.snowballr.backend.repository
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.assertj.core.api.Assertions.assertThat
-import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.model.FetcherApi
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
+import se.uulm.snowballr.backend.repository.RepositoryHelper.assignUserToProject
+import se.uulm.snowballr.backend.repository.RepositoryHelper.createExampleUser
 import se.uulm.snowballr.backend.table.ProjectTable
-import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.testCoroutine
-import snowballr.ProjectOuterClass.MemberRole
 import snowballr.ProjectOuterClass.Project
 import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
 import snowballr.ProjectOuterClass.SnowballingType
-import snowballr.UserOuterClass
 import java.util.UUID
 
 @ExperimentalCoroutinesApi
 @DelicateCoroutinesApi
-class ProjectTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectMemberTable, UserTable), true) {
+class ProjectTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectMemberTable), true) {
     private val repo = ProjectTableRepo(db)
 
     private suspend fun createExampleProject(name: String, status: ProjectStatus): UUID = db.dbQuery {
@@ -41,26 +39,6 @@ class ProjectTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectMemberT
                 it[fetcherApis] = FetcherApi.entries.toList()
                 it[createdBy] = testUserId
             }.value
-    }
-
-    private suspend fun createExampleUser(email: String) = db.dbQuery {
-        UserTable
-            .insertAndGetId {
-                it[UserTable.email] = email
-                it[firstName] = "Test"
-                it[lastName] = "User"
-                it[passwordHash] = "1234"
-                it[role] = UserOuterClass.UserRole.USER_ROLE_DEFAULT
-                it[status] = UserOuterClass.UserStatus.USER_STATUS_ACTIVE
-            }.value
-    }
-
-    private suspend fun assignUserToProject(userId: UUID, projectId: UUID) = db.dbQuery {
-        ProjectMemberTable.insert {
-            it[ProjectMemberTable.userId] = userId
-            it[ProjectMemberTable.projectId] = projectId
-            it[role] = MemberRole.MEMBER_ROLE_DEFAULT
-        }
     }
 
     @Nested

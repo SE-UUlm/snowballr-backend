@@ -3,7 +3,6 @@ package se.uulm.snowballr.backend.repository.association
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.assertj.core.api.Assertions.assertThat
-import org.jetbrains.exposed.sql.insertAndGetId
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -12,13 +11,12 @@ import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.ProjectMember
 import se.uulm.snowballr.backend.repository.H2DatabaseTest
 import se.uulm.snowballr.backend.repository.ProjectTableRepo
+import se.uulm.snowballr.backend.repository.RepositoryHelper.createAndAssignUserToProject
 import se.uulm.snowballr.backend.table.ProjectTable
-import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.testCoroutine
 import snowballr.ProjectOuterClass
 import snowballr.ProjectOuterClass.MemberRole
-import snowballr.UserOuterClass
 import java.util.UUID
 
 @ExperimentalCoroutinesApi
@@ -36,22 +34,6 @@ class ProjectMemberTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectM
         return projectRepo.createProject(request, testUserId)
     }
 
-    private suspend fun addTestMember(index: Int, projectId: UUID): ProjectMember {
-        val userId =
-            db.dbQuery {
-                UserTable
-                    .insertAndGetId {
-                        it[email] = "test.user.$index@example.com"
-                        it[firstName] = "Test"
-                        it[lastName] = "User"
-                        it[passwordHash] = "hashedPassword"
-                        it[role] = UserOuterClass.UserRole.USER_ROLE_DEFAULT
-                        it[status] = UserOuterClass.UserStatus.USER_STATUS_ACTIVE
-                    }.value
-            }
-        return repo.addUserToProject(userId, projectId)
-    }
-
     private suspend fun setupProject(
         numberOfTestMembers: Int = 0,
         addTestUser: Boolean = true,
@@ -64,7 +46,7 @@ class ProjectMemberTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectM
         }
 
         for (i in 1..numberOfTestMembers) {
-            addTestMember(i, project.id).also { members.add(it) }
+            createAndAssignUserToProject("test.user$i@example.com", project.id).also { members.add(it) }
         }
 
         return project to members
@@ -177,9 +159,9 @@ class ProjectMemberTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectM
             val project2 = setupProject().first
             val project3 = setupProject().first
 
-            val member1 = addTestMember(1, project1.id)
-            val member2 = addTestMember(2, project2.id)
-            val member3 = addTestMember(3, project3.id)
+            val member1 = createAndAssignUserToProject("test.user1@example.com", project1.id)
+            val member2 = createAndAssignUserToProject("test.user2@example.com", project2.id)
+            val member3 = createAndAssignUserToProject("test.user3@example.com", project3.id)
 
             val result = repo.getMembersInSameProjectsAsUser(testUserId)
 

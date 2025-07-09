@@ -97,6 +97,7 @@ open class H2DatabaseTest(
     @BeforeAll
     fun setUp() {
         Dispatchers.setMain(threadContext)
+        RepositoryHelper.db = db
     }
 
     @BeforeEach
