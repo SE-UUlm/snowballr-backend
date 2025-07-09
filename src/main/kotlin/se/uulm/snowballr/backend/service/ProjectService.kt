@@ -6,8 +6,8 @@ import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
-import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.toGrpcProject
+import se.uulm.snowballr.backend.model.dto.toGrpcProjects
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
@@ -56,12 +56,6 @@ class ProjectService(
     private val repo: IProjectTableRepo,
     private val userRepo: IUserTableRepo,
 ) : IProjectService {
-    private fun toGrpcProjects(projects: List<Project>): GrpcProject.List {
-        val builder = GrpcProject.List.newBuilder()
-        projects.forEach { builder.addProjects(it.toGrpcProject()) }
-        return builder.build()
-    }
-
     override suspend fun createProject(request: GrpcProject.Create): GrpcProject {
         // TODO: remove dummy user when user management is implemented
         val requestingUserId = parseUUID(dummyUserId!!, EntityType.USER)
@@ -74,7 +68,7 @@ class ProjectService(
         verifyServerAdminRole(currentUser) { UnauthorizedException.All(EntityType.PROJECT, AccessType.READ, it) }
 
         val projects = repo.getAllProjects()
-        return toGrpcProjects(projects)
+        return projects.toGrpcProjects()
     }
 
     override suspend fun getAllProjectsForUser(request: Base.Id): GrpcProject.List {
@@ -82,7 +76,7 @@ class ProjectService(
         authorizeAccessTo(requestedUserId, userRepo, AccessType.READ)
 
         val userProjects = repo.getUserProjects(requestedUserId)
-        return toGrpcProjects(userProjects)
+        return userProjects.toGrpcProjects()
     }
 
     override suspend fun getAllArchivedProjectsForUser(request: Base.Id): GrpcProject.List {
@@ -90,7 +84,7 @@ class ProjectService(
         authorizeAccessTo(requestedUserId, userRepo, AccessType.READ)
 
         val archivedUserProjects = repo.getUserProjects(requestedUserId, setOf(ProjectStatus.PROJECT_STATUS_ARCHIVED))
-        return toGrpcProjects(archivedUserProjects)
+        return archivedUserProjects.toGrpcProjects()
     }
 
     override suspend fun getAllDeletedProjectsForUser(request: Base.Id): GrpcProject.List {
@@ -98,6 +92,6 @@ class ProjectService(
         authorizeAccessTo(requestedUserId, userRepo, AccessType.READ)
 
         val deletedUserProjects = repo.getUserProjects(requestedUserId, setOf(ProjectStatus.PROJECT_STATUS_DELETED))
-        return toGrpcProjects(deletedUserProjects)
+        return deletedUserProjects.toGrpcProjects()
     }
 }

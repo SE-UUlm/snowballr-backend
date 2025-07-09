@@ -57,3 +57,12 @@ fun Project.toGrpcProject(): ProjectOuterClass.Project {
         .setSettings(settings)
         .build()
 }
+
+/**
+ * Creates a list of [ProjectOuterClass.Project]s from this list of [Project]s.
+ */
+fun List<Project>.toGrpcProjects(): ProjectOuterClass.Project.List {
+    val builder = ProjectOuterClass.Project.List.newBuilder()
+    this.forEach { builder.addProjects(it.toGrpcProject()) }
+    return builder.build()
+}
