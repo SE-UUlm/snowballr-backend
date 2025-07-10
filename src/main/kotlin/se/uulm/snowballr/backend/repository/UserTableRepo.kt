@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.repository
 
 import com.google.protobuf.util.FieldMaskUtil
 import org.jetbrains.exposed.sql.ResultRow
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.neq
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.update
 import se.uulm.snowballr.backend.db.IDatabase
@@ -17,6 +18,7 @@ import snowballr.Authentication
 import snowballr.UserOuterClass
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
+import snowballr.email
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -129,6 +131,7 @@ class UserTableRepo(
     override suspend fun getAllUsers(): List<User> = db.dbQuery {
         UserTable
             .selectAll()
+            .where(UserTable.email neq "")
             .map { it.toUser() }
     }
 
