@@ -9,7 +9,10 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.model.FetcherApi
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
+import se.uulm.snowballr.backend.repository.RepositoryHelper.assignUserToProject
+import se.uulm.snowballr.backend.repository.RepositoryHelper.createExampleUser
 import se.uulm.snowballr.backend.table.ProjectTable
+import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.testCoroutine
 import snowballr.ProjectOuterClass.Project
 import snowballr.ProjectOuterClass.ProjectStatus
@@ -19,7 +22,7 @@ import java.util.UUID
 
 @ExperimentalCoroutinesApi
 @DelicateCoroutinesApi
-class ProjectTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable), true) {
+class ProjectTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectMemberTable), true) {
     private val repo = ProjectTableRepo(db)
 
     private suspend fun createExampleProject(name: String, status: ProjectStatus): UUID = db.dbQuery {
@@ -106,5 +109,107 @@ class ProjectTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable), true) {
             val thirdProject = projects.find { it.id == project3Id }
             assertThat(thirdProject).isNull()
         }
+    }
+
+    @Nested
+    inner class GetUserProjects {
+        @Test
+        fun `When active projects are found where the user is member of, then all (and only these) active projects are returned`() =
+            testCoroutine {
+                val project1Id = createExampleProject("Test Project 1", ProjectStatus.PROJECT_STATUS_ACTIVE)
+                val project2Id = createExampleProject("Test Project 2", ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
+                val project3Id = createExampleProject("Test Project 3", ProjectStatus.PROJECT_STATUS_ARCHIVED)
+                val project4Id = createExampleProject("Test Project 4", ProjectStatus.PROJECT_STATUS_ACTIVE)
+
+                val userId = createExampleUser("userWithActiveProjects@example.com")
+
+                assignUserToProject(userId, project1Id)
+                assignUserToProject(userId, project2Id)
+                assignUserToProject(userId, project3Id)
+
+                val activeUserProjects = repo.getUserProjects(userId)
+                assertThat(activeUserProjects).hasSize(2)
+
+                assertThat(activeUserProjects.find { it.id == project1Id }).isNotNull
+                assertThat(activeUserProjects.find { it.id == project2Id }).isNotNull
+                assertThat(activeUserProjects.find { it.id == project3Id }).isNull()
+                assertThat(activeUserProjects.find { it.id == project4Id }).isNull()
+            }
+
+        @Test
+        fun `When archived projects are found where the user is member of, then all (and only these) archived projects are returned`() =
+            testCoroutine {
+                val project1Id = createExampleProject("Test Project 1", ProjectStatus.PROJECT_STATUS_ACTIVE)
+                val project2Id = createExampleProject("Test Project 2", ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
+                val project3Id = createExampleProject("Test Project 3", ProjectStatus.PROJECT_STATUS_ARCHIVED)
+                val project4Id = createExampleProject("Test Project 4", ProjectStatus.PROJECT_STATUS_ARCHIVED)
+
+                val userId = createExampleUser("userWithActiveProjects@example.com")
+
+                assignUserToProject(userId, project1Id)
+                assignUserToProject(userId, project2Id)
+                assignUserToProject(userId, project3Id)
+
+                val archivedUserProjects = repo.getUserProjects(userId, setOf(ProjectStatus.PROJECT_STATUS_ARCHIVED))
+                assertThat(archivedUserProjects).hasSize(1)
+
+                assertThat(archivedUserProjects.find { it.id == project1Id }).isNull()
+                assertThat(archivedUserProjects.find { it.id == project2Id }).isNull()
+                assertThat(archivedUserProjects.find { it.id == project3Id }).isNotNull
+                assertThat(archivedUserProjects.find { it.id == project4Id }).isNull()
+            }
+
+        @Test
+        fun `When deleted projects are found where the user is member of, then all (and only these) deleted projects are returned`() =
+            testCoroutine {
+                val project1Id = createExampleProject("Test Project 1", ProjectStatus.PROJECT_STATUS_ACTIVE)
+                val project2Id = createExampleProject("Test Project 2", ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
+                val project3Id = createExampleProject("Test Project 3", ProjectStatus.PROJECT_STATUS_DELETED)
+                val project4Id = createExampleProject("Test Project 4", ProjectStatus.PROJECT_STATUS_DELETED)
+
+                val userId = createExampleUser("userWithActiveProjects@example.com")
+
+                assignUserToProject(userId, project1Id)
+                assignUserToProject(userId, project2Id)
+                assignUserToProject(userId, project3Id)
+
+                val deletedUserProjects = repo.getUserProjects(userId, setOf(ProjectStatus.PROJECT_STATUS_DELETED))
+                assertThat(deletedUserProjects).hasSize(1)
+
+                assertThat(deletedUserProjects.find { it.id == project1Id }).isNull()
+                assertThat(deletedUserProjects.find { it.id == project2Id }).isNull()
+                assertThat(deletedUserProjects.find { it.id == project3Id }).isNotNull
+                assertThat(deletedUserProjects.find { it.id == project4Id }).isNull()
+            }
+
+        @Test
+        fun `When no projects are found where the user is member of, then no projects are returned`() = testCoroutine {
+            val project1Id = createExampleProject("Test Project 1", ProjectStatus.PROJECT_STATUS_ARCHIVED)
+            val project2Id = createExampleProject("Test Project 2", ProjectStatus.PROJECT_STATUS_DELETED)
+
+            val userId = createExampleUser("userWithActiveProjects@example.com")
+
+            assignUserToProject(userId, project1Id)
+            assignUserToProject(userId, project2Id)
+
+            val activeUserProjects = repo.getUserProjects(userId, setOf(ProjectStatus.PROJECT_STATUS_ACTIVE))
+            assertThat(activeUserProjects).hasSize(0)
+
+            assertThat(activeUserProjects.find { it.id == project1Id }).isNull()
+            assertThat(activeUserProjects.find { it.id == project2Id }).isNull()
+        }
+
+        @Test
+        fun `When an invalid project status is used to filter user projects, then an exception is thrown`() =
+            testCoroutine {
+                val userId = createExampleUser("userWithActiveProjects@example.com")
+
+                assertThrows<IllegalArgumentException> {
+                    repo.getUserProjects(
+                        userId,
+                        setOf(ProjectStatus.PROJECT_STATUS_UNSPECIFIED),
+                    )
+                }
+            }
     }
 }

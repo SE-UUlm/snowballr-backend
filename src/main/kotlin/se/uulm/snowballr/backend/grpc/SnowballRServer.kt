@@ -263,16 +263,16 @@ class SnowballRServer(
             super.getAllDeletedProjects(request)
 
         override suspend fun getAllDeletedProjectsForUser(request: Base.Id): ProjectOuterClass.Project.List =
-            super.getAllDeletedProjectsForUser(request)
+            mainService.getAllDeletedProjectsForUser(request)
 
         override suspend fun getAllArchivedProjects(request: Base.Nothing): ProjectOuterClass.Project.List =
             super.getAllArchivedProjects(request)
 
         override suspend fun getAllProjectsForUser(request: Base.Id): ProjectOuterClass.Project.List =
-            super.getAllProjectsForUser(request)
+            mainService.getAllProjectsForUser(request)
 
         override suspend fun getAllArchivedProjectsForUser(request: Base.Id): ProjectOuterClass.Project.List =
-            super.getAllArchivedProjectsForUser(request)
+            mainService.getAllArchivedProjectsForUser(request)
 
         override suspend fun createProject(request: ProjectOuterClass.Project.Create): ProjectOuterClass.Project =
             mainService.createProject(request)

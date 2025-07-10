@@ -1,6 +1,8 @@
 package se.uulm.snowballr.backend.repository
 
 import org.jetbrains.exposed.sql.ResultRow
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
@@ -8,6 +10,7 @@ import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.FetcherApi
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.table.ProjectTable
+import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.table.getUserEntityId
 import se.uulm.snowballr.backend.table.toProject
 import snowballr.ProjectOuterClass
@@ -37,6 +40,29 @@ interface IProjectTableRepo {
      * Returns all active projects stored in the database.
      */
     suspend fun getAllProjects(): List<Project>
+
+    /**
+     * Retrieves a list of projects from the database in which the user with the specified [userId] is a member.
+     *
+     * These projects can be filtered by their status, e.g., this function can be used to retrieve all archived
+     * and deleted projects of a user.
+     *
+     * @param userId The unique identifier of the user whose associated projects are to be fetched.
+     * @param statusFilters (optional) Set of filters to specify which project status the fetched projects should have.
+     * By default, [ProjectStatus.PROJECT_STATUS_ACTIVE] and [ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED] are used,
+     * which includes both active and active-locked projects, i.e., projects where settings cannot be changed anymore.
+     * If set to another value (e.g., [ProjectStatus.PROJECT_STATUS_DELETED]), only projects
+     * matching one of the statuses (e.g., deleted) will be returned.
+     *
+     * @return A list of [Project] objects matching the specified filters where the given user is member of.
+     */
+    suspend fun getUserProjects(
+        userId: UUID,
+        statusFilters: Set<ProjectStatus> = setOf(
+            ProjectStatus.PROJECT_STATUS_ACTIVE,
+            ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED,
+        ),
+    ): List<Project>
 }
 
 /**
@@ -77,6 +103,24 @@ class ProjectTableRepo(
                 (ProjectTable.status eq ProjectStatus.PROJECT_STATUS_ACTIVE) or
                     (ProjectTable.status eq ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
             }
+            .map { it.toProject() }
+    }
+
+    override suspend fun getUserProjects(userId: UUID, statusFilters: Set<ProjectStatus>): List<Project> = db.dbQuery {
+        val excludedStatuses = listOf(ProjectStatus.PROJECT_STATUS_UNSPECIFIED)
+        val projectFilter = statusFilters
+            .filterNot { it in excludedStatuses }
+            .map { ProjectTable.status eq it }
+            .reduceOrNull { acc, filter -> acc or filter }
+
+        require(
+            projectFilter != null,
+        ) { "Unsupported filter statuses: ${statusFilters.joinToString(", ") { it.name }}." }
+
+        (ProjectTable innerJoin ProjectMemberTable)
+            .select(ProjectTable.columns)
+            .where { ProjectMemberTable.userId eq userId }
+            .andWhere { projectFilter }
             .map { it.toProject() }
     }
 }
