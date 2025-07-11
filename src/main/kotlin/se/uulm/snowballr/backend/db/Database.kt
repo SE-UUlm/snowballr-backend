@@ -11,6 +11,7 @@ import org.jetbrains.exposed.sql.Transaction
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
+import se.uulm.snowballr.backend.auth.DummyUser
 import se.uulm.snowballr.backend.env.Env
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.table.AuthorTable
@@ -27,7 +28,6 @@ import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.table.association.ReadingListTable
 import se.uulm.snowballr.backend.table.association.ReviewHasCriterionTable
 import se.uulm.snowballr.backend.table.association.ReviewTable
-import snowballr.UserOuterClass
 import java.sql.Connection
 
 private val logger = KotlinLogging.logger { }
@@ -98,28 +98,8 @@ class Database(
                 ReviewHasCriterionTable,
             )
 
-            // Create dummy user until user management is implemented
-            // TODO: remove dummy user when user management is implemented
-            // Fetch existing user
-            var userId =
-                UserTable
-                    .select(UserTable.id)
-                    .where { UserTable.email eq "alice.smith@example.com" }
-                    .map { it[UserTable.id] }
-                    .singleOrNull()
-            // Create a new dummy user if they don't already exist
-            if (userId == null) {
-                userId =
-                    UserTable.insertAndGetId {
-                        it[email] = "alice.smith@example.com"
-                        it[firstName] = "Alice"
-                        it[lastName] = "Smith"
-                        it[passwordHash] = "passwordHash"
-                        it[role] = UserOuterClass.UserRole.USER_ROLE_ADMIN
-                        it[status] = UserOuterClass.UserStatus.USER_STATUS_ACTIVE
-                    }
-            }
-            dummyUserId = userId.value.toString()
+            useDummyUser()
+            dummyUserId = DummyUser.id.toString()
         }
         logger.info { "Database connection established" }
     }
@@ -144,5 +124,40 @@ class Database(
         Connection.TRANSACTION_SERIALIZABLE,
     ) {
         block()
+    }
+
+    /**
+     * Initializes a dummy user in the database if the environment variable is set to use a dummy user
+     * and the dummy user does not already exist.
+     *
+     * The dummy user is created with predefined credentials and role, which can be used for testing purposes.
+     */
+    fun useDummyUser() {
+        val useDummyUser = envReader.env.miscellaneous.useDummyUser
+        if (useDummyUser && !doesDummyUserExist()) {
+            val dummyUserId =
+                UserTable.insertAndGetId {
+                    it[email] = DummyUser.email
+                    it[firstName] = DummyUser.firstName
+                    it[lastName] = DummyUser.lastName
+                    it[passwordHash] = DummyUser.passwordHash
+                    it[role] = DummyUser.role
+                    it[status] = DummyUser.status
+                }
+            DummyUser.id = dummyUserId.value
+        }
+    }
+
+    /**
+     * Checks if the dummy user already exists in the database.
+     *
+     * @return `true` if the dummy user exists, `false` otherwise.
+     */
+    private fun doesDummyUserExist(): Boolean {
+        return UserTable
+            .select(UserTable.id)
+            .where { UserTable.email eq DummyUser.email }
+            .empty()
+            .not()
     }
 }
