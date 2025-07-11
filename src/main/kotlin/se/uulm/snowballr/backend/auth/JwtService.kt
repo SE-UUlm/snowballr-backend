@@ -6,8 +6,6 @@ import io.jsonwebtoken.Jws
 import io.jsonwebtoken.JwtException
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.io.Decoders
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.model.jwt.JwtTokens
 import se.uulm.snowballr.backend.model.jwt.ParsedJwtClaims
@@ -22,19 +20,69 @@ import java.util.concurrent.TimeUnit
 
 private val logger = KotlinLogging.logger {}
 
+interface IJwtService {
+    /**
+     * Generates a signed access and refresh token for the given user ID.
+     *
+     * @param userId The unique identifier of the user for whom the tokens are generated.
+     * @return A [JwtTokens] object containing the generated access and refresh tokens.
+     */
+    fun generateTokens(userId: UUID): JwtTokens
+
+    /**
+     * Parses and validates a JWT token, returning structured claims.
+     *
+     * @param token The JWT token to parse.
+     * @return ParsedJwtClaims if valid.
+     * @throws JwtException If the token is invalid or expired.
+     */
+    fun parseToken(token: String?): ParsedJwtClaims
+
+    /**
+     * Uses the parsed refresh token claims to generate a new access token.
+     *
+     * **Note:** This function assumes the provided claims are from a valid, verified refresh token.
+     * The caller is responsible for parsing and validating the token before invoking this function.
+     *
+     * @param refreshTokenClaims The parsed claims of the refresh token.
+     * @return A new access token as a string.
+     */
+    fun refreshAccessToken(refreshTokenClaims: ParsedJwtClaims): String
+
+    /**
+     * Returns the configured time-to-live (TTL) for an access token in seconds.
+     *
+     * This is useful for setting cookie `Max-Age` attributes.
+     *
+     * @return The access token TTL in seconds.
+     */
+    fun getAccessTokenTTL(): Long
+
+    /**
+     * Returns the configured time-to-live (TTL) for a refresh token in seconds.
+     *
+     * This is useful for setting cookie `Max-Age` attributes.
+     *
+     * @return The refresh token TTL in seconds.
+     */
+    fun getRefreshTokenTTL(): Long
+}
+
 /**
  * Utility object for handling JWT (JSON Web Token) operations, including token generation,
  * parsing, and validation.
  */
-object JwtUtils : KoinComponent {
-    const val KEY_ALGORITHM = "RSA"
-    private const val ACCESS_TOKEN_EXPIRATION_MS = 15 * 60 * 1000L // 15 minutes
-    private const val REFRESH_TOKEN_EXPIRATION_MS = 7 * 24 * 60 * 60 * 1000L // 7 days
-    private const val ISSUER = "SnowballR"
-    private const val AUDIENCE = "snowballr-backend"
-    private const val CLOCK_SKEW_SECONDS = 180L
-
-    private val envReader: EnvReader by inject()
+class JwtService(
+    private val envReader: EnvReader,
+) : IJwtService {
+    companion object {
+        const val KEY_ALGORITHM = "RSA"
+        const val ACCESS_TOKEN_EXPIRATION_MS = 15 * 60 * 1000L // 15 minutes
+        const val REFRESH_TOKEN_EXPIRATION_MS = 7 * 24 * 60 * 60 * 1000L // 7 days
+        private const val ISSUER = "SnowballR"
+        private const val AUDIENCE = "snowballr-backend"
+        private const val CLOCK_SKEW_SECONDS = 180L
+    }
 
     private val privateKey: PrivateKey
     private val publicKey: PublicKey
@@ -57,17 +105,7 @@ object JwtUtils : KoinComponent {
         logger.debug { "Initialized JWT private and public keys" }
     }
 
-    fun init() {
-        // Trigger initialization
-    }
-
-    /**
-     * Generates a signed access and refresh token for the given user ID.
-     *
-     * @param userId The unique identifier of the user for whom the tokens are generated.
-     * @return A [JwtTokens] object containing the generated access and refresh tokens.
-     */
-    fun generateTokens(userId: UUID): JwtTokens {
+    override fun generateTokens(userId: UUID): JwtTokens {
         val accessToken = generateToken(userId, ACCESS_TOKEN_EXPIRATION_MS)
         val refreshToken = generateToken(userId, REFRESH_TOKEN_EXPIRATION_MS)
         return JwtTokens(accessToken, refreshToken)
@@ -96,14 +134,7 @@ object JwtUtils : KoinComponent {
             .compact()
     }
 
-    /**
-     * Parses and validates a JWT token, returning structured claims.
-     *
-     * @param token The JWT token to parse.
-     * @return ParsedJwtClaims if valid.
-     * @throws JwtException If the token is invalid or expired.
-     */
-    fun parseToken(token: String?): ParsedJwtClaims {
+    override fun parseToken(token: String?): ParsedJwtClaims {
         if (token == null) throw JwtException("Token is null")
 
         val jws: Jws<Claims> = Jwts
@@ -124,33 +155,10 @@ object JwtUtils : KoinComponent {
         )
     }
 
-    /**
-     * Uses the parsed refresh token claims to generate a new access token.
-     *
-     * **Note:** This function assumes the provided claims are from a valid, verified refresh token.
-     * The caller is responsible for parsing and validating the token before invoking this function.
-     *
-     * @param refreshTokenClaims The parsed claims of the refresh token.
-     * @return A new access token as a string.
-     */
-    fun refreshAccessToken(refreshTokenClaims: ParsedJwtClaims): String =
+    override fun refreshAccessToken(refreshTokenClaims: ParsedJwtClaims): String =
         generateToken(refreshTokenClaims.userId, ACCESS_TOKEN_EXPIRATION_MS)
 
-    /**
-     * Returns the configured time-to-live (TTL) for an access token in seconds.
-     *
-     * This is useful for setting cookie `Max-Age` attributes.
-     *
-     * @return The access token TTL in seconds.
-     */
-    fun getAccessTokenTTL(): Long = TimeUnit.MILLISECONDS.toSeconds(ACCESS_TOKEN_EXPIRATION_MS)
+    override fun getAccessTokenTTL(): Long = TimeUnit.MILLISECONDS.toSeconds(ACCESS_TOKEN_EXPIRATION_MS)
 
-    /**
-     * Returns the configured time-to-live (TTL) for a refresh token in seconds.
-     *
-     * This is useful for setting cookie `Max-Age` attributes.
-     *
-     * @return The refresh token TTL in seconds.
-     */
-    fun getRefreshTokenTTL(): Long = TimeUnit.MILLISECONDS.toSeconds(REFRESH_TOKEN_EXPIRATION_MS)
+    override fun getRefreshTokenTTL(): Long = TimeUnit.MILLISECONDS.toSeconds(REFRESH_TOKEN_EXPIRATION_MS)
 }

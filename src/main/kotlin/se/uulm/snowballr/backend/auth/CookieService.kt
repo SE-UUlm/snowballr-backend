@@ -2,10 +2,7 @@ package se.uulm.snowballr.backend.auth
 
 import se.uulm.snowballr.backend.model.auth.CookieConfig
 
-/**
- * Utility object for parsing and constructing HTTP cookie headers.
- */
-object CookieUtils {
+interface ICookieService {
     /**
      * Parses a `Cookie` header string into a map of key-value pairs.
      *
@@ -18,17 +15,7 @@ object CookieUtils {
      * @param cookieHeader The string value of the `Cookie` header, or null if no cookie is present.
      * @return A map of cookie names to cookie values. Returns an empty map if the header is null or blank.
      */
-    fun parseCookies(cookieHeader: String?): Map<String, String> {
-        if (cookieHeader.isNullOrBlank()) return emptyMap()
-        return cookieHeader
-            .split(";")
-            .map { it.trim() }
-            .filter { it.contains("=") }
-            .associate {
-                val parts = it.split("=", limit = 2)
-                parts[0] to parts[1]
-            }
-    }
+    fun parseCookies(cookieHeader: String?): Map<String, String>
 
     /**
      * Builds a complete `Set-Cookie` string for a specific authentication cookie.
@@ -40,14 +27,48 @@ object CookieUtils {
      * @param value The token value. A null or empty value signals that the cookie should be expired.
      * @return A formatted `Set-Cookie` string, or null if the name is not a recognized auth cookie.
      */
-    fun buildAuthCookieString(name: String, value: String?): String? {
+    fun buildAuthCookieString(name: String, value: String?): String?
+
+    /**
+     * Creates a general-purpose `Set-Cookie` header string from the provided [CookieConfig].
+     *
+     * Example:
+     * ```
+     * val config = CookieConfig(name = "theme", value = "dark", maxAgeSeconds = 31536000)
+     * val cookieHeader = cookieService.createCookieString(config)
+     * // "theme=dark; Max-Age=31536000; Path=/; SameSite=Lax; HttpOnly; Secure"
+     * ```
+     *
+     * @param config The cookie configuration.
+     * @return A formatted `Set-Cookie` string.
+     */
+    fun createCookieString(config: CookieConfig): String
+}
+
+/**
+ * Utility object for parsing and constructing HTTP cookie headers.
+ */
+class CookieService(private val jwtService: IJwtService) : ICookieService {
+    override fun parseCookies(cookieHeader: String?): Map<String, String> {
+        if (cookieHeader.isNullOrBlank()) return emptyMap()
+        return cookieHeader
+            .split(";")
+            .map { it.trim() }
+            .filter { it.contains("=") }
+            .associate {
+                val parts = it.split("=", limit = 2)
+                parts[0] to parts[1]
+            }
+    }
+
+    override fun buildAuthCookieString(name: String, value: String?): String? {
         val ttl =
             when (name) {
                 GrpcContext.ACCESS_TOKEN_COOKIE_NAME ->
-                    if (value.isNullOrEmpty()) 0 else JwtUtils.getAccessTokenTTL()
+                    if (value.isNullOrEmpty()) 0 else jwtService.getAccessTokenTTL()
 
                 GrpcContext.REFRESH_TOKEN_COOKIE_NAME ->
-                    if (value.isNullOrEmpty()) 0 else JwtUtils.getRefreshTokenTTL()
+                    if (value.isNullOrEmpty()) 0 else jwtService.getRefreshTokenTTL()
 
                 else -> return null // Not a recognized authentication cookie.
             }
@@ -65,20 +86,7 @@ object CookieUtils {
         return createCookieString(authCookieConfig)
     }
 
-    /**
-     * Creates a general-purpose `Set-Cookie` header string from the provided [CookieConfig].
-     *
-     * Example:
-     * ```
-     * val config = CookieConfig(name = "theme", value = "dark", maxAgeSeconds = 31536000)
-     * val cookieHeader = CookieUtils.createCookieString(config)
-     * // "theme=dark; Max-Age=31536000; Path=/; SameSite=Lax; HttpOnly; Secure"
-     * ```
-     *
-     * @param config The cookie configuration.
-     * @return A formatted `Set-Cookie` string.
-     */
-    fun createCookieString(config: CookieConfig): String {
+    override fun createCookieString(config: CookieConfig): String {
         val parts = mutableListOf(
             "${config.name}=${config.value}",
             "Max-Age=${config.maxAgeSeconds}",

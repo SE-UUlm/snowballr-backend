@@ -16,11 +16,13 @@ import org.koin.core.context.stopKoin
 import org.koin.dsl.module
 import org.koin.test.KoinTest
 import se.uulm.snowballr.backend.RandomKeyGenerator
+import se.uulm.snowballr.backend.env.Env
 import se.uulm.snowballr.backend.env.EnvReader
 import java.util.UUID
 
-class JwtUtilsTest : KoinTest {
+class JwtServiceTest : KoinTest {
     private val envReaderMock = mockk<EnvReader>()
+    private lateinit var jwtService: JwtService
 
     @BeforeEach
     fun setUpTest() {
@@ -38,8 +40,17 @@ class JwtUtilsTest : KoinTest {
 
         // Mock JWT key pair
         val (privateKeyBase64, publicKeyBase64) = RandomKeyGenerator.generateKeyPair()
-        every { envReaderMock.env.encryption.jwtPrivateKeyBase64 } returns privateKeyBase64
-        every { envReaderMock.env.encryption.jwtPublicKeyBase64 } returns publicKeyBase64
+
+        val encryptionMock = mockk<Env.Encryption>()
+        every { encryptionMock.jwtPrivateKeyBase64 } returns privateKeyBase64
+        every { encryptionMock.jwtPublicKeyBase64 } returns publicKeyBase64
+
+        val envMock = mockk<Env>()
+        every { envMock.encryption } returns encryptionMock
+
+        every { envReaderMock.env } returns envMock
+
+        jwtService = JwtService(envReaderMock)
     }
 
     @AfterEach
@@ -52,7 +63,7 @@ class JwtUtilsTest : KoinTest {
         @Test
         fun `When generating tokens for a user, then non-blank access and refresh tokens are returned`() {
             val userId = UUID.randomUUID()
-            val tokens = JwtUtils.generateTokens(userId)
+            val tokens = jwtService.generateTokens(userId)
 
             assertTrue(tokens.accessToken.isNotBlank())
             assertTrue(tokens.refreshToken.isNotBlank())
@@ -64,9 +75,9 @@ class JwtUtilsTest : KoinTest {
         @Test
         fun `When parsing an access token, then the correct userId and timestamps are extracted`() {
             val userId = UUID.randomUUID()
-            val tokens = JwtUtils.generateTokens(userId)
+            val tokens = jwtService.generateTokens(userId)
 
-            val parsedToken = JwtUtils.parseToken(tokens.accessToken)
+            val parsedToken = jwtService.parseToken(tokens.accessToken)
 
             assertEquals(userId, parsedToken.userId)
             assertNotNull(parsedToken.issuedAt)
@@ -76,7 +87,7 @@ class JwtUtilsTest : KoinTest {
         @Test
         fun `When parsing a null token, then a JwtException is thrown`() {
             assertThrows<JwtException> {
-                JwtUtils.parseToken(null)
+                jwtService.parseToken(null)
             }
         }
 
@@ -84,7 +95,7 @@ class JwtUtilsTest : KoinTest {
         fun `When parsing a malformed token, then a JwtException is thrown`() {
             val malformed = "bad.token.without.structure"
             assertThrows<JwtException> {
-                JwtUtils.parseToken(malformed)
+                jwtService.parseToken(malformed)
             }
         }
     }
@@ -94,12 +105,12 @@ class JwtUtilsTest : KoinTest {
         @Test
         fun `When refreshing an access token with a valid refresh token, then a new valid access token is issued`() {
             val userId = UUID.randomUUID()
-            val tokens = JwtUtils.generateTokens(userId)
-            val parsedToken = JwtUtils.parseToken(tokens.accessToken)
+            val tokens = jwtService.generateTokens(userId)
+            val parsedToken = jwtService.parseToken(tokens.accessToken)
 
-            val newAccessToken = JwtUtils.refreshAccessToken(parsedToken)
+            val newAccessToken = jwtService.refreshAccessToken(parsedToken)
 
-            val parsedNewToken = JwtUtils.parseToken(newAccessToken)
+            val parsedNewToken = jwtService.parseToken(newAccessToken)
             assertEquals(userId, parsedNewToken.userId)
         }
     }

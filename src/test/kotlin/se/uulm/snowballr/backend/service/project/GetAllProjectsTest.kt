@@ -15,7 +15,7 @@ import snowballr.UserOuterClass.UserRole
 
 @ExperimentalCoroutinesApi
 @DelicateCoroutinesApi
-internal class GetAllProjectsTest : MainServiceTest() {
+class GetAllProjectsTest : MainServiceTest() {
     @Test
     fun `When all projects are retrieved by an admin, then no exception is thrown`() = testCoroutine {
         val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)

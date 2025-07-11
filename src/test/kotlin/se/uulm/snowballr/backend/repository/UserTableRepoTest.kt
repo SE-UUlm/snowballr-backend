@@ -278,9 +278,12 @@ class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
         fun `When the user is found, then the status of the user is set to USER_STATUS_DELETED`() = testCoroutine {
             val userId1 = insertTestUserAndGetId()
             val before = OffsetDateTime.now()
+
             repo.softDeleteUser(userId1)
+
             val after = OffsetDateTime.now()
             val deletedUser = repo.getUserById(userId1)
+
             assertThat(deletedUser.status).isEqualTo(UserStatus.USER_STATUS_DELETED)
             assertThat(deletedUser.deletedAt).isBetween(before, after)
         }
