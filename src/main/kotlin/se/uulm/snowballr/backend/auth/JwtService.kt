@@ -105,10 +105,6 @@ class JwtService(
         logger.debug { "Initialized JWT private and public keys" }
     }
 
-    fun init() {
-        // Trigger initialization
-    }
-
     override fun generateTokens(userId: UUID): JwtTokens {
         val accessToken = generateToken(userId, ACCESS_TOKEN_EXPIRATION_MS)
         val refreshToken = generateToken(userId, REFRESH_TOKEN_EXPIRATION_MS)

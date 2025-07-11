@@ -47,7 +47,10 @@ val snowballRModule =
         single<IEnvService> { EnvService() }
         singleOf(::EnvReader)
         // Then the JWT service, which depend on the env reader
-        singleOf(::JwtService) { bind<IJwtService>() }
+        singleOf(::JwtService) {
+            createdAtStart()
+            bind<IJwtService>()
+        }
         // Then the cookie service, which depend on the JWT service
         singleOf(::CookieService) { bind<ICookieService>() }
         // Then the database, which only needs access to some env variables
