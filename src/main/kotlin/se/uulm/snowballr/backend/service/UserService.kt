@@ -43,7 +43,7 @@ interface IUserService {
     /**
      * Service implementation of [SnowballRService.register].
      */
-    suspend fun register(request: Authentication.RegisterRequest)
+    suspend fun register(request: Authentication.RegisterRequest): Base.Nothing
 
     /**
      * Service implementation of [SnowballRService.updateUser].
@@ -155,7 +155,7 @@ class UserService(
         return builder.build()
     }
 
-    override suspend fun register(request: Authentication.RegisterRequest) {
+    override suspend fun register(request: Authentication.RegisterRequest): Base.Nothing {
         // Check whether a user with the given email already exists
         if (userRepo.doesUserExistByEmail(request.email)) {
             throw DuplicateEntityException(EntityType.USER, request.email, IdentifierType.EMAIL)
@@ -168,6 +168,8 @@ class UserService(
         // Generate JWT tokens
         val (accessToken, refreshToken) = jwtService.generateTokens(user.id)
         GrpcContext.setAuthCookiesInContext(accessToken, refreshToken)
+
+        return Base.Nothing.getDefaultInstance()
     }
 
     override suspend fun updateUser(request: UserOuterClass.User.Update): UserOuterClass.User {

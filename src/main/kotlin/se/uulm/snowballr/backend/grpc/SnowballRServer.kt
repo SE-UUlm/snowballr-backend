@@ -161,11 +161,8 @@ class SnowballRServer(
         override suspend fun getAvailableFetcherApis(request: Base.Nothing): Main.AvailableFetcherApis =
             super.getAvailableFetcherApis(request)
 
-        override suspend fun register(request: Authentication.RegisterRequest): Base.Nothing {
+        override suspend fun register(request: Authentication.RegisterRequest): Base.Nothing =
             mainService.register(request)
-
-            return Base.Nothing.getDefaultInstance()
-        }
 
         override suspend fun login(request: Authentication.LoginRequest): Base.Nothing = super.login(request)
 
