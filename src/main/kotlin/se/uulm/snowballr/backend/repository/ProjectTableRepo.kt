@@ -7,7 +7,6 @@ import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.FetcherApi
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
@@ -91,7 +90,7 @@ class ProjectTableRepo(
             it[snowballingType] = SnowballingType.SNOWBALLING_TYPE_BOTH
             it[reviewMaybeAllowed] = true
             it[reviewDecisionMatrixBinary] = ReviewDecisionMatrix.getDefaultInstance().toByteArray()
-            it[fetcherApis] = FetcherApi.entries.toList()
+            it[fetcherApis] = emptyList()
             it[createdBy] = userEntityId
         }
     }

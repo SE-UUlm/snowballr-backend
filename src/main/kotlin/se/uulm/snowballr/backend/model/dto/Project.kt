@@ -1,6 +1,5 @@
 package se.uulm.snowballr.backend.model.dto
 
-import se.uulm.snowballr.backend.model.FetcherApi
 import se.uulm.snowballr.backend.table.ProjectTable
 import snowballr.ProjectOuterClass
 import java.time.OffsetDateTime
@@ -19,7 +18,7 @@ data class Project(
     val snowballingType: ProjectOuterClass.SnowballingType,
     val reviewMaybeAllowed: Boolean,
     val reviewDecisionMatrix: ProjectOuterClass.ReviewDecisionMatrix,
-    val fetcherApis: List<FetcherApi>,
+    val fetcherApis: List<String>,
     val currentStageStartedAt: OffsetDateTime,
     val createdAt: OffsetDateTime,
     val createdBy: UUID,
@@ -35,17 +34,15 @@ data class Project(
  * Creates a [ProjectOuterClass.Project] from this [Project].
  */
 fun Project.toGrpcProject(): ProjectOuterClass.Project {
-    val settingsBuilder =
+    val settings =
         ProjectOuterClass.Project.Settings
             .newBuilder()
             .setSimilarityThreshold(this.similarityThreshold)
             .setDecisionMatrix(this.reviewDecisionMatrix)
             .setSnowballingType(this.snowballingType)
             .setReviewMaybeAllowed(this.reviewMaybeAllowed)
-    for (api in this.fetcherApis) {
-        settingsBuilder.addFetcherApis(api.name)
-    }
-    val settings = settingsBuilder.build()
+            .addAllFetcherApis(this.fetcherApis)
+            .build()
 
     return ProjectOuterClass.Project
         .newBuilder()

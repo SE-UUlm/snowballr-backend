@@ -1,6 +1,5 @@
 package se.uulm.snowballr.backend
 
-import se.uulm.snowballr.backend.model.FetcherApi
 import se.uulm.snowballr.backend.model.dto.Criterion
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.ProjectMember
@@ -30,7 +29,7 @@ object DataBuilder {
         snowballingType: SnowballingType = SnowballingType.SNOWBALLING_TYPE_BOTH,
         reviewMaybeAllowed: Boolean = true,
         reviewDecisionMatrix: ReviewDecisionMatrix = ReviewDecisionMatrix.getDefaultInstance(),
-        fetcherApis: List<FetcherApi> = emptyList(),
+        fetcherApis: List<String> = emptyList(),
         currentStageStartedAt: OffsetDateTime = OffsetDateTime.now(),
         createdAt: OffsetDateTime = OffsetDateTime.now(),
         createdBy: UUID = UUID.randomUUID(),
