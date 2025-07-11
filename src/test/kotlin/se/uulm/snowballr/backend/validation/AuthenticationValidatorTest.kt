@@ -165,4 +165,39 @@ class AuthenticationValidatorTest {
             assertThat(issues).contains(InvalidPassword("", InvalidPassword.Reason.NOT_ENOUGH_SPECIAL_CHARS))
         }
     }
+
+    @Nested
+    inner class LoginRequest {
+        @Test
+        fun `When a valid login request is validated, then no issue is returned`() {
+            val request = Authentication.LoginRequest.newBuilder()
+                .setEmail("test.user@example.com")
+                .setPassword("AAbb__00")
+                .build()
+            val result = AuthenticationValidator.validateLoginRequest(request)
+
+            EitherAssert.assertThat(result).isRight()
+        }
+
+        @Test
+        fun `When an invalid email is validated, then the 'InvalidEmail' issue is returned`() {
+            val request = Authentication.LoginRequest.newBuilder()
+                .setEmail("invalid-email")
+                .build()
+            val result = AuthenticationValidator.validateLoginRequest(request)
+
+            assertInvalidResult<InvalidEmail>(result)
+        }
+
+        @Test
+        fun `When a blank password is validated, then the 'BlankField' issue is returned`() {
+            val request = Authentication.LoginRequest.newBuilder()
+                .setEmail("test.user@example.com")
+                .setPassword("")
+                .build()
+            val result = AuthenticationValidator.validateLoginRequest(request)
+
+            assertInvalidResult<BlankField>(result)
+        }
+    }
 }
