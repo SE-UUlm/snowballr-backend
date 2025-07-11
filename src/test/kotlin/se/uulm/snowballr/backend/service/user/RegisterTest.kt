@@ -21,7 +21,7 @@ import kotlin.test.assertEquals
 @DelicateCoroutinesApi
 class RegisterTest : MainServiceTest() {
     @Test
-    fun `When a user provides valid credentials, the user is registered successfully`() = testCoroutine {
+    fun `When a user provides valid credentials, then the user is registered successfully`() = testCoroutine {
         val cookiesMap = mutableMapOf<String, String?>()
 
         // Create a new context with cookiesMap and run code inside it
@@ -30,15 +30,9 @@ class RegisterTest : MainServiceTest() {
         initialContext.attach()
 
         val testUser = DataBuilder.createExampleUser()
-        val userPassword = "AAbb__00"
         val tokens = JwtTokens("accessToken", "refreshToken")
 
-        val request = Authentication.RegisterRequest.newBuilder().apply {
-            email = testUser.email
-            password = userPassword
-            firstName = testUser.firstName
-            lastName = testUser.lastName
-        }.build()
+        val request = Authentication.RegisterRequest.newBuilder().setPassword("AAbb__00").build()
 
         coEvery { userRepoMock.doesUserExistByEmail(any()) } returns false
         coEvery { userRepoMock.createUser(any(), any()) } returns testUser
