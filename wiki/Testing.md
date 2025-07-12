@@ -17,6 +17,7 @@ On this page, we cover the following topics:
     * [Repository](#repository)
     * [Service](#service)
     * [Input Validation](#input-validation)
+  * [Dummy User](#dummy-user)
 <!-- TOC -->
 <!-- @formatter:on -->
 <!-- markdownlint-enable MD007 -->
@@ -184,3 +185,24 @@ val request =
 See
 [CriterionValidatorTest](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/test/kotlin/se/uulm/snowballr/backend/validation/CriterionValidatorTest.kt)
 for an example.
+
+## Dummy User
+
+For development and testing, you can enable a dummy user to avoid creating a real user account. When the
+`USE_DUMMY_USER` environment variable is set to `true`, the backend will:
+
+1. **Create a dummy user** and insert it into the database.
+2. **Automatically authenticate** the dummy user, allowing all whitelisted requests to proceed as if a real user were
+   logged in.
+
+This mechanism simplifies backend testing that requires an authenticated user context without the overhead of
+registration and login flows.
+
+> **Note**: Restricting Allowed Calls
+>
+> The dummy user is not intended to have unrestricted access. The `authenticationInterceptor` defines a whitelist of
+> allowed endpoints for the dummy user.
+>
+> To modify which endpoints the dummy user can access, update the allowed calls list in the `authenticationInterceptor`.
+> Ensure that only endpoints required for local development or automated tests are permitted to avoid inadvertently
+> bypassing critical authorization logic during testing.
