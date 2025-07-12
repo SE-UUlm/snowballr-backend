@@ -49,9 +49,6 @@ private const val SCHEMA_NAME = "snowballr"
  */
 private const val DB_USER = "postgres"
 
-// TODO: remove dummy user when user management is implemented
-var dummyUserId: String? = null
-
 /**
  * Interface defining a database abstraction layer for executing queries within transactional contexts.
  *
@@ -101,7 +98,6 @@ class Database(
             )
 
             useDummyUser()
-            dummyUserId = DummyUser.id.toString()
         }
         logger.info { "Database connection established" }
     }
