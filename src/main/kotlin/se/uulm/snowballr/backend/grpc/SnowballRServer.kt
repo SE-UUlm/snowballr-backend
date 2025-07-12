@@ -166,7 +166,7 @@ class SnowballRServer(
 
         override suspend fun login(request: Authentication.LoginRequest): Base.Nothing = super.login(request)
 
-        override suspend fun logout(request: Base.Nothing): Base.Nothing = super.logout(request)
+        override suspend fun logout(request: Base.Nothing): Base.Nothing = mainService.logout()
 
         override suspend fun getAuthenticationStatus(
             request: Base.Nothing,
