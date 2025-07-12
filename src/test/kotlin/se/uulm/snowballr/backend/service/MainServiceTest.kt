@@ -1,7 +1,6 @@
 package se.uulm.snowballr.backend.service
 
 import io.mockk.clearAllMocks
-import io.mockk.coEvery
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkObject
@@ -14,17 +13,14 @@ import kotlinx.coroutines.test.setMain
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.TestInstance
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.auth.IJwtService
-import se.uulm.snowballr.backend.db.dummyUserId
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.service.criterion.CreateCriterionTest
-import java.util.UUID
 
 /**
  * Unit test class for the [MainService] class.
@@ -92,14 +88,6 @@ open class MainServiceTest {
     fun setUp() {
         Dispatchers.setMain(threadContext)
         mockkObject(GrpcContext)
-    }
-
-    @BeforeEach
-    open fun setUpTest() {
-        val userId = UUID.randomUUID()
-        coEvery { GrpcContext.getUserIdFromContext() } returns userId
-        // TODO: remove when user management is implemented
-        dummyUserId = userId.toString()
     }
 
     @AfterEach
