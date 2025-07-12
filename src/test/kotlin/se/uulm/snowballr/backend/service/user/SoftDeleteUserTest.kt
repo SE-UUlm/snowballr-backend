@@ -22,7 +22,7 @@ import java.util.UUID
 
 @DelicateCoroutinesApi
 @ExperimentalCoroutinesApi
-class DeleteUserTest : MainServiceTest() {
+class SoftDeleteUserTest : MainServiceTest() {
     private val requestedUserId = UUID.randomUUID()
     private fun getExampleRequest() = Base.Id.newBuilder().setId(requestedUserId.toString()).build()
 
