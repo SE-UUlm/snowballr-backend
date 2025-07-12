@@ -14,7 +14,6 @@ import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.toGrpcUser
-import se.uulm.snowballr.backend.model.jwt.JwtTokens
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
@@ -44,7 +43,7 @@ interface IUserService {
     /**
      * Service implementation of [SnowballRService.register].
      */
-    suspend fun register(request: Authentication.RegisterRequest): JwtTokens
+    suspend fun register(request: Authentication.RegisterRequest): Base.Nothing
 
     /**
      * Service implementation of [SnowballRService.updateUser].
@@ -156,7 +155,7 @@ class UserService(
         return builder.build()
     }
 
-    override suspend fun register(request: Authentication.RegisterRequest): JwtTokens {
+    override suspend fun register(request: Authentication.RegisterRequest): Base.Nothing {
         // Check whether a user with the given email already exists
         if (userRepo.doesUserExistByEmail(request.email)) {
             throw DuplicateEntityException(EntityType.USER, request.email, IdentifierType.EMAIL)
@@ -167,9 +166,10 @@ class UserService(
         val user = userRepo.createUser(request, passwordHash)
 
         // Generate JWT tokens
-        val tokens = jwtService.generateTokens(user.id)
+        val (accessToken, refreshToken) = jwtService.generateTokens(user.id)
+        GrpcContext.setAuthCookiesInContext(accessToken, refreshToken)
 
-        return tokens
+        return Base.Nothing.getDefaultInstance()
     }
 
     override suspend fun updateUser(request: UserOuterClass.User.Update): UserOuterClass.User {
