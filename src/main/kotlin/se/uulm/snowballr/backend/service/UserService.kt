@@ -3,7 +3,6 @@ package se.uulm.snowballr.backend.service
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.auth.IJwtService
 import se.uulm.snowballr.backend.auth.PasswordUtils
-import se.uulm.snowballr.backend.db.dummyUserId
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
@@ -102,13 +101,12 @@ class UserService(
     }
 
     override suspend fun getUserById(request: Base.Id): UserOuterClass.User {
-        val requestingUserId = parseUUID(dummyUserId!!, EntityType.USER)
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
         val requestedUserId = parseUUID(request.id, EntityType.USER)
-        val currentUser = userRepo.getUserById(requestingUserId)
 
-        verifyUserAccess(currentUser, requestingUserId, IdentifierType.ID)
+        verifyUserAccess(currentUser, requestedUserId, IdentifierType.ID)
 
-        val isRequestedUser = requestingUserId == currentUser.id
+        val isRequestedUser = currentUser.id == requestedUserId
 
         // Don't re-request the user if it is the current user itself
         val result =
@@ -129,13 +127,12 @@ class UserService(
     }
 
     override suspend fun getUserByEmail(request: Base.Email): UserOuterClass.User {
-        val requestingUserId = parseUUID(dummyUserId!!, EntityType.USER)
-        val currentUser = userRepo.getUserById(requestingUserId)
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
 
         // We have to request the user first to get the ID for the access checks
         val requestedUser = userRepo.getUserByEmail(request.email)
 
-        verifyUserAccess(currentUser, requestingUserId, IdentifierType.EMAIL)
+        verifyUserAccess(currentUser, requestedUser.id, IdentifierType.EMAIL)
 
         // Only active or active unconfirmed users can be retrieved
         if (requestedUser.status != UserStatus.USER_STATUS_ACTIVE &&
@@ -148,8 +145,7 @@ class UserService(
     }
 
     override suspend fun getAllUsers(): UserOuterClass.User.List {
-        val requestingUserId = parseUUID(dummyUserId!!, EntityType.USER)
-        val currentUser = userRepo.getUserById(requestingUserId)
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
 
         verifyServerAdminRole(currentUser) { UnauthorizedException.All(EntityType.USER, AccessType.READ, it) }
 
