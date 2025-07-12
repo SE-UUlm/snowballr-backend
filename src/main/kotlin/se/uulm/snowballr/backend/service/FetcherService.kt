@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.service
 import io.github.oshai.kotlinlogging.KotlinLogging
 import se.uulm.snowballr.backend.fetcher.FetcherManager
 import snowballr.Main.AvailableFetcherApis
+import se.uulm.snowballr.backend.fetcher.PythonPluginFetcher
 
 private val logger = KotlinLogging.logger {}
 
@@ -26,6 +27,10 @@ interface IFetcherService {
  */
 class FetcherService : IFetcherService {
     private val fetcherManager = FetcherManager()
+
+    init {
+        PythonPluginFetcher.locateNativeLibrary()
+    }
 
     override suspend fun getAvailableFetchers(): AvailableFetcherApis = AvailableFetcherApis
         .newBuilder()
