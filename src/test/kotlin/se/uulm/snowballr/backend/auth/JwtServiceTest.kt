@@ -3,7 +3,6 @@ package se.uulm.snowballr.backend.auth
 import io.jsonwebtoken.JwtException
 import io.mockk.every
 import io.mockk.mockk
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -11,9 +10,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.koin.core.context.startKoin
-import org.koin.core.context.stopKoin
-import org.koin.dsl.module
 import org.koin.test.KoinTest
 import se.uulm.snowballr.backend.RandomKeyGenerator
 import se.uulm.snowballr.backend.env.Env
@@ -26,19 +22,6 @@ class JwtServiceTest : KoinTest {
 
     @BeforeEach
     fun setUpTest() {
-        // Stop any existing Koin context
-        stopKoin()
-
-        // Start Koin context with a mock module
-        startKoin {
-            modules(
-                module {
-                    single { envReaderMock }
-                },
-            )
-        }
-
-        // Mock JWT key pair
         val (privateKeyBase64, publicKeyBase64) = RandomKeyGenerator.generateKeyPair()
 
         val encryptionMock = mockk<Env.Encryption>()
@@ -51,11 +34,6 @@ class JwtServiceTest : KoinTest {
         every { envReaderMock.env } returns envMock
 
         jwtService = JwtService(envReaderMock)
-    }
-
-    @AfterEach
-    fun tearDownTest() {
-        stopKoin()
     }
 
     @Nested
