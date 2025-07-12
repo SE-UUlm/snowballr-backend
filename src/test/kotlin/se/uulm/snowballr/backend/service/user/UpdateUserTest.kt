@@ -1,7 +1,8 @@
 package se.uulm.snowballr.backend.service.user
 
-import com.google.protobuf.util.FieldMaskUtil
+import com.google.protobuf.FieldMask
 import io.mockk.coEvery
+import io.mockk.every
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.junit.jupiter.api.BeforeEach
@@ -10,112 +11,115 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.db.dummyUserId
-import se.uulm.snowballr.backend.model.SnowballRException
-import se.uulm.snowballr.backend.model.dto.toGrpcUser
+import se.uulm.snowballr.backend.auth.GrpcContext
+import se.uulm.snowballr.backend.model.SnowballRException.DuplicateEntityException
+import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import se.uulm.snowballr.backend.testCoroutine
-import snowballr.UserOuterClass.User
+import snowballr.UserOuterClass
 import snowballr.UserOuterClass.UserRole
 import java.util.UUID
 
-@ExperimentalCoroutinesApi
 @DelicateCoroutinesApi
+@ExperimentalCoroutinesApi
 class UpdateUserTest : MainServiceTest() {
-    @BeforeEach
-    override fun setUpTest() {
-        super.setUpTest()
+    private val requestedUserId = UUID.randomUUID()
 
+    private fun getExampleRequest(): UserOuterClass.User.Update {
+        val user = UserOuterClass.User.newBuilder()
+            .setId(requestedUserId.toString())
+            .setEmail("newemail@example.com")
+            .setRole(UserRole.USER_ROLE_ADMIN)
+            .build()
+
+        val mask = FieldMask.newBuilder()
+            .addPaths("email")
+            .addPaths("role")
+            .build()
+
+        return UserOuterClass.User.Update.newBuilder()
+            .setUser(user)
+            .setMask(mask)
+            .build()
+    }
+
+    @BeforeEach
+    fun setupTest() {
+        every { GrpcContext.getUserIdFromContext() } throws NotImplementedError()
         coEvery { userRepoMock.getUserById(any()) } throws NotImplementedError()
         coEvery { userRepoMock.doesUserExistByEmail(any()) } throws NotImplementedError()
         coEvery { userRepoMock.updateUser(any()) } throws NotImplementedError()
     }
 
     @Test
-    fun `When a user updates their own information successfully, then no exception is thrown`() = testCoroutine {
-        val nonAdminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-        val updatedUser = DataBuilder.createExampleUser(
-            id = nonAdminUser.id,
-            firstName = "John",
-            lastName = "Doe",
-        )
-        val updateFieldMask = FieldMaskUtil.fromStringList(listOf("first_name", "last_name"))
-        val request = User.Update.newBuilder().setUser(updatedUser.toGrpcUser()).setMask(updateFieldMask).build()
+    fun `When retrieving current user fails, then exception is thrown`() = testCoroutine {
+        every { GrpcContext.getUserIdFromContext() } returns UUID.randomUUID()
+        coEvery { userRepoMock.getUserById(any()) } throws TestSpecificException()
 
-        coEvery { userRepoMock.getUserById(any()) } returns nonAdminUser
-        coEvery { userRepoMock.doesUserExistByEmail(any()) } returns false
-        coEvery { userRepoMock.updateUser(request) } returns updatedUser
-
-        assertDoesNotThrow { mainService.updateUser(request) }
+        assertThrows<TestSpecificException> { mainService.updateUser(getExampleRequest()) }
     }
 
     @Test
-    fun `When an admin updates a user's information successfully, then no exception is thrown`() = testCoroutine {
-        val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-        val updatedUser = DataBuilder.createExampleUser(
-            email = "john@doe.com",
-            firstName = "John",
-            lastName = "Doe",
-            role = UserRole.USER_ROLE_ADMIN,
-        )
-        val updateFieldMask = FieldMaskUtil.fromStringList(listOf("email", "first_name", "last_name", "role"))
-        val request = User.Update.newBuilder().setUser(updatedUser.toGrpcUser()).setMask(updateFieldMask).build()
+    fun `When requested user retrieval fails, then exception is thrown`() = testCoroutine {
+        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
 
-        coEvery { userRepoMock.getUserById(any()) } returns adminUser
-        coEvery { userRepoMock.doesUserExistByEmail(any()) } returns false
-        coEvery { userRepoMock.updateUser(request) } returns updatedUser
+        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { userRepoMock.getUserById(requestedUserId) } throws TestSpecificException()
 
-        assertDoesNotThrow { mainService.updateUser(request) }
+        assertThrows<TestSpecificException> { mainService.updateUser(getExampleRequest()) }
     }
 
     @Test
-    fun `When a user wants to change their email to an existing email, then an exception is thrown`() = testCoroutine {
-        val user = DataBuilder.createExampleUser()
-        val request = User.Update.newBuilder().setUser(
-            user.toGrpcUser(),
-        ).setMask(FieldMaskUtil.fromString("email")).build()
+    fun `When user is not admin and tries to change role, then UnauthorizedException is thrown`() = testCoroutine {
+        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
+        val requestedUser = DataBuilder.createExampleUser(id = requestedUserId)
 
-        coEvery { userRepoMock.getUserById(any()) } returns user
+        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { userRepoMock.getUserById(requestedUserId) } returns requestedUser
+
+        assertThrows<UnauthorizedException.Single> { mainService.updateUser(getExampleRequest()) }
+    }
+
+    @Test
+    fun `When updating email to existing email, then DuplicateEntityException is thrown`() = testCoroutine {
+        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+        val requestedUser = DataBuilder.createExampleUser(id = requestedUserId)
+
+        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
+        coEvery { userRepoMock.getUserById(any()) } returns currentUser
+        coEvery { userRepoMock.getUserById(requestedUserId) } returns requestedUser
         coEvery { userRepoMock.doesUserExistByEmail(any()) } returns true
 
-        assertThrows<SnowballRException.DuplicateEntityException> { mainService.updateUser(request) }
+        assertThrows<DuplicateEntityException> { mainService.updateUser(getExampleRequest()) }
     }
 
     @Test
-    fun `When a non-admin user wants to change the user role, then an exception is thrown`() = testCoroutine {
-        val nonAdminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-        val updatedUser = DataBuilder.createExampleUser().toGrpcUser()
-        val request = User.Update.newBuilder().setUser(updatedUser).setMask(FieldMaskUtil.fromString("role")).build()
+    fun `When update fails, then exception is thrown`() = testCoroutine {
+        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+        val requestedUser = DataBuilder.createExampleUser(id = requestedUserId)
 
-        coEvery { userRepoMock.getUserById(any()) } returns nonAdminUser
-
-        assertThrows<SnowballRException.UnauthorizedException.Single> { mainService.updateUser(request) }
-    }
-
-    @Test
-    fun `When a non-admin user wants to change the user information from another user, then an exception is thrown`() =
-        testCoroutine {
-            val anotherUser = DataBuilder.createExampleUser(id = UUID.fromString(dummyUserId))
-            val updatedUser = DataBuilder.createExampleUser()
-            val updateFieldMask = FieldMaskUtil.fromString("first_name")
-            val request = User.Update.newBuilder().setUser(updatedUser.toGrpcUser()).setMask(updateFieldMask).build()
-
-            coEvery { userRepoMock.getUserById(UUID.fromString(dummyUserId)) } returns anotherUser
-            coEvery { userRepoMock.getUserById(updatedUser.id) } returns updatedUser
-
-            assertThrows<SnowballRException.UnauthorizedException.Single> { mainService.updateUser(request) }
-        }
-
-    @Test
-    fun `When an error occurs while updating a user, then an exception is thrown`() = testCoroutine {
-        val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-        val updatedUser = DataBuilder.createExampleUser().toGrpcUser()
-        val request = User.Update.newBuilder().setUser(updatedUser).build()
-
-        coEvery { userRepoMock.getUserById(any()) } returns adminUser
+        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
+        coEvery { userRepoMock.getUserById(any()) } returns currentUser
+        coEvery { userRepoMock.getUserById(requestedUserId) } returns requestedUser
         coEvery { userRepoMock.doesUserExistByEmail(any()) } returns false
         coEvery { userRepoMock.updateUser(any()) } throws TestSpecificException()
 
-        assertThrows<TestSpecificException> { mainService.updateUser(request) }
+        assertThrows<TestSpecificException> { mainService.updateUser(getExampleRequest()) }
+    }
+
+    @Test
+    fun `When update succeeds, then updated user is returned`() = testCoroutine {
+        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+        val requestedUser = DataBuilder.createExampleUser(id = requestedUserId)
+
+        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
+        coEvery { userRepoMock.getUserById(any()) } returns currentUser
+        coEvery { userRepoMock.getUserById(requestedUserId) } returns requestedUser
+        coEvery { userRepoMock.doesUserExistByEmail(any()) } returns false
+        coEvery { userRepoMock.updateUser(any()) } returns requestedUser
+
+        assertDoesNotThrow { mainService.updateUser(getExampleRequest()) }
     }
 }

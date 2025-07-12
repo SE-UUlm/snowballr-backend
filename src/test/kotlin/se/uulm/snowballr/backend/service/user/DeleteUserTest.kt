@@ -1,6 +1,7 @@
 package se.uulm.snowballr.backend.service.user
 
 import io.mockk.coEvery
+import io.mockk.every
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.junit.jupiter.api.BeforeEach
@@ -8,106 +9,106 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
-import se.uulm.snowballr.backend.db.dummyUserId
-import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.SnowballRException
+import se.uulm.snowballr.backend.TestSpecificException
+import se.uulm.snowballr.backend.auth.GrpcContext
+import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
+import se.uulm.snowballr.backend.model.SnowballRException.InvalidIdException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
-import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.service.MainServiceTest
 import se.uulm.snowballr.backend.testCoroutine
 import snowballr.Base
 import snowballr.UserOuterClass.UserRole
 import java.util.UUID
 
-@ExperimentalCoroutinesApi
 @DelicateCoroutinesApi
-internal class DeleteUserTest : MainServiceTest() {
-    private var dummyUserUUID: UUID = UUID.randomUUID()
+@ExperimentalCoroutinesApi
+class DeleteUserTest : MainServiceTest() {
+    private val requestedUserId = UUID.randomUUID()
+    private fun getExampleRequest() = Base.Id.newBuilder().setId(requestedUserId.toString()).build()
 
     @BeforeEach
-    fun setup() {
-        dummyUserUUID = UUID.fromString(dummyUserId!!)
+    fun setupTest() {
+        every { GrpcContext.getUserIdFromContext() } throws NotImplementedError()
+        coEvery { userRepoMock.getUserById(any()) } throws NotImplementedError()
+        coEvery { userRepoMock.softDeleteUser(any()) } throws NotImplementedError()
     }
 
     @Test
-    fun `When a user who is not an admin tries to delete another user, then an unauthorized exception is thrown`() =
+    fun `When parsing user ID fails, then InvalidIdException is thrown`() = testCoroutine {
+        val request = Base.Id.newBuilder().setId("invalid-uuid").build()
+        every { GrpcContext.getUserIdFromContext() } returns UUID.randomUUID()
+        coEvery { userRepoMock.getUserById(any()) } returns DataBuilder.createExampleUser()
+
+        assertThrows<InvalidIdException> { mainService.softDeleteUser(request) }
+    }
+
+    @Test
+    fun `When retrieving current user fails, then exception is thrown`() = testCoroutine {
+        every { GrpcContext.getUserIdFromContext() } returns UUID.randomUUID()
+        coEvery { userRepoMock.getUserById(any()) } throws TestSpecificException()
+
+        assertThrows<TestSpecificException> { mainService.softDeleteUser(getExampleRequest()) }
+    }
+
+    @Test
+    fun `When retrieving user to delete fails, then exception is thrown`() = testCoroutine {
+        val currentUser = DataBuilder.createExampleUser()
+
+        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { userRepoMock.getUserById(requestedUserId) } throws TestSpecificException()
+
+        assertThrows<TestSpecificException> { mainService.softDeleteUser(getExampleRequest()) }
+    }
+
+    @Test
+    fun `When user is not admin and tries to delete another user, then UnauthorizedException is thrown`() =
         testCoroutine {
-            val firstUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-            val request =
-                Base.Id
-                    .newBuilder()
-                    .setId(firstUser.id.toString())
-                    .build()
-            val secondUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
+            val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
+            val userToDelete = DataBuilder.createExampleUser(id = requestedUserId)
 
-            coEvery { userRepoMock.getUserById(dummyUserUUID) } returns secondUser
-            coEvery { userRepoMock.getUserById(parseUUID(request.id, EntityType.USER)) } returns firstUser
+            every { GrpcContext.getUserIdFromContext() } returns currentUser.id
+            coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+            coEvery { userRepoMock.getUserById(requestedUserId) } returns userToDelete
 
-            assertThrows<UnauthorizedException.Single> { mainService.softDeleteUser(request) }
+            assertThrows<UnauthorizedException.Single> { mainService.softDeleteUser(getExampleRequest()) }
         }
 
     @Test
-    fun `When an admin tries to delete another admin, then a failed precondition exception is thrown`() =
-        testCoroutine {
-            val firstUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-            val request =
-                Base.Id
-                    .newBuilder()
-                    .setId(firstUser.id.toString())
-                    .build()
-            val secondUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+    fun `When trying to delete another admin user, then FailedPreconditionException is thrown`() = testCoroutine {
+        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+        val userToDelete = DataBuilder.createExampleUser(id = requestedUserId, role = UserRole.USER_ROLE_ADMIN)
 
-            coEvery { userRepoMock.getUserById(any()) } returns firstUser
-            coEvery { userRepoMock.getUserById(dummyUserUUID) } returns secondUser
+        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { userRepoMock.getUserById(requestedUserId) } returns userToDelete
 
-            assertThrows<SnowballRException.FailedPreconditionException> { mainService.softDeleteUser(request) }
-        }
-
-    @Test
-    fun `When an admin tries to delete a user, then no exception is thrown`() = testCoroutine {
-        val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-        val userToDelete = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-        val request =
-            Base.Id
-                .newBuilder()
-                .setId(userToDelete.id.toString())
-                .build()
-
-        coEvery { userRepoMock.getUserById(dummyUserUUID) } returns adminUser
-        coEvery { userRepoMock.getUserById(parseUUID(request.id, EntityType.USER)) } returns userToDelete
-
-        assertDoesNotThrow { mainService.softDeleteUser(request) }
+        assertThrows<FailedPreconditionException> { mainService.softDeleteUser(getExampleRequest()) }
     }
 
     @Test
-    fun `When a user tries to delete an admin user, then an unauthorized exception is thrown`() = testCoroutine {
-        val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-        val normalUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-        val request =
-            Base.Id
-                .newBuilder()
-                .setId(adminUser.id.toString())
-                .build()
+    fun `When soft delete fails, then exception is thrown`() = testCoroutine {
+        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+        val userToDelete = DataBuilder.createExampleUser(id = requestedUserId)
 
-        print("Holla: " + parseUUID(request.id, EntityType.USER))
-        print("Hallo: $dummyUserUUID")
-        coEvery { userRepoMock.getUserById(parseUUID(request.id, EntityType.USER)) } returns adminUser
-        coEvery { userRepoMock.getUserById(dummyUserUUID) } returns normalUser
+        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { userRepoMock.getUserById(requestedUserId) } returns userToDelete
+        coEvery { userRepoMock.softDeleteUser(requestedUserId) } throws TestSpecificException()
 
-        assertThrows<UnauthorizedException.Single> { mainService.softDeleteUser(request) }
+        assertThrows<TestSpecificException> { mainService.softDeleteUser(getExampleRequest()) }
     }
 
     @Test
-    fun `When a user tries to delete himself, then no exception is thrown`() = testCoroutine {
-        val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-        val request =
-            Base.Id
-                .newBuilder()
-                .setId(dummyUserId)
-                .build()
+    fun `When soft delete succeeds, then nothing is returned`() = testCoroutine {
+        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+        val userToDelete = DataBuilder.createExampleUser(id = requestedUserId)
 
-        coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
+        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { userRepoMock.getUserById(requestedUserId) } returns userToDelete
+        coEvery { userRepoMock.softDeleteUser(requestedUserId) } returns Unit
 
-        assertDoesNotThrow { mainService.softDeleteUser(request) }
+        assertDoesNotThrow { mainService.softDeleteUser(getExampleRequest()) }
     }
 }

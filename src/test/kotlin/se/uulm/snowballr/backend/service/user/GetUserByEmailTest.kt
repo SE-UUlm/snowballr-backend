@@ -1,6 +1,7 @@
 package se.uulm.snowballr.backend.service.user
 
 import io.mockk.coEvery
+import io.mockk.every
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.junit.jupiter.api.BeforeEach
@@ -9,8 +10,7 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.db.dummyUserId
-import se.uulm.snowballr.backend.model.SnowballRException.InvalidIdException
+import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
@@ -20,140 +20,94 @@ import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
 import java.util.UUID
 
-@ExperimentalCoroutinesApi
 @DelicateCoroutinesApi
+@ExperimentalCoroutinesApi
 class GetUserByEmailTest : MainServiceTest() {
-    private val requestEmail = "test.user@example.com"
-    private var dummyUserUUID = UUID.randomUUID()
-
-    private fun getExampleRequest() = Base.Email
-        .newBuilder()
-        .setEmail(requestEmail)
-        .build()
+    private val exampleEmail = "test@example.com"
+    private fun getExampleRequest() = Base.Email.newBuilder().setEmail(exampleEmail).build()
 
     @BeforeEach
-    fun setup() {
-        dummyUserUUID = UUID.fromString(dummyUserId!!)
+    fun setupTest() {
+        every { GrpcContext.getUserIdFromContext() } throws NotImplementedError()
+        coEvery { userRepoMock.getUserById(any()) } throws NotImplementedError()
+        coEvery { userRepoMock.getUserByEmail(any()) } throws NotImplementedError()
+        coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(any()) } throws NotImplementedError()
     }
 
     @Test
-    fun `When the requesting user has an invalid ID, then an exception is thrown`() = testCoroutine {
-        val request = getExampleRequest()
+    fun `When retrieving current user fails, then exception is thrown`() = testCoroutine {
+        every { GrpcContext.getUserIdFromContext() } returns UUID.randomUUID()
+        coEvery { userRepoMock.getUserById(any()) } throws TestSpecificException()
 
-        dummyUserId = "invalid-UUID"
-
-        assertThrows<InvalidIdException.UUID> { mainService.getUserByEmail(request) }
+        assertThrows<TestSpecificException> { mainService.getUserByEmail(getExampleRequest()) }
     }
 
     @Test
-    fun `When requesting the current user fails, then an exception is thrown`() = testCoroutine {
-        val request = getExampleRequest()
+    fun `When retrieving requested user by email fails, then exception is thrown`() = testCoroutine {
+        val currentUser = DataBuilder.createExampleUser()
 
-        coEvery { userRepoMock.getUserById(dummyUserUUID) } throws TestSpecificException()
+        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { userRepoMock.getUserByEmail(any()) } throws TestSpecificException()
 
-        assertThrows<TestSpecificException> { mainService.getUserByEmail(request) }
+        assertThrows<TestSpecificException> { mainService.getUserByEmail(getExampleRequest()) }
     }
 
     @Test
-    fun `When the requesting user has no access, then an exception is thrown`() = testCoroutine {
-        val request = getExampleRequest()
+    fun `When verifying user access fails, then UnauthorizedException is thrown`() = testCoroutine {
+        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
+        val requestedUser = DataBuilder.createExampleUser(email = exampleEmail)
 
-        val noAccessUser = DataBuilder.createExampleUser()
-        coEvery { userRepoMock.getUserById(dummyUserUUID) } returns noAccessUser
-        coEvery { userRepoMock.getUserByEmail(requestEmail) } returns DataBuilder.createExampleUser()
-        coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(any()) } returns listOf()
+        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { userRepoMock.getUserByEmail(exampleEmail) } returns requestedUser
+        coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(requestedUser.id) } returns emptyList()
 
-        assertThrows<UnauthorizedException.Single> { mainService.getUserByEmail(request) }
+        assertThrows<UnauthorizedException.Single> { mainService.getUserByEmail(getExampleRequest()) }
     }
 
     @Test
-    fun `When the requesting user is a server admin, then the user can be retrieved`() = testCoroutine {
-        val request = getExampleRequest()
+    fun `When requested user is inactive, then NotFoundException is thrown`() = testCoroutine {
+        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
 
-        val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-        coEvery { userRepoMock.getUserById(dummyUserUUID) } returns adminUser
-        val user = DataBuilder.createExampleUser(status = UserStatus.USER_STATUS_ACTIVE)
-        coEvery { userRepoMock.getUserByEmail(requestEmail) } returns user
-        coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(any()) } returns listOf()
+        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
 
-        assertDoesNotThrow { mainService.getUserByEmail(request) }
-    }
-
-    @Test
-    fun `When the requesting user is the requested user, then the user can be retrieved`() = testCoroutine {
-        dummyUserUUID = UUID.randomUUID()
-        dummyUserId = dummyUserUUID.toString()
-
-        val request = getExampleRequest()
-
-        val requestingUser =
-            DataBuilder.createExampleUser(
-                id = UUID.fromString(dummyUserId),
-                status = UserStatus.USER_STATUS_ACTIVE,
-            )
-        coEvery { userRepoMock.getUserById(dummyUserUUID) } returns requestingUser
-        coEvery { userRepoMock.getUserByEmail(requestEmail) } returns requestingUser
-
-        assertDoesNotThrow { mainService.getUserByEmail(request) }
-    }
-
-    @Test
-    fun `When the requesting user is in the same project as requested user, then the user can be retrieved`() =
-        testCoroutine {
-            val request = getExampleRequest()
-
-            val otherUser = DataBuilder.createExampleUser()
-            val member = DataBuilder.createExampleProjectMember(userId = otherUser.id)
-
-            coEvery { userRepoMock.getUserById(dummyUserUUID) } returns otherUser
-            val user = DataBuilder.createExampleUser(status = UserStatus.USER_STATUS_ACTIVE)
-            coEvery { userRepoMock.getUserByEmail(requestEmail) } returns user
-            coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(any()) } returns listOf(member)
-
-            assertDoesNotThrow { mainService.getUserByEmail(request) }
+        val inactiveStatuses = UserStatus.entries.filterNot {
+            it == UserStatus.USER_STATUS_ACTIVE || it == UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED
         }
 
-    @Test
-    fun `When an error occurs while the user is retrieved, then an exception is thrown`() = testCoroutine {
-        val request = getExampleRequest()
+        inactiveStatuses.forEach { status ->
+            val requestedUser = DataBuilder.createExampleUser(email = exampleEmail, status = status)
 
-        val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-        coEvery { userRepoMock.getUserById(dummyUserUUID) } returns adminUser
-        coEvery { userRepoMock.getUserByEmail(requestEmail) } throws TestSpecificException()
+            coEvery { userRepoMock.getUserByEmail(exampleEmail) } returns requestedUser
 
-        assertThrows<TestSpecificException> { mainService.getUserByEmail(request) }
-    }
-
-    @Test
-    fun `When the requested user is active unconfirmed, then they can be retrieved`() = testCoroutine {
-        val request = getExampleRequest()
-
-        val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-        coEvery { userRepoMock.getUserById(dummyUserUUID) } returns adminUser
-        val user = DataBuilder.createExampleUser(status = UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED)
-        coEvery { userRepoMock.getUserByEmail(requestEmail) } returns user
-        coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(any()) } returns listOf()
-
-        assertDoesNotThrow { mainService.getUserByEmail(request) }
-    }
-
-    @Test
-    fun `When the requested user is inactive, then an exception is thrown`() = testCoroutine {
-        val values =
-            UserStatus.entries.filter {
-                it != UserStatus.USER_STATUS_ACTIVE &&
-                    it != UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED
+            assertThrows<NotFoundException>("Should throw NotFoundException for status $status") {
+                mainService.getUserByEmail(getExampleRequest())
             }
-        for (status in values) {
-            val request = getExampleRequest()
+        }
+    }
 
-            val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-            coEvery { userRepoMock.getUserById(dummyUserUUID) } returns adminUser
-            val user = DataBuilder.createExampleUser(status = status)
-            coEvery { userRepoMock.getUserByEmail(requestEmail) } returns user
-            coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(any()) } returns listOf()
+    @Test
+    fun `When all retrievals succeed and user is active, then user is returned`() = testCoroutine {
+        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
 
-            assertThrows<NotFoundException> { mainService.getUserByEmail(request) }
+        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+
+        val activeStatuses = listOf(
+            UserStatus.USER_STATUS_ACTIVE,
+            UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED,
+        )
+
+        activeStatuses.forEach { status ->
+            val requestedUser = DataBuilder.createExampleUser(email = exampleEmail, status = status)
+
+            coEvery { userRepoMock.getUserByEmail(exampleEmail) } returns requestedUser
+
+            assertDoesNotThrow("Should succeed for status $status") {
+                mainService.getUserByEmail(getExampleRequest())
+            }
         }
     }
 }

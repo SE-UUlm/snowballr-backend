@@ -1,6 +1,7 @@
 package se.uulm.snowballr.backend.service.user
 
 import io.mockk.coEvery
+import io.mockk.every
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.junit.jupiter.api.BeforeEach
@@ -9,66 +10,60 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.db.dummyUserId
-import se.uulm.snowballr.backend.model.SnowballRException.InvalidIdException
+import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import se.uulm.snowballr.backend.testCoroutine
 import snowballr.UserOuterClass.UserRole
 import java.util.UUID
 
-@ExperimentalCoroutinesApi
 @DelicateCoroutinesApi
+@ExperimentalCoroutinesApi
 class GetAllUsersTest : MainServiceTest() {
-    private var dummyUserUUID: UUID = UUID.randomUUID()
-
     @BeforeEach
-    fun setup() {
-        dummyUserUUID = UUID.fromString(dummyUserId!!)
+    fun setupTest() {
+        every { GrpcContext.getUserIdFromContext() } throws NotImplementedError()
+        coEvery { userRepoMock.getUserById(any()) } throws NotImplementedError()
+        coEvery { userRepoMock.getAllUsers() } throws NotImplementedError()
     }
 
     @Test
-    fun `When the requesting user has an invalid ID, then an exception is thrown`() = testCoroutine {
-        dummyUserId = "invalid-UUID"
-
-        assertThrows<InvalidIdException.UUID> { mainService.getAllUsers() }
-    }
-
-    @Test
-    fun `When all users are retrieved by an admin, then no exception is thrown`() = testCoroutine {
-        val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-
-        coEvery { userRepoMock.getUserById(dummyUserUUID) } returns adminUser
-        coEvery { userRepoMock.getAllUsers() } returns emptyList()
-
-        assertDoesNotThrow { mainService.getAllUsers() }
-    }
-
-    @Test
-    fun `When retrieving the current user fails, then an exception is thrown`() = testCoroutine {
-        coEvery { userRepoMock.getUserById(dummyUserUUID) } throws TestSpecificException()
-        coEvery { userRepoMock.getAllUsers() } returns emptyList()
+    fun `When retrieving current user fails, then exception is thrown`() = testCoroutine {
+        every { GrpcContext.getUserIdFromContext() } returns UUID.randomUUID()
+        coEvery { userRepoMock.getUserById(any()) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getAllUsers() }
     }
 
     @Test
-    fun `When all users are retrieved by an non-admin, then an exception is thrown`() = testCoroutine {
-        val nonAdminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
+    fun `When current user is not admin, then UnauthorizedException is thrown`() = testCoroutine {
+        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
 
-        coEvery { userRepoMock.getUserById(dummyUserUUID) } returns nonAdminUser
-        coEvery { userRepoMock.getAllUsers() } returns emptyList()
+        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
 
         assertThrows<UnauthorizedException.All> { mainService.getAllUsers() }
     }
 
     @Test
-    fun `When retrieving all users fails, then an exception is thrown`() = testCoroutine {
-        val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+    fun `When retrieving users fails, then exception is thrown`() = testCoroutine {
+        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
 
-        coEvery { userRepoMock.getUserById(dummyUserUUID) } returns adminUser
+        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
         coEvery { userRepoMock.getAllUsers() } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getAllUsers() }
+    }
+
+    @Test
+    fun `When user is admin, then all users are returned`() = testCoroutine {
+        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+
+        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { userRepoMock.getAllUsers() } returns emptyList()
+
+        assertDoesNotThrow { mainService.getAllUsers() }
     }
 }

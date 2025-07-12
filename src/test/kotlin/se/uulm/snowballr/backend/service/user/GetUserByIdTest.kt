@@ -1,6 +1,8 @@
 package se.uulm.snowballr.backend.service.user
 
 import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.every
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.junit.jupiter.api.BeforeEach
@@ -9,7 +11,7 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.db.dummyUserId
+import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.model.SnowballRException.InvalidIdException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
@@ -23,171 +25,152 @@ import java.util.UUID
 @ExperimentalCoroutinesApi
 @DelicateCoroutinesApi
 class GetUserByIdTest : MainServiceTest() {
-    private val requestId = UUID.randomUUID()
-    private var dummyUserUUID = UUID.randomUUID()
-
-    private fun getExampleRequest() = Base.Id
-        .newBuilder()
-        .setId(requestId.toString())
-        .build()
+    private val requestedUserId = UUID.randomUUID()
+    private fun getExampleRequest() = Base.Id.newBuilder().setId(requestedUserId.toString()).build()
 
     @BeforeEach
-    fun setup() {
-        dummyUserUUID = UUID.fromString(dummyUserId!!)
+    fun setupTest() {
+        every { GrpcContext.getUserIdFromContext() } throws NotImplementedError()
+        coEvery { userRepoMock.getUserById(any()) } throws NotImplementedError()
+        coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(any()) } throws NotImplementedError()
     }
 
     @Test
-    fun `When the requesting user has an invalid ID, then an exception is thrown`() = testCoroutine {
-        val request = getExampleRequest()
+    fun `When parsing the user ID fails, then InvalidIdException is thrown`() = testCoroutine {
+        val request = Base.Id.newBuilder().setId("invalid-uuid").build()
+        every { GrpcContext.getUserIdFromContext() } returns UUID.randomUUID()
+        coEvery { userRepoMock.getUserById(any()) } returns DataBuilder.createExampleUser()
 
-        dummyUserId = "invalid-UUID"
-
-        assertThrows<InvalidIdException.UUID> { mainService.getUserById(request) }
+        assertThrows<InvalidIdException> { mainService.getUserById(request) }
     }
 
     @Test
-    fun `When the requested user has an invalid ID, then an exception is thrown`() = testCoroutine {
-        val request =
-            Base.Id
-                .newBuilder()
-                .setId("invalid-UUID")
-                .build()
+    fun `When retrieving current user fails, then exception is thrown`() = testCoroutine {
+        every { GrpcContext.getUserIdFromContext() } returns UUID.randomUUID()
+        coEvery { userRepoMock.getUserById(any()) } throws TestSpecificException()
 
-        assertThrows<InvalidIdException.UUID> { mainService.getUserById(request) }
+        assertThrows<TestSpecificException> { mainService.getUserById(getExampleRequest()) }
     }
 
     @Test
-    fun `When requesting the current user fails, then an exception is thrown`() = testCoroutine {
-        val request = getExampleRequest()
+    fun `When current user is admin, then requested user is returned successfully`() = testCoroutine {
+        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+        val requestedUser = DataBuilder.createExampleUser(
+            id = requestedUserId,
+            status = UserStatus.USER_STATUS_ACTIVE,
+        )
 
-        coEvery { userRepoMock.getUserById(dummyUserUUID) } throws TestSpecificException()
+        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { userRepoMock.getUserById(requestedUserId) } returns requestedUser
 
-        assertThrows<TestSpecificException> { mainService.getUserById(request) }
+        assertDoesNotThrow { mainService.getUserById(getExampleRequest()) }
     }
 
     @Test
-    fun `When the requesting user has no access, then an exception is thrown`() = testCoroutine {
-        val request = getExampleRequest()
+    fun `When current user requests own user, then user is returned without redundant DB call`() = testCoroutine {
+        val currentUser = DataBuilder.createExampleUser()
+        val requestedUser = DataBuilder.createExampleUser(
+            id = currentUser.id,
+            status = UserStatus.USER_STATUS_ACTIVE,
+        )
+        val request = Base.Id.newBuilder().setId(requestedUser.id.toString()).build()
 
-        val noAccessUser = DataBuilder.createExampleUser()
-        coEvery { userRepoMock.getUserById(dummyUserUUID) } returns noAccessUser
-        coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(any()) } returns listOf()
-
-        assertThrows<UnauthorizedException.Single> { mainService.getUserById(request) }
-    }
-
-    @Test
-    fun `When the requesting user is a server admin, then the user can be retrieved`() = testCoroutine {
-        val request = getExampleRequest()
-
-        // Mock access check
-        val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-        coEvery { userRepoMock.getUserById(dummyUserUUID) } returns adminUser
-        coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(any()) } returns listOf()
-
-        // Mock user retrieval
-        val user = DataBuilder.createExampleUser(status = UserStatus.USER_STATUS_ACTIVE)
-        coEvery { userRepoMock.getUserById(requestId) } returns user
+        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { userRepoMock.getUserById(requestedUser.id) } returns requestedUser
 
         assertDoesNotThrow { mainService.getUserById(request) }
+
+        // Should not call userRepoMock.getUserById(requestedUserId) again because it's self-request
+        coVerify(exactly = 1) { userRepoMock.getUserById(requestedUser.id) }
     }
 
     @Test
-    fun `When the requesting user is the requested user, then the user can be retrieved`() = testCoroutine {
-        dummyUserUUID = UUID.randomUUID()
-        dummyUserId = dummyUserUUID.toString()
+    fun `When current user is in same project as requested user, then requested user is returned`() = testCoroutine {
+        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
+        val requestedUser = DataBuilder.createExampleUser(
+            id = requestedUserId,
+            status = UserStatus.USER_STATUS_ACTIVE,
+        )
 
-        val request =
-            Base.Id
-                .newBuilder()
-                .setId(dummyUserId)
-                .build()
+        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { userRepoMock.getUserById(requestedUserId) } returns requestedUser
+        coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(requestedUserId) } returns listOf(
+            DataBuilder.createExampleProjectMember(userId = currentUser.id),
+        )
 
-        // Mock access check
-        val requestingUser =
-            DataBuilder.createExampleUser(
-                id = UUID.fromString(dummyUserId),
-                status = UserStatus.USER_STATUS_ACTIVE,
-            )
-        coEvery { userRepoMock.getUserById(dummyUserUUID) } returns requestingUser
-        coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(any()) } returns listOf()
-
-        // Mock user retrieval
-        coEvery { userRepoMock.getUserById(requestId) } returns requestingUser
-
-        assertDoesNotThrow { mainService.getUserById(request) }
+        assertDoesNotThrow { mainService.getUserById(getExampleRequest()) }
     }
 
     @Test
-    fun `When the requesting user is in the same project as requested user, then the user can be retrieved`() =
+    fun `When current user is not authorized to access requested user, then UnauthorizedException is thrown`() =
         testCoroutine {
-            val request = getExampleRequest()
+            val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
+            val requestedUser = DataBuilder.createExampleUser(id = requestedUserId)
 
-            val otherUser = DataBuilder.createExampleUser()
-            val member = DataBuilder.createExampleProjectMember(userId = otherUser.id)
+            every { GrpcContext.getUserIdFromContext() } returns currentUser.id
+            coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+            coEvery { userRepoMock.getUserById(requestedUserId) } returns requestedUser
+            coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(requestedUserId) } returns emptyList()
 
-            // Mock access check
-            coEvery { userRepoMock.getUserById(dummyUserUUID) } returns otherUser
-            coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(any()) } returns listOf(member)
-
-            // Mock user retrieval
-            val user = DataBuilder.createExampleUser(status = UserStatus.USER_STATUS_ACTIVE)
-            coEvery { userRepoMock.getUserById(requestId) } returns user
-
-            assertDoesNotThrow { mainService.getUserById(request) }
+            assertThrows<UnauthorizedException.Single> { mainService.getUserById(getExampleRequest()) }
         }
 
     @Test
-    fun `When an error occurs while the user is retrieved, then an exception is thrown`() = testCoroutine {
-        val request = getExampleRequest()
+    fun `When requested user is inactive, then NotFoundException is thrown`() = testCoroutine {
+        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
 
-        // Mock access check
-        val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-        coEvery { userRepoMock.getUserById(dummyUserUUID) } returns adminUser
-        coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(any()) } returns listOf()
+        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
 
-        // Mock user retrieval
-        coEvery { userRepoMock.getUserById(requestId) } throws TestSpecificException()
+        val inactiveStatuses = UserStatus.entries.filterNot {
+            it == UserStatus.USER_STATUS_ACTIVE || it == UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED
+        }
 
-        assertThrows<TestSpecificException> { mainService.getUserById(request) }
-    }
+        inactiveStatuses.forEach { status ->
+            val requestedUser = DataBuilder.createExampleUser(id = requestedUserId, status = status)
 
-    @Test
-    fun `When the requested user is active unconfirmed, then they can be retrieved`() = testCoroutine {
-        val request = getExampleRequest()
+            coEvery { userRepoMock.getUserById(requestedUserId) } returns requestedUser
 
-        // Mock access check
-        val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-        coEvery { userRepoMock.getUserById(dummyUserUUID) } returns adminUser
-        coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(any()) } returns listOf()
-
-        // Mock user retrieval
-        val user = DataBuilder.createExampleUser(status = UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED)
-        coEvery { userRepoMock.getUserById(requestId) } returns user
-
-        assertDoesNotThrow { mainService.getUserById(request) }
-    }
-
-    @Test
-    fun `When the requested user is inactive, then an exception is thrown`() = testCoroutine {
-        val values =
-            UserStatus.entries.filter {
-                it != UserStatus.USER_STATUS_ACTIVE &&
-                    it != UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED
+            assertThrows<NotFoundException>("Should throw NotFoundException for status $status") {
+                mainService.getUserById(getExampleRequest())
             }
-        for (status in values) {
-            val request = getExampleRequest()
-
-            // Mock access check
-            val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-            coEvery { userRepoMock.getUserById(dummyUserUUID) } returns adminUser
-            coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(any()) } returns listOf()
-
-            // Mock user retrieval
-            val user = DataBuilder.createExampleUser(status = status)
-            coEvery { userRepoMock.getUserById(requestId) } returns user
-
-            assertThrows<NotFoundException> { mainService.getUserById(request) }
         }
+    }
+
+    @Test
+    fun `When requested user is active, then user is returned`() = testCoroutine {
+        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+
+        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+
+        val activeStatuses = listOf(
+            UserStatus.USER_STATUS_ACTIVE,
+            UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED,
+        )
+
+        activeStatuses.forEach { status ->
+            val requestedUser = DataBuilder.createExampleUser(id = requestedUserId, status = status)
+
+            coEvery { userRepoMock.getUserById(requestedUserId) } returns requestedUser
+
+            assertDoesNotThrow("Should succeed for status $status") {
+                mainService.getUserById(getExampleRequest())
+            }
+        }
+    }
+
+    @Test
+    fun `When retrieving requested user fails, then exception is thrown`() = testCoroutine {
+        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+
+        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { userRepoMock.getUserById(requestedUserId) } throws TestSpecificException()
+
+        assertThrows<TestSpecificException> { mainService.getUserById(getExampleRequest()) }
     }
 }
