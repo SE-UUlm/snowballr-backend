@@ -121,13 +121,13 @@ val authenticationInterceptor: ServerInterceptor =
                                 "processing authentication status."
                         }
                         val authState = AuthRequestState(forwardingCall, headers, next)
-                        handleAuthentication(authState, true)
+                        handleAuthentication(authState, true, methodName)
                     }
 
                     else -> {
                         logger.trace { "Method $methodName requires authentication." }
                         val authState = AuthRequestState(forwardingCall, headers, next)
-                        handleAuthentication(authState, false)
+                        handleAuthentication(authState, false, methodName)
                     }
                 }
             }
@@ -148,11 +148,13 @@ val authenticationInterceptor: ServerInterceptor =
          * @param RespT The type of the response.
          * @param authState The [AuthRequestState] containing the call, headers, and next handler.
          * @param skipRefresh If true, skips the refresh token logic and only validates the access token.
+         * @param methodName The full method name being called, used to determine if the call should proceed.
          * @return A [ServerCall.Listener] that will handle the call, or an empty listener if authentication fails.
          */
         private fun <ReqT : Any?, RespT : Any?> handleAuthentication(
             authState: AuthRequestState<ReqT, RespT>,
             skipRefresh: Boolean,
+            methodName: String,
         ): ServerCall.Listener<ReqT?>? {
             val cookieHeader = authState.headers?.get(GrpcContext.COOKIE_METADATA_KEY)
             val cookies = cookieService.parseCookies(cookieHeader)
@@ -166,8 +168,12 @@ val authenticationInterceptor: ServerInterceptor =
                     context.call { authState.next?.startCall(authState.call, authState.headers) }
                 },
                 onFailure = {
-                    authState.call.close(Status.UNAUTHENTICATED.withDescription("Session is invalid"), Metadata())
-                    emptyListener()
+                    if (methodName == SnowballRGrpcKt.getAuthenticationStatusMethod.fullMethodName) {
+                        authResult.updatedContext.call { authState.next?.startCall(authState.call, authState.headers) }
+                    } else {
+                        authState.call.close(Status.UNAUTHENTICATED.withDescription("Session is invalid"), Metadata())
+                        emptyListener()
+                    }
                 },
             )
         }
