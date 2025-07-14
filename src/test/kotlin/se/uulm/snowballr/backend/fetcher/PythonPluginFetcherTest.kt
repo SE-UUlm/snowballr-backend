@@ -33,7 +33,7 @@ internal class PythonPluginFetcherTest {
     }
 
     @Test
-    fun `When an options-map is convert to a PyObject, python should be able to correctly access it`() {
+    fun `When an options-map is convert to a PyObject, then python should be able to correctly access it`() {
         PythonPluginFetcher.withNewInterpreter { interp ->
             val opts = mapOf("foo" to "bar")
             interp.set("opts", opts.toPyObject(interp))
@@ -42,7 +42,7 @@ internal class PythonPluginFetcherTest {
     }
 
     @Test
-    fun `When a python dictionary is convert to an options-map, java should be able to correctly access it`() {
+    fun `When a python dictionary is convert to an options-map, then java should be able to correctly access it`() {
         PythonPluginFetcher.withNewInterpreter { interp ->
             val opts = interp.getValue("""{"foo": "bar"}""", PyObject::class.java).toOptionsMap()
             assertEquals("bar", opts.get("foo"))
@@ -50,7 +50,7 @@ internal class PythonPluginFetcherTest {
     }
 
     @Test
-    fun `When a options-map is convert to a PyObject and back, it should stay the same`() {
+    fun `When a options-map is convert to a PyObject and back, then it should stay the same`() {
         PythonPluginFetcher.withNewInterpreter { interp ->
             val options = mapOf("foo" to "bar")
             assertEquals(options, options.toPyObject(interp).toOptionsMap())
@@ -58,7 +58,7 @@ internal class PythonPluginFetcherTest {
     }
 
     @Test
-    fun `When a paper is convert to a python paper, python should be able to correctly access it`() {
+    fun `When a paper is convert to a python paper, then python should be able to correctly access it`() {
         PythonPluginFetcher.withNewInterpreter { interp ->
             interp.set("paper", examplePaper.toPyObject(interp))
             assertEquals(examplePaper.title, interp.getValue("paper.title", String::class.java))
@@ -75,7 +75,7 @@ internal class PythonPluginFetcherTest {
     }
 
     @Test
-    fun `When a python paper is convert to a paper, java should be able to correctly access it`() {
+    fun `When a python paper is convert to a paper, then java should be able to correctly access it`() {
         PythonPluginFetcher.withNewInterpreter { interp ->
             val paper = interp.getValue(
                 """
@@ -104,7 +104,7 @@ internal class PythonPluginFetcherTest {
     }
 
     @Test
-    fun `When a paper is convert to a python paper and back, it should stay the same`() {
+    fun `When a paper is convert to a python paper and back, then it should stay the same`() {
         PythonPluginFetcher.withNewInterpreter { interp ->
             val converted = examplePaper.toPyObject(interp).toPaper()
             with(converted) {
@@ -120,7 +120,7 @@ internal class PythonPluginFetcherTest {
     }
 
     @Test
-    fun `When python returns a string set, java can access it as a string set`() {
+    fun `When python returns a string set, then java can access it as a string set`() {
         PythonPluginFetcher.withNewInterpreter { interp ->
             val set = interp.getValue("""{"foo", "bar"}""", PyObject::class.java).toSet<String>(interp)
             assertEquals(setOf("foo", "bar"), set)
@@ -128,7 +128,7 @@ internal class PythonPluginFetcherTest {
     }
 
     @Test
-    fun `When python returns a paper set, java can access it as a paper set`() {
+    fun `When python returns a paper set, then java can access it as a paper set`() {
         PythonPluginFetcher.withNewInterpreter { interp ->
             val set = interp.getValue("""{Paper("foo", "bar"), Paper("x", "y")}""", PyObject::class.java).toSet<PyObject>(interp).map { it.toPaper() }.toSet()
 
