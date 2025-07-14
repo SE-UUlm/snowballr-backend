@@ -9,6 +9,7 @@ import org.jetbrains.exposed.sql.Schema
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.Transaction
 import org.jetbrains.exposed.sql.insertAndGetId
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
 import se.uulm.snowballr.backend.auth.DummyUser
@@ -28,6 +29,7 @@ import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.table.association.ReadingListTable
 import se.uulm.snowballr.backend.table.association.ReviewHasCriterionTable
 import se.uulm.snowballr.backend.table.association.ReviewTable
+import se.uulm.snowballr.backend.table.toUser
 import java.sql.Connection
 
 private val logger = KotlinLogging.logger { }
@@ -133,31 +135,23 @@ class Database(
      * The dummy user is created with predefined credentials and role, which can be used for testing purposes.
      */
     fun useDummyUser() {
-        val useDummyUser = envReader.env.miscellaneous.useDummyUser
-        if (useDummyUser && !doesDummyUserExist()) {
-            val dummyUserId =
-                UserTable.insertAndGetId {
-                    it[email] = DummyUser.email
-                    it[firstName] = DummyUser.firstName
-                    it[lastName] = DummyUser.lastName
-                    it[passwordHash] = DummyUser.passwordHash
-                    it[role] = DummyUser.role
-                    it[status] = DummyUser.status
-                }
-            DummyUser.id = dummyUserId.value
+        if (!envReader.env.miscellaneous.useDummyUser) {
+            return
         }
-    }
 
-    /**
-     * Checks if the dummy user already exists in the database.
-     *
-     * @return `true` if the dummy user exists, `false` otherwise.
-     */
-    private fun doesDummyUserExist(): Boolean {
-        return UserTable
-            .select(UserTable.id)
+        val existingId = UserTable
+            .selectAll()
             .where { UserTable.email eq DummyUser.email }
-            .empty()
-            .not()
+            .map { it.toUser().id }
+            .singleOrNull()
+
+        DummyUser.id = existingId ?: UserTable.insertAndGetId {
+            it[email] = DummyUser.email
+            it[firstName] = DummyUser.firstName
+            it[lastName] = DummyUser.lastName
+            it[passwordHash] = DummyUser.passwordHash
+            it[role] = DummyUser.role
+            it[status] = DummyUser.status
+        }.value
     }
 }
