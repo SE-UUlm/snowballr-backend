@@ -1,6 +1,7 @@
 package se.uulm.snowballr.backend.fetcher
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.github.oshai.kotlinlogging.KLogger
 import jep.Jep
 import jep.MainInterpreter
 import jep.SharedInterpreter
@@ -83,6 +84,7 @@ class PythonPluginFetcher : IFetcher {
             val thread = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
             val interp = runBlocking(thread) {
                 val interp = newInterpreter()
+                interp.set("log", PythonLogger("PythonFetcherPlugin '$name'"))
                 interp.exec(source)
                 interp
             }
@@ -123,6 +125,20 @@ class PythonPluginFetcher : IFetcher {
             .map { it.toPaper() }
             .toSet()
     }
+}
+
+private class PythonLogger {
+    private val logger: KLogger
+
+    constructor(name: String) {
+        this.logger = KotlinLogging.logger(name)
+    }
+
+    fun trace(message: String) = logger.trace { message }
+    fun debug(message: String) = logger.debug { message }
+    fun info(message: String) = logger.info { message }
+    fun warn(message: String) = logger.warn { message }
+    fun error(message: String) = logger.error { message }
 }
 
 fun Map<String, String>.toPyObject(interp: Jep): PyObject = PyBuiltins.get(interp).dict(this)
