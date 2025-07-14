@@ -11,6 +11,8 @@ import se.uulm.snowballr.backend.model.dto.Paper
 import java.time.OffsetDateTime
 import java.util.HashMap
 import java.util.UUID
+import java.nio.file.Path
+import kotlin.io.path.readText
 
 private val logger = KotlinLogging.logger {}
 
@@ -66,8 +68,21 @@ class PythonPluginFetcher : IFetcher {
         }
 
         fun withNewInterpreter(block: (Jep) -> Unit) = newInterpreter().use(block)
+
+        fun fromFile(path: Path): PythonPluginFetcher = fromSource(path.readText())
+
+        fun fromSource(source: String): PythonPluginFetcher {
+            val interp = newInterpreter()
+            interp.exec(source)
+            return PythonPluginFetcher(interp)
+        }
     }
 
+    private val interp: Jep
+
+    private constructor(interp: Jep) {
+        this.interp = interp
+    }
 
     override suspend fun getAvailableOptions(): Set<String> = setOf()
 
