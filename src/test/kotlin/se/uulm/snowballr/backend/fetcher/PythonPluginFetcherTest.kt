@@ -118,4 +118,24 @@ internal class PythonPluginFetcherTest {
             }
         }
     }
+
+    @Test
+    fun `When python returns a string set, java can access it as a string set`() {
+        PythonPluginFetcher.withNewInterpreter { interp ->
+            val set = interp.getValue("""{"foo", "bar"}""", PyObject::class.java).toSet<String>(interp)
+            assertEquals(setOf("foo", "bar"), set)
+        }
+    }
+
+    @Test
+    fun `When python returns a paper set, java can access it as a paper set`() {
+        PythonPluginFetcher.withNewInterpreter { interp ->
+            val set = interp.getValue("""{Paper("foo", "bar"), Paper("x", "y")}""", PyObject::class.java).toSet<PyObject>(interp).map { it.toPaper() }.toSet()
+
+            assertEquals(2, set.size)
+
+            assert(set.any { it.title == "foo" && it.abstract == "bar" })
+            assert(set.any { it.title == "x" && it.abstract == "y" })
+        }
+    }
 }

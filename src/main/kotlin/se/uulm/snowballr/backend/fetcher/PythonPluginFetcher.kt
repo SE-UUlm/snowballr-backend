@@ -6,6 +6,7 @@ import jep.MainInterpreter
 import jep.SharedInterpreter
 import jep.python.PyBuiltins
 import jep.python.PyObject
+import jep.python.PyCallable
 import kotlinx.datetime.Instant
 import se.uulm.snowballr.backend.model.dto.Paper
 import java.time.OffsetDateTime
@@ -31,7 +32,9 @@ private val pythonDataTypes = """
     from datetime import datetime
     from typing import Optional
 
-    @dataclass
+    # Unsafe hash needed to make it hashable whilst maintaining mutability.
+    # Do not add an object of this class to a dict and then modify it!
+    @dataclass(unsafe_hash=True)
     class Paper:
         title: str
         abstract: str
@@ -111,6 +114,24 @@ fun PyObject.toPaper(): Paper = Paper(
     null,
     null,
 )
+
+inline fun<reified T> PyObject.toSet(interp: Jep): Set<T> {
+    val builtins = interp.getValue("__import__('builtins')", PyObject::class.java)
+    val lenBuiltin = builtins.getAttr("len", PyCallable::class.java)
+    val iterBuiltin = builtins.getAttr("iter", PyCallable::class.java)
+    val nextBuiltin = builtins.getAttr("next", PyCallable::class.java)
+
+    val len = lenBuiltin.call(this) as Long
+
+    val map = HashSet<T>()
+    val iterator = iterBuiltin.call(this) as PyObject
+
+    for (i in 1..len) {
+        map.add(nextBuiltin.callAs(T::class.java, iterator))
+    }
+
+    return map
+}
 
 fun Paper.toPyObject(interp: Jep): PyObject {
     val paper = interp.getValue("""Paper("", "")""", PyObject::class.java)
