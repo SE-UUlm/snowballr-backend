@@ -12,8 +12,10 @@ import io.grpc.health.v1.HealthGrpc
 import io.grpc.reflection.v1alpha.ServerReflectionGrpc
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import se.uulm.snowballr.backend.auth.DummyUser
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.auth.ICookieService
+import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.model.auth.AuthRequestState
 import se.uulm.snowballr.backend.service.AuthenticationService
 import se.uulm.snowballr.backend.service.IAuthenticationService
@@ -48,6 +50,14 @@ private val PUBLIC_METHODS =
     )
 
 /**
+ * A set of dummy user methods that are used for testing purposes.
+ *
+ * Only these methods are allowed to be called by the dummy user.
+ */
+private val DUMMY_USER_METHODS =
+    setOf(SnowballRGrpcKt.getAuthenticationStatusMethod.fullMethodName)
+
+/**
  * A [ServerInterceptor] that authenticates incoming gRPC calls using JWT tokens stored in cookies.
  *
  * This interceptor checks if the called method is public or a health check. If so, it bypasses authentication
@@ -72,6 +82,7 @@ val authenticationInterceptor: ServerInterceptor =
     object : ServerInterceptor, KoinComponent {
         private val authService: IAuthenticationService by inject()
         private val cookieService: ICookieService by inject()
+        private val envReader: EnvReader by inject()
 
         /**
          * Returns a no-op listener. Used when the call chain cannot proceed.
@@ -156,6 +167,11 @@ val authenticationInterceptor: ServerInterceptor =
             skipRefresh: Boolean,
             methodName: String,
         ): ServerCall.Listener<ReqT?>? {
+            val useDummyUser = this.envReader.env.miscellaneous.useDummyUser
+            if (useDummyUser) {
+                return proceedWithDummyUser(authState)
+            }
+
             val cookieHeader = authState.headers?.get(GrpcContext.COOKIE_METADATA_KEY)
             val cookies = cookieService.parseCookies(cookieHeader)
             val accessToken = cookies[GrpcContext.ACCESS_TOKEN_COOKIE_NAME]
@@ -176,6 +192,35 @@ val authenticationInterceptor: ServerInterceptor =
                     }
                 },
             )
+        }
+
+        /**
+         * Proceeds with the call using a dummy user.
+         * This method is used for testing purposes and allows certain methods to be called
+         * without requiring a valid user ID.
+         *
+         * @param ReqT The type of the request.
+         * @param RespT The type of the response.
+         * @param authState The [AuthRequestState] containing the call, headers, and next handler.
+         * @return A [ServerCall.Listener] that will handle the call, or an empty listener if the method is not allowed.
+         */
+        private fun <ReqT : Any?, RespT : Any?> proceedWithDummyUser(
+            authState: AuthRequestState<ReqT, RespT>,
+        ): ServerCall.Listener<ReqT?>? {
+            val methodName = authState.call.methodDescriptor.fullMethodName
+            if (methodName !in DUMMY_USER_METHODS) {
+                logger.warn { "Dummy user is not allowed to call $methodName" }
+                authState.call.close(
+                    Status.PERMISSION_DENIED.withDescription("Dummy user cannot call this method"),
+                    Metadata(),
+                )
+                return emptyListener()
+            }
+
+            val context = Context.current()
+                .withValue(GrpcContext.USER_ID_CONTEXT_KEY, DummyUser.id)
+
+            return context.call { authState.next?.startCall(authState.call, authState.headers) }
         }
     }
 

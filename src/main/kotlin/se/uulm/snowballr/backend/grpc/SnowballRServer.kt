@@ -8,6 +8,7 @@ import io.grpc.protobuf.services.HealthStatusManager
 import io.grpc.protobuf.services.ProtoReflectionService
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import se.uulm.snowballr.backend.auth.DummyUser
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.grpc.interceptor.authenticationInterceptor
 import se.uulm.snowballr.backend.grpc.interceptor.exceptionInterceptor
@@ -186,11 +187,18 @@ class SnowballRServer(
 
         override suspend fun getAllUsers(request: Base.Nothing): UserOuterClass.User.List = mainService.getAllUsers()
 
-        // TODO: Remove dummy implementation!
-        //   This is currently needed to not get redirected to the Sign-In page in the frontend,
-        //   because the returned user would be `null`.
+        // TODO: Remove dummy user when `getCurrentUser` is implemented
+        //  This is currently needed to not get redirected to the Sign-In page in the frontend,
+        //  because the returned user would be `null`.
         override suspend fun getCurrentUser(request: Base.Nothing): UserOuterClass.User =
-            UserOuterClass.User.newBuilder().build()
+            UserOuterClass.User.newBuilder().apply {
+                id = DummyUser.id.toString()
+                email = DummyUser.email
+                firstName = DummyUser.firstName
+                lastName = DummyUser.lastName
+                role = DummyUser.role
+                status = DummyUser.status
+            }.build()
 
         override suspend fun getUserById(request: Base.Id): UserOuterClass.User = mainService.getUserById(request)
 

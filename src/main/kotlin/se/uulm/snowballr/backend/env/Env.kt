@@ -20,6 +20,7 @@ data class Env(
 
     data class Miscellaneous(
         val logLevel: String,
+        val useDummyUser: Boolean,
     )
 
     data class Database(

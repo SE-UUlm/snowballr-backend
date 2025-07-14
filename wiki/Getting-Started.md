@@ -44,6 +44,7 @@ The environment variables are as follows:
 | `BACKEND_TAG`            |        :x:*        | `latest-dev` | Tag of registry backend image to use for `registry` docker compose profile       |
 | `JWT_PRIVATE_KEY_BASE64` | :white_check_mark: |      -       | Base64 encoded private key for JWT authentication                                |
 | `JWT_PUBLIC_KEY_BASE64`  | :white_check_mark: |      -       | Base64 encoded public key for JWT authentication                                 |
+| `USE_DUMMY_USER`         |        :x:         |   `false`    | Whether to use a dummy user for development purposes                             |
 
 \* only used when using the docker compose profiles.
 
