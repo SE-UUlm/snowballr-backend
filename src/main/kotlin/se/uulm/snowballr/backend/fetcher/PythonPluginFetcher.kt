@@ -8,10 +8,15 @@ import jep.python.PyBuiltins
 import jep.python.PyObject
 import jep.python.PyCallable
 import kotlinx.datetime.Instant
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.withContext
 import se.uulm.snowballr.backend.model.dto.Paper
 import java.time.OffsetDateTime
 import java.util.HashMap
 import java.util.UUID
+import java.util.concurrent.Executors
 import java.nio.file.Path
 import kotlin.io.path.readText
 
@@ -72,18 +77,25 @@ class PythonPluginFetcher : IFetcher {
 
         fun withNewInterpreter(block: (Jep) -> Unit) = newInterpreter().use(block)
 
-        fun fromFile(path: Path): PythonPluginFetcher = fromSource(path.readText())
+        fun fromFile(name: String, path: Path): PythonPluginFetcher = fromSource(name, path.readText())
 
-        fun fromSource(source: String): PythonPluginFetcher {
-            val interp = newInterpreter()
-            interp.exec(source)
-            return PythonPluginFetcher(interp)
+        fun fromSource(name: String, source: String): PythonPluginFetcher {
+            val thread = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
+            val interp = runBlocking(thread) {
+                val interp = newInterpreter()
+                interp.exec(source)
+                interp
+            }
+            return PythonPluginFetcher(thread, interp)
         }
     }
 
+    // Each Jep interpreter requires its own thread.
+    private val thread: CoroutineDispatcher
     private val interp: Jep
 
-    private constructor(interp: Jep) {
+    private constructor(thread: CoroutineDispatcher, interp: Jep) {
+        this.thread = thread
         this.interp = interp
     }
 
