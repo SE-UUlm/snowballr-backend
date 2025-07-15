@@ -82,7 +82,10 @@ class PythonPluginFetcher : IFetcher {
         fun fromFile(name: String, path: Path, cwd: Path, fetcherManager: FetcherManager): PythonPluginFetcher = fromSource(name, path.readText(), cwd, fetcherManager)
 
         fun fromSource(name: String, source: String, cwd: Path, fetcherManager: FetcherManager): PythonPluginFetcher {
-            val thread = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
+            val thread = Executors.newSingleThreadExecutor {
+                Thread(it, "PythonPluginFetcher:$name")
+            }.asCoroutineDispatcher()
+
             val interp = runBlocking(thread) {
                 val interp = newInterpreter()
                 interp.getValue("__import__('os')", PyObject::class.java)
@@ -92,11 +95,12 @@ class PythonPluginFetcher : IFetcher {
                     .getAttr("path", PyObject::class.java)
                     .getAttr("append", PyCallable::class.java)
                     .call(cwd.toAbsolutePath().toString())
-                interp.set("log", PythonLogger("PythonFetcherPlugin '$name'"))
+                interp.set("log", PythonLogger(name))
                 interp.set("fetchers", PythonFetcherManager(fetcherManager, interp, thread))
                 interp.exec(source)
                 interp
             }
+
             return PythonPluginFetcher(thread, interp)
         }
     }
