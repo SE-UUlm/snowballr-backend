@@ -16,6 +16,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.TestInstance
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.auth.IJwtService
+import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
@@ -75,6 +76,7 @@ open class MainServiceTest {
     val userRepoMock = mockk<IUserTableRepo>(relaxed = true)
     val projectMemberRepoMock = mockk<IProjectMemberTableRepo>(relaxed = true)
     val jwtServiceMock = mockk<IJwtService>(relaxed = true)
+    val envReader = mockk<EnvReader>(relaxed = true)
     val mainService =
         MainService(
             projectRepoMock,
@@ -82,6 +84,7 @@ open class MainServiceTest {
             userRepoMock,
             projectMemberRepoMock,
             jwtServiceMock,
+            envReader
         )
 
     @BeforeAll

@@ -1,5 +1,7 @@
 package se.uulm.snowballr.backend.env
 
+import java.nio.file.Path
+
 // Default values
 const val DEFAULT_LOG_LEVEL = "DEBUG"
 const val DEFAULT_USE_DUMMY_USER = false
@@ -19,6 +21,9 @@ private const val DATABASE_HOST = "DATABASE_HOST"
 // Encryption
 private const val JWT_PRIVATE_KEY_BASE64 = "JWT_PRIVATE_KEY_BASE64"
 private const val JWT_PUBLIC_KEY_BASE64 = "JWT_PUBLIC_KEY_BASE64"
+
+// Fetcher
+private const val FETCHER_PLUGIN_DIRECTORY = "FETCHER_PLUGIN_DIRECTORY"
 
 /**
  * The entrypoint for accessing environment variables. All registered variables can be accessed using this reader class.
@@ -44,6 +49,9 @@ class EnvReader(
         encryption = Env.Encryption(
             jwtPrivateKeyBase64 = envService[JWT_PRIVATE_KEY_BASE64],
             jwtPublicKeyBase64 = envService[JWT_PUBLIC_KEY_BASE64],
+        ),
+        fetcher = Env.Fetcher(
+            pluginDirectory = Path.of(envService.getOrDefault(FETCHER_PLUGIN_DIRECTORY, "./plugins/fetchers/")),
         ),
     )
 }
