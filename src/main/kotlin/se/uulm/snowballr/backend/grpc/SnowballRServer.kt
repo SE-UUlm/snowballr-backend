@@ -285,10 +285,12 @@ class SnowballRServer(
         override suspend fun createProject(request: ProjectOuterClass.Project.Create): ProjectOuterClass.Project =
             mainService.createProject(request)
 
-        override suspend fun getProjectById(request: Base.Id): ProjectOuterClass.Project = super.getProjectById(request)
+        override suspend fun getProjectById(request: Base.Id): ProjectOuterClass.Project = mainService.getProjectById(
+            request,
+        )
 
         override suspend fun updateProject(request: ProjectOuterClass.Project.Update): ProjectOuterClass.Project =
-            super.updateProject(request)
+            mainService.updateProject(request)
 
         override suspend fun exportProject(request: Export.ExportRequest): Base.Blob = super.exportProject(request)
 

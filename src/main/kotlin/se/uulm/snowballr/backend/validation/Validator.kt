@@ -30,6 +30,7 @@ const val PASSWORD_MIN_NUMBER_SPECIAL_CHARS = 2
 const val PASSWORD_MIN_LENGTH = 8
 const val FIRST_NAME_MAX_LENGTH = 100
 const val LAST_NAME_MAX_LENGTH = 100
+const val PROJECT_NAME_MAX_LENGTH = 100
 
 /**
  * Validates a given request object and returns either a collection of validation issues
@@ -54,6 +55,7 @@ fun <T> validateRequest(request: T): EitherNel<ValidationIssue, Unit> = when (re
     is UserOuterClass.User.Update -> UserValidator.validateUpdateRequest(request)
     // Project
     is ProjectOuterClass.Project.Create -> ProjectValidator.validateCreateRequest(request)
+    is ProjectOuterClass.Project.Update -> ProjectValidator.validateUpdateRequest(request)
     // Criterion
     is CriterionOuterClass.Criterion.Create -> CriterionValidator.validateCreateRequest(request)
     // Base

@@ -53,6 +53,29 @@ class ProjectMemberTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectM
     }
 
     @Nested
+    inner class GetProjectMemberByComposedId {
+        @Test
+        fun `When a project member is found, then the correct project member is returned`() = testCoroutine {
+            val (project, members) = setupProject()
+            val projectMember = repo.getProjectMemberByComposedId(project.id, members[0].userId)
+
+            assertThat(projectMember.projectId).isEqualTo(project.id)
+            assertThat(projectMember.userId).isEqualTo(testUserId)
+            assertThat(projectMember.role).isEqualTo(members[0].role)
+        }
+
+        @Test
+        fun `When a project member is not found, then an exception is thrown`() = testCoroutine {
+            assertThrows<NotFoundException> {
+                repo.getProjectMemberByComposedId(
+                    UUID.randomUUID(),
+                    UUID.randomUUID(),
+                )
+            }
+        }
+    }
+
+    @Nested
     inner class AddUserToProject {
         @Test
         fun `When a user is added to a project, then they can be retrieved as project member`() = testCoroutine {
@@ -167,6 +190,78 @@ class ProjectMemberTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectM
 
             assertThat(result).hasSize(3)
             assertThat(result).containsExactlyInAnyOrder(member1, member2, member3)
+        }
+    }
+
+    @Nested
+    inner class GetAllProjectAdmins {
+        @Test
+        fun `When all project members are project admins, then the correct list of project admins is returned`() =
+            testCoroutine {
+                val (project, members) = setupProject(1)
+                val firstMember = repo.getProjectMemberByComposedId(project.id, testUserId)
+                val secondMember = repo.getProjectMemberByComposedId(project.id, members[1].userId)
+                assertThat(firstMember.role).isEqualTo(MemberRole.MEMBER_ROLE_DEFAULT)
+                assertThat(secondMember.role).isEqualTo(MemberRole.MEMBER_ROLE_DEFAULT)
+
+                repo.promoteProjectMemberToAdmin(project.id, firstMember.userId)
+                repo.promoteProjectMemberToAdmin(project.id, secondMember.userId)
+
+                val projectAdmins = repo.getAllProjectAdmins(project.id)
+
+                projectAdmins.forEachIndexed { index, admin ->
+                    assertThat(admin.projectId).isEqualTo(project.id)
+                    assertThat(admin.userId).isEqualTo(members[index].userId)
+                    assertThat(admin.role).isEqualTo(MemberRole.MEMBER_ROLE_ADMIN)
+                }
+            }
+
+        @Test
+        fun `When not all project members are project admins, then the correct list of project admins is returned`() =
+            testCoroutine {
+                val (project, members) = setupProject(1)
+                val firstMember = repo.getProjectMemberByComposedId(project.id, testUserId)
+                val secondMember = repo.getProjectMemberByComposedId(project.id, members[1].userId)
+                assertThat(firstMember.role).isEqualTo(MemberRole.MEMBER_ROLE_DEFAULT)
+                assertThat(secondMember.role).isEqualTo(MemberRole.MEMBER_ROLE_DEFAULT)
+
+                repo.promoteProjectMemberToAdmin(project.id, firstMember.userId)
+
+                val projectAdmins = repo.getAllProjectAdmins(project.id)
+
+                assertThat(projectAdmins).hasSize(1)
+                assertThat(projectAdmins).anyMatch { it.userId == firstMember.userId }
+                assertThat(projectAdmins).noneMatch { it.userId == secondMember.userId }
+            }
+    }
+
+    @Nested
+    inner class PromoteProjectMemberToAdmin {
+        @Test
+        fun `When a project member is promoted to admin, then the role of the project member is correctly updated`() =
+            testCoroutine {
+                val (project, _) = setupProject()
+                val normalMember = repo.getProjectMemberByComposedId(project.id, testUserId)
+                assertThat(normalMember.role).isEqualTo(MemberRole.MEMBER_ROLE_DEFAULT)
+
+                val promotedMember = repo.promoteProjectMemberToAdmin(project.id, testUserId)
+
+                assertThat(promotedMember.projectId).isEqualTo(project.id)
+                assertThat(promotedMember.userId).isEqualTo(testUserId)
+                assertThat(promotedMember.role).isEqualTo(MemberRole.MEMBER_ROLE_ADMIN)
+            }
+
+        @Test
+        fun `When a project admin is promoted, then the role of the project admin does not change`() = testCoroutine {
+            val (project, _) = setupProject()
+            var promotedMember = repo.promoteProjectMemberToAdmin(project.id, testUserId)
+            assertThat(promotedMember.role).isEqualTo(MemberRole.MEMBER_ROLE_ADMIN)
+
+            promotedMember = repo.promoteProjectMemberToAdmin(project.id, testUserId)
+
+            assertThat(promotedMember.projectId).isEqualTo(project.id)
+            assertThat(promotedMember.userId).isEqualTo(testUserId)
+            assertThat(promotedMember.role).isEqualTo(MemberRole.MEMBER_ROLE_ADMIN)
         }
     }
 }

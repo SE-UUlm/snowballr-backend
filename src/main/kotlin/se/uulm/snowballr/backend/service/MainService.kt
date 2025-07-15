@@ -39,6 +39,6 @@ class MainService(
     private val projectMemberRepo: IProjectMemberTableRepo,
     private val jwtService: IJwtService,
 ) : IMainService,
-    IProjectService by ProjectService(projectRepo, userRepo),
+    IProjectService by ProjectService(projectRepo, userRepo, projectMemberRepo),
     ICriterionService by CriterionService(criterionRepo),
     IUserService by UserService(userRepo, projectMemberRepo, jwtService)

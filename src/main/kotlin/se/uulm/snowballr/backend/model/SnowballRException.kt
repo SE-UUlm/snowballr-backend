@@ -17,29 +17,32 @@ sealed class SnowballRException(
      * Represents an exception that occurs when an entity cannot be found by its identifier.
      *
      * @param entityType The type of the entity that could not be found.
-     * @param entityId The unique identifier of the missing entity.
-     * @param identifierType The type of the [identifierType] field. Default to [IdentifierType.ID].
+     * @param entityIds The missing entity's ID(s).
+     * @param identifierType The type of the entity's identifier. Defaults to [IdentifierType.ID].
      */
     open class NotFoundException(
         entityType: EntityType,
-        entityId: String,
+        vararg entityIds: String,
         identifierType: IdentifierType = IdentifierType.ID,
-    ) : SnowballRException("${entityType.singularUpper()} with ${identifierType.displayName} '$entityId' not found.")
+    ) : SnowballRException(
+        "${entityType.singularUpper()} ${displayEntityIds(entityIds.toList(), identifierType)} not found.",
+    )
 
     /**
      * Represents an exception that occurs when an entity already exists in the system
      * and creation is not allowed.
      *
      * @param entityType The type of the duplicated entity.
-     * @param identifier The identifying value (e.g., email, username).
-     * @param identifierType The type of the [identifier] field. Default to [IdentifierType.ID].
+     * @param entityIds The missing entity's ID(s).
+     * @param identifierType The type of the entity's identifier. Defaults to [IdentifierType.ID].
      */
     class DuplicateEntityException(
         entityType: EntityType,
-        identifier: String,
+        vararg entityIds: String,
         identifierType: IdentifierType = IdentifierType.ID,
     ) : SnowballRException(
-        "${entityType.singularUpper()} with ${identifierType.displayName} '$identifier' already exists.",
+        "${entityType.singularUpper()} ${displayEntityIds(entityIds.toList(), identifierType)}" +
+            " already exists.",
     )
 
     /**

@@ -88,6 +88,16 @@ data class InvalidId(
     override fun toString(): String = "The ID '$id' is invalid for the field '$name'."
 }
 
+data class OutOfRangeValue(
+    val name: String,
+    val value: Float,
+    val from: Float,
+    val to: Float,
+) : ValidationIssue {
+    override fun toString(): String =
+        "The value '$value' is not in the allowed range [$from-$to] for the field '$name'."
+}
+
 /**
  * Represents a validation issue where a password does not meet the required criteria.
  *
