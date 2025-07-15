@@ -19,14 +19,14 @@ try {
 
     // Count occurrences of "override suspend fun"
     const allCallsMatches = fileContent.match(allCallsPattern) ?? [];
-    const allCalls = allCallsMatches.length;
+    const allCallsCount = allCallsMatches.length;
 
     // Count occurrences of not "super."
     const implementedCallsMatches = fileContent.match(implementedCallsPattern) ?? [];
-    const implementedCalls = implementedCallsMatches.length;
+    const implementedCallsCount = implementedCallsMatches.length;
 
     // Calculate percentage
-    const percentage = allCalls > 0 ? Math.round((implementedCalls / allCalls) * 100) : 0;
+    const percentage = allCallsCount > 0 ? Math.round((implementedCallsCount / allCallsCount) * 100) : 0;
 
     // Count API calls by category/service
     const categories = {};
@@ -45,36 +45,56 @@ try {
             : "Other";
     };
 
+    const allCalls = [];
     let match;
     let categoryMatches = 0;
     while ((match = allCallsPattern.exec(fileContent)) !== null) {
         const methodName = match[1];
+        allCalls.push(methodName);
         const category = getCategory(methodName);
 
         categories[category] = (categories[category] ?? 0) + 1;
         categoryMatches++;
     }
-    assert(categoryMatches === allCalls, "Category matches should equal all API calls");
+    assert(categoryMatches === allCallsCount, "Category matches should equal all API calls");
     console.log(`Found ${categoryMatches} API calls and all were successfully categorized.`);
     console.log("Categories:", categories);
+    fs.writeFileSync(
+        "all-available-calls.md",
+        allCalls
+            .toSorted()
+            .map((m) => `- ${m}`)
+            .join("\n"),
+        "utf8",
+    );
 
     // Count implemented calls by category
+    const implementedCalls = [];
     let implementedMatches = 0;
     while ((match = implementedCallsPattern.exec(fileContent)) !== null) {
         const methodName = match[1];
+        implementedCalls.push(methodName);
         const category = getCategory(methodName);
 
         implementedByCategory[category] = (implementedByCategory[category] ?? 0) + 1;
         implementedMatches++;
     }
-    assert(implementedMatches === implementedCalls, "Implemented matches should equal implemented API calls");
+    assert(implementedMatches === implementedCallsCount, "Implemented matches should equal implemented API calls");
+    fs.writeFileSync(
+        "all-implemented-calls.md",
+        implementedCalls
+            .toSorted()
+            .map((m) => `- ${m}`)
+            .join("\n"),
+        "utf8",
+    );
 
     // Calculate remaining work
-    const remainingCalls = allCalls - implementedCalls;
+    const remainingCalls = allCallsCount - implementedCallsCount;
 
     // Output the results
-    console.log(`All API calls: ${allCalls}`);
-    console.log(`Implemented API calls: ${implementedCalls}`);
+    console.log(`All API calls: ${allCallsCount}`);
+    console.log(`Implemented API calls: ${implementedCallsCount}`);
     console.log(`Percentage implemented: ${percentage}%`);
     console.log(`Remaining API calls: ${remainingCalls}`);
     console.log("\nImplementation by category:");
@@ -90,7 +110,7 @@ try {
 
     // Create the replacement string with Markdown formatting
     let replacementText = `## API Implementation Progress\n\n`;
-    replacementText += `Currently, **${implementedCalls}/${allCalls} (${percentage}%)** of the API calls are implemented.\n\n`;
+    replacementText += `Currently, **${implementedCallsCount}/${allCallsCount} (${percentage}%)** of the API calls are implemented.\n\n`;
 
     // Add progress bar
     const progressBarLength = 45;
