@@ -1,7 +1,6 @@
 package se.uulm.snowballr.backend.service
 
 import se.uulm.snowballr.backend.auth.GrpcContext
-import se.uulm.snowballr.backend.db.dummyUserId
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
@@ -56,11 +55,8 @@ class ProjectService(
     private val repo: IProjectTableRepo,
     private val userRepo: IUserTableRepo,
 ) : IProjectService {
-    override suspend fun createProject(request: GrpcProject.Create): GrpcProject {
-        // TODO: remove dummy user when user management is implemented
-        val requestingUserId = parseUUID(dummyUserId!!, EntityType.USER)
-        return repo.createProject(request, requestingUserId).toGrpcProject()
-    }
+    override suspend fun createProject(request: GrpcProject.Create): GrpcProject =
+        repo.createProject(request, GrpcContext.getUserIdFromContext()).toGrpcProject()
 
     override suspend fun getAllProjects(): GrpcProject.List {
         val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())

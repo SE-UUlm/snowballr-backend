@@ -1,47 +1,54 @@
 package se.uulm.snowballr.backend.service.project
 
 import io.mockk.coEvery
+import io.mockk.every
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.db.dummyUserId
-import se.uulm.snowballr.backend.model.SnowballRException.InvalidIdException
+import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.service.MainServiceTest
 import se.uulm.snowballr.backend.testCoroutine
 import snowballr.ProjectOuterClass
+import java.util.UUID
 
 @ExperimentalCoroutinesApi
 @DelicateCoroutinesApi
 class CreateProjectTest : MainServiceTest() {
-    @Test
-    fun `When the requesting user has an invalid ID, then an exception is thrown`() = testCoroutine {
-        val request = ProjectOuterClass.Project.Create.getDefaultInstance()
+    private fun getExampleRequest() = ProjectOuterClass.Project.Create.getDefaultInstance()
 
-        dummyUserId = "invalid-UUID"
-
-        assertThrows<InvalidIdException.UUID> { mainService.createProject(request) }
+    @BeforeEach
+    fun setupTest() {
+        every { GrpcContext.getUserIdFromContext() } throws NotImplementedError()
+        coEvery { projectRepoMock.createProject(any(), any()) } throws NotImplementedError()
     }
 
     @Test
-    fun `When a project is correctly created, then no exception is thrown`() = testCoroutine {
-        val request = ProjectOuterClass.Project.Create.getDefaultInstance()
-        val project = DataBuilder.createExampleProject()
+    fun `When retrieving the current user ID fails, then an exception is thrown`() = testCoroutine {
+        every { GrpcContext.getUserIdFromContext() } throws TestSpecificException()
 
-        coEvery { projectRepoMock.createProject(any(), any()) } returns project
-
-        assertDoesNotThrow { mainService.createProject(request) }
+        assertThrows<TestSpecificException> { mainService.createProject(getExampleRequest()) }
     }
 
     @Test
     fun `When an error occurs while a project is created, then an exception is thrown`() = testCoroutine {
-        val request = ProjectOuterClass.Project.Create.getDefaultInstance()
-
+        every { GrpcContext.getUserIdFromContext() } returns UUID.randomUUID()
         coEvery { projectRepoMock.createProject(any(), any()) } throws TestSpecificException()
 
-        assertThrows<TestSpecificException> { mainService.createProject(request) }
+        assertThrows<TestSpecificException> { mainService.createProject(getExampleRequest()) }
+    }
+
+    @Test
+    fun `When a project is correctly created, then no exception is thrown`() = testCoroutine {
+        val project = DataBuilder.createExampleProject()
+
+        every { GrpcContext.getUserIdFromContext() } returns UUID.randomUUID()
+        coEvery { projectRepoMock.createProject(any(), any()) } returns project
+
+        assertDoesNotThrow { mainService.createProject(getExampleRequest()) }
     }
 }

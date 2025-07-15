@@ -71,8 +71,7 @@ private class StructureRules {
             .whereLayer("Table")
             .mayOnlyBeAccessedByLayers("Repository", "DB")
             .whereLayer("DB")
-            // TODO: remove service when dummy user isn't used anymore
-            .mayOnlyBeAccessedByLayers("Main", "Repository", "Service")
+            .mayOnlyBeAccessedByLayers("Main", "Repository")
             .check(classes)
     }
 
@@ -111,8 +110,7 @@ private class StructureRules {
             .whereLayer("gRPC Server")
             .mayOnlyAccessLayers("Service", "Input Validation")
             .whereLayer("Service")
-            // TODO: remove DB when dummy user isn't used anymore
-            .mayOnlyAccessLayers("Repository", "DB")
+            .mayOnlyAccessLayers("Repository")
             .whereLayer("Repository")
             .mayOnlyAccessLayers("Table", "DB")
             .whereLayer("Table")

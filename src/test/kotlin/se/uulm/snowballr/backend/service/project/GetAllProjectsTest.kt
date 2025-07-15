@@ -1,35 +1,43 @@
 package se.uulm.snowballr.backend.service.project
 
 import io.mockk.coEvery
+import io.mockk.every
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
+import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import se.uulm.snowballr.backend.testCoroutine
 import snowballr.UserOuterClass.UserRole
+import java.util.UUID
 
 @ExperimentalCoroutinesApi
 @DelicateCoroutinesApi
 class GetAllProjectsTest : MainServiceTest() {
+    @BeforeEach
+    fun setupTest() {
+        every { GrpcContext.getUserIdFromContext() } throws NotImplementedError()
+        coEvery { userRepoMock.getUserById(any()) } throws NotImplementedError()
+        coEvery { projectRepoMock.getAllProjects() } throws NotImplementedError()
+    }
+
     @Test
-    fun `When all projects are retrieved by an admin, then no exception is thrown`() = testCoroutine {
-        val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+    fun `When retrieving the current user ID fails, then an exception is thrown`() = testCoroutine {
+        every { GrpcContext.getUserIdFromContext() } throws TestSpecificException()
 
-        coEvery { userRepoMock.getUserById(any()) } returns adminUser
-        coEvery { projectRepoMock.getAllProjects() } returns emptyList()
-
-        assertDoesNotThrow { mainService.getAllProjects() }
+        assertThrows<TestSpecificException> { mainService.getAllProjects() }
     }
 
     @Test
     fun `When retrieving the current user fails, then an exception is thrown`() = testCoroutine {
+        every { GrpcContext.getUserIdFromContext() } returns UUID.randomUUID()
         coEvery { userRepoMock.getUserById(any()) } throws TestSpecificException()
-        coEvery { projectRepoMock.getAllProjects() } returns emptyList()
 
         assertThrows<TestSpecificException> { mainService.getAllProjects() }
     }
@@ -38,8 +46,8 @@ class GetAllProjectsTest : MainServiceTest() {
     fun `When all projects are retrieved by a non-admin, then an exception is thrown`() = testCoroutine {
         val nonAdminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
 
+        every { GrpcContext.getUserIdFromContext() } returns UUID.randomUUID()
         coEvery { userRepoMock.getUserById(any()) } returns nonAdminUser
-        coEvery { projectRepoMock.getAllProjects() } returns emptyList()
 
         assertThrows<UnauthorizedException.All> { mainService.getAllProjects() }
     }
@@ -48,9 +56,21 @@ class GetAllProjectsTest : MainServiceTest() {
     fun `When retrieving all projects fails, then an exception is thrown`() = testCoroutine {
         val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
 
+        every { GrpcContext.getUserIdFromContext() } returns UUID.randomUUID()
         coEvery { userRepoMock.getUserById(any()) } returns adminUser
         coEvery { projectRepoMock.getAllProjects() } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getAllProjects() }
+    }
+
+    @Test
+    fun `When all projects are retrieved by an admin, then no exception is thrown`() = testCoroutine {
+        val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+
+        every { GrpcContext.getUserIdFromContext() } returns UUID.randomUUID()
+        coEvery { userRepoMock.getUserById(any()) } returns adminUser
+        coEvery { projectRepoMock.getAllProjects() } returns emptyList()
+
+        assertDoesNotThrow { mainService.getAllProjects() }
     }
 }
