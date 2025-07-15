@@ -34,30 +34,6 @@ val jepLocatorScript = """
         print(f)
     """.trimIndent()
 
-@Suppress("StringTemplateIndent", "Indentation")
-val pythonDataTypes = """
-    from dataclasses import dataclass
-    from typing import Optional
-    import builtins
-
-    # Unsafe hash needed to make it hashable whilst maintaining mutability.
-    # Do not add an object of this class to a dict and then modify it!
-    @dataclass(unsafe_hash=True)
-    class Paper:
-        title: str
-        abstract: str
-        externalId: Optional[str] = None
-        publishedAt: Optional[int] = None
-        publisher: Optional[str] = None
-        publicationType: Optional[str] = None
-        publicationName: Optional[str] = None
-
-    # Workaround used to make ruff and lsp not complain about
-    # missing definitions
-    log = builtins.snowballr["log"]
-    fetchers = FetcherService(builtins.snowballr["fetchers"])
-    """.trimIndent()
-
 class PythonPluginFetcher : IFetcher {
     companion object {
         fun locateNativeLibrary() {
@@ -77,8 +53,13 @@ class PythonPluginFetcher : IFetcher {
             MainInterpreter.setJepLibraryPath(ret)
         }
 
+        fun dataTypesModuleContent() = this::class.java
+            .getResourceAsStream("/PythonSnowballrTypes.py")
+            .bufferedReader()
+            .readText()
+
         fun writeDataTypesModule(path: Path) {
-            path.writeText(pythonDataTypes)
+            path.writeText(dataTypesModuleContent())
         }
 
         fun fromFile(name: String, path: Path, cwd: Path, fetcherManager: FetcherManager): PythonPluginFetcher = fromSource(name, path.readText(), cwd, fetcherManager)
@@ -107,7 +88,7 @@ class PythonPluginFetcher : IFetcher {
                         "fetchers" to PythonFetcherManager(fetcherManager, interp, thread)
                     )) )
 
-                interp.exec(pythonDataTypes)
+                interp.exec(dataTypesModuleContent())
                 interp.exec(source)
                 interp
             }

@@ -70,7 +70,7 @@ internal class PythonPluginFetcherTest {
 
     private fun withNewInterpreter(block: (Jep) -> Unit) {
         val interp = SharedInterpreter()
-        interp.exec(pythonDataTypes)
+        interp.exec(PythonPluginFetcher.dataTypesModuleContent())
         interp.use(block)
     }
 
