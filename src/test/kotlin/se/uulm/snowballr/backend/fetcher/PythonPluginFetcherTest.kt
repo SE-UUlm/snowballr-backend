@@ -15,12 +15,17 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.AfterAll
 import se.uulm.snowballr.backend.model.dto.Paper
+import se.uulm.snowballr.backend.fetcher.FetcherManager
 import java.time.OffsetDateTime
 import java.util.UUID
 import java.net.InetSocketAddress
 import com.sun.net.httpserver.HttpServer
 import com.sun.net.httpserver.HttpHandler
 import com.sun.net.httpserver.HttpExchange
+import io.mockk.mockk
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.confirmVerified
 
 private val examplePaper = Paper(
     UUID.randomUUID(),
@@ -174,7 +179,7 @@ internal class PythonPluginFetcherTest {
                 "foo",
                 "bar"
             ]
-        """.trimIndent())
+        """.trimIndent(), mockk())
 
         assertEquals(setOf("foo", "bar"), fetcher.getAvailableOptions())
     }
@@ -187,7 +192,7 @@ internal class PythonPluginFetcherTest {
                     Paper("foo", "bar"),
                     Paper("x", "y"),
                 }
-        """.trimIndent())
+        """.trimIndent(), mockk())
 
         val papers = fetcher.searchPapers("", mapOf())
 
@@ -203,7 +208,7 @@ internal class PythonPluginFetcherTest {
                 return {
                     Paper(searchQuery, ""),
                 }
-        """.trimIndent())
+        """.trimIndent(), mockk())
 
         val papers = fetcher.searchPapers("foo", mapOf())
 
@@ -218,7 +223,7 @@ internal class PythonPluginFetcherTest {
                 return {
                     Paper(options["foo"], options["x"]),
                 }
-        """.trimIndent())
+        """.trimIndent(), mockk())
 
         val papers = fetcher.searchPapers("", mapOf("foo" to "bar", "x" to "y"))
 
@@ -234,7 +239,7 @@ internal class PythonPluginFetcherTest {
                     Paper("foo", "bar"),
                     Paper("x", "y"),
                 }
-        """.trimIndent())
+        """.trimIndent(), mockk())
 
         val papers = fetcher.fetchForwardReferences(examplePaper, mapOf())
 
@@ -248,7 +253,7 @@ internal class PythonPluginFetcherTest {
         val fetcher = PythonPluginFetcher.fromSource("test" ,"""
             def fetchForwardReferences(paper, options):
                 return { paper }
-        """.trimIndent())
+        """.trimIndent(), mockk())
 
         val papers = fetcher.fetchForwardReferences(examplePaper, mapOf())
 
@@ -271,7 +276,7 @@ internal class PythonPluginFetcherTest {
                 return {
                     Paper(options["foo"], options["x"]),
                 }
-        """.trimIndent())
+        """.trimIndent(), mockk())
 
         val papers = fetcher.fetchForwardReferences(examplePaper, mapOf("foo" to "bar", "x" to "y"))
 
@@ -287,7 +292,7 @@ internal class PythonPluginFetcherTest {
                     Paper("foo", "bar"),
                     Paper("x", "y"),
                 }
-        """.trimIndent())
+        """.trimIndent(), mockk())
 
         val papers = fetcher.fetchBackwardReferences(examplePaper, mapOf())
 
@@ -301,7 +306,7 @@ internal class PythonPluginFetcherTest {
         val fetcher = PythonPluginFetcher.fromSource("test" ,"""
             def fetchBackwardReferences(paper, options):
                 return { paper }
-        """.trimIndent())
+        """.trimIndent(), mockk())
 
         val papers = fetcher.fetchBackwardReferences(examplePaper, mapOf())
 
@@ -324,7 +329,7 @@ internal class PythonPluginFetcherTest {
                 return {
                     Paper(options["foo"], options["x"]),
                 }
-        """.trimIndent())
+        """.trimIndent(), mockk())
 
         val papers = fetcher.fetchBackwardReferences(examplePaper, mapOf("foo" to "bar", "x" to "y"))
 
@@ -353,11 +358,45 @@ internal class PythonPluginFetcherTest {
             availableOptions = {
                 requests.get("http://127.0.0.1:62843/").text
             }
-        """.trimIndent())
+        """.trimIndent(), mockk())
 
         val opts = fetcher.getAvailableOptions()
         assertEquals(setOf("foobar"), opts)
 
         server.stop(0)
+    }
+
+    @Test
+    fun `When a python fetcher uses the exposed java fetcherService, then it is able to make requests to other fetchers`() = runTest {
+        val fetcherManager = mockk<FetcherManager>()
+
+        coEvery { fetcherManager.getAvailableFetchers() } returns setOf("foo")
+        coEvery { fetcherManager.getAvailableOptions("foo") } returns setOf("bar")
+        coEvery { fetcherManager.searchPapers("foo", any(), any()) } returns setOf(examplePaper)
+
+        val fetcher = PythonPluginFetcher.fromSource("test" ,"""
+            availableOptions = fetchers.getAvailableOptions("foo")
+
+            def searchPapers(searchQuery, options):
+                return fetchers.searchPapers("foo", "x", { "y": "z" })
+
+        """.trimIndent(), fetcherManager)
+
+        assertEquals(setOf("bar"), fetcher.getAvailableOptions())
+        assert(fetcher.searchPapers("", mapOf()).any {
+            examplePaper.title == it.title &&
+            examplePaper.abstract == it.abstract &&
+            examplePaper.externalId == it.externalId &&
+            examplePaper.publishedAt?.epochSeconds == it.publishedAt?.epochSeconds &&
+            examplePaper.publisher == it.publisher &&
+            examplePaper.publicationType == it.publicationType &&
+            examplePaper.publicationName == it.publicationName
+        })
+
+        coVerify {
+            fetcherManager.getAvailableOptions("foo")
+            fetcherManager.searchPapers("foo", "x", mapOf("y" to "z"))
+        }
+        confirmVerified(fetcherManager)
     }
 }

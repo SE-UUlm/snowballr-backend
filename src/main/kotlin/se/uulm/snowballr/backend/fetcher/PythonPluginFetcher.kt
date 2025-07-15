@@ -14,6 +14,7 @@ import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import se.uulm.snowballr.backend.model.dto.Paper
+import se.uulm.snowballr.backend.fetcher.FetcherManager
 import java.time.OffsetDateTime
 import java.util.HashMap
 import java.util.UUID
@@ -78,13 +79,14 @@ class PythonPluginFetcher : IFetcher {
 
         fun withNewInterpreter(block: (Jep) -> Unit) = newInterpreter().use(block)
 
-        fun fromFile(name: String, path: Path): PythonPluginFetcher = fromSource(name, path.readText())
+        fun fromFile(name: String, path: Path, fetcherManager: FetcherManager): PythonPluginFetcher = fromSource(name, path.readText(), fetcherManager)
 
-        fun fromSource(name: String, source: String): PythonPluginFetcher {
+        fun fromSource(name: String, source: String, fetcherManager: FetcherManager): PythonPluginFetcher {
             val thread = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
             val interp = runBlocking(thread) {
                 val interp = newInterpreter()
                 interp.set("log", PythonLogger("PythonFetcherPlugin '$name'"))
+                interp.set("fetchers", PythonFetcherManager(fetcherManager, interp, thread))
                 interp.exec(source)
                 interp
             }
@@ -141,6 +143,33 @@ private class PythonLogger {
     fun error(message: String) = logger.error { message }
 }
 
+private class PythonFetcherManager(
+    private val fetcherManager: FetcherManager,
+    private val interp: Jep,
+    private val thread: CoroutineDispatcher,
+) {
+    fun getAvailableFetchers(): PyObject = runBlocking {
+        fetcherManager.getAvailableFetchers()
+    }.toPyObject(interp)
+
+    fun getAvailableOptions(fetcher: String): PyObject = runBlocking {
+        fetcherManager.getAvailableOptions(fetcher)
+    }.toPyObject(interp)
+
+
+    fun searchPapers(fetcher: String, searchQuery: String, options: PyObject): PyObject = runBlocking {
+        fetcherManager.searchPapers(fetcher, searchQuery, options.toOptionsMap())
+    }.map { it.toPyObject(interp) }.toSet().toPyObject(interp)
+
+    fun fetchForwardReferences(fetcher: String, paper: PyObject, options: PyObject): PyObject = runBlocking {
+        fetcherManager.fetchForwardReferences(fetcher, paper.toPaper(), options.toOptionsMap())
+    }.map { it.toPyObject(interp) }.toSet().toPyObject(interp)
+
+    fun fetchBackwardReferences(fetcher: String, paper: PyObject, options: PyObject): PyObject = runBlocking {
+            fetcherManager.fetchBackwardReferences(fetcher, paper.toPaper(), options.toOptionsMap())
+    }.map { it.toPyObject(interp) }.toSet().toPyObject(interp)
+}
+
 fun Map<String, String>.toPyObject(interp: Jep): PyObject = PyBuiltins.get(interp).dict(this)
 
 fun PyObject.toOptionsMap(): Map<String, String> = this.`as`(HashMap<String, String>()::class.java)
@@ -159,6 +188,8 @@ fun PyObject.toPaper(): Paper = Paper(
     null,
     null,
 )
+
+fun<T> Set<T>.toPyObject(interp: Jep): PyObject = PyBuiltins.get(interp).set(this)
 
 inline fun<reified T> PyObject.toSet(interp: Jep): Set<T> {
     val builtins = interp.getValue("__import__('builtins')", PyObject::class.java)
