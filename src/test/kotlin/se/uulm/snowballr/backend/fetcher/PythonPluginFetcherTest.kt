@@ -17,6 +17,10 @@ import org.junit.jupiter.api.AfterAll
 import se.uulm.snowballr.backend.model.dto.Paper
 import java.time.OffsetDateTime
 import java.util.UUID
+import java.net.InetSocketAddress
+import com.sun.net.httpserver.HttpServer
+import com.sun.net.httpserver.HttpHandler
+import com.sun.net.httpserver.HttpExchange
 
 private val examplePaper = Paper(
     UUID.randomUUID(),
@@ -326,5 +330,34 @@ internal class PythonPluginFetcherTest {
 
         assertEquals(1, papers.size)
         assert(papers.any { it.title == "bar" && it.abstract == "y" })
+    }
+
+    @Test
+    fun `When a python fetcher uses the requests module, then it is able to fetch web resources`() = runTest {
+        val server = HttpServer.create(InetSocketAddress(62843), 0)
+        server.createContext("/", object : HttpHandler {
+            override fun handle(t: HttpExchange) {
+                val response = "foobar"
+                t.sendResponseHeaders(200, response.length.toLong())
+                with(t.responseBody) {
+                    write(response.toByteArray())
+                    close()
+                }
+            }
+        })
+        server.start()
+
+        val fetcher = PythonPluginFetcher.fromSource("test" ,"""
+            import requests
+
+            availableOptions = {
+                requests.get("http://127.0.0.1:62843/").text
+            }
+        """.trimIndent())
+
+        val opts = fetcher.getAvailableOptions()
+        assertEquals(setOf("foobar"), opts)
+
+        server.stop(0)
     }
 }
