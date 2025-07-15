@@ -50,11 +50,14 @@ class FetcherService(
         .build()
 
     private fun loadPythonFetcherPlugins(pluginDirectory: Path) {
-        ensurePluginDirectoryExists(pluginDirectory)
+        ensureDirectoryExists(pluginDirectory)
         val pluginFiles = pluginDirectory
             .listDirectoryEntries()
             .filter { it.extension == "py" }
             .toSet()
+
+        ensureDirectoryExists(pluginDirectory.resolve("lib"))
+        PythonPluginFetcher.writeDataTypesModule(pluginDirectory.resolve("lib/snowballr.py"))
 
         logger.info { "Trying to load ${pluginFiles.size} python fetcher plugins" }
 
@@ -76,14 +79,14 @@ class FetcherService(
         logger.info { "Successfully loaded $successful python fetcher plugins" }
     }
 
-    private fun ensurePluginDirectoryExists(path: Path): Boolean {
+    private fun ensureDirectoryExists(path: Path): Boolean {
         if (path.isDirectory()) return true
 
-        logger.warn { "Fetcher plugin directory could not be found" }
+        logger.warn { "Directory '$path' could not be found" }
 
         try {
             path.createDirectories()
-            logger.info { "Created fetcher plugin directory" }
+            logger.info { "Created directory '$path'" }
             return true
         } catch (e: Exception) {
             logger.error(e) { "Could not create directory '$path'" }

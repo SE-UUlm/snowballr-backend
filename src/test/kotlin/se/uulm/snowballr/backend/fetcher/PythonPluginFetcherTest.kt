@@ -1,6 +1,8 @@
 package se.uulm.snowballr.backend.fetcher
 
 import jep.python.PyObject
+import jep.SharedInterpreter
+import jep.Jep
 import kotlinx.datetime.Instant
 import kotlinx.coroutines.newSingleThreadContext
 import kotlinx.coroutines.Dispatchers
@@ -19,6 +21,7 @@ import se.uulm.snowballr.backend.fetcher.FetcherManager
 import java.time.OffsetDateTime
 import java.util.UUID
 import java.net.InetSocketAddress
+import java.nio.file.Path
 import com.sun.net.httpserver.HttpServer
 import com.sun.net.httpserver.HttpHandler
 import com.sun.net.httpserver.HttpExchange
@@ -65,9 +68,15 @@ internal class PythonPluginFetcherTest {
         threadContext.close()
     }
 
+    private fun withNewInterpreter(block: (Jep) -> Unit) {
+        val interp = SharedInterpreter()
+        interp.exec(pythonDataTypes)
+        interp.use(block)
+    }
+
     @Test
     fun `When an options-map is convert to a PyObject, then python should be able to correctly access it`() {
-        PythonPluginFetcher.withNewInterpreter { interp ->
+        withNewInterpreter { interp ->
             val opts = mapOf("foo" to "bar")
             interp.set("opts", opts.toPyObject(interp))
             assertEquals("bar", interp.getValue("""opts["foo"]""", String::class.java))
@@ -76,7 +85,7 @@ internal class PythonPluginFetcherTest {
 
     @Test
     fun `When a python dictionary is convert to an options-map, then java should be able to correctly access it`() {
-        PythonPluginFetcher.withNewInterpreter { interp ->
+        withNewInterpreter { interp ->
             val opts = interp.getValue("""{"foo": "bar"}""", PyObject::class.java).toOptionsMap()
             assertEquals("bar", opts.get("foo"))
         }
@@ -84,7 +93,7 @@ internal class PythonPluginFetcherTest {
 
     @Test
     fun `When a options-map is convert to a PyObject and back, then it should stay the same`() {
-        PythonPluginFetcher.withNewInterpreter { interp ->
+        withNewInterpreter { interp ->
             val options = mapOf("foo" to "bar")
             assertEquals(options, options.toPyObject(interp).toOptionsMap())
         }
@@ -92,7 +101,7 @@ internal class PythonPluginFetcherTest {
 
     @Test
     fun `When a paper is convert to a python paper, then python should be able to correctly access it`() {
-        PythonPluginFetcher.withNewInterpreter { interp ->
+        withNewInterpreter { interp ->
             interp.set("paper", examplePaper.toPyObject(interp))
             assertEquals(examplePaper.title, interp.getValue("paper.title", String::class.java))
             assertEquals(examplePaper.externalId, interp.getValue("paper.externalId", String::class.java))
@@ -109,7 +118,7 @@ internal class PythonPluginFetcherTest {
 
     @Test
     fun `When a python paper is convert to a paper, then java should be able to correctly access it`() {
-        PythonPluginFetcher.withNewInterpreter { interp ->
+        withNewInterpreter { interp ->
             val paper = interp.getValue(
                 """
                 Paper(
@@ -138,7 +147,7 @@ internal class PythonPluginFetcherTest {
 
     @Test
     fun `When a paper is convert to a python paper and back, then it should stay the same`() {
-        PythonPluginFetcher.withNewInterpreter { interp ->
+        withNewInterpreter { interp ->
             val converted = examplePaper.toPyObject(interp).toPaper()
             with(converted) {
                 assertEquals(examplePaper.title, title)
@@ -154,7 +163,7 @@ internal class PythonPluginFetcherTest {
 
     @Test
     fun `When python returns a string set, then java can access it as a string set`() {
-        PythonPluginFetcher.withNewInterpreter { interp ->
+        withNewInterpreter { interp ->
             val set = interp.getValue("""{"foo", "bar"}""", PyObject::class.java).toSet<String>(interp)
             assertEquals(setOf("foo", "bar"), set)
         }
@@ -162,7 +171,7 @@ internal class PythonPluginFetcherTest {
 
     @Test
     fun `When python returns a paper set, then java can access it as a paper set`() {
-        PythonPluginFetcher.withNewInterpreter { interp ->
+        withNewInterpreter { interp ->
             val set = interp.getValue("""{Paper("foo", "bar"), Paper("x", "y")}""", PyObject::class.java).toSet<PyObject>(interp).map { it.toPaper() }.toSet()
 
             assertEquals(2, set.size)
@@ -179,7 +188,7 @@ internal class PythonPluginFetcherTest {
                 "foo",
                 "bar"
             ]
-        """.trimIndent(), mockk())
+        """.trimIndent(), Path.of("."), mockk())
 
         assertEquals(setOf("foo", "bar"), fetcher.getAvailableOptions())
     }
@@ -192,7 +201,7 @@ internal class PythonPluginFetcherTest {
                     Paper("foo", "bar"),
                     Paper("x", "y"),
                 }
-        """.trimIndent(), mockk())
+        """.trimIndent(), Path.of("."), mockk())
 
         val papers = fetcher.searchPapers("", mapOf())
 
@@ -208,7 +217,7 @@ internal class PythonPluginFetcherTest {
                 return {
                     Paper(searchQuery, ""),
                 }
-        """.trimIndent(), mockk())
+        """.trimIndent(), Path.of("."), mockk())
 
         val papers = fetcher.searchPapers("foo", mapOf())
 
@@ -223,7 +232,7 @@ internal class PythonPluginFetcherTest {
                 return {
                     Paper(options["foo"], options["x"]),
                 }
-        """.trimIndent(), mockk())
+        """.trimIndent(), Path.of("."), mockk())
 
         val papers = fetcher.searchPapers("", mapOf("foo" to "bar", "x" to "y"))
 
@@ -239,7 +248,7 @@ internal class PythonPluginFetcherTest {
                     Paper("foo", "bar"),
                     Paper("x", "y"),
                 }
-        """.trimIndent(), mockk())
+        """.trimIndent(), Path.of("."), mockk())
 
         val papers = fetcher.fetchForwardReferences(examplePaper, mapOf())
 
@@ -253,7 +262,7 @@ internal class PythonPluginFetcherTest {
         val fetcher = PythonPluginFetcher.fromSource("test" ,"""
             def fetchForwardReferences(paper, options):
                 return { paper }
-        """.trimIndent(), mockk())
+        """.trimIndent(), Path.of("."), mockk())
 
         val papers = fetcher.fetchForwardReferences(examplePaper, mapOf())
 
@@ -276,7 +285,7 @@ internal class PythonPluginFetcherTest {
                 return {
                     Paper(options["foo"], options["x"]),
                 }
-        """.trimIndent(), mockk())
+        """.trimIndent(), Path.of("."), mockk())
 
         val papers = fetcher.fetchForwardReferences(examplePaper, mapOf("foo" to "bar", "x" to "y"))
 
@@ -292,7 +301,7 @@ internal class PythonPluginFetcherTest {
                     Paper("foo", "bar"),
                     Paper("x", "y"),
                 }
-        """.trimIndent(), mockk())
+        """.trimIndent(), Path.of("."), mockk())
 
         val papers = fetcher.fetchBackwardReferences(examplePaper, mapOf())
 
@@ -306,7 +315,7 @@ internal class PythonPluginFetcherTest {
         val fetcher = PythonPluginFetcher.fromSource("test" ,"""
             def fetchBackwardReferences(paper, options):
                 return { paper }
-        """.trimIndent(), mockk())
+        """.trimIndent(), Path.of("."), mockk())
 
         val papers = fetcher.fetchBackwardReferences(examplePaper, mapOf())
 
@@ -329,7 +338,7 @@ internal class PythonPluginFetcherTest {
                 return {
                     Paper(options["foo"], options["x"]),
                 }
-        """.trimIndent(), mockk())
+        """.trimIndent(), Path.of("."), mockk())
 
         val papers = fetcher.fetchBackwardReferences(examplePaper, mapOf("foo" to "bar", "x" to "y"))
 
@@ -358,7 +367,7 @@ internal class PythonPluginFetcherTest {
             availableOptions = {
                 requests.get("http://127.0.0.1:62843/").text
             }
-        """.trimIndent(), mockk())
+        """.trimIndent(), Path.of("."), mockk())
 
         val opts = fetcher.getAvailableOptions()
         assertEquals(setOf("foobar"), opts)
@@ -367,7 +376,7 @@ internal class PythonPluginFetcherTest {
     }
 
     @Test
-    fun `When a python fetcher uses the exposed java fetcherService, then it is able to make requests to other fetchers`() = runTest {
+    fun `When a python fetcher uses the exposed java fetcherManager, then it is able to make requests to other fetchers`() = runTest {
         val fetcherManager = mockk<FetcherManager>()
 
         coEvery { fetcherManager.getAvailableFetchers() } returns setOf("foo")
@@ -379,8 +388,7 @@ internal class PythonPluginFetcherTest {
 
             def searchPapers(searchQuery, options):
                 return fetchers.searchPapers("foo", "x", { "y": "z" })
-
-        """.trimIndent(), fetcherManager)
+        """.trimIndent(), Path.of("."), fetcherManager)
 
         assertEquals(setOf("bar"), fetcher.getAvailableOptions())
         assert(fetcher.searchPapers("", mapOf()).any {

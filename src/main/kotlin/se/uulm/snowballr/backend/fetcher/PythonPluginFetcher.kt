@@ -21,6 +21,7 @@ import java.util.UUID
 import java.util.concurrent.Executors
 import java.nio.file.Path
 import kotlin.io.path.readText
+import kotlin.io.path.writeText
 
 private val logger = KotlinLogging.logger {}
 
@@ -34,10 +35,10 @@ val jepLocatorScript = """
     """.trimIndent()
 
 @Suppress("StringTemplateIndent", "Indentation")
-private val pythonDataTypes = """
+val pythonDataTypes = """
     from dataclasses import dataclass
-    from datetime import datetime
     from typing import Optional
+    import builtins
 
     # Unsafe hash needed to make it hashable whilst maintaining mutability.
     # Do not add an object of this class to a dict and then modify it!
@@ -50,6 +51,11 @@ private val pythonDataTypes = """
         publisher: Optional[str] = None
         publicationType: Optional[str] = None
         publicationName: Optional[str] = None
+
+    # Workaround used to make ruff and lsp not complain about
+    # missing definitions
+    log = builtins.snowballr["log"]
+    fetchers = FetcherService(builtins.snowballr["fetchers"])
     """.trimIndent()
 
 class PythonPluginFetcher : IFetcher {
@@ -71,13 +77,9 @@ class PythonPluginFetcher : IFetcher {
             MainInterpreter.setJepLibraryPath(ret)
         }
 
-        fun newInterpreter(): Jep {
-            val interp = SharedInterpreter()
-            interp.exec(pythonDataTypes)
-            return interp
+        fun writeDataTypesModule(path: Path) {
+            path.writeText(pythonDataTypes)
         }
-
-        fun withNewInterpreter(block: (Jep) -> Unit) = newInterpreter().use(block)
 
         fun fromFile(name: String, path: Path, cwd: Path, fetcherManager: FetcherManager): PythonPluginFetcher = fromSource(name, path.readText(), cwd, fetcherManager)
 
@@ -87,7 +89,8 @@ class PythonPluginFetcher : IFetcher {
             }.asCoroutineDispatcher()
 
             val interp = runBlocking(thread) {
-                val interp = newInterpreter()
+                val interp = SharedInterpreter()
+                val builtins = PyBuiltins.get(interp)
                 interp.getValue("__import__('os')", PyObject::class.java)
                     .getAttr("chdir", PyCallable::class.java)
                     .call(cwd.toAbsolutePath().toString())
@@ -95,8 +98,16 @@ class PythonPluginFetcher : IFetcher {
                     .getAttr("path", PyObject::class.java)
                     .getAttr("append", PyCallable::class.java)
                     .call(cwd.toAbsolutePath().toString())
-                interp.set("log", PythonLogger(name))
-                interp.set("fetchers", PythonFetcherManager(fetcherManager, interp, thread))
+
+                // Workaround used to make ruff and lsp not complain about
+                // missing definitions
+                interp.getValue("__import__('builtins')", PyObject::class.java)
+                    .setAttr("snowballr", builtins.dict(mapOf(
+                        "log" to PythonLogger(name),
+                        "fetchers" to PythonFetcherManager(fetcherManager, interp, thread)
+                    )) )
+
+                interp.exec(pythonDataTypes)
                 interp.exec(source)
                 interp
             }
