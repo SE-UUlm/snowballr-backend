@@ -1,6 +1,7 @@
 package se.uulm.snowballr.backend.service.project
 
 import io.mockk.coEvery
+import io.mockk.every
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.junit.jupiter.api.BeforeEach
@@ -9,7 +10,7 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.db.dummyUserId
+import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import se.uulm.snowballr.backend.testCoroutine
@@ -21,7 +22,7 @@ import java.util.UUID
 @DelicateCoroutinesApi
 class GetProjectByIdTest : MainServiceTest() {
     private val requestId = UUID.randomUUID()
-    private var dummyUserUUID = UUID.randomUUID()
+    private val dummyUserUUID = UUID.randomUUID()
 
     private fun getExampleRequest() = Base.Id
         .newBuilder()
@@ -29,8 +30,12 @@ class GetProjectByIdTest : MainServiceTest() {
         .build()
 
     @BeforeEach
-    fun setup() {
-        dummyUserUUID = UUID.fromString(dummyUserId!!)
+    fun setupTest() {
+        every { GrpcContext.getUserIdFromContext() } throws NotImplementedError()
+        coEvery { userRepoMock.getUserById(any()) } throws NotImplementedError()
+        coEvery { projectRepoMock.getProjectById(any()) } throws NotImplementedError()
+        coEvery { projectMemberRepoMock.addUserToProject(any(), any()) } throws NotImplementedError()
+        coEvery { projectMemberRepoMock.getMembersOfProject(any()) } throws NotImplementedError()
     }
 
     @Test
@@ -40,7 +45,9 @@ class GetProjectByIdTest : MainServiceTest() {
         val noAccessUser = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject(id = requestId)
 
+        every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns noAccessUser
+        coEvery { projectMemberRepoMock.getMembersOfProject(any()) } returns emptyList()
         coEvery { projectRepoMock.getProjectById(requestId) } returns project
 
         assertThrows<UnauthorizedException.Single> { mainService.getProjectById(request) }
@@ -53,7 +60,9 @@ class GetProjectByIdTest : MainServiceTest() {
         val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val project = DataBuilder.createExampleProject(id = requestId)
 
+        every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns adminUser
+        coEvery { projectMemberRepoMock.getMembersOfProject(any()) } returns emptyList()
         coEvery { projectRepoMock.getProjectById(requestId) } returns project
 
         assertDoesNotThrow { mainService.getProjectById(request) }
@@ -67,6 +76,7 @@ class GetProjectByIdTest : MainServiceTest() {
         val project = DataBuilder.createExampleProject(id = requestId)
         val projectMember = DataBuilder.createExampleProjectMember(userId = user.id, projectId = requestId)
 
+        every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
         coEvery { projectMemberRepoMock.addUserToProject(user.id, requestId) } returns projectMember
         coEvery { projectMemberRepoMock.getMembersOfProject(requestId) } returns listOf(projectMember)
@@ -80,7 +90,10 @@ class GetProjectByIdTest : MainServiceTest() {
         val request = getExampleRequest()
 
         val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+
+        every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns adminUser
+        coEvery { projectMemberRepoMock.getMembersOfProject(any()) } returns emptyList()
         coEvery { projectRepoMock.getProjectById(any()) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getProjectById(request) }

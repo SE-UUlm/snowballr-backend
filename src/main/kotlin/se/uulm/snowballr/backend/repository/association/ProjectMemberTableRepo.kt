@@ -167,10 +167,9 @@ class ProjectMemberTableRepo(
             it[role] = ProjectOuterClass.MemberRole.MEMBER_ROLE_ADMIN
         }
 
-        getProjectMemberByComposedIdOrNull(projectId, userId) ?: throw EntityNotPersistedException.ComposedId(
+        getProjectMemberByComposedIdOrNull(projectId, userId) ?: throw EntityNotPersistedException(
             EntityType.PROJECT_MEMBER,
             projectId.toString(),
-            userId.toString(),
         )
     }
 }

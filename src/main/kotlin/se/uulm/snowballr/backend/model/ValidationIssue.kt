@@ -88,14 +88,14 @@ data class InvalidId(
     override fun toString(): String = "The ID '$id' is invalid for the field '$name'."
 }
 
-data class InvalidThreshold(
+data class OutOfRangeValue(
     val name: String,
-    val threshold: Float,
+    val value: Float,
     val from: Float,
     val to: Float,
 ) : ValidationIssue {
     override fun toString(): String =
-        "The value '$threshold' is not in the allowed range [$from-$to] for the field '$name'."
+        "The value '$value' is not in the allowed range [$from-$to] for the field '$name'."
 }
 
 /**

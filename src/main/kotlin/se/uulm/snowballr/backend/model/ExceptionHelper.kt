@@ -9,12 +9,10 @@ package se.uulm.snowballr.backend.model
  * @return A string containing the formatted representation of the entity IDs prefixed with the specified identifier type.
  */
 fun displayEntityIds(entityIds: List<String>, identifierType: IdentifierType = IdentifierType.ID): String {
-    var idString = entityIds.dropLast(1).joinToString(
-        separator = ", ",
-    ) { "'$it'" }
-
-    if (entityIds.isNotEmpty()) {
-        idString += " and '${entityIds.last()}'"
+    require(entityIds.isNotEmpty()) { "Cannot display empty list of entity IDs." }
+    if (entityIds.size == 1) {
+        return "with ${identifierType.displayName} '${entityIds[0]}'"
     }
-    return "with ${identifierType.displayName} $idString"
+    val idString = entityIds.dropLast(1).joinToString(separator = ", ") { "'$it'" }
+    return "with ${identifierType.displayName} $idString and '${entityIds.last()}'"
 }

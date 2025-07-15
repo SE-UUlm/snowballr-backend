@@ -159,7 +159,7 @@ class UserService(
     override suspend fun register(request: Authentication.RegisterRequest): Base.Nothing {
         // Check whether a user with the given email already exists
         if (userRepo.doesUserExistByEmail(request.email)) {
-            throw DuplicateEntityException(EntityType.USER, request.email, IdentifierType.EMAIL)
+            throw DuplicateEntityException(EntityType.USER, request.email, identifierType = IdentifierType.EMAIL)
         }
 
         // Hash the password and create the user
@@ -196,7 +196,7 @@ class UserService(
 
         // Check whether a user with the given email already exists if the email should be changed
         if (request.mask.pathsList.contains("email") && userRepo.doesUserExistByEmail(request.user.email)) {
-            throw DuplicateEntityException(EntityType.USER, request.user.email, IdentifierType.EMAIL)
+            throw DuplicateEntityException(EntityType.USER, request.user.email, identifierType = IdentifierType.EMAIL)
         }
 
         val updatedUser = userRepo.updateUser(request)

@@ -6,7 +6,7 @@ import arrow.core.raise.Raise
 import arrow.core.raise.either
 import arrow.core.raise.ensure
 import arrow.core.raise.zipOrAccumulate
-import se.uulm.snowballr.backend.model.InvalidThreshold
+import se.uulm.snowballr.backend.model.OutOfRangeValue
 import se.uulm.snowballr.backend.model.ValidationIssue
 import snowballr.ProjectOuterClass.Project
 import snowballr.ProjectOuterClass.Project.Create
@@ -71,7 +71,7 @@ object ProjectValidator {
 
     fun Raise<ValidationIssue>.ensureSimilarityThresholdValidity(threshold: Float) {
         ensure(threshold in 0.0f..1.0f) {
-            InvalidThreshold("similarity_threshold", threshold, 0.0f, 1.0f)
+            OutOfRangeValue("similarity_threshold", threshold, 0.0f, 1.0f)
         }
     }
 }

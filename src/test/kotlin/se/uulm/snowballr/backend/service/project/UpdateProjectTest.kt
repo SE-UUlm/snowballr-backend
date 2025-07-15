@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.service.project
 
 import com.google.protobuf.util.FieldMaskUtil
 import io.mockk.coEvery
+import io.mockk.every
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.junit.jupiter.api.BeforeEach
@@ -10,29 +11,39 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.db.dummyUserId
-import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.model.SnowballRException
 import se.uulm.snowballr.backend.model.dto.toGrpcProject
-import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.service.MainServiceTest
 import se.uulm.snowballr.backend.testCoroutine
 import snowballr.ProjectOuterClass
 import snowballr.UserOuterClass.UserRole
+import java.util.UUID
 
 @ExperimentalCoroutinesApi
 @DelicateCoroutinesApi
 class UpdateProjectTest : MainServiceTest() {
+    private val dummyUserUUID = UUID.randomUUID()
+
     @BeforeEach
-    override fun setUpTest() {
-        super.setUpTest()
+    fun setupTest() {
+        every { GrpcContext.getUserIdFromContext() } throws NotImplementedError()
+        coEvery { userRepoMock.getUserById(any()) } throws NotImplementedError()
+        coEvery { projectRepoMock.getProjectById(any()) } throws NotImplementedError()
+        coEvery {
+            projectMemberRepoMock.addUserToProject(any(), any())
+        } throws NotImplementedError()
+        coEvery {
+            projectMemberRepoMock.promoteProjectMemberToAdmin(any(), any())
+        } throws NotImplementedError()
+        coEvery { projectMemberRepoMock.getAllProjectAdmins(any()) } throws NotImplementedError()
+        coEvery { projectRepoMock.updateProject(any(), any()) } throws NotImplementedError()
     }
 
     @Test
     fun `When a server admin updates the project information successfully, then no exception is thrown`() =
         testCoroutine {
-            val userId = parseUUID(dummyUserId!!, EntityType.USER)
-            val user = DataBuilder.createExampleUser(id = userId, role = UserRole.USER_ROLE_ADMIN)
+            val user = DataBuilder.createExampleUser(id = dummyUserUUID, role = UserRole.USER_ROLE_ADMIN)
             val project = DataBuilder.createExampleProject(
                 status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE,
             )
@@ -53,7 +64,8 @@ class UpdateProjectTest : MainServiceTest() {
                 updatedProject.toGrpcProject(),
             ).setMask(updateFieldMask).build()
 
-            coEvery { userRepoMock.getUserById(userId) } returns user
+            every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
+            coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
             coEvery { projectRepoMock.getProjectById(project.id) } returns project
             coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
             coEvery { projectRepoMock.updateProject(request, false) } returns updatedProject
@@ -63,8 +75,7 @@ class UpdateProjectTest : MainServiceTest() {
 
     @Test
     fun `When a project admin updates an ACITVE project, then no exception is thrown`() = testCoroutine {
-        val userId = parseUUID(dummyUserId!!, EntityType.USER)
-        val user = DataBuilder.createExampleUser(id = userId, role = UserRole.USER_ROLE_DEFAULT)
+        val user = DataBuilder.createExampleUser(id = dummyUserUUID, role = UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject(
             status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE,
         )
@@ -86,10 +97,11 @@ class UpdateProjectTest : MainServiceTest() {
             updatedProject.toGrpcProject(),
         ).setMask(updateFieldMask).build()
 
-        coEvery { userRepoMock.getUserById(userId) } returns user
+        every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
+        coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
         coEvery { projectRepoMock.getProjectById(project.id) } returns project
-        coEvery { projectMemberRepoMock.addUserToProject(userId, project.id) } returns projectMember
-        coEvery { projectMemberRepoMock.promoteProjectMemberToAdmin(project.id, userId) } returns projectMember
+        coEvery { projectMemberRepoMock.addUserToProject(dummyUserUUID, project.id) } returns projectMember
+        coEvery { projectMemberRepoMock.promoteProjectMemberToAdmin(project.id, dummyUserUUID) } returns projectMember
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
         coEvery { projectRepoMock.updateProject(request, false) } returns updatedProject
 
@@ -98,8 +110,7 @@ class UpdateProjectTest : MainServiceTest() {
 
     @Test
     fun `When a project member updates an ACTIVE project, then an unauthorized exception is thrown`() = testCoroutine {
-        val userId = parseUUID(dummyUserId!!, EntityType.USER)
-        val user = DataBuilder.createExampleUser(id = userId, role = UserRole.USER_ROLE_DEFAULT)
+        val user = DataBuilder.createExampleUser(id = dummyUserUUID, role = UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject(
             status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE,
         )
@@ -115,9 +126,11 @@ class UpdateProjectTest : MainServiceTest() {
             updatedProject.toGrpcProject(),
         ).setMask(updateFieldMask).build()
 
-        coEvery { userRepoMock.getUserById(userId) } returns user
+        every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
+        coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
         coEvery { projectRepoMock.getProjectById(project.id) } returns project
-        coEvery { projectMemberRepoMock.addUserToProject(userId, project.id) } returns projectMember
+        coEvery { projectMemberRepoMock.addUserToProject(dummyUserUUID, project.id) } returns
+            projectMember
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
         coEvery { projectRepoMock.updateProject(request, false) } returns updatedProject
 
@@ -125,9 +138,8 @@ class UpdateProjectTest : MainServiceTest() {
     }
 
     @Test
-    fun `When a project admin updates an ACTIVE_LOCKED project, then no exception is thrown`() = testCoroutine {
-        val userId = parseUUID(dummyUserId!!, EntityType.USER)
-        val user = DataBuilder.createExampleUser(id = userId, role = UserRole.USER_ROLE_DEFAULT)
+    fun `When a project admin updates an ACITVE_LOCKED project, then no exception is thrown`() = testCoroutine {
+        val user = DataBuilder.createExampleUser(id = dummyUserUUID, role = UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject(
             status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED,
         )
@@ -137,6 +149,9 @@ class UpdateProjectTest : MainServiceTest() {
             id = project.id,
             name = "Updated Project",
             status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ARCHIVED,
+            similarityThreshold = 1F,
+            snowballingType = ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_FORWARD,
+            reviewMaybeAllowed = false,
         )
 
         val updateFieldMask = FieldMaskUtil.fromStringList(
@@ -146,12 +161,16 @@ class UpdateProjectTest : MainServiceTest() {
             updatedProject.toGrpcProject(),
         ).setMask(updateFieldMask).build()
 
-        coEvery { userRepoMock.getUserById(userId) } returns user
+        every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
+        coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
         coEvery { projectRepoMock.getProjectById(project.id) } returns project
-        coEvery { projectMemberRepoMock.addUserToProject(userId, project.id) } returns projectMember
-        coEvery { projectMemberRepoMock.promoteProjectMemberToAdmin(project.id, userId) } returns projectMember
+        coEvery { projectMemberRepoMock.addUserToProject(dummyUserUUID, project.id) } returns
+            projectMember
+        coEvery {
+            projectMemberRepoMock.promoteProjectMemberToAdmin(project.id, dummyUserUUID)
+        } returns projectMember
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
-        coEvery { projectRepoMock.updateProject(request, false) } returns updatedProject
+        coEvery { projectRepoMock.updateProject(request, true) } returns updatedProject
 
         assertDoesNotThrow { mainService.updateProject(request) }
     }
@@ -159,8 +178,7 @@ class UpdateProjectTest : MainServiceTest() {
     @Test
     fun `When a project member updates an ACTIVE_LOCKED project, then an unauthorized exception is thrown`() =
         testCoroutine {
-            val userId = parseUUID(dummyUserId!!, EntityType.USER)
-            val user = DataBuilder.createExampleUser(id = userId, role = UserRole.USER_ROLE_DEFAULT)
+            val user = DataBuilder.createExampleUser(id = dummyUserUUID, role = UserRole.USER_ROLE_DEFAULT)
             val project = DataBuilder.createExampleProject(
                 status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED,
             )
@@ -176,9 +194,11 @@ class UpdateProjectTest : MainServiceTest() {
                 updatedProject.toGrpcProject(),
             ).setMask(updateFieldMask).build()
 
-            coEvery { userRepoMock.getUserById(userId) } returns user
+            every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
+            coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
             coEvery { projectRepoMock.getProjectById(project.id) } returns project
-            coEvery { projectMemberRepoMock.addUserToProject(userId, project.id) } returns projectMember
+            coEvery { projectMemberRepoMock.addUserToProject(dummyUserUUID, project.id) } returns
+                projectMember
             coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
             coEvery { projectRepoMock.updateProject(request, false) } returns updatedProject
 
@@ -188,8 +208,7 @@ class UpdateProjectTest : MainServiceTest() {
     @Test
     fun `When a project admin updates an archived project, then a failed precondition exception is thrown`() =
         testCoroutine {
-            val userId = parseUUID(dummyUserId!!, EntityType.USER)
-            val user = DataBuilder.createExampleUser(id = userId, role = UserRole.USER_ROLE_DEFAULT)
+            val user = DataBuilder.createExampleUser(id = dummyUserUUID, role = UserRole.USER_ROLE_DEFAULT)
             val project = DataBuilder.createExampleProject(
                 status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ARCHIVED,
             )
@@ -205,10 +224,14 @@ class UpdateProjectTest : MainServiceTest() {
                 updatedProject.toGrpcProject(),
             ).setMask(updateFieldMask).build()
 
-            coEvery { userRepoMock.getUserById(userId) } returns user
+            every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
+            coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
             coEvery { projectRepoMock.getProjectById(project.id) } returns project
-            coEvery { projectMemberRepoMock.addUserToProject(userId, project.id) } returns projectMember
-            coEvery { projectMemberRepoMock.promoteProjectMemberToAdmin(project.id, userId) } returns projectMember
+            coEvery { projectMemberRepoMock.addUserToProject(dummyUserUUID, project.id) } returns
+                projectMember
+            coEvery {
+                projectMemberRepoMock.promoteProjectMemberToAdmin(project.id, dummyUserUUID)
+            } returns projectMember
             coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
             coEvery { projectRepoMock.updateProject(request, false) } returns updatedProject
 
@@ -223,8 +246,10 @@ class UpdateProjectTest : MainServiceTest() {
         )
         val request = ProjectOuterClass.Project.Update.newBuilder().setProject(updatedProject.toGrpcProject()).build()
 
+        every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
         coEvery { userRepoMock.getUserById(any()) } returns user
         coEvery { projectRepoMock.getProjectById(updatedProject.id) } returns updatedProject
+        coEvery { projectMemberRepoMock.getAllProjectAdmins(any()) } returns emptyList()
         coEvery { projectRepoMock.updateProject(any(), any()) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.updateProject(request) }

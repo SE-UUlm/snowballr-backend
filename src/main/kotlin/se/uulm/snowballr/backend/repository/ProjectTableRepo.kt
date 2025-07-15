@@ -85,7 +85,8 @@ interface IProjectTableRepo {
      * - review_maybe_allowed
      *
      * @param request The update request containing the new project details, such as the new name.
-     * @param isActiveLocked True, if the project is of status [ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED] (only the name and status can be updated then).
+     * @param isActiveLocked True, if the project is of status [ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED] (only the
+     * name and status can be updated then).
      * @return The updated [Project] object reflecting the changes from the [request].
      */
     suspend fun updateProject(request: ProjectOuterClass.Project.Update, isActiveLocked: Boolean): Project

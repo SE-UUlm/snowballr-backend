@@ -9,8 +9,8 @@ import se.uulm.snowballr.backend.model.BlankField
 import se.uulm.snowballr.backend.model.EnumUnspecified
 import se.uulm.snowballr.backend.model.InvalidFieldMask
 import se.uulm.snowballr.backend.model.InvalidId
+import se.uulm.snowballr.backend.model.OutOfRangeValue
 import se.uulm.snowballr.backend.model.TooLongField
-import se.uulm.snowballr.backend.model.ValidationIssue
 import snowballr.ProjectOuterClass.Project
 import snowballr.ProjectOuterClass.Project.Create
 import snowballr.ProjectOuterClass.Project.Update
@@ -129,7 +129,7 @@ class ProjectValidatorTest {
         }
 
         @Test
-        fun `When an invalid project name is provided and specified in the field mask, then an 'BlankField' issue is returned`() {
+        fun `When an invalid project name is provided and specified in the field mask, then the 'BlankField' issue is returned`() {
             val project = validUpdatedProject.setName("  ").build()
             val request = validUpdateRequestBuilder
                 .setProject(project)
@@ -206,7 +206,7 @@ class ProjectValidatorTest {
         }
 
         @Test
-        fun `When a too low similarity threshold is provided and specified in the field mask, then the 'ValidationIssue' issue is returned`() {
+        fun `When a too low similarity threshold is provided and specified in the field mask, then the 'OutOfRangeValue' issue is returned`() {
             val project = validUpdatedProject.setSettings(
                 Project.Settings.newBuilder().setSimilarityThreshold(-1f).build(),
             ).build()
@@ -215,11 +215,11 @@ class ProjectValidatorTest {
                 .build()
             val result = validateRequest(request)
 
-            assertInvalidResult<ValidationIssue>(result)
+            assertInvalidResult<OutOfRangeValue>(result)
         }
 
         @Test
-        fun `When a too high similarity threshold is provided and specified in the field mask, then the 'ValidationIssue' issue is returned`() {
+        fun `When a too high similarity threshold is provided and specified in the field mask, then the 'OutOfRangeValue' issue is returned`() {
             val project = validUpdatedProject.setSettings(
                 Project.Settings.newBuilder().setSimilarityThreshold(2f).build(),
             ).build()
@@ -228,7 +228,7 @@ class ProjectValidatorTest {
                 .build()
             val result = validateRequest(request)
 
-            assertInvalidResult<ValidationIssue>(result)
+            assertInvalidResult<OutOfRangeValue>(result)
         }
 
         @Test

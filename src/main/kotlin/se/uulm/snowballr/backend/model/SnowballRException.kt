@@ -17,8 +17,8 @@ sealed class SnowballRException(
      * Represents an exception that occurs when an entity cannot be found by its identifier.
      *
      * @param entityType The type of the entity that could not be found.
-     * @param entityIds The list missing entity IDs.
-     * @param identifierType The type of the [identifierType] field. Default to [IdentifierType.ID].
+     * @param entityIds The missing entity's ID(s).
+     * @param identifierType The type of the entity's identifier. Defaults to [IdentifierType.ID].
      */
     open class NotFoundException(
         entityType: EntityType,
@@ -33,15 +33,16 @@ sealed class SnowballRException(
      * and creation is not allowed.
      *
      * @param entityType The type of the duplicated entity.
-     * @param identifier The identifying value (e.g., email, username).
-     * @param identifierType The type of the [identifier] field. Default to [IdentifierType.ID].
+     * @param entityIds The missing entity's ID(s).
+     * @param identifierType The type of the entity's identifier. Defaults to [IdentifierType.ID].
      */
     class DuplicateEntityException(
         entityType: EntityType,
-        identifier: String,
+        vararg entityIds: String,
         identifierType: IdentifierType = IdentifierType.ID,
     ) : SnowballRException(
-        "${entityType.singularUpper()} with ${identifierType.displayName} '$identifier' already exists.",
+        "${entityType.singularUpper()} ${displayEntityIds(entityIds.toList(), identifierType)}" +
+            " already exists.",
     )
 
     /**
@@ -53,16 +54,7 @@ sealed class SnowballRException(
     class EntityNotPersistedException(
         entityType: EntityType,
         entityId: String,
-    ) : SnowballRException("${entityType.singularUpper()} with ID '$entityId' was not persisted.") {
-        class ComposedId(
-            entityType: EntityType,
-            firstEntityId: String,
-            secondEntityId: String,
-        ) : SnowballRException(
-            "${entityType.singularUpper()} with the composed ID '$firstEntityId' and '$secondEntityId' " +
-                "was not persisted.",
-        )
-    }
+    ) : SnowballRException("${entityType.singularUpper()} with ID '$entityId' was not persisted.")
 
     /**
      * Represents an exception that occurs when the current user accesses one or more entities without permission.
