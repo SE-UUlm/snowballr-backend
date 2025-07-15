@@ -346,6 +346,9 @@ internal class PythonPluginFetcherTest {
         assert(papers.any { it.title == "bar" && it.abstract == "y" })
     }
 
+    // This test could fail even though the implementation is correct. Because
+    // a real http connection to a real ad-hoc http server is established, it
+    // is possible that the used port (62843) is already in use.
     @Test
     fun `When a python fetcher uses the requests module, then it is able to fetch web resources`() = runTest {
         val server = HttpServer.create(InetSocketAddress(62843), 0)
