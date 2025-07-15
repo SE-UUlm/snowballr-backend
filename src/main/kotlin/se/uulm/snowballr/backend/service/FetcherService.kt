@@ -63,7 +63,7 @@ class FetcherService(
         for (path in pluginFiles) {
             val name = path.nameWithoutExtension
             try {
-                fetcherManager.registerFetcher(name, PythonPluginFetcher.fromFile(name, path, fetcherManager))
+                fetcherManager.registerFetcher(name, PythonPluginFetcher.fromFile(name, path, pluginDirectory, fetcherManager))
                 successful++
             } catch (e: Exception) {
                 logger.atError {

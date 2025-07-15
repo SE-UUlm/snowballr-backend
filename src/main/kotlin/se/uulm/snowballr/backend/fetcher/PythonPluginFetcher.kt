@@ -79,12 +79,19 @@ class PythonPluginFetcher : IFetcher {
 
         fun withNewInterpreter(block: (Jep) -> Unit) = newInterpreter().use(block)
 
-        fun fromFile(name: String, path: Path, fetcherManager: FetcherManager): PythonPluginFetcher = fromSource(name, path.readText(), fetcherManager)
+        fun fromFile(name: String, path: Path, cwd: Path, fetcherManager: FetcherManager): PythonPluginFetcher = fromSource(name, path.readText(), cwd, fetcherManager)
 
-        fun fromSource(name: String, source: String, fetcherManager: FetcherManager): PythonPluginFetcher {
+        fun fromSource(name: String, source: String, cwd: Path, fetcherManager: FetcherManager): PythonPluginFetcher {
             val thread = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
             val interp = runBlocking(thread) {
                 val interp = newInterpreter()
+                interp.getValue("__import__('os')", PyObject::class.java)
+                    .getAttr("chdir", PyCallable::class.java)
+                    .call(cwd.toAbsolutePath().toString())
+                interp.getValue("__import__('sys')", PyObject::class.java)
+                    .getAttr("path", PyObject::class.java)
+                    .getAttr("append", PyCallable::class.java)
+                    .call(cwd.toAbsolutePath().toString())
                 interp.set("log", PythonLogger("PythonFetcherPlugin '$name'"))
                 interp.set("fetchers", PythonFetcherManager(fetcherManager, interp, thread))
                 interp.exec(source)
