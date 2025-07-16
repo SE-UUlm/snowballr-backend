@@ -285,9 +285,8 @@ class SnowballRServer(
         override suspend fun createProject(request: ProjectOuterClass.Project.Create): ProjectOuterClass.Project =
             mainService.createProject(request)
 
-        override suspend fun getProjectById(request: Base.Id): ProjectOuterClass.Project = mainService.getProjectById(
-            request,
-        )
+        override suspend fun getProjectById(request: Base.Id): ProjectOuterClass.Project =
+            mainService.getProjectById(request)
 
         override suspend fun updateProject(request: ProjectOuterClass.Project.Update): ProjectOuterClass.Project =
             mainService.updateProject(request)
