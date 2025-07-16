@@ -106,7 +106,17 @@ sealed class SnowballRException(
     }
 
     /**
-     * Represents an exception that occurs when an ID is in an invalid format.
+     * Represents a specific type of exception that occurs when a user is not authenticated.
+     *
+     * This exception is thrown when an operation requires user authentication,
+     * but the user is not authenticated.
+     *
+     * @constructor Creates an [UnauthenticatedException] with a default message.
+     */
+    class UnauthenticatedException : SnowballRException("User is not authenticated.")
+
+    /**
+     * Represents a specific type of exception that occurs when an ID is in an invalid format.
      *
      * @param entityType The type of the entity to which the ID belongs to.
      * @param entityId The value of the invalid ID.

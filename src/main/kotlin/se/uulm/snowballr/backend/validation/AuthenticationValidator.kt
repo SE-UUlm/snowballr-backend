@@ -23,4 +23,9 @@ object AuthenticationValidator {
 
         return EitherNel.zipOrAccumulate(result1, result2) { _, _ -> }
     }
+
+    fun validateLoginRequest(request: Authentication.LoginRequest): EitherNel<ValidationIssue, Unit> = either {
+        ensureEmailValidity(request.email)
+        ensureFieldNonBlank("password", request.password)
+    }.toEitherNel()
 }

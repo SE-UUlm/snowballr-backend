@@ -18,7 +18,6 @@ import snowballr.Authentication
 import snowballr.UserOuterClass
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
-import snowballr.email
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -81,6 +80,14 @@ interface IUserTableRepo {
      * status is set to [UserOuterClass.UserStatus.USER_STATUS_DELETED].
      */
     suspend fun softDeleteUser(id: UUID)
+
+    /**
+     * Retrieves the password hash for a user by their email address.
+     *
+     * @param email The email address of the user whose password hash is to be retrieved.
+     * @return The password hash as a [String] for the user with the specified email.
+     */
+    suspend fun getPasswordHashByEmail(email: String): String
 }
 
 /**
@@ -168,11 +175,21 @@ class UserTableRepo(
         getUserByIdOrNull(uuid) ?: throw EntityNotPersistedException(EntityType.USER, uuid.toString())
     }
 
-    override suspend fun softDeleteUser(id: UUID) = db.dbQuery {
-        UserTable.update({ UserTable.id eq id }) {
-            it[status] = UserStatus.USER_STATUS_DELETED
-            it[deletedAt] = OffsetDateTime.now()
+    override suspend fun softDeleteUser(id: UUID) {
+        db.dbQuery {
+            UserTable.update({ UserTable.id eq id }) {
+                it[status] = UserStatus.USER_STATUS_DELETED
+                it[deletedAt] = OffsetDateTime.now()
+            }
         }
-        return@dbQuery
+    }
+
+    override suspend fun getPasswordHashByEmail(email: String): String = db.dbQuery {
+        UserTable
+            .select(UserTable.passwordHash)
+            .where { UserTable.email eq email }
+            .map { it[UserTable.passwordHash] }
+            .singleOrNull()
+            ?: throw NotFoundException(EntityType.USER, email, identifierType = IdentifierType.EMAIL)
     }
 }

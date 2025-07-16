@@ -24,16 +24,19 @@ import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
 import java.time.OffsetDateTime
 import java.util.UUID
+import kotlin.test.assertEquals
 
 @ExperimentalCoroutinesApi
 @DelicateCoroutinesApi
 class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
     private val repo = UserTableRepo(db)
 
+    @Suppress("LongParameterList")
     private suspend fun insertTestUserAndGetId(
         email: String = "test.user@example.com",
         firstName: String = "Test",
         lastName: String = "User",
+        passwordHash: String = "passwordHash",
         role: UserRole = UserRole.USER_ROLE_DEFAULT,
         status: UserStatus = UserStatus.USER_STATUS_ACTIVE,
     ): UUID = db.dbQuery {
@@ -41,7 +44,7 @@ class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
             it[UserTable.email] = email
             it[UserTable.firstName] = firstName
             it[UserTable.lastName] = lastName
-            it[UserTable.passwordHash] = "hashedPassword"
+            it[UserTable.passwordHash] = passwordHash
             it[UserTable.role] = role
             it[UserTable.status] = status
         }.value
@@ -291,6 +294,23 @@ class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
         @Test
         fun `When a user is not found, then an exception is thrown`() = testCoroutine {
             assertThrows<NotFoundException> { repo.getUserById(UUID.randomUUID()) }
+        }
+    }
+
+    @Nested
+    inner class GetPasswordHashByEmail {
+        @Test
+        fun `When a user is found, then the password hash is returned`() = testCoroutine {
+            val passwordHash = "hashedPassword"
+            insertTestUserAndGetId(email = "test.user@example.com", passwordHash = passwordHash)
+            val retrievedPasswordHash = repo.getPasswordHashByEmail("test.user@example.com")
+
+            assertEquals(passwordHash, retrievedPasswordHash)
+        }
+
+        @Test
+        fun `When a user is not found, then an exception is thrown`() = testCoroutine {
+            assertThrows<NotFoundException> { repo.getPasswordHashByEmail("non-existing email") }
         }
     }
 }
