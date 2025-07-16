@@ -33,7 +33,7 @@ object CriterionTable : UUIDTable("criterion") {
      * - `onDelete=CASCADE` so that all criteria are deleted when the according project is deleted
      * - `onUpdate=CASCADE` so that when the project ID is updated, the foreign key ID is updated too
      */
-    val projectId = reference("project_id", ProjectTable, ReferenceOption.CASCADE, ReferenceOption.CASCADE)
+    val projectId = optReference("project_id", ProjectTable, ReferenceOption.CASCADE, ReferenceOption.CASCADE)
 
     // Metadata
 
@@ -50,7 +50,7 @@ fun ResultRow.toCriterion() = Criterion(
     name = this[CriterionTable.name],
     description = this[CriterionTable.description],
     category = this[CriterionTable.category],
-    projectId = this[CriterionTable.projectId].value,
+    projectId = this[CriterionTable.projectId]?.value,
     createdAt = this[CriterionTable.createdAt],
     createdBy = this[CriterionTable.createdBy].value,
 )

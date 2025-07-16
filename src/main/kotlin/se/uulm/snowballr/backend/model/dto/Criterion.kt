@@ -14,9 +14,9 @@ data class Criterion(
     val name: String,
     val description: String,
     val category: CriterionOuterClass.CriterionCategory,
-    val projectId: UUID,
+    val projectId: UUID?,
     val createdAt: OffsetDateTime,
-    val createdBy: UUID?,
+    val createdBy: UUID,
 )
 
 /**

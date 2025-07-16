@@ -67,9 +67,9 @@ object DataBuilder {
         name: String = "Test Criterion",
         description: String = "Test Description",
         category: CriterionCategory = CriterionCategory.CRITERION_CATEGORY_UNSPECIFIED,
-        projectId: UUID = UUID.randomUUID(),
+        projectId: UUID? = UUID.randomUUID(),
         createdAt: OffsetDateTime = OffsetDateTime.now(),
-        createdBy: UUID? = null,
+        createdBy: UUID = UUID.randomUUID(),
     ) = Criterion(
         id = id,
         tag = tag,
