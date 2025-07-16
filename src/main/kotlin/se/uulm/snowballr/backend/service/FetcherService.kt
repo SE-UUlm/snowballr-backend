@@ -2,7 +2,6 @@ package se.uulm.snowballr.backend.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import se.uulm.snowballr.backend.fetcher.IFetcher
-import se.uulm.snowballr.backend.model.SnowballRException
 import se.uulm.snowballr.backend.model.dto.Paper
 import java.util.concurrent.ConcurrentHashMap
 
@@ -88,7 +87,7 @@ class FetcherService : IFetcherService {
     private val fetchers: ConcurrentHashMap<String, IFetcher> = ConcurrentHashMap()
 
     private fun getFetcherOrThrow(name: String): IFetcher =
-        fetchers[name] ?: throw SnowballRException.FetcherException.UnknownFetcher(name)
+        fetchers[name] ?: throw Exception("The fetcher '$name' is not known")
 
     override fun getAvailableFetchers(): Set<String> = fetchers.keys.toSet()
 
@@ -96,7 +95,7 @@ class FetcherService : IFetcherService {
         if (fetchers.putIfAbsent(name, impl) == null) {
             logger.info { "Successfully registered the fetcher $name." }
         } else {
-            throw SnowballRException.FetcherException.AlreadyRegistered(name)
+            throw Exception("The fetcher '$name' is already registered.")
         }
     }
 
@@ -104,7 +103,7 @@ class FetcherService : IFetcherService {
         if (fetchers.remove(name) != null) {
             logger.info { "Successfully removed the fetcher $name." }
         } else {
-            logger.warn { "Could not remove the fetcher, as it was not registered: $name" }
+            logger.warn { "Could not remove the fetcher $name, as it was not registered before." }
         }
     }
 
