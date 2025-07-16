@@ -76,14 +76,14 @@ private class ExceptionCall<ReqT, RespT>(
     private fun getStatusForSnowballRException(e: SnowballRException): Status {
         val status =
             when (e) {
+                is SnowballRException.InvalidIdException -> Status.INVALID_ARGUMENT
                 is SnowballRException.NotFoundException -> Status.NOT_FOUND
                 is SnowballRException.DuplicateEntityException -> Status.ALREADY_EXISTS
-                is SnowballRException.EntityNotPersistedException -> Status.INTERNAL
                 is SnowballRException.UnauthorizedException -> Status.PERMISSION_DENIED
-                is SnowballRException.InvalidIdException -> Status.INVALID_ARGUMENT
+                is SnowballRException.FailedPreconditionException -> Status.FAILED_PRECONDITION
+                is SnowballRException.EntityNotPersistedException -> Status.INTERNAL
                 is SnowballRException.MissingContextException -> Status.INTERNAL
                 is SnowballRException.UnauthenticatedException -> Status.UNAUTHENTICATED
-                is SnowballRException.FailedPreconditionException -> Status.FAILED_PRECONDITION
             }.withDescription(e.message).withCause(e.cause)
 
         logger.debug {
