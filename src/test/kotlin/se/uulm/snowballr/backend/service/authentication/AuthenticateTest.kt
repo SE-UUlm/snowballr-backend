@@ -1,13 +1,15 @@
 package se.uulm.snowballr.backend.service.authentication
 
-import io.grpc.Context
 import io.jsonwebtoken.JwtException
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.extension.ExtendWith
+import se.uulm.snowballr.backend.GrpcTestContextExtension
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.auth.JwtService
 import se.uulm.snowballr.backend.model.jwt.ParsedJwtClaims
@@ -21,23 +23,14 @@ import kotlin.test.assertTrue
 
 @ExperimentalCoroutinesApi
 @DelicateCoroutinesApi
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@ExtendWith(GrpcTestContextExtension::class)
 class AuthenticateTest {
     private val jwtServiceMock = mockk<JwtService>()
     private lateinit var authenticationService: AuthenticationService
 
-    @BeforeEach
+    @BeforeAll
     fun setUpTest() {
-        val cookiesMap = mutableMapOf<String, String?>()
-
-        // Create a new context with cookiesMap and run code inside it
-        val initialContext = Context.current()
-            .withValue(GrpcContext.COOKIES_TO_SET_CONTEXT_KEY, cookiesMap)
-            .withValue(
-                GrpcContext.AUTHENTICATION_STATUS,
-                Authentication.AuthenticationStatus.AUTHENTICATION_STATUS_UNSPECIFIED,
-            )
-        initialContext.attach()
-
         every { jwtServiceMock.getAccessTokenTTL() } returns JwtService.ACCESS_TOKEN_EXPIRATION_MS
         every { jwtServiceMock.getRefreshTokenTTL() } returns JwtService.REFRESH_TOKEN_EXPIRATION_MS
 
