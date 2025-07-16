@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.repository
 import com.google.protobuf.util.FieldMaskUtil
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.exposed.exceptions.ExposedSQLException
 import org.jetbrains.exposed.sql.insertAndGetId
@@ -17,7 +18,6 @@ import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.toGrpcUser
 import se.uulm.snowballr.backend.table.UserTable
-import se.uulm.snowballr.backend.testCoroutine
 import snowballr.Authentication
 import snowballr.UserOuterClass.User
 import snowballr.UserOuterClass.UserRole
@@ -62,7 +62,7 @@ class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
     @Nested
     inner class GetUserById {
         @Test
-        fun `When a user is found, then the correct user is returned`() = testCoroutine {
+        fun `When a user is found, then the correct user is returned`() = runTest {
             val userId = insertTestUserAndGetId()
             val user = repo.getUserById(userId)
 
@@ -75,7 +75,7 @@ class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
         }
 
         @Test
-        fun `When a user is not found, then an exception is thrown`() = testCoroutine {
+        fun `When a user is not found, then an exception is thrown`() = runTest {
             assertThrows<NotFoundException> { repo.getUserById(UUID.randomUUID()) }
         }
     }
@@ -83,7 +83,7 @@ class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
     @Nested
     inner class GetUserByEmail {
         @Test
-        fun `When a user is found, then the correct user is returned`() = testCoroutine {
+        fun `When a user is found, then the correct user is returned`() = runTest {
             val userId = insertTestUserAndGetId()
             val user = repo.getUserByEmail("test.user@example.com")
 
@@ -96,7 +96,7 @@ class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
         }
 
         @Test
-        fun `When a user is not found, then an exception is thrown`() = testCoroutine {
+        fun `When a user is not found, then an exception is thrown`() = runTest {
             assertThrows<NotFoundException> { repo.getUserByEmail("non-existing email") }
         }
     }
@@ -104,14 +104,14 @@ class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
     @Nested
     inner class DoesUserExistByEmail {
         @Test
-        fun `When a user with the given email exists, then true is returned`() = testCoroutine {
+        fun `When a user with the given email exists, then true is returned`() = runTest {
             insertTestUserAndGetId()
 
             assertTrue(repo.doesUserExistByEmail("test.user@example.com"))
         }
 
         @Test
-        fun `When a user with the given email does not exist, then false is returned`() = testCoroutine {
+        fun `When a user with the given email does not exist, then false is returned`() = runTest {
             assertFalse(repo.doesUserExistByEmail("test.user@example.com"))
         }
     }
@@ -119,7 +119,7 @@ class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
     @Nested
     inner class GetAllUsers {
         @Test
-        fun `When users are found, then all users are returned`() = testCoroutine {
+        fun `When users are found, then all users are returned`() = runTest {
             val userId1 = insertTestUserAndGetId(email = "test.user1@example.com", lastName = "User 2")
             val userId2 = insertTestUserAndGetId(email = "test.user2@example.com", lastName = "User 1")
 
@@ -132,7 +132,7 @@ class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
         }
 
         @Test
-        fun `When permanently deleted users exist, then only the existing users are returned`() = testCoroutine {
+        fun `When permanently deleted users exist, then only the existing users are returned`() = runTest {
             val userId1 = insertTestUserAndGetId(email = "test.user1@example.com", lastName = "User 1")
             val userId2 = insertTestUserAndGetId(email = "", firstName = "", lastName = "")
 
@@ -148,7 +148,7 @@ class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
     @Nested
     inner class CreateUser {
         @Test
-        fun `When a user is created, then the user is returned`() = testCoroutine {
+        fun `When a user is created, then the user is returned`() = runTest {
             val request =
                 Authentication.RegisterRequest
                     .newBuilder()
@@ -167,7 +167,7 @@ class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
         }
 
         @Test
-        fun `When a user with an existing email is created, then an exception is thrown`() = testCoroutine {
+        fun `When a user with an existing email is created, then an exception is thrown`() = runTest {
             val request =
                 Authentication.RegisterRequest
                     .newBuilder()
@@ -184,7 +184,7 @@ class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
         }
 
         @Test
-        fun `When two users with different emails are created, then they have different IDs`() = testCoroutine {
+        fun `When two users with different emails are created, then they have different IDs`() = runTest {
             val request1 =
                 Authentication.RegisterRequest
                     .newBuilder()
@@ -214,7 +214,7 @@ class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
         @MethodSource("se.uulm.snowballr.backend.repository.UserTableRepoTest#validFieldMasks")
         fun `When a user is updated, then only the fields specified in the field mask are updated and the updated user is returned`(
             fieldMask: List<String>,
-        ) = testCoroutine {
+        ) = runTest {
             val userId = insertTestUserAndGetId(email = "test.user@example.com")
             val originalUser = repo.getUserById(userId)
 
@@ -255,30 +255,29 @@ class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
         }
 
         @Test
-        fun `When a user's email should be updated to an existing email, then an exception is thrown`() =
-            testCoroutine {
-                insertTestUserAndGetId(email = "alice.smith@example.com")
+        fun `When a user's email should be updated to an existing email, then an exception is thrown`() = runTest {
+            insertTestUserAndGetId(email = "alice.smith@example.com")
 
-                val user2Id = insertTestUserAndGetId(email = "bob.smith@example.com")
-                val user2Builder = repo.getUserById(user2Id).toGrpcUser().toBuilder()
+            val user2Id = insertTestUserAndGetId(email = "bob.smith@example.com")
+            val user2Builder = repo.getUserById(user2Id).toGrpcUser().toBuilder()
 
-                val updateRequest =
-                    User.Update
-                        .newBuilder()
-                        .setUser(user2Builder.setEmail("alice.smith@example.com").build())
-                        .setMask(FieldMaskUtil.fromString("user.email"))
-                        .build()
+            val updateRequest =
+                User.Update
+                    .newBuilder()
+                    .setUser(user2Builder.setEmail("alice.smith@example.com").build())
+                    .setMask(FieldMaskUtil.fromString("user.email"))
+                    .build()
 
-                assertThrows<ExposedSQLException> {
-                    repo.updateUser(updateRequest)
-                }
+            assertThrows<ExposedSQLException> {
+                repo.updateUser(updateRequest)
             }
+        }
     }
 
     @Nested
     inner class DeleteUser {
         @Test
-        fun `When the user is found, then the status of the user is set to USER_STATUS_DELETED`() = testCoroutine {
+        fun `When the user is found, then the status of the user is set to USER_STATUS_DELETED`() = runTest {
             val userId1 = insertTestUserAndGetId()
             val before = OffsetDateTime.now()
 
@@ -292,7 +291,7 @@ class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
         }
 
         @Test
-        fun `When a user is not found, then an exception is thrown`() = testCoroutine {
+        fun `When a user is not found, then an exception is thrown`() = runTest {
             assertThrows<NotFoundException> { repo.getUserById(UUID.randomUUID()) }
         }
     }
@@ -300,7 +299,7 @@ class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
     @Nested
     inner class GetPasswordHashByEmail {
         @Test
-        fun `When a user is found, then the password hash is returned`() = testCoroutine {
+        fun `When a user is found, then the password hash is returned`() = runTest {
             val passwordHash = "hashedPassword"
             insertTestUserAndGetId(email = "test.user@example.com", passwordHash = passwordHash)
             val retrievedPasswordHash = repo.getPasswordHashByEmail("test.user@example.com")
@@ -309,7 +308,7 @@ class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
         }
 
         @Test
-        fun `When a user is not found, then an exception is thrown`() = testCoroutine {
+        fun `When a user is not found, then an exception is thrown`() = runTest {
             assertThrows<NotFoundException> { repo.getPasswordHashByEmail("non-existing email") }
         }
     }

@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.repository.association
 
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -14,7 +15,6 @@ import se.uulm.snowballr.backend.repository.ProjectTableRepo
 import se.uulm.snowballr.backend.repository.RepositoryHelper.createAndAssignUserToProject
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
-import se.uulm.snowballr.backend.testCoroutine
 import snowballr.ProjectOuterClass
 import snowballr.ProjectOuterClass.MemberRole
 import java.util.UUID
@@ -55,7 +55,7 @@ class ProjectMemberTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectM
     @Nested
     inner class GetProjectMemberByComposedId {
         @Test
-        fun `When a project member is found, then the correct project member is returned`() = testCoroutine {
+        fun `When a project member is found, then the correct project member is returned`() = runTest {
             val (project, members) = setupProject()
             val projectMember = repo.getProjectMemberByComposedId(project.id, members[0].userId)
 
@@ -65,7 +65,7 @@ class ProjectMemberTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectM
         }
 
         @Test
-        fun `When a project member is not found, then an exception is thrown`() = testCoroutine {
+        fun `When a project member is not found, then an exception is thrown`() = runTest {
             assertThrows<NotFoundException> {
                 repo.getProjectMemberByComposedId(
                     UUID.randomUUID(),
@@ -78,7 +78,7 @@ class ProjectMemberTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectM
     @Nested
     inner class AddUserToProject {
         @Test
-        fun `When a user is added to a project, then they can be retrieved as project member`() = testCoroutine {
+        fun `When a user is added to a project, then they can be retrieved as project member`() = runTest {
             val (project, members) = setupProject()
             val member = members.first()
 
@@ -92,7 +92,7 @@ class ProjectMemberTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectM
         }
 
         @Test
-        fun `When a user is added to a project twice, then only one member is created`() = testCoroutine {
+        fun `When a user is added to a project twice, then only one member is created`() = runTest {
             val (project, members) = setupProject()
             val member = members.first()
             val member1 = repo.addUserToProject(testUserId, project.id)
@@ -105,14 +105,14 @@ class ProjectMemberTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectM
         }
 
         @Test
-        fun `When a user is added to a non-existing project, then an exception is thrown`() = testCoroutine {
+        fun `When a user is added to a non-existing project, then an exception is thrown`() = runTest {
             assertThrows<NotFoundException> {
                 repo.addUserToProject(testUserId, UUID.randomUUID())
             }
         }
 
         @Test
-        fun `When a non-existing user is added to a project, then an exception is thrown`() = testCoroutine {
+        fun `When a non-existing user is added to a project, then an exception is thrown`() = runTest {
             val project = createExampleProject()
 
             assertThrows<NotFoundException> {
@@ -124,7 +124,7 @@ class ProjectMemberTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectM
     @Nested
     inner class GetMembersOfProject {
         @Test
-        fun `When no members are in a project, then the list is empty`() = testCoroutine {
+        fun `When no members are in a project, then the list is empty`() = runTest {
             val (project, _) = setupProject(0, false)
 
             val members = repo.getMembersOfProject(project.id)
@@ -133,7 +133,7 @@ class ProjectMemberTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectM
         }
 
         @Test
-        fun `When one member is in a project, then they are part of the list`() = testCoroutine {
+        fun `When one member is in a project, then they are part of the list`() = runTest {
             val (project, _) = setupProject()
 
             val actualMembers = repo.getMembersOfProject(project.id)
@@ -144,7 +144,7 @@ class ProjectMemberTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectM
         }
 
         @Test
-        fun `When several members are in a project, then they are part of the list`() = testCoroutine {
+        fun `When several members are in a project, then they are part of the list`() = runTest {
             val (project, members) = setupProject(3)
 
             val actualMembers = repo.getMembersOfProject(project.id)
@@ -161,14 +161,14 @@ class ProjectMemberTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectM
     @Nested
     inner class GetMembersInSameProjectsAsUser {
         @Test
-        fun `When the user is in no projects, then the list of members is empty`() = testCoroutine {
+        fun `When the user is in no projects, then the list of members is empty`() = runTest {
             val result = repo.getMembersInSameProjectsAsUser(testUserId)
 
             assertThat(result).isEmpty()
         }
 
         @Test
-        fun `When the user is in a project, then they are not part of the list of members`() = testCoroutine {
+        fun `When the user is in a project, then they are not part of the list of members`() = runTest {
             setupProject()
 
             val result = repo.getMembersInSameProjectsAsUser(testUserId)
@@ -177,7 +177,7 @@ class ProjectMemberTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectM
         }
 
         @Test
-        fun `When the user is in projects with other users, then all members are part of the list`() = testCoroutine {
+        fun `When the user is in projects with other users, then all members are part of the list`() = runTest {
             val project1 = setupProject().first
             val project2 = setupProject().first
             val project3 = setupProject().first
@@ -197,7 +197,7 @@ class ProjectMemberTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectM
     inner class GetAllProjectAdmins {
         @Test
         fun `When all project members are project admins, then the correct list of project admins is returned`() =
-            testCoroutine {
+            runTest {
                 val (project, members) = setupProject(1)
                 val firstMember = repo.getProjectMemberByComposedId(project.id, testUserId)
                 val secondMember = repo.getProjectMemberByComposedId(project.id, members[1].userId)
@@ -218,7 +218,7 @@ class ProjectMemberTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectM
 
         @Test
         fun `When not all project members are project admins, then the correct list of project admins is returned`() =
-            testCoroutine {
+            runTest {
                 val (project, members) = setupProject(1)
                 val firstMember = repo.getProjectMemberByComposedId(project.id, testUserId)
                 val secondMember = repo.getProjectMemberByComposedId(project.id, members[1].userId)
@@ -239,7 +239,7 @@ class ProjectMemberTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectM
     inner class PromoteProjectMemberToAdmin {
         @Test
         fun `When a project member is promoted to admin, then the role of the project member is correctly updated`() =
-            testCoroutine {
+            runTest {
                 val (project, _) = setupProject()
                 val normalMember = repo.getProjectMemberByComposedId(project.id, testUserId)
                 assertThat(normalMember.role).isEqualTo(MemberRole.MEMBER_ROLE_DEFAULT)
@@ -252,7 +252,7 @@ class ProjectMemberTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectM
             }
 
         @Test
-        fun `When a project admin is promoted, then the role of the project admin does not change`() = testCoroutine {
+        fun `When a project admin is promoted, then the role of the project admin does not change`() = runTest {
             val (project, _) = setupProject()
             var promotedMember = repo.promoteProjectMemberToAdmin(project.id, testUserId)
             assertThat(promotedMember.role).isEqualTo(MemberRole.MEMBER_ROLE_ADMIN)

@@ -4,6 +4,7 @@ import io.mockk.coEvery
 import io.mockk.every
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -12,7 +13,6 @@ import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.service.MainServiceTest
-import se.uulm.snowballr.backend.testCoroutine
 import snowballr.CriterionOuterClass
 import java.util.UUID
 
@@ -26,7 +26,7 @@ class CreateCriterionTest : MainServiceTest() {
     }
 
     @Test
-    fun `When retrieving the current user ID fails, then an exception is thrown`() = testCoroutine {
+    fun `When retrieving the current user ID fails, then an exception is thrown`() = runTest {
         val request = CriterionOuterClass.Criterion.Create.getDefaultInstance()
 
         every { GrpcContext.getUserIdFromContext() } throws TestSpecificException()
@@ -35,7 +35,7 @@ class CreateCriterionTest : MainServiceTest() {
     }
 
     @Test
-    fun `When creating a criterion fails, then an exception is thrown`() = testCoroutine {
+    fun `When creating a criterion fails, then an exception is thrown`() = runTest {
         val request = CriterionOuterClass.Criterion.Create.getDefaultInstance()
 
         every { GrpcContext.getUserIdFromContext() } returns UUID.randomUUID()
@@ -45,7 +45,7 @@ class CreateCriterionTest : MainServiceTest() {
     }
 
     @Test
-    fun `When a criterion is correctly created, then no exception is thrown`() = testCoroutine {
+    fun `When a criterion is correctly created, then no exception is thrown`() = runTest {
         val request = CriterionOuterClass.Criterion.Create.getDefaultInstance()
         val criterion = DataBuilder.createExampleCriterion()
 

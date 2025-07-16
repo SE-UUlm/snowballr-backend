@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.repository
 import com.google.protobuf.util.FieldMaskUtil
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.junit.jupiter.api.Nested
@@ -17,7 +18,6 @@ import se.uulm.snowballr.backend.repository.RepositoryHelper.assignUserToProject
 import se.uulm.snowballr.backend.repository.RepositoryHelper.createExampleUser
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
-import se.uulm.snowballr.backend.testCoroutine
 import snowballr.ProjectOuterClass.Project
 import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
@@ -59,7 +59,7 @@ class ProjectTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectMemberT
     @Nested
     inner class GetProjectById {
         @Test
-        fun `When a project is found, then the correct project is returned`() = testCoroutine {
+        fun `When a project is found, then the correct project is returned`() = runTest {
             val projectId = insertTestProjectAndGetId("Test Project", ProjectStatus.PROJECT_STATUS_ACTIVE)
             val project = repo.getProjectById(projectId)
 
@@ -76,7 +76,7 @@ class ProjectTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectMemberT
         }
 
         @Test
-        fun `When a project is not found, then an exception is thrown`() = testCoroutine {
+        fun `When a project is not found, then an exception is thrown`() = runTest {
             assertThrows<NotFoundException> { repo.getProjectById(UUID.randomUUID()) }
         }
     }
@@ -84,7 +84,7 @@ class ProjectTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectMemberT
     @Nested
     inner class CreateProject {
         @Test
-        fun `When a project is created, then the passed values are correctly assigned`() = testCoroutine {
+        fun `When a project is created, then the passed values are correctly assigned`() = runTest {
             val projectId = insertTestProjectAndGetId("Test Project", ProjectStatus.PROJECT_STATUS_ACTIVE)
             val project = repo.getProjectById(projectId)
 
@@ -101,24 +101,23 @@ class ProjectTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectMemberT
         }
 
         @Test
-        fun `When two projects are created, then they have different IDs`() = testCoroutine {
+        fun `When two projects are created, then they have different IDs`() = runTest {
             val projectId1 = insertTestProjectAndGetId("Test Project 1", ProjectStatus.PROJECT_STATUS_ACTIVE)
             val projectId2 = insertTestProjectAndGetId("Test Project 2", ProjectStatus.PROJECT_STATUS_ACTIVE)
             assertThat(projectId1).isNotEqualTo(projectId2)
         }
 
         @Test
-        fun `When a project is created, but the assigned user doesn't exist, then an exception is thrown`() =
-            testCoroutine {
-                val request = Project.Create.newBuilder().setName("Test Project").build()
-                assertThrows<NotFoundException> { repo.createProject(request, UUID.randomUUID()) }
-            }
+        fun `When a project is created, but the assigned user doesn't exist, then an exception is thrown`() = runTest {
+            val request = Project.Create.newBuilder().setName("Test Project").build()
+            assertThrows<NotFoundException> { repo.createProject(request, UUID.randomUUID()) }
+        }
     }
 
     @Nested
     inner class GetAllProjects {
         @Test
-        fun `When projects are found, then all projects are returned`() = testCoroutine {
+        fun `When projects are found, then all projects are returned`() = runTest {
             val project1Id = insertTestProjectAndGetId("Test Project 1", ProjectStatus.PROJECT_STATUS_ACTIVE)
             val project2Id = insertTestProjectAndGetId("Test Project 2", ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
 
@@ -131,7 +130,7 @@ class ProjectTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectMemberT
         }
 
         @Test
-        fun `When archived and deleted projects exist, then they are not returned`() = testCoroutine {
+        fun `When archived and deleted projects exist, then they are not returned`() = runTest {
             val project1Id = insertTestProjectAndGetId("Test Project 1", ProjectStatus.PROJECT_STATUS_ACTIVE)
             val project2Id = insertTestProjectAndGetId("Test Project 2", ProjectStatus.PROJECT_STATUS_ARCHIVED)
             val project3Id = insertTestProjectAndGetId("Test Project 3", ProjectStatus.PROJECT_STATUS_DELETED)
@@ -153,7 +152,7 @@ class ProjectTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectMemberT
         @MethodSource("se.uulm.snowballr.backend.repository.ProjectTableRepoTest#validFieldMasks")
         fun `When a project is active and updated, then only the fields specified in the field mask are updated and the updated project is returned`(
             fieldMask: List<String>,
-        ) = testCoroutine {
+        ) = runTest {
             val projectId =
                 insertTestProjectAndGetId(name = "Test Project", ProjectStatus.PROJECT_STATUS_ACTIVE)
             val originalProject = repo.getProjectById(projectId)
@@ -208,7 +207,7 @@ class ProjectTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectMemberT
         @MethodSource("se.uulm.snowballr.backend.repository.ProjectTableRepoTest#validFieldMasks")
         fun `When a project is active locked and updated, then only the project name and status are updated and the updated project is returned`(
             fieldMask: List<String>,
-        ) = testCoroutine {
+        ) = runTest {
             val projectId =
                 insertTestProjectAndGetId(name = "Test Project", ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
             val originalProject = repo.getProjectById(projectId)
@@ -252,7 +251,7 @@ class ProjectTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectMemberT
     inner class GetUserProjects {
         @Test
         fun `When active projects are found where the user is member of, then all (and only these) active projects are returned`() =
-            testCoroutine {
+            runTest {
                 val project1Id = insertTestProjectAndGetId("Test Project 1", ProjectStatus.PROJECT_STATUS_ACTIVE)
                 val project2Id = insertTestProjectAndGetId("Test Project 2", ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
                 val project3Id = insertTestProjectAndGetId("Test Project 3", ProjectStatus.PROJECT_STATUS_ARCHIVED)
@@ -275,7 +274,7 @@ class ProjectTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectMemberT
 
         @Test
         fun `When archived projects are found where the user is member of, then all (and only these) archived projects are returned`() =
-            testCoroutine {
+            runTest {
                 val project1Id = insertTestProjectAndGetId("Test Project 1", ProjectStatus.PROJECT_STATUS_ACTIVE)
                 val project2Id = insertTestProjectAndGetId("Test Project 2", ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
                 val project3Id = insertTestProjectAndGetId("Test Project 3", ProjectStatus.PROJECT_STATUS_ARCHIVED)
@@ -298,7 +297,7 @@ class ProjectTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectMemberT
 
         @Test
         fun `When deleted projects are found where the user is member of, then all (and only these) deleted projects are returned`() =
-            testCoroutine {
+            runTest {
                 val project1Id = insertTestProjectAndGetId("Test Project 1", ProjectStatus.PROJECT_STATUS_ACTIVE)
                 val project2Id = insertTestProjectAndGetId("Test Project 2", ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
                 val project3Id = insertTestProjectAndGetId("Test Project 3", ProjectStatus.PROJECT_STATUS_DELETED)
@@ -320,7 +319,7 @@ class ProjectTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectMemberT
             }
 
         @Test
-        fun `When no projects are found where the user is member of, then no projects are returned`() = testCoroutine {
+        fun `When no projects are found where the user is member of, then no projects are returned`() = runTest {
             val project1Id = insertTestProjectAndGetId("Test Project 1", ProjectStatus.PROJECT_STATUS_ARCHIVED)
             val project2Id = insertTestProjectAndGetId("Test Project 2", ProjectStatus.PROJECT_STATUS_DELETED)
 
@@ -337,16 +336,15 @@ class ProjectTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectMemberT
         }
 
         @Test
-        fun `When an invalid project status is used to filter user projects, then an exception is thrown`() =
-            testCoroutine {
-                val userId = createExampleUser("userWithActiveProjects@example.com")
+        fun `When an invalid project status is used to filter user projects, then an exception is thrown`() = runTest {
+            val userId = createExampleUser("userWithActiveProjects@example.com")
 
-                assertThrows<IllegalArgumentException> {
-                    repo.getUserProjects(
-                        userId,
-                        setOf(ProjectStatus.PROJECT_STATUS_UNSPECIFIED),
-                    )
-                }
+            assertThrows<IllegalArgumentException> {
+                repo.getUserProjects(
+                    userId,
+                    setOf(ProjectStatus.PROJECT_STATUS_UNSPECIFIED),
+                )
             }
+        }
     }
 }
