@@ -10,28 +10,25 @@ import fs from "fs";
 const serverPath = "src/main/kotlin/se/uulm/snowballr/backend/grpc/SnowballRServer.kt";
 const wikiPath = "wiki/Contributing.md";
 const replacePattern = "<!-- @add-progress -->";
+const allCallsPattern = /override suspend fun (\w+)\(/g;
+const implementedCallsPattern = /override suspend fun (\w+)\(\s*.*?\s*\)\s*:\s+[\w.]+\s+=(?!\s*super\.)/g;
 
 try {
     // Read the file content
     const fileContent = fs.readFileSync(serverPath, "utf8");
 
     // Count occurrences of "override suspend fun"
-    const allCallsPattern = /override suspend fun/g;
     const allCallsMatches = fileContent.match(allCallsPattern) ?? [];
     const allCalls = allCallsMatches.length;
 
-    // Count occurrences of "mainService."
-    const implementedCallsPattern = /mainService\./g;
-    const implementedCallsMatches =
-        fileContent.match(implementedCallsPattern) ?? [];
+    // Count occurrences of not "super."
+    const implementedCallsMatches = fileContent.match(implementedCallsPattern) ?? [];
     const implementedCalls = implementedCallsMatches.length;
 
     // Calculate percentage
-    const percentage =
-        allCalls > 0 ? Math.round((implementedCalls / allCalls) * 100) : 0;
+    const percentage = allCalls > 0 ? Math.round((implementedCalls / allCalls) * 100) : 0;
 
     // Count API calls by category/service
-    const categoryPattern = /override suspend fun (\w+)\(/g;
     const categories = {};
     const implementedByCategory = {};
 
@@ -50,37 +47,27 @@ try {
 
     let match;
     let categoryMatches = 0;
-    while ((match = categoryPattern.exec(fileContent)) !== null) {
+    while ((match = allCallsPattern.exec(fileContent)) !== null) {
         const methodName = match[1];
         const category = getCategory(methodName);
 
         categories[category] = (categories[category] ?? 0) + 1;
         categoryMatches++;
     }
-    assert(
-        categoryMatches === allCalls,
-        "Category matches should equal all API calls"
-    );
-    console.log(
-        `Found ${categoryMatches} API calls and all were successfully categorized.`
-    );
+    assert(categoryMatches === allCalls, "Category matches should equal all API calls");
+    console.log(`Found ${categoryMatches} API calls and all were successfully categorized.`);
     console.log("Categories:", categories);
 
     // Count implemented calls by category
-    const implementedPattern = /mainService\.(\w+)\(/g;
     let implementedMatches = 0;
-    while ((match = implementedPattern.exec(fileContent)) !== null) {
+    while ((match = implementedCallsPattern.exec(fileContent)) !== null) {
         const methodName = match[1];
         const category = getCategory(methodName);
 
-        implementedByCategory[category] =
-            (implementedByCategory[category] ?? 0) + 1;
+        implementedByCategory[category] = (implementedByCategory[category] ?? 0) + 1;
         implementedMatches++;
     }
-    assert(
-        implementedMatches === implementedCalls,
-        "Implemented matches should equal implemented API calls"
-    );
+    assert(implementedMatches === implementedCalls, "Implemented matches should equal implemented API calls");
 
     // Calculate remaining work
     const remainingCalls = allCalls - implementedCalls;
@@ -95,9 +82,7 @@ try {
         const implemented = implementedByCategory[category] ?? 0;
         const total = categories[category];
         const catPercentage = Math.round((implemented / total) * 100);
-        console.log(
-            `  ${category}: ${implemented}/${total} (${catPercentage}%)`
-        );
+        console.log(`  ${category}: ${implemented}/${total} (${catPercentage}%)`);
     }
 
     // Read wiki file
@@ -108,10 +93,9 @@ try {
     replacementText += `Currently, **${implementedCalls}/${allCalls} (${percentage}%)** of the API calls are implemented.\n\n`;
 
     // Add progress bar
-    const progressBarLength = 20;
+    const progressBarLength = 45;
     const filledChars = Math.round((percentage / 100) * progressBarLength);
-    const progressBar =
-        "█".repeat(filledChars) + "░".repeat(progressBarLength - filledChars);
+    const progressBar = "█".repeat(filledChars) + "░".repeat(progressBarLength - filledChars);
     replacementText += `\`${progressBar}\` ${percentage}%\n\n`;
 
     // Add category breakdown
@@ -128,14 +112,9 @@ try {
 
     // Replace the pattern in the wiki content
     if (!wikiContent.includes(replacePattern)) {
-        throw new Error(
-            `Pattern "${replacePattern}" not found in the wiki file.`
-        );
+        throw new Error(`Pattern "${replacePattern}" not found in the wiki file.`);
     }
-    const updatedWikiContent = wikiContent.replace(
-        replacePattern,
-        replacementText
-    );
+    const updatedWikiContent = wikiContent.replace(replacePattern, replacementText);
 
     // Write the updated content back to the wiki file
     fs.writeFileSync(wikiPath, updatedWikiContent, "utf8");
