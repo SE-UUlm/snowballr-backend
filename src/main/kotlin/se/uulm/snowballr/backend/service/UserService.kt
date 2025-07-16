@@ -312,8 +312,7 @@ class UserService(
     override suspend fun getUserSettings(): UserSettingsOuterClass.UserSettings {
         val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
         val userSettings = userRepo.getUserSettings(currentUser.id)
-        val userCriteria = criterionRepo.getAllUserCriteria(currentUser.id)
-        val defaultUserCriteria = userCriteria.filter { userSettings.criteriaIds.contains(it.id) }
+        val defaultUserCriteria = criterionRepo.getCriteriaByIds(userSettings.criteriaIds)
 
         val criteria = mutableListOf<CriterionOuterClass.Criterion>()
         for (criterion in defaultUserCriteria) {

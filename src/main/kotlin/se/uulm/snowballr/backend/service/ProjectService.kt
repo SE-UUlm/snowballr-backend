@@ -10,10 +10,12 @@ import se.uulm.snowballr.backend.model.dto.toGrpcProject
 import se.uulm.snowballr.backend.model.dto.toGrpcProjectMembers
 import se.uulm.snowballr.backend.model.dto.toGrpcProjects
 import se.uulm.snowballr.backend.model.parseUUID
+import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import snowballr.Base
+import snowballr.CriterionOuterClass
 import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.ProjectOuterClass.Project as GrpcProject
 
@@ -72,11 +74,13 @@ interface IProjectService {
  * @param repo The repository responsible for managing persistence operations for projects.
  * @param userRepo The repository responsible for managing persistence operations for users.
  * @param projectMemberRepo The repository responsible for managing persistence operations for project members.
+ * @param criterionRepo The repository responsible for managing persistence operations for criteria.
  */
 class ProjectService(
     private val repo: IProjectTableRepo,
     private val userRepo: IUserTableRepo,
     private val projectMemberRepo: IProjectMemberTableRepo,
+    private val criterionRepo: ICriterionTableRepo,
 ) : IProjectService {
     override suspend fun getProjectById(request: Base.Id): GrpcProject {
         val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
@@ -97,8 +101,27 @@ class ProjectService(
         return repo.getProjectById(projectId).toGrpcProject()
     }
 
-    override suspend fun createProject(request: GrpcProject.Create): GrpcProject =
-        repo.createProject(request, GrpcContext.getUserIdFromContext()).toGrpcProject()
+    override suspend fun createProject(request: GrpcProject.Create): GrpcProject {
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
+        val userSettings = userRepo.getUserSettings(currentUser.id)
+        val userDefaultCriteria = criterionRepo.getCriteriaByIds(userSettings.criteriaIds)
+
+        val project = repo.createProject(request, GrpcContext.getUserIdFromContext(), userSettings).toGrpcProject()
+
+        for (criterion in userDefaultCriteria) {
+            val criterionRequest = CriterionOuterClass.Criterion.Create
+                .newBuilder()
+                .setTag(criterion.tag)
+                .setName(criterion.name)
+                .setDescription(criterion.description)
+                .setCategory(criterion.category)
+                .setProjectId(project.id ?: "")
+                .build()
+
+            criterionRepo.createCriterion(criterionRequest, currentUser.id)
+        }
+        return project
+    }
 
     override suspend fun getAllProjects(): GrpcProject.List {
         val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())

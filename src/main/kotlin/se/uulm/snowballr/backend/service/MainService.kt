@@ -1,12 +1,5 @@
 package se.uulm.snowballr.backend.service
 
-import se.uulm.snowballr.backend.auth.IJwtService
-import se.uulm.snowballr.backend.fetcher.FetcherManager
-import se.uulm.snowballr.backend.repository.ICriterionTableRepo
-import se.uulm.snowballr.backend.repository.IProjectTableRepo
-import se.uulm.snowballr.backend.repository.IUserTableRepo
-import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
-
 /**
  * The [IMainService] interface provides a unified contract that combines the responsibilities of all sub-services. It
  * inherits functionality from their interfaces, making it possible to handle CRUD operations related to various
@@ -27,23 +20,19 @@ interface IMainService :
  * This class implements the [IMainService] interface and delegates the execution of specific functionality to the
  * sub-service implementations, e.g. [ProjectService].
  *
- * @constructor Initializes the [MainService] with the required repositories.
- * @param projectRepo The repository responsible for handling persistence operations related to projects.
- * @param criterionRepo The repository responsible for handling persistence operations related to criteria.
- * @param userRepo The repository responsible for handling persistence operations related to users.
- * @param projectMemberRepo The repository responsible for handling persistence operations related to project members.
- * @param jwtService The utility for handling JWT operations, such as token parsing and validation.
- * @param fetcherManager The manager responsible for making fetchers available for use.
+ * @constructor Initializes the [MainService] with the required services.
+ * @param projectService The service responsible for handling business logic related to projects.
+ * @param criterionService The service responsible for handling business logic related to criteria.
+ * @param userService The service responsible for handling business logic related to users.
+ * @param fetcherService The service responsible for handling business logic related to fetchers.
  */
 class MainService(
-    private val projectRepo: IProjectTableRepo,
-    private val criterionRepo: ICriterionTableRepo,
-    private val userRepo: IUserTableRepo,
-    private val projectMemberRepo: IProjectMemberTableRepo,
-    private val jwtService: IJwtService,
-    private val fetcherManager: FetcherManager,
+    private val projectService: IProjectService,
+    private val criterionService: ICriterionService,
+    private val userService: IUserService,
+    private val fetcherService: IFetcherService,
 ) : IMainService,
-    IProjectService by ProjectService(projectRepo, userRepo, projectMemberRepo),
-    ICriterionService by CriterionService(criterionRepo, userRepo, projectRepo, projectMemberRepo),
-    IUserService by UserService(userRepo, projectMemberRepo, criterionRepo, jwtService),
-    IFetcherService by FetcherService(fetcherManager)
+    IProjectService by projectService,
+    ICriterionService by criterionService,
+    IUserService by userService,
+    IFetcherService by fetcherService
