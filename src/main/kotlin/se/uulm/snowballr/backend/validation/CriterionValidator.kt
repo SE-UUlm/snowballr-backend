@@ -29,7 +29,11 @@ private const val MASK_CATEGORY = "criterion.category"
 object CriterionValidator {
     fun validateCreateRequest(request: Criterion.Create): EitherNel<ValidationIssue, Unit> = either {
         zipOrAccumulate(
-            { ensureIdValidity(FIELD_PROJECT_ID, request.projectId) },
+            {
+                if (request.projectId.isNotEmpty()) {
+                    ensureIdValidity(FIELD_PROJECT_ID, request.projectId)
+                }
+            },
             {
                 ensureFieldNonBlank(FIELD_TAG, request.tag)
                 ensureFieldLength(FIELD_TAG, request.tag, CRITERION_TAG_MAX_LENGTH)
