@@ -68,7 +68,7 @@ COPY --from=build /app/build/libs/snowballr-backend-*.jar app.jar
 COPY --from=build /app/grpc_health_probe grpc_health_probe
 
 ENV PORT=8080
-ENV PLUGIN_FETCHER_DIRECTORY=/app/plugins/fetchers
+ENV PLUGIN_DIRECTORY=/app/plugins/
 
 # Healthcheck uses grpc-health-probe
 HEALTHCHECK CMD ./grpc_health_probe -addr=localhost:${PORT} -service "snowballr.SnowballR"

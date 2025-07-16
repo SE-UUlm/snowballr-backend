@@ -84,14 +84,14 @@ for the plugins to work.
 
 ### Plugin Directory
 
-Fetcher plugins are loaded during runtime from a specific directory. This
-directory can be configured using the `FETCHER_PLUGIN_DIRECTORY` environment
-variable and defaults to `./plugins/fetchers/`. This directory is relative to
-the working directory of the backend and should already be present if you have
-previously started the backend. Every `*.py` file directly contained within the
-plugin directory will be treated as a fetcher. If you would like to create a
-reusable module/library, put it inside a subdirectory like the `lib` folder or
-create a new one.
+Fetcher plugins are loaded during runtime from the `fetchers` subdirectory
+of the plugin directory. This directory can be configured using the
+`PLUGIN_DIRECTORY` environment variable and defaults to `./plugins/`. This
+directory is relative to the working directory of the backend and should
+already be present if you have previously started the backend. Every `*.py`
+file directly contained within the `fetchers` directory will be treated as a
+fetcher. If you would like to create a reusable module/library, put it inside a
+subdirectory like the `lib` folder or create a new one.
 
 ### Fetcher Contract
 

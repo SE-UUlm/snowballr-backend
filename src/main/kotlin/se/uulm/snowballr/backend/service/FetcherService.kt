@@ -41,7 +41,7 @@ class FetcherService(
 
     init {
         PythonPluginFetcher.locateNativeLibrary()
-        loadPythonFetcherPlugins(envReader.env.fetcher.pluginDirectory)
+        loadPythonFetcherPlugins(envReader.env.plugins.pluginDirectory.resolve("fetchers"))
     }
 
     override suspend fun getAvailableFetchers(): AvailableFetcherApis = AvailableFetcherApis
