@@ -6,5 +6,5 @@ NOTICE="_This document was generated on $TIMESTAMP. Please do not edit this page
 find "./wiki" -type f -name "*.md" ! -name "_*" | while read -r file; do
   echo "Processing $file..."
   # Prepend text using temp file
-  echo -e "$NOTICE\n\n$(cat "$file")" > "$file"
+  sed -i "1s/^/$NOTICE\n\n/" "$file"
 done
