@@ -4,6 +4,7 @@ import io.mockk.coEvery
 import io.mockk.every
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -13,7 +14,6 @@ import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
-import se.uulm.snowballr.backend.testCoroutine
 import snowballr.Base
 import snowballr.UserOuterClass.UserRole
 import java.util.UUID
@@ -39,7 +39,7 @@ class GetProjectByIdTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the requesting user is not a member of the project, then an exception is thrown`() = testCoroutine {
+    fun `When the requesting user is not a member of the project, then an exception is thrown`() = runTest {
         val request = getExampleRequest()
 
         val noAccessUser = DataBuilder.createExampleUser()
@@ -54,7 +54,7 @@ class GetProjectByIdTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the requesting user is a server admin, then the project can be retrieved`() = testCoroutine {
+    fun `When the requesting user is a server admin, then the project can be retrieved`() = runTest {
         val request = getExampleRequest()
 
         val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
@@ -69,7 +69,7 @@ class GetProjectByIdTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the requesting user is a project member, then the project can be retrieved`() = testCoroutine {
+    fun `When the requesting user is a project member, then the project can be retrieved`() = runTest {
         val request = getExampleRequest()
 
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
@@ -86,7 +86,7 @@ class GetProjectByIdTest : MainServiceTest() {
     }
 
     @Test
-    fun `When an error occurs while the project is retrieved, then an exception is thrown`() = testCoroutine {
+    fun `When an error occurs while the project is retrieved, then an exception is thrown`() = runTest {
         val request = getExampleRequest()
 
         val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)

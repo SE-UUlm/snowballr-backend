@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.repository
 
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -10,7 +11,6 @@ import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.ProjectTable
-import se.uulm.snowballr.backend.testCoroutine
 import se.uulm.snowballr.backend.utils.GrpcEnumSourceTest
 import snowballr.CriterionOuterClass
 import snowballr.ProjectOuterClass
@@ -35,7 +35,7 @@ class CriterionTableRepoTest : H2DatabaseTest(arrayOf(CriterionTable, ProjectTab
         @GrpcEnumSourceTest(CriterionOuterClass.CriterionCategory::class)
         fun `When a criterion is created, then the values are correctly assigned`(
             category: CriterionOuterClass.CriterionCategory,
-        ) = testCoroutine {
+        ) = runTest {
             val project = createExampleProject()
 
             val request =
@@ -58,7 +58,7 @@ class CriterionTableRepoTest : H2DatabaseTest(arrayOf(CriterionTable, ProjectTab
         @GrpcEnumSourceTest(CriterionOuterClass.CriterionCategory::class)
         fun `When a criterion is created, but the assigned project doesn't exist, then an exception is thrown`(
             category: CriterionOuterClass.CriterionCategory,
-        ) = testCoroutine {
+        ) = runTest {
             val request =
                 CriterionOuterClass.Criterion.Create
                     .newBuilder()
@@ -73,7 +73,7 @@ class CriterionTableRepoTest : H2DatabaseTest(arrayOf(CriterionTable, ProjectTab
         }
 
         @Test
-        fun `When two criteria are created, then they have different IDs`() = testCoroutine {
+        fun `When two criteria are created, then they have different IDs`() = runTest {
             val project = createExampleProject()
 
             val request =
@@ -94,7 +94,7 @@ class CriterionTableRepoTest : H2DatabaseTest(arrayOf(CriterionTable, ProjectTab
         @GrpcEnumSourceTest(CriterionOuterClass.CriterionCategory::class)
         fun `When a criterion is created, but the assigned user doesn't exist, then an exception is thrown`(
             category: CriterionOuterClass.CriterionCategory,
-        ) = testCoroutine {
+        ) = runTest {
             val request =
                 CriterionOuterClass.Criterion.Create
                     .newBuilder()

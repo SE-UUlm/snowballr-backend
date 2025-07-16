@@ -1,14 +1,16 @@
 package se.uulm.snowballr.backend.service.user
 
-import io.grpc.Context
 import io.mockk.coEvery
 import io.mockk.every
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.extension.ExtendWith
 import se.uulm.snowballr.backend.DataBuilder
+import se.uulm.snowballr.backend.GrpcTestContextExtension
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.auth.PasswordUtils
 import se.uulm.snowballr.backend.model.EntityType
@@ -17,22 +19,15 @@ import se.uulm.snowballr.backend.model.SnowballRException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthenticatedException
 import se.uulm.snowballr.backend.model.jwt.JwtTokens
 import se.uulm.snowballr.backend.service.MainServiceTest
-import se.uulm.snowballr.backend.testCoroutine
 import snowballr.Authentication.LoginRequest
 import kotlin.test.assertEquals
 
 @ExperimentalCoroutinesApi
 @DelicateCoroutinesApi
+@ExtendWith(GrpcTestContextExtension::class)
 class LoginTest : MainServiceTest() {
     @Test
-    fun `When a user provides valid credentials, then the user is logged in successfully`() = testCoroutine {
-        val cookiesMap = mutableMapOf<String, String?>()
-
-        // Create a new context with cookiesMap and run code inside it
-        val initialContext = Context.current()
-            .withValue(GrpcContext.COOKIES_TO_SET_CONTEXT_KEY, cookiesMap)
-        initialContext.attach()
-
+    fun `When a user provides valid credentials, then the user is logged in successfully`() = runTest {
         val testUser = DataBuilder.createExampleUser()
         val userPassword = "AAbb__00"
         val passwordHash = PasswordUtils.hashPassword(userPassword)
@@ -60,14 +55,7 @@ class LoginTest : MainServiceTest() {
     }
 
     @Test
-    fun `When a user provides an invalid email, then an exception is thrown`() = testCoroutine {
-        val cookiesMap = mutableMapOf<String, String?>()
-
-        // Create a new context with cookiesMap and run code inside it
-        val initialContext = Context.current()
-            .withValue(GrpcContext.COOKIES_TO_SET_CONTEXT_KEY, cookiesMap)
-        initialContext.attach()
-
+    fun `When a user provides an invalid email, then an exception is thrown`() = runTest {
         val request = LoginRequest.newBuilder().setEmail("wrongEmail").build()
 
         coEvery { userRepoMock.getUserByEmail(any()) } throws SnowballRException.NotFoundException(
@@ -79,14 +67,7 @@ class LoginTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the password hash cannot be retrieved, then an exception is thrown`() = testCoroutine {
-        val cookiesMap = mutableMapOf<String, String?>()
-
-        // Create a new context with cookiesMap and run code inside it
-        val initialContext = Context.current()
-            .withValue(GrpcContext.COOKIES_TO_SET_CONTEXT_KEY, cookiesMap)
-        initialContext.attach()
-
+    fun `When the password hash cannot be retrieved, then an exception is thrown`() = runTest {
         val testUser = DataBuilder.createExampleUser()
 
         val request = LoginRequest.newBuilder().apply {
@@ -103,14 +84,7 @@ class LoginTest : MainServiceTest() {
     }
 
     @Test
-    fun `When a user provides an invalid password, then an exception is thrown`() = testCoroutine {
-        val cookiesMap = mutableMapOf<String, String?>()
-
-        // Create a new context with cookiesMap and run code inside it
-        val initialContext = Context.current()
-            .withValue(GrpcContext.COOKIES_TO_SET_CONTEXT_KEY, cookiesMap)
-        initialContext.attach()
-
+    fun `When a user provides an invalid password, then an exception is thrown`() = runTest {
         val testUser = DataBuilder.createExampleUser()
         val userPassword = "AAbb__00"
         val passwordHash = PasswordUtils.hashPassword(userPassword)

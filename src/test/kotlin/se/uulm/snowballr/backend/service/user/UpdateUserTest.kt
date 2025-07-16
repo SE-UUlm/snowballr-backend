@@ -5,6 +5,7 @@ import io.mockk.coEvery
 import io.mockk.every
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -15,7 +16,6 @@ import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.model.SnowballRException.DuplicateEntityException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
-import se.uulm.snowballr.backend.testCoroutine
 import snowballr.UserOuterClass
 import snowballr.UserOuterClass.UserRole
 import java.util.UUID
@@ -52,14 +52,14 @@ class UpdateUserTest : MainServiceTest() {
     }
 
     @Test
-    fun `When retrieving the current user ID fails, then an exception is thrown`() = testCoroutine {
+    fun `When retrieving the current user ID fails, then an exception is thrown`() = runTest {
         every { GrpcContext.getUserIdFromContext() } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.updateUser(getExampleRequest()) }
     }
 
     @Test
-    fun `When retrieving current user fails, then exception is thrown`() = testCoroutine {
+    fun `When retrieving current user fails, then exception is thrown`() = runTest {
         every { GrpcContext.getUserIdFromContext() } returns UUID.randomUUID()
         coEvery { userRepoMock.getUserById(any()) } throws TestSpecificException()
 
@@ -67,7 +67,7 @@ class UpdateUserTest : MainServiceTest() {
     }
 
     @Test
-    fun `When requested user retrieval fails, then exception is thrown`() = testCoroutine {
+    fun `When requested user retrieval fails, then exception is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
 
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
@@ -78,7 +78,7 @@ class UpdateUserTest : MainServiceTest() {
     }
 
     @Test
-    fun `When user is not admin and tries to change role, then UnauthorizedException is thrown`() = testCoroutine {
+    fun `When user is not admin and tries to change role, then UnauthorizedException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val requestedUser = DataBuilder.createExampleUser(id = requestedUserId)
 
@@ -90,7 +90,7 @@ class UpdateUserTest : MainServiceTest() {
     }
 
     @Test
-    fun `When updating email to existing email, then DuplicateEntityException is thrown`() = testCoroutine {
+    fun `When updating email to existing email, then DuplicateEntityException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val requestedUser = DataBuilder.createExampleUser(id = requestedUserId)
 
@@ -103,7 +103,7 @@ class UpdateUserTest : MainServiceTest() {
     }
 
     @Test
-    fun `When update fails, then exception is thrown`() = testCoroutine {
+    fun `When update fails, then exception is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val requestedUser = DataBuilder.createExampleUser(id = requestedUserId)
 
@@ -117,7 +117,7 @@ class UpdateUserTest : MainServiceTest() {
     }
 
     @Test
-    fun `When update succeeds, then updated user is returned`() = testCoroutine {
+    fun `When update succeeds, then updated user is returned`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val requestedUser = DataBuilder.createExampleUser(id = requestedUserId)
 

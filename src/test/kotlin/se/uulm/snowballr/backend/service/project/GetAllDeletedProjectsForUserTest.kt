@@ -4,6 +4,7 @@ import io.mockk.coEvery
 import io.mockk.every
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -14,7 +15,6 @@ import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.model.SnowballRException.InvalidIdException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
-import se.uulm.snowballr.backend.testCoroutine
 import snowballr.Base
 import snowballr.UserOuterClass.UserRole
 import java.util.UUID
@@ -33,21 +33,21 @@ class GetAllDeletedProjectsForUserTest : MainServiceTest() {
     }
 
     @Test
-    fun `When parsing the ID fails, then an exception is thrown`() = testCoroutine {
+    fun `When parsing the ID fails, then an exception is thrown`() = runTest {
         val request = Base.Id.newBuilder().setId("invalid-uuid").build()
 
         assertThrows<InvalidIdException> { mainService.getAllDeletedProjectsForUser(request) }
     }
 
     @Test
-    fun `When retrieving current user ID fails, then an exception is thrown`() = testCoroutine {
+    fun `When retrieving current user ID fails, then an exception is thrown`() = runTest {
         every { GrpcContext.getUserIdFromContext() } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getAllDeletedProjectsForUser(getExampleRequest()) }
     }
 
     @Test
-    fun `When retrieving current user fails, then an exception is thrown`() = testCoroutine {
+    fun `When retrieving current user fails, then an exception is thrown`() = runTest {
         every { GrpcContext.getUserIdFromContext() } returns UUID.randomUUID()
         coEvery { userRepoMock.getUserById(any()) } throws TestSpecificException()
 
@@ -55,7 +55,7 @@ class GetAllDeletedProjectsForUserTest : MainServiceTest() {
     }
 
     @Test
-    fun `When retrieving requested user fails, then an exception is thrown`() = testCoroutine {
+    fun `When retrieving requested user fails, then an exception is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
         val requestedUser = DataBuilder.createExampleUser(id = requestedUserId)
 
@@ -68,7 +68,7 @@ class GetAllDeletedProjectsForUserTest : MainServiceTest() {
 
     @Test
     fun `When a non-admin retrieves another user's deleted projects, then an unauthorized exception is thrown`() =
-        testCoroutine {
+        runTest {
             val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
             val requestedUser = DataBuilder.createExampleUser(id = requestedUserId)
 
@@ -80,7 +80,7 @@ class GetAllDeletedProjectsForUserTest : MainServiceTest() {
         }
 
     @Test
-    fun `When retrieving deleted projects fails, then an exception is thrown`() = testCoroutine {
+    fun `When retrieving deleted projects fails, then an exception is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val requestedUser = DataBuilder.createExampleUser(id = requestedUserId)
 
@@ -93,7 +93,7 @@ class GetAllDeletedProjectsForUserTest : MainServiceTest() {
     }
 
     @Test
-    fun `When deleted projects are retrieved by an admin, then they are returned successfully`() = testCoroutine {
+    fun `When deleted projects are retrieved by an admin, then they are returned successfully`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val requestedUser = DataBuilder.createExampleUser(id = requestedUserId)
 
@@ -106,7 +106,7 @@ class GetAllDeletedProjectsForUserTest : MainServiceTest() {
     }
 
     @Test
-    fun `When a user retrieves its own deleted projects, then they are returned successfully`() = testCoroutine {
+    fun `When a user retrieves its own deleted projects, then they are returned successfully`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
         val requestedUser = DataBuilder.createExampleUser(id = currentUser.id)
         val request = Base.Id.newBuilder().setId(requestedUser.id.toString()).build()

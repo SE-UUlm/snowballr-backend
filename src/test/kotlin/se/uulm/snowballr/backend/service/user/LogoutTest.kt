@@ -2,31 +2,28 @@ package se.uulm.snowballr.backend.service.user
 
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.extension.ExtendWith
+import se.uulm.snowballr.backend.GrpcTestContextExtension
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.service.MainServiceTest
-import se.uulm.snowballr.backend.testCoroutine
 import kotlin.test.assertEquals
 
 @ExperimentalCoroutinesApi
 @DelicateCoroutinesApi
+@ExtendWith(GrpcTestContextExtension::class)
 class LogoutTest : MainServiceTest() {
     @Test
-    fun `When a user logs out, then the access and refresh token are cleared`() = testCoroutine {
-        val cookiesMap = mutableMapOf<String, String?>()
+    fun `When a user logs out, then the access and refresh token are cleared`(cookiesMap: MutableMap<String, String>) =
+        runTest {
+            // Simulate setting cookies via login
+            GrpcContext.setAuthCookiesInContext("testAccessToken", "testRefreshToken")
 
-        // Create a new context with cookiesMap and run code inside it
-        val initialContext = io.grpc.Context.current()
-            .withValue(GrpcContext.COOKIES_TO_SET_CONTEXT_KEY, cookiesMap)
-        initialContext.attach()
+            assertDoesNotThrow { mainService.logout() }
 
-        // Simulate setting cookies via login
-        GrpcContext.setAuthCookiesInContext("testAccessToken", "testRefreshToken")
-
-        assertDoesNotThrow { mainService.logout() }
-
-        assertEquals("", GrpcContext.COOKIES_TO_SET_CONTEXT_KEY.get()[GrpcContext.ACCESS_TOKEN_COOKIE_NAME])
-        assertEquals("", GrpcContext.COOKIES_TO_SET_CONTEXT_KEY.get()[GrpcContext.REFRESH_TOKEN_COOKIE_NAME])
-    }
+            assertEquals("", cookiesMap[GrpcContext.ACCESS_TOKEN_COOKIE_NAME])
+            assertEquals("", cookiesMap[GrpcContext.REFRESH_TOKEN_COOKIE_NAME])
+        }
 }

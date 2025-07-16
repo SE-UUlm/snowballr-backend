@@ -4,6 +4,7 @@ import io.mockk.coEvery
 import io.mockk.every
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -14,7 +15,6 @@ import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
-import se.uulm.snowballr.backend.testCoroutine
 import snowballr.Base
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
@@ -35,14 +35,14 @@ class GetUserByEmailTest : MainServiceTest() {
     }
 
     @Test
-    fun `When retrieving the current user ID fails, then an exception is thrown`() = testCoroutine {
+    fun `When retrieving the current user ID fails, then an exception is thrown`() = runTest {
         every { GrpcContext.getUserIdFromContext() } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getUserByEmail(getExampleRequest()) }
     }
 
     @Test
-    fun `When retrieving current user fails, then exception is thrown`() = testCoroutine {
+    fun `When retrieving current user fails, then exception is thrown`() = runTest {
         every { GrpcContext.getUserIdFromContext() } returns UUID.randomUUID()
         coEvery { userRepoMock.getUserById(any()) } throws TestSpecificException()
 
@@ -50,7 +50,7 @@ class GetUserByEmailTest : MainServiceTest() {
     }
 
     @Test
-    fun `When retrieving requested user by email fails, then exception is thrown`() = testCoroutine {
+    fun `When retrieving requested user by email fails, then exception is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
 
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
@@ -61,7 +61,7 @@ class GetUserByEmailTest : MainServiceTest() {
     }
 
     @Test
-    fun `When verifying user access fails, then UnauthorizedException is thrown`() = testCoroutine {
+    fun `When verifying user access fails, then UnauthorizedException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val requestedUser = DataBuilder.createExampleUser(email = exampleEmail)
 
@@ -74,7 +74,7 @@ class GetUserByEmailTest : MainServiceTest() {
     }
 
     @Test
-    fun `When requested user is inactive, then NotFoundException is thrown`() = testCoroutine {
+    fun `When requested user is inactive, then NotFoundException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
 
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
@@ -96,7 +96,7 @@ class GetUserByEmailTest : MainServiceTest() {
     }
 
     @Test
-    fun `When all retrievals succeed and user is active, then user is returned`() = testCoroutine {
+    fun `When all retrievals succeed and user is active, then user is returned`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
 
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id

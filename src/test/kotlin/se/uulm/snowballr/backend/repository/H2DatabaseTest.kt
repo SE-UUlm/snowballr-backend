@@ -45,7 +45,7 @@ import java.util.UUID
  *     inner class CreateExample {
  *         @Test
  *         fun `When an example is created, then the passed values are correctly assigned`() =
- *             testCoroutine {
+ *             runTest {
  *                 // Use the repo property to perform database operations within a coroutine context
  *                 val request = ExampleOuterClass.Example.Create.newBuilder()
  *                     .setName("Test Example")

@@ -5,6 +5,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -16,7 +17,6 @@ import se.uulm.snowballr.backend.model.SnowballRException.InvalidIdException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
-import se.uulm.snowballr.backend.testCoroutine
 import snowballr.Base
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
@@ -36,7 +36,7 @@ class GetUserByIdTest : MainServiceTest() {
     }
 
     @Test
-    fun `When parsing the user ID fails, then InvalidIdException is thrown`() = testCoroutine {
+    fun `When parsing the user ID fails, then InvalidIdException is thrown`() = runTest {
         val request = Base.Id.newBuilder().setId("invalid-uuid").build()
         every { GrpcContext.getUserIdFromContext() } returns UUID.randomUUID()
         coEvery { userRepoMock.getUserById(any()) } returns DataBuilder.createExampleUser()
@@ -45,7 +45,7 @@ class GetUserByIdTest : MainServiceTest() {
     }
 
     @Test
-    fun `When retrieving current user fails, then exception is thrown`() = testCoroutine {
+    fun `When retrieving current user fails, then exception is thrown`() = runTest {
         every { GrpcContext.getUserIdFromContext() } returns UUID.randomUUID()
         coEvery { userRepoMock.getUserById(any()) } throws TestSpecificException()
 
@@ -53,7 +53,7 @@ class GetUserByIdTest : MainServiceTest() {
     }
 
     @Test
-    fun `When current user is admin, then requested user is returned successfully`() = testCoroutine {
+    fun `When current user is admin, then requested user is returned successfully`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val requestedUser = DataBuilder.createExampleUser(
             id = requestedUserId,
@@ -68,7 +68,7 @@ class GetUserByIdTest : MainServiceTest() {
     }
 
     @Test
-    fun `When current user requests own user, then user is returned without redundant DB call`() = testCoroutine {
+    fun `When current user requests own user, then user is returned without redundant DB call`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
         val requestedUser = DataBuilder.createExampleUser(
             id = currentUser.id,
@@ -87,7 +87,7 @@ class GetUserByIdTest : MainServiceTest() {
     }
 
     @Test
-    fun `When current user is in same project as requested user, then requested user is returned`() = testCoroutine {
+    fun `When current user is in same project as requested user, then requested user is returned`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val requestedUser = DataBuilder.createExampleUser(
             id = requestedUserId,
@@ -106,7 +106,7 @@ class GetUserByIdTest : MainServiceTest() {
 
     @Test
     fun `When current user is not authorized to access requested user, then UnauthorizedException is thrown`() =
-        testCoroutine {
+        runTest {
             val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
             val requestedUser = DataBuilder.createExampleUser(id = requestedUserId)
 
@@ -119,7 +119,7 @@ class GetUserByIdTest : MainServiceTest() {
         }
 
     @Test
-    fun `When requested user is inactive, then NotFoundException is thrown`() = testCoroutine {
+    fun `When requested user is inactive, then NotFoundException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
 
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
@@ -141,7 +141,7 @@ class GetUserByIdTest : MainServiceTest() {
     }
 
     @Test
-    fun `When requested user is active, then user is returned`() = testCoroutine {
+    fun `When requested user is active, then user is returned`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
 
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
@@ -164,7 +164,7 @@ class GetUserByIdTest : MainServiceTest() {
     }
 
     @Test
-    fun `When retrieving requested user fails, then exception is thrown`() = testCoroutine {
+    fun `When retrieving requested user fails, then exception is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
 
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id

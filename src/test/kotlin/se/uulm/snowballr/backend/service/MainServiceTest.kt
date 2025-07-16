@@ -39,7 +39,7 @@ import se.uulm.snowballr.backend.service.criterion.CreateCriterionTest
  * class CreateExampleTest : MainServiceTest() {
  *     @Test
  *     fun `When an example is correctly created, then no exception is thrown`() =
- *         testCoroutine {
+ *         runTest {
  *             val request = ExampleOuterClass.Example.Create.getDefaultInstance()
  *             val example = ExampleOuterClass.Example.getDefaultInstance()
  *
@@ -52,7 +52,7 @@ import se.uulm.snowballr.backend.service.criterion.CreateCriterionTest
  *
  *     @Test
  *     fun `When an error occurs during example creation, then an exception is thrown`() =
- *         testCoroutine {
+ *         runTest {
  *             val request = ExampleOuterClass.Example.Create.getDefaultInstance()
  *
  *             // Mock the behavior of the repositories
