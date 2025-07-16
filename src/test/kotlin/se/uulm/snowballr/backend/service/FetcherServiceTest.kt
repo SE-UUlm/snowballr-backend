@@ -10,7 +10,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.newSingleThreadContext
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
-import kotlinx.datetime.Instant
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
@@ -18,27 +17,12 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
+import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.fetcher.IFetcher
-import se.uulm.snowballr.backend.model.dto.Paper
 import se.uulm.snowballr.backend.testCoroutine
-import java.time.OffsetDateTime
-import java.util.UUID
 import kotlin.test.assertEquals
 
-private val examplePaper = Paper(
-    UUID.randomUUID(),
-    "Title",
-    "ExternalId",
-    "Abstract",
-    Instant.fromEpochSeconds(0),
-    "Publisher",
-    "PublicationType",
-    "PublicationName",
-    UUID.randomUUID(),
-    OffsetDateTime.now(),
-    null,
-    null,
-)
+private val examplePaper = DataBuilder.createExamplePaper()
 
 @ExperimentalCoroutinesApi
 @DelicateCoroutinesApi
