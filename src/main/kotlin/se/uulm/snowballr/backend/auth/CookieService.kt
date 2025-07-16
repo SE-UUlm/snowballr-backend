@@ -64,12 +64,8 @@ class CookieService(private val jwtService: IJwtService) : ICookieService {
     override fun buildAuthCookieString(name: String, value: String?): String? {
         val ttl =
             when (name) {
-                GrpcContext.ACCESS_TOKEN_COOKIE_NAME ->
-                    if (value.isNullOrEmpty()) 0 else jwtService.getAccessTokenTTL()
-
-                GrpcContext.REFRESH_TOKEN_COOKIE_NAME ->
-                    if (value.isNullOrEmpty()) 0 else jwtService.getRefreshTokenTTL()
-
+                GrpcContext.ACCESS_TOKEN_COOKIE_NAME -> resolveTokenTTL(value) { jwtService.getAccessTokenTTL() }
+                GrpcContext.REFRESH_TOKEN_COOKIE_NAME -> resolveTokenTTL(value) { jwtService.getRefreshTokenTTL() }
                 else -> return null // Not a recognized authentication cookie.
             }
 
@@ -85,6 +81,16 @@ class CookieService(private val jwtService: IJwtService) : ICookieService {
 
         return createCookieString(authCookieConfig)
     }
+
+    /**
+     * Resolves the TTL for a token based on its value.
+     *
+     * @param value The token value, which may be null or empty.
+     * @param ttlProvider A function that provides the TTL in seconds if the token is valid.
+     * @return The TTL in seconds, or 0 if the value is null or empty (indicating an expired cookie).
+     */
+    private fun resolveTokenTTL(value: String?, ttlProvider: () -> Long): Long =
+        if (value.isNullOrEmpty()) 0 else ttlProvider()
 
     override fun createCookieString(config: CookieConfig): String {
         val parts = mutableListOf(
