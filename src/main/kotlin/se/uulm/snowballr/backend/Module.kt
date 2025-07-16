@@ -67,5 +67,8 @@ val snowballRModule =
         singleOf(::ProjectMemberTableRepo) { bind<IProjectMemberTableRepo>() }
         singleOf(::AuthenticationService) { bind<IAuthenticationService>() }
         // The main service comes last
-        singleOf(::MainService) { bind<IMainService>() }
+        singleOf(::MainService) {
+            createdAtStart()
+            bind<IMainService>()
+        }
     }
