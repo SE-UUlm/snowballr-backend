@@ -40,5 +40,5 @@ class MainService(
     private val jwtService: IJwtService,
 ) : IMainService,
     IProjectService by ProjectService(projectRepo, userRepo, projectMemberRepo),
-    ICriterionService by CriterionService(criterionRepo),
+    ICriterionService by CriterionService(criterionRepo, userRepo, projectRepo, projectMemberRepo),
     IUserService by UserService(userRepo, projectMemberRepo, jwtService)
