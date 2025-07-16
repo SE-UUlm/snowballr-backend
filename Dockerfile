@@ -43,13 +43,24 @@ RUN ARCH=$(uname -m) && \
     && chmod +x grpc_health_probe
 
 # Stage 2: Run the application
-FROM eclipse-temurin:21-jre-alpine-3.21 AS final
+FROM eclipse-temurin:21-jdk-alpine-3.21 AS final
+
+################ Plugin System Setup ################
+# Install dependencies
+RUN apk add --no-cache python3 python3-dev py3-pip gcc musl-dev
+# Create venv so pip can be used
+RUN python3 -m venv /app/python-env
+# Manually activate venv
+ENV VIRTUAL_ENV=/app/python-env
+ENV PATH=/app/python-env/bin:$PATH
+# Install jep and requests
+RUN pip3 install --no-cache jep requests
+################ Plugin System Setup ################
 
 WORKDIR /app
 
 # Run the application as a non-root user.
 RUN adduser -D backend-user && chown -R backend-user /app
-USER backend-user
 
 # Copy built jar file
 COPY --from=build /app/build/libs/snowballr-backend-*.jar app.jar
@@ -57,9 +68,14 @@ COPY --from=build /app/build/libs/snowballr-backend-*.jar app.jar
 COPY --from=build /app/grpc_health_probe grpc_health_probe
 
 ENV PORT=8080
+ENV PLUGIN_FETCHER_DIRECTORY=/app/plugins/fetchers
 
 # Healthcheck uses grpc-health-probe
 HEALTHCHECK CMD ./grpc_health_probe -addr=localhost:${PORT} -service "snowballr.SnowballR"
 
+RUN apk add --no-cache runuser
+
 # Start execute the jar file when starting the container
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# `chown` workaround needed because /app/plugins would else be mounted as root
+# and thus not accessible by backend-user.
+ENTRYPOINT chown -R backend-user /app/plugins && exec runuser -u backend-user -- java -jar app.jar

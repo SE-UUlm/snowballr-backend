@@ -28,6 +28,9 @@ services:
             DATABASE_HOST: db # use db service as db host
             JWT_PRIVATE_KEY_BASE64: ${JWT_PRIVATE_KEY_BASE64}
             JWT_PUBLIC_KEY_BASE64: ${JWT_PUBLIC_KEY_BASE64}
+            FETCHER_PLUGIN_DIRECTORY: /app/plugins/fetchers
+        volumes:
+            - ./plugins:/app/plugins
         ports:
             - ${PORT:-8080}:${PORT:-8080}
         depends_on:
@@ -70,6 +73,9 @@ services:
             DATABASE_HOST: db # use db service as db host
             JWT_PRIVATE_KEY_BASE64: ${JWT_PRIVATE_KEY_BASE64}
             JWT_PUBLIC_KEY_BASE64: ${JWT_PUBLIC_KEY_BASE64}
+            FETCHER_PLUGIN_DIRECTORY: /app/plugins/fetchers
+        volumes:
+            - ./plugins:/app/plugins
         ports:
             - ${PORT:-8080}:${PORT:-8080}
         depends_on:
