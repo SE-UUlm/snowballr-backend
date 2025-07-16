@@ -82,7 +82,7 @@ class ProjectMemberTableRepo(
     /**
      * Requesting a project member from the database.
      *
-     * @param projectId The id of the requested project.
+     * @param projectId The ID of the requested project.
      * @param userId The id of the requested user.
      * @return The [ProjectMember] object or null, if no project with the given [projectId] and [userId] was found.
      */

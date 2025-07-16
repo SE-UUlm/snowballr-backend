@@ -1,8 +1,13 @@
 package se.uulm.snowballr.backend.repository
 
+import com.google.protobuf.util.FieldMaskUtil
 import org.jetbrains.exposed.sql.ResultRow
+import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.update
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.SnowballRException.EntityNotPersistedException
+import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.Criterion
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.table.CriterionTable
@@ -21,6 +26,11 @@ import java.util.UUID
  */
 interface ICriterionTableRepo {
     /**
+     * Returns a criterion by its ID or throws a [NotFoundException] if the criterion with the passed [id] doesn't exist.
+     */
+    suspend fun getCriterionById(id: UUID): Criterion
+
+    /**
      * Creates a new criterion in the database based on the provided request and user ID.
      *
      * @param request The creation request containing details for the new criterion.
@@ -28,6 +38,19 @@ interface ICriterionTableRepo {
      * @return The created [Criterion] object representing the newly created criterion.
      */
     suspend fun createCriterion(request: CriterionOuterClass.Criterion.Create, userId: UUID): Criterion
+
+    /**
+     * Updates an existing criterion in the database with the provided new information.
+     * The following fields can be updated:
+     * - tag
+     * - name
+     * - description
+     * - category
+     *
+     * @param request The update request containing the new criterion details, such as the new name.
+     * @return The updated [Criterion] object reflecting the changes from the [request].
+     */
+    suspend fun updateCriterion(request: CriterionOuterClass.Criterion.Update): Criterion
 }
 
 /**
@@ -43,6 +66,22 @@ interface ICriterionTableRepo {
 class CriterionTableRepo(
     private val db: IDatabase,
 ) : ICriterionTableRepo {
+    /**
+     * Requesting a criterion from the database.
+     *
+     * @param id The id of the requested criterion.
+     * @return The [Criterion] object or null, if no criterion with the given [id] was found.
+     */
+    private fun getCriterionByIdOrNull(id: UUID): Criterion? = CriterionTable
+        .selectAll()
+        .where { CriterionTable.id eq id }
+        .map { it.toCriterion() }
+        .singleOrNull()
+
+    override suspend fun getCriterionById(id: UUID): Criterion = db.dbQuery {
+        getCriterionByIdOrNull(id) ?: throw NotFoundException(EntityType.CRITERION, id.toString())
+    }
+
     override suspend fun createCriterion(request: CriterionOuterClass.Criterion.Create, userId: UUID): Criterion =
         db.dbQuery {
             val projectUUID = parseUUID(request.projectId, EntityType.PROJECT)
@@ -62,4 +101,25 @@ class CriterionTableRepo(
                 it[createdBy] = userEntityId
             }
         }
+
+    override suspend fun updateCriterion(request: CriterionOuterClass.Criterion.Update): Criterion = db.dbQuery {
+        val criterionId = parseUUID(request.criterion.id, EntityType.CRITERION)
+        val fieldMask = FieldMaskUtil.normalize(request.mask)
+
+        CriterionTable.update({ CriterionTable.id eq criterionId }) {
+            for (field in fieldMask.pathsList) {
+                when (field) {
+                    "criterion.tag" -> it[tag] = request.criterion.tag
+                    "criterion.name" -> it[name] = request.criterion.name
+                    "criterion.description" -> it[description] = request.criterion.description
+                    "criterion.category" -> it[category] = request.criterion.category
+                }
+            }
+        }
+
+        // Return the updated criterion
+        getCriterionByIdOrNull(criterionId) ?: throw EntityNotPersistedException(
+            EntityType.CRITERION, criterionId.toString(),
+        )
+    }
 }
