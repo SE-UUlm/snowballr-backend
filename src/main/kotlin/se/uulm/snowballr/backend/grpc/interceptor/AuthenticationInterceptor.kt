@@ -219,6 +219,7 @@ val authenticationInterceptor: ServerInterceptor =
 
             val context = Context.current()
                 .withValue(GrpcContext.USER_ID_CONTEXT_KEY, DummyUser.id)
+                .withValue(GrpcContext.AUTHENTICATION_STATUS, AuthenticationStatus.AUTHENTICATION_STATUS_AUTHENTICATED)
 
             return context.call { authState.next?.startCall(authState.call, authState.headers) }
         }

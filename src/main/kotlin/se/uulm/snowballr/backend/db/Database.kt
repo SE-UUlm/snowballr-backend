@@ -7,9 +7,10 @@ import kotlinx.coroutines.Dispatchers
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.Schema
 import org.jetbrains.exposed.sql.SchemaUtils
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.Transaction
+import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insertAndGetId
-import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
 import se.uulm.snowballr.backend.auth.DummyUser
@@ -29,7 +30,6 @@ import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.table.association.ReadingListTable
 import se.uulm.snowballr.backend.table.association.ReviewHasCriterionTable
 import se.uulm.snowballr.backend.table.association.ReviewTable
-import se.uulm.snowballr.backend.table.toUser
 import java.sql.Connection
 
 private val logger = KotlinLogging.logger { }
@@ -97,7 +97,7 @@ class Database(
                 ReviewHasCriterionTable,
             )
 
-            useDummyUser()
+            setupDummyUser()
         }
         logger.info { "Database connection established" }
     }
@@ -125,29 +125,38 @@ class Database(
     }
 
     /**
-     * Initializes a dummy user in the database if the environment variable is set to use a dummy user
-     * and the dummy user does not already exist.
+     * Sets up a dummy user in the database if the environment configuration requires it.
      *
-     * The dummy user is created with predefined credentials and role, which can be used for testing purposes.
+     * This method checks if a dummy user is needed based on the environment settings. If so, it
+     * creates the dummy user if it does not already exist. If the dummy user is not needed, it
+     * deletes the dummy user from the database, in case it exists.
      */
-    fun useDummyUser() {
-        if (!envReader.env.miscellaneous.useDummyUser) {
-            return
-        }
+    fun setupDummyUser() {
+        val useDummyUser = envReader.env.miscellaneous.useDummyUser
 
         val existingId = UserTable
-            .selectAll()
+            .select(UserTable.id)
             .where { UserTable.email eq DummyUser.email }
-            .map { it.toUser().id }
+            .map { it[UserTable.id].value }
             .singleOrNull()
 
-        DummyUser.id = existingId ?: UserTable.insertAndGetId {
-            it[email] = DummyUser.email
-            it[firstName] = DummyUser.firstName
-            it[lastName] = DummyUser.lastName
-            it[passwordHash] = DummyUser.passwordHash
-            it[role] = DummyUser.role
-            it[status] = DummyUser.status
-        }.value
+        if (useDummyUser) {
+            // If the dummy user is needed, create it if it does not exist
+            DummyUser.id = existingId ?: UserTable.insertAndGetId {
+                it[email] = DummyUser.email
+                it[firstName] = DummyUser.firstName
+                it[lastName] = DummyUser.lastName
+                it[passwordHash] = DummyUser.passwordHash
+                it[role] = DummyUser.role
+                it[status] = DummyUser.status
+            }.value
+
+            logger.info { "Dummy User ID: ${DummyUser.id}" }
+        } else if (existingId != null) {
+            // If the dummy user is not needed, delete it if it exists
+            UserTable.deleteWhere { UserTable.id eq existingId }.also {
+                logger.info { "Dummy user deleted" }
+            }
+        }
     }
 }
