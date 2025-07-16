@@ -72,6 +72,7 @@ class JwtServiceTest : KoinTest {
         @Test
         fun `When parsing a malformed token, then a JwtException is thrown`() {
             val malformed = "bad.token.without.structure"
+
             assertThrows<JwtException> {
                 jwtService.parseToken(malformed)
             }
@@ -90,6 +91,23 @@ class JwtServiceTest : KoinTest {
 
             val parsedNewToken = jwtService.parseToken(newAccessToken)
             assertEquals(userId, parsedNewToken.userId)
+        }
+    }
+
+    @Nested
+    inner class TokenTTL {
+        @Test
+        fun `When getting access token TTL, then correct TTL in seconds is returned`() {
+            val ttl = jwtService.getAccessTokenTTL()
+
+            assertEquals(JwtService.ACCESS_TOKEN_EXPIRATION_MS / 1000, ttl)
+        }
+
+        @Test
+        fun `When getting refresh token TTL, then correct TTL in seconds is returned`() {
+            val ttl = jwtService.getRefreshTokenTTL()
+
+            assertEquals(JwtService.REFRESH_TOKEN_EXPIRATION_MS / 1000, ttl)
         }
     }
 }
