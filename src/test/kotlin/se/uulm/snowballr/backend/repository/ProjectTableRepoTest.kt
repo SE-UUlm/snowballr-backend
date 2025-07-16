@@ -10,6 +10,7 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.toGrpcProject
 import se.uulm.snowballr.backend.repository.RepositoryHelper.assignUserToProject
@@ -81,32 +82,36 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
     inner class CreateProject {
         @Test
         fun `When a project is created, then the passed values are correctly assigned`() = runTest {
-            val projectId = insertTestProjectAndGetId("Test Project", ProjectStatus.PROJECT_STATUS_ACTIVE)
-            val project = repo.getProjectById(projectId)
+            val userSettings = DataBuilder.createExampleUserSettings()
+            val projectBuilder = Project.Create.newBuilder().setName("Test Project").build()
+            val project = repo.createProject(projectBuilder, testUserId, userSettings)
 
             assertThat(project.name).isEqualTo("Test Project")
             assertThat(project.status).isEqualTo(ProjectStatus.PROJECT_STATUS_ACTIVE)
             assertThat(project.currentStage).isEqualTo(0)
             assertThat(project.maxStage).isEqualTo(0)
             // Assert default settings from user
-            assertThat(project.similarityThreshold).isEqualTo(0F)
+            assertThat(project.similarityThreshold).isEqualTo(0.5F)
             assertThat(project.snowballingType).isEqualTo(SnowballingType.SNOWBALLING_TYPE_BOTH)
-            assertThat(project.reviewMaybeAllowed).isTrue()
+            assertThat(project.reviewMaybeAllowed).isFalse()
             assertThat(project.reviewDecisionMatrix).isEqualTo(ReviewDecisionMatrix.getDefaultInstance())
             assertThat(project.fetcherApis).isEmpty()
         }
 
         @Test
         fun `When two projects are created, then they have different IDs`() = runTest {
-            val projectId1 = insertTestProjectAndGetId("Test Project 1", ProjectStatus.PROJECT_STATUS_ACTIVE)
-            val projectId2 = insertTestProjectAndGetId("Test Project 2", ProjectStatus.PROJECT_STATUS_ACTIVE)
+            val userSettings = DataBuilder.createExampleUserSettings()
+            val project = Project.Create.newBuilder().setName("Test Project 1").build()
+            val projectId1 = repo.createProject(project, testUserId, userSettings)
+            val projectId2 = repo.createProject(project, testUserId, userSettings)
             assertThat(projectId1).isNotEqualTo(projectId2)
         }
 
         @Test
         fun `When a project is created, but the assigned user doesn't exist, then an exception is thrown`() = runTest {
             val request = Project.Create.newBuilder().setName("Test Project").build()
-            assertThrows<NotFoundException> { repo.createProject(request, UUID.randomUUID()) }
+            val userSettings = DataBuilder.createExampleUserSettings()
+            assertThrows<NotFoundException> { repo.createProject(request, UUID.randomUUID(), userSettings) }
         }
     }
 

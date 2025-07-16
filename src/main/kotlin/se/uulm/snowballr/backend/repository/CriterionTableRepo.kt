@@ -1,7 +1,10 @@
 package se.uulm.snowballr.backend.repository
 
 import com.google.protobuf.util.FieldMaskUtil
+import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.ResultRow
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
@@ -35,6 +38,14 @@ interface ICriterionTableRepo {
     suspend fun createCriterion(request: CriterionOuterClass.Criterion.Create, userId: UUID): Criterion
 
     /**
+     * Retrieves all criteria associated with a specific user.
+     *
+     * @param userId The unique identifier of the user for whom the criteria are being retrieved.
+     * @return A list of [Criterion] objects associated with the given user.
+     */
+    suspend fun getAllUserCriteria(userId: UUID): List<Criterion>
+
+    /**
      * Updates an existing criterion in the database with the provided new information.
      * The following fields can be updated:
      * - tag
@@ -46,6 +57,15 @@ interface ICriterionTableRepo {
      * @return The updated [Criterion] object reflecting the changes from the [request].
      */
     suspend fun updateCriterion(request: CriterionOuterClass.Criterion.Update): Criterion
+
+    /**
+     * Retrieves a list of criteria based on their unique identifiers.
+     *
+     * @param ids A list of unique identifiers (UUIDs) for the criteria to be fetched.
+     * @return A list of [Criterion] objects corresponding to the provided IDs.
+     *         If no criteria are found for certain IDs, they may be excluded from the result.
+     */
+    suspend fun getCriteriaByIds(ids: List<UUID>): List<Criterion>
 }
 
 /**
@@ -70,13 +90,12 @@ class CriterionTableRepo(
 
     override suspend fun createCriterion(request: CriterionOuterClass.Criterion.Create, userId: UUID): Criterion =
         db.query {
-            val projectUUID = parseUUID(request.projectId, EntityType.PROJECT)
-
-            // Get user reference
             val userEntityId = getUserEntityId(userId)
-
-            // Get project reference
-            val projectEntityId = getProjectEntityId(projectUUID)
+            var projectEntityId: EntityID<UUID>? = null
+            if (request.projectId.isNotEmpty()) {
+                val projectUUID = parseUUID(request.projectId, EntityType.PROJECT)
+                projectEntityId = getProjectEntityId(projectUUID)
+            }
 
             CriterionTable.insertAndGet(ResultRow::toCriterion, EntityType.CRITERION) {
                 it[tag] = request.tag
@@ -102,5 +121,19 @@ class CriterionTableRepo(
                 }
             }
         }
+    }
+
+    override suspend fun getCriteriaByIds(ids: List<UUID>): List<Criterion> = db.query {
+        CriterionTable
+            .selectAll()
+            .where { CriterionTable.id inList ids }
+            .map { it.toCriterion() }
+    }
+
+    override suspend fun getAllUserCriteria(userId: UUID): List<Criterion> = db.query {
+        CriterionTable
+            .selectAll()
+            .where { CriterionTable.createdBy eq userId and CriterionTable.projectId.isNull() }
+            .map { it.toCriterion() }
     }
 }

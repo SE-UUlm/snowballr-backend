@@ -274,7 +274,7 @@ class UserTableRepo(
             ?: throw NotFoundException(EntityType.USER, email, identifierType = IdentifierType.EMAIL)
     }
 
-    override suspend fun getUserSettings(id: UUID): UserSettings = db.dbQuery {
+    override suspend fun getUserSettings(id: UUID): UserSettings = db.query {
         UserTable.selectAll()
             .where { UserTable.id eq id }
             .map { it.toUserSettings() }

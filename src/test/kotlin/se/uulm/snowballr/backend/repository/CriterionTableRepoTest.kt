@@ -11,13 +11,16 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.toGrpcCriterion
+import se.uulm.snowballr.backend.repository.RepositoryHelper.createExampleUser
 import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.utils.GrpcEnumSourceTest
 import snowballr.CriterionOuterClass
+import snowballr.CriterionOuterClass.Criterion
 import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass
 import java.util.UUID
@@ -31,7 +34,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
             ProjectOuterClass.Project.Create
                 .newBuilder()
                 .build()
-        return projectRepo.createProject(request, testUserId)
+        return projectRepo.createProject(request, testUserId, DataBuilder.createExampleUserSettings())
     }
 
     private suspend fun insertTestCriterionAndGetId(
@@ -88,12 +91,12 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
     @Nested
     inner class CreateCriterion {
         @GrpcEnumSourceTest(CriterionCategory::class)
-        fun `When a criterion is created, then the values are correctly assigned`(category: CriterionCategory) =
+        fun `When a project criterion is created, then the values are correctly assigned`(category: CriterionCategory) =
             runTest {
                 val project = createExampleProject()
 
                 val request =
-                    CriterionOuterClass.Criterion.Create
+                    Criterion.Create
                         .newBuilder()
                         .setTag("Test Tag")
                         .setName("Test Criterion")
@@ -107,31 +110,53 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                 Assertions.assertThat(criterion.name).isEqualTo("Test Criterion")
                 Assertions.assertThat(criterion.description).isEqualTo("Test Description")
                 Assertions.assertThat(criterion.category).isEqualTo(category)
+                Assertions.assertThat(criterion.projectId).isEqualTo(project.id)
+                Assertions.assertThat(criterion.createdBy).isEqualTo(testUserId)
             }
 
         @GrpcEnumSourceTest(CriterionCategory::class)
-        fun `When a criterion is created, but the assigned project doesn't exist, then an exception is thrown`(
-            category: CriterionCategory,
-        ) = runTest {
-            val request =
-                CriterionOuterClass.Criterion.Create
-                    .newBuilder()
-                    .setTag("Test Tag")
-                    .setName("Test Criterion")
-                    .setDescription("Test Description")
-                    .setCategory(category)
-                    .setProjectId(UUID.randomUUID().toString())
-                    .build()
+        fun `When a user criterion is created, then the values are correctly assigned`(category: CriterionCategory) =
+            runTest {
+                val request =
+                    Criterion.Create
+                        .newBuilder()
+                        .setTag("Test Tag")
+                        .setName("Test Criterion")
+                        .setDescription("Test Description")
+                        .setCategory(category)
+                        .build()
+                val criterion = repo.createCriterion(request, testUserId)
 
-            assertThrows<NotFoundException> { repo.createCriterion(request, testUserId) }
-        }
+                Assertions.assertThat(criterion.tag).isEqualTo("Test Tag")
+                Assertions.assertThat(criterion.name).isEqualTo("Test Criterion")
+                Assertions.assertThat(criterion.description).isEqualTo("Test Description")
+                Assertions.assertThat(criterion.category).isEqualTo(category)
+                Assertions.assertThat(criterion.projectId).isNull()
+                Assertions.assertThat(criterion.createdBy).isEqualTo(testUserId)
+            }
+
+        @Test
+        fun `When a project criterion is created, but the assigned project doesn't exist, then an exception is thrown`() =
+            runTest {
+                val request =
+                    Criterion.Create
+                        .newBuilder()
+                        .setTag("Test Tag")
+                        .setName("Test Criterion")
+                        .setDescription("Test Description")
+                        .setCategory(CriterionCategory.CRITERION_CATEGORY_EXCLUSION)
+                        .setProjectId(UUID.randomUUID().toString())
+                        .build()
+
+                assertThrows<NotFoundException> { repo.createCriterion(request, testUserId) }
+            }
 
         @Test
         fun `When two criteria are created, then they have different IDs`() = runTest {
             val project = createExampleProject()
 
             val request =
-                CriterionOuterClass.Criterion.Create
+                Criterion.Create
                     .newBuilder()
                     .setTag("Test Tag")
                     .setName("Test Criterion")
@@ -150,7 +175,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
             category: CriterionCategory,
         ) = runTest {
             val request =
-                CriterionOuterClass.Criterion.Create
+                Criterion.Create
                     .newBuilder()
                     .setTag("Test Tag")
                     .setName("Test Criterion")
@@ -160,6 +185,115 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                     .build()
 
             assertThrows<NotFoundException> { repo.createCriterion(request, UUID.randomUUID()) }
+        }
+    }
+
+    @Nested
+    inner class GetAllUserCriteria {
+        @Test
+        fun `When all criteria of a specific user are requested, then the only criteria created by the according user are returned`() =
+            runTest {
+                val userId = createExampleUser("test@email.com")
+                val projectId = createExampleProject().id
+
+                val baseRequestBuilder = Criterion.Create.newBuilder()
+                    .setTag("Test Tag")
+                    .setName("Test Criterion")
+                    .setDescription("Test Description")
+                    .setCategory(CriterionCategory.CRITERION_CATEGORY_EXCLUSION)
+
+                val userCriterionRequest = baseRequestBuilder.build()
+                val projectCriterionRequest = baseRequestBuilder
+                    .setProjectId(projectId.toString())
+                    .build()
+
+                val userCriterion1 = repo.createCriterion(userCriterionRequest, testUserId)
+                val userCriterion2 = repo.createCriterion(userCriterionRequest, userId)
+                val projectCriterion = repo.createCriterion(projectCriterionRequest, testUserId)
+
+                val userCriteria = repo.getAllUserCriteria(testUserId)
+
+                Assertions.assertThat(userCriteria).hasSize(1)
+                Assertions.assertThat(userCriteria).containsExactly(userCriterion1)
+                Assertions.assertThat(userCriteria).doesNotContain(userCriterion2)
+                Assertions.assertThat(userCriteria).doesNotContain(projectCriterion)
+            }
+    }
+
+    @Nested
+    inner class GetCriteriaByIds {
+        @Test
+        fun `When all criteria of the given ids are requested and exist, then all those criteria are returned`() =
+            runTest {
+                val projectId = createExampleProject().id
+
+                val baseRequestBuilder = Criterion.Create.newBuilder()
+                    .setTag("Test Tag")
+                    .setName("Test Criterion")
+                    .setDescription("Test Description")
+                    .setCategory(CriterionCategory.CRITERION_CATEGORY_EXCLUSION)
+
+                val userCriterionRequest = baseRequestBuilder.build()
+                val projectCriterionRequest = baseRequestBuilder
+                    .setProjectId(projectId.toString())
+                    .build()
+
+                val userCriterion = repo.createCriterion(userCriterionRequest, testUserId)
+                val projectCriterion = repo.createCriterion(projectCriterionRequest, testUserId)
+
+                val userCriteria = repo.getCriteriaByIds(listOf(userCriterion.id, projectCriterion.id))
+
+                assertThat(userCriteria).hasSize(2)
+                assertThat(userCriteria).containsExactlyInAnyOrder(userCriterion, projectCriterion)
+            }
+
+        @Test
+        fun `When all criteria of the given ids are requested but not all criteria exist, then only the existing criteria are returned`() =
+            runTest {
+                val baseRequestBuilder = Criterion.Create.newBuilder()
+                    .setTag("Test Tag")
+                    .setName("Test Criterion")
+                    .setDescription("Test Description")
+                    .setCategory(CriterionCategory.CRITERION_CATEGORY_EXCLUSION)
+
+                val userCriterionRequest = baseRequestBuilder.build()
+
+                val userCriterion = repo.createCriterion(userCriterionRequest, testUserId)
+
+                val userCriteria = repo.getCriteriaByIds(listOf(userCriterion.id, UUID.randomUUID()))
+
+                assertThat(userCriteria).hasSize(1)
+                assertThat(userCriteria).containsExactlyInAnyOrder(userCriterion)
+            }
+
+        @Test
+        fun `When all the input list is empty, then an empty list is returned`() = runTest {
+            val userCriteria = repo.getCriteriaByIds(emptyList())
+            assertThat(userCriteria).isEmpty()
+        }
+
+        @Test
+        fun `When no criteria of the input list exist, then an empty list is returned`() = runTest {
+            val userCriteria = repo.getCriteriaByIds(listOf(UUID.randomUUID()))
+            assertThat(userCriteria).isEmpty()
+        }
+
+        @Test
+        fun `When the input list contains duplicated ids, then every criterion is returned only once`() = runTest {
+            val baseRequestBuilder = Criterion.Create.newBuilder()
+                .setTag("Test Tag")
+                .setName("Test Criterion")
+                .setDescription("Test Description")
+                .setCategory(CriterionCategory.CRITERION_CATEGORY_EXCLUSION)
+
+            val userCriterionRequest = baseRequestBuilder.build()
+
+            val userCriterion = repo.createCriterion(userCriterionRequest, testUserId)
+
+            val userCriteria = repo.getCriteriaByIds(listOf(userCriterion.id, userCriterion.id))
+
+            assertThat(userCriteria).hasSize(1)
+            assertThat(userCriteria).containsExactlyInAnyOrder(userCriterion)
         }
     }
 

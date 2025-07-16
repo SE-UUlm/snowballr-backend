@@ -5,6 +5,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.ProjectMember
@@ -30,7 +31,8 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
                 .newBuilder()
                 .setName("Test Project")
                 .build()
-        return projectRepo.createProject(request, testUserId)
+        val userSettings = DataBuilder.createExampleUserSettings()
+        return projectRepo.createProject(request, testUserId, userSettings)
     }
 
     private suspend fun setupProject(

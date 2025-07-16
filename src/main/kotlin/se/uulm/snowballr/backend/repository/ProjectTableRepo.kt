@@ -11,14 +11,13 @@ import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.Project
+import se.uulm.snowballr.backend.model.dto.UserSettings
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.table.toProject
 import snowballr.ProjectOuterClass
 import snowballr.ProjectOuterClass.ProjectStatus
-import snowballr.ProjectOuterClass.ReviewDecisionMatrix
-import snowballr.ProjectOuterClass.SnowballingType
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -40,9 +39,14 @@ interface IProjectTableRepo {
      *
      * @param request The project creation request containing project details
      * @param userId The ID of the user creating the project.
+     * @param userSettings The user's current settings, such as default criteria IDs, similarity threshold, and other relevant preferences.
      * @return The created [Project] object representing the newly created project.
      */
-    suspend fun createProject(request: ProjectOuterClass.Project.Create, userId: UUID): Project
+    suspend fun createProject(
+        request: ProjectOuterClass.Project.Create,
+        userId: UUID,
+        userSettings: UserSettings,
+    ): Project
 
     /**
      * Returns all active projects stored in the database.
@@ -108,8 +112,11 @@ class ProjectTableRepo(
         getProjectByIdOrNull(id) ?: throw NotFoundException(EntityType.PROJECT, id.toString())
     }
 
-    override suspend fun createProject(request: ProjectOuterClass.Project.Create, userId: UUID): Project = db.query {
-        // Get user reference
+    override suspend fun createProject(
+        request: ProjectOuterClass.Project.Create,
+        userId: UUID,
+        userSettings: UserSettings,
+    ): Project = db.query {
         val userEntityId = getUserEntityId(userId)
 
         ProjectTable.insertAndGet(ResultRow::toProject, EntityType.PROJECT) {
@@ -117,11 +124,10 @@ class ProjectTableRepo(
             it[status] = ProjectStatus.PROJECT_STATUS_ACTIVE
             it[currentStage] = 0
             it[maxStage] = 0
-            // TODO: Fetch default settings from user
-            it[similarityThreshold] = 0F
-            it[snowballingType] = SnowballingType.SNOWBALLING_TYPE_BOTH
-            it[reviewMaybeAllowed] = true
-            it[reviewDecisionMatrixBinary] = ReviewDecisionMatrix.getDefaultInstance().toByteArray()
+            it[similarityThreshold] = userSettings.similarityThreshold
+            it[snowballingType] = userSettings.snowballingType
+            it[reviewMaybeAllowed] = userSettings.reviewMaybeAllowed
+            it[reviewDecisionMatrixBinary] = userSettings.decisionMatrix.toByteArray()
             it[fetcherApis] = emptyList()
             it[createdBy] = userEntityId
         }
