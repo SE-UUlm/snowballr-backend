@@ -309,7 +309,7 @@ class SnowballRServer(
             super.updateProjectMemberRole(request)
 
         override suspend fun getCriterionById(request: Base.Id): CriterionOuterClass.Criterion =
-            super.getCriterionById(request)
+            mainService.getCriterionById(request)
 
         override suspend fun getAllCriteriaForProject(request: Base.Id): CriterionOuterClass.Criterion.List =
             super.getAllCriteriaForProject(request)
@@ -320,7 +320,7 @@ class SnowballRServer(
 
         override suspend fun updateCriterion(
             request: CriterionOuterClass.Criterion.Update,
-        ): CriterionOuterClass.Criterion = super.updateCriterion(request)
+        ): CriterionOuterClass.Criterion = mainService.updateCriterion(request)
 
         override suspend fun deleteCriterion(request: Base.Id): Base.Nothing = super.deleteCriterion(request)
 
