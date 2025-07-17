@@ -1,5 +1,8 @@
 /**
- * Script to compare API methods between all-available-calls.md and all-used-calls.md
+ * Script to compare API methods between all-available-calls.md, all-implemented-calls.md and all-used-calls.md
+ *
+ * This script assumes that the "get-all-used-calls.js" script in the frontend repository has been run.
+ * It also assumes that the the "cacl-impl-progress.js" script has been run with the "write-files" or "all" mode.
  *
  * Usage: node scripts/compare-api-method-states.js
  */

@@ -66,7 +66,7 @@ try {
     assert(categoryMatches === allCallsCount, "Category matches should equal all API calls");
     console.log(`Found ${categoryMatches} API calls and all were successfully categorized.`);
     console.log("Categories:", categories);
-    
+
     if (mode === "write-files" || mode === "all") {
         fs.writeFileSync(
             "all-available-calls.md",
@@ -102,13 +102,13 @@ try {
     }
 
     // Calculate remaining work
-    const remainingCalls = allCallsCount - implementedCallsCount;
+    const remainingCallsCount = allCallsCount - implementedCallsCount;
 
     // Output the results
     console.log(`All API calls: ${allCallsCount}`);
     console.log(`Implemented API calls: ${implementedCallsCount}`);
     console.log(`Percentage implemented: ${percentage}%`);
-    console.log(`Remaining API calls: ${remainingCalls}`);
+    console.log(`Remaining API calls: ${remainingCallsCount}`);
     console.log("\nImplementation by category:");
     for (const category in categories) {
         const implemented = implementedByCategory[category] ?? 0;
