@@ -12,6 +12,13 @@ const wikiPath = "wiki/Contributing.md";
 const replacePattern = "<!-- @add-progress -->";
 const allCallsPattern = /override suspend fun (\w+)\(/g;
 const implementedCallsPattern = /override suspend fun (\w+)\(\s*.*?\s*\)\s*:\s+[\w.]+\s+=(?!\s*super\.)/g;
+// Mode can be "update-wiki" or "write-files" or "all" or "none"
+// "all" will perform both actions
+const mode = process.argv[2] || "all"; // Default to "all" if not specified
+if (!["update-wiki", "write-files", "all", "none"].includes(mode)) {
+    console.error(`Invalid mode: ${mode}. Use "update-wiki", "write-files", "all", or "none".`);
+    process.exit(1);
+}
 
 try {
     // Read the file content
@@ -59,14 +66,17 @@ try {
     assert(categoryMatches === allCallsCount, "Category matches should equal all API calls");
     console.log(`Found ${categoryMatches} API calls and all were successfully categorized.`);
     console.log("Categories:", categories);
-    fs.writeFileSync(
-        "all-available-calls.md",
-        allCalls
-            .toSorted()
-            .map((m) => `- ${m}`)
-            .join("\n"),
-        "utf8",
-    );
+    
+    if (mode === "write-files" || mode === "all") {
+        fs.writeFileSync(
+            "all-available-calls.md",
+            allCalls
+                .toSorted()
+                .map((m) => `- ${m}`)
+                .join("\n"),
+            "utf8",
+        );
+    }
 
     // Count implemented calls by category
     const implementedCalls = [];
@@ -80,14 +90,16 @@ try {
         implementedMatches++;
     }
     assert(implementedMatches === implementedCallsCount, "Implemented matches should equal implemented API calls");
-    fs.writeFileSync(
-        "all-implemented-calls.md",
-        implementedCalls
-            .toSorted()
-            .map((m) => `- ${m}`)
-            .join("\n"),
-        "utf8",
-    );
+    if (mode === "write-files" || mode === "all") {
+        fs.writeFileSync(
+            "all-implemented-calls.md",
+            implementedCalls
+                .toSorted()
+                .map((m) => `- ${m}`)
+                .join("\n"),
+            "utf8",
+        );
+    }
 
     // Calculate remaining work
     const remainingCalls = allCallsCount - implementedCallsCount;
@@ -137,9 +149,10 @@ try {
     const updatedWikiContent = wikiContent.replace(replacePattern, replacementText);
 
     // Write the updated content back to the wiki file
-    fs.writeFileSync(wikiPath, updatedWikiContent, "utf8");
-
-    console.log("\nWiki updated with progress statistics!");
+    if (mode === "update-wiki" || mode === "all") {
+        fs.writeFileSync(wikiPath, updatedWikiContent, "utf8");
+        console.log("\nWiki updated with progress statistics!");
+    }
 } catch (error) {
     console.error(`Error: ${error.message}`);
     process.exit(1);
