@@ -17,16 +17,16 @@ class Paper:
 class Logger:
     def __init__(self, impl):
         self.__impl__ = impl
-    def info(self, msg: str):
-        self.__impl__.info(msg)
-    def warn(self, msg: str):
-        self.__impl__.warn(msg)
-    def error(self, msg: str):
-        self.__impl__.error(msg)
-    def debug(self, msg: str):
-        self.__impl__.debug(msg)
-    def trace(self, msg: str):
-        self.__impl__.trace(msg)
+    def info(self, msg):
+        self.__impl__.info(str(msg))
+    def warn(self, msg):
+        self.__impl__.warn(str(msg))
+    def error(self, msg):
+        self.__impl__.error(str(msg))
+    def debug(self, msg):
+        self.__impl__.debug(str(msg))
+    def trace(self, msg):
+        self.__impl__.trace(str(msg))
 
 class FetcherManager:
     def __init__(self, impl):
