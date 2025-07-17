@@ -51,6 +51,11 @@ try {
         (method) => !usedApiMethods.includes(method)
     );
 
+    // Find unnecessary implemented calls (implemented but not used)
+    const unnecessaryImplementedCalls = allImplementedCalls.filter(
+        (method) => !usedApiMethods.includes(method)
+    );
+
     // Generate output files
     const formatList = (items) =>
         items
@@ -71,6 +76,17 @@ try {
             ? formatList(unusedCalls)
             : "# No unused calls found\n\nAll available API methods are being used.";
     fs.writeFileSync(unusedCallsPath, unusedCallsContent, "utf8");
+
+    // Write unnecessary implemented calls to file
+    const unnecessaryImplementedCallsContent =
+        unnecessaryImplementedCalls.length > 0
+            ? formatList(unnecessaryImplementedCalls)
+            : "# No unnecessary implemented calls found\n\nAll implemented API methods are being used.";
+    fs.writeFileSync(
+        "all-unnecessary-implemented-calls.md",
+        unnecessaryImplementedCallsContent,
+        "utf8"
+    );
 
     console.log(`Comparison completed successfully!`);
     console.log(
