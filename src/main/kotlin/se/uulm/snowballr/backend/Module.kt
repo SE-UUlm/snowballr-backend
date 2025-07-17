@@ -13,6 +13,7 @@ import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.env.EnvService
 import se.uulm.snowballr.backend.env.IEnvService
+import se.uulm.snowballr.backend.fetcher.FetcherManager
 import se.uulm.snowballr.backend.repository.CriterionTableRepo
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
@@ -58,6 +59,7 @@ val snowballRModule =
             createdAtStart()
             bind<IDatabase>()
         }
+        singleOf(::FetcherManager)
         // Here come all repos and other definitions, e.g., the http client
         singleOf(::ProjectTableRepo) { bind<IProjectTableRepo>() }
         singleOf(::CriterionTableRepo) { bind<ICriterionTableRepo>() }

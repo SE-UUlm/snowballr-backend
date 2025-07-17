@@ -1,6 +1,8 @@
 package se.uulm.snowballr.backend
 
+import kotlinx.datetime.Instant
 import se.uulm.snowballr.backend.model.dto.Criterion
+import se.uulm.snowballr.backend.model.dto.Paper
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.ProjectMember
 import se.uulm.snowballr.backend.model.dto.User
@@ -117,5 +119,33 @@ object DataBuilder {
         role = role,
         createdAt = createdAt,
         modifiedAt = modifiedAt,
+    )
+
+    fun createExamplePaper(
+        id: UUID = UUID.randomUUID(),
+        title: String = "Title",
+        externalId: String? = "ExternalId",
+        abstract: String = "Abstract",
+        publishedAt: Instant? = Instant.fromEpochSeconds(0),
+        publisher: String? = "Publisher",
+        publicationType: String? = "PublicationType",
+        publicationName: String? = "PublicationName",
+        pdfId: UUID? = UUID.randomUUID(),
+        createdAt: OffsetDateTime = OffsetDateTime.now(),
+        modifiedAt: OffsetDateTime? = null,
+        modifiedBy: UUID? = null,
+    ) = Paper(
+        id,
+        title,
+        externalId,
+        abstract,
+        publishedAt,
+        publisher,
+        publicationType,
+        publicationName,
+        pdfId,
+        createdAt,
+        modifiedAt,
+        modifiedBy,
     )
 }
