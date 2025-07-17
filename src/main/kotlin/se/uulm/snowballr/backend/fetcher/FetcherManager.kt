@@ -1,7 +1,6 @@
-package se.uulm.snowballr.backend.service
+package se.uulm.snowballr.backend.fetcher
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import se.uulm.snowballr.backend.fetcher.IFetcher
 import se.uulm.snowballr.backend.model.dto.Paper
 import java.util.concurrent.ConcurrentHashMap
 
@@ -10,11 +9,15 @@ private val logger = KotlinLogging.logger {}
 /**
  * Keeps track of and delegates requests to multiple [IFetcher] instances.
  */
-interface IFetcherService {
+class FetcherManager {
+    private val fetchers: ConcurrentHashMap<String, IFetcher> = ConcurrentHashMap()
+
+    private fun getFetcherOrThrow(name: String): IFetcher = fetchers[name] ?: throw UnknownFetcherException(name)
+
     /**
      * Get the names of all registered fetchers.
      */
-    fun getAvailableFetchers(): Set<String>
+    fun getAvailableFetchers(): Set<String> = fetchers.keys.toSet()
 
     /**
      * Register a fetcher.
@@ -22,14 +25,26 @@ interface IFetcherService {
      * @param name The name under which a fetcher should be accessible.
      * @param impl An implementation of a fetcher.
      */
-    fun registerFetcher(name: String, impl: IFetcher)
+    fun registerFetcher(name: String, impl: IFetcher) {
+        if (fetchers.putIfAbsent(name, impl) == null) {
+            logger.info { "Successfully registered the fetcher $name." }
+        } else {
+            throw AlreadyRegisteredException(name)
+        }
+    }
 
     /**
      * Remove a fetcher.
      *
      * @param name The name of the fetcher which should be removed.
      */
-    fun removeFetcher(name: String)
+    fun removeFetcher(name: String) {
+        if (fetchers.remove(name) != null) {
+            logger.info { "Successfully removed the fetcher $name." }
+        } else {
+            logger.warn { "Could not remove the fetcher $name, as it was not registered before." }
+        }
+    }
 
     /**
      * Get a set of all option keys the specified fetcher can be configured
@@ -39,7 +54,9 @@ interface IFetcherService {
      * @param fetcher The name of the fetcher whose options should be retrieved.
      * @returns A set of names for options the fetcher has specified it would accept.
      */
-    suspend fun getAvailableOptions(fetcher: String): Set<String>
+    suspend fun getAvailableOptions(fetcher: String): Set<String> = getFetcherOrThrow(
+        fetcher,
+    ).getAvailableOptions()
 
     /**
      * Search for papers using a search query.
@@ -49,7 +66,10 @@ interface IFetcherService {
      * @param options The set of options to be used for this invocation.
      * @return A set of papers best matching the provided searchQuery.
      */
-    suspend fun searchPapers(fetcher: String, searchQuery: String, options: Map<String, String>): Set<Paper>
+    suspend fun searchPapers(fetcher: String, searchQuery: String, options: Map<String, String>): Set<Paper> =
+        getFetcherOrThrow(
+            fetcher,
+        ).searchPapers(searchQuery, options)
 
     /**
      * Get the papers that are forward references of the specified paper.
@@ -63,7 +83,8 @@ interface IFetcherService {
      * @param options The set of options to be used for this invocation.
      * @return A (sub)set of papers that are forward references of the provided paper.
      */
-    suspend fun fetchForwardReferences(fetcher: String, paper: Paper, options: Map<String, String>): Set<Paper>
+    suspend fun fetchForwardReferences(fetcher: String, paper: Paper, options: Map<String, String>): Set<Paper> =
+        getFetcherOrThrow(fetcher).fetchForwardReferences(paper, options)
 
     /**
      * Get the papers that are backward references of the specified paper.
@@ -77,54 +98,9 @@ interface IFetcherService {
      * @param options The set of options to be used for this invocation.
      * @return A (sub)set of papers that are backward references of the provided paper.
      */
-    suspend fun fetchBackwardReferences(fetcher: String, paper: Paper, options: Map<String, String>): Set<Paper>
-}
+    suspend fun fetchBackwardReferences(fetcher: String, paper: Paper, options: Map<String, String>): Set<Paper> =
+        getFetcherOrThrow(fetcher).fetchBackwardReferences(paper, options)
 
-/**
- * Default implementation of [IFetcherService].
- */
-class FetcherService : IFetcherService {
-    private val fetchers: ConcurrentHashMap<String, IFetcher> = ConcurrentHashMap()
-
-    private fun getFetcherOrThrow(name: String): IFetcher =
-        fetchers[name] ?: throw Exception("The fetcher '$name' is not known")
-
-    override fun getAvailableFetchers(): Set<String> = fetchers.keys.toSet()
-
-    override fun registerFetcher(name: String, impl: IFetcher) {
-        if (fetchers.putIfAbsent(name, impl) == null) {
-            logger.info { "Successfully registered the fetcher $name." }
-        } else {
-            throw Exception("The fetcher '$name' is already registered.")
-        }
-    }
-
-    override fun removeFetcher(name: String) {
-        if (fetchers.remove(name) != null) {
-            logger.info { "Successfully removed the fetcher $name." }
-        } else {
-            logger.warn { "Could not remove the fetcher $name, as it was not registered before." }
-        }
-    }
-
-    override suspend fun getAvailableOptions(fetcher: String): Set<String> = getFetcherOrThrow(
-        fetcher,
-    ).getAvailableOptions()
-
-    override suspend fun searchPapers(fetcher: String, searchQuery: String, options: Map<String, String>): Set<Paper> =
-        getFetcherOrThrow(
-            fetcher,
-        ).searchPapers(searchQuery, options)
-
-    override suspend fun fetchForwardReferences(
-        fetcher: String,
-        paper: Paper,
-        options: Map<String, String>,
-    ): Set<Paper> = getFetcherOrThrow(fetcher).fetchForwardReferences(paper, options)
-
-    override suspend fun fetchBackwardReferences(
-        fetcher: String,
-        paper: Paper,
-        options: Map<String, String>,
-    ): Set<Paper> = getFetcherOrThrow(fetcher).fetchBackwardReferences(paper, options)
+    class UnknownFetcherException(name: String) : Exception("The fetcher '$name' is not known")
+    class AlreadyRegisteredException(name: String) : Exception("The fetcher '$name' is already registered.")
 }
