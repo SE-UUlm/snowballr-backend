@@ -111,21 +111,21 @@ class PythonPluginFetcher : IFetcher {
     }
 
     override suspend fun searchPapers(searchQuery: String, options: Map<String, String>): Set<Paper> = withContext(thread) {
-        (interp.invoke("searchPapers", searchQuery, options.toPyObject(interp)) as PyObject)
+        interp.getValue("searchPapers", PyCallable::class.java).callAs(PyObject::class.java, searchQuery, options.toPyObject(interp))
             .toSet<PyObject>(interp)
             .map { it.toPaper() }
             .toSet()
     }
 
     override suspend fun fetchForwardReferences(paper: Paper, options: Map<String, String>): Set<Paper> = withContext(thread) {
-        (interp.invoke("fetchForwardReferences", paper.toPyObject(interp), options.toPyObject(interp)) as PyObject)
+        interp.getValue("fetchForwardReferences", PyCallable::class.java).callAs(PyObject::class.java, paper.toPyObject(interp), options.toPyObject(interp))
             .toSet<PyObject>(interp)
             .map { it.toPaper() }
             .toSet()
     }
 
     override suspend fun fetchBackwardReferences(paper: Paper, options: Map<String, String>): Set<Paper> = withContext(thread) {
-       (interp.invoke("fetchBackwardReferences", paper.toPyObject(interp), options.toPyObject(interp)) as PyObject)
+        interp.getValue("fetchBackwardReferences", PyCallable::class.java).callAs(PyObject::class.java, paper.toPyObject(interp), options.toPyObject(interp))
             .toSet<PyObject>(interp)
             .map { it.toPaper() }
             .toSet()
