@@ -1,18 +1,11 @@
 package se.uulm.snowballr.backend.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlinx.coroutines.DelicateCoroutinesApi
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.fetcher.FetcherManager
-import se.uulm.snowballr.backend.fetcher.PythonPluginFetcher
+import se.uulm.snowballr.backend.fetcher.PythonPluginLoader
 import snowballr.Main.AvailableFetcherApis
-import java.io.IOException
-import java.nio.file.Path
-import kotlin.io.path.createDirectories
-import kotlin.io.path.extension
-import kotlin.io.path.isDirectory
-import kotlin.io.path.listDirectoryEntries
-import kotlin.io.path.name
-import kotlin.io.path.nameWithoutExtension
 
 private val logger = KotlinLogging.logger {}
 
@@ -34,67 +27,17 @@ interface IFetcherService {
 /**
  * Default implementation of [IFetcherService].
  */
+@DelicateCoroutinesApi
 class FetcherService(
     private val envReader: EnvReader,
 ) : IFetcherService {
     private val fetcherManager = FetcherManager()
 
-    init {
-        PythonPluginFetcher.locateNativeLibrary()
-        loadPythonFetcherPlugins(envReader.env.plugins.pluginDirectory.resolve("fetchers"))
-    }
+    @Suppress("UnusedPrivateProperty")
+    private val pythonPluginLoader = PythonPluginLoader(envReader.env.plugins.pluginDirectory, fetcherManager)
 
     override suspend fun getAvailableFetchers(): AvailableFetcherApis = AvailableFetcherApis
         .newBuilder()
         .addAllFetcherApis(fetcherManager.getAvailableFetchers())
         .build()
-
-    @Suppress("TooGenericExceptionCaught")
-    private fun loadPythonFetcherPlugins(pluginDirectory: Path) {
-        ensureDirectoryExists(pluginDirectory)
-        val pluginFiles = pluginDirectory
-            .listDirectoryEntries()
-            .filter { it.extension == "py" }
-            .toSet()
-
-        ensureDirectoryExists(pluginDirectory.resolve("lib"))
-        PythonPluginFetcher.writeDataTypesModule(pluginDirectory.resolve("lib/snowballr.py"))
-
-        logger.info { "Trying to load ${pluginFiles.size} python fetcher plugins" }
-
-        var successful = 0
-
-        for (path in pluginFiles) {
-            val name = path.nameWithoutExtension
-            try {
-                fetcherManager.registerFetcher(
-                    name,
-                    PythonPluginFetcher.fromFile(name, path, pluginDirectory, fetcherManager),
-                )
-                successful++
-            } catch (e: Exception) {
-                logger.atError {
-                    message = "A python fetcher plugin could not be loaded: ${path.name}"
-                    cause = e
-                }
-            }
-        }
-
-        logger.info { "Successfully loaded $successful python fetcher plugins" }
-    }
-
-    private fun ensureDirectoryExists(path: Path): Boolean {
-        if (path.isDirectory()) return true
-
-        logger.warn { "Directory '$path' could not be found" }
-
-        try {
-            path.createDirectories()
-            logger.info { "Created directory '$path'" }
-            return true
-        } catch (e: IOException) {
-            logger.error(e) { "Could not create directory '$path'" }
-            return false
-        }
-    }
 }
