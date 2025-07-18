@@ -11,21 +11,21 @@ sequenceDiagram
     autonumber
     actor Frontend
     box rgb(113,146,179) Server
-        participant Authorization
+        participant Authentication
         participant Input Validation
         participant gRPC Server
         participant Service
         participant Repository
     end
     participant Database
-    Frontend ->> Authorization: gRPC Request
-    activate Authorization
+    Frontend ->> Authentication: gRPC Request
+    activate Authentication
 
-    alt Unauthorized access
-        Authorization -->> Frontend: UNAUTHENTICATED
-    else Authorized access
-        Authorization ->> Input Validation: Pass authorized request
-        deactivate Authorization
+    alt Unauthenticated access
+        Authentication -->> Frontend: UNAUTHENTICATED
+    else Authenticated access
+        Authentication ->> Input Validation: Pass authenticated request
+        deactivate Authentication
         activate Input Validation
     end
 
@@ -93,7 +93,7 @@ When an unexpected error occurs at any time in this diagram, an `INTERNAL` statu
 
 ## Layers
 
-### Authorization (2 - 3)
+### Authentication (2 - 3)
 
 - Is an interceptor
 - Read the request tokens and expect an `accessToken` and a `refreshToken`
@@ -129,6 +129,12 @@ When an unexpected error occurs at any time in this diagram, an `INTERNAL` statu
 - Implementation of the [Repository Pattern](https://medium.com/@pererikbergman/repository-design-pattern-e28c0f3e4a30)
 - Works as direct abstraction layer above the database
 - Uses DSL to execute CRUD operations
+
+## Database
+
+The following diagram shows the database schema used in the SnowballR backend.
+
+![snowballr-database-schema.svg](assets/snowballr-database-schema.svg)
 
 ## Architecture Tests
 
