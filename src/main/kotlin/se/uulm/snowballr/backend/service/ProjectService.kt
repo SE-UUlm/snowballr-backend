@@ -132,7 +132,7 @@ class ProjectService(
         val projectId = parseUUID(request.project.id, EntityType.PROJECT)
         val project = repo.getProjectById(projectId)
         val isProjectAdmin = projectMemberRepo.getAllProjectAdmins(projectId).any { it.userId == currentUser.id }
-        val isProjectActiveLocked = project.status == ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED
+        val projectStatus = project.status
 
         if (!isProjectAdmin) {
             verifyServerAdminRole(currentUser) {
@@ -144,12 +144,17 @@ class ProjectService(
                 )
             }
         }
-        if (project.status != ProjectStatus.PROJECT_STATUS_ACTIVE && !isProjectActiveLocked) {
+        if (project.status == ProjectStatus.PROJECT_STATUS_DELETED) {
             throw SnowballRException.FailedPreconditionException(
-                "The project with the id ${request.project.id} is not active.",
+                "The project with the id ${request.project.id} is deleted.",
+            )
+        }
+        if (request.project.status == ProjectStatus.PROJECT_STATUS_DELETED) {
+            throw SnowballRException.FailedPreconditionException(
+                "The project status can not be set to deleted by an update call.",
             )
         }
 
-        return repo.updateProject(request, isProjectActiveLocked).toGrpcProject()
+        return repo.updateProject(request, projectStatus).toGrpcProject()
     }
 }

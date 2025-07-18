@@ -85,11 +85,10 @@ interface IProjectTableRepo {
      * - review_maybe_allowed
      *
      * @param request The update request containing the new project details, such as the new name.
-     * @param isActiveLocked True, if the project is of status [ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED] (only the
-     * name and status can be updated then).
+     * @param projectStatus The status of the project to update.
      * @return The updated [Project] object reflecting the changes from the [request].
      */
-    suspend fun updateProject(request: ProjectOuterClass.Project.Update, isActiveLocked: Boolean): Project
+    suspend fun updateProject(request: ProjectOuterClass.Project.Update, projectStatus: ProjectStatus): Project
 }
 
 /**
@@ -167,28 +166,38 @@ class ProjectTableRepo(
             .map { it.toProject() }
     }
 
-    override suspend fun updateProject(request: ProjectOuterClass.Project.Update, isActiveLocked: Boolean): Project =
-        db.dbQuery {
-            val projectId = parseUUID(request.project.id, EntityType.PROJECT)
-            val fieldMaskPaths = FieldMaskUtil.normalize(request.mask).pathsList.toSet()
+    override suspend fun updateProject(
+        request: ProjectOuterClass.Project.Update,
+        projectStatus: ProjectStatus,
+    ): Project = db.dbQuery {
+        val projectId = parseUUID(request.project.id, EntityType.PROJECT)
+        val fieldMaskPaths = FieldMaskUtil.normalize(request.mask).pathsList.toSet()
 
-            ProjectTable.update({ ProjectTable.id eq projectId }) {
-                it.applyBasicProjectUpdates(request.project, fieldMaskPaths)
-                if (!isActiveLocked) {
-                    it.applySlrProjectUpdates(request.project.settings, fieldMaskPaths)
-                }
-                it[modifiedAt] = OffsetDateTime.now()
+        ProjectTable.update({ ProjectTable.id eq projectId }) {
+            it.applyProjectStatusUpdate(request.project, fieldMaskPaths)
+            if (projectStatus == ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED ||
+                projectStatus == ProjectStatus.PROJECT_STATUS_ACTIVE
+            ) {
+                it.applyProjectNameUpdate(request.project, fieldMaskPaths)
             }
-
-            // Return updated project
-            getProjectByIdOrNull(projectId)
-                ?: throw EntityNotPersistedException(EntityType.PROJECT, projectId.toString())
+            if (projectStatus == ProjectStatus.PROJECT_STATUS_ACTIVE) {
+                it.applySlrProjectUpdates(request.project.settings, fieldMaskPaths)
+            }
+            it[modifiedAt] = OffsetDateTime.now()
         }
 
-    private fun UpdateStatement.applyBasicProjectUpdates(project: ProjectOuterClass.Project, paths: Set<String>) {
+        // Return updated project
+        getProjectByIdOrNull(projectId)
+            ?: throw EntityNotPersistedException(EntityType.PROJECT, projectId.toString())
+    }
+
+    private fun UpdateStatement.applyProjectNameUpdate(project: ProjectOuterClass.Project, paths: Set<String>) {
         if ("project.name" in paths) {
             this[ProjectTable.name] = project.name
         }
+    }
+
+    private fun UpdateStatement.applyProjectStatusUpdate(project: ProjectOuterClass.Project, paths: Set<String>) {
         if ("project.status" in paths) {
             this[ProjectTable.status] = project.status
         }

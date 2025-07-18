@@ -10,6 +10,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.auth.GrpcContext
@@ -30,127 +32,28 @@ class UpdateProjectTest : MainServiceTest() {
         every { GrpcContext.getUserIdFromContext() } throws NotImplementedError()
         coEvery { userRepoMock.getUserById(any()) } throws NotImplementedError()
         coEvery { projectRepoMock.getProjectById(any()) } throws NotImplementedError()
-        coEvery {
-            projectMemberRepoMock.addUserToProject(any(), any())
-        } throws NotImplementedError()
-        coEvery {
-            projectMemberRepoMock.promoteProjectMemberToAdmin(any(), any())
-        } throws NotImplementedError()
         coEvery { projectMemberRepoMock.getAllProjectAdmins(any()) } throws NotImplementedError()
         coEvery { projectRepoMock.updateProject(any(), any()) } throws NotImplementedError()
     }
 
-    @Test
-    fun `When a server admin updates the project information successfully, then no exception is thrown`() = runTest {
+    @ParameterizedTest
+    @CsvSource(
+        value = [
+            "PROJECT_STATUS_ACTIVE",
+            "PROJECT_STATUS_ACTIVE_LOCKED",
+            "PROJECT_STATUS_ARCHIVED",
+        ],
+        delimiter = ':',
+    )
+    fun `When a server admin updates an existing project, then no exception is thrown`(statusName: String) = runTest {
+        val status = ProjectOuterClass.ProjectStatus.valueOf(statusName)
         val user = DataBuilder.createExampleUser(id = dummyUserUUID, role = UserRole.USER_ROLE_ADMIN)
         val project = DataBuilder.createExampleProject(
-            status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE,
+            status = status,
         )
-
         val updatedProject = DataBuilder.createExampleProject(
             id = project.id,
             name = "Updated Project",
-            status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ARCHIVED,
-            similarityThreshold = 1F,
-            snowballingType = ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_FORWARD,
-            reviewMaybeAllowed = false,
-        )
-
-        val updateFieldMask = FieldMaskUtil.fromStringList(
-            listOf("name", "status", "similarityThreshold", "snowballingType", "reviewMaybeAllowed"),
-        )
-        val request = ProjectOuterClass.Project.Update.newBuilder().setProject(
-            updatedProject.toGrpcProject(),
-        ).setMask(updateFieldMask).build()
-
-        every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
-        coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
-        coEvery { projectRepoMock.getProjectById(project.id) } returns project
-        coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
-        coEvery { projectRepoMock.updateProject(request, false) } returns updatedProject
-
-        assertDoesNotThrow { mainService.updateProject(request) }
-    }
-
-    @Test
-    fun `When a project admin updates an ACITVE project, then no exception is thrown`() = runTest {
-        val user = DataBuilder.createExampleUser(id = dummyUserUUID, role = UserRole.USER_ROLE_DEFAULT)
-        val project = DataBuilder.createExampleProject(
-            status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE,
-        )
-        val projectMember = DataBuilder.createExampleProjectMember(userId = user.id, projectId = project.id)
-
-        val updatedProject = DataBuilder.createExampleProject(
-            id = project.id,
-            name = "Updated Project",
-            status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ARCHIVED,
-            similarityThreshold = 1F,
-            snowballingType = ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_FORWARD,
-            reviewMaybeAllowed = false,
-        )
-
-        val updateFieldMask = FieldMaskUtil.fromStringList(
-            listOf("name", "status", "similarityThreshold", "snowballingType", "reviewMaybeAllowed"),
-        )
-        val request = ProjectOuterClass.Project.Update.newBuilder().setProject(
-            updatedProject.toGrpcProject(),
-        ).setMask(updateFieldMask).build()
-
-        every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
-        coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
-        coEvery { projectRepoMock.getProjectById(project.id) } returns project
-        coEvery { projectMemberRepoMock.addUserToProject(dummyUserUUID, project.id) } returns projectMember
-        coEvery { projectMemberRepoMock.promoteProjectMemberToAdmin(project.id, dummyUserUUID) } returns projectMember
-        coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
-        coEvery { projectRepoMock.updateProject(request, false) } returns updatedProject
-
-        assertDoesNotThrow { mainService.updateProject(request) }
-    }
-
-    @Test
-    fun `When a project member updates an ACTIVE project, then an unauthorized exception is thrown`() = runTest {
-        val user = DataBuilder.createExampleUser(id = dummyUserUUID, role = UserRole.USER_ROLE_DEFAULT)
-        val project = DataBuilder.createExampleProject(
-            status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE,
-        )
-        val projectMember = DataBuilder.createExampleProjectMember(userId = user.id, projectId = project.id)
-
-        val updatedProject = DataBuilder.createExampleProject(
-            id = project.id,
-            name = "Updated Project",
-        )
-
-        val updateFieldMask = FieldMaskUtil.fromStringList(listOf("name"))
-        val request = ProjectOuterClass.Project.Update.newBuilder().setProject(
-            updatedProject.toGrpcProject(),
-        ).setMask(updateFieldMask).build()
-
-        every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
-        coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
-        coEvery { projectRepoMock.getProjectById(project.id) } returns project
-        coEvery { projectMemberRepoMock.addUserToProject(dummyUserUUID, project.id) } returns
-            projectMember
-        coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
-        coEvery { projectRepoMock.updateProject(request, false) } returns updatedProject
-
-        assertThrows<SnowballRException.UnauthorizedException.Single> { mainService.updateProject(request) }
-    }
-
-    @Test
-    fun `When a project admin updates an ACITVE_LOCKED project, then no exception is thrown`() = runTest {
-        val user = DataBuilder.createExampleUser(id = dummyUserUUID, role = UserRole.USER_ROLE_DEFAULT)
-        val project = DataBuilder.createExampleProject(
-            status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED,
-        )
-        val projectMember = DataBuilder.createExampleProjectMember(userId = user.id, projectId = project.id)
-
-        val updatedProject = DataBuilder.createExampleProject(
-            id = project.id,
-            name = "Updated Project",
-            status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ARCHIVED,
-            similarityThreshold = 1F,
-            snowballingType = ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_FORWARD,
-            reviewMaybeAllowed = false,
         )
 
         val updateFieldMask = FieldMaskUtil.fromStringList(
@@ -163,22 +66,26 @@ class UpdateProjectTest : MainServiceTest() {
         every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
         coEvery { projectRepoMock.getProjectById(project.id) } returns project
-        coEvery { projectMemberRepoMock.addUserToProject(dummyUserUUID, project.id) } returns
-            projectMember
-        coEvery {
-            projectMemberRepoMock.promoteProjectMemberToAdmin(project.id, dummyUserUUID)
-        } returns projectMember
-        coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
-        coEvery { projectRepoMock.updateProject(request, true) } returns updatedProject
+        coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
+        coEvery { projectRepoMock.updateProject(request, project.status) } returns updatedProject
 
         assertDoesNotThrow { mainService.updateProject(request) }
     }
 
-    @Test
-    fun `When a project member updates an ACTIVE_LOCKED project, then an unauthorized exception is thrown`() = runTest {
+    @ParameterizedTest
+    @CsvSource(
+        value = [
+            "PROJECT_STATUS_ACTIVE",
+            "PROJECT_STATUS_ACTIVE_LOCKED",
+            "PROJECT_STATUS_ARCHIVED",
+        ],
+        delimiter = ':',
+    )
+    fun `When a project admin updates an existing project, then no exception is thrown`(statusName: String) = runTest {
+        val status = ProjectOuterClass.ProjectStatus.valueOf(statusName)
         val user = DataBuilder.createExampleUser(id = dummyUserUUID, role = UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject(
-            status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED,
+            status = status,
         )
         val projectMember = DataBuilder.createExampleProjectMember(userId = user.id, projectId = project.id)
 
@@ -187,6 +94,123 @@ class UpdateProjectTest : MainServiceTest() {
             name = "Updated Project",
         )
 
+        val updateFieldMask = FieldMaskUtil.fromStringList(
+            listOf("name", "status"),
+        )
+        val request = ProjectOuterClass.Project.Update.newBuilder().setProject(
+            updatedProject.toGrpcProject(),
+        ).setMask(updateFieldMask).build()
+
+        every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
+        coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
+        coEvery { projectRepoMock.getProjectById(project.id) } returns project
+        coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
+        coEvery { projectRepoMock.updateProject(request, project.status) } returns updatedProject
+
+        assertDoesNotThrow { mainService.updateProject(request) }
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+        value = [
+            "PROJECT_STATUS_ACTIVE",
+            "PROJECT_STATUS_ACTIVE_LOCKED",
+            "PROJECT_STATUS_ARCHIVED",
+            "PROJECT_STATUS_DELETED",
+        ],
+        delimiter = ':',
+    )
+    fun `When a project member updates an project, then an unauthorized exception is thrown`(statusName: String) =
+        runTest {
+            val status = ProjectOuterClass.ProjectStatus.valueOf(statusName)
+            val user = DataBuilder.createExampleUser(id = dummyUserUUID, role = UserRole.USER_ROLE_DEFAULT)
+            val project = DataBuilder.createExampleProject(
+                status = status,
+            )
+            val updatedProject = DataBuilder.createExampleProject(
+                id = project.id,
+                name = "Updated Project",
+            )
+
+            val updateFieldMask = FieldMaskUtil.fromStringList(listOf("name"))
+            val request = ProjectOuterClass.Project.Update.newBuilder().setProject(
+                updatedProject.toGrpcProject(),
+            ).setMask(updateFieldMask).build()
+
+            every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
+            coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
+            coEvery { projectRepoMock.getProjectById(project.id) } returns project
+            coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
+            coEvery { projectRepoMock.updateProject(request, project.status) } returns updatedProject
+
+            assertThrows<SnowballRException.UnauthorizedException.Single> { mainService.updateProject(request) }
+        }
+
+    @Test
+    fun `When a server admin updates project to the project status DELETED, then an failed precondition exception is thrown`() =
+        runTest {
+            val user = DataBuilder.createExampleUser(id = dummyUserUUID, role = UserRole.USER_ROLE_ADMIN)
+            val project = DataBuilder.createExampleProject(
+                status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE,
+            )
+            val updatedProject = DataBuilder.createExampleProject(
+                id = project.id,
+                name = "Updated Project",
+                status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_DELETED,
+            )
+
+            val updateFieldMask = FieldMaskUtil.fromStringList(listOf("name", "status"))
+            val request = ProjectOuterClass.Project.Update.newBuilder().setProject(
+                updatedProject.toGrpcProject(),
+            ).setMask(updateFieldMask).build()
+
+            every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
+            coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
+            coEvery { projectRepoMock.getProjectById(project.id) } returns project
+            coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
+            coEvery { projectRepoMock.updateProject(request, project.status) } returns updatedProject
+
+            assertThrows<SnowballRException.FailedPreconditionException> { mainService.updateProject(request) }
+        }
+
+    @Test
+    fun `When a project admin updates project to the project status DELETED, then an failed precondition exception is thrown`() =
+        runTest {
+            val user = DataBuilder.createExampleUser(id = dummyUserUUID, role = UserRole.USER_ROLE_DEFAULT)
+            val project = DataBuilder.createExampleProject(
+                status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE,
+            )
+            val updatedProject = DataBuilder.createExampleProject(
+                id = project.id,
+                name = "Updated Project",
+                status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_DELETED,
+            )
+            val projectMember = DataBuilder.createExampleProjectMember(userId = user.id, projectId = project.id)
+
+            val updateFieldMask = FieldMaskUtil.fromStringList(listOf("name", "status"))
+            val request = ProjectOuterClass.Project.Update.newBuilder().setProject(
+                updatedProject.toGrpcProject(),
+            ).setMask(updateFieldMask).build()
+
+            every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
+            coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
+            coEvery { projectRepoMock.getProjectById(project.id) } returns project
+            coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
+            coEvery { projectRepoMock.updateProject(request, project.status) } returns updatedProject
+
+            assertThrows<SnowballRException.FailedPreconditionException> { mainService.updateProject(request) }
+        }
+
+    @Test
+    fun `When a server admin updates a deleted project, then an failed precondition exception is thrown`() = runTest {
+        val user = DataBuilder.createExampleUser(id = dummyUserUUID, role = UserRole.USER_ROLE_ADMIN)
+        val project = DataBuilder.createExampleProject(
+            status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_DELETED,
+        )
+        val updatedProject = DataBuilder.createExampleProject(
+            id = project.id,
+            name = "Updated Project",
+        )
         val updateFieldMask = FieldMaskUtil.fromStringList(listOf("name"))
         val request = ProjectOuterClass.Project.Update.newBuilder().setProject(
             updatedProject.toGrpcProject(),
@@ -195,26 +219,23 @@ class UpdateProjectTest : MainServiceTest() {
         every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
         coEvery { projectRepoMock.getProjectById(project.id) } returns project
-        coEvery { projectMemberRepoMock.addUserToProject(dummyUserUUID, project.id) } returns
-            projectMember
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
-        coEvery { projectRepoMock.updateProject(request, false) } returns updatedProject
+        coEvery { projectRepoMock.updateProject(request, project.status) } returns updatedProject
 
-        assertThrows<SnowballRException.UnauthorizedException.Single> { mainService.updateProject(request) }
+        assertThrows<SnowballRException.FailedPreconditionException> { mainService.updateProject(request) }
     }
 
     @Test
-    fun `When a project admin updates an archived project, then a failed precondition exception is thrown`() = runTest {
+    fun `When a project admin updates a deleted project, then an failed precondition exception is thrown`() = runTest {
         val user = DataBuilder.createExampleUser(id = dummyUserUUID, role = UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject(
-            status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ARCHIVED,
+            status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_DELETED,
         )
-        val projectMember = DataBuilder.createExampleProjectMember(userId = user.id, projectId = project.id)
-
         val updatedProject = DataBuilder.createExampleProject(
             id = project.id,
             name = "Updated Project",
         )
+        val projectMember = DataBuilder.createExampleProjectMember(userId = user.id, projectId = project.id)
 
         val updateFieldMask = FieldMaskUtil.fromStringList(listOf("name"))
         val request = ProjectOuterClass.Project.Update.newBuilder().setProject(
@@ -224,13 +245,8 @@ class UpdateProjectTest : MainServiceTest() {
         every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
         coEvery { projectRepoMock.getProjectById(project.id) } returns project
-        coEvery { projectMemberRepoMock.addUserToProject(dummyUserUUID, project.id) } returns
-            projectMember
-        coEvery {
-            projectMemberRepoMock.promoteProjectMemberToAdmin(project.id, dummyUserUUID)
-        } returns projectMember
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
-        coEvery { projectRepoMock.updateProject(request, false) } returns updatedProject
+        coEvery { projectRepoMock.updateProject(request, project.status) } returns updatedProject
 
         assertThrows<SnowballRException.FailedPreconditionException> { mainService.updateProject(request) }
     }
