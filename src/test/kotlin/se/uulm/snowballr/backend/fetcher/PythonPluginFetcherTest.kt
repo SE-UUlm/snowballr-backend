@@ -1,34 +1,33 @@
 package se.uulm.snowballr.backend.fetcher
 
-import jep.python.PyObject
-import jep.SharedInterpreter
+import com.sun.net.httpserver.HttpExchange
+import com.sun.net.httpserver.HttpHandler
+import com.sun.net.httpserver.HttpServer
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.confirmVerified
+import io.mockk.mockk
 import jep.Jep
-import kotlinx.datetime.Instant
-import kotlinx.coroutines.newSingleThreadContext
+import jep.SharedInterpreter
+import jep.python.PyObject
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.newSingleThreadContext
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import kotlinx.datetime.Instant
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import org.junit.jupiter.api.AfterAll
 import se.uulm.snowballr.backend.model.dto.Paper
-import se.uulm.snowballr.backend.fetcher.FetcherManager
-import java.time.OffsetDateTime
-import java.util.UUID
 import java.net.InetSocketAddress
 import java.nio.file.Path
-import com.sun.net.httpserver.HttpServer
-import com.sun.net.httpserver.HttpHandler
-import com.sun.net.httpserver.HttpExchange
-import io.mockk.mockk
-import io.mockk.coEvery
-import io.mockk.coVerify
-import io.mockk.confirmVerified
+import java.time.OffsetDateTime
+import java.util.UUID
 
 private val examplePaper = Paper(
     UUID.randomUUID(),
@@ -49,7 +48,6 @@ private val examplePaper = Paper(
 @DelicateCoroutinesApi
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class PythonPluginFetcherTest {
-
     private val threadContext = newSingleThreadContext("Test thread")
 
     @BeforeAll
@@ -172,7 +170,10 @@ internal class PythonPluginFetcherTest {
     @Test
     fun `When python returns a paper set, then java can access it as a paper set`() {
         withNewInterpreter { interp ->
-            val set = interp.getValue("""{Paper("foo", "bar"), Paper("x", "y")}""", PyObject::class.java).toSet<PyObject>(interp).map { it.toPaper() }.toSet()
+            val set = interp.getValue(
+                """{Paper("foo", "bar"), Paper("x", "y")}""",
+                PyObject::class.java,
+            ).toSet<PyObject>(interp).map { it.toPaper() }.toSet()
 
             assertEquals(2, set.size)
 
@@ -183,25 +184,35 @@ internal class PythonPluginFetcherTest {
 
     @Test
     fun `When a python fetcher specifies options, then java should read them correctly`() = runTest {
-        val fetcher = PythonPluginFetcher.fromSource("test", """
+        val fetcher = PythonPluginFetcher.fromSource(
+            "test",
+            """
             availableOptions = [
                 "foo",
                 "bar"
             ]
-        """.trimIndent(), Path.of("."), mockk())
+            """.trimIndent(),
+            Path.of("."),
+            mockk(),
+        )
 
         assertEquals(setOf("foo", "bar"), fetcher.getAvailableOptions())
     }
 
     @Test
     fun `When a python fetcher's searchPapers returns papers, then java should read them correctly`() = runTest {
-        val fetcher = PythonPluginFetcher.fromSource("test" ,"""
+        val fetcher = PythonPluginFetcher.fromSource(
+            "test",
+            """
             def searchPapers(searchQuery, options):
                 return {
                     Paper("foo", "bar"),
                     Paper("x", "y"),
                 }
-        """.trimIndent(), Path.of("."), mockk())
+            """.trimIndent(),
+            Path.of("."),
+            mockk(),
+        )
 
         val papers = fetcher.searchPapers("", mapOf())
 
@@ -211,166 +222,226 @@ internal class PythonPluginFetcherTest {
     }
 
     @Test
-    fun `When java passes a searchQuery to a python fetcher's searchPapers, then python should read it correctly`() = runTest {
-        val fetcher = PythonPluginFetcher.fromSource("test" ,"""
-            def searchPapers(searchQuery, options):
-                return {
-                    Paper(searchQuery, ""),
-                }
-        """.trimIndent(), Path.of("."), mockk())
+    fun `When java passes a searchQuery to a python fetcher's searchPapers, then python should read it correctly`() =
+        runTest {
+            val fetcher = PythonPluginFetcher.fromSource(
+                "test",
+                """
+                def searchPapers(searchQuery, options):
+                    return {
+                        Paper(searchQuery, ""),
+                    }
+                """.trimIndent(),
+                Path.of("."),
+                mockk(),
+            )
 
-        val papers = fetcher.searchPapers("foo", mapOf())
+            val papers = fetcher.searchPapers("foo", mapOf())
 
-        assertEquals(1, papers.size)
-        assert(papers.any { it.title == "foo" })
-    }
-
-    @Test
-    fun `When java passes an option to a python fetcher's searchPapers, then python should read it correctly`() = runTest {
-        val fetcher = PythonPluginFetcher.fromSource("test" ,"""
-            def searchPapers(searchQuery, options):
-                return {
-                    Paper(options["foo"], options["x"]),
-                }
-        """.trimIndent(), Path.of("."), mockk())
-
-        val papers = fetcher.searchPapers("", mapOf("foo" to "bar", "x" to "y"))
-
-        assertEquals(1, papers.size)
-        assert(papers.any { it.title == "bar" && it.abstract == "y" })
-    }
+            assertEquals(1, papers.size)
+            assert(papers.any { it.title == "foo" })
+        }
 
     @Test
-    fun `When a python fetcher's fetchForwardReferences returns papers, then java should read them correctly`() = runTest {
-        val fetcher = PythonPluginFetcher.fromSource("test" ,"""
-            def fetchForwardReferences(paper, options):
-                return {
-                    Paper("foo", "bar"),
-                    Paper("x", "y"),
-                }
-        """.trimIndent(), Path.of("."), mockk())
+    fun `When java passes an option to a python fetcher's searchPapers, then python should read it correctly`() =
+        runTest {
+            val fetcher = PythonPluginFetcher.fromSource(
+                "test",
+                """
+                def searchPapers(searchQuery, options):
+                    return {
+                        Paper(options["foo"], options["x"]),
+                    }
+                """.trimIndent(),
+                Path.of("."),
+                mockk(),
+            )
 
-        val papers = fetcher.fetchForwardReferences(examplePaper, mapOf())
+            val papers = fetcher.searchPapers("", mapOf("foo" to "bar", "x" to "y"))
 
-        assertEquals(2, papers.size)
-        assert(papers.any { it.title == "foo" && it.abstract == "bar" })
-        assert(papers.any { it.title == "x" && it.abstract == "y" })
-    }
-
-    @Test
-    fun `When java passes a paper to a python fetcher's fetchForwardReferences, then python should read it correctly`() = runTest {
-        val fetcher = PythonPluginFetcher.fromSource("test" ,"""
-            def fetchForwardReferences(paper, options):
-                return { paper }
-        """.trimIndent(), Path.of("."), mockk())
-
-        val papers = fetcher.fetchForwardReferences(examplePaper, mapOf())
-
-        assertEquals(1, papers.size)
-        assert(papers.any {
-            examplePaper.title == it.title &&
-            examplePaper.abstract == it.abstract &&
-            examplePaper.externalId == it.externalId &&
-            examplePaper.publishedAt?.epochSeconds == it.publishedAt?.epochSeconds &&
-            examplePaper.publisher == it.publisher &&
-            examplePaper.publicationType == it.publicationType &&
-            examplePaper.publicationName == it.publicationName
-        })
-    }
+            assertEquals(1, papers.size)
+            assert(papers.any { it.title == "bar" && it.abstract == "y" })
+        }
 
     @Test
-    fun `When java passes an option to a python fetcher's fetchForwardReferences, then python should read it correctly`() = runTest {
-        val fetcher = PythonPluginFetcher.fromSource("test" ,"""
-            def fetchForwardReferences(paper, options):
-                return {
-                    Paper(options["foo"], options["x"]),
-                }
-        """.trimIndent(), Path.of("."), mockk())
+    fun `When a python fetcher's fetchForwardReferences returns papers, then java should read them correctly`() =
+        runTest {
+            val fetcher = PythonPluginFetcher.fromSource(
+                "test",
+                """
+                def fetchForwardReferences(paper, options):
+                    return {
+                        Paper("foo", "bar"),
+                        Paper("x", "y"),
+                    }
+                """.trimIndent(),
+                Path.of("."),
+                mockk(),
+            )
 
-        val papers = fetcher.fetchForwardReferences(examplePaper, mapOf("foo" to "bar", "x" to "y"))
+            val papers = fetcher.fetchForwardReferences(examplePaper, mapOf())
 
-        assertEquals(1, papers.size)
-        assert(papers.any { it.title == "bar" && it.abstract == "y" })
-    }
-
-    @Test
-    fun `When a python fetcher's fetchBackwardReferences returns papers, then java should read them correctly`() = runTest {
-        val fetcher = PythonPluginFetcher.fromSource("test" ,"""
-            def fetchBackwardReferences(paper, options):
-                return {
-                    Paper("foo", "bar"),
-                    Paper("x", "y"),
-                }
-        """.trimIndent(), Path.of("."), mockk())
-
-        val papers = fetcher.fetchBackwardReferences(examplePaper, mapOf())
-
-        assertEquals(2, papers.size)
-        assert(papers.any { it.title == "foo" && it.abstract == "bar" })
-        assert(papers.any { it.title == "x" && it.abstract == "y" })
-    }
+            assertEquals(2, papers.size)
+            assert(papers.any { it.title == "foo" && it.abstract == "bar" })
+            assert(papers.any { it.title == "x" && it.abstract == "y" })
+        }
 
     @Test
-    fun `When java passes a paper to a python fetcher's fetchBackwardReferences, then python should read it correctly`() = runTest {
-        val fetcher = PythonPluginFetcher.fromSource("test" ,"""
-            def fetchBackwardReferences(paper, options):
-                return { paper }
-        """.trimIndent(), Path.of("."), mockk())
+    fun `When java passes a paper to a python fetcher's fetchForwardReferences, then python should read it correctly`() =
+        runTest {
+            val fetcher = PythonPluginFetcher.fromSource(
+                "test",
+                """
+                def fetchForwardReferences(paper, options):
+                    return { paper }
+                """.trimIndent(),
+                Path.of("."),
+                mockk(),
+            )
 
-        val papers = fetcher.fetchBackwardReferences(examplePaper, mapOf())
+            val papers = fetcher.fetchForwardReferences(examplePaper, mapOf())
 
-        assertEquals(1, papers.size)
-        assert(papers.any {
-            examplePaper.title == it.title &&
-            examplePaper.abstract == it.abstract &&
-            examplePaper.externalId == it.externalId &&
-            examplePaper.publishedAt?.epochSeconds == it.publishedAt?.epochSeconds &&
-            examplePaper.publisher == it.publisher &&
-            examplePaper.publicationType == it.publicationType &&
-            examplePaper.publicationName == it.publicationName
-        })
-    }
+            assertEquals(1, papers.size)
+            assert(
+                papers.any {
+                    examplePaper.title == it.title &&
+                        examplePaper.abstract == it.abstract &&
+                        examplePaper.externalId == it.externalId &&
+                        examplePaper.publishedAt?.epochSeconds == it.publishedAt?.epochSeconds &&
+                        examplePaper.publisher == it.publisher &&
+                        examplePaper.publicationType == it.publicationType &&
+                        examplePaper.publicationName == it.publicationName
+                },
+            )
+        }
 
     @Test
-    fun `When java passes an option to a python fetcher's fetchBackwardReferences, then python should read it correctly`() = runTest {
-        val fetcher = PythonPluginFetcher.fromSource("test" ,"""
-            def fetchBackwardReferences(paper, options):
-                return {
-                    Paper(options["foo"], options["x"]),
-                }
-        """.trimIndent(), Path.of("."), mockk())
+    fun `When java passes an option to a python fetcher's fetchForwardReferences, then python should read it correctly`() =
+        runTest {
+            val fetcher = PythonPluginFetcher.fromSource(
+                "test",
+                """
+                def fetchForwardReferences(paper, options):
+                    return {
+                        Paper(options["foo"], options["x"]),
+                    }
+                """.trimIndent(),
+                Path.of("."),
+                mockk(),
+            )
 
-        val papers = fetcher.fetchBackwardReferences(examplePaper, mapOf("foo" to "bar", "x" to "y"))
+            val papers = fetcher.fetchForwardReferences(examplePaper, mapOf("foo" to "bar", "x" to "y"))
 
-        assertEquals(1, papers.size)
-        assert(papers.any { it.title == "bar" && it.abstract == "y" })
-    }
+            assertEquals(1, papers.size)
+            assert(papers.any { it.title == "bar" && it.abstract == "y" })
+        }
+
+    @Test
+    fun `When a python fetcher's fetchBackwardReferences returns papers, then java should read them correctly`() =
+        runTest {
+            val fetcher = PythonPluginFetcher.fromSource(
+                "test",
+                """
+                def fetchBackwardReferences(paper, options):
+                    return {
+                        Paper("foo", "bar"),
+                        Paper("x", "y"),
+                    }
+                """.trimIndent(),
+                Path.of("."),
+                mockk(),
+            )
+
+            val papers = fetcher.fetchBackwardReferences(examplePaper, mapOf())
+
+            assertEquals(2, papers.size)
+            assert(papers.any { it.title == "foo" && it.abstract == "bar" })
+            assert(papers.any { it.title == "x" && it.abstract == "y" })
+        }
+
+    @Test
+    fun `When java passes a paper to a python fetcher's fetchBackwardReferences, then python should read it correctly`() =
+        runTest {
+            val fetcher = PythonPluginFetcher.fromSource(
+                "test",
+                """
+                def fetchBackwardReferences(paper, options):
+                    return { paper }
+                """.trimIndent(),
+                Path.of("."),
+                mockk(),
+            )
+
+            val papers = fetcher.fetchBackwardReferences(examplePaper, mapOf())
+
+            assertEquals(1, papers.size)
+            assert(
+                papers.any {
+                    examplePaper.title == it.title &&
+                        examplePaper.abstract == it.abstract &&
+                        examplePaper.externalId == it.externalId &&
+                        examplePaper.publishedAt?.epochSeconds == it.publishedAt?.epochSeconds &&
+                        examplePaper.publisher == it.publisher &&
+                        examplePaper.publicationType == it.publicationType &&
+                        examplePaper.publicationName == it.publicationName
+                },
+            )
+        }
+
+    @Test
+    fun `When java passes an option to a python fetcher's fetchBackwardReferences, then python should read it correctly`() =
+        runTest {
+            val fetcher = PythonPluginFetcher.fromSource(
+                "test",
+                """
+                def fetchBackwardReferences(paper, options):
+                    return {
+                        Paper(options["foo"], options["x"]),
+                    }
+                """.trimIndent(),
+                Path.of("."),
+                mockk(),
+            )
+
+            val papers = fetcher.fetchBackwardReferences(examplePaper, mapOf("foo" to "bar", "x" to "y"))
+
+            assertEquals(1, papers.size)
+            assert(papers.any { it.title == "bar" && it.abstract == "y" })
+        }
 
     // This test could fail even though the implementation is correct. Because
     // a real http connection to a real ad-hoc http server is established, it
     // is possible that the used port (62843) is already in use.
     @Test
     fun `When a python fetcher uses the requests module, then it is able to fetch web resources`() = runTest {
-        val server = HttpServer.create(InetSocketAddress(62843), 0)
-        server.createContext("/", object : HttpHandler {
-            override fun handle(t: HttpExchange) {
-                val response = "foobar"
-                t.sendResponseHeaders(200, response.length.toLong())
-                with(t.responseBody) {
-                    write(response.toByteArray())
-                    close()
+        val server = HttpServer.create(InetSocketAddress(62_843), 0)
+        server.createContext(
+            "/",
+            object : HttpHandler {
+                override fun handle(t: HttpExchange) {
+                    val response = "foobar"
+                    t.sendResponseHeaders(200, response.length.toLong())
+                    with(t.responseBody) {
+                        write(response.toByteArray())
+                        close()
+                    }
                 }
-            }
-        })
+            },
+        )
         server.start()
 
-        val fetcher = PythonPluginFetcher.fromSource("test" ,"""
+        val fetcher = PythonPluginFetcher.fromSource(
+            "test",
+            """
             import requests
 
             availableOptions = {
                 requests.get("http://127.0.0.1:62843/").text
             }
-        """.trimIndent(), Path.of("."), mockk())
+            """.trimIndent(),
+            Path.of("."),
+            mockk(),
+        )
 
         val opts = fetcher.getAvailableOptions()
         assertEquals(setOf("foobar"), opts)
@@ -379,35 +450,43 @@ internal class PythonPluginFetcherTest {
     }
 
     @Test
-    fun `When a python fetcher uses the exposed java fetcherManager, then it is able to make requests to other fetchers`() = runTest {
-        val fetcherManager = mockk<FetcherManager>()
+    fun `When a python fetcher uses the exposed java fetcherManager, then it is able to make requests to other fetchers`() =
+        runTest {
+            val fetcherManager = mockk<FetcherManager>()
 
-        coEvery { fetcherManager.getAvailableFetchers() } returns setOf("foo")
-        coEvery { fetcherManager.getAvailableOptions("foo") } returns setOf("bar")
-        coEvery { fetcherManager.searchPapers("foo", any(), any()) } returns setOf(examplePaper)
+            coEvery { fetcherManager.getAvailableFetchers() } returns setOf("foo")
+            coEvery { fetcherManager.getAvailableOptions("foo") } returns setOf("bar")
+            coEvery { fetcherManager.searchPapers("foo", any(), any()) } returns setOf(examplePaper)
 
-        val fetcher = PythonPluginFetcher.fromSource("test" ,"""
-            availableOptions = fetchers.getAvailableOptions("foo")
+            val fetcher = PythonPluginFetcher.fromSource(
+                "test",
+                """
+                availableOptions = fetchers.getAvailableOptions("foo")
 
-            def searchPapers(searchQuery, options):
-                return fetchers.searchPapers("foo", "x", { "y": "z" })
-        """.trimIndent(), Path.of("."), fetcherManager)
+                def searchPapers(searchQuery, options):
+                    return fetchers.searchPapers("foo", "x", { "y": "z" })
+                """.trimIndent(),
+                Path.of("."),
+                fetcherManager,
+            )
 
-        assertEquals(setOf("bar"), fetcher.getAvailableOptions())
-        assert(fetcher.searchPapers("", mapOf()).any {
-            examplePaper.title == it.title &&
-            examplePaper.abstract == it.abstract &&
-            examplePaper.externalId == it.externalId &&
-            examplePaper.publishedAt?.epochSeconds == it.publishedAt?.epochSeconds &&
-            examplePaper.publisher == it.publisher &&
-            examplePaper.publicationType == it.publicationType &&
-            examplePaper.publicationName == it.publicationName
-        })
+            assertEquals(setOf("bar"), fetcher.getAvailableOptions())
+            assert(
+                fetcher.searchPapers("", mapOf()).any {
+                    examplePaper.title == it.title &&
+                        examplePaper.abstract == it.abstract &&
+                        examplePaper.externalId == it.externalId &&
+                        examplePaper.publishedAt?.epochSeconds == it.publishedAt?.epochSeconds &&
+                        examplePaper.publisher == it.publisher &&
+                        examplePaper.publicationType == it.publicationType &&
+                        examplePaper.publicationName == it.publicationName
+                },
+            )
 
-        coVerify {
-            fetcherManager.getAvailableOptions("foo")
-            fetcherManager.searchPapers("foo", "x", mapOf("y" to "z"))
+            coVerify {
+                fetcherManager.getAvailableOptions("foo")
+                fetcherManager.searchPapers("foo", "x", mapOf("y" to "z"))
+            }
+            confirmVerified(fetcherManager)
         }
-        confirmVerified(fetcherManager)
-    }
 }

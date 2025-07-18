@@ -84,7 +84,7 @@ open class MainServiceTest {
             userRepoMock,
             projectMemberRepoMock,
             jwtServiceMock,
-            envReader
+            envReader,
         )
 
     @BeforeAll

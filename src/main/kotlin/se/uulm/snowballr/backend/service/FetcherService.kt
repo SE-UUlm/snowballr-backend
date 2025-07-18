@@ -1,11 +1,11 @@
 package se.uulm.snowballr.backend.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import se.uulm.snowballr.backend.fetcher.FetcherManager
-import snowballr.Main.AvailableFetcherApis
-import se.uulm.snowballr.backend.fetcher.PythonPluginFetcher
-import se.uulm.snowballr.backend.env.Env
 import se.uulm.snowballr.backend.env.EnvReader
+import se.uulm.snowballr.backend.fetcher.FetcherManager
+import se.uulm.snowballr.backend.fetcher.PythonPluginFetcher
+import snowballr.Main.AvailableFetcherApis
+import java.io.IOException
 import java.nio.file.Path
 import kotlin.io.path.createDirectories
 import kotlin.io.path.extension
@@ -49,6 +49,7 @@ class FetcherService(
         .addAllFetcherApis(fetcherManager.getAvailableFetchers())
         .build()
 
+    @Suppress("TooGenericExceptionCaught")
     private fun loadPythonFetcherPlugins(pluginDirectory: Path) {
         ensureDirectoryExists(pluginDirectory)
         val pluginFiles = pluginDirectory
@@ -66,7 +67,10 @@ class FetcherService(
         for (path in pluginFiles) {
             val name = path.nameWithoutExtension
             try {
-                fetcherManager.registerFetcher(name, PythonPluginFetcher.fromFile(name, path, pluginDirectory, fetcherManager))
+                fetcherManager.registerFetcher(
+                    name,
+                    PythonPluginFetcher.fromFile(name, path, pluginDirectory, fetcherManager),
+                )
                 successful++
             } catch (e: Exception) {
                 logger.atError {
@@ -88,7 +92,7 @@ class FetcherService(
             path.createDirectories()
             logger.info { "Created directory '$path'" }
             return true
-        } catch (e: Exception) {
+        } catch (e: IOException) {
             logger.error(e) { "Could not create directory '$path'" }
             return false
         }

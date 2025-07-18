@@ -1,25 +1,24 @@
 package se.uulm.snowballr.backend.fetcher
 
-import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.oshai.kotlinlogging.KLogger
+import io.github.oshai.kotlinlogging.KotlinLogging
 import jep.Jep
 import jep.MainInterpreter
 import jep.SharedInterpreter
 import jep.python.PyBuiltins
-import jep.python.PyObject
 import jep.python.PyCallable
-import kotlinx.datetime.Instant
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.asCoroutineDispatcher
+import jep.python.PyObject
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Instant
 import se.uulm.snowballr.backend.model.dto.Paper
-import se.uulm.snowballr.backend.fetcher.FetcherManager
+import java.nio.file.Path
 import java.time.OffsetDateTime
 import java.util.HashMap
 import java.util.UUID
 import java.util.concurrent.Executors
-import java.nio.file.Path
 import kotlin.io.path.readText
 import kotlin.io.path.writeText
 
@@ -62,7 +61,13 @@ class PythonPluginFetcher : IFetcher {
             path.writeText(dataTypesModuleContent())
         }
 
-        fun fromFile(name: String, path: Path, cwd: Path, fetcherManager: FetcherManager): PythonPluginFetcher = fromSource(name, path.readText(), cwd, fetcherManager)
+        fun fromFile(name: String, path: Path, cwd: Path, fetcherManager: FetcherManager): PythonPluginFetcher =
+            fromSource(
+                name,
+                path.readText(),
+                cwd,
+                fetcherManager,
+            )
 
         fun fromSource(name: String, source: String, cwd: Path, fetcherManager: FetcherManager): PythonPluginFetcher {
             val thread = Executors.newSingleThreadExecutor {
@@ -83,10 +88,15 @@ class PythonPluginFetcher : IFetcher {
                 // Workaround used to make ruff and lsp not complain about
                 // missing definitions
                 interp.getValue("__import__('builtins')", PyObject::class.java)
-                    .setAttr("snowballr", builtins.dict(mapOf(
-                        "log" to PythonLogger(name),
-                        "fetchers" to PythonFetcherManager(fetcherManager, interp, thread)
-                    )) )
+                    .setAttr(
+                        "snowballr",
+                        builtins.dict(
+                            mapOf(
+                                "log" to PythonLogger(name),
+                                "fetchers" to PythonFetcherManager(fetcherManager, interp, thread),
+                            ),
+                        ),
+                    )
 
                 interp.exec(dataTypesModuleContent())
                 interp.exec(source)
@@ -110,22 +120,37 @@ class PythonPluginFetcher : IFetcher {
         interp.getValue("availableOptions", PyObject::class.java).toSet<String>(interp)
     }
 
-    override suspend fun searchPapers(searchQuery: String, options: Map<String, String>): Set<Paper> = withContext(thread) {
-        interp.getValue("searchPapers", PyCallable::class.java).callAs(PyObject::class.java, searchQuery, options.toPyObject(interp))
+    override suspend fun searchPapers(searchQuery: String, options: Map<String, String>): Set<Paper> = withContext(
+        thread,
+    ) {
+        interp.getValue(
+            "searchPapers",
+            PyCallable::class.java,
+        ).callAs(PyObject::class.java, searchQuery, options.toPyObject(interp))
             .toSet<PyObject>(interp)
             .map { it.toPaper() }
             .toSet()
     }
 
-    override suspend fun fetchForwardReferences(paper: Paper, options: Map<String, String>): Set<Paper> = withContext(thread) {
-        interp.getValue("fetchForwardReferences", PyCallable::class.java).callAs(PyObject::class.java, paper.toPyObject(interp), options.toPyObject(interp))
+    override suspend fun fetchForwardReferences(paper: Paper, options: Map<String, String>): Set<Paper> = withContext(
+        thread,
+    ) {
+        interp.getValue(
+            "fetchForwardReferences",
+            PyCallable::class.java,
+        ).callAs(PyObject::class.java, paper.toPyObject(interp), options.toPyObject(interp))
             .toSet<PyObject>(interp)
             .map { it.toPaper() }
             .toSet()
     }
 
-    override suspend fun fetchBackwardReferences(paper: Paper, options: Map<String, String>): Set<Paper> = withContext(thread) {
-        interp.getValue("fetchBackwardReferences", PyCallable::class.java).callAs(PyObject::class.java, paper.toPyObject(interp), options.toPyObject(interp))
+    override suspend fun fetchBackwardReferences(paper: Paper, options: Map<String, String>): Set<Paper> = withContext(
+        thread,
+    ) {
+        interp.getValue(
+            "fetchBackwardReferences",
+            PyCallable::class.java,
+        ).callAs(PyObject::class.java, paper.toPyObject(interp), options.toPyObject(interp))
             .toSet<PyObject>(interp)
             .map { it.toPaper() }
             .toSet()
@@ -159,7 +184,6 @@ private class PythonFetcherManager(
         fetcherManager.getAvailableOptions(fetcher)
     }.toPyObject(interp)
 
-
     fun searchPapers(fetcher: String, searchQuery: String, options: PyObject): PyObject = runBlocking {
         fetcherManager.searchPapers(fetcher, searchQuery, options.toOptionsMap())
     }.map { it.toPyObject(interp) }.toSet().toPyObject(interp)
@@ -169,7 +193,7 @@ private class PythonFetcherManager(
     }.map { it.toPyObject(interp) }.toSet().toPyObject(interp)
 
     fun fetchBackwardReferences(fetcher: String, paper: PyObject, options: PyObject): PyObject = runBlocking {
-            fetcherManager.fetchBackwardReferences(fetcher, paper.toPaper(), options.toOptionsMap())
+        fetcherManager.fetchBackwardReferences(fetcher, paper.toPaper(), options.toOptionsMap())
     }.map { it.toPyObject(interp) }.toSet().toPyObject(interp)
 }
 
@@ -192,9 +216,9 @@ fun PyObject.toPaper(): Paper = Paper(
     null,
 )
 
-fun<T> Set<T>.toPyObject(interp: Jep): PyObject = PyBuiltins.get(interp).set(this)
+fun <T> Set<T>.toPyObject(interp: Jep): PyObject = PyBuiltins.get(interp).set(this)
 
-inline fun<reified T> PyObject.toSet(interp: Jep): Set<T> {
+inline fun <reified T> PyObject.toSet(interp: Jep): Set<T> {
     val builtins = interp.getValue("__import__('builtins')", PyObject::class.java)
     val lenBuiltin = builtins.getAttr("len", PyCallable::class.java)
     val iterBuiltin = builtins.getAttr("iter", PyCallable::class.java)
@@ -205,7 +229,7 @@ inline fun<reified T> PyObject.toSet(interp: Jep): Set<T> {
     val map = HashSet<T>()
     val iterator = iterBuiltin.call(this) as PyObject
 
-    for (i in 1..len) {
+    repeat(len.toInt()) {
         map.add(nextBuiltin.callAs(T::class.java, iterator))
     }
 

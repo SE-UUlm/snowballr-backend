@@ -1,11 +1,11 @@
 package se.uulm.snowballr.backend.service
 
 import se.uulm.snowballr.backend.auth.IJwtService
+import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
-import se.uulm.snowballr.backend.env.EnvReader
 
 /**
  * The [IMainService] interface provides a unified contract that combines the responsibilities of all sub-services. It
@@ -33,6 +33,7 @@ interface IMainService :
  * @param userRepo The repository responsible for handling persistence operations related to users.
  * @param projectMemberRepo The repository responsible for handling persistence operations related to project members.
  * @param jwtService The utility for handling JWT operations, such as token parsing and validation.
+ * @param envReader Providing environment variables.
  */
 class MainService(
     private val projectRepo: IProjectTableRepo,

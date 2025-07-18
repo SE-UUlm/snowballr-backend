@@ -43,6 +43,7 @@ to a running SnowballR backend instance.
 - Your favourite code editor.
 
 These commands should get you started:
+
 - Fedora: `dnf install -y python3 python3-devel python3-pip  java-21-openjdk-devel gcc`
 - Ubuntu: `apt install --update -y python3 python3-dev python3-pip python3-venv openjdk-21-jdk gcc`
 - Other: The packages should have similar names.
