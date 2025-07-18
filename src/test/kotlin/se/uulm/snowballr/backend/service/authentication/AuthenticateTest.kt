@@ -5,9 +5,7 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
 import se.uulm.snowballr.backend.GrpcTestContextExtension
 import se.uulm.snowballr.backend.auth.GrpcContext
@@ -23,19 +21,13 @@ import kotlin.test.assertTrue
 
 @ExperimentalCoroutinesApi
 @DelicateCoroutinesApi
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ExtendWith(GrpcTestContextExtension::class)
 class AuthenticateTest {
-    private val jwtServiceMock = mockk<JwtService>()
-    private lateinit var authenticationService: AuthenticationService
-
-    @BeforeAll
-    fun setUpTest() {
-        every { jwtServiceMock.getAccessTokenTTL() } returns JwtService.ACCESS_TOKEN_EXPIRATION_MS
-        every { jwtServiceMock.getRefreshTokenTTL() } returns JwtService.REFRESH_TOKEN_EXPIRATION_MS
-
-        authenticationService = AuthenticationService(jwtServiceMock)
+    private val jwtServiceMock = mockk<JwtService> {
+        every { getAccessTokenTTL() } returns JwtService.ACCESS_TOKEN_EXPIRATION_MS
+        every { getRefreshTokenTTL() } returns JwtService.REFRESH_TOKEN_EXPIRATION_MS
     }
+    private val authenticationService = AuthenticationService(jwtServiceMock)
 
     @Test
     fun `When access token is valid, then authentication succeeds`() {
