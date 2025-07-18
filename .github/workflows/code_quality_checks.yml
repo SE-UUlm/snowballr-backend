@@ -49,6 +49,17 @@ jobs:
                   java_version: ${{ env.java_version }}
                   java_distribution: ${{ env.java_distribution }}
 
+            - name: Write Python Dependencies to requirements.txt
+              run: echo -e "jep==4.2.2\nrequests==2.32.4" > ./requirements.txt
+
+            - uses: actions/setup-python@v5
+              with:
+                python-version: '3.13'
+                cache: "pip"
+
+            - name: Install Python Plugin Fetcher Dependencies
+              run: pip install -r requirements.txt
+
             - name: Run tests and collect coverage
               run: |
                   ./gradlew test
