@@ -35,21 +35,26 @@ val jepLocatorScript = """
 
 class PythonPluginFetcher : IFetcher {
     companion object {
+        private var nativeLibraryLoaded = false
+
         fun locateNativeLibrary() {
-            val process = ProcessBuilder()
-                .command("python3", "-")
-                .redirectInput(ProcessBuilder.Redirect.PIPE)
-                .redirectOutput(ProcessBuilder.Redirect.PIPE)
-                .start()
+            if (!nativeLibraryLoaded) {
+                nativeLibraryLoaded = true
+                val process = ProcessBuilder()
+                    .command("python3", "-")
+                    .redirectInput(ProcessBuilder.Redirect.PIPE)
+                    .redirectOutput(ProcessBuilder.Redirect.PIPE)
+                    .start()
 
-            with(process.outputStream) {
-                write(jepLocatorScript.toByteArray(Charsets.UTF_8))
-                close()
+                with(process.outputStream) {
+                    write(jepLocatorScript.toByteArray(Charsets.UTF_8))
+                    close()
+                }
+
+                val ret = process.inputStream.bufferedReader().readLine()
+                logger.info { "Located Jep C Library: $ret" }
+                MainInterpreter.setJepLibraryPath(ret)
             }
-
-            val ret = process.inputStream.bufferedReader().readLine()
-            logger.info { "Located Jep C Library: $ret" }
-            MainInterpreter.setJepLibraryPath(ret)
         }
 
         fun dataTypesModuleContent() = this::class.java
