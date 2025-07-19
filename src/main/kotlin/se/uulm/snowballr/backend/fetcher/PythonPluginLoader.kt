@@ -159,7 +159,7 @@ class PythonPluginLoader(
                 .bufferedReader()
                 .readText()
 
-            val pythonSnowballrTypes = fetcherResource("lib/PythonSnowballrTypes.py")
+            val pythonSnowballrTypes = fetcherResource("lib/snowballr.py")
         }
     }
 }
