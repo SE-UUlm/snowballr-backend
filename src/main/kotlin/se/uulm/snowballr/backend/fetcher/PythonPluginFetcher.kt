@@ -20,7 +20,6 @@ import java.util.HashMap
 import java.util.UUID
 import java.util.concurrent.Executors
 import kotlin.io.path.readText
-import kotlin.io.path.writeText
 
 private val logger = KotlinLogging.logger {}
 
@@ -55,15 +54,6 @@ class PythonPluginFetcher : IFetcher {
                 logger.info { "Located Jep C Library: $ret" }
                 MainInterpreter.setJepLibraryPath(ret)
             }
-        }
-
-        fun dataTypesModuleContent() = this::class.java
-            .getResourceAsStream("/PythonSnowballrTypes.py")
-            .bufferedReader()
-            .readText()
-
-        fun writeDataTypesModule(path: Path) {
-            path.writeText(dataTypesModuleContent())
         }
 
         fun fromFile(name: String, path: Path, cwd: Path, fetcherManager: FetcherManager): PythonPluginFetcher =
@@ -103,7 +93,6 @@ class PythonPluginFetcher : IFetcher {
                         ),
                     )
 
-                interp.exec(dataTypesModuleContent())
                 interp.exec(source)
                 interp
             }

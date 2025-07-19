@@ -68,9 +68,21 @@ internal class PythonPluginFetcherTest {
 
     private fun withNewInterpreter(block: (Jep) -> Unit) {
         val interp = SharedInterpreter()
-        interp.exec(PythonPluginFetcher.dataTypesModuleContent())
+        interp.exec(PythonPluginLoader.Resources.pythonSnowballrTypes)
         interp.use(block)
     }
+
+    private fun newPythonPluginFetcher(
+        name: String,
+        source: String,
+        fetcherManager: FetcherManager = mockk(),
+        cwd: Path = Path.of("."),
+    ) = PythonPluginFetcher.fromSource(
+        name,
+        PythonPluginLoader.Resources.pythonSnowballrTypes + "\n" + source,
+        cwd,
+        fetcherManager,
+    )
 
     @Test
     fun `When an options-map is convert to a PyObject, then python should be able to correctly access it`() {
@@ -184,7 +196,7 @@ internal class PythonPluginFetcherTest {
 
     @Test
     fun `When a python fetcher specifies options, then java should read them correctly`() = runTest {
-        val fetcher = PythonPluginFetcher.fromSource(
+        val fetcher = newPythonPluginFetcher(
             "test",
             """
             availableOptions = [
@@ -192,8 +204,6 @@ internal class PythonPluginFetcherTest {
                 "bar"
             ]
             """.trimIndent(),
-            Path.of("."),
-            mockk(),
         )
 
         assertEquals(setOf("foo", "bar"), fetcher.getAvailableOptions())
@@ -201,7 +211,7 @@ internal class PythonPluginFetcherTest {
 
     @Test
     fun `When a python fetcher's searchPapers returns papers, then java should read them correctly`() = runTest {
-        val fetcher = PythonPluginFetcher.fromSource(
+        val fetcher = newPythonPluginFetcher(
             "test",
             """
             def searchPapers(searchQuery, options):
@@ -210,8 +220,6 @@ internal class PythonPluginFetcherTest {
                     Paper("x", "y"),
                 }
             """.trimIndent(),
-            Path.of("."),
-            mockk(),
         )
 
         val papers = fetcher.searchPapers("", mapOf())
@@ -224,7 +232,7 @@ internal class PythonPluginFetcherTest {
     @Test
     fun `When java passes a searchQuery to a python fetcher's searchPapers, then python should read it correctly`() =
         runTest {
-            val fetcher = PythonPluginFetcher.fromSource(
+            val fetcher = newPythonPluginFetcher(
                 "test",
                 """
                 def searchPapers(searchQuery, options):
@@ -232,8 +240,6 @@ internal class PythonPluginFetcherTest {
                         Paper(searchQuery, ""),
                     }
                 """.trimIndent(),
-                Path.of("."),
-                mockk(),
             )
 
             val papers = fetcher.searchPapers("foo", mapOf())
@@ -245,7 +251,7 @@ internal class PythonPluginFetcherTest {
     @Test
     fun `When java passes an option to a python fetcher's searchPapers, then python should read it correctly`() =
         runTest {
-            val fetcher = PythonPluginFetcher.fromSource(
+            val fetcher = newPythonPluginFetcher(
                 "test",
                 """
                 def searchPapers(searchQuery, options):
@@ -253,8 +259,6 @@ internal class PythonPluginFetcherTest {
                         Paper(options["foo"], options["x"]),
                     }
                 """.trimIndent(),
-                Path.of("."),
-                mockk(),
             )
 
             val papers = fetcher.searchPapers("", mapOf("foo" to "bar", "x" to "y"))
@@ -266,7 +270,7 @@ internal class PythonPluginFetcherTest {
     @Test
     fun `When a python fetcher's fetchForwardReferences returns papers, then java should read them correctly`() =
         runTest {
-            val fetcher = PythonPluginFetcher.fromSource(
+            val fetcher = newPythonPluginFetcher(
                 "test",
                 """
                 def fetchForwardReferences(paper, options):
@@ -275,8 +279,6 @@ internal class PythonPluginFetcherTest {
                         Paper("x", "y"),
                     }
                 """.trimIndent(),
-                Path.of("."),
-                mockk(),
             )
 
             val papers = fetcher.fetchForwardReferences(examplePaper, mapOf())
@@ -289,14 +291,12 @@ internal class PythonPluginFetcherTest {
     @Test
     fun `When java passes a paper to a python fetcher's fetchForwardReferences, then python should read it correctly`() =
         runTest {
-            val fetcher = PythonPluginFetcher.fromSource(
+            val fetcher = newPythonPluginFetcher(
                 "test",
                 """
                 def fetchForwardReferences(paper, options):
                     return { paper }
                 """.trimIndent(),
-                Path.of("."),
-                mockk(),
             )
 
             val papers = fetcher.fetchForwardReferences(examplePaper, mapOf())
@@ -318,7 +318,7 @@ internal class PythonPluginFetcherTest {
     @Test
     fun `When java passes an option to a python fetcher's fetchForwardReferences, then python should read it correctly`() =
         runTest {
-            val fetcher = PythonPluginFetcher.fromSource(
+            val fetcher = newPythonPluginFetcher(
                 "test",
                 """
                 def fetchForwardReferences(paper, options):
@@ -326,8 +326,6 @@ internal class PythonPluginFetcherTest {
                         Paper(options["foo"], options["x"]),
                     }
                 """.trimIndent(),
-                Path.of("."),
-                mockk(),
             )
 
             val papers = fetcher.fetchForwardReferences(examplePaper, mapOf("foo" to "bar", "x" to "y"))
@@ -339,7 +337,7 @@ internal class PythonPluginFetcherTest {
     @Test
     fun `When a python fetcher's fetchBackwardReferences returns papers, then java should read them correctly`() =
         runTest {
-            val fetcher = PythonPluginFetcher.fromSource(
+            val fetcher = newPythonPluginFetcher(
                 "test",
                 """
                 def fetchBackwardReferences(paper, options):
@@ -348,8 +346,6 @@ internal class PythonPluginFetcherTest {
                         Paper("x", "y"),
                     }
                 """.trimIndent(),
-                Path.of("."),
-                mockk(),
             )
 
             val papers = fetcher.fetchBackwardReferences(examplePaper, mapOf())
@@ -362,14 +358,12 @@ internal class PythonPluginFetcherTest {
     @Test
     fun `When java passes a paper to a python fetcher's fetchBackwardReferences, then python should read it correctly`() =
         runTest {
-            val fetcher = PythonPluginFetcher.fromSource(
+            val fetcher = newPythonPluginFetcher(
                 "test",
                 """
                 def fetchBackwardReferences(paper, options):
                     return { paper }
                 """.trimIndent(),
-                Path.of("."),
-                mockk(),
             )
 
             val papers = fetcher.fetchBackwardReferences(examplePaper, mapOf())
@@ -391,7 +385,7 @@ internal class PythonPluginFetcherTest {
     @Test
     fun `When java passes an option to a python fetcher's fetchBackwardReferences, then python should read it correctly`() =
         runTest {
-            val fetcher = PythonPluginFetcher.fromSource(
+            val fetcher = newPythonPluginFetcher(
                 "test",
                 """
                 def fetchBackwardReferences(paper, options):
@@ -399,8 +393,6 @@ internal class PythonPluginFetcherTest {
                         Paper(options["foo"], options["x"]),
                     }
                 """.trimIndent(),
-                Path.of("."),
-                mockk(),
             )
 
             val papers = fetcher.fetchBackwardReferences(examplePaper, mapOf("foo" to "bar", "x" to "y"))
@@ -430,7 +422,7 @@ internal class PythonPluginFetcherTest {
         )
         server.start()
 
-        val fetcher = PythonPluginFetcher.fromSource(
+        val fetcher = newPythonPluginFetcher(
             "test",
             """
             import requests
@@ -439,8 +431,6 @@ internal class PythonPluginFetcherTest {
                 requests.get("http://127.0.0.1:62843/").text
             }
             """.trimIndent(),
-            Path.of("."),
-            mockk(),
         )
 
         val opts = fetcher.getAvailableOptions()
@@ -458,7 +448,7 @@ internal class PythonPluginFetcherTest {
             coEvery { fetcherManager.getAvailableOptions("foo") } returns setOf("bar")
             coEvery { fetcherManager.searchPapers("foo", any(), any()) } returns setOf(examplePaper)
 
-            val fetcher = PythonPluginFetcher.fromSource(
+            val fetcher = newPythonPluginFetcher(
                 "test",
                 """
                 availableOptions = fetchers.getAvailableOptions("foo")
@@ -466,7 +456,6 @@ internal class PythonPluginFetcherTest {
                 def searchPapers(searchQuery, options):
                     return fetchers.searchPapers("foo", "x", { "y": "z" })
                 """.trimIndent(),
-                Path.of("."),
                 fetcherManager,
             )
 

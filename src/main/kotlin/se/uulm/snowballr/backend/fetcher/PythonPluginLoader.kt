@@ -19,6 +19,7 @@ import kotlin.io.path.isDirectory
 import kotlin.io.path.listDirectoryEntries
 import kotlin.io.path.name
 import kotlin.io.path.nameWithoutExtension
+import kotlin.io.path.writeText
 
 const val WATCHER_REFRESH_INTERVAL_MS: Long = 1000
 
@@ -33,15 +34,14 @@ class PythonPluginLoader(
 
     init {
         PythonPluginFetcher.locateNativeLibrary()
-        ensureDirectory()
+        ensureDirectoryExists(fetchersDirectory.resolve("lib"))
+        writeModules()
         loadAllPlugins()
         GlobalScope.launch { watchDirectory() }
     }
 
-    private fun ensureDirectory() {
-        ensureDirectoryExists(fetchersDirectory)
-        ensureDirectoryExists(fetchersDirectory.resolve("lib"))
-        PythonPluginFetcher.writeDataTypesModule(fetchersDirectory.resolve("lib/snowballr.py"))
+    private fun writeModules() {
+        fetchersDirectory.resolve("lib/snowballr.py").writeText(Resources.pythonSnowballrTypes)
     }
 
     private fun loadAllPlugins() {
@@ -151,4 +151,15 @@ class PythonPluginLoader(
         fetchersDirectory,
         fetcherManager,
     )
+
+    sealed class Resources {
+        companion object {
+            private fun fetcherResource(fileName: String) = this::class.java
+                .getResourceAsStream("/fetchers/$fileName")
+                .bufferedReader()
+                .readText()
+
+            val pythonSnowballrTypes = fetcherResource("lib/PythonSnowballrTypes.py")
+        }
+    }
 }
