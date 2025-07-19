@@ -56,14 +56,16 @@ interface IUserTableRepo {
     suspend fun getAllUsers(): List<User>
 
     /**
-     * Returns users whose names and / or emails (partially) match the [searchQuery].
+     * Retrieves a list of users whose name or email partially or fully match the [searchQuery].
      *
-     * A maximum of 10 matching users is returned. The matching users must still be active and not deleted or
-     * marked to be deleted.
+     * Only users who are active (not deleted or marked for deletion) and not present in the list of [excludedUsers]
+     * are included in the results. The number of returned users is limited to a maximum of 10.
      *
      * @param searchQuery The query against which the firstnames, lastnames, and emails of the users are checked.
+     * @param excludedUsers A list of user ids to be excluded from the results.
+     * @return A list of up to 10 matching users.
      */
-    suspend fun getUsersMatchingSearchQuery(searchQuery: String): List<User>
+    suspend fun getUsersMatchingSearchQuery(searchQuery: String, excludedUsers: Set<UUID>): List<User>
 
     /**
      * Creates a new user in the database with the provided registration request and password hash.
@@ -154,19 +156,23 @@ class UserTableRepo(
             .map { it.toUser() }
     }
 
-    override suspend fun getUsersMatchingSearchQuery(searchQuery: String): List<User> = db.dbQuery {
-        val query = "%$searchQuery%"
+    override suspend fun getUsersMatchingSearchQuery(searchQuery: String, excludedUsers: Set<UUID>): List<User> =
+        db.dbQuery {
+            val query = "%$searchQuery%"
 
-        UserTable
-            .selectAll()
-            .where((UserTable.firstName like query) or (UserTable.lastName like query) or (UserTable.email like query))
-            .andWhere {
-                (UserTable.status eq UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED) or
-                    (UserTable.status eq UserStatus.USER_STATUS_ACTIVE)
-            }
-            .limit(MAXIMUM_NUMBER_OF_INVITE_CANDIDATES)
-            .map { it.toUser() }
-    }
+            UserTable
+                .selectAll()
+                .where {
+                    (UserTable.firstName like query) or (UserTable.lastName like query) or (UserTable.email like query)
+                }
+                .andWhere {
+                    (UserTable.status eq UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED) or
+                        (UserTable.status eq UserStatus.USER_STATUS_ACTIVE)
+                }
+                .andWhere { UserTable.id notInList excludedUsers.map { it } }
+                .limit(MAXIMUM_NUMBER_OF_INVITE_CANDIDATES)
+                .map { it.toUser() }
+        }
 
     override suspend fun createUser(request: Authentication.RegisterRequest, passwordHash: String): User = db.query {
         UserTable.insertAndGet(ResultRow::toUser, EntityType.USER) {

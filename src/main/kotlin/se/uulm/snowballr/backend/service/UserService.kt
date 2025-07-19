@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.service
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.auth.IJwtService
 import se.uulm.snowballr.backend.auth.PasswordUtils
@@ -7,6 +8,7 @@ import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.IdentifierType
+import se.uulm.snowballr.backend.model.SnowballRException
 import se.uulm.snowballr.backend.model.SnowballRException.DuplicateEntityException
 import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
@@ -20,11 +22,14 @@ import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import snowballr.Authentication
 import snowballr.Base
+import snowballr.ProjectOuterClass
 import snowballr.UserOuterClass
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
 import java.util.UUID
 import snowballr.UserOuterClass.User as GrpcUser
+
+val Logger = KotlinLogging.logger { }
 
 interface IUserService {
     /**
@@ -45,7 +50,7 @@ interface IUserService {
     /**
      * Service implementation of [SnowballRService.getInviteCandidates]
      */
-    suspend fun getInviteCandidates(request: UserOuterClass.User.SearchQuery): UserOuterClass.User.List
+    suspend fun getInviteCandidates(request: ProjectOuterClass.Project.InviteCandidatesRequest): GrpcUser.List
 
     /**
      * Service implementation of [SnowballRService.register].
@@ -65,7 +70,7 @@ interface IUserService {
     /**
      * Service implementation of [SnowballRService.updateUser].
      */
-    suspend fun updateUser(request: UserOuterClass.User.Update): UserOuterClass.User
+    suspend fun updateUser(request: GrpcUser.Update): GrpcUser
 
     /**
      * Service implementation of [SnowballRService.softDeleteUser].
@@ -171,7 +176,9 @@ class UserService(
         return users.toGrpcUsers()
     }
 
-    override suspend fun getInviteCandidates(request: GrpcUser.SearchQuery): GrpcUser.List {
+    override suspend fun getInviteCandidates(
+        request: ProjectOuterClass.Project.InviteCandidatesRequest,
+    ): GrpcUser.List {
         val searchQuery = request.query.trim()
 
         // Check whether the search query is too short, i.e., 3 or fewer characters long
@@ -179,7 +186,17 @@ class UserService(
             return GrpcUser.List.newBuilder().build()
         }
 
-        val candidates = userRepo.getUsersMatchingSearchQuery(searchQuery)
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
+        val excludedUsersFromSearch = mutableSetOf(currentUser.id)
+        try {
+            val projectMembers = projectMemberRepo.getMembersOfProject(parseUUID(request.projectId, EntityType.PROJECT))
+            excludedUsersFromSearch += projectMembers.map { it.userId }
+        } catch (_: SnowballRException.InvalidIdException.UUID) {
+            Logger.warn { "Invalid project ID in invite candidates request: ${request.projectId}" }
+        }
+
+        val candidates = userRepo.getUsersMatchingSearchQuery(searchQuery, excludedUsersFromSearch)
+
         return candidates.toGrpcUsers()
     }
 
