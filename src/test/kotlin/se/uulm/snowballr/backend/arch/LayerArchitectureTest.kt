@@ -190,6 +190,7 @@ private class NamingConventions {
             .orShould(haveSimpleNameEndingWith("ColumnHelperKt")) // exception
             .orShould(haveSimpleName("TableHelperKt")) // exception
             .orShould(haveSimpleNameEndingWith("ObfuscatedTextColumnType")) // exception
+            .orShould(haveSimpleName("HStoreColumnType")) // exception
             .because("All tables should have the 'Table' suffix")
             .check(classes)
     }

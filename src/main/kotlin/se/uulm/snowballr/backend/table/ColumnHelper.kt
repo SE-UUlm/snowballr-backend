@@ -1,9 +1,11 @@
 package se.uulm.snowballr.backend.table
 
+import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.TextColumnType
 import org.jetbrains.exposed.sql.kotlin.datetime.timestampWithTimeZone
+import org.postgresql.util.HStoreConverter
 import java.time.OffsetDateTime
 
 /** Common column definition for a user reference */
@@ -48,3 +50,21 @@ fun Table.deletedBy() = userReference("deleted_by", ReferenceOption.RESTRICT, Re
  */
 fun Table.obfuscatedText(name: String, collate: String? = null, eagerLoading: Boolean = false) =
     registerColumn(name, ObfuscatedTextColumnType(collate, eagerLoading))
+
+/**
+ * Stores a Map<String, String> inside an [HStoreColumnType]. Unallowed characters are automatically escaped.
+ */
+fun Table.stringMap(name: String): Column<Map<String, String>> = registerColumn(
+    name,
+    HStoreColumnType(),
+).transform<String, Map<String, String>>(
+    wrap = {
+        HStoreConverter
+            .fromString(it)
+            .filterValues { it !== null }
+            .mapValues { it.value!! }
+    },
+    unwrap = {
+        HStoreConverter.toString(it)
+    },
+)
