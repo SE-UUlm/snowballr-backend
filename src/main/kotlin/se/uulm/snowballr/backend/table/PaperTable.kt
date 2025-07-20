@@ -43,6 +43,7 @@ object PaperTable : UUIDTable("paper") {
 
     // Metadata
 
+    val fetcherMetadata = stringMap("fetcher_metadata")
     val createdAt = createdAt()
     val modifiedAt = modifiedAt()
     val modifiedBy = modifiedBy()
@@ -61,6 +62,7 @@ fun ResultRow.toPaper() = Paper(
     publicationType = this[PaperTable.publicationType],
     publicationName = this[PaperTable.publicationName],
     pdfId = this[PaperTable.pdfId]?.value,
+    fetcherMetadata = this[PaperTable.fetcherMetadata],
     createdAt = this[PaperTable.createdAt],
     modifiedAt = this[PaperTable.modifiedAt],
     modifiedBy = this[PaperTable.modifiedBy]?.value,
