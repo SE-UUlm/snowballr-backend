@@ -9,7 +9,6 @@ import io.grpc.ServerCallHandler
 import io.grpc.ServerInterceptor
 import io.grpc.Status
 import io.grpc.health.v1.HealthGrpc
-import io.grpc.reflection.v1alpha.ServerReflectionGrpc
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import se.uulm.snowballr.backend.auth.DummyUser
@@ -21,6 +20,8 @@ import se.uulm.snowballr.backend.service.AuthenticationService
 import se.uulm.snowballr.backend.service.IAuthenticationService
 import snowballr.Authentication.AuthenticationStatus
 import snowballr.SnowballRGrpcKt
+import io.grpc.reflection.v1.ServerReflectionGrpc as ServerReflectionV1Grpc
+import io.grpc.reflection.v1alpha.ServerReflectionGrpc as ServerReflectionV1AlphaGrpc
 
 private val logger = KotlinLogging.logger {}
 
@@ -30,7 +31,8 @@ private val logger = KotlinLogging.logger {}
 private val PUBLIC_SERVICES =
     setOf(
         HealthGrpc.SERVICE_NAME,
-        ServerReflectionGrpc.SERVICE_NAME,
+        ServerReflectionV1Grpc.SERVICE_NAME,
+        ServerReflectionV1AlphaGrpc.SERVICE_NAME,
     )
 
 /**
