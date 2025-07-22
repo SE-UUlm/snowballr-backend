@@ -94,16 +94,17 @@ val authenticationInterceptor: ServerInterceptor =
             headers: Metadata?,
             next: ServerCallHandler<ReqT?, RespT?>?,
         ): ServerCall.Listener<ReqT?>? {
+            val serviceName = call?.methodDescriptor?.serviceName
             val methodName = call?.methodDescriptor?.fullMethodName
             logger.info { "Authenticating call to $methodName" }
 
-            if (methodName == null) {
-                call?.close(Status.UNAUTHENTICATED.withDescription("Method name is null"), Metadata())
+            if (methodName == null || serviceName == null) {
+                call?.close(Status.UNAUTHENTICATED.withDescription("Method or service name is null"), Metadata())
                 return emptyListener()
             }
 
-            if (methodName in PUBLIC_SERVICES) {
-                logger.trace { "Method $methodName is a public service, bypassing authentication." }
+            if (serviceName in PUBLIC_SERVICES) {
+                logger.trace { "Service $serviceName is a public service, bypassing authentication for $methodName." }
                 return next?.startCall(call, headers)
             }
 
