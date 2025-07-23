@@ -98,7 +98,7 @@ class Database(
                 ReviewHasCriterionTable,
             )
 
-            setupDummyUser()
+            seedDummyUserIfEnabled()
         }
         logger.info { "Database connection established" }
     }
@@ -126,14 +126,13 @@ class Database(
     }
 
     /**
-     * Sets up a dummy user in the database if the environment configuration requires it.
+     * Seeds the database with a dummy user if the environment configuration requires it.
      *
-     * This method checks if a dummy user is needed based on the environment settings. If so, it
-     * creates the dummy user if it does not already exist. If the dummy user is not needed, it
-     * deletes the dummy user from the database, in case it exists.
+     * This method checks the `seedUser` flag. If true, it ensures the dummy user exists.
+     * If false, it ensures the dummy user is deleted, keeping the database clean.
      */
-    fun setupDummyUser() {
-        val useDummyUser = envReader.env.miscellaneous.useDummyUser
+    fun seedDummyUserIfEnabled() {
+        val shouldSeedUser = envReader.env.database.seedUser
 
         val existingId = UserTable
             .select(UserTable.id)
@@ -141,23 +140,27 @@ class Database(
             .map { it[UserTable.id].value }
             .singleOrNull()
 
-        if (useDummyUser) {
-            // If the dummy user is needed, create it if it does not exist
-            DummyUser.id = existingId ?: UserTable.insertAndGetId {
-                it[email] = DummyUser.email
-                it[firstName] = DummyUser.firstName
-                it[lastName] = DummyUser.lastName
-                it[passwordHash] = DummyUser.passwordHash
-                it[role] = DummyUser.role
-                it[status] = DummyUser.status
-            }.value
-
-            logger.info { "Dummy User ID: ${DummyUser.id}" }
-        } else if (existingId != null) {
-            // If the dummy user is not needed, delete it if it exists
-            UserTable.deleteWhere { UserTable.id eq existingId }.also {
-                logger.info { "Dummy user deleted" }
+        if (shouldSeedUser) {
+            if (existingId == null) {
+                // If seeding is enabled and a user doesn't exist, create it.
+                DummyUser.id = UserTable.insertAndGetId {
+                    it[email] = DummyUser.email
+                    it[firstName] = DummyUser.firstName
+                    it[lastName] = DummyUser.lastName
+                    it[passwordHash] = DummyUser.passwordHash
+                    it[role] = DummyUser.role
+                    it[status] = DummyUser.status
+                }.value
+                logger.info { "Dummy User seeded with ID: ${DummyUser.id}" }
+            } else {
+                // If the user already exists, update the static ID.
+                DummyUser.id = existingId
+                logger.info { "Dummy User already exists with ID: ${DummyUser.id}" }
             }
+        } else if (existingId != null) {
+            // If seeding is disabled and a user exists, delete it.
+            UserTable.deleteWhere { UserTable.id eq existingId }
+            logger.info { "Dummy user deleted as seeding is disabled." }
         }
     }
 }
