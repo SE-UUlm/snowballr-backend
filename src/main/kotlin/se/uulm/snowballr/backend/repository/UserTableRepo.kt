@@ -12,9 +12,11 @@ import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.IdentifierType
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.User
+import se.uulm.snowballr.backend.model.dto.UserSettings
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.toUser
+import se.uulm.snowballr.backend.table.toUserSettings
 import snowballr.Authentication
 import snowballr.UserOuterClass
 import snowballr.UserOuterClass.UserRole
@@ -105,6 +107,14 @@ interface IUserTableRepo {
      * @return The password hash as a [String] for the user with the specified email.
      */
     suspend fun getPasswordHashByEmail(email: String): String
+
+    /**
+     * Retrieves the user settings associated with a specific user ID.
+     *
+     * @param id The unique identifier of the user whose settings are to be fetched.
+     * @return The [UserSettings] object containing the settings for the specified user.
+     */
+    suspend fun getUserSettings(id: UUID): UserSettings
 }
 
 /**
@@ -262,5 +272,13 @@ class UserTableRepo(
             .map { it[UserTable.passwordHash] }
             .singleOrNull()
             ?: throw NotFoundException(EntityType.USER, email, identifierType = IdentifierType.EMAIL)
+    }
+
+    override suspend fun getUserSettings(id: UUID): UserSettings = db.dbQuery {
+        UserTable.selectAll()
+            .where { UserTable.id eq id }
+            .map { it.toUserSettings() }
+            .singleOrNull()
+            ?: throw NotFoundException(EntityType.USER, id.toString(), identifierType = IdentifierType.ID)
     }
 }
