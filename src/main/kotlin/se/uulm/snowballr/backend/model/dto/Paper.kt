@@ -19,6 +19,7 @@ data class Paper(
     val publicationType: String?,
     val publicationName: String?,
     val pdfId: UUID?,
+    val fetcherMetadata: Map<String, String>,
     val createdAt: OffsetDateTime,
     val modifiedAt: OffsetDateTime?,
     val modifiedBy: UUID?,
