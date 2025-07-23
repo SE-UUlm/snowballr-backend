@@ -85,7 +85,9 @@ interface IProjectTableRepo {
      * - review_maybe_allowed
      *
      * @param request The update request containing the new project details, such as the new name.
-     * @param projectStatus The status of the project to update.
+     * @param projectStatus The current status of the project, which shall be updated. The status is used to check
+     *  whether the project can be updated and which parts are eligible for updates depending on the current project
+     *  status.
      * @return The updated [Project] object reflecting the changes from the [request].
      */
     suspend fun updateProject(request: ProjectOuterClass.Project.Update, projectStatus: ProjectStatus): Project

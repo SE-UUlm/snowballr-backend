@@ -43,7 +43,6 @@ class UpdateProjectTest : MainServiceTest() {
             "PROJECT_STATUS_ACTIVE_LOCKED",
             "PROJECT_STATUS_ARCHIVED",
         ],
-        delimiter = ':',
     )
     fun `When a server admin updates an existing project, then no exception is thrown`(statusName: String) = runTest {
         val status = ProjectOuterClass.ProjectStatus.valueOf(statusName)
@@ -79,7 +78,6 @@ class UpdateProjectTest : MainServiceTest() {
             "PROJECT_STATUS_ACTIVE_LOCKED",
             "PROJECT_STATUS_ARCHIVED",
         ],
-        delimiter = ':',
     )
     fun `When a project admin updates an existing project, then no exception is thrown`(statusName: String) = runTest {
         val status = ProjectOuterClass.ProjectStatus.valueOf(statusName)
@@ -118,9 +116,8 @@ class UpdateProjectTest : MainServiceTest() {
             "PROJECT_STATUS_ARCHIVED",
             "PROJECT_STATUS_DELETED",
         ],
-        delimiter = ':',
     )
-    fun `When a project member updates an project, then an unauthorized exception is thrown`(statusName: String) =
+    fun `When a project member updates a project, then an unauthorized exception is thrown`(statusName: String) =
         runTest {
             val status = ProjectOuterClass.ProjectStatus.valueOf(statusName)
             val user = DataBuilder.createExampleUser(id = dummyUserUUID, role = UserRole.USER_ROLE_DEFAULT)
@@ -147,7 +144,7 @@ class UpdateProjectTest : MainServiceTest() {
         }
 
     @Test
-    fun `When a server admin updates project to the project status DELETED, then an failed precondition exception is thrown`() =
+    fun `When a server admin updates project to the project status DELETED, then a failed precondition exception is thrown`() =
         runTest {
             val user = DataBuilder.createExampleUser(id = dummyUserUUID, role = UserRole.USER_ROLE_ADMIN)
             val project = DataBuilder.createExampleProject(
@@ -174,7 +171,7 @@ class UpdateProjectTest : MainServiceTest() {
         }
 
     @Test
-    fun `When a project admin updates project to the project status DELETED, then an failed precondition exception is thrown`() =
+    fun `When a project admin updates project to the project status DELETED, then a failed precondition exception is thrown`() =
         runTest {
             val user = DataBuilder.createExampleUser(id = dummyUserUUID, role = UserRole.USER_ROLE_DEFAULT)
             val project = DataBuilder.createExampleProject(
@@ -202,7 +199,7 @@ class UpdateProjectTest : MainServiceTest() {
         }
 
     @Test
-    fun `When a server admin updates a deleted project, then an failed precondition exception is thrown`() = runTest {
+    fun `When a server admin updates a deleted project, then a failed precondition exception is thrown`() = runTest {
         val user = DataBuilder.createExampleUser(id = dummyUserUUID, role = UserRole.USER_ROLE_ADMIN)
         val project = DataBuilder.createExampleProject(
             status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_DELETED,
@@ -226,7 +223,7 @@ class UpdateProjectTest : MainServiceTest() {
     }
 
     @Test
-    fun `When a project admin updates a deleted project, then an failed precondition exception is thrown`() = runTest {
+    fun `When a project admin updates a deleted project, then a failed precondition exception is thrown`() = runTest {
         val user = DataBuilder.createExampleUser(id = dummyUserUUID, role = UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject(
             status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_DELETED,
