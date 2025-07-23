@@ -228,7 +228,7 @@ class SnowballRServer(
             super.getPreviousPaper(request)
 
         override suspend fun getUserSettings(request: Base.Nothing): UserSettingsOuterClass.UserSettings =
-            super.getUserSettings(request)
+            mainService.getUserSettings()
 
         override suspend fun updateUserSettings(
             request: UserSettingsOuterClass.UserSettings.Update,
