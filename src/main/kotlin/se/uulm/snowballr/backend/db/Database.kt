@@ -75,7 +75,7 @@ class Database(
         logger.info { "Connecting to database" }
         dataSource = initDataSource(envReader.env.database)
         transaction(Database.connect(dataSource)) {
-            exec("CREATE EXTENSION hstore;")
+            exec("CREATE EXTENSION IF NOT EXISTS hstore;")
             val schema = Schema(SCHEMA_NAME, DB_USER)
             SchemaUtils.createSchema(schema)
             SchemaUtils.setSchema(schema)
