@@ -36,7 +36,7 @@ fun main() {
  *
  * @param logLevel The desired log level for the root logger. Acceptable values are one of
  * [io.github.oshai.kotlinlogging.Level] as string such as `DEBUG` or `INFO`.
- * If an invalid log level is provided, the `DEBUG` log level will be used.
+ * If an invalid log level is provided, the default log level [DEFAULT_LOG_LEVEL] will be used.
  */
 fun configureRootLogger(logLevel: String) {
     val context = LoggerFactory.getILoggerFactory() as LoggerContext
