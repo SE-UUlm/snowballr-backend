@@ -34,6 +34,7 @@ import se.uulm.snowballr.backend.service.MainService
  * - The environment service ([IEnvService]) and its reader ([EnvReader]), which are initialized first to provide
  *  access to environment variables.
  * - The JWT service ([IJwtService]), which depends on the environment reader to access necessary environment variables.
+ * - The FetcherManager ([FetcherManager]), which makes fetchers available for use.
  * - The cookie service ([ICookieService]), which relies on the JWT service for token handling.
  * - The database implementation ([IDatabase]), which is initialized with no external dependencies.
  * - The repository layer (e.g. [IProjectTableRepo]), which uses the [IDatabase] implementation for database operations.
@@ -52,6 +53,7 @@ val snowballRModule =
             createdAtStart()
             bind<IJwtService>()
         }
+        singleOf(::FetcherManager)
         // Then the cookie service, which depend on the JWT service
         singleOf(::CookieService) { bind<ICookieService>() }
         // Then the database, which only needs access to some env variables
@@ -59,7 +61,6 @@ val snowballRModule =
             createdAtStart()
             bind<IDatabase>()
         }
-        singleOf(::FetcherManager)
         // Here come all repos and other definitions, e.g., the http client
         singleOf(::ProjectTableRepo) { bind<IProjectTableRepo>() }
         singleOf(::CriterionTableRepo) { bind<ICriterionTableRepo>() }

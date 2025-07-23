@@ -160,7 +160,7 @@ class SnowballRServer(
         private val mainService: IMainService by inject()
 
         override suspend fun getAvailableFetcherApis(request: Base.Nothing): Main.AvailableFetcherApis =
-            super.getAvailableFetcherApis(request)
+            mainService.getAvailableFetchers()
 
         override suspend fun register(request: Authentication.RegisterRequest): Base.Nothing =
             mainService.register(request)
