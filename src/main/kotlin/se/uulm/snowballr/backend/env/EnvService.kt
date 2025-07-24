@@ -28,6 +28,12 @@ interface IEnvService {
      * value if the env variable couldn't be found or is not a valid boolean.
      */
     fun getBooleanOrDefault(key: String, default: Boolean): Boolean
+
+    /**
+     * Retrieves the value of the environment variable identified by [key], or returns [default] if [default]
+     * is non-null. If [default] is null, throws [EnvVariableNotFoundException] if the environment variable is not set.
+     */
+    fun getRequiredOrDefault(key: String, default: String?): String
 }
 
 /**
@@ -52,6 +58,14 @@ class EnvService : IEnvService {
         val value = dotenv[key] ?: return default
         return value.toBooleanStrictOrNull()
             ?: throw EnvVariableNotFoundException("Invalid boolean value for key '$key': '$value'")
+    }
+
+    override fun getRequiredOrDefault(key: String, default: String?): String {
+        if (default != null) {
+            return getOrDefault(key, default)
+        }
+
+        return dotenv[key] ?: throw EnvVariableNotFoundException(key)
     }
 
     companion object {

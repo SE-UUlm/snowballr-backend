@@ -82,8 +82,8 @@ class EnvReader(
         }
 
         // Read final values, applying defaults and allowing overrides
-        val port = defaultPort?.let { envService.getOrDefault(PORT, it.toString()).toInt() } ?: envService[PORT].toInt()
-        val host = defaultDBHost?.let { envService.getOrDefault(DATABASE_HOST, it) } ?: envService[DATABASE_HOST]
+        val port = envService.getRequiredOrDefault(PORT, defaultPort?.toString()).toInt()
+        val host = envService.getRequiredOrDefault(DATABASE_HOST, defaultDBHost)
         val logLevel = envService.getOrDefault(LOG_LEVEL, defaultLogLevel)
 
         // If AUTH_BYPASS is true, we must also seed the user
