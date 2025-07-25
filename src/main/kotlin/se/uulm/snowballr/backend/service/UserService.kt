@@ -22,6 +22,7 @@ import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.IVerificationTokenTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
+import se.uulm.snowballr.backend.service.accessrules.verifyServerAdminRole
 import snowballr.Authentication
 import snowballr.Base
 import snowballr.UserOuterClass.UserRole

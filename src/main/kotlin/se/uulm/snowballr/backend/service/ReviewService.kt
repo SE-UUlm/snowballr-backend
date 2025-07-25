@@ -15,6 +15,7 @@ import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.IReviewHasCriterionTableRepo
+import se.uulm.snowballr.backend.service.accessrules.verifyServerAdminRole
 import snowballr.Base
 import java.util.UUID
 import snowballr.ReviewOuterClass.Review as GrpcReview
@@ -94,7 +95,7 @@ class ReviewService(
 
         if (!isProjectMember) {
             verifyServerAdminRole(currentUser) {
-                throw UnauthorizedException.Single(EntityType.PROJECT, project.id.toString(), AccessType.READ, it)
+                UnauthorizedException.Single(EntityType.PROJECT, project.id.toString(), AccessType.READ, it)
             }
         }
     }

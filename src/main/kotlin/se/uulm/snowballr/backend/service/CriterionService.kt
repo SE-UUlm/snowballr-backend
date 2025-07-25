@@ -18,6 +18,7 @@ import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
+import se.uulm.snowballr.backend.service.accessrules.verifyServerAdminRole
 import snowballr.Base
 import snowballr.ProjectOuterClass.ProjectStatus
 import java.util.UUID
@@ -102,7 +103,7 @@ class CriterionService(
 
         if (!members.any { it.userId == currentUser.id }) {
             verifyServerAdminRole(currentUser) {
-                throw UnauthorizedException.Single(
+                UnauthorizedException.Single(
                     EntityType.PROJECT,
                     projectId.toString(),
                     AccessType.READ,
@@ -137,11 +138,15 @@ class CriterionService(
      *
      * @throws UnauthorizedException.Single If the current user does not have permissions to access the criterion.
      */
-    private fun checkUserCriterionPermission(criterion: UserCriterion, currentUser: User, accessType: AccessType) {
+    private suspend fun checkUserCriterionPermission(
+        criterion: UserCriterion,
+        currentUser: User,
+        accessType: AccessType,
+    ) {
         if (criterion.createdBy == currentUser.id) return
 
         verifyServerAdminRole(currentUser) {
-            throw UnauthorizedException.Single(
+            UnauthorizedException.Single(
                 EntityType.CRITERION,
                 criterion.id.toString(),
                 accessType,
@@ -218,7 +223,7 @@ class CriterionService(
 
             if (!projectMembers.any { it.userId == currentUser.id }) {
                 verifyServerAdminRole(currentUser) {
-                    throw UnauthorizedException.Single(
+                    UnauthorizedException.Single(
                         EntityType.PROJECT,
                         projectId.toString(),
                         AccessType.READ,

@@ -13,6 +13,9 @@ import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
+import se.uulm.snowballr.backend.service.accessrules.authorizeAccessTo
+import se.uulm.snowballr.backend.service.accessrules.ensureCurrentUserIsProjectMember
+import se.uulm.snowballr.backend.service.accessrules.verifyServerAdminRole
 import snowballr.Base
 import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
@@ -124,7 +127,7 @@ class ProjectService(
         statuses: Set<ProjectStatus>,
     ): GrpcProject.List = withUser(userRepo) { currentUser ->
         val requestedUserId = parseUUID(request.id, EntityType.USER)
-        authorizeAccessTo(currentUser, requestedUserId, userRepo, AccessType.READ)
+        authorizeAccessTo(requestedUserId, userRepo, AccessType.READ)
 
         repo.getUserProjects(requestedUserId, statuses).toGrpcProjects()
     }
@@ -148,7 +151,7 @@ class ProjectService(
 
         if (!isProjectAdmin) {
             verifyServerAdminRole(currentUser) {
-                throw UnauthorizedException.Single(EntityType.PROJECT, request.project.id, AccessType.UPDATE, it)
+                UnauthorizedException.Single(EntityType.PROJECT, request.project.id, AccessType.UPDATE, it)
             }
         }
         if (project.status == ProjectStatus.PROJECT_STATUS_DELETED) {
@@ -169,7 +172,7 @@ class ProjectService(
 
             if (!projectMembersWithUsers.any { it.user.id == currentUser.id }) {
                 verifyServerAdminRole(currentUser) {
-                    throw UnauthorizedException.Single(EntityType.PROJECT, projectId.toString(), AccessType.READ, it)
+                    UnauthorizedException.Single(EntityType.PROJECT, projectId.toString(), AccessType.READ, it)
                 }
             }
 

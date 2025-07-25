@@ -158,13 +158,16 @@ private class NamingConventions {
     }
 
     @ArchTest
-    fun `When a class is in the service package, then it should have the 'Service' suffix`(classes: JavaClasses) {
+    fun `When a class is in the service package, then it should have the 'Service' or 'AccessRule' suffix`(
+        classes: JavaClasses,
+    ) {
         classes()
             .that()
             .resideInAPackage("$BASE_PACKAGE.service..")
             .should()
             .haveNameMatching(".*Service.*")
-            .because("All services should have the 'Service' suffix")
+            .orShould(haveNameMatching(".*AccessRule.*"))
+            .because("All services should have the 'Service' or 'AccessRule' suffix")
             .check(classes)
     }
 
