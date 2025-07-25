@@ -54,7 +54,7 @@ private val PUBLIC_METHODS =
 /**
  * A whitelist of gRPC methods that are allowed to be called when authentication bypass is active.
  *
- * When `AUTH_BYPASS` is enabled, only calls to methods listed in this set will be permitted
+ * When `AUTH_BYPASS_ENABLED` is `true`, only calls to methods listed in this set will be permitted
  * to proceed with the dummy user's context. All other calls will be rejected.
  */
 private val AUTH_BYPASS_METHODS =
@@ -171,8 +171,8 @@ val authenticationInterceptor: ServerInterceptor =
             skipRefresh: Boolean,
             methodName: String,
         ): ServerCall.Listener<ReqT?>? {
-            val authBypass = this.envReader.env.miscellaneous.authBypass
-            if (authBypass) {
+            val authBypassEnabled = this.envReader.env.miscellaneous.authBypassEnabled
+            if (authBypassEnabled) {
                 return proceedWithDummyUser(authState)
             }
 

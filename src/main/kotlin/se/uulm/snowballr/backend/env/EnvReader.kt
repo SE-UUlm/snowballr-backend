@@ -10,12 +10,12 @@ private const val PORT = "PORT"
 
 // Miscellaneous
 private const val LOG_LEVEL = "LOG_LEVEL"
-private const val AUTH_BYPASS = "AUTH_BYPASS"
+private const val AUTH_BYPASS_ENABLED = "AUTH_BYPASS_ENABLED"
 
 // Database
 private const val DATABASE_PASSWORD = "DATABASE_PASSWORD"
 private const val DATABASE_HOST = "DATABASE_HOST"
-private const val DATABASE_SEED_USER = "DATABASE_SEED_USER"
+private const val DATABASE_SEED_USER_ENABLED = "DATABASE_SEED_USER_ENABLED"
 
 // Encryption
 private const val JWT_PRIVATE_KEY_BASE64 = "JWT_PRIVATE_KEY_BASE64"
@@ -52,32 +52,32 @@ class EnvReader(
         val defaultPort: Int?
         val defaultDBHost: String?
         val defaultLogLevel: String
-        val defaultAuthBypass: Boolean
-        val defaultSeedUser: Boolean
+        val defaultAuthBypassEnabled: Boolean
+        val defaultSeedUserEnabled: Boolean
 
         when (activeProfile) {
             AppProfile.TESTING -> {
                 defaultPort = DEFAULT_PORT
                 defaultDBHost = DEFAULT_DATABASE_HOST
                 defaultLogLevel = "TRACE"
-                defaultAuthBypass = true
-                defaultSeedUser = true
+                defaultAuthBypassEnabled = true
+                defaultSeedUserEnabled = true
             }
 
             AppProfile.DEVELOPMENT -> {
                 defaultPort = DEFAULT_PORT
                 defaultDBHost = DEFAULT_DATABASE_HOST
                 defaultLogLevel = "DEBUG"
-                defaultAuthBypass = false
-                defaultSeedUser = true
+                defaultAuthBypassEnabled = false
+                defaultSeedUserEnabled = true
             }
 
             AppProfile.PRODUCTION -> {
                 defaultPort = null
                 defaultDBHost = null
                 defaultLogLevel = "INFO"
-                defaultAuthBypass = false
-                defaultSeedUser = false
+                defaultAuthBypassEnabled = false
+                defaultSeedUserEnabled = false
             }
         }
 
@@ -87,16 +87,17 @@ class EnvReader(
         val logLevel = envService.getOrDefault(LOG_LEVEL, defaultLogLevel)
 
         // If AUTH_BYPASS is true, we must also seed the user
-        val authBypass = envService.getBooleanOrDefault(AUTH_BYPASS, defaultAuthBypass)
-        val seedUser = authBypass || envService.getBooleanOrDefault(DATABASE_SEED_USER, defaultSeedUser)
+        val authBypassEnabled = envService.getBooleanOrDefault(AUTH_BYPASS_ENABLED, defaultAuthBypassEnabled)
+        val seedUserEnabled =
+            authBypassEnabled || envService.getBooleanOrDefault(DATABASE_SEED_USER_ENABLED, defaultSeedUserEnabled)
 
         env = Env(
             http = Env.Http(port),
-            miscellaneous = Env.Miscellaneous(logLevel, authBypass),
+            miscellaneous = Env.Miscellaneous(logLevel, authBypassEnabled),
             database = Env.Database(
                 password = envService[DATABASE_PASSWORD],
                 host = host,
-                seedUser = seedUser,
+                seedUserEnabled = seedUserEnabled,
             ),
             encryption = Env.Encryption(
                 jwtPrivateKeyBase64 = envService[JWT_PRIVATE_KEY_BASE64],

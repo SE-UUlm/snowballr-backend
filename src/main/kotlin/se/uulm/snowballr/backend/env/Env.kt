@@ -20,13 +20,13 @@ data class Env(
 
     data class Miscellaneous(
         val logLevel: String,
-        val authBypass: Boolean,
+        val authBypassEnabled: Boolean,
     )
 
     data class Database(
         val password: String,
         val host: String,
-        val seedUser: Boolean,
+        val seedUserEnabled: Boolean,
     )
 
     data class Encryption(

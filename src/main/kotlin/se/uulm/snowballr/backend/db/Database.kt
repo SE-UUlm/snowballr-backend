@@ -128,11 +128,11 @@ class Database(
     /**
      * Seeds the database with a dummy user if the environment configuration requires it.
      *
-     * This method checks the `seedUser` flag. If true, it ensures the dummy user exists.
+     * This method checks the `seedUserEnabled` flag. If true, it ensures the dummy user exists.
      * If false, it ensures the dummy user is deleted, keeping the database clean.
      */
     fun seedDummyUserIfEnabled() {
-        val shouldSeedUser = envReader.env.database.seedUser
+        val seedUserEnabled = envReader.env.database.seedUserEnabled
 
         val existingId = UserTable
             .select(UserTable.id)
@@ -140,7 +140,7 @@ class Database(
             .map { it[UserTable.id].value }
             .singleOrNull()
 
-        if (shouldSeedUser) {
+        if (seedUserEnabled) {
             if (existingId == null) {
                 // If seeding is enabled and a user doesn't exist, create it.
                 DummyUser.id = UserTable.insertAndGetId {

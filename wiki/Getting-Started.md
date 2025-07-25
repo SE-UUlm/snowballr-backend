@@ -46,31 +46,31 @@ The `PROFILE` variable determines the default behavior of the application.
 
 ### Environment Variables Table
 
-| Variable                 |               Required               |    Default    | Description                                                                       |
-|--------------------------|:------------------------------------:|:-------------:|-----------------------------------------------------------------------------------|
-| `PROFILE`                |                 :x:                  | `PRODUCTION`  | Sets the configuration profile (`PRODUCTION`, `DEVELOPMENT`, `TESTING`).          |
-| `PORT`                   | :white_check_mark: (in `PRODUCTION`) |     8080      | The port where the backend is served.                                             |
-| `DATABASE_HOST`          | :white_check_mark: (in `PRODUCTION`) |  `localhost`  | Hostname of the database connection.                                              |
-| `LOG_LEVEL`              |                 :x:                  | Profile-based | The log level to use. One of `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`, or `OFF`. |
-| `AUTH_BYPASS`            |                 :x:                  | Profile-based | Bypasses authentication and uses the dummy user for all whitelisted requests.     |
-| `DATABASE_SEED_USER`     |                 :x:                  | Profile-based | Inserts a dummy user into the database on startup.                                |
-| `DATABASE_PASSWORD`      |          :white_check_mark:          |       -       | Password for the database e.g. `postgres_password`.                               |
-| `JWT_PRIVATE_KEY_BASE64` |          :white_check_mark:          |       -       | Base64 encoded private key for JWT authentication.                                |
-| `JWT_PUBLIC_KEY_BASE64`  |          :white_check_mark:          |       -       | Base64 encoded public key for JWT authentication.                                 |
-| `WEB_PORT`               |                 :x:*                 |     8081      | The port where the proxy is served (used for gRPC-Web).                           |
-| `BACKEND_TAG`            |                 :x:*                 | `latest-dev`  | Tag of registry backend image to use for `registry` docker compose profile.       |
+| Variable                     |               Required               |    Default    | Description                                                                       |
+|------------------------------|:------------------------------------:|:-------------:|-----------------------------------------------------------------------------------|
+| `PROFILE`                    |                 :x:                  | `PRODUCTION`  | Sets the configuration profile (`PRODUCTION`, `DEVELOPMENT`, `TESTING`).          |
+| `PORT`                       | :white_check_mark: (in `PRODUCTION`) |     8080      | The port where the backend is served.                                             |
+| `DATABASE_HOST`              | :white_check_mark: (in `PRODUCTION`) |  `localhost`  | Hostname of the database connection.                                              |
+| `LOG_LEVEL`                  |                 :x:                  | Profile-based | The log level to use. One of `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`, or `OFF`. |
+| `AUTH_BYPASS_ENABLED`        |                 :x:                  | Profile-based | Bypasses authentication and uses the dummy user for all whitelisted requests.     |
+| `DATABASE_SEED_USER_ENABLED` |                 :x:                  | Profile-based | Inserts a dummy user into the database on startup.                                |
+| `DATABASE_PASSWORD`          |          :white_check_mark:          |       -       | Password for the database e.g. `postgres_password`.                               |
+| `JWT_PRIVATE_KEY_BASE64`     |          :white_check_mark:          |       -       | Base64 encoded private key for JWT authentication.                                |
+| `JWT_PUBLIC_KEY_BASE64`      |          :white_check_mark:          |       -       | Base64 encoded public key for JWT authentication.                                 |
+| `WEB_PORT`                   |                 :x:*                 |     8081      | The port where the proxy is served (used for gRPC-Web).                           |
+| `BACKEND_TAG`                |                 :x:*                 | `latest-dev`  | Tag of registry backend image to use for `registry` docker compose profile.       |
 
 \* only used when using the docker compose profiles.
 
 #### Profile-based Defaults
 
-| Profile              | `PRODUCTION` | `DEVELOPMENT` | `TESTING`   |
-|----------------------|--------------|---------------|-------------|
-| `PORT`               | -            | 8080          | 8080        |
-| `DATABASE_HOST`      | -            | `localhost`   | `localhost` |
-| `LOG_LEVEL`          | `INFO`       | `DEBUG`       | `TRACE`     |
-| `AUTH_BYPASS`        | `false`      | `false`       | `true`      |
-| `DATABASE_SEED_USER` | `false`      | `true`        | `true`      |
+| Profile                      | `PRODUCTION` | `DEVELOPMENT` | `TESTING`   |
+|------------------------------|--------------|---------------|-------------|
+| `PORT`                       | -            | 8080          | 8080        |
+| `DATABASE_HOST`              | -            | `localhost`   | `localhost` |
+| `LOG_LEVEL`                  | `INFO`       | `DEBUG`       | `TRACE`     |
+| `AUTH_BYPASS_ENABLED`        | `false`      | `false`       | `true`      |
+| `DATABASE_SEED_USER_ENABLED` | `false`      | `true`        | `true`      |
 
 ### JWT Private/Public Key
 

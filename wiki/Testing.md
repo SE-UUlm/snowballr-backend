@@ -18,8 +18,8 @@ On this page, we cover the following topics:
     * [Service](#service)
     * [Input Validation](#input-validation)
   * [Authentication Bypass and User Seeding](#authentication-bypass-and-user-seeding)
-    * [`DATABASE_SEED_USER`](#database_seed_user)
-    * [`AUTH_BYPASS`](#auth_bypass)
+    * [`DATABASE_SEED_USER_ENABLED`](#database_seed_user_enabled)
+    * [`AUTH_BYPASS_ENABLED`](#auth_bypass_enabled)
     * [How They Work Together](#how-they-work-together)
 <!-- TOC -->
 <!-- @formatter:on -->
@@ -192,9 +192,9 @@ for an example.
 ## Authentication Bypass and User Seeding
 
 For local development and manual testing, we provide helpers to simplify working with authenticated endpoints. These are
-controlled by the `PROFILE` environment variable or the `AUTH_BYPASS` and `DATABASE_SEED_USER` flags.
+controlled by the `PROFILE` environment variable or the `AUTH_BYPASS_ENABLED` and `DATABASE_SEED_USER_ENABLED` flags.
 
-### `DATABASE_SEED_USER`
+### `DATABASE_SEED_USER_ENABLED`
 
 * **What it does**: When set to `true`, the application will insert a pre-defined "dummy" user into the database on
   startup. If set to `false`, it will ensure the dummy user is removed.
@@ -202,7 +202,7 @@ controlled by the `PROFILE` environment variable or the `AUTH_BYPASS` and `DATAB
   registration.
 * **Default Behavior**: Enabled in `DEVELOPMENT` and `TESTING` profiles.
 
-### `AUTH_BYPASS`
+### `AUTH_BYPASS_ENABLED`
 
 * **What it does**: When set to `true`, the
   [AuthenticationInterceptor](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/grpc/interceptor/AuthenticationInterceptor.kt)
@@ -214,16 +214,16 @@ controlled by the `PROFILE` environment variable or the `AUTH_BYPASS` and `DATAB
 
 ### How They Work Together
 
-* Enabling `AUTH_BYPASS` automatically enables `DATABASE_SEED_USER`, because the user must exist in the database for the
-  bypass to function.
-* In the `DEVELOPMENT` profile, `DATABASE_SEED_USER` is on but `AUTH_BYPASS` is off. This is useful for developing
-  features related to login and authentication, as you can log in with the known dummy user's credentials.
+* Enabling `AUTH_BYPASS_ENABLED` automatically enables `DATABASE_SEED_USER_ENABLED`, because the user must exist in the
+  database for the bypass to function.
+* In the `DEVELOPMENT` profile, `DATABASE_SEED_USER_ENABLED` is on but `AUTH_BYPASS_ENABLED` is off. This is useful for
+  developing features related to login and authentication, as you can log in with the known dummy user's credentials.
 * In the `TESTING` profile, both are on, allowing you to directly call authenticated endpoints without logging in first.
 
 > **Note**: Restricting Allowed Calls
 >
 > The authentication bypass does not grant unrestricted access. The `authenticationInterceptor` maintains a whitelist of
-> gRPC methods that can be called when `AUTH_BYPASS` is active.
+> gRPC methods that can be called when `AUTH_BYPASS_ENABLED` is active.
 >
-> To modify this list, update the `AUTH_BYPASS_METHODS` set in the authenticationInterceptor. Ensure that only endpoints
+> To modify this list, update the `AUTH_BYPASS_ENABLED` set in the authenticationInterceptor. Ensure that only endpoints
 > required for local development or testing are permitted to avoid inadvertently bypassing critical authorization logic.
