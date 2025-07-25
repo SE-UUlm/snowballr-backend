@@ -47,49 +47,17 @@ class EnvReader(
         val activeProfile = AppProfile.fromString(envService[PROFILE])
         logger.info { "Application starting with profile: $activeProfile" }
 
-        // Define profile-based defaults
-        // For PRODUCTION, required values are left as null to enforce they are explicitly set
-        val defaultPort: Int?
-        val defaultDBHost: String?
-        val defaultLogLevel: String
-        val defaultAuthBypassEnabled: Boolean
-        val defaultSeedUserEnabled: Boolean
-
-        when (activeProfile) {
-            AppProfile.TESTING -> {
-                defaultPort = DEFAULT_PORT
-                defaultDBHost = DEFAULT_DATABASE_HOST
-                defaultLogLevel = "TRACE"
-                defaultAuthBypassEnabled = true
-                defaultSeedUserEnabled = true
-            }
-
-            AppProfile.DEVELOPMENT -> {
-                defaultPort = DEFAULT_PORT
-                defaultDBHost = DEFAULT_DATABASE_HOST
-                defaultLogLevel = "DEBUG"
-                defaultAuthBypassEnabled = false
-                defaultSeedUserEnabled = true
-            }
-
-            AppProfile.PRODUCTION -> {
-                defaultPort = null
-                defaultDBHost = null
-                defaultLogLevel = "INFO"
-                defaultAuthBypassEnabled = false
-                defaultSeedUserEnabled = false
-            }
-        }
+        val defaults = defaultsForProfile(activeProfile)
 
         // Read final values, applying defaults and allowing overrides
-        val port = envService.getRequiredOrDefault(PORT, defaultPort?.toString()).toInt()
-        val host = envService.getRequiredOrDefault(DATABASE_HOST, defaultDBHost)
-        val logLevel = envService.getOrDefault(LOG_LEVEL, defaultLogLevel)
+        val port = envService.getRequiredOrDefault(PORT, defaults.port?.toString()).toInt()
+        val host = envService.getRequiredOrDefault(DATABASE_HOST, defaults.databaseHost)
+        val logLevel = envService.getOrDefault(LOG_LEVEL, defaults.logLevel)
 
-        // If AUTH_BYPASS is true, we must also seed the user
-        val authBypassEnabled = envService.getBooleanOrDefault(AUTH_BYPASS_ENABLED, defaultAuthBypassEnabled)
+        // If AUTH_BYPASS_ENABLED is `true`, we must also seed the user
+        val authBypassEnabled = envService.getBooleanOrDefault(AUTH_BYPASS_ENABLED, defaults.authBypassEnabled)
         val seedUserEnabled =
-            authBypassEnabled || envService.getBooleanOrDefault(DATABASE_SEED_USER_ENABLED, defaultSeedUserEnabled)
+            authBypassEnabled || envService.getBooleanOrDefault(DATABASE_SEED_USER_ENABLED, defaults.seedUserEnabled)
 
         env = Env(
             http = Env.Http(port),
@@ -105,4 +73,54 @@ class EnvReader(
             ),
         )
     }
+
+    /**
+     * Returns the default values for the specified [profile]. These defaults are used to
+     * initialize the environment configuration if the corresponding environment variables are not set.
+     *
+     * @param profile The application profile for which to retrieve the defaults.
+     * @return A [ProfileDefaults] object containing the default values for the specified profile.
+     */
+    private fun defaultsForProfile(profile: AppProfile): ProfileDefaults = when (profile) {
+        AppProfile.TESTING -> ProfileDefaults(
+            port = DEFAULT_PORT,
+            databaseHost = DEFAULT_DATABASE_HOST,
+            logLevel = "TRACE",
+            authBypassEnabled = true,
+            seedUserEnabled = true,
+        )
+
+        AppProfile.DEVELOPMENT -> ProfileDefaults(
+            port = DEFAULT_PORT,
+            databaseHost = DEFAULT_DATABASE_HOST,
+            logLevel = "DEBUG",
+            authBypassEnabled = false,
+            seedUserEnabled = true,
+        )
+
+        AppProfile.PRODUCTION -> ProfileDefaults(
+            port = null,
+            databaseHost = null,
+            logLevel = "INFO",
+            authBypassEnabled = false,
+            seedUserEnabled = false,
+        )
+    }
+
+    /**
+     * Represents the application profile, which determines the environment configuration.
+     *
+     * @property port The port number for the HTTP server, or null if not set.
+     * @property databaseHost The host for the database, or null if not set.
+     * @property logLevel The logging level for the application.
+     * @property authBypassEnabled Whether authentication bypass is enabled.
+     * @property seedUserEnabled Whether the seed user is enabled.
+     */
+    private data class ProfileDefaults(
+        val port: Int?,
+        val databaseHost: String?,
+        val logLevel: String,
+        val authBypassEnabled: Boolean,
+        val seedUserEnabled: Boolean,
+    )
 }
