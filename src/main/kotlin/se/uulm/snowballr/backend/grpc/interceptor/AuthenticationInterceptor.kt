@@ -52,11 +52,12 @@ private val PUBLIC_METHODS =
     )
 
 /**
- * A set of dummy user methods that are used for testing purposes.
+ * A whitelist of gRPC methods that are allowed to be called when authentication bypass is active.
  *
- * Only these methods are allowed to be called by the dummy user.
+ * When `AUTH_BYPASS_ENABLED` is `true`, only calls to methods listed in this set will be permitted
+ * to proceed with the dummy user's context. All other calls will be rejected.
  */
-private val DUMMY_USER_METHODS =
+private val AUTH_BYPASS_METHODS =
     setOf(SnowballRGrpcKt.getAuthenticationStatusMethod.fullMethodName)
 
 /**
@@ -170,8 +171,8 @@ val authenticationInterceptor: ServerInterceptor =
             skipRefresh: Boolean,
             methodName: String,
         ): ServerCall.Listener<ReqT?>? {
-            val useDummyUser = this.envReader.env.miscellaneous.useDummyUser
-            if (useDummyUser) {
+            val authBypassEnabled = this.envReader.env.miscellaneous.authBypassEnabled
+            if (authBypassEnabled) {
                 return proceedWithDummyUser(authState)
             }
 
@@ -211,7 +212,7 @@ val authenticationInterceptor: ServerInterceptor =
             authState: AuthRequestState<ReqT, RespT>,
         ): ServerCall.Listener<ReqT?>? {
             val methodName = authState.call.methodDescriptor.fullMethodName
-            if (methodName !in DUMMY_USER_METHODS) {
+            if (methodName !in AUTH_BYPASS_METHODS) {
                 logger.warn { "Dummy user is not allowed to call $methodName" }
                 authState.call.close(
                     Status.PERMISSION_DENIED.withDescription("Dummy user cannot call this method"),
