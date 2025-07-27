@@ -1,25 +1,32 @@
 package se.uulm.snowballr.backend.service
 
+import com.github.jknack.handlebars.Handlebars
+import com.github.jknack.handlebars.Template
+import com.github.jknack.handlebars.io.ClassPathTemplateLoader
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.simplejavamail.MailException
 import org.simplejavamail.api.mailer.Mailer
 import org.simplejavamail.email.EmailBuilder
 import org.simplejavamail.mailer.MailerBuilder
 import se.uulm.snowballr.backend.env.EnvReader
+import se.uulm.snowballr.backend.model.EmailTemplate
+import se.uulm.snowballr.backend.model.SnowballRException.EmailException
+import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
+import java.io.IOException
 
 private val logger = KotlinLogging.logger {}
 
 interface IEmailService {
     /**
-     * Sends an email with the specified subject and HTML body to the given recipient.
+     * Sends an email using a specific template and data model.
      *
      * @param to The recipient's email address.
-     * @param subject The subject of the email.
-     * @param htmlBody The HTML content of the email.
+     * @param template The [EmailTemplate] enum instance, containing the template name and subject.
+     * @param data The data model (e.g., a Map) to populate the template.
      *
      * TODO: This method will be replaced by more specific methods like `sendInvitationEmail` in later issues
      */
-    fun sendEmail(to: String, subject: String, htmlBody: String)
+    fun sendEmail(to: String, template: EmailTemplate, data: Any)
 }
 
 /**
@@ -37,6 +44,7 @@ class EmailService(
     private val envReader: EnvReader,
 ) : IEmailService {
     private val mailer: Mailer
+    private val compiledTemplates: Map<EmailTemplate, Template>
 
     init {
         val env = envReader.env
@@ -51,33 +59,48 @@ class EmailService(
             .withTransportModeLoggingOnly(env.smtp.smtpTransportLoggingOnlyEnabled)
             .withDebugLogging(isDebugLogging)
             .apply {
-                val username = env.smtp.smtpUser
-                if (username != null) {
-                    withSMTPServerUsername(username)
-                }
-                val password = env.smtp.smtpPassword
-                if (password != null) {
-                    withSMTPServerPassword(password)
-                }
+                env.smtp.smtpUser?.let { withSMTPServerUsername(it) }
+                env.smtp.smtpPassword?.let { withSMTPServerPassword(it) }
             }
+            .async()
             .buildMailer()
 
-        logger.info { "Initialized Mailer" }
+        val handlebars = Handlebars(ClassPathTemplateLoader("/templates", ".hbs"))
+
+        // Compile all email templates at startup to ensure they are ready for use
+        compiledTemplates = EmailTemplate.entries.associateWith { template ->
+            logger.info { "Compiling email template: ${template.templateFileName}" }
+            try {
+                handlebars.compile(template.templateFileName)
+            } catch (e: IOException) {
+                logger.error(e) { "Could not find or compile template '${template.templateFileName}'." }
+                throw EmailException.TemplateCompilationFailed(template.templateFileName, e)
+            }
+        }
+
+        logger.info { "Initialized Mailer and compiled all email templates." }
     }
 
-    override fun sendEmail(to: String, subject: String, htmlBody: String) {
+    override fun sendEmail(to: String, template: EmailTemplate, data: Any) {
         try {
+            val compiledTemplate = compiledTemplates[template]
+                ?: throw FailedPreconditionException("Template ${template.name} was not pre-compiled.")
+
+            val htmlBody = compiledTemplate.apply(data)
+
             val email = EmailBuilder
                 .startingBlank()
                 .to(to)
                 .from(envReader.env.smtp.smtpSenderName, envReader.env.smtp.smtpSenderEmail)
-                .withSubject(subject)
+                .withSubject(template.subject)
                 .withHTMLText(htmlBody)
                 .buildEmailCompletedWithDefaultsAndOverrides()
 
-            mailer.sendMail(email, true)
+            mailer.sendMail(email)
+            logger.info { "Successfully queued email for delivery to $to with template '${template.name}'" }
         } catch (e: MailException) {
-            logger.error(e) { "Failed to send email to $to with subject '$subject'" }
+            logger.error(e) { "Mailer failed to send email to $to with template '${template.name}'" }
+            throw EmailException.MailSendFailed(to, e)
         }
     }
 }
