@@ -90,7 +90,7 @@ class CriterionService(
         val members = when (accessType) {
             AccessType.READ -> projectMemberRepo.getMembersOfProject(project.id)
             AccessType.UPDATE -> projectMemberRepo.getAllProjectAdmins(project.id)
-            else -> emptyList()
+            AccessType.CREATE, AccessType.DELETE -> emptyList()
         }
 
         if (!members.any { it.userId == currentUser.id }) {
