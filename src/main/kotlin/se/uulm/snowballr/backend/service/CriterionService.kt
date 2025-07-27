@@ -17,6 +17,7 @@ import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import snowballr.Base
 import snowballr.CriterionOuterClass
 import snowballr.ProjectOuterClass
+import java.util.UUID
 
 interface ICriterionService {
     /**
@@ -82,7 +83,10 @@ class CriterionService(
         accessType: AccessType,
     ) {
         val criterionId = criterion.id.toString()
-        val project = projectRepo.getProjectById(criterion.projectId!!)
+        val project = projectRepo.getProjectById(
+            // TODO: This will be refactored in #163
+            criterion.projectId ?: UUID.fromString("00000000-0000-0000-0000-000000000000"),
+        )
         val members = when (accessType) {
             AccessType.READ -> projectMemberRepo.getMembersOfProject(project.id)
             AccessType.UPDATE -> projectMemberRepo.getAllProjectAdmins(project.id)
