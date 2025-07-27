@@ -728,6 +728,7 @@ potential-bugs:
             - 'kotlinx.coroutines.flow.*Flow'
             - 'java.util.stream.*Stream'
         ignoreFunctionCall: [ ]
+        excludes: [ '**/test/**' ]
     ImplicitDefaultLocale:
         active: true
     ImplicitUnitReturnType:
