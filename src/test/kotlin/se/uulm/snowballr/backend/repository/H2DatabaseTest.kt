@@ -1,6 +1,7 @@
 package se.uulm.snowballr.backend.repository
 
 import io.mockk.clearAllMocks
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -86,12 +87,13 @@ open class H2DatabaseTest(
      * and use the [Connection.TRANSACTION_SERIALIZABLE] isolation level to ensure data consistency.
      */
     class TestDatabase : IDatabase {
-        override suspend fun <T> dbQuery(block: suspend Transaction.() -> T): T = newSuspendedTransaction(
-            Dispatchers.IO,
-            transactionIsolation = Connection.TRANSACTION_SERIALIZABLE,
-        ) {
-            block()
-        }
+        override suspend fun <T> dbQuery(dispatcher: CoroutineDispatcher, block: suspend Transaction.() -> T): T =
+            newSuspendedTransaction(
+                dispatcher,
+                transactionIsolation = Connection.TRANSACTION_SERIALIZABLE,
+            ) {
+                block()
+            }
     }
 
     @BeforeAll
