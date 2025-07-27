@@ -998,6 +998,7 @@ style:
         active: true
     UnnecessaryInnerClass:
         active: true
+        excludes: [ '**/test/**' ]
     UnnecessaryLet:
         active: true
     UnnecessaryParentheses:
