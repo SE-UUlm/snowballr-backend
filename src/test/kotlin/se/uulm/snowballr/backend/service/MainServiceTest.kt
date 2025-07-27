@@ -79,12 +79,12 @@ open class MainServiceTest {
     val fetcherManagerMock = mockk<FetcherManager>(relaxed = true)
     val mainService =
         MainService(
-            projectRepoMock,
-            criterionRepoMock,
-            userRepoMock,
-            projectMemberRepoMock,
-            jwtServiceMock,
-            fetcherManagerMock,
+            projectRepo = projectRepoMock,
+            criterionRepo = criterionRepoMock,
+            userRepo = userRepoMock,
+            projectMemberRepo = projectMemberRepoMock,
+            jwtService = jwtServiceMock,
+            fetcherManager = fetcherManagerMock,
         )
 
     @BeforeAll
