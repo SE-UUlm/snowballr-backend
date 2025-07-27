@@ -215,4 +215,15 @@ tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
     }
     jvmTarget = "1.8"
     classpath = sourceSets["main"].runtimeClasspath
+    baseline.set(file("$rootDir/detekt-baseline.xml"))
+}
+
+tasks.withType<io.gitlab.arturbosch.detekt.DetektCreateBaselineTask>().configureEach {
+    setSource(files("src"))
+    include("**/*.kt", "**/*.kts")
+    exclude {
+        it.file.path.contains("build")
+    }
+    jvmTarget = "1.8"
+    classpath = sourceSets["main"].runtimeClasspath
 }

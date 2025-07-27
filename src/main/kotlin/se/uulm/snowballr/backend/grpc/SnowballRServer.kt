@@ -68,7 +68,6 @@ class SnowballRServer(
      *
      * **Note:** ProtoReflectionServiceV1 does not work - calls are not registered by the server.
      */
-    @Suppress("Deprecation")
     private val reflectionService = ProtoReflectionService.newInstance()
 
     /**
