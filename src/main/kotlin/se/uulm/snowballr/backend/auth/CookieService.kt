@@ -71,7 +71,7 @@ class CookieService(private val jwtService: IJwtService) : ICookieService {
 
         val authCookieConfig = CookieConfig(
             name = name,
-            value = value ?: "", // Use empty string for expiration
+            value = value.orEmpty(), // Use empty string for expiration
             maxAgeSeconds = ttl,
             path = "/",
             sameSite = "Strict", // Stricter policy for auth tokens
