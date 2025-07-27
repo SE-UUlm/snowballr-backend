@@ -19,6 +19,8 @@ data class CookieConfig(
     val path: String = "/",
     val domain: String? = null,
     val sameSite: String = "Lax",
+    @Suppress("BooleanPropertyNaming")
     val httpOnly: Boolean = true,
+    @Suppress("BooleanPropertyNaming")
     val secure: Boolean = true,
 )

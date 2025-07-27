@@ -37,7 +37,7 @@ private class ValidationCallListener<ReqT, RespT>(
     listener: ServerCall.Listener<ReqT?>?,
 ) : SimpleForwardingServerCallListener<ReqT>(listener) {
     // Track whether the call was already closed and return if that's the case
-    private var callClosedByInterceptor = false
+    private var isCallClosedByInterceptor = false
 
     override fun onMessage(message: ReqT?) {
         // Perform input validation
@@ -52,7 +52,7 @@ private class ValidationCallListener<ReqT, RespT>(
                     .withDescription("Request validation failed: $reasons"),
                 Metadata(),
             )
-            callClosedByInterceptor = true
+            isCallClosedByInterceptor = true
             // Stop further processing
             return
         }
@@ -62,21 +62,21 @@ private class ValidationCallListener<ReqT, RespT>(
     }
 
     override fun onHalfClose() {
-        if (callClosedByInterceptor) {
+        if (isCallClosedByInterceptor) {
             return
         }
         super.onHalfClose()
     }
 
     override fun onCancel() {
-        if (callClosedByInterceptor) {
+        if (isCallClosedByInterceptor) {
             return
         }
         super.onCancel()
     }
 
     override fun onComplete() {
-        if (callClosedByInterceptor) {
+        if (isCallClosedByInterceptor) {
             return
         }
         super.onComplete()
