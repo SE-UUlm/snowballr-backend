@@ -1,5 +1,6 @@
 // Suppress the 'FunctionName' rule because it cannot detect that this is a test file.
-@file:Suppress("FunctionName")
+// Suppress the 'ForbiddenMethodCall' rule because we can use println here.
+@file:Suppress("FunctionName", "ForbiddenMethodCall")
 
 package se.uulm.snowballr.backend.arch
 
