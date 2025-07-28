@@ -1,6 +1,8 @@
 package se.uulm.snowballr.backend.model
 
+import org.simplejavamail.MailException
 import se.uulm.snowballr.backend.service.EmailService
+import java.io.IOException
 
 /**
  * Base class for all exceptions in the SnowballR application.
@@ -193,22 +195,22 @@ sealed class SnowballRException(
          * This is a fatal startup error.
          *
          * @param templateFileName The name of the file that failed to compile.
-         * @param cause The original IOException from the template engine.
+         * @param cause The original [IOException] from the template engine.
          */
         class TemplateCompilationFailed(
             templateFileName: String,
-            cause: Throwable?,
+            cause: IOException,
         ) : EmailException("Failed to compile email template '$templateFileName'.", cause)
 
         /**
          * Thrown when the email provider fails to send an email.
          *
          * @param recipient The email address of the intended recipient.
-         * @param cause The original MailException from the mailer library.
+         * @param cause The original [MailException] from the mailer library.
          */
         class MailSendFailed(
             recipient: String,
-            cause: Throwable?,
+            cause: MailException,
         ) : EmailException("Mailer failed to send email to '$recipient'.", cause)
     }
 }
