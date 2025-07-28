@@ -66,7 +66,7 @@ The `PROFILE` variable determines the default behavior of the application.
 | `DATABASE_PASSWORD`                   |          :white_check_mark:          |       -       | Password for the database e.g. `postgres_password`.                               |
 | `JWT_PRIVATE_KEY_BASE64`              |          :white_check_mark:          |       -       | Base64 encoded private key for JWT authentication.                                |
 | `JWT_PUBLIC_KEY_BASE64`               |          :white_check_mark:          |       -       | Base64 encoded public key for JWT authentication.                                 |
-| `SMPT_HOST`                           |          :white_check_mark:          |       -       | SMTP host for sending emails.                                                     |
+| `SMTP_HOST`                           |          :white_check_mark:          |       -       | SMTP host for sending emails.                                                     |
 | `SMTP_PORT`                           |          :white_check_mark:          |       -       | SMTP port for sending emails.                                                     |
 | `SMTP_USER`                           |                 :x:                  |       -       | SMTP user for sending emails.                                                     |
 | `SMTP_PASSWORD`                       |                 :x:                  |       -       | SMTP password for sending emails.                                                 |
