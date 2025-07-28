@@ -24,6 +24,8 @@ shadow-jar-version = "8.3.6"
 archunit-version = "1.4.1"
 password4j-version = "1.8.3"
 jjwt-version = "0.12.6"
+simple-java-mail-version = "8.12.6"
+handlebars-version = "4.4.0"
 
 [libraries]
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines-version" }
@@ -77,6 +79,9 @@ archunit = { module = "com.tngtech.archunit:archunit", version.ref = "archunit-v
 archunit-junit5 = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit-version" }
 
 detekt-formatting = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", version.ref = "detekt-version" }
+
+simple-java-mail = { module = "org.simplejavamail:simple-java-mail", version.ref = "simple-java-mail-version" }
+handlebars = { module = "com.github.jknack:handlebars", version.ref = "handlebars-version" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin-version" }

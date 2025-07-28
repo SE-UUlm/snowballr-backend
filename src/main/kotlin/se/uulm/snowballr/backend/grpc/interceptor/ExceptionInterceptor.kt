@@ -83,6 +83,7 @@ private class ExceptionCall<ReqT, RespT>(
                 is SnowballRException.FailedPreconditionException -> Status.FAILED_PRECONDITION
                 is SnowballRException.EntityNotPersistedException -> Status.INTERNAL
                 is SnowballRException.MissingContextException -> Status.INTERNAL
+                is SnowballRException.EmailException -> Status.INTERNAL
                 is SnowballRException.UnauthenticatedException -> Status.UNAUTHENTICATED
             }.withDescription(e.message).withCause(e.cause)
 

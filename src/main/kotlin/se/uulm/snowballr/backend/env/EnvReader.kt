@@ -21,6 +21,15 @@ private const val DATABASE_SEED_USER_ENABLED = "DATABASE_SEED_USER_ENABLED"
 private const val JWT_PRIVATE_KEY_BASE64 = "JWT_PRIVATE_KEY_BASE64"
 private const val JWT_PUBLIC_KEY_BASE64 = "JWT_PUBLIC_KEY_BASE64"
 
+// SMTP
+private const val SMTP_HOST = "SMTP_HOST"
+private const val SMTP_PORT = "SMTP_PORT"
+private const val SMTP_USER = "SMTP_USER"
+private const val SMTP_PASSWORD = "SMTP_PASSWORD"
+private const val SMTP_TRANSPORT_LOGGING_ONLY_ENABLED = "SMTP_TRANSPORT_LOGGING_ONLY_ENABLED"
+private const val SMTP_SENDER_NAME = "SMTP_SENDER_NAME"
+private const val SMTP_SENDER_EMAIL = "SMTP_SENDER_EMAIL"
+
 // Default values
 private const val DEFAULT_PORT = 8080
 const val DEFAULT_LOG_LEVEL = "DEBUG"
@@ -53,6 +62,11 @@ class EnvReader(
         val port = envService.getRequiredOrDefault(PORT, defaults.port?.toString()).toInt()
         val host = envService.getRequiredOrDefault(DATABASE_HOST, defaults.databaseHost)
         val logLevel = envService.getOrDefault(LOG_LEVEL, defaults.logLevel)
+        val smtpTransportLoggingOnlyEnabled =
+            envService.getBooleanOrDefault(
+                SMTP_TRANSPORT_LOGGING_ONLY_ENABLED,
+                defaults.smtpTransportLoggingOnlyEnabled,
+            )
 
         // If AUTH_BYPASS_ENABLED is `true`, we must also seed the user
         val authBypassEnabled = envService.getBooleanOrDefault(AUTH_BYPASS_ENABLED, defaults.authBypassEnabled)
@@ -71,6 +85,15 @@ class EnvReader(
                 jwtPrivateKeyBase64 = envService[JWT_PRIVATE_KEY_BASE64],
                 jwtPublicKeyBase64 = envService[JWT_PUBLIC_KEY_BASE64],
             ),
+            smtp = Env.SMTP(
+                smtpHost = envService[SMTP_HOST],
+                smtpPort = envService[SMTP_PORT].toInt(),
+                smtpUser = envService.getOrNull(SMTP_USER),
+                smtpPassword = envService.getOrNull(SMTP_PASSWORD),
+                smtpTransportLoggingOnlyEnabled = smtpTransportLoggingOnlyEnabled,
+                smtpSenderName = envService[SMTP_SENDER_NAME],
+                smtpSenderEmail = envService[SMTP_SENDER_EMAIL],
+            ),
         )
     }
 
@@ -88,6 +111,7 @@ class EnvReader(
             logLevel = "TRACE",
             authBypassEnabled = true,
             seedUserEnabled = true,
+            smtpTransportLoggingOnlyEnabled = true,
         )
 
         AppProfile.DEVELOPMENT -> ProfileDefaults(
@@ -96,6 +120,7 @@ class EnvReader(
             logLevel = "DEBUG",
             authBypassEnabled = false,
             seedUserEnabled = true,
+            smtpTransportLoggingOnlyEnabled = true,
         )
 
         AppProfile.PRODUCTION -> ProfileDefaults(
@@ -104,6 +129,7 @@ class EnvReader(
             logLevel = "INFO",
             authBypassEnabled = false,
             seedUserEnabled = false,
+            smtpTransportLoggingOnlyEnabled = false,
         )
     }
 
@@ -115,6 +141,7 @@ class EnvReader(
      * @property logLevel The logging level for the application.
      * @property authBypassEnabled Whether authentication bypass is enabled.
      * @property seedUserEnabled Whether the seed user is enabled.
+     * @property smtpTransportLoggingOnlyEnabled Whether SMTP transport logging is enabled.
      */
     private data class ProfileDefaults(
         val port: Int?,
@@ -122,5 +149,6 @@ class EnvReader(
         val logLevel: String,
         val authBypassEnabled: Boolean,
         val seedUserEnabled: Boolean,
+        val smtpTransportLoggingOnlyEnabled: Boolean,
     )
 }

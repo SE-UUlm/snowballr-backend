@@ -68,6 +68,9 @@ dependencies {
     runtimeOnly(libs.grpc.netty)
 
     detektPlugins(libs.detekt.formatting)
+
+    implementation(libs.simple.java.mail)
+    implementation(libs.handlebars)
 }
 
 kotlin {
