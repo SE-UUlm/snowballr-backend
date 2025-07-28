@@ -87,8 +87,8 @@ private class ExceptionCall<ReqT, RespT>(
             }.withDescription(e.message).withCause(e.cause)
 
         logger.debug {
-            "gRPC call failed due to ${e::class.qualifiedName} with status: ${status.code}." +
-                " Message: ${status.description}"
+            "gRPC call failed due to ${e::class.qualifiedName ?: "<unknown class>"} with status: ${status.code}." +
+                " Message: ${status.description ?: "<no message>"}"
         }
         logger.trace { e.stackTraceToString() }
         return status
@@ -99,7 +99,10 @@ private class ExceptionCall<ReqT, RespT>(
      * They are logged as warning so that they can be handled in the future.
      */
     private fun getStatusForSpecificUnexpectedException(status: Status, e: Exception): Status {
-        logger.warn(e) { "gRPC call failed due to unexpected ${e::class.simpleName} with message: ${e.message}" }
+        logger.warn(e) {
+            "gRPC call failed due to unexpected ${e::class.simpleName ?: "<unknown class>"} " +
+                "with message: ${e.message ?: "<no message>"}."
+        }
         return status
     }
 

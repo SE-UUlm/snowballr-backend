@@ -20,7 +20,7 @@ interface IProjectService {
     /**
      * Service implementation of [SnowballRService.getProjectById].
      */
-    suspend fun getProjectById(projectId: Base.Id): GrpcProject
+    suspend fun getProjectById(request: Base.Id): GrpcProject
 
     /**
      * Service implementation of [SnowballRService.createProject].
@@ -72,9 +72,9 @@ class ProjectService(
     private val userRepo: IUserTableRepo,
     private val projectMemberRepo: IProjectMemberTableRepo,
 ) : IProjectService {
-    override suspend fun getProjectById(projectId: Base.Id): GrpcProject {
+    override suspend fun getProjectById(request: Base.Id): GrpcProject {
         val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
-        val projectId = parseUUID(projectId.id, EntityType.PROJECT)
+        val projectId = parseUUID(request.id, EntityType.PROJECT)
         val isInProject = projectMemberRepo.getMembersOfProject(projectId)
             .any { it.userId == currentUser.id }
 

@@ -44,7 +44,7 @@ class UserValidatorTest {
 
         @Test
         fun `When a blank field mask is validated, then the 'InvalidFieldMask' issue is returned`() {
-            val inValidFieldMask = FieldMaskUtil.fromStringList(listOf())
+            val inValidFieldMask = FieldMaskUtil.fromStringList(emptyList())
             val request =
                 validUpdateRequestBuilder
                     .setMask(inValidFieldMask)

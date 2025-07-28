@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.db
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.Schema
@@ -57,7 +58,7 @@ private const val DB_USER = "postgres"
  * managing transaction lifecycles, allowing for simpler and more testable database interactions.
  */
 interface IDatabase {
-    suspend fun <T> dbQuery(block: suspend Transaction.() -> T): T
+    suspend fun <T> dbQuery(dispatcher: CoroutineDispatcher = Dispatchers.IO, block: suspend Transaction.() -> T): T
 }
 
 /**
@@ -117,13 +118,14 @@ class Database(
         return HikariDataSource(config)
     }
 
-    override suspend fun <T> dbQuery(block: suspend Transaction.() -> T): T = newSuspendedTransaction(
-        Dispatchers.IO,
-        Database.connect(dataSource),
-        Connection.TRANSACTION_SERIALIZABLE,
-    ) {
-        block()
-    }
+    override suspend fun <T> dbQuery(dispatcher: CoroutineDispatcher, block: suspend Transaction.() -> T): T =
+        newSuspendedTransaction(
+            dispatcher,
+            Database.connect(dataSource),
+            Connection.TRANSACTION_SERIALIZABLE,
+        ) {
+            block()
+        }
 
     /**
      * Seeds the database with a dummy user if the environment configuration requires it.

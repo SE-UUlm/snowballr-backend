@@ -97,9 +97,9 @@ val authenticationInterceptor: ServerInterceptor =
             headers: Metadata?,
             next: ServerCallHandler<ReqT?, RespT?>?,
         ): ServerCall.Listener<ReqT?>? {
-            val serviceName = call?.methodDescriptor?.serviceName
-            val methodName = call?.methodDescriptor?.fullMethodName
-            logger.info { "Authenticating call to $methodName" }
+            val serviceName = call?.run { methodDescriptor.serviceName }
+            val methodName = call?.run { methodDescriptor.serviceName }
+            logger.info { "Authenticating call to ${methodName ?: "<unknown method>"}" }
 
             if (methodName == null || serviceName == null) {
                 call?.close(Status.UNAUTHENTICATED.withDescription("Method or service name is null"), Metadata())

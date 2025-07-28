@@ -50,7 +50,7 @@ class GenericEnumProvider : ArgumentsProvider {
         parameters: ParameterDeclarations,
         context: ExtensionContext?,
     ): Stream<out Arguments> {
-        val method = checkNotNull(context?.testMethod?.getOrNull()) { "No test method found." }
+        val method = checkNotNull(context?.run { testMethod.getOrNull() }) { "No test method found." }
 
         val annotation = method.getAnnotation(GrpcEnumSourceTest::class.java)
         requireNonNull(annotation, "Missing @GrpcEnumSourceTest annotation.")

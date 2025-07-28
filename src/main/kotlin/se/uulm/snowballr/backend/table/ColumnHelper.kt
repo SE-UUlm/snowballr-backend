@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.table
 
+import arrow.core.mapValuesNotNull
 import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.Table
@@ -57,12 +58,11 @@ fun Table.obfuscatedText(name: String, collate: String? = null, eagerLoading: Bo
 fun Table.stringMap(name: String): Column<Map<String, String>> = registerColumn(
     name,
     HStoreColumnType(),
-).transform<String, Map<String, String>>(
+).transform(
     wrap = {
         HStoreConverter
             .fromString(it)
-            .filterValues { it !== null }
-            .mapValues { it.value!! }
+            .mapValuesNotNull { entry -> entry.value }
     },
     unwrap = {
         HStoreConverter.toString(it)

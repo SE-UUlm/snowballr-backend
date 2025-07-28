@@ -157,9 +157,9 @@ class ProjectTableRepo(
             .map { ProjectTable.status eq it }
             .reduceOrNull { acc, filter -> acc or filter }
 
-        require(
-            projectFilter != null,
-        ) { "Unsupported filter statuses: ${statusFilters.joinToString(", ") { it.name }}." }
+        requireNotNull(projectFilter) {
+            "Unsupported filter statuses: ${statusFilters.joinToString(", ") { it.name }}."
+        }
 
         (ProjectTable innerJoin ProjectMemberTable)
             .select(ProjectTable.columns)

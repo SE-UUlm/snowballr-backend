@@ -21,7 +21,7 @@ val loggingInterceptor =
             headers: Metadata?,
             next: ServerCallHandler<ReqT?, RespT?>?,
         ): ServerCall.Listener<ReqT?>? {
-            logger.info { "Received call to ${call?.methodDescriptor?.fullMethodName}" }
+            logger.info { "Received call to ${call?.run { methodDescriptor.fullMethodName } ?: "<unknown method>"}" }
             return next?.startCall(call, headers)
         }
     }

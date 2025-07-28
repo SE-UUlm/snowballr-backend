@@ -190,10 +190,12 @@ sourceSets {
 }
 
 // Alias for regular detekt lint check
-tasks.register("lint") {
+tasks.register<io.gitlab.arturbosch.detekt.Detekt>("lint") {
     group = "verification"
     description = "Runs Detekt linter"
-    dependsOn("detekt")
+
+    config.setFrom(files("detekt.yml"))
+    autoCorrect = false
 }
 
 // Custom format task as alias for "detekt --auto-correct"
@@ -203,9 +205,25 @@ tasks.register<io.gitlab.arturbosch.detekt.Detekt>("format") {
 
     config.setFrom(files("detekt.yml"))
     autoCorrect = true
+}
 
+tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
     setSource(files("src"))
-
     include("**/*.kt", "**/*.kts")
-    exclude("**/build/**")
+    exclude {
+        it.file.path.contains("build")
+    }
+    jvmTarget = "1.8"
+    classpath = sourceSets["main"].runtimeClasspath
+    baseline.set(file("$rootDir/detekt-baseline.xml"))
+}
+
+tasks.withType<io.gitlab.arturbosch.detekt.DetektCreateBaselineTask>().configureEach {
+    setSource(files("src"))
+    include("**/*.kt", "**/*.kts")
+    exclude {
+        it.file.path.contains("build")
+    }
+    jvmTarget = "1.8"
+    classpath = sourceSets["main"].runtimeClasspath
 }

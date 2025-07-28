@@ -39,7 +39,7 @@ fun main() {
  * If an invalid log level is provided, the default log level [DEFAULT_LOG_LEVEL] will be used.
  */
 fun configureRootLogger(logLevel: String) {
-    val context = LoggerFactory.getILoggerFactory() as LoggerContext
+    val context = (LoggerFactory.getILoggerFactory() ?: error("unable to get logger context")) as LoggerContext
     val rootLogger = context.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME)
 
     rootLogger.level = Level.toLevel(logLevel, Level.toLevel(DEFAULT_LOG_LEVEL))

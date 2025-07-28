@@ -57,7 +57,7 @@ class FetcherManagerTest {
         fetcherManager.registerFetcher("foo", mockk())
         assertEquals(setOf("foo"), fetcherManager.getAvailableFetchers())
         fetcherManager.removeFetcher("foo")
-        assertEquals(setOf(), fetcherManager.getAvailableFetchers())
+        assertEquals(emptySet(), fetcherManager.getAvailableFetchers())
     }
 
     @Test
@@ -112,9 +112,9 @@ class FetcherManagerTest {
         fetcherManager.registerFetcher("foo", mockk())
 
         assertThrows<Exception> { fetcherManager.getAvailableOptions("bar") }
-        assertThrows<Exception> { fetcherManager.searchPapers("bar", "", mapOf()) }
-        assertThrows<Exception> { fetcherManager.fetchForwardReferences("bar", examplePaper, mapOf()) }
-        assertThrows<Exception> { fetcherManager.fetchBackwardReferences("bar", examplePaper, mapOf()) }
+        assertThrows<Exception> { fetcherManager.searchPapers("bar", "", emptyMap()) }
+        assertThrows<Exception> { fetcherManager.fetchForwardReferences("bar", examplePaper, emptyMap()) }
+        assertThrows<Exception> { fetcherManager.fetchBackwardReferences("bar", examplePaper, emptyMap()) }
     }
 
     @Test

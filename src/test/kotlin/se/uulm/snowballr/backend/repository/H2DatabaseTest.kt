@@ -1,6 +1,7 @@
 package se.uulm.snowballr.backend.repository
 
 import io.mockk.clearAllMocks
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -60,14 +61,14 @@ import java.util.UUID
  * ```
  *
  * @property tables An array of database tables to be managed during the test lifecycle.
- * @property useTestUser Whether a test user should be created, which can be used in a test in the form of [testUserId].
+ * @property needsTestUser Whether a test user is required, which can be used in a test in the form of [testUserId].
  */
 @ExperimentalCoroutinesApi
 @DelicateCoroutinesApi
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 open class H2DatabaseTest(
     val tables: Array<Table> = emptyArray(),
-    val useTestUser: Boolean = false,
+    val needsTestUser: Boolean = false,
 ) {
     private val threadContext = newSingleThreadContext("Coroutine thread")
     private val connection = Database.connect("jdbc:h2:mem:test_db;DB_CLOSE_DELAY=-1;IGNORECASE=true;")
@@ -86,12 +87,13 @@ open class H2DatabaseTest(
      * and use the [Connection.TRANSACTION_SERIALIZABLE] isolation level to ensure data consistency.
      */
     class TestDatabase : IDatabase {
-        override suspend fun <T> dbQuery(block: suspend Transaction.() -> T): T = newSuspendedTransaction(
-            Dispatchers.IO,
-            transactionIsolation = Connection.TRANSACTION_SERIALIZABLE,
-        ) {
-            block()
-        }
+        override suspend fun <T> dbQuery(dispatcher: CoroutineDispatcher, block: suspend Transaction.() -> T): T =
+            newSuspendedTransaction(
+                dispatcher,
+                transactionIsolation = Connection.TRANSACTION_SERIALIZABLE,
+            ) {
+                block()
+            }
     }
 
     @BeforeAll
@@ -107,7 +109,7 @@ open class H2DatabaseTest(
                 SchemaUtils.create(*tables)
 
                 // Create the user table and a test entity if requested
-                if (useTestUser) {
+                if (needsTestUser) {
                     SchemaUtils.create(UserTable)
                     // Create the test user
                     val userId =
@@ -130,7 +132,7 @@ open class H2DatabaseTest(
         runBlocking {
             db.dbQuery {
                 SchemaUtils.drop(*tables)
-                if (useTestUser) {
+                if (needsTestUser) {
                     SchemaUtils.drop(UserTable)
                 }
             }
