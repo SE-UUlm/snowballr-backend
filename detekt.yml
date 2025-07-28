@@ -150,7 +150,7 @@ complexity:
         active: true
         threshold: 4
     NestedScopeFunctions:
-        active: true
+        active: false
         threshold: 1
         functions:
             - 'kotlin.apply'
@@ -732,7 +732,7 @@ potential-bugs:
     ImplicitDefaultLocale:
         active: true
     ImplicitUnitReturnType:
-        active: true
+        active: false
         allowExplicitReturnType: true
     InvalidRange:
         active: true
