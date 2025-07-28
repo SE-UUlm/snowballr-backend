@@ -228,7 +228,7 @@ class UserService(
         val user = userRepo.createUser(request, passwordHash)
 
         // Generate JWT tokens
-        val (accessToken, refreshToken) = jwtService.generateTokens(user.id)
+        val (accessToken, refreshToken) = jwtService.generateAuthTokens(user.id)
         GrpcContext.setAuthCookiesInContext(accessToken, refreshToken)
 
         return Base.Nothing.getDefaultInstance()
@@ -261,7 +261,7 @@ class UserService(
         }
 
         // Generate JWT tokens
-        val (accessToken, refreshToken) = jwtService.generateTokens(user.id)
+        val (accessToken, refreshToken) = jwtService.generateAuthTokens(user.id)
         GrpcContext.setAuthCookiesInContext(accessToken, refreshToken)
 
         return Base.Nothing.getDefaultInstance()

@@ -182,7 +182,7 @@ val authenticationInterceptor: ServerInterceptor =
             val refreshToken = cookies[GrpcContext.REFRESH_TOKEN_COOKIE_NAME]
 
             val authResult = authService.authenticate(accessToken, refreshToken, skipRefresh)
-            return authResult.parsedJwtClaimsResult.fold(
+            return authResult.parsedJwtAuthClaimsResult.fold(
                 onSuccess = { claims ->
                     val context = authResult.updatedContext.withValue(GrpcContext.USER_ID_CONTEXT_KEY, claims.userId)
                     context.call { authState.next?.startCall(authState.call, authState.headers) }

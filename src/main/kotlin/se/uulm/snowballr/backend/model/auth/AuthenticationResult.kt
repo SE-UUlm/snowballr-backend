@@ -1,15 +1,15 @@
 package se.uulm.snowballr.backend.model.auth
 
 import io.grpc.Context
-import se.uulm.snowballr.backend.model.jwt.ParsedJwtClaims
+import se.uulm.snowballr.backend.model.jwt.ParsedJwtAuthClaims
 
 /**
  * Represents the result of an authentication attempt.
  *
- * @property parsedJwtClaimsResult The result of the authentication attempt, which can be either a success with parsed JWT claims or a failure.
+ * @property parsedJwtAuthClaimsResult The result of the authentication attempt, which can be either a success with parsed JWT claims or a failure.
  * @property updatedContext The gRPC context updated with the authentication status.
  */
 data class AuthenticationResult(
-    val parsedJwtClaimsResult: Result<ParsedJwtClaims>,
+    val parsedJwtAuthClaimsResult: Result<ParsedJwtAuthClaims>,
     val updatedContext: Context,
 )

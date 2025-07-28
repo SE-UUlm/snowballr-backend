@@ -15,7 +15,7 @@ import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.IdentifierType
 import se.uulm.snowballr.backend.model.SnowballRException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthenticatedException
-import se.uulm.snowballr.backend.model.jwt.JwtTokens
+import se.uulm.snowballr.backend.model.jwt.JwtAuthTokens
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.Authentication.LoginRequest
 import kotlin.test.assertEquals
@@ -27,7 +27,7 @@ class LoginTest : MainServiceTest() {
         val testUser = DataBuilder.createExampleUser()
         val userPassword = "AAbb__00"
         val passwordHash = PasswordUtils.hashPassword(userPassword)
-        val tokens = JwtTokens("accessToken", "refreshToken")
+        val tokens = JwtAuthTokens("accessToken", "refreshToken")
 
         val request = LoginRequest.newBuilder().apply {
             email = testUser.email
@@ -36,7 +36,7 @@ class LoginTest : MainServiceTest() {
 
         coEvery { userRepoMock.getUserByEmail(any()) } returns testUser
         coEvery { userRepoMock.getPasswordHashByEmail(testUser.email) } returns passwordHash
-        every { jwtServiceMock.generateTokens(testUser.id) } returns tokens
+        every { jwtServiceMock.generateAuthTokens(testUser.id) } returns tokens
 
         assertDoesNotThrow { mainService.login(request) }
 

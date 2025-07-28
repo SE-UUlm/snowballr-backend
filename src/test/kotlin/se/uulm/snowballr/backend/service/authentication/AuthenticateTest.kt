@@ -8,7 +8,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import se.uulm.snowballr.backend.GrpcTestContextExtension
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.auth.JwtService
-import se.uulm.snowballr.backend.model.jwt.ParsedJwtClaims
+import se.uulm.snowballr.backend.model.jwt.ParsedJwtAuthClaims
 import se.uulm.snowballr.backend.service.AuthenticationService
 import snowballr.Authentication
 import java.util.Date
@@ -27,14 +27,14 @@ class AuthenticateTest {
 
     @Test
     fun `When access token is valid, then authentication succeeds`() {
-        val parsedClaims = ParsedJwtClaims(UUID.randomUUID(), Date(), Date())
-        every { jwtServiceMock.parseToken("validAccessToken") } returns parsedClaims
+        val parsedClaims = ParsedJwtAuthClaims(UUID.randomUUID(), Date(), Date())
+        every { jwtServiceMock.parseAuthToken("validAccessToken") } returns parsedClaims
 
         val authResult = authenticationService.authenticate("validAccessToken", "anyRefreshToken", false)
         authResult.updatedContext.attach() // Simulate using the updated context in the authentication interceptor
 
-        assertTrue(authResult.parsedJwtClaimsResult.isSuccess)
-        assertEquals(parsedClaims, authResult.parsedJwtClaimsResult.getOrNull())
+        assertTrue(authResult.parsedJwtAuthClaimsResult.isSuccess)
+        assertEquals(parsedClaims, authResult.parsedJwtAuthClaimsResult.getOrNull())
         assertEquals(
             Authentication.AuthenticationStatus.AUTHENTICATION_STATUS_AUTHENTICATED,
             GrpcContext.getAuthenticationStatusFromContext(),
@@ -43,16 +43,16 @@ class AuthenticateTest {
 
     @Test
     fun `When access token is invalid but refresh token is valid, then token is not refreshed and authentication succeeds`() {
-        val parsedRefreshClaims = ParsedJwtClaims(UUID.randomUUID(), Date(), Date())
-        every { jwtServiceMock.parseToken("invalidAccessToken") } throws JwtException("Invalid access token")
-        every { jwtServiceMock.parseToken("validRefreshToken") } returns parsedRefreshClaims
+        val parsedRefreshClaims = ParsedJwtAuthClaims(UUID.randomUUID(), Date(), Date())
+        every { jwtServiceMock.parseAuthToken("invalidAccessToken") } throws JwtException("Invalid access token")
+        every { jwtServiceMock.parseAuthToken("validRefreshToken") } returns parsedRefreshClaims
         every { jwtServiceMock.refreshAccessToken(parsedRefreshClaims) } returns "newAccessToken"
 
         val authResult = authenticationService.authenticate("invalidAccessToken", "validRefreshToken", false)
         authResult.updatedContext.attach() // Simulate using the updated context in the authentication interceptor
 
-        assertTrue(authResult.parsedJwtClaimsResult.isSuccess)
-        assertEquals(parsedRefreshClaims, authResult.parsedJwtClaimsResult.getOrNull())
+        assertTrue(authResult.parsedJwtAuthClaimsResult.isSuccess)
+        assertEquals(parsedRefreshClaims, authResult.parsedJwtAuthClaimsResult.getOrNull())
         assertEquals(
             Authentication.AuthenticationStatus.AUTHENTICATION_STATUS_ACCESS_TOKEN_EXPIRED,
             GrpcContext.getAuthenticationStatusFromContext(),
@@ -61,13 +61,13 @@ class AuthenticateTest {
 
     @Test
     fun `When both access and refresh tokens are invalid, then authentication fails and cookies are cleared`() {
-        every { jwtServiceMock.parseToken("invalidAccessToken") } throws JwtException("Invalid access token")
-        every { jwtServiceMock.parseToken("invalidRefreshToken") } throws JwtException("Invalid refresh token")
+        every { jwtServiceMock.parseAuthToken("invalidAccessToken") } throws JwtException("Invalid access token")
+        every { jwtServiceMock.parseAuthToken("invalidRefreshToken") } throws JwtException("Invalid refresh token")
 
         val authResult = authenticationService.authenticate("invalidAccessToken", "invalidRefreshToken", false)
         authResult.updatedContext.attach() // Simulate using the updated context in the authentication interceptor
 
-        assertTrue(authResult.parsedJwtClaimsResult.isFailure)
+        assertTrue(authResult.parsedJwtAuthClaimsResult.isFailure)
         assertEquals(
             Authentication.AuthenticationStatus.AUTHENTICATION_STATUS_UNAUTHENTICATED,
             GrpcContext.getAuthenticationStatusFromContext(),
@@ -78,12 +78,12 @@ class AuthenticateTest {
 
     @Test
     fun `When access token is invalid and refresh token is missing, then authentication fails`() {
-        every { jwtServiceMock.parseToken("invalidAccessToken") } throws JwtException("Invalid access token")
+        every { jwtServiceMock.parseAuthToken("invalidAccessToken") } throws JwtException("Invalid access token")
 
         val authResult = authenticationService.authenticate("invalidAccessToken", null, false)
         authResult.updatedContext.attach() // Simulate using the updated context in the authentication interceptor
 
-        assertTrue(authResult.parsedJwtClaimsResult.isFailure)
+        assertTrue(authResult.parsedJwtAuthClaimsResult.isFailure)
         assertEquals(
             Authentication.AuthenticationStatus.AUTHENTICATION_STATUS_UNAUTHENTICATED,
             GrpcContext.getAuthenticationStatusFromContext(),

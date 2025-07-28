@@ -11,7 +11,7 @@ import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.GrpcTestContextExtension
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.model.SnowballRException
-import se.uulm.snowballr.backend.model.jwt.JwtTokens
+import se.uulm.snowballr.backend.model.jwt.JwtAuthTokens
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.Authentication
 import kotlin.test.assertEquals
@@ -21,13 +21,13 @@ class RegisterTest : MainServiceTest() {
     @Test
     fun `When a user provides valid credentials, then the user is registered successfully`() = runTest {
         val testUser = DataBuilder.createExampleUser()
-        val tokens = JwtTokens("accessToken", "refreshToken")
+        val tokens = JwtAuthTokens("accessToken", "refreshToken")
 
         val request = Authentication.RegisterRequest.newBuilder().setPassword("AAbb__00").build()
 
         coEvery { userRepoMock.doesUserExistByEmail(any()) } returns false
         coEvery { userRepoMock.createUser(any(), any()) } returns testUser
-        every { jwtServiceMock.generateTokens(any()) } returns tokens
+        every { jwtServiceMock.generateAuthTokens(any()) } returns tokens
 
         assertDoesNotThrow { mainService.register(request) }
 
