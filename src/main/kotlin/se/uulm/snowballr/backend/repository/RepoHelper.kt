@@ -6,12 +6,14 @@ import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.statements.InsertStatement
+import org.jetbrains.exposed.sql.statements.UpdateStatement
+import org.jetbrains.exposed.sql.update
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.EntityNotPersistedException
 import java.util.UUID
 
 /**
- * Combination of using [insertAndGetId] and fetching the created object by its ID.
+ * Combination of using [insertAndGetId] and fetching the created entity by its ID.
  *
  * @param Key The type of the [IdTable], i.e., the ID type, such as [UUID].
  * @param T The table type as a subtype of [IdTable].
@@ -30,6 +32,33 @@ inline fun <Key : Any, T : IdTable<Key>, EntT : Any> T.insertAndGet(
     return this
         .selectAll()
         .where { this@insertAndGet.id eq id }
+        .map { mapper.invoke(it) }
+        .singleOrNull()
+        ?: throw EntityNotPersistedException(entityType, id.toString())
+}
+
+/**
+ * Combination of using [update] and fetching the updated entity by its ID.
+ *
+ * @param Key The type of the [IdTable], i.e., the ID type, such as [UUID].
+ * @param T The table type as a subtype of [IdTable].
+ * @param EntT The result entity type.
+ * @param id The ID of type [Key], which is used to find the entity that should be updated.
+ * @param mapper Mapping function of the [ResultRow] to the entity type [EntT].
+ * @param entityType The entity type used for the [EntityNotPersistedException], which is thrown when the entity cannot
+ * be retrieved by its ID.
+ * @param body The body that is passed to [update].
+ */
+inline fun <Key : Any, T : IdTable<Key>, EntT : Any> T.updateAndGet(
+    id: Key,
+    mapper: (ResultRow) -> EntT,
+    entityType: EntityType,
+    crossinline body: T.(UpdateStatement) -> Unit,
+): EntT {
+    this.update({ this@updateAndGet.id eq id }, body = body)
+    return this
+        .selectAll()
+        .where { this@updateAndGet.id eq id }
         .map { mapper.invoke(it) }
         .singleOrNull()
         ?: throw EntityNotPersistedException(entityType, id.toString())

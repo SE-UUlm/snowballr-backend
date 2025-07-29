@@ -8,7 +8,6 @@ import org.jetbrains.exposed.sql.update
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.IdentifierType
-import se.uulm.snowballr.backend.model.SnowballRException.EntityNotPersistedException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.parseUUID
@@ -154,11 +153,10 @@ class UserTableRepo(
     }
 
     override suspend fun updateUser(request: UserOuterClass.User.Update): User = db.query {
-        val uuid = parseUUID(request.user.id, EntityType.USER)
+        val userId = parseUUID(request.user.id, EntityType.USER)
         val fieldMask = FieldMaskUtil.normalize(request.mask)
 
-        // Update user
-        UserTable.update({ UserTable.id eq uuid }) {
+        UserTable.updateAndGet(userId, ResultRow::toUser, EntityType.USER) {
             for (field in fieldMask.pathsList) {
                 when (field) {
                     "user.email" -> it[email] = request.user.email
@@ -170,9 +168,6 @@ class UserTableRepo(
 
             it[modifiedAt] = OffsetDateTime.now()
         }
-
-        // Return updated user
-        getUserByIdOrNull(uuid) ?: throw EntityNotPersistedException(EntityType.USER, uuid.toString())
     }
 
     override suspend fun softDeleteUser(id: UUID) {

@@ -7,10 +7,8 @@ import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.statements.UpdateStatement
-import org.jetbrains.exposed.sql.update
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.SnowballRException.EntityNotPersistedException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.parseUUID
@@ -175,7 +173,7 @@ class ProjectTableRepo(
         val projectId = parseUUID(request.project.id, EntityType.PROJECT)
         val fieldMaskPaths = FieldMaskUtil.normalize(request.mask).pathsList.toSet()
 
-        ProjectTable.update({ ProjectTable.id eq projectId }) {
+        ProjectTable.updateAndGet(projectId, ResultRow::toProject, EntityType.PROJECT) {
             it.applyProjectStatusUpdate(request.project, fieldMaskPaths)
             if (projectStatus == ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED ||
                 projectStatus == ProjectStatus.PROJECT_STATUS_ACTIVE
@@ -187,10 +185,6 @@ class ProjectTableRepo(
             }
             it[modifiedAt] = OffsetDateTime.now()
         }
-
-        // Return updated project
-        getProjectByIdOrNull(projectId)
-            ?: throw EntityNotPersistedException(EntityType.PROJECT, projectId.toString())
     }
 
     private fun UpdateStatement.applyProjectNameUpdate(project: ProjectOuterClass.Project, paths: Set<String>) {

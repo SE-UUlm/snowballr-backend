@@ -3,10 +3,8 @@ package se.uulm.snowballr.backend.repository
 import com.google.protobuf.util.FieldMaskUtil
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.update
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.SnowballRException.EntityNotPersistedException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.Criterion
 import se.uulm.snowballr.backend.model.parseUUID
@@ -106,7 +104,7 @@ class CriterionTableRepo(
         val criterionId = parseUUID(request.criterion.id, EntityType.CRITERION)
         val fieldMask = FieldMaskUtil.normalize(request.mask)
 
-        CriterionTable.update({ CriterionTable.id eq criterionId }) {
+        CriterionTable.updateAndGet(criterionId, ResultRow::toCriterion, EntityType.CRITERION) {
             for (field in fieldMask.pathsList) {
                 when (field) {
                     "criterion.tag" -> it[tag] = request.criterion.tag
@@ -116,10 +114,5 @@ class CriterionTableRepo(
                 }
             }
         }
-
-        // Return the updated criterion
-        getCriterionByIdOrNull(criterionId) ?: throw EntityNotPersistedException(
-            EntityType.CRITERION, criterionId.toString(),
-        )
     }
 }
