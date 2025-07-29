@@ -315,7 +315,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
         fun `When a user is matching the search query, then this user is returned`() = runTest {
             val userId1 = insertTestUserAndGetId(firstName = "Johnathan", email = "jonathan.doe@example.com")
             val userId2 = insertTestUserAndGetId(lastName = "John", email = "doe.john@example.com")
-            val userId3 = insertTestUserAndGetId(email = "john.doe@example.com")
+            val userId3 = insertTestUserAndGetId(email = "john@example.com")
 
             val matchingUsers = repo.getUsersMatchingSearchQuery("john", emptySet())
 

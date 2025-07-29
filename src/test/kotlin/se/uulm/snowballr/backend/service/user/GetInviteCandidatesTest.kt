@@ -32,8 +32,9 @@ class GetInviteCandidatesTest : MainServiceTest() {
 
     @Test
     fun `When retrieving the current user fails, then an exception is thrown`() = runTest {
-        every { GrpcContext.getUserIdFromContext() } returns UUID.randomUUID()
-        coEvery { userRepoMock.getUserById(any()) } throws TestSpecificException()
+        val userId = UUID.randomUUID()
+        every { GrpcContext.getUserIdFromContext() } returns userId
+        coEvery { userRepoMock.getUserById(userId) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getInviteCandidates(validInviteCandidatesRequest) }
     }
@@ -46,14 +47,13 @@ class GetInviteCandidatesTest : MainServiceTest() {
         ).setProjectId("invalid-uuid").build()
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
         coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
-        coEvery { projectMemberRepoMock.getMembersOfProject(any()) } returns emptyList()
         coEvery { userRepoMock.getUsersMatchingSearchQuery(any(), any()) } returns emptyList()
 
         assertDoesNotThrow { mainService.getInviteCandidates(requestWithInvalidProjectId) }
     }
 
     @Test
-    fun `When retrieving the project members fails, then only a warning is logged`() = runTest {
+    fun `When no the project members exist, then no users except for the current user are excluded`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
         val requestedProjectId = UUID.randomUUID()
         val requestWithNotExistingProject = InviteCandidatesRequest.newBuilder().setQuery(
