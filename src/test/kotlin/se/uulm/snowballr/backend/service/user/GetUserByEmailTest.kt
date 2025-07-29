@@ -2,8 +2,6 @@ package se.uulm.snowballr.backend.service.user
 
 import io.mockk.coEvery
 import io.mockk.every
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -20,8 +18,6 @@ import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
 import java.util.UUID
 
-@DelicateCoroutinesApi
-@ExperimentalCoroutinesApi
 class GetUserByEmailTest : MainServiceTest() {
     private val exampleEmail = "test@example.com"
     private fun getExampleRequest() = Base.Email.newBuilder().setEmail(exampleEmail).build()

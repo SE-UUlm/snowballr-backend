@@ -4,8 +4,6 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.confirmVerified
 import io.mockk.mockk
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -16,8 +14,6 @@ import kotlin.test.assertEquals
 
 private val examplePaper = DataBuilder.createExamplePaper()
 
-@ExperimentalCoroutinesApi
-@DelicateCoroutinesApi
 class FetcherManagerTest {
     private var fetcherManager = FetcherManager()
 

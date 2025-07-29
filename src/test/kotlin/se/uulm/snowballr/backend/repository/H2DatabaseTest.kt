@@ -2,9 +2,7 @@ package se.uulm.snowballr.backend.repository
 
 import io.mockk.clearAllMocks
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
@@ -34,8 +32,6 @@ import java.util.UUID
  *
  * Example usage:
  * ```kotlin
- * @ExperimentalCoroutinesApi
- * @DelicateCoroutinesApi
  * class ExampleTest : H2DatabaseTest(arrayOf(ExampleTable)) {
  *     private val repo = ExampleTableRepo(db)
  *
@@ -60,8 +56,6 @@ import java.util.UUID
  * @property tables An array of database tables to be managed during the test lifecycle.
  * @property needsTestUser Whether a test user is required, which can be used in a test in the form of [testUserId].
  */
-@ExperimentalCoroutinesApi
-@DelicateCoroutinesApi
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 open class H2DatabaseTest(
     val tables: Array<Table> = emptyArray(),

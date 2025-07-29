@@ -2,8 +2,6 @@ package se.uulm.snowballr.backend.service.project
 
 import io.mockk.coEvery
 import io.mockk.every
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -16,8 +14,6 @@ import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.ProjectOuterClass
 import java.util.UUID
 
-@ExperimentalCoroutinesApi
-@DelicateCoroutinesApi
 class CreateProjectTest : MainServiceTest() {
     private fun getExampleRequest() = ProjectOuterClass.Project.Create.getDefaultInstance()
 

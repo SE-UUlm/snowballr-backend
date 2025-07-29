@@ -3,8 +3,6 @@ package se.uulm.snowballr.backend.service.criterion
 import com.google.protobuf.util.FieldMaskUtil
 import io.mockk.coEvery
 import io.mockk.every
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -21,8 +19,6 @@ import snowballr.ProjectOuterClass
 import snowballr.UserOuterClass.UserRole
 import java.util.UUID
 
-@ExperimentalCoroutinesApi
-@DelicateCoroutinesApi
 class UpdateCriterionTest : MainServiceTest() {
     private val requestId = UUID.randomUUID()
     private val dummyUserUUID = UUID.randomUUID()

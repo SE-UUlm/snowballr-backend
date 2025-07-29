@@ -4,8 +4,6 @@ import io.mockk.clearAllMocks
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkObject
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
@@ -22,17 +20,15 @@ import se.uulm.snowballr.backend.service.criterion.CreateCriterionTest
 /**
  * Unit test class for the [MainService] class.
  *
- * This test class provides the setup and teardown logic needed to test [MainService] effectively in a
- * controlled coroutine environment. It leverages dependency mocking for all repositories to isolate the service and
- * test its functionality without reliance on external systems.
+ * This test class provides the setup and teardown logic needed to test [MainService] effectively. It leverages
+ * dependency mocking for all repositories to isolate the service and test its functionality without reliance on
+ * external systems.
  *
  * An extension of this class can be used to implement specific test cases for the sub-services of
  * [MainService], such as [CreateCriterionTest].
  *
  * Example usage:
  * ```kotlin
- * @ExperimentalCoroutinesApi
- * @DelicateCoroutinesApi
  * class CreateExampleTest : MainServiceTest() {
  *     @Test
  *     fun `When an example is correctly created, then no exception is thrown`() =
@@ -61,8 +57,6 @@ import se.uulm.snowballr.backend.service.criterion.CreateCriterionTest
  * }
  * ```
  */
-@ExperimentalCoroutinesApi
-@DelicateCoroutinesApi
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 open class MainServiceTest {
     val projectRepoMock = mockk<IProjectTableRepo>(relaxed = true)

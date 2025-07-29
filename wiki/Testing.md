@@ -66,8 +66,6 @@ The base class of each repository test class is
 which uses the in-memory database H2. A repository test class has the following structure:
 
 ```kotlin
-@ExperimentalCoroutinesApi
-@DelicateCoroutinesApi
 class ExampleRepoTest : H2DatabaseTest(arrayOf(ExampleTable, AnotherExampleTable)) {
     private val repo = ExampleTableRepo(db)
     private val otherRepo = AnotherExampleTableRepo(db)
@@ -114,12 +112,10 @@ cases. All test classes of a service are grouped in a package named after the as
 has the following test structure:
 
 ```kotlin
-@ExperimentalCoroutinesApi
-@DelicateCoroutinesApi
 class CreateExampleTest : MainServiceTest() {
     @Test
     fun `When an example is correctly created, then no exception is thrown`() =
-        testCoroutine {
+        runTest {
             val request = ExampleOuterClass.Example.Create.getDefaultInstance()
             val example = ExampleOuterClass.Example.getDefaultInstance()
 
@@ -132,7 +128,7 @@ class CreateExampleTest : MainServiceTest() {
 
     @Test
     fun `When an error occurs during example creation, then an exception is thrown`() =
-        testCoroutine {
+        runTest {
             val request = ExampleOuterClass.Example.Create.getDefaultInstance()
 
             // Mock the behavior of the repositories

@@ -1,7 +1,5 @@
 package se.uulm.snowballr.backend.repository
 
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.insertAndGetId
 import se.uulm.snowballr.backend.model.EntityType
@@ -15,8 +13,6 @@ import java.util.UUID
 /**
  * This class acts as a collection of create methods to create database entries for testing purposes.
  */
-@ExperimentalCoroutinesApi
-@DelicateCoroutinesApi
 object RepositoryHelper {
     lateinit var db: H2DatabaseTest.TestDatabase
 

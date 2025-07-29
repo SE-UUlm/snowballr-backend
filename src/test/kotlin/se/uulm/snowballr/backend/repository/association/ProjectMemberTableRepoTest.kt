@@ -1,7 +1,5 @@
 package se.uulm.snowballr.backend.repository.association
 
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
@@ -19,8 +17,6 @@ import snowballr.ProjectOuterClass
 import snowballr.ProjectOuterClass.MemberRole
 import java.util.UUID
 
-@ExperimentalCoroutinesApi
-@DelicateCoroutinesApi
 class ProjectMemberTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectMemberTable), true) {
     private val repo = ProjectMemberTableRepo(db)
     private val projectRepo = ProjectTableRepo(db)

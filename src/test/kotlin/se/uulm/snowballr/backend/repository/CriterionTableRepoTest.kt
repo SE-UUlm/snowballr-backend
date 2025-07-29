@@ -1,8 +1,6 @@
 package se.uulm.snowballr.backend.repository
 
 import com.google.protobuf.util.FieldMaskUtil
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
@@ -24,8 +22,6 @@ import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass
 import java.util.UUID
 
-@ExperimentalCoroutinesApi
-@DelicateCoroutinesApi
 class CriterionTableRepoTest : H2DatabaseTest(arrayOf(CriterionTable, ProjectTable), true) {
     private val repo = CriterionTableRepo(db)
     private val projectRepo = ProjectTableRepo(db)

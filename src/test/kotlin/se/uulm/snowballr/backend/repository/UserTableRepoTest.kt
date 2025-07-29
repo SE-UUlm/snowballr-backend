@@ -1,8 +1,6 @@
 package se.uulm.snowballr.backend.repository
 
 import com.google.protobuf.util.FieldMaskUtil
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.exposed.exceptions.ExposedSQLException
@@ -26,8 +24,6 @@ import java.time.OffsetDateTime
 import java.util.UUID
 import kotlin.test.assertEquals
 
-@ExperimentalCoroutinesApi
-@DelicateCoroutinesApi
 class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
     private val repo = UserTableRepo(db)
 

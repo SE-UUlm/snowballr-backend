@@ -2,8 +2,6 @@ package se.uulm.snowballr.backend.service.user
 
 import io.mockk.coEvery
 import io.mockk.every
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -22,8 +20,6 @@ import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.Authentication.LoginRequest
 import kotlin.test.assertEquals
 
-@ExperimentalCoroutinesApi
-@DelicateCoroutinesApi
 @ExtendWith(GrpcTestContextExtension::class)
 class LoginTest : MainServiceTest() {
     @Test
