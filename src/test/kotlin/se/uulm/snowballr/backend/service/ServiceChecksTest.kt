@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
-import org.junit.jupiter.params.ParameterizedTest
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
@@ -15,7 +14,6 @@ import snowballr.UserOuterClass.UserRole
 class ServiceChecksTest {
     @Nested
     inner class VerifyServerAdminRole {
-        @ParameterizedTest
         @GrpcEnumSourceTest(UserRole::class, excludes = ["USER_ROLE_ADMIN"])
         fun `When the user is not a server admin, then an exception is thrown`(role: UserRole) {
             val user = DataBuilder.createExampleUser(role = role)
