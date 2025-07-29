@@ -94,7 +94,7 @@ class CriterionTableRepo(
         val criterionId = parseUUID(request.criterion.id, EntityType.CRITERION)
         val fieldMask = FieldMaskUtil.normalize(request.mask)
 
-        CriterionTable.updateAndGet(criterionId, ResultRow::toCriterion, EntityType.CRITERION) {
+        CriterionTable.updateByIdAndGet(criterionId, ResultRow::toCriterion, EntityType.CRITERION) {
             for (field in fieldMask.pathsList) {
                 when (field) {
                     "criterion.tag" -> it[tag] = request.criterion.tag

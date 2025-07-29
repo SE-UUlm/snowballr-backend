@@ -146,7 +146,7 @@ class UserTableRepo(
         val userId = parseUUID(request.user.id, EntityType.USER)
         val fieldMask = FieldMaskUtil.normalize(request.mask)
 
-        UserTable.updateAndGet(userId, ResultRow::toUser, EntityType.USER) {
+        UserTable.updateByIdAndGet(userId, ResultRow::toUser, EntityType.USER) {
             for (field in fieldMask.pathsList) {
                 when (field) {
                     "user.email" -> it[email] = request.user.email

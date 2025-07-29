@@ -163,7 +163,7 @@ class ProjectTableRepo(
         val projectId = parseUUID(request.project.id, EntityType.PROJECT)
         val fieldMaskPaths = FieldMaskUtil.normalize(request.mask).pathsList.toSet()
 
-        ProjectTable.updateAndGet(projectId, ResultRow::toProject, EntityType.PROJECT) {
+        ProjectTable.updateByIdAndGet(projectId, ResultRow::toProject, EntityType.PROJECT) {
             it.applyProjectStatusUpdate(request.project, fieldMaskPaths)
             if (projectStatus == ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED ||
                 projectStatus == ProjectStatus.PROJECT_STATUS_ACTIVE

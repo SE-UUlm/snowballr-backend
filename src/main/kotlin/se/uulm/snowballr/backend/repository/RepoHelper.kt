@@ -75,12 +75,12 @@ inline fun <Key : Any, T : IdTable<Key>, EntT : Any> T.insertAndGet(
  * be retrieved by its ID.
  * @param body The body that is passed to [update].
  */
-inline fun <Key : Any, T : IdTable<Key>, EntT : Any> T.updateAndGet(
+inline fun <Key : Any, T : IdTable<Key>, EntT : Any> T.updateByIdAndGet(
     id: Key,
     noinline mapper: (ResultRow) -> EntT,
     entityType: EntityType,
     crossinline body: T.(UpdateStatement) -> Unit,
 ): EntT {
-    this.update({ this@updateAndGet.id eq id }, body = body)
+    this.update({ this@updateByIdAndGet.id eq id }, body = body)
     return this.getEntityByIdOrNull(id, mapper) ?: throw EntityNotPersistedException(entityType, id.toString())
 }
