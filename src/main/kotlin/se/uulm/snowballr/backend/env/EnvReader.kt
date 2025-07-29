@@ -31,6 +31,7 @@ private const val SMTP_SENDER_NAME = "SMTP_SENDER_NAME"
 private const val SMTP_SENDER_EMAIL = "SMTP_SENDER_EMAIL"
 
 // Default values
+private val DEFAULT_PROFILE = AppProfile.PRODUCTION
 private const val DEFAULT_PORT = 8080
 const val DEFAULT_LOG_LEVEL = "DEBUG"
 private const val DEFAULT_DATABASE_HOST = "localhost"
@@ -53,7 +54,7 @@ class EnvReader(
     val env: Env
 
     init {
-        val activeProfile = AppProfile.fromString(envService[PROFILE])
+        val activeProfile = AppProfile.fromString(envService.getOrDefault(PROFILE, DEFAULT_PROFILE.toString()))
         logger.info { "Application starting with profile: $activeProfile" }
 
         val defaults = defaultsForProfile(activeProfile)

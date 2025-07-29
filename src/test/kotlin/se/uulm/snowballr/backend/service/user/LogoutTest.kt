@@ -1,7 +1,5 @@
 package se.uulm.snowballr.backend.service.user
 
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -11,8 +9,6 @@ import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.service.MainServiceTest
 import kotlin.test.assertEquals
 
-@ExperimentalCoroutinesApi
-@DelicateCoroutinesApi
 @ExtendWith(GrpcTestContextExtension::class)
 class LogoutTest : MainServiceTest() {
     @Test

@@ -3,8 +3,6 @@ package se.uulm.snowballr.backend.service.user
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -22,8 +20,6 @@ import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
 import java.util.UUID
 
-@ExperimentalCoroutinesApi
-@DelicateCoroutinesApi
 class GetUserByIdTest : MainServiceTest() {
     private val requestedUserId = UUID.randomUUID()
     private fun getExampleRequest() = Base.Id.newBuilder().setId(requestedUserId.toString()).build()

@@ -98,7 +98,7 @@ val authenticationInterceptor: ServerInterceptor =
             next: ServerCallHandler<ReqT?, RespT?>?,
         ): ServerCall.Listener<ReqT?>? {
             val serviceName = call?.run { methodDescriptor.serviceName }
-            val methodName = call?.run { methodDescriptor.serviceName }
+            val methodName = call?.run { methodDescriptor.fullMethodName }
             logger.info { "Authenticating call to ${methodName ?: "<unknown method>"}" }
 
             if (methodName == null || serviceName == null) {

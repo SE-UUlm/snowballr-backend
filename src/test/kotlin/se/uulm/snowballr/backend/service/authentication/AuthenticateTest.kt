@@ -3,8 +3,6 @@ package se.uulm.snowballr.backend.service.authentication
 import io.jsonwebtoken.JwtException
 import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import se.uulm.snowballr.backend.GrpcTestContextExtension
@@ -19,8 +17,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-@ExperimentalCoroutinesApi
-@DelicateCoroutinesApi
 @ExtendWith(GrpcTestContextExtension::class)
 class AuthenticateTest {
     private val jwtServiceMock = mockk<JwtService> {

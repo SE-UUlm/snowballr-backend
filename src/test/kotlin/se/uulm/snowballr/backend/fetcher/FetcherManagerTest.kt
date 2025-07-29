@@ -4,18 +4,9 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.confirmVerified
 import io.mockk.mockk
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.newSingleThreadContext
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
-import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
@@ -23,23 +14,8 @@ import kotlin.test.assertEquals
 
 private val examplePaper = DataBuilder.createExamplePaper()
 
-@ExperimentalCoroutinesApi
-@DelicateCoroutinesApi
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class FetcherManagerTest {
-    private val threadContext = newSingleThreadContext("Test thread")
     private var fetcherManager = FetcherManager()
-
-    @BeforeAll
-    fun setThreadDispatcher() {
-        Dispatchers.setMain(threadContext)
-    }
-
-    @AfterAll
-    fun cleanThreadDispatcher() {
-        Dispatchers.resetMain()
-        threadContext.close()
-    }
 
     @BeforeEach
     fun createNewFetcherService() {

@@ -33,8 +33,10 @@ To set up the development environment, follow the steps in
 ├── src/
 │   ├── main/
 │   │   ├── kotlin/
+│   │   │   ├── auth/        (auth related classes)
 │   │   │   ├── db/          (database interface)
 │   │   │   ├── env/         (environment variables)
+│   │   │   ├── fetcher/     (fetcher related classes)
 │   │   │   ├── grpc/        (gRPC server and its interceptors)
 │   │   │   ├── model/       (model classes)
 │   │   │   ├── repository/  (repository layer)
@@ -139,21 +141,21 @@ interface IMainService :
     IExampleService
 
 class MainService(
-    /* dependencies are listed here */
+    private val exampleService: IExampleService
 ) : IMainService,
-    IExampleService by ExampleService(/* dependencies are passed here */)
+    IExampleService by exampleService
 ```
 
-Dependencies are one or more repositories, another service, or whatever the service requires to execute its logic. For
-the dependency injection to work, add all repositories to the `snowballRModule` in
+For the dependency injection to work, add all repositories and services to the `snowballRModule` in
 [Module.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/Module.kt).
 Build the service method implementation in a way that preconditions are checked first. We want to fail as fast as
 possible, and if the associated entity doesn't exist or the user doesn't even have access to the operation, we don't
 want to have already persisted data. Only if every precondition is met, make changes to the persisted data and finish
 the method with returning required data, such as the updated entity for an update request.
 
-Currently, there aren't great examples of services as the existing ones only map the request to the repository layer and
-no real business logic is executed. This will change in the future and this section will be updated accordingly.
+See
+[ProjectService.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/service/ProjectService.kt)
+for an example.
 
 ### Input Validation
 

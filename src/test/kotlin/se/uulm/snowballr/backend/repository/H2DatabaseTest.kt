@@ -2,13 +2,8 @@ package se.uulm.snowballr.backend.repository
 
 import io.mockk.clearAllMocks
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.newSingleThreadContext
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.resetMain
-import kotlinx.coroutines.test.setMain
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.Table
@@ -37,8 +32,6 @@ import java.util.UUID
  *
  * Example usage:
  * ```kotlin
- * @ExperimentalCoroutinesApi
- * @DelicateCoroutinesApi
  * class ExampleTest : H2DatabaseTest(arrayOf(ExampleTable)) {
  *     private val repo = ExampleTableRepo(db)
  *
@@ -63,14 +56,11 @@ import java.util.UUID
  * @property tables An array of database tables to be managed during the test lifecycle.
  * @property needsTestUser Whether a test user is required, which can be used in a test in the form of [testUserId].
  */
-@ExperimentalCoroutinesApi
-@DelicateCoroutinesApi
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 open class H2DatabaseTest(
     val tables: Array<Table> = emptyArray(),
     val needsTestUser: Boolean = false,
 ) {
-    private val threadContext = newSingleThreadContext("Coroutine thread")
     private val connection = Database.connect("jdbc:h2:mem:test_db;DB_CLOSE_DELAY=-1;IGNORECASE=true;")
     protected val db = TestDatabase()
 
@@ -98,7 +88,6 @@ open class H2DatabaseTest(
 
     @BeforeAll
     fun setUp() {
-        Dispatchers.setMain(threadContext)
         RepositoryHelper.db = db
     }
 
@@ -143,7 +132,5 @@ open class H2DatabaseTest(
     @AfterAll
     fun tearDown() {
         TransactionManager.closeAndUnregister(connection)
-        Dispatchers.resetMain()
-        threadContext.close()
     }
 }

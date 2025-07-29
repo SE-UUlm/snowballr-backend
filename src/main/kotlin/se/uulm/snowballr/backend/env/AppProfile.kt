@@ -16,18 +16,19 @@ enum class AppProfile {
 
     companion object {
         /**
-         * Parses a string to an [AppProfile], defaulting to [PRODUCTION] for safety.
+         * Parses a string to an [AppProfile], defaulting to an exception for safety.
          * The matching is case-insensitive.
          *
          * @param value The string value to parse.
-         * @return The corresponding [AppProfile] or [PRODUCTION] if the input is invalid.
+         * @return The corresponding [AppProfile].
+         * @throws IllegalStateException If the [value] doesn't match an [AppProfile].
          */
-        fun fromString(value: String?): AppProfile {
-            return when (value?.uppercase()) {
+        fun fromString(value: String): AppProfile {
+            return when (value.uppercase()) {
                 "TESTING" -> TESTING
                 "DEVELOPMENT" -> DEVELOPMENT
                 "PRODUCTION" -> PRODUCTION
-                else -> PRODUCTION // Default to the safest profile
+                else -> error("Unknown profile type: $value")
             }
         }
     }

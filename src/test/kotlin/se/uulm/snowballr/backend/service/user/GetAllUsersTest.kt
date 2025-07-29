@@ -2,8 +2,6 @@ package se.uulm.snowballr.backend.service.user
 
 import io.mockk.coEvery
 import io.mockk.every
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -17,8 +15,6 @@ import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.UserOuterClass.UserRole
 import java.util.UUID
 
-@DelicateCoroutinesApi
-@ExperimentalCoroutinesApi
 class GetAllUsersTest : MainServiceTest() {
     @BeforeEach
     fun setupTest() {
