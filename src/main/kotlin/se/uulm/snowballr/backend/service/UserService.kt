@@ -1,9 +1,11 @@
 package se.uulm.snowballr.backend.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.viascom.nanoid.NanoId
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.auth.IJwtService
 import se.uulm.snowballr.backend.auth.PasswordUtils
+import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
@@ -18,9 +20,11 @@ import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.toGrpcUser
 import se.uulm.snowballr.backend.model.dto.toGrpcUserSettings
 import se.uulm.snowballr.backend.model.dto.toGrpcUsers
+import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
+import se.uulm.snowballr.backend.repository.IVerificationTokenTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import snowballr.Authentication
 import snowballr.Base
@@ -92,6 +96,8 @@ interface IUserService {
     suspend fun getCurrentUser(): GrpcUser
 }
 
+private const val VERIFICATION_TOKEN_LENGTH = 48
+
 /**
  * The [UserService] class handles operations related to users by implementing the [IUserService] interface.
  *
@@ -99,17 +105,23 @@ interface IUserService {
  * delegating the actual persistence operations to the [IUserTableRepo] repository.
  *
  * @constructor Initializes the [UserService] with a user repository.
+ * @param envReader The environment reader for accessing environment variables.
  * @param userRepo The repository responsible for managing persistence operations for users.
  * @param projectMemberRepo The repository responsible for managing persistence operations for project members.
  * @param criterionRepo The repository responsible for managing persistence operations for criteria.
+ * @param verificationTokenRepo The repository responsible for managing persistence operations for verification tokens.
  * @param jwtService The utility for handling JWT operations, such as token parsing and validation.
+ * @param emailService The service responsible for sending emails.
  */
 @Suppress("TooManyFunctions")
 class UserService(
+    private val envReader: EnvReader,
     private val userRepo: IUserTableRepo,
     private val projectMemberRepo: IProjectMemberTableRepo,
     private val criterionRepo: ICriterionTableRepo,
+    private val verificationTokenRepo: IVerificationTokenTableRepo,
     private val jwtService: IJwtService,
+    private val emailService: IEmailService,
 ) : IUserService {
     companion object {
         const val MINIMUM_LENGTH_OF_SEARCH_QUERY = 3
@@ -227,9 +239,20 @@ class UserService(
         val passwordHash = PasswordUtils.hashPassword(request.password)
         val user = userRepo.createUser(request, passwordHash)
 
-        // Generate JWT tokens
-        val (accessToken, refreshToken) = jwtService.generateAuthTokens(user.id)
-        GrpcContext.setAuthCookiesInContext(accessToken, refreshToken)
+        // Generate and save verification token for the user
+        val verificationToken = NanoId.generate(VERIFICATION_TOKEN_LENGTH)
+        verificationTokenRepo.saveVerificationToken(user.id, verificationToken)
+
+        // Send verification email
+        val verificationLink = "${envReader.env.miscellaneous.frontendBaseUrl}/verifyemail?token=$verificationToken"
+        emailService.sendEmailVerificationEmail(
+            user.email,
+            EmailData.EmailVerification(
+                user.firstName,
+                user.lastName,
+                verificationLink,
+            ),
+        )
 
         return Base.Nothing.getDefaultInstance()
     }
