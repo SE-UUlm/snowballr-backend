@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend
 
+import org.koin.core.module.Module
 import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.createdAtStart
 import org.koin.core.module.dsl.singleOf
@@ -23,11 +24,19 @@ import se.uulm.snowballr.backend.repository.UserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.ProjectMemberTableRepo
 import se.uulm.snowballr.backend.service.AuthenticationService
+import se.uulm.snowballr.backend.service.CriterionService
 import se.uulm.snowballr.backend.service.EmailService
+import se.uulm.snowballr.backend.service.FetcherService
 import se.uulm.snowballr.backend.service.IAuthenticationService
+import se.uulm.snowballr.backend.service.ICriterionService
 import se.uulm.snowballr.backend.service.IEmailService
+import se.uulm.snowballr.backend.service.IFetcherService
 import se.uulm.snowballr.backend.service.IMainService
+import se.uulm.snowballr.backend.service.IProjectService
+import se.uulm.snowballr.backend.service.IUserService
 import se.uulm.snowballr.backend.service.MainService
+import se.uulm.snowballr.backend.service.ProjectService
+import se.uulm.snowballr.backend.service.UserService
 
 /**
  * Defines the Koin dependency injection module for the application.
@@ -35,45 +44,83 @@ import se.uulm.snowballr.backend.service.MainService
  * This module includes the following components in a defined order of initialization:
  * - The environment service ([IEnvService]) and its reader ([EnvReader]), which are initialized first to provide
  *  access to environment variables.
- * - The JWT service ([IJwtService]), which depends on the environment reader to access necessary environment variables.
- * - The FetcherManager ([FetcherManager]), which makes fetchers available for use.
- * - The cookie service ([ICookieService]), which relies on the JWT service for token handling.
- * - The database implementation ([IDatabase]), which is initialized with no external dependencies.
- * - The email service ([IEmailService]), which uses the environment reader to configure email settings.
+ * - The database ([IDatabase]), which only requires some env variables provided by the [EnvReader].
  * - The repository layer (e.g. [IProjectTableRepo]), which uses the [IDatabase] implementation for database operations.
- * - The [IAuthenticationService] is also included to handle authentication logic, which may be used by the main service.
- * - The main service ([IMainService]), which depends on the repository layer to provide higher-level functionality.
+ * - Custom services / manager / clients that are used by the core service layer.
+ * - The core service layer, which consists of entity-related services (e.g. [IProjectService]) and the [IMainService],
+ * which combines all services into one access point.
  *
  * The ordering ensures proper dependency resolution and initialization.
  */
 val snowballRModule =
     module {
-        // First come the env service and reader
-        single<IEnvService> { EnvService() }
-        singleOf(::EnvReader)
-        // Then the JWT service, which depend on the env reader
-        singleOf(::JwtService) {
-            createdAtStart()
-            bind<IJwtService>()
-        }
-        singleOf(::FetcherManager)
-        // Then the cookie service, which depend on the JWT service
-        singleOf(::CookieService) { bind<ICookieService>() }
-        // Then the database, which only needs access to some env variables
-        singleOf(::Database) {
-            createdAtStart()
-            bind<IDatabase>()
-        }
-        singleOf(::EmailService) {
-            createdAtStart()
-            bind<IEmailService>()
-        }
-        // Here come all repos and other definitions, e.g., the http client
-        singleOf(::ProjectTableRepo) { bind<IProjectTableRepo>() }
-        singleOf(::CriterionTableRepo) { bind<ICriterionTableRepo>() }
-        singleOf(::UserTableRepo) { bind<IUserTableRepo>() }
-        singleOf(::ProjectMemberTableRepo) { bind<IProjectMemberTableRepo>() }
-        singleOf(::AuthenticationService) { bind<IAuthenticationService>() }
-        // The main service comes last
-        singleOf(::MainService) { bind<IMainService>() }
+        envDeps()
+        dbDeps()
+        repositoryLayerDeps()
+        customServicesDeps()
+        serviceLayerDeps()
     }
+
+/**
+ * Module declaration of the [IEnvService] and [EnvReader].
+ */
+private fun Module.envDeps() {
+    single<IEnvService> { EnvService() }
+    singleOf(::EnvReader)
+}
+
+/**
+ * Module declaration of the [IDatabase].
+ */
+private fun Module.dbDeps() {
+    singleOf(::Database) {
+        createdAtStart()
+        bind<IDatabase>()
+    }
+}
+
+/**
+ * Module declaration of the repository layer.
+ *
+ * Consists of all repositories.
+ */
+private fun Module.repositoryLayerDeps() {
+    singleOf(::ProjectTableRepo) { bind<IProjectTableRepo>() }
+    singleOf(::CriterionTableRepo) { bind<ICriterionTableRepo>() }
+    singleOf(::UserTableRepo) { bind<IUserTableRepo>() }
+    singleOf(::ProjectMemberTableRepo) { bind<IProjectMemberTableRepo>() }
+}
+
+/**
+ * Module declaration of all custom services / managers / clients.
+ *
+ * Consists of all dependencies that are used by the core service layer.
+ */
+private fun Module.customServicesDeps() {
+    singleOf(::JwtService) {
+        createdAtStart()
+        bind<IJwtService>()
+    }
+    singleOf(::FetcherManager)
+    singleOf(::CookieService) { bind<ICookieService>() }
+    singleOf(::EmailService) {
+        createdAtStart()
+        bind<IEmailService>()
+    }
+    singleOf(::AuthenticationService) { bind<IAuthenticationService>() }
+}
+
+/**
+ * Module declaration of the core service layer.
+ *
+ * Consists of the [MainService] and all its direct service dependencies.
+ */
+fun Module.serviceLayerDeps() {
+    // All services that are directly used by the MainService
+    singleOf(::ProjectService) { bind<IProjectService>() }
+    singleOf(::CriterionService) { bind<ICriterionService>() }
+    singleOf(::UserService) { bind<IUserService>() }
+    singleOf(::FetcherService) { bind<IFetcherService>() }
+    // The main service comes last
+    singleOf(::MainService) { bind<IMainService>() }
+}
