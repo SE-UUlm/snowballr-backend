@@ -9,24 +9,22 @@ import org.simplejavamail.api.mailer.Mailer
 import org.simplejavamail.email.EmailBuilder
 import org.simplejavamail.mailer.MailerBuilder
 import se.uulm.snowballr.backend.env.EnvReader
-import se.uulm.snowballr.backend.model.EmailTemplate
 import se.uulm.snowballr.backend.model.SnowballRException.EmailException
 import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
+import se.uulm.snowballr.backend.model.email.EmailData
+import se.uulm.snowballr.backend.model.email.EmailTemplate
 import java.io.IOException
 
 private val logger = KotlinLogging.logger {}
 
 interface IEmailService {
     /**
-     * Sends an email using a specific template and data model.
+     * Sends an email verification email to the specified recipient.
      *
      * @param to The recipient's email address.
-     * @param template The [EmailTemplate] enum instance, containing the template name and subject.
-     * @param data The data model (e.g., a Map) to populate the template.
-     *
-     * TODO: This method will be replaced by more specific methods like `sendInvitationEmail` in later issues
+     * @param data The data model containing the user's data.
      */
-    fun sendEmail(to: String, template: EmailTemplate, data: Any)
+    fun sendEmailVerificationEmail(to: String, data: EmailData.EmailVerification)
 }
 
 /**
@@ -81,7 +79,18 @@ class EmailService(
         logger.info { "Initialized Mailer and compiled all email templates." }
     }
 
-    override fun sendEmail(to: String, template: EmailTemplate, data: Any) {
+    override fun sendEmailVerificationEmail(to: String, data: EmailData.EmailVerification) {
+        sendEmail(to, EmailTemplate.EMAIL_VERIFICATION, data)
+    }
+
+    /**
+     * Sends an email using the specified template and data.
+     *
+     * @param to The recipient's email address.
+     * @param template The email template to use for the email.
+     * @param data The data model containing the information to populate the email template.
+     */
+    private fun sendEmail(to: String, template: EmailTemplate, data: EmailData) {
         try {
             val compiledTemplate = compiledTemplates[template]
                 ?: throw FailedPreconditionException("Template ${template.name} was not pre-compiled.")
