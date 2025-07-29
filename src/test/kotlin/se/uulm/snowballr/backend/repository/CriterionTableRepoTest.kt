@@ -111,7 +111,7 @@ class CriterionTableRepoTest : H2DatabaseTest(arrayOf(CriterionTable, ProjectTab
 
         @GrpcEnumSourceTest(CriterionCategory::class)
         fun `When a criterion is created, but the assigned project doesn't exist, then an exception is thrown`(
-            category: CriterionOuterClass.CriterionCategory,
+            category: CriterionCategory,
         ) = runTest {
             val request =
                 CriterionOuterClass.Criterion.Create
