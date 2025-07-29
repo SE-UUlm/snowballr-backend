@@ -103,17 +103,7 @@ interface IProjectTableRepo {
 class ProjectTableRepo(
     private val db: IDatabase,
 ) : IProjectTableRepo {
-    /**
-     * Requesting a project from the database.
-     *
-     * @param id The ID of the requested project.
-     * @return The [Project] object or null, if no project with the given [id] was found.
-     */
-    private fun getProjectByIdOrNull(id: UUID): Project? = ProjectTable
-        .selectAll()
-        .where { ProjectTable.id eq id }
-        .map { it.toProject() }
-        .singleOrNull()
+    private fun getProjectByIdOrNull(id: UUID): Project? = ProjectTable.getEntityByIdOrNull(id, ResultRow::toProject)
 
     override suspend fun getProjectById(id: UUID): Project = db.query {
         getProjectByIdOrNull(id) ?: throw NotFoundException(EntityType.PROJECT, id.toString())

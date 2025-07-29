@@ -101,17 +101,7 @@ interface IUserTableRepo {
 class UserTableRepo(
     private val db: IDatabase,
 ) : IUserTableRepo {
-    /**
-     * Requesting a user from the database.
-     *
-     * @param id The id of the requested user.
-     * @return The [User] object or null, if no user with the given [id] was found.
-     */
-    private fun getUserByIdOrNull(id: UUID): User? = UserTable
-        .selectAll()
-        .where { UserTable.id eq id }
-        .map { it.toUser() }
-        .singleOrNull()
+    private fun getUserByIdOrNull(id: UUID): User? = UserTable.getEntityByIdOrNull(id, ResultRow::toUser)
 
     override suspend fun getUserById(id: UUID): User = db.query {
         getUserByIdOrNull(id) ?: throw NotFoundException(EntityType.USER, id.toString())

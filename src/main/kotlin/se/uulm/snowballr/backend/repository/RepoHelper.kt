@@ -13,6 +13,21 @@ import se.uulm.snowballr.backend.model.SnowballRException.EntityNotPersistedExce
 import java.util.UUID
 
 /**
+ * Returns an entity by its ID or returns null if the entity couldn't be found.
+ *
+ * @param Key The type of the [IdTable], i.e., the ID type, such as [UUID].
+ * @param T The table type as a subtype of [IdTable].
+ * @param EntT The result entity type.
+ * @param id The ID of type [Key], which is used to find the entity.
+ * @param mapper Mapping function of the [ResultRow] to the entity type [EntT].
+ */
+fun <Key : Any, T : IdTable<Key>, EntT : Any> T.getEntityByIdOrNull(id: Key, mapper: (ResultRow) -> EntT): EntT? =
+    this.selectAll()
+        .where { this@getEntityByIdOrNull.id eq id }
+        .map(mapper)
+        .singleOrNull()
+
+/**
  * Combination of using [insertAndGetId] and fetching the created entity by its ID.
  *
  * @param Key The type of the [IdTable], i.e., the ID type, such as [UUID].
@@ -24,17 +39,12 @@ import java.util.UUID
  * @param body The body that is passed to [insertAndGetId].
  */
 inline fun <Key : Any, T : IdTable<Key>, EntT : Any> T.insertAndGet(
-    mapper: (ResultRow) -> EntT,
+    noinline mapper: (ResultRow) -> EntT,
     entityType: EntityType,
     crossinline body: T.(InsertStatement<EntityID<Key>>) -> Unit,
 ): EntT {
     val id = this.insertAndGetId(body).value
-    return this
-        .selectAll()
-        .where { this@insertAndGet.id eq id }
-        .map { mapper.invoke(it) }
-        .singleOrNull()
-        ?: throw EntityNotPersistedException(entityType, id.toString())
+    return this.getEntityByIdOrNull(id, mapper) ?: throw EntityNotPersistedException(entityType, id.toString())
 }
 
 /**
@@ -51,15 +61,10 @@ inline fun <Key : Any, T : IdTable<Key>, EntT : Any> T.insertAndGet(
  */
 inline fun <Key : Any, T : IdTable<Key>, EntT : Any> T.updateAndGet(
     id: Key,
-    mapper: (ResultRow) -> EntT,
+    noinline mapper: (ResultRow) -> EntT,
     entityType: EntityType,
     crossinline body: T.(UpdateStatement) -> Unit,
 ): EntT {
     this.update({ this@updateAndGet.id eq id }, body = body)
-    return this
-        .selectAll()
-        .where { this@updateAndGet.id eq id }
-        .map { mapper.invoke(it) }
-        .singleOrNull()
-        ?: throw EntityNotPersistedException(entityType, id.toString())
+    return this.getEntityByIdOrNull(id, mapper) ?: throw EntityNotPersistedException(entityType, id.toString())
 }
