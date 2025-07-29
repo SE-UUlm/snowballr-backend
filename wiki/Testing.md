@@ -113,6 +113,11 @@ has the following test structure:
 
 ```kotlin
 class CreateExampleTest : MainServiceTest() {
+    @BeforeEach
+    fun setupTest() {
+        coEvery { userRepoMock.createExample(any()) } throws NotImplementedError()
+    }
+
     @Test
     fun `When an example is correctly created, then no exception is thrown`() =
         runTest {
@@ -140,11 +145,12 @@ class CreateExampleTest : MainServiceTest() {
 }
 ```
 
-The class always needs to be annotated as shown in the example above because we use coroutines. It is important that we
-mock each external dependency such as the call to the repository. In the example, we mock the repository to always
-return a specific object or to throw an exception. This way, we can test the behavior of the service method according to
-the behavior of our dependencies. For more complex mocks such as how often a method is called, refer to the rich
-documentation of the used mocking library [MockK](https://mockk.io/).
+It is important that we mock each external dependency such as the call to the repository. In the example above, we first
+mock that the repository call throws a `NotImplementedError` and after that in each test case that the repository always
+returns a specific object or throws an exception. This way, we can ensure that every call that is made in the service
+method is also mocked and then test the behavior of the service method according to the behavior of our dependencies.
+For more complex mocks such as how often a method is called, refer to the rich documentation of the used mocking library
+[MockK](https://mockk.io/).
 
 ### Input Validation
 
