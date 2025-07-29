@@ -11,6 +11,7 @@ import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.EntityNotPersistedException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.ProjectMember
+import se.uulm.snowballr.backend.repository.getEntityOrNull
 import se.uulm.snowballr.backend.repository.insertAndGet
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.table.association.toProjectMember
@@ -87,13 +88,9 @@ class ProjectMemberTableRepo(
      * @return The [ProjectMember] object or null, if no project with the given [projectId] and [userId] was found.
      */
     private fun getProjectMemberByComposedIdOrNull(projectId: UUID, userId: UUID): ProjectMember? = ProjectMemberTable
-        .selectAll()
-        .where {
-            (ProjectMemberTable.projectId eq projectId) and
-                (ProjectMemberTable.userId eq userId)
+        .getEntityOrNull(ResultRow::toProjectMember) {
+            (ProjectMemberTable.projectId eq projectId) and (ProjectMemberTable.userId eq userId)
         }
-        .map { it.toProjectMember() }
-        .singleOrNull()
 
     override suspend fun getProjectMemberByComposedId(projectId: UUID, userId: UUID): ProjectMember = db.query {
         getProjectMemberByComposedIdOrNull(projectId, userId)
