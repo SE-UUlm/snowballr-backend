@@ -167,6 +167,39 @@ class AuthenticationValidatorTest {
     }
 
     @Nested
+    inner class VerifyEmailRequest {
+        @Test
+        fun `When a valid verify email request is validated, then no issue is returned`() {
+            val request = Authentication.VerifyEmailRequest.newBuilder()
+                .setToken("a-valid-non-blank-token-12345")
+                .build()
+            val result = validateRequest(request)
+
+            EitherAssert.assertThat(result).isRight()
+        }
+
+        @Test
+        fun `When a blank token is validated, then the 'BlankField' issue is returned`() {
+            val request = Authentication.VerifyEmailRequest.newBuilder()
+                .setToken("")
+                .build()
+            val result = validateRequest(request)
+
+            assertInvalidResult<BlankField>(result)
+        }
+
+        @Test
+        fun `When a token consisting only of whitespace is validated, then the 'BlankField' issue is returned`() {
+            val request = Authentication.VerifyEmailRequest.newBuilder()
+                .setToken("   ")
+                .build()
+            val result = validateRequest(request)
+
+            assertInvalidResult<BlankField>(result)
+        }
+    }
+
+    @Nested
     inner class LoginRequest {
         @Test
         fun `When a valid login request is validated, then no issue is returned`() {
