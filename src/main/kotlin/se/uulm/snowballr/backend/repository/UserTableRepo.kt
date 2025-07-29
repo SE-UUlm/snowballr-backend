@@ -2,7 +2,6 @@ package se.uulm.snowballr.backend.repository
 
 import com.google.protobuf.util.FieldMaskUtil
 import org.jetbrains.exposed.sql.ResultRow
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.neq
 import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.or
@@ -169,7 +168,7 @@ class UserTableRepo(
                     (UserTable.status eq UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED) or
                         (UserTable.status eq UserStatus.USER_STATUS_ACTIVE)
                 }
-                .andWhere { UserTable.id notInList excludedUsers.map { it } }
+                .andWhere { UserTable.id notInList excludedUsers.toList() }
                 .limit(MAXIMUM_NUMBER_OF_INVITE_CANDIDATES)
                 .map { it.toUser() }
         }

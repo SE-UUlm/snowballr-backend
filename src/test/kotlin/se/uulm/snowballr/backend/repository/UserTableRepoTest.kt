@@ -317,20 +317,18 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
             val userId2 = insertTestUserAndGetId(lastName = "John", email = "doe.john@example.com")
             val userId3 = insertTestUserAndGetId(email = "john.doe@example.com")
 
-            val matchingUsers = repo.getUsersMatchingSearchQuery("john", setOf())
+            val matchingUsers = repo.getUsersMatchingSearchQuery("john", emptySet())
 
-            assertEquals(3, matchingUsers.size)
+            assertThat(matchingUsers).hasSize(3)
 
-            assertThat(matchingUsers.find { it.id == userId1 }).isNotNull
-            assertThat(matchingUsers.find { it.id == userId2 }).isNotNull
-            assertThat(matchingUsers.find { it.id == userId3 }).isNotNull
+            assertThat(matchingUsers.map { it.id }).containsExactlyInAnyOrder(userId1, userId2, userId3)
         }
 
         @Test
         fun `When a deleted user is matching the search query, then this user is not returned`() = runTest {
             insertTestUserAndGetId(firstName = "john", lastName = "doe", status = UserStatus.USER_STATUS_DELETED)
 
-            val matchingUsers = repo.getUsersMatchingSearchQuery("john", setOf())
+            val matchingUsers = repo.getUsersMatchingSearchQuery("john", emptySet())
 
             assertEquals(0, matchingUsers.size)
         }
@@ -339,7 +337,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
         fun `When no user is matching the search query, then an empty list is returned`() = runTest {
             insertTestUserAndGetId(firstName = "johnathan")
 
-            val matchingUsers = repo.getUsersMatchingSearchQuery("non-existing", setOf())
+            val matchingUsers = repo.getUsersMatchingSearchQuery("non-existing", emptySet())
 
             assertEquals(0, matchingUsers.size)
         }
@@ -351,7 +349,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
                     insertTestUserAndGetId(firstName = "John the $i-th", email = "john$i@example.com")
                 }
 
-                val matchingUsers = repo.getUsersMatchingSearchQuery("john", setOf())
+                val matchingUsers = repo.getUsersMatchingSearchQuery("john", emptySet())
 
                 assertEquals(10, matchingUsers.size)
             }

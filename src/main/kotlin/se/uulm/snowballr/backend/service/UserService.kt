@@ -183,7 +183,7 @@ class UserService(
 
         // Check whether the search query is too short, i.e., 3 or fewer characters long
         if (searchQuery.length < MINIMUM_LENGTH_OF_SEARCH_QUERY) {
-            return GrpcUser.List.newBuilder().build()
+            return GrpcUser.List.getDefaultInstance()
         }
 
         val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
