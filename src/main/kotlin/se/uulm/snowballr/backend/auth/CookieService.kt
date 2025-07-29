@@ -47,6 +47,8 @@ interface ICookieService {
 
 /**
  * Utility object for parsing and constructing HTTP cookie headers.
+ *
+ * @param jwtService The JWT service used to resolve token TTLs.
  */
 class CookieService(private val jwtService: IJwtService) : ICookieService {
     override fun parseCookies(cookieHeader: String?): Map<String, String> {

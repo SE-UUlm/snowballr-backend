@@ -71,7 +71,7 @@ interface IJwtService {
 /**
  * Service for handling JWT (JSON Web Token) operations related to user authentication.
  *
- * @property envReader Provides access to environment variables for configuration.
+ * @param envReader Provides access to environment variables for configuration.
  */
 class JwtService(
     private val envReader: EnvReader,
