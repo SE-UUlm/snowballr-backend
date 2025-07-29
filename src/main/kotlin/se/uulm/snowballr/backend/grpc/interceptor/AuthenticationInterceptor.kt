@@ -46,6 +46,7 @@ private val PUBLIC_SERVICES =
 private val PUBLIC_METHODS =
     setOf(
         SnowballRGrpcKt.registerMethod.fullMethodName,
+        SnowballRGrpcKt.verifyEmailMethod.fullMethodName,
         SnowballRGrpcKt.loginMethod.fullMethodName,
         SnowballRGrpcKt.requestPasswordResetMethod.fullMethodName,
         SnowballRGrpcKt.resetPasswordMethod.fullMethodName,

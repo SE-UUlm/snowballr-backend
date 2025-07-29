@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.service
 
+import com.google.protobuf.FieldMask
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.viascom.nanoid.NanoId
 import se.uulm.snowballr.backend.auth.GrpcContext
@@ -16,6 +17,7 @@ import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionExce
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthenticatedException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
+import se.uulm.snowballr.backend.model.SnowballRException.VerificationTokenNotFoundException
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.toGrpcUser
 import se.uulm.snowballr.backend.model.dto.toGrpcUserSettings
@@ -33,6 +35,7 @@ import snowballr.ProjectOuterClass
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
 import snowballr.UserSettingsOuterClass
+import java.time.OffsetDateTime
 import java.util.UUID
 import snowballr.UserOuterClass.User as GrpcUser
 
@@ -64,6 +67,11 @@ interface IUserService {
      * Service implementation of [SnowballRService.register].
      */
     suspend fun register(request: Authentication.RegisterRequest): Base.Nothing
+
+    /**
+     * Service implementation of [SnowballRService.verifyEmail].
+     */
+    suspend fun verifyEmail(request: Authentication.VerifyEmailRequest): Base.Nothing
 
     /**
      * Service implementation of [SnowballRService.logout].
@@ -253,6 +261,33 @@ class UserService(
                 verificationLink,
             ),
         )
+
+        return Base.Nothing.getDefaultInstance()
+    }
+
+    override suspend fun verifyEmail(request: Authentication.VerifyEmailRequest): Base.Nothing {
+        val verificationToken = verificationTokenRepo.getVerificationTokenByValue(request.token)
+            ?: throw VerificationTokenNotFoundException()
+
+        // Check if the token has expired
+        if (OffsetDateTime.now().isAfter(verificationToken.expiresAt)) {
+            verificationTokenRepo.deleteVerificationToken(request.token)
+            throw VerificationTokenNotFoundException()
+        }
+
+        // Check whether the user exists
+        val user = userRepo.getUserById(verificationToken.userId)
+
+        // Update the user's status to active
+        val updatedUser = user.copy(status = UserStatus.USER_STATUS_ACTIVE)
+        val userUpdate = GrpcUser.Update.newBuilder()
+            .setUser(updatedUser.toGrpcUser())
+            .setMask(FieldMask.newBuilder().addPaths("user.status").build())
+            .build()
+        userRepo.updateUser(userUpdate)
+
+        // Remove the verification token after successful verification
+        verificationTokenRepo.deleteVerificationToken(request.token)
 
         return Base.Nothing.getDefaultInstance()
     }

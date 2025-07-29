@@ -169,7 +169,7 @@ class SnowballRServer(
             mainService.register(request)
 
         override suspend fun verifyEmail(request: Authentication.VerifyEmailRequest): Base.Nothing =
-            super.verifyEmail(request)
+            mainService.verifyEmail(request)
 
         override suspend fun login(request: Authentication.LoginRequest): Base.Nothing = mainService.login(request)
 
