@@ -5,14 +5,13 @@ import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.alias
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.update
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.SnowballRException.EntityNotPersistedException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.ProjectMember
 import se.uulm.snowballr.backend.repository.getEntityOrNull
 import se.uulm.snowballr.backend.repository.insertAndGet
+import se.uulm.snowballr.backend.repository.updateAndGet
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.table.association.toProjectMember
 import se.uulm.snowballr.backend.table.getProjectEntityId
@@ -155,18 +154,16 @@ class ProjectMemberTableRepo(
     }
 
     override suspend fun promoteProjectMemberToAdmin(projectId: UUID, userId: UUID): ProjectMember = db.query {
-        ProjectMemberTable.update(
-            {
-                (ProjectMemberTable.projectId eq projectId) and
-                    (ProjectMemberTable.userId eq userId)
+        ProjectMemberTable.updateAndGet(
+            mapper = ResultRow::toProjectMember,
+            entityType = EntityType.PROJECT_MEMBER,
+            id = projectId.toString(),
+            where = {
+                (ProjectMemberTable.projectId eq projectId) and (ProjectMemberTable.userId eq userId)
             },
-        ) {
-            it[role] = ProjectOuterClass.MemberRole.MEMBER_ROLE_ADMIN
-        }
-
-        getProjectMemberByComposedIdOrNull(projectId, userId) ?: throw EntityNotPersistedException(
-            EntityType.PROJECT_MEMBER,
-            projectId.toString(),
+            body = {
+                it[role] = ProjectOuterClass.MemberRole.MEMBER_ROLE_ADMIN
+            },
         )
     }
 }

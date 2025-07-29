@@ -64,6 +64,30 @@ inline fun <Key : Any, T : IdTable<Key>, EntT : Any> T.insertAndGet(
 }
 
 /**
+ * Combination of using [update] and fetching the updated entity both according to the [where] expression.
+ *
+ * @param Key The type of the [IdTable], i.e., the ID type, such as [UUID].
+ * @param T The table type as a subtype of [IdTable].
+ * @param EntT The result entity type.
+ * @param mapper Mapping function of the [ResultRow] to the entity type [EntT].
+ * @param entityType The entity type used for the [EntityNotPersistedException], which is thrown when the entity cannot
+ * be retrieved by its ID.
+ * @param id The ID, which is used for the [EntityNotPersistedException].
+ * @param where The SQL expression that is used to find the entity.
+ * @param body The body that is passed to [update].
+ */
+inline fun <Key : Any, T : IdTable<Key>, EntT : Any> T.updateAndGet(
+    noinline mapper: (ResultRow) -> EntT,
+    entityType: EntityType,
+    id: String,
+    noinline where: SqlExpressionBuilder.() -> Op<Boolean>,
+    crossinline body: T.(UpdateStatement) -> Unit,
+): EntT {
+    this.update(where, body = body)
+    return this.getEntityOrNull(mapper, where) ?: throw EntityNotPersistedException(entityType, id)
+}
+
+/**
  * Combination of using [update] and fetching the updated entity by its ID.
  *
  * @param Key The type of the [IdTable], i.e., the ID type, such as [UUID].
@@ -80,7 +104,4 @@ inline fun <Key : Any, T : IdTable<Key>, EntT : Any> T.updateByIdAndGet(
     noinline mapper: (ResultRow) -> EntT,
     entityType: EntityType,
     crossinline body: T.(UpdateStatement) -> Unit,
-): EntT {
-    this.update({ this@updateByIdAndGet.id eq id }, body = body)
-    return this.getEntityByIdOrNull(id, mapper) ?: throw EntityNotPersistedException(entityType, id.toString())
-}
+): EntT = this.updateAndGet(mapper, entityType, id.toString(), { this@updateByIdAndGet.id eq id }, body)
