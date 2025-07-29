@@ -5,11 +5,7 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkObject
 import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.newSingleThreadContext
-import kotlinx.coroutines.test.resetMain
-import kotlinx.coroutines.test.setMain
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
@@ -69,8 +65,6 @@ import se.uulm.snowballr.backend.service.criterion.CreateCriterionTest
 @DelicateCoroutinesApi
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 open class MainServiceTest {
-    private val threadContext = newSingleThreadContext("Test thread")
-
     val projectRepoMock = mockk<IProjectTableRepo>(relaxed = true)
     val criterionRepoMock = mockk<ICriterionTableRepo>(relaxed = true)
     val userRepoMock = mockk<IUserTableRepo>(relaxed = true)
@@ -89,7 +83,6 @@ open class MainServiceTest {
 
     @BeforeAll
     fun setUp() {
-        Dispatchers.setMain(threadContext)
         mockkObject(GrpcContext)
     }
 
@@ -100,8 +93,6 @@ open class MainServiceTest {
 
     @AfterAll
     fun tearDown() {
-        Dispatchers.resetMain()
-        threadContext.close()
         unmockkObject(GrpcContext)
     }
 }

@@ -5,10 +5,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.newSingleThreadContext
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.resetMain
-import kotlinx.coroutines.test.setMain
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.Table
@@ -70,7 +67,6 @@ open class H2DatabaseTest(
     val tables: Array<Table> = emptyArray(),
     val needsTestUser: Boolean = false,
 ) {
-    private val threadContext = newSingleThreadContext("Coroutine thread")
     private val connection = Database.connect("jdbc:h2:mem:test_db;DB_CLOSE_DELAY=-1;IGNORECASE=true;")
     protected val db = TestDatabase()
 
@@ -98,7 +94,6 @@ open class H2DatabaseTest(
 
     @BeforeAll
     fun setUp() {
-        Dispatchers.setMain(threadContext)
         RepositoryHelper.db = db
     }
 
@@ -143,7 +138,5 @@ open class H2DatabaseTest(
     @AfterAll
     fun tearDown() {
         TransactionManager.closeAndUnregister(connection)
-        Dispatchers.resetMain()
-        threadContext.close()
     }
 }
