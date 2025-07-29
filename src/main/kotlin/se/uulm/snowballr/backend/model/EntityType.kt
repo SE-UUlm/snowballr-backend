@@ -13,6 +13,7 @@ enum class EntityType(val singular: String, val plural: String) {
     PROJECT_MEMBER("project member", "project members"),
     PAPER("paper", "papers"),
     AUTHOR("author", "authors"),
+    VERIFICATION_TOKEN("verification token", "verification tokens"),
     ;
 
     /**
