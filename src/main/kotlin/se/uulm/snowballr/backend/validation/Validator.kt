@@ -52,6 +52,7 @@ fun <T> validateRequest(request: T): EitherNel<ValidationIssue, Unit> = when (re
     is io.grpc.reflection.v1.ServerReflectionRequest -> Either.Right(Unit)
     // Authentication
     is Authentication.RegisterRequest -> AuthenticationValidator.validateRegisterRequest(request)
+    is Authentication.VerifyEmailRequest -> AuthenticationValidator.validateVerifyEmailRequest(request)
     is Authentication.LoginRequest -> AuthenticationValidator.validateLoginRequest(request)
     // User
     is UserOuterClass.User.Update -> UserValidator.validateUpdateRequest(request)
