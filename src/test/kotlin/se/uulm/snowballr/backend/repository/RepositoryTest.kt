@@ -29,7 +29,7 @@ import java.util.UUID
 import javax.sql.DataSource
 
 /**
- * Base class for unit tests that interact with the in-memory H2 database.
+ * Base class for unit tests that interact with a test PostgreSQL database.
  * This class manages the lifecycle of the database and provides setup
  * for database schema creation and teardown for schema cleanup between tests.
  *
@@ -38,7 +38,7 @@ import javax.sql.DataSource
  *
  * Example usage:
  * ```kotlin
- * class ExampleTest : H2DatabaseTest(arrayOf(ExampleTable)) {
+ * class ExampleTest : RepositoryTest(arrayOf(ExampleTable)) {
  *     private val repo = ExampleTableRepo(db)
  *
  *     @Nested

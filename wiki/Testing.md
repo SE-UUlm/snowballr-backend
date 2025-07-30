@@ -62,11 +62,11 @@ find the according test class. The service test classes break this convention as
 ### Repository
 
 The base class of each repository test class is
-[H2DatabaseTest](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/test/kotlin/se/uulm/snowballr/backend/repository/H2DatabaseTest.kt),
-which uses the in-memory database H2. A repository test class has the following structure:
+[RepositoryTest](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/test/kotlin/se/uulm/snowballr/backend/repository/RepositoryTest.kt),
+which uses an isolated PostgreSQL database. A repository test class has the following structure:
 
 ```kotlin
-class ExampleRepoTest : H2DatabaseTest(arrayOf(ExampleTable, AnotherExampleTable)) {
+class ExampleRepoTest : RepositoryTest(arrayOf(ExampleTable, AnotherExampleTable)) {
     private val repo = ExampleTableRepo(db)
     private val otherRepo = AnotherExampleTableRepo(db)
 
@@ -84,11 +84,10 @@ class ExampleRepoTest : H2DatabaseTest(arrayOf(ExampleTable, AnotherExampleTable
 }
 ```
 
-First, the class always needs to be annotated as shown in the example above because we use coroutines. Second, we always
-pass a list of used tables to the `H2DatabaseTest` super constructor. This way, the tables will be created before and
-dropped after each test case. This ensures the isolation of each test. Third, a `repo` object is created, providing
-access to the repository we want to test. There might be some cases where we need access to another repo, for instance,
-to create entities, which are referenced by entities of the tested repository.
+We always pass a list of used tables to the `RepositoryTest` super constructor. This way, the tables will be created
+before and dropped after each test case. This ensures the isolation of each test. Third, a `repo` object is created,
+providing access to the repository we want to test. There might be some cases where we need access to another repo, for
+instance, to create entities, which are referenced by entities of the tested repository.
 
 To keep a clean structure, we group all tests in inner classes according to the associated repository method. Use the
 `@Nested` annotation for the inner classes.
