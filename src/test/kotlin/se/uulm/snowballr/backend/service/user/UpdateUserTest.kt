@@ -65,15 +65,32 @@ class UpdateUserTest : MainServiceTest() {
     }
 
     @Test
-    fun `When user is not admin and tries to change role, then UnauthorizedException is thrown`() = runTest {
+    fun `When user is not admin and tries to change another user's role, then UnauthorizedException is thrown`() =
+        runTest {
+            val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
+            val requestedUser = DataBuilder.createExampleUser(id = requestedUserId)
+
+            every { GrpcContext.getUserIdFromContext() } returns currentUser.id
+            coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+            coEvery { userRepoMock.getUserById(requestedUserId) } returns requestedUser
+
+            assertThrows<UnauthorizedException.Single> { mainService.updateUser(getExampleRequest()) }
+        }
+
+    @Test
+    fun `When user is not admin and tries to update another user, then UnauthorizedException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-        val requestedUser = DataBuilder.createExampleUser(id = requestedUserId)
+        val otherUser = DataBuilder.createExampleUser(id = requestedUserId)
+        val request = UserOuterClass.User.Update.newBuilder()
+            .setUser(UserOuterClass.User.newBuilder().setId(otherUser.id.toString()).setFirstName("NewFirstName"))
+            .setMask(FieldMask.newBuilder().addPaths("first_name"))
+            .build()
 
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
         coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
-        coEvery { userRepoMock.getUserById(requestedUserId) } returns requestedUser
+        coEvery { userRepoMock.getUserById(otherUser.id) } returns otherUser
 
-        assertThrows<UnauthorizedException.Single> { mainService.updateUser(getExampleRequest()) }
+        assertThrows<UnauthorizedException.Single> { mainService.updateUser(request) }
     }
 
     @Test
@@ -104,7 +121,48 @@ class UpdateUserTest : MainServiceTest() {
     }
 
     @Test
-    fun `When update succeeds, then updated user is returned`() = runTest {
+    fun `When user updates own email, then it succeeds`() = runTest {
+        val currentUser = DataBuilder.createExampleUser(id = requestedUserId, role = UserRole.USER_ROLE_DEFAULT)
+        val request = UserOuterClass.User.Update.newBuilder()
+            .setUser(
+                UserOuterClass.User.newBuilder()
+                    .setId(currentUser.id.toString())
+                    .setEmail("new-and-shiny@example.com"),
+            )
+            .setMask(FieldMask.newBuilder().addPaths("email"))
+            .build()
+
+        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { userRepoMock.doesUserExistByEmail("new-and-shiny@example.com") } returns false
+        coEvery { userRepoMock.updateUser(request) } returns currentUser
+
+        assertDoesNotThrow { mainService.updateUser(request) }
+    }
+
+    @Test
+    fun `When admin updates another user's role, then it succeeds`() = runTest {
+        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+        val otherUser = DataBuilder.createExampleUser(id = requestedUserId, role = UserRole.USER_ROLE_DEFAULT)
+        val request = UserOuterClass.User.Update.newBuilder()
+            .setUser(
+                UserOuterClass.User.newBuilder()
+                    .setId(otherUser.id.toString())
+                    .setRole(UserRole.USER_ROLE_ADMIN),
+            )
+            .setMask(FieldMask.newBuilder().addPaths("role"))
+            .build()
+
+        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { userRepoMock.getUserById(otherUser.id) } returns otherUser
+        coEvery { userRepoMock.updateUser(request) } returns otherUser
+
+        assertDoesNotThrow { mainService.updateUser(request) }
+    }
+
+    @Test
+    fun `When admin updates all fields of another user, then it succeeds`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val requestedUser = DataBuilder.createExampleUser(id = requestedUserId)
 

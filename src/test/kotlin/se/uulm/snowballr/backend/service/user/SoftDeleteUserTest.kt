@@ -94,7 +94,7 @@ class SoftDeleteUserTest : MainServiceTest() {
     }
 
     @Test
-    fun `When soft delete succeeds, then nothing is returned`() = runTest {
+    fun `When admin soft deletes other user, then it succeeds`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val userToDelete = DataBuilder.createExampleUser(id = requestedUserId)
 
@@ -102,6 +102,28 @@ class SoftDeleteUserTest : MainServiceTest() {
         coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
         coEvery { userRepoMock.getUserById(requestedUserId) } returns userToDelete
         coEvery { userRepoMock.softDeleteUser(requestedUserId) } returns Unit
+
+        assertDoesNotThrow { mainService.softDeleteUser(getExampleRequest()) }
+    }
+
+    @Test
+    fun `When user tries to delete own account, then it succeeds`() = runTest {
+        val currentUser = DataBuilder.createExampleUser(id = requestedUserId, role = UserRole.USER_ROLE_DEFAULT)
+
+        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { userRepoMock.softDeleteUser(currentUser.id) } returns Unit
+
+        assertDoesNotThrow { mainService.softDeleteUser(getExampleRequest()) }
+    }
+
+    @Test
+    fun `When admin tries to delete own account, then it succeeds`() = runTest {
+        val currentUser = DataBuilder.createExampleUser(id = requestedUserId, role = UserRole.USER_ROLE_ADMIN)
+
+        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { userRepoMock.softDeleteUser(currentUser.id) } returns Unit
 
         assertDoesNotThrow { mainService.softDeleteUser(getExampleRequest()) }
     }
