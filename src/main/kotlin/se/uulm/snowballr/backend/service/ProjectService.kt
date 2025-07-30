@@ -7,6 +7,7 @@ import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.toGrpcProject
+import se.uulm.snowballr.backend.model.dto.toGrpcProjectMembers
 import se.uulm.snowballr.backend.model.dto.toGrpcProjects
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
@@ -54,6 +55,11 @@ interface IProjectService {
      * @return The updated project after the changes have been applied.
      */
     suspend fun updateProject(request: GrpcProject.Update): GrpcProject
+
+    /**
+     * Service implementation of [SnowballRService.getProjectMembers].
+     */
+    suspend fun getProjectMembers(request: Base.Id): GrpcProject.Member.List
 }
 
 /**
@@ -75,7 +81,7 @@ class ProjectService(
     override suspend fun getProjectById(request: Base.Id): GrpcProject {
         val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
         val projectId = parseUUID(request.id, EntityType.PROJECT)
-        val isInProject = projectMemberRepo.getMembersOfProject(projectId)
+        val isInProject = projectMemberRepo.getProjectMembers(projectId)
             .any { it.userId == currentUser.id }
 
         if (!isInProject) {
@@ -156,5 +162,23 @@ class ProjectService(
         }
 
         return repo.updateProject(request, projectStatus).toGrpcProject()
+    }
+
+    override suspend fun getProjectMembers(request: Base.Id): GrpcProject.Member.List {
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
+        val projectId = parseUUID(request.id, EntityType.PROJECT)
+        val projectMembersWithUsers = projectMemberRepo.getProjectMembersWithUsers(projectId)
+
+        if (!projectMembersWithUsers.any { it.user.id == currentUser.id }) {
+            verifyServerAdminRole(currentUser) {
+                throw UnauthorizedException.Single(
+                    EntityType.PROJECT,
+                    projectId.toString(),
+                    AccessType.READ,
+                    it,
+                )
+            }
+        }
+        return projectMembersWithUsers.toGrpcProjectMembers()
     }
 }

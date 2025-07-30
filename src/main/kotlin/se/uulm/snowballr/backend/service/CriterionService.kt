@@ -88,7 +88,7 @@ class CriterionService(
             criterion.projectId ?: UUID.fromString("00000000-0000-0000-0000-000000000000"),
         )
         val members = when (accessType) {
-            AccessType.READ -> projectMemberRepo.getMembersOfProject(project.id)
+            AccessType.READ -> projectMemberRepo.getProjectMembers(project.id)
             AccessType.UPDATE -> projectMemberRepo.getAllProjectAdmins(project.id)
             AccessType.CREATE, AccessType.DELETE -> emptyList()
         }
