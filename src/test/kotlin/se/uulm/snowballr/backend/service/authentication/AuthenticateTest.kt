@@ -42,7 +42,7 @@ class AuthenticateTest {
     }
 
     @Test
-    fun `When access token is invalid but refresh token is valid, then token is not refreshed and authentication succeeds`() {
+    fun `When access token is invalid but refresh token is valid, then token is refreshed and authentication succeeds`() {
         val parsedRefreshClaims = ParsedJwtAuthClaims(UUID.randomUUID(), Date(), Date())
         every { jwtServiceMock.parseAuthToken("invalidAccessToken") } throws JwtException("Invalid access token")
         every { jwtServiceMock.parseAuthToken("validRefreshToken") } returns parsedRefreshClaims
@@ -57,6 +57,28 @@ class AuthenticateTest {
             Authentication.AuthenticationStatus.AUTHENTICATION_STATUS_ACCESS_TOKEN_EXPIRED,
             GrpcContext.getAuthenticationStatusFromContext(),
         )
+        assertEquals(
+            "newAccessToken",
+            GrpcContext.COOKIES_TO_SET_CONTEXT_KEY.get()[GrpcContext.ACCESS_TOKEN_COOKIE_NAME],
+        )
+    }
+
+    @Test
+    fun `When access token is invalid, refresh token is valid, and skipRefresh is true, then auth succeeds without refresh`() {
+        val parsedRefreshClaims = ParsedJwtAuthClaims(UUID.randomUUID(), Date(), Date())
+        every { jwtServiceMock.parseAuthToken("invalidAccessToken") } throws JwtException("Invalid access token")
+        every { jwtServiceMock.parseAuthToken("validRefreshToken") } returns parsedRefreshClaims
+
+        val authResult = authenticationService.authenticate("invalidAccessToken", "validRefreshToken", true)
+        authResult.updatedContext.attach()
+
+        assertTrue(authResult.parsedJwtAuthClaimsResult.isSuccess)
+        assertEquals(parsedRefreshClaims, authResult.parsedJwtAuthClaimsResult.getOrNull())
+        assertEquals(
+            Authentication.AuthenticationStatus.AUTHENTICATION_STATUS_ACCESS_TOKEN_EXPIRED,
+            GrpcContext.getAuthenticationStatusFromContext(),
+        )
+        assertTrue(GrpcContext.COOKIES_TO_SET_CONTEXT_KEY.get().isEmpty())
     }
 
     @Test
@@ -90,5 +112,21 @@ class AuthenticateTest {
         )
         assertNull(GrpcContext.COOKIES_TO_SET_CONTEXT_KEY.get()[GrpcContext.ACCESS_TOKEN_COOKIE_NAME])
         assertNull(GrpcContext.COOKIES_TO_SET_CONTEXT_KEY.get()[GrpcContext.REFRESH_TOKEN_COOKIE_NAME])
+    }
+
+    @Test
+    fun `When both tokens are invalid and skipRefresh is true, then authentication fails and cookies are not cleared`() {
+        every { jwtServiceMock.parseAuthToken("invalidAccessToken") } throws JwtException("Invalid access token")
+        every { jwtServiceMock.parseAuthToken("invalidRefreshToken") } throws JwtException("Invalid refresh token")
+
+        val authResult = authenticationService.authenticate("invalidAccessToken", "invalidRefreshToken", true)
+        authResult.updatedContext.attach()
+
+        assertTrue(authResult.parsedJwtAuthClaimsResult.isFailure)
+        assertEquals(
+            Authentication.AuthenticationStatus.AUTHENTICATION_STATUS_UNAUTHENTICATED,
+            GrpcContext.getAuthenticationStatusFromContext(),
+        )
+        assertTrue(GrpcContext.COOKIES_TO_SET_CONTEXT_KEY.get().isEmpty())
     }
 }
