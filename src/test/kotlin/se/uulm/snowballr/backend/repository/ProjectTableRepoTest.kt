@@ -25,7 +25,7 @@ import java.util.UUID
 class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberTable), true) {
     private val repo = ProjectTableRepo(db)
 
-    private suspend fun insertTestProjectAndGetId(name: String, status: ProjectStatus): UUID = db.dbQuery {
+    private suspend fun insertTestProjectAndGetId(name: String, status: ProjectStatus): UUID = db.query {
         ProjectTable
             .insertAndGetId {
                 it[ProjectTable.name] = name

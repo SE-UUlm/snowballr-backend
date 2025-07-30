@@ -81,7 +81,7 @@ open class RepositoryTest(
      * and use the [Connection.TRANSACTION_SERIALIZABLE] isolation level to ensure data consistency.
      */
     protected class TestDatabase(var dataSource: DataSource) : IDatabase {
-        override suspend fun <T> dbQuery(dispatcher: CoroutineDispatcher, block: suspend Transaction.() -> T): T =
+        override suspend fun <T> query(dispatcher: CoroutineDispatcher, block: suspend Transaction.() -> T): T =
             newSuspendedTransaction(
                 dispatcher,
                 Database.connect(dataSource),
@@ -106,7 +106,7 @@ open class RepositoryTest(
     @BeforeEach
     fun setUpTest() {
         runBlocking {
-            db.dbQuery {
+            db.query {
                 SchemaUtils.create(*tables)
 
                 // Create the user table and a test entity if requested
@@ -131,7 +131,7 @@ open class RepositoryTest(
     @AfterEach
     fun tearDownTest() {
         runBlocking {
-            db.dbQuery {
+            db.query {
                 SchemaUtils.drop(*tables)
                 if (needsTestUser) {
                     SchemaUtils.drop(UserTable)

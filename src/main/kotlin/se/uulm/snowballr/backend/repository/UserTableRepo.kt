@@ -114,11 +114,11 @@ class UserTableRepo(
         .map { it.toUser() }
         .singleOrNull()
 
-    override suspend fun getUserById(id: UUID): User = db.dbQuery {
+    override suspend fun getUserById(id: UUID): User = db.query {
         getUserByIdOrNull(id) ?: throw NotFoundException(EntityType.USER, id.toString())
     }
 
-    override suspend fun getUserByEmail(email: String): User = db.dbQuery {
+    override suspend fun getUserByEmail(email: String): User = db.query {
         UserTable
             .selectAll()
             .where { UserTable.email eq email }
@@ -127,7 +127,7 @@ class UserTableRepo(
             ?: throw NotFoundException(EntityType.USER, email, identifierType = IdentifierType.EMAIL)
     }
 
-    override suspend fun doesUserExistByEmail(email: String): Boolean = db.dbQuery {
+    override suspend fun doesUserExistByEmail(email: String): Boolean = db.query {
         UserTable
             .select(UserTable.email)
             .where { UserTable.email eq email }
@@ -135,14 +135,14 @@ class UserTableRepo(
             .not()
     }
 
-    override suspend fun getAllUsers(): List<User> = db.dbQuery {
+    override suspend fun getAllUsers(): List<User> = db.query {
         UserTable
             .selectAll()
             .where(UserTable.email neq "")
             .map { it.toUser() }
     }
 
-    override suspend fun createUser(request: Authentication.RegisterRequest, passwordHash: String): User = db.dbQuery {
+    override suspend fun createUser(request: Authentication.RegisterRequest, passwordHash: String): User = db.query {
         UserTable.insertAndGet(ResultRow::toUser, EntityType.USER) {
             it[email] = request.email
             it[firstName] = request.firstName
@@ -153,7 +153,7 @@ class UserTableRepo(
         }
     }
 
-    override suspend fun updateUser(request: UserOuterClass.User.Update): User = db.dbQuery {
+    override suspend fun updateUser(request: UserOuterClass.User.Update): User = db.query {
         val uuid = parseUUID(request.user.id, EntityType.USER)
         val fieldMask = FieldMaskUtil.normalize(request.mask)
 
@@ -176,7 +176,7 @@ class UserTableRepo(
     }
 
     override suspend fun softDeleteUser(id: UUID) {
-        db.dbQuery {
+        db.query {
             UserTable.update({ UserTable.id eq id }) {
                 it[status] = UserStatus.USER_STATUS_DELETED
                 it[deletedAt] = OffsetDateTime.now()
@@ -184,7 +184,7 @@ class UserTableRepo(
         }
     }
 
-    override suspend fun getPasswordHashByEmail(email: String): String = db.dbQuery {
+    override suspend fun getPasswordHashByEmail(email: String): String = db.query {
         UserTable
             .select(UserTable.passwordHash)
             .where { UserTable.email eq email }

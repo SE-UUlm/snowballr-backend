@@ -58,7 +58,7 @@ private const val DB_USER = "postgres"
  * managing transaction lifecycles, allowing for simpler and more testable database interactions.
  */
 interface IDatabase {
-    suspend fun <T> dbQuery(dispatcher: CoroutineDispatcher = Dispatchers.IO, block: suspend Transaction.() -> T): T
+    suspend fun <T> query(dispatcher: CoroutineDispatcher = Dispatchers.IO, block: suspend Transaction.() -> T): T
 }
 
 /**
@@ -118,7 +118,7 @@ class Database(
         return HikariDataSource(config)
     }
 
-    override suspend fun <T> dbQuery(dispatcher: CoroutineDispatcher, block: suspend Transaction.() -> T): T =
+    override suspend fun <T> query(dispatcher: CoroutineDispatcher, block: suspend Transaction.() -> T): T =
         newSuspendedTransaction(
             dispatcher,
             Database.connect(dataSource),

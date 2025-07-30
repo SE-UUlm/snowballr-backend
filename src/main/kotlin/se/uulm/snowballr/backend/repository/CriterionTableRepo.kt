@@ -78,12 +78,12 @@ class CriterionTableRepo(
         .map { it.toCriterion() }
         .singleOrNull()
 
-    override suspend fun getCriterionById(id: UUID): Criterion = db.dbQuery {
+    override suspend fun getCriterionById(id: UUID): Criterion = db.query {
         getCriterionByIdOrNull(id) ?: throw NotFoundException(EntityType.CRITERION, id.toString())
     }
 
     override suspend fun createCriterion(request: CriterionOuterClass.Criterion.Create, userId: UUID): Criterion =
-        db.dbQuery {
+        db.query {
             val projectUUID = parseUUID(request.projectId, EntityType.PROJECT)
 
             // Get user reference
@@ -102,7 +102,7 @@ class CriterionTableRepo(
             }
         }
 
-    override suspend fun updateCriterion(request: CriterionOuterClass.Criterion.Update): Criterion = db.dbQuery {
+    override suspend fun updateCriterion(request: CriterionOuterClass.Criterion.Update): Criterion = db.query {
         val criterionId = parseUUID(request.criterion.id, EntityType.CRITERION)
         val fieldMask = FieldMaskUtil.normalize(request.mask)
 

@@ -23,7 +23,7 @@ object RepositoryHelper {
      * @param email The email address for the example user to be created.
      * @return The uuid of the created user
      */
-    suspend fun createExampleUser(email: String) = db.dbQuery {
+    suspend fun createExampleUser(email: String) = db.query {
         UserTable
             .insertAndGetId {
                 it[UserTable.email] = email
@@ -42,7 +42,7 @@ object RepositoryHelper {
      * @param projectId The unique identifier of the project to which the user is being assigned.
      * @return The created project member instance
      */
-    suspend fun assignUserToProject(userId: UUID, projectId: UUID) = db.dbQuery {
+    suspend fun assignUserToProject(userId: UUID, projectId: UUID) = db.query {
         ProjectMemberTable.insertAndGet(ResultRow::toProjectMember, EntityType.PROJECT_MEMBER) {
             it[ProjectMemberTable.userId] = userId
             it[ProjectMemberTable.projectId] = projectId
@@ -56,7 +56,7 @@ object RepositoryHelper {
      * @param email The email address of the user to be created.
      * @param projectId The unique identifier of the project to which the user will be assigned.
      */
-    suspend fun createAndAssignUserToProject(email: String, projectId: UUID) = db.dbQuery {
+    suspend fun createAndAssignUserToProject(email: String, projectId: UUID) = db.query {
         val userId = createExampleUser(email)
         assignUserToProject(userId, projectId)
     }

@@ -35,7 +35,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
         passwordHash: String = "passwordHash",
         role: UserRole = UserRole.USER_ROLE_DEFAULT,
         status: UserStatus = UserStatus.USER_STATUS_ACTIVE,
-    ): UUID = db.dbQuery {
+    ): UUID = db.query {
         UserTable.insertAndGetId {
             it[UserTable.email] = email
             it[UserTable.firstName] = firstName

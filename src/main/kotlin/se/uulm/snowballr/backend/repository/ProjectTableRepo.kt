@@ -117,11 +117,11 @@ class ProjectTableRepo(
         .map { it.toProject() }
         .singleOrNull()
 
-    override suspend fun getProjectById(id: UUID): Project = db.dbQuery {
+    override suspend fun getProjectById(id: UUID): Project = db.query {
         getProjectByIdOrNull(id) ?: throw NotFoundException(EntityType.PROJECT, id.toString())
     }
 
-    override suspend fun createProject(request: ProjectOuterClass.Project.Create, userId: UUID): Project = db.dbQuery {
+    override suspend fun createProject(request: ProjectOuterClass.Project.Create, userId: UUID): Project = db.query {
         // Get user reference
         val userEntityId = getUserEntityId(userId)
 
@@ -140,7 +140,7 @@ class ProjectTableRepo(
         }
     }
 
-    override suspend fun getAllProjects(): List<Project> = db.dbQuery {
+    override suspend fun getAllProjects(): List<Project> = db.query {
         ProjectTable
             .selectAll()
             .where {
@@ -150,7 +150,7 @@ class ProjectTableRepo(
             .map { it.toProject() }
     }
 
-    override suspend fun getUserProjects(userId: UUID, statusFilters: Set<ProjectStatus>): List<Project> = db.dbQuery {
+    override suspend fun getUserProjects(userId: UUID, statusFilters: Set<ProjectStatus>): List<Project> = db.query {
         val excludedStatuses = listOf(ProjectStatus.PROJECT_STATUS_UNSPECIFIED)
         val projectFilter = statusFilters
             .filterNot { it in excludedStatuses }
@@ -171,7 +171,7 @@ class ProjectTableRepo(
     override suspend fun updateProject(
         request: ProjectOuterClass.Project.Update,
         projectStatus: ProjectStatus,
-    ): Project = db.dbQuery {
+    ): Project = db.query {
         val projectId = parseUUID(request.project.id, EntityType.PROJECT)
         val fieldMaskPaths = FieldMaskUtil.normalize(request.mask).pathsList.toSet()
 

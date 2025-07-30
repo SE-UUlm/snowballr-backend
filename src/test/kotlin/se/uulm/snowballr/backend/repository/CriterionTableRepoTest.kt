@@ -40,7 +40,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
         description: String = "Test Description",
         category: CriterionCategory = CriterionCategory.CRITERION_CATEGORY_EXCLUSION,
         projectId: UUID = UUID.randomUUID(),
-    ): UUID = db.dbQuery {
+    ): UUID = db.query {
         CriterionTable.insertAndGetId {
             it[CriterionTable.tag] = tag
             it[CriterionTable.name] = name
