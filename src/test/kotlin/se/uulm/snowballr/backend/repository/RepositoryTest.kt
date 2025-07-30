@@ -114,22 +114,25 @@ open class RepositoryTest(
         db.queryBlocking {
             SchemaUtils.create(*tables)
 
-            // Create the user table and a test entity if requested
             if (needsTestUser) {
-                SchemaUtils.create(UserTable)
-                // Create the test user
-                val userId =
-                    UserTable.insertAndGetId {
-                        it[email] = "test.user@example.com"
-                        it[firstName] = "Test"
-                        it[lastName] = "User"
-                        it[passwordHash] = "hashedPassword"
-                        it[role] = UserOuterClass.UserRole.USER_ROLE_ADMIN
-                        it[status] = UserOuterClass.UserStatus.USER_STATUS_ACTIVE
-                    }
-                testUserId = userId.value
+                initTestUser()
             }
         }
+    }
+
+    private fun initTestUser() {
+        SchemaUtils.create(UserTable)
+        // Create the test user
+        val userId =
+            UserTable.insertAndGetId {
+                it[email] = "test.user@example.com"
+                it[firstName] = "Test"
+                it[lastName] = "User"
+                it[passwordHash] = "hashedPassword"
+                it[role] = UserOuterClass.UserRole.USER_ROLE_ADMIN
+                it[status] = UserOuterClass.UserStatus.USER_STATUS_ACTIVE
+            }
+        testUserId = userId.value
     }
 
     @AfterEach
