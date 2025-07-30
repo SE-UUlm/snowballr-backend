@@ -9,7 +9,6 @@ import java.util.UUID
  * DTO of [ProjectMemberTable].
  */
 data class ProjectMember(
-    val id: String,
     val projectId: UUID,
     val userId: UUID,
     val role: ProjectOuterClass.MemberRole,

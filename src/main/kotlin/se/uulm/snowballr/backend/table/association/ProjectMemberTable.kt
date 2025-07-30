@@ -4,10 +4,12 @@ import org.jetbrains.exposed.dao.id.CompositeIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.ResultRow
 import se.uulm.snowballr.backend.model.dto.ProjectMember
+import se.uulm.snowballr.backend.model.dto.ProjectMemberWithUser
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.createdAt
 import se.uulm.snowballr.backend.table.modifiedAt
+import se.uulm.snowballr.backend.table.toUser
 import se.uulm.snowballr.backend.table.userReference
 import snowballr.ProjectOuterClass
 import java.time.OffsetDateTime
@@ -63,10 +65,17 @@ object ProjectMemberTable : CompositeIdTable("project_member") {
  * Creates a [ProjectMember] from this [ResultRow].
  */
 fun ResultRow.toProjectMember() = ProjectMember(
-    id = this[ProjectMemberTable.id].toString(),
     projectId = this[ProjectMemberTable.projectId].value,
     userId = this[ProjectMemberTable.userId].value,
     role = this[ProjectMemberTable.role],
     createdAt = this[ProjectMemberTable.createdAt],
     modifiedAt = this[ProjectMemberTable.modifiedAt],
+)
+
+/**
+ * Creates a [ProjectMemberWithUser] from this [ResultRow].
+ */
+fun ResultRow.toProjectMemberWithUser() = ProjectMemberWithUser(
+    projectMember = toProjectMember(),
+    user = toUser(),
 )
