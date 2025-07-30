@@ -22,7 +22,7 @@ import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass
 import java.util.UUID
 
-class CriterionTableRepoTest : H2DatabaseTest(arrayOf(CriterionTable, ProjectTable), true) {
+class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTable), true) {
     private val repo = CriterionTableRepo(db)
     private val projectRepo = ProjectTableRepo(db)
 

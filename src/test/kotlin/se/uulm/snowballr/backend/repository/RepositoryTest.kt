@@ -60,7 +60,7 @@ import javax.sql.DataSource
  * @property needsTestUser Whether a test user is required, which can be used in a test in the form of [testUserId].
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-open class H2DatabaseTest(
+open class RepositoryTest(
     val tables: Array<Table> = emptyArray(),
     val needsTestUser: Boolean = false,
 ) {

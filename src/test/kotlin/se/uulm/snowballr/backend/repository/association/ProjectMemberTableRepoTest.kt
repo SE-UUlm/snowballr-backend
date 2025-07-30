@@ -8,16 +8,16 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.ProjectMember
-import se.uulm.snowballr.backend.repository.H2DatabaseTest
 import se.uulm.snowballr.backend.repository.ProjectTableRepo
 import se.uulm.snowballr.backend.repository.RepositoryHelper.createAndAssignUserToProject
+import se.uulm.snowballr.backend.repository.RepositoryTest
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import snowballr.ProjectOuterClass
 import snowballr.ProjectOuterClass.MemberRole
 import java.util.UUID
 
-class ProjectMemberTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectMemberTable), true) {
+class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberTable), true) {
     private val repo = ProjectMemberTableRepo(db)
     private val projectRepo = ProjectTableRepo(db)
 

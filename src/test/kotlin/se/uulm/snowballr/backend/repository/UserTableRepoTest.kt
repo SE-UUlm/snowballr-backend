@@ -24,7 +24,7 @@ import java.time.OffsetDateTime
 import java.util.UUID
 import kotlin.test.assertEquals
 
-class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
+class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
     private val repo = UserTableRepo(db)
 
     @Suppress("LongParameterList")

@@ -22,7 +22,7 @@ import snowballr.ProjectOuterClass.ReviewDecisionMatrix
 import snowballr.ProjectOuterClass.SnowballingType
 import java.util.UUID
 
-class ProjectTableRepoTest : H2DatabaseTest(arrayOf(ProjectTable, ProjectMemberTable), true) {
+class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberTable), true) {
     private val repo = ProjectTableRepo(db)
 
     private suspend fun insertTestProjectAndGetId(name: String, status: ProjectStatus): UUID = db.dbQuery {
