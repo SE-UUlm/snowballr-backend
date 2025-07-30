@@ -219,6 +219,7 @@ tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
     jvmTarget = "1.8"
     classpath = sourceSets["main"].runtimeClasspath
     baseline.set(file("$rootDir/detekt-baseline.xml"))
+    parallel = true
 }
 
 tasks.withType<io.gitlab.arturbosch.detekt.DetektCreateBaselineTask>().configureEach {
@@ -229,4 +230,5 @@ tasks.withType<io.gitlab.arturbosch.detekt.DetektCreateBaselineTask>().configure
     }
     jvmTarget = "1.8"
     classpath = sourceSets["main"].runtimeClasspath
+    parallel = true
 }
