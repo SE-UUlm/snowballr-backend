@@ -100,6 +100,8 @@ open class RepositoryTest(
         }
     }
 
+    private fun getTestTables() = if (needsTestUser) arrayOf(*tables, UserTable) else tables
+
     @BeforeAll
     fun setUp() {
         postgres.start()
@@ -116,7 +118,7 @@ open class RepositoryTest(
     fun setUpTest() {
         db.queryBlocking {
             addExtensions()
-            addAllTables()
+            addAllTables(getTestTables())
 
             if (needsTestUser) {
                 initTestUser()
@@ -141,7 +143,7 @@ open class RepositoryTest(
     @AfterEach
     fun tearDownTest() {
         db.queryBlocking {
-            dropAllTables()
+            dropAllTables(getTestTables())
             removeExtensions()
         }
         clearAllMocks()

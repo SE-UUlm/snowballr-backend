@@ -59,10 +59,10 @@ object DatabaseHelper {
     /**
      * Adds all SnowballR tables to the current DB.
      */
-    fun addAllTables() = SchemaUtils.create(*allTables)
+    fun addAllTables(tables: Array<Table> = allTables) = SchemaUtils.create(*tables)
 
     /**
      * Drops all SnowballR tables from the current DB.
      */
-    fun dropAllTables() = SchemaUtils.drop(*allTables)
+    fun dropAllTables(tables: Array<Table> = allTables) = SchemaUtils.drop(*tables)
 }
