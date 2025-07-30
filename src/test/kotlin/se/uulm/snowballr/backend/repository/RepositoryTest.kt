@@ -6,16 +6,26 @@ import io.mockk.clearAllMocks
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.Table
+import org.jetbrains.exposed.sql.Transaction
+import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
-import org.junit.jupiter.api.*
+import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.TestInstance
 import org.testcontainers.containers.PostgreSQLContainer
+import se.uulm.snowballr.backend.db.DatabaseHelper.addAllTables
 import se.uulm.snowballr.backend.db.DatabaseHelper.addExtensions
+import se.uulm.snowballr.backend.db.DatabaseHelper.dropAllTables
+import se.uulm.snowballr.backend.db.DatabaseHelper.removeExtensions
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.table.UserTable
 import snowballr.UserOuterClass
 import java.sql.Connection
-import java.util.*
+import java.util.UUID
 import javax.sql.DataSource
 
 /**
@@ -90,8 +100,6 @@ open class RepositoryTest(
         }
     }
 
-    private fun getAllTables() = if (needsTestUser) arrayOf(*tables, UserTable) else tables
-
     @BeforeAll
     fun setUp() {
         postgres.start()
@@ -108,8 +116,7 @@ open class RepositoryTest(
     fun setUpTest() {
         db.queryBlocking {
             addExtensions()
-
-            SchemaUtils.create(*getAllTables())
+            addAllTables()
 
             if (needsTestUser) {
                 initTestUser()
@@ -134,7 +141,8 @@ open class RepositoryTest(
     @AfterEach
     fun tearDownTest() {
         db.queryBlocking {
-            SchemaUtils.drop(*getAllTables())
+            dropAllTables()
+            removeExtensions()
         }
         clearAllMocks()
     }

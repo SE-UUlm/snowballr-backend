@@ -18,20 +18,7 @@ import se.uulm.snowballr.backend.auth.DummyUser
 import se.uulm.snowballr.backend.db.DatabaseHelper.addExtensions
 import se.uulm.snowballr.backend.env.Env
 import se.uulm.snowballr.backend.env.EnvReader
-import se.uulm.snowballr.backend.table.AuthorTable
-import se.uulm.snowballr.backend.table.CriterionTable
-import se.uulm.snowballr.backend.table.PaperTable
-import se.uulm.snowballr.backend.table.PdfTable
-import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.UserTable
-import se.uulm.snowballr.backend.table.association.AuthorOfPaperTable
-import se.uulm.snowballr.backend.table.association.CitationTable
-import se.uulm.snowballr.backend.table.association.InvitationTable
-import se.uulm.snowballr.backend.table.association.ProjectMemberTable
-import se.uulm.snowballr.backend.table.association.ProjectPaperTable
-import se.uulm.snowballr.backend.table.association.ReadingListTable
-import se.uulm.snowballr.backend.table.association.ReviewHasCriterionTable
-import se.uulm.snowballr.backend.table.association.ReviewTable
 import java.sql.Connection
 
 private val logger = KotlinLogging.logger { }
@@ -93,24 +80,7 @@ class Database(
         addExtensions()
 
         // Tables
-        SchemaUtils.create(
-            // Non-many-to-many tables
-            UserTable,
-            PdfTable,
-            ProjectTable,
-            PaperTable,
-            AuthorTable,
-            CriterionTable,
-            // Many-to-many tables
-            ProjectPaperTable,
-            AuthorOfPaperTable,
-            CitationTable,
-            ReadingListTable,
-            ProjectMemberTable,
-            InvitationTable,
-            ReviewTable,
-            ReviewHasCriterionTable,
-        )
+        DatabaseHelper.addAllTables()
     }
 
     private fun initDataSource(data: Env.Database): HikariDataSource {
