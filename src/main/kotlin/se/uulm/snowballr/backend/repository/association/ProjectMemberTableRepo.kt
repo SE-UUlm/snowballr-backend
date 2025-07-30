@@ -9,13 +9,16 @@ import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.ProjectMember
+import se.uulm.snowballr.backend.model.dto.ProjectMemberWithUser
 import se.uulm.snowballr.backend.repository.getEntityOrNull
 import se.uulm.snowballr.backend.repository.getProjectEntityId
 import se.uulm.snowballr.backend.repository.getUserEntityId
 import se.uulm.snowballr.backend.repository.insertAndGet
 import se.uulm.snowballr.backend.repository.updateAndGet
+import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.table.association.toProjectMember
+import se.uulm.snowballr.backend.table.association.toProjectMemberWithUser
 import snowballr.ProjectOuterClass
 import java.util.UUID
 
@@ -42,7 +45,7 @@ interface IProjectMemberTableRepo {
     /**
      * Returns all project members of the project with the passed [projectId].
      */
-    suspend fun getMembersOfProject(projectId: UUID): List<ProjectMember>
+    suspend fun getProjectMembers(projectId: UUID): List<ProjectMember>
 
     /**
      * Returns all project members, which are in the same projects as the user with the passed [userId].
@@ -64,6 +67,14 @@ interface IProjectMemberTableRepo {
      * @return The updated [ProjectMember] including the new role as an admin.
      */
     suspend fun promoteProjectMemberToAdmin(projectId: UUID, userId: UUID): ProjectMember
+
+    /**
+     * Retrieves a list of all project members along with their associated user details for a given project.
+     *
+     * @param projectId The unique identifier of the project whose members and their associated user details are to be retrieved.
+     * @return A list of [ProjectMemberWithUser] objects, each containing a project member and the corresponding user information.
+     */
+    suspend fun getProjectMembersWithUsers(projectId: UUID): List<ProjectMemberWithUser>
 }
 
 /**
@@ -104,7 +115,7 @@ class ProjectMemberTableRepo(
         val projectEntityId = getProjectEntityId(projectId)
 
         // Return when the user is already a project member
-        val projectMembers = getMembersOfProject(projectId)
+        val projectMembers = getProjectMembers(projectId)
         val existingMember = projectMembers.find { it.userId == userEntityId.value }
         if (existingMember != null) {
             return@query existingMember
@@ -117,7 +128,7 @@ class ProjectMemberTableRepo(
         }
     }
 
-    override suspend fun getMembersOfProject(projectId: UUID): List<ProjectMember> = db.query {
+    override suspend fun getProjectMembers(projectId: UUID): List<ProjectMember> = db.query {
         ProjectMemberTable
             .selectAll()
             .where { ProjectMemberTable.projectId eq projectId }
@@ -165,5 +176,13 @@ class ProjectMemberTableRepo(
                 it[role] = ProjectOuterClass.MemberRole.MEMBER_ROLE_ADMIN
             },
         )
+    }
+
+    override suspend fun getProjectMembersWithUsers(projectId: UUID): List<ProjectMemberWithUser> = db.query {
+        ProjectMemberTable
+            .join(UserTable, JoinType.INNER, onColumn = ProjectMemberTable.userId, otherColumn = UserTable.id)
+            .selectAll()
+            .where { ProjectMemberTable.projectId eq projectId }
+            .map { it.toProjectMemberWithUser() }
     }
 }

@@ -5,12 +5,14 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.ProjectMember
 import se.uulm.snowballr.backend.repository.ProjectTableRepo
 import se.uulm.snowballr.backend.repository.RepositoryHelper.createAndAssignUserToProject
 import se.uulm.snowballr.backend.repository.RepositoryTest
+import se.uulm.snowballr.backend.repository.UserTableRepo
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import snowballr.ProjectOuterClass
@@ -19,6 +21,7 @@ import java.util.UUID
 
 class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberTable), true) {
     private val repo = ProjectMemberTableRepo(db)
+    private val userRepo = UserTableRepo(db)
     private val projectRepo = ProjectTableRepo(db)
 
     private suspend fun createExampleProject(): Project {
@@ -82,7 +85,7 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
             assertThat(member.projectId).isEqualTo(project.id)
             assertThat(member.role).isEqualTo(MemberRole.MEMBER_ROLE_DEFAULT)
 
-            val actualMembers = repo.getMembersOfProject(project.id)
+            val actualMembers = repo.getProjectMembers(project.id)
             assertThat(actualMembers).hasSize(1)
             assertThat(actualMembers).containsExactly(member)
         }
@@ -95,7 +98,7 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
 
             assertThat(member).isEqualTo(member1)
 
-            val actualMembers = repo.getMembersOfProject(project.id)
+            val actualMembers = repo.getProjectMembers(project.id)
             assertThat(actualMembers).hasSize(1)
             assertThat(actualMembers).containsExactly(member)
         }
@@ -118,12 +121,12 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
     }
 
     @Nested
-    inner class GetMembersOfProject {
+    inner class GetProjectMembers {
         @Test
         fun `When no members are in a project, then the list is empty`() = runTest {
             val (project, _) = setupProject(0, false)
 
-            val members = repo.getMembersOfProject(project.id)
+            val members = repo.getProjectMembers(project.id)
 
             assertThat(members).isEmpty()
         }
@@ -132,7 +135,7 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
         fun `When one member is in a project, then they are part of the list`() = runTest {
             val (project, _) = setupProject()
 
-            val actualMembers = repo.getMembersOfProject(project.id)
+            val actualMembers = repo.getProjectMembers(project.id)
 
             assertThat(actualMembers).hasSize(1)
             val member = actualMembers.first()
@@ -143,7 +146,7 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
         fun `When several members are in a project, then they are part of the list`() = runTest {
             val (project, members) = setupProject(3)
 
-            val actualMembers = repo.getMembersOfProject(project.id)
+            val actualMembers = repo.getProjectMembers(project.id)
 
             assertThat(actualMembers).hasSize(4)
             assertThat(actualMembers[0].userId).isEqualTo(testUserId)
@@ -259,5 +262,36 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
             assertThat(promotedMember.userId).isEqualTo(testUserId)
             assertThat(promotedMember.role).isEqualTo(MemberRole.MEMBER_ROLE_ADMIN)
         }
+    }
+
+    @Nested
+    inner class GetProjectMembersWithUsers {
+        @Test
+        fun `When a project member and the corresponding user exists, then the project member with user is correctly returned`() =
+            runTest {
+                val (project, _) = setupProject()
+                val normalMember = repo.getProjectMemberByComposedId(project.id, testUserId)
+                val user = userRepo.getUserById(testUserId)
+                val projectMembersWithUsers = repo.getProjectMembersWithUsers(project.id)
+
+                assertThat(projectMembersWithUsers).hasSize(1)
+                assertThat(projectMembersWithUsers).anyMatch { it.projectMember == normalMember }
+                assertThat(projectMembersWithUsers).anyMatch { it.user == user }
+            }
+
+        @Test
+        fun `When a not all users are project members, then only the correct project members with users are returned`() =
+            runTest {
+                val (project, _) = setupProject()
+                val user = userRepo.getUserById(testUserId)
+                val nonProjectMemberUser = DataBuilder.createExampleUser()
+                val normalMember = repo.getProjectMemberByComposedId(project.id, testUserId)
+                val projectMembersWithUsers = repo.getProjectMembersWithUsers(project.id)
+
+                assertThat(projectMembersWithUsers).hasSize(1)
+                assertThat(projectMembersWithUsers).anyMatch { it.projectMember == normalMember }
+                assertThat(projectMembersWithUsers).anyMatch { it.user == user }
+                assertThat(projectMembersWithUsers).noneMatch { it.projectMember.userId == nonProjectMemberUser.id }
+            }
     }
 }
