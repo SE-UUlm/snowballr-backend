@@ -1,5 +1,7 @@
 package se.uulm.snowballr.backend.repository
 
+import com.zaxxer.hikari.HikariConfig
+import com.zaxxer.hikari.HikariDataSource
 import io.mockk.clearAllMocks
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -9,18 +11,19 @@ import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.Transaction
 import org.jetbrains.exposed.sql.insertAndGetId
-import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.TestInstance
+import org.testcontainers.containers.PostgreSQLContainer
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.table.UserTable
 import snowballr.UserOuterClass
 import java.sql.Connection
 import java.util.UUID
+import javax.sql.DataSource
 
 /**
  * Base class for unit tests that interact with the in-memory H2 database.
@@ -61,8 +64,9 @@ open class H2DatabaseTest(
     val tables: Array<Table> = emptyArray(),
     val needsTestUser: Boolean = false,
 ) {
-    private val connection = Database.connect("jdbc:h2:mem:test_db;DB_CLOSE_DELAY=-1;IGNORECASE=true;")
-    protected val db = TestDatabase()
+    // Initialize DB with empty dataSource only to set it in the setUp method
+    protected val db = TestDatabase(HikariDataSource())
+    private val postgres = PostgreSQLContainer<Nothing>("postgres:16.1-alpine3.19")
 
     /** User for testing. This prevents having to create a user for each test. */
     protected var testUserId: UUID = UUID.randomUUID()
@@ -76,10 +80,11 @@ open class H2DatabaseTest(
      * Transactions executed by this class are performed with a [Dispatchers.IO] context
      * and use the [Connection.TRANSACTION_SERIALIZABLE] isolation level to ensure data consistency.
      */
-    class TestDatabase : IDatabase {
+    protected class TestDatabase(var dataSource: DataSource) : IDatabase {
         override suspend fun <T> dbQuery(dispatcher: CoroutineDispatcher, block: suspend Transaction.() -> T): T =
             newSuspendedTransaction(
                 dispatcher,
+                Database.connect(dataSource),
                 transactionIsolation = Connection.TRANSACTION_SERIALIZABLE,
             ) {
                 block()
@@ -88,11 +93,18 @@ open class H2DatabaseTest(
 
     @BeforeAll
     fun setUp() {
+        postgres.start()
+        val config = HikariConfig().apply {
+            jdbcUrl = postgres.jdbcUrl
+            username = postgres.username
+            password = postgres.password
+        }
+        db.dataSource = HikariDataSource(config)
         RepositoryHelper.db = db
     }
 
     @BeforeEach
-    fun databaseSetUp() {
+    fun setUpTest() {
         runBlocking {
             db.dbQuery {
                 SchemaUtils.create(*tables)
@@ -117,7 +129,7 @@ open class H2DatabaseTest(
     }
 
     @AfterEach
-    fun databaseTearDown() {
+    fun tearDownTest() {
         runBlocking {
             db.dbQuery {
                 SchemaUtils.drop(*tables)
@@ -131,6 +143,6 @@ open class H2DatabaseTest(
 
     @AfterAll
     fun tearDown() {
-        TransactionManager.closeAndUnregister(connection)
+        postgres.stop()
     }
 }

@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.repository
 
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.insertAndGetId
+import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
@@ -14,7 +15,7 @@ import java.util.UUID
  * This class acts as a collection of create methods to create database entries for testing purposes.
  */
 object RepositoryHelper {
-    lateinit var db: H2DatabaseTest.TestDatabase
+    lateinit var db: IDatabase
 
     /**
      * Creates an example user in the database with the specified email and fake user details

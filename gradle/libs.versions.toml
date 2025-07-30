@@ -10,7 +10,6 @@ hikari-cp-version = "6.3.0"
 postgresql-version = "42.7.6"
 dotenv-version = "6.5.1"
 assertj-version = "3.27.3"
-h2-version = "2.3.232"
 mockk-version = "1.14.2"
 arrow-version = "2.1.2"
 assertj-arrow-core-version = "1.2.1"
@@ -26,6 +25,7 @@ password4j-version = "1.8.3"
 jjwt-version = "0.12.6"
 simple-java-mail-version = "8.12.6"
 handlebars-version = "4.4.0"
+testcontainers-version = "1.21.3"
 
 [libraries]
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines-version" }
@@ -55,12 +55,11 @@ junit-platform = { module = "org.junit.platform:junit-platform-launcher" }
 hikaricp = { module = "com.zaxxer:HikariCP", version.ref = "hikari-cp-version" }
 
 postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql-version" }
+testcontainers = { module = "org.testcontainers:postgresql", version.ref = "testcontainers-version" }
 
 dotenv-kotlin = { module = "io.github.cdimascio:dotenv-kotlin", version.ref = "dotenv-version" }
 
 assertj-core = { module = "org.assertj:assertj-core", version.ref = "assertj-version" }
-
-h2 = { module = "com.h2database:h2", version.ref = "h2-version" }
 
 mockk = { module = "io.mockk:mockk", version.ref = "mockk-version" }
 

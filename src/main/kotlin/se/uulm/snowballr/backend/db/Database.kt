@@ -133,7 +133,7 @@ class Database(
      * This method checks the `seedUserEnabled` flag. If true, it ensures the dummy user exists.
      * If false, it ensures the dummy user is deleted, keeping the database clean.
      */
-    fun seedDummyUserIfEnabled() {
+    private fun seedDummyUserIfEnabled() {
         val seedUserEnabled = envReader.env.database.seedUserEnabled
 
         val existingId = UserTable
