@@ -36,6 +36,7 @@ dependencies {
     implementation(libs.exposed.json)
     implementation(libs.postgresql)
     implementation(libs.hikaricp)
+    testImplementation(libs.testcontainers)
 
     implementation(libs.password4j)
     implementation(libs.jjwt.api)
@@ -47,7 +48,6 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.assertj.core)
     testImplementation(libs.assertj.arrow.core)
-    testImplementation(libs.h2)
     testImplementation(libs.mockk)
 
     testImplementation(platform(libs.junit.bom))
@@ -219,6 +219,7 @@ tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
     jvmTarget = "1.8"
     classpath = sourceSets["main"].runtimeClasspath
     baseline.set(file("$rootDir/detekt-baseline.xml"))
+    parallel = true
 }
 
 tasks.withType<io.gitlab.arturbosch.detekt.DetektCreateBaselineTask>().configureEach {
@@ -229,4 +230,5 @@ tasks.withType<io.gitlab.arturbosch.detekt.DetektCreateBaselineTask>().configure
     }
     jvmTarget = "1.8"
     classpath = sourceSets["main"].runtimeClasspath
+    parallel = true
 }

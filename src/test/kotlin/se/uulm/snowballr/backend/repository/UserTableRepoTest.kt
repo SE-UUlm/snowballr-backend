@@ -24,7 +24,7 @@ import java.time.OffsetDateTime
 import java.util.UUID
 import kotlin.test.assertEquals
 
-class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
+class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
     private val repo = UserTableRepo(db)
 
     @Suppress("LongParameterList")
@@ -35,7 +35,7 @@ class UserTableRepoTest : H2DatabaseTest(arrayOf(UserTable)) {
         passwordHash: String = "passwordHash",
         role: UserRole = UserRole.USER_ROLE_DEFAULT,
         status: UserStatus = UserStatus.USER_STATUS_ACTIVE,
-    ): UUID = db.dbQuery {
+    ): UUID = db.query {
         UserTable.insertAndGetId {
             it[UserTable.email] = email
             it[UserTable.firstName] = firstName

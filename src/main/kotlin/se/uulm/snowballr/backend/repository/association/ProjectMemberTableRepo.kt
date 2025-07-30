@@ -95,12 +95,12 @@ class ProjectMemberTableRepo(
         .map { it.toProjectMember() }
         .singleOrNull()
 
-    override suspend fun getProjectMemberByComposedId(projectId: UUID, userId: UUID): ProjectMember = db.dbQuery {
+    override suspend fun getProjectMemberByComposedId(projectId: UUID, userId: UUID): ProjectMember = db.query {
         getProjectMemberByComposedIdOrNull(projectId, userId)
             ?: throw NotFoundException(EntityType.PROJECT_MEMBER, projectId.toString(), userId.toString())
     }
 
-    override suspend fun addUserToProject(userId: UUID, projectId: UUID) = db.dbQuery {
+    override suspend fun addUserToProject(userId: UUID, projectId: UUID) = db.query {
         // Get user reference
         val userEntityId = getUserEntityId(userId)
 
@@ -111,7 +111,7 @@ class ProjectMemberTableRepo(
         val projectMembers = getMembersOfProject(projectId)
         val existingMember = projectMembers.find { it.userId == userEntityId.value }
         if (existingMember != null) {
-            return@dbQuery existingMember
+            return@query existingMember
         }
 
         ProjectMemberTable.insertAndGet(ResultRow::toProjectMember, EntityType.PROJECT_MEMBER) {
@@ -121,14 +121,14 @@ class ProjectMemberTableRepo(
         }
     }
 
-    override suspend fun getMembersOfProject(projectId: UUID): List<ProjectMember> = db.dbQuery {
+    override suspend fun getMembersOfProject(projectId: UUID): List<ProjectMember> = db.query {
         ProjectMemberTable
             .selectAll()
             .where { ProjectMemberTable.projectId eq projectId }
             .map { it.toProjectMember() }
     }
 
-    override suspend fun getMembersInSameProjectsAsUser(userId: UUID): List<ProjectMember> = db.dbQuery {
+    override suspend fun getMembersInSameProjectsAsUser(userId: UUID): List<ProjectMember> = db.query {
         // We join the ProjectMemberTable with itself but aliasing one instance to represent the user's membership.
         val userMembership = ProjectMemberTable.alias("userMembership")
 
@@ -147,7 +147,7 @@ class ProjectMemberTableRepo(
             .map { it.toProjectMember() }
     }
 
-    override suspend fun getAllProjectAdmins(projectId: UUID): List<ProjectMember> = db.dbQuery {
+    override suspend fun getAllProjectAdmins(projectId: UUID): List<ProjectMember> = db.query {
         ProjectMemberTable
             .selectAll()
             .where {
@@ -157,7 +157,7 @@ class ProjectMemberTableRepo(
             .map { it.toProjectMember() }
     }
 
-    override suspend fun promoteProjectMemberToAdmin(projectId: UUID, userId: UUID): ProjectMember = db.dbQuery {
+    override suspend fun promoteProjectMemberToAdmin(projectId: UUID, userId: UUID): ProjectMember = db.query {
         ProjectMemberTable.update(
             {
                 (ProjectMemberTable.projectId eq projectId) and

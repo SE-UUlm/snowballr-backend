@@ -22,7 +22,7 @@ import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass
 import java.util.UUID
 
-class CriterionTableRepoTest : H2DatabaseTest(arrayOf(CriterionTable, ProjectTable), true) {
+class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTable), true) {
     private val repo = CriterionTableRepo(db)
     private val projectRepo = ProjectTableRepo(db)
 
@@ -40,7 +40,7 @@ class CriterionTableRepoTest : H2DatabaseTest(arrayOf(CriterionTable, ProjectTab
         description: String = "Test Description",
         category: CriterionCategory = CriterionCategory.CRITERION_CATEGORY_EXCLUSION,
         projectId: UUID = UUID.randomUUID(),
-    ): UUID = db.dbQuery {
+    ): UUID = db.query {
         CriterionTable.insertAndGetId {
             it[CriterionTable.tag] = tag
             it[CriterionTable.name] = name

@@ -125,7 +125,7 @@ complexity:
     LabeledExpression:
         active: true
         ignoredLabels:
-            - dbQuery
+            - query
     LargeClass:
         active: true
         threshold: 600

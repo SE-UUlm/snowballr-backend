@@ -1,29 +1,35 @@
 package se.uulm.snowballr.backend.repository
 
+import com.zaxxer.hikari.HikariConfig
+import com.zaxxer.hikari.HikariDataSource
 import io.mockk.clearAllMocks
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.Transaction
 import org.jetbrains.exposed.sql.insertAndGetId
-import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.TestInstance
+import org.testcontainers.containers.PostgreSQLContainer
+import se.uulm.snowballr.backend.db.DatabaseHelper.addAllTables
+import se.uulm.snowballr.backend.db.DatabaseHelper.addExtensions
+import se.uulm.snowballr.backend.db.DatabaseHelper.dropAllTables
+import se.uulm.snowballr.backend.db.DatabaseHelper.removeExtensions
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.table.UserTable
 import snowballr.UserOuterClass
 import java.sql.Connection
 import java.util.UUID
+import javax.sql.DataSource
 
 /**
- * Base class for unit tests that interact with the in-memory H2 database.
+ * Base class for unit tests that interact with a test PostgreSQL database.
  * This class manages the lifecycle of the database and provides setup
  * for database schema creation and teardown for schema cleanup between tests.
  *
@@ -32,7 +38,7 @@ import java.util.UUID
  *
  * Example usage:
  * ```kotlin
- * class ExampleTest : H2DatabaseTest(arrayOf(ExampleTable)) {
+ * class ExampleTest : RepositoryTest(arrayOf(ExampleTable)) {
  *     private val repo = ExampleTableRepo(db)
  *
  *     @Nested
@@ -57,12 +63,13 @@ import java.util.UUID
  * @property needsTestUser Whether a test user is required, which can be used in a test in the form of [testUserId].
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-open class H2DatabaseTest(
+open class RepositoryTest(
     val tables: Array<Table> = emptyArray(),
     val needsTestUser: Boolean = false,
 ) {
-    private val connection = Database.connect("jdbc:h2:mem:test_db;DB_CLOSE_DELAY=-1;IGNORECASE=true;")
-    protected val db = TestDatabase()
+    // Initialize DB with empty dataSource only to set it in the setUp method
+    protected val db = TestDatabase(HikariDataSource())
+    private val postgres = PostgreSQLContainer<Nothing>("postgres:16.1-alpine3.19")
 
     /** User for testing. This prevents having to create a user for each test. */
     protected var testUserId: UUID = UUID.randomUUID()
@@ -76,61 +83,74 @@ open class H2DatabaseTest(
      * Transactions executed by this class are performed with a [Dispatchers.IO] context
      * and use the [Connection.TRANSACTION_SERIALIZABLE] isolation level to ensure data consistency.
      */
-    class TestDatabase : IDatabase {
-        override suspend fun <T> dbQuery(dispatcher: CoroutineDispatcher, block: suspend Transaction.() -> T): T =
+    protected class TestDatabase(var dataSource: DataSource) : IDatabase {
+        override suspend fun <T> query(dispatcher: CoroutineDispatcher, block: suspend Transaction.() -> T): T =
             newSuspendedTransaction(
                 dispatcher,
+                Database.connect(dataSource),
                 transactionIsolation = Connection.TRANSACTION_SERIALIZABLE,
             ) {
                 block()
             }
-    }
 
-    @BeforeAll
-    fun setUp() {
-        RepositoryHelper.db = db
-    }
-
-    @BeforeEach
-    fun databaseSetUp() {
-        runBlocking {
-            db.dbQuery {
-                SchemaUtils.create(*tables)
-
-                // Create the user table and a test entity if requested
-                if (needsTestUser) {
-                    SchemaUtils.create(UserTable)
-                    // Create the test user
-                    val userId =
-                        UserTable.insertAndGetId {
-                            it[email] = "test.user@example.com"
-                            it[firstName] = "Test"
-                            it[lastName] = "User"
-                            it[passwordHash] = "hashedPassword"
-                            it[role] = UserOuterClass.UserRole.USER_ROLE_ADMIN
-                            it[status] = UserOuterClass.UserStatus.USER_STATUS_ACTIVE
-                        }
-                    testUserId = userId.value
-                }
+        fun <T> queryBlocking(block: suspend Transaction.() -> T): T = runBlocking {
+            query {
+                block()
             }
         }
     }
 
-    @AfterEach
-    fun databaseTearDown() {
-        runBlocking {
-            db.dbQuery {
-                SchemaUtils.drop(*tables)
-                if (needsTestUser) {
-                    SchemaUtils.drop(UserTable)
-                }
+    private fun getTestTables() = if (needsTestUser) arrayOf(*tables, UserTable) else tables
+
+    @BeforeAll
+    fun setUp() {
+        postgres.start()
+        val config = HikariConfig().apply {
+            jdbcUrl = postgres.jdbcUrl
+            username = postgres.username
+            password = postgres.password
+        }
+        db.dataSource = HikariDataSource(config)
+        RepositoryHelper.db = db
+    }
+
+    @BeforeEach
+    fun setUpTest() {
+        db.queryBlocking {
+            addExtensions()
+            addAllTables(getTestTables())
+
+            if (needsTestUser) {
+                initTestUser()
             }
+        }
+    }
+
+    private fun initTestUser() {
+        // Create the test user
+        val userId =
+            UserTable.insertAndGetId {
+                it[email] = "test.user@example.com"
+                it[firstName] = "Test"
+                it[lastName] = "User"
+                it[passwordHash] = "hashedPassword"
+                it[role] = UserOuterClass.UserRole.USER_ROLE_ADMIN
+                it[status] = UserOuterClass.UserStatus.USER_STATUS_ACTIVE
+            }
+        testUserId = userId.value
+    }
+
+    @AfterEach
+    fun tearDownTest() {
+        db.queryBlocking {
+            dropAllTables(getTestTables())
+            removeExtensions()
         }
         clearAllMocks()
     }
 
     @AfterAll
     fun tearDown() {
-        TransactionManager.closeAndUnregister(connection)
+        postgres.stop()
     }
 }

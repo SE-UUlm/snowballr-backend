@@ -15,22 +15,10 @@ import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
 import se.uulm.snowballr.backend.auth.DummyUser
+import se.uulm.snowballr.backend.db.DatabaseHelper.addExtensions
 import se.uulm.snowballr.backend.env.Env
 import se.uulm.snowballr.backend.env.EnvReader
-import se.uulm.snowballr.backend.table.AuthorTable
-import se.uulm.snowballr.backend.table.CriterionTable
-import se.uulm.snowballr.backend.table.PaperTable
-import se.uulm.snowballr.backend.table.PdfTable
-import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.UserTable
-import se.uulm.snowballr.backend.table.association.AuthorOfPaperTable
-import se.uulm.snowballr.backend.table.association.CitationTable
-import se.uulm.snowballr.backend.table.association.InvitationTable
-import se.uulm.snowballr.backend.table.association.ProjectMemberTable
-import se.uulm.snowballr.backend.table.association.ProjectPaperTable
-import se.uulm.snowballr.backend.table.association.ReadingListTable
-import se.uulm.snowballr.backend.table.association.ReviewHasCriterionTable
-import se.uulm.snowballr.backend.table.association.ReviewTable
 import java.sql.Connection
 
 private val logger = KotlinLogging.logger { }
@@ -58,7 +46,7 @@ private const val DB_USER = "postgres"
  * managing transaction lifecycles, allowing for simpler and more testable database interactions.
  */
 interface IDatabase {
-    suspend fun <T> dbQuery(dispatcher: CoroutineDispatcher = Dispatchers.IO, block: suspend Transaction.() -> T): T
+    suspend fun <T> query(dispatcher: CoroutineDispatcher = Dispatchers.IO, block: suspend Transaction.() -> T): T
 }
 
 /**
@@ -76,32 +64,23 @@ class Database(
         logger.info { "Connecting to database" }
         dataSource = initDataSource(envReader.env.database)
         transaction(Database.connect(dataSource)) {
-            val schema = Schema(SCHEMA_NAME, DB_USER)
-            SchemaUtils.createSchema(schema)
-            SchemaUtils.setSchema(schema)
-            exec("CREATE EXTENSION IF NOT EXISTS hstore;")
-            SchemaUtils.create(
-                // Non-many-to-many tables
-                UserTable,
-                PdfTable,
-                ProjectTable,
-                PaperTable,
-                AuthorTable,
-                CriterionTable,
-                // Many-to-many tables
-                ProjectPaperTable,
-                AuthorOfPaperTable,
-                CitationTable,
-                ReadingListTable,
-                ProjectMemberTable,
-                InvitationTable,
-                ReviewTable,
-                ReviewHasCriterionTable,
-            )
-
+            setUpDatabase()
             seedDummyUserIfEnabled()
         }
         logger.info { "Database connection established" }
+    }
+
+    private fun Transaction.setUpDatabase() {
+        // Schema
+        val schema = Schema(SCHEMA_NAME, DB_USER)
+        SchemaUtils.createSchema(schema)
+        SchemaUtils.setSchema(schema)
+
+        // Extensions
+        addExtensions()
+
+        // Tables
+        DatabaseHelper.addAllTables()
     }
 
     private fun initDataSource(data: Env.Database): HikariDataSource {
@@ -118,7 +97,7 @@ class Database(
         return HikariDataSource(config)
     }
 
-    override suspend fun <T> dbQuery(dispatcher: CoroutineDispatcher, block: suspend Transaction.() -> T): T =
+    override suspend fun <T> query(dispatcher: CoroutineDispatcher, block: suspend Transaction.() -> T): T =
         newSuspendedTransaction(
             dispatcher,
             Database.connect(dataSource),
@@ -133,7 +112,7 @@ class Database(
      * This method checks the `seedUserEnabled` flag. If true, it ensures the dummy user exists.
      * If false, it ensures the dummy user is deleted, keeping the database clean.
      */
-    fun seedDummyUserIfEnabled() {
+    private fun seedDummyUserIfEnabled() {
         val seedUserEnabled = envReader.env.database.seedUserEnabled
 
         val existingId = UserTable
