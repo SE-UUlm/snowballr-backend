@@ -307,6 +307,11 @@ class UserService(
                 throw UnauthenticatedException()
             }
 
+        // Check whether the user is active (verified email)
+        if (user.status != UserStatus.USER_STATUS_ACTIVE) {
+            throw UnauthenticatedException()
+        }
+
         // Verify the password against the stored hash
         val storedPasswordHash = try {
             userRepo.getPasswordHashByEmail(request.email)
