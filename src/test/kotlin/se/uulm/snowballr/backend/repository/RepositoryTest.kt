@@ -89,6 +89,12 @@ open class RepositoryTest(
             ) {
                 block()
             }
+
+        fun <T> queryBlocking(block: suspend Transaction.() -> T): T = runBlocking {
+            query {
+                block()
+            }
+        }
     }
 
     @BeforeAll
@@ -105,37 +111,33 @@ open class RepositoryTest(
 
     @BeforeEach
     fun setUpTest() {
-        runBlocking {
-            db.query {
-                SchemaUtils.create(*tables)
+        db.queryBlocking {
+            SchemaUtils.create(*tables)
 
-                // Create the user table and a test entity if requested
-                if (needsTestUser) {
-                    SchemaUtils.create(UserTable)
-                    // Create the test user
-                    val userId =
-                        UserTable.insertAndGetId {
-                            it[email] = "test.user@example.com"
-                            it[firstName] = "Test"
-                            it[lastName] = "User"
-                            it[passwordHash] = "hashedPassword"
-                            it[role] = UserOuterClass.UserRole.USER_ROLE_ADMIN
-                            it[status] = UserOuterClass.UserStatus.USER_STATUS_ACTIVE
-                        }
-                    testUserId = userId.value
-                }
+            // Create the user table and a test entity if requested
+            if (needsTestUser) {
+                SchemaUtils.create(UserTable)
+                // Create the test user
+                val userId =
+                    UserTable.insertAndGetId {
+                        it[email] = "test.user@example.com"
+                        it[firstName] = "Test"
+                        it[lastName] = "User"
+                        it[passwordHash] = "hashedPassword"
+                        it[role] = UserOuterClass.UserRole.USER_ROLE_ADMIN
+                        it[status] = UserOuterClass.UserStatus.USER_STATUS_ACTIVE
+                    }
+                testUserId = userId.value
             }
         }
     }
 
     @AfterEach
     fun tearDownTest() {
-        runBlocking {
-            db.query {
-                SchemaUtils.drop(*tables)
-                if (needsTestUser) {
-                    SchemaUtils.drop(UserTable)
-                }
+        db.queryBlocking {
+            SchemaUtils.drop(*tables)
+            if (needsTestUser) {
+                SchemaUtils.drop(UserTable)
             }
         }
         clearAllMocks()
