@@ -15,6 +15,7 @@ import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
 import se.uulm.snowballr.backend.auth.DummyUser
+import se.uulm.snowballr.backend.db.DatabaseHelper.addExtensions
 import se.uulm.snowballr.backend.env.Env
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.table.AuthorTable
@@ -76,32 +77,40 @@ class Database(
         logger.info { "Connecting to database" }
         dataSource = initDataSource(envReader.env.database)
         transaction(Database.connect(dataSource)) {
-            val schema = Schema(SCHEMA_NAME, DB_USER)
-            SchemaUtils.createSchema(schema)
-            SchemaUtils.setSchema(schema)
-            exec("CREATE EXTENSION IF NOT EXISTS hstore;")
-            SchemaUtils.create(
-                // Non-many-to-many tables
-                UserTable,
-                PdfTable,
-                ProjectTable,
-                PaperTable,
-                AuthorTable,
-                CriterionTable,
-                // Many-to-many tables
-                ProjectPaperTable,
-                AuthorOfPaperTable,
-                CitationTable,
-                ReadingListTable,
-                ProjectMemberTable,
-                InvitationTable,
-                ReviewTable,
-                ReviewHasCriterionTable,
-            )
-
+            setUpDatabase()
             seedDummyUserIfEnabled()
         }
         logger.info { "Database connection established" }
+    }
+
+    private fun Transaction.setUpDatabase() {
+        // Schema
+        val schema = Schema(SCHEMA_NAME, DB_USER)
+        SchemaUtils.createSchema(schema)
+        SchemaUtils.setSchema(schema)
+
+        // Extensions
+        addExtensions()
+
+        // Tables
+        SchemaUtils.create(
+            // Non-many-to-many tables
+            UserTable,
+            PdfTable,
+            ProjectTable,
+            PaperTable,
+            AuthorTable,
+            CriterionTable,
+            // Many-to-many tables
+            ProjectPaperTable,
+            AuthorOfPaperTable,
+            CitationTable,
+            ReadingListTable,
+            ProjectMemberTable,
+            InvitationTable,
+            ReviewTable,
+            ReviewHasCriterionTable,
+        )
     }
 
     private fun initDataSource(data: Env.Database): HikariDataSource {
