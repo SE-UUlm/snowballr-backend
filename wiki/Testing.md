@@ -100,7 +100,7 @@ for an example.
 Similar to the repository tests, the service tests use the base class
 [MainServiceTest](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/test/kotlin/se/uulm/snowballr/backend/service/MainServiceTest.kt).
 In there, the mocks for all repositories are declared. If the mock of the repo you are working on is not already added,
-add it below the existing mocks with the pattern `[Repository Name]Mock = mockk<I[Repository Name]>(relaxed = true)`.
+add it below the existing mocks with the pattern `[Repository Name]Mock = mockk<I[Repository Name]>()`.
 Furthermore, pass it to the `MainService` constructor because we use the `mainService` object to call the methods we
 want to test. We create a test class for each service method separately as they are expected to contain a lot of test
 cases. All test classes of a service are grouped in a package named after the associated entity. A service test class

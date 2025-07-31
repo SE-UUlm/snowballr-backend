@@ -66,14 +66,14 @@ import se.uulm.snowballr.backend.serviceLayerDeps
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 open class MainServiceTest : KoinTest {
     // Repository layer mocks
-    val projectRepoMock = mockk<IProjectTableRepo>(relaxed = true)
-    val criterionRepoMock = mockk<ICriterionTableRepo>(relaxed = true)
-    val userRepoMock = mockk<IUserTableRepo>(relaxed = true)
-    val projectMemberRepoMock = mockk<IProjectMemberTableRepo>(relaxed = true)
+    val projectRepoMock = mockk<IProjectTableRepo>()
+    val criterionRepoMock = mockk<ICriterionTableRepo>()
+    val userRepoMock = mockk<IUserTableRepo>()
+    val projectMemberRepoMock = mockk<IProjectMemberTableRepo>()
 
     // Custom services / manager / clients mocks
-    val jwtServiceMock = mockk<IJwtService>(relaxed = true)
-    val fetcherManagerMock = mockk<FetcherManager>(relaxed = true)
+    val jwtServiceMock = mockk<IJwtService>()
+    val fetcherManagerMock = mockk<FetcherManager>()
 
     val mainService: IMainService by inject()
 
