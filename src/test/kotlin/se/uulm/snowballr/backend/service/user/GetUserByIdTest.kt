@@ -4,7 +4,6 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import kotlinx.coroutines.test.runTest
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
@@ -23,13 +22,6 @@ import java.util.UUID
 class GetUserByIdTest : MainServiceTest() {
     private val requestedUserId = UUID.randomUUID()
     private fun getExampleRequest() = Base.Id.newBuilder().setId(requestedUserId.toString()).build()
-
-    @BeforeEach
-    fun setupTest() {
-        every { GrpcContext.getUserIdFromContext() } throws NotImplementedError()
-        coEvery { userRepoMock.getUserById(any()) } throws NotImplementedError()
-        coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(any()) } throws NotImplementedError()
-    }
 
     @Test
     fun `When parsing the user ID fails, then InvalidIdException is thrown`() = runTest {

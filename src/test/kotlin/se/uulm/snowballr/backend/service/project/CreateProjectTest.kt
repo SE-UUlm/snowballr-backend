@@ -3,7 +3,6 @@ package se.uulm.snowballr.backend.service.project
 import io.mockk.coEvery
 import io.mockk.every
 import kotlinx.coroutines.test.runTest
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
@@ -16,12 +15,6 @@ import java.util.UUID
 
 class CreateProjectTest : MainServiceTest() {
     private fun getExampleRequest() = ProjectOuterClass.Project.Create.getDefaultInstance()
-
-    @BeforeEach
-    fun setupTest() {
-        every { GrpcContext.getUserIdFromContext() } throws NotImplementedError()
-        coEvery { projectRepoMock.createProject(any(), any()) } throws NotImplementedError()
-    }
 
     @Test
     fun `When retrieving the current user ID fails, then an exception is thrown`() = runTest {

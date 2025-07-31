@@ -4,7 +4,6 @@ import com.google.protobuf.util.FieldMaskUtil
 import io.mockk.coEvery
 import io.mockk.every
 import kotlinx.coroutines.test.runTest
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
@@ -40,16 +39,6 @@ class UpdateCriterionTest : MainServiceTest() {
             .setCriterion(updatedCriterion.toGrpcCriterion())
             .setMask(updateFieldMask)
             .build()
-    }
-
-    @BeforeEach
-    fun setUpTest() {
-        every { GrpcContext.getUserIdFromContext() } throws NotImplementedError()
-        coEvery { userRepoMock.getUserById(any()) } throws NotImplementedError()
-        coEvery { criterionRepoMock.getCriterionById(any()) } throws NotImplementedError()
-        coEvery { projectRepoMock.getProjectById(any()) } throws NotImplementedError()
-        coEvery { projectMemberRepoMock.getAllProjectAdmins(any()) } throws NotImplementedError()
-        coEvery { criterionRepoMock.updateCriterion(any()) } throws NotImplementedError()
     }
 
     @Test
