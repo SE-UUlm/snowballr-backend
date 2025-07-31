@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.service
 
+import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.mockk
 import io.mockk.mockkObject
@@ -75,8 +76,18 @@ open class MainServiceTest : KoinTest {
     val jwtServiceMock = mockk<IJwtService>()
     val fetcherManagerMock = mockk<FetcherManager>()
 
+    val allMocks = arrayOf(
+        projectRepoMock,
+        criterionRepoMock,
+        userRepoMock,
+        projectMemberRepoMock,
+        jwtServiceMock,
+        fetcherManagerMock,
+    )
+
     val mainService: IMainService by inject()
 
+    // Note that we cannot use the list of all mocks to add it to the module.
     private val serviceTestModule = module {
         // Repository layer
         single { projectRepoMock }
@@ -102,6 +113,7 @@ open class MainServiceTest : KoinTest {
 
     @AfterEach
     open fun tearDownTest() {
+        checkUnnecessaryStub(*allMocks)
         clearAllMocks()
     }
 
