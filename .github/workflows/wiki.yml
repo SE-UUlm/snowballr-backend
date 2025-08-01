@@ -46,12 +46,12 @@ jobs:
               run: node scripts/wiki-replace-github-urls.js ${{ steps.get_branch_name.outputs.branch_name }}
 
             - name: Check for Broken Links in README
-              uses: becheran/mlc@v0.22.0
+              uses: becheran/mlc@v1.0.0
               with:
                   args: README.md
 
             - name: Check for Broken Links in Wiki
-              uses: becheran/mlc@v0.22.0
+              uses: becheran/mlc@v1.0.0
               with:
                   args: --ignore-links "https://stackoverflow.com/questions/6720050/foreign-key-constraints-when-to-use-on-update-and-on-delete/6720458#6720458" wiki/
 
