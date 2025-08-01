@@ -62,7 +62,6 @@ class GetAllProjectsForUserTest : MainServiceTest() {
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
         coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
         coEvery { userRepoMock.getUserById(requestedUser.id) } returns requestedUser
-        coEvery { projectRepoMock.getUserProjects(any()) } returns emptyList()
 
         assertThrows<UnauthorizedException.Single> { mainService.getAllProjectsForUser(getExampleRequest()) }
     }

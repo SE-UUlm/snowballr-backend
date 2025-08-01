@@ -29,12 +29,10 @@ class GetProjectByIdTest : MainServiceTest() {
         val request = getExampleRequest()
 
         val noAccessUser = DataBuilder.createExampleUser()
-        val project = DataBuilder.createExampleProject(id = requestId)
 
         every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns noAccessUser
         coEvery { projectMemberRepoMock.getMembersOfProject(any()) } returns emptyList()
-        coEvery { projectRepoMock.getProjectById(requestId) } returns project
 
         assertThrows<UnauthorizedException.Single> { mainService.getProjectById(request) }
     }
@@ -64,7 +62,6 @@ class GetProjectByIdTest : MainServiceTest() {
 
         every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
-        coEvery { projectMemberRepoMock.addUserToProject(user.id, requestId) } returns projectMember
         coEvery { projectMemberRepoMock.getMembersOfProject(requestId) } returns listOf(projectMember)
         coEvery { projectRepoMock.getProjectById(requestId) } returns project
 

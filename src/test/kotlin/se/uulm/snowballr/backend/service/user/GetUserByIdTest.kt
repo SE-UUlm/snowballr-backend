@@ -96,11 +96,9 @@ class GetUserByIdTest : MainServiceTest() {
     fun `When current user is not authorized to access requested user, then UnauthorizedException is thrown`() =
         runTest {
             val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-            val requestedUser = DataBuilder.createExampleUser(id = requestedUserId)
 
             every { GrpcContext.getUserIdFromContext() } returns currentUser.id
             coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
-            coEvery { userRepoMock.getUserById(requestedUserId) } returns requestedUser
             coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(requestedUserId) } returns emptyList()
 
             assertThrows<UnauthorizedException.Single> { mainService.getUserById(getExampleRequest()) }

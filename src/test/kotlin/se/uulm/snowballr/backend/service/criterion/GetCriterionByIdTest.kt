@@ -61,7 +61,6 @@ class GetCriterionByIdTest : MainServiceTest() {
 
             every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
             coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
-            coEvery { projectMemberRepoMock.addUserToProject(user.id, project.id) } returns projectMember
             coEvery { projectMemberRepoMock.getMembersOfProject(project.id) } returns listOf(projectMember)
             coEvery { projectRepoMock.getProjectById(project.id) } returns project
             coEvery { criterionRepoMock.getCriterionById(requestId) } returns criterion
@@ -148,13 +147,9 @@ class GetCriterionByIdTest : MainServiceTest() {
         val request = getExampleRequest()
 
         val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-        val project = DataBuilder.createExampleProject()
-        val projectMember = DataBuilder.createExampleProjectMember(userId = adminUser.id, projectId = project.id)
 
         every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns adminUser
-        coEvery { projectRepoMock.getProjectById(any()) } throws TestSpecificException()
-        coEvery { projectMemberRepoMock.getMembersOfProject(project.id) } returns listOf(projectMember)
         coEvery { criterionRepoMock.getCriterionById(requestId) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getCriterionById(request) }

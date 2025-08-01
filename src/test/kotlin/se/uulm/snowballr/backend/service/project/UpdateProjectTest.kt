@@ -124,7 +124,6 @@ class UpdateProjectTest : MainServiceTest() {
             coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
             coEvery { projectRepoMock.getProjectById(project.id) } returns project
             coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
-            coEvery { projectRepoMock.updateProject(request, project.status) } returns updatedProject
 
             assertThrows<SnowballRException.UnauthorizedException.Single> { mainService.updateProject(request) }
         }
@@ -151,7 +150,6 @@ class UpdateProjectTest : MainServiceTest() {
             coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
             coEvery { projectRepoMock.getProjectById(project.id) } returns project
             coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
-            coEvery { projectRepoMock.updateProject(request, project.status) } returns updatedProject
 
             assertThrows<SnowballRException.FailedPreconditionException> { mainService.updateProject(request) }
         }
@@ -179,7 +177,6 @@ class UpdateProjectTest : MainServiceTest() {
             coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
             coEvery { projectRepoMock.getProjectById(project.id) } returns project
             coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
-            coEvery { projectRepoMock.updateProject(request, project.status) } returns updatedProject
 
             assertThrows<SnowballRException.FailedPreconditionException> { mainService.updateProject(request) }
         }
@@ -203,7 +200,6 @@ class UpdateProjectTest : MainServiceTest() {
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
         coEvery { projectRepoMock.getProjectById(project.id) } returns project
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
-        coEvery { projectRepoMock.updateProject(request, project.status) } returns updatedProject
 
         assertThrows<SnowballRException.FailedPreconditionException> { mainService.updateProject(request) }
     }
@@ -229,7 +225,6 @@ class UpdateProjectTest : MainServiceTest() {
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
         coEvery { projectRepoMock.getProjectById(project.id) } returns project
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
-        coEvery { projectRepoMock.updateProject(request, project.status) } returns updatedProject
 
         assertThrows<SnowballRException.FailedPreconditionException> { mainService.updateProject(request) }
     }
