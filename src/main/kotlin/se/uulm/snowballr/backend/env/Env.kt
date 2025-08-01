@@ -23,6 +23,7 @@ data class Env(
     data class Miscellaneous(
         val logLevel: String,
         val authBypassEnabled: Boolean,
+        val frontendBaseUrl: String,
     )
 
     data class Database(
