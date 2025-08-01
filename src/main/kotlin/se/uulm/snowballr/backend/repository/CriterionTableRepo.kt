@@ -2,17 +2,12 @@ package se.uulm.snowballr.backend.repository
 
 import com.google.protobuf.util.FieldMaskUtil
 import org.jetbrains.exposed.sql.ResultRow
-import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.update
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.SnowballRException.EntityNotPersistedException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.Criterion
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.table.CriterionTable
-import se.uulm.snowballr.backend.table.getProjectEntityId
-import se.uulm.snowballr.backend.table.getUserEntityId
 import se.uulm.snowballr.backend.table.toCriterion
 import snowballr.CriterionOuterClass
 import java.util.UUID
@@ -66,17 +61,8 @@ interface ICriterionTableRepo {
 class CriterionTableRepo(
     private val db: IDatabase,
 ) : ICriterionTableRepo {
-    /**
-     * Requesting a criterion from the database.
-     *
-     * @param id The id of the requested criterion.
-     * @return The [Criterion] object or null, if no criterion with the given [id] was found.
-     */
-    private fun getCriterionByIdOrNull(id: UUID): Criterion? = CriterionTable
-        .selectAll()
-        .where { CriterionTable.id eq id }
-        .map { it.toCriterion() }
-        .singleOrNull()
+    private fun getCriterionByIdOrNull(id: UUID): Criterion? =
+        CriterionTable.getEntityByIdOrNull(id, ResultRow::toCriterion)
 
     override suspend fun getCriterionById(id: UUID): Criterion = db.query {
         getCriterionByIdOrNull(id) ?: throw NotFoundException(EntityType.CRITERION, id.toString())
@@ -106,7 +92,7 @@ class CriterionTableRepo(
         val criterionId = parseUUID(request.criterion.id, EntityType.CRITERION)
         val fieldMask = FieldMaskUtil.normalize(request.mask)
 
-        CriterionTable.update({ CriterionTable.id eq criterionId }) {
+        CriterionTable.updateByIdAndGet(criterionId, ResultRow::toCriterion, EntityType.CRITERION) {
             for (field in fieldMask.pathsList) {
                 when (field) {
                     "criterion.tag" -> it[tag] = request.criterion.tag
@@ -116,10 +102,5 @@ class CriterionTableRepo(
                 }
             }
         }
-
-        // Return the updated criterion
-        getCriterionByIdOrNull(criterionId) ?: throw EntityNotPersistedException(
-            EntityType.CRITERION, criterionId.toString(),
-        )
     }
 }

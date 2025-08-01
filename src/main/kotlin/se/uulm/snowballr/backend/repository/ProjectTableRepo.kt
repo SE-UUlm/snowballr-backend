@@ -7,16 +7,13 @@ import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.statements.UpdateStatement
-import org.jetbrains.exposed.sql.update
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.SnowballRException.EntityNotPersistedException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
-import se.uulm.snowballr.backend.table.getUserEntityId
 import se.uulm.snowballr.backend.table.toProject
 import snowballr.ProjectOuterClass
 import snowballr.ProjectOuterClass.ProjectStatus
@@ -105,17 +102,7 @@ interface IProjectTableRepo {
 class ProjectTableRepo(
     private val db: IDatabase,
 ) : IProjectTableRepo {
-    /**
-     * Requesting a project from the database.
-     *
-     * @param id The ID of the requested project.
-     * @return The [Project] object or null, if no project with the given [id] was found.
-     */
-    private fun getProjectByIdOrNull(id: UUID): Project? = ProjectTable
-        .selectAll()
-        .where { ProjectTable.id eq id }
-        .map { it.toProject() }
-        .singleOrNull()
+    private fun getProjectByIdOrNull(id: UUID): Project? = ProjectTable.getEntityByIdOrNull(id, ResultRow::toProject)
 
     override suspend fun getProjectById(id: UUID): Project = db.query {
         getProjectByIdOrNull(id) ?: throw NotFoundException(EntityType.PROJECT, id.toString())
@@ -175,7 +162,7 @@ class ProjectTableRepo(
         val projectId = parseUUID(request.project.id, EntityType.PROJECT)
         val fieldMaskPaths = FieldMaskUtil.normalize(request.mask).pathsList.toSet()
 
-        ProjectTable.update({ ProjectTable.id eq projectId }) {
+        ProjectTable.updateByIdAndGet(projectId, ResultRow::toProject, EntityType.PROJECT) {
             it.applyProjectStatusUpdate(request.project, fieldMaskPaths)
             if (projectStatus == ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED ||
                 projectStatus == ProjectStatus.PROJECT_STATUS_ACTIVE
@@ -187,10 +174,6 @@ class ProjectTableRepo(
             }
             it[modifiedAt] = OffsetDateTime.now()
         }
-
-        // Return updated project
-        getProjectByIdOrNull(projectId)
-            ?: throw EntityNotPersistedException(EntityType.PROJECT, projectId.toString())
     }
 
     private fun UpdateStatement.applyProjectNameUpdate(project: ProjectOuterClass.Project, paths: Set<String>) {

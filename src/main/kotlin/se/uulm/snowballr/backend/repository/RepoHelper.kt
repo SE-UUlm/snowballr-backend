@@ -2,16 +2,72 @@ package se.uulm.snowballr.backend.repository
 
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.IdTable
+import org.jetbrains.exposed.sql.Op
 import org.jetbrains.exposed.sql.ResultRow
+import org.jetbrains.exposed.sql.SqlExpressionBuilder
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.statements.InsertStatement
+import org.jetbrains.exposed.sql.statements.UpdateStatement
+import org.jetbrains.exposed.sql.update
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.EntityNotPersistedException
+import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
+import se.uulm.snowballr.backend.table.ProjectTable
+import se.uulm.snowballr.backend.table.UserTable
 import java.util.UUID
 
+// === generic repo helpers === //
+
 /**
- * Combination of using [insertAndGetId] and fetching the created object by its ID.
+ * Returns an entity according to the [where] expression or returns null if the entity couldn't be found.
+ *
+ * @param Key The type of the [IdTable], i.e., the ID type, such as [UUID].
+ * @param T The table type as a subtype of [IdTable].
+ * @param EntT The result entity type.
+ * @param mapper Mapping function of the [ResultRow] to the entity type [EntT].
+ * @param where The SQL expression that is used to find the entity.
+ */
+fun <Key : Any, T : IdTable<Key>, EntT : Any> T.getEntityOrNull(
+    mapper: (ResultRow) -> EntT,
+    where: SqlExpressionBuilder.() -> Op<Boolean>,
+): EntT? = this.selectAll()
+    .where(where)
+    .map(mapper)
+    .singleOrNull()
+
+/**
+ * Returns an entity by its ID or returns null if the entity couldn't be found.
+ *
+ * @param Key The type of the [IdTable], i.e., the ID type, such as [UUID].
+ * @param T The table type as a subtype of [IdTable].
+ * @param EntT The result entity type.
+ * @param id The ID of type [Key], which is used to find the entity.
+ * @param mapper Mapping function of the [ResultRow] to the entity type [EntT].
+ */
+fun <Key : Any, T : IdTable<Key>, EntT : Any> T.getEntityByIdOrNull(id: Key, mapper: (ResultRow) -> EntT): EntT? =
+    this.getEntityOrNull(mapper) { this@getEntityByIdOrNull.id eq id }
+
+/**
+ * Returns the entity ID of the entity with the given [id] or throws a [NotFoundException] if no such entity exists.
+ * This can be used to reference the entity in other table rows.
+ *
+ * Example:
+ * Table A stores a reference to this table as `entity_id`. To create a row in table A, we can use this method
+ * to get the [EntityID] and then pass it to the `entity_id` column of table A.
+ *
+ * @param Key The type of the [IdTable], i.e., the ID type, such as [UUID].
+ * @param T The table type as a subtype of [IdTable].
+ * @param id The ID of type [Key], which is used to find the entity.
+ * @param entityType The type of the entity used for the [NotFoundException].
+ * @return The ID of the entity as [EntityID].
+ */
+private fun <Key : Any, T : IdTable<Key>> T.getEntityId(id: Key, entityType: EntityType): EntityID<Key> = this
+    .getEntityByIdOrNull(id) { it[this.id] }
+    ?: throw NotFoundException(entityType, id.toString())
+
+/**
+ * Combination of using [insertAndGetId] and fetching the created entity by its ID.
  *
  * @param Key The type of the [IdTable], i.e., the ID type, such as [UUID].
  * @param T The table type as a subtype of [IdTable].
@@ -22,15 +78,70 @@ import java.util.UUID
  * @param body The body that is passed to [insertAndGetId].
  */
 inline fun <Key : Any, T : IdTable<Key>, EntT : Any> T.insertAndGet(
-    mapper: (ResultRow) -> EntT,
+    noinline mapper: (ResultRow) -> EntT,
     entityType: EntityType,
     crossinline body: T.(InsertStatement<EntityID<Key>>) -> Unit,
 ): EntT {
     val id = this.insertAndGetId(body).value
-    return this
-        .selectAll()
-        .where { this@insertAndGet.id eq id }
-        .map { mapper.invoke(it) }
-        .singleOrNull()
-        ?: throw EntityNotPersistedException(entityType, id.toString())
+    return this.getEntityByIdOrNull(id, mapper) ?: throw EntityNotPersistedException(entityType, id.toString())
 }
+
+/**
+ * Combination of using [update] and fetching the updated entity both according to the [where] expression.
+ *
+ * @param Key The type of the [IdTable], i.e., the ID type, such as [UUID].
+ * @param T The table type as a subtype of [IdTable].
+ * @param EntT The result entity type.
+ * @param mapper Mapping function of the [ResultRow] to the entity type [EntT].
+ * @param entityType The entity type used for the [EntityNotPersistedException], which is thrown when the entity cannot
+ * be retrieved by its ID.
+ * @param id The ID, which is used for the [EntityNotPersistedException].
+ * @param where The SQL expression that is used to find the entity.
+ * @param body The body that is passed to [update].
+ */
+inline fun <Key : Any, T : IdTable<Key>, EntT : Any> T.updateAndGet(
+    noinline mapper: (ResultRow) -> EntT,
+    entityType: EntityType,
+    id: String,
+    noinline where: SqlExpressionBuilder.() -> Op<Boolean>,
+    crossinline body: T.(UpdateStatement) -> Unit,
+): EntT {
+    this.update(where, body = body)
+    return this.getEntityOrNull(mapper, where) ?: throw EntityNotPersistedException(entityType, id)
+}
+
+/**
+ * Combination of using [update] and fetching the updated entity by its ID.
+ *
+ * @param Key The type of the [IdTable], i.e., the ID type, such as [UUID].
+ * @param T The table type as a subtype of [IdTable].
+ * @param EntT The result entity type.
+ * @param id The ID of type [Key], which is used to find the entity that should be updated.
+ * @param mapper Mapping function of the [ResultRow] to the entity type [EntT].
+ * @param entityType The entity type used for the [EntityNotPersistedException], which is thrown when the entity cannot
+ * be retrieved by its ID.
+ * @param body The body that is passed to [update].
+ */
+inline fun <Key : Any, T : IdTable<Key>, EntT : Any> T.updateByIdAndGet(
+    id: Key,
+    noinline mapper: (ResultRow) -> EntT,
+    entityType: EntityType,
+    crossinline body: T.(UpdateStatement) -> Unit,
+): EntT = this.updateAndGet(mapper, entityType, id.toString(), { this@updateByIdAndGet.id eq id }, body)
+
+// === specific repo helpers === //
+
+/**
+ * Returns the entity ID of the user with the passed [id] or throws a [NotFoundException] if the user doesn't exist.
+ *
+ * @see getEntityId
+ */
+fun getUserEntityId(id: UUID): EntityID<UUID> = UserTable.getEntityId(id, EntityType.USER)
+
+/**
+ * Returns the entity ID of the project with the passed [id] or throws a [NotFoundException] if the project doesn't
+ * exist.
+ *
+ * @see getEntityId
+ */
+fun getProjectEntityId(id: UUID): EntityID<UUID> = ProjectTable.getEntityId(id, EntityType.PROJECT)
