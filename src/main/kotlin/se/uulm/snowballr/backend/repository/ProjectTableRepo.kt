@@ -14,7 +14,6 @@ import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
-import se.uulm.snowballr.backend.table.getUserEntityId
 import se.uulm.snowballr.backend.table.toProject
 import snowballr.ProjectOuterClass
 import snowballr.ProjectOuterClass.ProjectStatus

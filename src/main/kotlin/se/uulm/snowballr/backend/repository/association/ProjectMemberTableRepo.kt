@@ -10,12 +10,12 @@ import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.ProjectMember
 import se.uulm.snowballr.backend.repository.getEntityOrNull
+import se.uulm.snowballr.backend.repository.getProjectEntityId
+import se.uulm.snowballr.backend.repository.getUserEntityId
 import se.uulm.snowballr.backend.repository.insertAndGet
 import se.uulm.snowballr.backend.repository.updateAndGet
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.table.association.toProjectMember
-import se.uulm.snowballr.backend.table.getProjectEntityId
-import se.uulm.snowballr.backend.table.getUserEntityId
 import snowballr.ProjectOuterClass
 import java.util.UUID
 
