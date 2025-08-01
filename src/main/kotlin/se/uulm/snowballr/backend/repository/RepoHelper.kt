@@ -2,7 +2,6 @@ package se.uulm.snowballr.backend.repository
 
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.IdTable
-import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.Op
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SqlExpressionBuilder
@@ -57,15 +56,14 @@ fun <Key : Any, T : IdTable<Key>, EntT : Any> T.getEntityByIdOrNull(id: Key, map
  * Table A stores a reference to this table as `entity_id`. To create a row in table A, we can use this method
  * to get the [EntityID] and then pass it to the `entity_id` column of table A.
  *
- * @param id The ID of the entity as [String].
- * @param entityType The type of the entity.
+ * @param Key The type of the [IdTable], i.e., the ID type, such as [UUID].
+ * @param T The table type as a subtype of [IdTable].
+ * @param id The ID of type [Key], which is used to find the entity.
+ * @param entityType The type of the entity used for the [NotFoundException].
  * @return The ID of the entity as [EntityID].
  */
-private fun UUIDTable.getEntityId(id: UUID, entityType: EntityType): EntityID<UUID> = this
-    .select(this.id)
-    .where { this@getEntityId.id eq id }
-    .map { it[this.id] }
-    .singleOrNull()
+private fun <Key : Any, T : IdTable<Key>> T.getEntityId(id: Key, entityType: EntityType): EntityID<Key> = this
+    .getEntityByIdOrNull(id) { it[this.id] }
     ?: throw NotFoundException(entityType, id.toString())
 
 /**
@@ -134,16 +132,15 @@ inline fun <Key : Any, T : IdTable<Key>, EntT : Any> T.updateByIdAndGet(
 // === specific repo helpers === //
 
 /**
- * Returns the entity ID of the user with the passed [id] or throws a [NotFoundException] if the user doesn't
- * exist.
+ * Returns the entity ID of the user with the passed [id] or throws a [NotFoundException] if the user doesn't exist.
  *
  * @see getEntityId
  */
 fun getUserEntityId(id: UUID): EntityID<UUID> = UserTable.getEntityId(id, EntityType.USER)
 
 /**
- * Returns the entity ID of the project with the passed [id] or throws a [NotFoundException] if the project
- * doesn't exist.
+ * Returns the entity ID of the project with the passed [id] or throws a [NotFoundException] if the project doesn't
+ * exist.
  *
  * @see getEntityId
  */
