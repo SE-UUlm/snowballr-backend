@@ -20,6 +20,7 @@ import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
+import se.uulm.snowballr.backend.repository.IVerificationTokenTableRepo
 import se.uulm.snowballr.backend.repository.association.IAuthorOfPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
@@ -79,6 +80,7 @@ open class MainServiceTest : KoinTest {
     val citationRepoMock = mockk<ICitationTableRepo>()
     val readingListRepoMock = mockk<IReadingListTableRepo>()
     val paperRepoMock = mockk<IPaperTableRepo>()
+    val verificationTokenRepoMock = mockk<IVerificationTokenTableRepo>()
 
     // Custom services / manager / clients mocks
     val jwtServiceMock = mockk<IJwtService>()
@@ -112,6 +114,7 @@ open class MainServiceTest : KoinTest {
         single { citationRepoMock }
         single { readingListRepoMock }
         single { paperRepoMock }
+        single { verificationTokenRepoMock }
 
         // Custom services / managers / clients
         single { jwtServiceMock }
