@@ -14,6 +14,8 @@ import org.koin.dsl.module
 import org.koin.test.KoinTest
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.auth.IJwtService
+import se.uulm.snowballr.backend.env.EnvReader
+import se.uulm.snowballr.backend.env.IEnvService
 import se.uulm.snowballr.backend.fetcher.FetcherManager
 import se.uulm.snowballr.backend.repository.IAuthorTableRepo
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
@@ -70,6 +72,10 @@ import se.uulm.snowballr.backend.serviceLayerDeps
  */
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
 open class MainServiceTest : KoinTest {
+    // Environment dependencies
+    val envServiceMock = mockk<IEnvService>()
+    val envReaderMock = mockk<EnvReader>()
+
     // Repository layer mocks
     val projectRepoMock = mockk<IProjectTableRepo>()
     val criterionRepoMock = mockk<ICriterionTableRepo>()
@@ -84,6 +90,7 @@ open class MainServiceTest : KoinTest {
 
     // Custom services / manager / clients mocks
     val jwtServiceMock = mockk<IJwtService>()
+    val emailServiceMock = mockk<IEmailService>()
     val fetcherManagerMock = mockk<FetcherManager>()
 
     val allMocks = arrayOf(
@@ -104,6 +111,10 @@ open class MainServiceTest : KoinTest {
 
     // Note that we cannot use the list of all mocks to add it to the module.
     private val serviceTestModule = module {
+        // Environment dependencies
+        single { envServiceMock }
+        single { envReaderMock }
+
         // Repository layer
         single { projectRepoMock }
         single { criterionRepoMock }
@@ -118,6 +129,7 @@ open class MainServiceTest : KoinTest {
 
         // Custom services / managers / clients
         single { jwtServiceMock }
+        single { emailServiceMock }
         single { fetcherManagerMock }
 
         // The base service layer is the same as in production
