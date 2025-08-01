@@ -3,7 +3,6 @@ package se.uulm.snowballr.backend.service.user
 import io.mockk.coEvery
 import io.mockk.every
 import kotlinx.coroutines.test.runTest
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
@@ -16,13 +15,6 @@ import snowballr.UserOuterClass.UserRole
 import java.util.UUID
 
 class GetAllUsersTest : MainServiceTest() {
-    @BeforeEach
-    fun setupTest() {
-        every { GrpcContext.getUserIdFromContext() } throws NotImplementedError()
-        coEvery { userRepoMock.getUserById(any()) } throws NotImplementedError()
-        coEvery { userRepoMock.getAllUsers() } throws NotImplementedError()
-    }
-
     @Test
     fun `When retrieving the current user ID fails, then an exception is thrown`() = runTest {
         every { GrpcContext.getUserIdFromContext() } throws TestSpecificException()

@@ -3,7 +3,6 @@ package se.uulm.snowballr.backend.service.criterion
 import io.mockk.coEvery
 import io.mockk.every
 import kotlinx.coroutines.test.runTest
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
@@ -24,16 +23,6 @@ class GetCriterionByIdTest : MainServiceTest() {
         .newBuilder()
         .setId(requestId.toString())
         .build()
-
-    @BeforeEach
-    fun setupTest() {
-        every { GrpcContext.getUserIdFromContext() } throws NotImplementedError()
-        coEvery { userRepoMock.getUserById(any()) } throws NotImplementedError()
-        coEvery { projectMemberRepoMock.addUserToProject(any(), any()) } throws NotImplementedError()
-        coEvery { projectMemberRepoMock.getMembersOfProject(any()) } throws NotImplementedError()
-        coEvery { projectRepoMock.getProjectById(any()) } throws NotImplementedError()
-        coEvery { criterionRepoMock.getCriterionById(any()) } throws NotImplementedError()
-    }
 
     @Test
     fun `When the requesting user is a server admin, then a project criterion can be retrieved`() = runTest {
@@ -72,7 +61,6 @@ class GetCriterionByIdTest : MainServiceTest() {
 
             every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
             coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
-            coEvery { projectMemberRepoMock.addUserToProject(user.id, project.id) } returns projectMember
             coEvery { projectMemberRepoMock.getMembersOfProject(project.id) } returns listOf(projectMember)
             coEvery { projectRepoMock.getProjectById(project.id) } returns project
             coEvery { criterionRepoMock.getCriterionById(requestId) } returns criterion
@@ -159,13 +147,9 @@ class GetCriterionByIdTest : MainServiceTest() {
         val request = getExampleRequest()
 
         val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-        val project = DataBuilder.createExampleProject()
-        val projectMember = DataBuilder.createExampleProjectMember(userId = adminUser.id, projectId = project.id)
 
         every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns adminUser
-        coEvery { projectRepoMock.getProjectById(any()) } throws TestSpecificException()
-        coEvery { projectMemberRepoMock.getMembersOfProject(project.id) } returns listOf(projectMember)
         coEvery { criterionRepoMock.getCriterionById(requestId) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getCriterionById(request) }

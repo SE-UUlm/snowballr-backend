@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.service
 
+import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.mockk
 import io.mockk.mockkObject
@@ -66,17 +67,27 @@ import se.uulm.snowballr.backend.serviceLayerDeps
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 open class MainServiceTest : KoinTest {
     // Repository layer mocks
-    val projectRepoMock = mockk<IProjectTableRepo>(relaxed = true)
-    val criterionRepoMock = mockk<ICriterionTableRepo>(relaxed = true)
-    val userRepoMock = mockk<IUserTableRepo>(relaxed = true)
-    val projectMemberRepoMock = mockk<IProjectMemberTableRepo>(relaxed = true)
+    val projectRepoMock = mockk<IProjectTableRepo>()
+    val criterionRepoMock = mockk<ICriterionTableRepo>()
+    val userRepoMock = mockk<IUserTableRepo>()
+    val projectMemberRepoMock = mockk<IProjectMemberTableRepo>()
 
     // Custom services / manager / clients mocks
-    val jwtServiceMock = mockk<IJwtService>(relaxed = true)
-    val fetcherManagerMock = mockk<FetcherManager>(relaxed = true)
+    val jwtServiceMock = mockk<IJwtService>()
+    val fetcherManagerMock = mockk<FetcherManager>()
+
+    val allMocks = arrayOf(
+        projectRepoMock,
+        criterionRepoMock,
+        userRepoMock,
+        projectMemberRepoMock,
+        jwtServiceMock,
+        fetcherManagerMock,
+    )
 
     val mainService: IMainService by inject()
 
+    // Note that we cannot use the list of all mocks to add it to the module.
     private val serviceTestModule = module {
         // Repository layer
         single { projectRepoMock }
@@ -102,6 +113,7 @@ open class MainServiceTest : KoinTest {
 
     @AfterEach
     open fun tearDownTest() {
+        checkUnnecessaryStub(*allMocks)
         clearAllMocks()
     }
 

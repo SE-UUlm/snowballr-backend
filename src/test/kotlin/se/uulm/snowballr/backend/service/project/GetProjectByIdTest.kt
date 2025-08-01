@@ -3,7 +3,6 @@ package se.uulm.snowballr.backend.service.project
 import io.mockk.coEvery
 import io.mockk.every
 import kotlinx.coroutines.test.runTest
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
@@ -25,26 +24,15 @@ class GetProjectByIdTest : MainServiceTest() {
         .setId(requestId.toString())
         .build()
 
-    @BeforeEach
-    fun setupTest() {
-        every { GrpcContext.getUserIdFromContext() } throws NotImplementedError()
-        coEvery { userRepoMock.getUserById(any()) } throws NotImplementedError()
-        coEvery { projectRepoMock.getProjectById(any()) } throws NotImplementedError()
-        coEvery { projectMemberRepoMock.addUserToProject(any(), any()) } throws NotImplementedError()
-        coEvery { projectMemberRepoMock.getMembersOfProject(any()) } throws NotImplementedError()
-    }
-
     @Test
     fun `When the requesting user is not a member of the project, then an exception is thrown`() = runTest {
         val request = getExampleRequest()
 
         val noAccessUser = DataBuilder.createExampleUser()
-        val project = DataBuilder.createExampleProject(id = requestId)
 
         every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns noAccessUser
         coEvery { projectMemberRepoMock.getMembersOfProject(any()) } returns emptyList()
-        coEvery { projectRepoMock.getProjectById(requestId) } returns project
 
         assertThrows<UnauthorizedException.Single> { mainService.getProjectById(request) }
     }
@@ -74,7 +62,6 @@ class GetProjectByIdTest : MainServiceTest() {
 
         every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
-        coEvery { projectMemberRepoMock.addUserToProject(user.id, requestId) } returns projectMember
         coEvery { projectMemberRepoMock.getMembersOfProject(requestId) } returns listOf(projectMember)
         coEvery { projectRepoMock.getProjectById(requestId) } returns project
 

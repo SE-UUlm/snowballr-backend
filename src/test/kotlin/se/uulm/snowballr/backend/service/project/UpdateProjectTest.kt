@@ -4,7 +4,6 @@ import com.google.protobuf.util.FieldMaskUtil
 import io.mockk.coEvery
 import io.mockk.every
 import kotlinx.coroutines.test.runTest
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
@@ -23,15 +22,6 @@ import java.util.UUID
 class UpdateProjectTest : MainServiceTest() {
     private val dummyUserUUID = UUID.randomUUID()
 
-    @BeforeEach
-    fun setupTest() {
-        every { GrpcContext.getUserIdFromContext() } throws NotImplementedError()
-        coEvery { userRepoMock.getUserById(any()) } throws NotImplementedError()
-        coEvery { projectRepoMock.getProjectById(any()) } throws NotImplementedError()
-        coEvery { projectMemberRepoMock.getAllProjectAdmins(any()) } throws NotImplementedError()
-        coEvery { projectRepoMock.updateProject(any(), any()) } throws NotImplementedError()
-    }
-
     @ParameterizedTest
     @CsvSource(
         value = [
@@ -43,20 +33,15 @@ class UpdateProjectTest : MainServiceTest() {
     fun `When a server admin updates an existing project, then no exception is thrown`(statusName: String) = runTest {
         val status = ProjectOuterClass.ProjectStatus.valueOf(statusName)
         val user = DataBuilder.createExampleUser(id = dummyUserUUID, role = UserRole.USER_ROLE_ADMIN)
-        val project = DataBuilder.createExampleProject(
-            status = status,
-        )
-        val updatedProject = DataBuilder.createExampleProject(
-            id = project.id,
-            name = "Updated Project",
-        )
+        val project = DataBuilder.createExampleProject(status = status)
+        val updatedProject = DataBuilder.createExampleProject(id = project.id, name = "Updated Project")
 
-        val updateFieldMask = FieldMaskUtil.fromStringList(
-            listOf("name", "status"),
-        )
-        val request = ProjectOuterClass.Project.Update.newBuilder().setProject(
-            updatedProject.toGrpcProject(),
-        ).setMask(updateFieldMask).build()
+        val updateFieldMask = FieldMaskUtil.fromStringList(listOf("name", "status"))
+        val request = ProjectOuterClass.Project.Update
+            .newBuilder()
+            .setProject(updatedProject.toGrpcProject())
+            .setMask(updateFieldMask)
+            .build()
 
         every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
@@ -78,22 +63,17 @@ class UpdateProjectTest : MainServiceTest() {
     fun `When a project admin updates an existing project, then no exception is thrown`(statusName: String) = runTest {
         val status = ProjectOuterClass.ProjectStatus.valueOf(statusName)
         val user = DataBuilder.createExampleUser(id = dummyUserUUID, role = UserRole.USER_ROLE_DEFAULT)
-        val project = DataBuilder.createExampleProject(
-            status = status,
-        )
+        val project = DataBuilder.createExampleProject(status = status)
         val projectMember = DataBuilder.createExampleProjectMember(userId = user.id, projectId = project.id)
 
-        val updatedProject = DataBuilder.createExampleProject(
-            id = project.id,
-            name = "Updated Project",
-        )
+        val updatedProject = DataBuilder.createExampleProject(id = project.id, name = "Updated Project")
 
-        val updateFieldMask = FieldMaskUtil.fromStringList(
-            listOf("name", "status"),
-        )
-        val request = ProjectOuterClass.Project.Update.newBuilder().setProject(
-            updatedProject.toGrpcProject(),
-        ).setMask(updateFieldMask).build()
+        val updateFieldMask = FieldMaskUtil.fromStringList(listOf("name", "status"))
+        val request = ProjectOuterClass.Project.Update
+            .newBuilder()
+            .setProject(updatedProject.toGrpcProject())
+            .setMask(updateFieldMask)
+            .build()
 
         every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
@@ -117,24 +97,20 @@ class UpdateProjectTest : MainServiceTest() {
         runTest {
             val status = ProjectOuterClass.ProjectStatus.valueOf(statusName)
             val user = DataBuilder.createExampleUser(id = dummyUserUUID, role = UserRole.USER_ROLE_DEFAULT)
-            val project = DataBuilder.createExampleProject(
-                status = status,
-            )
-            val updatedProject = DataBuilder.createExampleProject(
-                id = project.id,
-                name = "Updated Project",
-            )
+            val project = DataBuilder.createExampleProject(status = status)
+            val updatedProject = DataBuilder.createExampleProject(id = project.id, name = "Updated Project")
 
             val updateFieldMask = FieldMaskUtil.fromStringList(listOf("name"))
-            val request = ProjectOuterClass.Project.Update.newBuilder().setProject(
-                updatedProject.toGrpcProject(),
-            ).setMask(updateFieldMask).build()
+            val request = ProjectOuterClass.Project.Update
+                .newBuilder()
+                .setProject(updatedProject.toGrpcProject())
+                .setMask(updateFieldMask)
+                .build()
 
             every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
             coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
             coEvery { projectRepoMock.getProjectById(project.id) } returns project
             coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
-            coEvery { projectRepoMock.updateProject(request, project.status) } returns updatedProject
 
             assertThrows<SnowballRException.UnauthorizedException.Single> { mainService.updateProject(request) }
         }
@@ -153,15 +129,16 @@ class UpdateProjectTest : MainServiceTest() {
             )
 
             val updateFieldMask = FieldMaskUtil.fromStringList(listOf("name", "status"))
-            val request = ProjectOuterClass.Project.Update.newBuilder().setProject(
-                updatedProject.toGrpcProject(),
-            ).setMask(updateFieldMask).build()
+            val request = ProjectOuterClass.Project.Update
+                .newBuilder()
+                .setProject(updatedProject.toGrpcProject())
+                .setMask(updateFieldMask)
+                .build()
 
             every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
             coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
             coEvery { projectRepoMock.getProjectById(project.id) } returns project
             coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
-            coEvery { projectRepoMock.updateProject(request, project.status) } returns updatedProject
 
             assertThrows<SnowballRException.FailedPreconditionException> { mainService.updateProject(request) }
         }
@@ -181,15 +158,16 @@ class UpdateProjectTest : MainServiceTest() {
             val projectMember = DataBuilder.createExampleProjectMember(userId = user.id, projectId = project.id)
 
             val updateFieldMask = FieldMaskUtil.fromStringList(listOf("name", "status"))
-            val request = ProjectOuterClass.Project.Update.newBuilder().setProject(
-                updatedProject.toGrpcProject(),
-            ).setMask(updateFieldMask).build()
+            val request = ProjectOuterClass.Project.Update
+                .newBuilder()
+                .setProject(updatedProject.toGrpcProject())
+                .setMask(updateFieldMask)
+                .build()
 
             every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
             coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
             coEvery { projectRepoMock.getProjectById(project.id) } returns project
             coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
-            coEvery { projectRepoMock.updateProject(request, project.status) } returns updatedProject
 
             assertThrows<SnowballRException.FailedPreconditionException> { mainService.updateProject(request) }
         }
@@ -200,20 +178,18 @@ class UpdateProjectTest : MainServiceTest() {
         val project = DataBuilder.createExampleProject(
             status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_DELETED,
         )
-        val updatedProject = DataBuilder.createExampleProject(
-            id = project.id,
-            name = "Updated Project",
-        )
+        val updatedProject = DataBuilder.createExampleProject(id = project.id, name = "Updated Project")
         val updateFieldMask = FieldMaskUtil.fromStringList(listOf("name"))
-        val request = ProjectOuterClass.Project.Update.newBuilder().setProject(
-            updatedProject.toGrpcProject(),
-        ).setMask(updateFieldMask).build()
+        val request = ProjectOuterClass.Project.Update
+            .newBuilder()
+            .setProject(updatedProject.toGrpcProject())
+            .setMask(updateFieldMask)
+            .build()
 
         every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
         coEvery { projectRepoMock.getProjectById(project.id) } returns project
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
-        coEvery { projectRepoMock.updateProject(request, project.status) } returns updatedProject
 
         assertThrows<SnowballRException.FailedPreconditionException> { mainService.updateProject(request) }
     }
@@ -224,22 +200,20 @@ class UpdateProjectTest : MainServiceTest() {
         val project = DataBuilder.createExampleProject(
             status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_DELETED,
         )
-        val updatedProject = DataBuilder.createExampleProject(
-            id = project.id,
-            name = "Updated Project",
-        )
+        val updatedProject = DataBuilder.createExampleProject(id = project.id, name = "Updated Project")
         val projectMember = DataBuilder.createExampleProjectMember(userId = user.id, projectId = project.id)
 
         val updateFieldMask = FieldMaskUtil.fromStringList(listOf("name"))
-        val request = ProjectOuterClass.Project.Update.newBuilder().setProject(
-            updatedProject.toGrpcProject(),
-        ).setMask(updateFieldMask).build()
+        val request = ProjectOuterClass.Project.Update
+            .newBuilder()
+            .setProject(updatedProject.toGrpcProject())
+            .setMask(updateFieldMask)
+            .build()
 
         every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
         coEvery { projectRepoMock.getProjectById(project.id) } returns project
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
-        coEvery { projectRepoMock.updateProject(request, project.status) } returns updatedProject
 
         assertThrows<SnowballRException.FailedPreconditionException> { mainService.updateProject(request) }
     }
@@ -247,9 +221,8 @@ class UpdateProjectTest : MainServiceTest() {
     @Test
     fun `When an error occurs while updating a project, then an exception is thrown`() = runTest {
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-        val updatedProject = DataBuilder.createExampleProject(
-            status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE,
-        )
+        val status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE
+        val updatedProject = DataBuilder.createExampleProject(status = status)
         val request = ProjectOuterClass.Project.Update.newBuilder().setProject(updatedProject.toGrpcProject()).build()
 
         every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID

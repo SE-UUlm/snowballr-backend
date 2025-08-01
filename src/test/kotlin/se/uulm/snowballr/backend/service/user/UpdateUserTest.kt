@@ -4,7 +4,6 @@ import com.google.protobuf.FieldMask
 import io.mockk.coEvery
 import io.mockk.every
 import kotlinx.coroutines.test.runTest
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
@@ -37,14 +36,6 @@ class UpdateUserTest : MainServiceTest() {
             .setUser(user)
             .setMask(mask)
             .build()
-    }
-
-    @BeforeEach
-    fun setupTest() {
-        every { GrpcContext.getUserIdFromContext() } throws NotImplementedError()
-        coEvery { userRepoMock.getUserById(any()) } throws NotImplementedError()
-        coEvery { userRepoMock.doesUserExistByEmail(any()) } throws NotImplementedError()
-        coEvery { userRepoMock.updateUser(any()) } throws NotImplementedError()
     }
 
     @Test

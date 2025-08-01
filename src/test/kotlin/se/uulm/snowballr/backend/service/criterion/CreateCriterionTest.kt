@@ -3,7 +3,6 @@ package se.uulm.snowballr.backend.service.criterion
 import io.mockk.coEvery
 import io.mockk.every
 import kotlinx.coroutines.test.runTest
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
@@ -15,12 +14,6 @@ import snowballr.CriterionOuterClass
 import java.util.UUID
 
 class CreateCriterionTest : MainServiceTest() {
-    @BeforeEach
-    fun setUpTest() {
-        every { GrpcContext.getUserIdFromContext() } throws NotImplementedError()
-        coEvery { criterionRepoMock.createCriterion(any(), any()) } throws NotImplementedError()
-    }
-
     @Test
     fun `When retrieving the current user ID fails, then an exception is thrown`() = runTest {
         val request = CriterionOuterClass.Criterion.Create.getDefaultInstance()

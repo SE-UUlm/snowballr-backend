@@ -3,7 +3,6 @@ package se.uulm.snowballr.backend.service.project
 import io.mockk.coEvery
 import io.mockk.every
 import kotlinx.coroutines.test.runTest
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
@@ -20,13 +19,6 @@ import java.util.UUID
 class GetAllProjectsForUserTest : MainServiceTest() {
     private val requestedUserId = UUID.randomUUID()
     private fun getExampleRequest() = Base.Id.newBuilder().setId(requestedUserId.toString()).build()
-
-    @BeforeEach
-    fun setupTest() {
-        every { GrpcContext.getUserIdFromContext() } throws NotImplementedError()
-        coEvery { userRepoMock.getUserById(any()) } throws NotImplementedError()
-        coEvery { projectRepoMock.getUserProjects(any()) } throws NotImplementedError()
-    }
 
     @Test
     fun `When parsing the ID of the requested user fails, then an exception is thrown`() = runTest {
@@ -70,7 +62,6 @@ class GetAllProjectsForUserTest : MainServiceTest() {
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
         coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
         coEvery { userRepoMock.getUserById(requestedUser.id) } returns requestedUser
-        coEvery { projectRepoMock.getUserProjects(any()) } returns emptyList()
 
         assertThrows<UnauthorizedException.Single> { mainService.getAllProjectsForUser(getExampleRequest()) }
     }
