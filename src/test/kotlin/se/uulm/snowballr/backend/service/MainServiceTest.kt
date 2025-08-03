@@ -4,10 +4,8 @@ import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.mockk
 import io.mockk.mockkObject
-import io.mockk.unmockkObject
-import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.TestInstance
 import org.koin.core.component.inject
 import org.koin.core.context.startKoin
@@ -64,7 +62,7 @@ import se.uulm.snowballr.backend.serviceLayerDeps
  * }
  * ```
  */
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@TestInstance(TestInstance.Lifecycle.PER_METHOD)
 open class MainServiceTest : KoinTest {
     // Repository layer mocks
     val projectRepoMock = mockk<IProjectTableRepo>()
@@ -103,8 +101,8 @@ open class MainServiceTest : KoinTest {
         serviceLayerDeps()
     }
 
-    @BeforeAll
-    fun setUp() {
+    @BeforeEach
+    fun setUpTest() {
         startKoin {
             modules(serviceTestModule)
         }
@@ -115,11 +113,6 @@ open class MainServiceTest : KoinTest {
     open fun tearDownTest() {
         checkUnnecessaryStub(*allMocks)
         clearAllMocks()
-    }
-
-    @AfterAll
-    fun tearDown() {
         stopKoin()
-        unmockkObject(GrpcContext)
     }
 }
