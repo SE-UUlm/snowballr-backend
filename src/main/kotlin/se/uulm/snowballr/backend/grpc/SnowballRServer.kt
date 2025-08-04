@@ -223,16 +223,16 @@ class SnowballRServer(
         ): UserSettingsOuterClass.UserSettings = super.updateUserSettings(request)
 
         override suspend fun getReadingList(request: Base.Nothing): PaperOuterClass.Paper.List =
-            super.getReadingList(request)
+            mainService.getReadingList()
 
         override suspend fun isPaperOnReadingList(request: Base.Id): Base.BoolValue =
-            super.isPaperOnReadingList(request)
+            mainService.isPaperOnReadingList(request)
 
         override suspend fun addPaperToReadingList(request: Base.Id): Base.Nothing =
-            super.addPaperToReadingList(request)
+            mainService.addPaperToReadingList(request)
 
         override suspend fun removePaperFromReadingList(request: Base.Id): Base.Nothing =
-            super.removePaperFromReadingList(request)
+            mainService.removePaperFromReadingList(request)
 
         override suspend fun getPendingInvitationsForUser(request: Base.Id): ProjectOuterClass.Project.List =
             super.getPendingInvitationsForUser(request)

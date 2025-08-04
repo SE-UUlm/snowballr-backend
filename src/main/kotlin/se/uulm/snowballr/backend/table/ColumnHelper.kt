@@ -61,7 +61,7 @@ fun Table.stringMap(name: String): Column<Map<String, String>> = registerColumn(
 ).transform(
     wrap = {
         HStoreConverter
-            .fromString(it)
+            .fromString(it.trim('{', '}'))
             .mapValuesNotNull { entry -> entry.value }
     },
     unwrap = {

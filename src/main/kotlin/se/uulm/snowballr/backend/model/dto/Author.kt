@@ -20,9 +20,12 @@ data class Author(
 /**
  * Creates a [PaperOuterClass.Author] from this [Author].
  */
-fun Author.toGrpcAuthor(): PaperOuterClass.Author = PaperOuterClass.Author
-    .newBuilder()
-    .setFirstName(this.firstName)
-    .setLastName(this.lastName)
-    .setOrcid(this.orcid)
-    .build()
+fun Author.toGrpcAuthor(): PaperOuterClass.Author = with(
+    PaperOuterClass.Author
+        .newBuilder(),
+) {
+    setFirstName(this.firstName)
+    setLastName(this.lastName)
+    this.orcid?.let { setOrcid(it) }
+    build()
+}

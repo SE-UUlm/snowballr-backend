@@ -11,6 +11,8 @@ enum class EntityType(val singular: String, val plural: String) {
     PROJECT("project", "projects"),
     CRITERION("criterion", "criteria"),
     PROJECT_MEMBER("project member", "project members"),
+    PAPER("paper", "papers"),
+    AUTHOR("author", "authors"),
     ;
 
     /**

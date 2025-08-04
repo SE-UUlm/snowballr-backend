@@ -15,10 +15,15 @@ import org.koin.test.KoinTest
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.auth.IJwtService
 import se.uulm.snowballr.backend.fetcher.FetcherManager
+import se.uulm.snowballr.backend.repository.IAuthorTableRepo
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
+import se.uulm.snowballr.backend.repository.IPaperTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
+import se.uulm.snowballr.backend.repository.association.IAuthorOfPaperTableRepo
+import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
+import se.uulm.snowballr.backend.repository.association.IReadingListTableRepo
 import se.uulm.snowballr.backend.service.criterion.CreateCriterionTest
 import se.uulm.snowballr.backend.serviceLayerDeps
 
@@ -69,6 +74,11 @@ open class MainServiceTest : KoinTest {
     val criterionRepoMock = mockk<ICriterionTableRepo>()
     val userRepoMock = mockk<IUserTableRepo>()
     val projectMemberRepoMock = mockk<IProjectMemberTableRepo>()
+    val authorOfPaperRepoMock = mockk<IAuthorOfPaperTableRepo>()
+    val authorRepoMock = mockk<IAuthorTableRepo>()
+    val citationRepoMock = mockk<ICitationTableRepo>()
+    val readingListRepoMock = mockk<IReadingListTableRepo>()
+    val paperRepoMock = mockk<IPaperTableRepo>()
 
     // Custom services / manager / clients mocks
     val jwtServiceMock = mockk<IJwtService>()
@@ -81,6 +91,11 @@ open class MainServiceTest : KoinTest {
         projectMemberRepoMock,
         jwtServiceMock,
         fetcherManagerMock,
+        authorOfPaperRepoMock,
+        authorRepoMock,
+        citationRepoMock,
+        readingListRepoMock,
+        paperRepoMock,
     )
 
     val mainService: IMainService by inject()
@@ -92,6 +107,11 @@ open class MainServiceTest : KoinTest {
         single { criterionRepoMock }
         single { userRepoMock }
         single { projectMemberRepoMock }
+        single { authorOfPaperRepoMock }
+        single { authorRepoMock }
+        single { citationRepoMock }
+        single { readingListRepoMock }
+        single { paperRepoMock }
 
         // Custom services / managers / clients
         single { jwtServiceMock }

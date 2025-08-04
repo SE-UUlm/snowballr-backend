@@ -1,9 +1,11 @@
 package se.uulm.snowballr.backend.repository
 
+import kotlinx.datetime.Instant
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.insertAndGetId
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.table.association.toProjectMember
@@ -59,5 +61,28 @@ object RepositoryHelper {
     suspend fun createAndAssignUserToProject(email: String, projectId: UUID) = db.query {
         val userId = createExampleUser(email)
         assignUserToProject(userId, projectId)
+    }
+
+    @Suppress("LongParameterList")
+    suspend fun insertPaperAndGetId(
+        title: String = "Title",
+        externalId: String = "ExternalId",
+        abstract: String = "Abstract",
+        publishedAt: Instant = Instant.fromEpochSeconds(0),
+        publisher: String = "Publisher",
+        publicationType: String = "PublicationType",
+        publicationName: String = "PublicationName",
+        fetcherMetadata: Map<String, String> = emptyMap(),
+    ): UUID = db.query {
+        PaperTable.insertAndGetId {
+            it[PaperTable.title] = title
+            it[PaperTable.externalId] = externalId
+            it[PaperTable.abstract] = abstract
+            it[PaperTable.publishedAt] = publishedAt
+            it[PaperTable.publisher] = publisher
+            it[PaperTable.publicationType] = publicationType
+            it[PaperTable.publicationName] = publicationName
+            it[PaperTable.fetcherMetadata] = fetcherMetadata
+        }.value
     }
 }

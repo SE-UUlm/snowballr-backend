@@ -28,17 +28,22 @@ data class Paper(
 /**
  * Creates a [PaperOuterClass.Paper] from this [Paper].
  */
-fun Paper.toGrpcPaper(authors: List<PaperOuterClass.Author>, backwardReferencedIds: List<Int>): PaperOuterClass.Paper =
-    PaperOuterClass.Paper
-        .newBuilder()
-        .setId(this.id.toString())
-        .setTitle(this.title)
-        .setExternalId(this.externalId)
-        .setAbstrakt(this.abstract)
-        .setPublisher(this.publisher)
-        .setPublicationType(this.publicationType)
-        .setPublicationName(this.publicationName)
-        .setHasPdf(this.pdfId != null)
-        .addAllAuthors(authors)
-        .addAllBackwardReferencedIds(backwardReferencedIds.map { it.toString() })
-        .build()
+fun Paper.toGrpcPaper(
+    authors: List<PaperOuterClass.Author>,
+    backwardReferencedIds: List<String>,
+): PaperOuterClass.Paper {
+    val paper = this
+    return with(PaperOuterClass.Paper.newBuilder()) {
+        setId(paper.id.toString())
+        setTitle(paper.title)
+        paper.externalId?.let { setExternalId(it) }
+        setAbstrakt(paper.abstract)
+        paper.publisher?.let { setPublisher(it) }
+        paper.publicationType?.let { setPublicationType(it) }
+        paper.publicationName?.let { setPublicationName(it) }
+        setHasPdf(paper.pdfId != null)
+        addAllAuthors(authors)
+        addAllBackwardReferencedIds(backwardReferencedIds)
+        build()
+    }
+}
