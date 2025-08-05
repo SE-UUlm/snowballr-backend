@@ -105,14 +105,6 @@ interface IUserTableRepo {
      * @return The password hash as a [String] for the user with the specified email.
      */
     suspend fun getPasswordHashByEmail(email: String): String
-
-    /**
-     * Retrieves a list of users by their IDs.
-     *
-     * @param ids A list of UUIDs representing the IDs of the users to be fetched.
-     * @return A list of [User] objects corresponding to the provided IDs.
-     */
-    suspend fun getUsersByIds(ids: List<UUID>): List<User>
 }
 
 /**
@@ -270,9 +262,5 @@ class UserTableRepo(
             .map { it[UserTable.passwordHash] }
             .singleOrNull()
             ?: throw NotFoundException(EntityType.USER, email, identifierType = IdentifierType.EMAIL)
-    }
-
-    override suspend fun getUsersByIds(ids: List<UUID>): List<User> = db.query {
-        UserTable.getEntitiesByIds(ids, ResultRow::toUser)
     }
 }

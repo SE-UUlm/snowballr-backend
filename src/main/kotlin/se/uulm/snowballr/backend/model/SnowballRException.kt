@@ -3,7 +3,6 @@ package se.uulm.snowballr.backend.model
 import org.simplejavamail.MailException
 import se.uulm.snowballr.backend.service.EmailService
 import java.io.IOException
-import java.util.UUID
 
 /**
  * Base class for all exceptions in the SnowballR application.

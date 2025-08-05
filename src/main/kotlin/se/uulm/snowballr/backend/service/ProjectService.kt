@@ -167,6 +167,7 @@ class ProjectService(
     override suspend fun getProjectMembers(request: Base.Id): GrpcProject.Member.List {
         val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
         val projectId = parseUUID(request.id, EntityType.PROJECT)
+        repo.getProjectById(projectId)
         val projectMembersWithUsers = projectMemberRepo.getProjectMembersWithUsers(projectId)
 
         if (!projectMembersWithUsers.any { it.user.id == currentUser.id }) {

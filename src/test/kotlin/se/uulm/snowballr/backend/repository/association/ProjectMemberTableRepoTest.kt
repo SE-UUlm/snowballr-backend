@@ -5,11 +5,11 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.ProjectMember
 import se.uulm.snowballr.backend.repository.ProjectTableRepo
+import se.uulm.snowballr.backend.repository.RepositoryHelper
 import se.uulm.snowballr.backend.repository.RepositoryHelper.createAndAssignUserToProject
 import se.uulm.snowballr.backend.repository.RepositoryTest
 import se.uulm.snowballr.backend.repository.UserTableRepo
@@ -280,11 +280,12 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
             }
 
         @Test
-        fun `When a not all users are project members, then only the correct project members with users are returned`() =
+        fun `When not all users are project members, then only the correct project members with users are returned`() =
             runTest {
                 val (project, _) = setupProject()
                 val user = userRepo.getUserById(testUserId)
-                val nonProjectMemberUser = DataBuilder.createExampleUser()
+                val nonProjectMemberUserId = RepositoryHelper.createExampleUser("test-user@example.com")
+                val nonProjectMemberUser = userRepo.getUserById(nonProjectMemberUserId)
                 val normalMember = repo.getProjectMemberByComposedId(project.id, testUserId)
                 val projectMembersWithUsers = repo.getProjectMembersWithUsers(project.id)
 

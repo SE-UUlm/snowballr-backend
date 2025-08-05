@@ -8,6 +8,8 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.auth.GrpcContext
+import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.SnowballRException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.ProjectMemberWithUser
 import se.uulm.snowballr.backend.service.MainServiceTest
@@ -39,6 +41,7 @@ class GetProjectMembersTest : MainServiceTest() {
 
         every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns adminUser
+        coEvery { projectRepoMock.getProjectById(requestId) } returns project
         coEvery { projectMemberRepoMock.getProjectMembersWithUsers(project.id) } returns
             listOf(projectMemberWithUser)
 
@@ -56,6 +59,7 @@ class GetProjectMembersTest : MainServiceTest() {
 
         every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
+        coEvery { projectRepoMock.getProjectById(requestId) } returns project
         coEvery { projectMemberRepoMock.getProjectMembersWithUsers(project.id) } returns
             listOf(projectMemberWithUser)
 
@@ -71,8 +75,25 @@ class GetProjectMembersTest : MainServiceTest() {
 
         every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
+        coEvery { projectRepoMock.getProjectById(requestId) } returns project
         coEvery { projectMemberRepoMock.getProjectMembersWithUsers(project.id) } returns emptyList()
 
         assertThrows<UnauthorizedException> { mainService.getProjectMembers(request) }
     }
+
+    @Test
+    fun `When project members are request from a non existing project, then a not found exception is thrown`() =
+        runTest {
+            val request = getExampleRequest()
+
+            val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
+
+            every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
+            coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
+            coEvery {
+                projectRepoMock.getProjectById(requestId)
+            } throws SnowballRException.NotFoundException(EntityType.PROJECT, request.id)
+
+            assertThrows<SnowballRException.NotFoundException> { mainService.getProjectMembers(request) }
+        }
 }

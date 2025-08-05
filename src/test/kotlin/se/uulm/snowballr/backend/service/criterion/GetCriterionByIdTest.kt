@@ -147,7 +147,6 @@ class GetCriterionByIdTest : MainServiceTest() {
         val request = getExampleRequest()
 
         val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-        val project = DataBuilder.createExampleProject()
 
         every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns adminUser
