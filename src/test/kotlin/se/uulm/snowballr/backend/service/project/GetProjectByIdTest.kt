@@ -32,7 +32,7 @@ class GetProjectByIdTest : MainServiceTest() {
 
         every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns noAccessUser
-        coEvery { projectMemberRepoMock.getMembersOfProject(any()) } returns emptyList()
+        coEvery { projectMemberRepoMock.getProjectMembers(any()) } returns emptyList()
 
         assertThrows<UnauthorizedException.Single> { mainService.getProjectById(request) }
     }
@@ -46,7 +46,7 @@ class GetProjectByIdTest : MainServiceTest() {
 
         every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns adminUser
-        coEvery { projectMemberRepoMock.getMembersOfProject(any()) } returns emptyList()
+        coEvery { projectMemberRepoMock.getProjectMembers(any()) } returns emptyList()
         coEvery { projectRepoMock.getProjectById(requestId) } returns project
 
         assertDoesNotThrow { mainService.getProjectById(request) }
@@ -62,7 +62,7 @@ class GetProjectByIdTest : MainServiceTest() {
 
         every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
-        coEvery { projectMemberRepoMock.getMembersOfProject(requestId) } returns listOf(projectMember)
+        coEvery { projectMemberRepoMock.getProjectMembers(requestId) } returns listOf(projectMember)
         coEvery { projectRepoMock.getProjectById(requestId) } returns project
 
         assertDoesNotThrow { mainService.getProjectById(request) }
@@ -76,7 +76,7 @@ class GetProjectByIdTest : MainServiceTest() {
 
         every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns adminUser
-        coEvery { projectMemberRepoMock.getMembersOfProject(any()) } returns emptyList()
+        coEvery { projectMemberRepoMock.getProjectMembers(any()) } returns emptyList()
         coEvery { projectRepoMock.getProjectById(any()) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getProjectById(request) }

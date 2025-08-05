@@ -39,7 +39,7 @@ class GetCriterionByIdTest : MainServiceTest() {
         every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns adminUser
         coEvery { projectRepoMock.getProjectById(any()) } returns project
-        coEvery { projectMemberRepoMock.getMembersOfProject(any()) } returns emptyList()
+        coEvery { projectMemberRepoMock.getProjectMembers(any()) } returns emptyList()
         coEvery { criterionRepoMock.getCriterionById(requestId) } returns criterion
 
         assertDoesNotThrow { mainService.getCriterionById(request) }
@@ -61,7 +61,7 @@ class GetCriterionByIdTest : MainServiceTest() {
 
             every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
             coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
-            coEvery { projectMemberRepoMock.getMembersOfProject(project.id) } returns listOf(projectMember)
+            coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
             coEvery { projectRepoMock.getProjectById(project.id) } returns project
             coEvery { criterionRepoMock.getCriterionById(requestId) } returns criterion
 
@@ -84,7 +84,7 @@ class GetCriterionByIdTest : MainServiceTest() {
             every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
             coEvery { userRepoMock.getUserById(dummyUserUUID) } returns noAccessUser
             coEvery { projectRepoMock.getProjectById(any()) } returns project
-            coEvery { projectMemberRepoMock.getMembersOfProject(any()) } returns emptyList()
+            coEvery { projectMemberRepoMock.getProjectMembers(any()) } returns emptyList()
             coEvery { criterionRepoMock.getCriterionById(requestId) } returns criterion
 
             assertThrows<UnauthorizedException.Single> { mainService.getCriterionById(request) }

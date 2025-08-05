@@ -129,6 +129,26 @@ inline fun <Key : Any, T : IdTable<Key>, EntT : Any> T.updateByIdAndGet(
     crossinline body: T.(UpdateStatement) -> Unit,
 ): EntT = this.updateAndGet(mapper, entityType, id.toString(), { this@updateByIdAndGet.id eq id }, body)
 
+/**
+ * Retrieves a list of entities from the table by their primary key IDs.
+ *
+ * @param Key The type of the [IdTable], i.e., the ID type, such as [UUID].
+ * @param T The table type as a subtype of [IdTable].
+ * @param EntT The result entity type.
+ * @param ids A list of primary key IDs for the entities to be fetched.
+ * @param mapper A function to map each [ResultRow] to an entity of type [EntT].
+ * @return A list of entities of type [EntT] corresponding to the provided IDs.
+ */
+inline fun <Key : Any, T : IdTable<Key>, EntT : Any> T.getEntitiesByIds(
+    ids: List<Key>,
+    mapper: (ResultRow) -> EntT,
+): List<EntT> {
+    return this
+        .selectAll()
+        .where { this@getEntitiesByIds.id inList ids }
+        .map(mapper)
+}
+
 // === specific repo helpers === //
 
 /**

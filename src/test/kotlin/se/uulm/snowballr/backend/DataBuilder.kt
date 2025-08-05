@@ -108,12 +108,10 @@ object DataBuilder {
     fun createExampleProjectMember(
         projectId: UUID = UUID.randomUUID(),
         userId: UUID = UUID.randomUUID(),
-        id: String = "$projectId-$userId",
         role: MemberRole = MemberRole.MEMBER_ROLE_UNSPECIFIED,
         createdAt: OffsetDateTime = OffsetDateTime.now(),
         modifiedAt: OffsetDateTime? = null,
     ) = ProjectMember(
-        id = id,
         projectId = projectId,
         userId = userId,
         role = role,
