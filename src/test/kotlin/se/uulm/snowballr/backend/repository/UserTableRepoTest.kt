@@ -53,6 +53,8 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
             Arguments.of(listOf("user.email")),
             Arguments.of(listOf("user.first_name", "user.last_name")),
             Arguments.of(listOf("user.role")),
+            Arguments.of(listOf("user.status")),
+            Arguments.of(listOf("user.status", "user.role")),
         )
     }
 
@@ -220,6 +222,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
                 .setFirstName("John")
                 .setLastName("Doe")
                 .setRole(UserRole.USER_ROLE_ADMIN)
+                .setStatus(UserStatus.USER_STATUS_DELETED)
                 .build()
 
             val request = User.Update.newBuilder()
@@ -248,6 +251,11 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
                 assertThat(updatedUser.role).isEqualTo(UserRole.USER_ROLE_ADMIN)
             } else {
                 assertThat(updatedUser.role).isEqualTo(UserRole.USER_ROLE_DEFAULT)
+            }
+            if ("user.status" in fieldMask) {
+                assertThat(updatedUser.status).isEqualTo(UserStatus.USER_STATUS_DELETED)
+            } else {
+                assertThat(updatedUser.status).isEqualTo(UserStatus.USER_STATUS_ACTIVE)
             }
         }
 
