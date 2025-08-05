@@ -189,7 +189,7 @@ class UserService(
         val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
         val excludedUsersFromSearch = mutableSetOf(currentUser.id)
         try {
-            val projectMembers = projectMemberRepo.getMembersOfProject(parseUUID(request.projectId, EntityType.PROJECT))
+            val projectMembers = projectMemberRepo.getProjectMembers(parseUUID(request.projectId, EntityType.PROJECT))
             excludedUsersFromSearch += projectMembers.map { it.userId }
         } catch (_: SnowballRException.InvalidIdException.UUID) {
             Logger.warn { "Invalid project ID in invite candidates request: ${request.projectId}" }
