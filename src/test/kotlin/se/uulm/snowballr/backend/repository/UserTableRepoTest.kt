@@ -17,6 +17,7 @@ import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.toGrpcUser
 import se.uulm.snowballr.backend.table.UserTable
 import snowballr.Authentication
+import snowballr.ProjectOuterClass
 import snowballr.UserOuterClass.User
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
@@ -306,6 +307,31 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
         @Test
         fun `When a user is not found, then an exception is thrown`() = runTest {
             assertThrows<NotFoundException> { repo.getPasswordHashByEmail("non-existing email") }
+        }
+    }
+
+    @Nested
+    inner class GetUserSettings {
+        @Test
+        fun `When a user is found, then the user settings are returned`() = runTest {
+            val userId = insertTestUserAndGetId()
+            val userSettings = repo.getUserSettings(userId)
+
+            assertThat(userSettings.areHotkeysShown).isTrue()
+            assertThat(userSettings.isReviewModeEnabled).isFalse()
+            assertThat(userSettings.criteriaIds).isEmpty()
+            assertThat(userSettings.similarityThreshold).isEqualTo(0F)
+            assertThat(
+                userSettings.decisionMatrix,
+            ).isEqualTo(ProjectOuterClass.ReviewDecisionMatrix.getDefaultInstance())
+            assertThat(userSettings.fetcherApis).isEmpty()
+            assertThat(userSettings.snowballingType).isEqualTo(ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_BOTH)
+            assertThat(userSettings.reviewMaybeAllowed).isTrue()
+        }
+
+        @Test
+        fun `When a user is not found, then an exception is thrown`() = runTest {
+            assertThrows<NotFoundException> { repo.getUserSettings(UUID.randomUUID()) }
         }
     }
 

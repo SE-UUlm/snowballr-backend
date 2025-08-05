@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.auth
 
+import snowballr.ProjectOuterClass
 import snowballr.UserOuterClass
 import java.util.UUID
 
@@ -20,4 +21,14 @@ object DummyUser {
     var passwordHash: String = PasswordUtils.hashPassword(password)
     var role: UserOuterClass.UserRole = UserOuterClass.UserRole.USER_ROLE_ADMIN
     var status: UserOuterClass.UserStatus = UserOuterClass.UserStatus.USER_STATUS_ACTIVE
+
+    // user settings
+    var areHotkeysShown: Boolean = true
+    var isReviewModeEnabled: Boolean = false
+    var criteriaIds: List<UUID> = emptyList()
+    var similarityThreshold: Float = 0F
+    var decisionMatrix: ByteArray = ProjectOuterClass.ReviewDecisionMatrix.getDefaultInstance().toByteArray()
+    var fetcherApis: List<String> = emptyList()
+    var snowballingType: ProjectOuterClass.SnowballingType = ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_BOTH
+    var reviewMaybeAllowed: Boolean = true
 }

@@ -40,6 +40,14 @@ class CriterionValidatorTest {
         }
 
         @Test
+        fun `When a request with an empty project ID is validated, then the no issue is returned`() {
+            val request = validCreateRequestBuilder.setProjectId("").build()
+            val result = validateRequest(request)
+
+            EitherAssert.assertThat(result).isRight()
+        }
+
+        @Test
         fun `When a request with an invalid project ID is validated, then the 'InvalidId' issue is returned`() {
             val request = validCreateRequestBuilder.setProjectId("invalid-id").build()
             val result = validateRequest(request)

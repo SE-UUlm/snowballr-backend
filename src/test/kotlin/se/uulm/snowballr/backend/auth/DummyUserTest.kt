@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.auth
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import snowballr.ProjectOuterClass
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
 import java.util.UUID
@@ -15,6 +16,19 @@ class DummyUserTest {
         assertEquals("Alice", DummyUser.firstName)
         assertEquals("Smith", DummyUser.lastName)
         assertEquals("VALIDPassword__1234", DummyUser.password)
+        // User Settings
+        assertEquals(true, DummyUser.areHotkeysShown)
+        assertEquals(false, DummyUser.isReviewModeEnabled)
+        assertEquals(emptyList<UUID>(), DummyUser.criteriaIds)
+        assertEquals(0F, DummyUser.similarityThreshold)
+        assertTrue(
+            ProjectOuterClass.ReviewDecisionMatrix.getDefaultInstance().toByteArray().contentEquals(
+                DummyUser.decisionMatrix,
+            ),
+        )
+        assertEquals(emptyList<String>(), DummyUser.fetcherApis)
+        assertEquals(ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_BOTH, DummyUser.snowballingType)
+        assertEquals(true, DummyUser.reviewMaybeAllowed)
 
         assertTrue(
             PasswordUtils.verifyPassword(DummyUser.password, DummyUser.passwordHash),

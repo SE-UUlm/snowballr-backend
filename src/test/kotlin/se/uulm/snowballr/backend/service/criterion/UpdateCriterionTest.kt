@@ -58,7 +58,7 @@ class UpdateCriterionTest : MainServiceTest() {
         every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
         coEvery { criterionRepoMock.getCriterionById(requestId) } returns criterion
-        coEvery { projectRepoMock.getProjectById(project.id) } returns project
+        coEvery { projectRepoMock.getProjectById(any()) } returns project
         coEvery { projectMemberRepoMock.getAllProjectAdmins(any()) } returns emptyList()
         coEvery { criterionRepoMock.updateCriterion(request) } returns criterion
 
@@ -83,7 +83,7 @@ class UpdateCriterionTest : MainServiceTest() {
         every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
         coEvery { criterionRepoMock.getCriterionById(requestId) } returns criterion
-        coEvery { projectRepoMock.getProjectById(project.id) } returns project
+        coEvery { projectRepoMock.getProjectById(any()) } returns project
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
         coEvery { criterionRepoMock.updateCriterion(request) } returns criterion
 
@@ -109,7 +109,7 @@ class UpdateCriterionTest : MainServiceTest() {
             every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
             coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
             coEvery { criterionRepoMock.getCriterionById(requestId) } returns criterion
-            coEvery { projectRepoMock.getProjectById(project.id) } returns project
+            coEvery { projectRepoMock.getProjectById(any()) } returns project
             coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
 
             assertThrows<SnowballRException.FailedPreconditionException> { mainService.updateCriterion(request) }
@@ -132,7 +132,7 @@ class UpdateCriterionTest : MainServiceTest() {
         every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
         coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
         coEvery { criterionRepoMock.getCriterionById(requestId) } returns criterion
-        coEvery { projectRepoMock.getProjectById(project.id) } returns project
+        coEvery { projectRepoMock.getProjectById(any()) } returns project
         coEvery { projectMemberRepoMock.getAllProjectAdmins(any()) } returns emptyList()
 
         assertThrows<SnowballRException.UnauthorizedException> { mainService.updateCriterion(request) }

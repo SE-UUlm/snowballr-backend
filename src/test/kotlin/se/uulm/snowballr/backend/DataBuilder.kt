@@ -6,6 +6,7 @@ import se.uulm.snowballr.backend.model.dto.Paper
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.ProjectMember
 import se.uulm.snowballr.backend.model.dto.User
+import se.uulm.snowballr.backend.model.dto.UserSettings
 import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass.MemberRole
 import snowballr.ProjectOuterClass.ProjectStatus
@@ -117,6 +118,26 @@ object DataBuilder {
         role = role,
         createdAt = createdAt,
         modifiedAt = modifiedAt,
+    )
+
+    fun createExampleUserSettings(
+        showHotkeys: Boolean = true,
+        reviewMode: Boolean = false,
+        criteriaIds: List<UUID> = emptyList(),
+        similarityThreshold: Float = 0.5f,
+        decisionMatrix: ReviewDecisionMatrix = ReviewDecisionMatrix.getDefaultInstance(),
+        fetcherApis: List<String> = emptyList(),
+        snowballingType: SnowballingType = SnowballingType.SNOWBALLING_TYPE_BOTH,
+        reviewMaybeAllowed: Boolean = false,
+    ) = UserSettings(
+        areHotkeysShown = showHotkeys,
+        isReviewModeEnabled = reviewMode,
+        criteriaIds = criteriaIds,
+        similarityThreshold = similarityThreshold,
+        decisionMatrix = decisionMatrix,
+        fetcherApis = fetcherApis,
+        snowballingType = snowballingType,
+        reviewMaybeAllowed = reviewMaybeAllowed,
     )
 
     fun createExamplePaper(

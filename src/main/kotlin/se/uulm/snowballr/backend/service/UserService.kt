@@ -16,21 +16,26 @@ import se.uulm.snowballr.backend.model.SnowballRException.UnauthenticatedExcepti
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.toGrpcUser
+import se.uulm.snowballr.backend.model.dto.toGrpcUserSettings
 import se.uulm.snowballr.backend.model.dto.toGrpcUsers
 import se.uulm.snowballr.backend.model.parseUUID
+import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import snowballr.Authentication
 import snowballr.Base
+import snowballr.CriterionOuterClass
 import snowballr.ProjectOuterClass
 import snowballr.UserOuterClass
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
+import snowballr.UserSettingsOuterClass
 import java.util.UUID
 import snowballr.UserOuterClass.User as GrpcUser
 
 val Logger = KotlinLogging.logger { }
 
+@Suppress("ComplexInterface")
 interface IUserService {
     /**
      * Service implementation of [SnowballRService.getUserById].
@@ -76,6 +81,11 @@ interface IUserService {
      * Service implementation of [SnowballRService.softDeleteUser].
      */
     suspend fun softDeleteUser(request: Base.Id): Base.Nothing
+
+    /**
+     * Service implementation of [SnowballRService.getUserSettings].
+     */
+    suspend fun getUserSettings(): UserSettingsOuterClass.UserSettings
 }
 
 /**
@@ -87,11 +97,14 @@ interface IUserService {
  * @constructor Initializes the [UserService] with a user repository.
  * @param userRepo The repository responsible for managing persistence operations for users.
  * @param projectMemberRepo The repository responsible for managing persistence operations for project members.
+ * @param criterionRepo The repository responsible for managing persistence operations for criteria.
  * @param jwtService The utility for handling JWT operations, such as token parsing and validation.
  */
+@Suppress("TooManyFunctions")
 class UserService(
     private val userRepo: IUserTableRepo,
     private val projectMemberRepo: IProjectMemberTableRepo,
+    private val criterionRepo: ICriterionTableRepo,
     private val jwtService: IJwtService,
 ) : IUserService {
     companion object {
@@ -296,5 +309,25 @@ class UserService(
 
         userRepo.softDeleteUser(targetUser.id)
         return Base.Nothing.getDefaultInstance()
+    }
+
+    override suspend fun getUserSettings(): UserSettingsOuterClass.UserSettings {
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
+        val userSettings = userRepo.getUserSettings(currentUser.id)
+        val defaultUserCriteria = criterionRepo.getCriteriaByIds(userSettings.criteriaIds)
+
+        val criteria = mutableListOf<CriterionOuterClass.Criterion>()
+        for (criterion in defaultUserCriteria) {
+            criteria.add(
+                CriterionOuterClass.Criterion
+                    .newBuilder()
+                    .setTag(criterion.tag)
+                    .setName(criterion.name)
+                    .setDescription(criterion.description)
+                    .setCategory(criterion.category)
+                    .build(),
+            )
+        }
+        return userSettings.toGrpcUserSettings(criteria)
     }
 }

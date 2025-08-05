@@ -67,8 +67,8 @@ class CriterionService(
      * that belongs to an active project and throws exceptions when access is unauthorized
      * or when attempting to access a criterion of an inactive project.
      *
-     * @param criterion The criterion for which permissions need to be checked. It may or may not
-     *                  be associated with a project.
+     * @param criterion The [CriterionOuterClass.Criterion] to check the permission for or null, if it does not already exists
+     * @param projectId The projectId of the [ProjectOuterClass.Project] to check the permission for.
      * @param currentUser The user whose permissions are being validated.
      * @param accessType The type of access being requested (e.g., READ, UPDATE).
      *
@@ -78,38 +78,38 @@ class CriterionService(
      *         in a project that is not active.
      */
     private suspend fun checkProjectCriterionPermission(
-        criterion: Criterion,
+        criterion: Criterion?,
+        projectId: UUID,
         currentUser: User,
         accessType: AccessType,
     ) {
-        val criterionId = criterion.id.toString()
-        val project = projectRepo.getProjectById(
-            // TODO: This will be refactored in #163
-            criterion.projectId ?: UUID.fromString("00000000-0000-0000-0000-000000000000"),
-        )
+        val project = projectRepo.getProjectById(projectId)
         val members = when (accessType) {
             AccessType.READ -> projectMemberRepo.getProjectMembers(project.id)
-            AccessType.UPDATE -> projectMemberRepo.getAllProjectAdmins(project.id)
-            AccessType.CREATE, AccessType.DELETE -> emptyList()
+            AccessType.CREATE, AccessType.UPDATE -> projectMemberRepo.getAllProjectAdmins(project.id)
+            AccessType.DELETE -> emptyList()
         }
 
         if (!members.any { it.userId == currentUser.id }) {
             verifyServerAdminRole(currentUser) {
                 throw UnauthorizedException.Single(
-                    EntityType.CRITERION,
-                    criterionId,
+                    EntityType.PROJECT,
+                    projectId.toString(),
                     AccessType.READ,
-                    currentUser.id.toString(),
+                    it,
                 )
             }
         }
-        if (accessType == AccessType.UPDATE &&
+        if ((accessType == AccessType.UPDATE || accessType == AccessType.CREATE) &&
             project.status != ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE
         ) {
             verifyServerAdminRole(currentUser) {
-                throw SnowballRException.FailedPreconditionException(
-                    "The project is not active. Cannot update criterion with the ID: $criterionId",
-                )
+                val message = if (accessType == AccessType.CREATE) {
+                    "Cannot create a criterion for the project with the id: $projectId."
+                } else {
+                    "Cannot update criterion with the ID: ${criterion?.id ?: "<unknown>"}"
+                }
+                throw SnowballRException.FailedPreconditionException("The project is not active. $message")
             }
         }
     }
@@ -135,7 +135,7 @@ class CriterionService(
                 EntityType.CRITERION,
                 criterion.id.toString(),
                 accessType,
-                currentUser.id.toString(),
+                it,
             )
         }
     }
@@ -152,7 +152,7 @@ class CriterionService(
      */
     private suspend fun checkCriterionPermission(criterion: Criterion, currentUser: User, accessType: AccessType) {
         if (criterion.projectId != null) {
-            checkProjectCriterionPermission(criterion, currentUser, accessType)
+            checkProjectCriterionPermission(criterion, criterion.projectId, currentUser, accessType)
         } else {
             checkUserCriterionPermission(criterion, currentUser, accessType)
         }
@@ -167,8 +167,18 @@ class CriterionService(
         return criterion.toGrpcCriterion()
     }
 
-    override suspend fun createCriterion(request: CriterionOuterClass.Criterion.Create): CriterionOuterClass.Criterion =
-        repo.createCriterion(request, GrpcContext.getUserIdFromContext()).toGrpcCriterion()
+    override suspend fun createCriterion(request: CriterionOuterClass.Criterion.Create): CriterionOuterClass.Criterion {
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
+        if (request.projectId.isNotEmpty()) {
+            checkProjectCriterionPermission(
+                null,
+                parseUUID(request.projectId, EntityType.PROJECT),
+                currentUser,
+                AccessType.CREATE,
+            )
+        }
+        return repo.createCriterion(request, currentUser.id).toGrpcCriterion()
+    }
 
     override suspend fun updateCriterion(request: CriterionOuterClass.Criterion.Update): CriterionOuterClass.Criterion {
         val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
