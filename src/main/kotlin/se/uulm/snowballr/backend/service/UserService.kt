@@ -26,7 +26,6 @@ import snowballr.Authentication
 import snowballr.Base
 import snowballr.CriterionOuterClass
 import snowballr.ProjectOuterClass
-import snowballr.UserOuterClass
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
 import snowballr.UserSettingsOuterClass
@@ -35,22 +34,22 @@ import snowballr.UserOuterClass.User as GrpcUser
 
 val Logger = KotlinLogging.logger { }
 
-@Suppress("ComplexInterface")
+@Suppress("ComplexInterface", "TooManyFunctions")
 interface IUserService {
     /**
      * Service implementation of [SnowballRService.getUserById].
      */
-    suspend fun getUserById(request: Base.Id): UserOuterClass.User
+    suspend fun getUserById(request: Base.Id): GrpcUser
 
     /**
      * Service implementation of [SnowballRService.getUserByEmail].
      */
-    suspend fun getUserByEmail(request: Base.Email): UserOuterClass.User
+    suspend fun getUserByEmail(request: Base.Email): GrpcUser
 
     /**
      * Service implementation of [SnowballRService.getAllUsers].
      */
-    suspend fun getAllUsers(): UserOuterClass.User.List
+    suspend fun getAllUsers(): GrpcUser.List
 
     /**
      * Service implementation of [SnowballRService.getInviteCandidates]
@@ -86,6 +85,11 @@ interface IUserService {
      * Service implementation of [SnowballRService.getUserSettings].
      */
     suspend fun getUserSettings(): UserSettingsOuterClass.UserSettings
+
+    /**
+     * Service implementation of [SnowballRService.getCurrentUser].
+     */
+    suspend fun getCurrentUser(): GrpcUser
 }
 
 /**
@@ -310,6 +314,9 @@ class UserService(
         userRepo.softDeleteUser(targetUser.id)
         return Base.Nothing.getDefaultInstance()
     }
+
+    override suspend fun getCurrentUser(): GrpcUser =
+        userRepo.getUserById(GrpcContext.getUserIdFromContext()).toGrpcUser()
 
     override suspend fun getUserSettings(): UserSettingsOuterClass.UserSettings {
         val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())

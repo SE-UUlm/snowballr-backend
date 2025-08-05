@@ -15,20 +15,20 @@ import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import snowballr.Base
-import snowballr.CriterionOuterClass
 import snowballr.ProjectOuterClass
 import java.util.UUID
+import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
 
 interface ICriterionService {
     /**
      * Service implementation of [SnowballRService.getCriterionById].
      */
-    suspend fun getCriterionById(request: Base.Id): CriterionOuterClass.Criterion
+    suspend fun getCriterionById(request: Base.Id): GrpcCriterion
 
     /**
      * Service implementation of [SnowballRService.createCriterion].
      */
-    suspend fun createCriterion(request: CriterionOuterClass.Criterion.Create): CriterionOuterClass.Criterion
+    suspend fun createCriterion(request: GrpcCriterion.Create): GrpcCriterion
 
     /**
      * Service implementation of [SnowballRService.updateCriterion].
@@ -36,7 +36,7 @@ interface ICriterionService {
      * @param request The update request containing the criterion details to be modified.
      * @return The updated criterion after the changes have been applied.
      */
-    suspend fun updateCriterion(request: CriterionOuterClass.Criterion.Update): CriterionOuterClass.Criterion
+    suspend fun updateCriterion(request: GrpcCriterion.Update): GrpcCriterion
 }
 
 /**
@@ -67,7 +67,7 @@ class CriterionService(
      * that belongs to an active project and throws exceptions when access is unauthorized
      * or when attempting to access a criterion of an inactive project.
      *
-     * @param criterion The [CriterionOuterClass.Criterion] to check the permission for or null, if it does not already exists
+     * @param criterion The [GrpcCriterion] to check the permission for or null, if it does not already exists
      * @param projectId The projectId of the [ProjectOuterClass.Project] to check the permission for.
      * @param currentUser The user whose permissions are being validated.
      * @param accessType The type of access being requested (e.g., READ, UPDATE).
@@ -158,7 +158,7 @@ class CriterionService(
         }
     }
 
-    override suspend fun getCriterionById(request: Base.Id): CriterionOuterClass.Criterion {
+    override suspend fun getCriterionById(request: Base.Id): GrpcCriterion {
         val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
         val criterionId = parseUUID(request.id, EntityType.CRITERION)
         val criterion = repo.getCriterionById(criterionId)
@@ -167,7 +167,7 @@ class CriterionService(
         return criterion.toGrpcCriterion()
     }
 
-    override suspend fun createCriterion(request: CriterionOuterClass.Criterion.Create): CriterionOuterClass.Criterion {
+    override suspend fun createCriterion(request: GrpcCriterion.Create): GrpcCriterion {
         val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
         if (request.projectId.isNotEmpty()) {
             checkProjectCriterionPermission(
@@ -180,7 +180,7 @@ class CriterionService(
         return repo.createCriterion(request, currentUser.id).toGrpcCriterion()
     }
 
-    override suspend fun updateCriterion(request: CriterionOuterClass.Criterion.Update): CriterionOuterClass.Criterion {
+    override suspend fun updateCriterion(request: GrpcCriterion.Update): GrpcCriterion {
         val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
         val criterionId = parseUUID(request.criterion.id, EntityType.CRITERION)
         val criterion = repo.getCriterionById(criterionId)
