@@ -32,6 +32,7 @@ import java.util.UUID
  * abstraction over the underlying database implementation. By using this interface, the logic
  * for creating and managing users can remain decoupled from the specifics of the database layer.
  */
+@Suppress("ComplexInterface")
 interface IUserTableRepo {
     /**
      * Returns a user by its id or throws a [NotFoundException] if the user with the passed [id] doesn't exist.

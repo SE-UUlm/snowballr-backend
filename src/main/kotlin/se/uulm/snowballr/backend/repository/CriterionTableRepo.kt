@@ -124,10 +124,7 @@ class CriterionTableRepo(
     }
 
     override suspend fun getCriteriaByIds(ids: List<UUID>): List<Criterion> = db.query {
-        CriterionTable
-            .selectAll()
-            .where { CriterionTable.id inList ids }
-            .map { it.toCriterion() }
+        CriterionTable.getEntitiesByIds(ids, ResultRow::toCriterion)
     }
 
     override suspend fun getAllUserCriteria(userId: UUID): List<Criterion> = db.query {

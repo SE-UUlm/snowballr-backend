@@ -16,16 +16,16 @@ import se.uulm.snowballr.backend.model.SnowballRException.UnauthenticatedExcepti
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.toGrpcUser
-import se.uulm.snowballr.backend.model.dto.toGrpcUsers
 import se.uulm.snowballr.backend.model.dto.toGrpcUserSettings
+import se.uulm.snowballr.backend.model.dto.toGrpcUsers
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import snowballr.Authentication
 import snowballr.Base
-import snowballr.ProjectOuterClass
 import snowballr.CriterionOuterClass
+import snowballr.ProjectOuterClass
 import snowballr.UserOuterClass
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
@@ -35,6 +35,7 @@ import snowballr.UserOuterClass.User as GrpcUser
 
 val Logger = KotlinLogging.logger { }
 
+@Suppress("ComplexInterface")
 interface IUserService {
     /**
      * Service implementation of [SnowballRService.getUserById].
@@ -99,6 +100,7 @@ interface IUserService {
  * @param criterionRepo The repository responsible for managing persistence operations for criteria.
  * @param jwtService The utility for handling JWT operations, such as token parsing and validation.
  */
+@Suppress("TooManyFunctions")
 class UserService(
     private val userRepo: IUserTableRepo,
     private val projectMemberRepo: IProjectMemberTableRepo,

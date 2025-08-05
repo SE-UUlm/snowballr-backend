@@ -147,18 +147,12 @@ class CriterionService(
      *
      * @param criterion The criterion object whose permissions need to be validated.
      *                  It may either belong to a project or be user-specific.
-     * @param projectId The projectId of the [ProjectOuterClass.Project] to check the permission for.
      * @param currentUser The user whose permissions are being checked against the given criterion.
      * @param accessType The type of access being requested on the criterion (e.g., READ, UPDATE, DELETE).
      */
-    private suspend fun checkCriterionPermission(
-        criterion: Criterion,
-        projectId: UUID,
-        currentUser: User,
-        accessType: AccessType,
-    ) {
+    private suspend fun checkCriterionPermission(criterion: Criterion, currentUser: User, accessType: AccessType) {
         if (criterion.projectId != null) {
-            checkProjectCriterionPermission(criterion, projectId, currentUser, accessType)
+            checkProjectCriterionPermission(criterion, criterion.projectId, currentUser, accessType)
         } else {
             checkUserCriterionPermission(criterion, currentUser, accessType)
         }
@@ -169,7 +163,7 @@ class CriterionService(
         val criterionId = parseUUID(request.id, EntityType.CRITERION)
         val criterion = repo.getCriterionById(criterionId)
 
-        checkCriterionPermission(criterion, criterionId, currentUser, AccessType.READ)
+        checkCriterionPermission(criterion, currentUser, AccessType.READ)
         return criterion.toGrpcCriterion()
     }
 
@@ -191,7 +185,7 @@ class CriterionService(
         val criterionId = parseUUID(request.criterion.id, EntityType.CRITERION)
         val criterion = repo.getCriterionById(criterionId)
 
-        checkCriterionPermission(criterion, criterionId, currentUser, AccessType.UPDATE)
+        checkCriterionPermission(criterion, currentUser, AccessType.UPDATE)
         return repo.updateCriterion(request).toGrpcCriterion()
     }
 }

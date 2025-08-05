@@ -106,7 +106,7 @@ class ProjectService(
         val userSettings = userRepo.getUserSettings(currentUser.id)
         val userDefaultCriteria = criterionRepo.getCriteriaByIds(userSettings.criteriaIds)
 
-        val project = repo.createProject(request, GrpcContext.getUserIdFromContext(), userSettings).toGrpcProject()
+        val project = repo.createProject(request, GrpcContext.getUserIdFromContext(), userSettings)
 
         for (criterion in userDefaultCriteria) {
             val criterionRequest = CriterionOuterClass.Criterion.Create
@@ -115,12 +115,12 @@ class ProjectService(
                 .setName(criterion.name)
                 .setDescription(criterion.description)
                 .setCategory(criterion.category)
-                .setProjectId(project.id ?: "")
+                .setProjectId(project.id.toString())
                 .build()
 
             criterionRepo.createCriterion(criterionRequest, currentUser.id)
         }
-        return project
+        return project.toGrpcProject()
     }
 
     override suspend fun getAllProjects(): GrpcProject.List {

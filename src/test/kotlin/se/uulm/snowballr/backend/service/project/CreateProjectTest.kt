@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.service.project
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
+import io.mockk.slot
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -13,6 +14,8 @@ import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.ProjectOuterClass
 import snowballr.UserOuterClass.UserRole
+import java.util.UUID
+import kotlin.test.assertEquals
 
 class CreateProjectTest : MainServiceTest() {
     private fun getExampleRequest() = ProjectOuterClass.Project.Create.getDefaultInstance()
@@ -61,15 +64,16 @@ class CreateProjectTest : MainServiceTest() {
             val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
             val criterion = DataBuilder.createExampleCriterion()
             val userSettings = DataBuilder.createExampleUserSettings(criteriaIds = listOf(criterion.id))
-            val slots = mutableListOf(criterion.id)
+            val criteriaIdsSlot = slot<List<UUID>>()
 
             every { GrpcContext.getUserIdFromContext() } returns user.id
             coEvery { userRepoMock.getUserById(user.id) } returns user
             coEvery { userRepoMock.getUserSettings(user.id) } returns userSettings
-            coEvery { criterionRepoMock.getCriteriaByIds(slots) } returns listOf(criterion)
+            coEvery { criterionRepoMock.getCriteriaByIds(capture(criteriaIdsSlot)) } returns listOf(criterion)
             coEvery { projectRepoMock.createProject(any(), user.id, userSettings) } returns project
             coEvery { criterionRepoMock.createCriterion(any(), user.id) } returns criterion
 
             assertDoesNotThrow { mainService.createProject(getExampleRequest()) }
+            assertEquals(listOf(criterion.id), criteriaIdsSlot.captured)
         }
 }
