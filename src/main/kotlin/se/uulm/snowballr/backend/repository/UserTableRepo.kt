@@ -250,6 +250,7 @@ class UserTableRepo(
                     "user.first_name" -> it[firstName] = request.user.firstName
                     "user.last_name" -> it[lastName] = request.user.lastName
                     "user.role" -> it[role] = request.user.role
+                    "user.status" -> it[status] = request.user.status
                 }
             }
 
