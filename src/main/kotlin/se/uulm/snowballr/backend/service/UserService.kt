@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.service
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.auth.IJwtService
 import se.uulm.snowballr.backend.auth.PasswordUtils
@@ -7,6 +8,7 @@ import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.IdentifierType
+import se.uulm.snowballr.backend.model.SnowballRException
 import se.uulm.snowballr.backend.model.SnowballRException.DuplicateEntityException
 import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
@@ -14,15 +16,20 @@ import se.uulm.snowballr.backend.model.SnowballRException.UnauthenticatedExcepti
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.toGrpcUser
+import se.uulm.snowballr.backend.model.dto.toGrpcUsers
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import snowballr.Authentication
 import snowballr.Base
+import snowballr.ProjectOuterClass
 import snowballr.UserOuterClass
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
 import java.util.UUID
+import snowballr.UserOuterClass.User as GrpcUser
+
+val Logger = KotlinLogging.logger { }
 
 interface IUserService {
     /**
@@ -39,6 +46,11 @@ interface IUserService {
      * Service implementation of [SnowballRService.getAllUsers].
      */
     suspend fun getAllUsers(): UserOuterClass.User.List
+
+    /**
+     * Service implementation of [SnowballRService.getInviteCandidates]
+     */
+    suspend fun getInviteCandidates(request: ProjectOuterClass.Project.InviteCandidatesRequest): GrpcUser.List
 
     /**
      * Service implementation of [SnowballRService.register].
@@ -58,7 +70,7 @@ interface IUserService {
     /**
      * Service implementation of [SnowballRService.updateUser].
      */
-    suspend fun updateUser(request: UserOuterClass.User.Update): UserOuterClass.User
+    suspend fun updateUser(request: GrpcUser.Update): GrpcUser
 
     /**
      * Service implementation of [SnowballRService.softDeleteUser].
@@ -82,8 +94,12 @@ class UserService(
     private val projectMemberRepo: IProjectMemberTableRepo,
     private val jwtService: IJwtService,
 ) : IUserService {
+    companion object {
+        const val MINIMUM_LENGTH_OF_SEARCH_QUERY = 3
+    }
+
     private suspend fun verifyUserAccess(currentUser: User, targetUserId: UUID, identifierType: IdentifierType) {
-        // Check whether requesting user is server admin
+        // Check whether the requesting user is server admin
         if (currentUser.role == UserRole.USER_ROLE_ADMIN) return
 
         // Check whether requesting user is requested user
@@ -106,7 +122,7 @@ class UserService(
         )
     }
 
-    override suspend fun getUserById(request: Base.Id): UserOuterClass.User {
+    override suspend fun getUserById(request: Base.Id): GrpcUser {
         val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
         val targetUserId = parseUUID(request.id, EntityType.USER)
 
@@ -132,7 +148,7 @@ class UserService(
         return result.toGrpcUser()
     }
 
-    override suspend fun getUserByEmail(request: Base.Email): UserOuterClass.User {
+    override suspend fun getUserByEmail(request: Base.Email): GrpcUser {
         val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
 
         // We have to request the user first to get the ID for the access checks
@@ -150,16 +166,38 @@ class UserService(
         return targetUser.toGrpcUser()
     }
 
-    override suspend fun getAllUsers(): UserOuterClass.User.List {
+    override suspend fun getAllUsers(): GrpcUser.List {
         val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
 
         verifyServerAdminRole(currentUser) { UnauthorizedException.All(EntityType.USER, AccessType.READ, it) }
 
         val users = userRepo.getAllUsers()
 
-        val builder = UserOuterClass.User.List.newBuilder()
-        users.forEach { builder.addUsers(it.toGrpcUser()) }
-        return builder.build()
+        return users.toGrpcUsers()
+    }
+
+    override suspend fun getInviteCandidates(
+        request: ProjectOuterClass.Project.InviteCandidatesRequest,
+    ): GrpcUser.List {
+        val searchQuery = request.query.trim()
+
+        // Check whether the search query is too short, i.e., 3 or fewer characters long
+        if (searchQuery.length < MINIMUM_LENGTH_OF_SEARCH_QUERY) {
+            return GrpcUser.List.getDefaultInstance()
+        }
+
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
+        val excludedUsersFromSearch = mutableSetOf(currentUser.id)
+        try {
+            val projectMembers = projectMemberRepo.getMembersOfProject(parseUUID(request.projectId, EntityType.PROJECT))
+            excludedUsersFromSearch += projectMembers.map { it.userId }
+        } catch (_: SnowballRException.InvalidIdException.UUID) {
+            Logger.warn { "Invalid project ID in invite candidates request: ${request.projectId}" }
+        }
+
+        val candidates = userRepo.getUsersMatchingSearchQuery(searchQuery, excludedUsersFromSearch)
+
+        return candidates.toGrpcUsers()
     }
 
     override suspend fun register(request: Authentication.RegisterRequest): Base.Nothing {
@@ -212,7 +250,7 @@ class UserService(
         return Base.Nothing.getDefaultInstance()
     }
 
-    override suspend fun updateUser(request: UserOuterClass.User.Update): UserOuterClass.User {
+    override suspend fun updateUser(request: GrpcUser.Update): GrpcUser {
         val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
 
         // Check that user to update exists in the database
@@ -241,7 +279,7 @@ class UserService(
         val targetUser = userRepo.getUserById(parseUUID(request.id, EntityType.USER))
         val isSameUser = currentUser.id == targetUser.id
 
-        // Checks, if the user tries to delete another user without being an admin
+        // Checks if the user tries to delete another user without being an admin
         if (!isSameUser) {
             verifyServerAdminRole(currentUser) {
                 UnauthorizedException.Single(EntityType.USER, targetUser.id.toString(), AccessType.DELETE, it)

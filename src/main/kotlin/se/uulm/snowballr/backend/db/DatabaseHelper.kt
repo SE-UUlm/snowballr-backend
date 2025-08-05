@@ -47,6 +47,7 @@ object DatabaseHelper {
      */
     fun Transaction.addExtensions() {
         exec("CREATE EXTENSION IF NOT EXISTS hstore;")
+        exec("CREATE EXTENSION IF NOT EXISTS pg_trgm;")
     }
 
     /**

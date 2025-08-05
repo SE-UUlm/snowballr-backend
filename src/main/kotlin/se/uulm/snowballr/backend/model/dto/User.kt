@@ -32,3 +32,12 @@ fun User.toGrpcUser(): UserOuterClass.User = UserOuterClass.User
     .setRole(this.role)
     .setStatus(this.status)
     .build()
+
+/**
+ * Creates a list of [UserOuterClass.User]s from this list of [User]s.
+ */
+fun List<User>.toGrpcUsers(): UserOuterClass.User.List {
+    val builder = UserOuterClass.User.List.newBuilder()
+    this.forEach { builder.addUsers(it.toGrpcUser()) }
+    return builder.build()
+}

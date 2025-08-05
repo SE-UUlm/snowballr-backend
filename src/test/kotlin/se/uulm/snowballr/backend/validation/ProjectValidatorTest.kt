@@ -246,4 +246,15 @@ class ProjectValidatorTest {
             EitherAssert.assertThat(result).isRight()
         }
     }
+
+    @Nested
+    inner class InviteCandidatesRequest {
+        @Test
+        fun `When an invite candidate request is validated, it is always valid`() {
+            val request = Project.InviteCandidatesRequest.getDefaultInstance()
+            val result = validateRequest(request)
+
+            EitherAssert.assertThat(result).isRight()
+        }
+    }
 }

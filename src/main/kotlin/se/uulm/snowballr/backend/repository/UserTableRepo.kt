@@ -3,7 +3,9 @@ package se.uulm.snowballr.backend.repository
 import com.google.protobuf.util.FieldMaskUtil
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.neq
+import org.jetbrains.exposed.sql.TextColumnType
 import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.statements.StatementType
 import org.jetbrains.exposed.sql.update
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
@@ -17,6 +19,7 @@ import snowballr.Authentication
 import snowballr.UserOuterClass
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
+import java.sql.ResultSet
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -51,6 +54,21 @@ interface IUserTableRepo {
      * Returns all users stored on the server.
      */
     suspend fun getAllUsers(): List<User>
+
+    /**
+     * Retrieves a list of users whose name or email partially or fully match the [searchQuery].
+     *
+     * Only users who are active (not deleted or marked for deletion) and not present in the list of [excludedUsers]
+     * are included in the results. The number of returned users is limited to a maximum of 10.
+     * The search string is matched against the firstname, lastname, and email address of the user using
+     * the `similarity()` function from the `pg_trgm` extension. Furthermore, the matching users are sorted by
+     * their similarity to the search query.
+     *
+     * @param searchQuery The query against which the firstnames, lastnames, and emails of the users are checked.
+     * @param excludedUsers A list of user ids to be excluded from the results.
+     * @return A list of up to 10 matching users.
+     */
+    suspend fun getUsersMatchingSearchQuery(searchQuery: String, excludedUsers: Set<UUID>): List<User>
 
     /**
      * Creates a new user in the database with the provided registration request and password hash.
@@ -98,9 +116,33 @@ interface IUserTableRepo {
  *
  * @param db The database abstraction used for executing queries within a transaction.
  */
+@Suppress("TooManyFunctions")
 class UserTableRepo(
     private val db: IDatabase,
 ) : IUserTableRepo {
+    companion object {
+        const val MAXIMUM_NUMBER_OF_INVITE_CANDIDATES = 10
+    }
+
+    private fun extractUserRows(result: ResultSet): List<User> {
+        return generateSequence {
+            if (result.next()) {
+                ResultRow.create(
+                    result,
+                    UserTable.fields.withIndex().associate { it.value to it.index },
+                )
+            } else {
+                null
+            }
+        }.map { it.toUser() }.toList()
+    }
+
+    /**
+     * Requesting a user from the database.
+     *
+     * @param id The id of the requested user.
+     * @return The [User] object or null, if no user with the given [id] was found.
+     */
     private fun getUserByIdOrNull(id: UUID): User? = UserTable.getEntityByIdOrNull(id, ResultRow::toUser)
 
     override suspend fun getUserById(id: UUID): User = db.query {
@@ -130,6 +172,50 @@ class UserTableRepo(
             .where(UserTable.email neq "")
             .map { it.toUser() }
     }
+
+    @Suppress("MagicNumber")
+    override suspend fun getUsersMatchingSearchQuery(searchQuery: String, excludedUsers: Set<UUID>): List<User> =
+        db.query {
+            val userTable = "\"${UserTable.tableName}\""
+            val idCol = "$userTable.${UserTable.id.name}"
+            val firstNameCol = "$userTable.${UserTable.firstName.name}"
+            val lastNameCol = "$userTable.${UserTable.lastName.name}"
+            val emailCol = "$userTable.${UserTable.email.name}"
+            val statusCol = "$userTable.${UserTable.status.name}"
+
+            val excludeUsersClause = if (excludedUsers.isNotEmpty()) {
+                "AND $idCol NOT IN (${excludedUsers.joinToString(",") { "'$it'" }})"
+            } else {
+                ""
+            }
+
+            val rawSqlQuery =
+                """
+                WITH users_with_similarity_scores AS (
+                    SELECT *,
+                        similarity($firstNameCol, ?) AS sim_first_name,
+                        similarity($lastNameCol, ?) AS sim_last_name,
+                        similarity($emailCol, ?) AS sim_email
+                    FROM $userTable
+                    WHERE $statusCol IN (${UserStatus.USER_STATUS_ACTIVE.ordinal}, ${UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED.ordinal})
+                      $excludeUsersClause
+                )
+                SELECT *
+                FROM users_with_similarity_scores
+                WHERE GREATEST(sim_first_name, sim_last_name, sim_email) > 0.2
+                ORDER BY GREATEST(sim_first_name, sim_last_name, sim_email) DESC
+                LIMIT $MAXIMUM_NUMBER_OF_INVITE_CANDIDATES
+                """.trimIndent()
+
+            val matchingUsers = exec(
+                stmt = rawSqlQuery,
+                args = List(3) { TextColumnType() to searchQuery },
+                explicitStatementType = StatementType.SELECT,
+                transform = ::extractUserRows,
+            )
+
+            matchingUsers.orEmpty()
+        }
 
     override suspend fun createUser(request: Authentication.RegisterRequest, passwordHash: String): User = db.query {
         UserTable.insertAndGet(ResultRow::toUser, EntityType.USER) {
