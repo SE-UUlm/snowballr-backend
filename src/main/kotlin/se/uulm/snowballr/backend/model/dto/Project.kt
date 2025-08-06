@@ -1,6 +1,7 @@
 package se.uulm.snowballr.backend.model.dto
 
 import se.uulm.snowballr.backend.table.ProjectTable
+import snowballr.Fetcher.FetcherOptions
 import snowballr.ProjectOuterClass
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -18,7 +19,8 @@ data class Project(
     val snowballingType: ProjectOuterClass.SnowballingType,
     val reviewMaybeAllowed: Boolean,
     val reviewDecisionMatrix: ProjectOuterClass.ReviewDecisionMatrix,
-    val fetcherApis: List<String>,
+    // Map of fetcher names to their options (which are maps from the option keys to the option values)
+    val fetchers: Map<String, Map<String, String>>,
     val currentStageStartedAt: OffsetDateTime,
     val createdAt: OffsetDateTime,
     val createdBy: UUID,
@@ -41,7 +43,14 @@ fun Project.toGrpcProject(): ProjectOuterClass.Project {
             .setDecisionMatrix(this.reviewDecisionMatrix)
             .setSnowballingType(this.snowballingType)
             .setReviewMaybeAllowed(this.reviewMaybeAllowed)
-            .addAllFetcherApis(this.fetcherApis)
+            .putAllFetchers(
+                this.fetchers.mapValues {
+                    FetcherOptions
+                        .newBuilder()
+                        .putAllOptions(it.value)
+                        .build()
+                },
+            )
             .build()
 
     return ProjectOuterClass.Project

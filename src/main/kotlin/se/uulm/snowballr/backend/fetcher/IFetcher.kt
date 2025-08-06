@@ -13,11 +13,11 @@ import se.uulm.snowballr.backend.model.dto.Paper
  */
 interface IFetcher {
     /**
-     * Get a set of all option keys this fetcher can be configured with.
-     * The values remain shapeless and ought to be validated in the fetcher
-     * implementation.
+     * Get the names of all option keys and their according default values this
+     * fetcher can be configured with. The values remain shapeless and ought to
+     * be validated in the fetcher implementation.
      */
-    suspend fun getAvailableOptions(): Set<String>
+    suspend fun getAvailableOptions(): Map<String, String>
 
     /**
      * Search for papers using a search query. The [IFetcher] is responsible

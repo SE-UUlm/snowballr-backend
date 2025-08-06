@@ -324,7 +324,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
             assertThat(
                 userSettings.decisionMatrix,
             ).isEqualTo(ProjectOuterClass.ReviewDecisionMatrix.getDefaultInstance())
-            assertThat(userSettings.fetcherApis).isEmpty()
+            assertThat(userSettings.fetchers).isEmpty()
             assertThat(userSettings.snowballingType).isEqualTo(ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_BOTH)
             assertThat(userSettings.reviewMaybeAllowed).isTrue()
         }

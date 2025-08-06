@@ -39,10 +39,10 @@ class FetcherManagerTest {
     @Test
     fun `When a fetcher is registered, then getAvailableOptions is delegated properly`() = runTest {
         val fetcherMock = mockk<IFetcher>()
-        coEvery { fetcherMock.getAvailableOptions() } returns setOf("bar")
+        coEvery { fetcherMock.getAvailableOptions() } returns mapOf("bar" to "test")
         fetcherManager.registerFetcher("foo", fetcherMock)
 
-        assertEquals(setOf("bar"), fetcherManager.getAvailableOptions("foo"))
+        assertEquals(mapOf("bar" to "test"), fetcherManager.getAvailableOptions("foo"))
         coVerify { fetcherMock.getAvailableOptions() }
         confirmVerified(fetcherMock)
     }

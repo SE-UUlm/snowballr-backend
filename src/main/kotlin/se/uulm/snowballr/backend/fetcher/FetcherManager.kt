@@ -47,14 +47,14 @@ class FetcherManager {
     }
 
     /**
-     * Get a set of all option keys the specified fetcher can be configured
-     * with. The values remain shapeless and ought to be validated in the
-     * fetcher implementation.
+     * Get the names of all option keys and their according default values the
+     * specified fetcher can be configured with. The values remain shapeless
+     * and ought to be validated in the fetcher implementation.
      *
      * @param fetcher The name of the fetcher whose options should be retrieved.
      * @return A set of names for options the fetcher has specified it would accept.
      */
-    suspend fun getAvailableOptions(fetcher: String): Set<String> = getFetcherOrThrow(
+    suspend fun getAvailableOptions(fetcher: String): Map<String, String> = getFetcherOrThrow(
         fetcher,
     ).getAvailableOptions()
 
