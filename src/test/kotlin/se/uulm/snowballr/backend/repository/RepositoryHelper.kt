@@ -9,8 +9,12 @@ import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
+import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.table.association.toProjectMember
 import snowballr.ProjectOuterClass
+import snowballr.ProjectOuterClass.ProjectStatus
+import snowballr.ProjectOuterClass.ReviewDecisionMatrix
+import snowballr.ProjectOuterClass.SnowballingType
 import snowballr.UserOuterClass
 import java.util.UUID
 
@@ -90,24 +94,50 @@ object RepositoryHelper {
         }.value
     }
 
-    /**
-     * Creates an example project in the database with the specified properties.
-     */
-    suspend fun insertTestProjectAndGetId(name: String, status: ProjectOuterClass.ProjectStatus, userId: UUID): UUID =
-        db.query {
-            ProjectTable
-                .insertAndGetId {
-                    it[ProjectTable.name] = name
-                    it[ProjectTable.status] = status
-                    it[currentStage] = 0
-                    it[maxStage] = 0
-                    it[similarityThreshold] = 0F
-                    it[snowballingType] = ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_BOTH
-                    it[reviewMaybeAllowed] = true
-                    it[reviewDecisionMatrixBinary] =
-                        ProjectOuterClass.ReviewDecisionMatrix.getDefaultInstance().toByteArray()
-                    it[fetchers] = emptyMap()
-                    it[createdBy] = userId
-                }.value
-        }
+    @Suppress("LongParameterList")
+    suspend fun insertProjectAndGetId(
+        name: String = "Test Project",
+        status: ProjectStatus = ProjectStatus.PROJECT_STATUS_ACTIVE,
+        currentStage: Long = 0,
+        maxStage: Long = 0,
+        similarityThreshold: Float = 0F,
+        snowballingType: SnowballingType = SnowballingType.SNOWBALLING_TYPE_BOTH,
+        reviewMaybeAllowed: Boolean = true,
+        reviewDecisionMatrix: ReviewDecisionMatrix = ReviewDecisionMatrix.getDefaultInstance(),
+        fetcherApis: Map<String, Map<String, String>> = emptyMap(),
+        createdBy: UUID,
+    ): UUID = db.query {
+        ProjectTable
+            .insertAndGetId {
+                it[ProjectTable.name] = name
+                it[ProjectTable.status] = status
+                it[ProjectTable.currentStage] = currentStage
+                it[ProjectTable.maxStage] = maxStage
+                it[ProjectTable.similarityThreshold] = similarityThreshold
+                it[ProjectTable.snowballingType] = snowballingType
+                it[ProjectTable.reviewMaybeAllowed] = reviewMaybeAllowed
+                it[ProjectTable.reviewDecisionMatrixBinary] = reviewDecisionMatrix.toByteArray()
+                it[ProjectTable.fetchers] = fetchers
+                it[ProjectTable.createdBy] = createdBy
+            }.value
+    }
+
+    @Suppress("LongParameterList")
+    suspend fun insertProjectPaperAndGetId(
+        paperId: UUID,
+        projectId: UUID,
+        localPaperId: Long = 0,
+        stage: Long = 0,
+        decision: ProjectOuterClass.PaperDecision = ProjectOuterClass.PaperDecision.PAPER_DECISION_ACCEPTED,
+        createdBy: UUID,
+    ): UUID = db.query {
+        ProjectPaperTable.insertAndGetId {
+            it[ProjectPaperTable.paperId] = paperId
+            it[ProjectPaperTable.projectId] = projectId
+            it[ProjectPaperTable.localPaperId] = localPaperId
+            it[ProjectPaperTable.stage] = stage
+            it[ProjectPaperTable.decision] = decision
+            it[ProjectPaperTable.createdBy] = createdBy
+        }.value
+    }
 }

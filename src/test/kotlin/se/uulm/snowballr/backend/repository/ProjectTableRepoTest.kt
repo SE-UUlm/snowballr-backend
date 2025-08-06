@@ -14,7 +14,7 @@ import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.toGrpcProject
 import se.uulm.snowballr.backend.repository.RepositoryHelper.assignUserToProject
 import se.uulm.snowballr.backend.repository.RepositoryHelper.createExampleUser
-import se.uulm.snowballr.backend.repository.RepositoryHelper.insertTestProjectAndGetId
+import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectAndGetId
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import snowballr.ProjectOuterClass.Project
@@ -27,7 +27,7 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
     private val repo = ProjectTableRepo(db)
 
     private suspend fun insertTestProjectAndGetId(name: String, status: ProjectStatus) =
-        insertTestProjectAndGetId(name, status, testUserId)
+        insertProjectAndGetId(name = name, status = status, createdBy = testUserId)
 
     companion object {
         @JvmStatic
@@ -44,7 +44,8 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
     inner class GetProjectById {
         @Test
         fun `When a project is found, then the correct project is returned`() = runTest {
-            val projectId = insertTestProjectAndGetId("Test Project", ProjectStatus.PROJECT_STATUS_ACTIVE)
+            val projectId =
+                insertProjectAndGetId("Test Project", ProjectStatus.PROJECT_STATUS_ACTIVE, createdBy = testUserId)
             val project = repo.getProjectById(projectId)
 
             assertThat(project.id).isEqualTo(projectId)
@@ -106,8 +107,14 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
     inner class GetAllProjects {
         @Test
         fun `When projects are found, then all projects are returned`() = runTest {
-            val project1Id = insertTestProjectAndGetId("Test Project 1", ProjectStatus.PROJECT_STATUS_ACTIVE)
-            val project2Id = insertTestProjectAndGetId("Test Project 2", ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
+            val project1Id =
+                insertProjectAndGetId("Test Project 1", ProjectStatus.PROJECT_STATUS_ACTIVE, createdBy = testUserId)
+            val project2Id =
+                insertProjectAndGetId(
+                    "Test Project 2",
+                    ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED,
+                    createdBy = testUserId,
+                )
 
             val projects = repo.getAllProjects()
             assertThat(projects).hasSize(2)
@@ -119,9 +126,12 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
 
         @Test
         fun `When archived and deleted projects exist, then they are not returned`() = runTest {
-            val project1Id = insertTestProjectAndGetId("Test Project 1", ProjectStatus.PROJECT_STATUS_ACTIVE)
-            val project2Id = insertTestProjectAndGetId("Test Project 2", ProjectStatus.PROJECT_STATUS_ARCHIVED)
-            val project3Id = insertTestProjectAndGetId("Test Project 3", ProjectStatus.PROJECT_STATUS_DELETED)
+            val project1Id =
+                insertProjectAndGetId("Test Project 1", ProjectStatus.PROJECT_STATUS_ACTIVE, createdBy = testUserId)
+            val project2Id =
+                insertProjectAndGetId("Test Project 2", ProjectStatus.PROJECT_STATUS_ARCHIVED, createdBy = testUserId)
+            val project3Id =
+                insertProjectAndGetId("Test Project 3", ProjectStatus.PROJECT_STATUS_DELETED, createdBy = testUserId)
 
             val projects = repo.getAllProjects()
             assertThat(projects).hasSize(1)
@@ -143,7 +153,7 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
         ) = runTest {
             val projectStatus = ProjectStatus.PROJECT_STATUS_ACTIVE
             val projectId =
-                insertTestProjectAndGetId(name = "Test Project", projectStatus)
+                insertProjectAndGetId(name = "Test Project", projectStatus, createdBy = testUserId)
             val originalProject = repo.getProjectById(projectId)
 
             val updatedProjectDetails = originalProject.toGrpcProject().toBuilder()
@@ -199,7 +209,7 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
         ) = runTest {
             val projectStatus = ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED
             val projectId =
-                insertTestProjectAndGetId(name = "Test Project", projectStatus)
+                insertProjectAndGetId(name = "Test Project", projectStatus, createdBy = testUserId)
             val originalProject = repo.getProjectById(projectId)
 
             val updatedProjectDetails = originalProject.toGrpcProject().toBuilder()
@@ -243,7 +253,7 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
         ) = runTest {
             val projectStatus = ProjectStatus.PROJECT_STATUS_ARCHIVED
             val projectId =
-                insertTestProjectAndGetId(name = "Test Project", projectStatus)
+                insertProjectAndGetId(name = "Test Project", projectStatus, createdBy = testUserId)
             val originalProject = repo.getProjectById(projectId)
 
             val updatedProjectDetails = originalProject.toGrpcProject().toBuilder()
@@ -282,10 +292,22 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
         @Test
         fun `When active projects are found where the user is member of, then all (and only these) active projects are returned`() =
             runTest {
-                val project1Id = insertTestProjectAndGetId("Test Project 1", ProjectStatus.PROJECT_STATUS_ACTIVE)
-                val project2Id = insertTestProjectAndGetId("Test Project 2", ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
-                val project3Id = insertTestProjectAndGetId("Test Project 3", ProjectStatus.PROJECT_STATUS_ARCHIVED)
-                val project4Id = insertTestProjectAndGetId("Test Project 4", ProjectStatus.PROJECT_STATUS_ACTIVE)
+                val project1Id =
+                    insertProjectAndGetId("Test Project 1", ProjectStatus.PROJECT_STATUS_ACTIVE, createdBy = testUserId)
+                val project2Id =
+                    insertProjectAndGetId(
+                        "Test Project 2",
+                        ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED,
+                        createdBy = testUserId,
+                    )
+                val project3Id =
+                    insertProjectAndGetId(
+                        "Test Project 3",
+                        ProjectStatus.PROJECT_STATUS_ARCHIVED,
+                        createdBy = testUserId,
+                    )
+                val project4Id =
+                    insertProjectAndGetId("Test Project 4", ProjectStatus.PROJECT_STATUS_ACTIVE, createdBy = testUserId)
 
                 val userId = createExampleUser("userWithActiveProjects@example.com")
 
@@ -305,10 +327,26 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
         @Test
         fun `When archived projects are found where the user is member of, then all (and only these) archived projects are returned`() =
             runTest {
-                val project1Id = insertTestProjectAndGetId("Test Project 1", ProjectStatus.PROJECT_STATUS_ACTIVE)
-                val project2Id = insertTestProjectAndGetId("Test Project 2", ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
-                val project3Id = insertTestProjectAndGetId("Test Project 3", ProjectStatus.PROJECT_STATUS_ARCHIVED)
-                val project4Id = insertTestProjectAndGetId("Test Project 4", ProjectStatus.PROJECT_STATUS_ARCHIVED)
+                val project1Id =
+                    insertProjectAndGetId("Test Project 1", ProjectStatus.PROJECT_STATUS_ACTIVE, createdBy = testUserId)
+                val project2Id =
+                    insertProjectAndGetId(
+                        "Test Project 2",
+                        ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED,
+                        createdBy = testUserId,
+                    )
+                val project3Id =
+                    insertProjectAndGetId(
+                        "Test Project 3",
+                        ProjectStatus.PROJECT_STATUS_ARCHIVED,
+                        createdBy = testUserId,
+                    )
+                val project4Id =
+                    insertProjectAndGetId(
+                        "Test Project 4",
+                        ProjectStatus.PROJECT_STATUS_ARCHIVED,
+                        createdBy = testUserId,
+                    )
 
                 val userId = createExampleUser("userWithActiveProjects@example.com")
 
@@ -328,10 +366,26 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
         @Test
         fun `When deleted projects are found where the user is member of, then all (and only these) deleted projects are returned`() =
             runTest {
-                val project1Id = insertTestProjectAndGetId("Test Project 1", ProjectStatus.PROJECT_STATUS_ACTIVE)
-                val project2Id = insertTestProjectAndGetId("Test Project 2", ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
-                val project3Id = insertTestProjectAndGetId("Test Project 3", ProjectStatus.PROJECT_STATUS_DELETED)
-                val project4Id = insertTestProjectAndGetId("Test Project 4", ProjectStatus.PROJECT_STATUS_DELETED)
+                val project1Id =
+                    insertProjectAndGetId("Test Project 1", ProjectStatus.PROJECT_STATUS_ACTIVE, createdBy = testUserId)
+                val project2Id =
+                    insertProjectAndGetId(
+                        "Test Project 2",
+                        ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED,
+                        createdBy = testUserId,
+                    )
+                val project3Id =
+                    insertProjectAndGetId(
+                        "Test Project 3",
+                        ProjectStatus.PROJECT_STATUS_DELETED,
+                        createdBy = testUserId,
+                    )
+                val project4Id =
+                    insertProjectAndGetId(
+                        "Test Project 4",
+                        ProjectStatus.PROJECT_STATUS_DELETED,
+                        createdBy = testUserId,
+                    )
 
                 val userId = createExampleUser("userWithActiveProjects@example.com")
 
@@ -350,8 +404,10 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
 
         @Test
         fun `When no projects are found where the user is member of, then no projects are returned`() = runTest {
-            val project1Id = insertTestProjectAndGetId("Test Project 1", ProjectStatus.PROJECT_STATUS_ARCHIVED)
-            val project2Id = insertTestProjectAndGetId("Test Project 2", ProjectStatus.PROJECT_STATUS_DELETED)
+            val project1Id =
+                insertProjectAndGetId("Test Project 1", ProjectStatus.PROJECT_STATUS_ARCHIVED, createdBy = testUserId)
+            val project2Id =
+                insertProjectAndGetId("Test Project 2", ProjectStatus.PROJECT_STATUS_DELETED, createdBy = testUserId)
 
             val userId = createExampleUser("userWithActiveProjects@example.com")
 

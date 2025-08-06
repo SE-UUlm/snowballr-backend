@@ -32,8 +32,10 @@ import se.uulm.snowballr.backend.repository.association.CitationTableRepo
 import se.uulm.snowballr.backend.repository.association.IAuthorOfPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
+import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.IReadingListTableRepo
 import se.uulm.snowballr.backend.repository.association.ProjectMemberTableRepo
+import se.uulm.snowballr.backend.repository.association.ProjectPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.ReadingListTableRepo
 import se.uulm.snowballr.backend.service.AuthenticationService
 import se.uulm.snowballr.backend.service.CriterionService
@@ -109,6 +111,7 @@ private fun Module.repositoryLayerDeps() {
     singleOf(::CitationTableRepo) { bind<ICitationTableRepo>() }
     singleOf(::ReadingListTableRepo) { bind<IReadingListTableRepo>() }
     singleOf(::VerificationTokenTableRepo) { bind<IVerificationTokenTableRepo>() }
+    singleOf(::ProjectPaperTableRepo) { bind<IProjectPaperTableRepo>() }
 }
 
 /**
