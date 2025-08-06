@@ -12,6 +12,9 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
+import se.uulm.snowballr.backend.model.dto.Criterion
+import se.uulm.snowballr.backend.model.dto.Criterion.ProjectCriterion
+import se.uulm.snowballr.backend.model.dto.Criterion.UserCriterion
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.toGrpcCriterion
 import se.uulm.snowballr.backend.repository.RepositoryHelper.createExampleUser
@@ -21,6 +24,7 @@ import se.uulm.snowballr.backend.utils.GrpcEnumSourceTest
 import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass
 import java.util.UUID
+import kotlin.test.assertIs
 import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
 
 class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTable), true) {
@@ -70,6 +74,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
             val criterionId = insertTestCriterionAndGetId(projectId = projectId)
             val criterion = repo.getCriterionById(criterionId)
 
+            assertIs<ProjectCriterion>(criterion)
             assertThat(criterion.id).isEqualTo(criterionId)
             assertThat(criterion.tag).isEqualTo("Test Tag")
             assertThat(criterion.name).isEqualTo("Test Criterion")
@@ -104,6 +109,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                         .build()
                 val criterion = repo.createCriterion(request, testUserId)
 
+                assertIs<ProjectCriterion>(criterion)
                 assertThat(criterion.tag).isEqualTo("Test Tag")
                 assertThat(criterion.name).isEqualTo("Test Criterion")
                 assertThat(criterion.description).isEqualTo("Test Description")
@@ -125,6 +131,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                         .build()
                 val criterion = repo.createCriterion(request, testUserId)
 
+                assertIs<UserCriterion>(criterion)
                 assertThat(criterion.tag).isEqualTo("Test Tag")
                 assertThat(criterion.name).isEqualTo("Test Criterion")
                 assertThat(criterion.description).isEqualTo("Test Description")
@@ -208,7 +215,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                 val userCriterion2 = repo.createCriterion(userCriterionRequest, userId)
                 val projectCriterion = repo.createCriterion(projectCriterionRequest, testUserId)
 
-                val userCriteria = repo.getAllUserCriteria(testUserId)
+                val userCriteria = repo.getAllUserCriteria(testUserId) as List<Criterion>
 
                 assertThat(userCriteria).hasSize(1)
                 assertThat(userCriteria).containsExactly(userCriterion1)

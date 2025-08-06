@@ -8,16 +8,42 @@ import java.util.UUID
 /**
  * DTO of [CriterionTable].
  */
-data class Criterion(
-    val id: UUID,
-    val tag: String,
-    val name: String,
-    val description: String,
-    val category: CriterionOuterClass.CriterionCategory,
-    val projectId: UUID?,
-    val createdAt: OffsetDateTime,
-    val createdBy: UUID,
-)
+sealed class Criterion {
+    abstract val id: UUID
+    abstract val tag: String
+    abstract val name: String
+    abstract val description: String
+    abstract val category: CriterionOuterClass.CriterionCategory
+    abstract val createdAt: OffsetDateTime
+    abstract val createdBy: UUID
+
+    /**
+     * [Criterion] that is owned by the project.
+     */
+    data class ProjectCriterion(
+        override val id: UUID,
+        override val tag: String,
+        override val name: String,
+        override val description: String,
+        override val category: CriterionOuterClass.CriterionCategory,
+        override val createdAt: OffsetDateTime,
+        override val createdBy: UUID,
+        val projectId: UUID,
+    ) : Criterion()
+
+    /**
+     * [Criterion] that is owned by the user.
+     */
+    data class UserCriterion(
+        override val id: UUID,
+        override val tag: String,
+        override val name: String,
+        override val description: String,
+        override val category: CriterionOuterClass.CriterionCategory,
+        override val createdAt: OffsetDateTime,
+        override val createdBy: UUID,
+    ) : Criterion()
+}
 
 /**
  * Creates a [CriterionOuterClass.Criterion] from this [Criterion].

@@ -12,6 +12,7 @@ import se.uulm.snowballr.backend.model.dto.Criterion
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.toCriterion
+import se.uulm.snowballr.backend.table.toUserCriterion
 import snowballr.CriterionOuterClass
 import java.util.UUID
 
@@ -135,11 +136,11 @@ class CriterionTableRepo(
         CriterionTable.getEntitiesByIds(ids, ResultRow::toCriterion)
     }
 
-    override suspend fun getAllUserCriteria(userId: UUID): List<Criterion> = db.query {
+    override suspend fun getAllUserCriteria(userId: UUID): List<Criterion.UserCriterion> = db.query {
         CriterionTable
             .selectAll()
             .where { CriterionTable.createdBy eq userId and CriterionTable.projectId.isNull() }
-            .map { it.toCriterion() }
+            .map { it.toUserCriterion() }
     }
 
     override suspend fun getAllProjectCriteria(projectId: UUID): List<Criterion> = db.query {

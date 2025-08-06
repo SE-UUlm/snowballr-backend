@@ -22,7 +22,7 @@ class UpdateCriterionTest : MainServiceTest() {
     private val requestId = UUID.randomUUID()
 
     private fun getExampleRequest(): CriterionOuterClass.Criterion.Update {
-        val updatedCriterion = DataBuilder.createExampleCriterion(
+        val updatedCriterion = DataBuilder.createExampleProjectCriterion(
             id = requestId,
             tag = "Updated Tag",
             name = "Updated Criterion",
@@ -46,7 +46,7 @@ class UpdateCriterionTest : MainServiceTest() {
         val project = DataBuilder.createExampleProject(
             status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE,
         )
-        val criterion = DataBuilder.createExampleCriterion(
+        val criterion = DataBuilder.createExampleProjectCriterion(
             id = requestId,
             projectId = project.id,
             createdBy = user.id,
@@ -71,7 +71,7 @@ class UpdateCriterionTest : MainServiceTest() {
             status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE,
         )
         val projectMember = DataBuilder.createExampleProjectMember(userId = user.id, projectId = project.id)
-        val criterion = DataBuilder.createExampleCriterion(
+        val criterion = DataBuilder.createExampleProjectCriterion(
             id = requestId,
             projectId = project.id,
             createdBy = user.id,
@@ -97,7 +97,7 @@ class UpdateCriterionTest : MainServiceTest() {
                 status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ARCHIVED,
             )
             val projectMember = DataBuilder.createExampleProjectMember(userId = user.id, projectId = project.id)
-            val criterion = DataBuilder.createExampleCriterion(
+            val criterion = DataBuilder.createExampleProjectCriterion(
                 id = requestId,
                 projectId = project.id,
                 createdBy = user.id,
@@ -120,7 +120,7 @@ class UpdateCriterionTest : MainServiceTest() {
         val project = DataBuilder.createExampleProject(
             status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE,
         )
-        val criterion = DataBuilder.createExampleCriterion(
+        val criterion = DataBuilder.createExampleProjectCriterion(
             id = requestId,
             projectId = project.id,
             createdBy = user.id,
@@ -141,7 +141,7 @@ class UpdateCriterionTest : MainServiceTest() {
     fun `When a server admin updates a user criterion, then no exception is thrown`() = runTest {
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val criterion =
-            DataBuilder.createExampleCriterion(id = requestId, projectId = null, createdBy = UUID.randomUUID())
+            DataBuilder.createExampleUserCriterion(id = requestId, createdBy = UUID.randomUUID())
 
         val request = getExampleRequest()
 
@@ -157,7 +157,7 @@ class UpdateCriterionTest : MainServiceTest() {
     fun `When a user updates a user criterion, which he created himself, then no exception is thrown`() = runTest {
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val criterion =
-            DataBuilder.createExampleCriterion(id = requestId, projectId = null, createdBy = user.id)
+            DataBuilder.createExampleUserCriterion(id = requestId, createdBy = user.id)
 
         val request = getExampleRequest()
 
@@ -174,7 +174,7 @@ class UpdateCriterionTest : MainServiceTest() {
         runTest {
             val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
             val criterion =
-                DataBuilder.createExampleCriterion(id = requestId, projectId = null, createdBy = UUID.randomUUID())
+                DataBuilder.createExampleUserCriterion(id = requestId, createdBy = UUID.randomUUID())
 
             val request = getExampleRequest()
 
@@ -189,7 +189,7 @@ class UpdateCriterionTest : MainServiceTest() {
     fun `When an error occurs while the criterion is updated, then an exception is thrown`() = runTest {
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val criterion =
-            DataBuilder.createExampleCriterion(id = requestId, projectId = null, createdBy = user.id)
+            DataBuilder.createExampleUserCriterion(id = requestId, createdBy = user.id)
 
         val request = getExampleRequest()
 
