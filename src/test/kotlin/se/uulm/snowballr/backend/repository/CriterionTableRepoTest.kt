@@ -2,7 +2,6 @@ package se.uulm.snowballr.backend.repository
 
 import com.google.protobuf.util.FieldMaskUtil
 import kotlinx.coroutines.test.runTest
-import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.junit.jupiter.api.Nested
@@ -105,12 +104,12 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                         .build()
                 val criterion = repo.createCriterion(request, testUserId)
 
-                Assertions.assertThat(criterion.tag).isEqualTo("Test Tag")
-                Assertions.assertThat(criterion.name).isEqualTo("Test Criterion")
-                Assertions.assertThat(criterion.description).isEqualTo("Test Description")
-                Assertions.assertThat(criterion.category).isEqualTo(category)
-                Assertions.assertThat(criterion.projectId).isEqualTo(project.id)
-                Assertions.assertThat(criterion.createdBy).isEqualTo(testUserId)
+                assertThat(criterion.tag).isEqualTo("Test Tag")
+                assertThat(criterion.name).isEqualTo("Test Criterion")
+                assertThat(criterion.description).isEqualTo("Test Description")
+                assertThat(criterion.category).isEqualTo(category)
+                assertThat(criterion.projectId).isEqualTo(project.id)
+                assertThat(criterion.createdBy).isEqualTo(testUserId)
             }
 
         @GrpcEnumSourceTest(CriterionCategory::class)
@@ -126,12 +125,11 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                         .build()
                 val criterion = repo.createCriterion(request, testUserId)
 
-                Assertions.assertThat(criterion.tag).isEqualTo("Test Tag")
-                Assertions.assertThat(criterion.name).isEqualTo("Test Criterion")
-                Assertions.assertThat(criterion.description).isEqualTo("Test Description")
-                Assertions.assertThat(criterion.category).isEqualTo(category)
-                Assertions.assertThat(criterion.projectId).isNull()
-                Assertions.assertThat(criterion.createdBy).isEqualTo(testUserId)
+                assertThat(criterion.tag).isEqualTo("Test Tag")
+                assertThat(criterion.name).isEqualTo("Test Criterion")
+                assertThat(criterion.description).isEqualTo("Test Description")
+                assertThat(criterion.category).isEqualTo(category)
+                assertThat(criterion.createdBy).isEqualTo(testUserId)
             }
 
         @Test
@@ -166,7 +164,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
             val criterion1 = repo.createCriterion(request, testUserId)
             val criterion2 = repo.createCriterion(request, testUserId)
 
-            Assertions.assertThat(criterion1.id).isNotEqualTo(criterion2.id)
+            assertThat(criterion1.id).isNotEqualTo(criterion2.id)
         }
 
         @GrpcEnumSourceTest(CriterionCategory::class)
@@ -212,10 +210,10 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
 
                 val userCriteria = repo.getAllUserCriteria(testUserId)
 
-                Assertions.assertThat(userCriteria).hasSize(1)
-                Assertions.assertThat(userCriteria).containsExactly(userCriterion1)
-                Assertions.assertThat(userCriteria).doesNotContain(userCriterion2)
-                Assertions.assertThat(userCriteria).doesNotContain(projectCriterion)
+                assertThat(userCriteria).hasSize(1)
+                assertThat(userCriteria).containsExactly(userCriterion1)
+                assertThat(userCriteria).doesNotContain(userCriterion2)
+                assertThat(userCriteria).doesNotContain(projectCriterion)
             }
     }
 
@@ -372,10 +370,10 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
 
                 val userCriteria = repo.getAllProjectCriteria(projectId1)
 
-                Assertions.assertThat(userCriteria).hasSize(1)
-                Assertions.assertThat(userCriteria).containsExactly(projectCriterion1)
-                Assertions.assertThat(userCriteria).doesNotContain(projectCriterion2)
-                Assertions.assertThat(userCriteria).doesNotContain(userCriterion)
+                assertThat(userCriteria).hasSize(1)
+                assertThat(userCriteria).containsExactly(projectCriterion1)
+                assertThat(userCriteria).doesNotContain(projectCriterion2)
+                assertThat(userCriteria).doesNotContain(userCriterion)
             }
     }
 }
