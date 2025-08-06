@@ -8,6 +8,7 @@ import se.uulm.snowballr.backend.model.SnowballRException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.Criterion
 import se.uulm.snowballr.backend.model.dto.User
+import se.uulm.snowballr.backend.model.dto.toGrpcCriteria
 import se.uulm.snowballr.backend.model.dto.toGrpcCriterion
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
@@ -37,6 +38,11 @@ interface ICriterionService {
      * @return The updated criterion after the changes have been applied.
      */
     suspend fun updateCriterion(request: GrpcCriterion.Update): GrpcCriterion
+
+    /**
+     * Service implementation of [SnowballRService.getAllCriteriaForProject].
+     */
+    suspend fun getAllCriteriaForProject(request: Base.Id): GrpcCriterion.List
 }
 
 /**
@@ -67,7 +73,7 @@ class CriterionService(
      * that belongs to an active project and throws exceptions when access is unauthorized
      * or when attempting to access a criterion of an inactive project.
      *
-     * @param criterion The [GrpcCriterion] to check the permission for or null, if it does not already exists
+     * @param criterion The [GrpcCriterion] to check the permission for or null, if it does not already exist
      * @param projectId The projectId of the [ProjectOuterClass.Project] to check the permission for.
      * @param currentUser The user whose permissions are being validated.
      * @param accessType The type of access being requested (e.g., READ, UPDATE).
@@ -187,5 +193,25 @@ class CriterionService(
 
         checkCriterionPermission(criterion, currentUser, AccessType.UPDATE)
         return repo.updateCriterion(request).toGrpcCriterion()
+    }
+
+    override suspend fun getAllCriteriaForProject(request: Base.Id): GrpcCriterion.List {
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
+        val projectId = parseUUID(request.id, EntityType.PROJECT)
+        // This call exists to throw a NotFoundException if the project with the given id does not exist
+        projectRepo.getProjectById(projectId)
+        val projectMembers = projectMemberRepo.getProjectMembers(projectId)
+
+        if (!projectMembers.any { it.userId == currentUser.id }) {
+            verifyServerAdminRole(currentUser) {
+                throw UnauthorizedException.Single(
+                    EntityType.PROJECT,
+                    projectId.toString(),
+                    AccessType.READ,
+                    it,
+                )
+            }
+        }
+        return repo.getAllProjectCriteria(projectId).toGrpcCriteria()
     }
 }

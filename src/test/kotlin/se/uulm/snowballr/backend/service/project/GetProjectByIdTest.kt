@@ -17,7 +17,6 @@ import java.util.UUID
 
 class GetProjectByIdTest : MainServiceTest() {
     private val requestId = UUID.randomUUID()
-    private val dummyUserUUID = UUID.randomUUID()
 
     private fun getExampleRequest() = Base.Id
         .newBuilder()
@@ -30,8 +29,8 @@ class GetProjectByIdTest : MainServiceTest() {
 
         val noAccessUser = DataBuilder.createExampleUser()
 
-        every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
-        coEvery { userRepoMock.getUserById(dummyUserUUID) } returns noAccessUser
+        every { GrpcContext.getUserIdFromContext() } returns noAccessUser.id
+        coEvery { userRepoMock.getUserById(noAccessUser.id) } returns noAccessUser
         coEvery { projectMemberRepoMock.getProjectMembers(any()) } returns emptyList()
 
         assertThrows<UnauthorizedException.Single> { mainService.getProjectById(request) }
@@ -44,8 +43,8 @@ class GetProjectByIdTest : MainServiceTest() {
         val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val project = DataBuilder.createExampleProject(id = requestId)
 
-        every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
-        coEvery { userRepoMock.getUserById(dummyUserUUID) } returns adminUser
+        every { GrpcContext.getUserIdFromContext() } returns adminUser.id
+        coEvery { userRepoMock.getUserById(adminUser.id) } returns adminUser
         coEvery { projectMemberRepoMock.getProjectMembers(any()) } returns emptyList()
         coEvery { projectRepoMock.getProjectById(requestId) } returns project
 
@@ -60,8 +59,8 @@ class GetProjectByIdTest : MainServiceTest() {
         val project = DataBuilder.createExampleProject(id = requestId)
         val projectMember = DataBuilder.createExampleProjectMember(userId = user.id, projectId = requestId)
 
-        every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
-        coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
+        every { GrpcContext.getUserIdFromContext() } returns user.id
+        coEvery { userRepoMock.getUserById(user.id) } returns user
         coEvery { projectMemberRepoMock.getProjectMembers(requestId) } returns listOf(projectMember)
         coEvery { projectRepoMock.getProjectById(requestId) } returns project
 
@@ -74,8 +73,8 @@ class GetProjectByIdTest : MainServiceTest() {
 
         val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
 
-        every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
-        coEvery { userRepoMock.getUserById(dummyUserUUID) } returns adminUser
+        every { GrpcContext.getUserIdFromContext() } returns adminUser.id
+        coEvery { userRepoMock.getUserById(adminUser.id) } returns adminUser
         coEvery { projectMemberRepoMock.getProjectMembers(any()) } returns emptyList()
         coEvery { projectRepoMock.getProjectById(any()) } throws TestSpecificException()
 

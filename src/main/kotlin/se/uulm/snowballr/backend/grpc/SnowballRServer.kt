@@ -301,7 +301,7 @@ class SnowballRServer(
             mainService.getCriterionById(request)
 
         override suspend fun getAllCriteriaForProject(request: Base.Id): CriterionOuterClass.Criterion.List =
-            super.getAllCriteriaForProject(request)
+            mainService.getAllCriteriaForProject(request)
 
         override suspend fun createCriterion(
             request: CriterionOuterClass.Criterion.Create,

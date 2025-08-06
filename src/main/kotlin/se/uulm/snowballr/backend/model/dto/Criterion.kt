@@ -30,3 +30,12 @@ fun Criterion.toGrpcCriterion(): CriterionOuterClass.Criterion = CriterionOuterC
     .setDescription(this.description)
     .setCategory(this.category)
     .build()
+
+/**
+ * Creates a list of [CriterionOuterClass.Criterion]s from this list of [Criterion]s.
+ */
+fun List<Criterion>.toGrpcCriteria(): CriterionOuterClass.Criterion.List {
+    val builder = CriterionOuterClass.Criterion.List.newBuilder()
+    this.forEach { builder.addCriteria(it.toGrpcCriterion()) }
+    return builder.build()
+}
