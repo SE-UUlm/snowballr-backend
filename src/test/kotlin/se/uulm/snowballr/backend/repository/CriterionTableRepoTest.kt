@@ -19,7 +19,6 @@ import se.uulm.snowballr.backend.repository.RepositoryHelper.createExampleUser
 import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.utils.GrpcEnumSourceTest
-import snowballr.CriterionOuterClass
 import snowballr.CriterionOuterClass.Criterion
 import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass
@@ -315,7 +314,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                 .setCategory(CriterionCategory.CRITERION_CATEGORY_INCLUSION)
                 .build()
 
-            val request = CriterionOuterClass.Criterion.Update.newBuilder()
+            val request = Criterion.Update.newBuilder()
                 .setCriterion(updatedCriterionDetails)
                 .setMask(FieldMaskUtil.fromStringList(fieldMask))
                 .build()
@@ -343,5 +342,40 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                 assertThat(updatedCriterion.category).isEqualTo(CriterionCategory.CRITERION_CATEGORY_EXCLUSION)
             }
         }
+    }
+
+    @Nested
+    inner class GetAllProjectCriteria {
+        @Test
+        fun `When all criteria of a specific project are requested, then the only criteria associated with this project are returned`() =
+            runTest {
+                val projectId1 = createExampleProject().id
+                val projectId2 = createExampleProject().id
+
+                val baseRequestBuilder = Criterion.Create.newBuilder()
+                    .setTag("Test Tag")
+                    .setName("Test Criterion")
+                    .setDescription("Test Description")
+                    .setCategory(CriterionCategory.CRITERION_CATEGORY_EXCLUSION)
+
+                val userCriterionRequest = baseRequestBuilder.build()
+                val projectCriterionRequest1 = baseRequestBuilder
+                    .setProjectId(projectId1.toString())
+                    .build()
+                val projectCriterionRequest2 = baseRequestBuilder
+                    .setProjectId(projectId2.toString())
+                    .build()
+
+                val userCriterion = repo.createCriterion(userCriterionRequest, testUserId)
+                val projectCriterion1 = repo.createCriterion(projectCriterionRequest1, testUserId)
+                val projectCriterion2 = repo.createCriterion(projectCriterionRequest2, testUserId)
+
+                val userCriteria = repo.getAllProjectCriteria(projectId1)
+
+                Assertions.assertThat(userCriteria).hasSize(1)
+                Assertions.assertThat(userCriteria).containsExactly(projectCriterion1)
+                Assertions.assertThat(userCriteria).doesNotContain(projectCriterion2)
+                Assertions.assertThat(userCriteria).doesNotContain(userCriterion)
+            }
     }
 }

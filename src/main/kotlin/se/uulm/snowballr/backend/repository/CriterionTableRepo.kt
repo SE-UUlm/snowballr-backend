@@ -66,6 +66,14 @@ interface ICriterionTableRepo {
      *         If no criteria are found for certain IDs, they may be excluded from the result.
      */
     suspend fun getCriteriaByIds(ids: List<UUID>): List<Criterion>
+
+    /**
+     * Retrieves all criteria associated with a specific project.
+     *
+     * @param projectId The unique identifier of the project for which the criteria are being retrieved.
+     * @return A list of [Criterion] objects associated with the given project.
+     */
+    suspend fun getAllProjectCriteria(projectId: UUID): List<Criterion>
 }
 
 /**
@@ -131,6 +139,13 @@ class CriterionTableRepo(
         CriterionTable
             .selectAll()
             .where { CriterionTable.createdBy eq userId and CriterionTable.projectId.isNull() }
+            .map { it.toCriterion() }
+    }
+
+    override suspend fun getAllProjectCriteria(projectId: UUID): List<Criterion> = db.query {
+        CriterionTable
+            .selectAll()
+            .where { CriterionTable.projectId eq projectId }
             .map { it.toCriterion() }
     }
 }
