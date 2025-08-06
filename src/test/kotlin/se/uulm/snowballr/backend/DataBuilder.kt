@@ -6,11 +6,13 @@ import se.uulm.snowballr.backend.model.dto.Criterion
 import se.uulm.snowballr.backend.model.dto.Paper
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.ProjectMember
+import se.uulm.snowballr.backend.model.dto.ProjectPaper
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.UserSettings
 import se.uulm.snowballr.backend.model.dto.VerificationToken
 import snowballr.Base
 import snowballr.CriterionOuterClass.CriterionCategory
+import snowballr.ProjectOuterClass
 import snowballr.ProjectOuterClass.MemberRole
 import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
@@ -187,6 +189,30 @@ object DataBuilder {
         pdfId,
         fetcherMetadata,
         createdAt,
+        modifiedAt,
+        modifiedBy,
+    )
+
+    fun createExampleProjectPaper(
+        id: UUID = UUID.randomUUID(),
+        paperId: UUID = UUID.randomUUID(),
+        projectId: UUID = UUID.randomUUID(),
+        localPaperId: Long = 0,
+        stage: Long = 0,
+        decision: ProjectOuterClass.PaperDecision = ProjectOuterClass.PaperDecision.PAPER_DECISION_ACCEPTED,
+        createdAt: OffsetDateTime = OffsetDateTime.now(),
+        createdBy: UUID = UUID.randomUUID(),
+        modifiedAt: OffsetDateTime? = null,
+        modifiedBy: UUID? = null,
+    ) = ProjectPaper(
+        id,
+        paperId,
+        projectId,
+        localPaperId,
+        stage,
+        decision,
+        createdAt,
+        createdBy,
         modifiedAt,
         modifiedBy,
     )

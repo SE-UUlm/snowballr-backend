@@ -4,12 +4,14 @@ import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.ResultRow
 import se.uulm.snowballr.backend.model.dto.ProjectPaper
+import se.uulm.snowballr.backend.model.dto.ProjectPaperWithPaper
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.createdAt
 import se.uulm.snowballr.backend.table.createdBy
 import se.uulm.snowballr.backend.table.modifiedAt
 import se.uulm.snowballr.backend.table.modifiedBy
+import se.uulm.snowballr.backend.table.toPaper
 import snowballr.ProjectOuterClass
 import java.time.OffsetDateTime
 
@@ -78,4 +80,12 @@ fun ResultRow.toProjectPaper() = ProjectPaper(
     createdBy = this[ProjectPaperTable.createdBy].value,
     modifiedAt = this[ProjectPaperTable.modifiedAt],
     modifiedBy = this[ProjectPaperTable.modifiedBy]?.value,
+)
+
+/**
+ * Creates a [ProjectPaperWithPaper] from this [ResultRow].
+ */
+fun ResultRow.toProjectPaperWithPaper() = ProjectPaperWithPaper(
+    projectPaper = toProjectPaper(),
+    paper = toPaper(),
 )
