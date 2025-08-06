@@ -26,6 +26,7 @@ import se.uulm.snowballr.backend.repository.IVerificationTokenTableRepo
 import se.uulm.snowballr.backend.repository.association.IAuthorOfPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
+import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.IReadingListTableRepo
 import se.uulm.snowballr.backend.service.criterion.CreateCriterionTest
 import se.uulm.snowballr.backend.serviceLayerDeps
@@ -81,6 +82,7 @@ open class MainServiceTest : KoinTest {
     val criterionRepoMock = mockk<ICriterionTableRepo>()
     val userRepoMock = mockk<IUserTableRepo>()
     val projectMemberRepoMock = mockk<IProjectMemberTableRepo>()
+    val projectPaperRepoMock = mockk<IProjectPaperTableRepo>()
     val authorOfPaperRepoMock = mockk<IAuthorOfPaperTableRepo>()
     val authorRepoMock = mockk<IAuthorTableRepo>()
     val citationRepoMock = mockk<ICitationTableRepo>()
@@ -100,6 +102,7 @@ open class MainServiceTest : KoinTest {
         projectMemberRepoMock,
         jwtServiceMock,
         fetcherManagerMock,
+        projectPaperRepoMock,
         authorOfPaperRepoMock,
         authorRepoMock,
         citationRepoMock,
@@ -120,6 +123,7 @@ open class MainServiceTest : KoinTest {
         single { criterionRepoMock }
         single { userRepoMock }
         single { projectMemberRepoMock }
+        single { projectPaperRepoMock }
         single { authorOfPaperRepoMock }
         single { authorRepoMock }
         single { citationRepoMock }

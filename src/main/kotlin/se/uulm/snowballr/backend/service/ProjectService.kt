@@ -6,19 +6,31 @@ import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
+import se.uulm.snowballr.backend.model.dto.Author
+import se.uulm.snowballr.backend.model.dto.Paper
+import se.uulm.snowballr.backend.model.dto.ProjectPaperWithPaper
+import se.uulm.snowballr.backend.model.dto.toGrpcAuthor
 import se.uulm.snowballr.backend.model.dto.toGrpcProject
 import se.uulm.snowballr.backend.model.dto.toGrpcProjectMembers
+import se.uulm.snowballr.backend.model.dto.toGrpcProjectPaper
+import se.uulm.snowballr.backend.model.dto.toGrpcProjectPapers
 import se.uulm.snowballr.backend.model.dto.toGrpcProjects
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
+import se.uulm.snowballr.backend.repository.IPaperTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
+import se.uulm.snowballr.backend.repository.association.IAuthorOfPaperTableRepo
+import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
+import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import snowballr.Base
 import snowballr.CriterionOuterClass
 import snowballr.ProjectOuterClass.ProjectStatus
+import java.util.UUID
 import snowballr.ProjectOuterClass.Project as GrpcProject
 
+@Suppress("ComplexInterface")
 interface IProjectService {
     /**
      * Service implementation of [SnowballRService.getProjectById].
@@ -62,6 +74,16 @@ interface IProjectService {
      * Service implementation of [SnowballRService.getProjectMembers].
      */
     suspend fun getProjectMembers(request: Base.Id): GrpcProject.Member.List
+
+    /**
+     * Service implementation of [SnowballRService.getProjectPaperById].
+     */
+    suspend fun getProjectPaperById(request: Base.Id): GrpcProject.Paper
+
+    /**
+     * Service implementation of [SnowballRService.getAllProjectPapersForProject].
+     */
+    suspend fun getAllProjectPapersForProject(request: Base.Id): GrpcProject.Paper.List
 }
 
 /**
@@ -75,12 +97,22 @@ interface IProjectService {
  * @param userRepo The repository responsible for managing persistence operations for users.
  * @param projectMemberRepo The repository responsible for managing persistence operations for project members.
  * @param criterionRepo The repository responsible for managing persistence operations for criteria.
+ * @param paperRepo The repository responsible for managing persistence operations for papers.
+ * @param projectPaperRepo The repository responsible for managing persistence operations for project papers.
+ * @param authorOfPaperTableRepo The repository responsible for managing persistence operations for the author
+ * paper relation.
+ * @param citationTableRepo The repository responsible for managing persistence operations for the citation relation.
  */
+@Suppress("LongParameterList")
 class ProjectService(
     private val repo: IProjectTableRepo,
     private val userRepo: IUserTableRepo,
     private val projectMemberRepo: IProjectMemberTableRepo,
     private val criterionRepo: ICriterionTableRepo,
+    private val paperRepo: IPaperTableRepo,
+    private val projectPaperRepo: IProjectPaperTableRepo,
+    private val authorOfPaperTableRepo: IAuthorOfPaperTableRepo,
+    private val citationTableRepo: ICitationTableRepo,
 ) : IProjectService {
     override suspend fun getProjectById(request: Base.Id): GrpcProject {
         val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
@@ -204,5 +236,60 @@ class ProjectService(
             }
         }
         return projectMembersWithUsers.toGrpcProjectMembers()
+    }
+
+    override suspend fun getProjectPaperById(request: Base.Id): GrpcProject.Paper {
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
+        val projectPaperId = parseUUID(request.id, EntityType.PROJECT_PAPER)
+        val projectPaper = projectPaperRepo.getProjectPaperById(projectPaperId)
+        val projectId = projectPaper.projectId
+        val isInProject = projectMemberRepo.getProjectMembers(projectId)
+            .any { it.userId == currentUser.id }
+
+        if (!isInProject) {
+            verifyServerAdminRole(currentUser) {
+                throw UnauthorizedException.Single(
+                    EntityType.PROJECT,
+                    projectId.toString(),
+                    AccessType.READ,
+                    it,
+                )
+            }
+        }
+
+        val paper = paperRepo.getPaperById(projectPaper.paperId)
+        val authors = authorOfPaperTableRepo.getAuthorsOfPaperById(paper.id).map { it.toGrpcAuthor() }
+        val backwardReferences = citationTableRepo.getBackwardsReferencedPaperIdsOfPaperById(
+            paper.id,
+        ).map { it.toString() }
+        return ProjectPaperWithPaper(projectPaper, paper).toGrpcProjectPaper(authors, backwardReferences)
+    }
+
+    override suspend fun getAllProjectPapersForProject(request: Base.Id): GrpcProject.Paper.List {
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
+        val projectId = parseUUID(request.id, EntityType.PROJECT)
+        repo.getProjectById(projectId)
+        val projectMembers = projectMemberRepo.getProjectMembers(projectId)
+
+        if (!projectMembers.any { it.userId == currentUser.id }) {
+            verifyServerAdminRole(currentUser) {
+                throw UnauthorizedException.Single(
+                    EntityType.PROJECT,
+                    projectId.toString(),
+                    AccessType.READ,
+                    it,
+                )
+            }
+        }
+
+        val projectPapersWithPapers = projectPaperRepo.getProjectPapersWithPapers(projectId)
+        val paperAuthorsMap = mutableMapOf<Paper, List<Author>>()
+        val paperBackwardReferencesMap = mutableMapOf<Paper, List<UUID>>()
+        for (projectPaper in projectPapersWithPapers) {
+            val paper = projectPaper.paper
+            paperAuthorsMap[paper] = authorOfPaperTableRepo.getAuthorsOfPaperById(paper.id)
+            paperBackwardReferencesMap[paper] = citationTableRepo.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
+        }
+        return projectPapersWithPapers.toGrpcProjectPapers(paperAuthorsMap, paperBackwardReferencesMap)
     }
 }
