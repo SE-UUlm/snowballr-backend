@@ -324,14 +324,14 @@ class SnowballRServer(
         override suspend fun deleteCriterion(request: Base.Id): Base.Nothing = super.deleteCriterion(request)
 
         override suspend fun getProjectPaperById(request: Base.Id): ProjectOuterClass.Project.Paper =
-            super.getProjectPaperById(request)
+            mainService.getProjectPaperById(request)
 
         override suspend fun getProjectPaperByRelativeId(
             request: ProjectOuterClass.Project.Paper.Get,
         ): ProjectOuterClass.Project.Paper = super.getProjectPaperByRelativeId(request)
 
         override suspend fun getAllProjectPapersForProject(request: Base.Id): ProjectOuterClass.Project.Paper.List =
-            super.getAllProjectPapersForProject(request)
+            mainService.getAllProjectPapersForProject(request)
 
         override suspend fun addPaperToProject(
             request: ProjectOuterClass.Project.Paper.Add,
