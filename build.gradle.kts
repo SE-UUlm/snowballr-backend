@@ -8,6 +8,7 @@ plugins {
     alias(libs.plugins.kotlinx.kover)
     alias(libs.plugins.protobuf)
     alias(libs.plugins.shadow.jar)
+    alias(libs.plugins.serialization)
     application
 }
 
@@ -71,6 +72,7 @@ dependencies {
 
     implementation(libs.simple.java.mail)
     implementation(libs.handlebars)
+    implementation(libs.serialization.json)
 }
 
 kotlin {
