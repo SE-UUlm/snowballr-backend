@@ -19,8 +19,6 @@ import snowballr.UserOuterClass.UserRole
 import java.util.UUID
 
 class CreateCriterionTest : MainServiceTest() {
-    private val dummyUserUUID = UUID.randomUUID()
-
     private fun getProjectCriterionRequest(projectId: String): CriterionOuterClass.Criterion.Create {
         return CriterionOuterClass.Criterion.Create.newBuilder()
             .setTag("Tag")
@@ -51,13 +49,13 @@ class CreateCriterionTest : MainServiceTest() {
 
     @Test
     fun `When an admin user creates a project criterion, then no exception is thrown`() = runTest {
-        val user = DataBuilder.createExampleUser(id = dummyUserUUID, role = UserRole.USER_ROLE_ADMIN)
+        val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val project = DataBuilder.createExampleProject()
 
         val criterion = DataBuilder.createExampleCriterion(projectId = project.id)
         val request = getProjectCriterionRequest(project.id.toString())
 
-        every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
+        every { GrpcContext.getUserIdFromContext() } returns user.id
         coEvery { userRepoMock.getUserById(GrpcContext.getUserIdFromContext()) } returns user
         coEvery { criterionRepoMock.createCriterion(any(), any()) } returns criterion
         coEvery { projectRepoMock.getProjectById(project.id) } returns project
@@ -68,14 +66,14 @@ class CreateCriterionTest : MainServiceTest() {
 
     @Test
     fun `When a project admin creates a project criterion, then no exception is thrown`() = runTest {
-        val user = DataBuilder.createExampleUser(id = dummyUserUUID, role = UserRole.USER_ROLE_DEFAULT)
+        val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject()
-        val projectMember = DataBuilder.createExampleProjectMember(userId = dummyUserUUID, projectId = project.id)
+        val projectMember = DataBuilder.createExampleProjectMember(userId = user.id, projectId = project.id)
 
         val criterion = DataBuilder.createExampleCriterion(projectId = project.id)
         val request = getProjectCriterionRequest(project.id.toString())
 
-        every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
+        every { GrpcContext.getUserIdFromContext() } returns user.id
         coEvery { userRepoMock.getUserById(GrpcContext.getUserIdFromContext()) } returns user
         coEvery { criterionRepoMock.createCriterion(any(), any()) } returns criterion
 
@@ -92,7 +90,7 @@ class CreateCriterionTest : MainServiceTest() {
 
         val request = getProjectCriterionRequest(project.id.toString())
 
-        every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
+        every { GrpcContext.getUserIdFromContext() } returns user.id
         coEvery { userRepoMock.getUserById(GrpcContext.getUserIdFromContext()) } returns user
         coEvery { projectRepoMock.getProjectById(project.id) } returns project
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
@@ -107,7 +105,7 @@ class CreateCriterionTest : MainServiceTest() {
     fun `When a project admin creates a project criterion for a non active project, then a failed precondition exception is thrown`(
         status: ProjectOuterClass.ProjectStatus,
     ) = runTest {
-        val user = DataBuilder.createExampleUser(id = dummyUserUUID, role = UserRole.USER_ROLE_DEFAULT)
+        val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject(
             status = status,
         )
@@ -115,7 +113,7 @@ class CreateCriterionTest : MainServiceTest() {
 
         val request = getProjectCriterionRequest(project.id.toString())
 
-        every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
+        every { GrpcContext.getUserIdFromContext() } returns user.id
         coEvery { userRepoMock.getUserById(GrpcContext.getUserIdFromContext()) } returns user
         coEvery { projectRepoMock.getProjectById(project.id) } returns project
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
@@ -125,14 +123,14 @@ class CreateCriterionTest : MainServiceTest() {
 
     @Test
     fun `When an user creates a user criterion, then no exception is thrown`() = runTest {
-        val user = DataBuilder.createExampleUser(id = dummyUserUUID, role = UserRole.USER_ROLE_DEFAULT)
+        val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
 
         val criterion = DataBuilder.createExampleCriterion()
         val request = getUserCriterionRequest()
 
-        every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
+        every { GrpcContext.getUserIdFromContext() } returns user.id
         coEvery { userRepoMock.getUserById(GrpcContext.getUserIdFromContext()) } returns user
-        coEvery { criterionRepoMock.createCriterion(any(), dummyUserUUID) } returns criterion
+        coEvery { criterionRepoMock.createCriterion(any(), user.id) } returns criterion
 
         assertDoesNotThrow { mainService.createCriterion(request) }
     }

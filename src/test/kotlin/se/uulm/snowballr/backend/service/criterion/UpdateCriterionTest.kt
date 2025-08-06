@@ -20,7 +20,6 @@ import java.util.UUID
 
 class UpdateCriterionTest : MainServiceTest() {
     private val requestId = UUID.randomUUID()
-    private val dummyUserUUID = UUID.randomUUID()
 
     private fun getExampleRequest(): CriterionOuterClass.Criterion.Update {
         val updatedCriterion = DataBuilder.createExampleCriterion(
@@ -43,20 +42,20 @@ class UpdateCriterionTest : MainServiceTest() {
 
     @Test
     fun `When a server admin updates a project criterion, then no exception is thrown`() = runTest {
-        val user = DataBuilder.createExampleUser(id = dummyUserUUID, role = UserRole.USER_ROLE_ADMIN)
+        val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val project = DataBuilder.createExampleProject(
             status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE,
         )
         val criterion = DataBuilder.createExampleCriterion(
             id = requestId,
             projectId = project.id,
-            createdBy = dummyUserUUID,
+            createdBy = user.id,
         )
 
         val request = getExampleRequest()
 
-        every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
-        coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
+        every { GrpcContext.getUserIdFromContext() } returns user.id
+        coEvery { userRepoMock.getUserById(user.id) } returns user
         coEvery { criterionRepoMock.getCriterionById(requestId) } returns criterion
         coEvery { projectRepoMock.getProjectById(any()) } returns project
         coEvery { projectMemberRepoMock.getAllProjectAdmins(any()) } returns emptyList()
@@ -67,7 +66,7 @@ class UpdateCriterionTest : MainServiceTest() {
 
     @Test
     fun `When a project admin updates a project criterion, then no exception is thrown`() = runTest {
-        val user = DataBuilder.createExampleUser(id = dummyUserUUID, role = UserRole.USER_ROLE_DEFAULT)
+        val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject(
             status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE,
         )
@@ -75,13 +74,13 @@ class UpdateCriterionTest : MainServiceTest() {
         val criterion = DataBuilder.createExampleCriterion(
             id = requestId,
             projectId = project.id,
-            createdBy = dummyUserUUID,
+            createdBy = user.id,
         )
 
         val request = getExampleRequest()
 
-        every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
-        coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
+        every { GrpcContext.getUserIdFromContext() } returns user.id
+        coEvery { userRepoMock.getUserById(user.id) } returns user
         coEvery { criterionRepoMock.getCriterionById(requestId) } returns criterion
         coEvery { projectRepoMock.getProjectById(any()) } returns project
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
@@ -93,7 +92,7 @@ class UpdateCriterionTest : MainServiceTest() {
     @Test
     fun `When a project admin updates a project criterion of a non-active project, then a failed precondition exception is thrown`() =
         runTest {
-            val user = DataBuilder.createExampleUser(id = dummyUserUUID, role = UserRole.USER_ROLE_DEFAULT)
+            val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
             val project = DataBuilder.createExampleProject(
                 status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ARCHIVED,
             )
@@ -101,13 +100,13 @@ class UpdateCriterionTest : MainServiceTest() {
             val criterion = DataBuilder.createExampleCriterion(
                 id = requestId,
                 projectId = project.id,
-                createdBy = dummyUserUUID,
+                createdBy = user.id,
             )
 
             val request = getExampleRequest()
 
-            every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
-            coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
+            every { GrpcContext.getUserIdFromContext() } returns user.id
+            coEvery { userRepoMock.getUserById(user.id) } returns user
             coEvery { criterionRepoMock.getCriterionById(requestId) } returns criterion
             coEvery { projectRepoMock.getProjectById(any()) } returns project
             coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
@@ -117,20 +116,20 @@ class UpdateCriterionTest : MainServiceTest() {
 
     @Test
     fun `When a project member updates a project criterion, then an unauthorized exception is thrown`() = runTest {
-        val user = DataBuilder.createExampleUser(id = dummyUserUUID, role = UserRole.USER_ROLE_DEFAULT)
+        val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject(
             status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE,
         )
         val criterion = DataBuilder.createExampleCriterion(
             id = requestId,
             projectId = project.id,
-            createdBy = dummyUserUUID,
+            createdBy = user.id,
         )
 
         val request = getExampleRequest()
 
-        every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
-        coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
+        every { GrpcContext.getUserIdFromContext() } returns user.id
+        coEvery { userRepoMock.getUserById(user.id) } returns user
         coEvery { criterionRepoMock.getCriterionById(requestId) } returns criterion
         coEvery { projectRepoMock.getProjectById(any()) } returns project
         coEvery { projectMemberRepoMock.getAllProjectAdmins(any()) } returns emptyList()
@@ -140,14 +139,14 @@ class UpdateCriterionTest : MainServiceTest() {
 
     @Test
     fun `When a server admin updates a user criterion, then no exception is thrown`() = runTest {
-        val user = DataBuilder.createExampleUser(id = dummyUserUUID, role = UserRole.USER_ROLE_ADMIN)
+        val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val criterion =
             DataBuilder.createExampleCriterion(id = requestId, projectId = null, createdBy = UUID.randomUUID())
 
         val request = getExampleRequest()
 
-        every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
-        coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
+        every { GrpcContext.getUserIdFromContext() } returns user.id
+        coEvery { userRepoMock.getUserById(user.id) } returns user
         coEvery { criterionRepoMock.getCriterionById(requestId) } returns criterion
         coEvery { criterionRepoMock.updateCriterion(request) } returns criterion
 
@@ -156,14 +155,14 @@ class UpdateCriterionTest : MainServiceTest() {
 
     @Test
     fun `When a user updates a user criterion, which he created himself, then no exception is thrown`() = runTest {
-        val user = DataBuilder.createExampleUser(id = dummyUserUUID, role = UserRole.USER_ROLE_DEFAULT)
+        val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val criterion =
-            DataBuilder.createExampleCriterion(id = requestId, projectId = null, createdBy = dummyUserUUID)
+            DataBuilder.createExampleCriterion(id = requestId, projectId = null, createdBy = user.id)
 
         val request = getExampleRequest()
 
-        every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
-        coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
+        every { GrpcContext.getUserIdFromContext() } returns user.id
+        coEvery { userRepoMock.getUserById(user.id) } returns user
         coEvery { criterionRepoMock.getCriterionById(requestId) } returns criterion
         coEvery { criterionRepoMock.updateCriterion(request) } returns criterion
 
@@ -173,14 +172,14 @@ class UpdateCriterionTest : MainServiceTest() {
     @Test
     fun `When a user updates a user criterion, which he did not created himself, then no exception is thrown`() =
         runTest {
-            val user = DataBuilder.createExampleUser(id = dummyUserUUID, role = UserRole.USER_ROLE_DEFAULT)
+            val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
             val criterion =
                 DataBuilder.createExampleCriterion(id = requestId, projectId = null, createdBy = UUID.randomUUID())
 
             val request = getExampleRequest()
 
-            every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
-            coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
+            every { GrpcContext.getUserIdFromContext() } returns user.id
+            coEvery { userRepoMock.getUserById(user.id) } returns user
             coEvery { criterionRepoMock.getCriterionById(requestId) } returns criterion
 
             assertThrows<SnowballRException.UnauthorizedException> { mainService.updateCriterion(request) }
@@ -188,14 +187,14 @@ class UpdateCriterionTest : MainServiceTest() {
 
     @Test
     fun `When an error occurs while the criterion is updated, then an exception is thrown`() = runTest {
-        val user = DataBuilder.createExampleUser(id = dummyUserUUID, role = UserRole.USER_ROLE_DEFAULT)
+        val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val criterion =
-            DataBuilder.createExampleCriterion(id = requestId, projectId = null, createdBy = dummyUserUUID)
+            DataBuilder.createExampleCriterion(id = requestId, projectId = null, createdBy = user.id)
 
         val request = getExampleRequest()
 
-        every { GrpcContext.getUserIdFromContext() } returns dummyUserUUID
-        coEvery { userRepoMock.getUserById(dummyUserUUID) } returns user
+        every { GrpcContext.getUserIdFromContext() } returns user.id
+        coEvery { userRepoMock.getUserById(user.id) } returns user
         coEvery { criterionRepoMock.getCriterionById(requestId) } returns criterion
         coEvery { criterionRepoMock.updateCriterion(request) } throws TestSpecificException()
 
