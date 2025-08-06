@@ -6,6 +6,7 @@ import org.jetbrains.exposed.sql.insertAndGetId
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.table.PaperTable
+import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.table.association.toProjectMember
@@ -85,4 +86,22 @@ object RepositoryHelper {
             it[PaperTable.fetcherMetadata] = fetcherMetadata
         }.value
     }
+
+    suspend fun insertTestProjectAndGetId(name: String, status: ProjectOuterClass.ProjectStatus, userId: UUID): UUID =
+        db.query {
+            ProjectTable
+                .insertAndGetId {
+                    it[ProjectTable.name] = name
+                    it[ProjectTable.status] = status
+                    it[currentStage] = 0
+                    it[maxStage] = 0
+                    it[similarityThreshold] = 0F
+                    it[snowballingType] = ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_BOTH
+                    it[reviewMaybeAllowed] = true
+                    it[reviewDecisionMatrixBinary] =
+                        ProjectOuterClass.ReviewDecisionMatrix.getDefaultInstance().toByteArray()
+                    it[fetcherApis] = emptyList()
+                    it[createdBy] = userId
+                }.value
+        }
 }
