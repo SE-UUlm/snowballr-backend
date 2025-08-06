@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.repository
 import com.google.protobuf.util.FieldMaskUtil
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -18,11 +19,15 @@ import se.uulm.snowballr.backend.model.dto.Criterion.UserCriterion
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.toGrpcCriterion
 import se.uulm.snowballr.backend.repository.RepositoryHelper.createExampleUser
+import se.uulm.snowballr.backend.repository.RepositoryHelper.insertTestProjectAndGetId
 import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.ProjectTable
+import se.uulm.snowballr.backend.table.toProjectCriterion
+import se.uulm.snowballr.backend.table.toUserCriterion
 import se.uulm.snowballr.backend.utils.GrpcEnumSourceTest
 import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass
+import snowballr.ProjectOuterClass.ProjectStatus
 import java.util.UUID
 import kotlin.test.assertIs
 import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
@@ -44,7 +49,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
         name: String = "Test Criterion",
         description: String = "Test Description",
         category: CriterionCategory = CriterionCategory.CRITERION_CATEGORY_EXCLUSION,
-        projectId: UUID = UUID.randomUUID(),
+        projectId: UUID? = UUID.randomUUID(),
     ): UUID = db.query {
         CriterionTable.insertAndGetId {
             it[CriterionTable.tag] = tag
@@ -64,6 +69,30 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
             Arguments.of(listOf("criterion.description")),
             Arguments.of(listOf("criterion.category")),
         )
+    }
+
+    @Nested
+    inner class Mapper {
+        @Test
+        fun `When project criterion is converted to user criterion, then exception is thrown`() = runTest {
+            val projectId = insertTestProjectAndGetId("Test Project", ProjectStatus.PROJECT_STATUS_ACTIVE, testUserId)
+            val id = insertTestCriterionAndGetId(projectId = projectId)
+            assertThrows<IllegalArgumentException> {
+                db.query {
+                    CriterionTable.getEntityByIdOrNull(id, ResultRow::toUserCriterion)
+                }
+            }
+        }
+
+        @Test
+        fun `When user criterion is converted to project criterion, then exception is thrown`() = runTest {
+            val id = insertTestCriterionAndGetId(projectId = null)
+            assertThrows<IllegalArgumentException> {
+                db.query {
+                    CriterionTable.getEntityByIdOrNull(id, ResultRow::toProjectCriterion)
+                }
+            }
+        }
     }
 
     @Nested
