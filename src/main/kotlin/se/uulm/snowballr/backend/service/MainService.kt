@@ -13,7 +13,8 @@ interface IMainService :
     IProjectService,
     ICriterionService,
     IUserService,
-    IFetcherService
+    IFetcherService,
+    IReadingListService
 
 /**
  * The [MainService] class serves as the primary service implementation layer that aggregates multiple sub-services.
@@ -25,14 +26,17 @@ interface IMainService :
  * @param criterionService The service responsible for handling business logic related to criteria.
  * @param userService The service responsible for handling business logic related to users.
  * @param fetcherService The service responsible for handling business logic related to fetchers.
+ * @param readingListService The service responsible for handling business logic related to reading lists.
  */
 class MainService(
     private val projectService: IProjectService,
     private val criterionService: ICriterionService,
     private val userService: IUserService,
     private val fetcherService: IFetcherService,
+    private val readingListService: IReadingListService,
 ) : IMainService,
     IProjectService by projectService,
     ICriterionService by criterionService,
     IUserService by userService,
-    IFetcherService by fetcherService
+    IFetcherService by fetcherService,
+    IReadingListService by readingListService

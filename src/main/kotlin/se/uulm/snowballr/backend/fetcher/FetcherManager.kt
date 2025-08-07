@@ -52,7 +52,7 @@ class FetcherManager {
      * fetcher implementation.
      *
      * @param fetcher The name of the fetcher whose options should be retrieved.
-     * @returns A set of names for options the fetcher has specified it would accept.
+     * @return A set of names for options the fetcher has specified it would accept.
      */
     suspend fun getAvailableOptions(fetcher: String): Set<String> = getFetcherOrThrow(
         fetcher,

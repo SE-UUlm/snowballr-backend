@@ -20,7 +20,6 @@ import org.testcontainers.containers.PostgreSQLContainer
 import se.uulm.snowballr.backend.db.DatabaseHelper.addAllTables
 import se.uulm.snowballr.backend.db.DatabaseHelper.addExtensions
 import se.uulm.snowballr.backend.db.DatabaseHelper.dropAllTables
-import se.uulm.snowballr.backend.db.DatabaseHelper.removeExtensions
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.table.UserTable
 import snowballr.UserOuterClass
@@ -144,7 +143,9 @@ open class RepositoryTest(
     fun tearDownTest() {
         db.queryBlocking {
             dropAllTables(getTestTables())
-            removeExtensions()
+            // This call seems to provoke "ERROR: cache lookup failed for type 16386"
+            // PSQLException errors in the test suite. Leaving this commented out for now.
+            // removeExtensions()
         }
         clearAllMocks()
     }

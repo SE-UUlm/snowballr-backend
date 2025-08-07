@@ -15,14 +15,24 @@ import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.env.EnvService
 import se.uulm.snowballr.backend.env.IEnvService
 import se.uulm.snowballr.backend.fetcher.FetcherManager
+import se.uulm.snowballr.backend.repository.AuthorTableRepo
 import se.uulm.snowballr.backend.repository.CriterionTableRepo
+import se.uulm.snowballr.backend.repository.IAuthorTableRepo
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
+import se.uulm.snowballr.backend.repository.IPaperTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
+import se.uulm.snowballr.backend.repository.PaperTableRepo
 import se.uulm.snowballr.backend.repository.ProjectTableRepo
 import se.uulm.snowballr.backend.repository.UserTableRepo
+import se.uulm.snowballr.backend.repository.association.AuthorOfPaperTableRepo
+import se.uulm.snowballr.backend.repository.association.CitationTableRepo
+import se.uulm.snowballr.backend.repository.association.IAuthorOfPaperTableRepo
+import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
+import se.uulm.snowballr.backend.repository.association.IReadingListTableRepo
 import se.uulm.snowballr.backend.repository.association.ProjectMemberTableRepo
+import se.uulm.snowballr.backend.repository.association.ReadingListTableRepo
 import se.uulm.snowballr.backend.service.AuthenticationService
 import se.uulm.snowballr.backend.service.CriterionService
 import se.uulm.snowballr.backend.service.EmailService
@@ -33,9 +43,11 @@ import se.uulm.snowballr.backend.service.IEmailService
 import se.uulm.snowballr.backend.service.IFetcherService
 import se.uulm.snowballr.backend.service.IMainService
 import se.uulm.snowballr.backend.service.IProjectService
+import se.uulm.snowballr.backend.service.IReadingListService
 import se.uulm.snowballr.backend.service.IUserService
 import se.uulm.snowballr.backend.service.MainService
 import se.uulm.snowballr.backend.service.ProjectService
+import se.uulm.snowballr.backend.service.ReadingListService
 import se.uulm.snowballr.backend.service.UserService
 
 /**
@@ -89,6 +101,11 @@ private fun Module.repositoryLayerDeps() {
     singleOf(::CriterionTableRepo) { bind<ICriterionTableRepo>() }
     singleOf(::UserTableRepo) { bind<IUserTableRepo>() }
     singleOf(::ProjectMemberTableRepo) { bind<IProjectMemberTableRepo>() }
+    singleOf(::PaperTableRepo) { bind<IPaperTableRepo>() }
+    singleOf(::AuthorTableRepo) { bind<IAuthorTableRepo>() }
+    singleOf(::AuthorOfPaperTableRepo) { bind<IAuthorOfPaperTableRepo>() }
+    singleOf(::CitationTableRepo) { bind<ICitationTableRepo>() }
+    singleOf(::ReadingListTableRepo) { bind<IReadingListTableRepo>() }
 }
 
 /**
@@ -121,6 +138,7 @@ fun Module.serviceLayerDeps() {
     singleOf(::CriterionService) { bind<ICriterionService>() }
     singleOf(::UserService) { bind<IUserService>() }
     singleOf(::FetcherService) { bind<IFetcherService>() }
+    singleOf(::ReadingListService) { bind<IReadingListService>() }
     // The main service comes last
     singleOf(::MainService) { bind<IMainService>() }
 }

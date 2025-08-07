@@ -1,12 +1,14 @@
 package se.uulm.snowballr.backend
 
 import kotlinx.datetime.Instant
+import se.uulm.snowballr.backend.model.dto.Author
 import se.uulm.snowballr.backend.model.dto.Criterion
 import se.uulm.snowballr.backend.model.dto.Paper
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.ProjectMember
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.UserSettings
+import snowballr.Base
 import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass.MemberRole
 import snowballr.ProjectOuterClass.ProjectStatus
@@ -169,4 +171,22 @@ object DataBuilder {
         modifiedAt,
         modifiedBy,
     )
+
+    fun createExampleAuthor(
+        id: UUID = UUID.randomUUID(),
+        firstName: String = "FirstName",
+        lastName: String = "LastName",
+        orcid: String? = "Orcid",
+        createdAt: OffsetDateTime = OffsetDateTime.now(),
+        modifiedAt: OffsetDateTime? = null,
+    ) = Author(
+        id,
+        firstName,
+        lastName,
+        orcid,
+        createdAt,
+        modifiedAt,
+    )
+
+    fun UUID.toGrpcId() = Base.Id.newBuilder().setId(this.toString()).build()
 }
