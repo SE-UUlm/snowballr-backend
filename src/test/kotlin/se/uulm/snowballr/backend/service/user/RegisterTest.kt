@@ -1,6 +1,7 @@
 package se.uulm.snowballr.backend.service.user
 
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.slot
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
@@ -54,6 +55,7 @@ class RegisterTest : MainServiceTest() {
         coEvery { userRepoMock.doesUserExistByEmail(any()) } returns false
         coEvery { userRepoMock.createUser(any(), any()) } returns user
         coEvery { verificationTokenRepoMock.saveVerificationToken(any(), any()) } returns Unit
+        every { emailServiceMock.createEmailVerificationLink(any()) } returns "test-token"
         coEvery { emailServiceMock.sendEmailVerificationEmail(any(), any()) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.register(request) }
@@ -69,6 +71,7 @@ class RegisterTest : MainServiceTest() {
                 .setLastName(user.lastName)
                 .setPassword("VALIDPassword__1234")
                 .build()
+            val testFrontendURL = "https://example.com"
 
             val tokenSlot = slot<String>()
             val emailDataSlot = slot<EmailData.EmailVerification>()
@@ -76,6 +79,12 @@ class RegisterTest : MainServiceTest() {
             coEvery { userRepoMock.doesUserExistByEmail(any()) } returns false
             coEvery { userRepoMock.createUser(any(), any()) } returns user
             coEvery { verificationTokenRepoMock.saveVerificationToken(any(), capture(tokenSlot)) } returns Unit
+
+            every { emailServiceMock.createEmailVerificationLink(any()) } answers {
+                val token = firstArg<String>()
+                "$testFrontendURL/verifyemail?token=$token"
+            }
+
             coEvery { emailServiceMock.sendEmailVerificationEmail(any(), capture(emailDataSlot)) } returns Unit
 
             assertDoesNotThrow { mainService.register(request) }
@@ -84,8 +93,10 @@ class RegisterTest : MainServiceTest() {
             assertThat(capturedToken).isNotBlank()
 
             val capturedEmailData = emailDataSlot.captured
+            val expectedVerificationLink = "$testFrontendURL/verifyemail?token=$capturedToken"
+
             assertThat(capturedEmailData.firstName).isEqualTo(user.firstName)
             assertThat(capturedEmailData.lastName).isEqualTo(user.lastName)
-            assertThat(capturedEmailData.verificationLink).contains(capturedToken)
+            assertThat(capturedEmailData.verificationLink).isEqualTo(expectedVerificationLink)
         }
 }
