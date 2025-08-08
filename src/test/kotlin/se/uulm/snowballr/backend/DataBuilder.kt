@@ -7,6 +7,7 @@ import se.uulm.snowballr.backend.model.dto.Paper
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.ProjectMember
 import se.uulm.snowballr.backend.model.dto.ProjectPaper
+import se.uulm.snowballr.backend.model.dto.Review
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.UserSettings
 import se.uulm.snowballr.backend.model.dto.VerificationToken
@@ -17,6 +18,7 @@ import snowballr.ProjectOuterClass.MemberRole
 import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
 import snowballr.ProjectOuterClass.SnowballingType
+import snowballr.ReviewOuterClass
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
 import java.time.OffsetDateTime
@@ -229,6 +231,22 @@ object DataBuilder {
         firstName,
         lastName,
         orcid,
+        createdAt,
+        modifiedAt,
+    )
+
+    fun createExampleReview(
+        id: UUID = UUID.randomUUID(),
+        projectPaperId: UUID = UUID.randomUUID(),
+        userId: UUID = UUID.randomUUID(),
+        decision: ReviewOuterClass.ReviewDecision = ReviewOuterClass.ReviewDecision.REVIEW_DECISION_ACCEPTED,
+        createdAt: OffsetDateTime = OffsetDateTime.now(),
+        modifiedAt: OffsetDateTime? = null,
+    ) = Review(
+        id,
+        projectPaperId,
+        userId,
+        decision,
         createdAt,
         modifiedAt,
     )
