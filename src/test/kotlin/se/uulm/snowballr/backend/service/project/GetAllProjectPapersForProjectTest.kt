@@ -60,7 +60,7 @@ class GetAllProjectPapersForProjectTest : MainServiceTest() {
     }
 
     @Test
-    fun `When retrieving requested project papers with project fails, then an exception is thrown`() = runTest {
+    fun `When retrieving project papers with project fails, then an exception is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject(id = requestId)
         val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
@@ -69,13 +69,15 @@ class GetAllProjectPapersForProjectTest : MainServiceTest() {
         coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
         coEvery { projectRepoMock.getProjectById(project.id) } returns project
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
-        coEvery { projectPaperRepoMock.getProjectPapersWithPapers(project.id) } throws TestSpecificException()
+        coEvery {
+            projectPaperRepoMock.getAllProjectPapersWithPapers(project.id)
+        } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getAllProjectPapersForProject(getExampleRequest()) }
     }
 
     @Test
-    fun `When retrieving requested authors by paper id fails, then an exception is thrown`() = runTest {
+    fun `When retrieving authors fails, then an exception is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject(id = requestId)
         val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
@@ -87,14 +89,16 @@ class GetAllProjectPapersForProjectTest : MainServiceTest() {
         coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
         coEvery { projectRepoMock.getProjectById(project.id) } returns project
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
-        coEvery { projectPaperRepoMock.getProjectPapersWithPapers(project.id) } returns listOf(projectPaperWithPaper)
+        coEvery {
+            projectPaperRepoMock.getAllProjectPapersWithPapers(project.id)
+        } returns listOf(projectPaperWithPaper)
         coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(paper.id) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getAllProjectPapersForProject(getExampleRequest()) }
     }
 
     @Test
-    fun `When retrieving requested backward references by paper id fails, then an exception is thrown`() = runTest {
+    fun `When retrieving backward references fails, then an exception is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject(id = requestId)
         val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
@@ -107,9 +111,69 @@ class GetAllProjectPapersForProjectTest : MainServiceTest() {
         coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
         coEvery { projectRepoMock.getProjectById(project.id) } returns project
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
-        coEvery { projectPaperRepoMock.getProjectPapersWithPapers(project.id) } returns listOf(projectPaperWithPaper)
+        coEvery {
+            projectPaperRepoMock.getAllProjectPapersWithPapers(project.id)
+        } returns listOf(projectPaperWithPaper)
         coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(paper.id) } returns listOf(author)
-        coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id) } throws TestSpecificException()
+        coEvery {
+            citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
+        } throws TestSpecificException()
+
+        assertThrows<TestSpecificException> { mainService.getAllProjectPapersForProject(getExampleRequest()) }
+    }
+
+    @Test
+    fun `When retrieving reviews fails, then an exception is thrown`() = runTest {
+        val currentUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_ADMIN)
+        val project = DataBuilder.createExampleProject(id = requestId)
+        val paper = DataBuilder.createExamplePaper(id = requestId)
+        val projectPaper = DataBuilder.createExampleProjectPaper(projectId = project.id, paperId = paper.id)
+        val projectPaperWithPaper = ProjectPaperWithPaper(projectPaper, paper)
+        val author = DataBuilder.createExampleAuthor()
+
+        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { projectRepoMock.getProjectById(project.id) } returns project
+        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
+        coEvery {
+            projectPaperRepoMock.getAllProjectPapersWithPapers(project.id)
+        } returns listOf(projectPaperWithPaper)
+        coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(paper.id) } returns listOf(author)
+        coEvery {
+            citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
+        } returns listOf(UUID.randomUUID())
+        coEvery {
+            reviewRepoMock.getAllReviewsForProjectPaper(projectPaper.id)
+        } throws TestSpecificException()
+
+        assertThrows<TestSpecificException> { mainService.getAllProjectPapersForProject(getExampleRequest()) }
+    }
+
+    @Test
+    fun `When retrieving selected criteria ids fails, then an exception is thrown`() = runTest {
+        val currentUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_ADMIN)
+        val project = DataBuilder.createExampleProject(id = requestId)
+        val paper = DataBuilder.createExamplePaper(id = requestId)
+        val projectPaper = DataBuilder.createExampleProjectPaper(projectId = project.id, paperId = paper.id)
+        val projectPaperWithPaper = ProjectPaperWithPaper(projectPaper, paper)
+        val author = DataBuilder.createExampleAuthor()
+        val review = DataBuilder.createExampleReview()
+
+        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { projectRepoMock.getProjectById(project.id) } returns project
+        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
+        coEvery {
+            projectPaperRepoMock.getAllProjectPapersWithPapers(project.id)
+        } returns listOf(projectPaperWithPaper)
+        coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(paper.id) } returns listOf(author)
+        coEvery {
+            citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
+        } returns listOf(UUID.randomUUID())
+        coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper.id) } returns listOf(review)
+        coEvery {
+            reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(review.id)
+        } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getAllProjectPapersForProject(getExampleRequest()) }
     }
@@ -122,15 +186,22 @@ class GetAllProjectPapersForProjectTest : MainServiceTest() {
         val projectPaper = DataBuilder.createExampleProjectPaper(projectId = project.id, paperId = paper.id)
         val projectPaperWithPaper = ProjectPaperWithPaper(projectPaper, paper)
         val author = DataBuilder.createExampleAuthor()
+        val review = DataBuilder.createExampleReview()
 
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
         coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
         coEvery { projectRepoMock.getProjectById(project.id) } returns project
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
-        coEvery { projectPaperRepoMock.getProjectPapersWithPapers(project.id) } returns listOf(projectPaperWithPaper)
+        coEvery {
+            projectPaperRepoMock.getAllProjectPapersWithPapers(project.id)
+        } returns listOf(projectPaperWithPaper)
         coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(paper.id) } returns listOf(author)
         coEvery {
             citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
+        } returns listOf(UUID.randomUUID())
+        coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper.id) } returns listOf(review)
+        coEvery {
+            reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(review.id)
         } returns listOf(UUID.randomUUID())
 
         assertDoesNotThrow { mainService.getAllProjectPapersForProject(getExampleRequest()) }
@@ -145,15 +216,22 @@ class GetAllProjectPapersForProjectTest : MainServiceTest() {
         val projectPaper = DataBuilder.createExampleProjectPaper(projectId = project.id, paperId = paper.id)
         val projectPaperWithPaper = ProjectPaperWithPaper(projectPaper, paper)
         val author = DataBuilder.createExampleAuthor()
+        val review = DataBuilder.createExampleReview()
 
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
         coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
         coEvery { projectRepoMock.getProjectById(project.id) } returns project
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
-        coEvery { projectPaperRepoMock.getProjectPapersWithPapers(project.id) } returns listOf(projectPaperWithPaper)
+        coEvery {
+            projectPaperRepoMock.getAllProjectPapersWithPapers(project.id)
+        } returns listOf(projectPaperWithPaper)
         coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(paper.id) } returns listOf(author)
         coEvery {
             citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
+        } returns listOf(UUID.randomUUID())
+        coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper.id) } returns listOf(review)
+        coEvery {
+            reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(review.id)
         } returns listOf(UUID.randomUUID())
 
         assertDoesNotThrow { mainService.getAllProjectPapersForProject(getExampleRequest()) }

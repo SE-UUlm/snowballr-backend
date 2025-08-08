@@ -6,7 +6,6 @@ import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
-import se.uulm.snowballr.backend.model.dto.Author
 import se.uulm.snowballr.backend.model.dto.Paper
 import se.uulm.snowballr.backend.model.dto.ProjectPaperWithPaper
 import se.uulm.snowballr.backend.model.dto.toGrpcAuthor
@@ -15,6 +14,7 @@ import se.uulm.snowballr.backend.model.dto.toGrpcProjectMembers
 import se.uulm.snowballr.backend.model.dto.toGrpcProjectPaper
 import se.uulm.snowballr.backend.model.dto.toGrpcProjectPapers
 import se.uulm.snowballr.backend.model.dto.toGrpcProjects
+import se.uulm.snowballr.backend.model.dto.toGrpcReview
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
@@ -24,10 +24,13 @@ import se.uulm.snowballr.backend.repository.association.IAuthorOfPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
+import se.uulm.snowballr.backend.repository.association.IReviewHasCriterionTableRepo
+import se.uulm.snowballr.backend.repository.association.IReviewTableRepo
 import snowballr.Base
 import snowballr.CriterionOuterClass
+import snowballr.PaperOuterClass
 import snowballr.ProjectOuterClass.ProjectStatus
-import java.util.UUID
+import snowballr.ReviewOuterClass
 import snowballr.ProjectOuterClass.Project as GrpcProject
 
 @Suppress("ComplexInterface")
@@ -102,6 +105,9 @@ interface IProjectService {
  * @param authorOfPaperTableRepo The repository responsible for managing persistence operations for the author
  * paper relation.
  * @param citationTableRepo The repository responsible for managing persistence operations for the citation relation.
+ * @param reviewTableRepo The repository responsible for managing persistence operations for the reviews
+ * @param reviewHasCriterionTableRepo The repository responsible for managing persistence operations for the review has
+ * criterion relation.
  */
 @Suppress("LongParameterList")
 class ProjectService(
@@ -113,6 +119,8 @@ class ProjectService(
     private val projectPaperRepo: IProjectPaperTableRepo,
     private val authorOfPaperTableRepo: IAuthorOfPaperTableRepo,
     private val citationTableRepo: ICitationTableRepo,
+    private val reviewTableRepo: IReviewTableRepo,
+    private val reviewHasCriterionTableRepo: IReviewHasCriterionTableRepo,
 ) : IProjectService {
     override suspend fun getProjectById(request: Base.Id): GrpcProject {
         val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
@@ -243,10 +251,9 @@ class ProjectService(
         val projectPaperId = parseUUID(request.id, EntityType.PROJECT_PAPER)
         val projectPaper = projectPaperRepo.getProjectPaperById(projectPaperId)
         val projectId = projectPaper.projectId
-        val isInProject = projectMemberRepo.getProjectMembers(projectId)
-            .any { it.userId == currentUser.id }
+        val projectMembers = projectMemberRepo.getProjectMembers(projectId)
 
-        if (!isInProject) {
+        if (!projectMembers.any { it.userId == currentUser.id }) {
             verifyServerAdminRole(currentUser) {
                 throw UnauthorizedException.Single(
                     EntityType.PROJECT,
@@ -262,7 +269,13 @@ class ProjectService(
         val backwardReferences = citationTableRepo.getBackwardsReferencedPaperIdsOfPaperById(
             paper.id,
         ).map { it.toString() }
-        return ProjectPaperWithPaper(projectPaper, paper).toGrpcProjectPaper(authors, backwardReferences)
+        val reviews = reviewTableRepo.getAllReviewsForProjectPaper(projectPaperId)
+            .map {
+                val selectedCriteriaIds = reviewHasCriterionTableRepo.getSelectedCriteriaIdsForReviewById(it.id)
+                it.toGrpcReview(selectedCriteriaIds.map { criterion -> criterion.toString() })
+            }
+
+        return ProjectPaperWithPaper(projectPaper, paper).toGrpcProjectPaper(authors, backwardReferences, reviews)
     }
 
     override suspend fun getAllProjectPapersForProject(request: Base.Id): GrpcProject.Paper.List {
@@ -282,14 +295,26 @@ class ProjectService(
             }
         }
 
-        val projectPapersWithPapers = projectPaperRepo.getProjectPapersWithPapers(projectId)
-        val paperAuthorsMap = mutableMapOf<Paper, List<Author>>()
-        val paperBackwardReferencesMap = mutableMapOf<Paper, List<UUID>>()
+        val projectPapersWithPapers = projectPaperRepo.getAllProjectPapersWithPapers(projectId)
+        val paperAuthorsMap = mutableMapOf<Paper, List<PaperOuterClass.Author>>()
+        val paperBackwardReferencesMap = mutableMapOf<Paper, List<String>>()
+        val paperReviewsMap = mutableMapOf<Paper, List<ReviewOuterClass.Review>>()
         for (projectPaper in projectPapersWithPapers) {
             val paper = projectPaper.paper
-            paperAuthorsMap[paper] = authorOfPaperTableRepo.getAuthorsOfPaperById(paper.id)
-            paperBackwardReferencesMap[paper] = citationTableRepo.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
+            paperAuthorsMap[paper] = authorOfPaperTableRepo
+                .getAuthorsOfPaperById(paper.id).map { it.toGrpcAuthor() }
+            paperBackwardReferencesMap[paper] = citationTableRepo
+                .getBackwardsReferencedPaperIdsOfPaperById(paper.id).map {
+                    it.toString()
+                }
+            paperReviewsMap[paper] = reviewTableRepo
+                .getAllReviewsForProjectPaper(projectPaper.projectPaper.id)
+                .map {
+                    val selectedCriteriaIds = reviewHasCriterionTableRepo
+                        .getSelectedCriteriaIdsForReviewById(it.id)
+                    it.toGrpcReview(selectedCriteriaIds.map { criterion -> criterion.toString() })
+                }
         }
-        return projectPapersWithPapers.toGrpcProjectPapers(paperAuthorsMap, paperBackwardReferencesMap)
+        return projectPapersWithPapers.toGrpcProjectPapers(paperAuthorsMap, paperBackwardReferencesMap, paperReviewsMap)
     }
 }

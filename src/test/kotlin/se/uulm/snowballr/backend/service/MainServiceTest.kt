@@ -28,6 +28,8 @@ import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.IReadingListTableRepo
+import se.uulm.snowballr.backend.repository.association.IReviewHasCriterionTableRepo
+import se.uulm.snowballr.backend.repository.association.IReviewTableRepo
 import se.uulm.snowballr.backend.service.criterion.CreateCriterionTest
 import se.uulm.snowballr.backend.serviceLayerDeps
 
@@ -88,6 +90,8 @@ open class MainServiceTest : KoinTest {
     val citationRepoMock = mockk<ICitationTableRepo>()
     val readingListRepoMock = mockk<IReadingListTableRepo>()
     val paperRepoMock = mockk<IPaperTableRepo>()
+    val reviewRepoMock = mockk<IReviewTableRepo>()
+    val reviewHasCriterionRepoMock = mockk<IReviewHasCriterionTableRepo>()
     val verificationTokenRepoMock = mockk<IVerificationTokenTableRepo>()
 
     // Custom services / manager / clients mocks
@@ -108,6 +112,8 @@ open class MainServiceTest : KoinTest {
         citationRepoMock,
         readingListRepoMock,
         paperRepoMock,
+        reviewRepoMock,
+        reviewHasCriterionRepoMock,
     )
 
     val mainService: IMainService by inject()
@@ -129,6 +135,8 @@ open class MainServiceTest : KoinTest {
         single { citationRepoMock }
         single { readingListRepoMock }
         single { paperRepoMock }
+        single { reviewRepoMock }
+        single { reviewHasCriterionRepoMock }
         single { verificationTokenRepoMock }
 
         // Custom services / managers / clients

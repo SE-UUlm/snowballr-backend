@@ -12,6 +12,7 @@ package se.uulm.snowballr.backend.service
 interface IMainService :
     IProjectService,
     ICriterionService,
+    IReviewService,
     IUserService,
     IFetcherService,
     IReadingListService
@@ -24,6 +25,7 @@ interface IMainService :
  * @constructor Initializes the [MainService] with the required services.
  * @param projectService The service responsible for handling business logic related to projects.
  * @param criterionService The service responsible for handling business logic related to criteria.
+ * @param reviewService The service responsible for handling business logic related to reviews.
  * @param userService The service responsible for handling business logic related to users.
  * @param fetcherService The service responsible for handling business logic related to fetchers.
  * @param readingListService The service responsible for handling business logic related to reading lists.
@@ -31,12 +33,14 @@ interface IMainService :
 class MainService(
     private val projectService: IProjectService,
     private val criterionService: ICriterionService,
+    private val reviewService: IReviewService,
     private val userService: IUserService,
     private val fetcherService: IFetcherService,
     private val readingListService: IReadingListService,
 ) : IMainService,
     IProjectService by projectService,
     ICriterionService by criterionService,
+    IReviewService by reviewService,
     IUserService by userService,
     IFetcherService by fetcherService,
     IReadingListService by readingListService
