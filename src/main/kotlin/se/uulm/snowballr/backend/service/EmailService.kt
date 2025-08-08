@@ -25,6 +25,16 @@ interface IEmailService {
      * @param data The data model containing the user's data.
      */
     fun sendEmailVerificationEmail(to: String, data: EmailData.EmailVerification)
+
+    /**
+     * Creates a verification link for email verification.
+     *
+     * This method generates a complete URL that includes the base URL of the frontend and appends the verification token as a query parameter.
+     *
+     * @param token The verification token to include in the link.
+     * @return A string representing the complete email verification link.
+     */
+    fun createEmailVerificationLink(token: String): String
 }
 
 /**
@@ -112,4 +122,7 @@ class EmailService(
             throw EmailException.MailSendFailed(to, e)
         }
     }
+
+    override fun createEmailVerificationLink(token: String): String =
+        "${envReader.env.miscellaneous.frontendBaseUrl}/verifyemail?token=$token"
 }

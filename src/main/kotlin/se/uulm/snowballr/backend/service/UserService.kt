@@ -6,7 +6,6 @@ import io.viascom.nanoid.NanoId
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.auth.IJwtService
 import se.uulm.snowballr.backend.auth.PasswordUtils
-import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
@@ -113,7 +112,6 @@ private const val VERIFICATION_TOKEN_LENGTH = 48
  * delegating the actual persistence operations to the [IUserTableRepo] repository.
  *
  * @constructor Initializes the [UserService] with a user repository.
- * @param envReader The environment reader for accessing environment variables.
  * @param userRepo The repository responsible for managing persistence operations for users.
  * @param projectMemberRepo The repository responsible for managing persistence operations for project members.
  * @param criterionRepo The repository responsible for managing persistence operations for criteria.
@@ -123,7 +121,6 @@ private const val VERIFICATION_TOKEN_LENGTH = 48
  */
 @Suppress("TooManyFunctions")
 class UserService(
-    private val envReader: EnvReader,
     private val userRepo: IUserTableRepo,
     private val projectMemberRepo: IProjectMemberTableRepo,
     private val criterionRepo: ICriterionTableRepo,
@@ -252,7 +249,7 @@ class UserService(
         verificationTokenRepo.saveVerificationToken(user.id, verificationToken)
 
         // Send verification email
-        val verificationLink = "${envReader.env.miscellaneous.frontendBaseUrl}/verifyemail?token=$verificationToken"
+        val verificationLink = emailService.createEmailVerificationLink(verificationToken)
         emailService.sendEmailVerificationEmail(
             user.email,
             EmailData.EmailVerification(
