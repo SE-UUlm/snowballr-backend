@@ -41,7 +41,7 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
         }
 
         @Test
-        fun `When a criterion is not found, then an exception is thrown`() = runTest {
+        fun `When a project paper is not found, then an exception is thrown`() = runTest {
             assertThrows<NotFoundException> { repo.getProjectPaperById(UUID.randomUUID()) }
         }
     }
@@ -58,7 +58,7 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
                 val projectPaper = repo.getProjectPaperById(projectPaperId)
 
                 val paper = paperRepo.getPaperById(paperId)
-                val projectPapers = repo.getProjectPapersWithPapers(projectId)
+                val projectPapers = repo.getAllProjectPapersWithPapers(projectId)
 
                 assertThat(projectPapers).hasSize(1)
                 assertThat(projectPapers).anyMatch { it.projectPaper == projectPaper }
@@ -78,10 +78,7 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
                     insertProjectPaperAndGetId(paperId = paperId, projectId = projectId2, createdBy = testUserId)
 
                 val paper = paperRepo.getPaperById(paperId)
-                val projectPapers = repo.getProjectPapersWithPapers(projectId1)
-
-                assertThat(projectPapers).hasSize(1)
-                assertThat(projectPapers).anyMatch { it.paper == paper }
+                val projectPapers = repo.getAllProjectPapersWithPapers(projectId1)
 
                 assertThat(projectPapers).hasSize(1)
                 assertThat(projectPapers).anyMatch { it.projectPaper == projectPaper }

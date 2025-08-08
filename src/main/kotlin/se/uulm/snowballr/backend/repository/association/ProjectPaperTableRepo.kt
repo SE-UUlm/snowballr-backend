@@ -10,7 +10,6 @@ import se.uulm.snowballr.backend.model.dto.ProjectPaper
 import se.uulm.snowballr.backend.model.dto.ProjectPaperWithPaper
 import se.uulm.snowballr.backend.repository.getEntityByIdOrNull
 import se.uulm.snowballr.backend.table.PaperTable
-import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.table.association.toProjectPaper
 import se.uulm.snowballr.backend.table.association.toProjectPaperWithPaper
@@ -40,7 +39,7 @@ interface IProjectPaperTableRepo {
      * @return A list of [ProjectPaperWithPaper] instances, each representing a relationship
      *         between a project paper and its associated paper.
      */
-    suspend fun getProjectPapersWithPapers(projectId: UUID): List<ProjectPaperWithPaper>
+    suspend fun getAllProjectPapersWithPapers(projectId: UUID): List<ProjectPaperWithPaper>
 }
 
 /**
@@ -65,9 +64,8 @@ class ProjectPaperTableRepo(
         getProjectPaperByIdOrNull(id) ?: throw NotFoundException(EntityType.PROJECT_PAPER, id.toString())
     }
 
-    override suspend fun getProjectPapersWithPapers(projectId: UUID): List<ProjectPaperWithPaper> = db.query {
+    override suspend fun getAllProjectPapersWithPapers(projectId: UUID): List<ProjectPaperWithPaper> = db.query {
         ProjectPaperTable
-            .join(ProjectTable, JoinType.INNER, onColumn = ProjectPaperTable.projectId, otherColumn = ProjectTable.id)
             .join(PaperTable, JoinType.INNER, onColumn = ProjectPaperTable.paperId, otherColumn = PaperTable.id)
             .selectAll()
             .where { ProjectPaperTable.projectId eq projectId }

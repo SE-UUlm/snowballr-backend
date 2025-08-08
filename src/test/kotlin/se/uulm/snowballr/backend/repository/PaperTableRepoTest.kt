@@ -20,7 +20,7 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
     inner class GetPaperById {
         @Test
         fun `When a paper is found, then the correct paper is returned`() = runTest {
-            val paperId = insertPaperAndGetId()
+            val paperId = insertPaperAndGetId(externalId = "ExternalId")
             val paper = repo.getPaperById(paperId)
 
             with(paper) {

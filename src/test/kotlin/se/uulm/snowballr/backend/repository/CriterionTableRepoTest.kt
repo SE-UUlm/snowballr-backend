@@ -3,8 +3,6 @@ package se.uulm.snowballr.backend.repository
 import com.google.protobuf.util.FieldMaskUtil
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
-import org.jetbrains.exposed.sql.ResultRow
-import org.jetbrains.exposed.sql.insertAndGetId
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -19,15 +17,12 @@ import se.uulm.snowballr.backend.model.dto.Criterion.UserCriterion
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.toGrpcCriterion
 import se.uulm.snowballr.backend.repository.RepositoryHelper.createExampleUser
-import se.uulm.snowballr.backend.repository.RepositoryHelper.insertTestProjectAndGetId
+import se.uulm.snowballr.backend.repository.RepositoryHelper.insertCriterionAndGetId
 import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.ProjectTable
-import se.uulm.snowballr.backend.table.toProjectCriterion
-import se.uulm.snowballr.backend.table.toUserCriterion
 import se.uulm.snowballr.backend.utils.GrpcEnumSourceTest
 import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass
-import snowballr.ProjectOuterClass.ProjectStatus
 import java.util.UUID
 import kotlin.test.assertIs
 import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
@@ -44,23 +39,6 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
         return projectRepo.createProject(request, testUserId, DataBuilder.createExampleUserSettings())
     }
 
-    private suspend fun insertTestCriterionAndGetId(
-        tag: String = "Test Tag",
-        name: String = "Test Criterion",
-        description: String = "Test Description",
-        category: CriterionCategory = CriterionCategory.CRITERION_CATEGORY_EXCLUSION,
-        projectId: UUID? = UUID.randomUUID(),
-    ): UUID = db.query {
-        CriterionTable.insertAndGetId {
-            it[CriterionTable.tag] = tag
-            it[CriterionTable.name] = name
-            it[CriterionTable.description] = description
-            it[CriterionTable.category] = category
-            it[CriterionTable.projectId] = projectId
-            it[CriterionTable.createdBy] = testUserId
-        }.value
-    }
-
     companion object {
         @JvmStatic
         fun validFieldMasks(): List<Arguments> = listOf(
@@ -72,35 +50,11 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
     }
 
     @Nested
-    inner class Mapper {
-        @Test
-        fun `When project criterion is converted to user criterion, then exception is thrown`() = runTest {
-            val projectId = insertTestProjectAndGetId("Test Project", ProjectStatus.PROJECT_STATUS_ACTIVE, testUserId)
-            val id = insertTestCriterionAndGetId(projectId = projectId)
-            assertThrows<IllegalArgumentException> {
-                db.query {
-                    CriterionTable.getEntityByIdOrNull(id, ResultRow::toUserCriterion)
-                }
-            }
-        }
-
-        @Test
-        fun `When user criterion is converted to project criterion, then exception is thrown`() = runTest {
-            val id = insertTestCriterionAndGetId(projectId = null)
-            assertThrows<IllegalArgumentException> {
-                db.query {
-                    CriterionTable.getEntityByIdOrNull(id, ResultRow::toProjectCriterion)
-                }
-            }
-        }
-    }
-
-    @Nested
     inner class GetCriterionById {
         @Test
         fun `When a criterion is found, then the correct criterion is returned`() = runTest {
             val projectId = createExampleProject().id
-            val criterionId = insertTestCriterionAndGetId(projectId = projectId)
+            val criterionId = insertCriterionAndGetId(projectId = projectId, createdBy = testUserId)
             val criterion = repo.getCriterionById(criterionId)
 
             assertIs<ProjectCriterion>(criterion)
@@ -338,7 +292,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
             fieldMask: List<String>,
         ) = runTest {
             val projectId = createExampleProject().id
-            val criterionId = insertTestCriterionAndGetId(projectId = projectId)
+            val criterionId = insertCriterionAndGetId(projectId = projectId, createdBy = testUserId)
             val originalCriterion = repo.getCriterionById(criterionId)
 
             val updatedCriterionDetails = originalCriterion.toGrpcCriterion().toBuilder()

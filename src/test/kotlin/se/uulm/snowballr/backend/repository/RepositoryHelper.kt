@@ -2,19 +2,25 @@ package se.uulm.snowballr.backend.repository
 
 import kotlinx.datetime.Instant
 import org.jetbrains.exposed.sql.ResultRow
+import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.insertAndGetId
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
+import se.uulm.snowballr.backend.table.association.ReviewHasCriterionTable
+import se.uulm.snowballr.backend.table.association.ReviewTable
 import se.uulm.snowballr.backend.table.association.toProjectMember
+import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass
 import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
 import snowballr.ProjectOuterClass.SnowballingType
+import snowballr.ReviewOuterClass
 import snowballr.UserOuterClass
 import java.util.UUID
 
@@ -74,7 +80,7 @@ object RepositoryHelper {
     @Suppress("LongParameterList")
     suspend fun insertPaperAndGetId(
         title: String = "Title",
-        externalId: String = "ExternalId",
+        externalId: String = UUID.randomUUID().toString(),
         abstract: String = "Abstract",
         publishedAt: Instant = Instant.fromEpochSeconds(0),
         publisher: String = "Publisher",
@@ -139,5 +145,44 @@ object RepositoryHelper {
             it[ProjectPaperTable.decision] = decision
             it[ProjectPaperTable.createdBy] = createdBy
         }.value
+    }
+
+    @Suppress("LongParameterList")
+    suspend fun insertReviewAndGetId(
+        projectPaperId: UUID,
+        userId: UUID,
+        decision: ReviewOuterClass.ReviewDecision = ReviewOuterClass.ReviewDecision.REVIEW_DECISION_ACCEPTED,
+    ): UUID = db.query {
+        ReviewTable.insertAndGetId {
+            it[ReviewTable.projectPaperId] = projectPaperId
+            it[ReviewTable.userId] = userId
+            it[ReviewTable.decision] = decision
+        }.value
+    }
+
+    @Suppress("LongParameterList")
+    suspend fun insertCriterionAndGetId(
+        tag: String = "Test Tag",
+        name: String = "Test Criterion",
+        description: String = "Test Description",
+        category: CriterionCategory = CriterionCategory.CRITERION_CATEGORY_EXCLUSION,
+        projectId: UUID,
+        createdBy: UUID,
+    ): UUID = db.query {
+        CriterionTable.insertAndGetId {
+            it[CriterionTable.tag] = tag
+            it[CriterionTable.name] = name
+            it[CriterionTable.description] = description
+            it[CriterionTable.category] = category
+            it[CriterionTable.projectId] = projectId
+            it[CriterionTable.createdBy] = createdBy
+        }.value
+    }
+
+    suspend fun assignCriterionToReview(reviewId: UUID, criterionId: UUID) = db.query {
+        ReviewHasCriterionTable.insert {
+            it[ReviewHasCriterionTable.reviewId] = reviewId
+            it[ReviewHasCriterionTable.criterionId] = criterionId
+        }
     }
 }
