@@ -55,8 +55,8 @@ class RegisterTest : MainServiceTest() {
         coEvery { userRepoMock.doesUserExistByEmail(any()) } returns false
         coEvery { userRepoMock.createUser(any(), any()) } returns user
         coEvery { verificationTokenRepoMock.saveVerificationToken(any(), any()) } returns Unit
-        every { emailServiceMock.createEmailVerificationLink(any()) } returns "test-token"
-        coEvery { emailServiceMock.sendEmailVerificationEmail(any(), any()) } throws TestSpecificException()
+        every { emailServiceMock.createVerificationLink(any()) } returns "test-token"
+        coEvery { emailServiceMock.sendVerificationEmail(any(), any()) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.register(request) }
     }
@@ -80,12 +80,12 @@ class RegisterTest : MainServiceTest() {
             coEvery { userRepoMock.createUser(any(), any()) } returns user
             coEvery { verificationTokenRepoMock.saveVerificationToken(any(), capture(tokenSlot)) } returns Unit
 
-            every { emailServiceMock.createEmailVerificationLink(any()) } answers {
+            every { emailServiceMock.createVerificationLink(any()) } answers {
                 val token = firstArg<String>()
                 "$testFrontendURL/verifyemail?token=$token"
             }
 
-            coEvery { emailServiceMock.sendEmailVerificationEmail(any(), capture(emailDataSlot)) } returns Unit
+            coEvery { emailServiceMock.sendVerificationEmail(any(), capture(emailDataSlot)) } returns Unit
 
             assertDoesNotThrow { mainService.register(request) }
 

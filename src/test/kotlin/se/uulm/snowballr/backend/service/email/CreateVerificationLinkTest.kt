@@ -18,7 +18,7 @@ import se.uulm.snowballr.backend.service.IEmailService
  * in the test resources classpath under the `/templates` directory. This is necessary
  * because the EmailService compiles these templates during its initialization.
  */
-class CreateEmailVerificationLinkTest {
+class CreateVerificationLinkTest {
     private val envReaderMock = mockk<EnvReader>()
     private lateinit var emailService: IEmailService
 
@@ -55,7 +55,7 @@ class CreateEmailVerificationLinkTest {
             val verificationToken = "random-test-token"
             val expectedLink = "$testFrontendUrl/verifyemail?token=$verificationToken"
 
-            val actualLink = emailService.createEmailVerificationLink(verificationToken)
+            val actualLink = emailService.createVerificationLink(verificationToken)
 
             assertThat(actualLink).isEqualTo(expectedLink)
         }

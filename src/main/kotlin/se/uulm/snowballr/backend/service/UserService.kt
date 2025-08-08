@@ -249,8 +249,8 @@ class UserService(
         verificationTokenRepo.saveVerificationToken(user.id, verificationToken)
 
         // Send verification email
-        val verificationLink = emailService.createEmailVerificationLink(verificationToken)
-        emailService.sendEmailVerificationEmail(
+        val verificationLink = emailService.createVerificationLink(verificationToken)
+        emailService.sendVerificationEmail(
             user.email,
             EmailData.EmailVerification(
                 user.firstName,

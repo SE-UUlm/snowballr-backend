@@ -19,12 +19,12 @@ private val logger = KotlinLogging.logger {}
 
 interface IEmailService {
     /**
-     * Sends an email verification email to the specified recipient.
+     * Sends a verification email to the specified recipient.
      *
      * @param to The recipient's email address.
      * @param data The data model containing the user's data.
      */
-    fun sendEmailVerificationEmail(to: String, data: EmailData.EmailVerification)
+    fun sendVerificationEmail(to: String, data: EmailData.EmailVerification)
 
     /**
      * Creates a verification link for email verification.
@@ -34,7 +34,7 @@ interface IEmailService {
      * @param token The verification token to include in the link.
      * @return A string representing the complete email verification link.
      */
-    fun createEmailVerificationLink(token: String): String
+    fun createVerificationLink(token: String): String
 }
 
 /**
@@ -89,7 +89,7 @@ class EmailService(
         logger.info { "Initialized Mailer and compiled all email templates." }
     }
 
-    override fun sendEmailVerificationEmail(to: String, data: EmailData.EmailVerification) {
+    override fun sendVerificationEmail(to: String, data: EmailData.EmailVerification) {
         sendEmail(to, EmailTemplate.EMAIL_VERIFICATION, data)
     }
 
@@ -123,6 +123,6 @@ class EmailService(
         }
     }
 
-    override fun createEmailVerificationLink(token: String): String =
+    override fun createVerificationLink(token: String): String =
         "${envReader.env.miscellaneous.frontendBaseUrl}/verifyemail?token=$token"
 }
