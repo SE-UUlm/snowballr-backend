@@ -3,7 +3,6 @@ package se.uulm.snowballr.backend.repository
 import com.google.protobuf.util.FieldMaskUtil
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
-import org.jetbrains.exposed.sql.insertAndGetId
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -15,6 +14,7 @@ import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.toGrpcProject
 import se.uulm.snowballr.backend.repository.RepositoryHelper.assignUserToProject
 import se.uulm.snowballr.backend.repository.RepositoryHelper.createExampleUser
+import se.uulm.snowballr.backend.repository.RepositoryHelper.insertTestProjectAndGetId
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import snowballr.ProjectOuterClass.Project
@@ -26,21 +26,8 @@ import java.util.UUID
 class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberTable), true) {
     private val repo = ProjectTableRepo(db)
 
-    private suspend fun insertTestProjectAndGetId(name: String, status: ProjectStatus): UUID = db.query {
-        ProjectTable
-            .insertAndGetId {
-                it[ProjectTable.name] = name
-                it[ProjectTable.status] = status
-                it[currentStage] = 0
-                it[maxStage] = 0
-                it[similarityThreshold] = 0F
-                it[snowballingType] = SnowballingType.SNOWBALLING_TYPE_BOTH
-                it[reviewMaybeAllowed] = true
-                it[reviewDecisionMatrixBinary] = ReviewDecisionMatrix.getDefaultInstance().toByteArray()
-                it[fetcherApis] = emptyList()
-                it[createdBy] = testUserId
-            }.value
-    }
+    private suspend fun insertTestProjectAndGetId(name: String, status: ProjectStatus) =
+        insertTestProjectAndGetId(name, status, testUserId)
 
     companion object {
         @JvmStatic

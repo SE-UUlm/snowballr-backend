@@ -66,22 +66,40 @@ object DataBuilder {
         archivedBy = archivedBy,
     )
 
-    fun createExampleCriterion(
+    fun createExampleProjectCriterion(
         id: UUID = UUID.randomUUID(),
         tag: String = "Test Tag",
         name: String = "Test Criterion",
         description: String = "Test Description",
         category: CriterionCategory = CriterionCategory.CRITERION_CATEGORY_UNSPECIFIED,
-        projectId: UUID? = UUID.randomUUID(),
+        projectId: UUID = UUID.randomUUID(),
         createdAt: OffsetDateTime = OffsetDateTime.now(),
         createdBy: UUID = UUID.randomUUID(),
-    ) = Criterion(
+    ) = Criterion.ProjectCriterion(
         id = id,
         tag = tag,
         name = name,
         description = description,
         category = category,
         projectId = projectId,
+        createdAt = createdAt,
+        createdBy = createdBy,
+    )
+
+    fun createExampleUserCriterion(
+        id: UUID = UUID.randomUUID(),
+        tag: String = "Test Tag",
+        name: String = "Test Criterion",
+        description: String = "Test Description",
+        category: CriterionCategory = CriterionCategory.CRITERION_CATEGORY_UNSPECIFIED,
+        createdAt: OffsetDateTime = OffsetDateTime.now(),
+        createdBy: UUID = UUID.randomUUID(),
+    ) = Criterion.UserCriterion(
+        id = id,
+        tag = tag,
+        name = name,
+        description = description,
+        category = category,
         createdAt = createdAt,
         createdBy = createdBy,
     )

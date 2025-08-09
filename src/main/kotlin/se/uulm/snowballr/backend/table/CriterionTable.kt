@@ -44,13 +44,39 @@ object CriterionTable : UUIDTable("criterion") {
 /**
  * Creates a [Criterion] from this [ResultRow].
  */
-fun ResultRow.toCriterion() = Criterion(
-    id = this[CriterionTable.id].value,
-    tag = this[CriterionTable.tag],
-    name = this[CriterionTable.name],
-    description = this[CriterionTable.description],
-    category = this[CriterionTable.category],
-    projectId = this[CriterionTable.projectId]?.value,
-    createdAt = this[CriterionTable.createdAt],
-    createdBy = this[CriterionTable.createdBy].value,
-)
+fun ResultRow.toCriterion(): Criterion =
+    if (this[CriterionTable.projectId] == null) this.toUserCriterion() else this.toProjectCriterion()
+
+/**
+ * Creates a [Criterion.UserCriterion] from this [ResultRow].
+ */
+fun ResultRow.toUserCriterion(): Criterion.UserCriterion {
+    require(this[CriterionTable.projectId] == null) { "Project ID must be null for a user criterion" }
+    return Criterion.UserCriterion(
+        id = this[CriterionTable.id].value,
+        tag = this[CriterionTable.tag],
+        name = this[CriterionTable.name],
+        description = this[CriterionTable.description],
+        category = this[CriterionTable.category],
+        createdAt = this[CriterionTable.createdAt],
+        createdBy = this[CriterionTable.createdBy].value,
+    )
+}
+
+/**
+ * Creates a [Criterion.ProjectCriterion] from this [ResultRow].
+ */
+fun ResultRow.toProjectCriterion(): Criterion.ProjectCriterion {
+    val projectId = this[CriterionTable.projectId]
+    requireNotNull(projectId) { "Project ID must not be null for a project criterion" }
+    return Criterion.ProjectCriterion(
+        id = this[CriterionTable.id].value,
+        tag = this[CriterionTable.tag],
+        name = this[CriterionTable.name],
+        description = this[CriterionTable.description],
+        category = this[CriterionTable.category],
+        projectId = projectId.value,
+        createdAt = this[CriterionTable.createdAt],
+        createdBy = this[CriterionTable.createdBy].value,
+    )
+}

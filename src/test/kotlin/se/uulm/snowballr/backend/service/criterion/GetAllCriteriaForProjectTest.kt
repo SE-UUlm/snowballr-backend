@@ -94,7 +94,7 @@ class GetAllCriteriaForProjectTest : MainServiceTest() {
         val request = getExampleRequest()
 
         val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-        val criterion = DataBuilder.createExampleCriterion(
+        val criterion = DataBuilder.createExampleProjectCriterion(
             projectId = requestId,
             createdBy = adminUser.id,
         )
@@ -115,7 +115,7 @@ class GetAllCriteriaForProjectTest : MainServiceTest() {
             val request = getExampleRequest()
 
             val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-            val criterion = DataBuilder.createExampleCriterion(
+            val criterion = DataBuilder.createExampleProjectCriterion(
                 projectId = requestId,
                 createdBy = user.id,
             )

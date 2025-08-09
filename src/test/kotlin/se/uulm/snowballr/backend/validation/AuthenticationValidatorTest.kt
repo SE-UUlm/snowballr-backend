@@ -174,7 +174,7 @@ class AuthenticationValidatorTest {
                 .setEmail("test.user@example.com")
                 .setPassword("AAbb__00")
                 .build()
-            val result = AuthenticationValidator.validateLoginRequest(request)
+            val result = validateRequest(request)
 
             EitherAssert.assertThat(result).isRight()
         }
@@ -184,7 +184,7 @@ class AuthenticationValidatorTest {
             val request = Authentication.LoginRequest.newBuilder()
                 .setEmail("invalid-email")
                 .build()
-            val result = AuthenticationValidator.validateLoginRequest(request)
+            val result = validateRequest(request)
 
             assertInvalidResult<InvalidEmail>(result)
         }
@@ -195,7 +195,7 @@ class AuthenticationValidatorTest {
                 .setEmail("test.user@example.com")
                 .setPassword("")
                 .build()
-            val result = AuthenticationValidator.validateLoginRequest(request)
+            val result = validateRequest(request)
 
             assertInvalidResult<BlankField>(result)
         }

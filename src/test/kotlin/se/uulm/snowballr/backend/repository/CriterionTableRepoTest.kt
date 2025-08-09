@@ -2,8 +2,8 @@ package se.uulm.snowballr.backend.repository
 
 import com.google.protobuf.util.FieldMaskUtil
 import kotlinx.coroutines.test.runTest
-import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
+import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -13,16 +13,24 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
+import se.uulm.snowballr.backend.model.dto.Criterion
+import se.uulm.snowballr.backend.model.dto.Criterion.ProjectCriterion
+import se.uulm.snowballr.backend.model.dto.Criterion.UserCriterion
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.toGrpcCriterion
 import se.uulm.snowballr.backend.repository.RepositoryHelper.createExampleUser
+import se.uulm.snowballr.backend.repository.RepositoryHelper.insertTestProjectAndGetId
 import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.ProjectTable
+import se.uulm.snowballr.backend.table.toProjectCriterion
+import se.uulm.snowballr.backend.table.toUserCriterion
 import se.uulm.snowballr.backend.utils.GrpcEnumSourceTest
-import snowballr.CriterionOuterClass.Criterion
 import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass
+import snowballr.ProjectOuterClass.ProjectStatus
 import java.util.UUID
+import kotlin.test.assertIs
+import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
 
 class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTable), true) {
     private val repo = CriterionTableRepo(db)
@@ -41,7 +49,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
         name: String = "Test Criterion",
         description: String = "Test Description",
         category: CriterionCategory = CriterionCategory.CRITERION_CATEGORY_EXCLUSION,
-        projectId: UUID = UUID.randomUUID(),
+        projectId: UUID? = UUID.randomUUID(),
     ): UUID = db.query {
         CriterionTable.insertAndGetId {
             it[CriterionTable.tag] = tag
@@ -64,6 +72,30 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
     }
 
     @Nested
+    inner class Mapper {
+        @Test
+        fun `When project criterion is converted to user criterion, then exception is thrown`() = runTest {
+            val projectId = insertTestProjectAndGetId("Test Project", ProjectStatus.PROJECT_STATUS_ACTIVE, testUserId)
+            val id = insertTestCriterionAndGetId(projectId = projectId)
+            assertThrows<IllegalArgumentException> {
+                db.query {
+                    CriterionTable.getEntityByIdOrNull(id, ResultRow::toUserCriterion)
+                }
+            }
+        }
+
+        @Test
+        fun `When user criterion is converted to project criterion, then exception is thrown`() = runTest {
+            val id = insertTestCriterionAndGetId(projectId = null)
+            assertThrows<IllegalArgumentException> {
+                db.query {
+                    CriterionTable.getEntityByIdOrNull(id, ResultRow::toProjectCriterion)
+                }
+            }
+        }
+    }
+
+    @Nested
     inner class GetCriterionById {
         @Test
         fun `When a criterion is found, then the correct criterion is returned`() = runTest {
@@ -71,6 +103,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
             val criterionId = insertTestCriterionAndGetId(projectId = projectId)
             val criterion = repo.getCriterionById(criterionId)
 
+            assertIs<ProjectCriterion>(criterion)
             assertThat(criterion.id).isEqualTo(criterionId)
             assertThat(criterion.tag).isEqualTo("Test Tag")
             assertThat(criterion.name).isEqualTo("Test Criterion")
@@ -95,7 +128,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                 val project = createExampleProject()
 
                 val request =
-                    Criterion.Create
+                    GrpcCriterion.Create
                         .newBuilder()
                         .setTag("Test Tag")
                         .setName("Test Criterion")
@@ -105,19 +138,20 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                         .build()
                 val criterion = repo.createCriterion(request, testUserId)
 
-                Assertions.assertThat(criterion.tag).isEqualTo("Test Tag")
-                Assertions.assertThat(criterion.name).isEqualTo("Test Criterion")
-                Assertions.assertThat(criterion.description).isEqualTo("Test Description")
-                Assertions.assertThat(criterion.category).isEqualTo(category)
-                Assertions.assertThat(criterion.projectId).isEqualTo(project.id)
-                Assertions.assertThat(criterion.createdBy).isEqualTo(testUserId)
+                assertIs<ProjectCriterion>(criterion)
+                assertThat(criterion.tag).isEqualTo("Test Tag")
+                assertThat(criterion.name).isEqualTo("Test Criterion")
+                assertThat(criterion.description).isEqualTo("Test Description")
+                assertThat(criterion.category).isEqualTo(category)
+                assertThat(criterion.projectId).isEqualTo(project.id)
+                assertThat(criterion.createdBy).isEqualTo(testUserId)
             }
 
         @GrpcEnumSourceTest(CriterionCategory::class)
         fun `When a user criterion is created, then the values are correctly assigned`(category: CriterionCategory) =
             runTest {
                 val request =
-                    Criterion.Create
+                    GrpcCriterion.Create
                         .newBuilder()
                         .setTag("Test Tag")
                         .setName("Test Criterion")
@@ -126,19 +160,19 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                         .build()
                 val criterion = repo.createCriterion(request, testUserId)
 
-                Assertions.assertThat(criterion.tag).isEqualTo("Test Tag")
-                Assertions.assertThat(criterion.name).isEqualTo("Test Criterion")
-                Assertions.assertThat(criterion.description).isEqualTo("Test Description")
-                Assertions.assertThat(criterion.category).isEqualTo(category)
-                Assertions.assertThat(criterion.projectId).isNull()
-                Assertions.assertThat(criterion.createdBy).isEqualTo(testUserId)
+                assertIs<UserCriterion>(criterion)
+                assertThat(criterion.tag).isEqualTo("Test Tag")
+                assertThat(criterion.name).isEqualTo("Test Criterion")
+                assertThat(criterion.description).isEqualTo("Test Description")
+                assertThat(criterion.category).isEqualTo(category)
+                assertThat(criterion.createdBy).isEqualTo(testUserId)
             }
 
         @Test
         fun `When a project criterion is created, but the assigned project doesn't exist, then an exception is thrown`() =
             runTest {
                 val request =
-                    Criterion.Create
+                    GrpcCriterion.Create
                         .newBuilder()
                         .setTag("Test Tag")
                         .setName("Test Criterion")
@@ -155,7 +189,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
             val project = createExampleProject()
 
             val request =
-                Criterion.Create
+                GrpcCriterion.Create
                     .newBuilder()
                     .setTag("Test Tag")
                     .setName("Test Criterion")
@@ -166,7 +200,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
             val criterion1 = repo.createCriterion(request, testUserId)
             val criterion2 = repo.createCriterion(request, testUserId)
 
-            Assertions.assertThat(criterion1.id).isNotEqualTo(criterion2.id)
+            assertThat(criterion1.id).isNotEqualTo(criterion2.id)
         }
 
         @GrpcEnumSourceTest(CriterionCategory::class)
@@ -174,7 +208,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
             category: CriterionCategory,
         ) = runTest {
             val request =
-                Criterion.Create
+                GrpcCriterion.Create
                     .newBuilder()
                     .setTag("Test Tag")
                     .setName("Test Criterion")
@@ -195,7 +229,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                 val userId = createExampleUser("test@email.com")
                 val projectId = createExampleProject().id
 
-                val baseRequestBuilder = Criterion.Create.newBuilder()
+                val baseRequestBuilder = GrpcCriterion.Create.newBuilder()
                     .setTag("Test Tag")
                     .setName("Test Criterion")
                     .setDescription("Test Description")
@@ -210,12 +244,12 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                 val userCriterion2 = repo.createCriterion(userCriterionRequest, userId)
                 val projectCriterion = repo.createCriterion(projectCriterionRequest, testUserId)
 
-                val userCriteria = repo.getAllUserCriteria(testUserId)
+                val userCriteria = repo.getAllUserCriteria(testUserId) as List<Criterion>
 
-                Assertions.assertThat(userCriteria).hasSize(1)
-                Assertions.assertThat(userCriteria).containsExactly(userCriterion1)
-                Assertions.assertThat(userCriteria).doesNotContain(userCriterion2)
-                Assertions.assertThat(userCriteria).doesNotContain(projectCriterion)
+                assertThat(userCriteria).hasSize(1)
+                assertThat(userCriteria).containsExactly(userCriterion1)
+                assertThat(userCriteria).doesNotContain(userCriterion2)
+                assertThat(userCriteria).doesNotContain(projectCriterion)
             }
     }
 
@@ -226,7 +260,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
             runTest {
                 val projectId = createExampleProject().id
 
-                val baseRequestBuilder = Criterion.Create.newBuilder()
+                val baseRequestBuilder = GrpcCriterion.Create.newBuilder()
                     .setTag("Test Tag")
                     .setName("Test Criterion")
                     .setDescription("Test Description")
@@ -249,7 +283,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
         @Test
         fun `When all criteria of the given ids are requested but not all criteria exist, then only the existing criteria are returned`() =
             runTest {
-                val baseRequestBuilder = Criterion.Create.newBuilder()
+                val baseRequestBuilder = GrpcCriterion.Create.newBuilder()
                     .setTag("Test Tag")
                     .setName("Test Criterion")
                     .setDescription("Test Description")
@@ -279,7 +313,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
 
         @Test
         fun `When the input list contains duplicated ids, then every criterion is returned only once`() = runTest {
-            val baseRequestBuilder = Criterion.Create.newBuilder()
+            val baseRequestBuilder = GrpcCriterion.Create.newBuilder()
                 .setTag("Test Tag")
                 .setName("Test Criterion")
                 .setDescription("Test Description")
@@ -314,7 +348,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                 .setCategory(CriterionCategory.CRITERION_CATEGORY_INCLUSION)
                 .build()
 
-            val request = Criterion.Update.newBuilder()
+            val request = GrpcCriterion.Update.newBuilder()
                 .setCriterion(updatedCriterionDetails)
                 .setMask(FieldMaskUtil.fromStringList(fieldMask))
                 .build()
@@ -352,7 +386,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                 val projectId1 = createExampleProject().id
                 val projectId2 = createExampleProject().id
 
-                val baseRequestBuilder = Criterion.Create.newBuilder()
+                val baseRequestBuilder = GrpcCriterion.Create.newBuilder()
                     .setTag("Test Tag")
                     .setName("Test Criterion")
                     .setDescription("Test Description")
@@ -372,10 +406,10 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
 
                 val userCriteria = repo.getAllProjectCriteria(projectId1)
 
-                Assertions.assertThat(userCriteria).hasSize(1)
-                Assertions.assertThat(userCriteria).containsExactly(projectCriterion1)
-                Assertions.assertThat(userCriteria).doesNotContain(projectCriterion2)
-                Assertions.assertThat(userCriteria).doesNotContain(userCriterion)
+                assertThat(userCriteria).hasSize(1)
+                assertThat(userCriteria).containsExactly(projectCriterion1)
+                assertThat(userCriteria).doesNotContain(projectCriterion2)
+                assertThat(userCriteria).doesNotContain(userCriterion)
             }
     }
 }

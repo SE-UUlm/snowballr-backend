@@ -62,7 +62,7 @@ class CreateProjectTest : MainServiceTest() {
         runTest {
             val project = DataBuilder.createExampleProject()
             val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-            val criterion = DataBuilder.createExampleCriterion()
+            val criterion = DataBuilder.createExampleProjectCriterion()
             val userSettings = DataBuilder.createExampleUserSettings(criteriaIds = listOf(criterion.id))
             val criteriaIdsSlot = slot<List<UUID>>()
 

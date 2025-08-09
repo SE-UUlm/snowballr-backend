@@ -52,7 +52,7 @@ class CreateCriterionTest : MainServiceTest() {
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val project = DataBuilder.createExampleProject()
 
-        val criterion = DataBuilder.createExampleCriterion(projectId = project.id)
+        val criterion = DataBuilder.createExampleProjectCriterion(projectId = project.id)
         val request = getProjectCriterionRequest(project.id.toString())
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
@@ -70,7 +70,7 @@ class CreateCriterionTest : MainServiceTest() {
         val project = DataBuilder.createExampleProject()
         val projectMember = DataBuilder.createExampleProjectMember(userId = user.id, projectId = project.id)
 
-        val criterion = DataBuilder.createExampleCriterion(projectId = project.id)
+        val criterion = DataBuilder.createExampleProjectCriterion(projectId = project.id)
         val request = getProjectCriterionRequest(project.id.toString())
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
@@ -125,7 +125,7 @@ class CreateCriterionTest : MainServiceTest() {
     fun `When an user creates a user criterion, then no exception is thrown`() = runTest {
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
 
-        val criterion = DataBuilder.createExampleCriterion()
+        val criterion = DataBuilder.createExampleUserCriterion()
         val request = getUserCriterionRequest()
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
@@ -152,7 +152,7 @@ class CreateCriterionTest : MainServiceTest() {
     fun `When a criterion is correctly created, then no exception is thrown`() = runTest {
         val request = CriterionOuterClass.Criterion.Create.getDefaultInstance()
         val user = DataBuilder.createExampleUser(id = UUID.randomUUID())
-        val criterion = DataBuilder.createExampleCriterion()
+        val criterion = DataBuilder.createExampleProjectCriterion()
 
         every { GrpcContext.getUserIdFromContext() } returns UUID.randomUUID()
         coEvery { userRepoMock.getUserById(GrpcContext.getUserIdFromContext()) } returns user

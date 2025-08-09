@@ -7,6 +7,8 @@ import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.Criterion
+import se.uulm.snowballr.backend.model.dto.Criterion.ProjectCriterion
+import se.uulm.snowballr.backend.model.dto.Criterion.UserCriterion
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.toGrpcCriteria
 import se.uulm.snowballr.backend.model.dto.toGrpcCriterion
@@ -73,7 +75,7 @@ class CriterionService(
      * that belongs to an active project and throws exceptions when access is unauthorized
      * or when attempting to access a criterion of an inactive project.
      *
-     * @param criterion The [GrpcCriterion] to check the permission for or null, if it does not already exist
+     * @param criterion The [ProjectCriterion] to check the permission for or null, if it does not already exist.
      * @param projectId The projectId of the [ProjectOuterClass.Project] to check the permission for.
      * @param currentUser The user whose permissions are being validated.
      * @param accessType The type of access being requested (e.g., READ, UPDATE).
@@ -84,7 +86,7 @@ class CriterionService(
      *         in a project that is not active.
      */
     private suspend fun checkProjectCriterionPermission(
-        criterion: Criterion?,
+        criterion: ProjectCriterion?,
         projectId: UUID,
         currentUser: User,
         accessType: AccessType,
@@ -133,7 +135,7 @@ class CriterionService(
      *
      * @throws UnauthorizedException.Single If the current user does not have permissions to access the criterion.
      */
-    private fun checkUserCriterionPermission(criterion: Criterion, currentUser: User, accessType: AccessType) {
+    private fun checkUserCriterionPermission(criterion: UserCriterion, currentUser: User, accessType: AccessType) {
         if (criterion.createdBy == currentUser.id) return
 
         verifyServerAdminRole(currentUser) {
@@ -157,10 +159,14 @@ class CriterionService(
      * @param accessType The type of access being requested on the criterion (e.g., READ, UPDATE, DELETE).
      */
     private suspend fun checkCriterionPermission(criterion: Criterion, currentUser: User, accessType: AccessType) {
-        if (criterion.projectId != null) {
-            checkProjectCriterionPermission(criterion, criterion.projectId, currentUser, accessType)
-        } else {
-            checkUserCriterionPermission(criterion, currentUser, accessType)
+        when (criterion) {
+            is ProjectCriterion -> checkProjectCriterionPermission(
+                criterion,
+                criterion.projectId,
+                currentUser,
+                accessType,
+            )
+            is UserCriterion -> checkUserCriterionPermission(criterion, currentUser, accessType)
         }
     }
 

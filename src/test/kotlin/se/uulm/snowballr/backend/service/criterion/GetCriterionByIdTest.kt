@@ -28,7 +28,7 @@ class GetCriterionByIdTest : MainServiceTest() {
         val request = getExampleRequest()
 
         val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-        val criterion = DataBuilder.createExampleCriterion(
+        val criterion = DataBuilder.createExampleProjectCriterion(
             id = requestId,
             projectId = UUID.randomUUID(),
             createdBy = adminUser.id,
@@ -51,7 +51,7 @@ class GetCriterionByIdTest : MainServiceTest() {
 
             val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
             val project = DataBuilder.createExampleProject()
-            val criterion = DataBuilder.createExampleCriterion(
+            val criterion = DataBuilder.createExampleProjectCriterion(
                 id = requestId,
                 projectId = project.id,
                 createdBy = user.id,
@@ -73,7 +73,7 @@ class GetCriterionByIdTest : MainServiceTest() {
             val request = getExampleRequest()
 
             val noAccessUser = DataBuilder.createExampleUser()
-            val criterion = DataBuilder.createExampleCriterion(
+            val criterion = DataBuilder.createExampleProjectCriterion(
                 id = requestId,
                 projectId = UUID.randomUUID(),
                 createdBy = noAccessUser.id,
@@ -94,11 +94,7 @@ class GetCriterionByIdTest : MainServiceTest() {
         val request = getExampleRequest()
 
         val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-        val criterion = DataBuilder.createExampleCriterion(
-            id = requestId,
-            projectId = null,
-            createdBy = UUID.randomUUID(),
-        )
+        val criterion = DataBuilder.createExampleUserCriterion(id = requestId, createdBy = UUID.randomUUID())
 
         every { GrpcContext.getUserIdFromContext() } returns adminUser.id
         coEvery { userRepoMock.getUserById(adminUser.id) } returns adminUser
@@ -113,7 +109,7 @@ class GetCriterionByIdTest : MainServiceTest() {
             val request = getExampleRequest()
 
             val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-            val criterion = DataBuilder.createExampleCriterion(id = requestId, projectId = null, createdBy = user.id)
+            val criterion = DataBuilder.createExampleUserCriterion(id = requestId, createdBy = user.id)
 
             every { GrpcContext.getUserIdFromContext() } returns user.id
             coEvery { userRepoMock.getUserById(user.id) } returns user
@@ -128,11 +124,7 @@ class GetCriterionByIdTest : MainServiceTest() {
             val request = getExampleRequest()
 
             val noAccessUser = DataBuilder.createExampleUser()
-            val criterion = DataBuilder.createExampleCriterion(
-                id = requestId,
-                projectId = null,
-                createdBy = UUID.randomUUID(),
-            )
+            val criterion = DataBuilder.createExampleUserCriterion(id = requestId, createdBy = UUID.randomUUID())
 
             every { GrpcContext.getUserIdFromContext() } returns noAccessUser.id
             coEvery { userRepoMock.getUserById(noAccessUser.id) } returns noAccessUser

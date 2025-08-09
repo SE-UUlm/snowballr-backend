@@ -46,7 +46,7 @@ class GetUserSettingsTest : MainServiceTest() {
     fun `When retrieving current user settings is correct and default criteria exist, then no exception is thrown`() =
         runTest {
             val user = DataBuilder.createExampleUser()
-            val criterion = DataBuilder.createExampleCriterion()
+            val criterion = DataBuilder.createExampleProjectCriterion()
             val userSettings = DataBuilder.createExampleUserSettings(criteriaIds = listOf(criterion.id))
 
             every { GrpcContext.getUserIdFromContext() } returns user.id
