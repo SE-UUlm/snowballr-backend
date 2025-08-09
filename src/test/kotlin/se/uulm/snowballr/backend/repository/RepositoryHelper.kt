@@ -21,7 +21,7 @@ object RepositoryHelper {
     lateinit var db: IDatabase
 
     /**
-     * Creates an example user in the database with the specified email and fake user details
+     * Creates an example user in the database with the specified email and fake user details.
      *
      * @param email The email address for the example user to be created.
      * @return The uuid of the created user
@@ -64,6 +64,9 @@ object RepositoryHelper {
         assignUserToProject(userId, projectId)
     }
 
+    /**
+     * Creates an example paper in the database with the specified properties.
+     */
     @Suppress("LongParameterList")
     suspend fun insertPaperAndGetId(
         title: String = "Title",
@@ -87,6 +90,9 @@ object RepositoryHelper {
         }.value
     }
 
+    /**
+     * Creates an example project in the database with the specified properties.
+     */
     suspend fun insertTestProjectAndGetId(name: String, status: ProjectOuterClass.ProjectStatus, userId: UUID): UUID =
         db.query {
             ProjectTable

@@ -125,7 +125,7 @@ class CreateCriterionTest : MainServiceTest() {
     fun `When an user creates a user criterion, then no exception is thrown`() = runTest {
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
 
-        val criterion = DataBuilder.createExampleProjectCriterion()
+        val criterion = DataBuilder.createExampleUserCriterion()
         val request = getUserCriterionRequest()
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
