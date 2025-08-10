@@ -6,7 +6,7 @@ import snowballr.Fetcher.AvailableFetchers
 
 interface IFetcherService {
     /**
-     * Service implementation of [SnowballRService.getAvailableFetcherApis].
+     * Service implementation of [SnowballRService.getAvailableFetchers].
      */
     suspend fun getAvailableFetchers(): AvailableFetchers
 }

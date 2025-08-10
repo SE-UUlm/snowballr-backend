@@ -26,8 +26,8 @@ jjwt-version = "0.12.6"
 simple-java-mail-version = "8.12.6"
 handlebars-version = "4.4.0"
 testcontainers-version = "1.21.3"
-serialization = "1.9.0"
-serialization-json = "1.7.1"
+kotlinx-serialization-version = "1.9.0"
+kotlinx-serialization-json-version = "1.7.1"
 
 [libraries]
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines-version" }
@@ -83,7 +83,7 @@ detekt-formatting = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", 
 
 simple-java-mail = { module = "org.simplejavamail:simple-java-mail", version.ref = "simple-java-mail-version" }
 handlebars = { module = "com.github.jknack:handlebars", version.ref = "handlebars-version" }
-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization-json" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization-json-version" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin-version" }
@@ -91,4 +91,4 @@ detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt-version" }
 kotlinx-kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kotlinx-kover-version" }
 protobuf = { id = "com.google.protobuf", version.ref = "protobuf-version" }
 shadow-jar = { id = "com.gradleup.shadow", version.ref = "shadow-jar-version" }
-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "serialization" }
+kotlinx-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlinx-serialization-version" }

@@ -206,5 +206,5 @@ object DataBuilder {
         modifiedAt,
     )
 
-    fun UUID.toGrpcId() = Base.Id.newBuilder().setId(this.toString()).build()
+    fun UUID.toGrpcId(): Base.Id = Base.Id.newBuilder().setId(this.toString()).build()
 }

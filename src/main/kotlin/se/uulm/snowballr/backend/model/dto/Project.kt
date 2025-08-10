@@ -19,7 +19,6 @@ data class Project(
     val snowballingType: ProjectOuterClass.SnowballingType,
     val reviewMaybeAllowed: Boolean,
     val reviewDecisionMatrix: ProjectOuterClass.ReviewDecisionMatrix,
-    // Map of fetcher names to their options (which are maps from the option keys to the option values)
     val fetchers: Map<String, Map<String, String>>,
     val currentStageStartedAt: OffsetDateTime,
     val createdAt: OffsetDateTime,

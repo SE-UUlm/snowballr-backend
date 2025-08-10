@@ -12,7 +12,6 @@ data class UserSettings(
     val criteriaIds: List<UUID>,
     val similarityThreshold: Float,
     val decisionMatrix: ProjectOuterClass.ReviewDecisionMatrix,
-    // Map of fetcher names to their options (which are maps from the option keys to the option values)
     val fetchers: Map<String, Map<String, String>>,
     val snowballingType: ProjectOuterClass.SnowballingType,
     val reviewMaybeAllowed: Boolean,
