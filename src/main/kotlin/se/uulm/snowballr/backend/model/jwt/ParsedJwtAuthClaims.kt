@@ -6,7 +6,7 @@ import java.util.UUID
 /**
  * Represents validated JWT claims.
  */
-data class ParsedJwtClaims(
+data class ParsedJwtAuthClaims(
     val userId: UUID,
     val issuedAt: Date?,
     val expiration: Date?,

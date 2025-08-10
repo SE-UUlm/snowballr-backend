@@ -8,6 +8,7 @@ import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.ProjectMember
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.UserSettings
+import se.uulm.snowballr.backend.model.dto.VerificationToken
 import snowballr.Base
 import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass.MemberRole
@@ -207,4 +208,16 @@ object DataBuilder {
     )
 
     fun UUID.toGrpcId(): Base.Id = Base.Id.newBuilder().setId(this.toString()).build()
+
+    fun createExampleVerificationToken(
+        id: UUID = UUID.randomUUID(),
+        userId: UUID = UUID.randomUUID(),
+        token: String = "example-token",
+        expiresAt: OffsetDateTime = OffsetDateTime.now().plusDays(1),
+    ) = VerificationToken(
+        id = id,
+        userId = userId,
+        token = token,
+        expiresAt = expiresAt,
+    )
 }

@@ -168,6 +168,9 @@ class SnowballRServer(
         override suspend fun register(request: Authentication.RegisterRequest): Base.Nothing =
             mainService.register(request)
 
+        override suspend fun verifyEmail(request: Authentication.VerifyEmailRequest): Base.Nothing =
+            mainService.verifyEmail(request)
+
         override suspend fun login(request: Authentication.LoginRequest): Base.Nothing = mainService.login(request)
 
         override suspend fun logout(request: Base.Nothing): Base.Nothing = mainService.logout()
@@ -247,6 +250,9 @@ class SnowballRServer(
 
         override suspend fun inviteUserToProject(request: ProjectOuterClass.Project.Member.Invite): Base.Nothing =
             super.inviteUserToProject(request)
+
+        override suspend fun acceptProjectInvitation(request: ProjectOuterClass.Project.Member.Accept): Base.Nothing =
+            super.acceptProjectInvitation(request)
 
         override suspend fun getPendingInvitationsForProject(request: Base.Id): UserOuterClass.User.List =
             super.getPendingInvitationsForProject(request)

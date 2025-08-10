@@ -27,6 +27,7 @@ The `PROFILE` variable determines the default behavior of the application.
 | `DATABASE_HOST`                       | :white_check_mark: (in `PRODUCTION`) |  `localhost`  | Hostname of the database connection.                                              |
 | `LOG_LEVEL`                           |                 :x:                  | Profile-based | The log level to use. One of `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`, or `OFF`. |
 | `AUTH_BYPASS_ENABLED`                 |                 :x:                  | Profile-based | Bypasses authentication and uses the dummy user for all whitelisted requests.     |
+| `FRONTEND_BASE_URL`                   | :white_check_mark: (in `PRODUCTION`) | Profile-based | Base URL of the frontend application, used for generating URLs in emails.         |
 | `DATABASE_SEED_USER_ENABLED`          |                 :x:                  | Profile-based | Inserts a dummy user into the database on startup.                                |
 | `DATABASE_PASSWORD`                   |          :white_check_mark:          |       -       | Password for the database e.g. `postgres_password`.                               |
 | `JWT_PRIVATE_KEY_BASE64`              |          :white_check_mark:          |       -       | Base64 encoded private key for JWT authentication.                                |
@@ -45,14 +46,15 @@ The `PROFILE` variable determines the default behavior of the application.
 
 #### Profile-based Defaults
 
-| Profile                               | `PRODUCTION` | `DEVELOPMENT` | `TESTING`   |
-|---------------------------------------|--------------|---------------|-------------|
-| `PORT`                                | -            | 8080          | 8080        |
-| `DATABASE_HOST`                       | -            | `localhost`   | `localhost` |
-| `LOG_LEVEL`                           | `INFO`       | `DEBUG`       | `TRACE`     |
-| `AUTH_BYPASS_ENABLED`                 | `false`      | `false`       | `true`      |
-| `DATABASE_SEED_USER_ENABLED`          | `false`      | `true`        | `true`      |
-| `SMTP_TRANSPORT_LOGGING_ONLY_ENABLED` | `false`      | `true`        | `true`      |
+| Profile                               | `PRODUCTION` | `DEVELOPMENT`           | `TESTING`               |
+|---------------------------------------|--------------|-------------------------|-------------------------|
+| `PORT`                                | -            | 8080                    | 8080                    |
+| `DATABASE_HOST`                       | -            | `localhost`             | `localhost`             |
+| `LOG_LEVEL`                           | `INFO`       | `DEBUG`                 | `TRACE`                 |
+| `AUTH_BYPASS_ENABLED`                 | `false`      | `false`                 | `true`                  |
+| `FRONTEND_BASE_URL`                   | -            | `http://localhost:5173` | `http://localhost:5173` |
+| `DATABASE_SEED_USER_ENABLED`          | `false`      | `true`                  | `true`                  |
+| `SMTP_TRANSPORT_LOGGING_ONLY_ENABLED` | `false`      | `true`                  | `true`                  |
 
 ### JWT Private/Public Key
 

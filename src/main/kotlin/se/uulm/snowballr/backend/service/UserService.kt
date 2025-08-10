@@ -1,6 +1,8 @@
 package se.uulm.snowballr.backend.service
 
+import com.google.protobuf.FieldMask
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.viascom.nanoid.NanoId
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.auth.IJwtService
 import se.uulm.snowballr.backend.auth.PasswordUtils
@@ -14,13 +16,16 @@ import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionExce
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthenticatedException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
+import se.uulm.snowballr.backend.model.SnowballRException.VerificationTokenNotFoundException
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.toGrpcUser
 import se.uulm.snowballr.backend.model.dto.toGrpcUserSettings
 import se.uulm.snowballr.backend.model.dto.toGrpcUsers
+import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
+import se.uulm.snowballr.backend.repository.IVerificationTokenTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import snowballr.Authentication
 import snowballr.Base
@@ -29,6 +34,7 @@ import snowballr.ProjectOuterClass
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
 import snowballr.UserSettingsOuterClass
+import java.time.OffsetDateTime
 import java.util.UUID
 import snowballr.UserOuterClass.User as GrpcUser
 
@@ -62,6 +68,11 @@ interface IUserService {
     suspend fun register(request: Authentication.RegisterRequest): Base.Nothing
 
     /**
+     * Service implementation of [SnowballRService.verifyEmail].
+     */
+    suspend fun verifyEmail(request: Authentication.VerifyEmailRequest): Base.Nothing
+
+    /**
      * Service implementation of [SnowballRService.logout].
      */
     suspend fun logout(): Base.Nothing
@@ -92,6 +103,8 @@ interface IUserService {
     suspend fun getCurrentUser(): GrpcUser
 }
 
+private const val VERIFICATION_TOKEN_LENGTH = 48
+
 /**
  * The [UserService] class handles operations related to users by implementing the [IUserService] interface.
  *
@@ -102,14 +115,18 @@ interface IUserService {
  * @param userRepo The repository responsible for managing persistence operations for users.
  * @param projectMemberRepo The repository responsible for managing persistence operations for project members.
  * @param criterionRepo The repository responsible for managing persistence operations for criteria.
+ * @param verificationTokenRepo The repository responsible for managing persistence operations for verification tokens.
  * @param jwtService The utility for handling JWT operations, such as token parsing and validation.
+ * @param emailService The service responsible for sending emails.
  */
 @Suppress("TooManyFunctions")
 class UserService(
     private val userRepo: IUserTableRepo,
     private val projectMemberRepo: IProjectMemberTableRepo,
     private val criterionRepo: ICriterionTableRepo,
+    private val verificationTokenRepo: IVerificationTokenTableRepo,
     private val jwtService: IJwtService,
+    private val emailService: IEmailService,
 ) : IUserService {
     companion object {
         const val MINIMUM_LENGTH_OF_SEARCH_QUERY = 3
@@ -227,9 +244,47 @@ class UserService(
         val passwordHash = PasswordUtils.hashPassword(request.password)
         val user = userRepo.createUser(request, passwordHash)
 
-        // Generate JWT tokens
-        val (accessToken, refreshToken) = jwtService.generateTokens(user.id)
-        GrpcContext.setAuthCookiesInContext(accessToken, refreshToken)
+        // Generate and save verification token for the user
+        val verificationToken = NanoId.generate(VERIFICATION_TOKEN_LENGTH)
+        verificationTokenRepo.saveVerificationToken(user.id, verificationToken)
+
+        // Send verification email
+        val verificationLink = emailService.createVerificationLink(verificationToken)
+        emailService.sendVerificationEmail(
+            user.email,
+            EmailData.EmailVerification(
+                user.firstName,
+                user.lastName,
+                verificationLink,
+            ),
+        )
+
+        return Base.Nothing.getDefaultInstance()
+    }
+
+    override suspend fun verifyEmail(request: Authentication.VerifyEmailRequest): Base.Nothing {
+        val verificationToken = verificationTokenRepo.getVerificationTokenByValue(request.token)
+            ?: throw VerificationTokenNotFoundException()
+
+        // Check if the token has expired
+        if (OffsetDateTime.now().isAfter(verificationToken.expiresAt)) {
+            verificationTokenRepo.deleteVerificationToken(request.token)
+            throw VerificationTokenNotFoundException()
+        }
+
+        // Check whether the user exists
+        val user = userRepo.getUserById(verificationToken.userId)
+
+        // Update the user's status to active
+        val updatedUser = user.copy(status = UserStatus.USER_STATUS_ACTIVE)
+        val userUpdate = GrpcUser.Update.newBuilder()
+            .setUser(updatedUser.toGrpcUser())
+            .setMask(FieldMask.newBuilder().addPaths("user.status").build())
+            .build()
+        userRepo.updateUser(userUpdate)
+
+        // Remove the verification token after successful verification
+        verificationTokenRepo.deleteVerificationToken(request.token)
 
         return Base.Nothing.getDefaultInstance()
     }
@@ -249,6 +304,11 @@ class UserService(
                 throw UnauthenticatedException()
             }
 
+        // Check whether the user is active (verified email)
+        if (user.status != UserStatus.USER_STATUS_ACTIVE) {
+            throw UnauthenticatedException()
+        }
+
         // Verify the password against the stored hash
         val storedPasswordHash = try {
             userRepo.getPasswordHashByEmail(request.email)
@@ -261,7 +321,7 @@ class UserService(
         }
 
         // Generate JWT tokens
-        val (accessToken, refreshToken) = jwtService.generateTokens(user.id)
+        val (accessToken, refreshToken) = jwtService.generateAuthTokens(user.id)
         GrpcContext.setAuthCookiesInContext(accessToken, refreshToken)
 
         return Base.Nothing.getDefaultInstance()

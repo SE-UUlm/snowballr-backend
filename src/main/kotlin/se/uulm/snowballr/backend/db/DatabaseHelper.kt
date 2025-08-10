@@ -9,6 +9,7 @@ import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.PdfTable
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.UserTable
+import se.uulm.snowballr.backend.table.VerificationTokenTable
 import se.uulm.snowballr.backend.table.association.AuthorOfPaperTable
 import se.uulm.snowballr.backend.table.association.CitationTable
 import se.uulm.snowballr.backend.table.association.InvitationTable
@@ -31,6 +32,7 @@ object DatabaseHelper {
         PaperTable,
         AuthorTable,
         CriterionTable,
+        VerificationTokenTable,
         // Many-to-many tables
         ProjectPaperTable,
         AuthorOfPaperTable,

@@ -11,6 +11,7 @@ private const val PORT = "PORT"
 // Miscellaneous
 private const val LOG_LEVEL = "LOG_LEVEL"
 private const val AUTH_BYPASS_ENABLED = "AUTH_BYPASS_ENABLED"
+private const val FRONTEND_BASE_URL = "FRONTEND_BASE_URL"
 
 // Database
 private const val DATABASE_PASSWORD = "DATABASE_PASSWORD"
@@ -63,6 +64,7 @@ class EnvReader(
         val port = envService.getRequiredOrDefault(PORT, defaults.port?.toString()).toInt()
         val host = envService.getRequiredOrDefault(DATABASE_HOST, defaults.databaseHost)
         val logLevel = envService.getOrDefault(LOG_LEVEL, defaults.logLevel)
+        val frontendBaseUrl = envService.getRequiredOrDefault(FRONTEND_BASE_URL, defaults.frontendBaseUrl)
         val smtpTransportLoggingOnlyEnabled =
             envService.getBooleanOrDefault(
                 SMTP_TRANSPORT_LOGGING_ONLY_ENABLED,
@@ -76,7 +78,7 @@ class EnvReader(
 
         env = Env(
             http = Env.Http(port),
-            miscellaneous = Env.Miscellaneous(logLevel, authBypassEnabled),
+            miscellaneous = Env.Miscellaneous(logLevel, authBypassEnabled, frontendBaseUrl),
             database = Env.Database(
                 password = envService[DATABASE_PASSWORD],
                 host = host,
@@ -111,6 +113,7 @@ class EnvReader(
             databaseHost = DEFAULT_DATABASE_HOST,
             logLevel = "TRACE",
             authBypassEnabled = true,
+            frontendBaseUrl = "http://localhost:5173",
             seedUserEnabled = true,
             smtpTransportLoggingOnlyEnabled = true,
         )
@@ -120,6 +123,7 @@ class EnvReader(
             databaseHost = DEFAULT_DATABASE_HOST,
             logLevel = "DEBUG",
             authBypassEnabled = false,
+            frontendBaseUrl = "http://localhost:5173",
             seedUserEnabled = true,
             smtpTransportLoggingOnlyEnabled = true,
         )
@@ -129,6 +133,7 @@ class EnvReader(
             databaseHost = null,
             logLevel = "INFO",
             authBypassEnabled = false,
+            frontendBaseUrl = null,
             seedUserEnabled = false,
             smtpTransportLoggingOnlyEnabled = false,
         )
@@ -141,6 +146,7 @@ class EnvReader(
      * @property databaseHost The host for the database, or null if not set.
      * @property logLevel The logging level for the application.
      * @property authBypassEnabled Whether authentication bypass is enabled.
+     * @property frontendBaseUrl The base URL for the frontend application.
      * @property seedUserEnabled Whether the seed user is enabled.
      * @property smtpTransportLoggingOnlyEnabled Whether SMTP transport logging is enabled.
      */
@@ -149,6 +155,7 @@ class EnvReader(
         val databaseHost: String?,
         val logLevel: String,
         val authBypassEnabled: Boolean,
+        val frontendBaseUrl: String?,
         val seedUserEnabled: Boolean,
         val smtpTransportLoggingOnlyEnabled: Boolean,
     )

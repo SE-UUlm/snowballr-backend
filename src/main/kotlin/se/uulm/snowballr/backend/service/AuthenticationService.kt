@@ -6,7 +6,7 @@ import io.jsonwebtoken.JwtException
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.auth.IJwtService
 import se.uulm.snowballr.backend.model.auth.AuthenticationResult
-import se.uulm.snowballr.backend.model.jwt.ParsedJwtClaims
+import se.uulm.snowballr.backend.model.jwt.ParsedJwtAuthClaims
 import snowballr.Authentication.AuthenticationStatus
 
 private val logger = KotlinLogging.logger {}
@@ -43,7 +43,7 @@ class AuthenticationService(private val jwtService: IJwtService) : IAuthenticati
         val cookiesToSet = GrpcContext.COOKIES_TO_SET_CONTEXT_KEY.get()
 
         val parsedAccessTokenResult = runCatching {
-            jwtService.parseToken(accessToken)
+            jwtService.parseAuthToken(accessToken)
         }
 
         val (status, result) = if (parsedAccessTokenResult.isSuccess) {
@@ -76,13 +76,13 @@ class AuthenticationService(private val jwtService: IJwtService) : IAuthenticati
         refreshToken: String?,
         skipRefresh: Boolean,
         cookiesToSet: MutableMap<String, String?>,
-    ): Result<ParsedJwtClaims> {
+    ): Result<ParsedJwtAuthClaims> {
         if (refreshToken == null) {
             return Result.failure(JwtException("Refresh token is missing"))
         }
 
         return runCatching {
-            val parsedRefreshToken = jwtService.parseToken(refreshToken)
+            val parsedRefreshToken = jwtService.parseAuthToken(refreshToken)
 
             if (!skipRefresh) {
                 val newAccessToken = jwtService.refreshAccessToken(parsedRefreshToken)

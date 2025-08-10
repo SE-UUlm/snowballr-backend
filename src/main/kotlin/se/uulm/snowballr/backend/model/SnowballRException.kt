@@ -213,4 +213,11 @@ sealed class SnowballRException(
             cause: MailException,
         ) : EmailException("Mailer failed to send email to '$recipient'.", cause)
     }
+
+    /**
+     * Represents an exception that occurs when a verification token is not found.
+     *
+     * @constructor Creates a [VerificationTokenNotFoundException].
+     */
+    class VerificationTokenNotFoundException : SnowballRException("Verification token not found.")
 }
