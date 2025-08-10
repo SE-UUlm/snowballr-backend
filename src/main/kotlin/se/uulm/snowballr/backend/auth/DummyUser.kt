@@ -28,7 +28,7 @@ object DummyUser {
     var criteriaIds: List<UUID> = emptyList()
     var similarityThreshold: Float = 0F
     var decisionMatrix: ByteArray = ProjectOuterClass.ReviewDecisionMatrix.getDefaultInstance().toByteArray()
-    var fetcherApis: List<String> = emptyList()
+    var fetchers: Map<String, Map<String, String>> = emptyMap()
     var snowballingType: ProjectOuterClass.SnowballingType = ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_BOTH
     var reviewMaybeAllowed: Boolean = true
 }

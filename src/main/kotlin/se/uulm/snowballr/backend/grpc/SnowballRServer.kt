@@ -18,7 +18,7 @@ import snowballr.Authentication
 import snowballr.Base
 import snowballr.CriterionOuterClass
 import snowballr.Export
-import snowballr.Main
+import snowballr.Fetcher
 import snowballr.PaperOuterClass
 import snowballr.ProjectOuterClass
 import snowballr.ReviewOuterClass
@@ -158,8 +158,12 @@ class SnowballRServer(
         KoinComponent {
         private val mainService: IMainService by inject()
 
-        override suspend fun getAvailableFetcherApis(request: Base.Nothing): Main.AvailableFetcherApis =
+        override suspend fun getAvailableFetchers(request: Base.Nothing): Fetcher.AvailableFetchers =
             mainService.getAvailableFetchers()
+
+        override suspend fun getAvailableFetcherOptions(
+            request: Fetcher.GetAvailableFetcherOptionsRequest,
+        ): Fetcher.FetcherOptions = super.getAvailableFetcherOptions(request)
 
         override suspend fun register(request: Authentication.RegisterRequest): Base.Nothing =
             mainService.register(request)

@@ -2,13 +2,13 @@ package se.uulm.snowballr.backend.service
 
 import se.uulm.snowballr.backend.fetcher.FetcherManager
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
-import snowballr.Main.AvailableFetcherApis
+import snowballr.Fetcher.AvailableFetchers
 
 interface IFetcherService {
     /**
-     * Service implementation of [SnowballRService.getAvailableFetcherApis].
+     * Service implementation of [SnowballRService.getAvailableFetchers].
      */
-    suspend fun getAvailableFetchers(): AvailableFetcherApis
+    suspend fun getAvailableFetchers(): AvailableFetchers
 }
 
 /**
@@ -22,8 +22,8 @@ interface IFetcherService {
 class FetcherService(
     private val fetcherManager: FetcherManager,
 ) : IFetcherService {
-    override suspend fun getAvailableFetchers(): AvailableFetcherApis = AvailableFetcherApis
+    override suspend fun getAvailableFetchers(): AvailableFetchers = AvailableFetchers
         .newBuilder()
-        .addAllFetcherApis(fetcherManager.getAvailableFetchers())
+        .addAllFetcherNames(fetcherManager.getAvailableFetchers())
         .build()
 }

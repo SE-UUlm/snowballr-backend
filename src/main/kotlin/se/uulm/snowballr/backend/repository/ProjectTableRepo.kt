@@ -128,7 +128,7 @@ class ProjectTableRepo(
             it[snowballingType] = userSettings.snowballingType
             it[reviewMaybeAllowed] = userSettings.reviewMaybeAllowed
             it[reviewDecisionMatrixBinary] = userSettings.decisionMatrix.toByteArray()
-            it[fetcherApis] = emptyList()
+            it[fetchers] = emptyMap()
             it[createdBy] = userEntityId
         }
     }

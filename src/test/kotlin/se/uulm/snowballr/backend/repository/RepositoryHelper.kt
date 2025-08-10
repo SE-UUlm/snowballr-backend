@@ -106,7 +106,7 @@ object RepositoryHelper {
                     it[reviewMaybeAllowed] = true
                     it[reviewDecisionMatrixBinary] =
                         ProjectOuterClass.ReviewDecisionMatrix.getDefaultInstance().toByteArray()
-                    it[fetcherApis] = emptyList()
+                    it[fetchers] = emptyMap()
                     it[createdBy] = userId
                 }.value
         }

@@ -1,8 +1,10 @@
 package se.uulm.snowballr.backend.table
 
+import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.ResultRow
+import org.jetbrains.exposed.sql.json.json
 import org.jetbrains.exposed.sql.kotlin.datetime.timestampWithTimeZone
 import se.uulm.snowballr.backend.model.dto.Project
 import snowballr.ProjectOuterClass
@@ -25,8 +27,7 @@ import java.time.OffsetDateTime
  * [ReviewOuterClass.ReviewDecision.REVIEW_DECISION_MAYBE] as a [Boolean].
  * - [reviewDecisionMatrixBinary]: Represents the decision matrix on how the [ProjectOuterClass.PaperDecision] for a
  * paper should be determined as a [ByteArray].
- * - [fetcherApis]: Represents the fetcher APIs used by the project as a list of string values referring to the names
- * of the used fetchers.
+ * - [fetchers]: Represents the fetchers used by the project as a json object mapping the fetcher names to their options.
  * - [currentStageStartedAt]: Represents the timestamp of when the current stage of the project was started as a
  * [OffsetDateTime].
  * - [createdAt]: Represents the timestamp of when the project was created as an [OffsetDateTime].
@@ -47,7 +48,7 @@ object ProjectTable : UUIDTable("project") {
     val snowballingType = enumeration<ProjectOuterClass.SnowballingType>("snowballing_type")
     val reviewMaybeAllowed = bool("review_maybe_allowed")
     val reviewDecisionMatrixBinary = binary("review_decision_matrix")
-    val fetcherApis = array<String>("fetcher_apis")
+    val fetchers = json<Map<String, Map<String, String>>>("fetchers", Json)
     val currentStageStartedAt = timestampWithTimeZone("current_stage_started_at").clientDefault { OffsetDateTime.now() }
 
     // Metadata
@@ -82,7 +83,7 @@ fun ResultRow.toProject() = Project(
     snowballingType = this[ProjectTable.snowballingType],
     reviewMaybeAllowed = this[ProjectTable.reviewMaybeAllowed],
     reviewDecisionMatrix = ReviewDecisionMatrix.parseFrom(this[ProjectTable.reviewDecisionMatrixBinary]),
-    fetcherApis = this[ProjectTable.fetcherApis],
+    fetchers = this[ProjectTable.fetchers],
     currentStageStartedAt = this[ProjectTable.currentStageStartedAt],
     createdAt = this[ProjectTable.createdAt],
     createdBy = this[ProjectTable.createdBy].value,

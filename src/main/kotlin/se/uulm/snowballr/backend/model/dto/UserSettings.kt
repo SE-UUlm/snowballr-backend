@@ -1,6 +1,7 @@
 package se.uulm.snowballr.backend.model.dto
 
 import snowballr.CriterionOuterClass
+import snowballr.Fetcher.FetcherOptions
 import snowballr.ProjectOuterClass
 import snowballr.UserSettingsOuterClass
 import java.util.UUID
@@ -11,7 +12,7 @@ data class UserSettings(
     val criteriaIds: List<UUID>,
     val similarityThreshold: Float,
     val decisionMatrix: ProjectOuterClass.ReviewDecisionMatrix,
-    val fetcherApis: List<String>,
+    val fetchers: Map<String, Map<String, String>>,
     val snowballingType: ProjectOuterClass.SnowballingType,
     val reviewMaybeAllowed: Boolean,
 )
@@ -34,7 +35,14 @@ fun UserSettings.toGrpcUserSettings(
         ProjectOuterClass.Project.Settings.newBuilder()
             .setSimilarityThreshold(this.similarityThreshold)
             .setDecisionMatrix(this.decisionMatrix)
-            .addAllFetcherApis(this.fetcherApis)
+            .putAllFetchers(
+                this.fetchers.mapValues {
+                    FetcherOptions
+                        .newBuilder()
+                        .putAllOptions(it.value)
+                        .build()
+                },
+            )
             .setSnowballingType(this.snowballingType)
             .setReviewMaybeAllowed(this.reviewMaybeAllowed)
             .build(),

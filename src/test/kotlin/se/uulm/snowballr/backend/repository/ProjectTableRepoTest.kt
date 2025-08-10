@@ -82,7 +82,7 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
             assertThat(project.snowballingType).isEqualTo(SnowballingType.SNOWBALLING_TYPE_BOTH)
             assertThat(project.reviewMaybeAllowed).isFalse()
             assertThat(project.reviewDecisionMatrix).isEqualTo(ReviewDecisionMatrix.getDefaultInstance())
-            assertThat(project.fetcherApis).isEmpty()
+            assertThat(project.fetchers).isEmpty()
         }
 
         @Test

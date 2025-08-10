@@ -1,8 +1,10 @@
 package se.uulm.snowballr.backend.table
 
+import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.ResultRow
+import org.jetbrains.exposed.sql.json.json
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.UserSettings
 import snowballr.ProjectOuterClass
@@ -16,7 +18,7 @@ private const val IS_REVIEW_MODE_ENABLED_DEFAULT = false
 private val CRITERIA_IDS_DEFAULT = emptyList<UUID>()
 private const val SIMILARITY_THRESHOLD_DEFAULT = 0F
 private val DECISION_MATRIX_DEFAULT: ByteArray = ReviewDecisionMatrix.getDefaultInstance().toByteArray()
-private val FETCHER_APIS_DEFAULT = emptyList<String>()
+private val FETCHERS_DEFAULT = emptyMap<String, Map<String, String>>()
 private val SNOWBALLING_TYPE_DEFAULT = ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_BOTH
 private const val REVIEW_MAYBE_ALLOWED_DEFAULT = true
 
@@ -35,7 +37,7 @@ private const val REVIEW_MAYBE_ALLOWED_DEFAULT = true
  * - [criteriaIds]: Represents a list of criteria IDs associated with the user as a [List] of [UUID].
  * - [similarityThreshold]: Represents the user's similarity threshold as a [Float].
  * - [decisionMatrix]: Represents the review decision matrix of the user as a binary value.
- * - [fetcherApis]: Represents a list of fetcher API identifiers associated with the user, stored as a [List] of [String].
+ * - [fetchers]: Represents the fetchers used by the project as a json object mapping the fetcher names to their options.
  * - [snowballingType]: Represents the snowballing type associated with the user, stored as an enumeration value of
  * [ProjectOuterClass.SnowballingType].
  * - [reviewMaybeAllowed]: Indicates whether "maybe" is allowed in reviews, stored as a [Boolean].
@@ -59,7 +61,7 @@ object UserTable : UUIDTable("user") {
     // Project settings defaults
     val similarityThreshold = float("similarity_threshold").clientDefault { SIMILARITY_THRESHOLD_DEFAULT }
     val decisionMatrix = binary("review_decision_matrix").clientDefault { DECISION_MATRIX_DEFAULT }
-    val fetcherApis = array<String>("fetcher_apis").clientDefault { FETCHER_APIS_DEFAULT }
+    val fetchers = json<Map<String, Map<String, String>>>("fetchers", Json).clientDefault { FETCHERS_DEFAULT }
     val snowballingType =
         enumeration<ProjectOuterClass.SnowballingType>("snowballing_type").clientDefault { SNOWBALLING_TYPE_DEFAULT }
     val reviewMaybeAllowed = bool("review_maybe_allowed").clientDefault { REVIEW_MAYBE_ALLOWED_DEFAULT }
@@ -94,7 +96,7 @@ fun ResultRow.toUserSettings() = UserSettings(
     criteriaIds = this[UserTable.criteriaIds],
     similarityThreshold = this[UserTable.similarityThreshold],
     decisionMatrix = ReviewDecisionMatrix.parseFrom(this[UserTable.decisionMatrix]),
-    fetcherApis = this[UserTable.fetcherApis],
+    fetchers = this[UserTable.fetchers],
     snowballingType = this[UserTable.snowballingType],
     reviewMaybeAllowed = this[UserTable.reviewMaybeAllowed],
 )

@@ -192,6 +192,7 @@ private class NamingConventions {
             .orShould(haveSimpleName("TableHelperKt")) // exception
             .orShould(haveSimpleNameEndingWith("ObfuscatedTextColumnType")) // exception
             .orShould(haveSimpleName("HStoreColumnType")) // exception
+            .orShould(haveNameMatching(".*inlined\\\$json\\\$.*")) // exception
             .because("All tables should have the 'Table' suffix")
             .check(classes)
     }

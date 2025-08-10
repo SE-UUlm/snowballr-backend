@@ -26,7 +26,7 @@ class DummyUserTest {
                 DummyUser.decisionMatrix,
             ),
         )
-        assertEquals(emptyList<String>(), DummyUser.fetcherApis)
+        assertEquals(emptyMap<String, Map<String, String>>(), DummyUser.fetchers)
         assertEquals(ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_BOTH, DummyUser.snowballingType)
         assertEquals(true, DummyUser.reviewMaybeAllowed)
 
