@@ -50,3 +50,7 @@ bin/
 
 ### Database ###
 db-data
+
+### Direnv ###
+/.direnv/
+
