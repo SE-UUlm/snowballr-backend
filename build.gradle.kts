@@ -18,10 +18,6 @@ application {
     mainClass.set("se.uulm.snowballr.backend.MainKt")
 }
 
-repositories {
-    mavenCentral()
-}
-
 dependencies {
     implementation(libs.logback)
     implementation(libs.kotlin.logging)
@@ -231,4 +227,17 @@ tasks.withType<io.gitlab.arturbosch.detekt.DetektCreateBaselineTask>().configure
     jvmTarget = "1.8"
     classpath = sourceSets["main"].runtimeClasspath
     parallel = true
+}
+
+tasks.withType<AbstractArchiveTask>().configureEach {
+    isPreserveFileTimestamps = false
+    isReproducibleFileOrder = true
+    dirPermissions { unix("755") }
+    filePermissions { unix("644") }
+}
+
+configurations.all {
+    resolutionStrategy {
+        failOnNonReproducibleResolution()
+    }
 }
