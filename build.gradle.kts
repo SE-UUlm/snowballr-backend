@@ -163,14 +163,14 @@ detekt {
 // https://github.com/grpc/grpc-kotlin/tree/master/compiler
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:${libs.versions.protobuf.kotlin.version.get()}"
+        artifact = "com.google.protobuf:protoc:${libs.versions.protobuf.kotlin.get()}"
     }
     plugins {
         create("grpc") {
-            artifact = "io.grpc:protoc-gen-grpc-java:${libs.versions.grpc.version.get()}"
+            artifact = "io.grpc:protoc-gen-grpc-java:${libs.versions.grpc.asProvider().get()}"
         }
         create("grpckt") {
-            artifact = "io.grpc:protoc-gen-grpc-kotlin:${libs.versions.grpc.kotlin.version.get()}:jdk8@jar"
+            artifact = "io.grpc:protoc-gen-grpc-kotlin:${libs.versions.grpc.kotlin.get()}:jdk8@jar"
         }
     }
     generateProtoTasks {
