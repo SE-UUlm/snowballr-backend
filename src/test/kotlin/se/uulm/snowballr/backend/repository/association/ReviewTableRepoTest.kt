@@ -47,7 +47,7 @@ class ReviewTableRepoTest : RepositoryTest(arrayOf(ReviewTable, ProjectTable, Pr
     @Nested
     inner class GetAllReviewsForProjectPaper {
         @Test
-        fun `When a the project paper has reviews, then the reviews are correctly returned`() = runTest {
+        fun `When the project paper has reviews, then the reviews are correctly returned`() = runTest {
             val projectId = insertProjectAndGetId(createdBy = testUserId)
             val paperId = insertPaperAndGetId()
             val projectPaperId =
@@ -60,7 +60,7 @@ class ReviewTableRepoTest : RepositoryTest(arrayOf(ReviewTable, ProjectTable, Pr
         }
 
         @Test
-        fun `When a the project paper has no reviews, then an empty list is returned`() = runTest {
+        fun `When the project paper has no reviews, then an empty list is returned`() = runTest {
             val projectId = insertProjectAndGetId(createdBy = testUserId)
             val paperId1 = insertPaperAndGetId()
             val paperId2 = insertPaperAndGetId()
@@ -82,7 +82,7 @@ class ReviewTableRepoTest : RepositoryTest(arrayOf(ReviewTable, ProjectTable, Pr
         }
 
         @Test
-        fun `When a the project paper has no reviews and other reviews exist, then only the project paper reviews are returned`() =
+        fun `When the project paper has no reviews and other reviews exist, then only the project paper reviews are returned`() =
             runTest {
                 val projectId = insertProjectAndGetId(createdBy = testUserId)
                 val paperId1 = insertPaperAndGetId()

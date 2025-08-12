@@ -49,7 +49,7 @@ class ReviewHasCriterionTableRepoTest : RepositoryTest(
         }
 
         @Test
-        fun `When a no selected criteria for the given review exist, then an empty list is returned`() = runTest {
+        fun `When no selected criteria for the given review exist, then an empty list is returned`() = runTest {
             val projectId = insertProjectAndGetId(createdBy = testUserId)
             val paperId = insertPaperAndGetId()
             val projectPaperId =

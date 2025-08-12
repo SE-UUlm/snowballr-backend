@@ -123,7 +123,7 @@ object RepositoryHelper {
                 it[ProjectTable.snowballingType] = snowballingType
                 it[ProjectTable.reviewMaybeAllowed] = reviewMaybeAllowed
                 it[ProjectTable.reviewDecisionMatrixBinary] = reviewDecisionMatrix.toByteArray()
-                it[ProjectTable.fetchers] = fetchers
+                it[ProjectTable.fetchers] = fetcherApis
                 it[ProjectTable.createdBy] = createdBy
             }.value
     }

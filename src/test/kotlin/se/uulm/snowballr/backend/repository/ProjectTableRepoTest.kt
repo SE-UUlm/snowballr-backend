@@ -26,9 +26,6 @@ import java.util.UUID
 class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberTable), true) {
     private val repo = ProjectTableRepo(db)
 
-    private suspend fun insertTestProjectAndGetId(name: String, status: ProjectStatus) =
-        insertProjectAndGetId(name = name, status = status, createdBy = testUserId)
-
     companion object {
         @JvmStatic
         fun validFieldMasks(): List<Arguments> = listOf(

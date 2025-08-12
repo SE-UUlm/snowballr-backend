@@ -55,9 +55,7 @@ fun List<ProjectPaperWithPaper>.toGrpcProjectPapers(
     .addAllProjectPapers(
         this.map { projectPaper ->
             val authors = paperAuthorsMap[projectPaper.paper].orEmpty()
-
             val backwardRefs = paperBackwardReferencesMap[projectPaper.paper].orEmpty()
-
             val reviews = paperReviewsMap[projectPaper.paper].orEmpty()
 
             projectPaper.toGrpcProjectPaper(

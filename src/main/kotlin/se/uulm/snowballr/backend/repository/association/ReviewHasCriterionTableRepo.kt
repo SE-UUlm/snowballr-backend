@@ -8,8 +8,8 @@ import java.util.UUID
 /**
  * Defines an interface for repository operations related to the [ReviewHasCriterionTable].
  *
- * This interface provides abstraction for handling persistence and retrieval operations for review criteria. By
- * using this interface, the functionality for managing review criteria can remain decoupled from the specifics of the database
+ * This interface provides abstraction for handling persistence and retrieval operations for selected criteria of a review. By
+ * using this interface, the functionality for managing selected criteria of a review can remain decoupled from the specifics of the database
  * layer.
  */
 interface IReviewHasCriterionTableRepo {
@@ -19,8 +19,8 @@ interface IReviewHasCriterionTableRepo {
 /**
  * Repository implementation for managing the [ReviewHasCriterionTable] in the database.
  *
- * This class provides functionality to handle persistence and retrieval operations for review criteria by
- * leveraging the database abstraction defined in [IDatabase]. It facilitates CRUD operations on review criteria and
+ * This class provides functionality to handle persistence and retrieval operations for selected criteria of a review by
+ * leveraging the database abstraction defined in [IDatabase]. It facilitates CRUD operations on selected criteria of a review and
  * ensures database transactions are handled properly.
  *
  * @param db The database abstraction used for executing queries within a transaction.
