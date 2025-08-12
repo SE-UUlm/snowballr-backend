@@ -1,95 +1,95 @@
 [versions]
-kotlin-version = "2.2.0"
-kotlinx-coroutines-version = "1.10.2"
-koin-version = "4.1.0"
-logback-version = "1.5.18"
-logger-version = "7.0.7"
-exposed-version = "0.61.0"
-junit-version = "5.13.2"
-hikari-cp-version = "6.3.0"
-postgresql-version = "42.7.7"
-dotenv-version = "6.5.1"
-assertj-version = "3.27.3"
-mockk-version = "1.14.2"
-arrow-version = "2.1.2"
-assertj-arrow-core-version = "1.2.1"
-detekt-version = "1.23.8"
-kotlinx-kover-version = "0.9.1"
-protobuf-version = "0.9.5"
-grpc-kotlin-version = "1.4.3"
-grpc-version = "1.74.0"
-protobuf-kotlin-version = "4.31.1"
-shadow-jar-version = "8.3.6"
-archunit-version = "1.4.1"
-password4j-version = "1.8.3"
-jjwt-version = "0.12.6"
-simple-java-mail-version = "8.12.6"
-handlebars-version = "4.4.0"
-testcontainers-version = "1.21.3"
-kotlinx-serialization-json-version = "1.7.1"
-nanoid-version = "1.0.1"
+kotlin = "2.2.0"
+kotlinx-coroutines = "1.10.2"
+koin = "4.1.0"
+logback = "1.5.18"
+logger = "7.0.7"
+exposed = "0.61.0"
+junit = "5.13.2"
+hikari-cp = "6.3.0"
+postgresql = "42.7.7"
+dotenv = "6.5.1"
+assertj = "3.27.3"
+mockk = "1.14.2"
+arrow = "2.1.2"
+assertj-arrow-core = "1.2.1"
+detekt = "1.23.8"
+kotlinx-kover = "0.9.1"
+protobuf = "0.9.5"
+grpc-kotlin = "1.4.3"
+grpc = "1.74.0"
+protobuf-kotlin = "4.31.1"
+shadow-jar = "8.3.6"
+archunit = "1.4.1"
+password4j = "1.8.3"
+jjwt = "0.12.6"
+simple-java-mail = "8.12.6"
+handlebars = "4.4.0"
+testcontainers = "1.21.3"
+kotlinx-serialization-json = "1.7.1"
+nanoid = "1.0.1"
 
 [libraries]
-kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines-version" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
 
-koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin-version" }
+koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin" }
 koin-core = { module = "io.insert-koin:koin-core" }
 koin-test = { module = "io.insert-koin:koin-test" }
 
-logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback-version" }
-kotlin-logging = { module = "io.github.oshai:kotlin-logging-jvm", version.ref = "logger-version" }
+logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+kotlin-logging = { module = "io.github.oshai:kotlin-logging-jvm", version.ref = "logger" }
 
-exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed-version" }
-exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "exposed-version" }
-exposed-datetime = { module = "org.jetbrains.exposed:exposed-kotlin-datetime", version.ref = "exposed-version" }
-exposed-json = { module = "org.jetbrains.exposed:exposed-json", version.ref = "exposed-version" }
+exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed" }
+exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "exposed" }
+exposed-datetime = { module = "org.jetbrains.exposed:exposed-kotlin-datetime", version.ref = "exposed" }
+exposed-json = { module = "org.jetbrains.exposed:exposed-json", version.ref = "exposed" }
 
-password4j = { module = "com.password4j:password4j", version.ref = "password4j-version" }
+password4j = { module = "com.password4j:password4j", version.ref = "password4j" }
 
-jjwt-api = { module = "io.jsonwebtoken:jjwt-api", version.ref = "jjwt-version" }
-jjwt-impl = { module = "io.jsonwebtoken:jjwt-impl", version.ref = "jjwt-version" }
-jjwt-jackson = { module = "io.jsonwebtoken:jjwt-jackson", version.ref = "jjwt-version" }
-nanoid = { module = "io.viascom.nanoid:nanoid", version.ref = "nanoid-version" }
+jjwt-api = { module = "io.jsonwebtoken:jjwt-api", version.ref = "jjwt" }
+jjwt-impl = { module = "io.jsonwebtoken:jjwt-impl", version.ref = "jjwt" }
+jjwt-jackson = { module = "io.jsonwebtoken:jjwt-jackson", version.ref = "jjwt" }
+nanoid = { module = "io.viascom.nanoid:nanoid", version.ref = "nanoid" }
 
-junit-bom = { module = "org.junit:junit-bom", version.ref = "junit-version" }
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
 junit-platform = { module = "org.junit.platform:junit-platform-launcher" }
 
-hikaricp = { module = "com.zaxxer:HikariCP", version.ref = "hikari-cp-version" }
+hikaricp = { module = "com.zaxxer:HikariCP", version.ref = "hikari-cp" }
 
-postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql-version" }
-testcontainers = { module = "org.testcontainers:postgresql", version.ref = "testcontainers-version" }
+postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
+testcontainers = { module = "org.testcontainers:postgresql", version.ref = "testcontainers" }
 
-dotenv-kotlin = { module = "io.github.cdimascio:dotenv-kotlin", version.ref = "dotenv-version" }
+dotenv-kotlin = { module = "io.github.cdimascio:dotenv-kotlin", version.ref = "dotenv" }
 
-assertj-core = { module = "org.assertj:assertj-core", version.ref = "assertj-version" }
+assertj-core = { module = "org.assertj:assertj-core", version.ref = "assertj" }
 
-mockk = { module = "io.mockk:mockk", version.ref = "mockk-version" }
+mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 
-arrow-core = { module = "io.arrow-kt:arrow-core", version.ref = "arrow-version" }
+arrow-core = { module = "io.arrow-kt:arrow-core", version.ref = "arrow" }
 
-assertj-arrow-core = { module = "in.rcard:assertj-arrow-core", version.ref = "assertj-arrow-core-version" }
+assertj-arrow-core = { module = "in.rcard:assertj-arrow-core", version.ref = "assertj-arrow-core" }
 
-grpc-kotlin = { module = "io.grpc:grpc-kotlin-stub", version.ref = "grpc-kotlin-version" }
-grpc-protobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc-version" }
-grpc-services = { module = "io.grpc:grpc-services", version.ref = "grpc-version" }
-grpc-netty = { module = "io.grpc:grpc-netty-shaded", version.ref = "grpc-version" }
-protobuf-kotlin = { module = "com.google.protobuf:protobuf-kotlin", version.ref = "protobuf-kotlin-version" }
-protobuf-java-util = { module = "com.google.protobuf:protobuf-java-util", version.ref = "protobuf-kotlin-version" }
+grpc-kotlin = { module = "io.grpc:grpc-kotlin-stub", version.ref = "grpc-kotlin" }
+grpc-protobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc" }
+grpc-services = { module = "io.grpc:grpc-services", version.ref = "grpc" }
+grpc-netty = { module = "io.grpc:grpc-netty-shaded", version.ref = "grpc" }
+protobuf-kotlin = { module = "com.google.protobuf:protobuf-kotlin", version.ref = "protobuf-kotlin" }
+protobuf-java-util = { module = "com.google.protobuf:protobuf-java-util", version.ref = "protobuf-kotlin" }
 
-archunit = { module = "com.tngtech.archunit:archunit", version.ref = "archunit-version" }
-archunit-junit5 = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit-version" }
+archunit = { module = "com.tngtech.archunit:archunit", version.ref = "archunit" }
+archunit-junit5 = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit" }
 
-detekt-formatting = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", version.ref = "detekt-version" }
+detekt-formatting = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", version.ref = "detekt" }
 
-simple-java-mail = { module = "org.simplejavamail:simple-java-mail", version.ref = "simple-java-mail-version" }
-handlebars = { module = "com.github.jknack:handlebars", version.ref = "handlebars-version" }
-kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization-json-version" }
+simple-java-mail = { module = "org.simplejavamail:simple-java-mail", version.ref = "simple-java-mail" }
+handlebars = { module = "com.github.jknack:handlebars", version.ref = "handlebars" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization-json" }
 
 [plugins]
-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin-version" }
-detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt-version" }
-kotlinx-kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kotlinx-kover-version" }
-protobuf = { id = "com.google.protobuf", version.ref = "protobuf-version" }
-shadow-jar = { id = "com.gradleup.shadow", version.ref = "shadow-jar-version" }
-kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin-version" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+kotlinx-kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kotlinx-kover" }
+protobuf = { id = "com.google.protobuf", version.ref = "protobuf" }
+shadow-jar = { id = "com.gradleup.shadow", version.ref = "shadow-jar" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
