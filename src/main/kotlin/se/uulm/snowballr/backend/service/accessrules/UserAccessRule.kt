@@ -10,6 +10,7 @@ import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import snowballr.UserOuterClass.UserRole
+import snowballr.UserOuterClass.UserStatus
 import java.util.UUID
 
 /**
@@ -18,23 +19,37 @@ import java.util.UUID
 fun interface UserAccessRule : AccessRule<User>
 
 /**
- * Check whether the requesting user is a server admin.
+ * Represents an [AccessRule] to a user only identified by its UUID.
  */
-val isServerAdmin = UserAccessRule { requester, _ -> requester.role == UserRole.USER_ROLE_ADMIN }
+fun interface UUIDAccessRule : AccessRule<UUID>
 
 /**
- * Check whether the requesting user and the target user are the same, i.e., have the same user id.
+ * Check whether the requesting user and the target user are the same, by checking
+ * whether they have the same user id.
  */
-val isSameUser = UserAccessRule { requester, target -> requester.id == target.id }
+val isSameUserById = UUIDAccessRule { requester, targetId -> requester.id == targetId }
+
+/**
+ * Check whether the target user is active, i.e., has the status `USER_STATUS_ACTIVE` or `USER_STATUS_ACTIVE_UNCONFIRMED`.
+ */
+val isTargetUserActive = UserAccessRule { _, target ->
+    target.status == UserStatus.USER_STATUS_ACTIVE ||
+        target.status == UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED
+}
+
+/**
+ * Check whether the target user is *not* a server admin.
+ */
+val targetUserIsNotAdmin = UserAccessRule { _, target -> target.role != UserRole.USER_ROLE_ADMIN }
 
 /**
  * Check whether the requesting user is in the same project as the target user.
  *
- * @param projectMemberRepo The repository to check project membership
+ * @param projectMemberRepo The repository to check project membership.
  */
-fun isInSameProject(projectMemberRepo: IProjectMemberTableRepo): UserAccessRule = UserAccessRule { requester, target ->
+fun isInSameProject(projectMemberRepo: IProjectMemberTableRepo) = UUIDAccessRule { requester, targetId ->
     projectMemberRepo
-        .getMembersInSameProjectsAsUser(target.id)
+        .getMembersInSameProjectsAsUser(targetId)
         .any { it.userId == requester.id }
 }
 
@@ -48,7 +63,9 @@ fun isInSameProject(projectMemberRepo: IProjectMemberTableRepo): UserAccessRule 
  * when the user is not a server admin.
  */
 suspend fun verifyServerAdminRole(user: User, getException: (String) -> UnauthorizedException) {
-    isServerAdmin.orElseThrow(user, user, getException(user.id.toString()))
+    isServerAdmin.forTarget<User>()
+        .orElseThrow(getException(user.id.toString()))
+        .checkFor(user, user)
 }
 
 /**
@@ -67,17 +84,19 @@ suspend fun authorizeAccessTo(requestedUserId: UUID, userRepo: IUserTableRepo, a
     val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
     val requestedUser = userRepo.getUserById(requestedUserId)
 
-    isSameUser
-        .orElse(isServerAdmin)
+    isSameUserById
+        .orElse(isServerAdmin.forTarget())
         .orElseThrow(
-            currentUser.getOrThrow(),
-            requestedUser.getOrThrow(),
             UnauthorizedException.Single(
                 EntityType.USER,
                 requestedUserId.toString(),
                 accessType,
                 currentUser.getOrThrow().id.toString(),
             ),
+        )
+        .checkFor(
+            currentUser.getOrThrow(),
+            requestedUser.getOrThrow().id,
         )
 }
 
