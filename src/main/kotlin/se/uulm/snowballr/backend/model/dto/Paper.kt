@@ -31,19 +31,38 @@ data class Paper(
 fun Paper.toGrpcPaper(
     authors: List<PaperOuterClass.Author>,
     backwardReferencedIds: List<String>,
-): PaperOuterClass.Paper {
-    val paper = this
-    return with(PaperOuterClass.Paper.newBuilder()) {
-        setId(paper.id.toString())
-        setTitle(paper.title)
-        paper.externalId?.let { setExternalId(it) }
-        setAbstrakt(paper.abstract)
-        paper.publisher?.let { setPublisher(it) }
-        paper.publicationType?.let { setPublicationType(it) }
-        paper.publicationName?.let { setPublicationName(it) }
-        setHasPdf(paper.pdfId != null)
-        addAllAuthors(authors)
-        addAllBackwardReferencedIds(backwardReferencedIds)
-        build()
-    }
-}
+): PaperOuterClass.Paper = PaperOuterClass.Paper
+    .newBuilder()
+    .setId(id.toString())
+    .setTitle(title)
+    .setExternalId(externalId)
+    .setAbstrakt(abstract)
+    .setPublisher(publisher)
+    .setPublicationType(publicationType)
+    .setPublicationName(publicationName)
+    .setHasPdf(pdfId != null)
+    .addAllAuthors(authors)
+    .addAllBackwardReferencedIds(backwardReferencedIds)
+    .build()
+
+/**
+ * Converts a list of [Paper] objects into a gRPC list of papers.
+ *
+ * @return A [PaperOuterClass.Paper.List] containing the gRPC representation of the papers.
+ */
+fun List<Paper>.toGrpcPapers(
+    paperAuthorsMap: Map<Paper, List<PaperOuterClass.Author>>,
+    paperBackwardReferencesMap: Map<Paper, List<String>>,
+): PaperOuterClass.Paper.List = PaperOuterClass.Paper.List
+    .newBuilder()
+    .addAllPapers(
+        this.map { paper ->
+            val authors = paperAuthorsMap[paper].orEmpty()
+            val backwardRefs = paperBackwardReferencesMap[paper].orEmpty()
+            paper.toGrpcPaper(
+                authors = authors,
+                backwardReferencedIds = backwardRefs,
+            )
+        },
+    )
+    .build()
