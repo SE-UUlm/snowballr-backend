@@ -3,9 +3,7 @@
 package se.uulm.snowballr.backend.validation
 
 import arrow.core.raise.Raise
-import arrow.core.raise.either
 import arrow.core.raise.ensure
-import arrow.core.raise.zipOrAccumulate
 import com.google.protobuf.Descriptors.Descriptor
 import com.google.protobuf.FieldMask
 import com.google.protobuf.util.FieldMaskUtil
@@ -14,8 +12,6 @@ import se.uulm.snowballr.backend.model.EnumUnspecified
 import se.uulm.snowballr.backend.model.InvalidEmail
 import se.uulm.snowballr.backend.model.InvalidFieldMask
 import se.uulm.snowballr.backend.model.InvalidId
-import se.uulm.snowballr.backend.model.InvalidPassword
-import se.uulm.snowballr.backend.model.InvalidPassword.Reason
 import se.uulm.snowballr.backend.model.OutOfRangeValue
 import se.uulm.snowballr.backend.model.TooLongField
 import se.uulm.snowballr.backend.model.ValidationIssue
@@ -73,51 +69,6 @@ fun Raise<ValidationIssue>.ensureEmailValidity(email: String) =
     ensure(EMAIL_REGEX.matches(email)) { InvalidEmail(email) }
 
 /**
- * Ensures that the provided password meets the required complexity criteria.
- *
- * It checks the following conditions:
- * - Minimum length of [PASSWORD_MIN_LENGTH]
- * - Minimum number of lowercase letters defined by [PASSWORD_MIN_NUMBER_LOWERCASE_LETTERS]
- * - Minimum number of uppercase letters defined by [PASSWORD_MIN_NUMBER_UPPERCASE_LETTERS]
- * - Minimum number of digits defined by [PASSWORD_MIN_NUMBER_DIGITS]
- * - Minimum number of special characters defined by [PASSWORD_MIN_NUMBER_SPECIAL_CHARS]
- *
- * If any of these conditions are not met, an [InvalidPassword] validation issue is raised with the appropriate reason.
- *
- * @param password The password to validate.
- * @return An [arrow.core.Either] containing either the validation issues or a success indication.
- */
-fun ensurePasswordValidity(password: String) = either {
-    zipOrAccumulate(
-        {
-            ensure(password.length >= PASSWORD_MIN_LENGTH) {
-                InvalidPassword(password, Reason.TOO_SHORT)
-            }
-        },
-        {
-            ensure(password.count { it.isLowerCase() } >= PASSWORD_MIN_NUMBER_LOWERCASE_LETTERS) {
-                InvalidPassword(password, Reason.NOT_ENOUGH_LOWERCASE_CHARS)
-            }
-        },
-        {
-            ensure(password.count { it.isUpperCase() } >= PASSWORD_MIN_NUMBER_UPPERCASE_LETTERS) {
-                InvalidPassword(password, Reason.NOT_ENOUGH_UPPERCASE_CHARS)
-            }
-        },
-        {
-            ensure(password.count { it.isDigit() } >= PASSWORD_MIN_NUMBER_DIGITS) {
-                InvalidPassword(password, Reason.NOT_ENOUGH_DIGITS)
-            }
-        },
-        {
-            ensure(countSpecialChars(password) >= PASSWORD_MIN_NUMBER_SPECIAL_CHARS) {
-                InvalidPassword(password, Reason.NOT_ENOUGH_SPECIAL_CHARS)
-            }
-        },
-    ) { _, _, _, _, _ -> }
-}
-
-/**
  * Ensures that the provided stage is positive or null.
  * If the stage is negative, an [OutOfRangeValue] validation issue is raised.
  *
@@ -125,16 +76,6 @@ fun ensurePasswordValidity(password: String) = either {
  */
 fun Raise<ValidationIssue>.ensureStageValidity(stage: Long) =
     ensure(stage >= 0) { OutOfRangeValue("stage", stage, 0, Long.MAX_VALUE) }
-
-/**
- * Counts the number of special characters in the given password.
- * Special characters are defined by the [SPECIAL_CHAR_REGEX].
- *
- * @param password The password to check for special characters.
- * @return The count of special characters in the password.
- */
-private fun countSpecialChars(password: String): Int =
-    password.count { SPECIAL_CHAR_REGEX.containsMatchIn(it.toString()) }
 
 /**
  * Ensures that the provided first name is valid.
