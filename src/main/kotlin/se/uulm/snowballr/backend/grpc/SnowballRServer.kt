@@ -359,7 +359,7 @@ class SnowballRServer(
 
         override suspend fun deleteReview(request: Base.Id): Base.Nothing = super.deleteReview(request)
 
-        override suspend fun getPaperById(request: Base.Id): PaperOuterClass.Paper = super.getPaperById(request)
+        override suspend fun getPaperById(request: Base.Id): PaperOuterClass.Paper = mainService.getPaperById(request)
 
         override suspend fun createPaper(request: PaperOuterClass.Paper): PaperOuterClass.Paper =
             super.createPaper(request)
