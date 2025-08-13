@@ -49,14 +49,14 @@ fun ProjectPaperWithPaper.toGrpcProjectPaper(
 fun List<ProjectPaperWithPaper>.toGrpcProjectPapers(
     paperAuthorsMap: Map<Paper, List<PaperOuterClass.Author>>,
     paperBackwardReferencesMap: Map<Paper, List<String>>,
-    paperReviewsMap: Map<Paper, List<ReviewOuterClass.Review>>,
+    paperReviewsMap: Map<ProjectPaper, List<ReviewOuterClass.Review>>,
 ): ProjectOuterClass.Project.Paper.List = ProjectOuterClass.Project.Paper.List
     .newBuilder()
     .addAllProjectPapers(
         this.map { projectPaper ->
             val authors = paperAuthorsMap[projectPaper.paper].orEmpty()
             val backwardRefs = paperBackwardReferencesMap[projectPaper.paper].orEmpty()
-            val reviews = paperReviewsMap[projectPaper.paper].orEmpty()
+            val reviews = paperReviewsMap[projectPaper.projectPaper].orEmpty()
 
             projectPaper.toGrpcProjectPaper(
                 authors = authors,
