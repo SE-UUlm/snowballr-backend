@@ -8,11 +8,11 @@ import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.ProjectTable
+import se.uulm.snowballr.backend.table.ReviewTable
 import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.table.association.ReviewHasCriterionTable
-import se.uulm.snowballr.backend.table.association.ReviewTable
 import se.uulm.snowballr.backend.table.association.toProjectMember
 import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass

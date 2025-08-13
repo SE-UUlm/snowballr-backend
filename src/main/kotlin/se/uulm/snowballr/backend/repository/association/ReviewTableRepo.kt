@@ -7,8 +7,8 @@ import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.Review
 import se.uulm.snowballr.backend.repository.getEntityByIdOrNull
-import se.uulm.snowballr.backend.table.association.ReviewTable
-import se.uulm.snowballr.backend.table.association.toReview
+import se.uulm.snowballr.backend.table.ReviewTable
+import se.uulm.snowballr.backend.table.toReview
 import java.util.UUID
 
 /**

@@ -8,6 +8,7 @@ import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.PdfTable
 import se.uulm.snowballr.backend.table.ProjectTable
+import se.uulm.snowballr.backend.table.ReviewTable
 import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.VerificationTokenTable
 import se.uulm.snowballr.backend.table.association.AuthorOfPaperTable
@@ -17,7 +18,6 @@ import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.table.association.ReadingListTable
 import se.uulm.snowballr.backend.table.association.ReviewHasCriterionTable
-import se.uulm.snowballr.backend.table.association.ReviewTable
 
 /**
  * Helper for the [Database] to manage all tables and extensions.

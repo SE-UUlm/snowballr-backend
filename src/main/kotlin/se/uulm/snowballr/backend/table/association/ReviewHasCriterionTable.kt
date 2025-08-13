@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.table.association
 import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.ReferenceOption
 import se.uulm.snowballr.backend.table.CriterionTable
+import se.uulm.snowballr.backend.table.ReviewTable
 
 /**
  * Represents the "review_has_criterion" table, defining the many-to-many relationship between reviews and criteria.
