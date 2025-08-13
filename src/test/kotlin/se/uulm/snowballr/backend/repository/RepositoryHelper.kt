@@ -1,6 +1,5 @@
 package se.uulm.snowballr.backend.repository
 
-import kotlinx.datetime.Instant
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.insertAndGetId
@@ -82,7 +81,7 @@ object RepositoryHelper {
         title: String = "Title",
         externalId: String = UUID.randomUUID().toString(),
         abstract: String = "Abstract",
-        publishedAt: Instant = Instant.fromEpochSeconds(0),
+        year: Int = 2025,
         publisher: String = "Publisher",
         publicationType: String = "PublicationType",
         publicationName: String = "PublicationName",
@@ -92,7 +91,7 @@ object RepositoryHelper {
             it[PaperTable.title] = title
             it[PaperTable.externalId] = externalId
             it[PaperTable.abstract] = abstract
-            it[PaperTable.publishedAt] = publishedAt
+            it[PaperTable.year] = year
             it[PaperTable.publisher] = publisher
             it[PaperTable.publicationType] = publicationType
             it[PaperTable.publicationName] = publicationName
