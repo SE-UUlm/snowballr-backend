@@ -29,7 +29,6 @@ const val PASSWORD_MIN_NUMBER_SPECIAL_CHARS = 2
 const val PASSWORD_MIN_LENGTH = 8
 const val FIRST_NAME_MAX_LENGTH = 100
 const val LAST_NAME_MAX_LENGTH = 100
-const val PROJECT_NAME_MAX_LENGTH = 100
 
 /**
  * Validates a given request object and returns either a collection of validation issues

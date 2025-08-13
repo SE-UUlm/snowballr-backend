@@ -15,6 +15,8 @@ import snowballr.ProjectOuterClass.Project.Create
  * A validator for [Project] related requests.
  */
 object ProjectValidator {
+    const val PROJECT_NAME_MAX_LENGTH = 100
+
     fun validateCreateRequest(request: Create): EitherNel<ValidationIssue, Unit> = either {
         ensureProjectNameValidity(request.name)
     }.toEitherNel()
