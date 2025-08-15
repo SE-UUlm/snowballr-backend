@@ -35,7 +35,7 @@ interface IProjectTableRepo {
     suspend fun getProjectById(id: UUID): Project
 
     /**
-     * @return whether the project with the passed [id] exists.
+     * Checks whether the project with the passed [id] exists.
      */
     suspend fun doesProjectExistById(id: UUID): Boolean
 

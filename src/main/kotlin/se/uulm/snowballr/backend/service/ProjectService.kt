@@ -132,14 +132,14 @@ class ProjectService(
     private val reviewHasCriterionTableRepo: IReviewHasCriterionTableRepo,
 ) : IProjectService {
     /**
-     * Retrieves a list of [ProjectPaper] associated with a specified [Project] ID. This method
-     * also ensures access control for the current user. Optionally, a predicate can be provided to filter
+     * Retrieves a list of [ProjectPaper] associated with a specified project id. This method
+     * also ensures access control for the current user. Optionally, a predicate function can be provided to filter
      * the [ProjectPaper]s based on custom criteria.
      *
      * @param request The request containing the ID of the [Project] for which [ProjectPaper]s are to be retrieved.
      * @param predicate An optional lambda function that takes a [ProjectPaperWithPaper], a map of [GrpcReview], and a user ID.
      * This function should return a boolean value to filter the [ProjectPaperWithPaper]s. If null, no filtering is applied.
-     * @return A list of [GrpcProjectPaper] as a [GrpcProjectPaper.List] including associated metadata such as authors,
+     * @return A list of [GrpcProjectPaper] including associated metadata such as authors,
      * backward references, and reviews.
      * @throws UnauthorizedException If the user does not have the required access to the project.
      */
@@ -360,12 +360,12 @@ class ProjectService(
             { projectPaper, projectPaperReviewsMap, currentUserId ->
                 val isAlreadyReviewedByCurrentUser = projectPaperReviewsMap[projectPaper.projectPaper]
                     ?.any { review -> review.userId == currentUserId } == true
-                val isAlreadyDecided =
+                val isStillUndecided =
                     projectPaper.projectPaper.decision == ProjectOuterClass.PaperDecision.PAPER_DECISION_UNREVIEWED ||
                         projectPaper.projectPaper.decision ==
                         ProjectOuterClass.PaperDecision.PAPER_DECISION_IN_REVIEW
 
-                !isAlreadyReviewedByCurrentUser && isAlreadyDecided
+                !isAlreadyReviewedByCurrentUser && isStillUndecided
             }
         return getProjectPapers(request, predicate)
     }
