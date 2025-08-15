@@ -11,6 +11,7 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
+import se.uulm.snowballr.backend.model.SnowballRException.InvalidIdException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.Base
 import java.util.UUID
@@ -58,6 +59,13 @@ class GetPaperByIdTest : MainServiceTest() {
         coEvery {
             citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
         } returns listOf(UUID.randomUUID())
+    }
+
+    @Test
+    fun `When parsing the paper ID fails, then an exception is thrown`() = runTest {
+        val request = Base.Id.newBuilder().setId("invalid-uuid").build()
+
+        assertThrows<InvalidIdException> { mainService.getPaperById(request) }
     }
 
     @ParameterizedTest

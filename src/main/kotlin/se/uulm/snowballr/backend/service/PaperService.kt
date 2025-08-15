@@ -19,13 +19,13 @@ interface IPaperService {
 }
 
 /**
- * The [PaperService] class handles operations related to papers by implementing the [IPaperService] interface.
+ * The [PaperService] class handles operations related to normal papers by implementing the [IPaperService] interface.
  *
  * This class serves as a layer that abstracts the responsibility of paper CRUD operations,
  * delegating the actual persistence operations to the [IPaperTableRepo] repository.
  *
  * @constructor Initializes the [PaperService] with a paper repository.
- * @param repo The repository responsible for managing persistence operations for projects.
+ * @param repo The repository responsible for managing persistence operations for normal papers.
  * @param authorOfPapersRepo The repository responsible for managing persistence operations for author-paper associations.
  * @param citationRepo The repository responsible for managing persistence operations for paper citations.
  */
@@ -38,11 +38,9 @@ class PaperService(
         val paperId = parseUUID(request.id, EntityType.PAPER)
         val paper = repo.getPaperById(paperId)
 
-        val authors = authorOfPapersRepo.getAuthorsOfPaperById(paperId)
+        val authors = authorOfPapersRepo.getAuthorsOfPaperById(paperId).map { it.toGrpcAuthor() }
         val backwardReferencedIds = citationRepo.getBackwardsReferencedPaperIdsOfPaperById(paperId)
-        return paper.toGrpcPaper(
-            authors.map { it.toGrpcAuthor() },
-            backwardReferencedIds.map { it.toString() },
-        )
+            .map { it.toString() }
+        return paper.toGrpcPaper(authors, backwardReferencedIds)
     }
 }

@@ -30,8 +30,10 @@ interface IMainService :
  * @param userService The service responsible for handling business logic related to users.
  * @param fetcherService The service responsible for handling business logic related to fetchers.
  * @param readingListService The service responsible for handling business logic related to reading lists.
- * @param paperService The service responsible for handling business logic related to papers.
+ * @param paperService The service responsible for handling business logic related to normal papers (project papers are
+ * handled by the [ProjectService]).
  */
+@Suppress("LongParameterList")
 class MainService(
     private val projectService: IProjectService,
     private val criterionService: ICriterionService,
