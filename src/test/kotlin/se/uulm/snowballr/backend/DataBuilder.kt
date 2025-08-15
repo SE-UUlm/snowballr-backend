@@ -6,15 +6,19 @@ import se.uulm.snowballr.backend.model.dto.Criterion
 import se.uulm.snowballr.backend.model.dto.Paper
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.ProjectMember
+import se.uulm.snowballr.backend.model.dto.ProjectPaper
+import se.uulm.snowballr.backend.model.dto.Review
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.UserSettings
 import se.uulm.snowballr.backend.model.dto.VerificationToken
 import snowballr.Base
 import snowballr.CriterionOuterClass.CriterionCategory
+import snowballr.ProjectOuterClass
 import snowballr.ProjectOuterClass.MemberRole
 import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
 import snowballr.ProjectOuterClass.SnowballingType
+import snowballr.ReviewOuterClass
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
 import java.time.OffsetDateTime
@@ -191,6 +195,30 @@ object DataBuilder {
         modifiedBy,
     )
 
+    fun createExampleProjectPaper(
+        id: UUID = UUID.randomUUID(),
+        paperId: UUID = UUID.randomUUID(),
+        projectId: UUID = UUID.randomUUID(),
+        localPaperId: Long = 0,
+        stage: Long = 0,
+        decision: ProjectOuterClass.PaperDecision = ProjectOuterClass.PaperDecision.PAPER_DECISION_ACCEPTED,
+        createdAt: OffsetDateTime = OffsetDateTime.now(),
+        createdBy: UUID = UUID.randomUUID(),
+        modifiedAt: OffsetDateTime? = null,
+        modifiedBy: UUID? = null,
+    ) = ProjectPaper(
+        id,
+        paperId,
+        projectId,
+        localPaperId,
+        stage,
+        decision,
+        createdAt,
+        createdBy,
+        modifiedAt,
+        modifiedBy,
+    )
+
     fun createExampleAuthor(
         id: UUID = UUID.randomUUID(),
         firstName: String = "FirstName",
@@ -203,6 +231,22 @@ object DataBuilder {
         firstName,
         lastName,
         orcid,
+        createdAt,
+        modifiedAt,
+    )
+
+    fun createExampleReview(
+        id: UUID = UUID.randomUUID(),
+        projectPaperId: UUID = UUID.randomUUID(),
+        userId: UUID = UUID.randomUUID(),
+        decision: ReviewOuterClass.ReviewDecision = ReviewOuterClass.ReviewDecision.REVIEW_DECISION_ACCEPTED,
+        createdAt: OffsetDateTime = OffsetDateTime.now(),
+        modifiedAt: OffsetDateTime? = null,
+    ) = Review(
+        id,
+        projectPaperId,
+        userId,
+        decision,
         createdAt,
         modifiedAt,
     )

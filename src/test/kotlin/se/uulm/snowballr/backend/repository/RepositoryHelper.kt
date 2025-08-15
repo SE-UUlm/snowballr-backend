@@ -2,15 +2,25 @@ package se.uulm.snowballr.backend.repository
 
 import kotlinx.datetime.Instant
 import org.jetbrains.exposed.sql.ResultRow
+import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.insertAndGetId
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
+import se.uulm.snowballr.backend.table.association.ProjectPaperTable
+import se.uulm.snowballr.backend.table.association.ReviewHasCriterionTable
+import se.uulm.snowballr.backend.table.association.ReviewTable
 import se.uulm.snowballr.backend.table.association.toProjectMember
+import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass
+import snowballr.ProjectOuterClass.ProjectStatus
+import snowballr.ProjectOuterClass.ReviewDecisionMatrix
+import snowballr.ProjectOuterClass.SnowballingType
+import snowballr.ReviewOuterClass
 import snowballr.UserOuterClass
 import java.util.UUID
 
@@ -70,7 +80,7 @@ object RepositoryHelper {
     @Suppress("LongParameterList")
     suspend fun insertPaperAndGetId(
         title: String = "Title",
-        externalId: String = "ExternalId",
+        externalId: String = UUID.randomUUID().toString(),
         abstract: String = "Abstract",
         publishedAt: Instant = Instant.fromEpochSeconds(0),
         publisher: String = "Publisher",
@@ -90,24 +100,89 @@ object RepositoryHelper {
         }.value
     }
 
-    /**
-     * Creates an example project in the database with the specified properties.
-     */
-    suspend fun insertTestProjectAndGetId(name: String, status: ProjectOuterClass.ProjectStatus, userId: UUID): UUID =
-        db.query {
-            ProjectTable
-                .insertAndGetId {
-                    it[ProjectTable.name] = name
-                    it[ProjectTable.status] = status
-                    it[currentStage] = 0
-                    it[maxStage] = 0
-                    it[similarityThreshold] = 0F
-                    it[snowballingType] = ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_BOTH
-                    it[reviewMaybeAllowed] = true
-                    it[reviewDecisionMatrixBinary] =
-                        ProjectOuterClass.ReviewDecisionMatrix.getDefaultInstance().toByteArray()
-                    it[fetchers] = emptyMap()
-                    it[createdBy] = userId
-                }.value
+    @Suppress("LongParameterList")
+    suspend fun insertProjectAndGetId(
+        name: String = "Test Project",
+        status: ProjectStatus = ProjectStatus.PROJECT_STATUS_ACTIVE,
+        currentStage: Long = 0,
+        maxStage: Long = 0,
+        similarityThreshold: Float = 0F,
+        snowballingType: SnowballingType = SnowballingType.SNOWBALLING_TYPE_BOTH,
+        reviewMaybeAllowed: Boolean = true,
+        reviewDecisionMatrix: ReviewDecisionMatrix = ReviewDecisionMatrix.getDefaultInstance(),
+        fetcherApis: Map<String, Map<String, String>> = emptyMap(),
+        createdBy: UUID,
+    ): UUID = db.query {
+        ProjectTable
+            .insertAndGetId {
+                it[ProjectTable.name] = name
+                it[ProjectTable.status] = status
+                it[ProjectTable.currentStage] = currentStage
+                it[ProjectTable.maxStage] = maxStage
+                it[ProjectTable.similarityThreshold] = similarityThreshold
+                it[ProjectTable.snowballingType] = snowballingType
+                it[ProjectTable.reviewMaybeAllowed] = reviewMaybeAllowed
+                it[ProjectTable.reviewDecisionMatrixBinary] = reviewDecisionMatrix.toByteArray()
+                it[ProjectTable.fetchers] = fetcherApis
+                it[ProjectTable.createdBy] = createdBy
+            }.value
+    }
+
+    @Suppress("LongParameterList")
+    suspend fun insertProjectPaperAndGetId(
+        paperId: UUID,
+        projectId: UUID,
+        localPaperId: Long = 0,
+        stage: Long = 0,
+        decision: ProjectOuterClass.PaperDecision = ProjectOuterClass.PaperDecision.PAPER_DECISION_ACCEPTED,
+        createdBy: UUID,
+    ): UUID = db.query {
+        ProjectPaperTable.insertAndGetId {
+            it[ProjectPaperTable.paperId] = paperId
+            it[ProjectPaperTable.projectId] = projectId
+            it[ProjectPaperTable.localPaperId] = localPaperId
+            it[ProjectPaperTable.stage] = stage
+            it[ProjectPaperTable.decision] = decision
+            it[ProjectPaperTable.createdBy] = createdBy
+        }.value
+    }
+
+    @Suppress("LongParameterList")
+    suspend fun insertReviewAndGetId(
+        projectPaperId: UUID,
+        userId: UUID,
+        decision: ReviewOuterClass.ReviewDecision = ReviewOuterClass.ReviewDecision.REVIEW_DECISION_ACCEPTED,
+    ): UUID = db.query {
+        ReviewTable.insertAndGetId {
+            it[ReviewTable.projectPaperId] = projectPaperId
+            it[ReviewTable.userId] = userId
+            it[ReviewTable.decision] = decision
+        }.value
+    }
+
+    @Suppress("LongParameterList")
+    suspend fun insertCriterionAndGetId(
+        tag: String = "Test Tag",
+        name: String = "Test Criterion",
+        description: String = "Test Description",
+        category: CriterionCategory = CriterionCategory.CRITERION_CATEGORY_EXCLUSION,
+        projectId: UUID,
+        createdBy: UUID,
+    ): UUID = db.query {
+        CriterionTable.insertAndGetId {
+            it[CriterionTable.tag] = tag
+            it[CriterionTable.name] = name
+            it[CriterionTable.description] = description
+            it[CriterionTable.category] = category
+            it[CriterionTable.projectId] = projectId
+            it[CriterionTable.createdBy] = createdBy
+        }.value
+    }
+
+    suspend fun assignCriterionToReview(reviewId: UUID, criterionId: UUID) = db.query {
+        ReviewHasCriterionTable.insert {
+            it[ReviewHasCriterionTable.reviewId] = reviewId
+            it[ReviewHasCriterionTable.criterionId] = criterionId
         }
+    }
 }

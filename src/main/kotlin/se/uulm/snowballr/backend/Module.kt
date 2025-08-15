@@ -32,9 +32,15 @@ import se.uulm.snowballr.backend.repository.association.CitationTableRepo
 import se.uulm.snowballr.backend.repository.association.IAuthorOfPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
+import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.IReadingListTableRepo
+import se.uulm.snowballr.backend.repository.association.IReviewHasCriterionTableRepo
+import se.uulm.snowballr.backend.repository.association.IReviewTableRepo
 import se.uulm.snowballr.backend.repository.association.ProjectMemberTableRepo
+import se.uulm.snowballr.backend.repository.association.ProjectPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.ReadingListTableRepo
+import se.uulm.snowballr.backend.repository.association.ReviewHasCriterionTableRepo
+import se.uulm.snowballr.backend.repository.association.ReviewTableRepo
 import se.uulm.snowballr.backend.service.AuthenticationService
 import se.uulm.snowballr.backend.service.CriterionService
 import se.uulm.snowballr.backend.service.EmailService
@@ -46,10 +52,12 @@ import se.uulm.snowballr.backend.service.IFetcherService
 import se.uulm.snowballr.backend.service.IMainService
 import se.uulm.snowballr.backend.service.IProjectService
 import se.uulm.snowballr.backend.service.IReadingListService
+import se.uulm.snowballr.backend.service.IReviewService
 import se.uulm.snowballr.backend.service.IUserService
 import se.uulm.snowballr.backend.service.MainService
 import se.uulm.snowballr.backend.service.ProjectService
 import se.uulm.snowballr.backend.service.ReadingListService
+import se.uulm.snowballr.backend.service.ReviewService
 import se.uulm.snowballr.backend.service.UserService
 
 /**
@@ -109,6 +117,9 @@ private fun Module.repositoryLayerDeps() {
     singleOf(::CitationTableRepo) { bind<ICitationTableRepo>() }
     singleOf(::ReadingListTableRepo) { bind<IReadingListTableRepo>() }
     singleOf(::VerificationTokenTableRepo) { bind<IVerificationTokenTableRepo>() }
+    singleOf(::ProjectPaperTableRepo) { bind<IProjectPaperTableRepo>() }
+    singleOf(::ReviewTableRepo) { bind<IReviewTableRepo>() }
+    singleOf(::ReviewHasCriterionTableRepo) { bind<IReviewHasCriterionTableRepo>() }
 }
 
 /**
@@ -142,6 +153,7 @@ fun Module.serviceLayerDeps() {
     singleOf(::UserService) { bind<IUserService>() }
     singleOf(::FetcherService) { bind<IFetcherService>() }
     singleOf(::ReadingListService) { bind<IReadingListService>() }
+    singleOf(::ReviewService) { bind<IReviewService>() }
     // The main service comes last
     singleOf(::MainService) { bind<IMainService>() }
 }

@@ -12,7 +12,9 @@ enum class EntityType(val singular: String, val plural: String) {
     CRITERION("criterion", "criteria"),
     PROJECT_MEMBER("project member", "project members"),
     PAPER("paper", "papers"),
+    PROJECT_PAPER("project paper", "project papers"),
     AUTHOR("author", "authors"),
+    REVIEW("review", "reviews"),
     VERIFICATION_TOKEN("verification token", "verification tokens"),
     ;
 
