@@ -7,6 +7,7 @@ import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.Paper
+import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.ProjectPaper
 import se.uulm.snowballr.backend.model.dto.ProjectPaperWithPaper
 import se.uulm.snowballr.backend.model.dto.toGrpcAuthor
@@ -31,8 +32,9 @@ import snowballr.Base
 import snowballr.CriterionOuterClass
 import snowballr.PaperOuterClass
 import snowballr.ProjectOuterClass
+import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 import snowballr.ProjectOuterClass.ProjectStatus
-import snowballr.ReviewOuterClass
+import snowballr.ReviewOuterClass.Review as GrpcReview
 import snowballr.ProjectOuterClass.Project as GrpcProject
 
 @Suppress("ComplexInterface", "TooManyFunctions")
@@ -129,6 +131,67 @@ class ProjectService(
     private val reviewTableRepo: IReviewTableRepo,
     private val reviewHasCriterionTableRepo: IReviewHasCriterionTableRepo,
 ) : IProjectService {
+
+    /**
+     * Retrieves a list of [ProjectPaper] associated with a specified [Project] ID. This method
+     * also ensures access control for the current user. Optionally, a predicate can be provided to filter
+     * the [ProjectPaper]s based on custom criteria.
+     *
+     * @param request The request containing the ID of the [Project] for which [ProjectPaper]s are to be retrieved.
+     * @param predicate An optional lambda function that takes a [ProjectPaperWithPaper], a map of [GrpcReview], and a user ID.
+     * This function should return a boolean value to filter the [ProjectPaperWithPaper]s. If null, no filtering is applied.
+     * @return A list of [GrpcProjectPaper] as a [GrpcProjectPaper.List] including associated metadata such as authors,
+     * backward references, and reviews.
+     * @throws UnauthorizedException If the user does not have the required access to the project.
+     */
+    private suspend fun getProjectPapers(
+        request: Base.Id,
+        predicate: (suspend (ProjectPaperWithPaper, Map<ProjectPaper, List<GrpcReview>>, String) -> Boolean)? = null,
+    ): GrpcProjectPaper.List {
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
+        val projectId = parseUUID(request.id, EntityType.PROJECT)
+        repo.getProjectById(projectId)
+        val projectMembers = projectMemberRepo.getProjectMembers(projectId)
+
+        if (!projectMembers.any { it.userId == currentUser.id }) {
+            verifyServerAdminRole(currentUser) {
+                throw UnauthorizedException.Single(
+                    EntityType.PROJECT,
+                    projectId.toString(),
+                    AccessType.READ,
+                    it,
+                )
+            }
+        }
+
+        var projectPapersWithPapers = projectPaperRepo.getAllProjectPapersWithPapers(projectId)
+        val paperAuthorsMap = mutableMapOf<Paper, List<PaperOuterClass.Author>>()
+        val paperBackwardReferencesMap = mutableMapOf<Paper, List<String>>()
+        val projectPaperReviewsMap = mutableMapOf<ProjectPaper, List<GrpcReview>>()
+        for (projectPaper in projectPapersWithPapers) {
+            val paper = projectPaper.paper
+            paperAuthorsMap[paper] = authorOfPaperTableRepo
+                .getAuthorsOfPaperById(paper.id).map { it.toGrpcAuthor() }
+            paperBackwardReferencesMap[paper] = citationTableRepo
+                .getBackwardsReferencedPaperIdsOfPaperById(paper.id).map {
+                    it.toString()
+                }
+            projectPaperReviewsMap[projectPaper.projectPaper] = reviewTableRepo
+                .getAllReviewsForProjectPaper(projectPaper.projectPaper.id)
+                .map {
+                    val selectedCriteriaIds = reviewHasCriterionTableRepo
+                        .getSelectedCriteriaIdsForReviewById(it.id)
+                    it.toGrpcReview(selectedCriteriaIds.map { criterion -> criterion.toString() })
+                }
+        }
+        projectPapersWithPapers = predicate?.let { pred ->
+            projectPapersWithPapers.filter { pred(it, projectPaperReviewsMap, currentUser.id.toString()) }
+        } ?: projectPapersWithPapers
+
+        return projectPapersWithPapers.toGrpcProjectPapers(paperAuthorsMap, paperBackwardReferencesMap, projectPaperReviewsMap)
+    }
+
+
     override suspend fun getProjectById(request: Base.Id): GrpcProject {
         val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
         val projectId = parseUUID(request.id, EntityType.PROJECT)
@@ -285,71 +348,19 @@ class ProjectService(
         return ProjectPaperWithPaper(projectPaper, paper).toGrpcProjectPaper(authors, backwardReferences, reviews)
     }
 
-    data class ProjectPaperData(
-        val projectPapersWithPapers: List<ProjectPaperWithPaper>,
-        val paperAuthorsMap: Map<Paper, List<PaperOuterClass.Author>>,
-        val paperBackwardReferencesMap: Map<Paper, List<String>>,
-        val paperReviewsMap: Map<ProjectPaper, List<ReviewOuterClass.Review>>,
-    )
+    override suspend fun getAllProjectPapersForProject(request: Base.Id): GrpcProjectPaper.List =
+        getProjectPapers(request)
 
-    private suspend fun getProjectPapers(request: Base.Id): ProjectPaperData {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
-        val projectId = parseUUID(request.id, EntityType.PROJECT)
-        repo.getProjectById(projectId)
-        val projectMembers = projectMemberRepo.getProjectMembers(projectId)
+    override suspend fun getPapersToReviewForProject(request: Base.Id): GrpcProjectPaper.List {
+        val predicate: (ProjectPaperWithPaper, Map<ProjectPaper, List<GrpcReview>>, String) -> Boolean =
+            { projectPaper, projectPaperReviewsMap, currentUserId ->
+                val isAlreadyReviewed = projectPaperReviewsMap[projectPaper.projectPaper]
+                    ?.any { review -> review.userId == currentUserId } == true
 
-        if (!projectMembers.any { it.userId == currentUser.id }) {
-            verifyServerAdminRole(currentUser) {
-                throw UnauthorizedException.Single(
-                    EntityType.PROJECT,
-                    projectId.toString(),
-                    AccessType.READ,
-                    it,
-                )
+                !isAlreadyReviewed &&
+                        (projectPaper.projectPaper.decision == ProjectOuterClass.PaperDecision.PAPER_DECISION_UNREVIEWED ||
+                        projectPaper.projectPaper.decision == ProjectOuterClass.PaperDecision.PAPER_DECISION_IN_REVIEW)
             }
-        }
-
-        val projectPapersWithPapers = projectPaperRepo.getAllProjectPapersWithPapers(projectId)
-        val paperAuthorsMap = mutableMapOf<Paper, List<PaperOuterClass.Author>>()
-        val paperBackwardReferencesMap = mutableMapOf<Paper, List<String>>()
-        val paperReviewsMap = mutableMapOf<ProjectPaper, List<ReviewOuterClass.Review>>()
-        for (projectPaper in projectPapersWithPapers) {
-            val paper = projectPaper.paper
-            paperAuthorsMap[paper] = authorOfPaperTableRepo
-                .getAuthorsOfPaperById(paper.id).map { it.toGrpcAuthor() }
-            paperBackwardReferencesMap[paper] = citationTableRepo
-                .getBackwardsReferencedPaperIdsOfPaperById(paper.id).map {
-                    it.toString()
-                }
-            paperReviewsMap[projectPaper.projectPaper] = reviewTableRepo
-                .getAllReviewsForProjectPaper(projectPaper.projectPaper.id)
-                .map {
-                    val selectedCriteriaIds = reviewHasCriterionTableRepo
-                        .getSelectedCriteriaIdsForReviewById(it.id)
-                    it.toGrpcReview(selectedCriteriaIds.map { criterion -> criterion.toString() })
-                }
-        }
-        return ProjectPaperData(projectPapersWithPapers, paperAuthorsMap, paperBackwardReferencesMap, paperReviewsMap)
-    }
-
-    override suspend fun getAllProjectPapersForProject(request: Base.Id): GrpcProject.Paper.List {
-        val (projectPapersWithPapers, paperAuthorsMap, paperBackwardReferencesMap, paperReviewsMap) =
-            getProjectPapers(request)
-        return projectPapersWithPapers.toGrpcProjectPapers(paperAuthorsMap, paperBackwardReferencesMap, paperReviewsMap)
-    }
-
-    override suspend fun getPapersToReviewForProject(request: Base.Id): GrpcProject.Paper.List {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
-        var (projectPapersWithPapers, paperAuthorsMap, paperBackwardReferencesMap, paperReviewsMap) =
-            getProjectPapers(request)
-        projectPapersWithPapers = projectPapersWithPapers.filter {
-            val isAlreadyReviewed = paperReviewsMap[it.projectPaper]
-                ?.any { review -> review.userId == currentUser.id.toString() } == true
-
-            !isAlreadyReviewed &&
-                it.projectPaper.decision != ProjectOuterClass.PaperDecision.PAPER_DECISION_ACCEPTED &&
-                it.projectPaper.decision != ProjectOuterClass.PaperDecision.PAPER_DECISION_DECLINED
-        }
-        return projectPapersWithPapers.toGrpcProjectPapers(paperAuthorsMap, paperBackwardReferencesMap, paperReviewsMap)
+        return getProjectPapers(request, predicate)
     }
 }
