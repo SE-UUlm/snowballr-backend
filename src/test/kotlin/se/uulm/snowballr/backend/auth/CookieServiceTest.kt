@@ -9,6 +9,8 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertNotNull
 import org.junit.jupiter.api.assertNull
+import se.uulm.snowballr.backend.env.Env
+import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.model.auth.CookieConfig
 
 class CookieServiceTest {
@@ -16,7 +18,18 @@ class CookieServiceTest {
         every { getAccessTokenTTL() } returns JwtService.ACCESS_TOKEN_EXPIRATION_MS
         every { getRefreshTokenTTL() } returns JwtService.REFRESH_TOKEN_EXPIRATION_MS
     }
-    private val cookieService = CookieService(jwtServiceMock)
+    private val cookieService = CookieService(jwtServiceMock, createEnvReader("https://"))
+
+    private fun createEnvReader(frontendBaseUrl: String): EnvReader {
+        val envReaderMock = mockk<EnvReader>()
+        val miscellaneousMock = mockk<Env.Miscellaneous>()
+        every { miscellaneousMock.frontendBaseUrl } returns frontendBaseUrl
+
+        val envMock = mockk<Env>()
+        every { envMock.miscellaneous } returns miscellaneousMock
+        every { envReaderMock.env } returns envMock
+        return envReaderMock
+    }
 
     @Nested
     inner class ParseCookies {
@@ -103,6 +116,24 @@ class CookieServiceTest {
             val cookie = cookieService.buildAuthCookieString("unknown_cookie", "value")
 
             assertNull(cookie)
+        }
+
+        @Test
+        fun `When the frontend base url starts with http(colon), then secure defaults to false`() {
+            val cookieService = CookieService(jwtServiceMock, createEnvReader("http://"))
+            val cookie = cookieService.buildAuthCookieString(GrpcContext.REFRESH_TOKEN_COOKIE_NAME, "value")
+
+            assertNotNull(cookie)
+            assertFalse(cookie.contains("Secure"))
+        }
+
+        @Test
+        fun `When the frontend base url starts with https(colon), then secure defaults to true`() {
+            val cookieService = CookieService(jwtServiceMock, createEnvReader("https://"))
+            val cookie = cookieService.buildAuthCookieString(GrpcContext.REFRESH_TOKEN_COOKIE_NAME, "value")
+
+            assertNotNull(cookie)
+            assertTrue(cookie.contains("Secure"))
         }
     }
 

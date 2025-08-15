@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.auth
 
+import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.model.auth.CookieConfig
 
 interface ICookieService {
@@ -49,8 +50,12 @@ interface ICookieService {
  * Utility object for parsing and constructing HTTP cookie headers.
  *
  * @param jwtService The JWT service used to resolve token TTLs.
+ * @param envReader The environment reader used to access the current configuration.
  */
-class CookieService(private val jwtService: IJwtService) : ICookieService {
+class CookieService(
+    private val jwtService: IJwtService,
+    private val envReader: EnvReader,
+) : ICookieService {
     override fun parseCookies(cookieHeader: String?): Map<String, String> {
         if (cookieHeader.isNullOrBlank()) return emptyMap()
         return cookieHeader
@@ -78,7 +83,8 @@ class CookieService(private val jwtService: IJwtService) : ICookieService {
             path = "/",
             sameSite = "Strict", // Stricter policy for auth tokens
             httpOnly = true,
-            secure = true,
+            // Inverted condition here so it defaults to `true`
+            secure = !envReader.env.miscellaneous.frontendBaseUrl.startsWith("http:"),
         )
 
         return createCookieString(authCookieConfig)

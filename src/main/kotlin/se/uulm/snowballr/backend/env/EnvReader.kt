@@ -71,6 +71,13 @@ class EnvReader(
                 defaults.smtpTransportLoggingOnlyEnabled,
             )
 
+        if (frontendBaseUrl.startsWith("http:")) {
+            logger.warn {
+                "The frontend url is set to the 'http' protocol, hinting at a possible security issue." +
+                    " Prefer 'https' wherever you can."
+            }
+        }
+
         // If AUTH_BYPASS_ENABLED is `true`, we must also seed the user
         val authBypassEnabled = envService.getBooleanOrDefault(AUTH_BYPASS_ENABLED, defaults.authBypassEnabled)
         val seedUserEnabled =
