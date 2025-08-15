@@ -39,8 +39,14 @@ class GetProjectPaperByIdTest : MainServiceTest() {
     )
 
     @Suppress("LongMethod", "ReturnCount")
-    private fun mockHappyPathUntil(failAt: KFunction<*>?) {
-        val currentUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_ADMIN)
+    private fun mockHappyPathUntil(failAt: KFunction<*>?, isUserAdmin: Boolean) {
+        val currentUser = DataBuilder.createExampleUser(
+            role = if (isUserAdmin) {
+                UserOuterClass.UserRole.USER_ROLE_ADMIN
+            } else {
+                UserOuterClass.UserRole.USER_ROLE_DEFAULT
+            },
+        )
         val project = DataBuilder.createExampleProject()
         val paper = DataBuilder.createExamplePaper()
         val projectPaper = DataBuilder.createExampleProjectPaper(
@@ -48,6 +54,7 @@ class GetProjectPaperByIdTest : MainServiceTest() {
             projectId = project.id,
             paperId = paper.id,
         )
+        val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
         val author = DataBuilder.createExampleAuthor()
         val review = DataBuilder.createExampleReview()
 
@@ -73,7 +80,12 @@ class GetProjectPaperByIdTest : MainServiceTest() {
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } throws TestSpecificException()
             return
         }
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
+        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns
+            if (isUserAdmin) {
+                emptyList()
+            } else {
+                listOf(projectMember)
+            }
 
         if (failAt == paperRepoMock::getPaperById) {
             coEvery { paperRepoMock.getPaperById(projectPaper.paperId) } throws TestSpecificException()
@@ -119,7 +131,7 @@ class GetProjectPaperByIdTest : MainServiceTest() {
     @ParameterizedTest
     @MethodSource("failingFunctions")
     fun `When a step fails, then an exception is thrown`(failAt: KFunction<*>) = runTest {
-        mockHappyPathUntil(failAt)
+        mockHappyPathUntil(failAt, true)
         assertThrows<TestSpecificException> {
             mainService.getProjectPaperById(getExampleRequest())
         }
@@ -127,38 +139,13 @@ class GetProjectPaperByIdTest : MainServiceTest() {
 
     @Test
     fun `When a server admin retrieves the project paper, then no exception is thrown`() = runTest {
-        mockHappyPathUntil(null)
+        mockHappyPathUntil(null, true)
         assertDoesNotThrow { mainService.getProjectPaperById(getExampleRequest()) }
     }
 
     @Test
     fun `When a project member retrieves the project paper, then no exception is thrown`() = runTest {
-        val currentUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_DEFAULT)
-        val project = DataBuilder.createExampleProject()
-        val paper = DataBuilder.createExamplePaper()
-        val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
-        val projectPaper = DataBuilder.createExampleProjectPaper(
-            id = requestId,
-            projectId = project.id,
-            paperId = paper.id,
-        )
-        val author = DataBuilder.createExampleAuthor()
-        val review = DataBuilder.createExampleReview()
-
-        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
-        coEvery { projectPaperRepoMock.getProjectPaperById(projectPaper.id) } returns projectPaper
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
-        coEvery { paperRepoMock.getPaperById(projectPaper.paperId) } returns paper
-        coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(paper.id) } returns listOf(author)
-        coEvery {
-            citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
-        } returns listOf(UUID.randomUUID())
-        coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper.id) } returns listOf(review)
-        coEvery {
-            reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(review.id)
-        } returns listOf(UUID.randomUUID())
-
+        mockHappyPathUntil(null, false)
         assertDoesNotThrow { mainService.getProjectPaperById(getExampleRequest()) }
     }
 

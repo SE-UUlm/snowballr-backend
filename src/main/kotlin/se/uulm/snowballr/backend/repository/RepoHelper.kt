@@ -67,6 +67,17 @@ private fun <Key : Any, T : IdTable<Key>> T.getEntityId(id: Key, entityType: Ent
     ?: throw NotFoundException(entityType, id.toString())
 
 /**
+ * Checks if an entity exists in the table with the given ID.
+ *
+ * @param Key The type of the [IdTable], i.e., the ID type, such as [UUID].
+ * @param T The table type as a subtype of [IdTable].
+ * @param id The ID of type [Key], which is used to find the entity.
+ * @return True if an entity with the given ID exists, false otherwise.
+ */
+fun <Key : Any, T : IdTable<Key>> T.doesEntityExistById(id: Key): Boolean = this
+    .getEntityByIdOrNull(id) { it[this.id] } != null
+
+/**
  * Combination of using [insertAndGetId] and fetching the created entity by its ID.
  *
  * @param Key The type of the [IdTable], i.e., the ID type, such as [UUID].

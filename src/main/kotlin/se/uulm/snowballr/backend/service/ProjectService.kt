@@ -32,10 +32,10 @@ import snowballr.Base
 import snowballr.CriterionOuterClass
 import snowballr.PaperOuterClass
 import snowballr.ProjectOuterClass
-import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 import snowballr.ProjectOuterClass.ProjectStatus
-import snowballr.ReviewOuterClass.Review as GrpcReview
 import snowballr.ProjectOuterClass.Project as GrpcProject
+import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
+import snowballr.ReviewOuterClass.Review as GrpcReview
 
 @Suppress("ComplexInterface", "TooManyFunctions")
 interface IProjectService {
@@ -131,7 +131,6 @@ class ProjectService(
     private val reviewTableRepo: IReviewTableRepo,
     private val reviewHasCriterionTableRepo: IReviewHasCriterionTableRepo,
 ) : IProjectService {
-
     /**
      * Retrieves a list of [ProjectPaper] associated with a specified [Project] ID. This method
      * also ensures access control for the current user. Optionally, a predicate can be provided to filter
@@ -150,7 +149,9 @@ class ProjectService(
     ): GrpcProjectPaper.List {
         val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
         val projectId = parseUUID(request.id, EntityType.PROJECT)
-        repo.getProjectById(projectId)
+        if (!repo.doesProjectExistById(projectId)) {
+            throw SnowballRException.NotFoundException(EntityType.PROJECT, projectId.toString())
+        }
         val projectMembers = projectMemberRepo.getProjectMembers(projectId)
 
         if (!projectMembers.any { it.userId == currentUser.id }) {
@@ -188,9 +189,12 @@ class ProjectService(
             projectPapersWithPapers.filter { pred(it, projectPaperReviewsMap, currentUser.id.toString()) }
         } ?: projectPapersWithPapers
 
-        return projectPapersWithPapers.toGrpcProjectPapers(paperAuthorsMap, paperBackwardReferencesMap, projectPaperReviewsMap)
+        return projectPapersWithPapers.toGrpcProjectPapers(
+            paperAuthorsMap,
+            paperBackwardReferencesMap,
+            projectPaperReviewsMap,
+        )
     }
-
 
     override suspend fun getProjectById(request: Base.Id): GrpcProject {
         val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
@@ -354,12 +358,14 @@ class ProjectService(
     override suspend fun getPapersToReviewForProject(request: Base.Id): GrpcProjectPaper.List {
         val predicate: (ProjectPaperWithPaper, Map<ProjectPaper, List<GrpcReview>>, String) -> Boolean =
             { projectPaper, projectPaperReviewsMap, currentUserId ->
-                val isAlreadyReviewed = projectPaperReviewsMap[projectPaper.projectPaper]
+                val isAlreadyReviewedByCurrentUser = projectPaperReviewsMap[projectPaper.projectPaper]
                     ?.any { review -> review.userId == currentUserId } == true
+                val isAlreadyDecided =
+                    projectPaper.projectPaper.decision == ProjectOuterClass.PaperDecision.PAPER_DECISION_UNREVIEWED ||
+                        projectPaper.projectPaper.decision ==
+                        ProjectOuterClass.PaperDecision.PAPER_DECISION_IN_REVIEW
 
-                !isAlreadyReviewed &&
-                        (projectPaper.projectPaper.decision == ProjectOuterClass.PaperDecision.PAPER_DECISION_UNREVIEWED ||
-                        projectPaper.projectPaper.decision == ProjectOuterClass.PaperDecision.PAPER_DECISION_IN_REVIEW)
+                !isAlreadyReviewedByCurrentUser && isAlreadyDecided
             }
         return getProjectPapers(request, predicate)
     }

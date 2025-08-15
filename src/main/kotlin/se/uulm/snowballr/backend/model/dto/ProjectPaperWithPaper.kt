@@ -1,8 +1,8 @@
 package se.uulm.snowballr.backend.model.dto
 
 import snowballr.PaperOuterClass.Author as GrpcAuthor
-import snowballr.ReviewOuterClass.Review as GrpcReview
 import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
+import snowballr.ReviewOuterClass.Review as GrpcReview
 
 /**
  * Represents a relationship between a [ProjectPaper] and its associated [Paper].

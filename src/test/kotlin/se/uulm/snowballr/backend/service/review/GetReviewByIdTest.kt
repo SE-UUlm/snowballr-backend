@@ -37,11 +37,18 @@ class GetReviewByIdTest : MainServiceTest() {
     )
 
     @Suppress("ReturnCount")
-    private fun mockHappyPathUntil(failAt: KFunction<*>?) {
-        val currentUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_ADMIN)
+    private fun mockHappyPathUntil(failAt: KFunction<*>?, isUserAdmin: Boolean) {
+        val currentUser = DataBuilder.createExampleUser(
+            role = if (isUserAdmin) {
+                UserOuterClass.UserRole.USER_ROLE_ADMIN
+            } else {
+                UserOuterClass.UserRole.USER_ROLE_DEFAULT
+            },
+        )
         val review = DataBuilder.createExampleReview(id = requestId, userId = currentUser.id)
         val project = DataBuilder.createExampleProject()
         val projectPaper = DataBuilder.createExampleProjectPaper(id = review.projectPaperId, projectId = project.id)
+        val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
         val selectedCriteriaIds = listOf<UUID>(UUID.randomUUID())
 
         if (failAt == GrpcContext::getUserIdFromContext) {
@@ -78,7 +85,12 @@ class GetReviewByIdTest : MainServiceTest() {
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } throws TestSpecificException()
             return
         }
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
+        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns
+            if (isUserAdmin) {
+                emptyList()
+            } else {
+                listOf(projectMember)
+            }
 
         if (failAt == reviewHasCriterionRepoMock::getSelectedCriteriaIdsForReviewById) {
             coEvery {
@@ -94,7 +106,7 @@ class GetReviewByIdTest : MainServiceTest() {
     @ParameterizedTest
     @MethodSource("failingFunctions")
     fun `When a step fails, then an exception is thrown`(failAt: KFunction<*>) = runTest {
-        mockHappyPathUntil(failAt)
+        mockHappyPathUntil(failAt, true)
         assertThrows<TestSpecificException> {
             mainService.getReviewById(getExampleRequest())
         }
@@ -102,29 +114,13 @@ class GetReviewByIdTest : MainServiceTest() {
 
     @Test
     fun `When a server admin retrieves the review, then no exception is thrown`() = runTest {
-        mockHappyPathUntil(null)
+        mockHappyPathUntil(null, true)
         assertDoesNotThrow { mainService.getReviewById(getExampleRequest()) }
     }
 
     @Test
     fun `When a project member retrieves the review, then no exception is thrown`() = runTest {
-        val currentUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_DEFAULT)
-        val review = DataBuilder.createExampleReview(id = requestId, userId = currentUser.id)
-        val project = DataBuilder.createExampleProject()
-        val projectPaper = DataBuilder.createExampleProjectPaper(id = review.projectPaperId, projectId = project.id)
-        val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
-        val selectedCriteriaIds = listOf<UUID>(UUID.randomUUID())
-
-        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
-        coEvery { reviewRepoMock.getReviewById(review.id) } returns review
-        coEvery { projectPaperRepoMock.getProjectPaperById(review.projectPaperId) } returns projectPaper
-        coEvery { projectRepoMock.getProjectById(project.id) } returns project
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
-        coEvery {
-            reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(review.id)
-        } returns selectedCriteriaIds
-
+        mockHappyPathUntil(null, false)
         assertDoesNotThrow { mainService.getReviewById(getExampleRequest()) }
     }
 
