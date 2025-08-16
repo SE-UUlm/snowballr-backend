@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.service.readinglist
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
+import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -22,6 +23,11 @@ class RemovePaperFromReadingListTest : MainServiceTest() {
         val paperId = Base.Id.getDefaultInstance()
         every { GrpcContext.getUserIdFromContext() } throws TestSpecificException()
         assertThrows<TestSpecificException> { mainService.removePaperFromReadingList(paperId) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 0) { userRepoMock.getUserById(any()) }
+        coVerify(exactly = 0) { paperRepoMock.doesPaperExistById(any()) }
+        coVerify(exactly = 0) { readingListRepoMock.removeReadingListEntry(any(), any()) }
     }
 
     @Test
@@ -35,6 +41,11 @@ class RemovePaperFromReadingListTest : MainServiceTest() {
         coEvery { readingListRepoMock.removeReadingListEntry(user.id, paperId) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.removePaperFromReadingList(paperId.toGrpcId()) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(user.id) }
+        coVerify(exactly = 1) { paperRepoMock.doesPaperExistById(paperId) }
+        coVerify(exactly = 1) { readingListRepoMock.removeReadingListEntry(user.id, paperId) }
     }
 
     @Test
@@ -48,6 +59,10 @@ class RemovePaperFromReadingListTest : MainServiceTest() {
         coEvery { readingListRepoMock.removeReadingListEntry(user.id, paperId) } returns Unit
 
         assertDoesNotThrow { mainService.removePaperFromReadingList(paperId.toGrpcId()) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(user.id) }
+        coVerify(exactly = 1) { paperRepoMock.doesPaperExistById(paperId) }
         coVerify(exactly = 1) { readingListRepoMock.removeReadingListEntry(user.id, paperId) }
     }
 
@@ -63,5 +78,10 @@ class RemovePaperFromReadingListTest : MainServiceTest() {
         assertThrows<NotFoundException> {
             mainService.removePaperFromReadingList(paperId.toGrpcId())
         }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(user.id) }
+        coVerify(exactly = 1) { paperRepoMock.doesPaperExistById(paperId) }
+        coVerify(exactly = 0) { readingListRepoMock.removeReadingListEntry(any(), any()) }
     }
 }

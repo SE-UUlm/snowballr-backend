@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.service.readinglist
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
+import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -22,6 +23,11 @@ class AddPaperToReadingListTest : MainServiceTest() {
         val paperId = Base.Id.getDefaultInstance()
         every { GrpcContext.getUserIdFromContext() } throws TestSpecificException()
         assertThrows<TestSpecificException> { mainService.addPaperToReadingList(paperId) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 0) { userRepoMock.getUserById(any()) }
+        coVerify(exactly = 0) { paperRepoMock.doesPaperExistById(any()) }
+        coVerify(exactly = 0) { readingListRepoMock.createReadingListEntry(any(), any()) }
     }
 
     @Test
@@ -35,6 +41,11 @@ class AddPaperToReadingListTest : MainServiceTest() {
         coEvery { readingListRepoMock.createReadingListEntry(user.id, paperId) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.addPaperToReadingList(paperId.toGrpcId()) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(user.id) }
+        coVerify(exactly = 1) { paperRepoMock.doesPaperExistById(paperId) }
+        coVerify(exactly = 1) { readingListRepoMock.createReadingListEntry(user.id, paperId) }
     }
 
     @Test
@@ -48,6 +59,10 @@ class AddPaperToReadingListTest : MainServiceTest() {
         coEvery { userRepoMock.getUserById(user.id) } returns user
 
         assertDoesNotThrow { mainService.addPaperToReadingList(paperId.toGrpcId()) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(user.id) }
+        coVerify(exactly = 1) { paperRepoMock.doesPaperExistById(paperId) }
         coVerify(exactly = 1) { readingListRepoMock.createReadingListEntry(user.id, paperId) }
     }
 
@@ -61,5 +76,10 @@ class AddPaperToReadingListTest : MainServiceTest() {
         coEvery { userRepoMock.getUserById(user.id) } returns user
 
         assertThrows<NotFoundException> { mainService.addPaperToReadingList(paperId.toGrpcId()) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(user.id) }
+        coVerify(exactly = 1) { paperRepoMock.doesPaperExistById(paperId) }
+        coVerify(exactly = 0) { readingListRepoMock.createReadingListEntry(any(), any()) }
     }
 }

@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.service.readinglist
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
+import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -23,6 +24,11 @@ class IsPaperOnReadingListTest : MainServiceTest() {
         val paperId = Base.Id.getDefaultInstance()
         every { GrpcContext.getUserIdFromContext() } throws TestSpecificException()
         assertThrows<TestSpecificException> { mainService.isPaperOnReadingList(paperId) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 0) { userRepoMock.getUserById(any()) }
+        coVerify(exactly = 0) { paperRepoMock.doesPaperExistById(any()) }
+        coVerify(exactly = 0) { readingListRepoMock.isPaperOnReadingList(any(), any()) }
     }
 
     @Test
@@ -36,6 +42,11 @@ class IsPaperOnReadingListTest : MainServiceTest() {
         coEvery { readingListRepoMock.isPaperOnReadingList(user.id, paperId) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.isPaperOnReadingList(paperId.toGrpcId()) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(user.id) }
+        coVerify(exactly = 1) { paperRepoMock.doesPaperExistById(paperId) }
+        coVerify(exactly = 1) { readingListRepoMock.isPaperOnReadingList(user.id, paperId) }
     }
 
     @Test
@@ -54,6 +65,11 @@ class IsPaperOnReadingListTest : MainServiceTest() {
 
             assertTrue(mainService.isPaperOnReadingList(paper1.id.toGrpcId()).value)
             assertFalse(mainService.isPaperOnReadingList(paper2.id.toGrpcId()).value)
+
+            verify(exactly = 2) { GrpcContext.getUserIdFromContext() }
+            coVerify(exactly = 2) { userRepoMock.getUserById(user.id) }
+            coVerify(exactly = 1) { paperRepoMock.doesPaperExistById(paper1.id) }
+            coVerify(exactly = 1) { paperRepoMock.doesPaperExistById(paper2.id) }
             coVerify(exactly = 1) { readingListRepoMock.isPaperOnReadingList(user.id, paper1.id) }
             coVerify(exactly = 1) { readingListRepoMock.isPaperOnReadingList(user.id, paper2.id) }
         }
@@ -71,5 +87,10 @@ class IsPaperOnReadingListTest : MainServiceTest() {
             assertThrows<NotFoundException> {
                 mainService.isPaperOnReadingList(paperId.toGrpcId())
             }
+
+            verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+            coVerify(exactly = 1) { userRepoMock.getUserById(user.id) }
+            coVerify(exactly = 1) { paperRepoMock.doesPaperExistById(paperId) }
+            coVerify(exactly = 0) { readingListRepoMock.isPaperOnReadingList(any(), any()) }
         }
 }
