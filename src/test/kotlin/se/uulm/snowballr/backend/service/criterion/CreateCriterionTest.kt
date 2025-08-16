@@ -16,7 +16,6 @@ import snowballr.CriterionOuterClass
 import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass
 import snowballr.UserOuterClass.UserRole
-import java.util.UUID
 
 class CreateCriterionTest : MainServiceTest() {
     private fun getProjectCriterionRequest(projectId: String): CriterionOuterClass.Criterion.Create {
@@ -56,7 +55,7 @@ class CreateCriterionTest : MainServiceTest() {
         val request = getProjectCriterionRequest(project.id.toString())
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(GrpcContext.getUserIdFromContext()) } returns user
+        coEvery { userRepoMock.getUserById(user.id) } returns user
         coEvery { criterionRepoMock.createCriterion(any(), any()) } returns criterion
         coEvery { projectRepoMock.getProjectById(project.id) } returns project
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
@@ -74,7 +73,7 @@ class CreateCriterionTest : MainServiceTest() {
         val request = getProjectCriterionRequest(project.id.toString())
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(GrpcContext.getUserIdFromContext()) } returns user
+        coEvery { userRepoMock.getUserById(user.id) } returns user
         coEvery { criterionRepoMock.createCriterion(any(), any()) } returns criterion
 
         coEvery { projectRepoMock.getProjectById(project.id) } returns project
@@ -91,7 +90,7 @@ class CreateCriterionTest : MainServiceTest() {
         val request = getProjectCriterionRequest(project.id.toString())
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(GrpcContext.getUserIdFromContext()) } returns user
+        coEvery { userRepoMock.getUserById(user.id) } returns user
         coEvery { projectRepoMock.getProjectById(project.id) } returns project
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
 
@@ -114,7 +113,7 @@ class CreateCriterionTest : MainServiceTest() {
         val request = getProjectCriterionRequest(project.id.toString())
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(GrpcContext.getUserIdFromContext()) } returns user
+        coEvery { userRepoMock.getUserById(user.id) } returns user
         coEvery { projectRepoMock.getProjectById(project.id) } returns project
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
 
@@ -129,7 +128,7 @@ class CreateCriterionTest : MainServiceTest() {
         val request = getUserCriterionRequest()
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(GrpcContext.getUserIdFromContext()) } returns user
+        coEvery { userRepoMock.getUserById(user.id) } returns user
         coEvery { criterionRepoMock.createCriterion(any(), user.id) } returns criterion
 
         assertDoesNotThrow { mainService.createCriterion(request) }
@@ -138,11 +137,10 @@ class CreateCriterionTest : MainServiceTest() {
     @Test
     fun `When an error occurs while a criterion is created, then an exception is thrown`() = runTest {
         val request = CriterionOuterClass.Criterion.Create.getDefaultInstance()
-        val userId = UUID.randomUUID()
-        val user = DataBuilder.createExampleUser(id = userId)
+        val user = DataBuilder.createExampleUser()
 
-        every { GrpcContext.getUserIdFromContext() } returns UUID.randomUUID()
-        coEvery { userRepoMock.getUserById(GrpcContext.getUserIdFromContext()) } returns user
+        every { GrpcContext.getUserIdFromContext() } returns user.id
+        coEvery { userRepoMock.getUserById(user.id) } returns user
         coEvery { criterionRepoMock.createCriterion(any(), any()) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.createCriterion(request) }
@@ -151,11 +149,11 @@ class CreateCriterionTest : MainServiceTest() {
     @Test
     fun `When a criterion is correctly created, then no exception is thrown`() = runTest {
         val request = CriterionOuterClass.Criterion.Create.getDefaultInstance()
-        val user = DataBuilder.createExampleUser(id = UUID.randomUUID())
+        val user = DataBuilder.createExampleUser()
         val criterion = DataBuilder.createExampleProjectCriterion()
 
-        every { GrpcContext.getUserIdFromContext() } returns UUID.randomUUID()
-        coEvery { userRepoMock.getUserById(GrpcContext.getUserIdFromContext()) } returns user
+        every { GrpcContext.getUserIdFromContext() } returns user.id
+        coEvery { userRepoMock.getUserById(user.id) } returns user
         coEvery { criterionRepoMock.createCriterion(any(), any()) } returns criterion
 
         assertDoesNotThrow { mainService.createCriterion(request) }
