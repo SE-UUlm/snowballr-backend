@@ -62,7 +62,6 @@ class UpdateProjectTest : MainServiceTest() {
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject(status = status)
         val projectMember = DataBuilder.createExampleProjectMember(userId = user.id, projectId = project.id)
-
         val updatedProject = DataBuilder.createExampleProject(id = project.id, name = "Updated Project")
 
         val updateFieldMask = FieldMaskUtil.fromStringList(listOf("name", "status"))
@@ -116,9 +115,8 @@ class UpdateProjectTest : MainServiceTest() {
     fun `When a server admin updates project to the project status DELETED, then a failed precondition exception is thrown`() =
         runTest {
             val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-            val project = DataBuilder.createExampleProject(
-                status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE,
-            )
+            val project =
+                DataBuilder.createExampleProject(status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE)
             val updatedProject = DataBuilder.createExampleProject(
                 id = project.id,
                 name = "Updated Project",
@@ -144,9 +142,8 @@ class UpdateProjectTest : MainServiceTest() {
     fun `When a project admin updates project to the project status DELETED, then a failed precondition exception is thrown`() =
         runTest {
             val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-            val project = DataBuilder.createExampleProject(
-                status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE,
-            )
+            val project =
+                DataBuilder.createExampleProject(status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE)
             val updatedProject = DataBuilder.createExampleProject(
                 id = project.id,
                 name = "Updated Project",
@@ -172,9 +169,7 @@ class UpdateProjectTest : MainServiceTest() {
     @Test
     fun `When a server admin updates a deleted project, then a failed precondition exception is thrown`() = runTest {
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-        val project = DataBuilder.createExampleProject(
-            status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_DELETED,
-        )
+        val project = DataBuilder.createExampleProject(status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_DELETED)
         val updatedProject = DataBuilder.createExampleProject(id = project.id, name = "Updated Project")
         val updateFieldMask = FieldMaskUtil.fromStringList(listOf("name"))
         val request = ProjectOuterClass.Project.Update
@@ -194,9 +189,7 @@ class UpdateProjectTest : MainServiceTest() {
     @Test
     fun `When a project admin updates a deleted project, then a failed precondition exception is thrown`() = runTest {
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-        val project = DataBuilder.createExampleProject(
-            status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_DELETED,
-        )
+        val project = DataBuilder.createExampleProject(status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_DELETED)
         val updatedProject = DataBuilder.createExampleProject(id = project.id, name = "Updated Project")
         val projectMember = DataBuilder.createExampleProjectMember(userId = user.id, projectId = project.id)
 
@@ -219,14 +212,14 @@ class UpdateProjectTest : MainServiceTest() {
     fun `When an error occurs while updating a project, then an exception is thrown`() = runTest {
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE
-        val updatedProject = DataBuilder.createExampleProject(status = status)
-        val request = ProjectOuterClass.Project.Update.newBuilder().setProject(updatedProject.toGrpcProject()).build()
+        val project = DataBuilder.createExampleProject(status = status)
+        val request = ProjectOuterClass.Project.Update.newBuilder().setProject(project.toGrpcProject()).build()
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(any()) } returns user
-        coEvery { projectRepoMock.getProjectById(updatedProject.id) } returns updatedProject
-        coEvery { projectMemberRepoMock.getAllProjectAdmins(any()) } returns emptyList()
-        coEvery { projectRepoMock.updateProject(any(), any()) } throws TestSpecificException()
+        coEvery { userRepoMock.getUserById(user.id) } returns user
+        coEvery { projectRepoMock.getProjectById(project.id) } returns project
+        coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
+        coEvery { projectRepoMock.updateProject(request, project.status) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.updateProject(request) }
     }

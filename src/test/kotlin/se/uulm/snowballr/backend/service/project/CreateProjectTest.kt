@@ -22,13 +22,15 @@ class CreateProjectTest : MainServiceTest() {
 
     @Test
     fun `When retrieving the current user ID fails, then an exception is thrown`() = runTest {
+        val request = getExampleRequest()
         every { GrpcContext.getUserIdFromContext() } throws TestSpecificException()
 
-        assertThrows<TestSpecificException> { mainService.createProject(getExampleRequest()) }
+        assertThrows<TestSpecificException> { mainService.createProject(request) }
     }
 
     @Test
     fun `When an error occurs while a project is created, then an exception is thrown`() = runTest {
+        val request = getExampleRequest()
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val userSettings = DataBuilder.createExampleUserSettings()
 
@@ -36,13 +38,14 @@ class CreateProjectTest : MainServiceTest() {
         coEvery { userRepoMock.getUserById(user.id) } returns user
         coEvery { userRepoMock.getUserSettings(user.id) } returns userSettings
         coEvery { criterionRepoMock.getCriteriaByIds(emptyList()) } returns emptyList()
-        coEvery { projectRepoMock.createProject(any(), user.id, userSettings) } throws TestSpecificException()
+        coEvery { projectRepoMock.createProject(request, user.id, userSettings) } throws TestSpecificException()
 
-        assertThrows<TestSpecificException> { mainService.createProject(getExampleRequest()) }
+        assertThrows<TestSpecificException> { mainService.createProject(request) }
     }
 
     @Test
     fun `When a project is correctly created, then no exception is thrown`() = runTest {
+        val request = getExampleRequest()
         val project = DataBuilder.createExampleProject()
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val userSettings = DataBuilder.createExampleUserSettings()
@@ -51,18 +54,19 @@ class CreateProjectTest : MainServiceTest() {
         coEvery { userRepoMock.getUserById(user.id) } returns user
         coEvery { userRepoMock.getUserSettings(user.id) } returns userSettings
         coEvery { criterionRepoMock.getCriteriaByIds(emptyList()) } returns emptyList()
-        coEvery { projectRepoMock.createProject(any(), any(), userSettings) } returns project
+        coEvery { projectRepoMock.createProject(request, user.id, userSettings) } returns project
 
-        assertDoesNotThrow { mainService.createProject(getExampleRequest()) }
+        assertDoesNotThrow { mainService.createProject(request) }
         coVerify(exactly = 0) { criterionRepoMock.createCriterion(any(), any()) }
     }
 
     @Test
     fun `When a project is correctly created and the user has default criteria, then no exception is thrown`() =
         runTest {
+            val request = getExampleRequest()
             val project = DataBuilder.createExampleProject()
             val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-            val criterion = DataBuilder.createExampleProjectCriterion()
+            val criterion = DataBuilder.createExampleUserCriterion()
             val userSettings = DataBuilder.createExampleUserSettings(criteriaIds = listOf(criterion.id))
             val criteriaIdsSlot = slot<List<UUID>>()
 
@@ -70,10 +74,10 @@ class CreateProjectTest : MainServiceTest() {
             coEvery { userRepoMock.getUserById(user.id) } returns user
             coEvery { userRepoMock.getUserSettings(user.id) } returns userSettings
             coEvery { criterionRepoMock.getCriteriaByIds(capture(criteriaIdsSlot)) } returns listOf(criterion)
-            coEvery { projectRepoMock.createProject(any(), user.id, userSettings) } returns project
+            coEvery { projectRepoMock.createProject(request, user.id, userSettings) } returns project
             coEvery { criterionRepoMock.createCriterion(any(), user.id) } returns criterion
 
-            assertDoesNotThrow { mainService.createProject(getExampleRequest()) }
+            assertDoesNotThrow { mainService.createProject(request) }
             assertEquals(listOf(criterion.id), criteriaIdsSlot.captured)
         }
 }

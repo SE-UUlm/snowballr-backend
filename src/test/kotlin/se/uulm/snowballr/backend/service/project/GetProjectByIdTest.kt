@@ -31,7 +31,7 @@ class GetProjectByIdTest : MainServiceTest() {
 
         every { GrpcContext.getUserIdFromContext() } returns noAccessUser.id
         coEvery { userRepoMock.getUserById(noAccessUser.id) } returns noAccessUser
-        coEvery { projectMemberRepoMock.getProjectMembers(any()) } returns emptyList()
+        coEvery { projectMemberRepoMock.getProjectMembers(requestId) } returns emptyList()
 
         assertThrows<UnauthorizedException.Single> { mainService.getProjectById(request) }
     }
@@ -45,7 +45,7 @@ class GetProjectByIdTest : MainServiceTest() {
 
         every { GrpcContext.getUserIdFromContext() } returns adminUser.id
         coEvery { userRepoMock.getUserById(adminUser.id) } returns adminUser
-        coEvery { projectMemberRepoMock.getProjectMembers(any()) } returns emptyList()
+        coEvery { projectMemberRepoMock.getProjectMembers(requestId) } returns emptyList()
         coEvery { projectRepoMock.getProjectById(requestId) } returns project
 
         assertDoesNotThrow { mainService.getProjectById(request) }
@@ -75,8 +75,8 @@ class GetProjectByIdTest : MainServiceTest() {
 
         every { GrpcContext.getUserIdFromContext() } returns adminUser.id
         coEvery { userRepoMock.getUserById(adminUser.id) } returns adminUser
-        coEvery { projectMemberRepoMock.getProjectMembers(any()) } returns emptyList()
-        coEvery { projectRepoMock.getProjectById(any()) } throws TestSpecificException()
+        coEvery { projectMemberRepoMock.getProjectMembers(requestId) } returns emptyList()
+        coEvery { projectRepoMock.getProjectById(requestId) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getProjectById(request) }
     }
