@@ -47,15 +47,14 @@ class IsPaperOnReadingListTest : MainServiceTest() {
 
             every { GrpcContext.getUserIdFromContext() } returns user.id
             coEvery { userRepoMock.getUserById(user.id) } returns user
-            coEvery { readingListRepoMock.isPaperOnReadingList(user.id, paper1.id) } returns true
-            coEvery { readingListRepoMock.isPaperOnReadingList(user.id, paper2.id) } returns false
             coEvery { paperRepoMock.doesPaperExistById(paper1.id) } returns true
             coEvery { paperRepoMock.doesPaperExistById(paper2.id) } returns true
+            coEvery { readingListRepoMock.isPaperOnReadingList(user.id, paper1.id) } returns true
+            coEvery { readingListRepoMock.isPaperOnReadingList(user.id, paper2.id) } returns false
 
             assertTrue(mainService.isPaperOnReadingList(paper1.id.toGrpcId()).value)
-            coVerify(exactly = 1) { readingListRepoMock.isPaperOnReadingList(user.id, paper1.id) }
-
             assertFalse(mainService.isPaperOnReadingList(paper2.id.toGrpcId()).value)
+            coVerify(exactly = 1) { readingListRepoMock.isPaperOnReadingList(user.id, paper1.id) }
             coVerify(exactly = 1) { readingListRepoMock.isPaperOnReadingList(user.id, paper2.id) }
         }
 

@@ -42,13 +42,15 @@ class GetReadingListTest : MainServiceTest() {
 
             every { GrpcContext.getUserIdFromContext() } returns user.id
             coEvery { userRepoMock.getUserById(user.id) } returns user
+            coEvery { readingListRepoMock.getAllReadingListEntries(user.id) } returns listOf(paper1, paper2)
             coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(paper1.id) } returns emptyList()
             coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(paper2.id) } returns listOf(author)
-            coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper2.id) } returns listOf(paper1.id)
             coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper1.id) } returns emptyList()
-            coEvery { readingListRepoMock.getAllReadingListEntries(user.id) } returns listOf(paper1, paper2)
+            coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper2.id) } returns listOf(paper1.id)
 
-            assertThat(mainService.getReadingList().papersList).containsExactlyInAnyOrder(
+            val result = mainService.getReadingList()
+
+            assertThat(result.papersList).containsExactlyInAnyOrder(
                 paper1.toGrpcPaper(emptyList(), emptyList()),
                 paper2.toGrpcPaper(listOf(author.toGrpcAuthor()), listOf(paper1.id.toString())),
             )
