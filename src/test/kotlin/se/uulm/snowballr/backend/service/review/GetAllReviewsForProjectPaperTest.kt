@@ -1,7 +1,9 @@
 package se.uulm.snowballr.backend.service.review
 
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
+import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -23,8 +25,15 @@ import kotlin.reflect.KFunction
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class GetAllReviewsForProjectPaperTest : MainServiceTest() {
-    private val requestId = UUID.randomUUID()
-    private fun getExampleRequest() = Base.Id.newBuilder().setId(requestId.toString()).build()
+    private val projectPaperId = UUID.randomUUID()
+    private fun getExampleRequest() = Base.Id.newBuilder().setId(projectPaperId.toString()).build()
+
+    // Test data defined at class level to be accessible in both mock setup and verification
+    private val adminUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_ADMIN)
+    private val project = DataBuilder.createExampleProject()
+    private val projectPaper = DataBuilder.createExampleProjectPaper(id = projectPaperId, projectId = project.id)
+    private val review = DataBuilder.createExampleReview(userId = adminUser.id, projectPaperId = projectPaper.id)
+    private val selectedCriteriaIds = listOf(UUID.randomUUID())
 
     fun failingFunctions(): Stream<Arguments?> = Stream.of(
         Arguments.of(GrpcContext::getUserIdFromContext),
@@ -38,23 +47,17 @@ class GetAllReviewsForProjectPaperTest : MainServiceTest() {
 
     @Suppress("ReturnCount")
     private fun mockHappyPathUntil(failAt: KFunction<*>?) {
-        val currentUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_ADMIN)
-        val project = DataBuilder.createExampleProject()
-        val projectPaper = DataBuilder.createExampleProjectPaper(id = requestId, projectId = project.id)
-        val review = DataBuilder.createExampleReview(userId = currentUser.id)
-        val selectedCriteriaIds = listOf<UUID>(UUID.randomUUID())
-
         if (failAt == GrpcContext::getUserIdFromContext) {
             every { GrpcContext.getUserIdFromContext() } throws TestSpecificException()
             return
         }
-        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
+        every { GrpcContext.getUserIdFromContext() } returns adminUser.id
 
         if (failAt == userRepoMock::getUserById) {
-            coEvery { userRepoMock.getUserById(currentUser.id) } throws TestSpecificException()
+            coEvery { userRepoMock.getUserById(adminUser.id) } throws TestSpecificException()
             return
         }
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { userRepoMock.getUserById(adminUser.id) } returns adminUser
 
         if (failAt == projectPaperRepoMock::getProjectPaperById) {
             coEvery { projectPaperRepoMock.getProjectPaperById(projectPaper.id) } throws TestSpecificException()
@@ -97,8 +100,58 @@ class GetAllReviewsForProjectPaperTest : MainServiceTest() {
     @MethodSource("failingFunctions")
     fun `When a step fails, then an exception is thrown`(failAt: KFunction<*>) = runTest {
         mockHappyPathUntil(failAt)
+
         assertThrows<TestSpecificException> {
             mainService.getAllReviewsForProjectPaper(getExampleRequest())
+        }
+
+        // Verification logic for each failure point
+        when (failAt) {
+            GrpcContext::getUserIdFromContext -> {
+                verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+                coVerify(exactly = 0) { userRepoMock.getUserById(any()) }
+            }
+
+            userRepoMock::getUserById -> {
+                verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+                coVerify(exactly = 1) { userRepoMock.getUserById(adminUser.id) }
+                coVerify(exactly = 0) { projectPaperRepoMock.getProjectPaperById(any()) }
+            }
+
+            projectPaperRepoMock::getProjectPaperById -> {
+                verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+                coVerify(exactly = 1) { userRepoMock.getUserById(adminUser.id) }
+                coVerify(exactly = 1) { projectPaperRepoMock.getProjectPaperById(projectPaperId) }
+                coVerify(exactly = 0) { projectRepoMock.getProjectById(any()) }
+            }
+
+            projectRepoMock::getProjectById -> {
+                verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+                coVerify(exactly = 1) { userRepoMock.getUserById(adminUser.id) }
+                coVerify(exactly = 1) { projectPaperRepoMock.getProjectPaperById(projectPaperId) }
+                coVerify(exactly = 1) { projectRepoMock.getProjectById(project.id) }
+                coVerify(exactly = 0) { projectMemberRepoMock.getProjectMembers(any()) }
+            }
+
+            projectMemberRepoMock::getProjectMembers -> {
+                verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+                coVerify(exactly = 1) { userRepoMock.getUserById(adminUser.id) }
+                coVerify(exactly = 1) { projectPaperRepoMock.getProjectPaperById(projectPaperId) }
+                coVerify(exactly = 1) { projectRepoMock.getProjectById(project.id) }
+                coVerify(exactly = 1) { projectMemberRepoMock.getProjectMembers(project.id) }
+                coVerify(exactly = 0) { reviewRepoMock.getAllReviewsForProjectPaper(any()) }
+            }
+
+            reviewRepoMock::getAllReviewsForProjectPaper -> {
+                coVerify(exactly = 1) { projectMemberRepoMock.getProjectMembers(project.id) }
+                coVerify(exactly = 1) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaperId) }
+                coVerify(exactly = 0) { reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(any()) }
+            }
+
+            reviewHasCriterionRepoMock::getSelectedCriteriaIdsForReviewById -> {
+                coVerify(exactly = 1) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaperId) }
+                coVerify(exactly = 1) { reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(review.id) }
+            }
         }
     }
 
@@ -106,16 +159,24 @@ class GetAllReviewsForProjectPaperTest : MainServiceTest() {
     fun `When a server admin retrieves all reviews for a project paper, then no exception is thrown`() = runTest {
         mockHappyPathUntil(null)
         assertDoesNotThrow { mainService.getAllReviewsForProjectPaper(getExampleRequest()) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(adminUser.id) }
+        coVerify(exactly = 1) { projectPaperRepoMock.getProjectPaperById(projectPaperId) }
+        coVerify(exactly = 1) { projectRepoMock.getProjectById(project.id) }
+        coVerify(exactly = 1) { projectMemberRepoMock.getProjectMembers(project.id) }
+        coVerify(exactly = 1) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaperId) }
+        coVerify(exactly = 1) { reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(review.id) }
     }
 
     @Test
     fun `When a project member retrieves all reviews for a project paper, then no exception is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject()
-        val projectPaper = DataBuilder.createExampleProjectPaper(id = requestId, projectId = project.id)
+        val projectPaper = DataBuilder.createExampleProjectPaper(id = projectPaperId, projectId = project.id)
         val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
         val review = DataBuilder.createExampleReview(userId = currentUser.id)
-        val selectedCriteriaIds = listOf<UUID>(UUID.randomUUID())
+        val selectedCriteriaIds = listOf(UUID.randomUUID())
 
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
         coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
@@ -128,6 +189,14 @@ class GetAllReviewsForProjectPaperTest : MainServiceTest() {
         } returns selectedCriteriaIds
 
         assertDoesNotThrow { mainService.getAllReviewsForProjectPaper(getExampleRequest()) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(currentUser.id) }
+        coVerify(exactly = 1) { projectPaperRepoMock.getProjectPaperById(projectPaperId) }
+        coVerify(exactly = 1) { projectRepoMock.getProjectById(project.id) }
+        coVerify(exactly = 1) { projectMemberRepoMock.getProjectMembers(project.id) }
+        coVerify(exactly = 1) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaperId) }
+        coVerify(exactly = 1) { reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(review.id) }
     }
 
     @Test
@@ -135,7 +204,7 @@ class GetAllReviewsForProjectPaperTest : MainServiceTest() {
         runTest {
             val currentUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_DEFAULT)
             val project = DataBuilder.createExampleProject()
-            val projectPaper = DataBuilder.createExampleProjectPaper(id = requestId, projectId = project.id)
+            val projectPaper = DataBuilder.createExampleProjectPaper(id = projectPaperId, projectId = project.id)
 
             every { GrpcContext.getUserIdFromContext() } returns currentUser.id
             coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
@@ -148,5 +217,13 @@ class GetAllReviewsForProjectPaperTest : MainServiceTest() {
                     getExampleRequest(),
                 )
             }
+
+            verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+            coVerify(exactly = 1) { userRepoMock.getUserById(currentUser.id) }
+            coVerify(exactly = 1) { projectPaperRepoMock.getProjectPaperById(projectPaperId) }
+            coVerify(exactly = 1) { projectRepoMock.getProjectById(project.id) }
+            coVerify(exactly = 1) { projectMemberRepoMock.getProjectMembers(project.id) }
+            coVerify(exactly = 0) { reviewRepoMock.getAllReviewsForProjectPaper(any()) }
+            coVerify(exactly = 0) { reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(any()) }
         }
 }
