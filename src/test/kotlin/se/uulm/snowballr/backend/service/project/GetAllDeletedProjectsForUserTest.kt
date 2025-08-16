@@ -1,7 +1,9 @@
 package se.uulm.snowballr.backend.service.project
 
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
+import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -13,6 +15,7 @@ import se.uulm.snowballr.backend.model.SnowballRException.InvalidIdException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.Base
+import snowballr.ProjectOuterClass
 import snowballr.UserOuterClass.UserRole
 import java.util.UUID
 
@@ -25,6 +28,10 @@ class GetAllDeletedProjectsForUserTest : MainServiceTest() {
         val request = Base.Id.newBuilder().setId("invalid-uuid").build()
 
         assertThrows<InvalidIdException> { mainService.getAllDeletedProjectsForUser(request) }
+
+        verify(exactly = 0) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 0) { userRepoMock.getUserById(any()) }
+        coVerify(exactly = 0) { projectRepoMock.getUserProjects(any(), any()) }
     }
 
     @Test
@@ -32,6 +39,10 @@ class GetAllDeletedProjectsForUserTest : MainServiceTest() {
         every { GrpcContext.getUserIdFromContext() } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getAllDeletedProjectsForUser(getExampleRequest()) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 0) { userRepoMock.getUserById(any()) }
+        coVerify(exactly = 0) { projectRepoMock.getUserProjects(any(), any()) }
     }
 
     @Test
@@ -41,6 +52,10 @@ class GetAllDeletedProjectsForUserTest : MainServiceTest() {
         coEvery { userRepoMock.getUserById(currentUserId) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getAllDeletedProjectsForUser(getExampleRequest()) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(currentUserId) }
+        coVerify(exactly = 0) { projectRepoMock.getUserProjects(any(), any()) }
     }
 
     @Test
@@ -52,6 +67,11 @@ class GetAllDeletedProjectsForUserTest : MainServiceTest() {
         coEvery { userRepoMock.getUserById(requestedUserId) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getAllDeletedProjectsForUser(getExampleRequest()) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(currentUser.id) }
+        coVerify(exactly = 1) { userRepoMock.getUserById(requestedUserId) }
+        coVerify(exactly = 0) { projectRepoMock.getUserProjects(any(), any()) }
     }
 
     @Test
@@ -65,6 +85,11 @@ class GetAllDeletedProjectsForUserTest : MainServiceTest() {
             coEvery { userRepoMock.getUserById(requestedUser.id) } returns requestedUser
 
             assertThrows<UnauthorizedException.Single> { mainService.getAllDeletedProjectsForUser(getExampleRequest()) }
+
+            verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+            coVerify(exactly = 1) { userRepoMock.getUserById(currentUser.id) }
+            coVerify(exactly = 1) { userRepoMock.getUserById(requestedUserId) }
+            coVerify(exactly = 0) { projectRepoMock.getUserProjects(any(), any()) }
         }
 
     @Test
@@ -78,6 +103,16 @@ class GetAllDeletedProjectsForUserTest : MainServiceTest() {
         coEvery { projectRepoMock.getUserProjects(any(), any()) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getAllDeletedProjectsForUser(getExampleRequest()) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(currentUser.id) }
+        coVerify(exactly = 1) { userRepoMock.getUserById(requestedUserId) }
+        coVerify(exactly = 1) {
+            projectRepoMock.getUserProjects(
+                requestedUserId,
+                setOf(ProjectOuterClass.ProjectStatus.PROJECT_STATUS_DELETED),
+            )
+        }
     }
 
     @Test
@@ -91,6 +126,16 @@ class GetAllDeletedProjectsForUserTest : MainServiceTest() {
         coEvery { projectRepoMock.getUserProjects(any(), any()) } returns emptyList()
 
         assertDoesNotThrow { mainService.getAllDeletedProjectsForUser(getExampleRequest()) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(currentUser.id) }
+        coVerify(exactly = 1) { userRepoMock.getUserById(requestedUserId) }
+        coVerify(exactly = 1) {
+            projectRepoMock.getUserProjects(
+                requestedUserId,
+                setOf(ProjectOuterClass.ProjectStatus.PROJECT_STATUS_DELETED),
+            )
+        }
     }
 
     @Test
@@ -103,5 +148,14 @@ class GetAllDeletedProjectsForUserTest : MainServiceTest() {
         coEvery { projectRepoMock.getUserProjects(any(), any()) } returns emptyList()
 
         assertDoesNotThrow { mainService.getAllDeletedProjectsForUser(request) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 2) { userRepoMock.getUserById(currentUser.id) }
+        coVerify(exactly = 1) {
+            projectRepoMock.getUserProjects(
+                currentUser.id,
+                setOf(ProjectOuterClass.ProjectStatus.PROJECT_STATUS_DELETED),
+            )
+        }
     }
 }

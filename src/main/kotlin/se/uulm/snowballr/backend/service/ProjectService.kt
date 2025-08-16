@@ -146,7 +146,7 @@ class ProjectService(
         val userSettings = userRepo.getUserSettings(currentUser.id)
         val userDefaultCriteria = criterionRepo.getCriteriaByIds(userSettings.criteriaIds)
 
-        val project = repo.createProject(request, GrpcContext.getUserIdFromContext(), userSettings)
+        val project = repo.createProject(request, currentUser.id, userSettings)
 
         for (criterion in userDefaultCriteria) {
             val criterionRequest = CriterionOuterClass.Criterion.Create

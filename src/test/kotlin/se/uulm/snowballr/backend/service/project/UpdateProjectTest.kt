@@ -2,7 +2,9 @@ package se.uulm.snowballr.backend.service.project
 
 import com.google.protobuf.util.FieldMaskUtil
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
+import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -47,6 +49,12 @@ class UpdateProjectTest : MainServiceTest() {
         coEvery { projectRepoMock.updateProject(request, project.status) } returns updatedProject
 
         assertDoesNotThrow { mainService.updateProject(request) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(user.id) }
+        coVerify(exactly = 1) { projectRepoMock.getProjectById(project.id) }
+        coVerify(exactly = 1) { projectMemberRepoMock.getAllProjectAdmins(project.id) }
+        coVerify(exactly = 1) { projectRepoMock.updateProject(request, project.status) }
     }
 
     @ParameterizedTest
@@ -78,6 +86,12 @@ class UpdateProjectTest : MainServiceTest() {
         coEvery { projectRepoMock.updateProject(request, project.status) } returns updatedProject
 
         assertDoesNotThrow { mainService.updateProject(request) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(user.id) }
+        coVerify(exactly = 1) { projectRepoMock.getProjectById(project.id) }
+        coVerify(exactly = 1) { projectMemberRepoMock.getAllProjectAdmins(project.id) }
+        coVerify(exactly = 1) { projectRepoMock.updateProject(request, project.status) }
     }
 
     @ParameterizedTest
@@ -109,6 +123,12 @@ class UpdateProjectTest : MainServiceTest() {
             coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
 
             assertThrows<SnowballRException.UnauthorizedException.Single> { mainService.updateProject(request) }
+
+            verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+            coVerify(exactly = 1) { userRepoMock.getUserById(user.id) }
+            coVerify(exactly = 1) { projectRepoMock.getProjectById(project.id) }
+            coVerify(exactly = 1) { projectMemberRepoMock.getAllProjectAdmins(project.id) }
+            coVerify(exactly = 0) { projectRepoMock.updateProject(any(), any()) }
         }
 
     @Test
@@ -136,6 +156,12 @@ class UpdateProjectTest : MainServiceTest() {
             coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
 
             assertThrows<SnowballRException.FailedPreconditionException> { mainService.updateProject(request) }
+
+            verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+            coVerify(exactly = 1) { userRepoMock.getUserById(user.id) }
+            coVerify(exactly = 1) { projectRepoMock.getProjectById(project.id) }
+            coVerify(exactly = 1) { projectMemberRepoMock.getAllProjectAdmins(project.id) }
+            coVerify(exactly = 0) { projectRepoMock.updateProject(any(), any()) }
         }
 
     @Test
@@ -164,6 +190,12 @@ class UpdateProjectTest : MainServiceTest() {
             coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
 
             assertThrows<SnowballRException.FailedPreconditionException> { mainService.updateProject(request) }
+
+            verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+            coVerify(exactly = 1) { userRepoMock.getUserById(user.id) }
+            coVerify(exactly = 1) { projectRepoMock.getProjectById(project.id) }
+            coVerify(exactly = 1) { projectMemberRepoMock.getAllProjectAdmins(project.id) }
+            coVerify(exactly = 0) { projectRepoMock.updateProject(any(), any()) }
         }
 
     @Test
@@ -184,6 +216,12 @@ class UpdateProjectTest : MainServiceTest() {
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
 
         assertThrows<SnowballRException.FailedPreconditionException> { mainService.updateProject(request) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(user.id) }
+        coVerify(exactly = 1) { projectRepoMock.getProjectById(project.id) }
+        coVerify(exactly = 1) { projectMemberRepoMock.getAllProjectAdmins(project.id) }
+        coVerify(exactly = 0) { projectRepoMock.updateProject(any(), any()) }
     }
 
     @Test
@@ -206,6 +244,12 @@ class UpdateProjectTest : MainServiceTest() {
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
 
         assertThrows<SnowballRException.FailedPreconditionException> { mainService.updateProject(request) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(user.id) }
+        coVerify(exactly = 1) { projectRepoMock.getProjectById(project.id) }
+        coVerify(exactly = 1) { projectMemberRepoMock.getAllProjectAdmins(project.id) }
+        coVerify(exactly = 0) { projectRepoMock.updateProject(any(), any()) }
     }
 
     @Test
@@ -222,5 +266,11 @@ class UpdateProjectTest : MainServiceTest() {
         coEvery { projectRepoMock.updateProject(request, project.status) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.updateProject(request) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(user.id) }
+        coVerify(exactly = 1) { projectRepoMock.getProjectById(project.id) }
+        coVerify(exactly = 1) { projectMemberRepoMock.getAllProjectAdmins(project.id) }
+        coVerify(exactly = 1) { projectRepoMock.updateProject(request, project.status) }
     }
 }

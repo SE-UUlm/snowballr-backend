@@ -1,7 +1,9 @@
 package se.uulm.snowballr.backend.service.project
 
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
+import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -45,6 +47,11 @@ class GetProjectMembersTest : MainServiceTest() {
             listOf(projectMemberWithUser)
 
         assertDoesNotThrow { mainService.getProjectMembers(request) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(adminUser.id) }
+        coVerify(exactly = 1) { projectRepoMock.getProjectById(requestId) }
+        coVerify(exactly = 1) { projectMemberRepoMock.getProjectMembersWithUsers(requestId) }
     }
 
     @Test
@@ -63,6 +70,11 @@ class GetProjectMembersTest : MainServiceTest() {
             listOf(projectMemberWithUser)
 
         assertDoesNotThrow { mainService.getProjectMembers(request) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(user.id) }
+        coVerify(exactly = 1) { projectRepoMock.getProjectById(requestId) }
+        coVerify(exactly = 1) { projectMemberRepoMock.getProjectMembersWithUsers(requestId) }
     }
 
     @Test
@@ -78,6 +90,11 @@ class GetProjectMembersTest : MainServiceTest() {
         coEvery { projectMemberRepoMock.getProjectMembersWithUsers(project.id) } returns emptyList()
 
         assertThrows<UnauthorizedException> { mainService.getProjectMembers(request) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(user.id) }
+        coVerify(exactly = 1) { projectRepoMock.getProjectById(requestId) }
+        coVerify(exactly = 1) { projectMemberRepoMock.getProjectMembersWithUsers(requestId) }
     }
 
     @Test
@@ -94,5 +111,10 @@ class GetProjectMembersTest : MainServiceTest() {
             } throws SnowballRException.NotFoundException(EntityType.PROJECT, request.id)
 
             assertThrows<SnowballRException.NotFoundException> { mainService.getProjectMembers(request) }
+
+            verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+            coVerify(exactly = 1) { userRepoMock.getUserById(user.id) }
+            coVerify(exactly = 1) { projectRepoMock.getProjectById(requestId) }
+            coVerify(exactly = 0) { projectMemberRepoMock.getProjectMembersWithUsers(any()) }
         }
 }

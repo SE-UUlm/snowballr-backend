@@ -4,6 +4,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.slot
+import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -26,6 +27,13 @@ class CreateProjectTest : MainServiceTest() {
         every { GrpcContext.getUserIdFromContext() } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.createProject(request) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 0) { userRepoMock.getUserById(any()) }
+        coVerify(exactly = 0) { userRepoMock.getUserSettings(any()) }
+        coVerify(exactly = 0) { criterionRepoMock.getCriteriaByIds(any()) }
+        coVerify(exactly = 0) { projectRepoMock.createProject(any(), any(), any()) }
+        coVerify(exactly = 0) { criterionRepoMock.createCriterion(any(), any()) }
     }
 
     @Test
@@ -41,6 +49,13 @@ class CreateProjectTest : MainServiceTest() {
         coEvery { projectRepoMock.createProject(request, user.id, userSettings) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.createProject(request) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(user.id) }
+        coVerify(exactly = 1) { userRepoMock.getUserSettings(user.id) }
+        coVerify(exactly = 1) { criterionRepoMock.getCriteriaByIds(emptyList()) }
+        coVerify(exactly = 1) { projectRepoMock.createProject(request, user.id, userSettings) }
+        coVerify(exactly = 0) { criterionRepoMock.createCriterion(any(), any()) }
     }
 
     @Test
@@ -57,6 +72,12 @@ class CreateProjectTest : MainServiceTest() {
         coEvery { projectRepoMock.createProject(request, user.id, userSettings) } returns project
 
         assertDoesNotThrow { mainService.createProject(request) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(user.id) }
+        coVerify(exactly = 1) { userRepoMock.getUserSettings(user.id) }
+        coVerify(exactly = 1) { criterionRepoMock.getCriteriaByIds(emptyList()) }
+        coVerify(exactly = 1) { projectRepoMock.createProject(request, user.id, userSettings) }
         coVerify(exactly = 0) { criterionRepoMock.createCriterion(any(), any()) }
     }
 
@@ -79,5 +100,12 @@ class CreateProjectTest : MainServiceTest() {
 
             assertDoesNotThrow { mainService.createProject(request) }
             assertEquals(listOf(criterion.id), criteriaIdsSlot.captured)
+
+            verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+            coVerify(exactly = 1) { userRepoMock.getUserById(user.id) }
+            coVerify(exactly = 1) { userRepoMock.getUserSettings(user.id) }
+            coVerify(exactly = 1) { criterionRepoMock.getCriteriaByIds(listOf(criterion.id)) }
+            coVerify(exactly = 1) { projectRepoMock.createProject(request, user.id, userSettings) }
+            coVerify(exactly = 1) { criterionRepoMock.createCriterion(any(), user.id) }
         }
 }

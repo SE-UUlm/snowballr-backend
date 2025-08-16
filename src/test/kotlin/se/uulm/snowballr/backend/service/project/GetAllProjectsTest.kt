@@ -1,7 +1,9 @@
 package se.uulm.snowballr.backend.service.project
 
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
+import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -20,6 +22,10 @@ class GetAllProjectsTest : MainServiceTest() {
         every { GrpcContext.getUserIdFromContext() } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getAllProjects() }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 0) { userRepoMock.getUserById(any()) }
+        coVerify(exactly = 0) { projectRepoMock.getAllProjects() }
     }
 
     @Test
@@ -29,6 +35,10 @@ class GetAllProjectsTest : MainServiceTest() {
         coEvery { userRepoMock.getUserById(currentUserId) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getAllProjects() }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(currentUserId) }
+        coVerify(exactly = 0) { projectRepoMock.getAllProjects() }
     }
 
     @Test
@@ -39,6 +49,10 @@ class GetAllProjectsTest : MainServiceTest() {
         coEvery { userRepoMock.getUserById(nonAdminUser.id) } returns nonAdminUser
 
         assertThrows<UnauthorizedException.All> { mainService.getAllProjects() }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(nonAdminUser.id) }
+        coVerify(exactly = 0) { projectRepoMock.getAllProjects() }
     }
 
     @Test
@@ -50,6 +64,10 @@ class GetAllProjectsTest : MainServiceTest() {
         coEvery { projectRepoMock.getAllProjects() } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getAllProjects() }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(adminUser.id) }
+        coVerify(exactly = 1) { projectRepoMock.getAllProjects() }
     }
 
     @Test
@@ -61,5 +79,9 @@ class GetAllProjectsTest : MainServiceTest() {
         coEvery { projectRepoMock.getAllProjects() } returns emptyList()
 
         assertDoesNotThrow { mainService.getAllProjects() }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(adminUser.id) }
+        coVerify(exactly = 1) { projectRepoMock.getAllProjects() }
     }
 }
