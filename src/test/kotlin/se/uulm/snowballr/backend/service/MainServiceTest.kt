@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.service
 
+import com.github.jknack.handlebars.Template
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.mockk
@@ -18,6 +19,7 @@ import se.uulm.snowballr.backend.auth.IJwtService
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.env.IEnvService
 import se.uulm.snowballr.backend.fetcher.FetcherManager
+import se.uulm.snowballr.backend.model.email.EmailTemplate
 import se.uulm.snowballr.backend.repository.IAuthorTableRepo
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
@@ -100,6 +102,7 @@ open class MainServiceTest : KoinTest {
     val emailServiceMock = mockk<IEmailService>()
     val fetcherManagerMock = mockk<FetcherManager>()
     val mailerMock = mockk<Mailer>()
+    val compilesTemplatesMock = mockk<Map<EmailTemplate, Template>>()
 
     val allMocks = arrayOf(
         projectRepoMock,
@@ -110,6 +113,7 @@ open class MainServiceTest : KoinTest {
         emailServiceMock,
         fetcherManagerMock,
         mailerMock,
+        compilesTemplatesMock,
         projectPaperRepoMock,
         authorOfPaperRepoMock,
         authorRepoMock,
@@ -149,6 +153,7 @@ open class MainServiceTest : KoinTest {
         single { emailServiceMock }
         single { fetcherManagerMock }
         single { mailerMock }
+        single { compilesTemplatesMock }
 
         // The base service layer is the same as in production
         serviceLayerDeps()

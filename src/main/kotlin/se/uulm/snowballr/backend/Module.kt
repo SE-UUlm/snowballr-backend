@@ -1,5 +1,8 @@
 package se.uulm.snowballr.backend
 
+import com.github.jknack.handlebars.Handlebars
+import com.github.jknack.handlebars.Template
+import com.github.jknack.handlebars.io.ClassPathTemplateLoader
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.createdAtStart
@@ -17,6 +20,8 @@ import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.env.EnvService
 import se.uulm.snowballr.backend.env.IEnvService
 import se.uulm.snowballr.backend.fetcher.FetcherManager
+import se.uulm.snowballr.backend.model.SnowballRException
+import se.uulm.snowballr.backend.model.email.EmailTemplate
 import se.uulm.snowballr.backend.repository.AuthorTableRepo
 import se.uulm.snowballr.backend.repository.CriterionTableRepo
 import se.uulm.snowballr.backend.repository.IAuthorTableRepo
@@ -61,6 +66,7 @@ import se.uulm.snowballr.backend.service.ProjectService
 import se.uulm.snowballr.backend.service.ReadingListService
 import se.uulm.snowballr.backend.service.ReviewService
 import se.uulm.snowballr.backend.service.UserService
+import java.io.IOException
 
 /**
  * Defines the Koin dependency injection module for the application.
@@ -110,6 +116,24 @@ private fun mailerModule(): Module = module {
 }
 
 /**
+ * Module for providing the [Handlebars] template engine.
+ */
+private fun templatesModule() = module {
+    single<Map<EmailTemplate, Template>> {
+        val handlebars = Handlebars(ClassPathTemplateLoader("/templates", ".hbs"))
+
+        val compiledTemplates = EmailTemplate.entries.associateWith { template ->
+            try {
+                handlebars.compile(template.templateFileName)
+            } catch (e: IOException) {
+                throw SnowballRException.EmailException.TemplateCompilationFailed(template.templateFileName, e)
+            }
+        }
+        compiledTemplates
+    }
+}
+
+/**
  * Module declaration of the [IEnvService] and [EnvReader].
  */
 private fun Module.envDeps() {
@@ -154,7 +178,7 @@ private fun Module.repositoryLayerDeps() {
  * Consists of all dependencies that are used by the core service layer.
  */
 private fun Module.customServicesDeps() {
-    includes(mailerModule())
+    includes(mailerModule(), templatesModule())
 
     singleOf(::JwtService) {
         createdAtStart()

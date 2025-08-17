@@ -1,8 +1,6 @@
 package se.uulm.snowballr.backend.service
 
-import com.github.jknack.handlebars.Handlebars
 import com.github.jknack.handlebars.Template
-import com.github.jknack.handlebars.io.ClassPathTemplateLoader
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.simplejavamail.MailException
 import org.simplejavamail.api.mailer.Mailer
@@ -12,7 +10,6 @@ import se.uulm.snowballr.backend.model.SnowballRException.EmailException
 import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.email.EmailTemplate
-import java.io.IOException
 
 private val logger = KotlinLogging.logger {}
 
@@ -47,30 +44,13 @@ interface IEmailService {
  * @constructor Initializes the [EmailService] with the environment reader to access SMTP settings.
  * @param envReader The environment reader that provides access to SMTP configuration settings.
  * @param mailer The mailer that is used to send emails.
+ * @param compiledTemplates A map of pre-compiled templates for each [EmailTemplate].
  */
 class EmailService(
     private val envReader: EnvReader,
     private val mailer: Mailer,
+    private val compiledTemplates: Map<EmailTemplate, Template>,
 ) : IEmailService {
-    private val compiledTemplates: Map<EmailTemplate, Template>
-
-    init {
-        val handlebars = Handlebars(ClassPathTemplateLoader("/templates", ".hbs"))
-
-        // Compile all email templates at startup to ensure they are ready for use
-        compiledTemplates = EmailTemplate.entries.associateWith { template ->
-            logger.info { "Compiling email template: ${template.templateFileName}" }
-            try {
-                handlebars.compile(template.templateFileName)
-            } catch (e: IOException) {
-                logger.error(e) { "Could not find or compile template '${template.templateFileName}'." }
-                throw EmailException.TemplateCompilationFailed(template.templateFileName, e)
-            }
-        }
-
-        logger.info { "Initialized Mailer and compiled all email templates." }
-    }
-
     override fun sendVerificationEmail(to: String, data: EmailData.EmailVerification) {
         sendEmail(to, EmailTemplate.EMAIL_VERIFICATION, data)
     }
