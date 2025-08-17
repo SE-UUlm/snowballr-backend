@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.service.user
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
+import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -32,6 +33,10 @@ class GetUserByIdTest : MainServiceTest() {
         coEvery { userRepoMock.getUserById(currentUserId) } returns DataBuilder.createExampleUser()
 
         assertThrows<InvalidIdException> { mainService.getUserById(request) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(currentUserId) }
+        coVerify(exactly = 0) { projectMemberRepoMock.getMembersInSameProjectsAsUser(any()) }
     }
 
     @Test
@@ -42,6 +47,10 @@ class GetUserByIdTest : MainServiceTest() {
         coEvery { userRepoMock.getUserById(currentUserId) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getUserById(getExampleRequest()) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(currentUserId) }
+        coVerify(exactly = 0) { projectMemberRepoMock.getMembersInSameProjectsAsUser(any()) }
     }
 
     @Test
@@ -57,6 +66,11 @@ class GetUserByIdTest : MainServiceTest() {
         coEvery { userRepoMock.getUserById(requestedUserId) } returns requestedUser
 
         assertDoesNotThrow { mainService.getUserById(getExampleRequest()) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(currentUser.id) }
+        coVerify(exactly = 1) { userRepoMock.getUserById(requestedUserId) }
+        coVerify(exactly = 0) { projectMemberRepoMock.getMembersInSameProjectsAsUser(any()) }
     }
 
     @Test
@@ -69,8 +83,9 @@ class GetUserByIdTest : MainServiceTest() {
 
         assertDoesNotThrow { mainService.getUserById(request) }
 
-        // Should not call userRepoMock.getUserById(requestedUserId) again because it's self-request
-        coVerify(exactly = 1) { userRepoMock.getUserById(requestedUser.id) }
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(currentUser.id) }
+        coVerify(exactly = 0) { projectMemberRepoMock.getMembersInSameProjectsAsUser(any()) }
     }
 
     @Test
@@ -89,6 +104,11 @@ class GetUserByIdTest : MainServiceTest() {
         )
 
         assertDoesNotThrow { mainService.getUserById(getExampleRequest()) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(currentUser.id) }
+        coVerify(exactly = 1) { userRepoMock.getUserById(requestedUserId) }
+        coVerify(exactly = 1) { projectMemberRepoMock.getMembersInSameProjectsAsUser(requestedUserId) }
     }
 
     @Test
@@ -101,6 +121,10 @@ class GetUserByIdTest : MainServiceTest() {
             coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(requestedUserId) } returns emptyList()
 
             assertThrows<UnauthorizedException.Single> { mainService.getUserById(getExampleRequest()) }
+
+            verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+            coVerify(exactly = 1) { userRepoMock.getUserById(currentUser.id) }
+            coVerify(exactly = 1) { projectMemberRepoMock.getMembersInSameProjectsAsUser(requestedUserId) }
         }
 
     @Test
@@ -122,6 +146,10 @@ class GetUserByIdTest : MainServiceTest() {
             assertThrows<NotFoundException>("Should throw NotFoundException for status $status") {
                 mainService.getUserById(getExampleRequest())
             }
+
+            verify(atLeast = 1, atMost = 3) { GrpcContext.getUserIdFromContext() }
+            coVerify(atLeast = 1, atMost = 3) { userRepoMock.getUserById(currentUser.id) }
+            coVerify(atLeast = 1, atMost = 3) { userRepoMock.getUserById(requestedUserId) }
         }
     }
 
@@ -145,6 +173,10 @@ class GetUserByIdTest : MainServiceTest() {
             assertDoesNotThrow("Should succeed for status $status") {
                 mainService.getUserById(getExampleRequest())
             }
+
+            verify(atLeast = 1, atMost = 2) { GrpcContext.getUserIdFromContext() }
+            coVerify(atLeast = 1, atMost = 2) { userRepoMock.getUserById(currentUser.id) }
+            coVerify(atLeast = 1, atMost = 2) { userRepoMock.getUserById(requestedUserId) }
         }
     }
 
@@ -157,5 +189,10 @@ class GetUserByIdTest : MainServiceTest() {
         coEvery { userRepoMock.getUserById(requestedUserId) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getUserById(getExampleRequest()) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(currentUser.id) }
+        coVerify(exactly = 1) { userRepoMock.getUserById(requestedUserId) }
+        coVerify(exactly = 0) { projectMemberRepoMock.getMembersInSameProjectsAsUser(any()) }
     }
 }

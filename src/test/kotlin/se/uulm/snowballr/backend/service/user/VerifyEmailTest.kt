@@ -1,6 +1,7 @@
 package se.uulm.snowballr.backend.service.user
 
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.slot
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
@@ -21,6 +22,11 @@ class VerifyEmailTest : MainServiceTest() {
         coEvery { verificationTokenRepoMock.getVerificationTokenByValue("non-existent-token") } returns null
 
         assertThrows<VerificationTokenNotFoundException> { mainService.verifyEmail(request) }
+
+        coVerify(exactly = 1) { verificationTokenRepoMock.getVerificationTokenByValue("non-existent-token") }
+        coVerify(exactly = 0) { verificationTokenRepoMock.deleteVerificationToken(any()) }
+        coVerify(exactly = 0) { userRepoMock.getUserById(any()) }
+        coVerify(exactly = 0) { userRepoMock.updateUser(any()) }
     }
 
     @Test
@@ -34,6 +40,11 @@ class VerifyEmailTest : MainServiceTest() {
         coEvery { verificationTokenRepoMock.deleteVerificationToken(expiredToken.token) } returns Unit
 
         assertThrows<VerificationTokenNotFoundException> { mainService.verifyEmail(request) }
+
+        coVerify(exactly = 1) { verificationTokenRepoMock.getVerificationTokenByValue(expiredToken.token) }
+        coVerify(exactly = 1) { verificationTokenRepoMock.deleteVerificationToken(expiredToken.token) }
+        coVerify(exactly = 0) { userRepoMock.getUserById(any()) }
+        coVerify(exactly = 0) { userRepoMock.updateUser(any()) }
     }
 
     @Test
@@ -45,6 +56,11 @@ class VerifyEmailTest : MainServiceTest() {
         coEvery { userRepoMock.getUserById(token.userId) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.verifyEmail(request) }
+
+        coVerify(exactly = 1) { verificationTokenRepoMock.getVerificationTokenByValue(token.token) }
+        coVerify(exactly = 1) { userRepoMock.getUserById(token.userId) }
+        coVerify(exactly = 0) { userRepoMock.updateUser(any()) }
+        coVerify(exactly = 0) { verificationTokenRepoMock.deleteVerificationToken(any()) }
     }
 
     @Test
@@ -58,6 +74,11 @@ class VerifyEmailTest : MainServiceTest() {
         coEvery { userRepoMock.updateUser(any()) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.verifyEmail(request) }
+
+        coVerify(exactly = 1) { verificationTokenRepoMock.getVerificationTokenByValue(token.token) }
+        coVerify(exactly = 1) { userRepoMock.getUserById(user.id) }
+        coVerify(exactly = 1) { userRepoMock.updateUser(any()) }
+        coVerify(exactly = 0) { verificationTokenRepoMock.deleteVerificationToken(any()) }
     }
 
     @Test
@@ -72,6 +93,11 @@ class VerifyEmailTest : MainServiceTest() {
         coEvery { verificationTokenRepoMock.deleteVerificationToken(token.token) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.verifyEmail(request) }
+
+        coVerify(exactly = 1) { verificationTokenRepoMock.getVerificationTokenByValue(token.token) }
+        coVerify(exactly = 1) { userRepoMock.getUserById(user.id) }
+        coVerify(exactly = 1) { userRepoMock.updateUser(any()) }
+        coVerify(exactly = 1) { verificationTokenRepoMock.deleteVerificationToken(token.token) }
     }
 
     @Test
@@ -87,5 +113,10 @@ class VerifyEmailTest : MainServiceTest() {
         coEvery { verificationTokenRepoMock.deleteVerificationToken(token.token) } returns Unit
 
         assertDoesNotThrow { mainService.verifyEmail(request) }
+
+        coVerify(exactly = 1) { verificationTokenRepoMock.getVerificationTokenByValue(token.token) }
+        coVerify(exactly = 1) { userRepoMock.getUserById(user.id) }
+        coVerify(exactly = 1) { userRepoMock.updateUser(userUpdateSlot.captured) }
+        coVerify(exactly = 1) { verificationTokenRepoMock.deleteVerificationToken(token.token) }
     }
 }

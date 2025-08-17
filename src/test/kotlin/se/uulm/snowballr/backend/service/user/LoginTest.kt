@@ -1,7 +1,9 @@
 package se.uulm.snowballr.backend.service.user
 
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
+import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -33,6 +35,10 @@ class LoginTest : MainServiceTest() {
         )
 
         assertThrows<UnauthenticatedException> { mainService.login(request) }
+
+        coVerify(exactly = 1) { userRepoMock.getUserByEmail("wrongEmail") }
+        coVerify(exactly = 0) { userRepoMock.getPasswordHashByEmail(any()) }
+        verify(exactly = 0) { jwtServiceMock.generateAuthTokens(any()) }
     }
 
     @Test
@@ -46,6 +52,10 @@ class LoginTest : MainServiceTest() {
         coEvery { userRepoMock.getUserByEmail(testUser.email) } returns testUser
 
         assertThrows<UnauthenticatedException> { mainService.login(request) }
+
+        coVerify(exactly = 1) { userRepoMock.getUserByEmail(testUser.email) }
+        coVerify(exactly = 0) { userRepoMock.getPasswordHashByEmail(any()) }
+        verify(exactly = 0) { jwtServiceMock.generateAuthTokens(any()) }
     }
 
     @Test
@@ -59,6 +69,10 @@ class LoginTest : MainServiceTest() {
         coEvery { userRepoMock.getUserByEmail(testUser.email) } returns testUser
 
         assertThrows<UnauthenticatedException> { mainService.login(request) }
+
+        coVerify(exactly = 1) { userRepoMock.getUserByEmail(testUser.email) }
+        coVerify(exactly = 0) { userRepoMock.getPasswordHashByEmail(any()) }
+        verify(exactly = 0) { jwtServiceMock.generateAuthTokens(any()) }
     }
 
     @Test
@@ -72,6 +86,10 @@ class LoginTest : MainServiceTest() {
         coEvery { userRepoMock.getUserByEmail(testUser.email) } returns testUser
 
         assertThrows<UnauthenticatedException> { mainService.login(request) }
+
+        coVerify(exactly = 1) { userRepoMock.getUserByEmail(testUser.email) }
+        coVerify(exactly = 0) { userRepoMock.getPasswordHashByEmail(any()) }
+        verify(exactly = 0) { jwtServiceMock.generateAuthTokens(any()) }
     }
 
     @Test
@@ -88,6 +106,10 @@ class LoginTest : MainServiceTest() {
         )
 
         assertThrows<UnauthenticatedException> { mainService.login(request) }
+
+        coVerify(exactly = 1) { userRepoMock.getUserByEmail(testUser.email) }
+        coVerify(exactly = 1) { userRepoMock.getPasswordHashByEmail(testUser.email) }
+        verify(exactly = 0) { jwtServiceMock.generateAuthTokens(any()) }
     }
 
     @Test
@@ -104,6 +126,10 @@ class LoginTest : MainServiceTest() {
         coEvery { userRepoMock.getPasswordHashByEmail(testUser.email) } returns passwordHash
 
         assertThrows<UnauthenticatedException> { mainService.login(request) }
+
+        coVerify(exactly = 1) { userRepoMock.getUserByEmail(testUser.email) }
+        coVerify(exactly = 1) { userRepoMock.getPasswordHashByEmail(testUser.email) }
+        verify(exactly = 0) { jwtServiceMock.generateAuthTokens(any()) }
     }
 
     @Test
@@ -127,5 +153,9 @@ class LoginTest : MainServiceTest() {
 
         assertEquals(tokens.accessToken, cookiesMap[GrpcContext.ACCESS_TOKEN_COOKIE_NAME])
         assertEquals(tokens.refreshToken, cookiesMap[GrpcContext.REFRESH_TOKEN_COOKIE_NAME])
+
+        coVerify(exactly = 1) { userRepoMock.getUserByEmail(testUser.email) }
+        coVerify(exactly = 1) { userRepoMock.getPasswordHashByEmail(testUser.email) }
+        verify(exactly = 1) { jwtServiceMock.generateAuthTokens(testUser.id) }
     }
 }

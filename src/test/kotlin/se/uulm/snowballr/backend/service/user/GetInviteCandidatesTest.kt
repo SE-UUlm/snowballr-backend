@@ -1,7 +1,9 @@
 package se.uulm.snowballr.backend.service.user
 
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
+import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -26,6 +28,11 @@ class GetInviteCandidatesTest : MainServiceTest() {
 
         val result = mainService.getInviteCandidates(shortSearchQuery)
         assertThat(result.usersList).isEmpty()
+
+        verify(exactly = 0) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 0) { userRepoMock.getUserById(any()) }
+        coVerify(exactly = 0) { projectMemberRepoMock.getProjectMembers(any()) }
+        coVerify(exactly = 0) { userRepoMock.getUsersMatchingSearchQuery(any(), any()) }
     }
 
     @Test
@@ -35,6 +42,11 @@ class GetInviteCandidatesTest : MainServiceTest() {
         coEvery { userRepoMock.getUserById(userId) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getInviteCandidates(validInviteCandidatesRequest) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(userId) }
+        coVerify(exactly = 0) { projectMemberRepoMock.getProjectMembers(any()) }
+        coVerify(exactly = 0) { userRepoMock.getUsersMatchingSearchQuery(any(), any()) }
     }
 
     @Test
@@ -48,6 +60,11 @@ class GetInviteCandidatesTest : MainServiceTest() {
         coEvery { userRepoMock.getUsersMatchingSearchQuery(any(), any()) } returns emptyList()
 
         assertDoesNotThrow { mainService.getInviteCandidates(requestWithInvalidProjectId) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(currentUser.id) }
+        coVerify(exactly = 0) { projectMemberRepoMock.getProjectMembers(any()) }
+        coVerify(exactly = 1) { userRepoMock.getUsersMatchingSearchQuery("john", setOf(currentUser.id)) }
     }
 
     @Test
@@ -63,6 +80,11 @@ class GetInviteCandidatesTest : MainServiceTest() {
         coEvery { userRepoMock.getUsersMatchingSearchQuery(any(), any()) } returns emptyList()
 
         assertDoesNotThrow { mainService.getInviteCandidates(requestWithNotExistingProject) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(currentUser.id) }
+        coVerify(exactly = 1) { projectMemberRepoMock.getProjectMembers(requestedProjectId) }
+        coVerify(exactly = 1) { userRepoMock.getUsersMatchingSearchQuery("john", setOf(currentUser.id)) }
     }
 
     @Test
@@ -74,6 +96,11 @@ class GetInviteCandidatesTest : MainServiceTest() {
         coEvery { userRepoMock.getUsersMatchingSearchQuery("john", setOf(currentUser.id)) } returns emptyList()
 
         assertDoesNotThrow { mainService.getInviteCandidates(validInviteCandidatesRequest) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(currentUser.id) }
+        coVerify(exactly = 1) { projectMemberRepoMock.getProjectMembers(testProjectId) }
+        coVerify(exactly = 1) { userRepoMock.getUsersMatchingSearchQuery("john", setOf(currentUser.id)) }
     }
 
     @Test
@@ -94,6 +121,11 @@ class GetInviteCandidatesTest : MainServiceTest() {
             val inviteCandidates = mainService.getInviteCandidates(validInviteCandidatesRequest)
             assertTrue { inviteCandidates.usersList.size == 1 }
             assertTrue { inviteCandidates.usersList.find { it.id == currentUser.id.toString() } == null }
+
+            verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+            coVerify(exactly = 1) { userRepoMock.getUserById(currentUser.id) }
+            coVerify(exactly = 1) { projectMemberRepoMock.getProjectMembers(testProjectId) }
+            coVerify(exactly = 1) { userRepoMock.getUsersMatchingSearchQuery("john", excludedUsers) }
         }
 
     @Test
@@ -112,5 +144,10 @@ class GetInviteCandidatesTest : MainServiceTest() {
 
             val inviteCandidates = mainService.getInviteCandidates(validInviteCandidatesRequest)
             assertTrue { inviteCandidates.usersList.isEmpty() }
+
+            verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+            coVerify(exactly = 1) { userRepoMock.getUserById(currentUser.id) }
+            coVerify(exactly = 1) { projectMemberRepoMock.getProjectMembers(testProjectId) }
+            coVerify(exactly = 1) { userRepoMock.getUsersMatchingSearchQuery("john", excludedUsers) }
         }
 }

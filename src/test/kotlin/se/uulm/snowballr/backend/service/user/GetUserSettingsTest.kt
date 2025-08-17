@@ -1,7 +1,9 @@
 package se.uulm.snowballr.backend.service.user
 
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
+import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -21,6 +23,11 @@ class GetUserSettingsTest : MainServiceTest() {
         coEvery { userRepoMock.getUserSettings(user.id) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getUserSettings() }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(user.id) }
+        coVerify(exactly = 1) { userRepoMock.getUserSettings(user.id) }
+        coVerify(exactly = 0) { criterionRepoMock.getCriteriaByIds(any()) }
     }
 
     @Test
@@ -35,6 +42,11 @@ class GetUserSettingsTest : MainServiceTest() {
             coEvery { criterionRepoMock.getCriteriaByIds(emptyList()) } returns emptyList()
 
             assertDoesNotThrow { mainService.getUserSettings() }
+
+            verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+            coVerify(exactly = 1) { userRepoMock.getUserById(user.id) }
+            coVerify(exactly = 1) { userRepoMock.getUserSettings(user.id) }
+            coVerify(exactly = 1) { criterionRepoMock.getCriteriaByIds(emptyList()) }
         }
 
     @Test
@@ -50,5 +62,10 @@ class GetUserSettingsTest : MainServiceTest() {
             coEvery { criterionRepoMock.getCriteriaByIds(listOf(criterion.id)) } returns listOf(criterion)
 
             assertDoesNotThrow { mainService.getUserSettings() }
+
+            verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+            coVerify(exactly = 1) { userRepoMock.getUserById(user.id) }
+            coVerify(exactly = 1) { userRepoMock.getUserSettings(user.id) }
+            coVerify(exactly = 1) { criterionRepoMock.getCriteriaByIds(listOf(criterion.id)) }
         }
 }

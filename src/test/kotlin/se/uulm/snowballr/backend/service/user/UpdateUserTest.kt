@@ -2,7 +2,9 @@ package se.uulm.snowballr.backend.service.user
 
 import com.google.protobuf.FieldMask
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
+import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -44,6 +46,10 @@ class UpdateUserTest : MainServiceTest() {
         every { GrpcContext.getUserIdFromContext() } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.updateUser(getExampleRequest()) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 0) { userRepoMock.getUserById(any()) }
+        coVerify(exactly = 0) { userRepoMock.updateUser(any()) }
     }
 
     @Test
@@ -53,6 +59,10 @@ class UpdateUserTest : MainServiceTest() {
         coEvery { userRepoMock.getUserById(currentUserId) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.updateUser(getExampleRequest()) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(currentUserId) }
+        coVerify(exactly = 0) { userRepoMock.updateUser(any()) }
     }
 
     @Test
@@ -64,6 +74,11 @@ class UpdateUserTest : MainServiceTest() {
         coEvery { userRepoMock.getUserById(requestedUserId) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.updateUser(getExampleRequest()) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(currentUser.id) }
+        coVerify(exactly = 1) { userRepoMock.getUserById(requestedUserId) }
+        coVerify(exactly = 0) { userRepoMock.updateUser(any()) }
     }
 
     @Test
@@ -77,6 +92,12 @@ class UpdateUserTest : MainServiceTest() {
             coEvery { userRepoMock.getUserById(requestedUserId) } returns requestedUser
 
             assertThrows<UnauthorizedException.Single> { mainService.updateUser(getExampleRequest()) }
+
+            verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+            coVerify(exactly = 1) { userRepoMock.getUserById(currentUser.id) }
+            coVerify(exactly = 1) { userRepoMock.getUserById(requestedUserId) }
+            coVerify(exactly = 0) { userRepoMock.doesUserExistByEmail(any()) }
+            coVerify(exactly = 0) { userRepoMock.updateUser(any()) }
         }
 
     @Test
@@ -93,6 +114,12 @@ class UpdateUserTest : MainServiceTest() {
         coEvery { userRepoMock.getUserById(otherUser.id) } returns otherUser
 
         assertThrows<UnauthorizedException.Single> { mainService.updateUser(request) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(currentUser.id) }
+        coVerify(exactly = 1) { userRepoMock.getUserById(otherUser.id) }
+        coVerify(exactly = 0) { userRepoMock.doesUserExistByEmail(any()) }
+        coVerify(exactly = 0) { userRepoMock.updateUser(any()) }
     }
 
     @Test
@@ -106,6 +133,12 @@ class UpdateUserTest : MainServiceTest() {
         coEvery { userRepoMock.doesUserExistByEmail(newEmail) } returns true
 
         assertThrows<DuplicateEntityException> { mainService.updateUser(getExampleRequest()) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(currentUser.id) }
+        coVerify(exactly = 1) { userRepoMock.getUserById(requestedUserId) }
+        coVerify(exactly = 1) { userRepoMock.doesUserExistByEmail(newEmail) }
+        coVerify(exactly = 0) { userRepoMock.updateUser(any()) }
     }
 
     @Test
@@ -121,6 +154,12 @@ class UpdateUserTest : MainServiceTest() {
         coEvery { userRepoMock.updateUser(request) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.updateUser(request) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(currentUser.id) }
+        coVerify(exactly = 1) { userRepoMock.getUserById(requestedUserId) }
+        coVerify(exactly = 1) { userRepoMock.doesUserExistByEmail(newEmail) }
+        coVerify(exactly = 1) { userRepoMock.updateUser(request) }
     }
 
     @Test
@@ -138,6 +177,11 @@ class UpdateUserTest : MainServiceTest() {
         coEvery { userRepoMock.updateUser(request) } returns currentUser
 
         assertDoesNotThrow { mainService.updateUser(request) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 2) { userRepoMock.getUserById(currentUser.id) }
+        coVerify(exactly = 1) { userRepoMock.doesUserExistByEmail(newEmail) }
+        coVerify(exactly = 1) { userRepoMock.updateUser(request) }
     }
 
     @Test
@@ -155,6 +199,12 @@ class UpdateUserTest : MainServiceTest() {
         coEvery { userRepoMock.updateUser(request) } returns otherUser
 
         assertDoesNotThrow { mainService.updateUser(request) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(currentUser.id) }
+        coVerify(exactly = 1) { userRepoMock.getUserById(otherUser.id) }
+        coVerify(exactly = 0) { userRepoMock.doesUserExistByEmail(any()) }
+        coVerify(exactly = 1) { userRepoMock.updateUser(request) }
     }
 
     @Test
@@ -170,5 +220,11 @@ class UpdateUserTest : MainServiceTest() {
         coEvery { userRepoMock.updateUser(request) } returns requestedUser
 
         assertDoesNotThrow { mainService.updateUser(request) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(currentUser.id) }
+        coVerify(exactly = 1) { userRepoMock.getUserById(requestedUserId) }
+        coVerify(exactly = 1) { userRepoMock.doesUserExistByEmail(newEmail) }
+        coVerify(exactly = 1) { userRepoMock.updateUser(request) }
     }
 }

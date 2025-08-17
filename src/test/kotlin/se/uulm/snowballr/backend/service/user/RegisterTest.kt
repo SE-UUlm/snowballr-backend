@@ -1,8 +1,10 @@
 package se.uulm.snowballr.backend.service.user
 
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.slot
+import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -23,6 +25,11 @@ class RegisterTest : MainServiceTest() {
         coEvery { userRepoMock.doesUserExistByEmail("test@example.com") } returns true
 
         assertThrows<DuplicateEntityException> { mainService.register(request) }
+
+        coVerify(exactly = 1) { userRepoMock.doesUserExistByEmail("test@example.com") }
+        coVerify(exactly = 0) { userRepoMock.createUser(any(), any()) }
+        coVerify(exactly = 0) { verificationTokenRepoMock.saveVerificationToken(any(), any()) }
+        coVerify(exactly = 0) { emailManagerMock.sendVerificationEmail(any(), any()) }
     }
 
     @Test
@@ -33,6 +40,11 @@ class RegisterTest : MainServiceTest() {
         coEvery { userRepoMock.createUser(any(), any()) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.register(request) }
+
+        coVerify(exactly = 1) { userRepoMock.doesUserExistByEmail(request.email) }
+        coVerify(exactly = 1) { userRepoMock.createUser(eq(request), any()) }
+        coVerify(exactly = 0) { verificationTokenRepoMock.saveVerificationToken(any(), any()) }
+        coVerify(exactly = 0) { emailManagerMock.sendVerificationEmail(any(), any()) }
     }
 
     @Test
@@ -45,6 +57,11 @@ class RegisterTest : MainServiceTest() {
         coEvery { verificationTokenRepoMock.saveVerificationToken(any(), any()) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.register(request) }
+
+        coVerify(exactly = 1) { userRepoMock.doesUserExistByEmail(request.email) }
+        coVerify(exactly = 1) { userRepoMock.createUser(eq(request), any()) }
+        coVerify(exactly = 1) { verificationTokenRepoMock.saveVerificationToken(eq(user.id), any()) }
+        coVerify(exactly = 0) { emailManagerMock.sendVerificationEmail(any(), any()) }
     }
 
     @Test
@@ -59,6 +76,12 @@ class RegisterTest : MainServiceTest() {
         coEvery { emailManagerMock.sendVerificationEmail(any(), any()) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.register(request) }
+
+        coVerify(exactly = 1) { userRepoMock.doesUserExistByEmail(request.email) }
+        coVerify(exactly = 1) { userRepoMock.createUser(eq(request), any()) }
+        coVerify(exactly = 1) { verificationTokenRepoMock.saveVerificationToken(eq(user.id), any()) }
+        verify(exactly = 1) { emailManagerMock.createVerificationLink(any()) }
+        coVerify(exactly = 1) { emailManagerMock.sendVerificationEmail(eq(user.email), any()) }
     }
 
     @Test
@@ -96,5 +119,11 @@ class RegisterTest : MainServiceTest() {
             assertThat(capturedEmailData.firstName).isEqualTo(user.firstName)
             assertThat(capturedEmailData.lastName).isEqualTo(user.lastName)
             assertThat(capturedEmailData.verificationLink).isEqualTo(expectedVerificationLink)
+
+            coVerify(exactly = 1) { userRepoMock.doesUserExistByEmail(request.email) }
+            coVerify(exactly = 1) { userRepoMock.createUser(eq(request), any()) }
+            coVerify(exactly = 1) { verificationTokenRepoMock.saveVerificationToken(user.id, capturedToken) }
+            verify(exactly = 1) { emailManagerMock.createVerificationLink(capturedToken) }
+            coVerify(exactly = 1) { emailManagerMock.sendVerificationEmail(user.email, capturedEmailData) }
         }
 }

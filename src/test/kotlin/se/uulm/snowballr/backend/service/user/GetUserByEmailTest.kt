@@ -1,7 +1,9 @@
 package se.uulm.snowballr.backend.service.user
 
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
+import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -26,6 +28,10 @@ class GetUserByEmailTest : MainServiceTest() {
         every { GrpcContext.getUserIdFromContext() } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getUserByEmail(getExampleRequest()) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 0) { userRepoMock.getUserById(any()) }
+        coVerify(exactly = 0) { userRepoMock.getUserByEmail(any()) }
     }
 
     @Test
@@ -36,6 +42,10 @@ class GetUserByEmailTest : MainServiceTest() {
         coEvery { userRepoMock.getUserById(currentUserId) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getUserByEmail(getExampleRequest()) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(currentUserId) }
+        coVerify(exactly = 0) { userRepoMock.getUserByEmail(any()) }
     }
 
     @Test
@@ -47,6 +57,11 @@ class GetUserByEmailTest : MainServiceTest() {
         coEvery { userRepoMock.getUserByEmail(exampleEmail) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getUserByEmail(getExampleRequest()) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(currentUser.id) }
+        coVerify(exactly = 1) { userRepoMock.getUserByEmail(exampleEmail) }
+        coVerify(exactly = 0) { projectMemberRepoMock.getMembersInSameProjectsAsUser(any()) }
     }
 
     @Test
@@ -60,6 +75,11 @@ class GetUserByEmailTest : MainServiceTest() {
         coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(requestedUser.id) } returns emptyList()
 
         assertThrows<UnauthorizedException.Single> { mainService.getUserByEmail(getExampleRequest()) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(currentUser.id) }
+        coVerify(exactly = 1) { userRepoMock.getUserByEmail(exampleEmail) }
+        coVerify(exactly = 1) { projectMemberRepoMock.getMembersInSameProjectsAsUser(requestedUser.id) }
     }
 
     @Test
@@ -81,6 +101,11 @@ class GetUserByEmailTest : MainServiceTest() {
             assertThrows<NotFoundException>("Should throw NotFoundException for status $status") {
                 mainService.getUserByEmail(getExampleRequest())
             }
+
+            verify(atLeast = 1, atMost = 3) { GrpcContext.getUserIdFromContext() }
+            coVerify(atLeast = 1, atMost = 3) { userRepoMock.getUserById(currentUser.id) }
+            coVerify(atLeast = 1, atMost = 3) { userRepoMock.getUserByEmail(exampleEmail) }
+            coVerify(exactly = 0) { projectMemberRepoMock.getMembersInSameProjectsAsUser(any()) }
         }
     }
 
@@ -104,6 +129,11 @@ class GetUserByEmailTest : MainServiceTest() {
             assertDoesNotThrow("Should succeed for status $status") {
                 mainService.getUserByEmail(getExampleRequest())
             }
+
+            verify(atLeast = 1, atMost = 2) { GrpcContext.getUserIdFromContext() }
+            coVerify(atLeast = 1, atMost = 2) { userRepoMock.getUserById(currentUser.id) }
+            coVerify(atLeast = 1, atMost = 2) { userRepoMock.getUserByEmail(exampleEmail) }
+            coVerify(exactly = 0) { projectMemberRepoMock.getMembersInSameProjectsAsUser(any()) }
         }
     }
 }

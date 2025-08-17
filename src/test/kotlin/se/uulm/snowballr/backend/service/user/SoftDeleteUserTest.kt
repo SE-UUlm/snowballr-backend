@@ -1,7 +1,9 @@
 package se.uulm.snowballr.backend.service.user
 
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
+import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -26,6 +28,10 @@ class SoftDeleteUserTest : MainServiceTest() {
         every { GrpcContext.getUserIdFromContext() } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.softDeleteUser(getExampleRequest()) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 0) { userRepoMock.getUserById(any()) }
+        coVerify(exactly = 0) { userRepoMock.softDeleteUser(any()) }
     }
 
     @Test
@@ -35,6 +41,10 @@ class SoftDeleteUserTest : MainServiceTest() {
         coEvery { userRepoMock.getUserById(currentUserId) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.softDeleteUser(getExampleRequest()) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(currentUserId) }
+        coVerify(exactly = 0) { userRepoMock.softDeleteUser(any()) }
     }
 
     @Test
@@ -46,6 +56,10 @@ class SoftDeleteUserTest : MainServiceTest() {
         coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
 
         assertThrows<InvalidIdException> { mainService.softDeleteUser(request) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(currentUser.id) }
+        coVerify(exactly = 0) { userRepoMock.softDeleteUser(any()) }
     }
 
     @Test
@@ -57,6 +71,11 @@ class SoftDeleteUserTest : MainServiceTest() {
         coEvery { userRepoMock.getUserById(requestedUserId) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.softDeleteUser(getExampleRequest()) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(currentUser.id) }
+        coVerify(exactly = 1) { userRepoMock.getUserById(requestedUserId) }
+        coVerify(exactly = 0) { userRepoMock.softDeleteUser(any()) }
     }
 
     @Test
@@ -69,6 +88,11 @@ class SoftDeleteUserTest : MainServiceTest() {
         coEvery { userRepoMock.getUserById(requestedUserId) } returns userToDelete
 
         assertThrows<UnauthorizedException.Single> { mainService.softDeleteUser(getExampleRequest()) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(currentUser.id) }
+        coVerify(exactly = 1) { userRepoMock.getUserById(requestedUserId) }
+        coVerify(exactly = 0) { userRepoMock.softDeleteUser(any()) }
     }
 
     @Test
@@ -81,6 +105,11 @@ class SoftDeleteUserTest : MainServiceTest() {
         coEvery { userRepoMock.getUserById(requestedUserId) } returns userToDelete
 
         assertThrows<FailedPreconditionException> { mainService.softDeleteUser(getExampleRequest()) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(currentUser.id) }
+        coVerify(exactly = 1) { userRepoMock.getUserById(requestedUserId) }
+        coVerify(exactly = 0) { userRepoMock.softDeleteUser(any()) }
     }
 
     @Test
@@ -94,6 +123,11 @@ class SoftDeleteUserTest : MainServiceTest() {
         coEvery { userRepoMock.softDeleteUser(requestedUserId) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.softDeleteUser(getExampleRequest()) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(currentUser.id) }
+        coVerify(exactly = 1) { userRepoMock.getUserById(requestedUserId) }
+        coVerify(exactly = 1) { userRepoMock.softDeleteUser(requestedUserId) }
     }
 
     @Test
@@ -107,6 +141,11 @@ class SoftDeleteUserTest : MainServiceTest() {
         coEvery { userRepoMock.softDeleteUser(requestedUserId) } returns Unit
 
         assertDoesNotThrow { mainService.softDeleteUser(getExampleRequest()) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(currentUser.id) }
+        coVerify(exactly = 1) { userRepoMock.getUserById(requestedUserId) }
+        coVerify(exactly = 1) { userRepoMock.softDeleteUser(requestedUserId) }
     }
 
     @Test
@@ -118,6 +157,10 @@ class SoftDeleteUserTest : MainServiceTest() {
         coEvery { userRepoMock.softDeleteUser(currentUser.id) } returns Unit
 
         assertDoesNotThrow { mainService.softDeleteUser(getExampleRequest()) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 2) { userRepoMock.getUserById(currentUser.id) }
+        coVerify(exactly = 1) { userRepoMock.softDeleteUser(currentUser.id) }
     }
 
     @Test
@@ -129,5 +172,9 @@ class SoftDeleteUserTest : MainServiceTest() {
         coEvery { userRepoMock.softDeleteUser(currentUser.id) } returns Unit
 
         assertDoesNotThrow { mainService.softDeleteUser(getExampleRequest()) }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 2) { userRepoMock.getUserById(currentUser.id) }
+        coVerify(exactly = 1) { userRepoMock.softDeleteUser(currentUser.id) }
     }
 }

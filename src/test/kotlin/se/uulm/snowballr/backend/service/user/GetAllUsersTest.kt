@@ -1,7 +1,9 @@
 package se.uulm.snowballr.backend.service.user
 
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
+import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -20,6 +22,10 @@ class GetAllUsersTest : MainServiceTest() {
         every { GrpcContext.getUserIdFromContext() } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getAllUsers() }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 0) { userRepoMock.getUserById(any()) }
+        coVerify(exactly = 0) { userRepoMock.getAllUsers() }
     }
 
     @Test
@@ -29,6 +35,10 @@ class GetAllUsersTest : MainServiceTest() {
         coEvery { userRepoMock.getUserById(currentUserId) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getAllUsers() }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(currentUserId) }
+        coVerify(exactly = 0) { userRepoMock.getAllUsers() }
     }
 
     @Test
@@ -39,6 +49,10 @@ class GetAllUsersTest : MainServiceTest() {
         coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
 
         assertThrows<UnauthorizedException.All> { mainService.getAllUsers() }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(currentUser.id) }
+        coVerify(exactly = 0) { userRepoMock.getAllUsers() }
     }
 
     @Test
@@ -50,6 +64,10 @@ class GetAllUsersTest : MainServiceTest() {
         coEvery { userRepoMock.getAllUsers() } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getAllUsers() }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(currentUser.id) }
+        coVerify(exactly = 1) { userRepoMock.getAllUsers() }
     }
 
     @Test
@@ -61,5 +79,9 @@ class GetAllUsersTest : MainServiceTest() {
         coEvery { userRepoMock.getAllUsers() } returns emptyList()
 
         assertDoesNotThrow { mainService.getAllUsers() }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(currentUser.id) }
+        coVerify(exactly = 1) { userRepoMock.getAllUsers() }
     }
 }

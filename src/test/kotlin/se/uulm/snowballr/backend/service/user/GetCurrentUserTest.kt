@@ -1,7 +1,9 @@
 package se.uulm.snowballr.backend.service.user
 
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
+import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -18,6 +20,9 @@ class GetCurrentUserTest : MainServiceTest() {
         every { GrpcContext.getUserIdFromContext() } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getCurrentUser() }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 0) { userRepoMock.getUserById(any()) }
     }
 
     @Test
@@ -27,6 +32,9 @@ class GetCurrentUserTest : MainServiceTest() {
         coEvery { userRepoMock.getUserById(userId) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getCurrentUser() }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(userId) }
     }
 
     @Test
@@ -36,5 +44,8 @@ class GetCurrentUserTest : MainServiceTest() {
         coEvery { userRepoMock.getUserById(user.id) } returns user
 
         assertDoesNotThrow { mainService.getCurrentUser() }
+
+        verify(exactly = 1) { GrpcContext.getUserIdFromContext() }
+        coVerify(exactly = 1) { userRepoMock.getUserById(user.id) }
     }
 }

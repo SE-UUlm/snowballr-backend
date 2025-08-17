@@ -1,5 +1,7 @@
 package se.uulm.snowballr.backend.service.user
 
+import io.mockk.coVerify
+import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -21,5 +23,9 @@ class LogoutTest : MainServiceTest() {
 
             assertEquals("", cookiesMap[GrpcContext.ACCESS_TOKEN_COOKIE_NAME])
             assertEquals("", cookiesMap[GrpcContext.REFRESH_TOKEN_COOKIE_NAME])
+
+            coVerify(exactly = 0) { userRepoMock.getUserById(any()) }
+            coVerify(exactly = 0) { userRepoMock.getUserByEmail(any()) }
+            verify(exactly = 0) { jwtServiceMock.generateAuthTokens(any()) }
         }
 }
