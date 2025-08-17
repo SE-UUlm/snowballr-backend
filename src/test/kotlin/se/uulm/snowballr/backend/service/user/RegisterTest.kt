@@ -18,9 +18,9 @@ import snowballr.Authentication
 class RegisterTest : MainServiceTest() {
     @Test
     fun `When a user with the given email already exists, then an exception is thrown`() = runTest {
-        val request = Authentication.RegisterRequest.newBuilder().build()
+        val request = Authentication.RegisterRequest.newBuilder().setEmail("test@example.com").build()
 
-        coEvery { userRepoMock.doesUserExistByEmail(any()) } returns true
+        coEvery { userRepoMock.doesUserExistByEmail("test@example.com") } returns true
 
         assertThrows<DuplicateEntityException> { mainService.register(request) }
     }
@@ -50,7 +50,7 @@ class RegisterTest : MainServiceTest() {
     @Test
     fun `When sending the verification email fails, then an exception is thrown`() = runTest {
         val user = DataBuilder.createExampleUser()
-        val request = Authentication.RegisterRequest.newBuilder().build()
+        val request = Authentication.RegisterRequest.newBuilder().setEmail(user.email).build()
 
         coEvery { userRepoMock.doesUserExistByEmail(any()) } returns false
         coEvery { userRepoMock.createUser(any(), any()) } returns user
@@ -76,16 +76,14 @@ class RegisterTest : MainServiceTest() {
             val tokenSlot = slot<String>()
             val emailDataSlot = slot<EmailData.EmailVerification>()
 
-            coEvery { userRepoMock.doesUserExistByEmail(any()) } returns false
-            coEvery { userRepoMock.createUser(any(), any()) } returns user
-            coEvery { verificationTokenRepoMock.saveVerificationToken(any(), capture(tokenSlot)) } returns Unit
-
+            coEvery { userRepoMock.doesUserExistByEmail(request.email) } returns false
+            coEvery { userRepoMock.createUser(eq(request), any()) } returns user
+            coEvery { verificationTokenRepoMock.saveVerificationToken(user.id, capture(tokenSlot)) } returns Unit
             every { emailManagerMock.createVerificationLink(any()) } answers {
                 val token = firstArg<String>()
                 "$testFrontendURL/verifyemail?token=$token"
             }
-
-            coEvery { emailManagerMock.sendVerificationEmail(any(), capture(emailDataSlot)) } returns Unit
+            coEvery { emailManagerMock.sendVerificationEmail(user.email, capture(emailDataSlot)) } returns Unit
 
             assertDoesNotThrow { mainService.register(request) }
 

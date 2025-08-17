@@ -27,7 +27,7 @@ class LoginTest : MainServiceTest() {
     fun `When a user provides an invalid email, then an exception is thrown`() = runTest {
         val request = LoginRequest.newBuilder().setEmail("wrongEmail").build()
 
-        coEvery { userRepoMock.getUserByEmail(any()) } throws SnowballRException.NotFoundException(
+        coEvery { userRepoMock.getUserByEmail("wrongEmail") } throws SnowballRException.NotFoundException(
             EntityType.USER, "wrongEmail",
             identifierType = IdentifierType.EMAIL,
         )
@@ -77,13 +77,12 @@ class LoginTest : MainServiceTest() {
     @Test
     fun `When the password hash cannot be retrieved, then an exception is thrown`() = runTest {
         val testUser = DataBuilder.createExampleUser(status = UserStatus.USER_STATUS_ACTIVE)
-
         val request = LoginRequest.newBuilder().apply {
             email = testUser.email
             password = "anyPassword"
         }.build()
 
-        coEvery { userRepoMock.getUserByEmail(any()) } returns testUser
+        coEvery { userRepoMock.getUserByEmail(testUser.email) } returns testUser
         coEvery { userRepoMock.getPasswordHashByEmail(testUser.email) } throws SnowballRException.NotFoundException(
             EntityType.USER, testUser.email, identifierType = IdentifierType.EMAIL,
         )
@@ -96,43 +95,37 @@ class LoginTest : MainServiceTest() {
         val testUser = DataBuilder.createExampleUser(status = UserStatus.USER_STATUS_ACTIVE)
         val userPassword = "AAbb__00"
         val passwordHash = PasswordUtils.hashPassword(userPassword)
-
         val request = LoginRequest.newBuilder().apply {
             email = testUser.email
             password = "wrongPassword"
         }.build()
 
-        coEvery { userRepoMock.getUserByEmail(any()) } returns testUser
+        coEvery { userRepoMock.getUserByEmail(testUser.email) } returns testUser
         coEvery { userRepoMock.getPasswordHashByEmail(testUser.email) } returns passwordHash
 
         assertThrows<UnauthenticatedException> { mainService.login(request) }
     }
 
     @Test
-    fun `When an active user provides valid credentials, then the user is logged in successfully`() = runTest {
+    fun `When an active user provides valid credentials, then the user is logged in successfully`(
+        cookiesMap: MutableMap<String, String>,
+    ) = runTest {
         val testUser = DataBuilder.createExampleUser(status = UserStatus.USER_STATUS_ACTIVE)
         val userPassword = "AAbb__00"
         val passwordHash = PasswordUtils.hashPassword(userPassword)
         val tokens = JwtAuthTokens("accessToken", "refreshToken")
-
         val request = LoginRequest.newBuilder().apply {
             email = testUser.email
             password = userPassword
         }.build()
 
-        coEvery { userRepoMock.getUserByEmail(any()) } returns testUser
+        coEvery { userRepoMock.getUserByEmail(testUser.email) } returns testUser
         coEvery { userRepoMock.getPasswordHashByEmail(testUser.email) } returns passwordHash
         every { jwtServiceMock.generateAuthTokens(testUser.id) } returns tokens
 
         assertDoesNotThrow { mainService.login(request) }
 
-        assertEquals(
-            tokens.accessToken,
-            GrpcContext.COOKIES_TO_SET_CONTEXT_KEY.get()[GrpcContext.ACCESS_TOKEN_COOKIE_NAME],
-        )
-        assertEquals(
-            tokens.refreshToken,
-            GrpcContext.COOKIES_TO_SET_CONTEXT_KEY.get()[GrpcContext.REFRESH_TOKEN_COOKIE_NAME],
-        )
+        assertEquals(tokens.accessToken, cookiesMap[GrpcContext.ACCESS_TOKEN_COOKIE_NAME])
+        assertEquals(tokens.refreshToken, cookiesMap[GrpcContext.REFRESH_TOKEN_COOKIE_NAME])
     }
 }

@@ -24,7 +24,7 @@ class GetCurrentUserTest : MainServiceTest() {
     fun `When retrieving the user by id fails, then an exception is thrown`() = runTest {
         val userId = UUID.randomUUID()
         every { GrpcContext.getUserIdFromContext() } returns userId
-        coEvery { userRepoMock.getUserById(GrpcContext.getUserIdFromContext()) } throws TestSpecificException()
+        coEvery { userRepoMock.getUserById(userId) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getCurrentUser() }
     }
@@ -33,7 +33,7 @@ class GetCurrentUserTest : MainServiceTest() {
     fun `When retrieving the current user, then no exception is thrown`() = runTest {
         val user = DataBuilder.createExampleUser()
         every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(GrpcContext.getUserIdFromContext()) } returns user
+        coEvery { userRepoMock.getUserById(user.id) } returns user
 
         assertDoesNotThrow { mainService.getCurrentUser() }
     }

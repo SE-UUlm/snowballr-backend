@@ -2,8 +2,6 @@ package se.uulm.snowballr.backend.service.user
 
 import io.mockk.coEvery
 import io.mockk.every
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -16,8 +14,6 @@ import snowballr.ProjectOuterClass.Project.InviteCandidatesRequest
 import java.util.UUID
 import kotlin.test.assertTrue
 
-@DelicateCoroutinesApi
-@ExperimentalCoroutinesApi
 class GetInviteCandidatesTest : MainServiceTest() {
     private val testProjectId = UUID.randomUUID()
     private val validInviteCandidatesRequest = InviteCandidatesRequest.newBuilder().setQuery(
@@ -27,7 +23,9 @@ class GetInviteCandidatesTest : MainServiceTest() {
     @Test
     fun `When the search query is too short, then an empty list is returned`() = runTest {
         val shortSearchQuery = InviteCandidatesRequest.newBuilder().setQuery("j").build()
-        assertDoesNotThrow { mainService.getInviteCandidates(shortSearchQuery) }
+
+        val result = mainService.getInviteCandidates(shortSearchQuery)
+        assertThat(result.usersList).isEmpty()
     }
 
     @Test
@@ -53,7 +51,7 @@ class GetInviteCandidatesTest : MainServiceTest() {
     }
 
     @Test
-    fun `When no the project members exist, then no users except for the current user are excluded`() = runTest {
+    fun `When no project members exist, then no users except for the current user are excluded`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
         val requestedProjectId = UUID.randomUUID()
         val requestWithNotExistingProject = InviteCandidatesRequest.newBuilder().setQuery(
@@ -68,12 +66,12 @@ class GetInviteCandidatesTest : MainServiceTest() {
     }
 
     @Test
-    fun `When retrieving the users matching the search query fails, then an empty list is returned`() = runTest {
+    fun `When retrieving the users matching the search query returns no users, a successful call is made`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
         coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
         coEvery { projectMemberRepoMock.getProjectMembers(testProjectId) } returns emptyList()
-        coEvery { userRepoMock.getUsersMatchingSearchQuery(any(), any()) } returns emptyList()
+        coEvery { userRepoMock.getUsersMatchingSearchQuery("john", setOf(currentUser.id)) } returns emptyList()
 
         assertDoesNotThrow { mainService.getInviteCandidates(validInviteCandidatesRequest) }
     }
@@ -82,13 +80,15 @@ class GetInviteCandidatesTest : MainServiceTest() {
     fun `When retrieving the invite candidates is successful, then these are returned except for the current user`() =
         runTest {
             val currentUser = DataBuilder.createExampleUser(email = "current.user@example.com")
-            val users = listOf(currentUser, DataBuilder.createExampleUser(email = "another.user@example.com"))
+            val otherUser = DataBuilder.createExampleUser(email = "another.user@example.com")
+            val users = listOf(currentUser, otherUser)
             val excludedUsers = setOf(currentUser.id)
+
             every { GrpcContext.getUserIdFromContext() } returns currentUser.id
             coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
             coEvery { projectMemberRepoMock.getProjectMembers(testProjectId) } returns emptyList()
             coEvery {
-                userRepoMock.getUsersMatchingSearchQuery(any(), setOf(currentUser.id))
+                userRepoMock.getUsersMatchingSearchQuery("john", excludedUsers)
             } returns users.filterNot { it.id in excludedUsers }
 
             val inviteCandidates = mainService.getInviteCandidates(validInviteCandidatesRequest)
@@ -100,17 +100,15 @@ class GetInviteCandidatesTest : MainServiceTest() {
     fun `When retrieving the project members is successful, then these members are not returned as invite candidates`() =
         runTest {
             val currentUser = DataBuilder.createExampleUser(email = "current.user@example.com")
-            val projectMember = DataBuilder.createExampleUser(email = "project.member@example.com")
-            val users = listOf(currentUser, projectMember)
-            val excludedUsers = setOf(currentUser.id, projectMember.id)
+            val projectMemberUser = DataBuilder.createExampleUser(email = "project.member@example.com")
+            val projectMember =
+                DataBuilder.createExampleProjectMember(userId = projectMemberUser.id, projectId = testProjectId)
+            val excludedUsers = setOf(currentUser.id, projectMemberUser.id)
+
             every { GrpcContext.getUserIdFromContext() } returns currentUser.id
             coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
-            coEvery {
-                projectMemberRepoMock.getProjectMembers(testProjectId)
-            } returns listOf(DataBuilder.createExampleProjectMember(userId = projectMember.id))
-            coEvery {
-                userRepoMock.getUsersMatchingSearchQuery(any(), setOf(currentUser.id, projectMember.id))
-            } returns users.filterNot { it.id in excludedUsers }
+            coEvery { projectMemberRepoMock.getProjectMembers(testProjectId) } returns listOf(projectMember)
+            coEvery { userRepoMock.getUsersMatchingSearchQuery("john", excludedUsers) } returns emptyList()
 
             val inviteCandidates = mainService.getInviteCandidates(validInviteCandidatesRequest)
             assertTrue { inviteCandidates.usersList.isEmpty() }

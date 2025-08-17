@@ -30,8 +30,10 @@ class GetUserByEmailTest : MainServiceTest() {
 
     @Test
     fun `When retrieving current user fails, then exception is thrown`() = runTest {
-        every { GrpcContext.getUserIdFromContext() } returns UUID.randomUUID()
-        coEvery { userRepoMock.getUserById(any()) } throws TestSpecificException()
+        val currentUserId = UUID.randomUUID()
+
+        every { GrpcContext.getUserIdFromContext() } returns currentUserId
+        coEvery { userRepoMock.getUserById(currentUserId) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getUserByEmail(getExampleRequest()) }
     }
@@ -42,7 +44,7 @@ class GetUserByEmailTest : MainServiceTest() {
 
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
         coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
-        coEvery { userRepoMock.getUserByEmail(any()) } throws TestSpecificException()
+        coEvery { userRepoMock.getUserByEmail(exampleEmail) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getUserByEmail(getExampleRequest()) }
     }

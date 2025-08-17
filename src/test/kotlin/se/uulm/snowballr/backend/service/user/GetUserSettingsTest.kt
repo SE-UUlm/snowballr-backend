@@ -2,8 +2,6 @@ package se.uulm.snowballr.backend.service.user
 
 import io.mockk.coEvery
 import io.mockk.every
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -12,18 +10,15 @@ import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.service.MainServiceTest
-import java.util.UUID
 
-@ExperimentalCoroutinesApi
-@DelicateCoroutinesApi
 class GetUserSettingsTest : MainServiceTest() {
     @Test
     fun `When retrieving current user settings fails, then an exception is thrown`() = runTest {
         val user = DataBuilder.createExampleUser()
 
-        every { GrpcContext.getUserIdFromContext() } returns UUID.randomUUID()
-        coEvery { userRepoMock.getUserById(any()) } returns user
-        coEvery { userRepoMock.getUserSettings(any()) } throws TestSpecificException()
+        every { GrpcContext.getUserIdFromContext() } returns user.id
+        coEvery { userRepoMock.getUserById(user.id) } returns user
+        coEvery { userRepoMock.getUserSettings(user.id) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getUserSettings() }
     }
@@ -36,8 +31,8 @@ class GetUserSettingsTest : MainServiceTest() {
 
             every { GrpcContext.getUserIdFromContext() } returns user.id
             coEvery { userRepoMock.getUserById(user.id) } returns user
-            coEvery { criterionRepoMock.getCriteriaByIds(emptyList()) } returns emptyList()
             coEvery { userRepoMock.getUserSettings(user.id) } returns userSettings
+            coEvery { criterionRepoMock.getCriteriaByIds(emptyList()) } returns emptyList()
 
             assertDoesNotThrow { mainService.getUserSettings() }
         }
@@ -51,8 +46,8 @@ class GetUserSettingsTest : MainServiceTest() {
 
             every { GrpcContext.getUserIdFromContext() } returns user.id
             coEvery { userRepoMock.getUserById(user.id) } returns user
-            coEvery { criterionRepoMock.getCriteriaByIds(listOf(criterion.id)) } returns listOf(criterion)
             coEvery { userRepoMock.getUserSettings(user.id) } returns userSettings
+            coEvery { criterionRepoMock.getCriteriaByIds(listOf(criterion.id)) } returns listOf(criterion)
 
             assertDoesNotThrow { mainService.getUserSettings() }
         }

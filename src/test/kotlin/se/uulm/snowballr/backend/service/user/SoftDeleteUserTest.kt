@@ -30,8 +30,9 @@ class SoftDeleteUserTest : MainServiceTest() {
 
     @Test
     fun `When retrieving current user fails, then exception is thrown`() = runTest {
-        every { GrpcContext.getUserIdFromContext() } returns UUID.randomUUID()
-        coEvery { userRepoMock.getUserById(any()) } throws TestSpecificException()
+        val currentUserId = UUID.randomUUID()
+        every { GrpcContext.getUserIdFromContext() } returns currentUserId
+        coEvery { userRepoMock.getUserById(currentUserId) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.softDeleteUser(getExampleRequest()) }
     }
@@ -39,8 +40,10 @@ class SoftDeleteUserTest : MainServiceTest() {
     @Test
     fun `When parsing user ID fails, then InvalidIdException is thrown`() = runTest {
         val request = Base.Id.newBuilder().setId("invalid-uuid").build()
-        every { GrpcContext.getUserIdFromContext() } returns UUID.randomUUID()
-        coEvery { userRepoMock.getUserById(any()) } returns DataBuilder.createExampleUser()
+        val currentUser = DataBuilder.createExampleUser()
+
+        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
 
         assertThrows<InvalidIdException> { mainService.softDeleteUser(request) }
     }

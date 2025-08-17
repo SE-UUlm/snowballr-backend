@@ -19,11 +19,12 @@ import java.util.UUID
 
 class UpdateUserTest : MainServiceTest() {
     private val requestedUserId = UUID.randomUUID()
+    private val newEmail = "newemail@example.com"
 
     private fun getExampleRequest(): UserOuterClass.User.Update {
         val user = UserOuterClass.User.newBuilder()
             .setId(requestedUserId.toString())
-            .setEmail("newemail@example.com")
+            .setEmail(newEmail)
             .setRole(UserRole.USER_ROLE_ADMIN)
             .build()
 
@@ -47,8 +48,9 @@ class UpdateUserTest : MainServiceTest() {
 
     @Test
     fun `When retrieving current user fails, then exception is thrown`() = runTest {
-        every { GrpcContext.getUserIdFromContext() } returns UUID.randomUUID()
-        coEvery { userRepoMock.getUserById(any()) } throws TestSpecificException()
+        val currentUserId = UUID.randomUUID()
+        every { GrpcContext.getUserIdFromContext() } returns currentUserId
+        coEvery { userRepoMock.getUserById(currentUserId) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.updateUser(getExampleRequest()) }
     }
@@ -99,9 +101,9 @@ class UpdateUserTest : MainServiceTest() {
         val requestedUser = DataBuilder.createExampleUser(id = requestedUserId)
 
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(any()) } returns currentUser
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
         coEvery { userRepoMock.getUserById(requestedUserId) } returns requestedUser
-        coEvery { userRepoMock.doesUserExistByEmail(any()) } returns true
+        coEvery { userRepoMock.doesUserExistByEmail(newEmail) } returns true
 
         assertThrows<DuplicateEntityException> { mainService.updateUser(getExampleRequest()) }
     }
@@ -110,31 +112,29 @@ class UpdateUserTest : MainServiceTest() {
     fun `When update fails, then exception is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val requestedUser = DataBuilder.createExampleUser(id = requestedUserId)
+        val request = getExampleRequest()
 
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(any()) } returns currentUser
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
         coEvery { userRepoMock.getUserById(requestedUserId) } returns requestedUser
-        coEvery { userRepoMock.doesUserExistByEmail(any()) } returns false
-        coEvery { userRepoMock.updateUser(any()) } throws TestSpecificException()
+        coEvery { userRepoMock.doesUserExistByEmail(newEmail) } returns false
+        coEvery { userRepoMock.updateUser(request) } throws TestSpecificException()
 
-        assertThrows<TestSpecificException> { mainService.updateUser(getExampleRequest()) }
+        assertThrows<TestSpecificException> { mainService.updateUser(request) }
     }
 
     @Test
     fun `When user updates own email, then it succeeds`() = runTest {
+        val newEmail = "new-and-shiny@example.com"
         val currentUser = DataBuilder.createExampleUser(id = requestedUserId, role = UserRole.USER_ROLE_DEFAULT)
         val request = UserOuterClass.User.Update.newBuilder()
-            .setUser(
-                UserOuterClass.User.newBuilder()
-                    .setId(currentUser.id.toString())
-                    .setEmail("new-and-shiny@example.com"),
-            )
+            .setUser(UserOuterClass.User.newBuilder().setId(currentUser.id.toString()).setEmail(newEmail))
             .setMask(FieldMask.newBuilder().addPaths("email"))
             .build()
 
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
         coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
-        coEvery { userRepoMock.doesUserExistByEmail("new-and-shiny@example.com") } returns false
+        coEvery { userRepoMock.doesUserExistByEmail(newEmail) } returns false
         coEvery { userRepoMock.updateUser(request) } returns currentUser
 
         assertDoesNotThrow { mainService.updateUser(request) }
@@ -145,11 +145,7 @@ class UpdateUserTest : MainServiceTest() {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val otherUser = DataBuilder.createExampleUser(id = requestedUserId, role = UserRole.USER_ROLE_DEFAULT)
         val request = UserOuterClass.User.Update.newBuilder()
-            .setUser(
-                UserOuterClass.User.newBuilder()
-                    .setId(otherUser.id.toString())
-                    .setRole(UserRole.USER_ROLE_ADMIN),
-            )
+            .setUser(UserOuterClass.User.newBuilder().setId(otherUser.id.toString()).setRole(UserRole.USER_ROLE_ADMIN))
             .setMask(FieldMask.newBuilder().addPaths("role"))
             .build()
 
@@ -165,13 +161,14 @@ class UpdateUserTest : MainServiceTest() {
     fun `When admin updates all fields of another user, then it succeeds`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val requestedUser = DataBuilder.createExampleUser(id = requestedUserId)
+        val request = getExampleRequest()
 
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(any()) } returns currentUser
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
         coEvery { userRepoMock.getUserById(requestedUserId) } returns requestedUser
-        coEvery { userRepoMock.doesUserExistByEmail(any()) } returns false
-        coEvery { userRepoMock.updateUser(any()) } returns requestedUser
+        coEvery { userRepoMock.doesUserExistByEmail(newEmail) } returns false
+        coEvery { userRepoMock.updateUser(request) } returns requestedUser
 
-        assertDoesNotThrow { mainService.updateUser(getExampleRequest()) }
+        assertDoesNotThrow { mainService.updateUser(request) }
     }
 }

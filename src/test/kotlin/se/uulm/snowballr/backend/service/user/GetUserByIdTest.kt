@@ -26,16 +26,20 @@ class GetUserByIdTest : MainServiceTest() {
     @Test
     fun `When parsing the user ID fails, then InvalidIdException is thrown`() = runTest {
         val request = Base.Id.newBuilder().setId("invalid-uuid").build()
-        every { GrpcContext.getUserIdFromContext() } returns UUID.randomUUID()
-        coEvery { userRepoMock.getUserById(any()) } returns DataBuilder.createExampleUser()
+        val currentUserId = UUID.randomUUID()
+
+        every { GrpcContext.getUserIdFromContext() } returns currentUserId
+        coEvery { userRepoMock.getUserById(currentUserId) } returns DataBuilder.createExampleUser()
 
         assertThrows<InvalidIdException> { mainService.getUserById(request) }
     }
 
     @Test
     fun `When retrieving current user fails, then exception is thrown`() = runTest {
-        every { GrpcContext.getUserIdFromContext() } returns UUID.randomUUID()
-        coEvery { userRepoMock.getUserById(any()) } throws TestSpecificException()
+        val currentUserId = UUID.randomUUID()
+
+        every { GrpcContext.getUserIdFromContext() } returns currentUserId
+        coEvery { userRepoMock.getUserById(currentUserId) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getUserById(getExampleRequest()) }
     }
@@ -57,16 +61,11 @@ class GetUserByIdTest : MainServiceTest() {
 
     @Test
     fun `When current user requests own user, then user is returned without redundant DB call`() = runTest {
-        val currentUser = DataBuilder.createExampleUser()
-        val requestedUser = DataBuilder.createExampleUser(
-            id = currentUser.id,
-            status = UserStatus.USER_STATUS_ACTIVE,
-        )
-        val request = Base.Id.newBuilder().setId(requestedUser.id.toString()).build()
+        val currentUser = DataBuilder.createExampleUser(status = UserStatus.USER_STATUS_ACTIVE)
+        val request = Base.Id.newBuilder().setId(currentUser.id.toString()).build()
 
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
         coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
-        coEvery { userRepoMock.getUserById(requestedUser.id) } returns requestedUser
 
         assertDoesNotThrow { mainService.getUserById(request) }
 
