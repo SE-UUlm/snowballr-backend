@@ -105,6 +105,7 @@ open class MainServiceTest : KoinTest {
         userRepoMock,
         projectMemberRepoMock,
         jwtServiceMock,
+        emailServiceMock,
         fetcherManagerMock,
         projectPaperRepoMock,
         authorOfPaperRepoMock,
@@ -114,6 +115,7 @@ open class MainServiceTest : KoinTest {
         paperRepoMock,
         reviewRepoMock,
         reviewHasCriterionRepoMock,
+        verificationTokenRepoMock,
     )
 
     val mainService: IMainService by inject()
