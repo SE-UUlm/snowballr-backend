@@ -87,51 +87,10 @@ val snowballRModule =
         envDeps()
         dbDeps()
         repositoryLayerDeps()
+        mailServiceDeps()
         customServicesDeps()
         serviceLayerDeps()
     }
-
-/**
- * Module declaration of the [Mailer] used for sending emails.
- */
-private fun mailerModule(): Module = module {
-    single<Mailer> {
-        val envReader: EnvReader = get()
-        val env = envReader.env
-
-        // Enable debug logging if the log level is DEBUG or TRACE
-        val isDebugLogging = env.miscellaneous.logLevel == "DEBUG" || env.miscellaneous.logLevel == "TRACE"
-
-        MailerBuilder
-            .withSMTPServer(env.smtp.smtpHost, env.smtp.smtpPort)
-            .withTransportModeLoggingOnly(env.smtp.smtpTransportLoggingOnlyEnabled)
-            .withDebugLogging(isDebugLogging)
-            .apply {
-                env.smtp.smtpUser?.let { withSMTPServerUsername(it) }
-                env.smtp.smtpPassword?.let { withSMTPServerPassword(it) }
-            }
-            .async()
-            .buildMailer()
-    }
-}
-
-/**
- * Module for providing the [Handlebars] template engine.
- */
-private fun templatesModule() = module {
-    single<Map<EmailTemplate, Template>> {
-        val handlebars = Handlebars(ClassPathTemplateLoader("/templates", ".hbs"))
-
-        val compiledTemplates = EmailTemplate.entries.associateWith { template ->
-            try {
-                handlebars.compile(template.templateFileName)
-            } catch (e: IOException) {
-                throw SnowballRException.EmailException.TemplateCompilationFailed(template.templateFileName, e)
-            }
-        }
-        compiledTemplates
-    }
-}
 
 /**
  * Module declaration of the [IEnvService] and [EnvReader].
@@ -173,13 +132,57 @@ private fun Module.repositoryLayerDeps() {
 }
 
 /**
+ * Module declaration of the mail service dependencies.
+ *
+ * Consists of the [Mailer] and the [Template]s used for sending mails.
+ */
+private fun Module.mailServiceDeps() {
+    single<Mailer> { createMailer(get()) }
+    single<Map<EmailTemplate, Template>> { createEmailTemplates() }
+}
+
+/**
+ * Creates the Mailer instance based on the environment configuration.
+ */
+fun createMailer(envReader: EnvReader): Mailer {
+    val env = envReader.env
+
+    // Enable debug logging if the log level is DEBUG or TRACE
+    val isDebugLogging = env.miscellaneous.logLevel == "DEBUG" || env.miscellaneous.logLevel == "TRACE"
+
+    return MailerBuilder
+        .withSMTPServer(env.smtp.smtpHost, env.smtp.smtpPort)
+        .withTransportModeLoggingOnly(env.smtp.smtpTransportLoggingOnlyEnabled)
+        .withDebugLogging(isDebugLogging)
+        .apply {
+            env.smtp.smtpUser?.let { withSMTPServerUsername(it) }
+            env.smtp.smtpPassword?.let { withSMTPServerPassword(it) }
+        }
+        .async()
+        .buildMailer()
+}
+
+/**
+ * Compiles all email templates from the classpath.
+ */
+fun createEmailTemplates(): Map<EmailTemplate, Template> {
+    val handlebars = Handlebars(ClassPathTemplateLoader("/templates", ".hbs"))
+
+    return EmailTemplate.entries.associateWith { template ->
+        try {
+            handlebars.compile(template.templateFileName)
+        } catch (e: IOException) {
+            throw SnowballRException.EmailException.TemplateCompilationFailed(template.templateFileName, e)
+        }
+    }
+}
+
+/**
  * Module declaration of all custom services / managers / clients.
  *
  * Consists of all dependencies that are used by the core service layer.
  */
 private fun Module.customServicesDeps() {
-    includes(mailerModule(), templatesModule())
-
     singleOf(::JwtService) {
         createdAtStart()
         bind<IJwtService>()
