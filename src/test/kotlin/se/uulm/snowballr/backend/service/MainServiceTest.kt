@@ -60,6 +60,9 @@ import se.uulm.snowballr.backend.serviceLayerDeps
  *
  *             // Assert service behavior
  *             assertDoesNotThrow { mainService.createExample(request) }
+ *
+ *             // Verify that the correct method was called
+ *             coVerify(exactly = 1) { exampleRepoMock.createExample(request) }
  *         }
  *
  *     @Test
@@ -72,6 +75,9 @@ import se.uulm.snowballr.backend.serviceLayerDeps
  *
  *             // Assert service behavior
  *             assertThrows<TestSpecificException> { mainService.createExample(request) }
+ *
+ *             // Verify that the correct method was called
+ *             coVerify(exactly = 1) { exampleRepoMock.createExample(request) }
  *         }
  * }
  * ```
