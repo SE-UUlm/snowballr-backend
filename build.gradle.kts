@@ -72,6 +72,7 @@ dependencies {
     detektPlugins(libs.detekt.formatting)
 
     implementation(libs.simple.java.mail)
+    testImplementation(libs.greenmail.junit5)
     implementation(libs.handlebars)
     implementation(libs.kotlinx.serialization.json)
 }

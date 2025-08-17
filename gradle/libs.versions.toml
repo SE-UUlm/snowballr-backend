@@ -24,6 +24,7 @@ archunit = "1.4.1"
 password4j = "1.8.3"
 jjwt = "0.12.6"
 simple-java-mail = "8.12.6"
+greenmail = "2.1.5"
 handlebars = "4.4.0"
 testcontainers = "1.21.3"
 kotlinx-serialization-json = "1.7.1"
@@ -83,6 +84,7 @@ archunit-junit5 = { module = "com.tngtech.archunit:archunit-junit5", version.ref
 detekt-formatting = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", version.ref = "detekt" }
 
 simple-java-mail = { module = "org.simplejavamail:simple-java-mail", version.ref = "simple-java-mail" }
+greenmail-junit5 = { module = "com.icegreen:greenmail-junit5", version.ref = "greenmail" }
 handlebars = { module = "com.github.jknack:handlebars", version.ref = "handlebars" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization-json" }
 
