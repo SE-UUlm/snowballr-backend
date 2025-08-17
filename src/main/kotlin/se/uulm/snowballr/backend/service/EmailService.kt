@@ -7,7 +7,6 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import org.simplejavamail.MailException
 import org.simplejavamail.api.mailer.Mailer
 import org.simplejavamail.email.EmailBuilder
-import org.simplejavamail.mailer.MailerBuilder
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.model.SnowballRException.EmailException
 import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
@@ -47,32 +46,15 @@ interface IEmailService {
  *
  * @constructor Initializes the [EmailService] with the environment reader to access SMTP settings.
  * @param envReader The environment reader that provides access to SMTP configuration settings.
+ * @param mailer The mailer that is used to send emails.
  */
 class EmailService(
     private val envReader: EnvReader,
+    private val mailer: Mailer,
 ) : IEmailService {
-    private val mailer: Mailer
     private val compiledTemplates: Map<EmailTemplate, Template>
 
     init {
-        val env = envReader.env
-
-        logger.info { "Initializing Mailer for email service" }
-
-        // Enable debug logging if the log level is DEBUG or TRACE
-        val isDebugLogging = env.miscellaneous.logLevel == "DEBUG" || env.miscellaneous.logLevel == "TRACE"
-
-        mailer = MailerBuilder
-            .withSMTPServer(env.smtp.smtpHost, env.smtp.smtpPort)
-            .withTransportModeLoggingOnly(env.smtp.smtpTransportLoggingOnlyEnabled)
-            .withDebugLogging(isDebugLogging)
-            .apply {
-                env.smtp.smtpUser?.let { withSMTPServerUsername(it) }
-                env.smtp.smtpPassword?.let { withSMTPServerPassword(it) }
-            }
-            .async()
-            .buildMailer()
-
         val handlebars = Handlebars(ClassPathTemplateLoader("/templates", ".hbs"))
 
         // Compile all email templates at startup to ensure they are ready for use

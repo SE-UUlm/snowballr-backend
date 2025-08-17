@@ -5,6 +5,8 @@ import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.createdAtStart
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
+import org.simplejavamail.api.mailer.Mailer
+import org.simplejavamail.mailer.MailerBuilder
 import se.uulm.snowballr.backend.auth.CookieService
 import se.uulm.snowballr.backend.auth.ICookieService
 import se.uulm.snowballr.backend.auth.IJwtService
@@ -84,6 +86,30 @@ val snowballRModule =
     }
 
 /**
+ * Module declaration of the [Mailer] used for sending emails.
+ */
+private fun mailerModule(): Module = module {
+    single<Mailer> {
+        val envReader: EnvReader = get()
+        val env = envReader.env
+
+        // Enable debug logging if the log level is DEBUG or TRACE
+        val isDebugLogging = env.miscellaneous.logLevel == "DEBUG" || env.miscellaneous.logLevel == "TRACE"
+
+        MailerBuilder
+            .withSMTPServer(env.smtp.smtpHost, env.smtp.smtpPort)
+            .withTransportModeLoggingOnly(env.smtp.smtpTransportLoggingOnlyEnabled)
+            .withDebugLogging(isDebugLogging)
+            .apply {
+                env.smtp.smtpUser?.let { withSMTPServerUsername(it) }
+                env.smtp.smtpPassword?.let { withSMTPServerPassword(it) }
+            }
+            .async()
+            .buildMailer()
+    }
+}
+
+/**
  * Module declaration of the [IEnvService] and [EnvReader].
  */
 private fun Module.envDeps() {
@@ -128,6 +154,8 @@ private fun Module.repositoryLayerDeps() {
  * Consists of all dependencies that are used by the core service layer.
  */
 private fun Module.customServicesDeps() {
+    includes(mailerModule())
+
     singleOf(::JwtService) {
         createdAtStart()
         bind<IJwtService>()

@@ -12,6 +12,7 @@ import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.dsl.module
 import org.koin.test.KoinTest
+import org.simplejavamail.api.mailer.Mailer
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.auth.IJwtService
 import se.uulm.snowballr.backend.env.EnvReader
@@ -98,6 +99,7 @@ open class MainServiceTest : KoinTest {
     val jwtServiceMock = mockk<IJwtService>()
     val emailServiceMock = mockk<IEmailService>()
     val fetcherManagerMock = mockk<FetcherManager>()
+    val mailerMock = mockk<Mailer>()
 
     val allMocks = arrayOf(
         projectRepoMock,
@@ -107,6 +109,7 @@ open class MainServiceTest : KoinTest {
         jwtServiceMock,
         emailServiceMock,
         fetcherManagerMock,
+        mailerMock,
         projectPaperRepoMock,
         authorOfPaperRepoMock,
         authorRepoMock,
@@ -145,6 +148,7 @@ open class MainServiceTest : KoinTest {
         single { jwtServiceMock }
         single { emailServiceMock }
         single { fetcherManagerMock }
+        single { mailerMock }
 
         // The base service layer is the same as in production
         serviceLayerDeps()
