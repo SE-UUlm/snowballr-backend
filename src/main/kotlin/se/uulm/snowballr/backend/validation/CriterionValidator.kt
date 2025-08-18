@@ -35,16 +35,13 @@ object CriterionValidator {
                 }
             },
             {
-                ensureFieldNonBlank(FIELD_TAG, request.tag)
-                ensureFieldLength(FIELD_TAG, request.tag, CRITERION_TAG_MAX_LENGTH)
+                ensureTextFieldValidity(FIELD_TAG, request.tag, CRITERION_TAG_MAX_LENGTH)
             },
             {
-                ensureFieldNonBlank(FIELD_NAME, request.name)
-                ensureFieldLength(FIELD_NAME, request.name, CRITERION_NAME_MAX_LENGTH)
+                ensureTextFieldValidity(FIELD_NAME, request.name, CRITERION_NAME_MAX_LENGTH)
             },
             {
-                ensureFieldNonBlank(FIELD_DESCRIPTION, request.description)
-                ensureFieldLength(FIELD_DESCRIPTION, request.description, CRITERION_DESCRIPTION_MAX_LENGTH)
+                ensureTextFieldValidity(FIELD_DESCRIPTION, request.description, CRITERION_DESCRIPTION_MAX_LENGTH)
             },
             {
                 ensureEnumNotUnspecified(FIELD_CATEGORY, request.category)
@@ -68,20 +65,17 @@ object CriterionValidator {
             { ensureIdValidity(FIELD_ID, request.criterion.id) },
             {
                 if (MASK_TAG in selectedFields) {
-                    ensureFieldNonBlank(FIELD_TAG, request.criterion.tag)
-                    ensureFieldLength(FIELD_TAG, request.criterion.tag, CRITERION_TAG_MAX_LENGTH)
+                    ensureTextFieldValidity(FIELD_TAG, request.criterion.tag, CRITERION_TAG_MAX_LENGTH)
                 }
             },
             {
                 if (MASK_NAME in selectedFields) {
-                    ensureFieldNonBlank(FIELD_NAME, request.criterion.name)
-                    ensureFieldLength(FIELD_NAME, request.criterion.name, CRITERION_NAME_MAX_LENGTH)
+                    ensureTextFieldValidity(FIELD_NAME, request.criterion.name, CRITERION_NAME_MAX_LENGTH)
                 }
             },
             {
                 if (MASK_DESCRIPTION in selectedFields) {
-                    ensureFieldNonBlank(FIELD_DESCRIPTION, request.criterion.description)
-                    ensureFieldLength(
+                    ensureTextFieldValidity(
                         FIELD_DESCRIPTION,
                         request.criterion.description,
                         CRITERION_DESCRIPTION_MAX_LENGTH,

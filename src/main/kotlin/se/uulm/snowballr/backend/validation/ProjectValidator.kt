@@ -66,10 +66,8 @@ object ProjectValidator {
      *
      * @param name The project name to validate.
      */
-    fun Raise<ValidationIssue>.ensureProjectNameValidity(name: String) {
-        ensureFieldNonBlank("name", name)
-        ensureFieldLength("name", name, PROJECT_NAME_MAX_LENGTH)
-    }
+    fun Raise<ValidationIssue>.ensureProjectNameValidity(name: String) =
+        ensureTextFieldValidity("name", name, PROJECT_NAME_MAX_LENGTH)
 
     fun Raise<ValidationIssue>.ensureSimilarityThresholdValidity(threshold: Float) {
         ensure(threshold in 0.0f..1.0f) {

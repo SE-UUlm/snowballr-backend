@@ -39,6 +39,22 @@ fun Raise<ValidationIssue>.ensureFieldLength(name: String, value: String, maxLen
     ensure(value.length <= maxLength) { TooLongField(name, maxLength) }
 
 /**
+ * Ensures that the given text field value is valid.
+ *
+ * Validity is defined as follows:
+ * - The field value must not be blank.
+ * - The field value must not exceed the specified maximum length.
+ *
+ * @param name The name of the field being validated.
+ * @param value The value of the field to check for validity.
+ * @param maxLength The maximum allowed length for the field value.
+ */
+fun Raise<ValidationIssue>.ensureTextFieldValidity(name: String, value: String, maxLength: Int) {
+    ensureFieldNonBlank(name, value)
+    ensureFieldLength(name, value, maxLength)
+}
+
+/**
  * Ensures that the provided enum value is not the `UNSPECIFIED` value.
  * If the value is `UNSPECIFIED`, an [EnumUnspecified] validation issue is raised.
  *
@@ -83,10 +99,8 @@ fun Raise<ValidationIssue>.ensureStageValidity(stage: Long) =
  *
  * @param firstName The first name to validate.
  */
-fun Raise<ValidationIssue>.ensureFirstNameValidity(firstName: String) {
-    ensureFieldNonBlank("first_name", firstName)
-    ensureFieldLength("first_name", firstName, FIRST_NAME_MAX_LENGTH)
-}
+fun Raise<ValidationIssue>.ensureFirstNameValidity(firstName: String) =
+    ensureTextFieldValidity("first_name", firstName, FIRST_NAME_MAX_LENGTH)
 
 /**
  * Ensures that the provided last name is valid.
@@ -94,10 +108,8 @@ fun Raise<ValidationIssue>.ensureFirstNameValidity(firstName: String) {
  *
  * @param lastName The last name to validate.
  */
-fun Raise<ValidationIssue>.ensureLastNameValidity(lastName: String) {
-    ensureFieldNonBlank("last_name", lastName)
-    ensureFieldLength("last_name", lastName, LAST_NAME_MAX_LENGTH)
-}
+fun Raise<ValidationIssue>.ensureLastNameValidity(lastName: String) =
+    ensureTextFieldValidity("last_name", lastName, LAST_NAME_MAX_LENGTH)
 
 /**
  * Ensures that the provided field mask contains only valid fields for the given object type and
