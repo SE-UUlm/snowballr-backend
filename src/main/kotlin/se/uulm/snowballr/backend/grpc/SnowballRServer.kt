@@ -180,7 +180,7 @@ class SnowballRServer(
         ): Authentication.AuthenticationStatusResponse = Authentication.AuthenticationStatusResponse.newBuilder()
             .setAuthenticationStatus(GrpcContext.getAuthenticationStatusFromContext()).build()
 
-        override suspend fun renewSession(request: Base.Nothing): Base.Nothing = super.renewSession(request)
+        override suspend fun renewSession(request: Base.Nothing): Base.Nothing = Base.Nothing.getDefaultInstance()
 
         override suspend fun requestPasswordReset(request: Authentication.RequestPasswordResetRequest): Base.Nothing =
             super.requestPasswordReset(request)
