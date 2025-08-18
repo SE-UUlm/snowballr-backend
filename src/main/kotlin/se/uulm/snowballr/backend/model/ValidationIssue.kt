@@ -147,3 +147,13 @@ data class InvalidFieldMask(val fieldMask: String?) : ValidationIssue {
             "corresponds to a field that cannot be changed."
     }
 }
+
+/**
+ * Represents a validation issue where a list field exceeds its maximum allowed length.
+ *
+ * @property name The name of the list field that exceeded the maximum length.
+ * @property maxLength The maximum allowed length for the list field.
+ */
+data class TooLongList(val name: String, val maxLength: Int) : ValidationIssue {
+    override fun toString(): String = "The list '$name' must not contain more than $maxLength elements."
+}

@@ -9,6 +9,7 @@ import se.uulm.snowballr.backend.model.ValidationIssue
 import snowballr.Authentication
 import snowballr.Base
 import snowballr.CriterionOuterClass
+import snowballr.PaperOuterClass.Paper
 import snowballr.ProjectOuterClass
 import snowballr.UserOuterClass
 
@@ -57,6 +58,8 @@ fun <T> validateRequest(request: T): EitherNel<ValidationIssue, Unit> = when (re
     is Base.Id -> BaseValidator.validateId(request)
     is Base.Email -> BaseValidator.validateEmail(request)
     is Base.Nothing -> Either.Right(Unit)
+    // Paper
+    is Paper.Update -> PaperValidator.validateUpdateRequest(request)
     else -> Either.Left(nonEmptyListOf(UnknownRequest))
 }
 
