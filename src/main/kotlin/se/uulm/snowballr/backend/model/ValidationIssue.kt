@@ -88,11 +88,11 @@ data class InvalidId(
     override fun toString(): String = "The ID '$id' is invalid for the field '$name'."
 }
 
-data class OutOfRangeValue(
+data class OutOfRangeValue<T : Comparable<T>>(
     val name: String,
-    val value: Number,
-    val from: Number,
-    val to: Number,
+    val value: T,
+    val from: T,
+    val to: T,
 ) : ValidationIssue {
     override fun toString(): String =
         "The value '$value' is not in the allowed range [$from-$to] for the field '$name'."

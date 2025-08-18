@@ -124,3 +124,20 @@ fun Raise<ValidationIssue>.ensureFieldMaskIsValid(fieldMask: FieldMask, descript
         InvalidFieldMask(fieldMask.toString())
     }
 }
+
+/**
+ * Ensures that the given number field is within the specified range.
+ *
+ * If the value is outside the range, an [OutOfRangeValue] validation issue is raised.
+ *
+ * @param T The type of the number field. Must be a subtype of [Comparable].
+ * @param name The name of the field being validated.
+ * @param value The value of the field to check for validity.
+ * @param min The minimum allowed value for the field.
+ * @param max The maximum allowed value for the field.
+ */
+fun <T : Comparable<T>> Raise<ValidationIssue>.ensureNumberFieldInRange(name: String, value: T, min: T, max: T) {
+    ensure(value in min..max) {
+        OutOfRangeValue(name, value, min, max)
+    }
+}

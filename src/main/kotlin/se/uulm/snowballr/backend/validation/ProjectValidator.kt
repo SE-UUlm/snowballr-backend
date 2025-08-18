@@ -4,9 +4,7 @@ import arrow.core.Either
 import arrow.core.EitherNel
 import arrow.core.raise.Raise
 import arrow.core.raise.either
-import arrow.core.raise.ensure
 import arrow.core.raise.zipOrAccumulate
-import se.uulm.snowballr.backend.model.OutOfRangeValue
 import se.uulm.snowballr.backend.model.ValidationIssue
 import snowballr.ProjectOuterClass.Project
 import snowballr.ProjectOuterClass.Project.Create
@@ -16,6 +14,8 @@ import snowballr.ProjectOuterClass.Project.Create
  */
 object ProjectValidator {
     const val PROJECT_NAME_MAX_LENGTH = 100
+    const val PROJECT_SIMILARITY_THRESHOLD_MIN_VALUE = 0.0f
+    const val PROJECT_SIMILARITY_THRESHOLD_MAX_VALUE = 1.0f
 
     fun validateCreateRequest(request: Create): EitherNel<ValidationIssue, Unit> = either {
         ensureProjectNameValidity(request.name)
@@ -54,7 +54,12 @@ object ProjectValidator {
             },
             {
                 if ("project.settings.similarity_threshold" in selectedFields) {
-                    ensureSimilarityThresholdValidity(request.project.settings.similarityThreshold)
+                    ensureNumberFieldInRange(
+                        "similarity_threshold",
+                        request.project.settings.similarityThreshold,
+                        PROJECT_SIMILARITY_THRESHOLD_MIN_VALUE,
+                        PROJECT_SIMILARITY_THRESHOLD_MAX_VALUE,
+                    )
                 }
             },
         ) { _, _, _, _, _ -> }
@@ -68,10 +73,4 @@ object ProjectValidator {
      */
     fun Raise<ValidationIssue>.ensureProjectNameValidity(name: String) =
         ensureTextFieldValidity("name", name, PROJECT_NAME_MAX_LENGTH)
-
-    fun Raise<ValidationIssue>.ensureSimilarityThresholdValidity(threshold: Float) {
-        ensure(threshold in 0.0f..1.0f) {
-            OutOfRangeValue("similarity_threshold", threshold, 0.0f, 1.0f)
-        }
-    }
 }

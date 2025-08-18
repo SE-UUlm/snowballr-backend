@@ -216,7 +216,7 @@ class ProjectValidatorTest {
                 .build()
             val result = validateRequest(request)
 
-            assertInvalidResult<OutOfRangeValue>(result)
+            assertInvalidResult<OutOfRangeValue<Float>>(result)
         }
 
         @Test
@@ -229,7 +229,7 @@ class ProjectValidatorTest {
                 .build()
             val result = validateRequest(request)
 
-            assertInvalidResult<OutOfRangeValue>(result)
+            assertInvalidResult<OutOfRangeValue<Float>>(result)
         }
 
         @Test
