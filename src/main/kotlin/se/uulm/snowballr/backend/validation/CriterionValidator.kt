@@ -11,9 +11,9 @@ import snowballr.CriterionOuterClass.Criterion
  * A validator for [Criterion] related requests.
  */
 object CriterionValidator {
-    const val CRITERION_TAG_MAX_LENGTH = 10
-    const val CRITERION_NAME_MAX_LENGTH = 50
-    const val CRITERION_DESCRIPTION_MAX_LENGTH = 200
+    const val TAG_MAX_LENGTH = 10
+    const val NAME_MAX_LENGTH = 50
+    const val DESCRIPTION_MAX_LENGTH = 200
 
     private const val FIELD_TAG = "tag"
     private const val FIELD_NAME = "name"
@@ -35,13 +35,13 @@ object CriterionValidator {
                 }
             },
             {
-                ensureTextFieldValidity(FIELD_TAG, request.tag, CRITERION_TAG_MAX_LENGTH)
+                ensureTextFieldValidity(FIELD_TAG, request.tag, TAG_MAX_LENGTH)
             },
             {
-                ensureTextFieldValidity(FIELD_NAME, request.name, CRITERION_NAME_MAX_LENGTH)
+                ensureTextFieldValidity(FIELD_NAME, request.name, NAME_MAX_LENGTH)
             },
             {
-                ensureTextFieldValidity(FIELD_DESCRIPTION, request.description, CRITERION_DESCRIPTION_MAX_LENGTH)
+                ensureTextFieldValidity(FIELD_DESCRIPTION, request.description, DESCRIPTION_MAX_LENGTH)
             },
             {
                 ensureEnumNotUnspecified(FIELD_CATEGORY, request.category)
@@ -61,30 +61,27 @@ object CriterionValidator {
 
         val selectedFields = request.mask.pathsList.toSet()
 
+        val criterion = request.criterion
         zipOrAccumulate(
-            { ensureIdValidity(FIELD_ID, request.criterion.id) },
+            { ensureIdValidity(FIELD_ID, criterion.id) },
             {
                 if (MASK_TAG in selectedFields) {
-                    ensureTextFieldValidity(FIELD_TAG, request.criterion.tag, CRITERION_TAG_MAX_LENGTH)
+                    ensureTextFieldValidity(FIELD_TAG, criterion.tag, TAG_MAX_LENGTH)
                 }
             },
             {
                 if (MASK_NAME in selectedFields) {
-                    ensureTextFieldValidity(FIELD_NAME, request.criterion.name, CRITERION_NAME_MAX_LENGTH)
+                    ensureTextFieldValidity(FIELD_NAME, criterion.name, NAME_MAX_LENGTH)
                 }
             },
             {
                 if (MASK_DESCRIPTION in selectedFields) {
-                    ensureTextFieldValidity(
-                        FIELD_DESCRIPTION,
-                        request.criterion.description,
-                        CRITERION_DESCRIPTION_MAX_LENGTH,
-                    )
+                    ensureTextFieldValidity(FIELD_DESCRIPTION, criterion.description, DESCRIPTION_MAX_LENGTH)
                 }
             },
             {
                 if (MASK_CATEGORY in selectedFields) {
-                    ensureEnumNotUnspecified(FIELD_CATEGORY, request.criterion.category)
+                    ensureEnumNotUnspecified(FIELD_CATEGORY, criterion.category)
                 }
             },
         ) { _, _, _, _, _ -> }

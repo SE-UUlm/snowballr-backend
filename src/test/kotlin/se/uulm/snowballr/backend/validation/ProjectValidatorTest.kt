@@ -11,7 +11,7 @@ import se.uulm.snowballr.backend.model.InvalidFieldMask
 import se.uulm.snowballr.backend.model.InvalidId
 import se.uulm.snowballr.backend.model.OutOfRangeValue
 import se.uulm.snowballr.backend.model.TooLongField
-import se.uulm.snowballr.backend.validation.ProjectValidator.PROJECT_NAME_MAX_LENGTH
+import se.uulm.snowballr.backend.validation.ProjectValidator.NAME_MAX_LENGTH
 import snowballr.ProjectOuterClass.Project
 import snowballr.ProjectOuterClass.Project.Create
 import snowballr.ProjectOuterClass.Project.Update
@@ -50,7 +50,7 @@ class ProjectValidatorTest {
         fun `When a too long name is validated, then the 'TooLongField' issue is returned`() {
             val request =
                 validCreateRequestBuilder
-                    .setName("a".repeat(PROJECT_NAME_MAX_LENGTH + 1))
+                    .setName("a".repeat(NAME_MAX_LENGTH + 1))
                     .build()
             val result = validateRequest(request)
 
