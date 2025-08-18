@@ -7,26 +7,26 @@ import arrow.core.raise.zipOrAccumulate
 import se.uulm.snowballr.backend.model.ValidationIssue
 import snowballr.CriterionOuterClass.Criterion
 
-const val CRITERION_TAG_MAX_LENGTH = 10
-const val CRITERION_NAME_MAX_LENGTH = 50
-const val CRITERION_DESCRIPTION_MAX_LENGTH = 200
-
-private const val FIELD_TAG = "tag"
-private const val FIELD_NAME = "name"
-private const val FIELD_DESCRIPTION = "description"
-private const val FIELD_CATEGORY = "category"
-private const val FIELD_PROJECT_ID = "project_id"
-private const val FIELD_ID = "id"
-
-private const val MASK_TAG = "criterion.tag"
-private const val MASK_NAME = "criterion.name"
-private const val MASK_DESCRIPTION = "criterion.description"
-private const val MASK_CATEGORY = "criterion.category"
-
 /**
  * A validator for [Criterion] related requests.
  */
 object CriterionValidator {
+    const val CRITERION_TAG_MAX_LENGTH = 10
+    const val CRITERION_NAME_MAX_LENGTH = 50
+    const val CRITERION_DESCRIPTION_MAX_LENGTH = 200
+
+    private const val FIELD_TAG = "tag"
+    private const val FIELD_NAME = "name"
+    private const val FIELD_DESCRIPTION = "description"
+    private const val FIELD_CATEGORY = "category"
+    private const val FIELD_PROJECT_ID = "project_id"
+    private const val FIELD_ID = "id"
+
+    private const val MASK_TAG = "criterion.tag"
+    private const val MASK_NAME = "criterion.name"
+    private const val MASK_DESCRIPTION = "criterion.description"
+    private const val MASK_CATEGORY = "criterion.category"
+
     fun validateCreateRequest(request: Criterion.Create): EitherNel<ValidationIssue, Unit> = either {
         zipOrAccumulate(
             {

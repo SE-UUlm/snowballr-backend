@@ -13,6 +13,9 @@ import se.uulm.snowballr.backend.model.EnumUnspecified
 import se.uulm.snowballr.backend.model.InvalidFieldMask
 import se.uulm.snowballr.backend.model.InvalidId
 import se.uulm.snowballr.backend.model.TooLongField
+import se.uulm.snowballr.backend.validation.CriterionValidator.CRITERION_DESCRIPTION_MAX_LENGTH
+import se.uulm.snowballr.backend.validation.CriterionValidator.CRITERION_NAME_MAX_LENGTH
+import se.uulm.snowballr.backend.validation.CriterionValidator.CRITERION_TAG_MAX_LENGTH
 import snowballr.CriterionOuterClass.Criterion
 import snowballr.CriterionOuterClass.Criterion.Create
 import snowballr.CriterionOuterClass.Criterion.Update

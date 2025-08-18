@@ -12,6 +12,11 @@ import snowballr.Authentication
  * A validator for [Authentication] related requests.
  */
 object AuthenticationValidator {
+    const val PASSWORD_MIN_NUMBER_LOWERCASE_LETTERS = 2
+    const val PASSWORD_MIN_NUMBER_UPPERCASE_LETTERS = 2
+    const val PASSWORD_MIN_NUMBER_DIGITS = 2
+    const val PASSWORD_MIN_NUMBER_SPECIAL_CHARS = 2
+    const val PASSWORD_MIN_LENGTH = 8
     private val SPECIAL_CHAR_REGEX = Regex("[" + Regex.escape("#$%&@^`~.,:;\"'/|_-<>*+!?={[()]}ß") + "]")
 
     fun validateRegisterRequest(request: Authentication.RegisterRequest): EitherNel<ValidationIssue, Unit> = either {

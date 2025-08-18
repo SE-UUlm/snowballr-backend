@@ -1,10 +1,10 @@
 package se.uulm.snowballr.backend.model
 
-import se.uulm.snowballr.backend.validation.PASSWORD_MIN_LENGTH
-import se.uulm.snowballr.backend.validation.PASSWORD_MIN_NUMBER_DIGITS
-import se.uulm.snowballr.backend.validation.PASSWORD_MIN_NUMBER_LOWERCASE_LETTERS
-import se.uulm.snowballr.backend.validation.PASSWORD_MIN_NUMBER_SPECIAL_CHARS
-import se.uulm.snowballr.backend.validation.PASSWORD_MIN_NUMBER_UPPERCASE_LETTERS
+import se.uulm.snowballr.backend.validation.AuthenticationValidator.PASSWORD_MIN_LENGTH
+import se.uulm.snowballr.backend.validation.AuthenticationValidator.PASSWORD_MIN_NUMBER_DIGITS
+import se.uulm.snowballr.backend.validation.AuthenticationValidator.PASSWORD_MIN_NUMBER_LOWERCASE_LETTERS
+import se.uulm.snowballr.backend.validation.AuthenticationValidator.PASSWORD_MIN_NUMBER_SPECIAL_CHARS
+import se.uulm.snowballr.backend.validation.AuthenticationValidator.PASSWORD_MIN_NUMBER_UPPERCASE_LETTERS
 
 /**
  * Represents a validation issue that can occur during the validation process.
