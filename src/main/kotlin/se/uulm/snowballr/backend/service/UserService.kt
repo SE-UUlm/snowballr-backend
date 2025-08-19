@@ -193,7 +193,6 @@ class UserService(
             user.email,
             EmailData.EmailVerification(
                 user.firstName,
-                user.lastName,
                 verificationLink,
             ),
         )

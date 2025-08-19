@@ -92,7 +92,7 @@ class EmailManagerTest {
 
             val verificationToken = "this-is-a-test-token-123"
             val expectedVerificationLink = emailManager.createVerificationLink(verificationToken)
-            val emailData = EmailData.EmailVerification("John", "Doe", expectedVerificationLink)
+            val emailData = EmailData.EmailVerification("John", expectedVerificationLink)
 
             emailManager.sendVerificationEmail(recipientEmail, emailData)
 
@@ -120,7 +120,7 @@ class EmailManagerTest {
             val emailTemplateManager = EmailTemplateManager()
             val emailManager = EmailManager(envReaderMock, mailerMock, emailTemplateManager)
 
-            val emailData = EmailData.EmailVerification("John", "Doe", "any-link")
+            val emailData = EmailData.EmailVerification("John", "any-link")
             val mailerException = TestMailException("Mailer failed to send email")
 
             every { mailerMock.sendMail(any()) } throws mailerException
@@ -137,7 +137,7 @@ class EmailManagerTest {
         fun `When template is not pre-compiled, then FailedPreconditionException is thrown`() {
             val emailManager = EmailManager(envReaderMock, mailerMock, emailTemplateManagerMock)
 
-            val emailData = EmailData.EmailVerification("John", "Doe", "any-link")
+            val emailData = EmailData.EmailVerification("John", "any-link")
 
             every { emailTemplateManagerMock.getTemplate(any()) } throws
                 SnowballRException.FailedPreconditionException("Template not pre-compiled")
