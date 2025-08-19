@@ -203,5 +203,15 @@ class EmailManagerTest {
 
             assertThat(actualLink).isEqualTo(expectedLink)
         }
+
+        @Test
+        fun `When given a token, then the correct accept project invitation link is created`() {
+            val acceptProjectInvitationToken = "random-test-token"
+            val expectedLink = "$testFrontendUrl/acceptprojectinvitation?token=$acceptProjectInvitationToken"
+
+            val actualLink = emailManager.createAcceptProjectInvitationLink(acceptProjectInvitationToken)
+
+            assertEquals(expectedLink, actualLink)
+        }
     }
 }
