@@ -6,6 +6,7 @@ import org.jetbrains.exposed.sql.insertAndGetId
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.table.CriterionTable
+import se.uulm.snowballr.backend.table.InvitationTokenTable
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.ReviewTable
@@ -184,6 +185,16 @@ object RepositoryHelper {
         ReviewHasCriterionTable.insert {
             it[ReviewHasCriterionTable.reviewId] = reviewId
             it[ReviewHasCriterionTable.criterionId] = criterionId
+        }
+    }
+
+    suspend fun insertTestToken(email: String, projectId: UUID, token: String = "secure-random-invitation-token-123") {
+        db.query {
+            InvitationTokenTable.insert {
+                it[InvitationTokenTable.email] = email
+                it[InvitationTokenTable.projectId] = projectId
+                it[InvitationTokenTable.token] = token
+            }
         }
     }
 }
