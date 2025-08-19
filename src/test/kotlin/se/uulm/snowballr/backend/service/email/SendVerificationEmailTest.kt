@@ -26,6 +26,18 @@ import se.uulm.snowballr.backend.model.email.EmailTemplate
 import se.uulm.snowballr.backend.service.EmailService
 
 class SendVerificationEmailTest {
+    private val testSenderName = "SnowballR Test"
+    private val testSenderEmail = "noreply@snowballr.test"
+    private val testFrontendUrl = "https://frontend.test"
+    private val recipientEmail = "test.user@example.com"
+
+    private val envReaderMock = mockk<EnvReader>()
+    private val mailerMock = mockk<Mailer>()
+    private val emailTemplateManagerMock = mockk<EmailTemplateManager>()
+
+    // Helper class to throw a custom exception from within the mailer.
+    private class TestMailException(message: String, cause: Throwable? = null) : MailException(message, cause)
+
     companion object {
         @JvmField
         @RegisterExtension
@@ -33,16 +45,6 @@ class SendVerificationEmailTest {
             .withConfiguration(GreenMailConfiguration.aConfig().withUser("user", "pass"))
             .withPerMethodLifecycle(true)
     }
-
-    // Helper class to throw a custom exception from within the mailer.
-    private class TestMailException(message: String, cause: Throwable? = null) : MailException(message, cause)
-
-    private val envReaderMock = mockk<EnvReader>()
-    private val testSenderName = "SnowballR Test"
-    private val testSenderEmail = "noreply@snowballr.test"
-    private val testFrontendUrl = "https://frontend.test"
-
-    private val emailTemplateManagerMock = mockk<EmailTemplateManager>()
 
     @BeforeEach
     fun setUp() {
@@ -73,14 +75,9 @@ class SendVerificationEmailTest {
 
         val emailService = EmailService(envReaderMock, mailer, emailTemplateManager)
 
-        val recipientEmail = "test.user@example.com"
         val verificationToken = "this-is-a-test-token-123"
         val expectedVerificationLink = emailService.createVerificationLink(verificationToken)
-        val emailData = EmailData.EmailVerification(
-            firstName = "John",
-            lastName = "Doe",
-            verificationLink = expectedVerificationLink,
-        )
+        val emailData = EmailData.EmailVerification("John", "Doe", expectedVerificationLink)
 
         emailService.sendVerificationEmail(recipientEmail, emailData)
 
@@ -106,17 +103,10 @@ class SendVerificationEmailTest {
 
     @Test
     fun `When mailer fails to send, then MailSendFailed exception is thrown`() {
-        val mailerMock = mockk<Mailer>()
         val emailTemplateManager = EmailTemplateManager()
-
         val emailService = EmailService(envReaderMock, mailerMock, emailTemplateManager)
 
-        val recipientEmail = "test.user@example.com"
-        val emailData = EmailData.EmailVerification(
-            firstName = "John",
-            lastName = "Doe",
-            verificationLink = "any-link",
-        )
+        val emailData = EmailData.EmailVerification("John", "Doe", "any-link")
         val mailerException = TestMailException("Mailer failed to send email")
 
         every { mailerMock.sendMail(any()) } throws mailerException
@@ -131,23 +121,15 @@ class SendVerificationEmailTest {
 
     @Test
     fun `When template is not pre-compiled, then FailedPreconditionException is thrown`() {
-        val mailerMock = mockk<Mailer>()
         val emailService = EmailService(envReaderMock, mailerMock, emailTemplateManagerMock)
 
-        val recipientEmail = "test.user@example.com"
-        val emailData = EmailData.EmailVerification(
-            firstName = "John",
-            lastName = "Doe",
-            verificationLink = "any-link",
-        )
+        val emailData = EmailData.EmailVerification("John", "Doe", "any-link")
 
-        every { emailTemplateManagerMock.getTemplate(any()) } throws SnowballRException.FailedPreconditionException("Template not pre-compiled")
+        every { emailTemplateManagerMock.getTemplate(any()) } throws
+            SnowballRException.FailedPreconditionException("Template not pre-compiled")
 
         assertThrows<SnowballRException.FailedPreconditionException> {
-            emailService.sendVerificationEmail(
-                recipientEmail,
-                emailData,
-            )
+            emailService.sendVerificationEmail(recipientEmail, emailData)
         }
 
         verify(exactly = 0) { mailerMock.sendMail(any()) }
