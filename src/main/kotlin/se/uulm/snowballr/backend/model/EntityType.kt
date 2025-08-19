@@ -16,6 +16,7 @@ enum class EntityType(val singular: String, val plural: String) {
     AUTHOR("author", "authors"),
     REVIEW("review", "reviews"),
     VERIFICATION_TOKEN("verification token", "verification tokens"),
+    INVITATION_TOKEN("invitation token", "invitation tokens"),
     ;
 
     /**
