@@ -10,6 +10,7 @@ import io.mockk.verify
 import jakarta.mail.internet.MimeMessage
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -113,6 +114,45 @@ class EmailManagerTest {
             assertThat(subject).isEqualTo(EmailTemplate.EMAIL_VERIFICATION.subject)
             assertThat(body).contains("Hello John,")
             assertThat(body).contains("<a href=\"$expectedVerificationLink\">$expectedVerificationLink</a>")
+        }
+
+        @Test
+        fun `When sending a project invitation acceptance email, then the email is sent with the correct content and headers`() {
+            val serverSetup = greenMail.smtp.serverSetup
+            val mailer = MailerBuilder
+                .withSMTPServer(serverSetup.bindAddress, serverSetup.port)
+                .withTransportStrategy(TransportStrategy.SMTP)
+                .withProperty("mail.smtp.starttls.enable", "false")
+                .async()
+                .buildMailer()
+            val emailTemplateManager = EmailTemplateManager()
+
+            val emailManager = EmailManager(envReaderMock, mailer, emailTemplateManager)
+
+            val acceptProjectInvitationToken = "this-is-a-test-token-123"
+            val expectedAcceptanceLink = emailManager.createAcceptProjectInvitationLink(acceptProjectInvitationToken)
+            val emailData = EmailData.AcceptProjectInvitation("John", "Test Project", expectedAcceptanceLink)
+
+            emailManager.sendAcceptProjectInvitationEmail(recipientEmail, emailData)
+
+            greenMail.waitForIncomingEmail(1)
+            val receivedMessages: Array<MimeMessage> = greenMail.receivedMessages
+            assertThat(receivedMessages).hasSize(1)
+
+            val receivedMessage = receivedMessages[0]
+            val fromHeader = receivedMessage.from[0].toString()
+            val subject = receivedMessage.subject
+
+            @Suppress("NullableToStringCall")
+            val body = receivedMessage.content.toString()
+
+            assertEquals(recipientEmail, receivedMessage.allRecipients[0].toString())
+            assertThat(fromHeader).contains(testSenderName)
+            assertThat(fromHeader).contains(testSenderEmail)
+            assertEquals(EmailTemplate.ACCEPT_PROJECT_INVITATION.subject, subject)
+            assertThat(body).contains("Hello John,")
+            assertThat(body).contains("Test Project")
+            assertThat(body).contains("<a href=\"$expectedAcceptanceLink\">$expectedAcceptanceLink</a>")
         }
 
         @Test
