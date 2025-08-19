@@ -1,4 +1,4 @@
-package se.uulm.snowballr.backend.service.email
+package se.uulm.snowballr.backend.mail
 
 import io.mockk.every
 import io.mockk.mockk
@@ -8,9 +8,6 @@ import org.junit.jupiter.api.Test
 import org.simplejavamail.api.mailer.Mailer
 import se.uulm.snowballr.backend.env.Env
 import se.uulm.snowballr.backend.env.EnvReader
-import se.uulm.snowballr.backend.mail.EmailTemplateManager
-import se.uulm.snowballr.backend.service.EmailService
-import se.uulm.snowballr.backend.service.IEmailService
 
 class CreateVerificationLinkTest {
     private val envReaderMock = mockk<EnvReader>()

@@ -1,7 +1,7 @@
 package se.uulm.snowballr.backend.model
 
 import org.simplejavamail.MailException
-import se.uulm.snowballr.backend.service.EmailService
+import se.uulm.snowballr.backend.mail.EmailService
 import java.io.IOException
 
 /**

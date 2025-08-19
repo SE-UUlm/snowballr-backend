@@ -1,4 +1,4 @@
-package se.uulm.snowballr.backend.service.email
+package se.uulm.snowballr.backend.mail
 
 import com.icegreen.greenmail.configuration.GreenMailConfiguration
 import com.icegreen.greenmail.junit5.GreenMailExtension
@@ -8,8 +8,6 @@ import org.junit.jupiter.api.extension.RegisterExtension
 import org.simplejavamail.MailException
 import org.simplejavamail.api.mailer.Mailer
 import se.uulm.snowballr.backend.env.EnvReader
-import se.uulm.snowballr.backend.mail.EmailTemplateManager
-import se.uulm.snowballr.backend.service.EmailService
 
 /**
  * A base class for testing the [EmailService].

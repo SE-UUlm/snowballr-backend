@@ -47,11 +47,11 @@ import se.uulm.snowballr.backend.repository.association.ReviewHasCriterionTableR
 import se.uulm.snowballr.backend.repository.association.ReviewTableRepo
 import se.uulm.snowballr.backend.service.AuthenticationService
 import se.uulm.snowballr.backend.service.CriterionService
-import se.uulm.snowballr.backend.service.EmailService
+import se.uulm.snowballr.backend.mail.EmailService
 import se.uulm.snowballr.backend.service.FetcherService
 import se.uulm.snowballr.backend.service.IAuthenticationService
 import se.uulm.snowballr.backend.service.ICriterionService
-import se.uulm.snowballr.backend.service.IEmailService
+import se.uulm.snowballr.backend.mail.IEmailService
 import se.uulm.snowballr.backend.service.IFetcherService
 import se.uulm.snowballr.backend.service.IMainService
 import se.uulm.snowballr.backend.service.IProjectService

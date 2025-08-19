@@ -1,12 +1,11 @@
-package se.uulm.snowballr.backend.service
+package se.uulm.snowballr.backend.mail
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.simplejavamail.MailException
 import org.simplejavamail.api.mailer.Mailer
 import org.simplejavamail.email.EmailBuilder
 import se.uulm.snowballr.backend.env.EnvReader
-import se.uulm.snowballr.backend.mail.EmailTemplateManager
-import se.uulm.snowballr.backend.model.SnowballRException.EmailException
+import se.uulm.snowballr.backend.model.SnowballRException
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.email.EmailTemplate
 
@@ -36,7 +35,7 @@ interface IEmailService {
  * The [EmailService] class provides functionality to send emails using an SMTP mailer.
  *
  * This class implements the [IEmailService] and is responsible for:
- * - Initializing the underlying SMTP mailer with configuration values from [EnvReader].
+ * - Initializing the underlying SMTP mailer with configuration values from [se.uulm.snowballr.backend.env.EnvReader].
  * - Sending invitation emails to new users.
  * - Sending account verification emails to registered users.
  *
@@ -78,7 +77,7 @@ class EmailService(
             logger.info { "Successfully queued email for delivery to $to with template '${template.name}'" }
         } catch (e: MailException) {
             logger.error(e) { "Mailer failed to send email to $to with template '${template.name}'" }
-            throw EmailException.MailSendFailed(to, e)
+            throw SnowballRException.EmailException.MailSendFailed(to, e)
         }
     }
 

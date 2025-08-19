@@ -19,6 +19,7 @@ import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.env.IEnvService
 import se.uulm.snowballr.backend.fetcher.FetcherManager
 import se.uulm.snowballr.backend.mail.EmailTemplateManager
+import se.uulm.snowballr.backend.mail.IEmailService
 import se.uulm.snowballr.backend.repository.IAuthorTableRepo
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IPaperTableRepo

@@ -1,4 +1,4 @@
-package se.uulm.snowballr.backend.service.email
+package se.uulm.snowballr.backend.mail
 
 import io.mockk.every
 import io.mockk.mockk
@@ -11,12 +11,10 @@ import org.junit.jupiter.api.assertThrows
 import org.simplejavamail.api.mailer.config.TransportStrategy
 import org.simplejavamail.mailer.MailerBuilder
 import se.uulm.snowballr.backend.env.Env
-import se.uulm.snowballr.backend.mail.EmailTemplateManager
 import se.uulm.snowballr.backend.model.SnowballRException
 import se.uulm.snowballr.backend.model.SnowballRException.EmailException
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.email.EmailTemplate
-import se.uulm.snowballr.backend.service.EmailService
 
 class SendVerificationEmailTest : EmailServiceTest() {
     @BeforeEach
@@ -70,8 +68,7 @@ class SendVerificationEmailTest : EmailServiceTest() {
         assertThat(fromHeader).contains(testSenderEmail)
         assertThat(subject).isEqualTo(EmailTemplate.EMAIL_VERIFICATION.subject)
         assertThat(body).contains("Hello John,")
-        assertThat(body).contains("href=\"$expectedVerificationLink\"")
-        assertThat(body).contains(">$expectedVerificationLink</a>")
+        assertThat(body).contains("<a href=\"$expectedVerificationLink\">$expectedVerificationLink</a>")
     }
 
     @Test
