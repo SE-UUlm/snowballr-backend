@@ -1,13 +1,12 @@
 package se.uulm.snowballr.backend.service
 
-import com.github.jknack.handlebars.Template
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.simplejavamail.MailException
 import org.simplejavamail.api.mailer.Mailer
 import org.simplejavamail.email.EmailBuilder
 import se.uulm.snowballr.backend.env.EnvReader
+import se.uulm.snowballr.backend.mail.EmailTemplateManager
 import se.uulm.snowballr.backend.model.SnowballRException.EmailException
-import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.email.EmailTemplate
 
@@ -44,12 +43,12 @@ interface IEmailService {
  * @constructor Initializes the [EmailService] with the environment reader to access SMTP settings.
  * @param envReader The environment reader that provides access to SMTP configuration settings.
  * @param mailer The mailer that is used to send emails.
- * @param compiledTemplates A map of pre-compiled templates for each [EmailTemplate].
+ * @param emailTemplateManager The manager that provides access to pre-compiled email templates.
  */
 class EmailService(
     private val envReader: EnvReader,
     private val mailer: Mailer,
-    private val compiledTemplates: Map<EmailTemplate, Template>,
+    private val emailTemplateManager: EmailTemplateManager,
 ) : IEmailService {
     override fun sendVerificationEmail(to: String, data: EmailData.EmailVerification) {
         sendEmail(to, EmailTemplate.EMAIL_VERIFICATION, data)
@@ -64,9 +63,7 @@ class EmailService(
      */
     private fun sendEmail(to: String, template: EmailTemplate, data: EmailData) {
         try {
-            val compiledTemplate = compiledTemplates[template]
-                ?: throw FailedPreconditionException("Template ${template.name} was not pre-compiled.")
-
+            val compiledTemplate = emailTemplateManager.getTemplate(template)
             val htmlBody = compiledTemplate.apply(data)
 
             val email = EmailBuilder

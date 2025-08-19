@@ -1,8 +1,6 @@
 package se.uulm.snowballr.backend
 
-import com.github.jknack.handlebars.Handlebars
 import com.github.jknack.handlebars.Template
-import com.github.jknack.handlebars.io.ClassPathTemplateLoader
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.createdAtStart
@@ -20,8 +18,7 @@ import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.env.EnvService
 import se.uulm.snowballr.backend.env.IEnvService
 import se.uulm.snowballr.backend.fetcher.FetcherManager
-import se.uulm.snowballr.backend.model.SnowballRException
-import se.uulm.snowballr.backend.model.email.EmailTemplate
+import se.uulm.snowballr.backend.mail.EmailTemplateManager
 import se.uulm.snowballr.backend.repository.AuthorTableRepo
 import se.uulm.snowballr.backend.repository.CriterionTableRepo
 import se.uulm.snowballr.backend.repository.IAuthorTableRepo
@@ -66,7 +63,6 @@ import se.uulm.snowballr.backend.service.ProjectService
 import se.uulm.snowballr.backend.service.ReadingListService
 import se.uulm.snowballr.backend.service.ReviewService
 import se.uulm.snowballr.backend.service.UserService
-import java.io.IOException
 
 /**
  * Defines the Koin dependency injection module for the application.
@@ -138,7 +134,7 @@ private fun Module.repositoryLayerDeps() {
  */
 private fun Module.mailServiceDeps() {
     single<Mailer> { createMailer(get()) }
-    single<Map<EmailTemplate, Template>> { createEmailTemplates() }
+    singleOf(::EmailTemplateManager)
 }
 
 /**
@@ -160,21 +156,6 @@ fun createMailer(envReader: EnvReader): Mailer {
         }
         .async()
         .buildMailer()
-}
-
-/**
- * Compiles all email templates from the classpath.
- */
-fun createEmailTemplates(): Map<EmailTemplate, Template> {
-    val handlebars = Handlebars(ClassPathTemplateLoader("/templates", ".hbs"))
-
-    return EmailTemplate.entries.associateWith { template ->
-        try {
-            handlebars.compile(template.templateFileName)
-        } catch (e: IOException) {
-            throw SnowballRException.EmailException.TemplateCompilationFailed(template.templateFileName, e)
-        }
-    }
 }
 
 /**

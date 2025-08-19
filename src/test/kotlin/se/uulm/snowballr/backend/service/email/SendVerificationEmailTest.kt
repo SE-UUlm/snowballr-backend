@@ -1,8 +1,5 @@
 package se.uulm.snowballr.backend.service.email
 
-import com.github.jknack.handlebars.Handlebars
-import com.github.jknack.handlebars.Template
-import com.github.jknack.handlebars.io.ClassPathTemplateLoader
 import com.icegreen.greenmail.configuration.GreenMailConfiguration
 import com.icegreen.greenmail.junit5.GreenMailExtension
 import com.icegreen.greenmail.util.ServerSetupTest
@@ -21,12 +18,12 @@ import org.simplejavamail.api.mailer.config.TransportStrategy
 import org.simplejavamail.mailer.MailerBuilder
 import se.uulm.snowballr.backend.env.Env
 import se.uulm.snowballr.backend.env.EnvReader
+import se.uulm.snowballr.backend.mail.EmailTemplateManager
 import se.uulm.snowballr.backend.model.SnowballRException
 import se.uulm.snowballr.backend.model.SnowballRException.EmailException
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.email.EmailTemplate
 import se.uulm.snowballr.backend.service.EmailService
-import se.uulm.snowballr.backend.service.IEmailService
 
 class SendVerificationEmailTest {
     companion object {
@@ -45,6 +42,8 @@ class SendVerificationEmailTest {
     private val testSenderEmail = "noreply@snowballr.test"
     private val testFrontendUrl = "https://frontend.test"
 
+    private val emailTemplateManagerMock = mockk<EmailTemplateManager>()
+
     @BeforeEach
     fun setUp() {
         val miscellaneousMock = mockk<Env.Miscellaneous>()
@@ -61,27 +60,18 @@ class SendVerificationEmailTest {
         every { envReaderMock.env } returns envMock
     }
 
-    /**
-     * Helper function to create a real, compiled map of templates for tests.
-     */
-    private fun getRealCompiledTemplates(): Map<EmailTemplate, Template> {
-        val handlebars = Handlebars(ClassPathTemplateLoader("/templates", ".hbs"))
-        return EmailTemplate.entries.associateWith { template ->
-            handlebars.compile(template.templateFileName)
-        }
-    }
-
     @Test
     fun `When sending a verification email, then the email is sent with the correct content and headers`() {
         val serverSetup = greenMail.smtp.serverSetup
-        val mailer: Mailer = MailerBuilder
+        val mailer = MailerBuilder
             .withSMTPServer(serverSetup.bindAddress, serverSetup.port)
             .withTransportStrategy(TransportStrategy.SMTP)
             .withProperty("mail.smtp.starttls.enable", "false")
             .async()
             .buildMailer()
+        val emailTemplateManager = EmailTemplateManager()
 
-        val emailService: IEmailService = EmailService(envReaderMock, mailer, getRealCompiledTemplates())
+        val emailService = EmailService(envReaderMock, mailer, emailTemplateManager)
 
         val recipientEmail = "test.user@example.com"
         val verificationToken = "this-is-a-test-token-123"
@@ -117,7 +107,9 @@ class SendVerificationEmailTest {
     @Test
     fun `When mailer fails to send, then MailSendFailed exception is thrown`() {
         val mailerMock = mockk<Mailer>()
-        val emailService: IEmailService = EmailService(envReaderMock, mailerMock, getRealCompiledTemplates())
+        val emailTemplateManager = EmailTemplateManager()
+
+        val emailService = EmailService(envReaderMock, mailerMock, emailTemplateManager)
 
         val recipientEmail = "test.user@example.com"
         val emailData = EmailData.EmailVerification(
@@ -140,8 +132,7 @@ class SendVerificationEmailTest {
     @Test
     fun `When template is not pre-compiled, then FailedPreconditionException is thrown`() {
         val mailerMock = mockk<Mailer>()
-        val emptyTemplatesMap = emptyMap<EmailTemplate, Template>()
-        val emailService: IEmailService = EmailService(envReaderMock, mailerMock, emptyTemplatesMap)
+        val emailService = EmailService(envReaderMock, mailerMock, emailTemplateManagerMock)
 
         val recipientEmail = "test.user@example.com"
         val emailData = EmailData.EmailVerification(
@@ -149,6 +140,8 @@ class SendVerificationEmailTest {
             lastName = "Doe",
             verificationLink = "any-link",
         )
+
+        every { emailTemplateManagerMock.getTemplate(any()) } throws SnowballRException.FailedPreconditionException("Template not pre-compiled")
 
         assertThrows<SnowballRException.FailedPreconditionException> {
             emailService.sendVerificationEmail(
