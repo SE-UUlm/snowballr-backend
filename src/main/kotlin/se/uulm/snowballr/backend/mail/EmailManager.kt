@@ -21,6 +21,14 @@ interface IEmailManager {
     fun sendVerificationEmail(to: String, data: EmailData.EmailVerification)
 
     /**
+     * Sends an 'accept project invitation' email to the specified recipient.
+     *
+     * @param to The recipient's email address.
+     * @param data The data model containing the user's data.
+     */
+    fun sendAcceptProjectInvitationEmail(to: String, data: EmailData.AcceptProjectInvitation)
+
+    /**
      * Creates a verification link for email verification.
      *
      * This method generates a complete URL that includes the base URL of the frontend and appends the verification token as a query parameter.
@@ -51,6 +59,10 @@ class EmailManager(
 ) : IEmailManager {
     override fun sendVerificationEmail(to: String, data: EmailData.EmailVerification) {
         sendEmail(to, EmailTemplate.EMAIL_VERIFICATION, data)
+    }
+
+    override fun sendAcceptProjectInvitationEmail(to: String, data: EmailData.AcceptProjectInvitation) {
+        sendEmail(to, EmailTemplate.ACCEPT_PROJECT_INVITATION, data)
     }
 
     /**
