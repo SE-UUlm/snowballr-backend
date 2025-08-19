@@ -7,7 +7,7 @@ import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.auth.IJwtService
 import se.uulm.snowballr.backend.auth.PasswordUtils
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
-import se.uulm.snowballr.backend.mail.IEmailService
+import se.uulm.snowballr.backend.mail.IEmailManager
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.IdentifierType
@@ -118,7 +118,7 @@ private const val VERIFICATION_TOKEN_LENGTH = 48
  * @param criterionRepo The repository responsible for managing persistence operations for criteria.
  * @param verificationTokenRepo The repository responsible for managing persistence operations for verification tokens.
  * @param jwtService The utility for handling JWT operations, such as token parsing and validation.
- * @param emailService The service responsible for sending emails.
+ * @param emailManager The manager responsible for sending emails.
  */
 @Suppress("TooManyFunctions")
 class UserService(
@@ -127,7 +127,7 @@ class UserService(
     private val criterionRepo: ICriterionTableRepo,
     private val verificationTokenRepo: IVerificationTokenTableRepo,
     private val jwtService: IJwtService,
-    private val emailService: IEmailService,
+    private val emailManager: IEmailManager,
 ) : IUserService {
     companion object {
         const val MINIMUM_LENGTH_OF_SEARCH_QUERY = 3
@@ -250,8 +250,8 @@ class UserService(
         verificationTokenRepo.saveVerificationToken(user.id, verificationToken)
 
         // Send verification email
-        val verificationLink = emailService.createVerificationLink(verificationToken)
-        emailService.sendVerificationEmail(
+        val verificationLink = emailManager.createVerificationLink(verificationToken)
+        emailManager.sendVerificationEmail(
             user.email,
             EmailData.EmailVerification(
                 user.firstName,

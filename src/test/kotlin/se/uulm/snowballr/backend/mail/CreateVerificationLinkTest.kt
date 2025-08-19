@@ -13,7 +13,7 @@ class CreateVerificationLinkTest {
     private val envReaderMock = mockk<EnvReader>()
     private val mailerMock = mockk<Mailer>()
     private val emailTemplateManagerMock = mockk<EmailTemplateManager>()
-    private lateinit var emailService: IEmailService
+    private lateinit var emailManager: IEmailManager
 
     private val testFrontendUrl = "https://example.com"
 
@@ -27,7 +27,7 @@ class CreateVerificationLinkTest {
 
         every { envReaderMock.env } returns envMock
 
-        emailService = EmailService(envReaderMock, mailerMock, emailTemplateManagerMock)
+        emailManager = EmailManager(envReaderMock, mailerMock, emailTemplateManagerMock)
     }
 
     @Test
@@ -35,7 +35,7 @@ class CreateVerificationLinkTest {
         val verificationToken = "random-test-token"
         val expectedLink = "$testFrontendUrl/verifyemail?token=$verificationToken"
 
-        val actualLink = emailService.createVerificationLink(verificationToken)
+        val actualLink = emailManager.createVerificationLink(verificationToken)
 
         assertThat(actualLink).isEqualTo(expectedLink)
     }

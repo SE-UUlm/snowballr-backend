@@ -16,7 +16,7 @@ import se.uulm.snowballr.backend.model.SnowballRException.EmailException
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.email.EmailTemplate
 
-class SendVerificationEmailTest : EmailServiceTest() {
+class SendVerificationEmailTest : EmailManagerTest() {
     @BeforeEach
     fun setUp() {
         val miscellaneousMock = mockk<Env.Miscellaneous>()
@@ -44,13 +44,13 @@ class SendVerificationEmailTest : EmailServiceTest() {
             .buildMailer()
         val emailTemplateManager = EmailTemplateManager()
 
-        val emailService = EmailService(envReaderMock, mailer, emailTemplateManager)
+        val emailManager = EmailManager(envReaderMock, mailer, emailTemplateManager)
 
         val verificationToken = "this-is-a-test-token-123"
-        val expectedVerificationLink = emailService.createVerificationLink(verificationToken)
+        val expectedVerificationLink = emailManager.createVerificationLink(verificationToken)
         val emailData = EmailData.EmailVerification("John", "Doe", expectedVerificationLink)
 
-        emailService.sendVerificationEmail(recipientEmail, emailData)
+        emailManager.sendVerificationEmail(recipientEmail, emailData)
 
         greenMail.waitForIncomingEmail(1)
         val receivedMessages: Array<MimeMessage> = greenMail.receivedMessages
@@ -74,7 +74,7 @@ class SendVerificationEmailTest : EmailServiceTest() {
     @Test
     fun `When mailer fails to send, then MailSendFailed exception is thrown`() {
         val emailTemplateManager = EmailTemplateManager()
-        val emailService = EmailService(envReaderMock, mailerMock, emailTemplateManager)
+        val emailManager = EmailManager(envReaderMock, mailerMock, emailTemplateManager)
 
         val emailData = EmailData.EmailVerification("John", "Doe", "any-link")
         val mailerException = TestMailException("Mailer failed to send email")
@@ -82,7 +82,7 @@ class SendVerificationEmailTest : EmailServiceTest() {
         every { mailerMock.sendMail(any()) } throws mailerException
 
         val thrownException = assertThrows<EmailException.MailSendFailed> {
-            emailService.sendVerificationEmail(recipientEmail, emailData)
+            emailManager.sendVerificationEmail(recipientEmail, emailData)
         }
         assertThat(thrownException.cause).isEqualTo(mailerException)
 
@@ -91,7 +91,7 @@ class SendVerificationEmailTest : EmailServiceTest() {
 
     @Test
     fun `When template is not pre-compiled, then FailedPreconditionException is thrown`() {
-        val emailService = EmailService(envReaderMock, mailerMock, emailTemplateManagerMock)
+        val emailManager = EmailManager(envReaderMock, mailerMock, emailTemplateManagerMock)
 
         val emailData = EmailData.EmailVerification("John", "Doe", "any-link")
 
@@ -99,7 +99,7 @@ class SendVerificationEmailTest : EmailServiceTest() {
             SnowballRException.FailedPreconditionException("Template not pre-compiled")
 
         assertThrows<SnowballRException.FailedPreconditionException> {
-            emailService.sendVerificationEmail(recipientEmail, emailData)
+            emailManager.sendVerificationEmail(recipientEmail, emailData)
         }
 
         verify(exactly = 0) { mailerMock.sendMail(any()) }

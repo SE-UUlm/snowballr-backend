@@ -18,7 +18,9 @@ import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.env.EnvService
 import se.uulm.snowballr.backend.env.IEnvService
 import se.uulm.snowballr.backend.fetcher.FetcherManager
+import se.uulm.snowballr.backend.mail.EmailManager
 import se.uulm.snowballr.backend.mail.EmailTemplateManager
+import se.uulm.snowballr.backend.mail.IEmailManager
 import se.uulm.snowballr.backend.repository.AuthorTableRepo
 import se.uulm.snowballr.backend.repository.CriterionTableRepo
 import se.uulm.snowballr.backend.repository.IAuthorTableRepo
@@ -47,11 +49,9 @@ import se.uulm.snowballr.backend.repository.association.ReviewHasCriterionTableR
 import se.uulm.snowballr.backend.repository.association.ReviewTableRepo
 import se.uulm.snowballr.backend.service.AuthenticationService
 import se.uulm.snowballr.backend.service.CriterionService
-import se.uulm.snowballr.backend.mail.EmailService
 import se.uulm.snowballr.backend.service.FetcherService
 import se.uulm.snowballr.backend.service.IAuthenticationService
 import se.uulm.snowballr.backend.service.ICriterionService
-import se.uulm.snowballr.backend.mail.IEmailService
 import se.uulm.snowballr.backend.service.IFetcherService
 import se.uulm.snowballr.backend.service.IMainService
 import se.uulm.snowballr.backend.service.IProjectService
@@ -170,9 +170,9 @@ private fun Module.customServicesDeps() {
     }
     singleOf(::FetcherManager)
     singleOf(::CookieService) { bind<ICookieService>() }
-    singleOf(::EmailService) {
+    singleOf(::EmailManager) {
         createdAtStart()
-        bind<IEmailService>()
+        bind<IEmailManager>()
     }
     singleOf(::AuthenticationService) { bind<IAuthenticationService>() }
 }

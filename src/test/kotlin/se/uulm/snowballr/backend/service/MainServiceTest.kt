@@ -19,7 +19,7 @@ import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.env.IEnvService
 import se.uulm.snowballr.backend.fetcher.FetcherManager
 import se.uulm.snowballr.backend.mail.EmailTemplateManager
-import se.uulm.snowballr.backend.mail.IEmailService
+import se.uulm.snowballr.backend.mail.IEmailManager
 import se.uulm.snowballr.backend.repository.IAuthorTableRepo
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
@@ -99,7 +99,7 @@ open class MainServiceTest : KoinTest {
 
     // Custom services / manager / clients mocks
     val jwtServiceMock = mockk<IJwtService>()
-    val emailServiceMock = mockk<IEmailService>()
+    val emailManagerMock = mockk<IEmailManager>()
     val fetcherManagerMock = mockk<FetcherManager>()
     val mailerMock = mockk<Mailer>()
     val emailTemplateManagerMock = mockk<EmailTemplateManager>()
@@ -110,7 +110,7 @@ open class MainServiceTest : KoinTest {
         userRepoMock,
         projectMemberRepoMock,
         jwtServiceMock,
-        emailServiceMock,
+        emailManagerMock,
         fetcherManagerMock,
         mailerMock,
         emailTemplateManagerMock,
@@ -150,7 +150,7 @@ open class MainServiceTest : KoinTest {
 
         // Custom services / managers / clients
         single { jwtServiceMock }
-        single { emailServiceMock }
+        single { emailManagerMock }
         single { fetcherManagerMock }
         single { mailerMock }
         single { emailTemplateManagerMock }

@@ -11,7 +11,7 @@ import se.uulm.snowballr.backend.model.email.EmailTemplate
 
 private val logger = KotlinLogging.logger {}
 
-interface IEmailService {
+interface IEmailManager {
     /**
      * Sends a verification email to the specified recipient.
      *
@@ -32,23 +32,23 @@ interface IEmailService {
 }
 
 /**
- * The [EmailService] class provides functionality to send emails using an SMTP mailer.
+ * The [EmailManager] class provides functionality to send emails using an SMTP mailer.
  *
- * This class implements the [IEmailService] and is responsible for:
+ * This class implements the [IEmailManager] and is responsible for:
  * - Initializing the underlying SMTP mailer with configuration values from [se.uulm.snowballr.backend.env.EnvReader].
  * - Sending invitation emails to new users.
  * - Sending account verification emails to registered users.
  *
- * @constructor Initializes the [EmailService] with the environment reader to access SMTP settings.
+ * @constructor Initializes the [EmailManager] with the environment reader to access SMTP settings.
  * @param envReader The environment reader that provides access to SMTP configuration settings.
  * @param mailer The mailer that is used to send emails.
  * @param emailTemplateManager The manager that provides access to pre-compiled email templates.
  */
-class EmailService(
+class EmailManager(
     private val envReader: EnvReader,
     private val mailer: Mailer,
     private val emailTemplateManager: EmailTemplateManager,
-) : IEmailService {
+) : IEmailManager {
     override fun sendVerificationEmail(to: String, data: EmailData.EmailVerification) {
         sendEmail(to, EmailTemplate.EMAIL_VERIFICATION, data)
     }

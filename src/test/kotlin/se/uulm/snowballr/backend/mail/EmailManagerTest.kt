@@ -10,11 +10,11 @@ import org.simplejavamail.api.mailer.Mailer
 import se.uulm.snowballr.backend.env.EnvReader
 
 /**
- * A base class for testing the [EmailService].
+ * A base class for testing the [EmailManager].
  *
  * It provides the necessary mocks, [GreenMailExtension] setup, and common environment configuration.
  */
-open class EmailServiceTest {
+open class EmailManagerTest {
     protected val testSenderName = "SnowballR Test"
     protected val testSenderEmail = "noreply@snowballr.test"
     protected val testFrontendUrl = "https://frontend.test"
