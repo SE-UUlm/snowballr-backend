@@ -5,17 +5,10 @@ import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.simplejavamail.api.mailer.Mailer
 import se.uulm.snowballr.backend.env.Env
-import se.uulm.snowballr.backend.env.EnvReader
 
-class CreateVerificationLinkTest {
-    private val envReaderMock = mockk<EnvReader>()
-    private val mailerMock = mockk<Mailer>()
-    private val emailTemplateManagerMock = mockk<EmailTemplateManager>()
+class CreateVerificationLinkTest : EmailManagerTest() {
     private lateinit var emailManager: IEmailManager
-
-    private val testFrontendUrl = "https://example.com"
 
     @BeforeEach
     fun setUp() {
