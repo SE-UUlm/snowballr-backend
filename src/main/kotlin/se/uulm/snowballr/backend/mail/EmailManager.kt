@@ -37,6 +37,16 @@ interface IEmailManager {
      * @return A string representing the complete email verification link.
      */
     fun createVerificationLink(token: String): String
+
+    /**
+     * Creates a link for accepting a project invitation.
+     *
+     * This method generates a complete URL that includes the base URL of the frontend and appends the invitation token as a query parameter.
+     *
+     * @param token The invitation token to include in the link.
+     * @return A string representing the complete project invitation link.
+     */
+    fun createAcceptProjectInvitationLink(token: String): String
 }
 
 /**
@@ -95,4 +105,7 @@ class EmailManager(
 
     override fun createVerificationLink(token: String): String =
         "${envReader.env.miscellaneous.frontendBaseUrl}/verifyemail?token=$token"
+
+    override fun createAcceptProjectInvitationLink(token: String): String =
+        "${envReader.env.miscellaneous.frontendBaseUrl}/acceptprojectinvitation?token=$token"
 }
