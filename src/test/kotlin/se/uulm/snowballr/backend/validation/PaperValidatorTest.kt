@@ -1,0 +1,301 @@
+package se.uulm.snowballr.backend.validation
+
+import com.google.protobuf.FieldMask
+import com.google.protobuf.util.FieldMaskUtil
+import `in`.rcard.assertj.arrowcore.EitherAssert
+import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
+import se.uulm.snowballr.backend.DataBuilder.createValidOrcid
+import se.uulm.snowballr.backend.model.BlankField
+import se.uulm.snowballr.backend.model.InvalidFieldMask
+import se.uulm.snowballr.backend.model.InvalidId
+import se.uulm.snowballr.backend.model.OutOfRangeValue
+import se.uulm.snowballr.backend.model.TooLongField
+import se.uulm.snowballr.backend.model.TooLongList
+import se.uulm.snowballr.backend.validation.PaperValidator.ABSTRACT_MAX_LENGTH
+import se.uulm.snowballr.backend.validation.PaperValidator.EXTERNAL_ID_MAX_LENGTH
+import se.uulm.snowballr.backend.validation.PaperValidator.MAX_AUTHOR_COUNT
+import se.uulm.snowballr.backend.validation.PaperValidator.PUBLICATION_NAME_MAX_LENGTH
+import se.uulm.snowballr.backend.validation.PaperValidator.PUBLICATION_TYPE_MAX_LENGTH
+import se.uulm.snowballr.backend.validation.PaperValidator.PUBLISHER_MAX_LENGTH
+import se.uulm.snowballr.backend.validation.PaperValidator.TITLE_MAX_LENGTH
+import snowballr.PaperOuterClass
+import snowballr.PaperOuterClass.Paper
+import snowballr.author
+import java.time.LocalDate
+import java.util.UUID
+
+class PaperValidatorTest {
+    companion object {
+        private val textFields =
+            listOf(
+                Pair("external_id", EXTERNAL_ID_MAX_LENGTH),
+                Pair("title", TITLE_MAX_LENGTH),
+                Pair("abstrakt", ABSTRACT_MAX_LENGTH),
+                Pair("publisher", PUBLISHER_MAX_LENGTH),
+                Pair("publication_name", PUBLICATION_NAME_MAX_LENGTH),
+                Pair("publication_type", PUBLICATION_TYPE_MAX_LENGTH),
+            )
+
+        @JvmStatic
+        fun blankFieldTestProvider(): List<Arguments> {
+            val testName: (String, Boolean) -> String = { fieldName, isFieldInMask ->
+                if (isFieldInMask) {
+                    "When a blank $fieldName field is validated and specified in the field mask, then the " +
+                        "'BlankField' issue is returned"
+                } else {
+                    "When a blank $fieldName field is validated but not specified in the field mask, then " +
+                        "no issue is returned"
+                }
+            }
+
+            return textFields.map { (fieldName) ->
+                listOf(
+                    Arguments.of(fieldName, false, testName(fieldName, false)),
+                    Arguments.of(fieldName, true, testName(fieldName, true)),
+                )
+            }.flatten()
+        }
+
+        @JvmStatic
+        fun tooLongFieldTestProvider(): List<Arguments> {
+            val testName: (String, Int, Boolean) -> String = { fieldName, maxLength, isFieldInMask ->
+                if (isFieldInMask) {
+                    "When a too long $fieldName field ($maxLength chars) is validated and specified in the " +
+                        "field mask, then the 'TooLongField' issue is returned"
+                } else {
+                    "When a too long $fieldName field ($maxLength chars) is validated but not specified in the " +
+                        "field mask, then no issue is returned"
+                }
+            }
+
+            return textFields.map { (fieldName, maxLength) ->
+                listOf(
+                    Arguments.of(fieldName, maxLength, false, testName(fieldName, maxLength, false)),
+                    Arguments.of(fieldName, maxLength, true, testName(fieldName, maxLength, true)),
+                )
+            }.flatten()
+        }
+    }
+
+    @Nested
+    inner class UpdateRequest {
+        private val validPaperBuilder: Paper.Builder = Paper.newBuilder()
+            .setId(UUID.randomUUID().toString())
+            .setExternalId("some-doi")
+            .setTitle("This is a paper title")
+            .setAbstrakt("This is the abstract of a paper")
+            .setYear(LocalDate.now().year)
+            .setPublisher("IEEE")
+            .setPublicationName("IEEE Journal")
+            .setPublicationType("journal")
+            .addAllAuthors(
+                (1..5).map {
+                    author {
+                        firstName = "John$it"
+                        lastName = "Doe$it"
+                        orcid = createValidOrcid()
+                    }
+                },
+            )
+
+        private val validFieldMask: FieldMask = FieldMaskUtil
+            .fromStringList(
+                listOf(
+                    "paper.external_id",
+                    "paper.title",
+                    "paper.abstrakt",
+                    "paper.year",
+                    "paper.publisher",
+                    "paper.publication_name",
+                    "paper.publication_type",
+                    "paper.authors",
+                ),
+            )
+
+        private val validUpdateRequestBuilder: Paper.Update.Builder = Paper.Update.newBuilder()
+            .setPaper(validPaperBuilder)
+            .setMask(validFieldMask)
+
+        @Test
+        fun `When a valid request is validated, then no issue is returned`() {
+            val request = validUpdateRequestBuilder.build()
+
+            val result = validateRequest(request)
+
+            EitherAssert.assertThat(result).isRight()
+        }
+
+        @Test
+        fun `When a blank field mask is validated, then the 'InvalidFieldMask' issue is returned`() {
+            val invalidFieldMask = FieldMaskUtil.fromStringList(emptyList())
+            val request = validUpdateRequestBuilder
+                .setMask(invalidFieldMask)
+                .build()
+
+            val result = validateRequest(request)
+
+            assertInvalidResult<InvalidFieldMask>(result)
+        }
+
+        @Test
+        fun `When a field mask containing a non-existing field is validated, then the 'InvalidFieldMask' issue is returned`() {
+            val request = validUpdateRequestBuilder
+                .setMask(FieldMaskUtil.fromStringList(listOf("non_existing_field")))
+                .build()
+
+            val result = validateRequest(request)
+
+            assertInvalidResult<InvalidFieldMask>(result)
+        }
+
+        @Test
+        fun `When an invalid ID is validated, then the 'InvalidId' issue is returned`() {
+            val request = validUpdateRequestBuilder
+                .setPaper(validPaperBuilder.setId("invalid-id"))
+                .build()
+
+            val result = validateRequest(request)
+
+            assertInvalidResult<InvalidId>(result)
+        }
+
+        @ParameterizedTest(name = "{2}")
+        @MethodSource("se.uulm.snowballr.backend.validation.PaperValidatorTest#blankFieldTestProvider")
+        fun `When a blank field is validated, then expected result is returned`(
+            fieldName: String,
+            isFieldInMask: Boolean,
+            @Suppress("unused") testName: String,
+        ) {
+            val fieldDescriptor = Paper.getDescriptor().findFieldByName(fieldName)
+            val paper = validPaperBuilder.setField(fieldDescriptor, " ").build()
+            val fieldMask = if (isFieldInMask) "paper.$fieldName" else "paper.id"
+            val request = validUpdateRequestBuilder
+                .setPaper(paper)
+                .setMask(FieldMaskUtil.fromStringList(listOf(fieldMask)))
+                .build()
+
+            val result = validateRequest(request)
+
+            if (isFieldInMask) {
+                assertInvalidResult<BlankField>(result)
+            } else {
+                EitherAssert.assertThat(result).isRight()
+            }
+        }
+
+        @ParameterizedTest(name = "{3}")
+        @MethodSource("se.uulm.snowballr.backend.validation.PaperValidatorTest#tooLongFieldTestProvider")
+        fun `When a too long field is validated, then expected result is returned`(
+            fieldName: String,
+            maxLength: Int,
+            isFieldInMask: Boolean,
+            @Suppress("unused") testName: String,
+        ) {
+            val fieldDescriptor = Paper.getDescriptor().findFieldByName(fieldName)
+            val paper = validPaperBuilder.setField(fieldDescriptor, "a".repeat(maxLength + 1)).build()
+            val fieldMask = if (isFieldInMask) "paper.$fieldName" else "paper.id"
+            val request = validUpdateRequestBuilder
+                .setPaper(paper)
+                .setMask(FieldMaskUtil.fromStringList(listOf(fieldMask)))
+                .build()
+
+            val result = validateRequest(request)
+
+            if (isFieldInMask) {
+                assertInvalidResult<TooLongField>(result)
+            } else {
+                EitherAssert.assertThat(result).isRight()
+            }
+        }
+
+        @Test
+        fun `When a too low year field is validated, then an 'OutOfRangeValue' issue is returned`() {
+            val paper = validPaperBuilder.setYear(-1).build()
+            val fieldMask = FieldMaskUtil.fromStringList(listOf("paper.year"))
+            val request = validUpdateRequestBuilder
+                .setPaper(paper)
+                .setMask(fieldMask)
+                .build()
+
+            val result = validateRequest(request)
+
+            assertInvalidResult<OutOfRangeValue<Int>>(result)
+        }
+
+        @Test
+        fun `When a too high year field is validated, then an 'OutOfRangeValue' issue is returned`() {
+            val paper = validPaperBuilder.setYear(LocalDate.now().year + 2).build()
+            val fieldMask = FieldMaskUtil.fromStringList(listOf("paper.year"))
+            val request = validUpdateRequestBuilder
+                .setPaper(paper)
+                .setMask(fieldMask)
+                .build()
+
+            val result = validateRequest(request)
+
+            assertInvalidResult<OutOfRangeValue<Int>>(result)
+        }
+
+        @Test
+        fun `When the authors list is too long, then a 'TooLongList' issue is returned`() {
+            val authors = mutableListOf<PaperOuterClass.Author>()
+            (1..MAX_AUTHOR_COUNT + 1).forEach { i ->
+                authors.add(
+                    author {
+                        firstName = "John$i"
+                        lastName = "Doe$i"
+                    },
+                )
+            }
+            val paper = validPaperBuilder.clearAuthors().addAllAuthors(authors).build()
+            val fieldMask = FieldMaskUtil.fromStringList(listOf("paper.authors"))
+            val request = validUpdateRequestBuilder
+                .setPaper(paper)
+                .setMask(fieldMask)
+                .build()
+
+            val result = validateRequest(request)
+
+            assertInvalidResult<TooLongList>(result)
+        }
+
+        @Test
+        fun `When the authors list is empty, then no issue is returned`() {
+            val paper = validPaperBuilder.clearAuthors().build()
+            val fieldMask = FieldMaskUtil.fromStringList(listOf("paper.authors"))
+            val request = validUpdateRequestBuilder
+                .setPaper(paper)
+                .setMask(fieldMask)
+                .build()
+
+            val result = validateRequest(request)
+
+            EitherAssert.assertThat(result).isRight()
+        }
+
+        @Test
+        fun `When authors are invalid, then the issues are returned`() {
+            val authors = listOf(
+                author {
+                    firstName = ""
+                    lastName = ""
+                    orcid = "invalid-orcid"
+                },
+            )
+            val paper = validPaperBuilder.clearAuthors().addAllAuthors(authors).build()
+            val fieldMask = FieldMaskUtil.fromStringList(listOf("paper.authors"))
+            val request = validUpdateRequestBuilder
+                .setPaper(paper)
+                .setMask(fieldMask)
+                .build()
+
+            val result = validateRequest(request)
+
+            EitherAssert.assertThat(result).isLeft()
+        }
+    }
+}
