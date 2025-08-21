@@ -1,13 +1,17 @@
 package se.uulm.snowballr.backend.repository
 
+import com.google.protobuf.util.FieldMaskUtil
 import org.jetbrains.exposed.sql.ResultRow
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.Paper
+import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.toPaper
+import java.time.OffsetDateTime
 import java.util.UUID
+import snowballr.PaperOuterClass.Paper as GrpcPaper
 
 /**
  * Defines an interface for repository operations related to the [PaperTable].
@@ -26,6 +30,19 @@ interface IPaperTableRepo {
      * @return whether the paper with the passed [id] exists.
      */
     suspend fun doesPaperExistById(id: UUID): Boolean
+
+    /**
+     * Updates an existing paper in the database with the provided new values.
+     * The following fields can be updated:
+     * - [GrpcPaper.externalId_]
+     * - [GrpcPaper.title_]
+     * - [GrpcPaper.abstrakt_]
+     * - [GrpcPaper.year_]
+     * - [GrpcPaper.publisher_]
+     * - [GrpcPaper.publicationName_]
+     * - [GrpcPaper.publicationType_]
+     */
+    suspend fun updatePaper(request: GrpcPaper.Update): Paper
 }
 
 /**
@@ -48,5 +65,30 @@ class PaperTableRepo(
 
     override suspend fun doesPaperExistById(id: UUID): Boolean = db.query {
         PaperTable.doesEntityExistById(id)
+    }
+
+    override suspend fun updatePaper(request: GrpcPaper.Update): Paper = db.query {
+        val paperId = parseUUID(request.paper.id, EntityType.PAPER)
+        val fieldMask = FieldMaskUtil.normalize(request.mask)
+
+        if (fieldMask.pathsList.isEmpty()) {
+            return@query getPaperById(paperId).getOrThrow()
+        }
+
+        PaperTable.updateByIdAndGet(paperId, ResultRow::toPaper, EntityType.PAPER) {
+            for (field in fieldMask.pathsList) {
+                when (field) {
+                    "paper.external_id" -> it[externalId] = request.paper.externalId
+                    "paper.title" -> it[title] = request.paper.title
+                    "paper.abstrakt" -> it[abstract] = request.paper.abstrakt
+                    "paper.year" -> it[year] = request.paper.year
+                    "paper.publisher" -> it[publisher] = request.paper.publisher
+                    "paper.publication_name" -> it[publicationName] = request.paper.publicationName
+                    "paper.publication_type" -> it[publicationType] = request.paper.publicationType
+                }
+            }
+
+            it[modifiedAt] = OffsetDateTime.now()
+        }
     }
 }
