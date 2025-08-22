@@ -134,7 +134,7 @@ private fun Module.repositoryLayerDeps() {
  */
 private fun Module.mailServiceDeps() {
     single<Mailer> { createMailer(get()) }
-    singleOf(::EmailTemplateManager)
+    single<EmailTemplateManager> { EmailTemplateManager() }
 }
 
 /**
