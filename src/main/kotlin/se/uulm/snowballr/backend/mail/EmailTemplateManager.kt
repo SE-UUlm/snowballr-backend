@@ -31,7 +31,7 @@ class EmailTemplateManager(templatePath: String = "/templates") {
      * Retrieves a compiled template for the specified email template type.
      *
      * @param emailTemplate The enum representing the desired email template.
-     * @return THe compiled `Template` object.
+     * @return The compiled [Template] object.
      */
     @Suppress("MapGetWithNotNullAssertionOperator", "UnsafeCallOnNullableType")
     fun getTemplate(emailTemplate: EmailTemplate): Template = templates[emailTemplate]!!
