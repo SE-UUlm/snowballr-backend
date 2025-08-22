@@ -1,11 +1,14 @@
 package se.uulm.snowballr.backend.service
 
+import com.google.protobuf.util.FieldMaskUtil
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
+import se.uulm.snowballr.backend.model.dto.Paper
 import se.uulm.snowballr.backend.model.dto.toGrpcPapers
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
+import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IAuthorOfPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
 import snowballr.Base
@@ -27,6 +30,11 @@ interface IPaperService {
      * Service implementation of [SnowballRService.getForwardReferencedPapers].
      */
     suspend fun getForwardReferencedPapers(request: Base.Id): GrpcPaper.List
+
+    /**
+     * Service implementation of [SnowballRService.updatePaper].
+     */
+    suspend fun updatePaper(request: GrpcPaper.Update): GrpcPaper
 }
 
 /**
@@ -39,17 +47,19 @@ interface IPaperService {
  * @param repo The repository responsible for managing persistence operations for normal papers.
  * @param authorOfPapersRepo The repository responsible for managing persistence operations for author-paper associations.
  * @param citationRepo The repository responsible for managing persistence operations for paper citations.
+ * @param userRepo The repository responsible for managing persistence operations for user data.
  */
 class PaperService(
     private val repo: IPaperTableRepo,
     private val authorOfPapersRepo: IAuthorOfPaperTableRepo,
     private val citationRepo: ICitationTableRepo,
+    private val userRepo: IUserTableRepo,
 ) : IPaperService {
     override suspend fun getPaperById(request: Base.Id): GrpcPaper {
         val paperId = parseUUID(request.id, EntityType.PAPER)
         val paper = repo.getPaperById(paperId).getOrThrow()
 
-        return paper.toGrpcPaperWithAuthorsAndBackwardReferences(authorOfPapersRepo, citationRepo)
+        return paper.toGrpcPaper()
     }
 
     override suspend fun getBackwardReferencedPapers(request: Base.Id): GrpcPaper.List =
@@ -57,6 +67,22 @@ class PaperService(
 
     override suspend fun getForwardReferencedPapers(request: Base.Id): GrpcPaper.List =
         getReferencePapers(request, citationRepo::getForwardReferencedPaperIdsOfPaperById)
+
+    override suspend fun updatePaper(request: GrpcPaper.Update): GrpcPaper = withUser(userRepo) { currentUser ->
+        val paperId = parseUUID(request.paper.id, EntityType.PAPER)
+
+        if (!repo.doesPaperExistById(paperId)) {
+            throw NotFoundException(EntityType.PAPER, paperId.toString())
+        }
+
+        val fieldMask = FieldMaskUtil.normalize(request.mask)
+
+        if (fieldMask.pathsList.contains("paper.authors")) {
+            // TODO: handle author update
+        }
+
+        repo.updatePaper(request).toGrpcPaper()
+    }
 
     /**
      * Retrieves a list of reference papers based on the provided paper ID and a specified function for fetching
@@ -77,8 +103,11 @@ class PaperService(
         val referenceIds = function.invoke(paperId)
         val papers = referenceIds.map {
             val referencedPaper = repo.getPaperById(it).getOrThrow()
-            referencedPaper.toGrpcPaperWithAuthorsAndBackwardReferences(authorOfPapersRepo, citationRepo)
+            referencedPaper.toGrpcPaper()
         }
         return papers.toGrpcPapers()
     }
+
+    private suspend fun Paper.toGrpcPaper(): GrpcPaper =
+        this.toGrpcPaperWithAuthorsAndBackwardReferences(authorOfPapersRepo, citationRepo)
 }
