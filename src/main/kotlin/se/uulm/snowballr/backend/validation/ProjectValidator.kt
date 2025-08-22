@@ -67,6 +67,15 @@ object ProjectValidator {
         ) { _, _, _, _, _ -> }
     }
 
+    fun validateInviteRequest(request: Project.Member.Invite): EitherNel<ValidationIssue, Unit> = either {
+        ensureFieldNonBlank("projectId", request.projectId)
+        ensureEmailValidity(request.userEmail)
+    }.toEitherNel()
+
+    fun validateAcceptRequest(request: Project.Member.Accept): EitherNel<ValidationIssue, Unit> = either {
+        ensureFieldNonBlank("token", request.token)
+    }.toEitherNel()
+
     /**
      * Ensures that the provided project name is valid.
      * It checks that the project name is not blank and does not exceed the maximum length defined by [NAME_MAX_LENGTH].
