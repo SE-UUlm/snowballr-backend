@@ -4,7 +4,6 @@ import com.github.jknack.handlebars.Handlebars
 import com.github.jknack.handlebars.Template
 import com.github.jknack.handlebars.io.ClassPathTemplateLoader
 import se.uulm.snowballr.backend.model.SnowballRException
-import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
 import se.uulm.snowballr.backend.model.email.EmailTemplate
 import java.io.IOException
 
@@ -32,11 +31,8 @@ class EmailTemplateManager(templatePath: String = "/templates") {
      * Retrieves a compiled template for the specified email template type.
      *
      * @param emailTemplate The enum representing the desired email template.
-     * @throws FailedPreconditionException if the template was not pre-compiled.
      * @return THe compiled `Template` object.
      */
-    fun getTemplate(emailTemplate: EmailTemplate): Template {
-        return templates[emailTemplate]
-            ?: throw FailedPreconditionException("Template ${emailTemplate.name} was not pre-compiled.")
-    }
+    @Suppress("MapGetWithNotNullAssertionOperator", "UnsafeCallOnNullableType")
+    fun getTemplate(emailTemplate: EmailTemplate): Template = templates[emailTemplate]!!
 }
