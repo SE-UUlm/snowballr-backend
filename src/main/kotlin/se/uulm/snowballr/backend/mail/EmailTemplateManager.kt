@@ -13,11 +13,11 @@ import java.io.IOException
  *
  * This class encapsulates the logic for loading and compiling [Handlebars] templates.
  */
-class EmailTemplateManager {
+class EmailTemplateManager(templatePath: String = "/templates") {
     private val templates: Map<EmailTemplate, Template>
 
     init {
-        val handlebars = Handlebars(ClassPathTemplateLoader("/templates", ".hbs"))
+        val handlebars = Handlebars(ClassPathTemplateLoader(templatePath, ".hbs"))
 
         templates = EmailTemplate.entries.associateWith { template ->
             try {
