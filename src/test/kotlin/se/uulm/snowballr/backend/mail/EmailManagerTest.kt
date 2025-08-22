@@ -3,12 +3,14 @@ package se.uulm.snowballr.backend.mail
 import com.icegreen.greenmail.configuration.GreenMailConfiguration
 import com.icegreen.greenmail.junit5.GreenMailExtension
 import com.icegreen.greenmail.util.ServerSetupTest
+import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import jakarta.mail.internet.MimeMessage
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -52,7 +54,7 @@ class EmailManagerTest {
             .withPerMethodLifecycle(true)
     }
 
-    @BeforeAll
+    @BeforeEach
     fun setUp() {
         val miscellaneousMock = mockk<Env.Miscellaneous>()
         every { miscellaneousMock.frontendBaseUrl } returns testFrontendUrl
@@ -66,6 +68,11 @@ class EmailManagerTest {
         every { envMock.smtp } returns smtpMock
 
         every { envReaderMock.env } returns envMock
+    }
+
+    @AfterEach
+    fun tearDown() {
+        clearAllMocks()
     }
 
     @Nested
