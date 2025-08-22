@@ -8,6 +8,7 @@ import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
 import se.uulm.snowballr.backend.model.SnowballRException.InvalidIdException
+import se.uulm.snowballr.backend.model.SnowballRException.InvitationTokenNotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.toGrpcUsers
@@ -21,6 +22,8 @@ import se.uulm.snowballr.backend.service.UserService.Companion.MINIMUM_LENGTH_OF
 import snowballr.Base
 import snowballr.ProjectOuterClass.Project
 import snowballr.ProjectOuterClass.ProjectStatus
+import snowballr.UserOuterClass.UserStatus
+import java.time.OffsetDateTime
 import snowballr.ProjectOuterClass.Project as GrpcProject
 import snowballr.UserOuterClass.User as GrpcUser
 
@@ -34,6 +37,11 @@ interface IInvitationService {
      * Service implementation of [SnowballRService.inviteUserToProject].
      */
     suspend fun inviteUserToProject(request: GrpcProject.Member.Invite): Base.Nothing
+
+    /**
+     * Service implementation of [SnowballRService.acceptProjectInvitation].
+     */
+    suspend fun acceptProjectInvitation(request: GrpcProject.Member.Accept): Base.Nothing
 }
 
 private const val INVITATION_TOKEN_LENGTH = 48
@@ -127,6 +135,40 @@ class InvitationService(
                 invitationLink,
             ),
         )
+
+        return Base.Nothing.getDefaultInstance()
+    }
+
+    override suspend fun acceptProjectInvitation(request: GrpcProject.Member.Accept): Base.Nothing {
+        val invitationToken = invitationTokenRepo.getInvitationTokenByValue(request.token)
+            ?: throw InvitationTokenNotFoundException()
+
+        // Check if the token has expired
+        if (OffsetDateTime.now().isAfter(invitationToken.expiresAt)) {
+            invitationTokenRepo.deleteInvitationToken(invitationToken.token)
+            throw InvitationTokenNotFoundException()
+        }
+
+        // Check if the user is registered and verified
+        val user = try {
+            userRepo.getUserByEmail(invitationToken.email)
+        } catch (_: NotFoundException) {
+            throw FailedPreconditionException(
+                "The user with the email ${invitationToken.email} is not registered.",
+            )
+        }.getOrThrow()
+
+        if (user.status != UserStatus.USER_STATUS_ACTIVE) {
+            throw FailedPreconditionException(
+                "The user with the email ${invitationToken.email} has not verified their email address.",
+            )
+        }
+
+        // Add user to project
+        projectMemberRepo.addUserToProject(user.id, invitationToken.projectId)
+
+        // Remove the invitation token after successful acceptance
+        invitationTokenRepo.deleteInvitationToken(invitationToken.token)
 
         return Base.Nothing.getDefaultInstance()
     }
