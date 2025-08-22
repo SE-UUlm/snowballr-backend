@@ -12,11 +12,14 @@ import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.dsl.module
 import org.koin.test.KoinTest
+import org.simplejavamail.api.mailer.Mailer
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.auth.IJwtService
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.env.IEnvService
 import se.uulm.snowballr.backend.fetcher.FetcherManager
+import se.uulm.snowballr.backend.mail.EmailTemplateManager
+import se.uulm.snowballr.backend.mail.IEmailManager
 import se.uulm.snowballr.backend.repository.IAuthorTableRepo
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
@@ -96,8 +99,10 @@ open class MainServiceTest : KoinTest {
 
     // Custom services / manager / clients mocks
     val jwtServiceMock = mockk<IJwtService>()
-    val emailServiceMock = mockk<IEmailService>()
+    val emailManagerMock = mockk<IEmailManager>()
     val fetcherManagerMock = mockk<FetcherManager>()
+    val mailerMock = mockk<Mailer>()
+    val emailTemplateManagerMock = mockk<EmailTemplateManager>()
 
     val allMocks = arrayOf(
         projectRepoMock,
@@ -105,7 +110,10 @@ open class MainServiceTest : KoinTest {
         userRepoMock,
         projectMemberRepoMock,
         jwtServiceMock,
+        emailManagerMock,
         fetcherManagerMock,
+        mailerMock,
+        emailTemplateManagerMock,
         projectPaperRepoMock,
         authorOfPaperRepoMock,
         authorRepoMock,
@@ -114,6 +122,7 @@ open class MainServiceTest : KoinTest {
         paperRepoMock,
         reviewRepoMock,
         reviewHasCriterionRepoMock,
+        verificationTokenRepoMock,
     )
 
     val mainService: IMainService by inject()
@@ -141,8 +150,10 @@ open class MainServiceTest : KoinTest {
 
         // Custom services / managers / clients
         single { jwtServiceMock }
-        single { emailServiceMock }
+        single { emailManagerMock }
         single { fetcherManagerMock }
+        single { mailerMock }
+        single { emailTemplateManagerMock }
 
         // The base service layer is the same as in production
         serviceLayerDeps()

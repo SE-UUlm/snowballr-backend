@@ -1,23 +1,17 @@
-package se.uulm.snowballr.backend.service
+package se.uulm.snowballr.backend.mail
 
-import com.github.jknack.handlebars.Handlebars
-import com.github.jknack.handlebars.Template
-import com.github.jknack.handlebars.io.ClassPathTemplateLoader
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.simplejavamail.MailException
 import org.simplejavamail.api.mailer.Mailer
 import org.simplejavamail.email.EmailBuilder
-import org.simplejavamail.mailer.MailerBuilder
 import se.uulm.snowballr.backend.env.EnvReader
-import se.uulm.snowballr.backend.model.SnowballRException.EmailException
-import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
+import se.uulm.snowballr.backend.model.SnowballRException
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.email.EmailTemplate
-import java.io.IOException
 
 private val logger = KotlinLogging.logger {}
 
-interface IEmailService {
+interface IEmailManager {
     /**
      * Sends a verification email to the specified recipient.
      *
@@ -38,57 +32,23 @@ interface IEmailService {
 }
 
 /**
- * The [EmailService] class provides functionality to send emails using an SMTP mailer.
+ * The [EmailManager] class provides functionality to send emails using an SMTP mailer.
  *
- * This class implements the [IEmailService] and is responsible for:
- * - Initializing the underlying SMTP mailer with configuration values from [EnvReader].
+ * This class implements the [IEmailManager] and is responsible for:
+ * - Initializing the underlying SMTP mailer with configuration values from [se.uulm.snowballr.backend.env.EnvReader].
  * - Sending invitation emails to new users.
  * - Sending account verification emails to registered users.
  *
- * @constructor Initializes the [EmailService] with the environment reader to access SMTP settings.
+ * @constructor Initializes the [EmailManager] with the environment reader to access SMTP settings.
  * @param envReader The environment reader that provides access to SMTP configuration settings.
+ * @param mailer The mailer that is used to send emails.
+ * @param emailTemplateManager The manager that provides access to pre-compiled email templates.
  */
-class EmailService(
+class EmailManager(
     private val envReader: EnvReader,
-) : IEmailService {
-    private val mailer: Mailer
-    private val compiledTemplates: Map<EmailTemplate, Template>
-
-    init {
-        val env = envReader.env
-
-        logger.info { "Initializing Mailer for email service" }
-
-        // Enable debug logging if the log level is DEBUG or TRACE
-        val isDebugLogging = env.miscellaneous.logLevel == "DEBUG" || env.miscellaneous.logLevel == "TRACE"
-
-        mailer = MailerBuilder
-            .withSMTPServer(env.smtp.smtpHost, env.smtp.smtpPort)
-            .withTransportModeLoggingOnly(env.smtp.smtpTransportLoggingOnlyEnabled)
-            .withDebugLogging(isDebugLogging)
-            .apply {
-                env.smtp.smtpUser?.let { withSMTPServerUsername(it) }
-                env.smtp.smtpPassword?.let { withSMTPServerPassword(it) }
-            }
-            .async()
-            .buildMailer()
-
-        val handlebars = Handlebars(ClassPathTemplateLoader("/templates", ".hbs"))
-
-        // Compile all email templates at startup to ensure they are ready for use
-        compiledTemplates = EmailTemplate.entries.associateWith { template ->
-            logger.info { "Compiling email template: ${template.templateFileName}" }
-            try {
-                handlebars.compile(template.templateFileName)
-            } catch (e: IOException) {
-                logger.error(e) { "Could not find or compile template '${template.templateFileName}'." }
-                throw EmailException.TemplateCompilationFailed(template.templateFileName, e)
-            }
-        }
-
-        logger.info { "Initialized Mailer and compiled all email templates." }
-    }
-
+    private val mailer: Mailer,
+    private val emailTemplateManager: EmailTemplateManager,
+) : IEmailManager {
     override fun sendVerificationEmail(to: String, data: EmailData.EmailVerification) {
         sendEmail(to, EmailTemplate.EMAIL_VERIFICATION, data)
     }
@@ -102,9 +62,7 @@ class EmailService(
      */
     private fun sendEmail(to: String, template: EmailTemplate, data: EmailData) {
         try {
-            val compiledTemplate = compiledTemplates[template]
-                ?: throw FailedPreconditionException("Template ${template.name} was not pre-compiled.")
-
+            val compiledTemplate = emailTemplateManager.getTemplate(template)
             val htmlBody = compiledTemplate.apply(data)
 
             val email = EmailBuilder
@@ -119,7 +77,7 @@ class EmailService(
             logger.info { "Successfully queued email for delivery to $to with template '${template.name}'" }
         } catch (e: MailException) {
             logger.error(e) { "Mailer failed to send email to $to with template '${template.name}'" }
-            throw EmailException.MailSendFailed(to, e)
+            throw SnowballRException.EmailException.MailSendFailed(to, e)
         }
     }
 

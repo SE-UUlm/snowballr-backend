@@ -1,10 +1,13 @@
 package se.uulm.snowballr.backend
 
+import com.github.jknack.handlebars.Template
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.createdAtStart
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
+import org.simplejavamail.api.mailer.Mailer
+import org.simplejavamail.mailer.MailerBuilder
 import se.uulm.snowballr.backend.auth.CookieService
 import se.uulm.snowballr.backend.auth.ICookieService
 import se.uulm.snowballr.backend.auth.IJwtService
@@ -15,6 +18,9 @@ import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.env.EnvService
 import se.uulm.snowballr.backend.env.IEnvService
 import se.uulm.snowballr.backend.fetcher.FetcherManager
+import se.uulm.snowballr.backend.mail.EmailManager
+import se.uulm.snowballr.backend.mail.EmailTemplateManager
+import se.uulm.snowballr.backend.mail.IEmailManager
 import se.uulm.snowballr.backend.repository.AuthorTableRepo
 import se.uulm.snowballr.backend.repository.CriterionTableRepo
 import se.uulm.snowballr.backend.repository.IAuthorTableRepo
@@ -43,11 +49,9 @@ import se.uulm.snowballr.backend.repository.association.ReviewHasCriterionTableR
 import se.uulm.snowballr.backend.repository.association.ReviewTableRepo
 import se.uulm.snowballr.backend.service.AuthenticationService
 import se.uulm.snowballr.backend.service.CriterionService
-import se.uulm.snowballr.backend.service.EmailService
 import se.uulm.snowballr.backend.service.FetcherService
 import se.uulm.snowballr.backend.service.IAuthenticationService
 import se.uulm.snowballr.backend.service.ICriterionService
-import se.uulm.snowballr.backend.service.IEmailService
 import se.uulm.snowballr.backend.service.IFetcherService
 import se.uulm.snowballr.backend.service.IMainService
 import se.uulm.snowballr.backend.service.IProjectService
@@ -79,6 +83,7 @@ val snowballRModule =
         envDeps()
         dbDeps()
         repositoryLayerDeps()
+        mailServiceDeps()
         customServicesDeps()
         serviceLayerDeps()
     }
@@ -123,6 +128,37 @@ private fun Module.repositoryLayerDeps() {
 }
 
 /**
+ * Module declaration of the mail service dependencies.
+ *
+ * Consists of the [Mailer] and the [Template]s used for sending mails.
+ */
+private fun Module.mailServiceDeps() {
+    single<Mailer> { createMailer(get()) }
+    single<EmailTemplateManager> { EmailTemplateManager() }
+}
+
+/**
+ * Creates the Mailer instance based on the environment configuration.
+ */
+fun createMailer(envReader: EnvReader): Mailer {
+    val env = envReader.env
+
+    // Enable debug logging if the log level is DEBUG or TRACE
+    val isDebugLogging = env.miscellaneous.logLevel == "DEBUG" || env.miscellaneous.logLevel == "TRACE"
+
+    return MailerBuilder
+        .withSMTPServer(env.smtp.smtpHost, env.smtp.smtpPort)
+        .withTransportModeLoggingOnly(env.smtp.smtpTransportLoggingOnlyEnabled)
+        .withDebugLogging(isDebugLogging)
+        .apply {
+            env.smtp.smtpUser?.let { withSMTPServerUsername(it) }
+            env.smtp.smtpPassword?.let { withSMTPServerPassword(it) }
+        }
+        .async()
+        .buildMailer()
+}
+
+/**
  * Module declaration of all custom services / managers / clients.
  *
  * Consists of all dependencies that are used by the core service layer.
@@ -134,9 +170,9 @@ private fun Module.customServicesDeps() {
     }
     singleOf(::FetcherManager)
     singleOf(::CookieService) { bind<ICookieService>() }
-    singleOf(::EmailService) {
+    singleOf(::EmailManager) {
         createdAtStart()
-        bind<IEmailService>()
+        bind<IEmailManager>()
     }
     singleOf(::AuthenticationService) { bind<IAuthenticationService>() }
 }
