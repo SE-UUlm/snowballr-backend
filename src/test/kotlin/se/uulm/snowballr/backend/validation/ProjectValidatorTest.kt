@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import se.uulm.snowballr.backend.model.BlankField
 import se.uulm.snowballr.backend.model.EnumUnspecified
+import se.uulm.snowballr.backend.model.InvalidEmail
 import se.uulm.snowballr.backend.model.InvalidFieldMask
 import se.uulm.snowballr.backend.model.InvalidId
 import se.uulm.snowballr.backend.model.OutOfRangeValue
@@ -256,6 +257,64 @@ class ProjectValidatorTest {
             val result = validateRequest(request)
 
             EitherAssert.assertThat(result).isRight()
+        }
+    }
+
+    @Nested
+    inner class InviteRequest {
+        private val validInviteRequestBuilder = Project.Member.Invite.newBuilder()
+            .setProjectId(UUID.randomUUID().toString())
+            .setUserEmail("test.user@example.com")
+
+        @Test
+        fun `When a valid request is validated, then no issue is returned`() {
+            val request = validInviteRequestBuilder.build()
+
+            val result = validateRequest(request)
+
+            EitherAssert.assertThat(result).isRight()
+        }
+
+        @Test
+        fun `When the project ID is blank, then the 'BlankField' issue is returned`() {
+            val request = validInviteRequestBuilder.setProjectId("").build()
+
+            val result = validateRequest(request)
+
+            assertInvalidResult<BlankField>(result)
+        }
+
+        @Test
+        fun `When the user email is invalid, then the 'InvalidEmail' issue is returned`() {
+            val request = validInviteRequestBuilder.setUserEmail("invalid-email").build()
+
+            val result = validateRequest(request)
+
+            assertInvalidResult<InvalidEmail>(result)
+        }
+    }
+
+    @Nested
+    inner class AcceptRequest {
+        private val validAcceptRequestBuilder = Project.Member.Accept.newBuilder()
+            .setToken("valid-token")
+
+        @Test
+        fun `When a valid request is validated, then no issue is returned`() {
+            val request = validAcceptRequestBuilder.build()
+
+            val result = validateRequest(request)
+
+            EitherAssert.assertThat(result).isRight()
+        }
+
+        @Test
+        fun `When the token is blank, then the 'BlankField' issue is returned`() {
+            val request = validAcceptRequestBuilder.setToken("").build()
+
+            val result = validateRequest(request)
+
+            assertInvalidResult<BlankField>(result)
         }
     }
 }
