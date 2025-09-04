@@ -27,7 +27,7 @@ simple-java-mail = "8.12.6"
 greenmail = "2.1.5"
 handlebars = "4.4.0"
 testcontainers = "1.21.3"
-kotlinx-serialization-json = "1.7.1"
+kotlinx-serialization-json = "1.9.0"
 nanoid = "1.0.1"
 
 [libraries]
