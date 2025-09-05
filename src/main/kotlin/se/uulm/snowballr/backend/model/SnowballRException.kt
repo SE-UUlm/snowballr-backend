@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.model
 
 import org.simplejavamail.MailException
 import se.uulm.snowballr.backend.mail.EmailManager
+import se.uulm.snowballr.backend.model.dto.ProjectPaper
 import java.io.IOException
 
 /**
@@ -23,13 +24,32 @@ sealed class SnowballRException(
      * @param entityType The type of the entity that could not be found.
      * @param entityIds The missing entity's ID(s).
      * @param identifierType The type of the entity's identifier. Defaults to [IdentifierType.ID].
+     * @param location The location where the entity could not be found, e.g., the project or paper. Should start with " in ...".
      */
     open class NotFoundException(
         entityType: EntityType,
         vararg entityIds: String,
         identifierType: IdentifierType = IdentifierType.ID,
+        location: String = "",
     ) : SnowballRException(
-        "${entityType.singularUpper()} ${displayEntityIds(entityIds.toList(), identifierType)} not found.",
+        "${entityType.singularUpper()} ${displayEntityIds(entityIds.toList(), identifierType)} not found$location.",
+    )
+
+    /**
+     * Represents an exception indicating that a [ProjectPaper] entity could not be found within the context of a
+     * specific project.
+     *
+     * @param localProjectPaperId The local identifier of the missing [ProjectPaper] entity.
+     * @param projectId The identifier of the project in which the [ProjectPaper] could not be found.
+     */
+    open class ProjectPaperNotFoundException(
+        localProjectPaperId: String,
+        projectId: String,
+    ) : NotFoundException(
+        EntityType.PROJECT_PAPER,
+        localProjectPaperId,
+        identifierType = IdentifierType.LOCAL_ID,
+        location = " in project with ID $projectId",
     )
 
     /**

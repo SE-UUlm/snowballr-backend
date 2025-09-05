@@ -328,7 +328,7 @@ class SnowballRServer(
 
         override suspend fun getProjectPaperByRelativeId(
             request: ProjectOuterClass.Project.Paper.Get,
-        ): ProjectOuterClass.Project.Paper = super.getProjectPaperByRelativeId(request)
+        ): ProjectOuterClass.Project.Paper = mainService.getProjectPaperByRelativeId(request)
 
         override suspend fun getAllProjectPapersForProject(request: Base.Id): ProjectOuterClass.Project.Paper.List =
             mainService.getAllProjectPapersForProject(request)
