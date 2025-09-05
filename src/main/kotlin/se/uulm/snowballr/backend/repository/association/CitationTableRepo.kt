@@ -32,9 +32,9 @@ class CitationTableRepo(
 ) : ICitationTableRepo {
     override suspend fun getBackwardsReferencedPaperIdsOfPaperById(id: UUID): List<UUID> = db.query {
         CitationTable
-            .select(CitationTable.paperId)
-            .where { CitationTable.citedPaperId eq id }
-            .map { it[CitationTable.paperId].value }
+            .select(CitationTable.citedPaperId)
+            .where { CitationTable.paperId eq id }
+            .map { it[CitationTable.citedPaperId].value }
             .toList()
     }
 }
