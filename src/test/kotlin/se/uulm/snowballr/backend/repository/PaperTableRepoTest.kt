@@ -51,4 +51,24 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
             assertFalse { repo.doesPaperExistById(UUID.randomUUID()) }
         }
     }
+
+    @Nested
+    inner class DoesPaperExistById {
+        @Test
+        fun `When a paper with the given id exists, then true returned`() = runTest {
+            val paperId =
+                insertPaperAndGetId("Test Paper")
+            val isPaperExisting = repo.doesPaperExistById(paperId)
+
+            assertTrue(isPaperExisting)
+        }
+
+        @Test
+        fun `When a paper with the given id does not exist, then false returned`() = runTest {
+            val paperId = UUID.randomUUID()
+            val isPaperExisting = repo.doesPaperExistById(paperId)
+
+            assertFalse(isPaperExisting)
+        }
+    }
 }
