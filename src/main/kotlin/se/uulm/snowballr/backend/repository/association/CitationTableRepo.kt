@@ -16,6 +16,11 @@ interface ICitationTableRepo {
      * Returns the backward references of a paper by its ID.
      */
     suspend fun getBackwardsReferencedPaperIdsOfPaperById(id: UUID): List<UUID>
+
+    /**
+     * Returns the forward references of a paper by its ID.
+     */
+    suspend fun getForwardReferencedPaperIdsOfPaperById(id: UUID): List<UUID>
 }
 
 /**
@@ -35,6 +40,14 @@ class CitationTableRepo(
             .select(CitationTable.citedPaperId)
             .where { CitationTable.paperId eq id }
             .map { it[CitationTable.citedPaperId].value }
+            .toList()
+    }
+
+    override suspend fun getForwardReferencedPaperIdsOfPaperById(id: UUID): List<UUID> = db.query {
+        CitationTable
+            .select(CitationTable.paperId)
+            .where { CitationTable.citedPaperId eq id }
+            .map { it[CitationTable.paperId].value }
             .toList()
     }
 }
