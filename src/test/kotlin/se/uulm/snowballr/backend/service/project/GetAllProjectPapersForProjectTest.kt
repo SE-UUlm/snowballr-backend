@@ -30,7 +30,7 @@ class GetAllProjectPapersForProjectTest : MainServiceTest() {
     fun failingFunctions(): Stream<Arguments?> = Stream.of(
         Arguments.of(GrpcContext::getUserIdFromContext),
         Arguments.of(userRepoMock::getUserById),
-        Arguments.of(projectRepoMock::getProjectById),
+        Arguments.of(projectRepoMock::doesProjectExistById),
         Arguments.of(projectMemberRepoMock::getProjectMembers),
         Arguments.of(projectPaperRepoMock::getAllProjectPapersWithPapers),
         Arguments.of(authorOfPaperRepoMock::getAuthorsOfPaperById),
@@ -40,12 +40,19 @@ class GetAllProjectPapersForProjectTest : MainServiceTest() {
     )
 
     @Suppress("LongMethod", "ReturnCount")
-    private fun mockHappyPathUntil(failAt: KFunction<*>?) {
-        val currentUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_ADMIN)
+    private fun mockHappyPathUntil(failAt: KFunction<*>?, isUserAdmin: Boolean) {
+        val currentUser = DataBuilder.createExampleUser(
+            role = if (isUserAdmin) {
+                UserOuterClass.UserRole.USER_ROLE_ADMIN
+            } else {
+                UserOuterClass.UserRole.USER_ROLE_DEFAULT
+            },
+        )
         val project = DataBuilder.createExampleProject(id = requestId)
         val paper = DataBuilder.createExamplePaper(id = requestId)
         val projectPaper = DataBuilder.createExampleProjectPaper(projectId = project.id, paperId = paper.id)
         val projectPaperWithPaper = ProjectPaperWithPaper(projectPaper, paper)
+        val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
         val author = DataBuilder.createExampleAuthor()
         val review = DataBuilder.createExampleReview()
 
@@ -61,19 +68,22 @@ class GetAllProjectPapersForProjectTest : MainServiceTest() {
         }
         coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
 
-        if (failAt == projectRepoMock::getProjectById) {
-            coEvery { projectRepoMock.getProjectById(any()) } throws TestSpecificException()
+        if (failAt == projectRepoMock::doesProjectExistById) {
+            coEvery { projectRepoMock.doesProjectExistById(any()) } throws TestSpecificException()
             return
         }
-        coEvery { projectRepoMock.getProjectById(project.id) } returns project
+        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
 
         if (failAt == projectMemberRepoMock::getProjectMembers) {
             coEvery { projectMemberRepoMock.getProjectMembers(any()) } throws TestSpecificException()
             return
         }
-        coEvery {
-            projectMemberRepoMock.getProjectMembers(project.id)
-        } returns listOf(DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id))
+        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns
+            if (isUserAdmin) {
+                emptyList()
+            } else {
+                listOf(projectMember)
+            }
 
         if (failAt == projectPaperRepoMock::getAllProjectPapersWithPapers) {
             coEvery {
@@ -121,7 +131,7 @@ class GetAllProjectPapersForProjectTest : MainServiceTest() {
     @ParameterizedTest
     @MethodSource("failingFunctions")
     fun `When a step fails, then an exception is thrown`(failAt: KFunction<*>) = runTest {
-        mockHappyPathUntil(failAt)
+        mockHappyPathUntil(failAt, true)
         assertThrows<TestSpecificException> {
             mainService.getAllProjectPapersForProject(getExampleRequest())
         }
@@ -129,37 +139,13 @@ class GetAllProjectPapersForProjectTest : MainServiceTest() {
 
     @Test
     fun `When a server admin requests the project papers, then no exception is thrown`() = runTest {
-        mockHappyPathUntil(null)
+        mockHappyPathUntil(null, true)
         assertDoesNotThrow { mainService.getAllProjectPapersForProject(getExampleRequest()) }
     }
 
     @Test
     fun `When a project member requests the project papers, then no exception is thrown`() = runTest {
-        val currentUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_DEFAULT)
-        val project = DataBuilder.createExampleProject(id = requestId)
-        val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
-        val paper = DataBuilder.createExamplePaper(id = requestId)
-        val projectPaper = DataBuilder.createExampleProjectPaper(projectId = project.id, paperId = paper.id)
-        val projectPaperWithPaper = ProjectPaperWithPaper(projectPaper, paper)
-        val author = DataBuilder.createExampleAuthor()
-        val review = DataBuilder.createExampleReview()
-
-        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
-        coEvery { projectRepoMock.getProjectById(project.id) } returns project
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
-        coEvery {
-            projectPaperRepoMock.getAllProjectPapersWithPapers(project.id)
-        } returns listOf(projectPaperWithPaper)
-        coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(paper.id) } returns listOf(author)
-        coEvery {
-            citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
-        } returns listOf(UUID.randomUUID())
-        coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper.id) } returns listOf(review)
-        coEvery {
-            reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(review.id)
-        } returns listOf(UUID.randomUUID())
-
+        mockHappyPathUntil(null, false)
         assertDoesNotThrow { mainService.getAllProjectPapersForProject(getExampleRequest()) }
     }
 
@@ -170,7 +156,7 @@ class GetAllProjectPapersForProjectTest : MainServiceTest() {
 
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
         coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
-        coEvery { projectRepoMock.getProjectById(project.id) } returns project
+        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
         assertThrows<SnowballRException.UnauthorizedException> {

@@ -36,11 +36,18 @@ class GetAllReviewsForProjectPaperTest : MainServiceTest() {
         Arguments.of(reviewHasCriterionRepoMock::getSelectedCriteriaIdsForReviewById),
     )
 
-    @Suppress("ReturnCount")
-    private fun mockHappyPathUntil(failAt: KFunction<*>?) {
-        val currentUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_ADMIN)
+    @Suppress("ReturnCount", "LongMethod")
+    private fun mockHappyPathUntil(failAt: KFunction<*>?, isUserAdmin: Boolean) {
+        val currentUser = DataBuilder.createExampleUser(
+            role = if (isUserAdmin) {
+                UserOuterClass.UserRole.USER_ROLE_ADMIN
+            } else {
+                UserOuterClass.UserRole.USER_ROLE_DEFAULT
+            },
+        )
         val project = DataBuilder.createExampleProject()
         val projectPaper = DataBuilder.createExampleProjectPaper(id = requestId, projectId = project.id)
+        val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
         val review = DataBuilder.createExampleReview(userId = currentUser.id)
         val selectedCriteriaIds = listOf<UUID>(UUID.randomUUID())
 
@@ -72,7 +79,12 @@ class GetAllReviewsForProjectPaperTest : MainServiceTest() {
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } throws TestSpecificException()
             return
         }
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
+        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns
+            if (isUserAdmin) {
+                emptyList()
+            } else {
+                listOf(projectMember)
+            }
 
         if (failAt == reviewRepoMock::getAllReviewsForProjectPaper) {
             coEvery {
@@ -96,7 +108,7 @@ class GetAllReviewsForProjectPaperTest : MainServiceTest() {
     @ParameterizedTest
     @MethodSource("failingFunctions")
     fun `When a step fails, then an exception is thrown`(failAt: KFunction<*>) = runTest {
-        mockHappyPathUntil(failAt)
+        mockHappyPathUntil(failAt, true)
         assertThrows<TestSpecificException> {
             mainService.getAllReviewsForProjectPaper(getExampleRequest())
         }
@@ -104,29 +116,13 @@ class GetAllReviewsForProjectPaperTest : MainServiceTest() {
 
     @Test
     fun `When a server admin retrieves all reviews for a project paper, then no exception is thrown`() = runTest {
-        mockHappyPathUntil(null)
+        mockHappyPathUntil(null, true)
         assertDoesNotThrow { mainService.getAllReviewsForProjectPaper(getExampleRequest()) }
     }
 
     @Test
     fun `When a project member retrieves all reviews for a project paper, then no exception is thrown`() = runTest {
-        val currentUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_DEFAULT)
-        val project = DataBuilder.createExampleProject()
-        val projectPaper = DataBuilder.createExampleProjectPaper(id = requestId, projectId = project.id)
-        val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
-        val review = DataBuilder.createExampleReview(userId = currentUser.id)
-        val selectedCriteriaIds = listOf<UUID>(UUID.randomUUID())
-
-        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
-        coEvery { projectPaperRepoMock.getProjectPaperById(projectPaper.id) } returns projectPaper
-        coEvery { projectRepoMock.getProjectById(project.id) } returns project
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
-        coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper.id) } returns listOf(review)
-        coEvery {
-            reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(review.id)
-        } returns selectedCriteriaIds
-
+        mockHappyPathUntil(null, false)
         assertDoesNotThrow { mainService.getAllReviewsForProjectPaper(getExampleRequest()) }
     }
 

@@ -1,7 +1,6 @@
 package se.uulm.snowballr.backend.repository
 
 import org.jetbrains.exposed.sql.ResultRow
-import org.jetbrains.exposed.sql.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
@@ -47,6 +46,6 @@ class PaperTableRepo(
     }
 
     override suspend fun doesPaperExistById(id: UUID): Boolean = db.query {
-        !PaperTable.selectAll().where { PaperTable.id eq id }.empty()
+        PaperTable.doesEntityExistById(id)
     }
 }

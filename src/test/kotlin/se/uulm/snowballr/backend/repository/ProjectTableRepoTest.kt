@@ -22,6 +22,8 @@ import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
 import snowballr.ProjectOuterClass.SnowballingType
 import java.util.UUID
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberTable), true) {
     private val repo = ProjectTableRepo(db)
@@ -60,6 +62,26 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
         @Test
         fun `When a project is not found, then an exception is thrown`() = runTest {
             assertThrows<NotFoundException> { repo.getProjectById(UUID.randomUUID()) }
+        }
+    }
+
+    @Nested
+    inner class DoesProjectExistById {
+        @Test
+        fun `When a project with the given id exists, then true returned`() = runTest {
+            val projectId =
+                insertProjectAndGetId("Test Project", ProjectStatus.PROJECT_STATUS_ACTIVE, createdBy = testUserId)
+            val isProjectExisting = repo.doesProjectExistById(projectId)
+
+            assertTrue(isProjectExisting)
+        }
+
+        @Test
+        fun `When a project with the given id does not exist, then false returned`() = runTest {
+            val projectId = UUID.randomUUID()
+            val isProjectExisting = repo.doesProjectExistById(projectId)
+
+            assertFalse(isProjectExisting)
         }
     }
 

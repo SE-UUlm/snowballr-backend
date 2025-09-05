@@ -35,6 +35,11 @@ interface IProjectTableRepo {
     suspend fun getProjectById(id: UUID): Project
 
     /**
+     * Checks whether the project with the passed [id] exists.
+     */
+    suspend fun doesProjectExistById(id: UUID): Boolean
+
+    /**
      * Creates a new project in the database with the provided project creation request and user ID.
      *
      * @param request The project creation request containing project details
@@ -110,6 +115,9 @@ class ProjectTableRepo(
 
     override suspend fun getProjectById(id: UUID): Project = db.query {
         getProjectByIdOrNull(id) ?: throw NotFoundException(EntityType.PROJECT, id.toString())
+    }
+    override suspend fun doesProjectExistById(id: UUID): Boolean = db.query {
+        ProjectTable.doesEntityExistById(id)
     }
 
     override suspend fun createProject(
