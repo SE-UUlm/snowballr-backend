@@ -30,7 +30,7 @@ import snowballr.UserOuterClass.User as GrpcUser
  * abstraction over the underlying database implementation. By using this interface, the logic
  * for creating and managing users can remain decoupled from the specifics of the database layer.
  */
-@Suppress("ComplexInterface")
+@Suppress("ComplexInterface", "TooManyFunctions")
 interface IUserTableRepo {
     /**
      * Returns a [Result] containing the user by their id or a [NotFoundException] if the user with the passed [id]
@@ -51,6 +51,14 @@ interface IUserTableRepo {
      * @return True if a user with the given email exists, false otherwise.
      */
     suspend fun doesUserExistByEmail(email: String): Boolean
+
+    /**
+     * Checks if a user exists in the database by their id.
+     *
+     * @param id The unique identifier to check for existence.
+     * @return True if a user with the given id exists, false otherwise.
+     */
+    suspend fun doesUserExistById(id: UUID): Boolean
 
     /**
      * Returns all users stored on the server.
@@ -168,6 +176,10 @@ class UserTableRepo(
 
     override suspend fun getUserByEmail(email: String): Result<User> = db.query {
         getEntityByKeyAsResult(::getUserByEmailOrNull, EntityType.USER, email, IdentifierType.EMAIL)
+    }
+
+    override suspend fun doesUserExistById(id: UUID): Boolean = db.query {
+        UserTable.doesEntityExistById(id)
     }
 
     override suspend fun doesUserExistByEmail(email: String): Boolean = db.query {

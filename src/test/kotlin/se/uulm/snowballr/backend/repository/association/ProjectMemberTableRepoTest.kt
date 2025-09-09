@@ -3,8 +3,10 @@ package se.uulm.snowballr.backend.repository.association
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.ProjectMember
@@ -302,5 +304,25 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
                 assertThat(projectMembersWithUsers).anyMatch { it.user == user }
                 assertThat(projectMembersWithUsers).noneMatch { it.projectMember.userId == nonProjectMemberUser.id }
             }
+    }
+
+    @Nested
+    inner class RemoveProjectMember {
+        @Test
+        fun `When a project member is found, then the correct project member is removed`() = runTest {
+            val (projectId, members) = setupProject()
+            repo.removeProjectMember(projectId, members[0].userId)
+
+            assertTrue(repo.getProjectMemberByComposedId(projectId, members[0].userId).isFailure)
+        }
+
+        @Test
+        fun `When a project member is not found, nothing happens`() = runTest {
+            val (projectId, members) = setupProject()
+
+            assertDoesNotThrow { repo.removeProjectMember(projectId, UUID.randomUUID()) }
+            assertDoesNotThrow { repo.removeProjectMember(UUID.randomUUID(), members[0].userId) }
+            assertTrue(repo.getProjectMemberByComposedId(projectId, members[0].userId).isSuccess)
+        }
     }
 }
