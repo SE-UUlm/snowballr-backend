@@ -16,7 +16,7 @@ import se.uulm.snowballr.backend.model.InvalidFieldMask
 import se.uulm.snowballr.backend.model.InvalidId
 import se.uulm.snowballr.backend.model.InvalidPassword
 import se.uulm.snowballr.backend.model.InvalidPassword.Reason
-import se.uulm.snowballr.backend.model.NotConvertableValue
+import se.uulm.snowballr.backend.model.OutOfRangeValue
 import se.uulm.snowballr.backend.model.TooLongField
 import se.uulm.snowballr.backend.model.ValidationIssue
 import java.util.UUID
@@ -118,6 +118,15 @@ fun ensurePasswordValidity(password: String) = either {
 }
 
 /**
+ * Ensures that the provided stage is positive or null.
+ * If the stage is negative, an [OutOfRangeValue] validation issue is raised.
+ *
+ * @param stage The stage value to validate.
+ */
+fun Raise<ValidationIssue>.ensureStageValidity(stage: Long) =
+    ensure(stage >= 0) { OutOfRangeValue("stage", stage, 0, Long.MAX_VALUE) }
+
+/**
  * Counts the number of special characters in the given password.
  * Special characters are defined by the [SPECIAL_CHAR_REGEX].
  *
@@ -160,19 +169,5 @@ fun Raise<ValidationIssue>.ensureFieldMaskIsValid(fieldMask: FieldMask, descript
     ensure(fieldMask.pathsList.isNotEmpty()) { InvalidFieldMask(null) }
     ensure(FieldMaskUtil.isValid(descriptor, fieldMask)) {
         InvalidFieldMask(fieldMask.toString())
-    }
-}
-
-/**
- * Ensures that the given string value can be converted to a `Long`.
- *
- * If the value cannot be converted to a `Long`, this function raises a validation issue
- * of type [NotConvertableValue].
- *
- * @param value The string value to check for `Long` convertibility.
- */
-fun Raise<ValidationIssue>.ensureStringIsLongConvertible(value: String) {
-    ensure(value.toLongOrNull() != null) {
-        NotConvertableValue(value, Long::class)
     }
 }

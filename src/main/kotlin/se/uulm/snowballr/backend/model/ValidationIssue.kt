@@ -5,7 +5,6 @@ import se.uulm.snowballr.backend.validation.PASSWORD_MIN_NUMBER_DIGITS
 import se.uulm.snowballr.backend.validation.PASSWORD_MIN_NUMBER_LOWERCASE_LETTERS
 import se.uulm.snowballr.backend.validation.PASSWORD_MIN_NUMBER_SPECIAL_CHARS
 import se.uulm.snowballr.backend.validation.PASSWORD_MIN_NUMBER_UPPERCASE_LETTERS
-import kotlin.reflect.KClass
 
 /**
  * Represents a validation issue that can occur during the validation process.
@@ -91,28 +90,12 @@ data class InvalidId(
 
 data class OutOfRangeValue(
     val name: String,
-    val value: Float,
-    val from: Float,
-    val to: Float,
+    val value: Number,
+    val from: Number,
+    val to: Number,
 ) : ValidationIssue {
     override fun toString(): String =
         "The value '$value' is not in the allowed range [$from-$to] for the field '$name'."
-}
-
-/**
- * Represents a validation issue where a given value cannot be converted to the expected type.
- *
- * This class encapsulates the problematic value and the expected type, enabling detailed error
- * reporting in validation workflows.
- *
- * @property value The value that failed conversion.
- * @property type The expected target type for the conversion.
- */
-data class NotConvertableValue(
-    val value: String,
-    val type: KClass<*>,
-) : ValidationIssue {
-    override fun toString(): String = "The value '$value' is not a valid '$type'."
 }
 
 /**
