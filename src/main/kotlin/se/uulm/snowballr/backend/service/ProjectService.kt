@@ -19,14 +19,20 @@ import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
+import se.uulm.snowballr.backend.service.accessrules.AccessRuleCompoundObject
 import se.uulm.snowballr.backend.service.accessrules.andAlso
 import se.uulm.snowballr.backend.service.accessrules.checkFor
 import se.uulm.snowballr.backend.service.accessrules.forProperty
+import se.uulm.snowballr.backend.service.accessrules.forTarget
 import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadProject
+import se.uulm.snowballr.backend.service.accessrules.isProjectAdmin
 import se.uulm.snowballr.backend.service.accessrules.isProjectExistent
+import se.uulm.snowballr.backend.service.accessrules.isProjectMember
+import se.uulm.snowballr.backend.service.accessrules.isSameUserById
 import se.uulm.snowballr.backend.service.accessrules.isServerAdmin
 import se.uulm.snowballr.backend.service.accessrules.isServerAdminOrSameUser
 import se.uulm.snowballr.backend.service.accessrules.isServerOrProjectAdmin
+import se.uulm.snowballr.backend.service.accessrules.orElse
 import se.uulm.snowballr.backend.service.accessrules.orElseThrow
 import snowballr.Base
 import snowballr.ProjectOuterClass.MemberRole
@@ -34,7 +40,6 @@ import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.copy
 import java.util.UUID
-import kotlin.getOrThrow
 import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
 import snowballr.ProjectOuterClass.Project as GrpcProject
 import snowballr.ProjectOuterClass.Project.Information.DecisionStatistics as GrpcProjectDecisionStatistics
@@ -96,6 +101,11 @@ interface IProjectService {
      * Service implementation of [SnowballRService.getDecisionStatisticsForStage].
      */
     suspend fun getDecisionStatisticsForStage(request: GrpcProjectDecisionStatistics.Get): GrpcProjectDecisionStatistics
+
+    /**
+     * Service implementation of [SnowballRService.removeProjectMember]
+     */
+    suspend fun removeProjectMember(request: GrpcProjectMember.Remove): Base.Nothing
 }
 
 /**
@@ -438,4 +448,52 @@ class ProjectService(
             PaperDecision.PAPER_DECISION_IN_REVIEW,
         ).map(::createStatistic)
     }
+
+    override suspend fun removeProjectMember(request: GrpcProjectMember.Remove): Base.Nothing =
+        withUser(userRepo) { currentUser ->
+            val projectId = parseUUID(request.projectId, EntityType.PROJECT)
+            val requestedUserId = parseUUID(request.userId, EntityType.USER)
+
+            val userProjectCompound = AccessRuleCompoundObject(requestedUserId, projectId)
+
+            isSameUserById()
+                .forProperty(AccessRuleCompoundObject::firstTargetId)
+                .andAlso(isProjectMember(projectMemberRepo).forProperty(AccessRuleCompoundObject::secondTargetId))
+                .orElse(
+                    isProjectAdmin(projectMemberRepo)
+                        .orElse(isServerAdmin().forTarget())
+                        .orElseThrow { user, targetId ->
+                            UnauthorizedException.Action(
+                                EntityType.PROJECT,
+                                targetId.toString(),
+                                AccessType.DELETE,
+                                user.id.toString(),
+                            )
+                        }
+                        .forProperty(AccessRuleCompoundObject::secondTargetId),
+                )
+                .checkFor(currentUser, userProjectCompound)
+
+            when {
+                !repo.doesProjectExistById(projectId)
+                -> throw NotFoundException(EntityType.PROJECT, projectId.toString())
+
+                !userRepo.doesUserExistById(requestedUserId)
+                -> throw NotFoundException(EntityType.USER, projectId.toString())
+            }
+
+            val projectMembers = projectMemberRepo.getProjectMembers(projectId)
+            val projectAdmins = projectMemberRepo.getAllProjectAdmins(projectId)
+            if (projectMembers.size == 1 && projectMembers.any { it.userId == requestedUserId }) {
+                // TODO soft delete the project asa the call is implemented in #87.
+            } else if (projectAdmins.size == 1 && projectAdmins.any { it.userId == requestedUserId }) {
+                throw FailedPreconditionException(
+                    "The user can not be removed from the project, because this user is the last " +
+                        "project admin.",
+                )
+            }
+
+            projectMemberRepo.removeProjectMember(projectId, requestedUserId)
+            Base.Nothing.newBuilder().build()
+        }
 }

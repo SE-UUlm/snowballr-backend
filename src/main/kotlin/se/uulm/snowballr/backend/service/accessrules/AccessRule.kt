@@ -150,3 +150,17 @@ suspend fun <T> AccessRule<T>.checkFor(requester: User, target: T) {
  *         without throwing a specific exception while evaluating the chain.
  */
 suspend fun AccessRule<Unit>.checkFor(requester: User) = checkFor(requester, Unit)
+
+/**
+ * Represents a compound object containing two target identifiers for access rule checks.
+ *
+ * This class is typically used in scenarios where access control requires validation involving
+ * two related targets, such as ensuring permissions across multiple associated entities.
+ *
+ * @property firstTargetId The unique identifier of the first target.
+ * @property secondTargetId The unique identifier of the second target.
+ */
+data class AccessRuleCompoundObject(
+    val firstTargetId: UUID,
+    val secondTargetId: UUID,
+)
