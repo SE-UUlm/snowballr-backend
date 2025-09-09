@@ -164,6 +164,30 @@ sealed class SnowballRException(
     }
 
     /**
+     * Represents a specific type of exception that occurs when a value is not in the correct range.
+     *
+     * @param value The value that is not in range.
+     * @param from The left border of the correct range interval.
+     * @param to The right border of the correct range interval.
+     */
+    sealed class OutOfRangeException(
+        value: Number,
+        from: Number,
+        to: Number,
+    ) : SnowballRException("The value $value is not in the range of from $from to $to.") {
+        /**
+         * Represents an [OutOfRangeException] that occurs when a [Stage] value is not in the correct range.
+         *
+         * @param stage The value of the stage.
+         * @param maxStage The maximum value of the stages allowed.
+         */
+        class Stage(
+            stage: Long,
+            maxStage: Long,
+        ) : OutOfRangeException(stage, 0, maxStage)
+    }
+
+    /**
      * Represents an exception that occurs when expected gRPC context data is missing.
      *
      * This may indicate a misconfigured interceptor, a bug in the server flow,

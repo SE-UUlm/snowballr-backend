@@ -335,7 +335,7 @@ class SnowballRServer(
 
         override suspend fun addPaperToProject(
             request: ProjectOuterClass.Project.Paper.Add,
-        ): ProjectOuterClass.Project.Paper = super.addPaperToProject(request)
+        ): ProjectOuterClass.Project.Paper = mainService.addPaperToProject(request)
 
         override suspend fun updateProjectPaper(
             request: ProjectOuterClass.Project.Paper.Update,
