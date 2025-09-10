@@ -2,13 +2,17 @@ package se.uulm.snowballr.backend.service
 
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.SnowballRException
+import se.uulm.snowballr.backend.model.dto.Paper
 import se.uulm.snowballr.backend.model.dto.toGrpcAuthor
 import se.uulm.snowballr.backend.model.dto.toGrpcPaper
+import se.uulm.snowballr.backend.model.dto.toGrpcPapers
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.IAuthorOfPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
 import snowballr.Base
+import snowballr.PaperOuterClass
 import snowballr.PaperOuterClass.Paper as GrpcPaper
 
 interface IPaperService {
@@ -16,6 +20,11 @@ interface IPaperService {
      * Service implementation of [SnowballRService.getPaperById].
      */
     suspend fun getPaperById(request: Base.Id): GrpcPaper
+
+    /**
+     * Service implementation of [SnowballRService.getBackwardReferencedPapers].
+     */
+    suspend fun getBackwardReferencedPapers(request: Base.Id): GrpcPaper.List
 }
 
 /**
@@ -42,5 +51,29 @@ class PaperService(
         val backwardReferencedIds = citationRepo.getBackwardsReferencedPaperIdsOfPaperById(paperId)
             .map { it.toString() }
         return paper.toGrpcPaper(authors, backwardReferencedIds)
+    }
+
+    override suspend fun getBackwardReferencedPapers(request: Base.Id): GrpcPaper.List {
+        val paperId = parseUUID(request.id, EntityType.PAPER)
+        if (!repo.doesPaperExistById(paperId)) {
+            throw SnowballRException.NotFoundException(EntityType.PAPER, paperId.toString())
+        }
+
+        val backwardReferencedIds = citationRepo.getBackwardsReferencedPaperIdsOfPaperById(paperId)
+        val papers: MutableList<Paper> = mutableListOf()
+        val paperAuthorsMap = mutableMapOf<Paper, List<PaperOuterClass.Author>>()
+        val paperBackwardReferencesMap = mutableMapOf<Paper, List<String>>()
+        backwardReferencedIds.forEach {
+            val referencedPaper = repo.getPaperById(it)
+            papers.add(referencedPaper)
+            paperAuthorsMap[referencedPaper] = authorOfPapersRepo
+                .getAuthorsOfPaperById(referencedPaper.id).map { author -> author.toGrpcAuthor() }
+            paperBackwardReferencesMap[referencedPaper] = citationRepo
+                .getBackwardsReferencedPaperIdsOfPaperById(referencedPaper.id).map { reference ->
+                    reference.toString()
+                }
+        }
+
+        return papers.toGrpcPapers(paperAuthorsMap, paperBackwardReferencesMap)
     }
 }

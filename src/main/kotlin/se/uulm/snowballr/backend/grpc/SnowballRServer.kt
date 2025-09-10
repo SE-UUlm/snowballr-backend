@@ -371,7 +371,7 @@ class SnowballRServer(
             super.getForwardReferencedPapers(request)
 
         override suspend fun getBackwardReferencedPapers(request: Base.Id): PaperOuterClass.Paper.List =
-            super.getBackwardReferencedPapers(request)
+            mainService.getBackwardReferencedPapers(request)
 
         override suspend fun getPaperPdf(request: Base.Id): Base.Blob = super.getPaperPdf(request)
 
