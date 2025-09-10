@@ -6,6 +6,7 @@ import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.Review
+import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.toGrpcReview
 import se.uulm.snowballr.backend.model.dto.toGrpcReviews
 import se.uulm.snowballr.backend.model.parseUUID
@@ -16,6 +17,7 @@ import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.IReviewHasCriterionTableRepo
 import snowballr.Base
+import java.util.UUID
 import snowballr.ReviewOuterClass.Review as GrpcReview
 
 interface IReviewService {
@@ -60,20 +62,9 @@ class ReviewService(
         val reviewId = parseUUID(request.id, EntityType.REVIEW)
         val review = repo.getReviewById(reviewId)
         val projectPaper = projectPaperRepo.getProjectPaperById(review.projectPaperId).getOrThrow()
-        val projectId = projectRepo.getProjectById(projectPaper.projectId).id
 
-        val projectMembers = projectMemberRepo.getProjectMembers(projectId)
+        ensureCurrentUserIsProjectMember(projectPaper.projectId, currentUser)
 
-        if (!projectMembers.any { it.userId == currentUser.id }) {
-            verifyServerAdminRole(currentUser) {
-                throw UnauthorizedException.Single(
-                    EntityType.PROJECT,
-                    projectId.toString(),
-                    AccessType.READ,
-                    it,
-                )
-            }
-        }
         val selectedCriteriaIds = reviewHasCriterionRepo.getSelectedCriteriaIdsForReviewById(reviewId)
         return review.toGrpcReview(selectedCriteriaIds.map { it.toString() })
     }
@@ -82,20 +73,8 @@ class ReviewService(
         val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
         val projectPaperId = parseUUID(request.id, EntityType.PROJECT_PAPER)
         val projectPaper = projectPaperRepo.getProjectPaperById(projectPaperId).getOrThrow()
-        val projectId = projectRepo.getProjectById(projectPaper.projectId).id
 
-        val projectMembers = projectMemberRepo.getProjectMembers(projectId)
-
-        if (!projectMembers.any { it.userId == currentUser.id }) {
-            verifyServerAdminRole(currentUser) {
-                throw UnauthorizedException.Single(
-                    EntityType.PROJECT,
-                    projectId.toString(),
-                    AccessType.READ,
-                    it,
-                )
-            }
-        }
+        ensureCurrentUserIsProjectMember(projectPaper.projectId, currentUser)
 
         val reviews = repo.getAllReviewsForProjectPaper(projectPaperId)
         val reviewSelectedCriteriaMap = mutableMapOf<Review, List<String>>()
@@ -106,5 +85,17 @@ class ReviewService(
                 }
         }
         return reviews.toGrpcReviews(reviewSelectedCriteriaMap)
+    }
+
+    private suspend fun ensureCurrentUserIsProjectMember(projectId: UUID, currentUser: User) {
+        val project = projectRepo.getProjectById(projectId)
+        val projectMembers = projectMemberRepo.getProjectMembers(project.id)
+        val isProjectMember = projectMembers.any { it.userId == currentUser.id }
+
+        if (!isProjectMember) {
+            verifyServerAdminRole(currentUser) {
+                throw UnauthorizedException.Single(EntityType.PROJECT, project.id.toString(), AccessType.READ, it)
+            }
+        }
     }
 }
