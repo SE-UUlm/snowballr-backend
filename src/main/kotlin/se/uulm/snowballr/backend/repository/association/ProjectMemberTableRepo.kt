@@ -31,9 +31,10 @@ import java.util.UUID
  */
 interface IProjectMemberTableRepo {
     /**
-     * Returns a project member by its composed ID or throws a [NotFoundException] if the project with the passed [projectId] and [userId] doesn't exist.
+     * Returns a [Result] containing the project member by its composed ID or a [NotFoundException] if the project with
+     * the passed [projectId] and [userId] doesn't exist.
      */
-    suspend fun getProjectMemberByComposedId(projectId: UUID, userId: UUID): ProjectMember
+    suspend fun getProjectMemberByComposedId(projectId: UUID, userId: UUID): Result<ProjectMember>
 
     /**
      * Adds a user with the passed [userId] as member to the project with the passed [projectId].
@@ -102,9 +103,14 @@ class ProjectMemberTableRepo(
             (ProjectMemberTable.projectId eq projectId) and (ProjectMemberTable.userId eq userId)
         }
 
-    override suspend fun getProjectMemberByComposedId(projectId: UUID, userId: UUID): ProjectMember = db.query {
-        getProjectMemberByComposedIdOrNull(projectId, userId)
-            ?: throw NotFoundException(EntityType.PROJECT_MEMBER, projectId.toString(), userId.toString())
+    override suspend fun getProjectMemberByComposedId(projectId: UUID, userId: UUID): Result<ProjectMember> = db.query {
+        val projectMember = getProjectMemberByComposedIdOrNull(projectId, userId)
+
+        if (projectMember != null) {
+            Result.success(projectMember)
+        } else {
+            Result.failure(NotFoundException(EntityType.PROJECT_MEMBER, projectId.toString(), userId.toString()))
+        }
     }
 
     override suspend fun addUserToProject(userId: UUID, projectId: UUID) = db.query {

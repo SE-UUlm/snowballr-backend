@@ -19,6 +19,7 @@ import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import snowballr.ProjectOuterClass
 import snowballr.ProjectOuterClass.MemberRole
 import java.util.UUID
+import kotlin.test.assertIs
 
 class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberTable), true) {
     private val repo = ProjectMemberTableRepo(db)
@@ -56,23 +57,26 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
     @Nested
     inner class GetProjectMemberByComposedId {
         @Test
-        fun `When a project member is found, then the correct project member is returned`() = runTest {
-            val (project, members) = setupProject()
-            val projectMember = repo.getProjectMemberByComposedId(project.id, members[0].userId)
+        fun `When a project member is found, then a successful result with the correct project member is returned`() =
+            runTest {
+                val (project, members) = setupProject()
+                val result = repo.getProjectMemberByComposedId(project.id, members[0].userId)
 
-            assertThat(projectMember.projectId).isEqualTo(project.id)
-            assertThat(projectMember.userId).isEqualTo(testUserId)
-            assertThat(projectMember.role).isEqualTo(members[0].role)
-        }
+                assertThat(result.isSuccess).isTrue()
+                val projectMember = result.getOrNull()
+                assertIs<ProjectMember>(projectMember)
+                assertThat(projectMember.projectId).isEqualTo(project.id)
+                assertThat(projectMember.userId).isEqualTo(testUserId)
+                assertThat(projectMember.role).isEqualTo(members[0].role)
+            }
 
         @Test
-        fun `When a project member is not found, then an exception is thrown`() = runTest {
-            assertThrows<NotFoundException> {
-                repo.getProjectMemberByComposedId(
-                    UUID.randomUUID(),
-                    UUID.randomUUID(),
-                )
-            }
+        fun `When a project member is not found, then a failed result with an exception is returned`() = runTest {
+            val result = repo.getProjectMemberByComposedId(UUID.randomUUID(), UUID.randomUUID())
+
+            assertThat(result.isFailure).isTrue()
+            val exception = result.exceptionOrNull()
+            assertIs<NotFoundException>(exception)
         }
     }
 
@@ -200,8 +204,8 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
         fun `When all project members are project admins, then the correct list of project admins is returned`() =
             runTest {
                 val (project, members) = setupProject(1)
-                val firstMember = repo.getProjectMemberByComposedId(project.id, testUserId)
-                val secondMember = repo.getProjectMemberByComposedId(project.id, members[1].userId)
+                val firstMember = repo.getProjectMemberByComposedId(project.id, testUserId).getOrThrow()
+                val secondMember = repo.getProjectMemberByComposedId(project.id, members[1].userId).getOrThrow()
                 assertThat(firstMember.role).isEqualTo(MemberRole.MEMBER_ROLE_DEFAULT)
                 assertThat(secondMember.role).isEqualTo(MemberRole.MEMBER_ROLE_DEFAULT)
 
@@ -221,8 +225,8 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
         fun `When not all project members are project admins, then the correct list of project admins is returned`() =
             runTest {
                 val (project, members) = setupProject(1)
-                val firstMember = repo.getProjectMemberByComposedId(project.id, testUserId)
-                val secondMember = repo.getProjectMemberByComposedId(project.id, members[1].userId)
+                val firstMember = repo.getProjectMemberByComposedId(project.id, testUserId).getOrThrow()
+                val secondMember = repo.getProjectMemberByComposedId(project.id, members[1].userId).getOrThrow()
                 assertThat(firstMember.role).isEqualTo(MemberRole.MEMBER_ROLE_DEFAULT)
                 assertThat(secondMember.role).isEqualTo(MemberRole.MEMBER_ROLE_DEFAULT)
 
@@ -242,7 +246,7 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
         fun `When a project member is promoted to admin, then the role of the project member is correctly updated`() =
             runTest {
                 val (project, _) = setupProject()
-                val normalMember = repo.getProjectMemberByComposedId(project.id, testUserId)
+                val normalMember = repo.getProjectMemberByComposedId(project.id, testUserId).getOrThrow()
                 assertThat(normalMember.role).isEqualTo(MemberRole.MEMBER_ROLE_DEFAULT)
 
                 val promotedMember = repo.promoteProjectMemberToAdmin(project.id, testUserId)
@@ -272,7 +276,7 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
         fun `When a project member and the corresponding user exists, then the project member with user is correctly returned`() =
             runTest {
                 val (project, _) = setupProject()
-                val normalMember = repo.getProjectMemberByComposedId(project.id, testUserId)
+                val normalMember = repo.getProjectMemberByComposedId(project.id, testUserId).getOrThrow()
                 val user = userRepo.getUserById(testUserId)
                 val projectMembersWithUsers = repo.getProjectMembersWithUsers(project.id)
 
@@ -288,7 +292,7 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
                 val user = userRepo.getUserById(testUserId)
                 val nonProjectMemberUserId = RepositoryHelper.createExampleUser("test-user@example.com")
                 val nonProjectMemberUser = userRepo.getUserById(nonProjectMemberUserId)
-                val normalMember = repo.getProjectMemberByComposedId(project.id, testUserId)
+                val normalMember = repo.getProjectMemberByComposedId(project.id, testUserId).getOrThrow()
                 val projectMembersWithUsers = repo.getProjectMembersWithUsers(project.id)
 
                 assertThat(projectMembersWithUsers).hasSize(1)
