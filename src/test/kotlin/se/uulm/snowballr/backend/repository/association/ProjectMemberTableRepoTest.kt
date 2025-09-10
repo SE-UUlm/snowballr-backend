@@ -16,10 +16,11 @@ import se.uulm.snowballr.backend.repository.RepositoryTest
 import se.uulm.snowballr.backend.repository.UserTableRepo
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
+import se.uulm.snowballr.backend.utils.assertResultFailure
+import se.uulm.snowballr.backend.utils.assertResultSuccess
 import snowballr.ProjectOuterClass
 import snowballr.ProjectOuterClass.MemberRole
 import java.util.UUID
-import kotlin.test.assertIs
 
 class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberTable), true) {
     private val repo = ProjectMemberTableRepo(db)
@@ -62,9 +63,7 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
                 val (project, members) = setupProject()
                 val result = repo.getProjectMemberByComposedId(project.id, members[0].userId)
 
-                assertThat(result.isSuccess).isTrue()
-                val projectMember = result.getOrNull()
-                assertIs<ProjectMember>(projectMember)
+                val projectMember = assertResultSuccess(result)
                 assertThat(projectMember.projectId).isEqualTo(project.id)
                 assertThat(projectMember.userId).isEqualTo(testUserId)
                 assertThat(projectMember.role).isEqualTo(members[0].role)
@@ -74,9 +73,7 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
         fun `When a project member is not found, then a failed result with an exception is returned`() = runTest {
             val result = repo.getProjectMemberByComposedId(UUID.randomUUID(), UUID.randomUUID())
 
-            assertThat(result.isFailure).isTrue()
-            val exception = result.exceptionOrNull()
-            assertIs<NotFoundException>(exception)
+            assertResultFailure<NotFoundException>(result)
         }
     }
 

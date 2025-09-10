@@ -8,7 +8,6 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.ProjectPaperNotFoundException
-import se.uulm.snowballr.backend.model.dto.ProjectPaper
 import se.uulm.snowballr.backend.repository.PaperTableRepo
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertPaperAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectAndGetId
@@ -17,13 +16,14 @@ import se.uulm.snowballr.backend.repository.RepositoryTest
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
+import se.uulm.snowballr.backend.utils.assertResultFailure
+import se.uulm.snowballr.backend.utils.assertResultSuccess
 import snowballr.ProjectOuterClass
 import snowballr.ProjectOuterClass.Project
 import java.util.UUID
 import kotlin.random.Random
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, ProjectTable, PaperTable), true) {
@@ -42,9 +42,7 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
 
                 val result = repo.getProjectPaperById(projectPaperId)
 
-                assertThat(result.isSuccess).isTrue()
-                val projectPaper = result.getOrNull()
-                assertIs<ProjectPaper>(projectPaper)
+                val projectPaper = assertResultSuccess(result)
                 assertThat(projectPaper.id).isEqualTo(projectPaperId)
                 assertThat(projectPaper.projectId).isEqualTo(projectId)
                 assertThat(projectPaper.paperId).isEqualTo(paperId)
@@ -58,9 +56,7 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
         fun `When a project paper is not found, then a failed result with an exception is returned`() = runTest {
             val result = repo.getProjectPaperById(UUID.randomUUID())
 
-            assertThat(result.isFailure).isTrue()
-            val exception = result.exceptionOrNull()
-            assertIs<NotFoundException>(exception)
+            assertResultFailure<NotFoundException>(result)
         }
     }
 

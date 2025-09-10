@@ -5,7 +5,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
-import se.uulm.snowballr.backend.model.dto.Review
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertPaperAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectPaperAndGetId
@@ -14,9 +13,10 @@ import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.ReviewTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
+import se.uulm.snowballr.backend.utils.assertResultFailure
+import se.uulm.snowballr.backend.utils.assertResultSuccess
 import snowballr.ReviewOuterClass
 import java.util.UUID
-import kotlin.test.assertIs
 
 class ReviewTableRepoTest : RepositoryTest(arrayOf(ReviewTable, ProjectTable, ProjectPaperTable, PaperTable), true) {
     private val repo = ReviewTableRepo(db)
@@ -32,9 +32,7 @@ class ReviewTableRepoTest : RepositoryTest(arrayOf(ReviewTable, ProjectTable, Pr
             val reviewId = insertReviewAndGetId(projectPaperId, userId = testUserId)
             val result = repo.getReviewById(reviewId)
 
-            assertThat(result.isSuccess).isTrue()
-            val review = result.getOrNull()
-            assertIs<Review>(review)
+            val review = assertResultSuccess(result)
             assertThat(review.id).isEqualTo(reviewId)
             assertThat(review.projectPaperId).isEqualTo(projectPaperId)
             assertThat(review.userId).isEqualTo(testUserId)
@@ -45,9 +43,7 @@ class ReviewTableRepoTest : RepositoryTest(arrayOf(ReviewTable, ProjectTable, Pr
         fun `When a review is not found, then a failed result with an exception is returned`() = runTest {
             val result = repo.getReviewById(UUID.randomUUID())
 
-            assertThat(result.isFailure).isTrue()
-            val exception = result.exceptionOrNull()
-            assertIs<NotFoundException>(exception)
+            assertResultFailure<NotFoundException>(result)
         }
     }
 
