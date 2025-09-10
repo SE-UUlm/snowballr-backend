@@ -3,12 +3,19 @@ package se.uulm.snowballr.backend.service
 import se.uulm.snowballr.backend.fetcher.FetcherManager
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import snowballr.Fetcher.AvailableFetchers
+import snowballr.Fetcher.FetcherOptions
+import snowballr.Fetcher.GetAvailableFetcherOptionsRequest
 
 interface IFetcherService {
     /**
      * Service implementation of [SnowballRService.getAvailableFetchers].
      */
     suspend fun getAvailableFetchers(): AvailableFetchers
+
+    /**
+     * Service implementation of [SnowballRService.getAvailableFetcherOptions].
+     */
+    suspend fun getAvailableFetcherOptions(request: GetAvailableFetcherOptionsRequest): FetcherOptions
 }
 
 /**
@@ -26,4 +33,9 @@ class FetcherService(
         .newBuilder()
         .addAllFetcherNames(fetcherManager.getAvailableFetchers())
         .build()
+
+    override suspend fun getAvailableFetcherOptions(request: GetAvailableFetcherOptionsRequest): FetcherOptions =
+        FetcherOptions.newBuilder()
+            .putAllOptions(fetcherManager.getAvailableOptions(request.fetcherName))
+            .build()
 }
