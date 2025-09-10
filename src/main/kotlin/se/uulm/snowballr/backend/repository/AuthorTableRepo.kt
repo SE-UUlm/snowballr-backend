@@ -18,9 +18,10 @@ import java.util.UUID
  */
 interface IAuthorTableRepo {
     /**
-     * Returns an author by its ID or throws a [NotFoundException] if the author with the passed [id] doesn't exist.
+     * Returns a [Result] containing the author by its ID or a [NotFoundException] if the author with the passed [id]
+     * doesn't exist.
      */
-    suspend fun getAuthorById(id: UUID): Author
+    suspend fun getAuthorById(id: UUID): Result<Author>
 }
 
 /**
@@ -43,7 +44,7 @@ class AuthorTableRepo(
      */
     private fun getAuthorByIdOrNull(id: UUID): Author? = AuthorTable.getEntityByIdOrNull(id, ResultRow::toAuthor)
 
-    override suspend fun getAuthorById(id: UUID): Author = db.query {
-        getAuthorByIdOrNull(id) ?: throw NotFoundException(EntityType.AUTHOR, id.toString())
+    override suspend fun getAuthorById(id: UUID): Result<Author> = db.query {
+        getEntityByIdAsResult(::getAuthorByIdOrNull, EntityType.AUTHOR, id)
     }
 }
