@@ -11,6 +11,7 @@ import se.uulm.snowballr.backend.model.SnowballRException.ProjectPaperNotFoundEx
 import se.uulm.snowballr.backend.model.dto.ProjectPaper
 import se.uulm.snowballr.backend.model.dto.ProjectPaperWithPaper
 import se.uulm.snowballr.backend.model.parseUUID
+import se.uulm.snowballr.backend.repository.getEntityByIdAsResult
 import se.uulm.snowballr.backend.repository.getEntityByIdOrNull
 import se.uulm.snowballr.backend.repository.getUserEntityId
 import se.uulm.snowballr.backend.repository.insertAndGet
@@ -122,13 +123,7 @@ class ProjectPaperTableRepo(
     }
 
     override suspend fun getProjectPaperById(id: UUID): Result<ProjectPaper> = db.query {
-        val projectPaper = getProjectPaperByIdOrNull(id)
-
-        if (projectPaper != null) {
-            Result.success(projectPaper)
-        } else {
-            Result.failure(NotFoundException(EntityType.PROJECT_PAPER, id.toString()))
-        }
+        getEntityByIdAsResult(::getProjectPaperByIdOrNull, EntityType.PROJECT_PAPER, id)
     }
 
     override suspend fun getProjectPaperByRelativeId(projectId: UUID, relativeId: Long): ProjectPaper = db.query {

@@ -48,13 +48,7 @@ class ReviewTableRepo(
     private fun getReviewByIdOrNull(id: UUID): Review? = ReviewTable.getEntityByIdOrNull(id, ResultRow::toReview)
 
     override suspend fun getReviewById(id: UUID): Result<Review> = db.query {
-        val review = getReviewByIdOrNull(id)
-
-        if (review != null) {
-            Result.success(review)
-        } else {
-            Result.failure(NotFoundException(EntityType.REVIEW, id.toString()))
-        }
+        getEntityByIdAsResult(::getReviewByIdOrNull, EntityType.REVIEW, id)
     }
 
     override suspend fun getAllReviewsForProjectPaper(projectPaperId: UUID): List<Review> = db.query {
