@@ -19,9 +19,10 @@ import java.util.UUID
  */
 interface IReviewTableRepo {
     /**
-     * Returns a review by its ID or throws a [NotFoundException] if the review with the passed [id] doesn't exist.
+     * Returns a [Result] containing the review by its ID or a [NotFoundException] if the review with the passed [id]
+     * doesn't exist.
      */
-    suspend fun getReviewById(id: UUID): Review
+    suspend fun getReviewById(id: UUID): Result<Review>
 
     /**
      * Retrieves all reviews associated with the specified project paper.
@@ -46,8 +47,14 @@ class ReviewTableRepo(
 ) : IReviewTableRepo {
     private fun getReviewByIdOrNull(id: UUID): Review? = ReviewTable.getEntityByIdOrNull(id, ResultRow::toReview)
 
-    override suspend fun getReviewById(id: UUID): Review = db.query {
-        getReviewByIdOrNull(id) ?: throw NotFoundException(EntityType.REVIEW, id.toString())
+    override suspend fun getReviewById(id: UUID): Result<Review> = db.query {
+        val review = getReviewByIdOrNull(id)
+
+        if (review != null) {
+            Result.success(review)
+        } else {
+            Result.failure(NotFoundException(EntityType.REVIEW, id.toString()))
+        }
     }
 
     override suspend fun getAllReviewsForProjectPaper(projectPaperId: UUID): List<Review> = db.query {

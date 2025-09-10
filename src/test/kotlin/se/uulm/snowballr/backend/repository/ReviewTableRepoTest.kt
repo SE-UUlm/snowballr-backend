@@ -4,8 +4,8 @@ import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
+import se.uulm.snowballr.backend.model.dto.Review
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertPaperAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectPaperAndGetId
@@ -16,6 +16,7 @@ import se.uulm.snowballr.backend.table.ReviewTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import snowballr.ReviewOuterClass
 import java.util.UUID
+import kotlin.test.assertIs
 
 class ReviewTableRepoTest : RepositoryTest(arrayOf(ReviewTable, ProjectTable, ProjectPaperTable, PaperTable), true) {
     private val repo = ReviewTableRepo(db)
@@ -23,14 +24,17 @@ class ReviewTableRepoTest : RepositoryTest(arrayOf(ReviewTable, ProjectTable, Pr
     @Nested
     inner class GetReviewById {
         @Test
-        fun `When a review is found, then the correct review is returned`() = runTest {
+        fun `When a review is found, then a successful result with the correct review is returned`() = runTest {
             val projectId = insertProjectAndGetId(createdBy = testUserId)
             val paperId = insertPaperAndGetId()
             val projectPaperId =
                 insertProjectPaperAndGetId(paperId = paperId, projectId = projectId, createdBy = testUserId)
             val reviewId = insertReviewAndGetId(projectPaperId, userId = testUserId)
-            val review = repo.getReviewById(reviewId)
+            val result = repo.getReviewById(reviewId)
 
+            assertThat(result.isSuccess).isTrue()
+            val review = result.getOrNull()
+            assertIs<Review>(review)
             assertThat(review.id).isEqualTo(reviewId)
             assertThat(review.projectPaperId).isEqualTo(projectPaperId)
             assertThat(review.userId).isEqualTo(testUserId)
@@ -38,8 +42,12 @@ class ReviewTableRepoTest : RepositoryTest(arrayOf(ReviewTable, ProjectTable, Pr
         }
 
         @Test
-        fun `When a review is not found, then an exception is thrown`() = runTest {
-            assertThrows<NotFoundException> { repo.getReviewById(UUID.randomUUID()) }
+        fun `When a review is not found, then a failed result with an exception is returned`() = runTest {
+            val result = repo.getReviewById(UUID.randomUUID())
+
+            assertThat(result.isFailure).isTrue()
+            val exception = result.exceptionOrNull()
+            assertIs<NotFoundException>(exception)
         }
     }
 

@@ -60,7 +60,7 @@ class ReviewService(
     override suspend fun getReviewById(request: Base.Id): GrpcReview {
         val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
         val reviewId = parseUUID(request.id, EntityType.REVIEW)
-        val review = repo.getReviewById(reviewId)
+        val review = repo.getReviewById(reviewId).getOrThrow()
         val projectPaper = projectPaperRepo.getProjectPaperById(review.projectPaperId).getOrThrow()
 
         ensureCurrentUserIsProjectMember(projectPaper.projectId, currentUser)
