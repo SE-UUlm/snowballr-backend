@@ -49,23 +49,9 @@ fun Paper.toGrpcPaper(
 }
 
 /**
- * Converts a list of [Paper] objects into a gRPC list of papers.
- *
- * @return A [PaperOuterClass.Paper.List] containing the gRPC representation of the papers.
+ * Converts a list of [PaperOuterClass.Paper] objects into a [PaperOuterClass.Paper.List].
  */
-fun List<Paper>.toGrpcPapers(
-    paperAuthorsMap: Map<Paper, List<PaperOuterClass.Author>>,
-    paperBackwardReferencesMap: Map<Paper, List<String>>,
-): PaperOuterClass.Paper.List = PaperOuterClass.Paper.List
+fun List<PaperOuterClass.Paper>.toGrpcPapers(): PaperOuterClass.Paper.List = PaperOuterClass.Paper.List
     .newBuilder()
-    .addAllPapers(
-        this.map { paper ->
-            val authors = paperAuthorsMap[paper].orEmpty()
-            val backwardRefs = paperBackwardReferencesMap[paper].orEmpty()
-            paper.toGrpcPaper(
-                authors = authors,
-                backwardReferencedIds = backwardRefs,
-            )
-        },
-    )
+    .addAllPapers(this)
     .build()
