@@ -6,8 +6,9 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
-import se.uulm.snowballr.backend.model.SnowballRException
+import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.ProjectPaperNotFoundException
+import se.uulm.snowballr.backend.model.dto.ProjectPaper
 import se.uulm.snowballr.backend.repository.PaperTableRepo
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertPaperAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectAndGetId
@@ -22,6 +23,7 @@ import java.util.UUID
 import kotlin.random.Random
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, ProjectTable, PaperTable), true) {
@@ -31,25 +33,34 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
     @Nested
     inner class GetProjectPaperById {
         @Test
-        fun `When a project paper is found, then the correct project paper is returned`() = runTest {
-            val projectId = insertProjectAndGetId(createdBy = testUserId)
-            val paperId = insertPaperAndGetId()
-            val projectPaperId =
-                insertProjectPaperAndGetId(paperId = paperId, projectId = projectId, createdBy = testUserId)
-            val projectPaper = repo.getProjectPaperById(projectPaperId)
+        fun `When a project paper is found, then a successful result with the correct project paper is returned`() =
+            runTest {
+                val projectId = insertProjectAndGetId(createdBy = testUserId)
+                val paperId = insertPaperAndGetId()
+                val projectPaperId =
+                    insertProjectPaperAndGetId(paperId = paperId, projectId = projectId, createdBy = testUserId)
 
-            assertThat(projectPaper.id).isEqualTo(projectPaperId)
-            assertThat(projectPaper.projectId).isEqualTo(projectId)
-            assertThat(projectPaper.paperId).isEqualTo(paperId)
-            assertThat(projectPaper.localPaperId).isEqualTo(0)
-            assertThat(projectPaper.stage).isEqualTo(0)
-            assertThat(projectPaper.decision).isEqualTo(ProjectOuterClass.PaperDecision.PAPER_DECISION_ACCEPTED)
-            assertThat(projectPaper.createdBy).isEqualTo(testUserId)
-        }
+                val result = repo.getProjectPaperById(projectPaperId)
+
+                assertThat(result.isSuccess).isTrue()
+                val projectPaper = result.getOrNull()
+                assertIs<ProjectPaper>(projectPaper)
+                assertThat(projectPaper.id).isEqualTo(projectPaperId)
+                assertThat(projectPaper.projectId).isEqualTo(projectId)
+                assertThat(projectPaper.paperId).isEqualTo(paperId)
+                assertThat(projectPaper.localPaperId).isEqualTo(0)
+                assertThat(projectPaper.stage).isEqualTo(0)
+                assertThat(projectPaper.decision).isEqualTo(ProjectOuterClass.PaperDecision.PAPER_DECISION_ACCEPTED)
+                assertThat(projectPaper.createdBy).isEqualTo(testUserId)
+            }
 
         @Test
-        fun `When a project paper is not found, then an exception is thrown`() = runTest {
-            assertThrows<SnowballRException.NotFoundException> { repo.getProjectPaperById(UUID.randomUUID()) }
+        fun `When a project paper is not found, then a failed result with an exception is returned`() = runTest {
+            val result = repo.getProjectPaperById(UUID.randomUUID())
+
+            assertThat(result.isFailure).isTrue()
+            val exception = result.exceptionOrNull()
+            assertIs<NotFoundException>(exception)
         }
     }
 
@@ -61,7 +72,7 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
             val paperId = insertPaperAndGetId()
             val projectPaperId =
                 insertProjectPaperAndGetId(paperId = paperId, projectId = projectId, createdBy = testUserId)
-            val projectPaper = repo.getProjectPaperById(projectPaperId)
+            val projectPaper = repo.getProjectPaperById(projectPaperId).getOrThrow()
 
             assertThrows<ProjectPaperNotFoundException> {
                 repo.getProjectPaperByRelativeId(UUID.randomUUID(), projectPaper.localPaperId)
@@ -88,7 +99,7 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
                 val paperId = insertPaperAndGetId()
                 val projectPaperId =
                     insertProjectPaperAndGetId(paperId = paperId, projectId = projectId, createdBy = testUserId)
-                var projectPaper = repo.getProjectPaperById(projectPaperId)
+                var projectPaper = repo.getProjectPaperById(projectPaperId).getOrThrow()
                 projectPaper = assertDoesNotThrow {
                     repo.getProjectPaperByRelativeId(projectId, projectPaper.localPaperId)
                 }
@@ -137,7 +148,7 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
                 val paperId = insertPaperAndGetId()
                 val projectPaperId =
                     insertProjectPaperAndGetId(paperId = paperId, projectId = projectId, createdBy = testUserId)
-                val projectPaper = repo.getProjectPaperById(projectPaperId)
+                val projectPaper = repo.getProjectPaperById(projectPaperId).getOrThrow()
 
                 val paper = paperRepo.getPaperById(paperId)
                 val projectPapers = repo.getAllProjectPapersWithPapers(projectId)
@@ -155,7 +166,7 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
                 val paperId = insertPaperAndGetId()
                 val projectPaperId =
                     insertProjectPaperAndGetId(paperId = paperId, projectId = projectId1, createdBy = testUserId)
-                val projectPaper = repo.getProjectPaperById(projectPaperId)
+                val projectPaper = repo.getProjectPaperById(projectPaperId).getOrThrow()
                 val nonProjectPaperId =
                     insertProjectPaperAndGetId(paperId = paperId, projectId = projectId2, createdBy = testUserId)
 
@@ -175,11 +186,8 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
         fun `When a project paper is added to a project, but the assigned user doesn't exist, then an exception is thrown`() =
             runTest {
                 val request = Project.Paper.Add.newBuilder().build()
-                assertThrows<SnowballRException.NotFoundException> {
-                    repo.addPaperToProject(
-                        request,
-                        UUID.randomUUID(),
-                    )
+                assertThrows<NotFoundException> {
+                    repo.addPaperToProject(request, UUID.randomUUID())
                 }
             }
 

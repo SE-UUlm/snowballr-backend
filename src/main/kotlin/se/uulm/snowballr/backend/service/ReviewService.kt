@@ -59,7 +59,7 @@ class ReviewService(
         val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
         val reviewId = parseUUID(request.id, EntityType.REVIEW)
         val review = repo.getReviewById(reviewId)
-        val projectPaper = projectPaperRepo.getProjectPaperById(review.projectPaperId)
+        val projectPaper = projectPaperRepo.getProjectPaperById(review.projectPaperId).getOrThrow()
         val projectId = projectRepo.getProjectById(projectPaper.projectId).id
 
         val projectMembers = projectMemberRepo.getProjectMembers(projectId)
@@ -81,7 +81,7 @@ class ReviewService(
     override suspend fun getAllReviewsForProjectPaper(request: Base.Id): GrpcReview.List {
         val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
         val projectPaperId = parseUUID(request.id, EntityType.PROJECT_PAPER)
-        val projectPaper = projectPaperRepo.getProjectPaperById(projectPaperId)
+        val projectPaper = projectPaperRepo.getProjectPaperById(projectPaperId).getOrThrow()
         val projectId = projectRepo.getProjectById(projectPaper.projectId).id
 
         val projectMembers = projectMemberRepo.getProjectMembers(projectId)

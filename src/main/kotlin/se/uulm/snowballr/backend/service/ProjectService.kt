@@ -408,7 +408,7 @@ class ProjectService(
 
     override suspend fun getProjectPaperById(request: Base.Id): GrpcProject.Paper {
         val projectPaperId = parseUUID(request.id, EntityType.PROJECT_PAPER)
-        val projectPaper = projectPaperRepo.getProjectPaperById(projectPaperId)
+        val projectPaper = projectPaperRepo.getProjectPaperById(projectPaperId).getOrThrow()
         return loadAndAuthorizeProjectPaper(projectPaper, projectPaper.projectId)
     }
 

@@ -62,7 +62,7 @@ class GetProjectPaperByIdTest : MainServiceTest() {
             coEvery { projectPaperRepoMock.getProjectPaperById(projectPaper.id) } throws TestSpecificException()
             return
         }
-        coEvery { projectPaperRepoMock.getProjectPaperById(projectPaper.id) } returns projectPaper
+        coEvery { projectPaperRepoMock.getProjectPaperById(projectPaper.id) } returns Result.success(projectPaper)
 
         if (failAt == GrpcContext::getUserIdFromContext) {
             every { GrpcContext.getUserIdFromContext() } throws TestSpecificException()
@@ -162,7 +162,7 @@ class GetProjectPaperByIdTest : MainServiceTest() {
 
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
         coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
-        coEvery { projectPaperRepoMock.getProjectPaperById(projectPaper.id) } returns projectPaper
+        coEvery { projectPaperRepoMock.getProjectPaperById(projectPaper.id) } returns Result.success(projectPaper)
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
         assertThrows<SnowballRException.UnauthorizedException> { mainService.getProjectPaperById(getExampleRequest()) }

@@ -67,7 +67,7 @@ class GetAllReviewsForProjectPaperTest : MainServiceTest() {
             coEvery { projectPaperRepoMock.getProjectPaperById(projectPaper.id) } throws TestSpecificException()
             return
         }
-        coEvery { projectPaperRepoMock.getProjectPaperById(projectPaper.id) } returns projectPaper
+        coEvery { projectPaperRepoMock.getProjectPaperById(projectPaper.id) } returns Result.success(projectPaper)
 
         if (failAt == projectRepoMock::getProjectById) {
             coEvery { projectRepoMock.getProjectById(project.id) } throws TestSpecificException()
@@ -135,7 +135,7 @@ class GetAllReviewsForProjectPaperTest : MainServiceTest() {
 
             every { GrpcContext.getUserIdFromContext() } returns currentUser.id
             coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
-            coEvery { projectPaperRepoMock.getProjectPaperById(projectPaper.id) } returns projectPaper
+            coEvery { projectPaperRepoMock.getProjectPaperById(projectPaper.id) } returns Result.success(projectPaper)
             coEvery { projectRepoMock.getProjectById(project.id) } returns project
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 

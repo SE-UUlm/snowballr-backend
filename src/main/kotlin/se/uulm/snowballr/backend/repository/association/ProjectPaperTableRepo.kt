@@ -31,9 +31,10 @@ import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
  */
 interface IProjectPaperTableRepo {
     /**
-     * Returns a project paper by its ID or throws a [NotFoundException] if the project paper with the passed [id] doesn't exist.
+     * Returns a [Result] containing the project paper by its ID or a [NotFoundException] if the project paper with the
+     * passed [id] doesn't exist.
      */
-    suspend fun getProjectPaperById(id: UUID): ProjectPaper
+    suspend fun getProjectPaperById(id: UUID): Result<ProjectPaper>
 
     /**
      * Retrieves a project paper by its relative ID in a project.
@@ -120,8 +121,14 @@ class ProjectPaperTableRepo(
             ?: 0L
     }
 
-    override suspend fun getProjectPaperById(id: UUID): ProjectPaper = db.query {
-        getProjectPaperByIdOrNull(id) ?: throw NotFoundException(EntityType.PROJECT_PAPER, id.toString())
+    override suspend fun getProjectPaperById(id: UUID): Result<ProjectPaper> = db.query {
+        val projectPaper = getProjectPaperByIdOrNull(id)
+
+        if (projectPaper != null) {
+            Result.success(projectPaper)
+        } else {
+            Result.failure(NotFoundException(EntityType.PROJECT_PAPER, id.toString()))
+        }
     }
 
     override suspend fun getProjectPaperByRelativeId(projectId: UUID, relativeId: Long): ProjectPaper = db.query {
