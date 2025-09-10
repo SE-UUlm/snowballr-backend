@@ -1,6 +1,5 @@
 package se.uulm.snowballr.backend
 
-import kotlinx.datetime.Instant
 import se.uulm.snowballr.backend.model.dto.Author
 import se.uulm.snowballr.backend.model.dto.Criterion
 import se.uulm.snowballr.backend.model.dto.Paper
@@ -21,6 +20,7 @@ import snowballr.ProjectOuterClass.SnowballingType
 import snowballr.ReviewOuterClass
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
+import snowballr.id
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -170,10 +170,10 @@ object DataBuilder {
         title: String = "Title",
         externalId: String? = "ExternalId",
         abstract: String = "Abstract",
-        publishedAt: Instant? = Instant.fromEpochSeconds(0),
-        publisher: String? = "Publisher",
-        publicationType: String? = "PublicationType",
-        publicationName: String? = "PublicationName",
+        year: Int = 2025,
+        publisher: String = "Publisher",
+        publicationType: String = "PublicationType",
+        publicationName: String = "PublicationName",
         pdfId: UUID? = UUID.randomUUID(),
         fetcherMetadata: Map<String, String> = emptyMap(),
         createdAt: OffsetDateTime = OffsetDateTime.now(),
@@ -184,7 +184,7 @@ object DataBuilder {
         title,
         externalId,
         abstract,
-        publishedAt,
+        year,
         publisher,
         publicationType,
         publicationName,

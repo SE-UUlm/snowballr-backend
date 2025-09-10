@@ -1,7 +1,6 @@
 package se.uulm.snowballr.backend.repository
 
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -27,7 +26,7 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
                 assertThat(title).isEqualTo("Title")
                 assertThat(externalId).isEqualTo("ExternalId")
                 assertThat(abstract).isEqualTo("Abstract")
-                assertThat(publishedAt).isEqualTo(Instant.fromEpochSeconds(0))
+                assertThat(year).isEqualTo(2025)
                 assertThat(publisher).isEqualTo("Publisher")
                 assertThat(publicationType).isEqualTo("PublicationType")
                 assertThat(publicationName).isEqualTo("PublicationName")

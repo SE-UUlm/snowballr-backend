@@ -3,9 +3,7 @@ package se.uulm.snowballr.backend.table
 import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.ResultRow
-import org.jetbrains.exposed.sql.kotlin.datetime.timestamp
 import se.uulm.snowballr.backend.model.dto.Paper
-import java.time.Instant
 import java.time.OffsetDateTime
 
 /**
@@ -15,7 +13,7 @@ import java.time.OffsetDateTime
  * - [title]: Represents the title of the paper as a [String].
  * - [externalId]: Represents an optional unique external identifier of the paper as a nullable [String].
  * - [abstract]: Represents the abstract of the paper as a [String].
- * - [publishedAt]: Represents the publication timestamp of the paper as an [Instant].
+ * - [year]: Represents the publication year of the paper as an [Int].
  * - [publisher]: Represents the publisher of the paper as a nullable [String].
  * - [publicationType]: Represents the type of publication as a nullable [String].
  * - [publicationName]: Represents the name of the publication where the paper is published, as a nullable [String].
@@ -28,10 +26,10 @@ object PaperTable : UUIDTable("paper") {
     val title = text("title")
     val externalId = text("external_id").uniqueIndex().nullable()
     val abstract = text("abstract")
-    val publishedAt = timestamp("published_at").nullable()
-    val publisher = text("publisher").nullable()
-    val publicationType = text("publication_type").nullable()
-    val publicationName = text("publication_name").nullable()
+    val year = integer("year")
+    val publisher = text("publisher")
+    val publicationType = text("publication_type")
+    val publicationName = text("publication_name")
 
     /**
      * Optional reference to the PDF of the paper.
@@ -57,7 +55,7 @@ fun ResultRow.toPaper() = Paper(
     title = this[PaperTable.title],
     externalId = this[PaperTable.externalId],
     abstract = this[PaperTable.abstract],
-    publishedAt = this[PaperTable.publishedAt],
+    year = this[PaperTable.year],
     publisher = this[PaperTable.publisher],
     publicationType = this[PaperTable.publicationType],
     publicationName = this[PaperTable.publicationName],
