@@ -91,7 +91,7 @@ class GetProjectPaperByRelativeIdTest : MainServiceTest() {
             coEvery { userRepoMock.getUserById(currentUser.id) } throws TestSpecificException()
             return
         }
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
 
         if (failAt == projectMemberRepoMock::getProjectMembers) {
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } throws TestSpecificException()
@@ -108,7 +108,7 @@ class GetProjectPaperByRelativeIdTest : MainServiceTest() {
             coEvery { paperRepoMock.getPaperById(projectPaper.paperId) } throws TestSpecificException()
             return
         }
-        coEvery { paperRepoMock.getPaperById(projectPaper.paperId) } returns paper
+        coEvery { paperRepoMock.getPaperById(projectPaper.paperId) } returns Result.success(paper)
 
         if (failAt == authorOfPaperRepoMock::getAuthorsOfPaperById) {
             coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(paper.id) } throws TestSpecificException()
@@ -196,7 +196,7 @@ class GetProjectPaperByRelativeIdTest : MainServiceTest() {
         coEvery {
             projectPaperRepoMock.getProjectPaperByRelativeId(project.id, projectPaper.localPaperId)
         } returns projectPaper
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
         assertThrows<SnowballRException.UnauthorizedException> {
