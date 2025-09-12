@@ -27,10 +27,12 @@ import se.uulm.snowballr.backend.repository.IAuthorTableRepo
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
+import se.uulm.snowballr.backend.repository.IReviewTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.IVerificationTokenTableRepo
 import se.uulm.snowballr.backend.repository.PaperTableRepo
 import se.uulm.snowballr.backend.repository.ProjectTableRepo
+import se.uulm.snowballr.backend.repository.ReviewTableRepo
 import se.uulm.snowballr.backend.repository.UserTableRepo
 import se.uulm.snowballr.backend.repository.VerificationTokenTableRepo
 import se.uulm.snowballr.backend.repository.association.AuthorOfPaperTableRepo
@@ -41,12 +43,10 @@ import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.IReadingListTableRepo
 import se.uulm.snowballr.backend.repository.association.IReviewHasCriterionTableRepo
-import se.uulm.snowballr.backend.repository.association.IReviewTableRepo
 import se.uulm.snowballr.backend.repository.association.ProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.ProjectPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.ReadingListTableRepo
 import se.uulm.snowballr.backend.repository.association.ReviewHasCriterionTableRepo
-import se.uulm.snowballr.backend.repository.association.ReviewTableRepo
 import se.uulm.snowballr.backend.service.AuthenticationService
 import se.uulm.snowballr.backend.service.CriterionService
 import se.uulm.snowballr.backend.service.FetcherService
