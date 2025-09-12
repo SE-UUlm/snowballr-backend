@@ -8,10 +8,12 @@ import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 import org.simplejavamail.api.mailer.Mailer
 import org.simplejavamail.mailer.MailerBuilder
+import se.uulm.snowballr.backend.auth.AuthenticationManager
 import se.uulm.snowballr.backend.auth.CookieService
+import se.uulm.snowballr.backend.auth.IAuthenticationManager
 import se.uulm.snowballr.backend.auth.ICookieService
-import se.uulm.snowballr.backend.auth.IJwtService
-import se.uulm.snowballr.backend.auth.JwtService
+import se.uulm.snowballr.backend.auth.IJwtManager
+import se.uulm.snowballr.backend.auth.JwtManager
 import se.uulm.snowballr.backend.db.Database
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.env.EnvReader
@@ -53,14 +55,18 @@ import se.uulm.snowballr.backend.service.FetcherService
 import se.uulm.snowballr.backend.service.IAuthenticationService
 import se.uulm.snowballr.backend.service.ICriterionService
 import se.uulm.snowballr.backend.service.IFetcherService
+import se.uulm.snowballr.backend.service.IInvitationService
 import se.uulm.snowballr.backend.service.IMainService
 import se.uulm.snowballr.backend.service.IPaperService
+import se.uulm.snowballr.backend.service.IProjectPaperService
 import se.uulm.snowballr.backend.service.IProjectService
 import se.uulm.snowballr.backend.service.IReadingListService
 import se.uulm.snowballr.backend.service.IReviewService
 import se.uulm.snowballr.backend.service.IUserService
+import se.uulm.snowballr.backend.service.InvitationService
 import se.uulm.snowballr.backend.service.MainService
 import se.uulm.snowballr.backend.service.PaperService
+import se.uulm.snowballr.backend.service.ProjectPaperService
 import se.uulm.snowballr.backend.service.ProjectService
 import se.uulm.snowballr.backend.service.ReadingListService
 import se.uulm.snowballr.backend.service.ReviewService
@@ -166,9 +172,9 @@ fun createMailer(envReader: EnvReader): Mailer {
  * Consists of all dependencies that are used by the core service layer.
  */
 private fun Module.customServicesDeps() {
-    singleOf(::JwtService) {
+    singleOf(::JwtManager) {
         createdAtStart()
-        bind<IJwtService>()
+        bind<IJwtManager>()
     }
     singleOf(::FetcherManager)
     singleOf(::CookieService) { bind<ICookieService>() }
@@ -176,7 +182,7 @@ private fun Module.customServicesDeps() {
         createdAtStart()
         bind<IEmailManager>()
     }
-    singleOf(::AuthenticationService) { bind<IAuthenticationService>() }
+    singleOf(::AuthenticationManager) { bind<IAuthenticationManager>() }
 }
 
 /**
@@ -193,6 +199,9 @@ fun Module.serviceLayerDeps() {
     singleOf(::ReadingListService) { bind<IReadingListService>() }
     singleOf(::ReviewService) { bind<IReviewService>() }
     singleOf(::PaperService) { bind<IPaperService>() }
+    singleOf(::ProjectPaperService) { bind<IProjectPaperService>() }
+    singleOf(::AuthenticationService) { bind<IAuthenticationService>() }
+    singleOf(::InvitationService) { bind<IInvitationService>() }
     // The main service comes last
     singleOf(::MainService) { bind<IMainService>() }
 }

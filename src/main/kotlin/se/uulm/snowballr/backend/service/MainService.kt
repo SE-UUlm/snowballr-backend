@@ -16,7 +16,10 @@ interface IMainService :
     IUserService,
     IFetcherService,
     IReadingListService,
-    IPaperService
+    IPaperService,
+    IProjectPaperService,
+    IAuthenticationService,
+    IInvitationService
 
 /**
  * The [MainService] class serves as the primary service implementation layer that aggregates multiple sub-services.
@@ -30,8 +33,10 @@ interface IMainService :
  * @param userService The service responsible for handling business logic related to users.
  * @param fetcherService The service responsible for handling business logic related to fetchers.
  * @param readingListService The service responsible for handling business logic related to reading lists.
- * @param paperService The service responsible for handling business logic related to normal papers (project papers are
- * handled by the [ProjectService]).
+ * @param paperService The service responsible for handling business logic related to normal papers.
+ * @param projectPaperService The service responsible for handling business logic related to project papers.
+ * @param authenticationService The service responsible for handling business logic related to user authentication
+ * @param invitationService The service responsible for handling business logic related to user invitations
  */
 @Suppress("LongParameterList")
 class MainService(
@@ -42,6 +47,9 @@ class MainService(
     private val fetcherService: IFetcherService,
     private val readingListService: IReadingListService,
     private val paperService: IPaperService,
+    private val projectPaperService: IProjectPaperService,
+    private val authenticationService: IAuthenticationService,
+    private val invitationService: IInvitationService,
 ) : IMainService,
     IProjectService by projectService,
     ICriterionService by criterionService,
@@ -49,4 +57,7 @@ class MainService(
     IUserService by userService,
     IFetcherService by fetcherService,
     IReadingListService by readingListService,
-    IPaperService by paperService
+    IPaperService by paperService,
+    IProjectPaperService by projectPaperService,
+    IAuthenticationService by authenticationService,
+    IInvitationService by invitationService
