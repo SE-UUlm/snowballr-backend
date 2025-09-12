@@ -1,6 +1,5 @@
 package se.uulm.snowballr.backend.service
 
-import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
@@ -167,61 +166,65 @@ class CriterionService(
                 currentUser,
                 accessType,
             )
+
             is UserCriterion -> checkUserCriterionPermission(criterion, currentUser, accessType)
         }
     }
 
-    override suspend fun getCriterionById(request: Base.Id): GrpcCriterion {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
+    override suspend fun getCriterionById(request: Base.Id): GrpcCriterion = withUser(userRepo) { currentUser ->
         val criterionId = parseUUID(request.id, EntityType.CRITERION)
         val criterion = repo.getCriterionById(criterionId).getOrThrow()
 
         checkCriterionPermission(criterion, currentUser, AccessType.READ)
-        return criterion.toGrpcCriterion()
+
+        criterion.toGrpcCriterion()
     }
 
-    override suspend fun createCriterion(request: GrpcCriterion.Create): GrpcCriterion {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
-        if (request.projectId.isNotEmpty()) {
-            checkProjectCriterionPermission(
-                null,
-                parseUUID(request.projectId, EntityType.PROJECT),
-                currentUser,
-                AccessType.CREATE,
-            )
-        }
-        return repo.createCriterion(request, currentUser.id).toGrpcCriterion()
-    }
-
-    override suspend fun updateCriterion(request: GrpcCriterion.Update): GrpcCriterion {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
-        val criterionId = parseUUID(request.criterion.id, EntityType.CRITERION)
-        val criterion = repo.getCriterionById(criterionId).getOrThrow()
-
-        checkCriterionPermission(criterion, currentUser, AccessType.UPDATE)
-        return repo.updateCriterion(request).toGrpcCriterion()
-    }
-
-    override suspend fun getAllCriteriaForProject(request: Base.Id): GrpcCriterion.List {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
-        val projectId = parseUUID(request.id, EntityType.PROJECT)
-
-        if (!projectRepo.doesProjectExistById(projectId)) {
-            throw NotFoundException(EntityType.PROJECT, projectId.toString())
-        }
-
-        val projectMembers = projectMemberRepo.getProjectMembers(projectId)
-
-        if (!projectMembers.any { it.userId == currentUser.id }) {
-            verifyServerAdminRole(currentUser) {
-                throw UnauthorizedException.Single(
-                    EntityType.PROJECT,
-                    projectId.toString(),
-                    AccessType.READ,
-                    it,
+    override suspend fun createCriterion(request: GrpcCriterion.Create): GrpcCriterion =
+        withUser(userRepo) { currentUser ->
+            if (request.projectId.isNotEmpty()) {
+                checkProjectCriterionPermission(
+                    null,
+                    parseUUID(request.projectId, EntityType.PROJECT),
+                    currentUser,
+                    AccessType.CREATE,
                 )
             }
+
+            repo.createCriterion(request, currentUser.id).toGrpcCriterion()
         }
-        return repo.getAllProjectCriteria(projectId).toGrpcCriteria()
-    }
+
+    override suspend fun updateCriterion(request: GrpcCriterion.Update): GrpcCriterion =
+        withUser(userRepo) { currentUser ->
+            val criterionId = parseUUID(request.criterion.id, EntityType.CRITERION)
+            val criterion = repo.getCriterionById(criterionId).getOrThrow()
+
+            checkCriterionPermission(criterion, currentUser, AccessType.UPDATE)
+
+            repo.updateCriterion(request).toGrpcCriterion()
+        }
+
+    override suspend fun getAllCriteriaForProject(request: Base.Id): GrpcCriterion.List =
+        withUser(userRepo) { currentUser ->
+            val projectId = parseUUID(request.id, EntityType.PROJECT)
+
+            if (!projectRepo.doesProjectExistById(projectId)) {
+                throw NotFoundException(EntityType.PROJECT, projectId.toString())
+            }
+
+            val projectMembers = projectMemberRepo.getProjectMembers(projectId)
+
+            if (!projectMembers.any { it.userId == currentUser.id }) {
+                verifyServerAdminRole(currentUser) {
+                    throw UnauthorizedException.Single(
+                        EntityType.PROJECT,
+                        projectId.toString(),
+                        AccessType.READ,
+                        it,
+                    )
+                }
+            }
+
+            repo.getAllProjectCriteria(projectId).toGrpcCriteria()
+        }
 }

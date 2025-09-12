@@ -35,6 +35,7 @@ import snowballr.ProjectOuterClass
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
 import snowballr.UserSettingsOuterClass
+import snowballr.nothing
 import java.time.OffsetDateTime
 import java.util.UUID
 import snowballr.UserOuterClass.User as GrpcUser
@@ -157,8 +158,7 @@ class UserService(
         )
     }
 
-    override suspend fun getUserById(request: Base.Id): GrpcUser {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
+    override suspend fun getUserById(request: Base.Id): GrpcUser = withUser(userRepo) { currentUser ->
         val targetUserId = parseUUID(request.id, EntityType.USER)
 
         verifyUserAccess(currentUser, targetUserId, IdentifierType.ID)
@@ -180,12 +180,10 @@ class UserService(
             throw NotFoundException(EntityType.USER, request.id)
         }
 
-        return result.toGrpcUser()
+        result.toGrpcUser()
     }
 
-    override suspend fun getUserByEmail(request: Base.Email): GrpcUser {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
-
+    override suspend fun getUserByEmail(request: Base.Email): GrpcUser = withUser(userRepo) { currentUser ->
         // We have to request the user first to get the ID for the access checks
         val targetUser = userRepo.getUserByEmail(request.email).getOrThrow()
 
@@ -198,17 +196,13 @@ class UserService(
             throw NotFoundException(EntityType.USER, request.email, identifierType = IdentifierType.EMAIL)
         }
 
-        return targetUser.toGrpcUser()
+        targetUser.toGrpcUser()
     }
 
-    override suspend fun getAllUsers(): GrpcUser.List {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
-
+    override suspend fun getAllUsers(): GrpcUser.List = withUser(userRepo) { currentUser ->
         verifyServerAdminRole(currentUser) { UnauthorizedException.All(EntityType.USER, AccessType.READ, it) }
 
-        val users = userRepo.getAllUsers()
-
-        return users.toGrpcUsers()
+        userRepo.getAllUsers().toGrpcUsers()
     }
 
     override suspend fun getInviteCandidates(
@@ -328,9 +322,7 @@ class UserService(
         return Base.Nothing.getDefaultInstance()
     }
 
-    override suspend fun updateUser(request: GrpcUser.Update): GrpcUser {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
-
+    override suspend fun updateUser(request: GrpcUser.Update): GrpcUser = withUser(userRepo) { currentUser ->
         // Check that user to update exists in the database
         val targetUserId = parseUUID(request.user.id, EntityType.USER)
         val targetUser = userRepo.getUserById(targetUserId).getOrThrow()
@@ -348,12 +340,10 @@ class UserService(
             throw DuplicateEntityException(EntityType.USER, request.user.email, identifierType = IdentifierType.EMAIL)
         }
 
-        val updatedUser = userRepo.updateUser(request)
-        return updatedUser.toGrpcUser()
+        userRepo.updateUser(request).toGrpcUser()
     }
 
-    override suspend fun softDeleteUser(request: Base.Id): Base.Nothing {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
+    override suspend fun softDeleteUser(request: Base.Id): Base.Nothing = withUser(userRepo) { currentUser ->
         val targetUser = userRepo.getUserById(parseUUID(request.id, EntityType.USER)).getOrThrow()
         val isSameUser = currentUser.id == targetUser.id
 
@@ -373,14 +363,13 @@ class UserService(
         }
 
         userRepo.softDeleteUser(targetUser.id)
-        return Base.Nothing.getDefaultInstance()
+
+        nothing { }
     }
 
-    override suspend fun getCurrentUser(): GrpcUser =
-        userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow().toGrpcUser()
+    override suspend fun getCurrentUser(): GrpcUser = withUser(userRepo, User::toGrpcUser)
 
-    override suspend fun getUserSettings(): UserSettingsOuterClass.UserSettings {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
+    override suspend fun getUserSettings(): UserSettingsOuterClass.UserSettings = withUser(userRepo) { currentUser ->
         val userSettings = userRepo.getUserSettings(currentUser.id).getOrThrow()
         val defaultUserCriteria = criterionRepo.getCriteriaByIds(userSettings.criteriaIds)
 
@@ -396,6 +385,7 @@ class UserService(
                     .build(),
             )
         }
-        return userSettings.toGrpcUserSettings(criteria)
+
+        userSettings.toGrpcUserSettings(criteria)
     }
 }

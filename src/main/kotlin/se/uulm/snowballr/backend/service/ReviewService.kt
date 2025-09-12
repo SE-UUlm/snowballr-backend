@@ -1,6 +1,5 @@
 package se.uulm.snowballr.backend.service
 
-import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
@@ -57,8 +56,7 @@ class ReviewService(
     private val projectMemberRepo: IProjectMemberTableRepo,
     private val reviewHasCriterionRepo: IReviewHasCriterionTableRepo,
 ) : IReviewService {
-    override suspend fun getReviewById(request: Base.Id): GrpcReview {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
+    override suspend fun getReviewById(request: Base.Id): GrpcReview = withUser(userRepo) { currentUser ->
         val reviewId = parseUUID(request.id, EntityType.REVIEW)
         val review = repo.getReviewById(reviewId).getOrThrow()
         val projectPaper = projectPaperRepo.getProjectPaperById(review.projectPaperId).getOrThrow()
@@ -66,26 +64,28 @@ class ReviewService(
         ensureCurrentUserIsProjectMember(projectPaper.projectId, currentUser)
 
         val selectedCriteriaIds = reviewHasCriterionRepo.getSelectedCriteriaIdsForReviewById(reviewId)
-        return review.toGrpcReview(selectedCriteriaIds.map { it.toString() })
+
+        review.toGrpcReview(selectedCriteriaIds.map { it.toString() })
     }
 
-    override suspend fun getAllReviewsForProjectPaper(request: Base.Id): GrpcReview.List {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
-        val projectPaperId = parseUUID(request.id, EntityType.PROJECT_PAPER)
-        val projectPaper = projectPaperRepo.getProjectPaperById(projectPaperId).getOrThrow()
+    override suspend fun getAllReviewsForProjectPaper(request: Base.Id): GrpcReview.List =
+        withUser(userRepo) { currentUser ->
+            val projectPaperId = parseUUID(request.id, EntityType.PROJECT_PAPER)
+            val projectPaper = projectPaperRepo.getProjectPaperById(projectPaperId).getOrThrow()
 
-        ensureCurrentUserIsProjectMember(projectPaper.projectId, currentUser)
+            ensureCurrentUserIsProjectMember(projectPaper.projectId, currentUser)
 
-        val reviews = repo.getAllReviewsForProjectPaper(projectPaperId)
-        val reviewSelectedCriteriaMap = mutableMapOf<Review, List<String>>()
-        for (review in reviews) {
-            reviewSelectedCriteriaMap[review] = reviewHasCriterionRepo
-                .getSelectedCriteriaIdsForReviewById(review.id).map {
-                    it.toString()
-                }
+            val reviews = repo.getAllReviewsForProjectPaper(projectPaperId)
+            val reviewSelectedCriteriaMap = mutableMapOf<Review, List<String>>()
+            for (review in reviews) {
+                reviewSelectedCriteriaMap[review] = reviewHasCriterionRepo
+                    .getSelectedCriteriaIdsForReviewById(review.id).map {
+                        it.toString()
+                    }
+            }
+
+            reviews.toGrpcReviews(reviewSelectedCriteriaMap)
         }
-        return reviews.toGrpcReviews(reviewSelectedCriteriaMap)
-    }
 
     private suspend fun ensureCurrentUserIsProjectMember(projectId: UUID, currentUser: User) {
         val project = projectRepo.getProjectById(projectId).getOrThrow()
