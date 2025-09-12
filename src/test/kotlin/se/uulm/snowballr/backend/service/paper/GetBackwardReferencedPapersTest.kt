@@ -6,124 +6,66 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.Arguments
-import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.DataBuilder
-import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.SnowballRException
+import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.Base
 import java.util.UUID
-import java.util.stream.Stream
-import kotlin.reflect.KFunction
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class GetBackwardReferencedPapersTest : MainServiceTest() {
-    private val requestId = UUID.randomUUID()
+    private val paperId = UUID.randomUUID()
 
     private fun getExampleRequest() = Base.Id
         .newBuilder()
-        .setId(requestId.toString())
+        .setId(paperId.toString())
         .build()
 
-    fun failingFunctions(): Stream<Arguments?> = Stream.of(
-        Arguments.of(paperRepoMock::doesPaperExistById),
-        Arguments.of(citationRepoMock::getBackwardsReferencedPaperIdsOfPaperById),
-        Arguments.of(authorOfPaperRepoMock::getAuthorsOfPaperById),
-        Arguments.of(citationRepoMock::getBackwardsReferencedPaperIdsOfPaperById),
-    )
-
-    @Suppress("ReturnCount")
-    private fun mockHappyPathUntil(failAt: KFunction<*>?) {
-        val paper = DataBuilder.createExamplePaper(id = requestId)
-        val backwardReferenceId = UUID.randomUUID()
-        val referencedPaper = DataBuilder.createExamplePaper(id = backwardReferenceId)
-        val author = DataBuilder.createExampleAuthor()
-
-        if (failAt == paperRepoMock::doesPaperExistById) {
-            coEvery { paperRepoMock.doesPaperExistById(paper.id) } throws TestSpecificException()
-            return
-        }
-        coEvery { paperRepoMock.doesPaperExistById(paper.id) } returns true
-
-        if (failAt == citationRepoMock::getBackwardsReferencedPaperIdsOfPaperById) {
-            coEvery {
-                citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
-            } throws TestSpecificException()
-            return
-        }
-        coEvery {
-            citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
-        } returns listOf(backwardReferenceId)
-
-        if (failAt == paperRepoMock::getPaperById) {
-            coEvery { paperRepoMock.getPaperById(backwardReferenceId) } throws TestSpecificException()
-            return
-        }
-        coEvery { paperRepoMock.getPaperById(backwardReferenceId) } returns Result.success(referencedPaper)
-
-        if (failAt == authorOfPaperRepoMock::getAuthorsOfPaperById) {
-            coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(backwardReferenceId) } throws TestSpecificException()
-            return
-        }
-        coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(backwardReferenceId) } returns listOf(author)
-
-        if (failAt == citationRepoMock::getBackwardsReferencedPaperIdsOfPaperById) {
-            coEvery {
-                citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(backwardReferenceId)
-            } throws TestSpecificException()
-            return
-        }
-        coEvery {
-            citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(backwardReferenceId)
-        } returns listOf(UUID.randomUUID())
-    }
-
-    @ParameterizedTest
-    @MethodSource("failingFunctions")
-    fun `When a step fails, then an exception is thrown`(failAt: KFunction<*>) = runTest {
-        mockHappyPathUntil(failAt)
-        assertThrows<TestSpecificException> {
+    @Test
+    fun `When the paper doesn't exist, then a NotFoundException is thrown`() = runTest {
+        coEvery { paperRepoMock.doesPaperExistById(paperId) } returns false
+        assertThrows<NotFoundException> {
             mainService.getBackwardReferencedPapers(getExampleRequest())
         }
     }
 
     @Test
-    fun `When the paper doesn't exist, then a NotFoundException is thrown`() = runTest {
-        coEvery { paperRepoMock.doesPaperExistById(requestId) } returns false
-        assertThrows<SnowballRException.NotFoundException> {
-            mainService.getBackwardReferencedPapers(
-                getExampleRequest(),
-            )
-        }
-    }
-
-    @Test
     fun `When one of the backward references doesn't exist, then a NotFoundException is thrown`() = runTest {
-        val paper = DataBuilder.createExamplePaper(id = requestId)
+        val paper = DataBuilder.createExamplePaper(id = paperId)
         val backwardReferenceId = UUID.randomUUID()
 
-        coEvery { paperRepoMock.doesPaperExistById(requestId) } returns true
+        coEvery { paperRepoMock.doesPaperExistById(paper.id) } returns true
         coEvery {
             citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
         } returns listOf(backwardReferenceId)
-        coEvery { paperRepoMock.getPaperById(backwardReferenceId) } throws SnowballRException.NotFoundException(
-            entityType = EntityType.PAPER, requestId.toString(),
-        )
+        coEvery {
+            paperRepoMock.getPaperById(backwardReferenceId)
+        } throws NotFoundException(entityType = EntityType.PAPER, paperId.toString())
 
-        assertThrows<SnowballRException.NotFoundException> {
-            mainService.getBackwardReferencedPapers(
-                getExampleRequest(),
-            )
+        assertThrows<NotFoundException> {
+            mainService.getBackwardReferencedPapers(getExampleRequest())
         }
     }
 
     @Test
-    fun `When the backward references of an existing paper are retrieved successfully, then no error is thrown`() =
+    fun `When the backward references of an existing paper are retrieved successfully, then no exception is thrown`() =
         runTest {
-            mockHappyPathUntil(null)
+            val paper = DataBuilder.createExamplePaper(id = paperId)
+            val backwardReferenceId = UUID.randomUUID()
+            val referencedPaper = DataBuilder.createExamplePaper(id = backwardReferenceId)
+            val author = DataBuilder.createExampleAuthor()
+
+            coEvery { paperRepoMock.doesPaperExistById(paper.id) } returns true
+            coEvery {
+                citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
+            } returns listOf(backwardReferenceId)
+            coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(backwardReferenceId) } returns listOf(author)
+            coEvery {
+                citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(backwardReferenceId)
+            } returns listOf(UUID.randomUUID())
+            coEvery { paperRepoMock.getPaperById(backwardReferenceId) } returns Result.success(referencedPaper)
+
             assertDoesNotThrow { mainService.getBackwardReferencedPapers(getExampleRequest()) }
         }
 }

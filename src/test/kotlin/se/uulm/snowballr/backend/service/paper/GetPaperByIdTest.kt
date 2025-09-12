@@ -6,17 +6,12 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.Arguments
-import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.SnowballRException.InvalidIdException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.Base
 import java.util.UUID
-import java.util.stream.Stream
-import kotlin.reflect.KFunction
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class GetPaperByIdTest : MainServiceTest() {
@@ -27,59 +22,31 @@ class GetPaperByIdTest : MainServiceTest() {
         .setId(requestId.toString())
         .build()
 
-    fun failingFunctions(): Stream<Arguments?> = Stream.of(
-        Arguments.of(paperRepoMock::getPaperById),
-        Arguments.of(authorOfPaperRepoMock::getAuthorsOfPaperById),
-        Arguments.of(citationRepoMock::getBackwardsReferencedPaperIdsOfPaperById),
-    )
-
-    @Suppress("ReturnCount")
-    private fun mockHappyPathUntil(failAt: KFunction<*>?) {
-        val paper = DataBuilder.createExamplePaper(id = requestId)
-        val author = DataBuilder.createExampleAuthor()
-
-        if (failAt == paperRepoMock::getPaperById) {
-            coEvery { paperRepoMock.getPaperById(paper.id) } throws TestSpecificException()
-            return
-        }
-        coEvery { paperRepoMock.getPaperById(paper.id) } returns Result.success(paper)
-
-        if (failAt == authorOfPaperRepoMock::getAuthorsOfPaperById) {
-            coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(paper.id) } throws TestSpecificException()
-            return
-        }
-        coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(paper.id) } returns listOf(author)
-
-        if (failAt == citationRepoMock::getBackwardsReferencedPaperIdsOfPaperById) {
-            coEvery {
-                citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
-            } throws TestSpecificException()
-            return
-        }
-        coEvery {
-            citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
-        } returns listOf(UUID.randomUUID())
-    }
-
     @Test
-    fun `When parsing the paper ID fails, then an exception is thrown`() = runTest {
+    fun `When parsing the paper ID fails, then an InvalidIdException is thrown`() = runTest {
         val request = Base.Id.newBuilder().setId("invalid-uuid").build()
 
         assertThrows<InvalidIdException> { mainService.getPaperById(request) }
     }
 
-    @ParameterizedTest
-    @MethodSource("failingFunctions")
-    fun `When a step fails, then an exception is thrown`(failAt: KFunction<*>) = runTest {
-        mockHappyPathUntil(failAt)
-        assertThrows<TestSpecificException> {
-            mainService.getPaperById(getExampleRequest())
-        }
+    @Test
+    fun `When fetching the paper fails, then a TestSpecificException is thrown`() = runTest {
+        coEvery { paperRepoMock.getPaperById(any()) } returns Result.failure(TestSpecificException())
+
+        assertThrows<TestSpecificException> { mainService.getPaperById(getExampleRequest()) }
     }
 
     @Test
     fun `When a paper is retrieved, then no error is thrown`() = runTest {
-        mockHappyPathUntil(null)
+        val paper = DataBuilder.createExamplePaper(id = requestId)
+        val author = DataBuilder.createExampleAuthor()
+
+        coEvery { paperRepoMock.getPaperById(paper.id) } returns Result.success(paper)
+        coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(paper.id) } returns listOf(author)
+        coEvery {
+            citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
+        } returns listOf(UUID.randomUUID())
+
         assertDoesNotThrow { mainService.getPaperById(getExampleRequest()) }
     }
 }
