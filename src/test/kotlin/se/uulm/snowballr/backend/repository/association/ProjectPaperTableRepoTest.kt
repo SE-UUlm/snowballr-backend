@@ -20,6 +20,7 @@ import se.uulm.snowballr.backend.utils.assertResultFailure
 import se.uulm.snowballr.backend.utils.assertResultSuccess
 import snowballr.ProjectOuterClass
 import snowballr.ProjectOuterClass.Project
+import java.sql.SQLException
 import java.util.UUID
 import kotlin.random.Random
 import kotlin.test.assertEquals
@@ -179,10 +180,14 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
     @Nested
     inner class AddPaperToProject {
         @Test
-        fun `When a project paper is added to a project, but the assigned user doesn't exist, then an exception is thrown`() =
+        fun `When a project paper is added to a project, but the assigned user doesn't exist, then a SQLException is thrown`() =
             runTest {
-                val request = Project.Paper.Add.newBuilder().build()
-                assertThrows<NotFoundException> {
+                val request = Project.Paper.Add
+                    .newBuilder()
+                    .setPaperId(UUID.randomUUID().toString())
+                    .setProjectId(UUID.randomUUID().toString())
+                    .build()
+                assertThrows<SQLException> {
                     repo.addPaperToProject(request, UUID.randomUUID())
                 }
             }

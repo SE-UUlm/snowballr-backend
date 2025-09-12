@@ -13,7 +13,6 @@ import se.uulm.snowballr.backend.model.dto.ProjectPaperWithPaper
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.getEntityByIdAsResult
 import se.uulm.snowballr.backend.repository.getEntityByIdOrNull
-import se.uulm.snowballr.backend.repository.getUserEntityId
 import se.uulm.snowballr.backend.repository.insertAndGet
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
@@ -158,7 +157,6 @@ class ProjectPaperTableRepo(
     }
 
     override suspend fun addPaperToProject(request: GrpcProjectPaper.Add, userId: UUID): ProjectPaper = db.query {
-        val userEntityId = getUserEntityId(userId)
         val paperId = parseUUID(request.paperId, EntityType.PAPER)
         val projectId = parseUUID(request.projectId, EntityType.PROJECT)
         val localPaperId = getNextLocalIdForProject(projectId)
@@ -170,7 +168,7 @@ class ProjectPaperTableRepo(
                 it[ProjectPaperTable.localPaperId] = localPaperId
                 it[stage] = request.stage
                 it[decision] = ProjectOuterClass.PaperDecision.PAPER_DECISION_UNSPECIFIED
-                it[createdBy] = userEntityId
+                it[createdBy] = userId
             }
     }
 }

@@ -74,7 +74,7 @@ class AddPaperToProjectTest : MainServiceTest() {
             coEvery { userRepoMock.getUserById(currentUser.id) } throws TestSpecificException()
             return
         }
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
 
         if (failAt == projectMemberRepoMock::getProjectMembers) {
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } throws TestSpecificException()
@@ -91,13 +91,13 @@ class AddPaperToProjectTest : MainServiceTest() {
             coEvery { projectRepoMock.getProjectById(project.id) } throws TestSpecificException()
             return
         }
-        coEvery { projectRepoMock.getProjectById(project.id) } returns project
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
         if (failAt == paperRepoMock::getPaperById) {
             coEvery { paperRepoMock.getPaperById(projectPaper.paperId) } throws TestSpecificException()
             return
         }
-        coEvery { paperRepoMock.getPaperById(projectPaper.paperId) } returns paper
+        coEvery { paperRepoMock.getPaperById(projectPaper.paperId) } returns Result.success(paper)
 
         if (failAt == projectPaperRepoMock::doesProjectPaperExist) {
             coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, paper.id) } throws TestSpecificException()
@@ -177,7 +177,7 @@ class AddPaperToProjectTest : MainServiceTest() {
         val project = DataBuilder.createExampleProject(id = projectId)
 
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
         assertThrows<SnowballRException.UnauthorizedException> { mainService.addPaperToProject(getExampleRequest()) }
@@ -191,10 +191,10 @@ class AddPaperToProjectTest : MainServiceTest() {
         val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
 
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
-        coEvery { projectRepoMock.getProjectById(project.id) } returns project
-        coEvery { paperRepoMock.getPaperById(paper.id) } returns paper
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
+        coEvery { paperRepoMock.getPaperById(paper.id) } returns Result.success(paper)
         coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, paper.id) } returns true
 
         assertThrows<SnowballRException.DuplicateEntityException> {
@@ -217,10 +217,10 @@ class AddPaperToProjectTest : MainServiceTest() {
                 .build()
 
             every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-            coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+            coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
-            coEvery { projectRepoMock.getProjectById(project.id) } returns project
-            coEvery { paperRepoMock.getPaperById(paper.id) } returns paper
+            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
+            coEvery { paperRepoMock.getPaperById(paper.id) } returns Result.success(paper)
             coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, paper.id) } returns false
 
             assertThrows<SnowballRException.OutOfRangeException> { mainService.addPaperToProject(request) }

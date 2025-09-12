@@ -442,7 +442,7 @@ class ProjectService(
     }
 
     override suspend fun addPaperToProject(request: GrpcProjectPaper.Add): GrpcProjectPaper {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
         val projectId = parseUUID(request.projectId, EntityType.PROJECT)
 
         if (!isProjectMember(projectId, currentUser.id)) {
@@ -457,8 +457,8 @@ class ProjectService(
         }
 
         val paperId = parseUUID(request.paperId, EntityType.PAPER)
-        val project = repo.getProjectById(projectId)
-        val paper = paperRepo.getPaperById(paperId)
+        val project = repo.getProjectById(projectId).getOrThrow()
+        val paper = paperRepo.getPaperById(paperId).getOrThrow()
         if (projectPaperRepo.doesProjectPaperExist(projectId, paperId)) {
             throw SnowballRException.DuplicateEntityException(
                 EntityType.PROJECT_PAPER,
