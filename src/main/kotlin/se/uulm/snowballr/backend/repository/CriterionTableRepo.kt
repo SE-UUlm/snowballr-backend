@@ -1,7 +1,6 @@
 package se.uulm.snowballr.backend.repository
 
 import com.google.protobuf.util.FieldMaskUtil
-import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.selectAll
@@ -100,11 +99,10 @@ class CriterionTableRepo(
 
     override suspend fun createCriterion(request: CriterionOuterClass.Criterion.Create, userId: UUID): Criterion =
         db.query {
-            val userEntityId = getUserEntityId(userId)
-            var projectEntityId: EntityID<UUID>? = null
-            if (request.projectId.isNotEmpty()) {
-                val projectUUID = parseUUID(request.projectId, EntityType.PROJECT)
-                projectEntityId = getProjectEntityId(projectUUID)
+            val projectId = if (request.projectId.isNotEmpty()) {
+                parseUUID(request.projectId, EntityType.PROJECT)
+            } else {
+                null
             }
 
             CriterionTable.insertAndGet(ResultRow::toCriterion, EntityType.CRITERION) {
@@ -112,8 +110,8 @@ class CriterionTableRepo(
                 it[name] = request.name
                 it[description] = request.description
                 it[category] = request.category
-                it[projectId] = projectEntityId
-                it[createdBy] = userEntityId
+                it[this.projectId] = projectId
+                it[createdBy] = userId
             }
         }
 

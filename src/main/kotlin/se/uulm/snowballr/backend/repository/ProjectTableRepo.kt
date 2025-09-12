@@ -127,8 +127,6 @@ class ProjectTableRepo(
         userId: UUID,
         userSettings: UserSettings,
     ): Project = db.query {
-        val userEntityId = getUserEntityId(userId)
-
         ProjectTable.insertAndGet(ResultRow::toProject, EntityType.PROJECT) {
             it[name] = request.name
             it[status] = ProjectStatus.PROJECT_STATUS_ACTIVE
@@ -139,7 +137,7 @@ class ProjectTableRepo(
             it[reviewMaybeAllowed] = userSettings.reviewMaybeAllowed
             it[reviewDecisionMatrixBinary] = userSettings.decisionMatrix.toByteArray()
             it[fetchers] = emptyMap()
-            it[createdBy] = userEntityId
+            it[createdBy] = userId
         }
     }
 

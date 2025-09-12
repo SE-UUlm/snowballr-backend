@@ -18,6 +18,7 @@ import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.toGrpcCriterion
 import se.uulm.snowballr.backend.repository.RepositoryHelper.createExampleUser
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertCriterionAndGetId
+import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectAndGetId
 import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.utils.GrpcEnumSourceTest
@@ -25,6 +26,7 @@ import se.uulm.snowballr.backend.utils.assertResultFailure
 import se.uulm.snowballr.backend.utils.assertResultSuccess
 import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass
+import java.sql.SQLException
 import java.util.UUID
 import kotlin.test.assertIs
 import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
@@ -138,7 +140,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                         .setProjectId(UUID.randomUUID().toString())
                         .build()
 
-                assertThrows<NotFoundException> { repo.createCriterion(request, testUserId) }
+                assertThrows<SQLException> { repo.createCriterion(request, testUserId) }
             }
 
         @Test
@@ -164,6 +166,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
         fun `When a criterion is created, but the assigned user doesn't exist, then an exception is thrown`(
             category: CriterionCategory,
         ) = runTest {
+            val projectId = insertProjectAndGetId(createdBy = testUserId)
             val request =
                 GrpcCriterion.Create
                     .newBuilder()
@@ -171,10 +174,10 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                     .setName("Test Criterion")
                     .setDescription("Test Description")
                     .setCategory(category)
-                    .setProjectId(UUID.randomUUID().toString())
+                    .setProjectId(projectId.toString())
                     .build()
 
-            assertThrows<NotFoundException> { repo.createCriterion(request, UUID.randomUUID()) }
+            assertThrows<SQLException> { repo.createCriterion(request, UUID.randomUUID()) }
         }
     }
 

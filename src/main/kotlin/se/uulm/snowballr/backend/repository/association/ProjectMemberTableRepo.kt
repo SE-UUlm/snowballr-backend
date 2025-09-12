@@ -12,8 +12,6 @@ import se.uulm.snowballr.backend.model.dto.ProjectMember
 import se.uulm.snowballr.backend.model.dto.ProjectMemberWithUser
 import se.uulm.snowballr.backend.repository.getEntityByIdsAsResult
 import se.uulm.snowballr.backend.repository.getEntityOrNull
-import se.uulm.snowballr.backend.repository.getProjectEntityId
-import se.uulm.snowballr.backend.repository.getUserEntityId
 import se.uulm.snowballr.backend.repository.insertAndGet
 import se.uulm.snowballr.backend.repository.updateAndGet
 import se.uulm.snowballr.backend.table.UserTable
@@ -109,22 +107,16 @@ class ProjectMemberTableRepo(
     }
 
     override suspend fun addUserToProject(userId: UUID, projectId: UUID) = db.query {
-        // Get user reference
-        val userEntityId = getUserEntityId(userId)
-
-        // Get project reference
-        val projectEntityId = getProjectEntityId(projectId)
-
         // Return when the user is already a project member
         val projectMembers = getProjectMembers(projectId)
-        val existingMember = projectMembers.find { it.userId == userEntityId.value }
+        val existingMember = projectMembers.find { it.userId == userId }
         if (existingMember != null) {
             return@query existingMember
         }
 
         ProjectMemberTable.insertAndGet(ResultRow::toProjectMember, EntityType.PROJECT_MEMBER) {
-            it[this.userId] = userEntityId
-            it[this.projectId] = projectEntityId
+            it[this.userId] = userId
+            it[this.projectId] = projectId
             it[role] = ProjectOuterClass.MemberRole.MEMBER_ROLE_DEFAULT
         }
     }

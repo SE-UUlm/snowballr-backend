@@ -23,6 +23,7 @@ import snowballr.ProjectOuterClass.Project
 import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
 import snowballr.ProjectOuterClass.SnowballingType
+import java.sql.SQLException
 import java.util.UUID
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -123,7 +124,7 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
         fun `When a project is created, but the assigned user doesn't exist, then an exception is thrown`() = runTest {
             val request = Project.Create.newBuilder().setName("Test Project").build()
             val userSettings = DataBuilder.createExampleUserSettings()
-            assertThrows<NotFoundException> { repo.createProject(request, UUID.randomUUID(), userSettings) }
+            assertThrows<SQLException> { repo.createProject(request, UUID.randomUUID(), userSettings) }
         }
     }
 

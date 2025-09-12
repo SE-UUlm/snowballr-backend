@@ -12,12 +12,7 @@ import org.jetbrains.exposed.sql.statements.UpdateStatement
 import org.jetbrains.exposed.sql.update
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.EntityNotPersistedException
-import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
-import se.uulm.snowballr.backend.table.ProjectTable
-import se.uulm.snowballr.backend.table.UserTable
 import java.util.UUID
-
-// === generic repo helpers === //
 
 /**
  * Returns an entity according to the [where] expression or returns null if the entity couldn't be found.
@@ -47,24 +42,6 @@ fun <Key : Any, T : IdTable<Key>, EntT : Any> T.getEntityOrNull(
  */
 fun <Key : Any, T : IdTable<Key>, EntT : Any> T.getEntityByIdOrNull(id: Key, mapper: (ResultRow) -> EntT): EntT? =
     this.getEntityOrNull(mapper) { this@getEntityByIdOrNull.id eq id }
-
-/**
- * Returns the entity ID of the entity with the given [id] or throws a [NotFoundException] if no such entity exists.
- * This can be used to reference the entity in other table rows.
- *
- * Example:
- * Table A stores a reference to this table as `entity_id`. To create a row in table A, we can use this method
- * to get the [EntityID] and then pass it to the `entity_id` column of table A.
- *
- * @param Key The type of the [IdTable], i.e., the ID type, such as [UUID].
- * @param T The table type as a subtype of [IdTable].
- * @param id The ID of type [Key], which is used to find the entity.
- * @param entityType The type of the entity used for the [NotFoundException].
- * @return The ID of the entity as [EntityID].
- */
-private fun <Key : Any, T : IdTable<Key>> T.getEntityId(id: Key, entityType: EntityType): EntityID<Key> = this
-    .getEntityByIdOrNull(id) { it[this.id] }
-    ?: throw NotFoundException(entityType, id.toString())
 
 /**
  * Checks if an entity exists in the table with the given ID.
@@ -159,20 +136,3 @@ inline fun <Key : Any, T : IdTable<Key>, EntT : Any> T.getEntitiesByIds(
         .where { this@getEntitiesByIds.id inList ids }
         .map(mapper)
 }
-
-// === specific repo helpers === //
-
-/**
- * Returns the entity ID of the user with the passed [id] or throws a [NotFoundException] if the user doesn't exist.
- *
- * @see getEntityId
- */
-fun getUserEntityId(id: UUID): EntityID<UUID> = UserTable.getEntityId(id, EntityType.USER)
-
-/**
- * Returns the entity ID of the project with the passed [id] or throws a [NotFoundException] if the project doesn't
- * exist.
- *
- * @see getEntityId
- */
-fun getProjectEntityId(id: UUID): EntityID<UUID> = ProjectTable.getEntityId(id, EntityType.PROJECT)

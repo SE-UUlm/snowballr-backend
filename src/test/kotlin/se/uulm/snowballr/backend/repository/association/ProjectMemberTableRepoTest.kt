@@ -20,6 +20,7 @@ import se.uulm.snowballr.backend.utils.assertResultFailure
 import se.uulm.snowballr.backend.utils.assertResultSuccess
 import snowballr.ProjectOuterClass
 import snowballr.ProjectOuterClass.MemberRole
+import java.sql.SQLException
 import java.util.UUID
 
 class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberTable), true) {
@@ -109,7 +110,7 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
 
         @Test
         fun `When a user is added to a non-existing project, then an exception is thrown`() = runTest {
-            assertThrows<NotFoundException> {
+            assertThrows<SQLException> {
                 repo.addUserToProject(testUserId, UUID.randomUUID())
             }
         }
@@ -118,7 +119,7 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
         fun `When a non-existing user is added to a project, then an exception is thrown`() = runTest {
             val project = createExampleProject()
 
-            assertThrows<NotFoundException> {
+            assertThrows<SQLException> {
                 repo.addUserToProject(UUID.randomUUID(), project.id)
             }
         }
