@@ -30,9 +30,10 @@ import java.util.UUID
  */
 interface IProjectTableRepo {
     /**
-     * Returns a project by its ID or throws a [NotFoundException] if the project with the passed [id] doesn't exist.
+     * Returns a [Result] containing the project by its ID or a [NotFoundException] if the project with the passed [id]
+     * doesn't exist.
      */
-    suspend fun getProjectById(id: UUID): Project
+    suspend fun getProjectById(id: UUID): Result<Project>
 
     /**
      * Checks whether the project with the passed [id] exists.
@@ -113,9 +114,10 @@ class ProjectTableRepo(
 ) : IProjectTableRepo {
     private fun getProjectByIdOrNull(id: UUID): Project? = ProjectTable.getEntityByIdOrNull(id, ResultRow::toProject)
 
-    override suspend fun getProjectById(id: UUID): Project = db.query {
-        getProjectByIdOrNull(id) ?: throw NotFoundException(EntityType.PROJECT, id.toString())
+    override suspend fun getProjectById(id: UUID): Result<Project> = db.query {
+        getEntityByIdAsResult(::getProjectByIdOrNull, EntityType.PROJECT, id)
     }
+
     override suspend fun doesProjectExistById(id: UUID): Boolean = db.query {
         ProjectTable.doesEntityExistById(id)
     }

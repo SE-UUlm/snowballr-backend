@@ -18,11 +18,11 @@ import snowballr.UserOuterClass.UserRole
 import java.util.UUID
 
 class GetProjectMembersTest : MainServiceTest() {
-    private val requestId = UUID.randomUUID()
+    private val projectId = UUID.randomUUID()
 
     private fun getExampleRequest() = Base.Id
         .newBuilder()
-        .setId(requestId.toString())
+        .setId(projectId.toString())
         .build()
 
     @Test
@@ -31,7 +31,7 @@ class GetProjectMembersTest : MainServiceTest() {
 
         val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val projectMemberUser = DataBuilder.createExampleUser()
-        val project = DataBuilder.createExampleProject(id = requestId)
+        val project = DataBuilder.createExampleProject(id = projectId)
         val projectMember = DataBuilder.createExampleProjectMember(
             userId = projectMemberUser.id,
             projectId = project.id,
@@ -40,7 +40,7 @@ class GetProjectMembersTest : MainServiceTest() {
 
         every { GrpcContext.getUserIdFromContext() } returns adminUser.id
         coEvery { userRepoMock.getUserById(adminUser.id) } returns adminUser
-        coEvery { projectRepoMock.getProjectById(requestId) } returns project
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getProjectMembersWithUsers(project.id) } returns
             listOf(projectMemberWithUser)
 
@@ -52,13 +52,13 @@ class GetProjectMembersTest : MainServiceTest() {
         val request = getExampleRequest()
 
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-        val project = DataBuilder.createExampleProject(id = requestId)
+        val project = DataBuilder.createExampleProject(id = projectId)
         val projectMember = DataBuilder.createExampleProjectMember(userId = user.id, projectId = project.id)
         val projectMemberWithUser = ProjectMemberWithUser(projectMember, user)
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
         coEvery { userRepoMock.getUserById(user.id) } returns user
-        coEvery { projectRepoMock.getProjectById(requestId) } returns project
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getProjectMembersWithUsers(project.id) } returns
             listOf(projectMemberWithUser)
 
@@ -70,11 +70,11 @@ class GetProjectMembersTest : MainServiceTest() {
         val request = getExampleRequest()
 
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-        val project = DataBuilder.createExampleProject(id = requestId)
+        val project = DataBuilder.createExampleProject(id = projectId)
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
         coEvery { userRepoMock.getUserById(user.id) } returns user
-        coEvery { projectRepoMock.getProjectById(requestId) } returns project
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getProjectMembersWithUsers(project.id) } returns emptyList()
 
         assertThrows<UnauthorizedException> { mainService.getProjectMembers(request) }
@@ -90,7 +90,7 @@ class GetProjectMembersTest : MainServiceTest() {
             every { GrpcContext.getUserIdFromContext() } returns user.id
             coEvery { userRepoMock.getUserById(user.id) } returns user
             coEvery {
-                projectRepoMock.getProjectById(requestId)
+                projectRepoMock.getProjectById(projectId)
             } throws SnowballRException.NotFoundException(EntityType.PROJECT, request.id)
 
             assertThrows<SnowballRException.NotFoundException> { mainService.getProjectMembers(request) }

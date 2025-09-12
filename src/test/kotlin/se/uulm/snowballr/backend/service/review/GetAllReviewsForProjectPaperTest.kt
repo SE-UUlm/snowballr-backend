@@ -73,7 +73,7 @@ class GetAllReviewsForProjectPaperTest : MainServiceTest() {
             coEvery { projectRepoMock.getProjectById(project.id) } throws TestSpecificException()
             return
         }
-        coEvery { projectRepoMock.getProjectById(project.id) } returns project
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
         if (failAt == projectMemberRepoMock::getProjectMembers) {
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } throws TestSpecificException()
@@ -136,7 +136,7 @@ class GetAllReviewsForProjectPaperTest : MainServiceTest() {
             every { GrpcContext.getUserIdFromContext() } returns currentUser.id
             coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
             coEvery { projectPaperRepoMock.getProjectPaperById(projectPaper.id) } returns Result.success(projectPaper)
-            coEvery { projectRepoMock.getProjectById(project.id) } returns project
+            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
             assertThrows<SnowballRException.UnauthorizedException> {

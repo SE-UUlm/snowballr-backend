@@ -79,7 +79,7 @@ class GetReviewByIdTest : MainServiceTest() {
             coEvery { projectRepoMock.getProjectById(project.id) } throws TestSpecificException()
             return
         }
-        coEvery { projectRepoMock.getProjectById(project.id) } returns project
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
         if (failAt == projectMemberRepoMock::getProjectMembers) {
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } throws TestSpecificException()
@@ -135,7 +135,7 @@ class GetReviewByIdTest : MainServiceTest() {
         coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
         coEvery { reviewRepoMock.getReviewById(review.id) } returns Result.success(review)
         coEvery { projectPaperRepoMock.getProjectPaperById(review.projectPaperId) } returns Result.success(projectPaper)
-        coEvery { projectRepoMock.getProjectById(project.id) } returns project
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
         assertThrows<SnowballRException.UnauthorizedException> { mainService.getReviewById(getExampleRequest()) }

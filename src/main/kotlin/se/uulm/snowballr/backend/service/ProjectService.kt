@@ -298,7 +298,7 @@ class ProjectService(
                 )
             }
         }
-        return repo.getProjectById(projectId).toGrpcProject()
+        return repo.getProjectById(projectId).getOrThrow().toGrpcProject()
     }
 
     override suspend fun createProject(request: GrpcProject.Create): GrpcProject {
@@ -359,7 +359,7 @@ class ProjectService(
     override suspend fun updateProject(request: GrpcProject.Update): GrpcProject {
         val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
         val projectId = parseUUID(request.project.id, EntityType.PROJECT)
-        val project = repo.getProjectById(projectId)
+        val project = repo.getProjectById(projectId).getOrThrow()
         val isProjectAdmin = projectMemberRepo.getAllProjectAdmins(projectId).any { it.userId == currentUser.id }
         val projectStatus = project.status
 

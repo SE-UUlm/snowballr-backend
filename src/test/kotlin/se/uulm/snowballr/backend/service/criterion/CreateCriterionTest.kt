@@ -58,7 +58,7 @@ class CreateCriterionTest : MainServiceTest() {
         every { GrpcContext.getUserIdFromContext() } returns user.id
         coEvery { userRepoMock.getUserById(GrpcContext.getUserIdFromContext()) } returns user
         coEvery { criterionRepoMock.createCriterion(any(), any()) } returns criterion
-        coEvery { projectRepoMock.getProjectById(project.id) } returns project
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
 
         assertDoesNotThrow { mainService.createCriterion(request) }
@@ -77,7 +77,7 @@ class CreateCriterionTest : MainServiceTest() {
         coEvery { userRepoMock.getUserById(GrpcContext.getUserIdFromContext()) } returns user
         coEvery { criterionRepoMock.createCriterion(any(), any()) } returns criterion
 
-        coEvery { projectRepoMock.getProjectById(project.id) } returns project
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
 
         assertDoesNotThrow { mainService.createCriterion(request) }
@@ -92,7 +92,7 @@ class CreateCriterionTest : MainServiceTest() {
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
         coEvery { userRepoMock.getUserById(GrpcContext.getUserIdFromContext()) } returns user
-        coEvery { projectRepoMock.getProjectById(project.id) } returns project
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
 
         assertThrows<SnowballRException.UnauthorizedException.Single> { mainService.createCriterion(request) }
@@ -115,7 +115,7 @@ class CreateCriterionTest : MainServiceTest() {
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
         coEvery { userRepoMock.getUserById(GrpcContext.getUserIdFromContext()) } returns user
-        coEvery { projectRepoMock.getProjectById(project.id) } returns project
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
 
         assertThrows<SnowballRException.FailedPreconditionException> { mainService.createCriterion(request) }

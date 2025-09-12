@@ -91,7 +91,7 @@ class CriterionService(
         currentUser: User,
         accessType: AccessType,
     ) {
-        val project = projectRepo.getProjectById(projectId)
+        val project = projectRepo.getProjectById(projectId).getOrThrow()
         val members = when (accessType) {
             AccessType.READ -> projectMemberRepo.getProjectMembers(project.id)
             AccessType.CREATE, AccessType.UPDATE -> projectMemberRepo.getAllProjectAdmins(project.id)

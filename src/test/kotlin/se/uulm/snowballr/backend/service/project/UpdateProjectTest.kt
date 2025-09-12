@@ -42,7 +42,7 @@ class UpdateProjectTest : MainServiceTest() {
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
         coEvery { userRepoMock.getUserById(user.id) } returns user
-        coEvery { projectRepoMock.getProjectById(project.id) } returns project
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
         coEvery { projectRepoMock.updateProject(request, project.status) } returns updatedProject
 
@@ -74,7 +74,7 @@ class UpdateProjectTest : MainServiceTest() {
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
         coEvery { userRepoMock.getUserById(user.id) } returns user
-        coEvery { projectRepoMock.getProjectById(project.id) } returns project
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
         coEvery { projectRepoMock.updateProject(request, project.status) } returns updatedProject
 
@@ -106,7 +106,7 @@ class UpdateProjectTest : MainServiceTest() {
 
             every { GrpcContext.getUserIdFromContext() } returns user.id
             coEvery { userRepoMock.getUserById(user.id) } returns user
-            coEvery { projectRepoMock.getProjectById(project.id) } returns project
+            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
             coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
 
             assertThrows<SnowballRException.UnauthorizedException.Single> { mainService.updateProject(request) }
@@ -134,7 +134,7 @@ class UpdateProjectTest : MainServiceTest() {
 
             every { GrpcContext.getUserIdFromContext() } returns user.id
             coEvery { userRepoMock.getUserById(user.id) } returns user
-            coEvery { projectRepoMock.getProjectById(project.id) } returns project
+            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
             coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
 
             assertThrows<SnowballRException.FailedPreconditionException> { mainService.updateProject(request) }
@@ -163,7 +163,7 @@ class UpdateProjectTest : MainServiceTest() {
 
             every { GrpcContext.getUserIdFromContext() } returns user.id
             coEvery { userRepoMock.getUserById(user.id) } returns user
-            coEvery { projectRepoMock.getProjectById(project.id) } returns project
+            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
             coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
 
             assertThrows<SnowballRException.FailedPreconditionException> { mainService.updateProject(request) }
@@ -185,7 +185,7 @@ class UpdateProjectTest : MainServiceTest() {
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
         coEvery { userRepoMock.getUserById(user.id) } returns user
-        coEvery { projectRepoMock.getProjectById(project.id) } returns project
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
 
         assertThrows<SnowballRException.FailedPreconditionException> { mainService.updateProject(request) }
@@ -209,7 +209,7 @@ class UpdateProjectTest : MainServiceTest() {
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
         coEvery { userRepoMock.getUserById(user.id) } returns user
-        coEvery { projectRepoMock.getProjectById(project.id) } returns project
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
 
         assertThrows<SnowballRException.FailedPreconditionException> { mainService.updateProject(request) }
@@ -219,12 +219,12 @@ class UpdateProjectTest : MainServiceTest() {
     fun `When an error occurs while updating a project, then an exception is thrown`() = runTest {
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE
-        val updatedProject = DataBuilder.createExampleProject(status = status)
-        val request = ProjectOuterClass.Project.Update.newBuilder().setProject(updatedProject.toGrpcProject()).build()
+        val project = DataBuilder.createExampleProject(status = status)
+        val request = ProjectOuterClass.Project.Update.newBuilder().setProject(project.toGrpcProject()).build()
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
         coEvery { userRepoMock.getUserById(any()) } returns user
-        coEvery { projectRepoMock.getProjectById(updatedProject.id) } returns updatedProject
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getAllProjectAdmins(any()) } returns emptyList()
         coEvery { projectRepoMock.updateProject(any(), any()) } throws TestSpecificException()
 

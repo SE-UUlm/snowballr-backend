@@ -88,7 +88,7 @@ class ReviewService(
     }
 
     private suspend fun ensureCurrentUserIsProjectMember(projectId: UUID, currentUser: User) {
-        val project = projectRepo.getProjectById(projectId)
+        val project = projectRepo.getProjectById(projectId).getOrThrow()
         val projectMembers = projectMemberRepo.getProjectMembers(project.id)
         val isProjectMember = projectMembers.any { it.userId == currentUser.id }
 

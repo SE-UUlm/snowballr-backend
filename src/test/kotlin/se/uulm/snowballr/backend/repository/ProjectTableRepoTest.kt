@@ -17,6 +17,8 @@ import se.uulm.snowballr.backend.repository.RepositoryHelper.createExampleUser
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectAndGetId
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
+import se.uulm.snowballr.backend.utils.assertResultFailure
+import se.uulm.snowballr.backend.utils.assertResultSuccess
 import snowballr.ProjectOuterClass.Project
 import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
@@ -45,8 +47,9 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
         fun `When a project is found, then the correct project is returned`() = runTest {
             val projectId =
                 insertProjectAndGetId("Test Project", ProjectStatus.PROJECT_STATUS_ACTIVE, createdBy = testUserId)
-            val project = repo.getProjectById(projectId)
+            val result = repo.getProjectById(projectId)
 
+            val project = assertResultSuccess(result)
             assertThat(project.id).isEqualTo(projectId)
             assertThat(project.name).isEqualTo("Test Project")
             assertThat(project.status).isEqualTo(ProjectStatus.PROJECT_STATUS_ACTIVE)
@@ -61,7 +64,9 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
 
         @Test
         fun `When a project is not found, then an exception is thrown`() = runTest {
-            assertThrows<NotFoundException> { repo.getProjectById(UUID.randomUUID()) }
+            val result = repo.getProjectById(UUID.randomUUID())
+
+            assertResultFailure<NotFoundException>(result)
         }
     }
 
@@ -173,7 +178,7 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
             val projectStatus = ProjectStatus.PROJECT_STATUS_ACTIVE
             val projectId =
                 insertProjectAndGetId(name = "Test Project", projectStatus, createdBy = testUserId)
-            val originalProject = repo.getProjectById(projectId)
+            val originalProject = repo.getProjectById(projectId).getOrThrow()
 
             val updatedProjectDetails = originalProject.toGrpcProject().toBuilder()
                 .setName("Updated Project")
@@ -229,7 +234,7 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
             val projectStatus = ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED
             val projectId =
                 insertProjectAndGetId(name = "Test Project", projectStatus, createdBy = testUserId)
-            val originalProject = repo.getProjectById(projectId)
+            val originalProject = repo.getProjectById(projectId).getOrThrow()
 
             val updatedProjectDetails = originalProject.toGrpcProject().toBuilder()
                 .setName("Updated Project")
@@ -273,7 +278,7 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
             val projectStatus = ProjectStatus.PROJECT_STATUS_ARCHIVED
             val projectId =
                 insertProjectAndGetId(name = "Test Project", projectStatus, createdBy = testUserId)
-            val originalProject = repo.getProjectById(projectId)
+            val originalProject = repo.getProjectById(projectId).getOrThrow()
 
             val updatedProjectDetails = originalProject.toGrpcProject().toBuilder()
                 .setName("Updated Project")

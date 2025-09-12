@@ -16,11 +16,11 @@ import snowballr.UserOuterClass.UserRole
 import java.util.UUID
 
 class GetProjectByIdTest : MainServiceTest() {
-    private val requestId = UUID.randomUUID()
+    private val projectId = UUID.randomUUID()
 
     private fun getExampleRequest() = Base.Id
         .newBuilder()
-        .setId(requestId.toString())
+        .setId(projectId.toString())
         .build()
 
     @Test
@@ -41,12 +41,12 @@ class GetProjectByIdTest : MainServiceTest() {
         val request = getExampleRequest()
 
         val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-        val project = DataBuilder.createExampleProject(id = requestId)
+        val project = DataBuilder.createExampleProject(id = projectId)
 
         every { GrpcContext.getUserIdFromContext() } returns adminUser.id
         coEvery { userRepoMock.getUserById(adminUser.id) } returns adminUser
-        coEvery { projectMemberRepoMock.getProjectMembers(any()) } returns emptyList()
-        coEvery { projectRepoMock.getProjectById(requestId) } returns project
+        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
         assertDoesNotThrow { mainService.getProjectById(request) }
     }
@@ -56,13 +56,13 @@ class GetProjectByIdTest : MainServiceTest() {
         val request = getExampleRequest()
 
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-        val project = DataBuilder.createExampleProject(id = requestId)
-        val projectMember = DataBuilder.createExampleProjectMember(userId = user.id, projectId = requestId)
+        val project = DataBuilder.createExampleProject(id = projectId)
+        val projectMember = DataBuilder.createExampleProjectMember(userId = user.id, projectId = projectId)
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
         coEvery { userRepoMock.getUserById(user.id) } returns user
-        coEvery { projectMemberRepoMock.getProjectMembers(requestId) } returns listOf(projectMember)
-        coEvery { projectRepoMock.getProjectById(requestId) } returns project
+        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
         assertDoesNotThrow { mainService.getProjectById(request) }
     }
