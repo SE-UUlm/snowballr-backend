@@ -1,7 +1,7 @@
 package se.uulm.snowballr.backend
 
 import io.jsonwebtoken.io.Encoders
-import se.uulm.snowballr.backend.auth.JwtService
+import se.uulm.snowballr.backend.auth.JwtManager
 import java.security.KeyPairGenerator
 
 /**
@@ -15,7 +15,7 @@ object RandomKeyGenerator {
      * @return A [Pair] with the private key in the first element and the public key in the second one.
      */
     fun generateKeyPair(keySize: Int = 2048): Pair<String, String> {
-        val keyGen = KeyPairGenerator.getInstance(JwtService.KEY_ALGORITHM)
+        val keyGen = KeyPairGenerator.getInstance(JwtManager.KEY_ALGORITHM)
         keyGen.initialize(keySize)
         val keyPair = keyGen.generateKeyPair()
 

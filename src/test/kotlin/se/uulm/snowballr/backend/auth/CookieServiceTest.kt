@@ -14,9 +14,9 @@ import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.model.auth.CookieConfig
 
 class CookieServiceTest {
-    private val jwtServiceMock = mockk<IJwtService> {
-        every { getAccessTokenTTL() } returns JwtService.ACCESS_TOKEN_EXPIRATION_MS
-        every { getRefreshTokenTTL() } returns JwtService.REFRESH_TOKEN_EXPIRATION_MS
+    private val jwtServiceMock = mockk<IJwtManager> {
+        every { getAccessTokenTTL() } returns JwtManager.ACCESS_TOKEN_EXPIRATION_MS
+        every { getRefreshTokenTTL() } returns JwtManager.REFRESH_TOKEN_EXPIRATION_MS
     }
     private val cookieService = CookieService(jwtServiceMock, createEnvReader("https://"))
 
@@ -75,7 +75,7 @@ class CookieServiceTest {
 
             assertNotNull(cookie)
             assertTrue(cookie.contains("${GrpcContext.ACCESS_TOKEN_COOKIE_NAME}=token123"))
-            assertTrue(cookie.contains("Max-Age=${JwtService.ACCESS_TOKEN_EXPIRATION_MS}"))
+            assertTrue(cookie.contains("Max-Age=${JwtManager.ACCESS_TOKEN_EXPIRATION_MS}"))
             assertTrue(cookie.contains("SameSite=Strict"))
             assertTrue(cookie.contains("HttpOnly"))
             assertTrue(cookie.contains("Secure"))
@@ -96,7 +96,7 @@ class CookieServiceTest {
 
             assertNotNull(cookie)
             assertTrue(cookie.contains("${GrpcContext.REFRESH_TOKEN_COOKIE_NAME}=refresh456"))
-            assertTrue(cookie.contains("Max-Age=${JwtService.REFRESH_TOKEN_EXPIRATION_MS}"))
+            assertTrue(cookie.contains("Max-Age=${JwtManager.REFRESH_TOKEN_EXPIRATION_MS}"))
             assertTrue(cookie.contains("SameSite=Strict"))
             assertTrue(cookie.contains("HttpOnly"))
             assertTrue(cookie.contains("Secure"))

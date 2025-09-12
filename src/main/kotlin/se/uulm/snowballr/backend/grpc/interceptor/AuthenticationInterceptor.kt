@@ -11,13 +11,13 @@ import io.grpc.Status
 import io.grpc.health.v1.HealthGrpc
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import se.uulm.snowballr.backend.auth.AuthenticationManager
 import se.uulm.snowballr.backend.auth.DummyUser
 import se.uulm.snowballr.backend.auth.GrpcContext
+import se.uulm.snowballr.backend.auth.IAuthenticationManager
 import se.uulm.snowballr.backend.auth.ICookieService
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.model.auth.AuthRequestState
-import se.uulm.snowballr.backend.service.AuthenticationService
-import se.uulm.snowballr.backend.service.IAuthenticationService
 import snowballr.Authentication.AuthenticationStatus
 import snowballr.SnowballRGrpcKt
 import io.grpc.reflection.v1.ServerReflectionGrpc as ServerReflectionV1Grpc
@@ -84,7 +84,7 @@ private val AUTH_BYPASS_METHODS =
  */
 val authenticationInterceptor: ServerInterceptor =
     object : ServerInterceptor, KoinComponent {
-        private val authService: IAuthenticationService by inject()
+        private val authService: IAuthenticationManager by inject()
         private val cookieService: ICookieService by inject()
         private val envReader: EnvReader by inject()
 
@@ -153,7 +153,7 @@ val authenticationInterceptor: ServerInterceptor =
          * Handles the authentication process for a gRPC call.
          *
          * This method retrieves the access and refresh tokens from the request cookies and delegates
-         * authentication to the [AuthenticationService]. If the access token is valid or successfully
+         * authentication to the [AuthenticationManager]. If the access token is valid or successfully
          * refreshed using the refresh token, it proceeds with the call and attaches the user ID to the gRPC
          * context.
          *

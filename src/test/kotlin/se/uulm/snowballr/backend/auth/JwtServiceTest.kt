@@ -18,7 +18,7 @@ import java.util.UUID
 
 class JwtServiceTest : KoinTest {
     private val envReaderMock = mockk<EnvReader>()
-    private lateinit var jwtService: IJwtService
+    private lateinit var jwtService: IJwtManager
 
     @BeforeEach
     fun setUpTest() {
@@ -33,7 +33,7 @@ class JwtServiceTest : KoinTest {
 
         every { envReaderMock.env } returns envMock
 
-        jwtService = JwtService(envReaderMock)
+        jwtService = JwtManager(envReaderMock)
     }
 
     @Nested
@@ -102,14 +102,14 @@ class JwtServiceTest : KoinTest {
         fun `When getting access token TTL, then correct TTL in seconds is returned`() {
             val ttl = jwtService.getAccessTokenTTL()
 
-            assertEquals(JwtService.ACCESS_TOKEN_EXPIRATION_MS / 1000, ttl)
+            assertEquals(JwtManager.ACCESS_TOKEN_EXPIRATION_MS / 1000, ttl)
         }
 
         @Test
         fun `When getting refresh token TTL, then correct TTL in seconds is returned`() {
             val ttl = jwtService.getRefreshTokenTTL()
 
-            assertEquals(JwtService.REFRESH_TOKEN_EXPIRATION_MS / 1000, ttl)
+            assertEquals(JwtManager.REFRESH_TOKEN_EXPIRATION_MS / 1000, ttl)
         }
     }
 }

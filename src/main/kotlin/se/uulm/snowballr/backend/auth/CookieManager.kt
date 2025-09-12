@@ -53,7 +53,7 @@ interface ICookieService {
  * @param envReader The environment reader used to access the current configuration.
  */
 class CookieService(
-    private val jwtService: IJwtService,
+    private val jwtService: IJwtManager,
     private val envReader: EnvReader,
 ) : ICookieService {
     override fun parseCookies(cookieHeader: String?): Map<String, String> {

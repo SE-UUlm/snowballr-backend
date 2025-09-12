@@ -1,4 +1,4 @@
-package se.uulm.snowballr.backend.service.user
+package se.uulm.snowballr.backend.service.authentication
 
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test

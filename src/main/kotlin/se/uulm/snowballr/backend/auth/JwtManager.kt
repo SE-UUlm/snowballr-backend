@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit
 
 private val logger = KotlinLogging.logger {}
 
-interface IJwtService {
+interface IJwtManager {
     /**
      * Generates a signed access and refresh token pair for authentication.
      *
@@ -73,9 +73,9 @@ interface IJwtService {
  *
  * @param envReader Provides access to environment variables for configuration.
  */
-class JwtService(
+class JwtManager(
     private val envReader: EnvReader,
-) : IJwtService {
+) : IJwtManager {
     companion object {
         const val KEY_ALGORITHM = "RSA"
         const val ACCESS_TOKEN_EXPIRATION_MS = 15 * 60 * 1000L // 15 minutes
