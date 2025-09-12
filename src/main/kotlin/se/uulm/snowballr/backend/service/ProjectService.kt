@@ -33,6 +33,7 @@ import snowballr.CriterionOuterClass
 import snowballr.PaperOuterClass
 import snowballr.ProjectOuterClass
 import snowballr.ProjectOuterClass.ProjectStatus
+import java.util.UUID
 import snowballr.ProjectOuterClass.Project as GrpcProject
 import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 import snowballr.ReviewOuterClass.Review as GrpcReview
@@ -86,6 +87,11 @@ interface IProjectService {
      * Service implementation of [SnowballRService.getProjectPaperById].
      */
     suspend fun getProjectPaperById(request: Base.Id): GrpcProject.Paper
+
+    /**
+     * Service implementation of [SnowballRService.getProjectPaperByRelativeId].
+     */
+    suspend fun getProjectPaperByRelativeId(request: GrpcProject.Paper.Get): GrpcProject.Paper
 
     /**
      * Service implementation of [SnowballRService.getAllProjectPapersForProject].
@@ -194,6 +200,50 @@ class ProjectService(
             paperBackwardReferencesMap,
             projectPaperReviewsMap,
         )
+    }
+
+    /**
+     * Retrieves the gRPC representation of a project's paper, including associated data such as authors,
+     * backward references, and reviews. Furthermore, it ensures that the current user has the necessary permissions to access
+     * the project's paper.
+     *
+     * @param projectPaper The project paper, containing the ids linking to the associated data.
+     * @param projectId The unique identifier of the project to which the paper belongs.
+     * @return The gRPC representation of the project's paper, including associated data.
+     * @throws UnauthorizedException.Single If the current user does not have the required read access to the project.
+     */
+    private suspend fun loadAndAuthorizeProjectPaper(projectPaper: ProjectPaper, projectId: UUID): GrpcProject.Paper {
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
+        val projectMembers = projectMemberRepo.getProjectMembers(projectId)
+
+        if (projectMembers.none { it.userId == currentUser.id }) {
+            verifyServerAdminRole(currentUser) {
+                throw UnauthorizedException.Single(
+                    EntityType.PROJECT,
+                    projectId.toString(),
+                    AccessType.READ,
+                    it,
+                )
+            }
+        }
+
+        val paper = paperRepo.getPaperById(projectPaper.paperId)
+        val authors = authorOfPaperTableRepo
+            .getAuthorsOfPaperById(paper.id)
+            .map { it.toGrpcAuthor() }
+
+        val backwardReferences = citationTableRepo
+            .getBackwardsReferencedPaperIdsOfPaperById(paper.id)
+            .map { it.toString() }
+
+        val reviews = reviewTableRepo
+            .getAllReviewsForProjectPaper(projectPaper.id)
+            .map {
+                val selectedCriteriaIds = reviewHasCriterionTableRepo.getSelectedCriteriaIdsForReviewById(it.id)
+                it.toGrpcReview(selectedCriteriaIds.map(UUID::toString))
+            }
+
+        return ProjectPaperWithPaper(projectPaper, paper).toGrpcProjectPaper(authors, backwardReferences, reviews)
     }
 
     override suspend fun getProjectById(request: Base.Id): GrpcProject {
@@ -321,35 +371,20 @@ class ProjectService(
     }
 
     override suspend fun getProjectPaperById(request: Base.Id): GrpcProject.Paper {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
         val projectPaperId = parseUUID(request.id, EntityType.PROJECT_PAPER)
         val projectPaper = projectPaperRepo.getProjectPaperById(projectPaperId)
-        val projectId = projectPaper.projectId
-        val projectMembers = projectMemberRepo.getProjectMembers(projectId)
+        return loadAndAuthorizeProjectPaper(projectPaper, projectPaper.projectId)
+    }
 
-        if (!projectMembers.any { it.userId == currentUser.id }) {
-            verifyServerAdminRole(currentUser) {
-                throw UnauthorizedException.Single(
-                    EntityType.PROJECT,
-                    projectId.toString(),
-                    AccessType.READ,
-                    it,
-                )
-            }
+    override suspend fun getProjectPaperByRelativeId(request: GrpcProjectPaper.Get): GrpcProjectPaper {
+        val projectId = parseUUID(request.projectId, EntityType.PROJECT)
+        if (!repo.doesProjectExistById(projectId)) {
+            throw SnowballRException.NotFoundException(EntityType.PROJECT, projectId.toString())
         }
 
-        val paper = paperRepo.getPaperById(projectPaper.paperId)
-        val authors = authorOfPaperTableRepo.getAuthorsOfPaperById(paper.id).map { it.toGrpcAuthor() }
-        val backwardReferences = citationTableRepo.getBackwardsReferencedPaperIdsOfPaperById(
-            paper.id,
-        ).map { it.toString() }
-        val reviews = reviewTableRepo.getAllReviewsForProjectPaper(projectPaperId)
-            .map {
-                val selectedCriteriaIds = reviewHasCriterionTableRepo.getSelectedCriteriaIdsForReviewById(it.id)
-                it.toGrpcReview(selectedCriteriaIds.map { criterion -> criterion.toString() })
-            }
-
-        return ProjectPaperWithPaper(projectPaper, paper).toGrpcProjectPaper(authors, backwardReferences, reviews)
+        val relativeId = request.relativeProjectPaperId.toLong()
+        val projectPaper = projectPaperRepo.getProjectPaperByRelativeId(projectId, relativeId)
+        return loadAndAuthorizeProjectPaper(projectPaper, projectId)
     }
 
     override suspend fun getAllProjectPapersForProject(request: Base.Id): GrpcProjectPaper.List =

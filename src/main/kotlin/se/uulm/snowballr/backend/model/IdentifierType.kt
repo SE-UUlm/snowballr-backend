@@ -8,4 +8,5 @@ package se.uulm.snowballr.backend.model
 enum class IdentifierType(val displayName: String) {
     ID("ID"),
     EMAIL("email"),
+    LOCAL_ID("local ID"),
 }
