@@ -31,6 +31,7 @@ import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import snowballr.Authentication
 import snowballr.Base
 import snowballr.ProjectOuterClass.Project
+import snowballr.CriterionOuterClass
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
 import snowballr.nothing
@@ -57,11 +58,6 @@ interface IUserService {
      * Service implementation of [SnowballRService.getAllUsers].
      */
     suspend fun getAllUsers(): GrpcUser.List
-
-    /**
-     * Service implementation of [SnowballRService.getInviteCandidates]
-     */
-    suspend fun getInviteCandidates(request: Project.InviteCandidatesRequest): GrpcUser.List
 
     /**
      * Service implementation of [SnowballRService.register].
@@ -185,28 +181,6 @@ class UserService(
 
         userRepo.getAllUsers().toGrpcUsers()
     }
-
-    override suspend fun getInviteCandidates(request: Project.InviteCandidatesRequest): GrpcUser.List =
-        withUser(userRepo) { currentUser ->
-            val searchQuery = request.query.trim()
-
-            // Check whether the search query is too short, i.e., 3 or fewer characters long
-            if (searchQuery.length < MINIMUM_LENGTH_OF_SEARCH_QUERY) {
-                return@withUser GrpcUser.List.getDefaultInstance()
-            }
-
-            val excludedUsersFromSearch = mutableSetOf(currentUser.id)
-            try {
-                val projectMembers =
-                    projectMemberRepo.getProjectMembers(parseUUID(request.projectId, EntityType.PROJECT))
-                excludedUsersFromSearch += projectMembers.map { it.userId }
-            } catch (_: InvalidIdException.UUID) {
-                Logger.warn { "Invalid project ID in invite candidates request: ${request.projectId}" }
-            }
-
-            val candidates = userRepo.getUsersMatchingSearchQuery(searchQuery, excludedUsersFromSearch)
-            candidates.toGrpcUsers()
-        }
 
     override suspend fun register(request: Authentication.RegisterRequest): Base.Nothing {
         // Check whether a user with the given email already exists

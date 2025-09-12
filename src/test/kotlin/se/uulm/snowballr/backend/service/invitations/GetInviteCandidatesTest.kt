@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.service.MainServiceTest
-import snowballr.ProjectOuterClass.Project.InviteCandidatesRequest
+import snowballr.ProjectOuterClass
 import java.util.UUID
 import kotlin.test.assertTrue
 
