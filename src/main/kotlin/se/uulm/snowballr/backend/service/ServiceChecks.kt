@@ -5,6 +5,7 @@ import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.repository.IUserTableRepo
+import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import snowballr.UserOuterClass.UserRole
 import java.util.UUID
 
@@ -43,4 +44,17 @@ suspend fun authorizeAccessTo(currentUser: User, targetUserId: UUID, userRepo: I
             UnauthorizedException.Single(EntityType.USER, targetUserId.toString(), accessType, it)
         }
     }
+}
+
+/**
+ * Checks whether a user is a member of a specific project.
+ *
+ * @param projectMemberRepo The project member repository used to retrieve project member data.
+ * @param projectId The unique identifier of the project.
+ * @param currentUserId The unique identifier of the user to be checked for membership.
+ * @return `true` if the user is a member of the project, `false` otherwise.
+ */
+suspend fun isProjectMember(projectMemberRepo: IProjectMemberTableRepo, projectId: UUID, currentUserId: UUID): Boolean {
+    val projectMembers = projectMemberRepo.getProjectMembers(projectId)
+    return projectMembers.any { it.userId == currentUserId }
 }

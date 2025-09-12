@@ -1,4 +1,4 @@
-package se.uulm.snowballr.backend.service.project
+package se.uulm.snowballr.backend.service.projectpaper
 
 import io.mockk.coEvery
 import kotlinx.coroutines.test.runTest
