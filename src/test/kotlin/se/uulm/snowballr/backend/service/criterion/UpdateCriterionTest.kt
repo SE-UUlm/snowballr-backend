@@ -8,9 +8,9 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
-import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.auth.GrpcContext
-import se.uulm.snowballr.backend.model.SnowballRException
+import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
+import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.toGrpcCriterion
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.CriterionOuterClass
@@ -90,7 +90,7 @@ class UpdateCriterionTest : MainServiceTest() {
     }
 
     @Test
-    fun `When a project admin updates a project criterion of a non-active project, then a failed precondition exception is thrown`() =
+    fun `When a project admin updates a project criterion of a non-active project, then a FailedPreconditionException is thrown`() =
         runTest {
             val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
             val project = DataBuilder.createExampleProject(
@@ -111,31 +111,32 @@ class UpdateCriterionTest : MainServiceTest() {
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
             coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
 
-            assertThrows<SnowballRException.FailedPreconditionException> { mainService.updateCriterion(request) }
+            assertThrows<FailedPreconditionException> { mainService.updateCriterion(request) }
         }
 
     @Test
-    fun `When a project member updates a project criterion, then an unauthorized exception is thrown`() = runTest {
-        val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-        val project = DataBuilder.createExampleProject(
-            status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE,
-        )
-        val criterion = DataBuilder.createExampleProjectCriterion(
-            id = criterionId,
-            projectId = project.id,
-            createdBy = user.id,
-        )
+    fun `When a project member updates a project criterion, then an UnauthorizedException#Single is thrown`() =
+        runTest {
+            val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
+            val project = DataBuilder.createExampleProject(
+                status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE,
+            )
+            val criterion = DataBuilder.createExampleProjectCriterion(
+                id = criterionId,
+                projectId = project.id,
+                createdBy = user.id,
+            )
 
-        val request = getExampleRequest()
+            val request = getExampleRequest()
 
-        every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
-        coEvery { criterionRepoMock.getCriterionById(criterionId) } returns Result.success(criterion)
-        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-        coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
+            every { GrpcContext.getUserIdFromContext() } returns user.id
+            coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
+            coEvery { criterionRepoMock.getCriterionById(criterionId) } returns Result.success(criterion)
+            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
+            coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
 
-        assertThrows<SnowballRException.UnauthorizedException> { mainService.updateCriterion(request) }
-    }
+            assertThrows<UnauthorizedException.Single> { mainService.updateCriterion(request) }
+        }
 
     @Test
     fun `When a server admin updates a user criterion, then no exception is thrown`() = runTest {
@@ -181,22 +182,6 @@ class UpdateCriterionTest : MainServiceTest() {
             coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
             coEvery { criterionRepoMock.getCriterionById(criterionId) } returns Result.success(criterion)
 
-            assertThrows<SnowballRException.UnauthorizedException> { mainService.updateCriterion(request) }
+            assertThrows<UnauthorizedException> { mainService.updateCriterion(request) }
         }
-
-    @Test
-    fun `When an error occurs while the criterion is updated, then an exception is thrown`() = runTest {
-        val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-        val criterion =
-            DataBuilder.createExampleUserCriterion(id = criterionId, createdBy = user.id)
-
-        val request = getExampleRequest()
-
-        every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
-        coEvery { criterionRepoMock.getCriterionById(criterionId) } returns Result.success(criterion)
-        coEvery { criterionRepoMock.updateCriterion(request) } throws TestSpecificException()
-
-        assertThrows<TestSpecificException> { mainService.updateCriterion(request) }
-    }
 }

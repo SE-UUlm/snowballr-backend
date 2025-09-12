@@ -68,7 +68,7 @@ class GetCriterionByIdTest : MainServiceTest() {
         }
 
     @Test
-    fun `When the requesting user is not a member of the project and wants to retrieve a project criterion, then an unauthorized exception is thrown`() =
+    fun `When the requesting user is not a member of the project and wants to retrieve a project criterion, then an UnauthorizedException#Single is thrown`() =
         runTest {
             val request = getExampleRequest()
 
@@ -119,7 +119,7 @@ class GetCriterionByIdTest : MainServiceTest() {
         }
 
     @Test
-    fun `When the requesting user is not a server admin and wants to retrieve a user criterion, which he did not create himself, then an unauthorized exception is thrown`() =
+    fun `When the requesting user is not a server admin and wants to retrieve a user criterion, which he did not create himself, then an UnauthorizedException#Single is thrown`() =
         runTest {
             val request = getExampleRequest()
 
@@ -134,14 +134,14 @@ class GetCriterionByIdTest : MainServiceTest() {
         }
 
     @Test
-    fun `When an error occurs while the criterion is retrieved, then an exception is thrown`() = runTest {
+    fun `When an error occurs while the criterion is retrieved, then a TestSpecificException is thrown`() = runTest {
         val request = getExampleRequest()
 
         val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
 
         every { GrpcContext.getUserIdFromContext() } returns adminUser.id
         coEvery { userRepoMock.getUserById(adminUser.id) } returns Result.success(adminUser)
-        coEvery { criterionRepoMock.getCriterionById(criterionId) } throws TestSpecificException()
+        coEvery { criterionRepoMock.getCriterionById(criterionId) } returns Result.failure(TestSpecificException())
 
         assertThrows<TestSpecificException> { mainService.getCriterionById(request) }
     }

@@ -5,6 +5,7 @@ import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException
+import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.Criterion
 import se.uulm.snowballr.backend.model.dto.Criterion.ProjectCriterion
@@ -204,8 +205,11 @@ class CriterionService(
     override suspend fun getAllCriteriaForProject(request: Base.Id): GrpcCriterion.List {
         val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
         val projectId = parseUUID(request.id, EntityType.PROJECT)
-        // This call exists to throw a NotFoundException if the project with the given id does not exist
-        projectRepo.getProjectById(projectId)
+
+        if (!projectRepo.doesProjectExistById(projectId)) {
+            throw NotFoundException(EntityType.PROJECT, projectId.toString())
+        }
+
         val projectMembers = projectMemberRepo.getProjectMembers(projectId)
 
         if (!projectMembers.any { it.userId == currentUser.id }) {

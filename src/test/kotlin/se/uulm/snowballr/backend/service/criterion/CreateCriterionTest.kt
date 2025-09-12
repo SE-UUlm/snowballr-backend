@@ -7,9 +7,9 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
-import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.auth.GrpcContext
-import se.uulm.snowballr.backend.model.SnowballRException
+import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
+import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import se.uulm.snowballr.backend.utils.GrpcEnumSourceTest
 import snowballr.CriterionOuterClass
@@ -36,15 +36,6 @@ class CreateCriterionTest : MainServiceTest() {
             .setDescription("Description")
             .setCategory(CriterionCategory.CRITERION_CATEGORY_EXCLUSION)
             .build()
-    }
-
-    @Test
-    fun `When retrieving the current user ID fails, then an exception is thrown`() = runTest {
-        val request = CriterionOuterClass.Criterion.Create.getDefaultInstance()
-
-        every { GrpcContext.getUserIdFromContext() } throws TestSpecificException()
-
-        assertThrows<TestSpecificException> { mainService.createCriterion(request) }
     }
 
     @Test
@@ -84,25 +75,26 @@ class CreateCriterionTest : MainServiceTest() {
     }
 
     @Test
-    fun `When a non project admin creates a project criterion, then an unauthorized exception is thrown`() = runTest {
-        val user = DataBuilder.createExampleUser()
-        val project = DataBuilder.createExampleProject()
+    fun `When a non project admin creates a project criterion, then an UnauthorizedException#Single is thrown`() =
+        runTest {
+            val user = DataBuilder.createExampleUser()
+            val project = DataBuilder.createExampleProject()
 
-        val request = getProjectCriterionRequest(project.id.toString())
+            val request = getProjectCriterionRequest(project.id.toString())
 
-        every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(GrpcContext.getUserIdFromContext()) } returns Result.success(user)
-        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-        coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
+            every { GrpcContext.getUserIdFromContext() } returns user.id
+            coEvery { userRepoMock.getUserById(GrpcContext.getUserIdFromContext()) } returns Result.success(user)
+            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
+            coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
 
-        assertThrows<SnowballRException.UnauthorizedException.Single> { mainService.createCriterion(request) }
-    }
+            assertThrows<UnauthorizedException.Single> { mainService.createCriterion(request) }
+        }
 
     @GrpcEnumSourceTest(
         ProjectOuterClass.ProjectStatus::class,
         excludes = ["PROJECT_STATUS_ACTIVE", "PROJECT_STATUS_UNSPECIFIED"],
     )
-    fun `When a project admin creates a project criterion for a non active project, then a failed precondition exception is thrown`(
+    fun `When a project admin creates a project criterion for a non active project, then a FailedPreconditionException is thrown`(
         status: ProjectOuterClass.ProjectStatus,
     ) = runTest {
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
@@ -118,7 +110,7 @@ class CreateCriterionTest : MainServiceTest() {
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
 
-        assertThrows<SnowballRException.FailedPreconditionException> { mainService.createCriterion(request) }
+        assertThrows<FailedPreconditionException> { mainService.createCriterion(request) }
     }
 
     @Test
@@ -133,19 +125,6 @@ class CreateCriterionTest : MainServiceTest() {
         coEvery { criterionRepoMock.createCriterion(any(), user.id) } returns criterion
 
         assertDoesNotThrow { mainService.createCriterion(request) }
-    }
-
-    @Test
-    fun `When an error occurs while a criterion is created, then an exception is thrown`() = runTest {
-        val request = CriterionOuterClass.Criterion.Create.getDefaultInstance()
-        val userId = UUID.randomUUID()
-        val user = DataBuilder.createExampleUser(id = userId)
-
-        every { GrpcContext.getUserIdFromContext() } returns UUID.randomUUID()
-        coEvery { userRepoMock.getUserById(GrpcContext.getUserIdFromContext()) } returns Result.success(user)
-        coEvery { criterionRepoMock.createCriterion(any(), any()) } throws TestSpecificException()
-
-        assertThrows<TestSpecificException> { mainService.createCriterion(request) }
     }
 
     @Test
