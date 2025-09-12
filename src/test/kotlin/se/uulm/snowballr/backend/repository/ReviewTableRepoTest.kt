@@ -40,7 +40,7 @@ class ReviewTableRepoTest : RepositoryTest(arrayOf(ReviewTable, ProjectTable, Pr
         }
 
         @Test
-        fun `When a review is not found, then a failed result with an exception is returned`() = runTest {
+        fun `When a review is not found, then a failed result with a NotFoundException is returned`() = runTest {
             val result = repo.getReviewById(UUID.randomUUID())
 
             assertResultFailure<NotFoundException>(result)

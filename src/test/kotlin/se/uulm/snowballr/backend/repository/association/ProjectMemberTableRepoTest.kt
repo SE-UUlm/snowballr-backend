@@ -70,11 +70,12 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
             }
 
         @Test
-        fun `When a project member is not found, then a failed result with an exception is returned`() = runTest {
-            val result = repo.getProjectMemberByComposedId(UUID.randomUUID(), UUID.randomUUID())
+        fun `When a project member is not found, then a failed result with a NotFoundException is returned`() =
+            runTest {
+                val result = repo.getProjectMemberByComposedId(UUID.randomUUID(), UUID.randomUUID())
 
-            assertResultFailure<NotFoundException>(result)
-        }
+                assertResultFailure<NotFoundException>(result)
+            }
     }
 
     @Nested

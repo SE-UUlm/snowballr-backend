@@ -19,7 +19,7 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
     @Nested
     inner class GetPaperById {
         @Test
-        fun `When a paper is found, then the correct paper is returned`() = runTest {
+        fun `When a paper is found, then a successful result with the correct paper is returned`() = runTest {
             val paperId = insertPaperAndGetId(externalId = "ExternalId")
             val result = repo.getPaperById(paperId)
 
@@ -37,7 +37,7 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
         }
 
         @Test
-        fun `When a paper is not found, then an exception is thrown`() = runTest {
+        fun `When a paper is not found, then a failed result with a NotFoundException is returned`() = runTest {
             val result = repo.getPaperById(UUID.randomUUID())
 
             assertResultFailure<NotFoundException>(result)

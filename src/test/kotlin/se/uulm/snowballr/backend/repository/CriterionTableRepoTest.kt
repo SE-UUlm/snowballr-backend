@@ -54,7 +54,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
     @Nested
     inner class GetCriterionById {
         @Test
-        fun `When a criterion is found, then the correct criterion is returned`() = runTest {
+        fun `When a criterion is found, then a successful result with the correct criterion is returned`() = runTest {
             val projectId = createExampleProject().id
             val criterionId = insertCriterionAndGetId(projectId = projectId, createdBy = testUserId)
             val result = repo.getCriterionById(criterionId)
@@ -70,7 +70,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
         }
 
         @Test
-        fun `When a criterion is not found, then an exception is thrown`() = runTest {
+        fun `When a criterion is not found, then a failed result with a NotFoundException is returned`() = runTest {
             val result = repo.getCriterionById(UUID.randomUUID())
 
             assertResultFailure<NotFoundException>(result)

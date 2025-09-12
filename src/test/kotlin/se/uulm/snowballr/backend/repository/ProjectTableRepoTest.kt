@@ -44,7 +44,7 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
     @Nested
     inner class GetProjectById {
         @Test
-        fun `When a project is found, then the correct project is returned`() = runTest {
+        fun `When a project is found, then a successful result with the correct project is returned`() = runTest {
             val projectId =
                 insertProjectAndGetId("Test Project", ProjectStatus.PROJECT_STATUS_ACTIVE, createdBy = testUserId)
             val result = repo.getProjectById(projectId)
@@ -63,7 +63,7 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
         }
 
         @Test
-        fun `When a project is not found, then an exception is thrown`() = runTest {
+        fun `When a project is not found, then a failed result with a NotFoundException is returned`() = runTest {
             val result = repo.getProjectById(UUID.randomUUID())
 
             assertResultFailure<NotFoundException>(result)

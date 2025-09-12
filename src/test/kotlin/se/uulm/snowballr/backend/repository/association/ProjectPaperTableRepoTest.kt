@@ -53,7 +53,7 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
             }
 
         @Test
-        fun `When a project paper is not found, then a failed result with an exception is returned`() = runTest {
+        fun `When a project paper is not found, then a failed result with a NotFoundException is returned`() = runTest {
             val result = repo.getProjectPaperById(UUID.randomUUID())
 
             assertResultFailure<NotFoundException>(result)

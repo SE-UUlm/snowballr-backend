@@ -31,7 +31,7 @@ class AuthorTableRepoTest : RepositoryTest(arrayOf(AuthorTable), false) {
     @Nested
     inner class GetAuthorById {
         @Test
-        fun `When an author is found, then the correct author is returned`() = runTest {
+        fun `When an author is found, then a successful result with the correct author is returned`() = runTest {
             val authorId = insertTestAuthorAndGetId()
             val result = repo.getAuthorById(authorId)
 
@@ -44,7 +44,7 @@ class AuthorTableRepoTest : RepositoryTest(arrayOf(AuthorTable), false) {
         }
 
         @Test
-        fun `When an author is not found, then an exception is thrown`() = runTest {
+        fun `When an author is not found, then a failed result with a NotFoundException is returned`() = runTest {
             val result = repo.getAuthorById(UUID.randomUUID())
 
             assertResultFailure<NotFoundException>(result)
