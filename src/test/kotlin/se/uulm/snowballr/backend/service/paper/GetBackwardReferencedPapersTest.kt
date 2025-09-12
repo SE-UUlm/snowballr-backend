@@ -62,7 +62,7 @@ class GetBackwardReferencedPapersTest : MainServiceTest() {
             coEvery { paperRepoMock.getPaperById(backwardReferenceId) } throws TestSpecificException()
             return
         }
-        coEvery { paperRepoMock.getPaperById(backwardReferenceId) } returns referencedPaper
+        coEvery { paperRepoMock.getPaperById(backwardReferenceId) } returns Result.success(referencedPaper)
 
         if (failAt == authorOfPaperRepoMock::getAuthorsOfPaperById) {
             coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(backwardReferenceId) } throws TestSpecificException()

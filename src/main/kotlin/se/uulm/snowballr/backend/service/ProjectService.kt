@@ -265,7 +265,7 @@ class ProjectService(
             }
         }
 
-        val paper = paperRepo.getPaperById(projectPaper.paperId)
+        val paper = paperRepo.getPaperById(projectPaper.paperId).getOrThrow()
         val authors = authorOfPaperTableRepo
             .getAuthorsOfPaperById(paper.id)
             .map { it.toGrpcAuthor() }

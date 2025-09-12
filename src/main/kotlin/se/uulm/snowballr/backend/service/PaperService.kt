@@ -50,7 +50,7 @@ class PaperService(
 ) : IPaperService {
     override suspend fun getPaperById(request: Base.Id): GrpcPaper {
         val paperId = parseUUID(request.id, EntityType.PAPER)
-        val paper = repo.getPaperById(paperId)
+        val paper = repo.getPaperById(paperId).getOrThrow()
 
         val authors = authorOfPapersRepo.getAuthorsOfPaperById(paperId).map { it.toGrpcAuthor() }
         val backwardReferencedIds = citationRepo.getBackwardsReferencedPaperIdsOfPaperById(paperId)
@@ -82,7 +82,7 @@ class PaperService(
 
         val referenceIds = function.invoke(paperId)
         val papers = referenceIds.map {
-            val referencedPaper = repo.getPaperById(it)
+            val referencedPaper = repo.getPaperById(it).getOrThrow()
             val authors = authorOfPapersRepo.getAuthorsOfPaperById(referencedPaper.id)
                 .map(Author::toGrpcAuthor)
             val backwardReferences = citationRepo

@@ -27,7 +27,7 @@ class ReadingListTableRepoTest : RepositoryTest(arrayOf(UserTable, PaperTable, R
             repo.createReadingListEntry(userId, paperId)
             val actualReadingListEntries = repo.getAllReadingListEntries(userId)
             assertThat(actualReadingListEntries).hasSize(1)
-            assertThat(actualReadingListEntries).containsExactly(paperRepo.getPaperById(paperId))
+            assertThat(actualReadingListEntries).containsExactly(paperRepo.getPaperById(paperId).getOrThrow())
         }
 
         @Test
@@ -38,7 +38,7 @@ class ReadingListTableRepoTest : RepositoryTest(arrayOf(UserTable, PaperTable, R
             repo.createReadingListEntry(userId, paperId)
             val actualReadingListEntries = repo.getAllReadingListEntries(userId)
             assertThat(actualReadingListEntries).hasSize(1)
-            assertThat(actualReadingListEntries).containsExactly(paperRepo.getPaperById(paperId))
+            assertThat(actualReadingListEntries).containsExactly(paperRepo.getPaperById(paperId).getOrThrow())
         }
     }
 
@@ -132,7 +132,7 @@ class ReadingListTableRepoTest : RepositoryTest(arrayOf(UserTable, PaperTable, R
 
                 val actualReadingListEntries = repo.getAllReadingListEntries(userId)
                 assertThat(actualReadingListEntries).hasSize(1)
-                assertThat(actualReadingListEntries).containsExactly(paperRepo.getPaperById(paperId))
+                assertThat(actualReadingListEntries).containsExactly(paperRepo.getPaperById(paperId).getOrThrow())
             }
 
         @Test
@@ -147,8 +147,8 @@ class ReadingListTableRepoTest : RepositoryTest(arrayOf(UserTable, PaperTable, R
                 val actualReadingListEntries = repo.getAllReadingListEntries(userId)
                 assertThat(actualReadingListEntries).hasSize(2)
                 assertThat(actualReadingListEntries).containsExactlyInAnyOrder(
-                    paperRepo.getPaperById(paperId1),
-                    paperRepo.getPaperById(paperId2),
+                    paperRepo.getPaperById(paperId1).getOrThrow(),
+                    paperRepo.getPaperById(paperId2).getOrThrow(),
                 )
             }
 

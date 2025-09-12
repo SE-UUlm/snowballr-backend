@@ -146,7 +146,7 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
                     insertProjectPaperAndGetId(paperId = paperId, projectId = projectId, createdBy = testUserId)
                 val projectPaper = repo.getProjectPaperById(projectPaperId).getOrThrow()
 
-                val paper = paperRepo.getPaperById(paperId)
+                val paper = paperRepo.getPaperById(paperId).getOrThrow()
                 val projectPapers = repo.getAllProjectPapersWithPapers(projectId)
 
                 assertThat(projectPapers).hasSize(1)
@@ -166,7 +166,7 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
                 val nonProjectPaperId =
                     insertProjectPaperAndGetId(paperId = paperId, projectId = projectId2, createdBy = testUserId)
 
-                val paper = paperRepo.getPaperById(paperId)
+                val paper = paperRepo.getPaperById(paperId).getOrThrow()
                 val projectPapers = repo.getAllProjectPapersWithPapers(projectId1)
 
                 assertThat(projectPapers).hasSize(1)

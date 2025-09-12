@@ -42,7 +42,7 @@ class GetPaperByIdTest : MainServiceTest() {
             coEvery { paperRepoMock.getPaperById(paper.id) } throws TestSpecificException()
             return
         }
-        coEvery { paperRepoMock.getPaperById(paper.id) } returns paper
+        coEvery { paperRepoMock.getPaperById(paper.id) } returns Result.success(paper)
 
         if (failAt == authorOfPaperRepoMock::getAuthorsOfPaperById) {
             coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(paper.id) } throws TestSpecificException()

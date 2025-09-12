@@ -62,7 +62,7 @@ class GetForwardReferencedPapersTest : MainServiceTest() {
             coEvery { paperRepoMock.getPaperById(forwardReferenceId) } throws TestSpecificException()
             return
         }
-        coEvery { paperRepoMock.getPaperById(forwardReferenceId) } returns citingPaper
+        coEvery { paperRepoMock.getPaperById(forwardReferenceId) } returns Result.success(citingPaper)
 
         if (failAt == authorOfPaperRepoMock::getAuthorsOfPaperById) {
             coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(forwardReferenceId) } throws TestSpecificException()
