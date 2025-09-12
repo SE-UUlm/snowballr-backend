@@ -17,8 +17,12 @@ import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import snowballr.ProjectOuterClass
+import snowballr.ProjectOuterClass.Project
 import java.util.UUID
 import kotlin.random.Random
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, ProjectTable, PaperTable), true) {
     private val repo = ProjectPaperTableRepo(db)
@@ -100,6 +104,31 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
     }
 
     @Nested
+    inner class DoesProjectPaperExistsByPaperId {
+        @Test
+        fun `When a project paper exists that is associated with the given paper ID in the project identified by the given project ID, then true is returned`() =
+            runTest {
+                val projectId =
+                    insertProjectAndGetId(createdBy = testUserId)
+                val paperId = insertPaperAndGetId()
+                insertProjectPaperAndGetId(paperId = paperId, projectId = projectId, createdBy = testUserId)
+                val isProjectPaperExisting = repo.doesProjectPaperExist(projectId, paperId)
+
+                assertTrue(isProjectPaperExisting)
+            }
+
+        @Test
+        fun `When no project paper exists that is associated with the given paper ID in the project identified by the given project ID, then false is returned`() =
+            runTest {
+                val projectId = UUID.randomUUID()
+                val paperId = UUID.randomUUID()
+                val isProjectExisting = repo.doesProjectPaperExist(projectId, paperId)
+
+                assertFalse(isProjectExisting)
+            }
+    }
+
+    @Nested
     inner class GetProjectMembersWithUsers {
         @Test
         fun `When a project, a project paper and the corresponding paper exists, then the project paper with paper is correctly returned`() =
@@ -137,6 +166,89 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
                 assertThat(projectPapers).anyMatch { it.projectPaper == projectPaper }
                 assertThat(projectPapers).anyMatch { it.paper == paper }
                 assertThat(projectPapers).noneMatch { it.projectPaper.id == nonProjectPaperId }
+            }
+    }
+
+    @Nested
+    inner class AddPaperToProject {
+        @Test
+        fun `When a project paper is added to a project, but the assigned user doesn't exist, then an exception is thrown`() =
+            runTest {
+                val request = Project.Paper.Add.newBuilder().build()
+                assertThrows<SnowballRException.NotFoundException> {
+                    repo.addPaperToProject(
+                        request,
+                        UUID.randomUUID(),
+                    )
+                }
+            }
+
+        @Test
+        fun `When a project paper is added to a project with the correct values, then the project paper is returned`() =
+            runTest {
+                val paperId = insertPaperAndGetId()
+                val projectId = insertProjectAndGetId(createdBy = testUserId)
+                val request = Project.Paper.Add.newBuilder()
+                    .setPaperId(paperId.toString())
+                    .setProjectId(projectId.toString())
+                    .setStage(0)
+                    .build()
+
+                val projectPaper = assertDoesNotThrow { repo.addPaperToProject(request, testUserId) }
+                assertEquals(paperId, projectPaper.paperId)
+                assertEquals(projectId, projectPaper.projectId)
+                assertEquals(0, projectPaper.localPaperId)
+                assertEquals(0, projectPaper.stage)
+                assertEquals(ProjectOuterClass.PaperDecision.PAPER_DECISION_UNSPECIFIED, projectPaper.decision)
+                assertEquals(testUserId, projectPaper.createdBy)
+            }
+
+        @Test
+        fun `When a second project paper is added to the same project with the correct values, then the local paper ID is increased correctly`() =
+            runTest {
+                val paperId1 = insertPaperAndGetId()
+                val projectId = insertProjectAndGetId(createdBy = testUserId)
+                val request1 = Project.Paper.Add.newBuilder()
+                    .setPaperId(paperId1.toString())
+                    .setProjectId(projectId.toString())
+                    .setStage(0)
+                    .build()
+
+                val paperId2 = insertPaperAndGetId()
+                val request2 = Project.Paper.Add.newBuilder()
+                    .setPaperId(paperId2.toString())
+                    .setProjectId(projectId.toString())
+                    .setStage(0)
+                    .build()
+
+                assertDoesNotThrow { repo.addPaperToProject(request1, testUserId) }
+                val projectPaper2 = assertDoesNotThrow { repo.addPaperToProject(request2, testUserId) }
+                assertEquals(1, projectPaper2.localPaperId)
+            }
+
+        @Test
+        fun `When a second project paper is added to another project with the correct values, then the local paper IDs are independent`() =
+            runTest {
+                val paperId1 = insertPaperAndGetId()
+                val projectId1 = insertProjectAndGetId(createdBy = testUserId)
+                val request1 = Project.Paper.Add.newBuilder()
+                    .setPaperId(paperId1.toString())
+                    .setProjectId(projectId1.toString())
+                    .setStage(0)
+                    .build()
+
+                val paperId2 = insertPaperAndGetId()
+                val projectId2 = insertProjectAndGetId(createdBy = testUserId)
+                val request2 = Project.Paper.Add.newBuilder()
+                    .setPaperId(paperId2.toString())
+                    .setProjectId(projectId2.toString())
+                    .setStage(0)
+                    .build()
+
+                val projectPaper1 = assertDoesNotThrow { repo.addPaperToProject(request1, testUserId) }
+                val projectPaper2 = assertDoesNotThrow { repo.addPaperToProject(request2, testUserId) }
+                assertEquals(0, projectPaper1.localPaperId)
+                assertEquals(0, projectPaper2.localPaperId)
             }
     }
 }

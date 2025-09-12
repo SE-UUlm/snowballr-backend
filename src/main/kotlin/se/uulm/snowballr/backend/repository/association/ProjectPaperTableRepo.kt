@@ -10,12 +10,17 @@ import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.ProjectPaperNotFoundException
 import se.uulm.snowballr.backend.model.dto.ProjectPaper
 import se.uulm.snowballr.backend.model.dto.ProjectPaperWithPaper
+import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.getEntityByIdOrNull
+import se.uulm.snowballr.backend.repository.getUserEntityId
+import se.uulm.snowballr.backend.repository.insertAndGet
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.table.association.toProjectPaper
 import se.uulm.snowballr.backend.table.association.toProjectPaperWithPaper
+import snowballr.ProjectOuterClass
 import java.util.UUID
+import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 
 /**
  * Defines an interface for repository operations related to the [ProjectPaperTable].
@@ -44,6 +49,15 @@ interface IProjectPaperTableRepo {
     suspend fun getProjectPaperByRelativeId(projectId: UUID, relativeId: Long): ProjectPaper
 
     /**
+     * Checks if a project paper exists in a project, based on the provided paper ID.
+     *
+     * @param projectId The unique identifier of the project.
+     * @param paperId The unique identifier of the paper to check for existence.
+     * @return `true` if the project paper exists, otherwise `false`.
+     */
+    suspend fun doesProjectPaperExist(projectId: UUID, paperId: UUID): Boolean
+
+    /**
      * Retrieves a list of project papers along with their associated papers for the specified project.
      *
      * This method fetches data that combines information from a `ProjectPaper` and its related `Paper`
@@ -55,6 +69,21 @@ interface IProjectPaperTableRepo {
      *         between a project paper and its associated paper.
      */
     suspend fun getAllProjectPapersWithPapers(projectId: UUID): List<ProjectPaperWithPaper>
+
+    /**
+     * Adds a paper to a project and returns the newly created project paper instance.
+     *
+     * This function associates a paper with a specific project by creating a new [ProjectPaper]
+     * entry, linking the provided paper and project. The local paper ID of the new [ProjectPaper] gets increased by 1,
+     * depending on the maximum local paper ID of the current papers in the project.
+     *
+     * @param request The request object containing the information necessary to add the paper
+     *                to the project, such as the paper and project IDs.
+     * @param userId The unique identifier of the user performing the operation.
+     * @return The created [ProjectPaper] object representing the association between the paper
+     *         and the project.
+     */
+    suspend fun addPaperToProject(request: GrpcProjectPaper.Add, userId: UUID): ProjectPaper
 }
 
 /**
@@ -75,6 +104,22 @@ class ProjectPaperTableRepo(
         ResultRow::toProjectPaper,
     )
 
+    /**
+     * Generates the next available local paper ID for the specified project by checking the existing maximum local paper ID
+     * within the project and incrementing it by one. If no local paper IDs exist for the given project, it returns 0.
+     *
+     * @param projectId The unique identifier of the project for which the next local paper ID is to be generated.
+     * @return The next available local paper ID as a [Long].
+     */
+    private suspend fun getNextLocalIdForProject(projectId: UUID): Long = db.query {
+        ProjectPaperTable
+            .selectAll()
+            .where { ProjectPaperTable.projectId eq projectId }
+            .maxOfOrNull { it[ProjectPaperTable.localPaperId] }
+            ?.plus(1)
+            ?: 0L
+    }
+
     override suspend fun getProjectPaperById(id: UUID): ProjectPaper = db.query {
         getProjectPaperByIdOrNull(id) ?: throw NotFoundException(EntityType.PROJECT_PAPER, id.toString())
     }
@@ -94,11 +139,36 @@ class ProjectPaperTableRepo(
         )
     }
 
+    override suspend fun doesProjectPaperExist(projectId: UUID, paperId: UUID): Boolean = db.query {
+        ProjectPaperTable
+            .selectAll()
+            .where { (ProjectPaperTable.paperId eq paperId) and (ProjectPaperTable.projectId eq projectId) }
+            .empty()
+            .not()
+    }
+
     override suspend fun getAllProjectPapersWithPapers(projectId: UUID): List<ProjectPaperWithPaper> = db.query {
         ProjectPaperTable
             .join(PaperTable, JoinType.INNER, onColumn = ProjectPaperTable.paperId, otherColumn = PaperTable.id)
             .selectAll()
             .where { ProjectPaperTable.projectId eq projectId }
             .map { it.toProjectPaperWithPaper() }
+    }
+
+    override suspend fun addPaperToProject(request: GrpcProjectPaper.Add, userId: UUID): ProjectPaper = db.query {
+        val userEntityId = getUserEntityId(userId)
+        val paperId = parseUUID(request.paperId, EntityType.PAPER)
+        val projectId = parseUUID(request.projectId, EntityType.PROJECT)
+        val localPaperId = getNextLocalIdForProject(projectId)
+
+        ProjectPaperTable
+            .insertAndGet(ResultRow::toProjectPaper, EntityType.PROJECT_PAPER) {
+                it[ProjectPaperTable.paperId] = paperId
+                it[ProjectPaperTable.projectId] = projectId
+                it[ProjectPaperTable.localPaperId] = localPaperId
+                it[stage] = request.stage
+                it[decision] = ProjectOuterClass.PaperDecision.PAPER_DECISION_UNSPECIFIED
+                it[createdBy] = userEntityId
+            }
     }
 }

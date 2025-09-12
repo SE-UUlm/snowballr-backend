@@ -77,6 +77,7 @@ private class ExceptionCall<ReqT, RespT>(
         val status =
             when (e) {
                 is SnowballRException.InvalidIdException -> Status.INVALID_ARGUMENT
+                is SnowballRException.OutOfRangeException -> Status.INVALID_ARGUMENT
                 is SnowballRException.VerificationTokenNotFoundException -> Status.DEADLINE_EXCEEDED
                 is SnowballRException.NotFoundException -> Status.NOT_FOUND
                 is SnowballRException.DuplicateEntityException -> Status.ALREADY_EXISTS
