@@ -27,10 +27,15 @@ inline fun <reified T : ValidationIssue> assertInvalidResult(result: EitherNel<V
     val issues = (result as Either.Left).value
 
     val matchingIssue = issues.find { it is T }
-    assertThat(
-        matchingIssue,
-    ).withFailMessage("Expected issue of type ${T::class} but found: ${issues.map { it::class }}")
+    assertThat(matchingIssue)
+        .withFailMessage(
+            "Expected issue of type ${T::class} but found: [${
+                issues.map { it::class }.joinToString(", ")
+            }]",
+        )
         .isNotNull()
     assertInstanceOf<T>(matchingIssue)
+    @Suppress("NullableToStringCall")
+    assertThat(matchingIssue.toString()).isNotEmpty()
     return matchingIssue
 }
