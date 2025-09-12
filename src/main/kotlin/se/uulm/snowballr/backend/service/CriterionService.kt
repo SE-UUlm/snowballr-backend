@@ -173,7 +173,7 @@ class CriterionService(
     override suspend fun getCriterionById(request: Base.Id): GrpcCriterion {
         val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
         val criterionId = parseUUID(request.id, EntityType.CRITERION)
-        val criterion = repo.getCriterionById(criterionId)
+        val criterion = repo.getCriterionById(criterionId).getOrThrow()
 
         checkCriterionPermission(criterion, currentUser, AccessType.READ)
         return criterion.toGrpcCriterion()
@@ -195,7 +195,7 @@ class CriterionService(
     override suspend fun updateCriterion(request: GrpcCriterion.Update): GrpcCriterion {
         val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
         val criterionId = parseUUID(request.criterion.id, EntityType.CRITERION)
-        val criterion = repo.getCriterionById(criterionId)
+        val criterion = repo.getCriterionById(criterionId).getOrThrow()
 
         checkCriterionPermission(criterion, currentUser, AccessType.UPDATE)
         return repo.updateCriterion(request).toGrpcCriterion()

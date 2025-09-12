@@ -21,6 +21,8 @@ import se.uulm.snowballr.backend.repository.RepositoryHelper.insertCriterionAndG
 import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.utils.GrpcEnumSourceTest
+import se.uulm.snowballr.backend.utils.assertResultFailure
+import se.uulm.snowballr.backend.utils.assertResultSuccess
 import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass
 import java.util.UUID
@@ -55,22 +57,23 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
         fun `When a criterion is found, then the correct criterion is returned`() = runTest {
             val projectId = createExampleProject().id
             val criterionId = insertCriterionAndGetId(projectId = projectId, createdBy = testUserId)
-            val criterion = repo.getCriterionById(criterionId)
+            val result = repo.getCriterionById(criterionId)
 
+            val criterion = assertResultSuccess(result)
             assertIs<ProjectCriterion>(criterion)
             assertThat(criterion.id).isEqualTo(criterionId)
             assertThat(criterion.tag).isEqualTo("Test Tag")
             assertThat(criterion.name).isEqualTo("Test Criterion")
             assertThat(criterion.description).isEqualTo("Test Description")
-            assertThat(
-                criterion.category,
-            ).isEqualTo(CriterionCategory.CRITERION_CATEGORY_EXCLUSION)
+            assertThat(criterion.category).isEqualTo(CriterionCategory.CRITERION_CATEGORY_EXCLUSION)
             assertThat(criterion.projectId).isEqualTo(projectId)
         }
 
         @Test
         fun `When a criterion is not found, then an exception is thrown`() = runTest {
-            assertThrows<NotFoundException> { repo.getCriterionById(UUID.randomUUID()) }
+            val result = repo.getCriterionById(UUID.randomUUID())
+
+            assertResultFailure<NotFoundException>(result)
         }
     }
 
@@ -293,7 +296,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
         ) = runTest {
             val projectId = createExampleProject().id
             val criterionId = insertCriterionAndGetId(projectId = projectId, createdBy = testUserId)
-            val originalCriterion = repo.getCriterionById(criterionId)
+            val originalCriterion = repo.getCriterionById(criterionId).getOrThrow()
 
             val updatedCriterionDetails = originalCriterion.toGrpcCriterion().toBuilder()
                 .setTag("Updated Tag")

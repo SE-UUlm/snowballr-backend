@@ -25,9 +25,10 @@ import java.util.UUID
  */
 interface ICriterionTableRepo {
     /**
-     * Returns a criterion by its ID or throws a [NotFoundException] if the criterion with the passed [id] doesn't exist.
+     * Returns a [Result] containing the criterion by its ID or a [NotFoundException] if the criterion with the passed
+     * [id] doesn't exist.
      */
-    suspend fun getCriterionById(id: UUID): Criterion
+    suspend fun getCriterionById(id: UUID): Result<Criterion>
 
     /**
      * Creates a new criterion in the database based on the provided request and user ID.
@@ -93,8 +94,8 @@ class CriterionTableRepo(
     private fun getCriterionByIdOrNull(id: UUID): Criterion? =
         CriterionTable.getEntityByIdOrNull(id, ResultRow::toCriterion)
 
-    override suspend fun getCriterionById(id: UUID): Criterion = db.query {
-        getCriterionByIdOrNull(id) ?: throw NotFoundException(EntityType.CRITERION, id.toString())
+    override suspend fun getCriterionById(id: UUID): Result<Criterion> = db.query {
+        getEntityByIdAsResult(::getCriterionByIdOrNull, EntityType.CRITERION, id)
     }
 
     override suspend fun createCriterion(request: CriterionOuterClass.Criterion.Create, userId: UUID): Criterion =
