@@ -10,11 +10,11 @@ import se.uulm.snowballr.backend.model.dto.toGrpcReview
 import se.uulm.snowballr.backend.model.dto.toGrpcReviews
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
+import se.uulm.snowballr.backend.repository.IReviewTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.IReviewHasCriterionTableRepo
-import se.uulm.snowballr.backend.repository.association.IReviewTableRepo
 import snowballr.Base
 import snowballr.ReviewOuterClass.Review as GrpcReview
 

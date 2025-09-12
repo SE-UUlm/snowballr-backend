@@ -1,4 +1,4 @@
-package se.uulm.snowballr.backend.repository.association
+package se.uulm.snowballr.backend.repository
 
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
@@ -10,11 +10,10 @@ import se.uulm.snowballr.backend.repository.RepositoryHelper.insertPaperAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectPaperAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertReviewAndGetId
-import se.uulm.snowballr.backend.repository.RepositoryTest
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.ProjectTable
+import se.uulm.snowballr.backend.table.ReviewTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
-import se.uulm.snowballr.backend.table.association.ReviewTable
 import snowballr.ReviewOuterClass
 import java.util.UUID
 

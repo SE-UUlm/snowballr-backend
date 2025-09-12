@@ -105,7 +105,7 @@ class ProjectPaperValidatorTest {
             val request = validAddRequestBuilder.setStage(-1).build()
             val result = validateRequest(request)
 
-            assertInvalidResult<OutOfRangeValue>(result)
+            assertInvalidResult<OutOfRangeValue<Long>>(result)
         }
     }
 }

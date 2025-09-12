@@ -27,26 +27,27 @@ object UserValidator {
         // Only proceed with field validation if the mask is valid
         val selectedFields = request.mask.pathsList.toSet()
 
+        val user = request.user
         zipOrAccumulate(
-            { ensureIdValidity("id", request.user.id) },
+            { ensureIdValidity("id", user.id) },
             {
                 if ("user.email" in selectedFields) {
-                    ensureEmailValidity(request.user.email)
+                    ensureEmailValidity(user.email)
                 }
             },
             {
                 if ("user.first_name" in selectedFields) {
-                    ensureFirstNameValidity(request.user.firstName)
+                    ensureFirstNameValidity(user.firstName)
                 }
             },
             {
                 if ("user.last_name" in selectedFields) {
-                    ensureLastNameValidity(request.user.lastName)
+                    ensureLastNameValidity(user.lastName)
                 }
             },
             {
                 if ("user.role" in selectedFields) {
-                    ensureEnumNotUnspecified("role", request.user.role)
+                    ensureEnumNotUnspecified("role", user.role)
                 }
             },
         ) { _, _, _, _, _ -> }

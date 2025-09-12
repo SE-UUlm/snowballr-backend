@@ -1,12 +1,10 @@
-package se.uulm.snowballr.backend.table.association
+package se.uulm.snowballr.backend.table
 
 import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.ResultRow
 import se.uulm.snowballr.backend.model.dto.Review
-import se.uulm.snowballr.backend.table.createdAt
-import se.uulm.snowballr.backend.table.modifiedAt
-import se.uulm.snowballr.backend.table.userReference
+import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import snowballr.ReviewOuterClass
 import java.time.OffsetDateTime
 

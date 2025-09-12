@@ -1,8 +1,9 @@
 package se.uulm.snowballr.backend.table.association
 
-import org.jetbrains.exposed.dao.id.UUIDTable
+import org.jetbrains.exposed.dao.id.CompositeIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
 import se.uulm.snowballr.backend.table.CriterionTable
+import se.uulm.snowballr.backend.table.ReviewTable
 
 /**
  * Represents the "review_has_criterion" table, defining the many-to-many relationship between reviews and criteria.
@@ -12,8 +13,11 @@ import se.uulm.snowballr.backend.table.CriterionTable
  * Columns:
  * - [reviewId]: Foreign key referencing the [ReviewTable.id], representing the associated review.
  * - [criterionId]: Foreign key referencing the [CriterionTable], representing the associated criterion.
+ *
+ * Primary Key:
+ * - Composite primary key consisting of [reviewId] and [criterionId].
  */
-object ReviewHasCriterionTable : UUIDTable("review_has_criterion") {
+object ReviewHasCriterionTable : CompositeIdTable("review_has_criterion") {
     /**
      * Reference to the associated review.
      *
@@ -31,6 +35,9 @@ object ReviewHasCriterionTable : UUIDTable("review_has_criterion") {
     val criterionId = reference("criterion_id", CriterionTable, ReferenceOption.CASCADE, ReferenceOption.CASCADE)
 
     init {
-        uniqueIndex(reviewId, criterionId)
+        addIdColumn(reviewId)
+        addIdColumn(criterionId)
     }
+
+    override val primaryKey = PrimaryKey(reviewId, criterionId)
 }

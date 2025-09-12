@@ -24,6 +24,7 @@ import se.uulm.snowballr.backend.repository.IAuthorTableRepo
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
+import se.uulm.snowballr.backend.repository.IReviewTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.IVerificationTokenTableRepo
 import se.uulm.snowballr.backend.repository.association.IAuthorOfPaperTableRepo
@@ -32,7 +33,6 @@ import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.IReadingListTableRepo
 import se.uulm.snowballr.backend.repository.association.IReviewHasCriterionTableRepo
-import se.uulm.snowballr.backend.repository.association.IReviewTableRepo
 import se.uulm.snowballr.backend.service.criterion.CreateCriterionTest
 import se.uulm.snowballr.backend.serviceLayerDeps
 

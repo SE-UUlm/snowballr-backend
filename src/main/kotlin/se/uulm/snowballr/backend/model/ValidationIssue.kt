@@ -1,10 +1,10 @@
 package se.uulm.snowballr.backend.model
 
-import se.uulm.snowballr.backend.validation.PASSWORD_MIN_LENGTH
-import se.uulm.snowballr.backend.validation.PASSWORD_MIN_NUMBER_DIGITS
-import se.uulm.snowballr.backend.validation.PASSWORD_MIN_NUMBER_LOWERCASE_LETTERS
-import se.uulm.snowballr.backend.validation.PASSWORD_MIN_NUMBER_SPECIAL_CHARS
-import se.uulm.snowballr.backend.validation.PASSWORD_MIN_NUMBER_UPPERCASE_LETTERS
+import se.uulm.snowballr.backend.validation.AuthenticationValidator.PASSWORD_MIN_LENGTH
+import se.uulm.snowballr.backend.validation.AuthenticationValidator.PASSWORD_MIN_NUMBER_DIGITS
+import se.uulm.snowballr.backend.validation.AuthenticationValidator.PASSWORD_MIN_NUMBER_LOWERCASE_LETTERS
+import se.uulm.snowballr.backend.validation.AuthenticationValidator.PASSWORD_MIN_NUMBER_SPECIAL_CHARS
+import se.uulm.snowballr.backend.validation.AuthenticationValidator.PASSWORD_MIN_NUMBER_UPPERCASE_LETTERS
 
 /**
  * Represents a validation issue that can occur during the validation process.
@@ -88,11 +88,11 @@ data class InvalidId(
     override fun toString(): String = "The ID '$id' is invalid for the field '$name'."
 }
 
-data class OutOfRangeValue(
+data class OutOfRangeValue<T : Comparable<T>>(
     val name: String,
-    val value: Number,
-    val from: Number,
-    val to: Number,
+    val value: T,
+    val from: T,
+    val to: T,
 ) : ValidationIssue {
     override fun toString(): String =
         "The value '$value' is not in the allowed range [$from-$to] for the field '$name'."

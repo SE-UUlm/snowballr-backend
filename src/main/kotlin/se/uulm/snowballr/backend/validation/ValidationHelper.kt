@@ -3,9 +3,7 @@
 package se.uulm.snowballr.backend.validation
 
 import arrow.core.raise.Raise
-import arrow.core.raise.either
 import arrow.core.raise.ensure
-import arrow.core.raise.zipOrAccumulate
 import com.google.protobuf.Descriptors.Descriptor
 import com.google.protobuf.FieldMask
 import com.google.protobuf.util.FieldMaskUtil
@@ -14,12 +12,23 @@ import se.uulm.snowballr.backend.model.EnumUnspecified
 import se.uulm.snowballr.backend.model.InvalidEmail
 import se.uulm.snowballr.backend.model.InvalidFieldMask
 import se.uulm.snowballr.backend.model.InvalidId
-import se.uulm.snowballr.backend.model.InvalidPassword
-import se.uulm.snowballr.backend.model.InvalidPassword.Reason
 import se.uulm.snowballr.backend.model.OutOfRangeValue
 import se.uulm.snowballr.backend.model.TooLongField
 import se.uulm.snowballr.backend.model.ValidationIssue
 import java.util.UUID
+
+/**
+ * Email regex.
+ *
+ * See: https://stackoverflow.com/questions/201323/how-can-i-validate-an-email-address-using-a-regular-expression/201378#201378
+ */
+@Suppress("MaxLineLength", "StringShouldBeRawString")
+private val EMAIL_REGEX =
+    Regex(
+        "(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21\\x23-\\x5b\\x5d-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21-\\x5a\\x53-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])+)])",
+    )
+private const val FIRST_NAME_MAX_LENGTH = 100
+private const val LAST_NAME_MAX_LENGTH = 100
 
 /**
  * Ensures that the given field value is not blank (i.e., it contains at least one non-whitespace character).
@@ -41,6 +50,22 @@ fun Raise<ValidationIssue>.ensureFieldNonBlank(name: String, value: String) =
  */
 fun Raise<ValidationIssue>.ensureFieldLength(name: String, value: String, maxLength: Int) =
     ensure(value.length <= maxLength) { TooLongField(name, maxLength) }
+
+/**
+ * Ensures that the given text field value is valid.
+ *
+ * Validity is defined as follows:
+ * - The field value must not be blank.
+ * - The field value must not exceed the specified maximum length.
+ *
+ * @param name The name of the field being validated.
+ * @param value The value of the field to check for validity.
+ * @param maxLength The maximum allowed length for the field value.
+ */
+fun Raise<ValidationIssue>.ensureTextFieldValidity(name: String, value: String, maxLength: Int) {
+    ensureFieldNonBlank(name, value)
+    ensureFieldLength(name, value, maxLength)
+}
 
 /**
  * Ensures that the provided enum value is not the `UNSPECIFIED` value.
@@ -73,51 +98,6 @@ fun Raise<ValidationIssue>.ensureEmailValidity(email: String) =
     ensure(EMAIL_REGEX.matches(email)) { InvalidEmail(email) }
 
 /**
- * Ensures that the provided password meets the required complexity criteria.
- *
- * It checks the following conditions:
- * - Minimum length of [PASSWORD_MIN_LENGTH]
- * - Minimum number of lowercase letters defined by [PASSWORD_MIN_NUMBER_LOWERCASE_LETTERS]
- * - Minimum number of uppercase letters defined by [PASSWORD_MIN_NUMBER_UPPERCASE_LETTERS]
- * - Minimum number of digits defined by [PASSWORD_MIN_NUMBER_DIGITS]
- * - Minimum number of special characters defined by [PASSWORD_MIN_NUMBER_SPECIAL_CHARS]
- *
- * If any of these conditions are not met, an [InvalidPassword] validation issue is raised with the appropriate reason.
- *
- * @param password The password to validate.
- * @return An [arrow.core.Either] containing either the validation issues or a success indication.
- */
-fun ensurePasswordValidity(password: String) = either {
-    zipOrAccumulate(
-        {
-            ensure(password.length >= PASSWORD_MIN_LENGTH) {
-                InvalidPassword(password, Reason.TOO_SHORT)
-            }
-        },
-        {
-            ensure(password.count { it.isLowerCase() } >= PASSWORD_MIN_NUMBER_LOWERCASE_LETTERS) {
-                InvalidPassword(password, Reason.NOT_ENOUGH_LOWERCASE_CHARS)
-            }
-        },
-        {
-            ensure(password.count { it.isUpperCase() } >= PASSWORD_MIN_NUMBER_UPPERCASE_LETTERS) {
-                InvalidPassword(password, Reason.NOT_ENOUGH_UPPERCASE_CHARS)
-            }
-        },
-        {
-            ensure(password.count { it.isDigit() } >= PASSWORD_MIN_NUMBER_DIGITS) {
-                InvalidPassword(password, Reason.NOT_ENOUGH_DIGITS)
-            }
-        },
-        {
-            ensure(countSpecialChars(password) >= PASSWORD_MIN_NUMBER_SPECIAL_CHARS) {
-                InvalidPassword(password, Reason.NOT_ENOUGH_SPECIAL_CHARS)
-            }
-        },
-    ) { _, _, _, _, _ -> }
-}
-
-/**
  * Ensures that the provided stage is positive or null.
  * If the stage is negative, an [OutOfRangeValue] validation issue is raised.
  *
@@ -127,25 +107,13 @@ fun Raise<ValidationIssue>.ensureStageValidity(stage: Long) =
     ensure(stage >= 0) { OutOfRangeValue("stage", stage, 0, Long.MAX_VALUE) }
 
 /**
- * Counts the number of special characters in the given password.
- * Special characters are defined by the [SPECIAL_CHAR_REGEX].
- *
- * @param password The password to check for special characters.
- * @return The count of special characters in the password.
- */
-private fun countSpecialChars(password: String): Int =
-    password.count { SPECIAL_CHAR_REGEX.containsMatchIn(it.toString()) }
-
-/**
  * Ensures that the provided first name is valid.
  * It checks that the first name is not blank and does not exceed the maximum length defined by [FIRST_NAME_MAX_LENGTH].
  *
  * @param firstName The first name to validate.
  */
-fun Raise<ValidationIssue>.ensureFirstNameValidity(firstName: String) {
-    ensureFieldNonBlank("first_name", firstName)
-    ensureFieldLength("first_name", firstName, FIRST_NAME_MAX_LENGTH)
-}
+fun Raise<ValidationIssue>.ensureFirstNameValidity(firstName: String) =
+    ensureTextFieldValidity("first_name", firstName, FIRST_NAME_MAX_LENGTH)
 
 /**
  * Ensures that the provided last name is valid.
@@ -153,10 +121,8 @@ fun Raise<ValidationIssue>.ensureFirstNameValidity(firstName: String) {
  *
  * @param lastName The last name to validate.
  */
-fun Raise<ValidationIssue>.ensureLastNameValidity(lastName: String) {
-    ensureFieldNonBlank("last_name", lastName)
-    ensureFieldLength("last_name", lastName, LAST_NAME_MAX_LENGTH)
-}
+fun Raise<ValidationIssue>.ensureLastNameValidity(lastName: String) =
+    ensureTextFieldValidity("last_name", lastName, LAST_NAME_MAX_LENGTH)
 
 /**
  * Ensures that the provided field mask contains only valid fields for the given object type and
@@ -169,5 +135,22 @@ fun Raise<ValidationIssue>.ensureFieldMaskIsValid(fieldMask: FieldMask, descript
     ensure(fieldMask.pathsList.isNotEmpty()) { InvalidFieldMask(null) }
     ensure(FieldMaskUtil.isValid(descriptor, fieldMask)) {
         InvalidFieldMask(fieldMask.toString())
+    }
+}
+
+/**
+ * Ensures that the given number field is within the specified range.
+ *
+ * If the value is outside the range, an [OutOfRangeValue] validation issue is raised.
+ *
+ * @param T The type of the number field. Must be a subtype of [Comparable].
+ * @param name The name of the field being validated.
+ * @param value The value of the field to check for validity.
+ * @param min The minimum allowed value for the field.
+ * @param max The maximum allowed value for the field.
+ */
+fun <T : Comparable<T>> Raise<ValidationIssue>.ensureNumberFieldInRange(name: String, value: T, min: T, max: T) {
+    ensure(value in min..max) {
+        OutOfRangeValue(name, value, min, max)
     }
 }

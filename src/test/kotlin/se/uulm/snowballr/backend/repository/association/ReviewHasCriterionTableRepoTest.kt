@@ -14,9 +14,9 @@ import se.uulm.snowballr.backend.repository.RepositoryTest
 import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.ProjectTable
+import se.uulm.snowballr.backend.table.ReviewTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.table.association.ReviewHasCriterionTable
-import se.uulm.snowballr.backend.table.association.ReviewTable
 
 class ReviewHasCriterionTableRepoTest : RepositoryTest(
     arrayOf(

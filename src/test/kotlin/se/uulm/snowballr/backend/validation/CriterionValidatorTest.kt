@@ -13,6 +13,9 @@ import se.uulm.snowballr.backend.model.EnumUnspecified
 import se.uulm.snowballr.backend.model.InvalidFieldMask
 import se.uulm.snowballr.backend.model.InvalidId
 import se.uulm.snowballr.backend.model.TooLongField
+import se.uulm.snowballr.backend.validation.CriterionValidator.DESCRIPTION_MAX_LENGTH
+import se.uulm.snowballr.backend.validation.CriterionValidator.NAME_MAX_LENGTH
+import se.uulm.snowballr.backend.validation.CriterionValidator.TAG_MAX_LENGTH
 import snowballr.CriterionOuterClass.Criterion
 import snowballr.CriterionOuterClass.Criterion.Create
 import snowballr.CriterionOuterClass.Criterion.Update
@@ -70,9 +73,9 @@ class CriterionValidatorTest {
         @ParameterizedTest
         @CsvSource(
             value = [
-                "tag:${CRITERION_TAG_MAX_LENGTH}",
-                "name:${CRITERION_NAME_MAX_LENGTH}",
-                "description:${CRITERION_DESCRIPTION_MAX_LENGTH}",
+                "tag:${TAG_MAX_LENGTH}",
+                "name:${NAME_MAX_LENGTH}",
+                "description:${DESCRIPTION_MAX_LENGTH}",
             ],
             delimiter = ':',
         )
@@ -217,9 +220,9 @@ class CriterionValidatorTest {
         @ParameterizedTest
         @CsvSource(
             value = [
-                "tag:${CRITERION_TAG_MAX_LENGTH}",
-                "name:${CRITERION_NAME_MAX_LENGTH}",
-                "description:${CRITERION_DESCRIPTION_MAX_LENGTH}",
+                "tag:${TAG_MAX_LENGTH}",
+                "name:${NAME_MAX_LENGTH}",
+                "description:${DESCRIPTION_MAX_LENGTH}",
             ],
             delimiter = ':',
         )

@@ -1,6 +1,6 @@
 package se.uulm.snowballr.backend.model.dto
 
-import se.uulm.snowballr.backend.table.association.ReviewTable
+import se.uulm.snowballr.backend.table.ReviewTable
 import snowballr.ReviewOuterClass
 import java.time.OffsetDateTime
 import java.util.UUID
