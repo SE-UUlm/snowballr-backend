@@ -46,7 +46,7 @@ class GetInviteCandidatesTest : MainServiceTest() {
             "john",
         ).setProjectId("invalid-uuid").build()
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
         coEvery { userRepoMock.getUsersMatchingSearchQuery(any(), any()) } returns emptyList()
 
         assertDoesNotThrow { mainService.getInviteCandidates(requestWithInvalidProjectId) }
@@ -60,7 +60,7 @@ class GetInviteCandidatesTest : MainServiceTest() {
             "john",
         ).setProjectId(requestedProjectId.toString()).build()
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
         coEvery { projectMemberRepoMock.getProjectMembers(requestedProjectId) } returns emptyList()
         coEvery { userRepoMock.getUsersMatchingSearchQuery(any(), any()) } returns emptyList()
 
@@ -71,7 +71,7 @@ class GetInviteCandidatesTest : MainServiceTest() {
     fun `When retrieving the users matching the search query fails, then an empty list is returned`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
         coEvery { projectMemberRepoMock.getProjectMembers(testProjectId) } returns emptyList()
         coEvery { userRepoMock.getUsersMatchingSearchQuery(any(), any()) } returns emptyList()
 
@@ -85,7 +85,7 @@ class GetInviteCandidatesTest : MainServiceTest() {
             val users = listOf(currentUser, DataBuilder.createExampleUser(email = "another.user@example.com"))
             val excludedUsers = setOf(currentUser.id)
             every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-            coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+            coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
             coEvery { projectMemberRepoMock.getProjectMembers(testProjectId) } returns emptyList()
             coEvery {
                 userRepoMock.getUsersMatchingSearchQuery(any(), setOf(currentUser.id))
@@ -104,7 +104,7 @@ class GetInviteCandidatesTest : MainServiceTest() {
             val users = listOf(currentUser, projectMember)
             val excludedUsers = setOf(currentUser.id, projectMember.id)
             every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-            coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+            coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
             coEvery {
                 projectMemberRepoMock.getProjectMembers(testProjectId)
             } returns listOf(DataBuilder.createExampleProjectMember(userId = projectMember.id))

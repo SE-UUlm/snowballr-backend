@@ -41,7 +41,7 @@ class GetUserByEmailTest : MainServiceTest() {
         val currentUser = DataBuilder.createExampleUser()
 
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
         coEvery { userRepoMock.getUserByEmail(any()) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getUserByEmail(getExampleRequest()) }
@@ -53,8 +53,8 @@ class GetUserByEmailTest : MainServiceTest() {
         val requestedUser = DataBuilder.createExampleUser(email = exampleEmail)
 
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
-        coEvery { userRepoMock.getUserByEmail(exampleEmail) } returns requestedUser
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
+        coEvery { userRepoMock.getUserByEmail(exampleEmail) } returns Result.success(requestedUser)
         coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(requestedUser.id) } returns emptyList()
 
         assertThrows<UnauthorizedException.Single> { mainService.getUserByEmail(getExampleRequest()) }
@@ -65,7 +65,7 @@ class GetUserByEmailTest : MainServiceTest() {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
 
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
 
         val inactiveStatuses = UserStatus.entries.filterNot {
             it == UserStatus.USER_STATUS_ACTIVE || it == UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED
@@ -74,7 +74,7 @@ class GetUserByEmailTest : MainServiceTest() {
         inactiveStatuses.forEach { status ->
             val requestedUser = DataBuilder.createExampleUser(email = exampleEmail, status = status)
 
-            coEvery { userRepoMock.getUserByEmail(exampleEmail) } returns requestedUser
+            coEvery { userRepoMock.getUserByEmail(exampleEmail) } returns Result.success(requestedUser)
 
             assertThrows<NotFoundException>("Should throw NotFoundException for status $status") {
                 mainService.getUserByEmail(getExampleRequest())
@@ -87,7 +87,7 @@ class GetUserByEmailTest : MainServiceTest() {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
 
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
 
         val activeStatuses = listOf(
             UserStatus.USER_STATUS_ACTIVE,
@@ -97,7 +97,7 @@ class GetUserByEmailTest : MainServiceTest() {
         activeStatuses.forEach { status ->
             val requestedUser = DataBuilder.createExampleUser(email = exampleEmail, status = status)
 
-            coEvery { userRepoMock.getUserByEmail(exampleEmail) } returns requestedUser
+            coEvery { userRepoMock.getUserByEmail(exampleEmail) } returns Result.success(requestedUser)
 
             assertDoesNotThrow("Should succeed for status $status") {
                 mainService.getUserByEmail(getExampleRequest())

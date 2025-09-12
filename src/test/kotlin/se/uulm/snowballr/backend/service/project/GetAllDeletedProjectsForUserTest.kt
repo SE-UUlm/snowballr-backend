@@ -48,7 +48,7 @@ class GetAllDeletedProjectsForUserTest : MainServiceTest() {
         val requestedUser = DataBuilder.createExampleUser(id = requestedUserId)
 
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
         coEvery { userRepoMock.getUserById(requestedUser.id) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getAllDeletedProjectsForUser(getExampleRequest()) }
@@ -61,8 +61,8 @@ class GetAllDeletedProjectsForUserTest : MainServiceTest() {
             val requestedUser = DataBuilder.createExampleUser(id = requestedUserId)
 
             every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-            coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
-            coEvery { userRepoMock.getUserById(requestedUser.id) } returns requestedUser
+            coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
+            coEvery { userRepoMock.getUserById(requestedUser.id) } returns Result.success(requestedUser)
 
             assertThrows<UnauthorizedException.Single> { mainService.getAllDeletedProjectsForUser(getExampleRequest()) }
         }
@@ -73,8 +73,8 @@ class GetAllDeletedProjectsForUserTest : MainServiceTest() {
         val requestedUser = DataBuilder.createExampleUser(id = requestedUserId)
 
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
-        coEvery { userRepoMock.getUserById(requestedUser.id) } returns requestedUser
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
+        coEvery { userRepoMock.getUserById(requestedUser.id) } returns Result.success(requestedUser)
         coEvery { projectRepoMock.getUserProjects(any(), any()) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getAllDeletedProjectsForUser(getExampleRequest()) }
@@ -86,8 +86,8 @@ class GetAllDeletedProjectsForUserTest : MainServiceTest() {
         val requestedUser = DataBuilder.createExampleUser(id = requestedUserId)
 
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(any()) } returns currentUser
-        coEvery { userRepoMock.getUserById(requestedUser.id) } returns requestedUser
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
+        coEvery { userRepoMock.getUserById(requestedUser.id) } returns Result.success(requestedUser)
         coEvery { projectRepoMock.getUserProjects(any(), any()) } returns emptyList()
 
         assertDoesNotThrow { mainService.getAllDeletedProjectsForUser(getExampleRequest()) }
@@ -100,7 +100,7 @@ class GetAllDeletedProjectsForUserTest : MainServiceTest() {
         val request = Base.Id.newBuilder().setId(requestedUser.id.toString()).build()
 
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
         coEvery { projectRepoMock.getUserProjects(any(), any()) } returns emptyList()
 
         assertDoesNotThrow { mainService.getAllDeletedProjectsForUser(request) }

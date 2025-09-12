@@ -55,7 +55,7 @@ class UpdateCriterionTest : MainServiceTest() {
         val request = getExampleRequest()
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(user.id) } returns user
+        coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
         coEvery { criterionRepoMock.getCriterionById(criterionId) } returns Result.success(criterion)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
@@ -80,7 +80,7 @@ class UpdateCriterionTest : MainServiceTest() {
         val request = getExampleRequest()
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(user.id) } returns user
+        coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
         coEvery { criterionRepoMock.getCriterionById(criterionId) } returns Result.success(criterion)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
@@ -106,7 +106,7 @@ class UpdateCriterionTest : MainServiceTest() {
             val request = getExampleRequest()
 
             every { GrpcContext.getUserIdFromContext() } returns user.id
-            coEvery { userRepoMock.getUserById(user.id) } returns user
+            coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
             coEvery { criterionRepoMock.getCriterionById(criterionId) } returns Result.success(criterion)
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
             coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
@@ -129,7 +129,7 @@ class UpdateCriterionTest : MainServiceTest() {
         val request = getExampleRequest()
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(user.id) } returns user
+        coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
         coEvery { criterionRepoMock.getCriterionById(criterionId) } returns Result.success(criterion)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
@@ -145,7 +145,7 @@ class UpdateCriterionTest : MainServiceTest() {
         val request = getExampleRequest()
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(user.id) } returns user
+        coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
         coEvery { criterionRepoMock.getCriterionById(criterionId) } returns Result.success(criterion)
         coEvery { criterionRepoMock.updateCriterion(request) } returns criterion
 
@@ -161,7 +161,7 @@ class UpdateCriterionTest : MainServiceTest() {
         val request = getExampleRequest()
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(user.id) } returns user
+        coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
         coEvery { criterionRepoMock.getCriterionById(criterionId) } returns Result.success(criterion)
         coEvery { criterionRepoMock.updateCriterion(request) } returns criterion
 
@@ -178,7 +178,7 @@ class UpdateCriterionTest : MainServiceTest() {
             val request = getExampleRequest()
 
             every { GrpcContext.getUserIdFromContext() } returns user.id
-            coEvery { userRepoMock.getUserById(user.id) } returns user
+            coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
             coEvery { criterionRepoMock.getCriterionById(criterionId) } returns Result.success(criterion)
 
             assertThrows<SnowballRException.UnauthorizedException> { mainService.updateCriterion(request) }
@@ -193,7 +193,7 @@ class UpdateCriterionTest : MainServiceTest() {
         val request = getExampleRequest()
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(user.id) } returns user
+        coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
         coEvery { criterionRepoMock.getCriterionById(criterionId) } returns Result.success(criterion)
         coEvery { criterionRepoMock.updateCriterion(request) } throws TestSpecificException()
 

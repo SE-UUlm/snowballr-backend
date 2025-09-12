@@ -66,7 +66,7 @@ class GetAllProjectPapersForProjectTest : MainServiceTest() {
             coEvery { userRepoMock.getUserById(currentUser.id) } throws TestSpecificException()
             return
         }
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
 
         if (failAt == projectRepoMock::doesProjectExistById) {
             coEvery { projectRepoMock.doesProjectExistById(any()) } throws TestSpecificException()
@@ -155,7 +155,7 @@ class GetAllProjectPapersForProjectTest : MainServiceTest() {
         val project = DataBuilder.createExampleProject(id = requestId)
 
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
         coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 

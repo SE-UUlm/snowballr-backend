@@ -58,7 +58,7 @@ class ReviewService(
     private val reviewHasCriterionRepo: IReviewHasCriterionTableRepo,
 ) : IReviewService {
     override suspend fun getReviewById(request: Base.Id): GrpcReview {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
         val reviewId = parseUUID(request.id, EntityType.REVIEW)
         val review = repo.getReviewById(reviewId).getOrThrow()
         val projectPaper = projectPaperRepo.getProjectPaperById(review.projectPaperId).getOrThrow()
@@ -70,7 +70,7 @@ class ReviewService(
     }
 
     override suspend fun getAllReviewsForProjectPaper(request: Base.Id): GrpcReview.List {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
         val projectPaperId = parseUUID(request.id, EntityType.PROJECT_PAPER)
         val projectPaper = projectPaperRepo.getProjectPaperById(projectPaperId).getOrThrow()
 

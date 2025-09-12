@@ -30,7 +30,7 @@ class GetProjectByIdTest : MainServiceTest() {
         val noAccessUser = DataBuilder.createExampleUser()
 
         every { GrpcContext.getUserIdFromContext() } returns noAccessUser.id
-        coEvery { userRepoMock.getUserById(noAccessUser.id) } returns noAccessUser
+        coEvery { userRepoMock.getUserById(noAccessUser.id) } returns Result.success(noAccessUser)
         coEvery { projectMemberRepoMock.getProjectMembers(any()) } returns emptyList()
 
         assertThrows<UnauthorizedException.Single> { mainService.getProjectById(request) }
@@ -44,7 +44,7 @@ class GetProjectByIdTest : MainServiceTest() {
         val project = DataBuilder.createExampleProject(id = projectId)
 
         every { GrpcContext.getUserIdFromContext() } returns adminUser.id
-        coEvery { userRepoMock.getUserById(adminUser.id) } returns adminUser
+        coEvery { userRepoMock.getUserById(adminUser.id) } returns Result.success(adminUser)
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
@@ -60,7 +60,7 @@ class GetProjectByIdTest : MainServiceTest() {
         val projectMember = DataBuilder.createExampleProjectMember(userId = user.id, projectId = projectId)
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(user.id) } returns user
+        coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
@@ -74,7 +74,7 @@ class GetProjectByIdTest : MainServiceTest() {
         val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
 
         every { GrpcContext.getUserIdFromContext() } returns adminUser.id
-        coEvery { userRepoMock.getUserById(adminUser.id) } returns adminUser
+        coEvery { userRepoMock.getUserById(adminUser.id) } returns Result.success(adminUser)
         coEvery { projectMemberRepoMock.getProjectMembers(any()) } returns emptyList()
         coEvery { projectRepoMock.getProjectById(any()) } throws TestSpecificException()
 

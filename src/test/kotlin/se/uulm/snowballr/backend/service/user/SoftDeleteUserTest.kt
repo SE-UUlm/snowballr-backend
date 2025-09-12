@@ -40,7 +40,7 @@ class SoftDeleteUserTest : MainServiceTest() {
     fun `When parsing user ID fails, then InvalidIdException is thrown`() = runTest {
         val request = Base.Id.newBuilder().setId("invalid-uuid").build()
         every { GrpcContext.getUserIdFromContext() } returns UUID.randomUUID()
-        coEvery { userRepoMock.getUserById(any()) } returns DataBuilder.createExampleUser()
+        coEvery { userRepoMock.getUserById(any()) } returns Result.success(DataBuilder.createExampleUser())
 
         assertThrows<InvalidIdException> { mainService.softDeleteUser(request) }
     }
@@ -50,7 +50,7 @@ class SoftDeleteUserTest : MainServiceTest() {
         val currentUser = DataBuilder.createExampleUser()
 
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
         coEvery { userRepoMock.getUserById(requestedUserId) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.softDeleteUser(getExampleRequest()) }
@@ -62,8 +62,8 @@ class SoftDeleteUserTest : MainServiceTest() {
         val userToDelete = DataBuilder.createExampleUser(id = requestedUserId)
 
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
-        coEvery { userRepoMock.getUserById(requestedUserId) } returns userToDelete
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
+        coEvery { userRepoMock.getUserById(requestedUserId) } returns Result.success(userToDelete)
 
         assertThrows<UnauthorizedException.Single> { mainService.softDeleteUser(getExampleRequest()) }
     }
@@ -74,8 +74,8 @@ class SoftDeleteUserTest : MainServiceTest() {
         val userToDelete = DataBuilder.createExampleUser(id = requestedUserId, role = UserRole.USER_ROLE_ADMIN)
 
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
-        coEvery { userRepoMock.getUserById(requestedUserId) } returns userToDelete
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
+        coEvery { userRepoMock.getUserById(requestedUserId) } returns Result.success(userToDelete)
 
         assertThrows<FailedPreconditionException> { mainService.softDeleteUser(getExampleRequest()) }
     }
@@ -86,8 +86,8 @@ class SoftDeleteUserTest : MainServiceTest() {
         val userToDelete = DataBuilder.createExampleUser(id = requestedUserId)
 
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
-        coEvery { userRepoMock.getUserById(requestedUserId) } returns userToDelete
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
+        coEvery { userRepoMock.getUserById(requestedUserId) } returns Result.success(userToDelete)
         coEvery { userRepoMock.softDeleteUser(requestedUserId) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.softDeleteUser(getExampleRequest()) }
@@ -99,8 +99,8 @@ class SoftDeleteUserTest : MainServiceTest() {
         val userToDelete = DataBuilder.createExampleUser(id = requestedUserId)
 
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
-        coEvery { userRepoMock.getUserById(requestedUserId) } returns userToDelete
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
+        coEvery { userRepoMock.getUserById(requestedUserId) } returns Result.success(userToDelete)
         coEvery { userRepoMock.softDeleteUser(requestedUserId) } returns Unit
 
         assertDoesNotThrow { mainService.softDeleteUser(getExampleRequest()) }
@@ -111,7 +111,7 @@ class SoftDeleteUserTest : MainServiceTest() {
         val currentUser = DataBuilder.createExampleUser(id = requestedUserId, role = UserRole.USER_ROLE_DEFAULT)
 
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
         coEvery { userRepoMock.softDeleteUser(currentUser.id) } returns Unit
 
         assertDoesNotThrow { mainService.softDeleteUser(getExampleRequest()) }
@@ -122,7 +122,7 @@ class SoftDeleteUserTest : MainServiceTest() {
         val currentUser = DataBuilder.createExampleUser(id = requestedUserId, role = UserRole.USER_ROLE_ADMIN)
 
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
         coEvery { userRepoMock.softDeleteUser(currentUser.id) } returns Unit
 
         assertDoesNotThrow { mainService.softDeleteUser(getExampleRequest()) }

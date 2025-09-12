@@ -56,7 +56,7 @@ class CreateCriterionTest : MainServiceTest() {
         val request = getProjectCriterionRequest(project.id.toString())
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(GrpcContext.getUserIdFromContext()) } returns user
+        coEvery { userRepoMock.getUserById(GrpcContext.getUserIdFromContext()) } returns Result.success(user)
         coEvery { criterionRepoMock.createCriterion(any(), any()) } returns criterion
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
@@ -74,7 +74,7 @@ class CreateCriterionTest : MainServiceTest() {
         val request = getProjectCriterionRequest(project.id.toString())
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(GrpcContext.getUserIdFromContext()) } returns user
+        coEvery { userRepoMock.getUserById(GrpcContext.getUserIdFromContext()) } returns Result.success(user)
         coEvery { criterionRepoMock.createCriterion(any(), any()) } returns criterion
 
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
@@ -91,7 +91,7 @@ class CreateCriterionTest : MainServiceTest() {
         val request = getProjectCriterionRequest(project.id.toString())
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(GrpcContext.getUserIdFromContext()) } returns user
+        coEvery { userRepoMock.getUserById(GrpcContext.getUserIdFromContext()) } returns Result.success(user)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
 
@@ -114,7 +114,7 @@ class CreateCriterionTest : MainServiceTest() {
         val request = getProjectCriterionRequest(project.id.toString())
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(GrpcContext.getUserIdFromContext()) } returns user
+        coEvery { userRepoMock.getUserById(GrpcContext.getUserIdFromContext()) } returns Result.success(user)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
 
@@ -129,7 +129,7 @@ class CreateCriterionTest : MainServiceTest() {
         val request = getUserCriterionRequest()
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(GrpcContext.getUserIdFromContext()) } returns user
+        coEvery { userRepoMock.getUserById(GrpcContext.getUserIdFromContext()) } returns Result.success(user)
         coEvery { criterionRepoMock.createCriterion(any(), user.id) } returns criterion
 
         assertDoesNotThrow { mainService.createCriterion(request) }
@@ -142,7 +142,7 @@ class CreateCriterionTest : MainServiceTest() {
         val user = DataBuilder.createExampleUser(id = userId)
 
         every { GrpcContext.getUserIdFromContext() } returns UUID.randomUUID()
-        coEvery { userRepoMock.getUserById(GrpcContext.getUserIdFromContext()) } returns user
+        coEvery { userRepoMock.getUserById(GrpcContext.getUserIdFromContext()) } returns Result.success(user)
         coEvery { criterionRepoMock.createCriterion(any(), any()) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.createCriterion(request) }
@@ -155,7 +155,7 @@ class CreateCriterionTest : MainServiceTest() {
         val criterion = DataBuilder.createExampleProjectCriterion()
 
         every { GrpcContext.getUserIdFromContext() } returns UUID.randomUUID()
-        coEvery { userRepoMock.getUserById(GrpcContext.getUserIdFromContext()) } returns user
+        coEvery { userRepoMock.getUserById(GrpcContext.getUserIdFromContext()) } returns Result.success(user)
         coEvery { criterionRepoMock.createCriterion(any(), any()) } returns criterion
 
         assertDoesNotThrow { mainService.createCriterion(request) }

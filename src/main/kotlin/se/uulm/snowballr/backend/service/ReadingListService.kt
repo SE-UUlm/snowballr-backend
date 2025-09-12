@@ -69,7 +69,7 @@ class ReadingListService(
     }
 
     override suspend fun getReadingList(): PaperOuterClass.Paper.List {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
         val papers = repo.getAllReadingListEntries(currentUser.id).map { paper ->
             val authors = authorOfPaperRepo.getAuthorsOfPaperById(paper.id).map { it.toGrpcAuthor() }
             val backwardReferences = citationRepo.getBackwardsReferencedPaperIdsOfPaperById(
@@ -84,7 +84,7 @@ class ReadingListService(
     }
 
     override suspend fun isPaperOnReadingList(paperId: Base.Id): Base.BoolValue {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
         val paperUuid = parseUUID(paperId.id, EntityType.PAPER)
         throwIfPaperDoesNotExist(paperUuid)
         return Base.BoolValue
@@ -99,7 +99,7 @@ class ReadingListService(
     }
 
     override suspend fun addPaperToReadingList(paperId: Base.Id): Base.Nothing {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
         val paperUuid = parseUUID(paperId.id, EntityType.PAPER)
         throwIfPaperDoesNotExist(paperUuid)
         repo.createReadingListEntry(currentUser.id, paperUuid)
@@ -107,7 +107,7 @@ class ReadingListService(
     }
 
     override suspend fun removePaperFromReadingList(paperId: Base.Id): Base.Nothing {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
         val paperUuid = parseUUID(paperId.id, EntityType.PAPER)
         throwIfPaperDoesNotExist(paperUuid)
         repo.removeReadingListEntry(currentUser.id, paperUuid)

@@ -41,7 +41,7 @@ class UpdateProjectTest : MainServiceTest() {
             .build()
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(user.id) } returns user
+        coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
         coEvery { projectRepoMock.updateProject(request, project.status) } returns updatedProject
@@ -73,7 +73,7 @@ class UpdateProjectTest : MainServiceTest() {
             .build()
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(user.id) } returns user
+        coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
         coEvery { projectRepoMock.updateProject(request, project.status) } returns updatedProject
@@ -105,7 +105,7 @@ class UpdateProjectTest : MainServiceTest() {
                 .build()
 
             every { GrpcContext.getUserIdFromContext() } returns user.id
-            coEvery { userRepoMock.getUserById(user.id) } returns user
+            coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
             coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
 
@@ -133,7 +133,7 @@ class UpdateProjectTest : MainServiceTest() {
                 .build()
 
             every { GrpcContext.getUserIdFromContext() } returns user.id
-            coEvery { userRepoMock.getUserById(user.id) } returns user
+            coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
             coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
 
@@ -162,7 +162,7 @@ class UpdateProjectTest : MainServiceTest() {
                 .build()
 
             every { GrpcContext.getUserIdFromContext() } returns user.id
-            coEvery { userRepoMock.getUserById(user.id) } returns user
+            coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
             coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
 
@@ -184,7 +184,7 @@ class UpdateProjectTest : MainServiceTest() {
             .build()
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(user.id) } returns user
+        coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
 
@@ -208,7 +208,7 @@ class UpdateProjectTest : MainServiceTest() {
             .build()
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(user.id) } returns user
+        coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
 
@@ -223,9 +223,9 @@ class UpdateProjectTest : MainServiceTest() {
         val request = ProjectOuterClass.Project.Update.newBuilder().setProject(project.toGrpcProject()).build()
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(any()) } returns user
+        coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-        coEvery { projectMemberRepoMock.getAllProjectAdmins(any()) } returns emptyList()
+        coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
         coEvery { projectRepoMock.updateProject(any(), any()) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.updateProject(request) }

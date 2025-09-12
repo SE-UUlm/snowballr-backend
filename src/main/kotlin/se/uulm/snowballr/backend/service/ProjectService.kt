@@ -192,7 +192,7 @@ class ProjectService(
         request: Base.Id,
         predicate: (suspend (ProjectPaperWithPaper, Map<ProjectPaper, List<GrpcReview>>, String) -> Boolean)? = null,
     ): GrpcProjectPaper.List {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
         val projectId = parseUUID(request.id, EntityType.PROJECT)
         if (!repo.doesProjectExistById(projectId)) {
             throw SnowballRException.NotFoundException(EntityType.PROJECT, projectId.toString())
@@ -251,7 +251,7 @@ class ProjectService(
      * @throws UnauthorizedException.Single If the current user does not have the required read access to the project.
      */
     private suspend fun loadAndAuthorizeProjectPaper(projectPaper: ProjectPaper, projectId: UUID): GrpcProject.Paper {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
         val projectMembers = projectMemberRepo.getProjectMembers(projectId)
 
         if (projectMembers.none { it.userId == currentUser.id }) {
@@ -285,7 +285,7 @@ class ProjectService(
     }
 
     override suspend fun getProjectById(request: Base.Id): GrpcProject {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
         val projectId = parseUUID(request.id, EntityType.PROJECT)
 
         if (!isProjectMember(projectId, currentUser.id)) {
@@ -302,8 +302,8 @@ class ProjectService(
     }
 
     override suspend fun createProject(request: GrpcProject.Create): GrpcProject {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
-        val userSettings = userRepo.getUserSettings(currentUser.id)
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
+        val userSettings = userRepo.getUserSettings(currentUser.id).getOrThrow()
         val userDefaultCriteria = criterionRepo.getCriteriaByIds(userSettings.criteriaIds)
 
         val project = repo.createProject(request, GrpcContext.getUserIdFromContext(), userSettings)
@@ -324,7 +324,7 @@ class ProjectService(
     }
 
     override suspend fun getAllProjects(): GrpcProject.List {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
 
         verifyServerAdminRole(currentUser) { UnauthorizedException.All(EntityType.PROJECT, AccessType.READ, it) }
 
@@ -357,7 +357,7 @@ class ProjectService(
     }
 
     override suspend fun updateProject(request: GrpcProject.Update): GrpcProject {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
         val projectId = parseUUID(request.project.id, EntityType.PROJECT)
         val project = repo.getProjectById(projectId).getOrThrow()
         val isProjectAdmin = projectMemberRepo.getAllProjectAdmins(projectId).any { it.userId == currentUser.id }
@@ -388,7 +388,7 @@ class ProjectService(
     }
 
     override suspend fun getProjectMembers(request: Base.Id): GrpcProject.Member.List {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
         val projectId = parseUUID(request.id, EntityType.PROJECT)
         repo.getProjectById(projectId)
         val projectMembersWithUsers = projectMemberRepo.getProjectMembersWithUsers(projectId)

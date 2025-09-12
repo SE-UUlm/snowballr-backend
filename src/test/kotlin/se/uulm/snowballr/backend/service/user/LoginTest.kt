@@ -13,7 +13,7 @@ import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.auth.PasswordUtils
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.IdentifierType
-import se.uulm.snowballr.backend.model.SnowballRException
+import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthenticatedException
 import se.uulm.snowballr.backend.model.jwt.JwtAuthTokens
 import se.uulm.snowballr.backend.service.MainServiceTest
@@ -27,10 +27,8 @@ class LoginTest : MainServiceTest() {
     fun `When a user provides an invalid email, then an exception is thrown`() = runTest {
         val request = LoginRequest.newBuilder().setEmail("wrongEmail").build()
 
-        coEvery { userRepoMock.getUserByEmail(any()) } throws SnowballRException.NotFoundException(
-            EntityType.USER, "wrongEmail",
-            identifierType = IdentifierType.EMAIL,
-        )
+        val exception = NotFoundException(EntityType.USER, "wrongEmail", identifierType = IdentifierType.EMAIL)
+        coEvery { userRepoMock.getUserByEmail(any()) } returns Result.failure(exception)
 
         assertThrows<UnauthenticatedException> { mainService.login(request) }
     }
@@ -43,7 +41,7 @@ class LoginTest : MainServiceTest() {
             password = "anyPassword"
         }.build()
 
-        coEvery { userRepoMock.getUserByEmail(testUser.email) } returns testUser
+        coEvery { userRepoMock.getUserByEmail(testUser.email) } returns Result.success(testUser)
 
         assertThrows<UnauthenticatedException> { mainService.login(request) }
     }
@@ -56,7 +54,7 @@ class LoginTest : MainServiceTest() {
             password = "anyPassword"
         }.build()
 
-        coEvery { userRepoMock.getUserByEmail(testUser.email) } returns testUser
+        coEvery { userRepoMock.getUserByEmail(testUser.email) } returns Result.success(testUser)
 
         assertThrows<UnauthenticatedException> { mainService.login(request) }
     }
@@ -69,7 +67,7 @@ class LoginTest : MainServiceTest() {
             password = "anyPassword"
         }.build()
 
-        coEvery { userRepoMock.getUserByEmail(testUser.email) } returns testUser
+        coEvery { userRepoMock.getUserByEmail(testUser.email) } returns Result.success(testUser)
 
         assertThrows<UnauthenticatedException> { mainService.login(request) }
     }
@@ -83,8 +81,8 @@ class LoginTest : MainServiceTest() {
             password = "anyPassword"
         }.build()
 
-        coEvery { userRepoMock.getUserByEmail(any()) } returns testUser
-        coEvery { userRepoMock.getPasswordHashByEmail(testUser.email) } throws SnowballRException.NotFoundException(
+        coEvery { userRepoMock.getUserByEmail(testUser.email) } returns Result.success(testUser)
+        coEvery { userRepoMock.getPasswordHashByEmail(testUser.email) } throws NotFoundException(
             EntityType.USER, testUser.email, identifierType = IdentifierType.EMAIL,
         )
 
@@ -102,8 +100,8 @@ class LoginTest : MainServiceTest() {
             password = "wrongPassword"
         }.build()
 
-        coEvery { userRepoMock.getUserByEmail(any()) } returns testUser
-        coEvery { userRepoMock.getPasswordHashByEmail(testUser.email) } returns passwordHash
+        coEvery { userRepoMock.getUserByEmail(testUser.email) } returns Result.success(testUser)
+        coEvery { userRepoMock.getPasswordHashByEmail(testUser.email) } returns Result.success(passwordHash)
 
         assertThrows<UnauthenticatedException> { mainService.login(request) }
     }
@@ -120,8 +118,8 @@ class LoginTest : MainServiceTest() {
             password = userPassword
         }.build()
 
-        coEvery { userRepoMock.getUserByEmail(any()) } returns testUser
-        coEvery { userRepoMock.getPasswordHashByEmail(testUser.email) } returns passwordHash
+        coEvery { userRepoMock.getUserByEmail(testUser.email) } returns Result.success(testUser)
+        coEvery { userRepoMock.getPasswordHashByEmail(testUser.email) } returns Result.success(passwordHash)
         every { jwtServiceMock.generateAuthTokens(testUser.id) } returns tokens
 
         assertDoesNotThrow { mainService.login(request) }

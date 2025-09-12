@@ -35,15 +35,16 @@ import java.util.UUID
 @Suppress("ComplexInterface")
 interface IUserTableRepo {
     /**
-     * Returns a user by its id or throws a [NotFoundException] if the user with the passed [id] doesn't exist.
+     * Returns a [Result] containing the user by its id or a [NotFoundException] if the user with the passed [id]
+     * doesn't exist.
      */
-    suspend fun getUserById(id: UUID): User
+    suspend fun getUserById(id: UUID): Result<User>
 
     /**
-     * Returns a user by its email or throws a [NotFoundException] if the user with the passed [email] doesn't
-     * exist.
+     * Returns a [Result] containing the user by its email or a [NotFoundException] if the user with the passed [email]
+     * doesn't exist.
      */
-    suspend fun getUserByEmail(email: String): User
+    suspend fun getUserByEmail(email: String): Result<User>
 
     /**
      * Checks if a user exists in the database by their email address.
@@ -107,7 +108,7 @@ interface IUserTableRepo {
      * @param email The email address of the user whose password hash is to be retrieved.
      * @return The password hash as a [String] for the user with the specified email.
      */
-    suspend fun getPasswordHashByEmail(email: String): String
+    suspend fun getPasswordHashByEmail(email: String): Result<String>
 
     /**
      * Retrieves the user settings associated with a specific user ID.
@@ -115,7 +116,7 @@ interface IUserTableRepo {
      * @param id The unique identifier of the user whose settings are to be fetched.
      * @return The [UserSettings] object containing the settings for the specified user.
      */
-    suspend fun getUserSettings(id: UUID): UserSettings
+    suspend fun getUserSettings(id: UUID): Result<UserSettings>
 }
 
 /**
@@ -156,17 +157,22 @@ class UserTableRepo(
      */
     private fun getUserByIdOrNull(id: UUID): User? = UserTable.getEntityByIdOrNull(id, ResultRow::toUser)
 
-    override suspend fun getUserById(id: UUID): User = db.query {
-        getUserByIdOrNull(id) ?: throw NotFoundException(EntityType.USER, id.toString())
+    override suspend fun getUserById(id: UUID): Result<User> = db.query {
+        getEntityByIdAsResult(::getUserByIdOrNull, EntityType.USER, id)
     }
 
-    override suspend fun getUserByEmail(email: String): User = db.query {
-        UserTable
+    override suspend fun getUserByEmail(email: String): Result<User> = db.query {
+        val user = UserTable
             .selectAll()
             .where { UserTable.email eq email }
             .map { it.toUser() }
             .singleOrNull()
-            ?: throw NotFoundException(EntityType.USER, email, identifierType = IdentifierType.EMAIL)
+
+        if (user != null) {
+            Result.success(user)
+        } else {
+            Result.failure(NotFoundException(EntityType.USER, email, identifierType = IdentifierType.EMAIL))
+        }
     }
 
     override suspend fun doesUserExistByEmail(email: String): Boolean = db.query {
@@ -267,20 +273,30 @@ class UserTableRepo(
         }
     }
 
-    override suspend fun getPasswordHashByEmail(email: String): String = db.query {
-        UserTable
+    override suspend fun getPasswordHashByEmail(email: String): Result<String> = db.query {
+        val passwordHash = UserTable
             .select(UserTable.passwordHash)
             .where { UserTable.email eq email }
             .map { it[UserTable.passwordHash] }
             .singleOrNull()
-            ?: throw NotFoundException(EntityType.USER, email, identifierType = IdentifierType.EMAIL)
+
+        if (passwordHash != null) {
+            Result.success(passwordHash)
+        } else {
+            Result.failure(NotFoundException(EntityType.USER, email, identifierType = IdentifierType.EMAIL))
+        }
     }
 
-    override suspend fun getUserSettings(id: UUID): UserSettings = db.query {
-        UserTable.selectAll()
+    override suspend fun getUserSettings(id: UUID): Result<UserSettings> = db.query {
+        val settings = UserTable.selectAll()
             .where { UserTable.id eq id }
             .map { it.toUserSettings() }
             .singleOrNull()
-            ?: throw NotFoundException(EntityType.USER, id.toString(), identifierType = IdentifierType.ID)
+
+        if (settings != null) {
+            Result.success(settings)
+        } else {
+            Result.failure(NotFoundException(EntityType.USER, id.toString(), identifierType = IdentifierType.ID))
+        }
     }
 }

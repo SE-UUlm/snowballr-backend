@@ -61,7 +61,7 @@ class GetReviewByIdTest : MainServiceTest() {
             coEvery { userRepoMock.getUserById(currentUser.id) } throws TestSpecificException()
             return
         }
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
 
         if (failAt == reviewRepoMock::getReviewById) {
             coEvery { reviewRepoMock.getReviewById(review.id) } throws TestSpecificException()
@@ -132,7 +132,7 @@ class GetReviewByIdTest : MainServiceTest() {
         val projectPaper = DataBuilder.createExampleProjectPaper(id = review.projectPaperId, projectId = project.id)
 
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
         coEvery { reviewRepoMock.getReviewById(review.id) } returns Result.success(review)
         coEvery { projectPaperRepoMock.getProjectPaperById(review.projectPaperId) } returns Result.success(projectPaper)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)

@@ -39,7 +39,7 @@ class GetProjectMembersTest : MainServiceTest() {
         val projectMemberWithUser = ProjectMemberWithUser(projectMember, projectMemberUser)
 
         every { GrpcContext.getUserIdFromContext() } returns adminUser.id
-        coEvery { userRepoMock.getUserById(adminUser.id) } returns adminUser
+        coEvery { userRepoMock.getUserById(adminUser.id) } returns Result.success(adminUser)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getProjectMembersWithUsers(project.id) } returns
             listOf(projectMemberWithUser)
@@ -57,7 +57,7 @@ class GetProjectMembersTest : MainServiceTest() {
         val projectMemberWithUser = ProjectMemberWithUser(projectMember, user)
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(user.id) } returns user
+        coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getProjectMembersWithUsers(project.id) } returns
             listOf(projectMemberWithUser)
@@ -73,7 +73,7 @@ class GetProjectMembersTest : MainServiceTest() {
         val project = DataBuilder.createExampleProject(id = projectId)
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(user.id) } returns user
+        coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getProjectMembersWithUsers(project.id) } returns emptyList()
 
@@ -88,7 +88,7 @@ class GetProjectMembersTest : MainServiceTest() {
             val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
 
             every { GrpcContext.getUserIdFromContext() } returns user.id
-            coEvery { userRepoMock.getUserById(user.id) } returns user
+            coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
             coEvery {
                 projectRepoMock.getProjectById(projectId)
             } throws SnowballRException.NotFoundException(EntityType.PROJECT, request.id)

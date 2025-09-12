@@ -31,7 +31,7 @@ class IsPaperOnReadingListTest : MainServiceTest() {
         val paperId = UUID.randomUUID()
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(user.id) } returns user
+        coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
         coEvery { paperRepoMock.doesPaperExistById(paperId) } returns true
         coEvery { readingListRepoMock.isPaperOnReadingList(user.id, paperId) } throws TestSpecificException()
 
@@ -46,7 +46,7 @@ class IsPaperOnReadingListTest : MainServiceTest() {
             val paper2 = DataBuilder.createExamplePaper(externalId = "ExternalId2")
 
             every { GrpcContext.getUserIdFromContext() } returns user.id
-            coEvery { userRepoMock.getUserById(user.id) } returns user
+            coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
             coEvery { readingListRepoMock.isPaperOnReadingList(user.id, paper1.id) } returns true
             coEvery { readingListRepoMock.isPaperOnReadingList(user.id, paper2.id) } returns false
             coEvery { paperRepoMock.doesPaperExistById(paper1.id) } returns true
@@ -66,7 +66,7 @@ class IsPaperOnReadingListTest : MainServiceTest() {
             val paperId = UUID.randomUUID()
 
             every { GrpcContext.getUserIdFromContext() } returns user.id
-            coEvery { userRepoMock.getUserById(user.id) } returns user
+            coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
             coEvery { paperRepoMock.doesPaperExistById(paperId) } returns false
 
             assertThrows<NotFoundException> {

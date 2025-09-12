@@ -35,7 +35,7 @@ class GetAllUsersTest : MainServiceTest() {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
 
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
 
         assertThrows<UnauthorizedException.All> { mainService.getAllUsers() }
     }
@@ -45,7 +45,7 @@ class GetAllUsersTest : MainServiceTest() {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
 
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
         coEvery { userRepoMock.getAllUsers() } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getAllUsers() }
@@ -56,7 +56,7 @@ class GetAllUsersTest : MainServiceTest() {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
 
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
         coEvery { userRepoMock.getAllUsers() } returns emptyList()
 
         assertDoesNotThrow { mainService.getAllUsers() }

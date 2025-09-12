@@ -54,7 +54,7 @@ class VerifyEmailTest : MainServiceTest() {
         val request = Authentication.VerifyEmailRequest.newBuilder().setToken(token.token).build()
 
         coEvery { verificationTokenRepoMock.getVerificationTokenByValue(any()) } returns token
-        coEvery { userRepoMock.getUserById(any()) } returns user
+        coEvery { userRepoMock.getUserById(any()) } returns Result.success(user)
         coEvery { userRepoMock.updateUser(any()) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.verifyEmail(request) }
@@ -67,7 +67,7 @@ class VerifyEmailTest : MainServiceTest() {
         val request = Authentication.VerifyEmailRequest.newBuilder().setToken(token.token).build()
 
         coEvery { verificationTokenRepoMock.getVerificationTokenByValue(any()) } returns token
-        coEvery { userRepoMock.getUserById(any()) } returns user
+        coEvery { userRepoMock.getUserById(any()) } returns Result.success(user)
         coEvery { userRepoMock.updateUser(any()) } returns user
         coEvery { verificationTokenRepoMock.deleteVerificationToken(any()) } throws TestSpecificException()
 
@@ -82,7 +82,7 @@ class VerifyEmailTest : MainServiceTest() {
         val userUpdateSlot = slot<UserOuterClass.User.Update>()
 
         coEvery { verificationTokenRepoMock.getVerificationTokenByValue(token.token) } returns token
-        coEvery { userRepoMock.getUserById(user.id) } returns user
+        coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
         coEvery { userRepoMock.updateUser(capture(userUpdateSlot)) } returns user
         coEvery { verificationTokenRepoMock.deleteVerificationToken(token.token) } returns Unit
 

@@ -171,7 +171,7 @@ class CriterionService(
     }
 
     override suspend fun getCriterionById(request: Base.Id): GrpcCriterion {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
         val criterionId = parseUUID(request.id, EntityType.CRITERION)
         val criterion = repo.getCriterionById(criterionId).getOrThrow()
 
@@ -180,7 +180,7 @@ class CriterionService(
     }
 
     override suspend fun createCriterion(request: GrpcCriterion.Create): GrpcCriterion {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
         if (request.projectId.isNotEmpty()) {
             checkProjectCriterionPermission(
                 null,
@@ -193,7 +193,7 @@ class CriterionService(
     }
 
     override suspend fun updateCriterion(request: GrpcCriterion.Update): GrpcCriterion {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
         val criterionId = parseUUID(request.criterion.id, EntityType.CRITERION)
         val criterion = repo.getCriterionById(criterionId).getOrThrow()
 
@@ -202,7 +202,7 @@ class CriterionService(
     }
 
     override suspend fun getAllCriteriaForProject(request: Base.Id): GrpcCriterion.List {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
         val projectId = parseUUID(request.id, EntityType.PROJECT)
         // This call exists to throw a NotFoundException if the project with the given id does not exist
         projectRepo.getProjectById(projectId)

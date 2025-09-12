@@ -51,7 +51,7 @@ class GetAllCriteriaForProjectTest : MainServiceTest() {
         val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
 
         every { GrpcContext.getUserIdFromContext() } returns adminUser.id
-        coEvery { userRepoMock.getUserById(adminUser.id) } returns adminUser
+        coEvery { userRepoMock.getUserById(adminUser.id) } returns Result.success(adminUser)
         coEvery { projectRepoMock.getProjectById(any()) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getAllCriteriaForProject(request) }
@@ -65,7 +65,7 @@ class GetAllCriteriaForProjectTest : MainServiceTest() {
         val project = DataBuilder.createExampleProject(id = projectId)
 
         every { GrpcContext.getUserIdFromContext() } returns adminUser.id
-        coEvery { userRepoMock.getUserById(adminUser.id) } returns adminUser
+        coEvery { userRepoMock.getUserById(adminUser.id) } returns Result.success(adminUser)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } throws TestSpecificException()
 
@@ -81,7 +81,7 @@ class GetAllCriteriaForProjectTest : MainServiceTest() {
         val projectMember = DataBuilder.createExampleProjectMember(userId = adminUser.id, projectId = project.id)
 
         every { GrpcContext.getUserIdFromContext() } returns adminUser.id
-        coEvery { userRepoMock.getUserById(adminUser.id) } returns adminUser
+        coEvery { userRepoMock.getUserById(adminUser.id) } returns Result.success(adminUser)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
         coEvery { criterionRepoMock.getAllProjectCriteria(project.id) } throws TestSpecificException()
@@ -101,7 +101,7 @@ class GetAllCriteriaForProjectTest : MainServiceTest() {
         val project = DataBuilder.createExampleProject(id = projectId)
 
         every { GrpcContext.getUserIdFromContext() } returns adminUser.id
-        coEvery { userRepoMock.getUserById(adminUser.id) } returns adminUser
+        coEvery { userRepoMock.getUserById(adminUser.id) } returns Result.success(adminUser)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getProjectMembers(any()) } returns emptyList()
         coEvery { criterionRepoMock.getAllProjectCriteria(project.id) } returns listOf(criterion)
@@ -123,7 +123,7 @@ class GetAllCriteriaForProjectTest : MainServiceTest() {
             val project = DataBuilder.createExampleProject(id = projectId)
 
             every { GrpcContext.getUserIdFromContext() } returns user.id
-            coEvery { userRepoMock.getUserById(user.id) } returns user
+            coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
             coEvery { criterionRepoMock.getAllProjectCriteria(project.id) } returns listOf(criterion)
@@ -140,7 +140,7 @@ class GetAllCriteriaForProjectTest : MainServiceTest() {
             val project = DataBuilder.createExampleProject(id = projectId)
 
             every { GrpcContext.getUserIdFromContext() } returns user.id
-            coEvery { userRepoMock.getUserById(user.id) } returns user
+            coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 

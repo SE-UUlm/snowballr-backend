@@ -26,7 +26,7 @@ class GetReadingListTest : MainServiceTest() {
         val user = DataBuilder.createExampleUser()
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(user.id) } returns user
+        coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
         coEvery { readingListRepoMock.getAllReadingListEntries(user.id) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getReadingList() }
@@ -41,7 +41,7 @@ class GetReadingListTest : MainServiceTest() {
             val author = DataBuilder.createExampleAuthor()
 
             every { GrpcContext.getUserIdFromContext() } returns user.id
-            coEvery { userRepoMock.getUserById(user.id) } returns user
+            coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
             coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(paper1.id) } returns emptyList()
             coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(paper2.id) } returns listOf(author)
             coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper2.id) } returns listOf(paper1.id)

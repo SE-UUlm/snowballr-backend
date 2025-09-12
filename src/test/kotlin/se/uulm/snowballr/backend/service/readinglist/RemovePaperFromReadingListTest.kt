@@ -30,7 +30,7 @@ class RemovePaperFromReadingListTest : MainServiceTest() {
         val paperId = UUID.randomUUID()
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(user.id) } returns user
+        coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
         coEvery { paperRepoMock.doesPaperExistById(paperId) } returns true
         coEvery { readingListRepoMock.removeReadingListEntry(user.id, paperId) } throws TestSpecificException()
 
@@ -43,7 +43,7 @@ class RemovePaperFromReadingListTest : MainServiceTest() {
         val paperId = UUID.randomUUID()
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(user.id) } returns user
+        coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
         coEvery { paperRepoMock.doesPaperExistById(paperId) } returns true
         coEvery { readingListRepoMock.removeReadingListEntry(user.id, paperId) } returns Unit
 
@@ -57,7 +57,7 @@ class RemovePaperFromReadingListTest : MainServiceTest() {
         val paperId = UUID.randomUUID()
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(user.id) } returns user
+        coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
         coEvery { paperRepoMock.doesPaperExistById(paperId) } returns false
 
         assertThrows<NotFoundException> {

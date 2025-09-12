@@ -158,7 +158,7 @@ class UserService(
     }
 
     override suspend fun getUserById(request: Base.Id): GrpcUser {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
         val targetUserId = parseUUID(request.id, EntityType.USER)
 
         verifyUserAccess(currentUser, targetUserId, IdentifierType.ID)
@@ -170,7 +170,7 @@ class UserService(
             if (isRequestedUser) {
                 currentUser
             } else {
-                userRepo.getUserById(targetUserId)
+                userRepo.getUserById(targetUserId).getOrThrow()
             }
 
         // Only active or active unconfirmed users can be retrieved
@@ -184,10 +184,10 @@ class UserService(
     }
 
     override suspend fun getUserByEmail(request: Base.Email): GrpcUser {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
 
         // We have to request the user first to get the ID for the access checks
-        val targetUser = userRepo.getUserByEmail(request.email)
+        val targetUser = userRepo.getUserByEmail(request.email).getOrThrow()
 
         verifyUserAccess(currentUser, targetUser.id, IdentifierType.EMAIL)
 
@@ -202,7 +202,7 @@ class UserService(
     }
 
     override suspend fun getAllUsers(): GrpcUser.List {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
 
         verifyServerAdminRole(currentUser) { UnauthorizedException.All(EntityType.USER, AccessType.READ, it) }
 
@@ -221,7 +221,7 @@ class UserService(
             return GrpcUser.List.getDefaultInstance()
         }
 
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
         val excludedUsersFromSearch = mutableSetOf(currentUser.id)
         try {
             val projectMembers = projectMemberRepo.getProjectMembers(parseUUID(request.projectId, EntityType.PROJECT))
@@ -274,7 +274,7 @@ class UserService(
         }
 
         // Check whether the user exists
-        val user = userRepo.getUserById(verificationToken.userId)
+        val user = userRepo.getUserById(verificationToken.userId).getOrThrow()
 
         // Update the user's status to active
         val updatedUser = user.copy(status = UserStatus.USER_STATUS_ACTIVE)
@@ -300,7 +300,7 @@ class UserService(
         // Check whether a user with the given email exists
         val user =
             try {
-                userRepo.getUserByEmail(request.email)
+                userRepo.getUserByEmail(request.email).getOrThrow()
             } catch (_: NotFoundException) {
                 throw UnauthenticatedException()
             }
@@ -312,7 +312,7 @@ class UserService(
 
         // Verify the password against the stored hash
         val storedPasswordHash = try {
-            userRepo.getPasswordHashByEmail(request.email)
+            userRepo.getPasswordHashByEmail(request.email).getOrThrow()
         } catch (_: NotFoundException) {
             throw UnauthenticatedException()
         }
@@ -329,11 +329,11 @@ class UserService(
     }
 
     override suspend fun updateUser(request: GrpcUser.Update): GrpcUser {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
 
         // Check that user to update exists in the database
         val targetUserId = parseUUID(request.user.id, EntityType.USER)
-        val targetUser = userRepo.getUserById(targetUserId)
+        val targetUser = userRepo.getUserById(targetUserId).getOrThrow()
 
         // Check whether the current user is a server admin if the role is changed or the requested user is different
         // from the current user
@@ -353,8 +353,8 @@ class UserService(
     }
 
     override suspend fun softDeleteUser(request: Base.Id): Base.Nothing {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
-        val targetUser = userRepo.getUserById(parseUUID(request.id, EntityType.USER))
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
+        val targetUser = userRepo.getUserById(parseUUID(request.id, EntityType.USER)).getOrThrow()
         val isSameUser = currentUser.id == targetUser.id
 
         // Checks if the user tries to delete another user without being an admin
@@ -377,11 +377,11 @@ class UserService(
     }
 
     override suspend fun getCurrentUser(): GrpcUser =
-        userRepo.getUserById(GrpcContext.getUserIdFromContext()).toGrpcUser()
+        userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow().toGrpcUser()
 
     override suspend fun getUserSettings(): UserSettingsOuterClass.UserSettings {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
-        val userSettings = userRepo.getUserSettings(currentUser.id)
+        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
+        val userSettings = userRepo.getUserSettings(currentUser.id).getOrThrow()
         val defaultUserCriteria = criterionRepo.getCriteriaByIds(userSettings.criteriaIds)
 
         val criteria = mutableListOf<CriterionOuterClass.Criterion>()

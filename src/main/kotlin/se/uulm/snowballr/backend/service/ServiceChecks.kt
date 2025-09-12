@@ -37,8 +37,8 @@ fun verifyServerAdminRole(user: User, getException: (String) -> SnowballRExcepti
  * @param accessType The type of access being attempted, used to construct the exception if unauthorized.
  */
 suspend fun authorizeAccessTo(requestedUserId: UUID, userRepo: IUserTableRepo, accessType: AccessType) {
-    val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
-    val requestedUser = userRepo.getUserById(requestedUserId)
+    val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
+    val requestedUser = userRepo.getUserById(requestedUserId).getOrThrow()
 
     if (currentUser.id != requestedUser.id) {
         verifyServerAdminRole(currentUser) {

@@ -33,8 +33,8 @@ class CreateProjectTest : MainServiceTest() {
         val userSettings = DataBuilder.createExampleUserSettings()
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(user.id) } returns user
-        coEvery { userRepoMock.getUserSettings(user.id) } returns userSettings
+        coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
+        coEvery { userRepoMock.getUserSettings(user.id) } returns Result.success(userSettings)
         coEvery { criterionRepoMock.getCriteriaByIds(emptyList()) } returns emptyList()
         coEvery { projectRepoMock.createProject(any(), user.id, userSettings) } throws TestSpecificException()
 
@@ -48,8 +48,8 @@ class CreateProjectTest : MainServiceTest() {
         val userSettings = DataBuilder.createExampleUserSettings()
 
         every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(user.id) } returns user
-        coEvery { userRepoMock.getUserSettings(user.id) } returns userSettings
+        coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
+        coEvery { userRepoMock.getUserSettings(user.id) } returns Result.success(userSettings)
         coEvery { criterionRepoMock.getCriteriaByIds(emptyList()) } returns emptyList()
         coEvery { projectRepoMock.createProject(any(), any(), userSettings) } returns project
 
@@ -67,8 +67,8 @@ class CreateProjectTest : MainServiceTest() {
             val criteriaIdsSlot = slot<List<UUID>>()
 
             every { GrpcContext.getUserIdFromContext() } returns user.id
-            coEvery { userRepoMock.getUserById(user.id) } returns user
-            coEvery { userRepoMock.getUserSettings(user.id) } returns userSettings
+            coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
+            coEvery { userRepoMock.getUserSettings(user.id) } returns Result.success(userSettings)
             coEvery { criterionRepoMock.getCriteriaByIds(capture(criteriaIdsSlot)) } returns listOf(criterion)
             coEvery { projectRepoMock.createProject(any(), user.id, userSettings) } returns project
             coEvery { criterionRepoMock.createCriterion(any(), user.id) } returns criterion

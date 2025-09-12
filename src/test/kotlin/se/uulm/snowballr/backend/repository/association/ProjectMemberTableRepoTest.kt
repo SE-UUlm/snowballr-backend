@@ -274,7 +274,7 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
             runTest {
                 val (project, _) = setupProject()
                 val normalMember = repo.getProjectMemberByComposedId(project.id, testUserId).getOrThrow()
-                val user = userRepo.getUserById(testUserId)
+                val user = userRepo.getUserById(testUserId).getOrThrow()
                 val projectMembersWithUsers = repo.getProjectMembersWithUsers(project.id)
 
                 assertThat(projectMembersWithUsers).hasSize(1)
@@ -286,9 +286,9 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
         fun `When not all users are project members, then only the correct project members with users are returned`() =
             runTest {
                 val (project, _) = setupProject()
-                val user = userRepo.getUserById(testUserId)
+                val user = userRepo.getUserById(testUserId).getOrThrow()
                 val nonProjectMemberUserId = RepositoryHelper.createExampleUser("test-user@example.com")
-                val nonProjectMemberUser = userRepo.getUserById(nonProjectMemberUserId)
+                val nonProjectMemberUser = userRepo.getUserById(nonProjectMemberUserId).getOrThrow()
                 val normalMember = repo.getProjectMemberByComposedId(project.id, testUserId).getOrThrow()
                 val projectMembersWithUsers = repo.getProjectMembersWithUsers(project.id)
 
