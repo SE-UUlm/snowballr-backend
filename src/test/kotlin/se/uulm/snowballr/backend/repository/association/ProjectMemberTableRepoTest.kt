@@ -109,14 +109,14 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
         }
 
         @Test
-        fun `When a user is added to a non-existing project, then an exception is thrown`() = runTest {
+        fun `When a user is added to a non-existing project, then an SQLException is thrown`() = runTest {
             assertThrows<SQLException> {
                 repo.addUserToProject(testUserId, UUID.randomUUID())
             }
         }
 
         @Test
-        fun `When a non-existing user is added to a project, then an exception is thrown`() = runTest {
+        fun `When a non-existing user is added to a project, then an SQLException is thrown`() = runTest {
             val project = createExampleProject()
 
             assertThrows<SQLException> {

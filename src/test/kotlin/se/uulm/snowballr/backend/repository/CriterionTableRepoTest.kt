@@ -128,7 +128,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
             }
 
         @Test
-        fun `When a project criterion is created, but the assigned project doesn't exist, then an exception is thrown`() =
+        fun `When a project criterion is created, but the assigned project doesn't exist, then an SQLException is thrown`() =
             runTest {
                 val request =
                     GrpcCriterion.Create
@@ -163,7 +163,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
         }
 
         @GrpcEnumSourceTest(CriterionCategory::class)
-        fun `When a criterion is created, but the assigned user doesn't exist, then an exception is thrown`(
+        fun `When a criterion is created, but the assigned user doesn't exist, then an SQLException is thrown`(
             category: CriterionCategory,
         ) = runTest {
             val projectId = insertProjectAndGetId(createdBy = testUserId)

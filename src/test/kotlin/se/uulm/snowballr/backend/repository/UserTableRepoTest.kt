@@ -3,7 +3,6 @@ package se.uulm.snowballr.backend.repository
 import com.google.protobuf.util.FieldMaskUtil
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
-import org.jetbrains.exposed.exceptions.ExposedSQLException
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -24,6 +23,7 @@ import snowballr.ProjectOuterClass
 import snowballr.UserOuterClass.User
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
+import java.sql.SQLException
 import java.time.OffsetDateTime
 import java.util.UUID
 import kotlin.test.assertEquals
@@ -175,7 +175,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
         }
 
         @Test
-        fun `When a user with an existing email is created, then an exception is thrown`() = runTest {
+        fun `When a user with an existing email is created, then an SQLException is thrown`() = runTest {
             val request =
                 Authentication.RegisterRequest
                     .newBuilder()
@@ -186,7 +186,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
                     .build()
             repo.createUser(request, "hashedPassword")
 
-            assertThrows<ExposedSQLException> {
+            assertThrows<SQLException> {
                 repo.createUser(request, "hashedPassword2")
             }
         }
@@ -269,7 +269,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
         }
 
         @Test
-        fun `When a user's email should be updated to an existing email, then an exception is thrown`() = runTest {
+        fun `When a user's email should be updated to an existing email, then an SQLException is thrown`() = runTest {
             insertTestUserAndGetId(email = "alice.smith@example.com")
 
             val user2Id = insertTestUserAndGetId(email = "bob.smith@example.com")
@@ -282,7 +282,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
                     .setMask(FieldMaskUtil.fromString("user.email"))
                     .build()
 
-            assertThrows<ExposedSQLException> {
+            assertThrows<SQLException> {
                 repo.updateUser(updateRequest)
             }
         }

@@ -121,11 +121,12 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
         }
 
         @Test
-        fun `When a project is created, but the assigned user doesn't exist, then an exception is thrown`() = runTest {
-            val request = Project.Create.newBuilder().setName("Test Project").build()
-            val userSettings = DataBuilder.createExampleUserSettings()
-            assertThrows<SQLException> { repo.createProject(request, UUID.randomUUID(), userSettings) }
-        }
+        fun `When a project is created, but the assigned user doesn't exist, then an SQLException is thrown`() =
+            runTest {
+                val request = Project.Create.newBuilder().setName("Test Project").build()
+                val userSettings = DataBuilder.createExampleUserSettings()
+                assertThrows<SQLException> { repo.createProject(request, UUID.randomUUID(), userSettings) }
+            }
     }
 
     @Nested
@@ -447,15 +448,16 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
         }
 
         @Test
-        fun `When an invalid project status is used to filter user projects, then an exception is thrown`() = runTest {
-            val userId = createExampleUser("userWithActiveProjects@example.com")
+        fun `When an invalid project status is used to filter user projects, then an IllegalArgumentException is thrown`() =
+            runTest {
+                val userId = createExampleUser("userWithActiveProjects@example.com")
 
-            assertThrows<IllegalArgumentException> {
-                repo.getUserProjects(
-                    userId,
-                    setOf(ProjectStatus.PROJECT_STATUS_UNSPECIFIED),
-                )
+                assertThrows<IllegalArgumentException> {
+                    repo.getUserProjects(
+                        userId,
+                        setOf(ProjectStatus.PROJECT_STATUS_UNSPECIFIED),
+                    )
+                }
             }
-        }
     }
 }
