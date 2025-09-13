@@ -32,7 +32,7 @@ interface IPaperTableRepo {
  * Repository implementation for managing the [PaperTable] in the database.
  *
  * This class provides functionality to handle persistence and retrieval operations for papers by leveraging the
- * database abstraction defined in [IDatabase]. It facilitates CRUD operations on free-standing papers and ensures
+ * database abstraction defined in [IDatabase]. It facilitates CRUD operations on freestanding papers and ensures
  * database transactions are handled properly.
  *
  * @param db The database abstraction used for executing queries within a transaction.

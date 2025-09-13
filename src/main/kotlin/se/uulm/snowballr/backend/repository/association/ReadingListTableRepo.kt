@@ -7,6 +7,7 @@ import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.dto.Paper
+import se.uulm.snowballr.backend.repository.doesEntityExist
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.association.ReadingListTable
 import se.uulm.snowballr.backend.table.toPaper
@@ -74,9 +75,9 @@ class ReadingListTableRepo(
     }
 
     override suspend fun isPaperOnReadingList(userId: UUID, paperId: UUID): Boolean = db.query {
-        ReadingListTable.selectAll().where {
+        ReadingListTable.doesEntityExist {
             (ReadingListTable.userId eq userId) and (ReadingListTable.paperId eq paperId)
-        }.count() > 0
+        }
     }
 
     override suspend fun getAllReadingListEntries(userId: UUID): List<Paper> = db.query {

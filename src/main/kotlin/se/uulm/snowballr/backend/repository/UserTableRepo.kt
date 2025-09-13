@@ -176,11 +176,7 @@ class UserTableRepo(
     }
 
     override suspend fun doesUserExistByEmail(email: String): Boolean = db.query {
-        UserTable
-            .select(UserTable.email)
-            .where { UserTable.email eq email }
-            .empty()
-            .not()
+        UserTable.doesEntityExist { UserTable.email eq email }
     }
 
     override suspend fun getAllUsers(): List<User> = db.query {

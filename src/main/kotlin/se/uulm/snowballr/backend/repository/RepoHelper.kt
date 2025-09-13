@@ -44,6 +44,18 @@ fun <Key : Any, T : IdTable<Key>, EntT : Any> T.getEntityByIdOrNull(id: Key, map
     this.getEntityOrNull(mapper) { this@getEntityByIdOrNull.id eq id }
 
 /**
+ * Checks if an entity exists in the table that matches the specified [where] condition.
+ *
+ * @param Key The type of the [IdTable], i.e., the ID type, such as [UUID].
+ * @param T The table type as a subtype of [IdTable].
+ * @param where The condition used to filter the entities in the table.
+ *              It is expressed as an [Op] built using the [SqlExpressionBuilder].
+ * @return `true` if an entity matching the condition exists, otherwise `false`.
+ */
+fun <Key : Any, T : IdTable<Key>> T.doesEntityExist(where: SqlExpressionBuilder.() -> Op<Boolean>): Boolean =
+    this.selectAll().where(where).count() > 0
+
+/**
  * Checks if an entity exists in the table with the given ID.
  *
  * @param Key The type of the [IdTable], i.e., the ID type, such as [UUID].
@@ -51,8 +63,8 @@ fun <Key : Any, T : IdTable<Key>, EntT : Any> T.getEntityByIdOrNull(id: Key, map
  * @param id The ID of type [Key], which is used to find the entity.
  * @return True if an entity with the given ID exists, false otherwise.
  */
-fun <Key : Any, T : IdTable<Key>> T.doesEntityExistById(id: Key): Boolean = this
-    .getEntityByIdOrNull(id) { it[this.id] } != null
+fun <Key : Any, T : IdTable<Key>> T.doesEntityExistById(id: Key): Boolean =
+    this.doesEntityExist { this@doesEntityExistById.id eq id }
 
 /**
  * Combination of using [insertAndGetId] and fetching the created entity by its ID.

@@ -12,6 +12,7 @@ import se.uulm.snowballr.backend.model.SnowballRException.ProjectPaperNotFoundEx
 import se.uulm.snowballr.backend.model.dto.ProjectPaper
 import se.uulm.snowballr.backend.model.dto.ProjectPaperWithPaper
 import se.uulm.snowballr.backend.model.parseUUID
+import se.uulm.snowballr.backend.repository.doesEntityExist
 import se.uulm.snowballr.backend.repository.getEntityByIdAsResult
 import se.uulm.snowballr.backend.repository.getEntityByIdOrNull
 import se.uulm.snowballr.backend.repository.insertAndGet
@@ -101,14 +102,13 @@ interface IProjectPaperTableRepo {
 class ProjectPaperTableRepo(
     private val db: IDatabase,
 ) : IProjectPaperTableRepo {
-    private fun getProjectPaperByIdOrNull(id: UUID): ProjectPaper? = ProjectPaperTable.getEntityByIdOrNull(
-        id,
-        ResultRow::toProjectPaper,
-    )
+    private fun getProjectPaperByIdOrNull(id: UUID): ProjectPaper? =
+        ProjectPaperTable.getEntityByIdOrNull(id, ResultRow::toProjectPaper)
 
     /**
-     * Generates the next available local paper ID for the specified project by checking the existing maximum local paper ID
-     * within the project and incrementing it by one. If no local paper IDs exist for the given project, it returns 0.
+     * Generates the next available local paper ID for the specified project by checking the existing maximum local
+     * paper ID within the project and incrementing it by one. If no local paper IDs exist for the given project, it
+     * returns 0.
      *
      * @param projectId The unique identifier of the project for which the next local paper ID is to be generated.
      * @return The next available local paper ID as a [Long].
@@ -143,11 +143,9 @@ class ProjectPaperTableRepo(
         }
 
     override suspend fun doesProjectPaperExist(projectId: UUID, paperId: UUID): Boolean = db.query {
-        ProjectPaperTable
-            .selectAll()
-            .where { (ProjectPaperTable.paperId eq paperId) and (ProjectPaperTable.projectId eq projectId) }
-            .empty()
-            .not()
+        ProjectPaperTable.doesEntityExist {
+            (ProjectPaperTable.paperId eq paperId) and (ProjectPaperTable.projectId eq projectId)
+        }
     }
 
     override suspend fun getAllProjectPapersWithPapers(projectId: UUID): List<ProjectPaperWithPaper> = db.query {
