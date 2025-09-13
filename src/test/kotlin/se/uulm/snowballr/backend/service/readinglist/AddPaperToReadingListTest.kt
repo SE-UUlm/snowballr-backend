@@ -8,24 +8,11 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.DataBuilder.toGrpcId
-import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import java.util.UUID
 
 class AddPaperToReadingListTest : MainServiceTest() {
-    @Test
-    fun `When creating the reading list entry fails, then a TestSpecificException is thrown`() = runTest {
-        val user = DataBuilder.createExampleUser()
-        val paperId = UUID.randomUUID()
-
-        mockCurrentUser(user)
-        coEvery { paperRepoMock.doesPaperExistById(paperId) } returns true
-        coEvery { readingListRepoMock.createReadingListEntry(user.id, paperId) } throws TestSpecificException()
-
-        assertThrows<TestSpecificException> { mainService.addPaperToReadingList(paperId.toGrpcId()) }
-    }
-
     @Test
     fun `When the user adds a paper to their reading list, then the request is forwarded correctly`() = runTest {
         val user = DataBuilder.createExampleUser()

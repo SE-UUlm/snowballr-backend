@@ -73,9 +73,9 @@ class ReadingListService(
     override suspend fun getReadingList(): GrpcPaper.List = withUser(userRepo) { currentUser ->
         val papers = repo.getAllReadingListEntries(currentUser.id).map { paper ->
             val authors = authorOfPaperRepo.getAuthorsOfPaperById(paper.id).map { it.toGrpcAuthor() }
-            val backwardReferences = citationRepo.getBackwardsReferencedPaperIdsOfPaperById(
-                paper.id,
-            ).map { it.toString() }
+            val backwardReferences = citationRepo
+                .getBackwardsReferencedPaperIdsOfPaperById(paper.id)
+                .map(UUID::toString)
             paper.toGrpcPaper(authors, backwardReferences)
         }
 
