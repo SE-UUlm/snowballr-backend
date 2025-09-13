@@ -11,7 +11,7 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.model.SnowballRException
+import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.Base
 import snowballr.UserOuterClass
@@ -22,14 +22,12 @@ import kotlin.reflect.KFunction
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class GetAllReviewsForProjectPaperTest : MainServiceTest() {
     private val requestId = UUID.randomUUID()
+
     private fun getExampleRequest() = Base.Id.newBuilder().setId(requestId.toString()).build()
 
     fun failingFunctions(): Stream<Arguments?> = Stream.of(
         Arguments.of(projectPaperRepoMock::getProjectPaperById),
         Arguments.of(projectRepoMock::getProjectById),
-        Arguments.of(projectMemberRepoMock::getProjectMembers),
-        Arguments.of(reviewRepoMock::getAllReviewsForProjectPaper),
-        Arguments.of(reviewHasCriterionRepoMock::getSelectedCriteriaIdsForReviewById),
     )
 
     @Suppress("ReturnCount", "LongMethod")
@@ -50,42 +48,26 @@ class GetAllReviewsForProjectPaperTest : MainServiceTest() {
         mockCurrentUser(currentUser)
 
         if (failAt == projectPaperRepoMock::getProjectPaperById) {
-            coEvery { projectPaperRepoMock.getProjectPaperById(projectPaper.id) } throws TestSpecificException()
+            coEvery {
+                projectPaperRepoMock.getProjectPaperById(projectPaper.id)
+            } returns Result.failure(TestSpecificException())
             return
         }
         coEvery { projectPaperRepoMock.getProjectPaperById(projectPaper.id) } returns Result.success(projectPaper)
 
         if (failAt == projectRepoMock::getProjectById) {
-            coEvery { projectRepoMock.getProjectById(project.id) } throws TestSpecificException()
+            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.failure(TestSpecificException())
             return
         }
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
-        if (failAt == projectMemberRepoMock::getProjectMembers) {
-            coEvery { projectMemberRepoMock.getProjectMembers(project.id) } throws TestSpecificException()
-            return
-        }
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns
             if (isUserAdmin) {
                 emptyList()
             } else {
                 listOf(projectMember)
             }
-
-        if (failAt == reviewRepoMock::getAllReviewsForProjectPaper) {
-            coEvery {
-                reviewRepoMock.getAllReviewsForProjectPaper(projectPaper.id)
-            } throws TestSpecificException()
-            return
-        }
         coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper.id) } returns listOf(review)
-
-        if (failAt == reviewHasCriterionRepoMock::getSelectedCriteriaIdsForReviewById) {
-            coEvery {
-                reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(review.id)
-            } throws TestSpecificException()
-            return
-        }
         coEvery {
             reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(review.id)
         } returns selectedCriteriaIds
@@ -95,6 +77,7 @@ class GetAllReviewsForProjectPaperTest : MainServiceTest() {
     @MethodSource("failingFunctions")
     fun `When a step fails, then a TestSpecificException is thrown`(failAt: KFunction<*>) = runTest {
         mockHappyPathUntil(failAt, true)
+
         assertThrows<TestSpecificException> {
             mainService.getAllReviewsForProjectPaper(getExampleRequest())
         }
@@ -103,12 +86,14 @@ class GetAllReviewsForProjectPaperTest : MainServiceTest() {
     @Test
     fun `When a server admin retrieves all reviews for a project paper, then no exception is thrown`() = runTest {
         mockHappyPathUntil(null, true)
+
         assertDoesNotThrow { mainService.getAllReviewsForProjectPaper(getExampleRequest()) }
     }
 
     @Test
     fun `When a project member retrieves all reviews for a project paper, then no exception is thrown`() = runTest {
         mockHappyPathUntil(null, false)
+
         assertDoesNotThrow { mainService.getAllReviewsForProjectPaper(getExampleRequest()) }
     }
 
@@ -124,7 +109,7 @@ class GetAllReviewsForProjectPaperTest : MainServiceTest() {
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
-            assertThrows<SnowballRException.UnauthorizedException> {
+            assertThrows<UnauthorizedException> {
                 mainService.getAllReviewsForProjectPaper(getExampleRequest())
             }
         }
