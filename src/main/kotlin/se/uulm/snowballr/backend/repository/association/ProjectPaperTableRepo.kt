@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.repository.association
 
 import org.jetbrains.exposed.sql.JoinType
 import org.jetbrains.exposed.sql.ResultRow
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
@@ -37,7 +38,8 @@ interface IProjectPaperTableRepo {
     suspend fun getProjectPaperById(id: UUID): Result<ProjectPaper>
 
     /**
-     * Retrieves a project paper by its relative ID in a project.
+     * Returns a [Result] containing the project paper by its relative ID in a project or a
+     * [ProjectPaperNotFoundException] if the project paper with the passed [relativeId] doesn't exist.
      *
      * Therefore, this method searches for a project paper in the project with the [projectId] with
      * the [relativeId] (`localPaperId`).
@@ -45,9 +47,8 @@ interface IProjectPaperTableRepo {
      * @param projectId The unique identifier of the project to which the project paper belongs.
      * @param relativeId The local paper ID of the project paper in the project.
      * @return The [ProjectPaper] matching the given project ID and relative ID.
-     * @throws [NotFoundException] if no matching project paper is found.
      */
-    suspend fun getProjectPaperByRelativeId(projectId: UUID, relativeId: Long): ProjectPaper
+    suspend fun getProjectPaperByRelativeId(projectId: UUID, relativeId: Long): Result<ProjectPaper>
 
     /**
      * Checks if a project paper exists in a project, based on the provided paper ID.
@@ -125,20 +126,21 @@ class ProjectPaperTableRepo(
         getEntityByIdAsResult(::getProjectPaperByIdOrNull, EntityType.PROJECT_PAPER, id)
     }
 
-    override suspend fun getProjectPaperByRelativeId(projectId: UUID, relativeId: Long): ProjectPaper = db.query {
-        ProjectPaperTable
-            .selectAll()
-            .where {
-                (
-                    (ProjectPaperTable.projectId eq projectId)
-                        and (ProjectPaperTable.localPaperId eq relativeId)
-                    )
+    override suspend fun getProjectPaperByRelativeId(projectId: UUID, relativeId: Long): Result<ProjectPaper> =
+        db.query {
+            val where = (ProjectPaperTable.projectId eq projectId) and (ProjectPaperTable.localPaperId eq relativeId)
+            val projectPaper = ProjectPaperTable
+                .selectAll()
+                .where(where)
+                .map { it.toProjectPaper() }
+                .singleOrNull()
+
+            if (projectPaper != null) {
+                Result.success(projectPaper)
+            } else {
+                Result.failure(ProjectPaperNotFoundException(relativeId.toString(), projectId.toString()))
             }
-            .map { it.toProjectPaper() }
-            .singleOrNull() ?: throw ProjectPaperNotFoundException(
-            relativeId.toString(), projectId.toString(),
-        )
-    }
+        }
 
     override suspend fun doesProjectPaperExist(projectId: UUID, paperId: UUID): Boolean = db.query {
         ProjectPaperTable

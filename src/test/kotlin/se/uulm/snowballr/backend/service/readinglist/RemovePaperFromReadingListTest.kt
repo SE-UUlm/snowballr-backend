@@ -40,15 +40,16 @@ class RemovePaperFromReadingListTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the user removes a non-existent paper on their reading list, then a NotFoundException is thrown`() = runTest {
-        val user = DataBuilder.createExampleUser()
-        val paperId = UUID.randomUUID()
+    fun `When the user removes a non-existent paper on their reading list, then a NotFoundException is thrown`() =
+        runTest {
+            val user = DataBuilder.createExampleUser()
+            val paperId = UUID.randomUUID()
 
-        mockCurrentUser(user)
-        coEvery { paperRepoMock.doesPaperExistById(paperId) } returns false
+            mockCurrentUser(user)
+            coEvery { paperRepoMock.doesPaperExistById(paperId) } returns false
 
-        assertThrows<NotFoundException> {
-            mainService.removePaperFromReadingList(paperId.toGrpcId())
+            assertThrows<NotFoundException> {
+                mainService.removePaperFromReadingList(paperId.toGrpcId())
+            }
         }
-    }
 }

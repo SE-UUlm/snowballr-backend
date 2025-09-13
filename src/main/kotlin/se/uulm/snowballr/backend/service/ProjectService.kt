@@ -3,8 +3,10 @@ package se.uulm.snowballr.backend.service
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.SnowballRException
+import se.uulm.snowballr.backend.model.SnowballRException.DuplicateEntityException
+import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
+import se.uulm.snowballr.backend.model.SnowballRException.OutOfRangeException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.Paper
 import se.uulm.snowballr.backend.model.dto.Project
@@ -165,13 +167,12 @@ class ProjectService(
      */
     private suspend fun getGrpcProjectPaper(paper: Paper, projectPaper: ProjectPaper): GrpcProjectPaper {
         val authors = authorOfPaperTableRepo.getAuthorsOfPaperById(paper.id).map { it.toGrpcAuthor() }
-        val backwardReferences = citationTableRepo.getBackwardsReferencedPaperIdsOfPaperById(
-            paper.id,
-        ).map { it.toString() }
+        val backwardReferences = citationTableRepo
+            .getBackwardsReferencedPaperIdsOfPaperById(paper.id).map(UUID::toString)
         val reviews = reviewTableRepo.getAllReviewsForProjectPaper(projectPaper.id)
             .map {
                 val selectedCriteriaIds = reviewHasCriterionTableRepo.getSelectedCriteriaIdsForReviewById(it.id)
-                it.toGrpcReview(selectedCriteriaIds.map { criterion -> criterion.toString() })
+                it.toGrpcReview(selectedCriteriaIds.map(UUID::toString))
             }
         return ProjectPaperWithPaper(projectPaper, paper).toGrpcProjectPaper(authors, backwardReferences, reviews)
     }
@@ -199,12 +200,7 @@ class ProjectService(
 
         if (!isProjectMember(projectId, currentUser.id)) {
             verifyServerAdminRole(currentUser) {
-                throw UnauthorizedException.Single(
-                    EntityType.PROJECT,
-                    projectId.toString(),
-                    AccessType.READ,
-                    it,
-                )
+                throw UnauthorizedException.Single(EntityType.PROJECT, projectId.toString(), AccessType.READ, it)
             }
         }
 
@@ -217,15 +213,12 @@ class ProjectService(
             paperAuthorsMap[paper] = authorOfPaperTableRepo
                 .getAuthorsOfPaperById(paper.id).map { it.toGrpcAuthor() }
             paperBackwardReferencesMap[paper] = citationTableRepo
-                .getBackwardsReferencedPaperIdsOfPaperById(paper.id).map {
-                    it.toString()
-                }
+                .getBackwardsReferencedPaperIdsOfPaperById(paper.id).map(UUID::toString)
             projectPaperReviewsMap[projectPaper.projectPaper] = reviewTableRepo
                 .getAllReviewsForProjectPaper(projectPaper.projectPaper.id)
                 .map {
-                    val selectedCriteriaIds = reviewHasCriterionTableRepo
-                        .getSelectedCriteriaIdsForReviewById(it.id)
-                    it.toGrpcReview(selectedCriteriaIds.map { criterion -> criterion.toString() })
+                    val selectedCriteriaIds = reviewHasCriterionTableRepo.getSelectedCriteriaIdsForReviewById(it.id)
+                    it.toGrpcReview(selectedCriteriaIds.map(UUID::toString))
                 }
         }
         projectPapersWithPapers = predicate?.let { pred ->
@@ -251,12 +244,7 @@ class ProjectService(
 
             if (projectMembers.none { it.userId == currentUser.id }) {
                 verifyServerAdminRole(currentUser) {
-                    throw UnauthorizedException.Single(
-                        EntityType.PROJECT,
-                        projectId.toString(),
-                        AccessType.READ,
-                        it,
-                    )
+                    throw UnauthorizedException.Single(EntityType.PROJECT, projectId.toString(), AccessType.READ, it)
                 }
             }
 
@@ -284,12 +272,7 @@ class ProjectService(
 
         if (!isProjectMember(projectId, currentUser.id)) {
             verifyServerAdminRole(currentUser) {
-                throw UnauthorizedException.Single(
-                    EntityType.PROJECT,
-                    projectId.toString(),
-                    AccessType.READ,
-                    it,
-                )
+                throw UnauthorizedException.Single(EntityType.PROJECT, projectId.toString(), AccessType.READ, it)
             }
         }
 
@@ -353,23 +336,14 @@ class ProjectService(
 
         if (!isProjectAdmin) {
             verifyServerAdminRole(currentUser) {
-                throw UnauthorizedException.Single(
-                    EntityType.PROJECT,
-                    request.project.id,
-                    AccessType.UPDATE,
-                    it,
-                )
+                throw UnauthorizedException.Single(EntityType.PROJECT, request.project.id, AccessType.UPDATE, it)
             }
         }
         if (project.status == ProjectStatus.PROJECT_STATUS_DELETED) {
-            throw SnowballRException.FailedPreconditionException(
-                "The project with the id ${request.project.id} is deleted.",
-            )
+            throw FailedPreconditionException("The project with the id ${request.project.id} is deleted.")
         }
         if (request.project.status == ProjectStatus.PROJECT_STATUS_DELETED) {
-            throw SnowballRException.FailedPreconditionException(
-                "The project status can not be set to deleted by an update call.",
-            )
+            throw FailedPreconditionException("The project status can not be set to deleted by an update call.")
         }
 
         repo.updateProject(request, projectStatus).toGrpcProject()
@@ -378,17 +352,12 @@ class ProjectService(
     override suspend fun getProjectMembers(request: Base.Id): GrpcProject.Member.List =
         withUser(userRepo) { currentUser ->
             val projectId = parseUUID(request.id, EntityType.PROJECT)
-            repo.getProjectById(projectId)
+            repo.getProjectById(projectId).getOrThrow()
             val projectMembersWithUsers = projectMemberRepo.getProjectMembersWithUsers(projectId)
 
             if (!projectMembersWithUsers.any { it.user.id == currentUser.id }) {
                 verifyServerAdminRole(currentUser) {
-                    throw UnauthorizedException.Single(
-                        EntityType.PROJECT,
-                        projectId.toString(),
-                        AccessType.READ,
-                        it,
-                    )
+                    throw UnauthorizedException.Single(EntityType.PROJECT, projectId.toString(), AccessType.READ, it)
                 }
             }
 
@@ -408,7 +377,7 @@ class ProjectService(
         }
 
         val relativeId = request.relativeProjectPaperId.toLong()
-        val projectPaper = projectPaperRepo.getProjectPaperByRelativeId(projectId, relativeId)
+        val projectPaper = projectPaperRepo.getProjectPaperByRelativeId(projectId, relativeId).getOrThrow()
         return loadAndAuthorizeProjectPaper(projectPaper, projectId)
     }
 
@@ -436,12 +405,7 @@ class ProjectService(
 
             if (!isProjectMember(projectId, currentUser.id)) {
                 verifyServerAdminRole(currentUser) {
-                    throw UnauthorizedException.Single(
-                        EntityType.PROJECT,
-                        projectId.toString(),
-                        AccessType.READ,
-                        it,
-                    )
+                    throw UnauthorizedException.Single(EntityType.PROJECT, projectId.toString(), AccessType.READ, it)
                 }
             }
 
@@ -449,15 +413,11 @@ class ProjectService(
             val project = repo.getProjectById(projectId).getOrThrow()
             val paper = paperRepo.getPaperById(paperId).getOrThrow()
             if (projectPaperRepo.doesProjectPaperExist(projectId, paperId)) {
-                throw SnowballRException.DuplicateEntityException(
-                    EntityType.PROJECT_PAPER,
-                    projectId.toString(),
-                    paperId.toString(),
-                )
+                throw DuplicateEntityException(EntityType.PROJECT_PAPER, projectId.toString(), paperId.toString())
             }
 
             if (request.stage !in 0..project.maxStage) {
-                throw SnowballRException.OutOfRangeException.Stage(request.stage, project.maxStage)
+                throw OutOfRangeException.Stage(request.stage, project.maxStage)
             }
 
             val projectPaper = projectPaperRepo.addPaperToProject(request, currentUser.id)

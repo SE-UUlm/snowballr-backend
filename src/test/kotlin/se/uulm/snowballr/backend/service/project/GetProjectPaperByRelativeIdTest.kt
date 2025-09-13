@@ -15,17 +15,19 @@ import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
-import snowballr.ProjectOuterClass
+import snowballr.ProjectOuterClass.Project
 import snowballr.UserOuterClass
 import java.util.UUID
 import java.util.stream.Stream
+import kotlin.random.Random
 import kotlin.reflect.KFunction
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class GetProjectPaperByRelativeIdTest : MainServiceTest() {
     private val projectId = UUID.randomUUID()
-    private val localPaperId = kotlin.random.Random.nextLong()
-    private fun getExampleRequest() = ProjectOuterClass.Project.Paper.Get
+    private val localPaperId = Random.nextLong()
+
+    private fun getExampleRequest() = Project.Paper.Get
         .newBuilder()
         .setProjectId(projectId.toString())
         .setRelativeProjectPaperId(localPaperId.toString())
@@ -71,12 +73,12 @@ class GetProjectPaperByRelativeIdTest : MainServiceTest() {
         if (failAt == projectPaperRepoMock::getProjectPaperByRelativeId) {
             coEvery {
                 projectPaperRepoMock.getProjectPaperByRelativeId(project.id, projectPaper.localPaperId)
-            } throws TestSpecificException()
+            } returns Result.failure(TestSpecificException())
             return
         }
         coEvery {
             projectPaperRepoMock.getProjectPaperByRelativeId(project.id, projectPaper.localPaperId)
-        } returns projectPaper
+        } returns Result.success(projectPaper)
 
         mockCurrentUser(currentUser)
 
@@ -180,7 +182,7 @@ class GetProjectPaperByRelativeIdTest : MainServiceTest() {
         coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
         coEvery {
             projectPaperRepoMock.getProjectPaperByRelativeId(project.id, projectPaper.localPaperId)
-        } returns projectPaper
+        } returns Result.success(projectPaper)
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
         assertThrows<UnauthorizedException> {

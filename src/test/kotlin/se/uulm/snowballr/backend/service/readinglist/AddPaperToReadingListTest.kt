@@ -40,13 +40,14 @@ class AddPaperToReadingListTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the user adds a non-existent paper to their reading list, then a NotFoundException is thrown`() = runTest {
-        val user = DataBuilder.createExampleUser()
-        val paperId = UUID.randomUUID()
+    fun `When the user adds a non-existent paper to their reading list, then a NotFoundException is thrown`() =
+        runTest {
+            val user = DataBuilder.createExampleUser()
+            val paperId = UUID.randomUUID()
 
-        mockCurrentUser(user)
-        coEvery { paperRepoMock.doesPaperExistById(paperId) } returns false
+            mockCurrentUser(user)
+            coEvery { paperRepoMock.doesPaperExistById(paperId) } returns false
 
-        assertThrows<NotFoundException> { mainService.addPaperToReadingList(paperId.toGrpcId()) }
-    }
+            assertThrows<NotFoundException> { mainService.addPaperToReadingList(paperId.toGrpcId()) }
+        }
 }
