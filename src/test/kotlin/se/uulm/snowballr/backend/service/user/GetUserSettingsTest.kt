@@ -1,7 +1,6 @@
 package se.uulm.snowballr.backend.service.user
 
 import io.mockk.coEvery
-import io.mockk.every
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -10,18 +9,16 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.service.MainServiceTest
 
 @ExperimentalCoroutinesApi
 @DelicateCoroutinesApi
 class GetUserSettingsTest : MainServiceTest() {
     @Test
-    fun `When retrieving current user settings fails, then an exception is thrown`() = runTest {
+    fun `When retrieving current user settings fails, then a TestSpecificException is thrown`() = runTest {
         val user = DataBuilder.createExampleUser()
 
-        every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
+        mockCurrentUser(user)
         coEvery { userRepoMock.getUserSettings(user.id) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.getUserSettings() }
@@ -33,8 +30,7 @@ class GetUserSettingsTest : MainServiceTest() {
             val user = DataBuilder.createExampleUser()
             val userSettings = DataBuilder.createExampleUserSettings()
 
-            every { GrpcContext.getUserIdFromContext() } returns user.id
-            coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
+            mockCurrentUser(user)
             coEvery { criterionRepoMock.getCriteriaByIds(emptyList()) } returns emptyList()
             coEvery { userRepoMock.getUserSettings(user.id) } returns Result.success(userSettings)
 
@@ -48,8 +44,7 @@ class GetUserSettingsTest : MainServiceTest() {
             val criterion = DataBuilder.createExampleProjectCriterion()
             val userSettings = DataBuilder.createExampleUserSettings(criteriaIds = listOf(criterion.id))
 
-            every { GrpcContext.getUserIdFromContext() } returns user.id
-            coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
+            mockCurrentUser(user)
             coEvery { criterionRepoMock.getCriteriaByIds(listOf(criterion.id)) } returns listOf(criterion)
             coEvery { userRepoMock.getUserSettings(user.id) } returns Result.success(userSettings)
 

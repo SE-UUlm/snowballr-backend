@@ -1,7 +1,6 @@
 package se.uulm.snowballr.backend.service.project
 
 import io.mockk.coEvery
-import io.mockk.every
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -12,9 +11,9 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.SnowballRException
+import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
+import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.ProjectOuterClass
 import snowballr.UserOuterClass
@@ -33,8 +32,6 @@ class GetProjectPaperByRelativeIdTest : MainServiceTest() {
         .build()
 
     fun failingFunctions(): Stream<Arguments?> = Stream.of(
-        Arguments.of(GrpcContext::getUserIdFromContext),
-        Arguments.of(userRepoMock::getUserById),
         Arguments.of(projectRepoMock::doesProjectExistById),
         Arguments.of(projectPaperRepoMock::getProjectPaperByRelativeId),
         Arguments.of(projectMemberRepoMock::getProjectMembers),
@@ -81,17 +78,7 @@ class GetProjectPaperByRelativeIdTest : MainServiceTest() {
             projectPaperRepoMock.getProjectPaperByRelativeId(project.id, projectPaper.localPaperId)
         } returns projectPaper
 
-        if (failAt == GrpcContext::getUserIdFromContext) {
-            every { GrpcContext.getUserIdFromContext() } throws TestSpecificException()
-            return
-        }
-        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-
-        if (failAt == userRepoMock::getUserById) {
-            coEvery { userRepoMock.getUserById(currentUser.id) } throws TestSpecificException()
-            return
-        }
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
+        mockCurrentUser(currentUser)
 
         if (failAt == projectMemberRepoMock::getProjectMembers) {
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } throws TestSpecificException()
@@ -147,7 +134,7 @@ class GetProjectPaperByRelativeIdTest : MainServiceTest() {
 
     @ParameterizedTest
     @MethodSource("failingFunctions")
-    fun `When a step fails, then an exception is thrown`(failAt: KFunction<*>) = runTest {
+    fun `When a step fails, then a TestSpecificException is thrown`(failAt: KFunction<*>) = runTest {
         mockHappyPathUntil(failAt, true)
         assertThrows<TestSpecificException> {
             mainService.getProjectPaperByRelativeId(getExampleRequest())
@@ -167,21 +154,19 @@ class GetProjectPaperByRelativeIdTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the project to retrieve the project paper from doesn't exist, then a not found exception is thrown`() =
+    fun `When the project to retrieve the project paper from doesn't exist, then a NotFoundException is thrown`() =
         runTest {
             coEvery {
                 projectRepoMock.doesProjectExistById(projectId)
-            } throws SnowballRException.NotFoundException(EntityType.PROJECT, projectId.toString())
+            } throws NotFoundException(EntityType.PROJECT, projectId.toString())
 
-            assertThrows<SnowballRException.NotFoundException> {
-                mainService.getProjectPaperByRelativeId(
-                    getExampleRequest(),
-                )
+            assertThrows<NotFoundException> {
+                mainService.getProjectPaperByRelativeId(getExampleRequest())
             }
         }
 
     @Test
-    fun `When a non project member retrieves the project paper, then an unauthorized exception is thrown`() = runTest {
+    fun `When a non project member retrieves the project paper, then an UnauthorizedException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject(projectId)
         val paper = DataBuilder.createExamplePaper()
@@ -191,18 +176,15 @@ class GetProjectPaperByRelativeIdTest : MainServiceTest() {
             localPaperId = localPaperId,
         )
 
-        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
+        mockCurrentUser(currentUser)
         coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
         coEvery {
             projectPaperRepoMock.getProjectPaperByRelativeId(project.id, projectPaper.localPaperId)
         } returns projectPaper
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
-        assertThrows<SnowballRException.UnauthorizedException> {
-            mainService.getProjectPaperByRelativeId(
-                getExampleRequest(),
-            )
+        assertThrows<UnauthorizedException> {
+            mainService.getProjectPaperByRelativeId(getExampleRequest())
         }
     }
 }

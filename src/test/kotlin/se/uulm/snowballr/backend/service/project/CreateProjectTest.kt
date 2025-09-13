@@ -2,7 +2,6 @@ package se.uulm.snowballr.backend.service.project
 
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.every
 import io.mockk.slot
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
@@ -10,7 +9,6 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.ProjectOuterClass
 import snowballr.UserOuterClass.UserRole
@@ -21,19 +19,11 @@ class CreateProjectTest : MainServiceTest() {
     private fun getExampleRequest() = ProjectOuterClass.Project.Create.getDefaultInstance()
 
     @Test
-    fun `When retrieving the current user ID fails, then an exception is thrown`() = runTest {
-        every { GrpcContext.getUserIdFromContext() } throws TestSpecificException()
-
-        assertThrows<TestSpecificException> { mainService.createProject(getExampleRequest()) }
-    }
-
-    @Test
-    fun `When an error occurs while a project is created, then an exception is thrown`() = runTest {
+    fun `When an error occurs while a project is created, then a TestSpecificException is thrown`() = runTest {
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val userSettings = DataBuilder.createExampleUserSettings()
 
-        every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
+        mockCurrentUser(user)
         coEvery { userRepoMock.getUserSettings(user.id) } returns Result.success(userSettings)
         coEvery { criterionRepoMock.getCriteriaByIds(emptyList()) } returns emptyList()
         coEvery { projectRepoMock.createProject(any(), user.id, userSettings) } throws TestSpecificException()
@@ -47,8 +37,7 @@ class CreateProjectTest : MainServiceTest() {
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val userSettings = DataBuilder.createExampleUserSettings()
 
-        every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
+        mockCurrentUser(user)
         coEvery { userRepoMock.getUserSettings(user.id) } returns Result.success(userSettings)
         coEvery { criterionRepoMock.getCriteriaByIds(emptyList()) } returns emptyList()
         coEvery { projectRepoMock.createProject(any(), any(), userSettings) } returns project
@@ -66,8 +55,7 @@ class CreateProjectTest : MainServiceTest() {
             val userSettings = DataBuilder.createExampleUserSettings(criteriaIds = listOf(criterion.id))
             val criteriaIdsSlot = slot<List<UUID>>()
 
-            every { GrpcContext.getUserIdFromContext() } returns user.id
-            coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
+            mockCurrentUser(user)
             coEvery { userRepoMock.getUserSettings(user.id) } returns Result.success(userSettings)
             coEvery { criterionRepoMock.getCriteriaByIds(capture(criteriaIdsSlot)) } returns listOf(criterion)
             coEvery { projectRepoMock.createProject(any(), user.id, userSettings) } returns project

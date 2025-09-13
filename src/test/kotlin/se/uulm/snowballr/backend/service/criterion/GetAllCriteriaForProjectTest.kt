@@ -1,14 +1,11 @@
 package se.uulm.snowballr.backend.service.criterion
 
 import io.mockk.coEvery
-import io.mockk.every
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
-import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
@@ -25,25 +22,12 @@ class GetAllCriteriaForProjectTest : MainServiceTest() {
         .build()
 
     @Test
-    fun `When an error occurs while user is retrieved, then a TestSpecificException is thrown`() = runTest {
-        val request = getExampleRequest()
-
-        val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-
-        every { GrpcContext.getUserIdFromContext() } returns adminUser.id
-        coEvery { userRepoMock.getUserById(adminUser.id) } returns Result.failure(TestSpecificException())
-
-        assertThrows<TestSpecificException> { mainService.getAllCriteriaForProject(request) }
-    }
-
-    @Test
     fun `When the project doesn't exist, then a NotFoundException is thrown`() = runTest {
         val request = getExampleRequest()
 
         val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
 
-        every { GrpcContext.getUserIdFromContext() } returns adminUser.id
-        coEvery { userRepoMock.getUserById(adminUser.id) } returns Result.success(adminUser)
+        mockCurrentUser(adminUser)
         coEvery { projectRepoMock.doesProjectExistById(projectId) } returns false
 
         assertThrows<NotFoundException> { mainService.getAllCriteriaForProject(request) }
@@ -60,8 +44,7 @@ class GetAllCriteriaForProjectTest : MainServiceTest() {
         )
         val project = DataBuilder.createExampleProject(id = projectId)
 
-        every { GrpcContext.getUserIdFromContext() } returns adminUser.id
-        coEvery { userRepoMock.getUserById(adminUser.id) } returns Result.success(adminUser)
+        mockCurrentUser(adminUser)
         coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
         coEvery { projectMemberRepoMock.getProjectMembers(any()) } returns emptyList()
         coEvery { criterionRepoMock.getAllProjectCriteria(project.id) } returns listOf(criterion)
@@ -82,8 +65,7 @@ class GetAllCriteriaForProjectTest : MainServiceTest() {
             val projectMember = DataBuilder.createExampleProjectMember(userId = user.id, projectId = projectId)
             val project = DataBuilder.createExampleProject(id = projectId)
 
-            every { GrpcContext.getUserIdFromContext() } returns user.id
-            coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
+            mockCurrentUser(user)
             coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
             coEvery { criterionRepoMock.getAllProjectCriteria(project.id) } returns listOf(criterion)
@@ -92,18 +74,17 @@ class GetAllCriteriaForProjectTest : MainServiceTest() {
         }
 
     @Test
-    fun `When the requesting user is a non project member and wants to retrieve all project criteria, then a UnauthorizedException#Single is thrown`() =
+    fun `When the requesting user is a non project member and wants to retrieve all project criteria, then an UnauthorizedException is thrown`() =
         runTest {
             val request = getExampleRequest()
 
             val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
             val project = DataBuilder.createExampleProject(id = projectId)
 
-            every { GrpcContext.getUserIdFromContext() } returns user.id
-            coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
+            mockCurrentUser(user)
             coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
-            assertThrows<UnauthorizedException.Single> { mainService.getAllCriteriaForProject(request) }
+            assertThrows<UnauthorizedException> { mainService.getAllCriteriaForProject(request) }
         }
 }

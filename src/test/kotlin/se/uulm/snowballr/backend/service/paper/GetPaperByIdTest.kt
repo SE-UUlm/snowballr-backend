@@ -37,7 +37,7 @@ class GetPaperByIdTest : MainServiceTest() {
     }
 
     @Test
-    fun `When a paper is retrieved, then no error is thrown`() = runTest {
+    fun `When a paper is retrieved, then no exception is thrown`() = runTest {
         val paper = DataBuilder.createExamplePaper(id = requestId)
         val author = DataBuilder.createExampleAuthor()
 

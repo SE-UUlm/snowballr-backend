@@ -1,10 +1,10 @@
 package se.uulm.snowballr.backend.service
 
-import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException
+import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.Paper
 import se.uulm.snowballr.backend.model.dto.Project
@@ -91,7 +91,7 @@ interface IProjectService {
     /**
      * Service implementation of [SnowballRService.getProjectPaperByRelativeId].
      */
-    suspend fun getProjectPaperByRelativeId(request: GrpcProject.Paper.Get): GrpcProject.Paper
+    suspend fun getProjectPaperByRelativeId(request: GrpcProjectPaper.Get): GrpcProjectPaper
 
     /**
      * Service implementation of [SnowballRService.getAllProjectPapersForProject].
@@ -194,7 +194,7 @@ class ProjectService(
     ): GrpcProjectPaper.List = withUser(userRepo) { currentUser ->
         val projectId = parseUUID(request.id, EntityType.PROJECT)
         if (!repo.doesProjectExistById(projectId)) {
-            throw SnowballRException.NotFoundException(EntityType.PROJECT, projectId.toString())
+            throw NotFoundException(EntityType.PROJECT, projectId.toString())
         }
 
         if (!isProjectMember(projectId, currentUser.id)) {
@@ -300,7 +300,7 @@ class ProjectService(
         val userSettings = userRepo.getUserSettings(currentUser.id).getOrThrow()
         val userDefaultCriteria = criterionRepo.getCriteriaByIds(userSettings.criteriaIds)
 
-        val project = repo.createProject(request, GrpcContext.getUserIdFromContext(), userSettings)
+        val project = repo.createProject(request, currentUser.id, userSettings)
 
         for (criterion in userDefaultCriteria) {
             val criterionRequest = CriterionOuterClass.Criterion.Create
@@ -324,29 +324,26 @@ class ProjectService(
         repo.getAllProjects().toGrpcProjects()
     }
 
-    override suspend fun getAllProjectsForUser(request: Base.Id): GrpcProject.List {
+    private suspend fun getAllProjectsForUserAndStatus(
+        request: Base.Id,
+        statuses: Set<ProjectStatus>,
+    ): GrpcProject.List = withUser(userRepo) { currentUser ->
         val requestedUserId = parseUUID(request.id, EntityType.USER)
-        authorizeAccessTo(requestedUserId, userRepo, AccessType.READ)
+        authorizeAccessTo(currentUser, requestedUserId, userRepo, AccessType.READ)
 
-        val userProjects = repo.getUserProjects(requestedUserId)
-        return userProjects.toGrpcProjects()
+        repo.getUserProjects(requestedUserId, statuses).toGrpcProjects()
     }
 
-    override suspend fun getAllArchivedProjectsForUser(request: Base.Id): GrpcProject.List {
-        val requestedUserId = parseUUID(request.id, EntityType.USER)
-        authorizeAccessTo(requestedUserId, userRepo, AccessType.READ)
+    override suspend fun getAllProjectsForUser(request: Base.Id): GrpcProject.List = getAllProjectsForUserAndStatus(
+        request,
+        setOf(ProjectStatus.PROJECT_STATUS_ACTIVE, ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED),
+    )
 
-        val archivedUserProjects = repo.getUserProjects(requestedUserId, setOf(ProjectStatus.PROJECT_STATUS_ARCHIVED))
-        return archivedUserProjects.toGrpcProjects()
-    }
+    override suspend fun getAllArchivedProjectsForUser(request: Base.Id): GrpcProject.List =
+        getAllProjectsForUserAndStatus(request, setOf(ProjectStatus.PROJECT_STATUS_ARCHIVED))
 
-    override suspend fun getAllDeletedProjectsForUser(request: Base.Id): GrpcProject.List {
-        val requestedUserId = parseUUID(request.id, EntityType.USER)
-        authorizeAccessTo(requestedUserId, userRepo, AccessType.READ)
-
-        val deletedUserProjects = repo.getUserProjects(requestedUserId, setOf(ProjectStatus.PROJECT_STATUS_DELETED))
-        return deletedUserProjects.toGrpcProjects()
-    }
+    override suspend fun getAllDeletedProjectsForUser(request: Base.Id): GrpcProject.List =
+        getAllProjectsForUserAndStatus(request, setOf(ProjectStatus.PROJECT_STATUS_DELETED))
 
     override suspend fun updateProject(request: GrpcProject.Update): GrpcProject = withUser(userRepo) { currentUser ->
         val projectId = parseUUID(request.project.id, EntityType.PROJECT)
@@ -398,7 +395,7 @@ class ProjectService(
             projectMembersWithUsers.toGrpcProjectMembers()
         }
 
-    override suspend fun getProjectPaperById(request: Base.Id): GrpcProject.Paper {
+    override suspend fun getProjectPaperById(request: Base.Id): GrpcProjectPaper {
         val projectPaperId = parseUUID(request.id, EntityType.PROJECT_PAPER)
         val projectPaper = projectPaperRepo.getProjectPaperById(projectPaperId).getOrThrow()
         return loadAndAuthorizeProjectPaper(projectPaper, projectPaper.projectId)
@@ -407,7 +404,7 @@ class ProjectService(
     override suspend fun getProjectPaperByRelativeId(request: GrpcProjectPaper.Get): GrpcProjectPaper {
         val projectId = parseUUID(request.projectId, EntityType.PROJECT)
         if (!repo.doesProjectExistById(projectId)) {
-            throw SnowballRException.NotFoundException(EntityType.PROJECT, projectId.toString())
+            throw NotFoundException(EntityType.PROJECT, projectId.toString())
         }
 
         val relativeId = request.relativeProjectPaperId.toLong()

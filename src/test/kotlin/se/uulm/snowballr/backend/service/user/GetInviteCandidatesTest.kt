@@ -1,16 +1,12 @@
 package se.uulm.snowballr.backend.service.user
 
 import io.mockk.coEvery
-import io.mockk.every
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
-import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
-import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.ProjectOuterClass.Project.InviteCandidatesRequest
 import java.util.UUID
@@ -31,22 +27,12 @@ class GetInviteCandidatesTest : MainServiceTest() {
     }
 
     @Test
-    fun `When retrieving the current user fails, then an exception is thrown`() = runTest {
-        val userId = UUID.randomUUID()
-        every { GrpcContext.getUserIdFromContext() } returns userId
-        coEvery { userRepoMock.getUserById(userId) } throws TestSpecificException()
-
-        assertThrows<TestSpecificException> { mainService.getInviteCandidates(validInviteCandidatesRequest) }
-    }
-
-    @Test
     fun `When parsing the project id fails, then only a warning is logged`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
         val requestWithInvalidProjectId = InviteCandidatesRequest.newBuilder().setQuery(
             "john",
         ).setProjectId("invalid-uuid").build()
-        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
+        mockCurrentUser(currentUser)
         coEvery { userRepoMock.getUsersMatchingSearchQuery(any(), any()) } returns emptyList()
 
         assertDoesNotThrow { mainService.getInviteCandidates(requestWithInvalidProjectId) }
@@ -59,8 +45,7 @@ class GetInviteCandidatesTest : MainServiceTest() {
         val requestWithNotExistingProject = InviteCandidatesRequest.newBuilder().setQuery(
             "john",
         ).setProjectId(requestedProjectId.toString()).build()
-        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
+        mockCurrentUser(currentUser)
         coEvery { projectMemberRepoMock.getProjectMembers(requestedProjectId) } returns emptyList()
         coEvery { userRepoMock.getUsersMatchingSearchQuery(any(), any()) } returns emptyList()
 
@@ -70,8 +55,7 @@ class GetInviteCandidatesTest : MainServiceTest() {
     @Test
     fun `When retrieving the users matching the search query fails, then an empty list is returned`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
-        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
+        mockCurrentUser(currentUser)
         coEvery { projectMemberRepoMock.getProjectMembers(testProjectId) } returns emptyList()
         coEvery { userRepoMock.getUsersMatchingSearchQuery(any(), any()) } returns emptyList()
 
@@ -84,8 +68,7 @@ class GetInviteCandidatesTest : MainServiceTest() {
             val currentUser = DataBuilder.createExampleUser(email = "current.user@example.com")
             val users = listOf(currentUser, DataBuilder.createExampleUser(email = "another.user@example.com"))
             val excludedUsers = setOf(currentUser.id)
-            every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-            coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
+            mockCurrentUser(currentUser)
             coEvery { projectMemberRepoMock.getProjectMembers(testProjectId) } returns emptyList()
             coEvery {
                 userRepoMock.getUsersMatchingSearchQuery(any(), setOf(currentUser.id))
@@ -103,8 +86,7 @@ class GetInviteCandidatesTest : MainServiceTest() {
             val projectMember = DataBuilder.createExampleUser(email = "project.member@example.com")
             val users = listOf(currentUser, projectMember)
             val excludedUsers = setOf(currentUser.id, projectMember.id)
-            every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-            coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
+            mockCurrentUser(currentUser)
             coEvery {
                 projectMemberRepoMock.getProjectMembers(testProjectId)
             } returns listOf(DataBuilder.createExampleProjectMember(userId = projectMember.id))

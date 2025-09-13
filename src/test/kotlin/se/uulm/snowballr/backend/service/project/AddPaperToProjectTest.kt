@@ -1,7 +1,6 @@
 package se.uulm.snowballr.backend.service.project
 
 import io.mockk.coEvery
-import io.mockk.every
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -12,8 +11,10 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.model.SnowballRException
+import se.uulm.snowballr.backend.model.SnowballRException.DuplicateEntityException
+import se.uulm.snowballr.backend.model.SnowballRException.OutOfRangeException
+import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.ProjectOuterClass
 import snowballr.UserOuterClass
@@ -32,8 +33,6 @@ class AddPaperToProjectTest : MainServiceTest() {
         .build()
 
     fun failingFunctions(): Stream<Arguments?> = Stream.of(
-        Arguments.of(GrpcContext::getUserIdFromContext),
-        Arguments.of(userRepoMock::getUserById),
         Arguments.of(projectMemberRepoMock::getProjectMembers),
         Arguments.of(projectRepoMock::getProjectById),
         Arguments.of(projectPaperRepoMock::doesProjectPaperExist),
@@ -64,17 +63,7 @@ class AddPaperToProjectTest : MainServiceTest() {
         val author = DataBuilder.createExampleAuthor()
         val review = DataBuilder.createExampleReview()
 
-        if (failAt == GrpcContext::getUserIdFromContext) {
-            every { GrpcContext.getUserIdFromContext() } throws TestSpecificException()
-            return
-        }
-        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-
-        if (failAt == userRepoMock::getUserById) {
-            coEvery { userRepoMock.getUserById(currentUser.id) } throws TestSpecificException()
-            return
-        }
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
+        mockCurrentUser(currentUser)
 
         if (failAt == projectMemberRepoMock::getProjectMembers) {
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } throws TestSpecificException()
@@ -152,7 +141,7 @@ class AddPaperToProjectTest : MainServiceTest() {
 
     @ParameterizedTest
     @MethodSource("failingFunctions")
-    fun `When a step fails, then an exception is thrown`(failAt: KFunction<*>) = runTest {
+    fun `When a step fails, then a TestSpecificException is thrown`(failAt: KFunction<*>) = runTest {
         mockHappyPathUntil(failAt, true)
         assertThrows<TestSpecificException> {
             mainService.addPaperToProject(getExampleRequest())
@@ -172,38 +161,36 @@ class AddPaperToProjectTest : MainServiceTest() {
     }
 
     @Test
-    fun `When a non project member adds a paper to a project, then an unauthorized exception is thrown`() = runTest {
+    fun `When a non project member adds a paper to a project, then an UnauthorizedException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject(id = projectId)
 
-        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
+        mockCurrentUser(currentUser)
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
-        assertThrows<SnowballRException.UnauthorizedException> { mainService.addPaperToProject(getExampleRequest()) }
+        assertThrows<UnauthorizedException> { mainService.addPaperToProject(getExampleRequest()) }
     }
 
     @Test
-    fun `When a project paper already exists, then a duplicate entity exception is thrown`() = runTest {
+    fun `When a project paper already exists, then a DuplicateEntityException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject(id = projectId)
         val paper = DataBuilder.createExamplePaper(id = paperId)
         val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
 
-        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
+        mockCurrentUser(currentUser)
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { paperRepoMock.getPaperById(paper.id) } returns Result.success(paper)
         coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, paper.id) } returns true
 
-        assertThrows<SnowballRException.DuplicateEntityException> {
+        assertThrows<DuplicateEntityException> {
             mainService.addPaperToProject(getExampleRequest())
         }
     }
 
     @Test
-    fun `When the requested stage is greater than the projects max stage, then a out of range exception is thrown`() =
+    fun `When the requested stage is greater than the projects max stage, then an OutOfRangeException is thrown`() =
         runTest {
             val currentUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_DEFAULT)
             val project = DataBuilder.createExampleProject(id = projectId)
@@ -216,13 +203,12 @@ class AddPaperToProjectTest : MainServiceTest() {
                 .setStage(1)
                 .build()
 
-            every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-            coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
+            mockCurrentUser(currentUser)
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
             coEvery { paperRepoMock.getPaperById(paper.id) } returns Result.success(paper)
             coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, paper.id) } returns false
 
-            assertThrows<SnowballRException.OutOfRangeException> { mainService.addPaperToProject(request) }
+            assertThrows<OutOfRangeException> { mainService.addPaperToProject(request) }
         }
 }

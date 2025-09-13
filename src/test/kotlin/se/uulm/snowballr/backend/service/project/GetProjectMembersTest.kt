@@ -1,15 +1,14 @@
 package se.uulm.snowballr.backend.service.project
 
 import io.mockk.coEvery
-import io.mockk.every
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
-import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException
+import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.ProjectMemberWithUser
 import se.uulm.snowballr.backend.service.MainServiceTest
@@ -38,8 +37,7 @@ class GetProjectMembersTest : MainServiceTest() {
         )
         val projectMemberWithUser = ProjectMemberWithUser(projectMember, projectMemberUser)
 
-        every { GrpcContext.getUserIdFromContext() } returns adminUser.id
-        coEvery { userRepoMock.getUserById(adminUser.id) } returns Result.success(adminUser)
+        mockCurrentUser(adminUser)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getProjectMembersWithUsers(project.id) } returns
             listOf(projectMemberWithUser)
@@ -56,8 +54,7 @@ class GetProjectMembersTest : MainServiceTest() {
         val projectMember = DataBuilder.createExampleProjectMember(userId = user.id, projectId = project.id)
         val projectMemberWithUser = ProjectMemberWithUser(projectMember, user)
 
-        every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
+        mockCurrentUser(user)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getProjectMembersWithUsers(project.id) } returns
             listOf(projectMemberWithUser)
@@ -66,14 +63,13 @@ class GetProjectMembersTest : MainServiceTest() {
     }
 
     @Test
-    fun `When a non project member requests the project members, then an unauthorized exception is thrown`() = runTest {
+    fun `When a non project member requests the project members, then an UnauthorizedException is thrown`() = runTest {
         val request = getExampleRequest()
 
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject(id = projectId)
 
-        every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
+        mockCurrentUser(user)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getProjectMembersWithUsers(project.id) } returns emptyList()
 
@@ -81,18 +77,14 @@ class GetProjectMembersTest : MainServiceTest() {
     }
 
     @Test
-    fun `When project members are request from a non existing project, then a not found exception is thrown`() =
-        runTest {
-            val request = getExampleRequest()
+    fun `When project members are request from a non existing project, then a NotFoundException is thrown`() = runTest {
+        val request = getExampleRequest()
 
-            val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
+        val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
 
-            every { GrpcContext.getUserIdFromContext() } returns user.id
-            coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
-            coEvery {
-                projectRepoMock.getProjectById(projectId)
-            } throws SnowballRException.NotFoundException(EntityType.PROJECT, request.id)
+        mockCurrentUser(user)
+        coEvery { projectRepoMock.getProjectById(projectId) } throws NotFoundException(EntityType.PROJECT, request.id)
 
-            assertThrows<SnowballRException.NotFoundException> { mainService.getProjectMembers(request) }
-        }
+        assertThrows<NotFoundException> { mainService.getProjectMembers(request) }
+    }
 }

@@ -1,7 +1,6 @@
 package se.uulm.snowballr.backend.service.review
 
 import io.mockk.coEvery
-import io.mockk.every
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -12,7 +11,6 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.model.SnowballRException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.Base
@@ -27,8 +25,6 @@ class GetReviewByIdTest : MainServiceTest() {
     private fun getExampleRequest() = Base.Id.newBuilder().setId(requestId.toString()).build()
 
     fun failingFunctions(): Stream<Arguments?> = Stream.of(
-        Arguments.of(GrpcContext::getUserIdFromContext),
-        Arguments.of(userRepoMock::getUserById),
         Arguments.of(reviewRepoMock::getReviewById),
         Arguments.of(projectPaperRepoMock::getProjectPaperById),
         Arguments.of(projectRepoMock::getProjectById),
@@ -51,17 +47,7 @@ class GetReviewByIdTest : MainServiceTest() {
         val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
         val selectedCriteriaIds = listOf<UUID>(UUID.randomUUID())
 
-        if (failAt == GrpcContext::getUserIdFromContext) {
-            every { GrpcContext.getUserIdFromContext() } throws TestSpecificException()
-            return
-        }
-        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-
-        if (failAt == userRepoMock::getUserById) {
-            coEvery { userRepoMock.getUserById(currentUser.id) } throws TestSpecificException()
-            return
-        }
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
+        mockCurrentUser(currentUser)
 
         if (failAt == reviewRepoMock::getReviewById) {
             coEvery { reviewRepoMock.getReviewById(review.id) } throws TestSpecificException()
@@ -105,7 +91,7 @@ class GetReviewByIdTest : MainServiceTest() {
 
     @ParameterizedTest
     @MethodSource("failingFunctions")
-    fun `When a step fails, then an exception is thrown`(failAt: KFunction<*>) = runTest {
+    fun `When a step fails, then a TestSpecificException is thrown`(failAt: KFunction<*>) = runTest {
         mockHappyPathUntil(failAt, true)
         assertThrows<TestSpecificException> {
             mainService.getReviewById(getExampleRequest())
@@ -125,14 +111,13 @@ class GetReviewByIdTest : MainServiceTest() {
     }
 
     @Test
-    fun `When a non project member retrieves the review, then an unauthorized exception is thrown`() = runTest {
+    fun `When a non project member retrieves the review, then an UnauthorizedException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_DEFAULT)
         val review = DataBuilder.createExampleReview(id = requestId, userId = currentUser.id)
         val project = DataBuilder.createExampleProject()
         val projectPaper = DataBuilder.createExampleProjectPaper(id = review.projectPaperId, projectId = project.id)
 
-        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
+        mockCurrentUser(currentUser)
         coEvery { reviewRepoMock.getReviewById(review.id) } returns Result.success(review)
         coEvery { projectPaperRepoMock.getProjectPaperById(review.projectPaperId) } returns Result.success(projectPaper)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
