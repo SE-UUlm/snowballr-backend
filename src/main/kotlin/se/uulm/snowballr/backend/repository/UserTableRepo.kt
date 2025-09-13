@@ -17,12 +17,12 @@ import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.toUser
 import se.uulm.snowballr.backend.table.toUserSettings
 import snowballr.Authentication
-import snowballr.UserOuterClass
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
 import java.sql.ResultSet
 import java.time.OffsetDateTime
 import java.util.UUID
+import snowballr.UserOuterClass.User as GrpcUser
 
 /**
  * Defines an interface for repository operations related to the [UserTable].
@@ -93,11 +93,11 @@ interface IUserTableRepo {
      * @param request The update request containing the new user details, such as the new first name.
      * @return The updated [User] object reflecting the changes from the [request].
      */
-    suspend fun updateUser(request: UserOuterClass.User.Update): User
+    suspend fun updateUser(request: GrpcUser.Update): User
 
     /**
      * Performs a soft delete meaning the user with the given [id] is not removed from the database, but only the
-     * status is set to [UserOuterClass.UserStatus.USER_STATUS_DELETED].
+     * status is set to [UserStatus.USER_STATUS_DELETED].
      */
     suspend fun softDeleteUser(id: UUID)
 
@@ -234,7 +234,7 @@ class UserTableRepo(
         }
     }
 
-    override suspend fun updateUser(request: UserOuterClass.User.Update): User = db.query {
+    override suspend fun updateUser(request: GrpcUser.Update): User = db.query {
         val userId = parseUUID(request.user.id, EntityType.USER)
         val fieldMask = FieldMaskUtil.normalize(request.mask)
 

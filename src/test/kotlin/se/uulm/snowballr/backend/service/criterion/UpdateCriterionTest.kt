@@ -11,28 +11,29 @@ import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionExce
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.toGrpcCriterion
 import se.uulm.snowballr.backend.service.MainServiceTest
-import snowballr.CriterionOuterClass
-import snowballr.ProjectOuterClass
+import snowballr.CriterionOuterClass.CriterionCategory
+import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.UserOuterClass.UserRole
 import java.util.UUID
+import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
 
 class UpdateCriterionTest : MainServiceTest() {
     private val criterionId = UUID.randomUUID()
 
-    private fun getExampleRequest(): CriterionOuterClass.Criterion.Update {
+    private fun getExampleRequest(): GrpcCriterion.Update {
         val updatedCriterion = DataBuilder.createExampleProjectCriterion(
             id = criterionId,
             tag = "Updated Tag",
             name = "Updated Criterion",
             description = "Updated Description",
-            category = CriterionOuterClass.CriterionCategory.CRITERION_CATEGORY_INCLUSION,
+            category = CriterionCategory.CRITERION_CATEGORY_INCLUSION,
         )
 
         val updateFieldMask = FieldMaskUtil.fromStringList(
             listOf("tag", "name", "description", "category"),
         )
 
-        return CriterionOuterClass.Criterion.Update.newBuilder()
+        return GrpcCriterion.Update.newBuilder()
             .setCriterion(updatedCriterion.toGrpcCriterion())
             .setMask(updateFieldMask)
             .build()
@@ -42,7 +43,7 @@ class UpdateCriterionTest : MainServiceTest() {
     fun `When a server admin updates a project criterion, then no exception is thrown`() = runTest {
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val project = DataBuilder.createExampleProject(
-            status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE,
+            status = ProjectStatus.PROJECT_STATUS_ACTIVE,
         )
         val criterion = DataBuilder.createExampleProjectCriterion(
             id = criterionId,
@@ -65,7 +66,7 @@ class UpdateCriterionTest : MainServiceTest() {
     fun `When a project admin updates a project criterion, then no exception is thrown`() = runTest {
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject(
-            status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE,
+            status = ProjectStatus.PROJECT_STATUS_ACTIVE,
         )
         val projectMember = DataBuilder.createExampleProjectMember(userId = user.id, projectId = project.id)
         val criterion = DataBuilder.createExampleProjectCriterion(
@@ -90,7 +91,7 @@ class UpdateCriterionTest : MainServiceTest() {
         runTest {
             val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
             val project = DataBuilder.createExampleProject(
-                status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ARCHIVED,
+                status = ProjectStatus.PROJECT_STATUS_ARCHIVED,
             )
             val projectMember = DataBuilder.createExampleProjectMember(userId = user.id, projectId = project.id)
             val criterion = DataBuilder.createExampleProjectCriterion(
@@ -113,7 +114,7 @@ class UpdateCriterionTest : MainServiceTest() {
     fun `When a project member updates a project criterion, then an UnauthorizedException is thrown`() = runTest {
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject(
-            status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE,
+            status = ProjectStatus.PROJECT_STATUS_ACTIVE,
         )
         val criterion = DataBuilder.createExampleProjectCriterion(
             id = criterionId,

@@ -15,17 +15,17 @@ import se.uulm.snowballr.backend.model.SnowballRException.DuplicateEntityExcepti
 import se.uulm.snowballr.backend.model.SnowballRException.OutOfRangeException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
-import snowballr.ProjectOuterClass
-import snowballr.UserOuterClass
+import snowballr.UserOuterClass.UserRole
 import java.util.UUID
 import java.util.stream.Stream
 import kotlin.reflect.KFunction
+import snowballr.ProjectOuterClass.Project as GrpcProject
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class AddPaperToProjectTest : MainServiceTest() {
     private val projectId = UUID.randomUUID()
     private val paperId = UUID.randomUUID()
-    private fun getExampleRequest() = ProjectOuterClass.Project.Paper.Add.newBuilder()
+    private fun getExampleRequest() = GrpcProject.Paper.Add.newBuilder()
         .setProjectId(projectId.toString())
         .setPaperId(paperId.toString())
         .setStage(0)
@@ -40,9 +40,9 @@ class AddPaperToProjectTest : MainServiceTest() {
     private fun mockHappyPathUntil(failAt: KFunction<*>?, isUserAdmin: Boolean) {
         val currentUser = DataBuilder.createExampleUser(
             role = if (isUserAdmin) {
-                UserOuterClass.UserRole.USER_ROLE_ADMIN
+                UserRole.USER_ROLE_ADMIN
             } else {
-                UserOuterClass.UserRole.USER_ROLE_DEFAULT
+                UserRole.USER_ROLE_DEFAULT
             },
         )
         val project = DataBuilder.createExampleProject(id = projectId)
@@ -112,7 +112,7 @@ class AddPaperToProjectTest : MainServiceTest() {
 
     @Test
     fun `When a non project member adds a paper to a project, then an UnauthorizedException is thrown`() = runTest {
-        val currentUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_DEFAULT)
+        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject(id = projectId)
 
         mockCurrentUser(currentUser)
@@ -123,7 +123,7 @@ class AddPaperToProjectTest : MainServiceTest() {
 
     @Test
     fun `When a project paper already exists, then a DuplicateEntityException is thrown`() = runTest {
-        val currentUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_DEFAULT)
+        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject(id = projectId)
         val paper = DataBuilder.createExamplePaper(id = paperId)
         val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
@@ -142,12 +142,12 @@ class AddPaperToProjectTest : MainServiceTest() {
     @Test
     fun `When the requested stage is greater than the projects max stage, then an OutOfRangeException is thrown`() =
         runTest {
-            val currentUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_DEFAULT)
+            val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
             val project = DataBuilder.createExampleProject(id = projectId)
             val paper = DataBuilder.createExamplePaper(id = paperId)
             val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
 
-            val request = ProjectOuterClass.Project.Paper.Add.newBuilder()
+            val request = GrpcProject.Paper.Add.newBuilder()
                 .setProjectId(projectId.toString())
                 .setPaperId(paperId.toString())
                 .setStage(1)

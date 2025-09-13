@@ -14,7 +14,7 @@ import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.Base
-import snowballr.UserOuterClass
+import snowballr.UserOuterClass.UserRole
 import java.util.UUID
 import java.util.stream.Stream
 import kotlin.reflect.KFunction
@@ -34,9 +34,9 @@ class GetAllReviewsForProjectPaperTest : MainServiceTest() {
     private fun mockHappyPathUntil(failAt: KFunction<*>?, isUserAdmin: Boolean) {
         val currentUser = DataBuilder.createExampleUser(
             role = if (isUserAdmin) {
-                UserOuterClass.UserRole.USER_ROLE_ADMIN
+                UserRole.USER_ROLE_ADMIN
             } else {
-                UserOuterClass.UserRole.USER_ROLE_DEFAULT
+                UserRole.USER_ROLE_DEFAULT
             },
         )
         val project = DataBuilder.createExampleProject()
@@ -100,7 +100,7 @@ class GetAllReviewsForProjectPaperTest : MainServiceTest() {
     @Test
     fun `When a non project member retrieves all reviews for a project paper, then an UnauthorizedException is thrown`() =
         runTest {
-            val currentUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_DEFAULT)
+            val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
             val project = DataBuilder.createExampleProject()
             val projectPaper = DataBuilder.createExampleProjectPaper(id = requestId, projectId = project.id)
 

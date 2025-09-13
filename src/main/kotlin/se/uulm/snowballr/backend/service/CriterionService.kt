@@ -4,6 +4,7 @@ import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException
+import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.Criterion
@@ -18,9 +19,10 @@ import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import snowballr.Base
-import snowballr.ProjectOuterClass
+import snowballr.ProjectOuterClass.ProjectStatus
 import java.util.UUID
 import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
+import snowballr.ProjectOuterClass.Project as GrpcProject
 
 interface ICriterionService {
     /**
@@ -76,7 +78,7 @@ class CriterionService(
      * or when attempting to access a criterion of an inactive project.
      *
      * @param criterion The [ProjectCriterion] to check the permission for or null, if it does not already exist.
-     * @param projectId The projectId of the [ProjectOuterClass.Project] to check the permission for.
+     * @param projectId The projectId of the [GrpcProject] to check the permission for.
      * @param currentUser The user whose permissions are being validated.
      * @param accessType The type of access being requested (e.g., READ, UPDATE).
      *
@@ -109,7 +111,7 @@ class CriterionService(
             }
         }
         if ((accessType == AccessType.UPDATE || accessType == AccessType.CREATE) &&
-            project.status != ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE
+            project.status != ProjectStatus.PROJECT_STATUS_ACTIVE
         ) {
             verifyServerAdminRole(currentUser) {
                 val message = if (accessType == AccessType.CREATE) {
@@ -117,7 +119,7 @@ class CriterionService(
                 } else {
                     "Cannot update criterion with the ID: ${criterion?.id ?: "<unknown>"}"
                 }
-                throw SnowballRException.FailedPreconditionException("The project is not active. $message")
+                throw FailedPreconditionException("The project is not active. $message")
             }
         }
     }

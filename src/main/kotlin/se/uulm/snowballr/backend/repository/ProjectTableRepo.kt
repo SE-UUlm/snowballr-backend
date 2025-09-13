@@ -15,10 +15,10 @@ import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.table.toProject
-import snowballr.ProjectOuterClass
 import snowballr.ProjectOuterClass.ProjectStatus
 import java.time.OffsetDateTime
 import java.util.UUID
+import snowballr.ProjectOuterClass.Project as GrpcProject
 
 /**
  * Defines an interface for repository operations related to the [ProjectTable].
@@ -44,14 +44,11 @@ interface IProjectTableRepo {
      *
      * @param request The project creation request containing project details
      * @param userId The ID of the user creating the project.
-     * @param userSettings The user's current settings, such as default criteria IDs, similarity threshold, and other relevant preferences.
+     * @param userSettings The user's current settings, such as default criteria IDs, similarity threshold, and other
+     * relevant preferences.
      * @return The created [Project] object representing the newly created project.
      */
-    suspend fun createProject(
-        request: ProjectOuterClass.Project.Create,
-        userId: UUID,
-        userSettings: UserSettings,
-    ): Project
+    suspend fun createProject(request: GrpcProject.Create, userId: UUID, userSettings: UserSettings): Project
 
     /**
      * Returns all active projects stored in the database.
@@ -96,7 +93,7 @@ interface IProjectTableRepo {
      *  status.
      * @return The updated [Project] object reflecting the changes from the [request].
      */
-    suspend fun updateProject(request: ProjectOuterClass.Project.Update, projectStatus: ProjectStatus): Project
+    suspend fun updateProject(request: GrpcProject.Update, projectStatus: ProjectStatus): Project
 }
 
 /**
@@ -121,24 +118,21 @@ class ProjectTableRepo(
         ProjectTable.doesEntityExistById(id)
     }
 
-    override suspend fun createProject(
-        request: ProjectOuterClass.Project.Create,
-        userId: UUID,
-        userSettings: UserSettings,
-    ): Project = db.query {
-        ProjectTable.insertAndGet(ResultRow::toProject, EntityType.PROJECT) {
-            it[name] = request.name
-            it[status] = ProjectStatus.PROJECT_STATUS_ACTIVE
-            it[currentStage] = 0
-            it[maxStage] = 0
-            it[similarityThreshold] = userSettings.similarityThreshold
-            it[snowballingType] = userSettings.snowballingType
-            it[reviewMaybeAllowed] = userSettings.reviewMaybeAllowed
-            it[reviewDecisionMatrixBinary] = userSettings.decisionMatrix.toByteArray()
-            it[fetchers] = emptyMap()
-            it[createdBy] = userId
+    override suspend fun createProject(request: GrpcProject.Create, userId: UUID, userSettings: UserSettings): Project =
+        db.query {
+            ProjectTable.insertAndGet(ResultRow::toProject, EntityType.PROJECT) {
+                it[name] = request.name
+                it[status] = ProjectStatus.PROJECT_STATUS_ACTIVE
+                it[currentStage] = 0
+                it[maxStage] = 0
+                it[similarityThreshold] = userSettings.similarityThreshold
+                it[snowballingType] = userSettings.snowballingType
+                it[reviewMaybeAllowed] = userSettings.reviewMaybeAllowed
+                it[reviewDecisionMatrixBinary] = userSettings.decisionMatrix.toByteArray()
+                it[fetchers] = emptyMap()
+                it[createdBy] = userId
+            }
         }
-    }
 
     override suspend fun getAllProjects(): List<Project> = db.query {
         ProjectTable.getEntities(ResultRow::toProject) {
@@ -165,10 +159,7 @@ class ProjectTableRepo(
             .map { it.toProject() }
     }
 
-    override suspend fun updateProject(
-        request: ProjectOuterClass.Project.Update,
-        projectStatus: ProjectStatus,
-    ): Project = db.query {
+    override suspend fun updateProject(request: GrpcProject.Update, projectStatus: ProjectStatus): Project = db.query {
         val projectId = parseUUID(request.project.id, EntityType.PROJECT)
         val fieldMaskPaths = FieldMaskUtil.normalize(request.mask).pathsList.toSet()
 
@@ -186,22 +177,19 @@ class ProjectTableRepo(
         }
     }
 
-    private fun UpdateStatement.applyProjectNameUpdate(project: ProjectOuterClass.Project, paths: Set<String>) {
+    private fun UpdateStatement.applyProjectNameUpdate(project: GrpcProject, paths: Set<String>) {
         if ("project.name" in paths) {
             this[ProjectTable.name] = project.name
         }
     }
 
-    private fun UpdateStatement.applyProjectStatusUpdate(project: ProjectOuterClass.Project, paths: Set<String>) {
+    private fun UpdateStatement.applyProjectStatusUpdate(project: GrpcProject, paths: Set<String>) {
         if ("project.status" in paths) {
             this[ProjectTable.status] = project.status
         }
     }
 
-    private fun UpdateStatement.applySlrProjectUpdates(
-        settings: ProjectOuterClass.Project.Settings,
-        paths: Set<String>,
-    ) {
+    private fun UpdateStatement.applySlrProjectUpdates(settings: GrpcProject.Settings, paths: Set<String>) {
         if ("project.settings.similarity_threshold" in paths) {
             this[ProjectTable.similarityThreshold] = settings.similarityThreshold
         }

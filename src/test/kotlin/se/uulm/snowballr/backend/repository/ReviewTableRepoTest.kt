@@ -15,7 +15,7 @@ import se.uulm.snowballr.backend.table.ReviewTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.utils.assertResultFailure
 import se.uulm.snowballr.backend.utils.assertResultSuccess
-import snowballr.ReviewOuterClass
+import snowballr.ReviewOuterClass.ReviewDecision
 import java.util.UUID
 
 class ReviewTableRepoTest : RepositoryTest(arrayOf(ReviewTable, ProjectTable, ProjectPaperTable, PaperTable), true) {
@@ -36,7 +36,7 @@ class ReviewTableRepoTest : RepositoryTest(arrayOf(ReviewTable, ProjectTable, Pr
             assertThat(review.id).isEqualTo(reviewId)
             assertThat(review.projectPaperId).isEqualTo(projectPaperId)
             assertThat(review.userId).isEqualTo(testUserId)
-            assertThat(review.decision).isEqualTo(ReviewOuterClass.ReviewDecision.REVIEW_DECISION_ACCEPTED)
+            assertThat(review.decision).isEqualTo(ReviewDecision.REVIEW_DECISION_ACCEPTED)
         }
 
         @Test

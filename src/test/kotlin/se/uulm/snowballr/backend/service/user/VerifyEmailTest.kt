@@ -11,8 +11,9 @@ import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.SnowballRException.VerificationTokenNotFoundException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.Authentication
-import snowballr.UserOuterClass
+import snowballr.UserOuterClass.UserStatus
 import java.time.OffsetDateTime
+import snowballr.UserOuterClass.User as GrpcUser
 
 class VerifyEmailTest : MainServiceTest() {
     @Test
@@ -49,10 +50,10 @@ class VerifyEmailTest : MainServiceTest() {
 
     @Test
     fun `When a valid token is provided and all operations succeed, then no exception is thrown`() = runTest {
-        val user = DataBuilder.createExampleUser(status = UserOuterClass.UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED)
+        val user = DataBuilder.createExampleUser(status = UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED)
         val token = DataBuilder.createExampleVerificationToken(userId = user.id)
         val request = Authentication.VerifyEmailRequest.newBuilder().setToken(token.token).build()
-        val userUpdateSlot = slot<UserOuterClass.User.Update>()
+        val userUpdateSlot = slot<GrpcUser.Update>()
 
         coEvery { verificationTokenRepoMock.getVerificationTokenByValue(token.token) } returns token
         coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)

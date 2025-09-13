@@ -2,7 +2,6 @@ package se.uulm.snowballr.backend.service
 
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.SnowballRException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.repository.IUserTableRepo
@@ -12,10 +11,10 @@ import java.util.UUID
 /**
  * Verifies that the [user] has the role [UserRole.USER_ROLE_ADMIN].
  *
- * If the user is not a server admin, a [SnowballRException.UnauthorizedException] is thrown.
+ * If the user is not a server admin, a [UnauthorizedException] is thrown.
  *
  * @param user The user to verify
- * @param getException Getter method for the subtype of [SnowballRException.UnauthorizedException], which is thrown
+ * @param getException Getter method for the subtype of [UnauthorizedException], which is thrown
  * when the user is not a server admin.
  */
 fun verifyServerAdminRole(user: User, getException: (String) -> UnauthorizedException) {
@@ -37,16 +36,11 @@ fun verifyServerAdminRole(user: User, getException: (String) -> UnauthorizedExce
  * @param accessType The type of access being attempted, used to construct the exception if unauthorized.
  */
 suspend fun authorizeAccessTo(currentUser: User, targetUserId: UUID, userRepo: IUserTableRepo, accessType: AccessType) {
-    val requestedUser = userRepo.getUserById(targetUserId).getOrThrow()
+    val targetUser = userRepo.getUserById(targetUserId).getOrThrow()
 
-    if (currentUser.id != requestedUser.id) {
+    if (currentUser.id != targetUser.id) {
         verifyServerAdminRole(currentUser) {
-            UnauthorizedException.Single(
-                EntityType.USER,
-                targetUserId.toString(),
-                accessType,
-                it,
-            )
+            UnauthorizedException.Single(EntityType.USER, targetUserId.toString(), accessType, it)
         }
     }
 }

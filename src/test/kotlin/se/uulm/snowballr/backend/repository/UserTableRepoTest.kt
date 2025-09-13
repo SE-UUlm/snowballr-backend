@@ -19,7 +19,8 @@ import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.utils.assertResultFailure
 import se.uulm.snowballr.backend.utils.assertResultSuccess
 import snowballr.Authentication
-import snowballr.ProjectOuterClass
+import snowballr.ProjectOuterClass.ReviewDecisionMatrix
+import snowballr.ProjectOuterClass.SnowballingType
 import snowballr.UserOuterClass.User
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
@@ -342,10 +343,9 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
             assertThat(userSettings.isReviewModeEnabled).isFalse()
             assertThat(userSettings.criteriaIds).isEmpty()
             assertThat(userSettings.similarityThreshold).isEqualTo(0F)
-            assertThat(userSettings.decisionMatrix)
-                .isEqualTo(ProjectOuterClass.ReviewDecisionMatrix.getDefaultInstance())
+            assertThat(userSettings.decisionMatrix).isEqualTo(ReviewDecisionMatrix.getDefaultInstance())
             assertThat(userSettings.fetchers).isEmpty()
-            assertThat(userSettings.snowballingType).isEqualTo(ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_BOTH)
+            assertThat(userSettings.snowballingType).isEqualTo(SnowballingType.SNOWBALLING_TYPE_BOTH)
             assertThat(userSettings.reviewMaybeAllowed).isTrue()
         }
 

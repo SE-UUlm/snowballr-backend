@@ -20,7 +20,7 @@ import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.table.association.toProjectPaper
 import se.uulm.snowballr.backend.table.association.toProjectPaperWithPaper
-import snowballr.ProjectOuterClass
+import snowballr.ProjectOuterClass.PaperDecision
 import java.util.UUID
 import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 
@@ -167,7 +167,7 @@ class ProjectPaperTableRepo(
                 it[ProjectPaperTable.projectId] = projectId
                 it[ProjectPaperTable.localPaperId] = localPaperId
                 it[stage] = request.stage
-                it[decision] = ProjectOuterClass.PaperDecision.PAPER_DECISION_UNSPECIFIED
+                it[decision] = PaperDecision.PAPER_DECISION_UNSPECIFIED
                 it[createdBy] = userId
             }
     }

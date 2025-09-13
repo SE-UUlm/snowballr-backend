@@ -11,15 +11,15 @@ import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.SnowballRException.DuplicateEntityException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
-import snowballr.UserOuterClass
 import snowballr.UserOuterClass.UserRole
 import java.util.UUID
+import snowballr.UserOuterClass.User as GrpcUser
 
 class UpdateUserTest : MainServiceTest() {
     private val requestedUserId = UUID.randomUUID()
 
-    private fun getExampleRequest(): UserOuterClass.User.Update {
-        val user = UserOuterClass.User.newBuilder()
+    private fun getExampleRequest(): GrpcUser.Update {
+        val user = GrpcUser.newBuilder()
             .setId(requestedUserId.toString())
             .setEmail("newemail@example.com")
             .setRole(UserRole.USER_ROLE_ADMIN)
@@ -30,7 +30,7 @@ class UpdateUserTest : MainServiceTest() {
             .addPaths("role")
             .build()
 
-        return UserOuterClass.User.Update.newBuilder()
+        return GrpcUser.Update.newBuilder()
             .setUser(user)
             .setMask(mask)
             .build()
@@ -62,8 +62,8 @@ class UpdateUserTest : MainServiceTest() {
     fun `When user is not admin and tries to update another user, then an UnauthorizedException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val otherUser = DataBuilder.createExampleUser(id = requestedUserId)
-        val request = UserOuterClass.User.Update.newBuilder()
-            .setUser(UserOuterClass.User.newBuilder().setId(otherUser.id.toString()).setFirstName("NewFirstName"))
+        val request = GrpcUser.Update.newBuilder()
+            .setUser(GrpcUser.newBuilder().setId(otherUser.id.toString()).setFirstName("NewFirstName"))
             .setMask(FieldMask.newBuilder().addPaths("first_name"))
             .build()
 
@@ -88,9 +88,9 @@ class UpdateUserTest : MainServiceTest() {
     @Test
     fun `When user updates own email, then it succeeds`() = runTest {
         val currentUser = DataBuilder.createExampleUser(id = requestedUserId, role = UserRole.USER_ROLE_DEFAULT)
-        val request = UserOuterClass.User.Update.newBuilder()
+        val request = GrpcUser.Update.newBuilder()
             .setUser(
-                UserOuterClass.User.newBuilder()
+                GrpcUser.newBuilder()
                     .setId(currentUser.id.toString())
                     .setEmail("new-and-shiny@example.com"),
             )
@@ -108,9 +108,9 @@ class UpdateUserTest : MainServiceTest() {
     fun `When admin updates another user's role, then it succeeds`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val otherUser = DataBuilder.createExampleUser(id = requestedUserId, role = UserRole.USER_ROLE_DEFAULT)
-        val request = UserOuterClass.User.Update.newBuilder()
+        val request = GrpcUser.Update.newBuilder()
             .setUser(
-                UserOuterClass.User.newBuilder()
+                GrpcUser.newBuilder()
                     .setId(otherUser.id.toString())
                     .setRole(UserRole.USER_ROLE_ADMIN),
             )

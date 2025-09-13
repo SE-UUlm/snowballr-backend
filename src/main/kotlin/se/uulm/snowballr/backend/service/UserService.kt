@@ -30,15 +30,15 @@ import se.uulm.snowballr.backend.repository.IVerificationTokenTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import snowballr.Authentication
 import snowballr.Base
-import snowballr.CriterionOuterClass
 import snowballr.ProjectOuterClass.Project
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
-import snowballr.UserSettingsOuterClass
 import snowballr.nothing
 import java.time.OffsetDateTime
 import java.util.UUID
+import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
 import snowballr.UserOuterClass.User as GrpcUser
+import snowballr.UserSettingsOuterClass.UserSettings as GrpcUserSettings
 
 val Logger = KotlinLogging.logger { }
 
@@ -97,7 +97,7 @@ interface IUserService {
     /**
      * Service implementation of [SnowballRService.getUserSettings].
      */
-    suspend fun getUserSettings(): UserSettingsOuterClass.UserSettings
+    suspend fun getUserSettings(): GrpcUserSettings
 
     /**
      * Service implementation of [SnowballRService.getCurrentUser].
@@ -367,14 +367,14 @@ class UserService(
 
     override suspend fun getCurrentUser(): GrpcUser = withUser(userRepo, User::toGrpcUser)
 
-    override suspend fun getUserSettings(): UserSettingsOuterClass.UserSettings = withUser(userRepo) { currentUser ->
+    override suspend fun getUserSettings(): GrpcUserSettings = withUser(userRepo) { currentUser ->
         val userSettings = userRepo.getUserSettings(currentUser.id).getOrThrow()
         val defaultUserCriteria = criterionRepo.getCriteriaByIds(userSettings.criteriaIds)
 
-        val criteria = mutableListOf<CriterionOuterClass.Criterion>()
+        val criteria = mutableListOf<GrpcCriterion>()
         for (criterion in defaultUserCriteria) {
             criteria.add(
-                CriterionOuterClass.Criterion
+                GrpcCriterion
                     .newBuilder()
                     .setTag(criterion.tag)
                     .setName(criterion.name)

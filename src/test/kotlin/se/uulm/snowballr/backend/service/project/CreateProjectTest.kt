@@ -8,13 +8,13 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.service.MainServiceTest
-import snowballr.ProjectOuterClass
 import snowballr.UserOuterClass.UserRole
 import java.util.UUID
 import kotlin.test.assertEquals
+import snowballr.ProjectOuterClass.Project as GrpcProject
 
 class CreateProjectTest : MainServiceTest() {
-    private fun getExampleRequest() = ProjectOuterClass.Project.Create.getDefaultInstance()
+    private fun getExampleRequest() = GrpcProject.Create.getDefaultInstance()
 
     @Test
     fun `When a project is correctly created, then no exception is thrown`() = runTest {

@@ -13,8 +13,9 @@ import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionExce
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.toGrpcProject
 import se.uulm.snowballr.backend.service.MainServiceTest
-import snowballr.ProjectOuterClass
+import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.UserOuterClass.UserRole
+import snowballr.ProjectOuterClass.Project as GrpcProject
 
 class UpdateProjectTest : MainServiceTest() {
     @ParameterizedTest
@@ -26,13 +27,13 @@ class UpdateProjectTest : MainServiceTest() {
         ],
     )
     fun `When a server admin updates an existing project, then no exception is thrown`(statusName: String) = runTest {
-        val status = ProjectOuterClass.ProjectStatus.valueOf(statusName)
+        val status = ProjectStatus.valueOf(statusName)
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val project = DataBuilder.createExampleProject(status = status)
         val updatedProject = DataBuilder.createExampleProject(id = project.id, name = "Updated Project")
 
         val updateFieldMask = FieldMaskUtil.fromStringList(listOf("name", "status"))
-        val request = ProjectOuterClass.Project.Update
+        val request = GrpcProject.Update
             .newBuilder()
             .setProject(updatedProject.toGrpcProject())
             .setMask(updateFieldMask)
@@ -55,7 +56,7 @@ class UpdateProjectTest : MainServiceTest() {
         ],
     )
     fun `When a project admin updates an existing project, then no exception is thrown`(statusName: String) = runTest {
-        val status = ProjectOuterClass.ProjectStatus.valueOf(statusName)
+        val status = ProjectStatus.valueOf(statusName)
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject(status = status)
         val projectMember = DataBuilder.createExampleProjectMember(userId = user.id, projectId = project.id)
@@ -63,7 +64,7 @@ class UpdateProjectTest : MainServiceTest() {
         val updatedProject = DataBuilder.createExampleProject(id = project.id, name = "Updated Project")
 
         val updateFieldMask = FieldMaskUtil.fromStringList(listOf("name", "status"))
-        val request = ProjectOuterClass.Project.Update
+        val request = GrpcProject.Update
             .newBuilder()
             .setProject(updatedProject.toGrpcProject())
             .setMask(updateFieldMask)
@@ -88,13 +89,13 @@ class UpdateProjectTest : MainServiceTest() {
     )
     fun `When a project member updates a project, then an UnauthorizedException is thrown`(statusName: String) =
         runTest {
-            val status = ProjectOuterClass.ProjectStatus.valueOf(statusName)
+            val status = ProjectStatus.valueOf(statusName)
             val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
             val project = DataBuilder.createExampleProject(status = status)
             val updatedProject = DataBuilder.createExampleProject(id = project.id, name = "Updated Project")
 
             val updateFieldMask = FieldMaskUtil.fromStringList(listOf("name"))
-            val request = ProjectOuterClass.Project.Update
+            val request = GrpcProject.Update
                 .newBuilder()
                 .setProject(updatedProject.toGrpcProject())
                 .setMask(updateFieldMask)
@@ -112,16 +113,16 @@ class UpdateProjectTest : MainServiceTest() {
         runTest {
             val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
             val project = DataBuilder.createExampleProject(
-                status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE,
+                status = ProjectStatus.PROJECT_STATUS_ACTIVE,
             )
             val updatedProject = DataBuilder.createExampleProject(
                 id = project.id,
                 name = "Updated Project",
-                status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_DELETED,
+                status = ProjectStatus.PROJECT_STATUS_DELETED,
             )
 
             val updateFieldMask = FieldMaskUtil.fromStringList(listOf("name", "status"))
-            val request = ProjectOuterClass.Project.Update
+            val request = GrpcProject.Update
                 .newBuilder()
                 .setProject(updatedProject.toGrpcProject())
                 .setMask(updateFieldMask)
@@ -139,17 +140,17 @@ class UpdateProjectTest : MainServiceTest() {
         runTest {
             val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
             val project = DataBuilder.createExampleProject(
-                status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE,
+                status = ProjectStatus.PROJECT_STATUS_ACTIVE,
             )
             val updatedProject = DataBuilder.createExampleProject(
                 id = project.id,
                 name = "Updated Project",
-                status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_DELETED,
+                status = ProjectStatus.PROJECT_STATUS_DELETED,
             )
             val projectMember = DataBuilder.createExampleProjectMember(userId = user.id, projectId = project.id)
 
             val updateFieldMask = FieldMaskUtil.fromStringList(listOf("name", "status"))
-            val request = ProjectOuterClass.Project.Update
+            val request = GrpcProject.Update
                 .newBuilder()
                 .setProject(updatedProject.toGrpcProject())
                 .setMask(updateFieldMask)
@@ -166,11 +167,11 @@ class UpdateProjectTest : MainServiceTest() {
     fun `When a server admin updates a deleted project, then a FailedPreconditionException is thrown`() = runTest {
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val project = DataBuilder.createExampleProject(
-            status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_DELETED,
+            status = ProjectStatus.PROJECT_STATUS_DELETED,
         )
         val updatedProject = DataBuilder.createExampleProject(id = project.id, name = "Updated Project")
         val updateFieldMask = FieldMaskUtil.fromStringList(listOf("name"))
-        val request = ProjectOuterClass.Project.Update
+        val request = GrpcProject.Update
             .newBuilder()
             .setProject(updatedProject.toGrpcProject())
             .setMask(updateFieldMask)
@@ -187,13 +188,13 @@ class UpdateProjectTest : MainServiceTest() {
     fun `When a project admin updates a deleted project, then a FailedPreconditionException is thrown`() = runTest {
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject(
-            status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_DELETED,
+            status = ProjectStatus.PROJECT_STATUS_DELETED,
         )
         val updatedProject = DataBuilder.createExampleProject(id = project.id, name = "Updated Project")
         val projectMember = DataBuilder.createExampleProjectMember(userId = user.id, projectId = project.id)
 
         val updateFieldMask = FieldMaskUtil.fromStringList(listOf("name"))
-        val request = ProjectOuterClass.Project.Update
+        val request = GrpcProject.Update
             .newBuilder()
             .setProject(updatedProject.toGrpcProject())
             .setMask(updateFieldMask)

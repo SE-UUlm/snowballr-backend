@@ -19,7 +19,7 @@ import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.table.association.toProjectMember
 import se.uulm.snowballr.backend.table.association.toProjectMemberWithUser
-import snowballr.ProjectOuterClass
+import snowballr.ProjectOuterClass.MemberRole
 import java.util.UUID
 
 /**
@@ -118,7 +118,7 @@ class ProjectMemberTableRepo(
         ProjectMemberTable.insertAndGet(ResultRow::toProjectMember, EntityType.PROJECT_MEMBER) {
             it[this.userId] = userId
             it[this.projectId] = projectId
-            it[role] = ProjectOuterClass.MemberRole.MEMBER_ROLE_DEFAULT
+            it[role] = MemberRole.MEMBER_ROLE_DEFAULT
         }
     }
 
@@ -148,7 +148,7 @@ class ProjectMemberTableRepo(
     override suspend fun getAllProjectAdmins(projectId: UUID): List<ProjectMember> = db.query {
         ProjectMemberTable.getEntities(ResultRow::toProjectMember) {
             (ProjectMemberTable.projectId eq projectId) and
-                (ProjectMemberTable.role eq ProjectOuterClass.MemberRole.MEMBER_ROLE_ADMIN)
+                (ProjectMemberTable.role eq MemberRole.MEMBER_ROLE_ADMIN)
         }
     }
 
@@ -161,7 +161,7 @@ class ProjectMemberTableRepo(
                 (ProjectMemberTable.projectId eq projectId) and (ProjectMemberTable.userId eq userId)
             },
         ) {
-            it[role] = ProjectOuterClass.MemberRole.MEMBER_ROLE_ADMIN
+            it[role] = MemberRole.MEMBER_ROLE_ADMIN
         }
     }
 

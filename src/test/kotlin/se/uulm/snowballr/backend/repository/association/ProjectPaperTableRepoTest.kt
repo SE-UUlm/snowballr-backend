@@ -18,7 +18,7 @@ import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.utils.assertResultFailure
 import se.uulm.snowballr.backend.utils.assertResultSuccess
-import snowballr.ProjectOuterClass
+import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ProjectOuterClass.Project
 import java.sql.SQLException
 import java.util.UUID
@@ -49,7 +49,7 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
                 assertThat(projectPaper.paperId).isEqualTo(paperId)
                 assertThat(projectPaper.localPaperId).isEqualTo(0)
                 assertThat(projectPaper.stage).isEqualTo(0)
-                assertThat(projectPaper.decision).isEqualTo(ProjectOuterClass.PaperDecision.PAPER_DECISION_ACCEPTED)
+                assertThat(projectPaper.decision).isEqualTo(PaperDecision.PAPER_DECISION_ACCEPTED)
                 assertThat(projectPaper.createdBy).isEqualTo(testUserId)
             }
 
@@ -103,7 +103,7 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
                 assertThat(projectPaper.paperId).isEqualTo(paperId)
                 assertThat(projectPaper.localPaperId).isEqualTo(0)
                 assertThat(projectPaper.stage).isEqualTo(0)
-                assertThat(projectPaper.decision).isEqualTo(ProjectOuterClass.PaperDecision.PAPER_DECISION_ACCEPTED)
+                assertThat(projectPaper.decision).isEqualTo(PaperDecision.PAPER_DECISION_ACCEPTED)
                 assertThat(projectPaper.createdBy).isEqualTo(testUserId)
             }
     }
@@ -205,7 +205,7 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
                 assertEquals(projectId, projectPaper.projectId)
                 assertEquals(0, projectPaper.localPaperId)
                 assertEquals(0, projectPaper.stage)
-                assertEquals(ProjectOuterClass.PaperDecision.PAPER_DECISION_UNSPECIFIED, projectPaper.decision)
+                assertEquals(PaperDecision.PAPER_DECISION_UNSPECIFIED, projectPaper.decision)
                 assertEquals(testUserId, projectPaper.createdBy)
             }
 

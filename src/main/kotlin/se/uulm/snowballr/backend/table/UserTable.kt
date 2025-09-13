@@ -7,9 +7,10 @@ import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.json.json
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.UserSettings
-import snowballr.ProjectOuterClass
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
-import snowballr.UserOuterClass
+import snowballr.ProjectOuterClass.SnowballingType
+import snowballr.UserOuterClass.UserRole
+import snowballr.UserOuterClass.UserStatus
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -19,7 +20,7 @@ private val CRITERIA_IDS_DEFAULT = emptyList<UUID>()
 private const val SIMILARITY_THRESHOLD_DEFAULT = 0F
 private val DECISION_MATRIX_DEFAULT: ByteArray = ReviewDecisionMatrix.getDefaultInstance().toByteArray()
 private val FETCHERS_DEFAULT = emptyMap<String, Map<String, String>>()
-private val SNOWBALLING_TYPE_DEFAULT = ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_BOTH
+private val SNOWBALLING_TYPE_DEFAULT = SnowballingType.SNOWBALLING_TYPE_BOTH
 private const val REVIEW_MAYBE_ALLOWED_DEFAULT = true
 
 /**
@@ -30,16 +31,17 @@ private const val REVIEW_MAYBE_ALLOWED_DEFAULT = true
  * - [firstName]: Represents the first name of the user as a [String].
  * - [lastName]: Represents the last name of the user as a [String].
  * - [passwordHash]: Represents the hashed password of the user as a [String].
- * - [role]: Represents the role of the user as an enumeration value from [UserOuterClass.UserRole].
- * - [status]: Represents the status of the user as an enumeration value from [UserOuterClass.UserStatus].
+ * - [role]: Represents the role of the user as an enumeration value from [UserRole].
+ * - [status]: Represents the status of the user as an enumeration value from [UserStatus].
  * - [areHotkeysShown]: Represents whether the user has hotkeys displayed as a [Boolean].
  * - [reviewModeEnabled]: Represents whether the user is in review mode as a [Boolean].
  * - [criteriaIds]: Represents a list of criteria IDs associated with the user as a [List] of [UUID].
  * - [similarityThreshold]: Represents the user's similarity threshold as a [Float].
  * - [decisionMatrix]: Represents the review decision matrix of the user as a binary value.
- * - [fetchers]: Represents the fetchers used by the project as a json object mapping the fetcher names to their options.
+ * - [fetchers]: Represents the fetchers used by the project as a json object mapping the fetcher names to their
+ * options.
  * - [snowballingType]: Represents the snowballing type associated with the user, stored as an enumeration value of
- * [ProjectOuterClass.SnowballingType].
+ * [SnowballingType].
  * - [reviewMaybeAllowed]: Indicates whether "maybe" is allowed in reviews, stored as a [Boolean].
  * - [createdAt]: Represents the timestamp of when the user was created as an [OffsetDateTime].
  * - [modifiedAt]: Represents the timestamp of when the user was last modified as an [OffsetDateTime].
@@ -50,8 +52,8 @@ object UserTable : UUIDTable("user") {
     val firstName = text("first_name")
     val lastName = text("last_name")
     val passwordHash = obfuscatedText("password_hash")
-    val role = enumeration<UserOuterClass.UserRole>("role")
-    val status = enumeration<UserOuterClass.UserStatus>("status")
+    val role = enumeration<UserRole>("role")
+    val status = enumeration<UserStatus>("status")
 
     // User settings
     val areHotkeysShown = bool("show_hotkeys").clientDefault { ARE_HOTKEYS_SHOWN_DEFAULT }
@@ -63,7 +65,7 @@ object UserTable : UUIDTable("user") {
     val decisionMatrix = binary("review_decision_matrix").clientDefault { DECISION_MATRIX_DEFAULT }
     val fetchers = json<Map<String, Map<String, String>>>("fetchers", Json).clientDefault { FETCHERS_DEFAULT }
     val snowballingType =
-        enumeration<ProjectOuterClass.SnowballingType>("snowballing_type").clientDefault { SNOWBALLING_TYPE_DEFAULT }
+        enumeration<SnowballingType>("snowballing_type").clientDefault { SNOWBALLING_TYPE_DEFAULT }
     val reviewMaybeAllowed = bool("review_maybe_allowed").clientDefault { REVIEW_MAYBE_ALLOWED_DEFAULT }
 
     // Metadata

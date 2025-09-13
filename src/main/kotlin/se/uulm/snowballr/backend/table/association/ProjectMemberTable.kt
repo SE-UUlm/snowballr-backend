@@ -11,7 +11,7 @@ import se.uulm.snowballr.backend.table.createdAt
 import se.uulm.snowballr.backend.table.modifiedAt
 import se.uulm.snowballr.backend.table.toUser
 import se.uulm.snowballr.backend.table.userReference
-import snowballr.ProjectOuterClass
+import snowballr.ProjectOuterClass.MemberRole
 import java.time.OffsetDateTime
 
 /**
@@ -22,7 +22,7 @@ import java.time.OffsetDateTime
  * Columns:
  * - [projectId]: Foreign key referencing the [ProjectTable], representing the associated project.
  * - [userId]: Foreign key referencing the [UserTable], representing the associated user.
- * - [role]: Enumeration representing the member's role in the project, as defined in [ProjectOuterClass.MemberRole].
+ * - [role]: Enumeration representing the member's role in the project, as defined in [MemberRole].
  * - [createdAt]: Represents the timestamp of when the project member was created as an [OffsetDateTime].
  * - [modifiedAt]: Represents the timestamp of when the project member was last modified as an [OffsetDateTime].
  *
@@ -53,7 +53,7 @@ object ProjectMemberTable : CompositeIdTable("project_member") {
 
     override val primaryKey = PrimaryKey(projectId, userId)
 
-    val role = enumeration<ProjectOuterClass.MemberRole>("role")
+    val role = enumeration<MemberRole>("role")
 
     // Metadata
 

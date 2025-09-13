@@ -25,21 +25,18 @@ import se.uulm.snowballr.backend.utils.GrpcEnumSourceTest
 import se.uulm.snowballr.backend.utils.assertResultFailure
 import se.uulm.snowballr.backend.utils.assertResultSuccess
 import snowballr.CriterionOuterClass.CriterionCategory
-import snowballr.ProjectOuterClass
 import java.sql.SQLException
 import java.util.UUID
 import kotlin.test.assertIs
 import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
+import snowballr.ProjectOuterClass.Project as GrpcProject
 
 class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTable), true) {
     private val repo = CriterionTableRepo(db)
     private val projectRepo = ProjectTableRepo(db)
 
     private suspend fun createExampleProject(): Project {
-        val request =
-            ProjectOuterClass.Project.Create
-                .newBuilder()
-                .build()
+        val request = GrpcProject.Create.newBuilder().build()
         return projectRepo.createProject(request, testUserId, DataBuilder.createExampleUserSettings())
     }
 

@@ -13,9 +13,10 @@ import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.ProjectPaperWithPaper
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.Base
-import snowballr.ProjectOuterClass
-import snowballr.UserOuterClass
+import snowballr.ProjectOuterClass.PaperDecision
+import snowballr.UserOuterClass.UserRole
 import java.util.UUID
+import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class GetPapersToReviewForProjectTest : MainServiceTest() {
@@ -26,9 +27,9 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
     private fun mockHappyPath(isUserAdmin: Boolean) {
         val currentUser = DataBuilder.createExampleUser(
             role = if (isUserAdmin) {
-                UserOuterClass.UserRole.USER_ROLE_ADMIN
+                UserRole.USER_ROLE_ADMIN
             } else {
-                UserOuterClass.UserRole.USER_ROLE_DEFAULT
+                UserRole.USER_ROLE_DEFAULT
             },
         )
         val project = DataBuilder.createExampleProject(id = requestId)
@@ -77,7 +78,7 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
     @Test
     fun `When a non project member requests the project papers to review, then an UnauthorizedException is thrown`() =
         runTest {
-            val currentUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_DEFAULT)
+            val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
             val project = DataBuilder.createExampleProject(id = requestId)
 
             mockCurrentUser(currentUser)
@@ -91,18 +92,18 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
 
     @Test
     fun `When the project papers to review are requested, then only the undecided papers are returned`() = runTest {
-        val currentUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_ADMIN)
+        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val project = DataBuilder.createExampleProject(id = requestId)
         val paper = DataBuilder.createExamplePaper(id = requestId)
         val projectPaperAlreadyDecided = DataBuilder.createExampleProjectPaper(
             projectId = project.id,
             paperId = paper.id,
-            decision = ProjectOuterClass.PaperDecision.PAPER_DECISION_ACCEPTED,
+            decision = PaperDecision.PAPER_DECISION_ACCEPTED,
         )
         val projectPaperNotAlreadyDecided = DataBuilder.createExampleProjectPaper(
             projectId = project.id,
             paperId = paper.id,
-            decision = ProjectOuterClass.PaperDecision.PAPER_DECISION_UNREVIEWED,
+            decision = PaperDecision.PAPER_DECISION_UNREVIEWED,
         )
         val projectPaperWithPaper1 = ProjectPaperWithPaper(projectPaperAlreadyDecided, paper)
         val projectPaperWithPaper2 = ProjectPaperWithPaper(projectPaperNotAlreadyDecided, paper)
@@ -129,7 +130,7 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
             reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(review.id)
         } returns listOf(UUID.randomUUID())
 
-        var projectPapers: ProjectOuterClass.Project.Paper.List
+        var projectPapers: GrpcProjectPaper.List
         assertDoesNotThrow { projectPapers = mainService.getPapersToReviewForProject(getExampleRequest()) }
         assertThat(projectPapers.projectPapersList).hasSize(1)
         assertThat(projectPapers.projectPapersList).anyMatch { it.id == projectPaperNotAlreadyDecided.id.toString() }
@@ -139,18 +140,18 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
     @Test
     fun `When the project papers to review are requested, then only undecided papers that were not already reviewed by the current user are returned`() =
         runTest {
-            val currentUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_ADMIN)
+            val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
             val project = DataBuilder.createExampleProject(id = requestId)
             val paper = DataBuilder.createExamplePaper(id = requestId)
             val projectPaperWithCurrentUserReview = DataBuilder.createExampleProjectPaper(
                 projectId = project.id,
                 paperId = paper.id,
-                decision = ProjectOuterClass.PaperDecision.PAPER_DECISION_UNREVIEWED,
+                decision = PaperDecision.PAPER_DECISION_UNREVIEWED,
             )
             val projectPaperWithoutCurrentUserReview = DataBuilder.createExampleProjectPaper(
                 projectId = project.id,
                 paperId = paper.id,
-                decision = ProjectOuterClass.PaperDecision.PAPER_DECISION_UNREVIEWED,
+                decision = PaperDecision.PAPER_DECISION_UNREVIEWED,
             )
             val projectPaperWithPaper1 = ProjectPaperWithPaper(projectPaperWithCurrentUserReview, paper)
             val projectPaperWithPaper2 = ProjectPaperWithPaper(projectPaperWithoutCurrentUserReview, paper)
@@ -181,7 +182,7 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
                 reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(reviewByOtherUser.id)
             } returns listOf(UUID.randomUUID())
 
-            var projectPapers: ProjectOuterClass.Project.Paper.List
+            var projectPapers: GrpcProjectPaper.List
             assertDoesNotThrow { projectPapers = mainService.getPapersToReviewForProject(getExampleRequest()) }
             assertThat(projectPapers.projectPapersList).hasSize(1)
             assertThat(projectPapers.projectPapersList)
@@ -192,7 +193,7 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
 
     @Test
     fun `When a non-existing project is requested, then a NotFoundException is thrown`() = runTest {
-        val currentUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_DEFAULT)
+        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject(id = requestId)
 
         mockCurrentUser(currentUser)

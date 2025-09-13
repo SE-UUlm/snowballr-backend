@@ -12,8 +12,8 @@ import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.toCriterion
 import se.uulm.snowballr.backend.table.toProjectCriterion
 import se.uulm.snowballr.backend.table.toUserCriterion
-import snowballr.CriterionOuterClass
 import java.util.UUID
+import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
 
 /**
  * Defines an interface for repository operations related to the [CriterionTable].
@@ -36,7 +36,7 @@ interface ICriterionTableRepo {
      * @param userId The ID of the user creating the criterion.
      * @return The created [Criterion] object representing the newly created criterion.
      */
-    suspend fun createCriterion(request: CriterionOuterClass.Criterion.Create, userId: UUID): Criterion
+    suspend fun createCriterion(request: GrpcCriterion.Create, userId: UUID): Criterion
 
     /**
      * Retrieves all criteria associated with a specific user.
@@ -57,7 +57,7 @@ interface ICriterionTableRepo {
      * @param request The update request containing the new criterion details, such as the new name.
      * @return The updated [Criterion] object reflecting the changes from the [request].
      */
-    suspend fun updateCriterion(request: CriterionOuterClass.Criterion.Update): Criterion
+    suspend fun updateCriterion(request: GrpcCriterion.Update): Criterion
 
     /**
      * Retrieves a list of criteria based on their unique identifiers.
@@ -97,25 +97,24 @@ class CriterionTableRepo(
         getEntityByIdAsResult(::getCriterionByIdOrNull, EntityType.CRITERION, id)
     }
 
-    override suspend fun createCriterion(request: CriterionOuterClass.Criterion.Create, userId: UUID): Criterion =
-        db.query {
-            val projectId = if (request.projectId.isNotEmpty()) {
-                parseUUID(request.projectId, EntityType.PROJECT)
-            } else {
-                null
-            }
-
-            CriterionTable.insertAndGet(ResultRow::toCriterion, EntityType.CRITERION) {
-                it[tag] = request.tag
-                it[name] = request.name
-                it[description] = request.description
-                it[category] = request.category
-                it[this.projectId] = projectId
-                it[createdBy] = userId
-            }
+    override suspend fun createCriterion(request: GrpcCriterion.Create, userId: UUID): Criterion = db.query {
+        val projectId = if (request.projectId.isNotEmpty()) {
+            parseUUID(request.projectId, EntityType.PROJECT)
+        } else {
+            null
         }
 
-    override suspend fun updateCriterion(request: CriterionOuterClass.Criterion.Update): Criterion = db.query {
+        CriterionTable.insertAndGet(ResultRow::toCriterion, EntityType.CRITERION) {
+            it[tag] = request.tag
+            it[name] = request.name
+            it[description] = request.description
+            it[category] = request.category
+            it[this.projectId] = projectId
+            it[createdBy] = userId
+        }
+    }
+
+    override suspend fun updateCriterion(request: GrpcCriterion.Update): Criterion = db.query {
         val criterionId = parseUUID(request.criterion.id, EntityType.CRITERION)
         val fieldMask = FieldMaskUtil.normalize(request.mask)
 

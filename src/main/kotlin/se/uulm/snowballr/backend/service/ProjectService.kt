@@ -31,12 +31,13 @@ import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.IReviewHasCriterionTableRepo
 import snowballr.Base
-import snowballr.CriterionOuterClass
-import snowballr.PaperOuterClass
-import snowballr.ProjectOuterClass
+import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ProjectOuterClass.ProjectStatus
 import java.util.UUID
+import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
+import snowballr.PaperOuterClass.Author as GrpcAuthor
 import snowballr.ProjectOuterClass.Project as GrpcProject
+import snowballr.ProjectOuterClass.Project.Member as GrpcProjectMember
 import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 import snowballr.ReviewOuterClass.Review as GrpcReview
 
@@ -74,16 +75,13 @@ interface IProjectService {
 
     /**
      * Service implementation of [SnowballRService.updateProject].
-     *
-     * @param request The update request containing the project details to be modified.
-     * @return The updated project after the changes have been applied.
      */
     suspend fun updateProject(request: GrpcProject.Update): GrpcProject
 
     /**
      * Service implementation of [SnowballRService.getProjectMembers].
      */
-    suspend fun getProjectMembers(request: Base.Id): GrpcProject.Member.List
+    suspend fun getProjectMembers(request: Base.Id): GrpcProjectMember.List
 
     /**
      * Service implementation of [SnowballRService.getProjectPaperById].
@@ -178,15 +176,16 @@ class ProjectService(
     }
 
     /**
-     * Retrieves a list of [ProjectPaper] associated with a specified project id. This method
-     * also ensures access control for the current user. Optionally, a predicate function can be provided to filter
-     * the [ProjectPaper]s based on custom criteria.
+     * Retrieves a list of [ProjectPaper] associated with a specified project id. This method also ensures access
+     * control for the current user. Optionally, a predicate function can be provided to filter the [ProjectPaper]s
+     * based on custom criteria.
      *
      * @param request The request containing the ID of the [Project] for which [ProjectPaper]s are to be retrieved.
-     * @param predicate An optional lambda function that takes a [ProjectPaperWithPaper], a map of [GrpcReview], and a user ID.
-     * This function should return a boolean value to filter the [ProjectPaperWithPaper]s. If null, no filtering is applied.
-     * @return A list of [GrpcProjectPaper] including associated metadata such as authors,
-     * backward references, and reviews.
+     * @param predicate An optional lambda function that takes a [ProjectPaperWithPaper], a map of [GrpcReview], and a
+     * user ID. This function should return a boolean value to filter the [ProjectPaperWithPaper]s. If null, no
+     * filtering is applied.
+     * @return A list of [GrpcProjectPaper] including associated metadata such as authors, backward references, and
+     * reviews.
      * @throws UnauthorizedException If the user does not have the required access to the project.
      */
     private suspend fun getProjectPapers(
@@ -205,7 +204,7 @@ class ProjectService(
         }
 
         var projectPapersWithPapers = projectPaperRepo.getAllProjectPapersWithPapers(projectId)
-        val paperAuthorsMap = mutableMapOf<Paper, List<PaperOuterClass.Author>>()
+        val paperAuthorsMap = mutableMapOf<Paper, List<GrpcAuthor>>()
         val paperBackwardReferencesMap = mutableMapOf<Paper, List<String>>()
         val projectPaperReviewsMap = mutableMapOf<ProjectPaper, List<GrpcReview>>()
         for (projectPaper in projectPapersWithPapers) {
@@ -286,7 +285,7 @@ class ProjectService(
         val project = repo.createProject(request, currentUser.id, userSettings)
 
         for (criterion in userDefaultCriteria) {
-            val criterionRequest = CriterionOuterClass.Criterion.Create
+            val criterionRequest = GrpcCriterion.Create
                 .newBuilder()
                 .setTag(criterion.tag)
                 .setName(criterion.name)
@@ -349,7 +348,7 @@ class ProjectService(
         repo.updateProject(request, projectStatus).toGrpcProject()
     }
 
-    override suspend fun getProjectMembers(request: Base.Id): GrpcProject.Member.List =
+    override suspend fun getProjectMembers(request: Base.Id): GrpcProjectMember.List =
         withUser(userRepo) { currentUser ->
             val projectId = parseUUID(request.id, EntityType.PROJECT)
             repo.getProjectById(projectId).getOrThrow()
@@ -390,9 +389,8 @@ class ProjectService(
                 val isAlreadyReviewedByCurrentUser = projectPaperReviewsMap[projectPaper.projectPaper]
                     ?.any { review -> review.userId == currentUserId } == true
                 val isStillUndecided =
-                    projectPaper.projectPaper.decision == ProjectOuterClass.PaperDecision.PAPER_DECISION_UNREVIEWED ||
-                        projectPaper.projectPaper.decision ==
-                        ProjectOuterClass.PaperDecision.PAPER_DECISION_IN_REVIEW
+                    projectPaper.projectPaper.decision == PaperDecision.PAPER_DECISION_UNREVIEWED ||
+                        projectPaper.projectPaper.decision == PaperDecision.PAPER_DECISION_IN_REVIEW
 
                 !isAlreadyReviewedByCurrentUser && isStillUndecided
             }

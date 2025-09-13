@@ -10,15 +10,15 @@ import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionExce
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import se.uulm.snowballr.backend.utils.GrpcEnumSourceTest
-import snowballr.CriterionOuterClass
 import snowballr.CriterionOuterClass.CriterionCategory
-import snowballr.ProjectOuterClass
+import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.UserOuterClass.UserRole
 import java.util.UUID
+import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
 
 class CreateCriterionTest : MainServiceTest() {
-    private fun getProjectCriterionRequest(projectId: String): CriterionOuterClass.Criterion.Create {
-        return CriterionOuterClass.Criterion.Create.newBuilder()
+    private fun getProjectCriterionRequest(projectId: String): GrpcCriterion.Create {
+        return GrpcCriterion.Create.newBuilder()
             .setTag("Tag")
             .setName("Criterion")
             .setDescription("Description")
@@ -27,8 +27,8 @@ class CreateCriterionTest : MainServiceTest() {
             .build()
     }
 
-    private fun getUserCriterionRequest(): CriterionOuterClass.Criterion.Create {
-        return CriterionOuterClass.Criterion.Create.newBuilder()
+    private fun getUserCriterionRequest(): GrpcCriterion.Create {
+        return GrpcCriterion.Create.newBuilder()
             .setTag("Tag")
             .setName("Criterion")
             .setDescription("Description")
@@ -85,11 +85,11 @@ class CreateCriterionTest : MainServiceTest() {
     }
 
     @GrpcEnumSourceTest(
-        ProjectOuterClass.ProjectStatus::class,
+        ProjectStatus::class,
         excludes = ["PROJECT_STATUS_ACTIVE", "PROJECT_STATUS_UNSPECIFIED"],
     )
     fun `When a project admin creates a project criterion for a non active project, then a FailedPreconditionException is thrown`(
-        status: ProjectOuterClass.ProjectStatus,
+        status: ProjectStatus,
     ) = runTest {
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject(
@@ -121,7 +121,7 @@ class CreateCriterionTest : MainServiceTest() {
 
     @Test
     fun `When a criterion is correctly created, then no exception is thrown`() = runTest {
-        val request = CriterionOuterClass.Criterion.Create.getDefaultInstance()
+        val request = GrpcCriterion.Create.getDefaultInstance()
         val user = DataBuilder.createExampleUser(id = UUID.randomUUID())
         val criterion = DataBuilder.createExampleProjectCriterion()
 

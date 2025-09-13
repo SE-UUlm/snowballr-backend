@@ -15,12 +15,14 @@ import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.table.association.ReviewHasCriterionTable
 import se.uulm.snowballr.backend.table.association.toProjectMember
 import snowballr.CriterionOuterClass.CriterionCategory
-import snowballr.ProjectOuterClass
+import snowballr.ProjectOuterClass.MemberRole
+import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
 import snowballr.ProjectOuterClass.SnowballingType
-import snowballr.ReviewOuterClass
-import snowballr.UserOuterClass
+import snowballr.ReviewOuterClass.ReviewDecision
+import snowballr.UserOuterClass.UserRole
+import snowballr.UserOuterClass.UserStatus
 import java.util.UUID
 
 /**
@@ -42,8 +44,8 @@ object RepositoryHelper {
                 it[firstName] = "Test"
                 it[lastName] = "User"
                 it[passwordHash] = "1234"
-                it[role] = UserOuterClass.UserRole.USER_ROLE_DEFAULT
-                it[status] = UserOuterClass.UserStatus.USER_STATUS_ACTIVE
+                it[role] = UserRole.USER_ROLE_DEFAULT
+                it[status] = UserStatus.USER_STATUS_ACTIVE
             }.value
     }
 
@@ -58,7 +60,7 @@ object RepositoryHelper {
         ProjectMemberTable.insertAndGet(ResultRow::toProjectMember, EntityType.PROJECT_MEMBER) {
             it[ProjectMemberTable.userId] = userId
             it[ProjectMemberTable.projectId] = projectId
-            it[role] = ProjectOuterClass.MemberRole.MEMBER_ROLE_DEFAULT
+            it[role] = MemberRole.MEMBER_ROLE_DEFAULT
         }
     }
 
@@ -133,7 +135,7 @@ object RepositoryHelper {
         projectId: UUID,
         localPaperId: Long = 0,
         stage: Long = 0,
-        decision: ProjectOuterClass.PaperDecision = ProjectOuterClass.PaperDecision.PAPER_DECISION_ACCEPTED,
+        decision: PaperDecision = PaperDecision.PAPER_DECISION_ACCEPTED,
         createdBy: UUID,
     ): UUID = db.query {
         ProjectPaperTable.insertAndGetId {
@@ -150,7 +152,7 @@ object RepositoryHelper {
     suspend fun insertReviewAndGetId(
         projectPaperId: UUID,
         userId: UUID,
-        decision: ReviewOuterClass.ReviewDecision = ReviewOuterClass.ReviewDecision.REVIEW_DECISION_ACCEPTED,
+        decision: ReviewDecision = ReviewDecision.REVIEW_DECISION_ACCEPTED,
     ): UUID = db.query {
         ReviewTable.insertAndGetId {
             it[ReviewTable.projectPaperId] = projectPaperId

@@ -18,10 +18,10 @@ import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.utils.assertResultFailure
 import se.uulm.snowballr.backend.utils.assertResultSuccess
-import snowballr.ProjectOuterClass
 import snowballr.ProjectOuterClass.MemberRole
 import java.sql.SQLException
 import java.util.UUID
+import snowballr.ProjectOuterClass.Project as GrpcProject
 
 class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberTable), true) {
     private val repo = ProjectMemberTableRepo(db)
@@ -29,11 +29,10 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
     private val projectRepo = ProjectTableRepo(db)
 
     private suspend fun createExampleProject(): Project {
-        val request =
-            ProjectOuterClass.Project.Create
-                .newBuilder()
-                .setName("Test Project")
-                .build()
+        val request = GrpcProject.Create
+            .newBuilder()
+            .setName("Test Project")
+            .build()
         val userSettings = DataBuilder.createExampleUserSettings()
         return projectRepo.createProject(request, testUserId, userSettings)
     }
