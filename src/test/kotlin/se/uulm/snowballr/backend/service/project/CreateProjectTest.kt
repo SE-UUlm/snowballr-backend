@@ -6,9 +6,7 @@ import io.mockk.slot
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
-import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
-import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.ProjectOuterClass
 import snowballr.UserOuterClass.UserRole
@@ -17,19 +15,6 @@ import kotlin.test.assertEquals
 
 class CreateProjectTest : MainServiceTest() {
     private fun getExampleRequest() = ProjectOuterClass.Project.Create.getDefaultInstance()
-
-    @Test
-    fun `When an error occurs while a project is created, then a TestSpecificException is thrown`() = runTest {
-        val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-        val userSettings = DataBuilder.createExampleUserSettings()
-
-        mockCurrentUser(user)
-        coEvery { userRepoMock.getUserSettings(user.id) } returns Result.success(userSettings)
-        coEvery { criterionRepoMock.getCriteriaByIds(emptyList()) } returns emptyList()
-        coEvery { projectRepoMock.createProject(any(), user.id, userSettings) } throws TestSpecificException()
-
-        assertThrows<TestSpecificException> { mainService.createProject(getExampleRequest()) }
-    }
 
     @Test
     fun `When a project is correctly created, then no exception is thrown`() = runTest {

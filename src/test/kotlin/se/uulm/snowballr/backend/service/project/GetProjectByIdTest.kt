@@ -24,7 +24,6 @@ class GetProjectByIdTest : MainServiceTest() {
     @Test
     fun `When the requesting user is not a member of the project, then an UnauthorizedException is thrown`() = runTest {
         val request = getExampleRequest()
-
         val noAccessUser = DataBuilder.createExampleUser()
 
         mockCurrentUser(noAccessUser)
@@ -36,7 +35,6 @@ class GetProjectByIdTest : MainServiceTest() {
     @Test
     fun `When the requesting user is a server admin, then the project can be retrieved`() = runTest {
         val request = getExampleRequest()
-
         val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val project = DataBuilder.createExampleProject(id = projectId)
 
@@ -50,7 +48,6 @@ class GetProjectByIdTest : MainServiceTest() {
     @Test
     fun `When the requesting user is a project member, then the project can be retrieved`() = runTest {
         val request = getExampleRequest()
-
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject(id = projectId)
         val projectMember = DataBuilder.createExampleProjectMember(userId = user.id, projectId = projectId)
@@ -65,12 +62,11 @@ class GetProjectByIdTest : MainServiceTest() {
     @Test
     fun `When an error occurs while the project is retrieved, then a TestSpecificException is thrown`() = runTest {
         val request = getExampleRequest()
-
         val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
 
         mockCurrentUser(adminUser)
         coEvery { projectMemberRepoMock.getProjectMembers(any()) } returns emptyList()
-        coEvery { projectRepoMock.getProjectById(any()) } throws TestSpecificException()
+        coEvery { projectRepoMock.getProjectById(any()) } returns Result.failure(TestSpecificException())
 
         assertThrows<TestSpecificException> { mainService.getProjectById(request) }
     }

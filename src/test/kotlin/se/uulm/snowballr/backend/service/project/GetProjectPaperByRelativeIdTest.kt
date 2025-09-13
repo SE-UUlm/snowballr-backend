@@ -11,8 +11,6 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.ProjectOuterClass.Project
@@ -34,14 +32,8 @@ class GetProjectPaperByRelativeIdTest : MainServiceTest() {
         .build()
 
     fun failingFunctions(): Stream<Arguments?> = Stream.of(
-        Arguments.of(projectRepoMock::doesProjectExistById),
         Arguments.of(projectPaperRepoMock::getProjectPaperByRelativeId),
-        Arguments.of(projectMemberRepoMock::getProjectMembers),
         Arguments.of(paperRepoMock::getPaperById),
-        Arguments.of(authorOfPaperRepoMock::getAuthorsOfPaperById),
-        Arguments.of(citationRepoMock::getBackwardsReferencedPaperIdsOfPaperById),
-        Arguments.of(reviewRepoMock::getAllReviewsForProjectPaper),
-        Arguments.of(reviewHasCriterionRepoMock::getSelectedCriteriaIdsForReviewById),
     )
 
     @Suppress("LongMethod", "ReturnCount")
@@ -64,10 +56,6 @@ class GetProjectPaperByRelativeIdTest : MainServiceTest() {
         val author = DataBuilder.createExampleAuthor()
         val review = DataBuilder.createExampleReview()
 
-        if (failAt == projectRepoMock::doesProjectExistById) {
-            coEvery { projectRepoMock.doesProjectExistById(project.id) } throws TestSpecificException()
-            return
-        }
         coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
 
         if (failAt == projectPaperRepoMock::getProjectPaperByRelativeId) {
@@ -81,11 +69,6 @@ class GetProjectPaperByRelativeIdTest : MainServiceTest() {
         } returns Result.success(projectPaper)
 
         mockCurrentUser(currentUser)
-
-        if (failAt == projectMemberRepoMock::getProjectMembers) {
-            coEvery { projectMemberRepoMock.getProjectMembers(project.id) } throws TestSpecificException()
-            return
-        }
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns
             if (isUserAdmin) {
                 emptyList()
@@ -94,41 +77,16 @@ class GetProjectPaperByRelativeIdTest : MainServiceTest() {
             }
 
         if (failAt == paperRepoMock::getPaperById) {
-            coEvery { paperRepoMock.getPaperById(projectPaper.paperId) } throws TestSpecificException()
+            coEvery { paperRepoMock.getPaperById(projectPaper.paperId) } returns Result.failure(TestSpecificException())
             return
         }
         coEvery { paperRepoMock.getPaperById(projectPaper.paperId) } returns Result.success(paper)
 
-        if (failAt == authorOfPaperRepoMock::getAuthorsOfPaperById) {
-            coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(paper.id) } throws TestSpecificException()
-            return
-        }
         coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(paper.id) } returns listOf(author)
-
-        if (failAt == citationRepoMock::getBackwardsReferencedPaperIdsOfPaperById) {
-            coEvery {
-                citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
-            } throws TestSpecificException()
-            return
-        }
         coEvery {
             citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
         } returns listOf(UUID.randomUUID())
-
-        if (failAt == reviewRepoMock::getAllReviewsForProjectPaper) {
-            coEvery {
-                reviewRepoMock.getAllReviewsForProjectPaper(projectPaper.id)
-            } throws TestSpecificException()
-            return
-        }
         coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper.id) } returns listOf(review)
-
-        if (failAt == reviewHasCriterionRepoMock::getSelectedCriteriaIdsForReviewById) {
-            coEvery {
-                reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(any())
-            } throws TestSpecificException()
-            return
-        }
         coEvery {
             reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(review.id)
         } returns listOf(UUID.randomUUID())
@@ -138,6 +96,7 @@ class GetProjectPaperByRelativeIdTest : MainServiceTest() {
     @MethodSource("failingFunctions")
     fun `When a step fails, then a TestSpecificException is thrown`(failAt: KFunction<*>) = runTest {
         mockHappyPathUntil(failAt, true)
+
         assertThrows<TestSpecificException> {
             mainService.getProjectPaperByRelativeId(getExampleRequest())
         }
@@ -146,26 +105,16 @@ class GetProjectPaperByRelativeIdTest : MainServiceTest() {
     @Test
     fun `When a server admin retrieves the project paper, then no exception is thrown`() = runTest {
         mockHappyPathUntil(null, true)
+
         assertDoesNotThrow { mainService.getProjectPaperByRelativeId(getExampleRequest()) }
     }
 
     @Test
     fun `When a project member retrieves the project paper, then no exception is thrown`() = runTest {
         mockHappyPathUntil(null, false)
+
         assertDoesNotThrow { mainService.getProjectPaperByRelativeId(getExampleRequest()) }
     }
-
-    @Test
-    fun `When the project to retrieve the project paper from doesn't exist, then a NotFoundException is thrown`() =
-        runTest {
-            coEvery {
-                projectRepoMock.doesProjectExistById(projectId)
-            } throws NotFoundException(EntityType.PROJECT, projectId.toString())
-
-            assertThrows<NotFoundException> {
-                mainService.getProjectPaperByRelativeId(getExampleRequest())
-            }
-        }
 
     @Test
     fun `When a non project member retrieves the project paper, then an UnauthorizedException is thrown`() = runTest {

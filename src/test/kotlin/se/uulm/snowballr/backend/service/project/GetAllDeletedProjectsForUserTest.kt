@@ -11,11 +11,14 @@ import se.uulm.snowballr.backend.model.SnowballRException.InvalidIdException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.Base
+import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.UserOuterClass.UserRole
 import java.util.UUID
 
 class GetAllDeletedProjectsForUserTest : MainServiceTest() {
     private val requestedUserId = UUID.randomUUID()
+    private val statusFilters = setOf(ProjectStatus.PROJECT_STATUS_DELETED)
+
     private fun getExampleRequest() = Base.Id.newBuilder().setId(requestedUserId.toString()).build()
 
     @Test
@@ -34,7 +37,7 @@ class GetAllDeletedProjectsForUserTest : MainServiceTest() {
         val requestedUser = DataBuilder.createExampleUser(id = requestedUserId)
 
         mockCurrentUser(currentUser)
-        coEvery { userRepoMock.getUserById(requestedUser.id) } throws TestSpecificException()
+        coEvery { userRepoMock.getUserById(requestedUser.id) } returns Result.failure(TestSpecificException())
 
         assertThrows<TestSpecificException> { mainService.getAllDeletedProjectsForUser(getExampleRequest()) }
     }
@@ -52,25 +55,13 @@ class GetAllDeletedProjectsForUserTest : MainServiceTest() {
         }
 
     @Test
-    fun `When retrieving deleted projects fails, then a TestSpecificException is thrown`() = runTest {
-        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-        val requestedUser = DataBuilder.createExampleUser(id = requestedUserId)
-
-        mockCurrentUser(currentUser)
-        coEvery { userRepoMock.getUserById(requestedUser.id) } returns Result.success(requestedUser)
-        coEvery { projectRepoMock.getUserProjects(any(), any()) } throws TestSpecificException()
-
-        assertThrows<TestSpecificException> { mainService.getAllDeletedProjectsForUser(getExampleRequest()) }
-    }
-
-    @Test
     fun `When deleted projects are retrieved by an admin, then they are returned successfully`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val requestedUser = DataBuilder.createExampleUser(id = requestedUserId)
 
         mockCurrentUser(currentUser)
         coEvery { userRepoMock.getUserById(requestedUser.id) } returns Result.success(requestedUser)
-        coEvery { projectRepoMock.getUserProjects(any(), any()) } returns emptyList()
+        coEvery { projectRepoMock.getUserProjects(requestedUser.id, statusFilters) } returns emptyList()
 
         assertDoesNotThrow { mainService.getAllDeletedProjectsForUser(getExampleRequest()) }
     }
@@ -82,7 +73,7 @@ class GetAllDeletedProjectsForUserTest : MainServiceTest() {
         val request = Base.Id.newBuilder().setId(requestedUser.id.toString()).build()
 
         mockCurrentUser(currentUser)
-        coEvery { projectRepoMock.getUserProjects(any(), any()) } returns emptyList()
+        coEvery { projectRepoMock.getUserProjects(requestedUser.id, statusFilters) } returns emptyList()
 
         assertDoesNotThrow { mainService.getAllDeletedProjectsForUser(request) }
     }

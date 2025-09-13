@@ -7,7 +7,6 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.SnowballRException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.ProjectMemberWithUser
@@ -27,7 +26,6 @@ class GetProjectMembersTest : MainServiceTest() {
     @Test
     fun `When a server admin requests the project members, then no exception is thrown`() = runTest {
         val request = getExampleRequest()
-
         val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val projectMemberUser = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject(id = projectId)
@@ -48,7 +46,6 @@ class GetProjectMembersTest : MainServiceTest() {
     @Test
     fun `When a project member requests the project members, then no exception is thrown`() = runTest {
         val request = getExampleRequest()
-
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject(id = projectId)
         val projectMember = DataBuilder.createExampleProjectMember(userId = user.id, projectId = project.id)
@@ -65,7 +62,6 @@ class GetProjectMembersTest : MainServiceTest() {
     @Test
     fun `When a non project member requests the project members, then an UnauthorizedException is thrown`() = runTest {
         val request = getExampleRequest()
-
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject(id = projectId)
 
@@ -77,14 +73,16 @@ class GetProjectMembersTest : MainServiceTest() {
     }
 
     @Test
-    fun `When project members are request from a non existing project, then a NotFoundException is thrown`() = runTest {
-        val request = getExampleRequest()
+    fun `When project members are requested from a non existing project, then a NotFoundException is thrown`() =
+        runTest {
+            val request = getExampleRequest()
+            val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
 
-        val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
+            mockCurrentUser(user)
+            coEvery {
+                projectRepoMock.getProjectById(projectId)
+            } returns Result.failure(NotFoundException(EntityType.PROJECT, request.id))
 
-        mockCurrentUser(user)
-        coEvery { projectRepoMock.getProjectById(projectId) } throws NotFoundException(EntityType.PROJECT, request.id)
-
-        assertThrows<NotFoundException> { mainService.getProjectMembers(request) }
-    }
+            assertThrows<NotFoundException> { mainService.getProjectMembers(request) }
+        }
 }

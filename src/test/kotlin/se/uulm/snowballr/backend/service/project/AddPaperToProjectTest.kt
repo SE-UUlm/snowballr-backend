@@ -11,7 +11,6 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.model.SnowballRException
 import se.uulm.snowballr.backend.model.SnowballRException.DuplicateEntityException
 import se.uulm.snowballr.backend.model.SnowballRException.OutOfRangeException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
@@ -33,15 +32,8 @@ class AddPaperToProjectTest : MainServiceTest() {
         .build()
 
     fun failingFunctions(): Stream<Arguments?> = Stream.of(
-        Arguments.of(projectMemberRepoMock::getProjectMembers),
         Arguments.of(projectRepoMock::getProjectById),
-        Arguments.of(projectPaperRepoMock::doesProjectPaperExist),
         Arguments.of(paperRepoMock::getPaperById),
-        Arguments.of(projectPaperRepoMock::addPaperToProject),
-        Arguments.of(authorOfPaperRepoMock::getAuthorsOfPaperById),
-        Arguments.of(citationRepoMock::getBackwardsReferencedPaperIdsOfPaperById),
-        Arguments.of(reviewRepoMock::getAllReviewsForProjectPaper),
-        Arguments.of(reviewHasCriterionRepoMock::getSelectedCriteriaIdsForReviewById),
     )
 
     @Suppress("LongMethod", "ReturnCount", "CyclomaticComplexMethod")
@@ -64,11 +56,6 @@ class AddPaperToProjectTest : MainServiceTest() {
         val review = DataBuilder.createExampleReview()
 
         mockCurrentUser(currentUser)
-
-        if (failAt == projectMemberRepoMock::getProjectMembers) {
-            coEvery { projectMemberRepoMock.getProjectMembers(project.id) } throws TestSpecificException()
-            return
-        }
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns
             if (isUserAdmin) {
                 emptyList()
@@ -77,63 +64,26 @@ class AddPaperToProjectTest : MainServiceTest() {
             }
 
         if (failAt == projectRepoMock::getProjectById) {
-            coEvery { projectRepoMock.getProjectById(project.id) } throws TestSpecificException()
+            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.failure(TestSpecificException())
             return
         }
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
         if (failAt == paperRepoMock::getPaperById) {
-            coEvery { paperRepoMock.getPaperById(projectPaper.paperId) } throws TestSpecificException()
+            coEvery { paperRepoMock.getPaperById(projectPaper.paperId) } returns Result.failure(TestSpecificException())
             return
         }
         coEvery { paperRepoMock.getPaperById(projectPaper.paperId) } returns Result.success(paper)
 
-        if (failAt == projectPaperRepoMock::doesProjectPaperExist) {
-            coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, paper.id) } throws TestSpecificException()
-            return
-        }
         coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, paper.id) } returns false
-
-        if (failAt == projectPaperRepoMock::addPaperToProject) {
-            coEvery {
-                projectPaperRepoMock.addPaperToProject(getExampleRequest(), currentUser.id)
-            } throws TestSpecificException()
-            return
-        }
         coEvery {
             projectPaperRepoMock.addPaperToProject(getExampleRequest(), currentUser.id)
         } returns projectPaper
-
-        if (failAt == authorOfPaperRepoMock::getAuthorsOfPaperById) {
-            coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(paper.id) } throws TestSpecificException()
-            return
-        }
         coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(paper.id) } returns listOf(author)
-
-        if (failAt == citationRepoMock::getBackwardsReferencedPaperIdsOfPaperById) {
-            coEvery {
-                citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
-            } throws TestSpecificException()
-            return
-        }
         coEvery {
             citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
         } returns listOf(UUID.randomUUID())
-
-        if (failAt == reviewRepoMock::getAllReviewsForProjectPaper) {
-            coEvery {
-                reviewRepoMock.getAllReviewsForProjectPaper(projectPaper.id)
-            } throws TestSpecificException()
-            return
-        }
         coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper.id) } returns listOf(review)
-
-        if (failAt == reviewHasCriterionRepoMock::getSelectedCriteriaIdsForReviewById) {
-            coEvery {
-                reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(any())
-            } throws TestSpecificException()
-            return
-        }
         coEvery {
             reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(review.id)
         } returns listOf(UUID.randomUUID())

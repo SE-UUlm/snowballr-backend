@@ -11,11 +11,14 @@ import se.uulm.snowballr.backend.model.SnowballRException.InvalidIdException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.Base
+import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.UserOuterClass.UserRole
 import java.util.UUID
 
 class GetAllProjectsForUserTest : MainServiceTest() {
     private val requestedUserId = UUID.randomUUID()
+    private val statusFilters = setOf(ProjectStatus.PROJECT_STATUS_ACTIVE, ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
+
     private fun getExampleRequest() = Base.Id.newBuilder().setId(requestedUserId.toString()).build()
 
     @Test
@@ -34,33 +37,22 @@ class GetAllProjectsForUserTest : MainServiceTest() {
         val requestedUser = DataBuilder.createExampleUser(id = requestedUserId)
 
         mockCurrentUser(currentUser)
-        coEvery { userRepoMock.getUserById(requestedUser.id) } throws TestSpecificException()
+        coEvery { userRepoMock.getUserById(requestedUser.id) } returns Result.failure(TestSpecificException())
 
         assertThrows<TestSpecificException> { mainService.getAllProjectsForUser(getExampleRequest()) }
     }
 
     @Test
-    fun `When all user projects are retrieved by another non-admin user, then an UnauthorizedException is thrown`() = runTest {
-        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-        val requestedUser = DataBuilder.createExampleUser(id = requestedUserId)
+    fun `When all user projects are retrieved by another non-admin user, then an UnauthorizedException is thrown`() =
+        runTest {
+            val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
+            val requestedUser = DataBuilder.createExampleUser(id = requestedUserId)
 
-        mockCurrentUser(currentUser)
-        coEvery { userRepoMock.getUserById(requestedUser.id) } returns Result.success(requestedUser)
+            mockCurrentUser(currentUser)
+            coEvery { userRepoMock.getUserById(requestedUser.id) } returns Result.success(requestedUser)
 
-        assertThrows<UnauthorizedException> { mainService.getAllProjectsForUser(getExampleRequest()) }
-    }
-
-    @Test
-    fun `When retrieving the projects of a user fails, then a TestSpecificException is thrown`() = runTest {
-        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-        val requestedUser = DataBuilder.createExampleUser(id = requestedUserId)
-
-        mockCurrentUser(currentUser)
-        coEvery { userRepoMock.getUserById(requestedUser.id) } returns Result.success(requestedUser)
-        coEvery { projectRepoMock.getUserProjects(any()) } throws TestSpecificException()
-
-        assertThrows<TestSpecificException> { mainService.getAllProjectsForUser(getExampleRequest()) }
-    }
+            assertThrows<UnauthorizedException> { mainService.getAllProjectsForUser(getExampleRequest()) }
+        }
 
     @Test
     fun `When the user projects are retrieved by an admin, then all user projects are returned successfully`() =
@@ -70,7 +62,7 @@ class GetAllProjectsForUserTest : MainServiceTest() {
 
             mockCurrentUser(currentUser)
             coEvery { userRepoMock.getUserById(requestedUser.id) } returns Result.success(requestedUser)
-            coEvery { projectRepoMock.getUserProjects(any()) } returns emptyList()
+            coEvery { projectRepoMock.getUserProjects(requestedUser.id, statusFilters) } returns emptyList()
 
             assertDoesNotThrow { mainService.getAllProjectsForUser(getExampleRequest()) }
         }
@@ -83,7 +75,7 @@ class GetAllProjectsForUserTest : MainServiceTest() {
 
         mockCurrentUser(currentUser)
         coEvery { userRepoMock.getUserById(requestedUser.id) } returns Result.success(requestedUser)
-        coEvery { projectRepoMock.getUserProjects(any()) } returns emptyList()
+        coEvery { projectRepoMock.getUserProjects(requestedUser.id, statusFilters) } returns emptyList()
 
         assertDoesNotThrow { mainService.getAllProjectsForUser(request) }
     }

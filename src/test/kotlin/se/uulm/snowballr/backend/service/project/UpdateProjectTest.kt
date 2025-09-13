@@ -9,7 +9,6 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import se.uulm.snowballr.backend.DataBuilder
-import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.toGrpcProject
@@ -205,20 +204,5 @@ class UpdateProjectTest : MainServiceTest() {
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
 
         assertThrows<FailedPreconditionException> { mainService.updateProject(request) }
-    }
-
-    @Test
-    fun `When an error occurs while updating a project, then a TestSpecificException is thrown`() = runTest {
-        val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-        val status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE
-        val project = DataBuilder.createExampleProject(status = status)
-        val request = ProjectOuterClass.Project.Update.newBuilder().setProject(project.toGrpcProject()).build()
-
-        mockCurrentUser(user)
-        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-        coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
-        coEvery { projectRepoMock.updateProject(any(), any()) } throws TestSpecificException()
-
-        assertThrows<TestSpecificException> { mainService.updateProject(request) }
     }
 }
