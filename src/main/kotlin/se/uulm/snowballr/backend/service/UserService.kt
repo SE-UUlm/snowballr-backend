@@ -31,7 +31,7 @@ import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import snowballr.Authentication
 import snowballr.Base
 import snowballr.CriterionOuterClass
-import snowballr.ProjectOuterClass
+import snowballr.ProjectOuterClass.Project
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
 import snowballr.UserSettingsOuterClass
@@ -62,7 +62,7 @@ interface IUserService {
     /**
      * Service implementation of [SnowballRService.getInviteCandidates]
      */
-    suspend fun getInviteCandidates(request: ProjectOuterClass.Project.InviteCandidatesRequest): GrpcUser.List
+    suspend fun getInviteCandidates(request: Project.InviteCandidatesRequest): GrpcUser.List
 
     /**
      * Service implementation of [SnowballRService.register].
@@ -205,9 +205,7 @@ class UserService(
         userRepo.getAllUsers().toGrpcUsers()
     }
 
-    override suspend fun getInviteCandidates(
-        request: ProjectOuterClass.Project.InviteCandidatesRequest,
-    ): GrpcUser.List {
+    override suspend fun getInviteCandidates(request: Project.InviteCandidatesRequest): GrpcUser.List {
         val searchQuery = request.query.trim()
 
         // Check whether the search query is too short, i.e., 3 or fewer characters long

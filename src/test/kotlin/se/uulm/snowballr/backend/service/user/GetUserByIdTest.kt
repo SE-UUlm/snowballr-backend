@@ -129,7 +129,7 @@ class GetUserByIdTest : MainServiceTest() {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
 
         mockCurrentUser(currentUser)
-        coEvery { userRepoMock.getUserById(requestedUserId) } throws TestSpecificException()
+        coEvery { userRepoMock.getUserById(requestedUserId) } returns Result.failure(TestSpecificException())
 
         assertThrows<TestSpecificException> { mainService.getUserById(getExampleRequest()) }
     }

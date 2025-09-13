@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
-import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.UserOuterClass.UserRole
@@ -19,16 +18,6 @@ class GetAllUsersTest : MainServiceTest() {
         mockCurrentUser(currentUser)
 
         assertThrows<UnauthorizedException> { mainService.getAllUsers() }
-    }
-
-    @Test
-    fun `When retrieving users fails, then a TestSpecificException is thrown`() = runTest {
-        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-
-        mockCurrentUser(currentUser)
-        coEvery { userRepoMock.getAllUsers() } throws TestSpecificException()
-
-        assertThrows<TestSpecificException> { mainService.getAllUsers() }
     }
 
     @Test

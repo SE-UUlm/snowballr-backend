@@ -19,7 +19,7 @@ class GetUserSettingsTest : MainServiceTest() {
         val user = DataBuilder.createExampleUser()
 
         mockCurrentUser(user)
-        coEvery { userRepoMock.getUserSettings(user.id) } throws TestSpecificException()
+        coEvery { userRepoMock.getUserSettings(user.id) } returns Result.failure(TestSpecificException())
 
         assertThrows<TestSpecificException> { mainService.getUserSettings() }
     }

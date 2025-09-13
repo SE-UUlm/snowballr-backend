@@ -24,7 +24,7 @@ import kotlin.test.assertEquals
 @ExtendWith(GrpcTestContextExtension::class)
 class LoginTest : MainServiceTest() {
     @Test
-    fun `When a user provides an invalid email, then an exception is thrown`() = runTest {
+    fun `When a user provides an invalid email, then an UnauthenticatedException is thrown`() = runTest {
         val request = LoginRequest.newBuilder().setEmail("wrongEmail").build()
 
         val exception = NotFoundException(EntityType.USER, "wrongEmail", identifierType = IdentifierType.EMAIL)
@@ -34,20 +34,21 @@ class LoginTest : MainServiceTest() {
     }
 
     @Test
-    fun `When a user with an unconfirmed email tries to log in, then an exception is thrown`() = runTest {
-        val testUser = DataBuilder.createExampleUser(status = UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED)
-        val request = LoginRequest.newBuilder().apply {
-            email = testUser.email
-            password = "anyPassword"
-        }.build()
+    fun `When a user with an unconfirmed email tries to log in, then an UnauthenticatedException is thrown`() =
+        runTest {
+            val testUser = DataBuilder.createExampleUser(status = UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED)
+            val request = LoginRequest.newBuilder().apply {
+                email = testUser.email
+                password = "anyPassword"
+            }.build()
 
-        coEvery { userRepoMock.getUserByEmail(testUser.email) } returns Result.success(testUser)
+            coEvery { userRepoMock.getUserByEmail(testUser.email) } returns Result.success(testUser)
 
-        assertThrows<UnauthenticatedException> { mainService.login(request) }
-    }
+            assertThrows<UnauthenticatedException> { mainService.login(request) }
+        }
 
     @Test
-    fun `When a deleted user tries to log in, then an exception is thrown`() = runTest {
+    fun `When a deleted user tries to log in, then an UnauthenticatedException is thrown`() = runTest {
         val testUser = DataBuilder.createExampleUser(status = UserStatus.USER_STATUS_DELETED)
         val request = LoginRequest.newBuilder().apply {
             email = testUser.email
@@ -60,20 +61,21 @@ class LoginTest : MainServiceTest() {
     }
 
     @Test
-    fun `When a user with an unspecified status tries to log in, then an exception is thrown`() = runTest {
-        val testUser = DataBuilder.createExampleUser(status = UserStatus.USER_STATUS_UNSPECIFIED)
-        val request = LoginRequest.newBuilder().apply {
-            email = testUser.email
-            password = "anyPassword"
-        }.build()
+    fun `When a user with an unspecified status tries to log in, then an UnauthenticatedException is thrown`() =
+        runTest {
+            val testUser = DataBuilder.createExampleUser(status = UserStatus.USER_STATUS_UNSPECIFIED)
+            val request = LoginRequest.newBuilder().apply {
+                email = testUser.email
+                password = "anyPassword"
+            }.build()
 
-        coEvery { userRepoMock.getUserByEmail(testUser.email) } returns Result.success(testUser)
+            coEvery { userRepoMock.getUserByEmail(testUser.email) } returns Result.success(testUser)
 
-        assertThrows<UnauthenticatedException> { mainService.login(request) }
-    }
+            assertThrows<UnauthenticatedException> { mainService.login(request) }
+        }
 
     @Test
-    fun `When the password hash cannot be retrieved, then an exception is thrown`() = runTest {
+    fun `When the password hash cannot be retrieved, then an UnauthenticatedException is thrown`() = runTest {
         val testUser = DataBuilder.createExampleUser(status = UserStatus.USER_STATUS_ACTIVE)
 
         val request = LoginRequest.newBuilder().apply {
@@ -82,15 +84,14 @@ class LoginTest : MainServiceTest() {
         }.build()
 
         coEvery { userRepoMock.getUserByEmail(testUser.email) } returns Result.success(testUser)
-        coEvery { userRepoMock.getPasswordHashByEmail(testUser.email) } throws NotFoundException(
-            EntityType.USER, testUser.email, identifierType = IdentifierType.EMAIL,
-        )
+        val exception = NotFoundException(EntityType.USER, testUser.email, identifierType = IdentifierType.EMAIL)
+        coEvery { userRepoMock.getPasswordHashByEmail(testUser.email) } returns Result.failure(exception)
 
         assertThrows<UnauthenticatedException> { mainService.login(request) }
     }
 
     @Test
-    fun `When a user provides an invalid password, then an exception is thrown`() = runTest {
+    fun `When a user provides an invalid password, then an UnauthenticatedException is thrown`() = runTest {
         val testUser = DataBuilder.createExampleUser(status = UserStatus.USER_STATUS_ACTIVE)
         val userPassword = "AAbb__00"
         val passwordHash = PasswordUtils.hashPassword(userPassword)

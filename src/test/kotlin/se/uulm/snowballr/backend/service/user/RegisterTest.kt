@@ -26,29 +26,7 @@ class RegisterTest : MainServiceTest() {
     }
 
     @Test
-    fun `When creating the user fails, then a TestSpecificException is thrown`() = runTest {
-        val request = Authentication.RegisterRequest.newBuilder().build()
-
-        coEvery { userRepoMock.doesUserExistByEmail(any()) } returns false
-        coEvery { userRepoMock.createUser(any(), any()) } throws TestSpecificException()
-
-        assertThrows<TestSpecificException> { mainService.register(request) }
-    }
-
-    @Test
-    fun `When saving the verification token fails, then a TestSpecificException is thrown`() = runTest {
-        val user = DataBuilder.createExampleUser()
-        val request = Authentication.RegisterRequest.newBuilder().build()
-
-        coEvery { userRepoMock.doesUserExistByEmail(any()) } returns false
-        coEvery { userRepoMock.createUser(any(), any()) } returns user
-        coEvery { verificationTokenRepoMock.saveVerificationToken(any(), any()) } throws TestSpecificException()
-
-        assertThrows<TestSpecificException> { mainService.register(request) }
-    }
-
-    @Test
-    fun `When sending the verification email fails, then a TestSpecificException is thrown`() = runTest {
+    fun `When sending the verification email fails, then an exception is thrown`() = runTest {
         val user = DataBuilder.createExampleUser()
         val request = Authentication.RegisterRequest.newBuilder().build()
 

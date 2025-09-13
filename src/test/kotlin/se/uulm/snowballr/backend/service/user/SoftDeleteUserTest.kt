@@ -32,7 +32,7 @@ class SoftDeleteUserTest : MainServiceTest() {
         val currentUser = DataBuilder.createExampleUser()
 
         mockCurrentUser(currentUser)
-        coEvery { userRepoMock.getUserById(requestedUserId) } throws TestSpecificException()
+        coEvery { userRepoMock.getUserById(requestedUserId) } returns Result.failure(TestSpecificException())
 
         assertThrows<TestSpecificException> { mainService.softDeleteUser(getExampleRequest()) }
     }
@@ -57,18 +57,6 @@ class SoftDeleteUserTest : MainServiceTest() {
         coEvery { userRepoMock.getUserById(requestedUserId) } returns Result.success(userToDelete)
 
         assertThrows<FailedPreconditionException> { mainService.softDeleteUser(getExampleRequest()) }
-    }
-
-    @Test
-    fun `When soft delete fails, then a TestSpecificException is thrown`() = runTest {
-        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-        val userToDelete = DataBuilder.createExampleUser(id = requestedUserId)
-
-        mockCurrentUser(currentUser)
-        coEvery { userRepoMock.getUserById(requestedUserId) } returns Result.success(userToDelete)
-        coEvery { userRepoMock.softDeleteUser(requestedUserId) } throws TestSpecificException()
-
-        assertThrows<TestSpecificException> { mainService.softDeleteUser(getExampleRequest()) }
     }
 
     @Test

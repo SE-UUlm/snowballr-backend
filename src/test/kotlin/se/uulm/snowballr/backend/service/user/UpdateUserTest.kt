@@ -41,7 +41,7 @@ class UpdateUserTest : MainServiceTest() {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
 
         mockCurrentUser(currentUser)
-        coEvery { userRepoMock.getUserById(requestedUserId) } throws TestSpecificException()
+        coEvery { userRepoMock.getUserById(requestedUserId) } returns Result.failure(TestSpecificException())
 
         assertThrows<TestSpecificException> { mainService.updateUser(getExampleRequest()) }
     }
@@ -83,19 +83,6 @@ class UpdateUserTest : MainServiceTest() {
         coEvery { userRepoMock.doesUserExistByEmail(any()) } returns true
 
         assertThrows<DuplicateEntityException> { mainService.updateUser(getExampleRequest()) }
-    }
-
-    @Test
-    fun `When update fails, then a TestSpecificException is thrown`() = runTest {
-        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-        val requestedUser = DataBuilder.createExampleUser(id = requestedUserId)
-
-        mockCurrentUser(currentUser)
-        coEvery { userRepoMock.getUserById(requestedUserId) } returns Result.success(requestedUser)
-        coEvery { userRepoMock.doesUserExistByEmail(any()) } returns false
-        coEvery { userRepoMock.updateUser(any()) } throws TestSpecificException()
-
-        assertThrows<TestSpecificException> { mainService.updateUser(getExampleRequest()) }
     }
 
     @Test

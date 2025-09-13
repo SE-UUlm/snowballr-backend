@@ -16,22 +16,27 @@ import kotlin.test.assertTrue
 @ExperimentalCoroutinesApi
 class GetInviteCandidatesTest : MainServiceTest() {
     private val testProjectId = UUID.randomUUID()
-    private val validInviteCandidatesRequest = InviteCandidatesRequest.newBuilder().setQuery(
-        "john",
-    ).setProjectId(testProjectId.toString()).build()
+    private val validInviteCandidatesRequest = InviteCandidatesRequest.newBuilder()
+        .setQuery("john")
+        .setProjectId(testProjectId.toString())
+        .build()
 
     @Test
     fun `When the search query is too short, then an empty list is returned`() = runTest {
         val shortSearchQuery = InviteCandidatesRequest.newBuilder().setQuery("j").build()
+
         assertDoesNotThrow { mainService.getInviteCandidates(shortSearchQuery) }
     }
 
     @Test
     fun `When parsing the project id fails, then only a warning is logged`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
-        val requestWithInvalidProjectId = InviteCandidatesRequest.newBuilder().setQuery(
-            "john",
-        ).setProjectId("invalid-uuid").build()
+        val requestWithInvalidProjectId = InviteCandidatesRequest
+            .newBuilder()
+            .setQuery("john")
+            .setProjectId("invalid-uuid")
+            .build()
+
         mockCurrentUser(currentUser)
         coEvery { userRepoMock.getUsersMatchingSearchQuery(any(), any()) } returns emptyList()
 
@@ -42,9 +47,12 @@ class GetInviteCandidatesTest : MainServiceTest() {
     fun `When no the project members exist, then no users except for the current user are excluded`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
         val requestedProjectId = UUID.randomUUID()
-        val requestWithNotExistingProject = InviteCandidatesRequest.newBuilder().setQuery(
-            "john",
-        ).setProjectId(requestedProjectId.toString()).build()
+        val requestWithNotExistingProject = InviteCandidatesRequest
+            .newBuilder()
+            .setQuery("john")
+            .setProjectId(requestedProjectId.toString())
+            .build()
+
         mockCurrentUser(currentUser)
         coEvery { projectMemberRepoMock.getProjectMembers(requestedProjectId) } returns emptyList()
         coEvery { userRepoMock.getUsersMatchingSearchQuery(any(), any()) } returns emptyList()
@@ -55,6 +63,7 @@ class GetInviteCandidatesTest : MainServiceTest() {
     @Test
     fun `When retrieving the users matching the search query fails, then an empty list is returned`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
+
         mockCurrentUser(currentUser)
         coEvery { projectMemberRepoMock.getProjectMembers(testProjectId) } returns emptyList()
         coEvery { userRepoMock.getUsersMatchingSearchQuery(any(), any()) } returns emptyList()
@@ -68,6 +77,7 @@ class GetInviteCandidatesTest : MainServiceTest() {
             val currentUser = DataBuilder.createExampleUser(email = "current.user@example.com")
             val users = listOf(currentUser, DataBuilder.createExampleUser(email = "another.user@example.com"))
             val excludedUsers = setOf(currentUser.id)
+
             mockCurrentUser(currentUser)
             coEvery { projectMemberRepoMock.getProjectMembers(testProjectId) } returns emptyList()
             coEvery {
@@ -86,6 +96,7 @@ class GetInviteCandidatesTest : MainServiceTest() {
             val projectMember = DataBuilder.createExampleUser(email = "project.member@example.com")
             val users = listOf(currentUser, projectMember)
             val excludedUsers = setOf(currentUser.id, projectMember.id)
+
             mockCurrentUser(currentUser)
             coEvery {
                 projectMemberRepoMock.getProjectMembers(testProjectId)

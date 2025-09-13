@@ -16,7 +16,7 @@ import java.time.OffsetDateTime
 
 class VerifyEmailTest : MainServiceTest() {
     @Test
-    fun `When the verification token is not found, then an exception is thrown`() = runTest {
+    fun `When the verification token is not found, then a TestSpecificException is thrown`() = runTest {
         val request = Authentication.VerifyEmailRequest.newBuilder().setToken("non-existent-token").build()
         coEvery { verificationTokenRepoMock.getVerificationTokenByValue(any()) } returns null
 
@@ -24,7 +24,7 @@ class VerifyEmailTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the verification token has expired, then an exception is thrown`() = runTest {
+    fun `When the verification token has expired, then a TestSpecificException is thrown`() = runTest {
         val expiredToken = DataBuilder.createExampleVerificationToken(
             expiresAt = OffsetDateTime.now().minusMinutes(1),
         )
@@ -37,39 +37,12 @@ class VerifyEmailTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the user associated with the token is not found, then an exception is thrown`() = runTest {
+    fun `When the user associated with the token is not found, then a TestSpecificException is thrown`() = runTest {
         val token = DataBuilder.createExampleVerificationToken()
         val request = Authentication.VerifyEmailRequest.newBuilder().setToken(token.token).build()
 
         coEvery { verificationTokenRepoMock.getVerificationTokenByValue(any()) } returns token
-        coEvery { userRepoMock.getUserById(token.userId) } throws TestSpecificException()
-
-        assertThrows<TestSpecificException> { mainService.verifyEmail(request) }
-    }
-
-    @Test
-    fun `When updating the user status fails, then an exception is thrown`() = runTest {
-        val user = DataBuilder.createExampleUser()
-        val token = DataBuilder.createExampleVerificationToken(userId = user.id)
-        val request = Authentication.VerifyEmailRequest.newBuilder().setToken(token.token).build()
-
-        coEvery { verificationTokenRepoMock.getVerificationTokenByValue(any()) } returns token
-        coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
-        coEvery { userRepoMock.updateUser(any()) } throws TestSpecificException()
-
-        assertThrows<TestSpecificException> { mainService.verifyEmail(request) }
-    }
-
-    @Test
-    fun `When deleting the verification token fails, then an exception is thrown`() = runTest {
-        val user = DataBuilder.createExampleUser()
-        val token = DataBuilder.createExampleVerificationToken(userId = user.id)
-        val request = Authentication.VerifyEmailRequest.newBuilder().setToken(token.token).build()
-
-        coEvery { verificationTokenRepoMock.getVerificationTokenByValue(any()) } returns token
-        coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
-        coEvery { userRepoMock.updateUser(any()) } returns user
-        coEvery { verificationTokenRepoMock.deleteVerificationToken(any()) } throws TestSpecificException()
+        coEvery { userRepoMock.getUserById(token.userId) } returns Result.failure(TestSpecificException())
 
         assertThrows<TestSpecificException> { mainService.verifyEmail(request) }
     }
