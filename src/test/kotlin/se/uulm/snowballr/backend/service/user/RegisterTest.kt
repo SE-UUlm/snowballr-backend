@@ -17,7 +17,7 @@ import snowballr.Authentication
 
 class RegisterTest : MainServiceTest() {
     @Test
-    fun `When a user with the given email already exists, then an exception is thrown`() = runTest {
+    fun `When a user with the given email already exists, then a DuplicateEntityException is thrown`() = runTest {
         val request = Authentication.RegisterRequest.newBuilder().build()
 
         coEvery { userRepoMock.doesUserExistByEmail(any()) } returns true
@@ -26,7 +26,7 @@ class RegisterTest : MainServiceTest() {
     }
 
     @Test
-    fun `When creating the user fails, then an exception is thrown`() = runTest {
+    fun `When creating the user fails, then a TestSpecificException is thrown`() = runTest {
         val request = Authentication.RegisterRequest.newBuilder().build()
 
         coEvery { userRepoMock.doesUserExistByEmail(any()) } returns false
@@ -36,7 +36,7 @@ class RegisterTest : MainServiceTest() {
     }
 
     @Test
-    fun `When saving the verification token fails, then an exception is thrown`() = runTest {
+    fun `When saving the verification token fails, then a TestSpecificException is thrown`() = runTest {
         val user = DataBuilder.createExampleUser()
         val request = Authentication.RegisterRequest.newBuilder().build()
 
@@ -48,7 +48,7 @@ class RegisterTest : MainServiceTest() {
     }
 
     @Test
-    fun `When sending the verification email fails, then an exception is thrown`() = runTest {
+    fun `When sending the verification email fails, then a TestSpecificException is thrown`() = runTest {
         val user = DataBuilder.createExampleUser()
         val request = Authentication.RegisterRequest.newBuilder().build()
 

@@ -64,7 +64,7 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
     @Nested
     inner class GetProjectPaperByRelativeId {
         @Test
-        fun `When no project with the given id exists, then a not found exception is thrown`() = runTest {
+        fun `When no project with the given id exists, then a NotFoundException is thrown`() = runTest {
             val projectId = insertProjectAndGetId(createdBy = testUserId)
             val paperId = insertPaperAndGetId()
             val projectPaperId =
@@ -77,7 +77,7 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
         }
 
         @Test
-        fun `When no project paper with the given local id exists in the project, then a not found exception is thrown`() =
+        fun `When no project paper with the given local id exists in the project, then a NotFoundException is thrown`() =
             runTest {
                 val projectId = insertProjectAndGetId(createdBy = testUserId)
 
