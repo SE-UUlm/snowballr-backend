@@ -180,10 +180,7 @@ class UserTableRepo(
     }
 
     override suspend fun getAllUsers(): List<User> = db.query {
-        UserTable
-            .selectAll()
-            .where(UserTable.email neq "")
-            .map { it.toUser() }
+        UserTable.getEntities(ResultRow::toUser) { UserTable.email neq "" }
     }
 
     @Suppress("MagicNumber")

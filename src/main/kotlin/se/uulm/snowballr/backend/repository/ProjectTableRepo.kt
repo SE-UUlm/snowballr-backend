@@ -5,7 +5,6 @@ import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.or
-import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.statements.UpdateStatement
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
@@ -142,13 +141,10 @@ class ProjectTableRepo(
     }
 
     override suspend fun getAllProjects(): List<Project> = db.query {
-        ProjectTable
-            .selectAll()
-            .where {
-                (ProjectTable.status eq ProjectStatus.PROJECT_STATUS_ACTIVE) or
-                    (ProjectTable.status eq ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
-            }
-            .map { it.toProject() }
+        ProjectTable.getEntities(ResultRow::toProject) {
+            (ProjectTable.status eq ProjectStatus.PROJECT_STATUS_ACTIVE) or
+                (ProjectTable.status eq ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
+        }
     }
 
     override suspend fun getUserProjects(userId: UUID, statusFilters: Set<ProjectStatus>): List<Project> = db.query {

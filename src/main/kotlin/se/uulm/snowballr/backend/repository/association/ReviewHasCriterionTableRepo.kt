@@ -1,7 +1,7 @@
 package se.uulm.snowballr.backend.repository.association
 
-import org.jetbrains.exposed.sql.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
+import se.uulm.snowballr.backend.repository.getEntities
 import se.uulm.snowballr.backend.table.association.ReviewHasCriterionTable
 import java.util.UUID
 
@@ -29,9 +29,8 @@ class ReviewHasCriterionTableRepo(
     private val db: IDatabase,
 ) : IReviewHasCriterionTableRepo {
     override suspend fun getSelectedCriteriaIdsForReviewById(reviewId: UUID): List<UUID> = db.query {
-        ReviewHasCriterionTable
-            .selectAll()
-            .where { ReviewHasCriterionTable.reviewId eq reviewId }
-            .map { it[ReviewHasCriterionTable.criterionId].value }
+        ReviewHasCriterionTable.getEntities(mapper = { it[ReviewHasCriterionTable.criterionId].value }) {
+            ReviewHasCriterionTable.reviewId eq reviewId
+        }
     }
 }

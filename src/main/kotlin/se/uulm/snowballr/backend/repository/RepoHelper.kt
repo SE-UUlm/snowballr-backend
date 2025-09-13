@@ -15,6 +15,38 @@ import se.uulm.snowballr.backend.model.SnowballRException.EntityNotPersistedExce
 import java.util.UUID
 
 /**
+ * Returns a list of entities according to the [where] expression.
+ *
+ * @param Key The type of the [IdTable], i.e., the ID type, such as [UUID].
+ * @param T The table type as a subtype of [IdTable].
+ * @param EntT The result entity type.
+ * @param mapper Mapping function to map each [ResultRow] to an entity of type [EntT].
+ * @param where The SQL expression that is used to find the entities.
+ */
+fun <Key : Any, T : IdTable<Key>, EntT : Any> T.getEntities(
+    mapper: (ResultRow) -> EntT,
+    where: SqlExpressionBuilder.() -> Op<Boolean>,
+): List<EntT> = this.selectAll()
+    .where(where)
+    .map(mapper)
+
+/**
+ * Returns a list of entities by their IDs.
+ *
+ * @param Key The type of the [IdTable], i.e., the ID type, such as [UUID].
+ * @param T The table type as a subtype of [IdTable].
+ * @param EntT The result entity type.
+ * @param ids A list of IDs for the entities to be fetched.
+ * @param mapper Mapping function to map each [ResultRow] to an entity of type [EntT].
+ */
+fun <Key : Any, T : IdTable<Key>, EntT : Any> T.getEntitiesByIds(
+    ids: List<Key>,
+    mapper: (ResultRow) -> EntT,
+): List<EntT> = this.getEntities(mapper) {
+    this@getEntitiesByIds.id inList ids
+}
+
+/**
  * Returns an entity according to the [where] expression or returns null if the entity couldn't be found.
  *
  * @param Key The type of the [IdTable], i.e., the ID type, such as [UUID].
@@ -26,9 +58,8 @@ import java.util.UUID
 fun <Key : Any, T : IdTable<Key>, EntT : Any> T.getEntityOrNull(
     mapper: (ResultRow) -> EntT,
     where: SqlExpressionBuilder.() -> Op<Boolean>,
-): EntT? = this.selectAll()
-    .where(where)
-    .map(mapper)
+): EntT? = this
+    .getEntities(mapper, where)
     .singleOrNull()
 
 /**
@@ -128,23 +159,3 @@ inline fun <Key : Any, T : IdTable<Key>, EntT : Any> T.updateByIdAndGet(
     entityType: EntityType,
     crossinline body: T.(UpdateStatement) -> Unit,
 ): EntT = this.updateAndGet(mapper, entityType, id.toString(), { this@updateByIdAndGet.id eq id }, body)
-
-/**
- * Retrieves a list of entities from the table by their primary key IDs.
- *
- * @param Key The type of the [IdTable], i.e., the ID type, such as [UUID].
- * @param T The table type as a subtype of [IdTable].
- * @param EntT The result entity type.
- * @param ids A list of primary key IDs for the entities to be fetched.
- * @param mapper A function to map each [ResultRow] to an entity of type [EntT].
- * @return A list of entities of type [EntT] corresponding to the provided IDs.
- */
-inline fun <Key : Any, T : IdTable<Key>, EntT : Any> T.getEntitiesByIds(
-    ids: List<Key>,
-    mapper: (ResultRow) -> EntT,
-): List<EntT> {
-    return this
-        .selectAll()
-        .where { this@getEntitiesByIds.id inList ids }
-        .map(mapper)
-}

@@ -10,6 +10,7 @@ import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.ProjectMember
 import se.uulm.snowballr.backend.model.dto.ProjectMemberWithUser
+import se.uulm.snowballr.backend.repository.getEntities
 import se.uulm.snowballr.backend.repository.getEntityByIdsAsResult
 import se.uulm.snowballr.backend.repository.getEntityOrNull
 import se.uulm.snowballr.backend.repository.insertAndGet
@@ -122,10 +123,7 @@ class ProjectMemberTableRepo(
     }
 
     override suspend fun getProjectMembers(projectId: UUID): List<ProjectMember> = db.query {
-        ProjectMemberTable
-            .selectAll()
-            .where { ProjectMemberTable.projectId eq projectId }
-            .map { it.toProjectMember() }
+        ProjectMemberTable.getEntities(ResultRow::toProjectMember) { ProjectMemberTable.projectId eq projectId }
     }
 
     override suspend fun getMembersInSameProjectsAsUser(userId: UUID): List<ProjectMember> = db.query {
@@ -148,13 +146,10 @@ class ProjectMemberTableRepo(
     }
 
     override suspend fun getAllProjectAdmins(projectId: UUID): List<ProjectMember> = db.query {
-        ProjectMemberTable
-            .selectAll()
-            .where {
-                (ProjectMemberTable.projectId eq projectId) and
-                    (ProjectMemberTable.role eq ProjectOuterClass.MemberRole.MEMBER_ROLE_ADMIN)
-            }
-            .map { it.toProjectMember() }
+        ProjectMemberTable.getEntities(ResultRow::toProjectMember) {
+            (ProjectMemberTable.projectId eq projectId) and
+                (ProjectMemberTable.role eq ProjectOuterClass.MemberRole.MEMBER_ROLE_ADMIN)
+        }
     }
 
     override suspend fun promoteProjectMemberToAdmin(projectId: UUID, userId: UUID): ProjectMember = db.query {
@@ -165,10 +160,9 @@ class ProjectMemberTableRepo(
             where = {
                 (ProjectMemberTable.projectId eq projectId) and (ProjectMemberTable.userId eq userId)
             },
-            body = {
-                it[role] = ProjectOuterClass.MemberRole.MEMBER_ROLE_ADMIN
-            },
-        )
+        ) {
+            it[role] = ProjectOuterClass.MemberRole.MEMBER_ROLE_ADMIN
+        }
     }
 
     override suspend fun getProjectMembersWithUsers(projectId: UUID): List<ProjectMemberWithUser> = db.query {

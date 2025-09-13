@@ -1,7 +1,6 @@
 package se.uulm.snowballr.backend.repository
 
 import org.jetbrains.exposed.sql.ResultRow
-import org.jetbrains.exposed.sql.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
@@ -52,9 +51,6 @@ class ReviewTableRepo(
     }
 
     override suspend fun getAllReviewsForProjectPaper(projectPaperId: UUID): List<Review> = db.query {
-        ReviewTable
-            .selectAll()
-            .where { ReviewTable.projectPaperId eq projectPaperId }
-            .map { it.toReview() }
+        ReviewTable.getEntities(ResultRow::toReview) { ReviewTable.projectPaperId eq projectPaperId }
     }
 }

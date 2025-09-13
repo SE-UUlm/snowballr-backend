@@ -3,7 +3,6 @@ package se.uulm.snowballr.backend.repository
 import com.google.protobuf.util.FieldMaskUtil
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
@@ -11,6 +10,7 @@ import se.uulm.snowballr.backend.model.dto.Criterion
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.toCriterion
+import se.uulm.snowballr.backend.table.toProjectCriterion
 import se.uulm.snowballr.backend.table.toUserCriterion
 import snowballr.CriterionOuterClass
 import java.util.UUID
@@ -136,16 +136,14 @@ class CriterionTableRepo(
     }
 
     override suspend fun getAllUserCriteria(userId: UUID): List<Criterion.UserCriterion> = db.query {
-        CriterionTable
-            .selectAll()
-            .where { CriterionTable.createdBy eq userId and CriterionTable.projectId.isNull() }
-            .map { it.toUserCriterion() }
+        CriterionTable.getEntities(ResultRow::toUserCriterion) {
+            CriterionTable.createdBy eq userId and CriterionTable.projectId.isNull()
+        }
     }
 
     override suspend fun getAllProjectCriteria(projectId: UUID): List<Criterion> = db.query {
-        CriterionTable
-            .selectAll()
-            .where { CriterionTable.projectId eq projectId }
-            .map { it.toCriterion() }
+        CriterionTable.getEntities(ResultRow::toProjectCriterion) {
+            CriterionTable.projectId eq projectId
+        }
     }
 }
