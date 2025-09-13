@@ -4,7 +4,6 @@ import com.google.protobuf.util.FieldMaskUtil
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.neq
 import org.jetbrains.exposed.sql.TextColumnType
-import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.statements.StatementType
 import org.jetbrains.exposed.sql.update
 import se.uulm.snowballr.backend.db.IDatabase
@@ -163,10 +162,7 @@ class UserTableRepo(
 
     override suspend fun getUserByEmail(email: String): Result<User> = db.query {
         val user = UserTable
-            .selectAll()
-            .where { UserTable.email eq email }
-            .map { it.toUser() }
-            .singleOrNull()
+            .getEntityOrNull(ResultRow::toUser) { UserTable.email eq email }
 
         if (user != null) {
             Result.success(user)
@@ -281,10 +277,7 @@ class UserTableRepo(
     }
 
     override suspend fun getUserSettings(id: UUID): Result<UserSettings> = db.query {
-        val settings = UserTable.selectAll()
-            .where { UserTable.id eq id }
-            .map { it.toUserSettings() }
-            .singleOrNull()
+        val settings = UserTable.getEntityByIdOrNull(id, ResultRow::toUserSettings)
 
         if (settings != null) {
             Result.success(settings)
