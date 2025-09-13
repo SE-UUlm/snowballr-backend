@@ -7,6 +7,7 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
+import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.ProjectPaperWithPaper
 import se.uulm.snowballr.backend.service.MainServiceTest
@@ -80,6 +81,19 @@ class GetAllProjectPapersForProjectTest : MainServiceTest() {
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
         assertThrows<UnauthorizedException> {
+            mainService.getAllProjectPapersForProject(getExampleRequest())
+        }
+    }
+
+    @Test
+    fun `When a non-existing project is requested, then a NotFoundException is thrown`() = runTest {
+        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
+        val project = DataBuilder.createExampleProject(id = requestId)
+
+        mockCurrentUser(currentUser)
+        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns false
+
+        assertThrows<NotFoundException> {
             mainService.getAllProjectPapersForProject(getExampleRequest())
         }
     }
