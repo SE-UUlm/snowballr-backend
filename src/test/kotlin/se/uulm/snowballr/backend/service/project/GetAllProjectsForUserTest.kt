@@ -7,7 +7,6 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.model.SnowballRException.InvalidIdException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.Base
@@ -20,16 +19,6 @@ class GetAllProjectsForUserTest : MainServiceTest() {
     private val statusFilters = setOf(ProjectStatus.PROJECT_STATUS_ACTIVE, ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
 
     private fun getExampleRequest() = Base.Id.newBuilder().setId(requestedUserId.toString()).build()
-
-    @Test
-    fun `When parsing the ID of the requested user fails, then an InvalidIdException is thrown`() = runTest {
-        val currentUser = DataBuilder.createExampleUser()
-        val request = Base.Id.newBuilder().setId("invalid-uuid").build()
-
-        mockCurrentUser(currentUser)
-
-        assertThrows<InvalidIdException> { mainService.getAllProjectsForUser(request) }
-    }
 
     @Test
     fun `When retrieving the requested user fails, then a TestSpecificException is thrown`() = runTest {

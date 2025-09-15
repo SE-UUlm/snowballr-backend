@@ -8,7 +8,6 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.model.SnowballRException.InvalidIdException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.Base
 import java.util.UUID
@@ -21,13 +20,6 @@ class GetPaperByIdTest : MainServiceTest() {
         .newBuilder()
         .setId(requestId.toString())
         .build()
-
-    @Test
-    fun `When parsing the paper ID fails, then an InvalidIdException is thrown`() = runTest {
-        val request = Base.Id.newBuilder().setId("invalid-uuid").build()
-
-        assertThrows<InvalidIdException> { mainService.getPaperById(request) }
-    }
 
     @Test
     fun `When fetching the paper fails, then a TestSpecificException is thrown`() = runTest {

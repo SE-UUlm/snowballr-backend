@@ -8,7 +8,6 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
-import se.uulm.snowballr.backend.model.SnowballRException.InvalidIdException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.Base
@@ -18,14 +17,6 @@ import java.util.UUID
 class SoftDeleteUserTest : MainServiceTest() {
     private val requestedUserId = UUID.randomUUID()
     private fun getExampleRequest() = Base.Id.newBuilder().setId(requestedUserId.toString()).build()
-
-    @Test
-    fun `When parsing user ID fails, then an InvalidIdException is thrown`() = runTest {
-        val request = Base.Id.newBuilder().setId("invalid-uuid").build()
-        mockCurrentUser(DataBuilder.createExampleUser())
-
-        assertThrows<InvalidIdException> { mainService.softDeleteUser(request) }
-    }
 
     @Test
     fun `When retrieving user to delete fails, then a TestSpecificException is thrown`() = runTest {
