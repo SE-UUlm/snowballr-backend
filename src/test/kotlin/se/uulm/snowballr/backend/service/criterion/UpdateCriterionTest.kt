@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
+import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.toGrpcCriterion
@@ -175,4 +176,15 @@ class UpdateCriterionTest : MainServiceTest() {
 
             assertThrows<UnauthorizedException> { mainService.updateCriterion(request) }
         }
+
+    @Test
+    fun `When an error occurs while the criterion is retrieved, then a TestSpecificException is thrown`() = runTest {
+        val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
+        val request = getExampleRequest()
+
+        mockCurrentUser(user)
+        coEvery { criterionRepoMock.getCriterionById(criterionId) } returns Result.failure(TestSpecificException())
+
+        assertThrows<TestSpecificException> { mainService.updateCriterion(request) }
+    }
 }
