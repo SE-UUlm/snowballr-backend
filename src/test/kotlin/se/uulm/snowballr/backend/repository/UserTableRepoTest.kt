@@ -65,7 +65,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
     @Nested
     inner class GetUserById {
         @Test
-        fun `When a user is found, then a successful result with the correct user is returned`() = runTest {
+        fun `When a user is found by their ID, then a successful result with the correct user is returned`() = runTest {
             val userId = insertTestUserAndGetId()
             val result = repo.getUserById(userId)
 
@@ -79,35 +79,38 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
         }
 
         @Test
-        fun `When a user is not found, then a failed result with a NotFoundException is returned`() = runTest {
-            val result = repo.getUserById(UUID.randomUUID())
+        fun `When a user is not found by their ID, then a failed result with a NotFoundException is returned`() =
+            runTest {
+                val result = repo.getUserById(UUID.randomUUID())
 
-            assertResultFailure<NotFoundException>(result)
-        }
+                assertResultFailure<NotFoundException>(result)
+            }
     }
 
     @Nested
     inner class GetUserByEmail {
         @Test
-        fun `When a user is found, then a successful result with the correct user is returned`() = runTest {
-            val userId = insertTestUserAndGetId()
-            val result = repo.getUserByEmail("test.user@example.com")
+        fun `When a user is found by their email, then a successful result with the correct user is returned`() =
+            runTest {
+                val userId = insertTestUserAndGetId()
+                val result = repo.getUserByEmail("test.user@example.com")
 
-            val user = assertResultSuccess(result)
-            assertThat(user.id).isEqualTo(userId)
-            assertThat(user.email).isEqualTo("test.user@example.com")
-            assertThat(user.firstName).isEqualTo("Test")
-            assertThat(user.lastName).isEqualTo("User")
-            assertThat(user.role).isEqualTo(UserRole.USER_ROLE_DEFAULT)
-            assertThat(user.status).isEqualTo(UserStatus.USER_STATUS_ACTIVE)
-        }
+                val user = assertResultSuccess(result)
+                assertThat(user.id).isEqualTo(userId)
+                assertThat(user.email).isEqualTo("test.user@example.com")
+                assertThat(user.firstName).isEqualTo("Test")
+                assertThat(user.lastName).isEqualTo("User")
+                assertThat(user.role).isEqualTo(UserRole.USER_ROLE_DEFAULT)
+                assertThat(user.status).isEqualTo(UserStatus.USER_STATUS_ACTIVE)
+            }
 
         @Test
-        fun `When a user is not found, then a failed result with a NotFoundException is returned`() = runTest {
-            val result = repo.getUserByEmail("non-existing email")
+        fun `When a user is not found by their email, then a failed result with a NotFoundException is returned`() =
+            runTest {
+                val result = repo.getUserByEmail("non-existing email")
 
-            assertResultFailure<NotFoundException>(result)
-        }
+                assertResultFailure<NotFoundException>(result)
+            }
     }
 
     @Nested
@@ -334,7 +337,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
     @Nested
     inner class GetUserSettings {
         @Test
-        fun `When a user is found, then the a successful result with the user settings is returned`() = runTest {
+        fun `When a user is found, then a successful result with the user settings is returned`() = runTest {
             val userId = insertTestUserAndGetId()
             val result = repo.getUserSettings(userId)
 

@@ -32,7 +32,7 @@ import java.util.UUID
 interface IProjectMemberTableRepo {
     /**
      * Returns a [Result] containing the project member by its composed ID or a [NotFoundException] if the project with
-     * the passed [projectId] and [userId] doesn't exist.
+     * the passed [projectId] or the user with the passed [userId] doesn't exist.
      */
     suspend fun getProjectMemberByComposedId(projectId: UUID, userId: UUID): Result<ProjectMember>
 

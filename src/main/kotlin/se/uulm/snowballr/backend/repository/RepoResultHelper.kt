@@ -5,7 +5,7 @@ import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import java.util.UUID
 
 /**
- * Returns an entity by its ID encapsulated by a [Result]. If the entity couldn't be found a [Result.Failure] is
+ * Returns an entity by its ID encapsulated by a [Result]. If the entity couldn't be found, a [Result.Failure] is
  * returned, containing a [NotFoundException].
  *
  * @param T The type of the entity.
@@ -24,7 +24,7 @@ fun <T> getEntityByIdAsResult(getter: (UUID) -> T?, entityType: EntityType, id: 
 }
 
 /**
- * Returns an entity by its two IDs encapsulated by a [Result]. If the entity couldn't be found a [Result.Failure] is
+ * Returns an entity by its two IDs encapsulated by a [Result]. If the entity couldn't be found, a [Result.Failure] is
  * returned, containing a [NotFoundException].
  *
  * @param T The type of the entity.

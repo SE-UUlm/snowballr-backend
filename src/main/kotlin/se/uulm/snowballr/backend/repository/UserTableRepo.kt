@@ -34,14 +34,14 @@ import snowballr.UserOuterClass.User as GrpcUser
 @Suppress("ComplexInterface")
 interface IUserTableRepo {
     /**
-     * Returns a [Result] containing the user by its id or a [NotFoundException] if the user with the passed [id]
+     * Returns a [Result] containing the user by their id or a [NotFoundException] if the user with the passed [id]
      * doesn't exist.
      */
     suspend fun getUserById(id: UUID): Result<User>
 
     /**
-     * Returns a [Result] containing the user by its email or a [NotFoundException] if the user with the passed [email]
-     * doesn't exist.
+     * Returns a [Result] containing the user by their email or a [NotFoundException] if the user with the passed
+     * [email] doesn't exist.
      */
     suspend fun getUserByEmail(email: String): Result<User>
 
@@ -102,7 +102,8 @@ interface IUserTableRepo {
     suspend fun softDeleteUser(id: UUID)
 
     /**
-     * Retrieves the password hash for a user by their email address.
+     * Returns a [Result] containing the password hash for a user by their email address or a [NotFoundException] if the
+     * user with the passed [email] doesn't exist.
      *
      * @param email The email address of the user whose password hash is to be retrieved.
      * @return The password hash as a [String] for the user with the specified email.
@@ -110,7 +111,8 @@ interface IUserTableRepo {
     suspend fun getPasswordHashByEmail(email: String): Result<String>
 
     /**
-     * Retrieves the user settings associated with a specific user ID.
+     * Returns a [Result] containing the settings of the user with the passed [id] or a [NotFoundException] if the user
+     * with the passed [id] doesn't exist.
      *
      * @param id The unique identifier of the user whose settings are to be fetched.
      * @return The [UserSettings] object containing the settings for the specified user.

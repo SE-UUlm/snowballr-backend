@@ -5,7 +5,7 @@ import se.uulm.snowballr.backend.model.SnowballRException
 import kotlin.test.assertIs
 
 /**
- * Assert that the passed [Result] is not a [Result.Failure] and contains the data of type [T].
+ * Assert that the passed [Result] is not a [Result.Failure] and contains the data of type [T]. The data is returned.
  */
 inline fun <reified T> assertResultSuccess(result: Result<T>): T {
     assertThat(result.isSuccess).isTrue()
