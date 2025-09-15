@@ -47,7 +47,7 @@ class ReviewTableRepo(
     private fun getReviewByIdOrNull(id: UUID): Review? = ReviewTable.getEntityByIdOrNull(id, ResultRow::toReview)
 
     override suspend fun getReviewById(id: UUID): Result<Review> = db.query {
-        getEntityByIdAsResult(::getReviewByIdOrNull, EntityType.REVIEW, id)
+        getEntityByKeyAsResult(::getReviewByIdOrNull, EntityType.REVIEW, id)
     }
 
     override suspend fun getAllReviewsForProjectPaper(projectPaperId: UUID): List<Review> = db.query {

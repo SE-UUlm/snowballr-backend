@@ -13,8 +13,8 @@ import se.uulm.snowballr.backend.model.dto.ProjectPaper
 import se.uulm.snowballr.backend.model.dto.ProjectPaperWithPaper
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.doesEntityExist
-import se.uulm.snowballr.backend.repository.getEntityByIdAsResult
 import se.uulm.snowballr.backend.repository.getEntityByIdOrNull
+import se.uulm.snowballr.backend.repository.getEntityByKeyAsResult
 import se.uulm.snowballr.backend.repository.insertAndGet
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
@@ -123,7 +123,7 @@ class ProjectPaperTableRepo(
     }
 
     override suspend fun getProjectPaperById(id: UUID): Result<ProjectPaper> = db.query {
-        getEntityByIdAsResult(::getProjectPaperByIdOrNull, EntityType.PROJECT_PAPER, id)
+        getEntityByKeyAsResult(::getProjectPaperByIdOrNull, EntityType.PROJECT_PAPER, id)
     }
 
     override suspend fun getProjectPaperByRelativeId(projectId: UUID, relativeId: Long): Result<ProjectPaper> =

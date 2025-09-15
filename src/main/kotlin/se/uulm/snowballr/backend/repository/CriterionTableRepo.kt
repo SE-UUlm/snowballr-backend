@@ -94,7 +94,7 @@ class CriterionTableRepo(
         CriterionTable.getEntityByIdOrNull(id, ResultRow::toCriterion)
 
     override suspend fun getCriterionById(id: UUID): Result<Criterion> = db.query {
-        getEntityByIdAsResult(::getCriterionByIdOrNull, EntityType.CRITERION, id)
+        getEntityByKeyAsResult(::getCriterionByIdOrNull, EntityType.CRITERION, id)
     }
 
     override suspend fun createCriterion(request: GrpcCriterion.Create, userId: UUID): Criterion = db.query {

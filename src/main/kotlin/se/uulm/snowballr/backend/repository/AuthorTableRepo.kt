@@ -45,6 +45,6 @@ class AuthorTableRepo(
     private fun getAuthorByIdOrNull(id: UUID): Author? = AuthorTable.getEntityByIdOrNull(id, ResultRow::toAuthor)
 
     override suspend fun getAuthorById(id: UUID): Result<Author> = db.query {
-        getEntityByIdAsResult(::getAuthorByIdOrNull, EntityType.AUTHOR, id)
+        getEntityByKeyAsResult(::getAuthorByIdOrNull, EntityType.AUTHOR, id)
     }
 }

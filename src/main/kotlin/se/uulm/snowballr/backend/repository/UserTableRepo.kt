@@ -2,7 +2,6 @@ package se.uulm.snowballr.backend.repository
 
 import com.google.protobuf.util.FieldMaskUtil
 import org.jetbrains.exposed.sql.ResultRow
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.neq
 import org.jetbrains.exposed.sql.TextColumnType
 import org.jetbrains.exposed.sql.statements.StatementType
 import org.jetbrains.exposed.sql.update
@@ -150,27 +149,26 @@ class UserTableRepo(
         }.map { it.toUser() }.toList()
     }
 
-    /**
-     * Requesting a user from the database.
-     *
-     * @param id The id of the requested user.
-     * @return The [User] object or null, if no user with the given [id] was found.
-     */
     private fun getUserByIdOrNull(id: UUID): User? = UserTable.getEntityByIdOrNull(id, ResultRow::toUser)
 
+    private fun getUserByEmailOrNull(email: String): User? =
+        UserTable.getEntityOrNull(ResultRow::toUser) { UserTable.email eq email }
+
+    private fun getPasswordHashByUserMailOrNull(email: String): String? = UserTable.getEntityOrNull(
+        mapper = { row -> row[UserTable.passwordHash] },
+        select = UserTable.select(UserTable.passwordHash),
+        where = { UserTable.email eq email },
+    )
+
+    private fun getUserSettingsByUserIdOrNull(userId: UUID): UserSettings? =
+        UserTable.getEntityByIdOrNull(userId, ResultRow::toUserSettings)
+
     override suspend fun getUserById(id: UUID): Result<User> = db.query {
-        getEntityByIdAsResult(::getUserByIdOrNull, EntityType.USER, id)
+        getEntityByKeyAsResult(::getUserByIdOrNull, EntityType.USER, id)
     }
 
     override suspend fun getUserByEmail(email: String): Result<User> = db.query {
-        val user = UserTable
-            .getEntityOrNull(ResultRow::toUser) { UserTable.email eq email }
-
-        if (user != null) {
-            Result.success(user)
-        } else {
-            Result.failure(NotFoundException(EntityType.USER, email, identifierType = IdentifierType.EMAIL))
-        }
+        getEntityByKeyAsResult(::getUserByEmailOrNull, EntityType.USER, email, IdentifierType.EMAIL)
     }
 
     override suspend fun doesUserExistByEmail(email: String): Boolean = db.query {
@@ -265,26 +263,10 @@ class UserTableRepo(
     }
 
     override suspend fun getPasswordHashByEmail(email: String): Result<String> = db.query {
-        val passwordHash = UserTable
-            .select(UserTable.passwordHash)
-            .where { UserTable.email eq email }
-            .map { it[UserTable.passwordHash] }
-            .singleOrNull()
-
-        if (passwordHash != null) {
-            Result.success(passwordHash)
-        } else {
-            Result.failure(NotFoundException(EntityType.USER, email, identifierType = IdentifierType.EMAIL))
-        }
+        getEntityByKeyAsResult(::getPasswordHashByUserMailOrNull, EntityType.USER, email)
     }
 
     override suspend fun getUserSettings(id: UUID): Result<UserSettings> = db.query {
-        val settings = UserTable.getEntityByIdOrNull(id, ResultRow::toUserSettings)
-
-        if (settings != null) {
-            Result.success(settings)
-        } else {
-            Result.failure(NotFoundException(EntityType.USER, id.toString(), identifierType = IdentifierType.ID))
-        }
+        getEntityByKeyAsResult(::getUserSettingsByUserIdOrNull, EntityType.USER, id)
     }
 }

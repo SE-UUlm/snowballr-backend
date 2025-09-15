@@ -11,7 +11,7 @@ import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.ProjectMember
 import se.uulm.snowballr.backend.model.dto.ProjectMemberWithUser
 import se.uulm.snowballr.backend.repository.getEntities
-import se.uulm.snowballr.backend.repository.getEntityByIdsAsResult
+import se.uulm.snowballr.backend.repository.getEntityByKeysAsResult
 import se.uulm.snowballr.backend.repository.getEntityOrNull
 import se.uulm.snowballr.backend.repository.insertAndGet
 import se.uulm.snowballr.backend.repository.updateAndGet
@@ -104,7 +104,7 @@ class ProjectMemberTableRepo(
         }
 
     override suspend fun getProjectMemberByComposedId(projectId: UUID, userId: UUID): Result<ProjectMember> = db.query {
-        getEntityByIdsAsResult(::getProjectMemberByComposedIdOrNull, EntityType.PROJECT_MEMBER, projectId, userId)
+        getEntityByKeysAsResult(::getProjectMemberByComposedIdOrNull, EntityType.PROJECT_MEMBER, projectId, userId)
     }
 
     override suspend fun addUserToProject(userId: UUID, projectId: UUID) = db.query {

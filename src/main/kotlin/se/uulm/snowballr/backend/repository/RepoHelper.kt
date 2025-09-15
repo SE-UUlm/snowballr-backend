@@ -138,7 +138,7 @@ inline fun <Key : Any, T : IdTable<Key>, EntT : Any> T.updateAndGet(
     crossinline body: T.(UpdateStatement) -> Unit,
 ): EntT {
     this.update(where, body = body)
-    return this.getEntityOrNull(mapper, where) ?: throw EntityNotPersistedException(entityType, id)
+    return this.getEntityOrNull(mapper, where = where) ?: throw EntityNotPersistedException(entityType, id)
 }
 
 /**

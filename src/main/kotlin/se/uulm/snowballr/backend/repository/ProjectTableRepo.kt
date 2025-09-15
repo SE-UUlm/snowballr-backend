@@ -111,7 +111,7 @@ class ProjectTableRepo(
     private fun getProjectByIdOrNull(id: UUID): Project? = ProjectTable.getEntityByIdOrNull(id, ResultRow::toProject)
 
     override suspend fun getProjectById(id: UUID): Result<Project> = db.query {
-        getEntityByIdAsResult(::getProjectByIdOrNull, EntityType.PROJECT, id)
+        getEntityByKeyAsResult(::getProjectByIdOrNull, EntityType.PROJECT, id)
     }
 
     override suspend fun doesProjectExistById(id: UUID): Boolean = db.query {

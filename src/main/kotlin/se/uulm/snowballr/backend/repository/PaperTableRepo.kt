@@ -43,7 +43,7 @@ class PaperTableRepo(
     private fun getPaperByIdOrNull(id: UUID): Paper? = PaperTable.getEntityByIdOrNull(id, ResultRow::toPaper)
 
     override suspend fun getPaperById(id: UUID): Result<Paper> = db.query {
-        getEntityByIdAsResult(::getPaperByIdOrNull, EntityType.PAPER, id)
+        getEntityByKeyAsResult(::getPaperByIdOrNull, EntityType.PAPER, id)
     }
 
     override suspend fun doesPaperExistById(id: UUID): Boolean = db.query {
