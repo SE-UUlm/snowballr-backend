@@ -14,23 +14,23 @@ import java.util.UUID
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class GetPaperByIdTest : MainServiceTest() {
-    private val requestId = UUID.randomUUID()
+    private val paperId = UUID.randomUUID()
 
     private fun getExampleRequest() = Base.Id
         .newBuilder()
-        .setId(requestId.toString())
+        .setId(paperId.toString())
         .build()
 
     @Test
     fun `When fetching the paper fails, then a TestSpecificException is thrown`() = runTest {
-        coEvery { paperRepoMock.getPaperById(any()) } returns Result.failure(TestSpecificException())
+        coEvery { paperRepoMock.getPaperById(paperId) } returns Result.failure(TestSpecificException())
 
         assertThrows<TestSpecificException> { mainService.getPaperById(getExampleRequest()) }
     }
 
     @Test
     fun `When a paper is retrieved, then no exception is thrown`() = runTest {
-        val paper = DataBuilder.createExamplePaper(id = requestId)
+        val paper = DataBuilder.createExamplePaper(id = paperId)
         val author = DataBuilder.createExampleAuthor()
 
         coEvery { paperRepoMock.getPaperById(paper.id) } returns Result.success(paper)
