@@ -101,7 +101,7 @@ open class MainServiceTest : KoinTest {
     val verificationTokenRepoMock = mockk<IVerificationTokenTableRepo>()
 
     // Custom services / manager / clients mocks
-    val jwtServiceMock = mockk<IJwtManager>()
+    val jwtManagerMock = mockk<IJwtManager>()
     val emailManagerMock = mockk<IEmailManager>()
     val fetcherManagerMock = mockk<FetcherManager>()
     val mailerMock = mockk<Mailer>()
@@ -112,7 +112,7 @@ open class MainServiceTest : KoinTest {
         criterionRepoMock,
         userRepoMock,
         projectMemberRepoMock,
-        jwtServiceMock,
+        jwtManagerMock,
         emailManagerMock,
         fetcherManagerMock,
         mailerMock,
@@ -152,7 +152,7 @@ open class MainServiceTest : KoinTest {
         single { verificationTokenRepoMock }
 
         // Custom services / managers / clients
-        single { jwtServiceMock }
+        single { jwtManagerMock }
         single { emailManagerMock }
         single { fetcherManagerMock }
         single { mailerMock }

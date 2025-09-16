@@ -9,9 +9,9 @@ import org.koin.dsl.module
 import org.simplejavamail.api.mailer.Mailer
 import org.simplejavamail.mailer.MailerBuilder
 import se.uulm.snowballr.backend.auth.AuthenticationManager
-import se.uulm.snowballr.backend.auth.CookieService
+import se.uulm.snowballr.backend.auth.CookieManager
 import se.uulm.snowballr.backend.auth.IAuthenticationManager
-import se.uulm.snowballr.backend.auth.ICookieService
+import se.uulm.snowballr.backend.auth.ICookieManager
 import se.uulm.snowballr.backend.auth.IJwtManager
 import se.uulm.snowballr.backend.auth.JwtManager
 import se.uulm.snowballr.backend.db.Database
@@ -177,7 +177,7 @@ private fun Module.customServicesDeps() {
         bind<IJwtManager>()
     }
     singleOf(::FetcherManager)
-    singleOf(::CookieService) { bind<ICookieService>() }
+    singleOf(::CookieManager) { bind<ICookieManager>() }
     singleOf(::EmailManager) {
         createdAtStart()
         bind<IEmailManager>()

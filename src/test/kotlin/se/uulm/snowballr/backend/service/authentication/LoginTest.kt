@@ -121,7 +121,7 @@ class LoginTest : MainServiceTest() {
 
         coEvery { userRepoMock.getUserByEmail(testUser.email) } returns Result.success(testUser)
         coEvery { userRepoMock.getPasswordHashByEmail(testUser.email) } returns Result.success(passwordHash)
-        every { jwtServiceMock.generateAuthTokens(testUser.id) } returns tokens
+        every { jwtManagerMock.generateAuthTokens(testUser.id) } returns tokens
 
         assertDoesNotThrow { mainService.login(request) }
 

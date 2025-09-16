@@ -16,18 +16,18 @@ import kotlin.test.assertTrue
 
 @ExtendWith(GrpcTestContextExtension::class)
 class AuthenticateTest {
-    private val jwtServiceMock = mockk<JwtManager> {
+    private val jwtManagerMock = mockk<JwtManager> {
         every { getAccessTokenTTL() } returns JwtManager.ACCESS_TOKEN_EXPIRATION_MS
         every { getRefreshTokenTTL() } returns JwtManager.REFRESH_TOKEN_EXPIRATION_MS
     }
-    private val authenticationService = AuthenticationManager(jwtServiceMock)
+    private val authenticationManager = AuthenticationManager(jwtManagerMock)
 
     @Test
     fun `When access token is valid, then authentication succeeds`() {
         val parsedClaims = ParsedJwtAuthClaims(UUID.randomUUID(), Date(), Date())
-        every { jwtServiceMock.parseAuthToken("validAccessToken") } returns parsedClaims
+        every { jwtManagerMock.parseAuthToken("validAccessToken") } returns parsedClaims
 
-        val authResult = authenticationService.authenticate("validAccessToken", "anyRefreshToken", false)
+        val authResult = authenticationManager.authenticate("validAccessToken", "anyRefreshToken", false)
         authResult.updatedContext.attach() // Simulate using the updated context in the authentication interceptor
 
         assertTrue(authResult.parsedJwtAuthClaimsResult.isSuccess)
@@ -41,11 +41,11 @@ class AuthenticateTest {
     @Test
     fun `When access token is invalid but refresh token is valid, then token is refreshed and authentication succeeds`() {
         val parsedRefreshClaims = ParsedJwtAuthClaims(UUID.randomUUID(), Date(), Date())
-        every { jwtServiceMock.parseAuthToken("invalidAccessToken") } throws JwtException("Invalid access token")
-        every { jwtServiceMock.parseAuthToken("validRefreshToken") } returns parsedRefreshClaims
-        every { jwtServiceMock.refreshAccessToken(parsedRefreshClaims) } returns "newAccessToken"
+        every { jwtManagerMock.parseAuthToken("invalidAccessToken") } throws JwtException("Invalid access token")
+        every { jwtManagerMock.parseAuthToken("validRefreshToken") } returns parsedRefreshClaims
+        every { jwtManagerMock.refreshAccessToken(parsedRefreshClaims) } returns "newAccessToken"
 
-        val authResult = authenticationService.authenticate("invalidAccessToken", "validRefreshToken", false)
+        val authResult = authenticationManager.authenticate("invalidAccessToken", "validRefreshToken", false)
         authResult.updatedContext.attach() // Simulate using the updated context in the authentication interceptor
 
         assertTrue(authResult.parsedJwtAuthClaimsResult.isSuccess)
@@ -63,10 +63,10 @@ class AuthenticateTest {
     @Test
     fun `When access token is invalid, refresh token is valid, and skipRefresh is true, then auth succeeds without refresh`() {
         val parsedRefreshClaims = ParsedJwtAuthClaims(UUID.randomUUID(), Date(), Date())
-        every { jwtServiceMock.parseAuthToken("invalidAccessToken") } throws JwtException("Invalid access token")
-        every { jwtServiceMock.parseAuthToken("validRefreshToken") } returns parsedRefreshClaims
+        every { jwtManagerMock.parseAuthToken("invalidAccessToken") } throws JwtException("Invalid access token")
+        every { jwtManagerMock.parseAuthToken("validRefreshToken") } returns parsedRefreshClaims
 
-        val authResult = authenticationService.authenticate("invalidAccessToken", "validRefreshToken", true)
+        val authResult = authenticationManager.authenticate("invalidAccessToken", "validRefreshToken", true)
         authResult.updatedContext.attach()
 
         assertTrue(authResult.parsedJwtAuthClaimsResult.isSuccess)
@@ -80,10 +80,10 @@ class AuthenticateTest {
 
     @Test
     fun `When both access and refresh tokens are invalid, then authentication fails and cookies are cleared`() {
-        every { jwtServiceMock.parseAuthToken("invalidAccessToken") } throws JwtException("Invalid access token")
-        every { jwtServiceMock.parseAuthToken("invalidRefreshToken") } throws JwtException("Invalid refresh token")
+        every { jwtManagerMock.parseAuthToken("invalidAccessToken") } throws JwtException("Invalid access token")
+        every { jwtManagerMock.parseAuthToken("invalidRefreshToken") } throws JwtException("Invalid refresh token")
 
-        val authResult = authenticationService.authenticate("invalidAccessToken", "invalidRefreshToken", false)
+        val authResult = authenticationManager.authenticate("invalidAccessToken", "invalidRefreshToken", false)
         authResult.updatedContext.attach() // Simulate using the updated context in the authentication interceptor
 
         assertTrue(authResult.parsedJwtAuthClaimsResult.isFailure)
@@ -97,9 +97,9 @@ class AuthenticateTest {
 
     @Test
     fun `When access token is invalid and refresh token is missing, then authentication fails`() {
-        every { jwtServiceMock.parseAuthToken("invalidAccessToken") } throws JwtException("Invalid access token")
+        every { jwtManagerMock.parseAuthToken("invalidAccessToken") } throws JwtException("Invalid access token")
 
-        val authResult = authenticationService.authenticate("invalidAccessToken", null, false)
+        val authResult = authenticationManager.authenticate("invalidAccessToken", null, false)
         authResult.updatedContext.attach() // Simulate using the updated context in the authentication interceptor
 
         assertTrue(authResult.parsedJwtAuthClaimsResult.isFailure)
@@ -113,10 +113,10 @@ class AuthenticateTest {
 
     @Test
     fun `When both tokens are invalid and skipRefresh is true, then authentication fails and cookies are not cleared`() {
-        every { jwtServiceMock.parseAuthToken("invalidAccessToken") } throws JwtException("Invalid access token")
-        every { jwtServiceMock.parseAuthToken("invalidRefreshToken") } throws JwtException("Invalid refresh token")
+        every { jwtManagerMock.parseAuthToken("invalidAccessToken") } throws JwtException("Invalid access token")
+        every { jwtManagerMock.parseAuthToken("invalidRefreshToken") } throws JwtException("Invalid refresh token")
 
-        val authResult = authenticationService.authenticate("invalidAccessToken", "invalidRefreshToken", true)
+        val authResult = authenticationManager.authenticate("invalidAccessToken", "invalidRefreshToken", true)
         authResult.updatedContext.attach()
 
         assertTrue(authResult.parsedJwtAuthClaimsResult.isFailure)

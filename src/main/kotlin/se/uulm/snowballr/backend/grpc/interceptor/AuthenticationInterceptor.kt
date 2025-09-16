@@ -15,7 +15,7 @@ import se.uulm.snowballr.backend.auth.AuthenticationManager
 import se.uulm.snowballr.backend.auth.DummyUser
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.auth.IAuthenticationManager
-import se.uulm.snowballr.backend.auth.ICookieService
+import se.uulm.snowballr.backend.auth.ICookieManager
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.model.auth.AuthRequestState
 import snowballr.Authentication.AuthenticationStatus
@@ -84,8 +84,8 @@ private val AUTH_BYPASS_METHODS =
  */
 val authenticationInterceptor: ServerInterceptor =
     object : ServerInterceptor, KoinComponent {
-        private val authService: IAuthenticationManager by inject()
-        private val cookieService: ICookieService by inject()
+        private val authManager: IAuthenticationManager by inject()
+        private val cookieManager: ICookieManager by inject()
         private val envReader: EnvReader by inject()
 
         /**
@@ -114,7 +114,7 @@ val authenticationInterceptor: ServerInterceptor =
 
             // This map will be captured by the forwarding call's closure
             val cookiesToSet = mutableMapOf<String, String?>()
-            val forwardingCall = AuthForwardingCall(call, cookieService, cookiesToSet)
+            val forwardingCall = AuthForwardingCall(call, cookieManager, cookiesToSet)
             val initialContext = Context.current()
                 .withValue(
                     GrpcContext.COOKIES_TO_SET_CONTEXT_KEY,
@@ -178,11 +178,11 @@ val authenticationInterceptor: ServerInterceptor =
             }
 
             val cookieHeader = authState.headers?.get(GrpcContext.COOKIE_METADATA_KEY)
-            val cookies = cookieService.parseCookies(cookieHeader)
+            val cookies = cookieManager.parseCookies(cookieHeader)
             val accessToken = cookies[GrpcContext.ACCESS_TOKEN_COOKIE_NAME]
             val refreshToken = cookies[GrpcContext.REFRESH_TOKEN_COOKIE_NAME]
 
-            val authResult = authService.authenticate(accessToken, refreshToken, skipRefresh)
+            val authResult = authManager.authenticate(accessToken, refreshToken, skipRefresh)
             return authResult.parsedJwtAuthClaimsResult.fold(
                 onSuccess = { claims ->
                     val context = authResult.updatedContext.withValue(GrpcContext.USER_ID_CONTEXT_KEY, claims.userId)
@@ -239,18 +239,18 @@ val authenticationInterceptor: ServerInterceptor =
  * @param ReqT The type of the request.
  * @param RespT The type of the response.
  * @param delegate The original server call to forward to.
- * @param cookieService The cookie service instance.
+ * @param cookieManager The cookie service instance.
  * @param cookiesToSet The map of cookies that should be set in the response headers.
  */
 private class AuthForwardingCall<ReqT, RespT>(
     delegate: ServerCall<ReqT, RespT>?,
-    private val cookieService: ICookieService,
+    private val cookieManager: ICookieManager,
     private val cookiesToSet: Map<String, String?>,
 ) : ForwardingServerCall.SimpleForwardingServerCall<ReqT, RespT>(delegate) {
     override fun sendHeaders(headers: Metadata) {
         if (cookiesToSet.isNotEmpty()) {
             cookiesToSet.entries
-                .mapNotNull { (name, value) -> cookieService.buildAuthCookieString(name, value) }
+                .mapNotNull { (name, value) -> cookieManager.buildAuthCookieString(name, value) }
                 .forEach { headers.put(GrpcContext.SET_COOKIE_METADATA_KEY, it) }
         }
         super.sendHeaders(headers)

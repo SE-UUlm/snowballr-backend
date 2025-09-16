@@ -35,13 +35,13 @@ interface IAuthenticationManager {
 /**
  * Default implementation of [IAuthenticationManager].
  */
-class AuthenticationManager(private val jwtService: IJwtManager) : IAuthenticationManager {
+class AuthenticationManager(private val jwtManager: IJwtManager) : IAuthenticationManager {
     override fun authenticate(accessToken: String?, refreshToken: String?, skipRefresh: Boolean): AuthenticationResult {
         val contextBuilder = Context.current()
         val cookiesToSet = GrpcContext.COOKIES_TO_SET_CONTEXT_KEY.get()
 
         val parsedAccessTokenResult = runCatching {
-            jwtService.parseAuthToken(accessToken)
+            jwtManager.parseAuthToken(accessToken)
         }
 
         val (status, result) = if (parsedAccessTokenResult.isSuccess) {
@@ -80,10 +80,10 @@ class AuthenticationManager(private val jwtService: IJwtManager) : IAuthenticati
         }
 
         return runCatching {
-            val parsedRefreshToken = jwtService.parseAuthToken(refreshToken)
+            val parsedRefreshToken = jwtManager.parseAuthToken(refreshToken)
 
             if (!skipRefresh) {
-                val newAccessToken = jwtService.refreshAccessToken(parsedRefreshToken)
+                val newAccessToken = jwtManager.refreshAccessToken(parsedRefreshToken)
                 cookiesToSet[GrpcContext.ACCESS_TOKEN_COOKIE_NAME] = newAccessToken
             }
 
