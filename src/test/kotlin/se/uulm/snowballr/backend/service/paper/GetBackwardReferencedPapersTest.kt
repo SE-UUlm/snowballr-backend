@@ -3,7 +3,6 @@ package se.uulm.snowballr.backend.service.paper
 import io.mockk.coEvery
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
@@ -13,7 +12,6 @@ import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.Base
 import java.util.UUID
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class GetBackwardReferencedPapersTest : MainServiceTest() {
     private val paperId = UUID.randomUUID()
 

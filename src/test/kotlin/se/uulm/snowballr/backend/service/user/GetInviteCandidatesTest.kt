@@ -1,8 +1,6 @@
 package se.uulm.snowballr.backend.service.user
 
 import io.mockk.coEvery
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -12,8 +10,6 @@ import snowballr.ProjectOuterClass.Project.InviteCandidatesRequest
 import java.util.UUID
 import kotlin.test.assertTrue
 
-@DelicateCoroutinesApi
-@ExperimentalCoroutinesApi
 class GetInviteCandidatesTest : MainServiceTest() {
     private val testProjectId = UUID.randomUUID()
     private val validInviteCandidatesRequest = InviteCandidatesRequest.newBuilder()
