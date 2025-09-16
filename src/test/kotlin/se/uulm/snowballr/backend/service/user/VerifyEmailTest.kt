@@ -17,7 +17,7 @@ import snowballr.UserOuterClass.User as GrpcUser
 
 class VerifyEmailTest : MainServiceTest() {
     @Test
-    fun `When the verification token is not found, then a TestSpecificException is thrown`() = runTest {
+    fun `When the verification token is not found, then a VerificationTokenNotFoundException is thrown`() = runTest {
         val request = Authentication.VerifyEmailRequest.newBuilder().setToken("non-existent-token").build()
         coEvery { verificationTokenRepoMock.getVerificationTokenByValue(any()) } returns null
 
@@ -25,7 +25,7 @@ class VerifyEmailTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the verification token has expired, then a TestSpecificException is thrown`() = runTest {
+    fun `When the verification token has expired, then a VerificationTokenNotFoundException is thrown`() = runTest {
         val expiredToken = DataBuilder.createExampleVerificationToken(
             expiresAt = OffsetDateTime.now().minusMinutes(1),
         )

@@ -115,14 +115,14 @@ class Database(
     private fun seedDummyUserIfEnabled() {
         val seedUserEnabled = envReader.env.database.seedUserEnabled
 
-        val existingId = UserTable
+        val existentId = UserTable
             .select(UserTable.id)
             .where { UserTable.email eq DummyUser.email }
             .map { it[UserTable.id].value }
             .singleOrNull()
 
         if (seedUserEnabled) {
-            if (existingId == null) {
+            if (existentId == null) {
                 // If seeding is enabled and a user doesn't exist, create it.
                 DummyUser.id = UserTable.insertAndGetId {
                     it[email] = DummyUser.email
@@ -135,12 +135,12 @@ class Database(
                 logger.info { "Dummy User seeded with ID: ${DummyUser.id}" }
             } else {
                 // If the user already exists, update the static ID.
-                DummyUser.id = existingId
+                DummyUser.id = existentId
                 logger.info { "Dummy User already exists with ID: ${DummyUser.id}" }
             }
-        } else if (existingId != null) {
+        } else if (existentId != null) {
             // If seeding is disabled and a user exists, delete it.
-            UserTable.deleteWhere { UserTable.id eq existingId }
+            UserTable.deleteWhere { UserTable.id eq existentId }
             logger.info { "Dummy user deleted as seeding is disabled." }
         }
     }

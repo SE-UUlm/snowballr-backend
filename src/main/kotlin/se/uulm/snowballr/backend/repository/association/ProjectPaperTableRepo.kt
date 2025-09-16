@@ -106,7 +106,7 @@ class ProjectPaperTableRepo(
         ProjectPaperTable.getEntityByIdOrNull(id, ResultRow::toProjectPaper)
 
     /**
-     * Generates the next available local paper ID for the specified project by checking the existing maximum local
+     * Generates the next available local paper ID for the specified project by checking the existent maximum local
      * paper ID within the project and incrementing it by one. If no local paper IDs exist for the given project, it
      * returns 0.
      *

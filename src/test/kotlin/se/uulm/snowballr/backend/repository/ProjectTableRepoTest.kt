@@ -77,17 +77,17 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
         fun `When a project with the given id exists, then true returned`() = runTest {
             val projectId =
                 insertProjectAndGetId("Test Project", ProjectStatus.PROJECT_STATUS_ACTIVE, createdBy = testUserId)
-            val isProjectExisting = repo.doesProjectExistById(projectId)
+            val isProjectExistent = repo.doesProjectExistById(projectId)
 
-            assertTrue(isProjectExisting)
+            assertTrue(isProjectExistent)
         }
 
         @Test
         fun `When a project with the given id does not exist, then false returned`() = runTest {
             val projectId = UUID.randomUUID()
-            val isProjectExisting = repo.doesProjectExistById(projectId)
+            val isProjectExistent = repo.doesProjectExistById(projectId)
 
-            assertFalse(isProjectExisting)
+            assertFalse(isProjectExistent)
         }
     }
 

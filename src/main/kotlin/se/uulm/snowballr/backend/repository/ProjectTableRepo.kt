@@ -79,7 +79,7 @@ interface IProjectTableRepo {
     ): List<Project>
 
     /**
-     * Updates an existing project in the database with the provided new information.
+     * Updates an existent project in the database with the provided new information.
      * The following fields can be updated:
      * - name
      * - status

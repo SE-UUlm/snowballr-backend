@@ -26,7 +26,7 @@ class UpdateProjectTest : MainServiceTest() {
             "PROJECT_STATUS_ARCHIVED",
         ],
     )
-    fun `When a server admin updates an existing project, then no exception is thrown`(statusName: String) = runTest {
+    fun `When a server admin updates an existent project, then no exception is thrown`(statusName: String) = runTest {
         val status = ProjectStatus.valueOf(statusName)
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val project = DataBuilder.createExampleProject(status = status)
@@ -55,7 +55,7 @@ class UpdateProjectTest : MainServiceTest() {
             "PROJECT_STATUS_ARCHIVED",
         ],
     )
-    fun `When a project admin updates an existing project, then no exception is thrown`(statusName: String) = runTest {
+    fun `When a project admin updates an existent project, then no exception is thrown`(statusName: String) = runTest {
         val status = ProjectStatus.valueOf(statusName)
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject(status = status)

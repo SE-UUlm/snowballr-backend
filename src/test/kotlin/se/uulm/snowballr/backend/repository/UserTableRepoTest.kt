@@ -107,7 +107,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
         @Test
         fun `When a user is not found by their email, then a failed result with a NotFoundException is returned`() =
             runTest {
-                val result = repo.getUserByEmail("non-existing email")
+                val result = repo.getUserByEmail("nonexistent email")
 
                 assertResultFailure<NotFoundException>(result)
             }
@@ -144,7 +144,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
         }
 
         @Test
-        fun `When permanently deleted users exist, then only the existing users are returned`() = runTest {
+        fun `When permanently deleted users exist, then only the existent users are returned`() = runTest {
             val userId1 = insertTestUserAndGetId(email = "test.user1@example.com", lastName = "User 1")
             val userId2 = insertTestUserAndGetId(email = "", firstName = "", lastName = "")
 
@@ -179,7 +179,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
         }
 
         @Test
-        fun `When a user with an existing email is created, then an SQLException is thrown`() = runTest {
+        fun `When a user with an existent email is created, then an SQLException is thrown`() = runTest {
             val request =
                 Authentication.RegisterRequest
                     .newBuilder()
@@ -273,7 +273,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
         }
 
         @Test
-        fun `When a user's email should be updated to an existing email, then an SQLException is thrown`() = runTest {
+        fun `When a user's email should be updated to an existent email, then an SQLException is thrown`() = runTest {
             insertTestUserAndGetId(email = "alice.smith@example.com")
 
             val user2Id = insertTestUserAndGetId(email = "bob.smith@example.com")
@@ -328,7 +328,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
 
         @Test
         fun `When a user is not found, then a failed result with a NotFoundException is returned`() = runTest {
-            val result = repo.getPasswordHashByEmail("non-existing email")
+            val result = repo.getPasswordHashByEmail("nonexistent email")
 
             assertResultFailure<NotFoundException>(result)
         }
@@ -388,7 +388,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
         fun `When no user is matching the search query, then an empty list is returned`() = runTest {
             insertTestUserAndGetId(firstName = "johnathan")
 
-            val matchingUsers = repo.getUsersMatchingSearchQuery("non-existing", emptySet())
+            val matchingUsers = repo.getUsersMatchingSearchQuery("nonexistent", emptySet())
 
             assertEquals(0, matchingUsers.size)
         }

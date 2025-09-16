@@ -73,7 +73,7 @@ class GetProjectMembersTest : MainServiceTest() {
     }
 
     @Test
-    fun `When project members are requested from a non existing project, then a NotFoundException is thrown`() =
+    fun `When project members are requested from a nonexistent project, then a NotFoundException is thrown`() =
         runTest {
             val request = getExampleRequest()
             val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)

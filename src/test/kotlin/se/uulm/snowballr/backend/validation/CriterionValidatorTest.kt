@@ -150,10 +150,10 @@ class CriterionValidatorTest {
         }
 
         @Test
-        fun `When a field mask containing a non-existing field is validated, then the 'InvalidFieldMask' issue is returned`() {
+        fun `When a field mask containing a nonexistent field is validated, then the 'InvalidFieldMask' issue is returned`() {
             val request =
                 validUpdateRequestBuilder
-                    .setMask(FieldMaskUtil.fromStringList(listOf("non_existing_field")))
+                    .setMask(FieldMaskUtil.fromStringList(listOf("non_existent_field")))
                     .build()
             val result = validateRequest(request)
 

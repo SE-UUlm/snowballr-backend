@@ -141,7 +141,7 @@ class GetProjectPaperByRelativeIdTest : MainServiceTest() {
     }
 
     @Test
-    fun `When a non existing project is requested, then a NotFoundException is thrown`() = runTest {
+    fun `When a nonexistent project is requested, then a NotFoundException is thrown`() = runTest {
         val project = DataBuilder.createExampleProject(id = projectId)
 
         coEvery { projectRepoMock.doesProjectExistById(project.id) } returns false

@@ -74,7 +74,7 @@ class UpdateUserTest : MainServiceTest() {
     }
 
     @Test
-    fun `When updating email to existing email, then a DuplicateEntityException is thrown`() = runTest {
+    fun `When updating email to existent email, then a DuplicateEntityException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val requestedUser = DataBuilder.createExampleUser(id = requestedUserId)
 

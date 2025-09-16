@@ -82,7 +82,7 @@ interface IUserTableRepo {
     suspend fun createUser(request: Authentication.RegisterRequest, passwordHash: String): User
 
     /**
-     * Updates an existing user in the database with the provided new information.
+     * Updates an existent user in the database with the provided new information.
      * The following fields can be updated:
      * - first name
      * - last name

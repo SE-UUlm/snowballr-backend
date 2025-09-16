@@ -117,9 +117,9 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
                     insertProjectAndGetId(createdBy = testUserId)
                 val paperId = insertPaperAndGetId()
                 insertProjectPaperAndGetId(paperId = paperId, projectId = projectId, createdBy = testUserId)
-                val isProjectPaperExisting = repo.doesProjectPaperExist(projectId, paperId)
+                val isProjectPaperExistent = repo.doesProjectPaperExist(projectId, paperId)
 
-                assertTrue(isProjectPaperExisting)
+                assertTrue(isProjectPaperExistent)
             }
 
         @Test
@@ -127,9 +127,9 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
             runTest {
                 val projectId = UUID.randomUUID()
                 val paperId = UUID.randomUUID()
-                val isProjectExisting = repo.doesProjectPaperExist(projectId, paperId)
+                val isProjectExistent = repo.doesProjectPaperExist(projectId, paperId)
 
-                assertFalse(isProjectExisting)
+                assertFalse(isProjectExistent)
             }
     }
 

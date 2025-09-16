@@ -25,7 +25,7 @@ class VerificationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, Verific
     @Nested
     inner class SaveVerificationToken {
         @Test
-        fun `When a token is saved for an existing user, then it can be retrieved by its value`() = runTest {
+        fun `When a token is saved for an existent user, then it can be retrieved by its value`() = runTest {
             val tokenValue = "a-unique-token-for-saving"
 
             repo.saveVerificationToken(testUserId, tokenValue)

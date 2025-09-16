@@ -49,7 +49,7 @@ class GetInviteCandidatesTest : MainServiceTest() {
     fun `When no the project members exist, then no users except for the current user are excluded`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
         val requestedProjectId = UUID.randomUUID()
-        val requestWithNotExistingProject = InviteCandidatesRequest
+        val requestWithNotExistentProject = InviteCandidatesRequest
             .newBuilder()
             .setQuery("john")
             .setProjectId(requestedProjectId.toString())
@@ -59,7 +59,7 @@ class GetInviteCandidatesTest : MainServiceTest() {
         coEvery { projectMemberRepoMock.getProjectMembers(requestedProjectId) } returns emptyList()
         coEvery { userRepoMock.getUsersMatchingSearchQuery(any(), any()) } returns emptyList()
 
-        assertDoesNotThrow { mainService.getInviteCandidates(requestWithNotExistingProject) }
+        assertDoesNotThrow { mainService.getInviteCandidates(requestWithNotExistentProject) }
     }
 
     @Test

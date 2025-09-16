@@ -192,7 +192,7 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
         }
 
     @Test
-    fun `When a non-existing project is requested, then a NotFoundException is thrown`() = runTest {
+    fun `When a nonexistent project is requested, then a NotFoundException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject(id = requestId)
 

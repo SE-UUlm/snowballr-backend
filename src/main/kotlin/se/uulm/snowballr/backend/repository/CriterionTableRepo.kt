@@ -47,7 +47,7 @@ interface ICriterionTableRepo {
     suspend fun getAllUserCriteria(userId: UUID): List<Criterion>
 
     /**
-     * Updates an existing criterion in the database with the provided new information.
+     * Updates an existent criterion in the database with the provided new information.
      * The following fields can be updated:
      * - tag
      * - name

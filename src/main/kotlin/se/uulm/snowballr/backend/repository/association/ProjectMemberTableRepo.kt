@@ -110,9 +110,9 @@ class ProjectMemberTableRepo(
     override suspend fun addUserToProject(userId: UUID, projectId: UUID) = db.query {
         // Return when the user is already a project member
         val projectMembers = getProjectMembers(projectId)
-        val existingMember = projectMembers.find { it.userId == userId }
-        if (existingMember != null) {
-            return@query existingMember
+        val existentMember = projectMembers.find { it.userId == userId }
+        if (existentMember != null) {
+            return@query existentMember
         }
 
         ProjectMemberTable.insertAndGet(ResultRow::toProjectMember, EntityType.PROJECT_MEMBER) {

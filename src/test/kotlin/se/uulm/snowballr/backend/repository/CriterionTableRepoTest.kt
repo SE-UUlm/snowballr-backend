@@ -238,7 +238,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
             }
 
         @Test
-        fun `When all criteria of the given ids are requested but not all criteria exist, then only the existing criteria are returned`() =
+        fun `When all criteria of the given ids are requested but not all criteria exist, then only the existent criteria are returned`() =
             runTest {
                 val baseRequestBuilder = GrpcCriterion.Create.newBuilder()
                     .setTag("Test Tag")
