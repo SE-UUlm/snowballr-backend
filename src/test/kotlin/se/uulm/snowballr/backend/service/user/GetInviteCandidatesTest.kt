@@ -25,6 +25,8 @@ class GetInviteCandidatesTest : MainServiceTest() {
     fun `When the search query is too short, then an empty list is returned`() = runTest {
         val shortSearchQuery = InviteCandidatesRequest.newBuilder().setQuery("j").build()
 
+        mockCurrentUser(DataBuilder.createExampleUser())
+
         assertDoesNotThrow { mainService.getInviteCandidates(shortSearchQuery) }
     }
 

@@ -126,6 +126,7 @@ complexity:
         active: true
         ignoredLabels:
             - query
+            - withUser
     LargeClass:
         active: true
         threshold: 600

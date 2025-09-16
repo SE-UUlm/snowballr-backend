@@ -11,9 +11,9 @@ import se.uulm.snowballr.backend.mail.IEmailManager
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.IdentifierType
-import se.uulm.snowballr.backend.model.SnowballRException
 import se.uulm.snowballr.backend.model.SnowballRException.DuplicateEntityException
 import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
+import se.uulm.snowballr.backend.model.SnowballRException.InvalidIdException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthenticatedException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
@@ -205,27 +205,27 @@ class UserService(
         userRepo.getAllUsers().toGrpcUsers()
     }
 
-    override suspend fun getInviteCandidates(request: Project.InviteCandidatesRequest): GrpcUser.List {
-        val searchQuery = request.query.trim()
+    override suspend fun getInviteCandidates(request: Project.InviteCandidatesRequest): GrpcUser.List =
+        withUser(userRepo) { currentUser ->
+            val searchQuery = request.query.trim()
 
-        // Check whether the search query is too short, i.e., 3 or fewer characters long
-        if (searchQuery.length < MINIMUM_LENGTH_OF_SEARCH_QUERY) {
-            return GrpcUser.List.getDefaultInstance()
+            // Check whether the search query is too short, i.e., 3 or fewer characters long
+            if (searchQuery.length < MINIMUM_LENGTH_OF_SEARCH_QUERY) {
+                return@withUser GrpcUser.List.getDefaultInstance()
+            }
+
+            val excludedUsersFromSearch = mutableSetOf(currentUser.id)
+            try {
+                val projectMembers =
+                    projectMemberRepo.getProjectMembers(parseUUID(request.projectId, EntityType.PROJECT))
+                excludedUsersFromSearch += projectMembers.map { it.userId }
+            } catch (_: InvalidIdException.UUID) {
+                Logger.warn { "Invalid project ID in invite candidates request: ${request.projectId}" }
+            }
+
+            val candidates = userRepo.getUsersMatchingSearchQuery(searchQuery, excludedUsersFromSearch)
+            candidates.toGrpcUsers()
         }
-
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
-        val excludedUsersFromSearch = mutableSetOf(currentUser.id)
-        try {
-            val projectMembers = projectMemberRepo.getProjectMembers(parseUUID(request.projectId, EntityType.PROJECT))
-            excludedUsersFromSearch += projectMembers.map { it.userId }
-        } catch (_: SnowballRException.InvalidIdException.UUID) {
-            Logger.warn { "Invalid project ID in invite candidates request: ${request.projectId}" }
-        }
-
-        val candidates = userRepo.getUsersMatchingSearchQuery(searchQuery, excludedUsersFromSearch)
-
-        return candidates.toGrpcUsers()
-    }
 
     override suspend fun register(request: Authentication.RegisterRequest): Base.Nothing {
         // Check whether a user with the given email already exists
