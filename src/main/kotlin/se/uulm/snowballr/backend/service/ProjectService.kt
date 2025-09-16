@@ -12,6 +12,7 @@ import se.uulm.snowballr.backend.model.dto.Paper
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.ProjectPaper
 import se.uulm.snowballr.backend.model.dto.ProjectPaperWithPaper
+import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.toGrpcAuthor
 import se.uulm.snowballr.backend.model.dto.toGrpcProject
 import se.uulm.snowballr.backend.model.dto.toGrpcProjectMembers
@@ -154,6 +155,14 @@ class ProjectService(
         return projectMembers.any { it.userId == currentUserId }
     }
 
+    private suspend fun ensureCurrentUserIsProjectMember(projectId: UUID, currentUser: User) {
+        if (isProjectMember(projectId, currentUser.id)) return
+
+        verifyServerAdminRole(currentUser) {
+            throw UnauthorizedException.Single(EntityType.PROJECT, projectId.toString(), AccessType.READ, it)
+        }
+    }
+
     /**
      * Converts a combination of [Paper] and [ProjectPaper] into a gRPC-compatible [GrpcProjectPaper] object.
      * This includes enriching the data with associated authors, backward references, and reviews.
@@ -197,11 +206,7 @@ class ProjectService(
             throw NotFoundException(EntityType.PROJECT, projectId.toString())
         }
 
-        if (!isProjectMember(projectId, currentUser.id)) {
-            verifyServerAdminRole(currentUser) {
-                throw UnauthorizedException.Single(EntityType.PROJECT, projectId.toString(), AccessType.READ, it)
-            }
-        }
+        ensureCurrentUserIsProjectMember(projectId, currentUser)
 
         var projectPapersWithPapers = projectPaperRepo.getAllProjectPapersWithPapers(projectId)
         val paperAuthorsMap = mutableMapOf<Paper, List<GrpcAuthor>>()
@@ -239,13 +244,7 @@ class ProjectService(
      */
     private suspend fun loadAndAuthorizeProjectPaper(projectPaper: ProjectPaper, projectId: UUID): GrpcProjectPaper =
         withUser(userRepo) { currentUser ->
-            val projectMembers = projectMemberRepo.getProjectMembers(projectId)
-
-            if (projectMembers.none { it.userId == currentUser.id }) {
-                verifyServerAdminRole(currentUser) {
-                    throw UnauthorizedException.Single(EntityType.PROJECT, projectId.toString(), AccessType.READ, it)
-                }
-            }
+            ensureCurrentUserIsProjectMember(projectId, currentUser)
 
             val paper = paperRepo.getPaperById(projectPaper.paperId).getOrThrow()
             val authors = authorOfPaperTableRepo
@@ -269,11 +268,7 @@ class ProjectService(
     override suspend fun getProjectById(request: Base.Id): GrpcProject = withUser(userRepo) { currentUser ->
         val projectId = parseUUID(request.id, EntityType.PROJECT)
 
-        if (!isProjectMember(projectId, currentUser.id)) {
-            verifyServerAdminRole(currentUser) {
-                throw UnauthorizedException.Single(EntityType.PROJECT, projectId.toString(), AccessType.READ, it)
-            }
-        }
+        ensureCurrentUserIsProjectMember(projectId, currentUser)
 
         repo.getProjectById(projectId).getOrThrow().toGrpcProject()
     }
@@ -401,11 +396,7 @@ class ProjectService(
         withUser(userRepo) { currentUser ->
             val projectId = parseUUID(request.projectId, EntityType.PROJECT)
 
-            if (!isProjectMember(projectId, currentUser.id)) {
-                verifyServerAdminRole(currentUser) {
-                    throw UnauthorizedException.Single(EntityType.PROJECT, projectId.toString(), AccessType.READ, it)
-                }
-            }
+            ensureCurrentUserIsProjectMember(projectId, currentUser)
 
             val paperId = parseUUID(request.paperId, EntityType.PAPER)
             val project = repo.getProjectById(projectId).getOrThrow()
