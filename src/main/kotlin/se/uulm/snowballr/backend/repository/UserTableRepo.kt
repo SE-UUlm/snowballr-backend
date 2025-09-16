@@ -154,11 +154,10 @@ class UserTableRepo(
     private fun getUserByEmailOrNull(email: String): User? =
         UserTable.getEntityOrNull(ResultRow::toUser) { UserTable.email eq email }
 
-    private fun getPasswordHashByUserMailOrNull(email: String): String? = UserTable.getEntityOrNull(
-        mapper = { row -> row[UserTable.passwordHash] },
-        select = UserTable.select(UserTable.passwordHash),
-        where = { UserTable.email eq email },
-    )
+    private fun getPasswordHashByUserMailOrNull(email: String): String? = UserTable.select(UserTable.passwordHash)
+        .where { UserTable.email eq email }
+        .map { it[UserTable.passwordHash] }
+        .singleOrNull()
 
     private fun getUserSettingsByUserIdOrNull(userId: UUID): UserSettings? =
         UserTable.getEntityByIdOrNull(userId, ResultRow::toUserSettings)
@@ -263,7 +262,7 @@ class UserTableRepo(
     }
 
     override suspend fun getPasswordHashByEmail(email: String): Result<String> = db.query {
-        getEntityByKeyAsResult(::getPasswordHashByUserMailOrNull, EntityType.USER, email)
+        getEntityByKeyAsResult(::getPasswordHashByUserMailOrNull, EntityType.USER, email, IdentifierType.EMAIL)
     }
 
     override suspend fun getUserSettings(id: UUID): Result<UserSettings> = db.query {
