@@ -21,7 +21,7 @@ class GetAllDeletedProjectsForUserTest : MainServiceTest() {
     private fun getExampleRequest() = Base.Id.newBuilder().setId(requestedUserId.toString()).build()
 
     @Test
-    fun `When retrieving requested user fails, then a TestSpecificException is thrown`() = runTest {
+    fun `When retrieving the requested user fails, then a TestSpecificException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
         val requestedUser = DataBuilder.createExampleUser(id = requestedUserId)
 
