@@ -2,7 +2,6 @@ package se.uulm.snowballr.backend.repository.association
 
 import org.jetbrains.exposed.sql.JoinType
 import org.jetbrains.exposed.sql.ResultRow
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
@@ -15,6 +14,7 @@ import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.doesEntityExist
 import se.uulm.snowballr.backend.repository.getEntityByIdOrNull
 import se.uulm.snowballr.backend.repository.getEntityByKeyAsResult
+import se.uulm.snowballr.backend.repository.getEntityOrNull
 import se.uulm.snowballr.backend.repository.insertAndGet
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
@@ -128,12 +128,9 @@ class ProjectPaperTableRepo(
 
     override suspend fun getProjectPaperByRelativeId(projectId: UUID, relativeId: Long): Result<ProjectPaper> =
         db.query {
-            val where = (ProjectPaperTable.projectId eq projectId) and (ProjectPaperTable.localPaperId eq relativeId)
-            val projectPaper = ProjectPaperTable
-                .selectAll()
-                .where(where)
-                .map { it.toProjectPaper() }
-                .singleOrNull()
+            val projectPaper = ProjectPaperTable.getEntityOrNull(ResultRow::toProjectPaper) {
+                (ProjectPaperTable.projectId eq projectId) and (ProjectPaperTable.localPaperId eq relativeId)
+            }
 
             if (projectPaper != null) {
                 Result.success(projectPaper)
