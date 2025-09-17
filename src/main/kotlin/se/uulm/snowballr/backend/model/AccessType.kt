@@ -10,7 +10,7 @@ enum class AccessType(val description: String) {
     /** Attempt to create a new entity */
     CREATE("create"),
 
-    /** Attempt to update an existing entity */
+    /** Attempt to update an existent entity */
     UPDATE("update"),
 
     /** Attempt to delete an entity */

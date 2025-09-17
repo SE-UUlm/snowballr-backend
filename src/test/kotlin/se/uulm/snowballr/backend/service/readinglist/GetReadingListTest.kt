@@ -2,36 +2,15 @@ package se.uulm.snowballr.backend.service.readinglist
 
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.every
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
-import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.model.dto.toGrpcAuthor
 import se.uulm.snowballr.backend.model.dto.toGrpcPaper
 import se.uulm.snowballr.backend.service.MainServiceTest
 
 class GetReadingListTest : MainServiceTest() {
-    @Test
-    fun `When retrieving the current user ID fails, then an exception is thrown`() = runTest {
-        every { GrpcContext.getUserIdFromContext() } throws TestSpecificException()
-        assertThrows<TestSpecificException> { mainService.getReadingList() }
-    }
-
-    @Test
-    fun `When retrieving the reading list entries fails, then an exception is thrown`() = runTest {
-        val user = DataBuilder.createExampleUser()
-
-        every { GrpcContext.getUserIdFromContext() } returns user.id
-        coEvery { userRepoMock.getUserById(user.id) } returns user
-        coEvery { readingListRepoMock.getAllReadingListEntries(user.id) } throws TestSpecificException()
-
-        assertThrows<TestSpecificException> { mainService.getReadingList() }
-    }
-
     @Test
     fun `When the user has entries on their reading list, then they are correctly returned by getReadingList`() =
         runTest {
@@ -40,8 +19,7 @@ class GetReadingListTest : MainServiceTest() {
             val paper2 = DataBuilder.createExamplePaper(externalId = "ExternalId2")
             val author = DataBuilder.createExampleAuthor()
 
-            every { GrpcContext.getUserIdFromContext() } returns user.id
-            coEvery { userRepoMock.getUserById(user.id) } returns user
+            mockCurrentUser(user)
             coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(paper1.id) } returns emptyList()
             coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(paper2.id) } returns listOf(author)
             coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper2.id) } returns listOf(paper1.id)
@@ -54,4 +32,18 @@ class GetReadingListTest : MainServiceTest() {
             )
             coVerify(exactly = 1) { readingListRepoMock.getAllReadingListEntries(user.id) }
         }
+
+    @Test
+    fun `When the user has no entries on their reading list, then an empty list is returned`() = runTest {
+        val user = DataBuilder.createExampleUser()
+
+        mockCurrentUser(user)
+        coEvery { readingListRepoMock.getAllReadingListEntries(user.id) } returns emptyList()
+
+        val papers = mainService.getReadingList().papersList
+        assertThat(papers).isEmpty()
+        coVerify(exactly = 1) { readingListRepoMock.getAllReadingListEntries(user.id) }
+        coVerify(exactly = 0) { authorOfPaperRepoMock.getAuthorsOfPaperById(any()) }
+        coVerify(exactly = 0) { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(any()) }
+    }
 }

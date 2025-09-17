@@ -3,12 +3,12 @@ package se.uulm.snowballr.backend.repository
 import com.google.protobuf.util.FieldMaskUtil
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
-import org.jetbrains.exposed.exceptions.ExposedSQLException
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
@@ -16,11 +16,15 @@ import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.toGrpcUser
 import se.uulm.snowballr.backend.table.UserTable
+import se.uulm.snowballr.backend.utils.assertResultFailure
+import se.uulm.snowballr.backend.utils.assertResultSuccess
 import snowballr.Authentication
-import snowballr.ProjectOuterClass
+import snowballr.ProjectOuterClass.ReviewDecisionMatrix
+import snowballr.ProjectOuterClass.SnowballingType
 import snowballr.UserOuterClass.User
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
+import java.sql.SQLException
 import java.time.OffsetDateTime
 import java.util.UUID
 import kotlin.test.assertEquals
@@ -61,10 +65,11 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
     @Nested
     inner class GetUserById {
         @Test
-        fun `When a user is found, then the correct user is returned`() = runTest {
+        fun `When a user is found by their ID, then a successful result with the correct user is returned`() = runTest {
             val userId = insertTestUserAndGetId()
-            val user = repo.getUserById(userId)
+            val result = repo.getUserById(userId)
 
+            val user = assertResultSuccess(result)
             assertThat(user.id).isEqualTo(userId)
             assertThat(user.email).isEqualTo("test.user@example.com")
             assertThat(user.firstName).isEqualTo("Test")
@@ -74,30 +79,38 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
         }
 
         @Test
-        fun `When a user is not found, then an exception is thrown`() = runTest {
-            assertThrows<NotFoundException> { repo.getUserById(UUID.randomUUID()) }
-        }
+        fun `When a user is not found by their ID, then a failed result with a NotFoundException is returned`() =
+            runTest {
+                val result = repo.getUserById(UUID.randomUUID())
+
+                assertResultFailure<NotFoundException>(result)
+            }
     }
 
     @Nested
     inner class GetUserByEmail {
         @Test
-        fun `When a user is found, then the correct user is returned`() = runTest {
-            val userId = insertTestUserAndGetId()
-            val user = repo.getUserByEmail("test.user@example.com")
+        fun `When a user is found by their email, then a successful result with the correct user is returned`() =
+            runTest {
+                val userId = insertTestUserAndGetId()
+                val result = repo.getUserByEmail("test.user@example.com")
 
-            assertThat(user.id).isEqualTo(userId)
-            assertThat(user.email).isEqualTo("test.user@example.com")
-            assertThat(user.firstName).isEqualTo("Test")
-            assertThat(user.lastName).isEqualTo("User")
-            assertThat(user.role).isEqualTo(UserRole.USER_ROLE_DEFAULT)
-            assertThat(user.status).isEqualTo(UserStatus.USER_STATUS_ACTIVE)
-        }
+                val user = assertResultSuccess(result)
+                assertThat(user.id).isEqualTo(userId)
+                assertThat(user.email).isEqualTo("test.user@example.com")
+                assertThat(user.firstName).isEqualTo("Test")
+                assertThat(user.lastName).isEqualTo("User")
+                assertThat(user.role).isEqualTo(UserRole.USER_ROLE_DEFAULT)
+                assertThat(user.status).isEqualTo(UserStatus.USER_STATUS_ACTIVE)
+            }
 
         @Test
-        fun `When a user is not found, then an exception is thrown`() = runTest {
-            assertThrows<NotFoundException> { repo.getUserByEmail("non-existing email") }
-        }
+        fun `When a user is not found by their email, then a failed result with a NotFoundException is returned`() =
+            runTest {
+                val result = repo.getUserByEmail("nonexistent email")
+
+                assertResultFailure<NotFoundException>(result)
+            }
     }
 
     @Nested
@@ -131,7 +144,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
         }
 
         @Test
-        fun `When permanently deleted users exist, then only the existing users are returned`() = runTest {
+        fun `When permanently deleted users exist, then only the existent users are returned`() = runTest {
             val userId1 = insertTestUserAndGetId(email = "test.user1@example.com", lastName = "User 1")
             val userId2 = insertTestUserAndGetId(email = "", firstName = "", lastName = "")
 
@@ -166,7 +179,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
         }
 
         @Test
-        fun `When a user with an existing email is created, then an exception is thrown`() = runTest {
+        fun `When a user with an existent email is created, then an SQLException is thrown`() = runTest {
             val request =
                 Authentication.RegisterRequest
                     .newBuilder()
@@ -177,7 +190,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
                     .build()
             repo.createUser(request, "hashedPassword")
 
-            assertThrows<ExposedSQLException> {
+            assertThrows<SQLException> {
                 repo.createUser(request, "hashedPassword2")
             }
         }
@@ -215,7 +228,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
             fieldMask: List<String>,
         ) = runTest {
             val userId = insertTestUserAndGetId(email = "test.user@example.com")
-            val originalUser = repo.getUserById(userId)
+            val originalUser = repo.getUserById(userId).getOrThrow()
 
             val updatedUserDetails = originalUser.toGrpcUser().toBuilder()
                 .setEmail("updated.user@example.com")
@@ -260,11 +273,11 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
         }
 
         @Test
-        fun `When a user's email should be updated to an existing email, then an exception is thrown`() = runTest {
+        fun `When a user's email should be updated to an existent email, then an SQLException is thrown`() = runTest {
             insertTestUserAndGetId(email = "alice.smith@example.com")
 
             val user2Id = insertTestUserAndGetId(email = "bob.smith@example.com")
-            val user2Builder = repo.getUserById(user2Id).toGrpcUser().toBuilder()
+            val user2Builder = repo.getUserById(user2Id).getOrThrow().toGrpcUser().toBuilder()
 
             val updateRequest =
                 User.Update
@@ -273,7 +286,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
                     .setMask(FieldMaskUtil.fromString("user.email"))
                     .build()
 
-            assertThrows<ExposedSQLException> {
+            assertThrows<SQLException> {
                 repo.updateUser(updateRequest)
             }
         }
@@ -289,57 +302,61 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
             repo.softDeleteUser(userId1)
 
             val after = OffsetDateTime.now()
-            val deletedUser = repo.getUserById(userId1)
+            val deletedUser = repo.getUserById(userId1).getOrThrow()
 
             assertThat(deletedUser.status).isEqualTo(UserStatus.USER_STATUS_DELETED)
             assertThat(deletedUser.deletedAt).isBetween(before, after)
         }
 
         @Test
-        fun `When a user is not found, then an exception is thrown`() = runTest {
-            assertThrows<NotFoundException> { repo.getUserById(UUID.randomUUID()) }
+        fun `When a user is not found, then no exception is thrown`() = runTest {
+            assertDoesNotThrow { repo.softDeleteUser(UUID.randomUUID()) }
         }
     }
 
     @Nested
     inner class GetPasswordHashByEmail {
         @Test
-        fun `When a user is found, then the password hash is returned`() = runTest {
+        fun `When a user is found, then a successful result with the password hash is returned`() = runTest {
             val passwordHash = "hashedPassword"
             insertTestUserAndGetId(email = "test.user@example.com", passwordHash = passwordHash)
-            val retrievedPasswordHash = repo.getPasswordHashByEmail("test.user@example.com")
+            val result = repo.getPasswordHashByEmail("test.user@example.com")
 
+            val retrievedPasswordHash = assertResultSuccess(result)
             assertEquals(passwordHash, retrievedPasswordHash)
         }
 
         @Test
-        fun `When a user is not found, then an exception is thrown`() = runTest {
-            assertThrows<NotFoundException> { repo.getPasswordHashByEmail("non-existing email") }
+        fun `When a user is not found, then a failed result with a NotFoundException is returned`() = runTest {
+            val result = repo.getPasswordHashByEmail("nonexistent email")
+
+            assertResultFailure<NotFoundException>(result)
         }
     }
 
     @Nested
     inner class GetUserSettings {
         @Test
-        fun `When a user is found, then the user settings are returned`() = runTest {
+        fun `When a user is found, then a successful result with the user settings is returned`() = runTest {
             val userId = insertTestUserAndGetId()
-            val userSettings = repo.getUserSettings(userId)
+            val result = repo.getUserSettings(userId)
 
+            val userSettings = assertResultSuccess(result)
             assertThat(userSettings.areHotkeysShown).isTrue()
             assertThat(userSettings.isReviewModeEnabled).isFalse()
             assertThat(userSettings.criteriaIds).isEmpty()
             assertThat(userSettings.similarityThreshold).isEqualTo(0F)
-            assertThat(
-                userSettings.decisionMatrix,
-            ).isEqualTo(ProjectOuterClass.ReviewDecisionMatrix.getDefaultInstance())
+            assertThat(userSettings.decisionMatrix).isEqualTo(ReviewDecisionMatrix.getDefaultInstance())
             assertThat(userSettings.fetchers).isEmpty()
-            assertThat(userSettings.snowballingType).isEqualTo(ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_BOTH)
+            assertThat(userSettings.snowballingType).isEqualTo(SnowballingType.SNOWBALLING_TYPE_BOTH)
             assertThat(userSettings.reviewMaybeAllowed).isTrue()
         }
 
         @Test
-        fun `When a user is not found, then an exception is thrown`() = runTest {
-            assertThrows<NotFoundException> { repo.getUserSettings(UUID.randomUUID()) }
+        fun `When a user is not found, then a failed result with a NotFoundException is returned`() = runTest {
+            val result = repo.getUserSettings(UUID.randomUUID())
+
+            assertResultFailure<NotFoundException>(result)
         }
     }
 
@@ -371,7 +388,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
         fun `When no user is matching the search query, then an empty list is returned`() = runTest {
             insertTestUserAndGetId(firstName = "johnathan")
 
-            val matchingUsers = repo.getUsersMatchingSearchQuery("non-existing", emptySet())
+            val matchingUsers = repo.getUsersMatchingSearchQuery("nonexistent", emptySet())
 
             assertEquals(0, matchingUsers.size)
         }

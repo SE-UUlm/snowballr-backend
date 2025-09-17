@@ -5,12 +5,12 @@ import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.ResultRow
 import se.uulm.snowballr.backend.model.dto.Review
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
-import snowballr.ReviewOuterClass
+import snowballr.ReviewOuterClass.ReviewDecision
 import java.time.OffsetDateTime
 
 /**
- * Represents the "review" table, defining the relationship between project papers and users, which is
- * typically used to associate users with reviews of specific project papers.
+ * Represents the "review" table, defining the relationship between project papers and users, which is typically used to
+ * associate users with reviews of specific project papers.
  *
  * Columns:
  * - [projectPaperId]: Foreign key referencing the [ProjectPaperTable], representing the project paper being reviewed.
@@ -40,7 +40,7 @@ object ReviewTable : UUIDTable("review") {
         uniqueIndex(projectPaperId, userId)
     }
 
-    val decision = enumeration<ReviewOuterClass.ReviewDecision>("decision")
+    val decision = enumeration<ReviewDecision>("decision")
 
     // Metadata
 

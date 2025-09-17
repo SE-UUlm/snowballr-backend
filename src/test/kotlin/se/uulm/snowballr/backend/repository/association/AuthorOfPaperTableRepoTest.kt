@@ -51,7 +51,7 @@ class AuthorOfPaperTableRepoTest : RepositoryTest(arrayOf(AuthorTable, PaperTabl
             addAuthorToPaper(authorId, paperId)
             val actualAuthors = repo.getAuthorsOfPaperById(paperId)
             assertThat(actualAuthors).hasSize(1)
-            assertThat(actualAuthors).containsExactly(authorRepo.getAuthorById(authorId))
+            assertThat(actualAuthors).containsExactly(authorRepo.getAuthorById(authorId).getOrThrow())
         }
 
         @Test
@@ -64,8 +64,8 @@ class AuthorOfPaperTableRepoTest : RepositoryTest(arrayOf(AuthorTable, PaperTabl
             val actualAuthors = repo.getAuthorsOfPaperById(paperId)
             assertThat(actualAuthors).hasSize(2)
             assertThat(actualAuthors).containsExactlyInAnyOrder(
-                authorRepo.getAuthorById(authorId1),
-                authorRepo.getAuthorById(authorId2),
+                authorRepo.getAuthorById(authorId1).getOrThrow(),
+                authorRepo.getAuthorById(authorId2).getOrThrow(),
             )
         }
     }

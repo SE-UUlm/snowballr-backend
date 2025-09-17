@@ -10,16 +10,16 @@ import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.ProjectMember
 import se.uulm.snowballr.backend.model.dto.ProjectMemberWithUser
+import se.uulm.snowballr.backend.repository.getEntities
+import se.uulm.snowballr.backend.repository.getEntityByKeysAsResult
 import se.uulm.snowballr.backend.repository.getEntityOrNull
-import se.uulm.snowballr.backend.repository.getProjectEntityId
-import se.uulm.snowballr.backend.repository.getUserEntityId
 import se.uulm.snowballr.backend.repository.insertAndGet
 import se.uulm.snowballr.backend.repository.updateAndGet
 import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.table.association.toProjectMember
 import se.uulm.snowballr.backend.table.association.toProjectMemberWithUser
-import snowballr.ProjectOuterClass
+import snowballr.ProjectOuterClass.MemberRole
 import java.util.UUID
 
 /**
@@ -31,9 +31,10 @@ import java.util.UUID
  */
 interface IProjectMemberTableRepo {
     /**
-     * Returns a project member by its composed ID or throws a [NotFoundException] if the project with the passed [projectId] and [userId] doesn't exist.
+     * Returns a [Result] containing the project member by its composed ID or a [NotFoundException] if the project with
+     * the passed [projectId] or the user with the passed [userId] doesn't exist.
      */
-    suspend fun getProjectMemberByComposedId(projectId: UUID, userId: UUID): ProjectMember
+    suspend fun getProjectMemberByComposedId(projectId: UUID, userId: UUID): Result<ProjectMember>
 
     /**
      * Adds a user with the passed [userId] as member to the project with the passed [projectId].
@@ -102,37 +103,27 @@ class ProjectMemberTableRepo(
             (ProjectMemberTable.projectId eq projectId) and (ProjectMemberTable.userId eq userId)
         }
 
-    override suspend fun getProjectMemberByComposedId(projectId: UUID, userId: UUID): ProjectMember = db.query {
-        getProjectMemberByComposedIdOrNull(projectId, userId)
-            ?: throw NotFoundException(EntityType.PROJECT_MEMBER, projectId.toString(), userId.toString())
+    override suspend fun getProjectMemberByComposedId(projectId: UUID, userId: UUID): Result<ProjectMember> = db.query {
+        getEntityByKeysAsResult(::getProjectMemberByComposedIdOrNull, EntityType.PROJECT_MEMBER, projectId, userId)
     }
 
     override suspend fun addUserToProject(userId: UUID, projectId: UUID) = db.query {
-        // Get user reference
-        val userEntityId = getUserEntityId(userId)
-
-        // Get project reference
-        val projectEntityId = getProjectEntityId(projectId)
-
         // Return when the user is already a project member
         val projectMembers = getProjectMembers(projectId)
-        val existingMember = projectMembers.find { it.userId == userEntityId.value }
-        if (existingMember != null) {
-            return@query existingMember
+        val existentMember = projectMembers.find { it.userId == userId }
+        if (existentMember != null) {
+            return@query existentMember
         }
 
         ProjectMemberTable.insertAndGet(ResultRow::toProjectMember, EntityType.PROJECT_MEMBER) {
-            it[this.userId] = userEntityId
-            it[this.projectId] = projectEntityId
-            it[role] = ProjectOuterClass.MemberRole.MEMBER_ROLE_DEFAULT
+            it[this.userId] = userId
+            it[this.projectId] = projectId
+            it[role] = MemberRole.MEMBER_ROLE_DEFAULT
         }
     }
 
     override suspend fun getProjectMembers(projectId: UUID): List<ProjectMember> = db.query {
-        ProjectMemberTable
-            .selectAll()
-            .where { ProjectMemberTable.projectId eq projectId }
-            .map { it.toProjectMember() }
+        ProjectMemberTable.getEntities(ResultRow::toProjectMember) { ProjectMemberTable.projectId eq projectId }
     }
 
     override suspend fun getMembersInSameProjectsAsUser(userId: UUID): List<ProjectMember> = db.query {
@@ -155,13 +146,10 @@ class ProjectMemberTableRepo(
     }
 
     override suspend fun getAllProjectAdmins(projectId: UUID): List<ProjectMember> = db.query {
-        ProjectMemberTable
-            .selectAll()
-            .where {
-                (ProjectMemberTable.projectId eq projectId) and
-                    (ProjectMemberTable.role eq ProjectOuterClass.MemberRole.MEMBER_ROLE_ADMIN)
-            }
-            .map { it.toProjectMember() }
+        ProjectMemberTable.getEntities(ResultRow::toProjectMember) {
+            (ProjectMemberTable.projectId eq projectId) and
+                (ProjectMemberTable.role eq MemberRole.MEMBER_ROLE_ADMIN)
+        }
     }
 
     override suspend fun promoteProjectMemberToAdmin(projectId: UUID, userId: UUID): ProjectMember = db.query {
@@ -172,10 +160,9 @@ class ProjectMemberTableRepo(
             where = {
                 (ProjectMemberTable.projectId eq projectId) and (ProjectMemberTable.userId eq userId)
             },
-            body = {
-                it[role] = ProjectOuterClass.MemberRole.MEMBER_ROLE_ADMIN
-            },
-        )
+        ) {
+            it[role] = MemberRole.MEMBER_ROLE_ADMIN
+        }
     }
 
     override suspend fun getProjectMembersWithUsers(projectId: UUID): List<ProjectMemberWithUser> = db.query {

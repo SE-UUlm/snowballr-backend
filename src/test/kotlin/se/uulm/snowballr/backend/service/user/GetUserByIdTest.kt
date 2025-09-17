@@ -2,15 +2,12 @@ package se.uulm.snowballr.backend.service.user
 
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.every
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.auth.GrpcContext
-import se.uulm.snowballr.backend.model.SnowballRException.InvalidIdException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
@@ -21,24 +18,8 @@ import java.util.UUID
 
 class GetUserByIdTest : MainServiceTest() {
     private val requestedUserId = UUID.randomUUID()
+
     private fun getExampleRequest() = Base.Id.newBuilder().setId(requestedUserId.toString()).build()
-
-    @Test
-    fun `When parsing the user ID fails, then InvalidIdException is thrown`() = runTest {
-        val request = Base.Id.newBuilder().setId("invalid-uuid").build()
-        every { GrpcContext.getUserIdFromContext() } returns UUID.randomUUID()
-        coEvery { userRepoMock.getUserById(any()) } returns DataBuilder.createExampleUser()
-
-        assertThrows<InvalidIdException> { mainService.getUserById(request) }
-    }
-
-    @Test
-    fun `When retrieving current user fails, then exception is thrown`() = runTest {
-        every { GrpcContext.getUserIdFromContext() } returns UUID.randomUUID()
-        coEvery { userRepoMock.getUserById(any()) } throws TestSpecificException()
-
-        assertThrows<TestSpecificException> { mainService.getUserById(getExampleRequest()) }
-    }
 
     @Test
     fun `When current user is admin, then requested user is returned successfully`() = runTest {
@@ -48,9 +29,8 @@ class GetUserByIdTest : MainServiceTest() {
             status = UserStatus.USER_STATUS_ACTIVE,
         )
 
-        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
-        coEvery { userRepoMock.getUserById(requestedUserId) } returns requestedUser
+        mockCurrentUser(currentUser)
+        coEvery { userRepoMock.getUserById(requestedUserId) } returns Result.success(requestedUser)
 
         assertDoesNotThrow { mainService.getUserById(getExampleRequest()) }
     }
@@ -64,9 +44,8 @@ class GetUserByIdTest : MainServiceTest() {
         )
         val request = Base.Id.newBuilder().setId(requestedUser.id.toString()).build()
 
-        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
-        coEvery { userRepoMock.getUserById(requestedUser.id) } returns requestedUser
+        mockCurrentUser(currentUser)
+        coEvery { userRepoMock.getUserById(requestedUser.id) } returns Result.success(requestedUser)
 
         assertDoesNotThrow { mainService.getUserById(request) }
 
@@ -82,9 +61,8 @@ class GetUserByIdTest : MainServiceTest() {
             status = UserStatus.USER_STATUS_ACTIVE,
         )
 
-        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
-        coEvery { userRepoMock.getUserById(requestedUserId) } returns requestedUser
+        mockCurrentUser(currentUser)
+        coEvery { userRepoMock.getUserById(requestedUserId) } returns Result.success(requestedUser)
         coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(requestedUserId) } returns listOf(
             DataBuilder.createExampleProjectMember(userId = currentUser.id),
         )
@@ -93,23 +71,21 @@ class GetUserByIdTest : MainServiceTest() {
     }
 
     @Test
-    fun `When current user is not authorized to access requested user, then UnauthorizedException is thrown`() =
+    fun `When current user is not authorized to access requested user, then an UnauthorizedException is thrown`() =
         runTest {
             val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
 
-            every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-            coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+            mockCurrentUser(currentUser)
             coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(requestedUserId) } returns emptyList()
 
-            assertThrows<UnauthorizedException.Single> { mainService.getUserById(getExampleRequest()) }
+            assertThrows<UnauthorizedException> { mainService.getUserById(getExampleRequest()) }
         }
 
     @Test
-    fun `When requested user is inactive, then NotFoundException is thrown`() = runTest {
+    fun `When requested user is inactive, then a NotFoundException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
 
-        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        mockCurrentUser(currentUser)
 
         val inactiveStatuses = UserStatus.entries.filterNot {
             it == UserStatus.USER_STATUS_ACTIVE || it == UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED
@@ -118,7 +94,7 @@ class GetUserByIdTest : MainServiceTest() {
         inactiveStatuses.forEach { status ->
             val requestedUser = DataBuilder.createExampleUser(id = requestedUserId, status = status)
 
-            coEvery { userRepoMock.getUserById(requestedUserId) } returns requestedUser
+            coEvery { userRepoMock.getUserById(requestedUserId) } returns Result.success(requestedUser)
 
             assertThrows<NotFoundException>("Should throw NotFoundException for status $status") {
                 mainService.getUserById(getExampleRequest())
@@ -130,8 +106,7 @@ class GetUserByIdTest : MainServiceTest() {
     fun `When requested user is active, then user is returned`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
 
-        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
+        mockCurrentUser(currentUser)
 
         val activeStatuses = listOf(
             UserStatus.USER_STATUS_ACTIVE,
@@ -141,7 +116,7 @@ class GetUserByIdTest : MainServiceTest() {
         activeStatuses.forEach { status ->
             val requestedUser = DataBuilder.createExampleUser(id = requestedUserId, status = status)
 
-            coEvery { userRepoMock.getUserById(requestedUserId) } returns requestedUser
+            coEvery { userRepoMock.getUserById(requestedUserId) } returns Result.success(requestedUser)
 
             assertDoesNotThrow("Should succeed for status $status") {
                 mainService.getUserById(getExampleRequest())
@@ -150,12 +125,11 @@ class GetUserByIdTest : MainServiceTest() {
     }
 
     @Test
-    fun `When retrieving requested user fails, then exception is thrown`() = runTest {
+    fun `When retrieving requested user fails, then a TestSpecificException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
 
-        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
-        coEvery { userRepoMock.getUserById(currentUser.id) } returns currentUser
-        coEvery { userRepoMock.getUserById(requestedUserId) } throws TestSpecificException()
+        mockCurrentUser(currentUser)
+        coEvery { userRepoMock.getUserById(requestedUserId) } returns Result.failure(TestSpecificException())
 
         assertThrows<TestSpecificException> { mainService.getUserById(getExampleRequest()) }
     }

@@ -1,7 +1,6 @@
 package se.uulm.snowballr.backend.repository
 
 import org.jetbrains.exposed.sql.ResultRow
-import org.jetbrains.exposed.sql.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
@@ -19,9 +18,10 @@ import java.util.UUID
  */
 interface IReviewTableRepo {
     /**
-     * Returns a review by its ID or throws a [NotFoundException] if the review with the passed [id] doesn't exist.
+     * Returns a [Result] containing the review by its ID or a [NotFoundException] if the review with the passed [id]
+     * doesn't exist.
      */
-    suspend fun getReviewById(id: UUID): Review
+    suspend fun getReviewById(id: UUID): Result<Review>
 
     /**
      * Retrieves all reviews associated with the specified project paper.
@@ -46,14 +46,11 @@ class ReviewTableRepo(
 ) : IReviewTableRepo {
     private fun getReviewByIdOrNull(id: UUID): Review? = ReviewTable.getEntityByIdOrNull(id, ResultRow::toReview)
 
-    override suspend fun getReviewById(id: UUID): Review = db.query {
-        getReviewByIdOrNull(id) ?: throw NotFoundException(EntityType.REVIEW, id.toString())
+    override suspend fun getReviewById(id: UUID): Result<Review> = db.query {
+        getEntityByKeyAsResult(::getReviewByIdOrNull, EntityType.REVIEW, id)
     }
 
     override suspend fun getAllReviewsForProjectPaper(projectPaperId: UUID): List<Review> = db.query {
-        ReviewTable
-            .selectAll()
-            .where { ReviewTable.projectPaperId eq projectPaperId }
-            .map { it.toReview() }
+        ReviewTable.getEntities(ResultRow::toReview) { ReviewTable.projectPaperId eq projectPaperId }
     }
 }

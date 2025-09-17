@@ -15,13 +15,13 @@ class ServiceChecksTest {
     @Nested
     inner class VerifyServerAdminRole {
         @GrpcEnumSourceTest(UserRole::class, excludes = ["USER_ROLE_ADMIN"])
-        fun `When the user is not a server admin, then an exception is thrown`(role: UserRole) {
+        fun `When the user is not a server admin, then an UnauthorizedException is thrown`(role: UserRole) {
             val user = DataBuilder.createExampleUser(role = role)
 
-            assertThrows<UnauthorizedException.All> {
-                verifyServerAdminRole(
-                    user,
-                ) { UnauthorizedException.All(EntityType.PROJECT, AccessType.READ, user.id.toString()) }
+            assertThrows<UnauthorizedException> {
+                verifyServerAdminRole(user) {
+                    UnauthorizedException.All(EntityType.PROJECT, AccessType.READ, user.id.toString())
+                }
             }
         }
 
@@ -30,9 +30,9 @@ class ServiceChecksTest {
             val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
 
             assertDoesNotThrow {
-                verifyServerAdminRole(
-                    user,
-                ) { UnauthorizedException.All(EntityType.PROJECT, AccessType.READ, user.id.toString()) }
+                verifyServerAdminRole(user) {
+                    UnauthorizedException.All(EntityType.PROJECT, AccessType.READ, user.id.toString())
+                }
             }
         }
     }

@@ -17,10 +17,13 @@ import se.uulm.snowballr.backend.repository.RepositoryHelper.createExampleUser
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectAndGetId
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
+import se.uulm.snowballr.backend.utils.assertResultFailure
+import se.uulm.snowballr.backend.utils.assertResultSuccess
 import snowballr.ProjectOuterClass.Project
 import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
 import snowballr.ProjectOuterClass.SnowballingType
+import java.sql.SQLException
 import java.util.UUID
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -42,11 +45,12 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
     @Nested
     inner class GetProjectById {
         @Test
-        fun `When a project is found, then the correct project is returned`() = runTest {
+        fun `When a project is found, then a successful result with the correct project is returned`() = runTest {
             val projectId =
                 insertProjectAndGetId("Test Project", ProjectStatus.PROJECT_STATUS_ACTIVE, createdBy = testUserId)
-            val project = repo.getProjectById(projectId)
+            val result = repo.getProjectById(projectId)
 
+            val project = assertResultSuccess(result)
             assertThat(project.id).isEqualTo(projectId)
             assertThat(project.name).isEqualTo("Test Project")
             assertThat(project.status).isEqualTo(ProjectStatus.PROJECT_STATUS_ACTIVE)
@@ -60,8 +64,10 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
         }
 
         @Test
-        fun `When a project is not found, then an exception is thrown`() = runTest {
-            assertThrows<NotFoundException> { repo.getProjectById(UUID.randomUUID()) }
+        fun `When a project is not found, then a failed result with a NotFoundException is returned`() = runTest {
+            val result = repo.getProjectById(UUID.randomUUID())
+
+            assertResultFailure<NotFoundException>(result)
         }
     }
 
@@ -71,17 +77,17 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
         fun `When a project with the given id exists, then true returned`() = runTest {
             val projectId =
                 insertProjectAndGetId("Test Project", ProjectStatus.PROJECT_STATUS_ACTIVE, createdBy = testUserId)
-            val isProjectExisting = repo.doesProjectExistById(projectId)
+            val isProjectExistent = repo.doesProjectExistById(projectId)
 
-            assertTrue(isProjectExisting)
+            assertTrue(isProjectExistent)
         }
 
         @Test
         fun `When a project with the given id does not exist, then false returned`() = runTest {
             val projectId = UUID.randomUUID()
-            val isProjectExisting = repo.doesProjectExistById(projectId)
+            val isProjectExistent = repo.doesProjectExistById(projectId)
 
-            assertFalse(isProjectExisting)
+            assertFalse(isProjectExistent)
         }
     }
 
@@ -115,11 +121,12 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
         }
 
         @Test
-        fun `When a project is created, but the assigned user doesn't exist, then an exception is thrown`() = runTest {
-            val request = Project.Create.newBuilder().setName("Test Project").build()
-            val userSettings = DataBuilder.createExampleUserSettings()
-            assertThrows<NotFoundException> { repo.createProject(request, UUID.randomUUID(), userSettings) }
-        }
+        fun `When a project is created, but the assigned user doesn't exist, then an SQLException is thrown`() =
+            runTest {
+                val request = Project.Create.newBuilder().setName("Test Project").build()
+                val userSettings = DataBuilder.createExampleUserSettings()
+                assertThrows<SQLException> { repo.createProject(request, UUID.randomUUID(), userSettings) }
+            }
     }
 
     @Nested
@@ -173,7 +180,7 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
             val projectStatus = ProjectStatus.PROJECT_STATUS_ACTIVE
             val projectId =
                 insertProjectAndGetId(name = "Test Project", projectStatus, createdBy = testUserId)
-            val originalProject = repo.getProjectById(projectId)
+            val originalProject = repo.getProjectById(projectId).getOrThrow()
 
             val updatedProjectDetails = originalProject.toGrpcProject().toBuilder()
                 .setName("Updated Project")
@@ -229,7 +236,7 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
             val projectStatus = ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED
             val projectId =
                 insertProjectAndGetId(name = "Test Project", projectStatus, createdBy = testUserId)
-            val originalProject = repo.getProjectById(projectId)
+            val originalProject = repo.getProjectById(projectId).getOrThrow()
 
             val updatedProjectDetails = originalProject.toGrpcProject().toBuilder()
                 .setName("Updated Project")
@@ -273,7 +280,7 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
             val projectStatus = ProjectStatus.PROJECT_STATUS_ARCHIVED
             val projectId =
                 insertProjectAndGetId(name = "Test Project", projectStatus, createdBy = testUserId)
-            val originalProject = repo.getProjectById(projectId)
+            val originalProject = repo.getProjectById(projectId).getOrThrow()
 
             val updatedProjectDetails = originalProject.toGrpcProject().toBuilder()
                 .setName("Updated Project")
@@ -441,15 +448,16 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
         }
 
         @Test
-        fun `When an invalid project status is used to filter user projects, then an exception is thrown`() = runTest {
-            val userId = createExampleUser("userWithActiveProjects@example.com")
+        fun `When an invalid project status is used to filter user projects, then an IllegalArgumentException is thrown`() =
+            runTest {
+                val userId = createExampleUser("userWithActiveProjects@example.com")
 
-            assertThrows<IllegalArgumentException> {
-                repo.getUserProjects(
-                    userId,
-                    setOf(ProjectStatus.PROJECT_STATUS_UNSPECIFIED),
-                )
+                assertThrows<IllegalArgumentException> {
+                    repo.getUserProjects(
+                        userId,
+                        setOf(ProjectStatus.PROJECT_STATUS_UNSPECIFIED),
+                    )
+                }
             }
-        }
     }
 }

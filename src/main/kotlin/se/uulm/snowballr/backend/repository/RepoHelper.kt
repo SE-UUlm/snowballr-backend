@@ -12,12 +12,39 @@ import org.jetbrains.exposed.sql.statements.UpdateStatement
 import org.jetbrains.exposed.sql.update
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.EntityNotPersistedException
-import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
-import se.uulm.snowballr.backend.table.ProjectTable
-import se.uulm.snowballr.backend.table.UserTable
 import java.util.UUID
 
-// === generic repo helpers === //
+/**
+ * Returns a list of entities according to the [where] expression.
+ *
+ * @param Key The type of the [IdTable], i.e., the ID type, such as [UUID].
+ * @param T The table type as a subtype of [IdTable].
+ * @param EntT The result entity type.
+ * @param mapper Mapping function to map each [ResultRow] to an entity of type [EntT].
+ * @param where The SQL expression that is used to find the entities.
+ */
+fun <Key : Any, T : IdTable<Key>, EntT : Any> T.getEntities(
+    mapper: (ResultRow) -> EntT,
+    where: SqlExpressionBuilder.() -> Op<Boolean>,
+): List<EntT> = this.selectAll()
+    .where(where)
+    .map(mapper)
+
+/**
+ * Returns a list of entities by their IDs.
+ *
+ * @param Key The type of the [IdTable], i.e., the ID type, such as [UUID].
+ * @param T The table type as a subtype of [IdTable].
+ * @param EntT The result entity type.
+ * @param ids A list of IDs for the entities to be fetched.
+ * @param mapper Mapping function to map each [ResultRow] to an entity of type [EntT].
+ */
+fun <Key : Any, T : IdTable<Key>, EntT : Any> T.getEntitiesByIds(
+    ids: List<Key>,
+    mapper: (ResultRow) -> EntT,
+): List<EntT> = this.getEntities(mapper) {
+    this@getEntitiesByIds.id inList ids
+}
 
 /**
  * Returns an entity according to the [where] expression or returns null if the entity couldn't be found.
@@ -31,9 +58,8 @@ import java.util.UUID
 fun <Key : Any, T : IdTable<Key>, EntT : Any> T.getEntityOrNull(
     mapper: (ResultRow) -> EntT,
     where: SqlExpressionBuilder.() -> Op<Boolean>,
-): EntT? = this.selectAll()
-    .where(where)
-    .map(mapper)
+): EntT? = this
+    .getEntities(mapper, where)
     .singleOrNull()
 
 /**
@@ -49,22 +75,16 @@ fun <Key : Any, T : IdTable<Key>, EntT : Any> T.getEntityByIdOrNull(id: Key, map
     this.getEntityOrNull(mapper) { this@getEntityByIdOrNull.id eq id }
 
 /**
- * Returns the entity ID of the entity with the given [id] or throws a [NotFoundException] if no such entity exists.
- * This can be used to reference the entity in other table rows.
- *
- * Example:
- * Table A stores a reference to this table as `entity_id`. To create a row in table A, we can use this method
- * to get the [EntityID] and then pass it to the `entity_id` column of table A.
+ * Checks if an entity exists in the table that matches the specified [where] condition.
  *
  * @param Key The type of the [IdTable], i.e., the ID type, such as [UUID].
  * @param T The table type as a subtype of [IdTable].
- * @param id The ID of type [Key], which is used to find the entity.
- * @param entityType The type of the entity used for the [NotFoundException].
- * @return The ID of the entity as [EntityID].
+ * @param where The condition used to filter the entities in the table.
+ *              It is expressed as an [Op] built using the [SqlExpressionBuilder].
+ * @return `true` if an entity matching the condition exists, otherwise `false`.
  */
-private fun <Key : Any, T : IdTable<Key>> T.getEntityId(id: Key, entityType: EntityType): EntityID<Key> = this
-    .getEntityByIdOrNull(id) { it[this.id] }
-    ?: throw NotFoundException(entityType, id.toString())
+fun <Key : Any, T : IdTable<Key>> T.doesEntityExist(where: SqlExpressionBuilder.() -> Op<Boolean>): Boolean =
+    this.selectAll().where(where).count() > 0
 
 /**
  * Checks if an entity exists in the table with the given ID.
@@ -74,8 +94,8 @@ private fun <Key : Any, T : IdTable<Key>> T.getEntityId(id: Key, entityType: Ent
  * @param id The ID of type [Key], which is used to find the entity.
  * @return True if an entity with the given ID exists, false otherwise.
  */
-fun <Key : Any, T : IdTable<Key>> T.doesEntityExistById(id: Key): Boolean = this
-    .getEntityByIdOrNull(id) { it[this.id] } != null
+fun <Key : Any, T : IdTable<Key>> T.doesEntityExistById(id: Key): Boolean =
+    this.doesEntityExist { this@doesEntityExistById.id eq id }
 
 /**
  * Combination of using [insertAndGetId] and fetching the created entity by its ID.
@@ -118,7 +138,7 @@ inline fun <Key : Any, T : IdTable<Key>, EntT : Any> T.updateAndGet(
     crossinline body: T.(UpdateStatement) -> Unit,
 ): EntT {
     this.update(where, body = body)
-    return this.getEntityOrNull(mapper, where) ?: throw EntityNotPersistedException(entityType, id)
+    return this.getEntityOrNull(mapper, where = where) ?: throw EntityNotPersistedException(entityType, id)
 }
 
 /**
@@ -139,40 +159,3 @@ inline fun <Key : Any, T : IdTable<Key>, EntT : Any> T.updateByIdAndGet(
     entityType: EntityType,
     crossinline body: T.(UpdateStatement) -> Unit,
 ): EntT = this.updateAndGet(mapper, entityType, id.toString(), { this@updateByIdAndGet.id eq id }, body)
-
-/**
- * Retrieves a list of entities from the table by their primary key IDs.
- *
- * @param Key The type of the [IdTable], i.e., the ID type, such as [UUID].
- * @param T The table type as a subtype of [IdTable].
- * @param EntT The result entity type.
- * @param ids A list of primary key IDs for the entities to be fetched.
- * @param mapper A function to map each [ResultRow] to an entity of type [EntT].
- * @return A list of entities of type [EntT] corresponding to the provided IDs.
- */
-inline fun <Key : Any, T : IdTable<Key>, EntT : Any> T.getEntitiesByIds(
-    ids: List<Key>,
-    mapper: (ResultRow) -> EntT,
-): List<EntT> {
-    return this
-        .selectAll()
-        .where { this@getEntitiesByIds.id inList ids }
-        .map(mapper)
-}
-
-// === specific repo helpers === //
-
-/**
- * Returns the entity ID of the user with the passed [id] or throws a [NotFoundException] if the user doesn't exist.
- *
- * @see getEntityId
- */
-fun getUserEntityId(id: UUID): EntityID<UUID> = UserTable.getEntityId(id, EntityType.USER)
-
-/**
- * Returns the entity ID of the project with the passed [id] or throws a [NotFoundException] if the project doesn't
- * exist.
- *
- * @see getEntityId
- */
-fun getProjectEntityId(id: UUID): EntityID<UUID> = ProjectTable.getEntityId(id, EntityType.PROJECT)

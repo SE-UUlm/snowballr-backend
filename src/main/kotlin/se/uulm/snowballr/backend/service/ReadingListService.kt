@@ -1,11 +1,11 @@
 package se.uulm.snowballr.backend.service
 
-import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.toGrpcAuthor
 import se.uulm.snowballr.backend.model.dto.toGrpcPaper
+import se.uulm.snowballr.backend.model.dto.toGrpcPapers
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
@@ -13,29 +13,31 @@ import se.uulm.snowballr.backend.repository.association.IAuthorOfPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
 import se.uulm.snowballr.backend.repository.association.IReadingListTableRepo
 import snowballr.Base
-import snowballr.PaperOuterClass
+import snowballr.boolValue
+import snowballr.nothing
 import java.util.UUID
+import snowballr.PaperOuterClass.Paper as GrpcPaper
 
 interface IReadingListService {
     /**
      * Service implementation of [SnowballRService.getReadingList].
      */
-    suspend fun getReadingList(): PaperOuterClass.Paper.List
+    suspend fun getReadingList(): GrpcPaper.List
 
     /**
      * Service implementation of [SnowballRService.isPaperOnReadingList].
      */
-    suspend fun isPaperOnReadingList(paperId: Base.Id): Base.BoolValue
+    suspend fun isPaperOnReadingList(request: Base.Id): Base.BoolValue
 
     /**
      * Service implementation of [SnowballRService.addPaperToReadingList].
      */
-    suspend fun addPaperToReadingList(paperId: Base.Id): Base.Nothing
+    suspend fun addPaperToReadingList(request: Base.Id): Base.Nothing
 
     /**
      * Service implementation of [SnowballRService.removePaperFromReadingList].
      */
-    suspend fun removePaperFromReadingList(paperId: Base.Id): Base.Nothing
+    suspend fun removePaperFromReadingList(request: Base.Id): Base.Nothing
 }
 
 /**
@@ -68,49 +70,41 @@ class ReadingListService(
         }
     }
 
-    override suspend fun getReadingList(): PaperOuterClass.Paper.List {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
+    override suspend fun getReadingList(): GrpcPaper.List = withUser(userRepo) { currentUser ->
         val papers = repo.getAllReadingListEntries(currentUser.id).map { paper ->
             val authors = authorOfPaperRepo.getAuthorsOfPaperById(paper.id).map { it.toGrpcAuthor() }
-            val backwardReferences = citationRepo.getBackwardsReferencedPaperIdsOfPaperById(
-                paper.id,
-            ).map { it.toString() }
+            val backwardReferences = citationRepo
+                .getBackwardsReferencedPaperIdsOfPaperById(paper.id)
+                .map(UUID::toString)
             paper.toGrpcPaper(authors, backwardReferences)
         }
-        return PaperOuterClass.Paper.List
-            .newBuilder()
-            .addAllPapers(papers)
-            .build()
+
+        papers.toGrpcPapers()
     }
 
-    override suspend fun isPaperOnReadingList(paperId: Base.Id): Base.BoolValue {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
-        val paperUuid = parseUUID(paperId.id, EntityType.PAPER)
-        throwIfPaperDoesNotExist(paperUuid)
-        return Base.BoolValue
-            .newBuilder()
-            .setValue(
-                repo.isPaperOnReadingList(
-                    currentUser.id,
-                    paperUuid,
-                ),
-            )
-            .build()
+    override suspend fun isPaperOnReadingList(request: Base.Id): Base.BoolValue = withUser(userRepo) { currentUser ->
+        val paperId = parseUUID(request.id, EntityType.PAPER)
+        throwIfPaperDoesNotExist(paperId)
+
+        boolValue { value = repo.isPaperOnReadingList(currentUser.id, paperId) }
     }
 
-    override suspend fun addPaperToReadingList(paperId: Base.Id): Base.Nothing {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
-        val paperUuid = parseUUID(paperId.id, EntityType.PAPER)
-        throwIfPaperDoesNotExist(paperUuid)
-        repo.createReadingListEntry(currentUser.id, paperUuid)
-        return Base.Nothing.newBuilder().build()
+    override suspend fun addPaperToReadingList(request: Base.Id): Base.Nothing = withUser(userRepo) { currentUser ->
+        val paperId = parseUUID(request.id, EntityType.PAPER)
+
+        throwIfPaperDoesNotExist(paperId)
+        repo.createReadingListEntry(currentUser.id, paperId)
+
+        nothing { }
     }
 
-    override suspend fun removePaperFromReadingList(paperId: Base.Id): Base.Nothing {
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext())
-        val paperUuid = parseUUID(paperId.id, EntityType.PAPER)
-        throwIfPaperDoesNotExist(paperUuid)
-        repo.removeReadingListEntry(currentUser.id, paperUuid)
-        return Base.Nothing.newBuilder().build()
-    }
+    override suspend fun removePaperFromReadingList(request: Base.Id): Base.Nothing =
+        withUser(userRepo) { currentUser ->
+            val paperId = parseUUID(request.id, EntityType.PAPER)
+
+            throwIfPaperDoesNotExist(paperId)
+            repo.removeReadingListEntry(currentUser.id, paperId)
+
+            nothing { }
+        }
 }

@@ -16,9 +16,9 @@ class ParserTest {
         }
 
         @Test
-        fun `When an invalid UUID is passed, then an exception is thrown`() {
+        fun `When an invalid UUID is passed, then an InvalidIdException is thrown`() {
             val uuid = "invalid-uuid"
-            assertThrows<InvalidIdException.UUID> { parseUUID(uuid, EntityType.USER) }
+            assertThrows<InvalidIdException> { parseUUID(uuid, EntityType.USER) }
         }
     }
 }

@@ -2,6 +2,8 @@ package se.uulm.snowballr.backend.service
 
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
+import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import org.junit.jupiter.api.AfterEach
@@ -20,6 +22,7 @@ import se.uulm.snowballr.backend.env.IEnvService
 import se.uulm.snowballr.backend.fetcher.FetcherManager
 import se.uulm.snowballr.backend.mail.EmailTemplateManager
 import se.uulm.snowballr.backend.mail.IEmailManager
+import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.repository.IAuthorTableRepo
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
@@ -63,12 +66,12 @@ import se.uulm.snowballr.backend.serviceLayerDeps
  *         }
  *
  *     @Test
- *     fun `When an error occurs during example creation, then an exception is thrown`() =
+ *     fun `When an error occurs during example creation, then a TestSpecificException is thrown`() =
  *         runTest {
  *             val request = ExampleOuterClass.Example.Create.getDefaultInstance()
  *
  *             // Mock the behavior of the repositories
- *             coEvery { exampleRepoMock.createExample(any()) } throws TestSpecificException()
+ *             coEvery { exampleRepoMock.createExample(any()) } returns Result.failure(TestSpecificException())
  *
  *             // Assert service behavior
  *             assertThrows<TestSpecificException> { mainService.createExample(request) }
@@ -172,5 +175,13 @@ open class MainServiceTest : KoinTest {
         checkUnnecessaryStub(*allMocks)
         clearAllMocks()
         stopKoin()
+    }
+
+    /**
+     * Mock the current user that is passed through the [withUser] helper.
+     */
+    protected fun mockCurrentUser(currentUser: User) {
+        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
+        coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
     }
 }

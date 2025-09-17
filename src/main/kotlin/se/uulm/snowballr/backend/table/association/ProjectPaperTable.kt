@@ -12,7 +12,7 @@ import se.uulm.snowballr.backend.table.createdBy
 import se.uulm.snowballr.backend.table.modifiedAt
 import se.uulm.snowballr.backend.table.modifiedBy
 import se.uulm.snowballr.backend.table.toPaper
-import snowballr.ProjectOuterClass
+import snowballr.ProjectOuterClass.PaperDecision
 import java.time.OffsetDateTime
 
 /**
@@ -24,7 +24,7 @@ import java.time.OffsetDateTime
  * - [projectId]: Foreign key referencing the [ProjectTable.id] column. Represents the project.
  * - [localPaperId]: Represents the unique identifier for the paper specific to the project as a [Long].
  * - [stage]: Represents the stage of the associated paper within the project as a [Long].
- * - [decision]: Represents the decision related to the paper, as per the [ProjectOuterClass.PaperDecision] enumeration.
+ * - [decision]: Represents the decision related to the paper, as per the [PaperDecision] enumeration.
  * - [createdAt]: Represents the timestamp of when the project paper was created as an [OffsetDateTime].
  * - [createdBy]: A foreign key referencing the user table, representing the user who created the project paper.
  * - [modifiedAt]: Represents the timestamp of when the project paper was last modified as an [OffsetDateTime].
@@ -56,7 +56,7 @@ object ProjectPaperTable : UUIDTable("project_paper") {
 
     val localPaperId = long("local_paper_id")
     val stage = long("stage")
-    val decision = enumeration<ProjectOuterClass.PaperDecision>("decision")
+    val decision = enumeration<PaperDecision>("decision")
 
     // Metadata
 

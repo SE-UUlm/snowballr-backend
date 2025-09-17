@@ -5,9 +5,10 @@ import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.table.AuthorTable
+import se.uulm.snowballr.backend.utils.assertResultFailure
+import se.uulm.snowballr.backend.utils.assertResultSuccess
 import java.util.UUID
 
 class AuthorTableRepoTest : RepositoryTest(arrayOf(AuthorTable), false) {
@@ -30,10 +31,11 @@ class AuthorTableRepoTest : RepositoryTest(arrayOf(AuthorTable), false) {
     @Nested
     inner class GetAuthorById {
         @Test
-        fun `When an author is found, then the correct author is returned`() = runTest {
+        fun `When an author is found, then a successful result with the correct author is returned`() = runTest {
             val authorId = insertTestAuthorAndGetId()
-            val author = repo.getAuthorById(authorId)
+            val result = repo.getAuthorById(authorId)
 
+            val author = assertResultSuccess(result)
             with(author) {
                 assertThat(firstName).isEqualTo("First Name")
                 assertThat(lastName).isEqualTo("Last Name")
@@ -42,8 +44,10 @@ class AuthorTableRepoTest : RepositoryTest(arrayOf(AuthorTable), false) {
         }
 
         @Test
-        fun `When an author is not found, then an exception is thrown`() = runTest {
-            assertThrows<NotFoundException> { repo.getAuthorById(UUID.randomUUID()) }
+        fun `When an author is not found, then a failed result with a NotFoundException is returned`() = runTest {
+            val result = repo.getAuthorById(UUID.randomUUID())
+
+            assertResultFailure<NotFoundException>(result)
         }
     }
 }

@@ -4,10 +4,11 @@ import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertPaperAndGetId
 import se.uulm.snowballr.backend.table.PaperTable
+import se.uulm.snowballr.backend.utils.assertResultFailure
+import se.uulm.snowballr.backend.utils.assertResultSuccess
 import java.util.UUID
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -18,10 +19,11 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
     @Nested
     inner class GetPaperById {
         @Test
-        fun `When a paper is found, then the correct paper is returned`() = runTest {
+        fun `When a paper is found, then a successful result with the correct paper is returned`() = runTest {
             val paperId = insertPaperAndGetId(externalId = "ExternalId")
-            val paper = repo.getPaperById(paperId)
+            val result = repo.getPaperById(paperId)
 
+            val paper = assertResultSuccess(result)
             with(paper) {
                 assertThat(title).isEqualTo("Title")
                 assertThat(externalId).isEqualTo("ExternalId")
@@ -35,8 +37,10 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
         }
 
         @Test
-        fun `When a paper is not found, then an exception is thrown`() = runTest {
-            assertThrows<NotFoundException> { repo.getPaperById(UUID.randomUUID()) }
+        fun `When a paper is not found, then a failed result with a NotFoundException is returned`() = runTest {
+            val result = repo.getPaperById(UUID.randomUUID())
+
+            assertResultFailure<NotFoundException>(result)
         }
 
         @Test
@@ -57,17 +61,17 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
         fun `When a paper with the given id exists, then true returned`() = runTest {
             val paperId =
                 insertPaperAndGetId("Test Paper")
-            val isPaperExisting = repo.doesPaperExistById(paperId)
+            val isPaperExistent = repo.doesPaperExistById(paperId)
 
-            assertTrue(isPaperExisting)
+            assertTrue(isPaperExistent)
         }
 
         @Test
         fun `When a paper with the given id does not exist, then false returned`() = runTest {
             val paperId = UUID.randomUUID()
-            val isPaperExisting = repo.doesPaperExistById(paperId)
+            val isPaperExistent = repo.doesPaperExistById(paperId)
 
-            assertFalse(isPaperExisting)
+            assertFalse(isPaperExistent)
         }
     }
 }

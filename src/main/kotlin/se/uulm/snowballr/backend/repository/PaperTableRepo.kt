@@ -17,9 +17,10 @@ import java.util.UUID
  */
 interface IPaperTableRepo {
     /**
-     * Returns a paper by its ID or throws a [NotFoundException] if the paper with the passed [id] doesn't exist.
+     * Returns a [Result] containing the paper by its ID or a [NotFoundException] if the paper with the passed [id]
+     * doesn't exist.
      */
-    suspend fun getPaperById(id: UUID): Paper
+    suspend fun getPaperById(id: UUID): Result<Paper>
 
     /**
      * @return whether the paper with the passed [id] exists.
@@ -31,7 +32,7 @@ interface IPaperTableRepo {
  * Repository implementation for managing the [PaperTable] in the database.
  *
  * This class provides functionality to handle persistence and retrieval operations for papers by leveraging the
- * database abstraction defined in [IDatabase]. It facilitates CRUD operations on free-standing papers and ensures
+ * database abstraction defined in [IDatabase]. It facilitates CRUD operations on freestanding papers and ensures
  * database transactions are handled properly.
  *
  * @param db The database abstraction used for executing queries within a transaction.
@@ -41,8 +42,8 @@ class PaperTableRepo(
 ) : IPaperTableRepo {
     private fun getPaperByIdOrNull(id: UUID): Paper? = PaperTable.getEntityByIdOrNull(id, ResultRow::toPaper)
 
-    override suspend fun getPaperById(id: UUID): Paper = db.query {
-        getPaperByIdOrNull(id) ?: throw NotFoundException(EntityType.PAPER, id.toString())
+    override suspend fun getPaperById(id: UUID): Result<Paper> = db.query {
+        getEntityByKeyAsResult(::getPaperByIdOrNull, EntityType.PAPER, id)
     }
 
     override suspend fun doesPaperExistById(id: UUID): Boolean = db.query {

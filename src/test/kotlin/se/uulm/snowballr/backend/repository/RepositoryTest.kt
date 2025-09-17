@@ -22,7 +22,8 @@ import se.uulm.snowballr.backend.db.DatabaseHelper.addExtensions
 import se.uulm.snowballr.backend.db.DatabaseHelper.dropAllTables
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.table.UserTable
-import snowballr.UserOuterClass
+import snowballr.UserOuterClass.UserRole
+import snowballr.UserOuterClass.UserStatus
 import java.sql.Connection
 import java.util.UUID
 import javax.sql.DataSource
@@ -133,8 +134,8 @@ open class RepositoryTest(
                 it[firstName] = "Test"
                 it[lastName] = "User"
                 it[passwordHash] = "hashedPassword"
-                it[role] = UserOuterClass.UserRole.USER_ROLE_ADMIN
-                it[status] = UserOuterClass.UserStatus.USER_STATUS_ACTIVE
+                it[role] = UserRole.USER_ROLE_ADMIN
+                it[status] = UserStatus.USER_STATUS_ACTIVE
             }
         testUserId = userId.value
     }

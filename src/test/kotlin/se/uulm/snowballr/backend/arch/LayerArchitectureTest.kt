@@ -176,6 +176,7 @@ private class NamingConventions {
             .should()
             .haveNameMatching(".*TableRepo.*")
             .orShould(haveNameMatching(".*RepoHelperKt.*")) // exception
+            .orShould(haveNameMatching(".*RepoResultHelperKt.*")) // exception
             .because("All repositories should have the 'TableRepo' suffix")
             .check(classes)
     }

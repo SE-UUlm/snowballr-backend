@@ -3,7 +3,8 @@ package se.uulm.snowballr.backend.auth
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import snowballr.ProjectOuterClass
+import snowballr.ProjectOuterClass.ReviewDecisionMatrix
+import snowballr.ProjectOuterClass.SnowballingType
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
 import java.util.UUID
@@ -21,13 +22,9 @@ class DummyUserTest {
         assertEquals(false, DummyUser.isReviewModeEnabled)
         assertEquals(emptyList<UUID>(), DummyUser.criteriaIds)
         assertEquals(0F, DummyUser.similarityThreshold)
-        assertTrue(
-            ProjectOuterClass.ReviewDecisionMatrix.getDefaultInstance().toByteArray().contentEquals(
-                DummyUser.decisionMatrix,
-            ),
-        )
+        assertTrue(ReviewDecisionMatrix.getDefaultInstance().toByteArray().contentEquals(DummyUser.decisionMatrix))
         assertEquals(emptyMap<String, Map<String, String>>(), DummyUser.fetchers)
-        assertEquals(ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_BOTH, DummyUser.snowballingType)
+        assertEquals(SnowballingType.SNOWBALLING_TYPE_BOTH, DummyUser.snowballingType)
         assertEquals(true, DummyUser.reviewMaybeAllowed)
 
         assertTrue(

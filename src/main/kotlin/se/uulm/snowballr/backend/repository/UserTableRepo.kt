@@ -2,9 +2,7 @@ package se.uulm.snowballr.backend.repository
 
 import com.google.protobuf.util.FieldMaskUtil
 import org.jetbrains.exposed.sql.ResultRow
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.neq
 import org.jetbrains.exposed.sql.TextColumnType
-import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.statements.StatementType
 import org.jetbrains.exposed.sql.update
 import se.uulm.snowballr.backend.db.IDatabase
@@ -18,12 +16,12 @@ import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.toUser
 import se.uulm.snowballr.backend.table.toUserSettings
 import snowballr.Authentication
-import snowballr.UserOuterClass
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
 import java.sql.ResultSet
 import java.time.OffsetDateTime
 import java.util.UUID
+import snowballr.UserOuterClass.User as GrpcUser
 
 /**
  * Defines an interface for repository operations related to the [UserTable].
@@ -35,15 +33,16 @@ import java.util.UUID
 @Suppress("ComplexInterface")
 interface IUserTableRepo {
     /**
-     * Returns a user by its id or throws a [NotFoundException] if the user with the passed [id] doesn't exist.
+     * Returns a [Result] containing the user by their id or a [NotFoundException] if the user with the passed [id]
+     * doesn't exist.
      */
-    suspend fun getUserById(id: UUID): User
+    suspend fun getUserById(id: UUID): Result<User>
 
     /**
-     * Returns a user by its email or throws a [NotFoundException] if the user with the passed [email] doesn't
-     * exist.
+     * Returns a [Result] containing the user by their email or a [NotFoundException] if the user with the passed
+     * [email] doesn't exist.
      */
-    suspend fun getUserByEmail(email: String): User
+    suspend fun getUserByEmail(email: String): Result<User>
 
     /**
      * Checks if a user exists in the database by their email address.
@@ -83,7 +82,7 @@ interface IUserTableRepo {
     suspend fun createUser(request: Authentication.RegisterRequest, passwordHash: String): User
 
     /**
-     * Updates an existing user in the database with the provided new information.
+     * Updates an existent user in the database with the provided new information.
      * The following fields can be updated:
      * - first name
      * - last name
@@ -93,29 +92,31 @@ interface IUserTableRepo {
      * @param request The update request containing the new user details, such as the new first name.
      * @return The updated [User] object reflecting the changes from the [request].
      */
-    suspend fun updateUser(request: UserOuterClass.User.Update): User
+    suspend fun updateUser(request: GrpcUser.Update): User
 
     /**
      * Performs a soft delete meaning the user with the given [id] is not removed from the database, but only the
-     * status is set to [UserOuterClass.UserStatus.USER_STATUS_DELETED].
+     * status is set to [UserStatus.USER_STATUS_DELETED].
      */
     suspend fun softDeleteUser(id: UUID)
 
     /**
-     * Retrieves the password hash for a user by their email address.
+     * Returns a [Result] containing the password hash for a user by their email address or a [NotFoundException] if the
+     * user with the passed [email] doesn't exist.
      *
      * @param email The email address of the user whose password hash is to be retrieved.
      * @return The password hash as a [String] for the user with the specified email.
      */
-    suspend fun getPasswordHashByEmail(email: String): String
+    suspend fun getPasswordHashByEmail(email: String): Result<String>
 
     /**
-     * Retrieves the user settings associated with a specific user ID.
+     * Returns a [Result] containing the settings of the user with the passed [id] or a [NotFoundException] if the user
+     * with the passed [id] doesn't exist.
      *
      * @param id The unique identifier of the user whose settings are to be fetched.
      * @return The [UserSettings] object containing the settings for the specified user.
      */
-    suspend fun getUserSettings(id: UUID): UserSettings
+    suspend fun getUserSettings(id: UUID): Result<UserSettings>
 }
 
 /**
@@ -148,40 +149,33 @@ class UserTableRepo(
         }.map { it.toUser() }.toList()
     }
 
-    /**
-     * Requesting a user from the database.
-     *
-     * @param id The id of the requested user.
-     * @return The [User] object or null, if no user with the given [id] was found.
-     */
     private fun getUserByIdOrNull(id: UUID): User? = UserTable.getEntityByIdOrNull(id, ResultRow::toUser)
 
-    override suspend fun getUserById(id: UUID): User = db.query {
-        getUserByIdOrNull(id) ?: throw NotFoundException(EntityType.USER, id.toString())
+    private fun getUserByEmailOrNull(email: String): User? =
+        UserTable.getEntityOrNull(ResultRow::toUser) { UserTable.email eq email }
+
+    private fun getPasswordHashByUserMailOrNull(email: String): String? = UserTable.select(UserTable.passwordHash)
+        .where { UserTable.email eq email }
+        .map { it[UserTable.passwordHash] }
+        .singleOrNull()
+
+    private fun getUserSettingsByUserIdOrNull(userId: UUID): UserSettings? =
+        UserTable.getEntityByIdOrNull(userId, ResultRow::toUserSettings)
+
+    override suspend fun getUserById(id: UUID): Result<User> = db.query {
+        getEntityByKeyAsResult(::getUserByIdOrNull, EntityType.USER, id)
     }
 
-    override suspend fun getUserByEmail(email: String): User = db.query {
-        UserTable
-            .selectAll()
-            .where { UserTable.email eq email }
-            .map { it.toUser() }
-            .singleOrNull()
-            ?: throw NotFoundException(EntityType.USER, email, identifierType = IdentifierType.EMAIL)
+    override suspend fun getUserByEmail(email: String): Result<User> = db.query {
+        getEntityByKeyAsResult(::getUserByEmailOrNull, EntityType.USER, email, IdentifierType.EMAIL)
     }
 
     override suspend fun doesUserExistByEmail(email: String): Boolean = db.query {
-        UserTable
-            .select(UserTable.email)
-            .where { UserTable.email eq email }
-            .empty()
-            .not()
+        UserTable.doesEntityExist { UserTable.email eq email }
     }
 
     override suspend fun getAllUsers(): List<User> = db.query {
-        UserTable
-            .selectAll()
-            .where(UserTable.email neq "")
-            .map { it.toUser() }
+        UserTable.getEntities(ResultRow::toUser) { UserTable.email neq "" }
     }
 
     @Suppress("MagicNumber")
@@ -239,7 +233,7 @@ class UserTableRepo(
         }
     }
 
-    override suspend fun updateUser(request: UserOuterClass.User.Update): User = db.query {
+    override suspend fun updateUser(request: GrpcUser.Update): User = db.query {
         val userId = parseUUID(request.user.id, EntityType.USER)
         val fieldMask = FieldMaskUtil.normalize(request.mask)
 
@@ -267,20 +261,11 @@ class UserTableRepo(
         }
     }
 
-    override suspend fun getPasswordHashByEmail(email: String): String = db.query {
-        UserTable
-            .select(UserTable.passwordHash)
-            .where { UserTable.email eq email }
-            .map { it[UserTable.passwordHash] }
-            .singleOrNull()
-            ?: throw NotFoundException(EntityType.USER, email, identifierType = IdentifierType.EMAIL)
+    override suspend fun getPasswordHashByEmail(email: String): Result<String> = db.query {
+        getEntityByKeyAsResult(::getPasswordHashByUserMailOrNull, EntityType.USER, email, IdentifierType.EMAIL)
     }
 
-    override suspend fun getUserSettings(id: UUID): UserSettings = db.query {
-        UserTable.selectAll()
-            .where { UserTable.id eq id }
-            .map { it.toUserSettings() }
-            .singleOrNull()
-            ?: throw NotFoundException(EntityType.USER, id.toString(), identifierType = IdentifierType.ID)
+    override suspend fun getUserSettings(id: UUID): Result<UserSettings> = db.query {
+        getEntityByKeyAsResult(::getUserSettingsByUserIdOrNull, EntityType.USER, id)
     }
 }

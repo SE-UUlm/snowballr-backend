@@ -3,7 +3,6 @@ package se.uulm.snowballr.backend.repository
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.VerificationToken
@@ -49,11 +48,7 @@ class VerificationTokenTableRepo(
     }
 
     override suspend fun getVerificationTokenByValue(token: String): VerificationToken? = db.query {
-        VerificationTokenTable
-            .selectAll()
-            .where { VerificationTokenTable.token eq token }
-            .map { it.toVerificationToken() }
-            .singleOrNull()
+        VerificationTokenTable.getEntityOrNull(ResultRow::toVerificationToken) { VerificationTokenTable.token eq token }
     }
 
     override suspend fun deleteVerificationToken(token: String) {

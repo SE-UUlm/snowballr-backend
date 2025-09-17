@@ -18,24 +18,25 @@ import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.toGrpcCriterion
 import se.uulm.snowballr.backend.repository.RepositoryHelper.createExampleUser
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertCriterionAndGetId
+import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectAndGetId
 import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.utils.GrpcEnumSourceTest
+import se.uulm.snowballr.backend.utils.assertResultFailure
+import se.uulm.snowballr.backend.utils.assertResultSuccess
 import snowballr.CriterionOuterClass.CriterionCategory
-import snowballr.ProjectOuterClass
+import java.sql.SQLException
 import java.util.UUID
 import kotlin.test.assertIs
 import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
+import snowballr.ProjectOuterClass.Project as GrpcProject
 
 class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTable), true) {
     private val repo = CriterionTableRepo(db)
     private val projectRepo = ProjectTableRepo(db)
 
     private suspend fun createExampleProject(): Project {
-        val request =
-            ProjectOuterClass.Project.Create
-                .newBuilder()
-                .build()
+        val request = GrpcProject.Create.newBuilder().build()
         return projectRepo.createProject(request, testUserId, DataBuilder.createExampleUserSettings())
     }
 
@@ -52,25 +53,26 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
     @Nested
     inner class GetCriterionById {
         @Test
-        fun `When a criterion is found, then the correct criterion is returned`() = runTest {
+        fun `When a criterion is found, then a successful result with the correct criterion is returned`() = runTest {
             val projectId = createExampleProject().id
             val criterionId = insertCriterionAndGetId(projectId = projectId, createdBy = testUserId)
-            val criterion = repo.getCriterionById(criterionId)
+            val result = repo.getCriterionById(criterionId)
 
+            val criterion = assertResultSuccess(result)
             assertIs<ProjectCriterion>(criterion)
             assertThat(criterion.id).isEqualTo(criterionId)
             assertThat(criterion.tag).isEqualTo("Test Tag")
             assertThat(criterion.name).isEqualTo("Test Criterion")
             assertThat(criterion.description).isEqualTo("Test Description")
-            assertThat(
-                criterion.category,
-            ).isEqualTo(CriterionCategory.CRITERION_CATEGORY_EXCLUSION)
+            assertThat(criterion.category).isEqualTo(CriterionCategory.CRITERION_CATEGORY_EXCLUSION)
             assertThat(criterion.projectId).isEqualTo(projectId)
         }
 
         @Test
-        fun `When a criterion is not found, then an exception is thrown`() = runTest {
-            assertThrows<NotFoundException> { repo.getCriterionById(UUID.randomUUID()) }
+        fun `When a criterion is not found, then a failed result with a NotFoundException is returned`() = runTest {
+            val result = repo.getCriterionById(UUID.randomUUID())
+
+            assertResultFailure<NotFoundException>(result)
         }
     }
 
@@ -123,7 +125,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
             }
 
         @Test
-        fun `When a project criterion is created, but the assigned project doesn't exist, then an exception is thrown`() =
+        fun `When a project criterion is created, but the assigned project doesn't exist, then an SQLException is thrown`() =
             runTest {
                 val request =
                     GrpcCriterion.Create
@@ -135,7 +137,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                         .setProjectId(UUID.randomUUID().toString())
                         .build()
 
-                assertThrows<NotFoundException> { repo.createCriterion(request, testUserId) }
+                assertThrows<SQLException> { repo.createCriterion(request, testUserId) }
             }
 
         @Test
@@ -158,9 +160,10 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
         }
 
         @GrpcEnumSourceTest(CriterionCategory::class)
-        fun `When a criterion is created, but the assigned user doesn't exist, then an exception is thrown`(
+        fun `When a criterion is created, but the assigned user doesn't exist, then an SQLException is thrown`(
             category: CriterionCategory,
         ) = runTest {
+            val projectId = insertProjectAndGetId(createdBy = testUserId)
             val request =
                 GrpcCriterion.Create
                     .newBuilder()
@@ -168,10 +171,10 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                     .setName("Test Criterion")
                     .setDescription("Test Description")
                     .setCategory(category)
-                    .setProjectId(UUID.randomUUID().toString())
+                    .setProjectId(projectId.toString())
                     .build()
 
-            assertThrows<NotFoundException> { repo.createCriterion(request, UUID.randomUUID()) }
+            assertThrows<SQLException> { repo.createCriterion(request, UUID.randomUUID()) }
         }
     }
 
@@ -235,7 +238,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
             }
 
         @Test
-        fun `When all criteria of the given ids are requested but not all criteria exist, then only the existing criteria are returned`() =
+        fun `When all criteria of the given ids are requested but not all criteria exist, then only the existent criteria are returned`() =
             runTest {
                 val baseRequestBuilder = GrpcCriterion.Create.newBuilder()
                     .setTag("Test Tag")
@@ -293,7 +296,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
         ) = runTest {
             val projectId = createExampleProject().id
             val criterionId = insertCriterionAndGetId(projectId = projectId, createdBy = testUserId)
-            val originalCriterion = repo.getCriterionById(criterionId)
+            val originalCriterion = repo.getCriterionById(criterionId).getOrThrow()
 
             val updatedCriterionDetails = originalCriterion.toGrpcCriterion().toBuilder()
                 .setTag("Updated Tag")
