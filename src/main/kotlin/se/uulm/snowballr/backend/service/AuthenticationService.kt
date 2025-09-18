@@ -62,7 +62,7 @@ class AuthenticationService(
         }
 
         // Check whether the user exists
-        val user = repo.getUserById(verificationToken.userId)
+        val user = repo.getUserById(verificationToken.userId).getOrThrow()
 
         // Update the user's status to active
         val updatedUser = user.copy(status = UserStatus.USER_STATUS_ACTIVE)
@@ -88,7 +88,7 @@ class AuthenticationService(
         // Check whether a user with the given email exists
         val user =
             try {
-                repo.getUserByEmail(request.email)
+                repo.getUserByEmail(request.email).getOrThrow()
             } catch (_: NotFoundException) {
                 throw UnauthenticatedException()
             }
@@ -100,7 +100,7 @@ class AuthenticationService(
 
         // Verify the password against the stored hash
         val storedPasswordHash = try {
-            repo.getPasswordHashByEmail(request.email)
+            repo.getPasswordHashByEmail(request.email).getOrThrow()
         } catch (_: NotFoundException) {
             throw UnauthenticatedException()
         }

@@ -58,3 +58,23 @@ suspend fun isProjectMember(projectMemberRepo: IProjectMemberTableRepo, projectI
     val projectMembers = projectMemberRepo.getProjectMembers(projectId)
     return projectMembers.any { it.userId == currentUserId }
 }
+
+/**
+ * Ensures that the current user is a member of the specified project. If the user is not a project member,
+ * verifies if the user has server admin privileges; otherwise, throws an [UnauthorizedException.Single].
+ *
+ * @param projectMemberRepo The repository used to access project membership data.
+ * @param projectId The unique identifier of the project to check membership for.
+ * @param currentUser The current user accessing the project.
+ */
+suspend fun ensureCurrentUserIsProjectMember(
+    projectMemberRepo: IProjectMemberTableRepo,
+    projectId: UUID,
+    currentUser: User,
+) {
+    if (isProjectMember(projectMemberRepo, projectId, currentUser.id)) return
+
+    verifyServerAdminRole(currentUser) {
+        throw UnauthorizedException.Single(EntityType.PROJECT, projectId.toString(), AccessType.READ, it)
+    }
+}

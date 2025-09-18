@@ -1,10 +1,7 @@
 package se.uulm.snowballr.backend.service
 
-import com.google.protobuf.FieldMask
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.viascom.nanoid.NanoId
-import se.uulm.snowballr.backend.auth.GrpcContext
-import se.uulm.snowballr.backend.auth.IJwtService
 import se.uulm.snowballr.backend.auth.PasswordUtils
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.mail.IEmailManager
@@ -13,11 +10,8 @@ import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.IdentifierType
 import se.uulm.snowballr.backend.model.SnowballRException.DuplicateEntityException
 import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
-import se.uulm.snowballr.backend.model.SnowballRException.InvalidIdException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
-import se.uulm.snowballr.backend.model.SnowballRException.UnauthenticatedException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
-import se.uulm.snowballr.backend.model.SnowballRException.VerificationTokenNotFoundException
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.toGrpcUser
 import se.uulm.snowballr.backend.model.dto.toGrpcUserSettings
@@ -30,12 +24,9 @@ import se.uulm.snowballr.backend.repository.IVerificationTokenTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import snowballr.Authentication
 import snowballr.Base
-import snowballr.ProjectOuterClass.Project
-import snowballr.CriterionOuterClass
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
 import snowballr.nothing
-import java.time.OffsetDateTime
 import java.util.UUID
 import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
 import snowballr.UserOuterClass.User as GrpcUser

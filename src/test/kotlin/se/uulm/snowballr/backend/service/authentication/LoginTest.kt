@@ -40,7 +40,7 @@ class LoginTest : MainServiceTest() {
             val request = LoginRequest.newBuilder()
                 .setEmail(testUser.email)
                 .setPassword("anyPassword")
-            .build()
+                .build()
 
             coEvery { userRepoMock.getUserByEmail(testUser.email) } returns Result.success(testUser)
 

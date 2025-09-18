@@ -1,4 +1,4 @@
-package se.uulm.snowballr.backend.service.user
+package se.uulm.snowballr.backend.service.invitations
 
 import io.mockk.coEvery
 import kotlinx.coroutines.test.runTest
@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.service.MainServiceTest
-import snowballr.ProjectOuterClass
+import snowballr.ProjectOuterClass.Project.InviteCandidatesRequest
 import java.util.UUID
 import kotlin.test.assertTrue
 

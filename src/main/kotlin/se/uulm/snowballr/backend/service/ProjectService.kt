@@ -5,7 +5,6 @@ import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
-import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.toGrpcProject
 import se.uulm.snowballr.backend.model.dto.toGrpcProjectMembers
 import se.uulm.snowballr.backend.model.dto.toGrpcProjects
@@ -16,7 +15,6 @@ import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import snowballr.Base
 import snowballr.ProjectOuterClass.ProjectStatus
-import java.util.UUID
 import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
 import snowballr.ProjectOuterClass.Project as GrpcProject
 import snowballr.ProjectOuterClass.Project.Member as GrpcProjectMember
@@ -81,18 +79,10 @@ class ProjectService(
     private val projectMemberRepo: IProjectMemberTableRepo,
     private val criterionRepo: ICriterionTableRepo,
 ) : IProjectService {
-    private suspend fun ensureCurrentUserIsProjectMember(projectId: UUID, currentUser: User) {
-        if (isProjectMember(projectId, currentUser.id)) return
-
-        verifyServerAdminRole(currentUser) {
-            throw UnauthorizedException.Single(EntityType.PROJECT, projectId.toString(), AccessType.READ, it)
-        }
-    }
-
     override suspend fun getProjectById(request: Base.Id): GrpcProject = withUser(userRepo) { currentUser ->
         val projectId = parseUUID(request.id, EntityType.PROJECT)
 
-        ensureCurrentUserIsProjectMember(projectId, currentUser)
+        ensureCurrentUserIsProjectMember(projectMemberRepo, projectId, currentUser)
 
         repo.getProjectById(projectId).getOrThrow().toGrpcProject()
     }
