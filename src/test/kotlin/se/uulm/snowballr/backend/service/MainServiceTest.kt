@@ -25,6 +25,7 @@ import se.uulm.snowballr.backend.mail.IEmailManager
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.repository.IAuthorTableRepo
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
+import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IReviewTableRepo
@@ -99,6 +100,7 @@ open class MainServiceTest : KoinTest {
     val reviewRepoMock = mockk<IReviewTableRepo>()
     val reviewHasCriterionRepoMock = mockk<IReviewHasCriterionTableRepo>()
     val verificationTokenRepoMock = mockk<IVerificationTokenTableRepo>()
+    val invitationTokenRepoMock = mockk<IInvitationTokenTableRepo>()
 
     // Custom services / manager / clients mocks
     val jwtManagerMock = mockk<IJwtManager>()
@@ -126,6 +128,7 @@ open class MainServiceTest : KoinTest {
         reviewRepoMock,
         reviewHasCriterionRepoMock,
         verificationTokenRepoMock,
+        invitationTokenRepoMock,
     )
 
     val mainService: IMainService by inject()
@@ -150,6 +153,7 @@ open class MainServiceTest : KoinTest {
         single { reviewRepoMock }
         single { reviewHasCriterionRepoMock }
         single { verificationTokenRepoMock }
+        single { invitationTokenRepoMock }
 
         // Custom services / managers / clients
         single { jwtManagerMock }
