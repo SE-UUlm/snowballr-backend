@@ -93,6 +93,7 @@ class ProjectService(
 
         val project = repo.createProject(request, currentUser.id, userSettings)
 
+        // Additionally, clone user default criteria into the project as project criteria and add creator as project member
         for (criterion in userDefaultCriteria) {
             val criterionRequest = GrpcCriterion.Create
                 .newBuilder()
@@ -105,6 +106,9 @@ class ProjectService(
 
             criterionRepo.createCriterion(criterionRequest, currentUser.id)
         }
+
+        projectMemberRepo.addUserToProject(currentUser.id, project.id)
+        projectMemberRepo.promoteProjectMemberToAdmin(project.id, currentUser.id)
 
         project.toGrpcProject()
     }
