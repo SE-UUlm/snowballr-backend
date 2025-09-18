@@ -1,10 +1,7 @@
 package se.uulm.snowballr.backend.service
 
-import com.google.protobuf.FieldMask
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.viascom.nanoid.NanoId
-import se.uulm.snowballr.backend.auth.GrpcContext
-import se.uulm.snowballr.backend.auth.IJwtService
 import se.uulm.snowballr.backend.auth.PasswordUtils
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.mail.IEmailManager
@@ -13,11 +10,8 @@ import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.IdentifierType
 import se.uulm.snowballr.backend.model.SnowballRException.DuplicateEntityException
 import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
-import se.uulm.snowballr.backend.model.SnowballRException.InvalidIdException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
-import se.uulm.snowballr.backend.model.SnowballRException.UnauthenticatedException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
-import se.uulm.snowballr.backend.model.SnowballRException.VerificationTokenNotFoundException
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.toGrpcUser
 import se.uulm.snowballr.backend.model.dto.toGrpcUserSettings
@@ -30,11 +24,9 @@ import se.uulm.snowballr.backend.repository.IVerificationTokenTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import snowballr.Authentication
 import snowballr.Base
-import snowballr.ProjectOuterClass.Project
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
 import snowballr.nothing
-import java.time.OffsetDateTime
 import java.util.UUID
 import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
 import snowballr.UserOuterClass.User as GrpcUser
@@ -42,7 +34,6 @@ import snowballr.UserSettingsOuterClass.UserSettings as GrpcUserSettings
 
 val Logger = KotlinLogging.logger { }
 
-@Suppress("ComplexInterface", "TooManyFunctions")
 interface IUserService {
     /**
      * Service implementation of [SnowballRService.getUserById].
@@ -60,29 +51,9 @@ interface IUserService {
     suspend fun getAllUsers(): GrpcUser.List
 
     /**
-     * Service implementation of [SnowballRService.getInviteCandidates]
-     */
-    suspend fun getInviteCandidates(request: Project.InviteCandidatesRequest): GrpcUser.List
-
-    /**
      * Service implementation of [SnowballRService.register].
      */
     suspend fun register(request: Authentication.RegisterRequest): Base.Nothing
-
-    /**
-     * Service implementation of [SnowballRService.verifyEmail].
-     */
-    suspend fun verifyEmail(request: Authentication.VerifyEmailRequest): Base.Nothing
-
-    /**
-     * Service implementation of [SnowballRService.logout].
-     */
-    suspend fun logout(): Base.Nothing
-
-    /**
-     * Service implementation of [SnowballRService.login].
-     */
-    suspend fun login(request: Authentication.LoginRequest): Base.Nothing
 
     /**
      * Service implementation of [SnowballRService.updateUser].
@@ -118,16 +89,13 @@ private const val VERIFICATION_TOKEN_LENGTH = 48
  * @param projectMemberRepo The repository responsible for managing persistence operations for project members.
  * @param criterionRepo The repository responsible for managing persistence operations for criteria.
  * @param verificationTokenRepo The repository responsible for managing persistence operations for verification tokens.
- * @param jwtService The utility for handling JWT operations, such as token parsing and validation.
  * @param emailManager The manager responsible for sending emails.
  */
-@Suppress("TooManyFunctions")
 class UserService(
     private val userRepo: IUserTableRepo,
     private val projectMemberRepo: IProjectMemberTableRepo,
     private val criterionRepo: ICriterionTableRepo,
     private val verificationTokenRepo: IVerificationTokenTableRepo,
-    private val jwtService: IJwtService,
     private val emailManager: IEmailManager,
 ) : IUserService {
     companion object {
@@ -205,28 +173,6 @@ class UserService(
         userRepo.getAllUsers().toGrpcUsers()
     }
 
-    override suspend fun getInviteCandidates(request: Project.InviteCandidatesRequest): GrpcUser.List =
-        withUser(userRepo) { currentUser ->
-            val searchQuery = request.query.trim()
-
-            // Check whether the search query is too short, i.e., 3 or fewer characters long
-            if (searchQuery.length < MINIMUM_LENGTH_OF_SEARCH_QUERY) {
-                return@withUser GrpcUser.List.getDefaultInstance()
-            }
-
-            val excludedUsersFromSearch = mutableSetOf(currentUser.id)
-            try {
-                val projectMembers =
-                    projectMemberRepo.getProjectMembers(parseUUID(request.projectId, EntityType.PROJECT))
-                excludedUsersFromSearch += projectMembers.map { it.userId }
-            } catch (_: InvalidIdException.UUID) {
-                Logger.warn { "Invalid project ID in invite candidates request: ${request.projectId}" }
-            }
-
-            val candidates = userRepo.getUsersMatchingSearchQuery(searchQuery, excludedUsersFromSearch)
-            candidates.toGrpcUsers()
-        }
-
     override suspend fun register(request: Authentication.RegisterRequest): Base.Nothing {
         // Check whether a user with the given email already exists
         if (userRepo.doesUserExistByEmail(request.email)) {
@@ -251,71 +197,6 @@ class UserService(
                 verificationLink,
             ),
         )
-
-        return Base.Nothing.getDefaultInstance()
-    }
-
-    override suspend fun verifyEmail(request: Authentication.VerifyEmailRequest): Base.Nothing {
-        val verificationToken = verificationTokenRepo.getVerificationTokenByValue(request.token)
-            ?: throw VerificationTokenNotFoundException()
-
-        // Check if the token has expired
-        if (OffsetDateTime.now().isAfter(verificationToken.expiresAt)) {
-            verificationTokenRepo.deleteVerificationToken(request.token)
-            throw VerificationTokenNotFoundException()
-        }
-
-        // Check whether the user exists
-        val user = userRepo.getUserById(verificationToken.userId).getOrThrow()
-
-        // Update the user's status to active
-        val updatedUser = user.copy(status = UserStatus.USER_STATUS_ACTIVE)
-        val userUpdate = GrpcUser.Update.newBuilder()
-            .setUser(updatedUser.toGrpcUser())
-            .setMask(FieldMask.newBuilder().addPaths("user.status").build())
-            .build()
-        userRepo.updateUser(userUpdate)
-
-        // Remove the verification token after successful verification
-        verificationTokenRepo.deleteVerificationToken(request.token)
-
-        return Base.Nothing.getDefaultInstance()
-    }
-
-    override suspend fun logout(): Base.Nothing {
-        GrpcContext.setAuthCookiesInContext("", "")
-
-        return Base.Nothing.getDefaultInstance()
-    }
-
-    override suspend fun login(request: Authentication.LoginRequest): Base.Nothing {
-        // Check whether a user with the given email exists
-        val user =
-            try {
-                userRepo.getUserByEmail(request.email).getOrThrow()
-            } catch (_: NotFoundException) {
-                throw UnauthenticatedException()
-            }
-
-        // Check whether the user is active (verified email)
-        if (user.status != UserStatus.USER_STATUS_ACTIVE) {
-            throw UnauthenticatedException()
-        }
-
-        // Verify the password against the stored hash
-        val storedPasswordHash = try {
-            userRepo.getPasswordHashByEmail(request.email).getOrThrow()
-        } catch (_: NotFoundException) {
-            throw UnauthenticatedException()
-        }
-
-        if (!PasswordUtils.verifyPassword(request.password, storedPasswordHash)) {
-            throw UnauthenticatedException()
-        }
-
-        // Generate JWT tokens
-        val (accessToken, refreshToken) = jwtService.generateAuthTokens(user.id)
-        GrpcContext.setAuthCookiesInContext(accessToken, refreshToken)
 
         return Base.Nothing.getDefaultInstance()
     }

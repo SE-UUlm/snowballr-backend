@@ -3,7 +3,7 @@ package se.uulm.snowballr.backend.auth
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.model.auth.CookieConfig
 
-interface ICookieService {
+interface ICookieManager {
     /**
      * Parses a `Cookie` header string into a map of key-value pairs.
      *
@@ -36,7 +36,7 @@ interface ICookieService {
      * Example:
      * ```
      * val config = CookieConfig(name = "theme", value = "dark", maxAgeSeconds = 31536000)
-     * val cookieHeader = cookieService.createCookieString(config)
+     * val cookieHeader = cookieManager.createCookieString(config)
      * // "theme=dark; Max-Age=31536000; Path=/; SameSite=Lax; HttpOnly; Secure"
      * ```
      *
@@ -49,13 +49,13 @@ interface ICookieService {
 /**
  * Utility object for parsing and constructing HTTP cookie headers.
  *
- * @param jwtService The JWT service used to resolve token TTLs.
+ * @param jwtManager The JWT manager used to resolve token TTLs.
  * @param envReader The environment reader used to access the current configuration.
  */
-class CookieService(
-    private val jwtService: IJwtService,
+class CookieManager(
+    private val jwtManager: IJwtManager,
     private val envReader: EnvReader,
-) : ICookieService {
+) : ICookieManager {
     override fun parseCookies(cookieHeader: String?): Map<String, String> {
         if (cookieHeader.isNullOrBlank()) return emptyMap()
         return cookieHeader
@@ -71,8 +71,8 @@ class CookieService(
     override fun buildAuthCookieString(name: String, value: String?): String? {
         val ttl =
             when (name) {
-                GrpcContext.ACCESS_TOKEN_COOKIE_NAME -> resolveTokenTTL(value) { jwtService.getAccessTokenTTL() }
-                GrpcContext.REFRESH_TOKEN_COOKIE_NAME -> resolveTokenTTL(value) { jwtService.getRefreshTokenTTL() }
+                GrpcContext.ACCESS_TOKEN_COOKIE_NAME -> resolveTokenTTL(value) { jwtManager.getAccessTokenTTL() }
+                GrpcContext.REFRESH_TOKEN_COOKIE_NAME -> resolveTokenTTL(value) { jwtManager.getRefreshTokenTTL() }
                 else -> return null // Not a recognized authentication cookie.
             }
 

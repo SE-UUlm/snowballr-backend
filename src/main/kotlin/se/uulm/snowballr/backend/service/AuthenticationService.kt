@@ -1,101 +1,118 @@
 package se.uulm.snowballr.backend.service
 
-import io.github.oshai.kotlinlogging.KotlinLogging
-import io.grpc.Context
-import io.jsonwebtoken.JwtException
+import com.google.protobuf.FieldMask
 import se.uulm.snowballr.backend.auth.GrpcContext
-import se.uulm.snowballr.backend.auth.IJwtService
-import se.uulm.snowballr.backend.model.auth.AuthenticationResult
-import se.uulm.snowballr.backend.model.jwt.ParsedJwtAuthClaims
-import snowballr.Authentication.AuthenticationStatus
+import se.uulm.snowballr.backend.auth.IJwtManager
+import se.uulm.snowballr.backend.auth.PasswordUtils
+import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
+import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
+import se.uulm.snowballr.backend.model.SnowballRException.UnauthenticatedException
+import se.uulm.snowballr.backend.model.SnowballRException.VerificationTokenNotFoundException
+import se.uulm.snowballr.backend.model.dto.toGrpcUser
+import se.uulm.snowballr.backend.repository.IUserTableRepo
+import se.uulm.snowballr.backend.repository.IVerificationTokenTableRepo
+import snowballr.Authentication
+import snowballr.Base
+import snowballr.UserOuterClass.UserStatus
+import java.time.OffsetDateTime
+import snowballr.UserOuterClass.User as GrpcUser
 
-private val logger = KotlinLogging.logger {}
-
-/**
- * Interface for authentication operations such as validating access tokens, refreshing them,
- * and managing authentication state.
- */
 interface IAuthenticationService {
     /**
-     * Authenticates a request using the provided tokens.
-     *
-     * This method attempts to parse and validate the given access token. If the access token is invalid
-     * or expired, it attempts to refresh it using the provided refresh token. If both tokens are invalid
-     * or the refresh fails, it returns a failure result.
-     *
-     * On success, it returns the parsed JWT claims containing the authenticated user's information and
-     * sets the appropriate authentication status in the [GrpcContext].
-     *
-     * @param accessToken The access token to validate.
-     * @param refreshToken The refresh token to use for refreshing the access token if it is invalid or expired.
-     * @param skipRefresh If true, skips the refresh token logic and only validates the access token.
-     * @return An [AuthenticationResult] containing the result of the authentication attempt and the updated gRPC context.
+     * Service implementation of [SnowballRService.verifyEmail].
      */
-    fun authenticate(accessToken: String?, refreshToken: String?, skipRefresh: Boolean): AuthenticationResult
+    suspend fun verifyEmail(request: Authentication.VerifyEmailRequest): Base.Nothing
+
+    /**
+     * Service implementation of [SnowballRService.logout].
+     */
+    suspend fun logout(): Base.Nothing
+
+    /**
+     * Service implementation of [SnowballRService.login].
+     */
+    suspend fun login(request: Authentication.LoginRequest): Base.Nothing
 }
 
 /**
- * Default implementation of [IAuthenticationService].
+ * The [AuthenticationService] class handles operations related to the authentication by implementing the
+ * [IAuthenticationService] interface.
+ *
+ * This class serves as a layer that abstracts the responsibility of authentication CRUD operations,
+ * delegating the actual persistence operations to the [IAuthenticationService] repository.
+ *
+ * @constructor Initializes the [AuthenticationService] with a user repository.
+ * @param repo The repository responsible for managing persistence operations for normal papers.
+ * @param verificationTokenRepo The repository responsible for managing persistence operations for verification tokens.
+ * @param jwtManager The utility for handling JWT operations, such as token parsing and validation.
  */
-class AuthenticationService(private val jwtService: IJwtService) : IAuthenticationService {
-    override fun authenticate(accessToken: String?, refreshToken: String?, skipRefresh: Boolean): AuthenticationResult {
-        val contextBuilder = Context.current()
-        val cookiesToSet = GrpcContext.COOKIES_TO_SET_CONTEXT_KEY.get()
+class AuthenticationService(
+    private val repo: IUserTableRepo,
+    private val verificationTokenRepo: IVerificationTokenTableRepo,
+    private val jwtManager: IJwtManager,
+) : IAuthenticationService {
+    override suspend fun verifyEmail(request: Authentication.VerifyEmailRequest): Base.Nothing {
+        val verificationToken = verificationTokenRepo.getVerificationTokenByValue(request.token)
+            ?: throw VerificationTokenNotFoundException()
 
-        val parsedAccessTokenResult = runCatching {
-            jwtService.parseAuthToken(accessToken)
+        // Check if the token has expired
+        if (OffsetDateTime.now().isAfter(verificationToken.expiresAt)) {
+            verificationTokenRepo.deleteVerificationToken(request.token)
+            throw VerificationTokenNotFoundException()
         }
 
-        val (status, result) = if (parsedAccessTokenResult.isSuccess) {
-            AuthenticationStatus.AUTHENTICATION_STATUS_AUTHENTICATED to parsedAccessTokenResult
-        } else {
-            val refreshResult = attemptTokenRefresh(refreshToken, skipRefresh, cookiesToSet)
-            if (refreshResult.isSuccess) {
-                AuthenticationStatus.AUTHENTICATION_STATUS_ACCESS_TOKEN_EXPIRED to refreshResult
-            } else {
-                AuthenticationStatus.AUTHENTICATION_STATUS_UNAUTHENTICATED to Result
-                    .failure(JwtException("Authentication failed"))
-            }
-        }
+        // Check whether the user exists
+        val user = repo.getUserById(verificationToken.userId).getOrThrow()
 
-        val updatedContext = contextBuilder.withValue(GrpcContext.AUTHENTICATION_STATUS, status)
-        return AuthenticationResult(result, updatedContext)
+        // Update the user's status to active
+        val updatedUser = user.copy(status = UserStatus.USER_STATUS_ACTIVE)
+        val userUpdate = GrpcUser.Update.newBuilder()
+            .setUser(updatedUser.toGrpcUser())
+            .setMask(FieldMask.newBuilder().addPaths("user.status").build())
+            .build()
+        repo.updateUser(userUpdate)
+
+        // Remove the verification token after successful verification
+        verificationTokenRepo.deleteVerificationToken(request.token)
+
+        return Base.Nothing.getDefaultInstance()
     }
 
-    /**
-     * Attempts to refresh the access token using the provided refresh token.
-     * If successful, it updates the cookies to set in the context.
-     * If the refresh token is invalid or expired, it clears the cookies and returns an error.
-     *
-     * @param refreshToken The refresh token to use for refreshing the access token.
-     * @param skipRefresh If true, skips the refresh logic and only validates the refresh token.
-     * @param cookiesToSet The map of cookies to set in the gRPC context.
-     * @return A [Result] containing the parsed JWT claims if successful, or an error if the refresh fails.
-     */
-    private fun attemptTokenRefresh(
-        refreshToken: String?,
-        skipRefresh: Boolean,
-        cookiesToSet: MutableMap<String, String?>,
-    ): Result<ParsedJwtAuthClaims> {
-        if (refreshToken == null) {
-            return Result.failure(JwtException("Refresh token is missing"))
-        }
+    override suspend fun logout(): Base.Nothing {
+        GrpcContext.setAuthCookiesInContext("", "")
 
-        return runCatching {
-            val parsedRefreshToken = jwtService.parseAuthToken(refreshToken)
+        return Base.Nothing.getDefaultInstance()
+    }
 
-            if (!skipRefresh) {
-                val newAccessToken = jwtService.refreshAccessToken(parsedRefreshToken)
-                cookiesToSet[GrpcContext.ACCESS_TOKEN_COOKIE_NAME] = newAccessToken
+    override suspend fun login(request: Authentication.LoginRequest): Base.Nothing {
+        // Check whether a user with the given email exists
+        val user =
+            try {
+                repo.getUserByEmail(request.email).getOrThrow()
+            } catch (_: NotFoundException) {
+                throw UnauthenticatedException()
             }
 
-            parsedRefreshToken
-        }.onFailure { e ->
-            if (!skipRefresh) {
-                logger.debug { "Refresh token is invalid or expired. Clearing cookies." }
-                cookiesToSet[GrpcContext.ACCESS_TOKEN_COOKIE_NAME] = null
-                cookiesToSet[GrpcContext.REFRESH_TOKEN_COOKIE_NAME] = null
-            }
+        // Check whether the user is active (verified email)
+        if (user.status != UserStatus.USER_STATUS_ACTIVE) {
+            throw UnauthenticatedException()
         }
+
+        // Verify the password against the stored hash
+        val storedPasswordHash = try {
+            repo.getPasswordHashByEmail(request.email).getOrThrow()
+        } catch (_: NotFoundException) {
+            throw UnauthenticatedException()
+        }
+
+        if (!PasswordUtils.verifyPassword(request.password, storedPasswordHash)) {
+            throw UnauthenticatedException()
+        }
+
+        // Generate JWT tokens
+        val (accessToken, refreshToken) = jwtManager.generateAuthTokens(user.id)
+        GrpcContext.setAuthCookiesInContext(accessToken, refreshToken)
+
+        return Base.Nothing.getDefaultInstance()
     }
 }

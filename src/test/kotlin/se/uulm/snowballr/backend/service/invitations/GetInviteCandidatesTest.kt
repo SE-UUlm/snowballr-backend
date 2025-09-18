@@ -1,4 +1,4 @@
-package se.uulm.snowballr.backend.service.user
+package se.uulm.snowballr.backend.service.invitations
 
 import io.mockk.coEvery
 import kotlinx.coroutines.test.runTest

@@ -1,4 +1,4 @@
-package se.uulm.snowballr.backend.service.user
+package se.uulm.snowballr.backend.service.authentication
 
 import io.mockk.coEvery
 import io.mockk.slot

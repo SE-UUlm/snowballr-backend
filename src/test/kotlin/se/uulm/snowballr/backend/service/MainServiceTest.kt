@@ -16,7 +16,7 @@ import org.koin.dsl.module
 import org.koin.test.KoinTest
 import org.simplejavamail.api.mailer.Mailer
 import se.uulm.snowballr.backend.auth.GrpcContext
-import se.uulm.snowballr.backend.auth.IJwtService
+import se.uulm.snowballr.backend.auth.IJwtManager
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.env.IEnvService
 import se.uulm.snowballr.backend.fetcher.FetcherManager
@@ -101,7 +101,7 @@ open class MainServiceTest : KoinTest {
     val verificationTokenRepoMock = mockk<IVerificationTokenTableRepo>()
 
     // Custom services / manager / clients mocks
-    val jwtServiceMock = mockk<IJwtService>()
+    val jwtManagerMock = mockk<IJwtManager>()
     val emailManagerMock = mockk<IEmailManager>()
     val fetcherManagerMock = mockk<FetcherManager>()
     val mailerMock = mockk<Mailer>()
@@ -112,7 +112,7 @@ open class MainServiceTest : KoinTest {
         criterionRepoMock,
         userRepoMock,
         projectMemberRepoMock,
-        jwtServiceMock,
+        jwtManagerMock,
         emailManagerMock,
         fetcherManagerMock,
         mailerMock,
@@ -152,7 +152,7 @@ open class MainServiceTest : KoinTest {
         single { verificationTokenRepoMock }
 
         // Custom services / managers / clients
-        single { jwtServiceMock }
+        single { jwtManagerMock }
         single { emailManagerMock }
         single { fetcherManagerMock }
         single { mailerMock }

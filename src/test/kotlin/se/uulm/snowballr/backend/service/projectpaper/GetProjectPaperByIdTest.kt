@@ -1,4 +1,4 @@
-package se.uulm.snowballr.backend.service.project
+package se.uulm.snowballr.backend.service.projectpaper
 
 import io.mockk.coEvery
 import kotlinx.coroutines.test.runTest
@@ -11,29 +11,22 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
-import snowballr.ProjectOuterClass.Project
+import snowballr.Base
 import snowballr.UserOuterClass.UserRole
 import java.util.UUID
 import java.util.stream.Stream
-import kotlin.random.Random
 import kotlin.reflect.KFunction
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class GetProjectPaperByRelativeIdTest : MainServiceTest() {
-    private val projectId = UUID.randomUUID()
-    private val localPaperId = Random.nextLong()
+class GetProjectPaperByIdTest : MainServiceTest() {
+    private val requestId = UUID.randomUUID()
 
-    private fun getExampleRequest() = Project.Paper.Get
-        .newBuilder()
-        .setProjectId(projectId.toString())
-        .setRelativeProjectPaperId(localPaperId.toString())
-        .build()
+    private fun getExampleRequest() = Base.Id.newBuilder().setId(requestId.toString()).build()
 
     fun failingFunctions(): Stream<Arguments?> = Stream.of(
-        Arguments.of(projectPaperRepoMock::getProjectPaperByRelativeId),
+        Arguments.of(projectPaperRepoMock::getProjectPaperById),
         Arguments.of(paperRepoMock::getPaperById),
     )
 
@@ -46,28 +39,24 @@ class GetProjectPaperByRelativeIdTest : MainServiceTest() {
                 UserRole.USER_ROLE_DEFAULT
             },
         )
-        val project = DataBuilder.createExampleProject(id = projectId)
+        val project = DataBuilder.createExampleProject()
         val paper = DataBuilder.createExamplePaper()
         val projectPaper = DataBuilder.createExampleProjectPaper(
+            id = requestId,
             projectId = project.id,
             paperId = paper.id,
-            localPaperId = localPaperId,
         )
         val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
         val author = DataBuilder.createExampleAuthor()
         val review = DataBuilder.createExampleReview()
 
-        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
-
-        if (failAt == projectPaperRepoMock::getProjectPaperByRelativeId) {
+        if (failAt == projectPaperRepoMock::getProjectPaperById) {
             coEvery {
-                projectPaperRepoMock.getProjectPaperByRelativeId(project.id, projectPaper.localPaperId)
+                projectPaperRepoMock.getProjectPaperById(projectPaper.id)
             } returns Result.failure(TestSpecificException())
             return
         }
-        coEvery {
-            projectPaperRepoMock.getProjectPaperByRelativeId(project.id, projectPaper.localPaperId)
-        } returns Result.success(projectPaper)
+        coEvery { projectPaperRepoMock.getProjectPaperById(projectPaper.id) } returns Result.success(projectPaper)
 
         mockCurrentUser(currentUser)
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns
@@ -99,7 +88,7 @@ class GetProjectPaperByRelativeIdTest : MainServiceTest() {
         mockHappyPathUntil(failAt, true)
 
         assertThrows<TestSpecificException> {
-            mainService.getProjectPaperByRelativeId(getExampleRequest())
+            mainService.getProjectPaperById(getExampleRequest())
         }
     }
 
@@ -107,45 +96,31 @@ class GetProjectPaperByRelativeIdTest : MainServiceTest() {
     fun `When a server admin retrieves the project paper, then no exception is thrown`() = runTest {
         mockHappyPathUntil(null, true)
 
-        assertDoesNotThrow { mainService.getProjectPaperByRelativeId(getExampleRequest()) }
+        assertDoesNotThrow { mainService.getProjectPaperById(getExampleRequest()) }
     }
 
     @Test
     fun `When a project member retrieves the project paper, then no exception is thrown`() = runTest {
         mockHappyPathUntil(null, false)
 
-        assertDoesNotThrow { mainService.getProjectPaperByRelativeId(getExampleRequest()) }
+        assertDoesNotThrow { mainService.getProjectPaperById(getExampleRequest()) }
     }
 
     @Test
     fun `When a non project member retrieves the project paper, then an UnauthorizedException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-        val project = DataBuilder.createExampleProject(projectId)
+        val project = DataBuilder.createExampleProject()
         val paper = DataBuilder.createExamplePaper()
         val projectPaper = DataBuilder.createExampleProjectPaper(
+            id = requestId,
             projectId = project.id,
             paperId = paper.id,
-            localPaperId = localPaperId,
         )
 
         mockCurrentUser(currentUser)
-        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
-        coEvery {
-            projectPaperRepoMock.getProjectPaperByRelativeId(project.id, projectPaper.localPaperId)
-        } returns Result.success(projectPaper)
+        coEvery { projectPaperRepoMock.getProjectPaperById(projectPaper.id) } returns Result.success(projectPaper)
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
-        assertThrows<UnauthorizedException> {
-            mainService.getProjectPaperByRelativeId(getExampleRequest())
-        }
-    }
-
-    @Test
-    fun `When a nonexistent project is requested, then a NotFoundException is thrown`() = runTest {
-        val project = DataBuilder.createExampleProject(id = projectId)
-
-        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns false
-
-        assertThrows<NotFoundException> { mainService.getProjectPaperByRelativeId(getExampleRequest()) }
+        assertThrows<UnauthorizedException> { mainService.getProjectPaperById(getExampleRequest()) }
     }
 }

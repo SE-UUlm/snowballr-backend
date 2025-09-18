@@ -13,12 +13,12 @@ import se.uulm.snowballr.backend.env.Env
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.model.auth.CookieConfig
 
-class CookieServiceTest {
-    private val jwtServiceMock = mockk<IJwtService> {
-        every { getAccessTokenTTL() } returns JwtService.ACCESS_TOKEN_EXPIRATION_MS
-        every { getRefreshTokenTTL() } returns JwtService.REFRESH_TOKEN_EXPIRATION_MS
+class CookieManagerTest {
+    private val jwtManagerMock = mockk<IJwtManager> {
+        every { getAccessTokenTTL() } returns JwtManager.ACCESS_TOKEN_EXPIRATION_MS
+        every { getRefreshTokenTTL() } returns JwtManager.REFRESH_TOKEN_EXPIRATION_MS
     }
-    private val cookieService = CookieService(jwtServiceMock, createEnvReader("https://"))
+    private val cookieManager = CookieManager(jwtManagerMock, createEnvReader("https://"))
 
     private fun createEnvReader(frontendBaseUrl: String): EnvReader {
         val envReaderMock = mockk<EnvReader>()
@@ -35,14 +35,14 @@ class CookieServiceTest {
     inner class ParseCookies {
         @Test
         fun `When parsing a null or blank header, then an empty map is returned`() {
-            assertTrue(cookieService.parseCookies(null).isEmpty())
-            assertTrue(cookieService.parseCookies("").isEmpty())
-            assertTrue(cookieService.parseCookies("   ").isEmpty())
+            assertTrue(cookieManager.parseCookies(null).isEmpty())
+            assertTrue(cookieManager.parseCookies("").isEmpty())
+            assertTrue(cookieManager.parseCookies("   ").isEmpty())
         }
 
         @Test
         fun `When parsing a single cookie header, then the cookie is parsed correctly`() {
-            val result = cookieService.parseCookies("session=abc123")
+            val result = cookieManager.parseCookies("session=abc123")
 
             assertEquals(1, result.size)
             assertEquals("abc123", result["session"])
@@ -50,7 +50,7 @@ class CookieServiceTest {
 
         @Test
         fun `When parsing multiple cookies with spaces, then all cookies are parsed correctly`() {
-            val result = cookieService.parseCookies("key1=val1; key2=val2; key3=val3")
+            val result = cookieManager.parseCookies("key1=val1; key2=val2; key3=val3")
 
             assertEquals(3, result.size)
             assertEquals("val1", result["key1"])
@@ -60,7 +60,7 @@ class CookieServiceTest {
 
         @Test
         fun `When parsing cookies with duplicate keys, then the last value is taken`() {
-            val result = cookieService.parseCookies("token=abc; token=xyz")
+            val result = cookieManager.parseCookies("token=abc; token=xyz")
 
             assertEquals(1, result.size)
             assertEquals("xyz", result["token"])
@@ -71,11 +71,11 @@ class CookieServiceTest {
     inner class BuildAuthCookieString {
         @Test
         fun `When building auth cookie for access token with value, then correct cookie string is returned`() {
-            val cookie = cookieService.buildAuthCookieString(GrpcContext.ACCESS_TOKEN_COOKIE_NAME, "token123")
+            val cookie = cookieManager.buildAuthCookieString(GrpcContext.ACCESS_TOKEN_COOKIE_NAME, "token123")
 
             assertNotNull(cookie)
             assertTrue(cookie.contains("${GrpcContext.ACCESS_TOKEN_COOKIE_NAME}=token123"))
-            assertTrue(cookie.contains("Max-Age=${JwtService.ACCESS_TOKEN_EXPIRATION_MS}"))
+            assertTrue(cookie.contains("Max-Age=${JwtManager.ACCESS_TOKEN_EXPIRATION_MS}"))
             assertTrue(cookie.contains("SameSite=Strict"))
             assertTrue(cookie.contains("HttpOnly"))
             assertTrue(cookie.contains("Secure"))
@@ -83,7 +83,7 @@ class CookieServiceTest {
 
         @Test
         fun `When building auth cookie for access token with null value, then cookie expires immediately`() {
-            val cookie = cookieService.buildAuthCookieString(GrpcContext.ACCESS_TOKEN_COOKIE_NAME, null)
+            val cookie = cookieManager.buildAuthCookieString(GrpcContext.ACCESS_TOKEN_COOKIE_NAME, null)
 
             assertNotNull(cookie)
             assertTrue(cookie.contains("${GrpcContext.ACCESS_TOKEN_COOKIE_NAME}="))
@@ -92,11 +92,11 @@ class CookieServiceTest {
 
         @Test
         fun `When building auth cookie for refresh token with value, then correct cookie string is returned`() {
-            val cookie = cookieService.buildAuthCookieString(GrpcContext.REFRESH_TOKEN_COOKIE_NAME, "refresh456")
+            val cookie = cookieManager.buildAuthCookieString(GrpcContext.REFRESH_TOKEN_COOKIE_NAME, "refresh456")
 
             assertNotNull(cookie)
             assertTrue(cookie.contains("${GrpcContext.REFRESH_TOKEN_COOKIE_NAME}=refresh456"))
-            assertTrue(cookie.contains("Max-Age=${JwtService.REFRESH_TOKEN_EXPIRATION_MS}"))
+            assertTrue(cookie.contains("Max-Age=${JwtManager.REFRESH_TOKEN_EXPIRATION_MS}"))
             assertTrue(cookie.contains("SameSite=Strict"))
             assertTrue(cookie.contains("HttpOnly"))
             assertTrue(cookie.contains("Secure"))
@@ -104,7 +104,7 @@ class CookieServiceTest {
 
         @Test
         fun `When building auth cookie for refresh token with empty value, then cookie expires immediately`() {
-            val cookie = cookieService.buildAuthCookieString(GrpcContext.REFRESH_TOKEN_COOKIE_NAME, "")
+            val cookie = cookieManager.buildAuthCookieString(GrpcContext.REFRESH_TOKEN_COOKIE_NAME, "")
 
             assertNotNull(cookie)
             assertTrue(cookie.contains("${GrpcContext.REFRESH_TOKEN_COOKIE_NAME}="))
@@ -113,15 +113,15 @@ class CookieServiceTest {
 
         @Test
         fun `When building auth cookie for unrecognized cookie name, then null is returned`() {
-            val cookie = cookieService.buildAuthCookieString("unknown_cookie", "value")
+            val cookie = cookieManager.buildAuthCookieString("unknown_cookie", "value")
 
             assertNull(cookie)
         }
 
         @Test
         fun `When the frontend base url starts with http(colon), then secure defaults to false`() {
-            val cookieService = CookieService(jwtServiceMock, createEnvReader("http://"))
-            val cookie = cookieService.buildAuthCookieString(GrpcContext.REFRESH_TOKEN_COOKIE_NAME, "value")
+            val cookieManager = CookieManager(jwtManagerMock, createEnvReader("http://"))
+            val cookie = cookieManager.buildAuthCookieString(GrpcContext.REFRESH_TOKEN_COOKIE_NAME, "value")
 
             assertNotNull(cookie)
             assertFalse(cookie.contains("Secure"))
@@ -129,8 +129,8 @@ class CookieServiceTest {
 
         @Test
         fun `When the frontend base url starts with https(colon), then secure defaults to true`() {
-            val cookieService = CookieService(jwtServiceMock, createEnvReader("https://"))
-            val cookie = cookieService.buildAuthCookieString(GrpcContext.REFRESH_TOKEN_COOKIE_NAME, "value")
+            val cookieManager = CookieManager(jwtManagerMock, createEnvReader("https://"))
+            val cookie = cookieManager.buildAuthCookieString(GrpcContext.REFRESH_TOKEN_COOKIE_NAME, "value")
 
             assertNotNull(cookie)
             assertTrue(cookie.contains("Secure"))
@@ -141,7 +141,7 @@ class CookieServiceTest {
     inner class CreateCookieString {
         @Test
         fun `When creating a cookie string with default config, then the expected string is generated`() {
-            val cookie = cookieService.createCookieString(CookieConfig("session", "abc123", 3600))
+            val cookie = cookieManager.createCookieString(CookieConfig("session", "abc123", 3600))
 
             assertTrue(cookie.contains("session=abc123"))
             assertTrue(cookie.contains("Path=/"))
@@ -154,7 +154,7 @@ class CookieServiceTest {
         @Test
         fun `When creating a cookie string with a domain specified, then the domain is included`() {
             val cookie =
-                cookieService.createCookieString(CookieConfig("session", "abc123", 3600, domain = "example.com"))
+                cookieManager.createCookieString(CookieConfig("session", "abc123", 3600, domain = "example.com"))
 
             assertTrue(cookie.contains("Domain=example.com"))
         }
@@ -162,7 +162,7 @@ class CookieServiceTest {
         @Test
         fun `When creating a cookie string with HttpOnly and Secure disabled, then they are omitted`() {
             val cookie =
-                cookieService.createCookieString(
+                cookieManager.createCookieString(
                     CookieConfig(
                         "session",
                         "abc123",
