@@ -12,10 +12,10 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import kotlin.test.assertEquals
 
-private val examplePaper = DataBuilder.createExamplePaper()
-
 class FetcherManagerTest {
     private var fetcherManager = FetcherManager()
+    private val examplePaper = DataBuilder.createExamplePaper()
+    private val exampleOptions = mapOf("foo" to "bar")
 
     @BeforeEach
     fun createNewFetcherService() {
@@ -32,6 +32,7 @@ class FetcherManagerTest {
     fun `When a fetcher is removed, then it is no longer listed as available`() = runTest {
         fetcherManager.registerFetcher("foo", mockk())
         assertEquals(setOf("foo"), fetcherManager.getAvailableFetchers())
+
         fetcherManager.removeFetcher("foo")
         assertEquals(emptySet(), fetcherManager.getAvailableFetchers())
     }
@@ -50,36 +51,46 @@ class FetcherManagerTest {
     @Test
     fun `When a fetcher is registered, then searchPapers is delegated properly`() = runTest {
         val fetcherMock = mockk<IFetcher>()
-        coEvery { fetcherMock.searchPapers(any(), any()) } returns setOf(examplePaper)
+        coEvery { fetcherMock.searchPapers("bar", exampleOptions) } returns setOf(examplePaper)
         fetcherManager.registerFetcher("foo", fetcherMock)
 
-        assertEquals(setOf(examplePaper), fetcherManager.searchPapers("foo", "bar", mapOf("x" to "y")))
-        coVerify { fetcherMock.searchPapers("bar", mapOf("x" to "y")) }
+        assertEquals(
+            setOf(examplePaper),
+            fetcherManager.searchPapers("foo", "bar", exampleOptions),
+        )
+        coVerify { fetcherMock.searchPapers("bar", exampleOptions) }
         confirmVerified(fetcherMock)
     }
 
     @Test
     fun `When a fetcher is registered, then fetchForwardReferences is delegated properly`() = runTest {
         val fetcherMock = mockk<IFetcher>()
-        coEvery { fetcherMock.fetchForwardReferences(any(), any()) } returns setOf(examplePaper)
+        val referencingPaper = DataBuilder.createExamplePaper()
+
+        coEvery { fetcherMock.fetchForwardReferences(referencingPaper, exampleOptions) } returns setOf(examplePaper)
         fetcherManager.registerFetcher("foo", fetcherMock)
 
-        assertEquals(setOf(examplePaper), fetcherManager.fetchForwardReferences("foo", examplePaper, mapOf("x" to "y")))
-        coVerify { fetcherMock.fetchForwardReferences(examplePaper, mapOf("x" to "y")) }
+        assertEquals(
+            setOf(examplePaper),
+            fetcherManager.fetchForwardReferences("foo", referencingPaper, exampleOptions),
+        )
+        coVerify { fetcherMock.fetchForwardReferences(referencingPaper, exampleOptions) }
         confirmVerified(fetcherMock)
     }
 
     @Test
     fun `When a fetcher is registered, then fetchBackwardReferences is delegated properly`() = runTest {
         val fetcherMock = mockk<IFetcher>()
-        coEvery { fetcherMock.fetchBackwardReferences(any(), any()) } returns setOf(examplePaper)
+        val paperWithReference = DataBuilder.createExamplePaper()
+
+        coEvery { fetcherMock.fetchBackwardReferences(paperWithReference, exampleOptions) } returns setOf(examplePaper)
         fetcherManager.registerFetcher("foo", fetcherMock)
 
         assertEquals(
             setOf(examplePaper),
-            fetcherManager.fetchBackwardReferences("foo", examplePaper, mapOf("x" to "y")),
+            fetcherManager.fetchBackwardReferences("foo", paperWithReference, exampleOptions),
         )
-        coVerify { fetcherMock.fetchBackwardReferences(examplePaper, mapOf("x" to "y")) }
+        coVerify { fetcherMock.fetchBackwardReferences(paperWithReference, exampleOptions) }
         confirmVerified(fetcherMock)
     }
 

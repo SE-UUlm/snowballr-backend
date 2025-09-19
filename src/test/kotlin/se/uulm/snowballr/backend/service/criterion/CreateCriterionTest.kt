@@ -45,7 +45,7 @@ class CreateCriterionTest : MainServiceTest() {
         val request = getProjectCriterionRequest(project.id.toString())
 
         mockCurrentUser(user)
-        coEvery { criterionRepoMock.createCriterion(any(), any()) } returns criterion
+        coEvery { criterionRepoMock.createCriterion(request, user.id) } returns criterion
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
 
@@ -62,7 +62,7 @@ class CreateCriterionTest : MainServiceTest() {
         val request = getProjectCriterionRequest(project.id.toString())
 
         mockCurrentUser(user)
-        coEvery { criterionRepoMock.createCriterion(any(), any()) } returns criterion
+        coEvery { criterionRepoMock.createCriterion(request, user.id) } returns criterion
 
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
@@ -114,7 +114,7 @@ class CreateCriterionTest : MainServiceTest() {
         val request = getUserCriterionRequest()
 
         mockCurrentUser(user)
-        coEvery { criterionRepoMock.createCriterion(any(), user.id) } returns criterion
+        coEvery { criterionRepoMock.createCriterion(request, user.id) } returns criterion
 
         assertDoesNotThrow { mainService.createCriterion(request) }
     }
@@ -126,7 +126,7 @@ class CreateCriterionTest : MainServiceTest() {
         val criterion = DataBuilder.createExampleProjectCriterion()
 
         mockCurrentUser(user)
-        coEvery { criterionRepoMock.createCriterion(any(), any()) } returns criterion
+        coEvery { criterionRepoMock.createCriterion(request, user.id) } returns criterion
 
         assertDoesNotThrow { mainService.createCriterion(request) }
     }

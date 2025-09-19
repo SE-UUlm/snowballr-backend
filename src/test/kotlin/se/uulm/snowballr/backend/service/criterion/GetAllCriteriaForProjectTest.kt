@@ -46,7 +46,7 @@ class GetAllCriteriaForProjectTest : MainServiceTest() {
 
         mockCurrentUser(adminUser)
         coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
-        coEvery { projectMemberRepoMock.getProjectMembers(any()) } returns emptyList()
+        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
         coEvery { criterionRepoMock.getAllProjectCriteria(project.id) } returns listOf(criterion)
 
         assertDoesNotThrow { mainService.getAllCriteriaForProject(request) }

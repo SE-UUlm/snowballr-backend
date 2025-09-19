@@ -59,7 +59,7 @@ import se.uulm.snowballr.backend.serviceLayerDeps
  *             val example = ExampleOuterClass.Example.getDefaultInstance()
  *
  *             // Mock the behavior of the repositories
- *             coEvery { exampleRepoMock.createExample(any()) } returns example
+ *             coEvery { exampleRepoMock.createExample(...) } returns Result.success(example)
  *
  *             // Assert service behavior
  *             assertDoesNotThrow { mainService.createExample(request) }
@@ -71,7 +71,7 @@ import se.uulm.snowballr.backend.serviceLayerDeps
  *             val request = ExampleOuterClass.Example.Create.getDefaultInstance()
  *
  *             // Mock the behavior of the repositories
- *             coEvery { exampleRepoMock.createExample(any()) } returns Result.failure(TestSpecificException())
+ *             coEvery { exampleRepoMock.createExample(...) } returns Result.failure(TestSpecificException())
  *
  *             // Assert service behavior
  *             assertThrows<TestSpecificException> { mainService.createExample(request) }

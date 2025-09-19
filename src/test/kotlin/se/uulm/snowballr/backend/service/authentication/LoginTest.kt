@@ -25,10 +25,11 @@ import kotlin.test.assertEquals
 class LoginTest : MainServiceTest() {
     @Test
     fun `When a user provides an invalid email, then an UnauthenticatedException is thrown`() = runTest {
-        val request = LoginRequest.newBuilder().setEmail("wrongEmail").build()
+        val email = "wrongEmail"
+        val request = LoginRequest.newBuilder().setEmail(email).build()
 
         val exception = NotFoundException(EntityType.USER, "wrongEmail", identifierType = IdentifierType.EMAIL)
-        coEvery { userRepoMock.getUserByEmail(any()) } returns Result.failure(exception)
+        coEvery { userRepoMock.getUserByEmail(email) } returns Result.failure(exception)
 
         assertThrows<UnauthenticatedException> { mainService.login(request) }
     }

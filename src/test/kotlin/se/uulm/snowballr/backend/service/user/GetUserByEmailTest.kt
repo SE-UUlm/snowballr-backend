@@ -23,7 +23,7 @@ class GetUserByEmailTest : MainServiceTest() {
         val currentUser = DataBuilder.createExampleUser()
 
         mockCurrentUser(currentUser)
-        coEvery { userRepoMock.getUserByEmail(any()) } returns Result.failure(TestSpecificException())
+        coEvery { userRepoMock.getUserByEmail(exampleEmail) } returns Result.failure(TestSpecificException())
 
         assertThrows<TestSpecificException> { mainService.getUserByEmail(getExampleRequest()) }
     }
