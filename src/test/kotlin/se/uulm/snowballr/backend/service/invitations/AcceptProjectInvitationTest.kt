@@ -19,7 +19,9 @@ class AcceptProjectInvitationTest : MainServiceTest() {
     @Test
     fun `When the invitation token is not found, then a InvitationTokenNotFoundException is thrown`() = runTest {
         val request = ProjectOuterClass.Project.Member.Accept.newBuilder().setToken("non-existent-token").build()
-        coEvery { invitationTokenRepoMock.getInvitationTokenByValue(any()) } returns null
+        coEvery { invitationTokenRepoMock.getInvitationTokenByValue(any()) } returns Result.failure(
+            InvitationTokenNotFoundException(),
+        )
 
         assertThrows<InvitationTokenNotFoundException> { mainService.acceptProjectInvitation(request) }
     }
@@ -31,7 +33,9 @@ class AcceptProjectInvitationTest : MainServiceTest() {
         )
         val request = ProjectOuterClass.Project.Member.Accept.newBuilder().setToken(expiredToken.token).build()
 
-        coEvery { invitationTokenRepoMock.getInvitationTokenByValue(expiredToken.token) } returns expiredToken
+        coEvery { invitationTokenRepoMock.getInvitationTokenByValue(expiredToken.token) } returns Result.success(
+            expiredToken,
+        )
         coEvery { invitationTokenRepoMock.deleteInvitationToken(expiredToken.token) } returns Unit
 
         assertThrows<InvitationTokenNotFoundException> { mainService.acceptProjectInvitation(request) }
@@ -43,7 +47,7 @@ class AcceptProjectInvitationTest : MainServiceTest() {
             val token = DataBuilder.createExampleInvitationToken()
             val request = ProjectOuterClass.Project.Member.Accept.newBuilder().setToken(token.token).build()
 
-            coEvery { invitationTokenRepoMock.getInvitationTokenByValue(token.token) } returns token
+            coEvery { invitationTokenRepoMock.getInvitationTokenByValue(token.token) } returns Result.success(token)
             coEvery { userRepoMock.getUserByEmail(token.email) } returns Result.failure(TestSpecificException())
 
             assertThrows<TestSpecificException> { mainService.acceptProjectInvitation(request) }
@@ -55,7 +59,7 @@ class AcceptProjectInvitationTest : MainServiceTest() {
         val token = DataBuilder.createExampleInvitationToken(email = user.email)
         val request = ProjectOuterClass.Project.Member.Accept.newBuilder().setToken(token.token).build()
 
-        coEvery { invitationTokenRepoMock.getInvitationTokenByValue(token.token) } returns token
+        coEvery { invitationTokenRepoMock.getInvitationTokenByValue(token.token) } returns Result.success(token)
         coEvery { userRepoMock.getUserByEmail(token.email) } returns Result.success(user)
 
         assertThrows<FailedPreconditionException> { mainService.acceptProjectInvitation(request) }
@@ -67,7 +71,7 @@ class AcceptProjectInvitationTest : MainServiceTest() {
         val token = DataBuilder.createExampleInvitationToken(email = user.email)
         val request = ProjectOuterClass.Project.Member.Accept.newBuilder().setToken(token.token).build()
 
-        coEvery { invitationTokenRepoMock.getInvitationTokenByValue(token.token) } returns token
+        coEvery { invitationTokenRepoMock.getInvitationTokenByValue(token.token) } returns Result.success(token)
         coEvery { userRepoMock.getUserByEmail(token.email) } returns Result.success(user)
         coEvery { projectMemberRepoMock.addUserToProject(user.id, token.projectId) } throws TestSpecificException()
 
@@ -87,7 +91,7 @@ class AcceptProjectInvitationTest : MainServiceTest() {
         )
         val request = ProjectOuterClass.Project.Member.Accept.newBuilder().setToken(token.token).build()
 
-        coEvery { invitationTokenRepoMock.getInvitationTokenByValue(token.token) } returns token
+        coEvery { invitationTokenRepoMock.getInvitationTokenByValue(token.token) } returns Result.success(token)
         coEvery { userRepoMock.getUserByEmail(token.email) } returns Result.success(user)
         coEvery { projectMemberRepoMock.addUserToProject(user.id, token.projectId) } returns userMember
         coEvery { invitationTokenRepoMock.deleteInvitationToken(token.token) } throws TestSpecificException()
@@ -108,7 +112,7 @@ class AcceptProjectInvitationTest : MainServiceTest() {
         )
         val request = ProjectOuterClass.Project.Member.Accept.newBuilder().setToken(token.token).build()
 
-        coEvery { invitationTokenRepoMock.getInvitationTokenByValue(token.token) } returns token
+        coEvery { invitationTokenRepoMock.getInvitationTokenByValue(token.token) } returns Result.success(token)
         coEvery { userRepoMock.getUserByEmail(token.email) } returns Result.success(user)
         coEvery { projectMemberRepoMock.addUserToProject(user.id, token.projectId) } returns userMember
         coEvery { invitationTokenRepoMock.deleteInvitationToken(token.token) } returns Unit

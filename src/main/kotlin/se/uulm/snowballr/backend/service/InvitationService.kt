@@ -140,8 +140,7 @@ class InvitationService(
     }
 
     override suspend fun acceptProjectInvitation(request: GrpcProject.Member.Accept): Base.Nothing {
-        val invitationToken = invitationTokenRepo.getInvitationTokenByValue(request.token)
-            ?: throw InvitationTokenNotFoundException()
+        val invitationToken = invitationTokenRepo.getInvitationTokenByValue(request.token).getOrThrow()
 
         // Check if the token has expired
         if (OffsetDateTime.now().isAfter(invitationToken.expiresAt)) {

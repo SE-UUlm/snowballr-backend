@@ -4,9 +4,9 @@ import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.SnowballRException.InvitationTokenNotFoundException
 import se.uulm.snowballr.backend.model.dto.InvitationToken
 import se.uulm.snowballr.backend.table.InvitationTokenTable
 import se.uulm.snowballr.backend.table.toInvitationToken
@@ -26,18 +26,20 @@ interface IInvitationTokenTableRepo {
      * Retrieves an invitation token by its value.
      *
      * @param token The invitation token to retrieve.
-     * @return The [InvitationToken] associated with the given token value.
+     * @return A [Result] containing the [InvitationToken] associated with the given token value or a
+     * [InvitationTokenNotFoundException] if the token doesn't exist.
      */
-    suspend fun getInvitationTokenByValue(token: String): InvitationToken?
+    suspend fun getInvitationTokenByValue(token: String): Result<InvitationToken>
 
     /**
      * Retrieves an invitation token by its email and project ID.
      *
      * @param email The email address of the user associated with the invitation token.
      * @param projectId The ID of the project associated with the invitation token.
-     * @return The [InvitationToken] associated with the given email and project ID.
+     * @return A [Result] containing the [InvitationToken] associated with the given email and project ID or a
+     * [InvitationTokenNotFoundException] if the token doesn't exist.
      */
-    suspend fun getInvitationTokenByEmailAndProjectId(email: String, projectId: UUID): InvitationToken?
+    suspend fun getInvitationTokenByEmailAndProjectId(email: String, projectId: UUID): Result<InvitationToken>
 
     /**
      * Deletes an invitation token by its value.
@@ -60,24 +62,31 @@ class InvitationTokenTableRepo(
         }
     }
 
-    override suspend fun getInvitationTokenByValue(token: String): InvitationToken? = db.query {
-        InvitationTokenTable
-            .selectAll()
-            .where { InvitationTokenTable.token eq token }
-            .map { it.toInvitationToken() }
-            .singleOrNull()
+    override suspend fun getInvitationTokenByValue(token: String): Result<InvitationToken> = db.query {
+        val result =
+            InvitationTokenTable.getEntityOrNull(ResultRow::toInvitationToken) { InvitationTokenTable.token eq token }
+
+        if (result != null) {
+            Result.success(result)
+        } else {
+            Result.failure(InvitationTokenNotFoundException())
+        }
     }
 
-    override suspend fun getInvitationTokenByEmailAndProjectId(email: String, projectId: UUID): InvitationToken? =
-        db.query {
-            InvitationTokenTable
-                .selectAll()
-                .where {
-                    (InvitationTokenTable.email eq email) and (InvitationTokenTable.projectId eq projectId)
-                }
-                .map { it.toInvitationToken() }
-                .singleOrNull()
+    override suspend fun getInvitationTokenByEmailAndProjectId(
+        email: String,
+        projectId: UUID,
+    ): Result<InvitationToken> = db.query {
+        val token = InvitationTokenTable.getEntityOrNull(ResultRow::toInvitationToken) {
+            (InvitationTokenTable.email eq email) and (InvitationTokenTable.projectId eq projectId)
         }
+
+        if (token != null) {
+            Result.success(token)
+        } else {
+            Result.failure(InvitationTokenNotFoundException())
+        }
+    }
 
     override suspend fun deleteInvitationToken(token: String) {
         db.query {
