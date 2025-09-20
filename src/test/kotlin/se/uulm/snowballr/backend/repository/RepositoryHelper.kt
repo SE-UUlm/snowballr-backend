@@ -11,6 +11,7 @@ import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.ReviewTable
 import se.uulm.snowballr.backend.table.UserTable
+import se.uulm.snowballr.backend.table.VerificationTokenTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.table.association.ReviewHasCriterionTable
@@ -185,6 +186,15 @@ object RepositoryHelper {
         ReviewHasCriterionTable.insert {
             it[ReviewHasCriterionTable.reviewId] = reviewId
             it[ReviewHasCriterionTable.criterionId] = criterionId
+        }
+    }
+
+    suspend fun insertTestVerificationToken(userId: UUID, token: String = "secure-random-token-123") {
+        db.query {
+            VerificationTokenTable.insert {
+                it[VerificationTokenTable.userId] = userId
+                it[VerificationTokenTable.token] = token
+            }
         }
     }
 

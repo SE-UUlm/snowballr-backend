@@ -21,7 +21,9 @@ class VerifyEmailTest : MainServiceTest() {
         val token = "non-existent-token"
         val request = Authentication.VerifyEmailRequest.newBuilder().setToken(token).build()
 
-        coEvery { verificationTokenRepoMock.getVerificationTokenByValue(token) } returns null
+        coEvery { verificationTokenRepoMock.getVerificationTokenByValue(token) } returns Result.failure(
+            VerificationTokenNotFoundException(),
+        )
 
         assertThrows<VerificationTokenNotFoundException> { mainService.verifyEmail(request) }
     }
@@ -33,7 +35,9 @@ class VerifyEmailTest : MainServiceTest() {
         )
         val request = Authentication.VerifyEmailRequest.newBuilder().setToken(expiredToken.token).build()
 
-        coEvery { verificationTokenRepoMock.getVerificationTokenByValue(expiredToken.token) } returns expiredToken
+        coEvery { verificationTokenRepoMock.getVerificationTokenByValue(expiredToken.token) } returns Result.success(
+            expiredToken,
+        )
         coEvery { verificationTokenRepoMock.deleteVerificationToken(expiredToken.token) } returns Unit
 
         assertThrows<VerificationTokenNotFoundException> { mainService.verifyEmail(request) }
@@ -44,7 +48,7 @@ class VerifyEmailTest : MainServiceTest() {
         val token = DataBuilder.createExampleVerificationToken()
         val request = Authentication.VerifyEmailRequest.newBuilder().setToken(token.token).build()
 
-        coEvery { verificationTokenRepoMock.getVerificationTokenByValue(token.token) } returns token
+        coEvery { verificationTokenRepoMock.getVerificationTokenByValue(token.token) } returns Result.success(token)
         coEvery { userRepoMock.getUserById(token.userId) } returns Result.failure(TestSpecificException())
 
         assertThrows<TestSpecificException> { mainService.verifyEmail(request) }
@@ -57,7 +61,7 @@ class VerifyEmailTest : MainServiceTest() {
         val request = Authentication.VerifyEmailRequest.newBuilder().setToken(token.token).build()
         val userUpdateSlot = slot<GrpcUser.Update>()
 
-        coEvery { verificationTokenRepoMock.getVerificationTokenByValue(token.token) } returns token
+        coEvery { verificationTokenRepoMock.getVerificationTokenByValue(token.token) } returns Result.success(token)
         coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
         coEvery { userRepoMock.updateUser(capture(userUpdateSlot)) } returns user
         coEvery { verificationTokenRepoMock.deleteVerificationToken(token.token) } returns Unit

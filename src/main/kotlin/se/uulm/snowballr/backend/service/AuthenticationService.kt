@@ -52,8 +52,7 @@ class AuthenticationService(
     private val jwtManager: IJwtManager,
 ) : IAuthenticationService {
     override suspend fun verifyEmail(request: Authentication.VerifyEmailRequest): Base.Nothing {
-        val verificationToken = verificationTokenRepo.getVerificationTokenByValue(request.token)
-            ?: throw VerificationTokenNotFoundException()
+        val verificationToken = verificationTokenRepo.getVerificationTokenByValue(request.token).getOrThrow()
 
         // Check if the token has expired
         if (OffsetDateTime.now().isAfter(verificationToken.expiresAt)) {
