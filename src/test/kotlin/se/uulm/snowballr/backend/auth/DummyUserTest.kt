@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.auth
 
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -21,10 +22,10 @@ class DummyUserTest {
         // User Settings
         assertTrue(DummyUser.areHotkeysShown)
         assertFalse(DummyUser.isReviewModeEnabled)
-        assertEquals(emptyList<UUID>(), DummyUser.criteriaIds)
+        assertThat(DummyUser.criteriaIds).isEmpty()
         assertEquals(0F, DummyUser.similarityThreshold)
         assertTrue(ReviewDecisionMatrix.getDefaultInstance().toByteArray().contentEquals(DummyUser.decisionMatrix))
-        assertEquals(emptyMap<String, Map<String, String>>(), DummyUser.fetchers)
+        assertThat(DummyUser.fetchers).isEmpty()
         assertEquals(SnowballingType.SNOWBALLING_TYPE_BOTH, DummyUser.snowballingType)
         assertTrue(DummyUser.reviewMaybeAllowed)
 
