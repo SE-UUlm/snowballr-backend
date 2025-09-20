@@ -2,6 +2,8 @@ package se.uulm.snowballr.backend.repository.association
 
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -91,26 +93,26 @@ class ReadingListTableRepoTest : RepositoryTest(arrayOf(UserTable, PaperTable, R
             val paperId = insertPaperAndGetId()
             val userId = createExampleUser("test.user@example.com")
             repo.createReadingListEntry(userId, paperId)
-            assertThat(repo.isPaperOnReadingList(userId, paperId)).isTrue()
+            assertTrue(repo.isPaperOnReadingList(userId, paperId))
         }
 
         @Test
         fun `When a paper is not on the reading list of a user, then isPaperOnReadingList returns false`() = runTest {
             val paperId = insertPaperAndGetId()
             val userId = createExampleUser("test.user@example.com")
-            assertThat(repo.isPaperOnReadingList(userId, paperId)).isFalse()
+            assertFalse(repo.isPaperOnReadingList(userId, paperId))
         }
 
         @Test
         fun `When a nonexistent paper is provided to isPaperOnReadingList, then it returns false`() = runTest {
             val userId = createExampleUser("test.user@example.com")
-            assertThat(repo.isPaperOnReadingList(userId, UUID.randomUUID())).isFalse()
+            assertFalse(repo.isPaperOnReadingList(userId, UUID.randomUUID()))
         }
 
         @Test
         fun `When a nonexistent user is provided to isPaperOnReadingList, then it returns false`() = runTest {
             val paperId = insertPaperAndGetId()
-            assertThat(repo.isPaperOnReadingList(UUID.randomUUID(), paperId)).isFalse()
+            assertFalse(repo.isPaperOnReadingList(UUID.randomUUID(), paperId))
         }
     }
 

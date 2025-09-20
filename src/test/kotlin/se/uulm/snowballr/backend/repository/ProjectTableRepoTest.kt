@@ -60,7 +60,7 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
             assertEquals(0, project.maxStage)
             assertEquals(0F, project.similarityThreshold)
             assertEquals(SnowballingType.SNOWBALLING_TYPE_BOTH, project.snowballingType)
-            assertThat(project.reviewMaybeAllowed).isEqualTo(true)
+            assertTrue(project.reviewMaybeAllowed)
             assertEquals(ReviewDecisionMatrix.getDefaultInstance(), project.reviewDecisionMatrix)
             assertEquals(testUserId, project.createdBy)
         }
@@ -108,7 +108,7 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
             // Assert default settings from user
             assertEquals(0.5F, project.similarityThreshold)
             assertEquals(SnowballingType.SNOWBALLING_TYPE_BOTH, project.snowballingType)
-            assertThat(project.reviewMaybeAllowed).isFalse()
+            assertFalse(project.reviewMaybeAllowed)
             assertEquals(ReviewDecisionMatrix.getDefaultInstance(), project.reviewDecisionMatrix)
             assertThat(project.fetchers).isEmpty()
         }
@@ -224,9 +224,9 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
                 assertEquals(SnowballingType.SNOWBALLING_TYPE_BOTH, updatedProject.snowballingType)
             }
             if ("project.settings.review_maybe_allowed" in fieldMask) {
-                assertThat(updatedProject.reviewMaybeAllowed).isEqualTo(false)
+                assertFalse(updatedProject.reviewMaybeAllowed)
             } else {
-                assertThat(updatedProject.reviewMaybeAllowed).isEqualTo(true)
+                assertTrue(updatedProject.reviewMaybeAllowed)
             }
         }
 
@@ -271,7 +271,7 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
             }
             assertEquals(0F, updatedProject.similarityThreshold)
             assertEquals(SnowballingType.SNOWBALLING_TYPE_BOTH, updatedProject.snowballingType)
-            assertThat(updatedProject.reviewMaybeAllowed).isEqualTo(true)
+            assertTrue(updatedProject.reviewMaybeAllowed)
         }
 
         @ParameterizedTest(name = "Update the fields {0}")
@@ -311,7 +311,7 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
             }
             assertEquals(0F, updatedProject.similarityThreshold)
             assertEquals(SnowballingType.SNOWBALLING_TYPE_BOTH, updatedProject.snowballingType)
-            assertThat(updatedProject.reviewMaybeAllowed).isEqualTo(true)
+            assertTrue(updatedProject.reviewMaybeAllowed)
         }
     }
 

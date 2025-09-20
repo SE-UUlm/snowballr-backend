@@ -343,14 +343,14 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
             val result = repo.getUserSettings(userId)
 
             val userSettings = assertResultSuccess(result)
-            assertThat(userSettings.areHotkeysShown).isTrue()
-            assertThat(userSettings.isReviewModeEnabled).isFalse()
+            assertTrue(userSettings.areHotkeysShown)
+            assertFalse(userSettings.isReviewModeEnabled)
             assertThat(userSettings.criteriaIds).isEmpty()
             assertEquals(0F, userSettings.similarityThreshold)
             assertEquals(ReviewDecisionMatrix.getDefaultInstance(), userSettings.decisionMatrix)
             assertThat(userSettings.fetchers).isEmpty()
             assertEquals(SnowballingType.SNOWBALLING_TYPE_BOTH, userSettings.snowballingType)
-            assertThat(userSettings.reviewMaybeAllowed).isTrue()
+            assertTrue(userSettings.reviewMaybeAllowed)
         }
 
         @Test
