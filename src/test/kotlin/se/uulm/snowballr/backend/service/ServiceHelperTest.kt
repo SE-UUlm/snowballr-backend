@@ -5,7 +5,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import kotlinx.coroutines.test.runTest
-import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -51,7 +51,7 @@ class ServiceHelperTest {
 
             assertDoesNotThrow {
                 withUser(userRepoMock) {
-                    assertThat(it).isEqualTo(currenUser)
+                    assertEquals(currenUser, it)
                 }
             }
         }

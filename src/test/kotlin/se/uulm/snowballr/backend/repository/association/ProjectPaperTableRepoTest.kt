@@ -44,13 +44,13 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
                 val result = repo.getProjectPaperById(projectPaperId)
 
                 val projectPaper = assertResultSuccess(result)
-                assertThat(projectPaper.id).isEqualTo(projectPaperId)
-                assertThat(projectPaper.projectId).isEqualTo(projectId)
-                assertThat(projectPaper.paperId).isEqualTo(paperId)
-                assertThat(projectPaper.localPaperId).isEqualTo(0)
-                assertThat(projectPaper.stage).isEqualTo(0)
-                assertThat(projectPaper.decision).isEqualTo(PaperDecision.PAPER_DECISION_ACCEPTED)
-                assertThat(projectPaper.createdBy).isEqualTo(testUserId)
+                assertEquals(projectPaperId, projectPaper.id)
+                assertEquals(projectId, projectPaper.projectId)
+                assertEquals(paperId, projectPaper.paperId)
+                assertEquals(0, projectPaper.localPaperId)
+                assertEquals(0, projectPaper.stage)
+                assertEquals(PaperDecision.PAPER_DECISION_ACCEPTED, projectPaper.decision)
+                assertEquals(testUserId, projectPaper.createdBy)
             }
 
         @Test
@@ -98,13 +98,13 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
                 val result = repo.getProjectPaperByRelativeId(projectId, projectPaper.localPaperId)
 
                 projectPaper = assertResultSuccess(result)
-                assertThat(projectPaper.id).isEqualTo(projectPaperId)
-                assertThat(projectPaper.projectId).isEqualTo(projectId)
-                assertThat(projectPaper.paperId).isEqualTo(paperId)
-                assertThat(projectPaper.localPaperId).isEqualTo(0)
-                assertThat(projectPaper.stage).isEqualTo(0)
-                assertThat(projectPaper.decision).isEqualTo(PaperDecision.PAPER_DECISION_ACCEPTED)
-                assertThat(projectPaper.createdBy).isEqualTo(testUserId)
+                assertEquals(projectPaperId, projectPaper.id)
+                assertEquals(projectId, projectPaper.projectId)
+                assertEquals(paperId, projectPaper.paperId)
+                assertEquals(0, projectPaper.localPaperId)
+                assertEquals(0, projectPaper.stage)
+                assertEquals(PaperDecision.PAPER_DECISION_ACCEPTED, projectPaper.decision)
+                assertEquals(testUserId, projectPaper.createdBy)
             }
     }
 

@@ -1,8 +1,8 @@
 package se.uulm.snowballr.backend.repository
 
 import kotlinx.coroutines.test.runTest
-import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.exposed.sql.insertAndGetId
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
@@ -37,9 +37,9 @@ class AuthorTableRepoTest : RepositoryTest(arrayOf(AuthorTable), false) {
 
             val author = assertResultSuccess(result)
             with(author) {
-                assertThat(firstName).isEqualTo("First Name")
-                assertThat(lastName).isEqualTo("Last Name")
-                assertThat(orcid).isEqualTo("ORCID")
+                assertEquals("First Name", firstName)
+                assertEquals("Last Name", lastName)
+                assertEquals("ORCID", orcid)
             }
         }
 

@@ -3,6 +3,8 @@ package se.uulm.snowballr.backend.repository
 import com.google.protobuf.util.FieldMaskUtil
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -51,16 +53,16 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
             val result = repo.getProjectById(projectId)
 
             val project = assertResultSuccess(result)
-            assertThat(project.id).isEqualTo(projectId)
-            assertThat(project.name).isEqualTo("Test Project")
-            assertThat(project.status).isEqualTo(ProjectStatus.PROJECT_STATUS_ACTIVE)
-            assertThat(project.currentStage).isEqualTo(0)
-            assertThat(project.maxStage).isEqualTo(0)
-            assertThat(project.similarityThreshold).isEqualTo(0F)
-            assertThat(project.snowballingType).isEqualTo(SnowballingType.SNOWBALLING_TYPE_BOTH)
+            assertEquals(projectId, project.id)
+            assertEquals("Test Project", project.name)
+            assertEquals(ProjectStatus.PROJECT_STATUS_ACTIVE, project.status)
+            assertEquals(0, project.currentStage)
+            assertEquals(0, project.maxStage)
+            assertEquals(0F, project.similarityThreshold)
+            assertEquals(SnowballingType.SNOWBALLING_TYPE_BOTH, project.snowballingType)
             assertThat(project.reviewMaybeAllowed).isEqualTo(true)
-            assertThat(project.reviewDecisionMatrix).isEqualTo(ReviewDecisionMatrix.getDefaultInstance())
-            assertThat(project.createdBy).isEqualTo(testUserId)
+            assertEquals(ReviewDecisionMatrix.getDefaultInstance(), project.reviewDecisionMatrix)
+            assertEquals(testUserId, project.createdBy)
         }
 
         @Test
@@ -99,15 +101,15 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
             val projectBuilder = Project.Create.newBuilder().setName("Test Project").build()
             val project = repo.createProject(projectBuilder, testUserId, userSettings)
 
-            assertThat(project.name).isEqualTo("Test Project")
-            assertThat(project.status).isEqualTo(ProjectStatus.PROJECT_STATUS_ACTIVE)
-            assertThat(project.currentStage).isEqualTo(0)
-            assertThat(project.maxStage).isEqualTo(0)
+            assertEquals("Test Project", project.name)
+            assertEquals(ProjectStatus.PROJECT_STATUS_ACTIVE, project.status)
+            assertEquals(0, project.currentStage)
+            assertEquals(0, project.maxStage)
             // Assert default settings from user
-            assertThat(project.similarityThreshold).isEqualTo(0.5F)
-            assertThat(project.snowballingType).isEqualTo(SnowballingType.SNOWBALLING_TYPE_BOTH)
+            assertEquals(0.5F, project.similarityThreshold)
+            assertEquals(SnowballingType.SNOWBALLING_TYPE_BOTH, project.snowballingType)
             assertThat(project.reviewMaybeAllowed).isFalse()
-            assertThat(project.reviewDecisionMatrix).isEqualTo(ReviewDecisionMatrix.getDefaultInstance())
+            assertEquals(ReviewDecisionMatrix.getDefaultInstance(), project.reviewDecisionMatrix)
             assertThat(project.fetchers).isEmpty()
         }
 
@@ -117,7 +119,7 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
             val project = Project.Create.newBuilder().setName("Test Project 1").build()
             val projectId1 = repo.createProject(project, testUserId, userSettings)
             val projectId2 = repo.createProject(project, testUserId, userSettings)
-            assertThat(projectId1).isNotEqualTo(projectId2)
+            assertNotEquals(projectId2, projectId1)
         }
 
         @Test
@@ -202,24 +204,24 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
             val updatedProject = repo.updateProject(request, projectStatus)
 
             if ("project.name" in fieldMask) {
-                assertThat(updatedProject.name).isEqualTo("Updated Project")
+                assertEquals("Updated Project", updatedProject.name)
             } else {
-                assertThat(updatedProject.name).isEqualTo("Test Project")
+                assertEquals("Test Project", updatedProject.name)
             }
             if ("project.status" in fieldMask) {
-                assertThat(updatedProject.status).isEqualTo(ProjectStatus.PROJECT_STATUS_ARCHIVED)
+                assertEquals(ProjectStatus.PROJECT_STATUS_ARCHIVED, updatedProject.status)
             } else {
-                assertThat(updatedProject.status).isEqualTo(projectStatus)
+                assertEquals(projectStatus, updatedProject.status)
             }
             if ("project.settings.similarity_threshold" in fieldMask) {
-                assertThat(updatedProject.similarityThreshold).isEqualTo(1F)
+                assertEquals(1F, updatedProject.similarityThreshold)
             } else {
-                assertThat(updatedProject.similarityThreshold).isEqualTo(0F)
+                assertEquals(0F, updatedProject.similarityThreshold)
             }
             if ("project.settings.snowballing_type" in fieldMask) {
-                assertThat(updatedProject.snowballingType).isEqualTo(SnowballingType.SNOWBALLING_TYPE_FORWARD)
+                assertEquals(SnowballingType.SNOWBALLING_TYPE_FORWARD, updatedProject.snowballingType)
             } else {
-                assertThat(updatedProject.snowballingType).isEqualTo(SnowballingType.SNOWBALLING_TYPE_BOTH)
+                assertEquals(SnowballingType.SNOWBALLING_TYPE_BOTH, updatedProject.snowballingType)
             }
             if ("project.settings.review_maybe_allowed" in fieldMask) {
                 assertThat(updatedProject.reviewMaybeAllowed).isEqualTo(false)
@@ -258,17 +260,17 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
             val updatedProject = repo.updateProject(request, projectStatus)
 
             if ("project.name" in fieldMask) {
-                assertThat(updatedProject.name).isEqualTo("Updated Project")
+                assertEquals("Updated Project", updatedProject.name)
             } else {
-                assertThat(updatedProject.name).isEqualTo("Test Project")
+                assertEquals("Test Project", updatedProject.name)
             }
             if ("project.status" in fieldMask) {
-                assertThat(updatedProject.status).isEqualTo(ProjectStatus.PROJECT_STATUS_ARCHIVED)
+                assertEquals(ProjectStatus.PROJECT_STATUS_ARCHIVED, updatedProject.status)
             } else {
-                assertThat(updatedProject.status).isEqualTo(projectStatus)
+                assertEquals(projectStatus, updatedProject.status)
             }
-            assertThat(updatedProject.similarityThreshold).isEqualTo(0F)
-            assertThat(updatedProject.snowballingType).isEqualTo(SnowballingType.SNOWBALLING_TYPE_BOTH)
+            assertEquals(0F, updatedProject.similarityThreshold)
+            assertEquals(SnowballingType.SNOWBALLING_TYPE_BOTH, updatedProject.snowballingType)
             assertThat(updatedProject.reviewMaybeAllowed).isEqualTo(true)
         }
 
@@ -301,14 +303,14 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
 
             val updatedProject = repo.updateProject(request, projectStatus)
 
-            assertThat(updatedProject.name).isEqualTo("Test Project")
+            assertEquals("Test Project", updatedProject.name)
             if ("project.status" in fieldMask) {
-                assertThat(updatedProject.status).isEqualTo(ProjectStatus.PROJECT_STATUS_ACTIVE)
+                assertEquals(ProjectStatus.PROJECT_STATUS_ACTIVE, updatedProject.status)
             } else {
-                assertThat(updatedProject.status).isEqualTo(projectStatus)
+                assertEquals(projectStatus, updatedProject.status)
             }
-            assertThat(updatedProject.similarityThreshold).isEqualTo(0F)
-            assertThat(updatedProject.snowballingType).isEqualTo(SnowballingType.SNOWBALLING_TYPE_BOTH)
+            assertEquals(0F, updatedProject.similarityThreshold)
+            assertEquals(SnowballingType.SNOWBALLING_TYPE_BOTH, updatedProject.snowballingType)
             assertThat(updatedProject.reviewMaybeAllowed).isEqualTo(true)
         }
     }

@@ -4,7 +4,9 @@ import com.google.protobuf.util.FieldMaskUtil
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.exposed.sql.insertAndGetId
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -27,7 +29,6 @@ import snowballr.UserOuterClass.UserStatus
 import java.sql.SQLException
 import java.time.OffsetDateTime
 import java.util.UUID
-import kotlin.test.assertEquals
 
 class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
     private val repo = UserTableRepo(db)
@@ -70,12 +71,12 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
             val result = repo.getUserById(userId)
 
             val user = assertResultSuccess(result)
-            assertThat(user.id).isEqualTo(userId)
-            assertThat(user.email).isEqualTo("test.user@example.com")
-            assertThat(user.firstName).isEqualTo("Test")
-            assertThat(user.lastName).isEqualTo("User")
-            assertThat(user.role).isEqualTo(UserRole.USER_ROLE_DEFAULT)
-            assertThat(user.status).isEqualTo(UserStatus.USER_STATUS_ACTIVE)
+            assertEquals(userId, user.id)
+            assertEquals("test.user@example.com", user.email)
+            assertEquals("Test", user.firstName)
+            assertEquals("User", user.lastName)
+            assertEquals(UserRole.USER_ROLE_DEFAULT, user.role)
+            assertEquals(UserStatus.USER_STATUS_ACTIVE, user.status)
         }
 
         @Test
@@ -96,12 +97,12 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
                 val result = repo.getUserByEmail("test.user@example.com")
 
                 val user = assertResultSuccess(result)
-                assertThat(user.id).isEqualTo(userId)
-                assertThat(user.email).isEqualTo("test.user@example.com")
-                assertThat(user.firstName).isEqualTo("Test")
-                assertThat(user.lastName).isEqualTo("User")
-                assertThat(user.role).isEqualTo(UserRole.USER_ROLE_DEFAULT)
-                assertThat(user.status).isEqualTo(UserStatus.USER_STATUS_ACTIVE)
+                assertEquals(userId, user.id)
+                assertEquals("test.user@example.com", user.email)
+                assertEquals("Test", user.firstName)
+                assertEquals("User", user.lastName)
+                assertEquals(UserRole.USER_ROLE_DEFAULT, user.role)
+                assertEquals(UserStatus.USER_STATUS_ACTIVE, user.status)
             }
 
         @Test
@@ -171,11 +172,11 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
                     .build()
             val user = repo.createUser(request, "hashedPassword")
 
-            assertThat(user.email).isEqualTo("alice.smith@example.com")
-            assertThat(user.firstName).isEqualTo("Alice")
-            assertThat(user.lastName).isEqualTo("Smith")
-            assertThat(user.role).isEqualTo(UserRole.USER_ROLE_DEFAULT)
-            assertThat(user.status).isEqualTo(UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED)
+            assertEquals("alice.smith@example.com", user.email)
+            assertEquals("Alice", user.firstName)
+            assertEquals("Smith", user.lastName)
+            assertEquals(UserRole.USER_ROLE_DEFAULT, user.role)
+            assertEquals(UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED, user.status)
         }
 
         @Test
@@ -216,7 +217,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
                     .build()
             val user2 = repo.createUser(request2, "hashedPassword2")
 
-            assertThat(user1.id).isNotEqualTo(user2.id)
+            assertNotEquals(user2.id, user1.id)
         }
     }
 
@@ -246,29 +247,29 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
             val updatedUser = repo.updateUser(request)
 
             if ("user.email" in fieldMask) {
-                assertThat(updatedUser.email).isEqualTo("updated.user@example.com")
+                assertEquals("updated.user@example.com", updatedUser.email)
             } else {
-                assertThat(updatedUser.email).isEqualTo("test.user@example.com")
+                assertEquals("test.user@example.com", updatedUser.email)
             }
             if ("user.first_name" in fieldMask) {
-                assertThat(updatedUser.firstName).isEqualTo("John")
+                assertEquals("John", updatedUser.firstName)
             } else {
-                assertThat(updatedUser.firstName).isEqualTo("Test")
+                assertEquals("Test", updatedUser.firstName)
             }
             if ("user.last_name" in fieldMask) {
-                assertThat(updatedUser.lastName).isEqualTo("Doe")
+                assertEquals("Doe", updatedUser.lastName)
             } else {
-                assertThat(updatedUser.lastName).isEqualTo("User")
+                assertEquals("User", updatedUser.lastName)
             }
             if ("user.role" in fieldMask) {
-                assertThat(updatedUser.role).isEqualTo(UserRole.USER_ROLE_ADMIN)
+                assertEquals(UserRole.USER_ROLE_ADMIN, updatedUser.role)
             } else {
-                assertThat(updatedUser.role).isEqualTo(UserRole.USER_ROLE_DEFAULT)
+                assertEquals(UserRole.USER_ROLE_DEFAULT, updatedUser.role)
             }
             if ("user.status" in fieldMask) {
-                assertThat(updatedUser.status).isEqualTo(UserStatus.USER_STATUS_DELETED)
+                assertEquals(UserStatus.USER_STATUS_DELETED, updatedUser.status)
             } else {
-                assertThat(updatedUser.status).isEqualTo(UserStatus.USER_STATUS_ACTIVE)
+                assertEquals(UserStatus.USER_STATUS_ACTIVE, updatedUser.status)
             }
         }
 
@@ -304,7 +305,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
             val after = OffsetDateTime.now()
             val deletedUser = repo.getUserById(userId1).getOrThrow()
 
-            assertThat(deletedUser.status).isEqualTo(UserStatus.USER_STATUS_DELETED)
+            assertEquals(UserStatus.USER_STATUS_DELETED, deletedUser.status)
             assertThat(deletedUser.deletedAt).isBetween(before, after)
         }
 
@@ -345,10 +346,10 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
             assertThat(userSettings.areHotkeysShown).isTrue()
             assertThat(userSettings.isReviewModeEnabled).isFalse()
             assertThat(userSettings.criteriaIds).isEmpty()
-            assertThat(userSettings.similarityThreshold).isEqualTo(0F)
-            assertThat(userSettings.decisionMatrix).isEqualTo(ReviewDecisionMatrix.getDefaultInstance())
+            assertEquals(0F, userSettings.similarityThreshold)
+            assertEquals(ReviewDecisionMatrix.getDefaultInstance(), userSettings.decisionMatrix)
             assertThat(userSettings.fetchers).isEmpty()
-            assertThat(userSettings.snowballingType).isEqualTo(SnowballingType.SNOWBALLING_TYPE_BOTH)
+            assertEquals(SnowballingType.SNOWBALLING_TYPE_BOTH, userSettings.snowballingType)
             assertThat(userSettings.reviewMaybeAllowed).isTrue()
         }
 

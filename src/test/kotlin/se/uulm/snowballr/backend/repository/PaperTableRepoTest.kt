@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.repository
 
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
@@ -25,13 +26,13 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
 
             val paper = assertResultSuccess(result)
             with(paper) {
-                assertThat(title).isEqualTo("Title")
-                assertThat(externalId).isEqualTo("ExternalId")
-                assertThat(abstract).isEqualTo("Abstract")
-                assertThat(year).isEqualTo(2025)
-                assertThat(publisher).isEqualTo("Publisher")
-                assertThat(publicationType).isEqualTo("PublicationType")
-                assertThat(publicationName).isEqualTo("PublicationName")
+                assertEquals("Title", title)
+                assertEquals("ExternalId", externalId)
+                assertEquals("Abstract", abstract)
+                assertEquals(2025, year)
+                assertEquals("Publisher", publisher)
+                assertEquals("PublicationType", publicationType)
+                assertEquals("PublicationName", publicationName)
                 assertThat(fetcherMetadata).isEmpty()
             }
         }

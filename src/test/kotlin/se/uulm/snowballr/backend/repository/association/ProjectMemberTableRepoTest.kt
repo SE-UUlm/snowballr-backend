@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.repository.association
 
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -64,9 +65,9 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
                 val result = repo.getProjectMemberByComposedId(project.id, members[0].userId)
 
                 val projectMember = assertResultSuccess(result)
-                assertThat(projectMember.projectId).isEqualTo(project.id)
-                assertThat(projectMember.userId).isEqualTo(testUserId)
-                assertThat(projectMember.role).isEqualTo(members[0].role)
+                assertEquals(project.id, projectMember.projectId)
+                assertEquals(testUserId, projectMember.userId)
+                assertEquals(members[0].role, projectMember.role)
             }
 
         @Test
@@ -85,9 +86,9 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
             val (project, members) = setupProject()
             val member = members.first()
 
-            assertThat(member.userId).isEqualTo(testUserId)
-            assertThat(member.projectId).isEqualTo(project.id)
-            assertThat(member.role).isEqualTo(MemberRole.MEMBER_ROLE_DEFAULT)
+            assertEquals(testUserId, member.userId)
+            assertEquals(project.id, member.projectId)
+            assertEquals(MemberRole.MEMBER_ROLE_DEFAULT, member.role)
 
             val actualMembers = repo.getProjectMembers(project.id)
             assertThat(actualMembers).hasSize(1)
@@ -100,7 +101,7 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
             val member = members.first()
             val member1 = repo.addUserToProject(testUserId, project.id)
 
-            assertThat(member).isEqualTo(member1)
+            assertEquals(member, member1)
 
             val actualMembers = repo.getProjectMembers(project.id)
             assertThat(actualMembers).hasSize(1)
@@ -143,7 +144,7 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
 
             assertThat(actualMembers).hasSize(1)
             val member = actualMembers.first()
-            assertThat(member.userId).isEqualTo(testUserId)
+            assertEquals(testUserId, member.userId)
         }
 
         @Test
@@ -153,11 +154,11 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
             val actualMembers = repo.getProjectMembers(project.id)
 
             assertThat(actualMembers).hasSize(4)
-            assertThat(actualMembers[0].userId).isEqualTo(testUserId)
-            assertThat(actualMembers[0]).isEqualTo(members[0])
-            assertThat(actualMembers[1]).isEqualTo(members[1])
-            assertThat(actualMembers[2]).isEqualTo(members[2])
-            assertThat(actualMembers[3]).isEqualTo(members[3])
+            assertEquals(testUserId, actualMembers[0].userId)
+            assertEquals(members[0], actualMembers[0])
+            assertEquals(members[1], actualMembers[1])
+            assertEquals(members[2], actualMembers[2])
+            assertEquals(members[3], actualMembers[3])
         }
     }
 
@@ -204,8 +205,8 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
                 val (project, members) = setupProject(1)
                 val firstMember = repo.getProjectMemberByComposedId(project.id, testUserId).getOrThrow()
                 val secondMember = repo.getProjectMemberByComposedId(project.id, members[1].userId).getOrThrow()
-                assertThat(firstMember.role).isEqualTo(MemberRole.MEMBER_ROLE_DEFAULT)
-                assertThat(secondMember.role).isEqualTo(MemberRole.MEMBER_ROLE_DEFAULT)
+                assertEquals(MemberRole.MEMBER_ROLE_DEFAULT, firstMember.role)
+                assertEquals(MemberRole.MEMBER_ROLE_DEFAULT, secondMember.role)
 
                 repo.promoteProjectMemberToAdmin(project.id, firstMember.userId)
                 repo.promoteProjectMemberToAdmin(project.id, secondMember.userId)
@@ -213,9 +214,9 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
                 val projectAdmins = repo.getAllProjectAdmins(project.id)
 
                 projectAdmins.forEachIndexed { index, admin ->
-                    assertThat(admin.projectId).isEqualTo(project.id)
-                    assertThat(admin.userId).isEqualTo(members[index].userId)
-                    assertThat(admin.role).isEqualTo(MemberRole.MEMBER_ROLE_ADMIN)
+                    assertEquals(project.id, admin.projectId)
+                    assertEquals(members[index].userId, admin.userId)
+                    assertEquals(MemberRole.MEMBER_ROLE_ADMIN, admin.role)
                 }
             }
 
@@ -225,8 +226,8 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
                 val (project, members) = setupProject(1)
                 val firstMember = repo.getProjectMemberByComposedId(project.id, testUserId).getOrThrow()
                 val secondMember = repo.getProjectMemberByComposedId(project.id, members[1].userId).getOrThrow()
-                assertThat(firstMember.role).isEqualTo(MemberRole.MEMBER_ROLE_DEFAULT)
-                assertThat(secondMember.role).isEqualTo(MemberRole.MEMBER_ROLE_DEFAULT)
+                assertEquals(MemberRole.MEMBER_ROLE_DEFAULT, firstMember.role)
+                assertEquals(MemberRole.MEMBER_ROLE_DEFAULT, secondMember.role)
 
                 repo.promoteProjectMemberToAdmin(project.id, firstMember.userId)
 
@@ -245,26 +246,26 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
             runTest {
                 val (project, _) = setupProject()
                 val normalMember = repo.getProjectMemberByComposedId(project.id, testUserId).getOrThrow()
-                assertThat(normalMember.role).isEqualTo(MemberRole.MEMBER_ROLE_DEFAULT)
+                assertEquals(MemberRole.MEMBER_ROLE_DEFAULT, normalMember.role)
 
                 val promotedMember = repo.promoteProjectMemberToAdmin(project.id, testUserId)
 
-                assertThat(promotedMember.projectId).isEqualTo(project.id)
-                assertThat(promotedMember.userId).isEqualTo(testUserId)
-                assertThat(promotedMember.role).isEqualTo(MemberRole.MEMBER_ROLE_ADMIN)
+                assertEquals(project.id, promotedMember.projectId)
+                assertEquals(testUserId, promotedMember.userId)
+                assertEquals(MemberRole.MEMBER_ROLE_ADMIN, promotedMember.role)
             }
 
         @Test
         fun `When a project admin is promoted, then the role of the project admin does not change`() = runTest {
             val (project, _) = setupProject()
             var promotedMember = repo.promoteProjectMemberToAdmin(project.id, testUserId)
-            assertThat(promotedMember.role).isEqualTo(MemberRole.MEMBER_ROLE_ADMIN)
+            assertEquals(MemberRole.MEMBER_ROLE_ADMIN, promotedMember.role)
 
             promotedMember = repo.promoteProjectMemberToAdmin(project.id, testUserId)
 
-            assertThat(promotedMember.projectId).isEqualTo(project.id)
-            assertThat(promotedMember.userId).isEqualTo(testUserId)
-            assertThat(promotedMember.role).isEqualTo(MemberRole.MEMBER_ROLE_ADMIN)
+            assertEquals(project.id, promotedMember.projectId)
+            assertEquals(testUserId, promotedMember.userId)
+            assertEquals(MemberRole.MEMBER_ROLE_ADMIN, promotedMember.role)
         }
     }
 

@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.repository
 
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -24,8 +25,8 @@ class VerificationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, Verific
             repo.saveVerificationToken(testUserId, tokenValue)
 
             val retrievedToken = assertResultSuccess(repo.getVerificationTokenByValue(tokenValue))
-            assertThat(retrievedToken.userId).isEqualTo(testUserId)
-            assertThat(retrievedToken.token).isEqualTo(tokenValue)
+            assertEquals(testUserId, retrievedToken.userId)
+            assertEquals(tokenValue, retrievedToken.token)
         }
     }
 
@@ -37,8 +38,8 @@ class VerificationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, Verific
             insertTestVerificationToken(userId = testUserId, token = tokenValue)
 
             val result = assertResultSuccess(repo.getVerificationTokenByValue(tokenValue))
-            assertThat(result.userId).isEqualTo(testUserId)
-            assertThat(result.token).isEqualTo(tokenValue)
+            assertEquals(testUserId, result.userId)
+            assertEquals(tokenValue, result.token)
         }
 
         @Test

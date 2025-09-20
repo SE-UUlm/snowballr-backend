@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.validation
 import arrow.core.Either
 import `in`.rcard.assertj.arrowcore.EitherAssert
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import se.uulm.snowballr.backend.model.BlankField
@@ -10,7 +11,6 @@ import se.uulm.snowballr.backend.model.InvalidEmail
 import se.uulm.snowballr.backend.model.InvalidPassword
 import se.uulm.snowballr.backend.model.TooLongField
 import snowballr.Authentication
-import kotlin.test.assertEquals
 
 class AuthenticationValidatorTest {
     @Nested
@@ -157,7 +157,7 @@ class AuthenticationValidatorTest {
             EitherAssert.assertThat(result).isLeft()
             val issues = (result as Either.Left).value
 
-            assertThat(issues.size).isEqualTo(5)
+            assertEquals(5, issues.size)
             assertThat(issues).contains(InvalidPassword("", InvalidPassword.Reason.TOO_SHORT))
             assertThat(issues).contains(InvalidPassword("", InvalidPassword.Reason.NOT_ENOUGH_LOWERCASE_CHARS))
             assertThat(issues).contains(InvalidPassword("", InvalidPassword.Reason.NOT_ENOUGH_UPPERCASE_CHARS))
