@@ -3,16 +3,16 @@ package se.uulm.snowballr.backend.auth
 import io.jsonwebtoken.JwtException
 import io.mockk.every
 import io.mockk.mockk
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertNull
 import org.junit.jupiter.api.extension.ExtendWith
 import se.uulm.snowballr.backend.GrpcTestContextExtension
 import se.uulm.snowballr.backend.model.jwt.ParsedJwtAuthClaims
 import snowballr.Authentication
 import java.util.Date
 import java.util.UUID
-import kotlin.test.assertEquals
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 @ExtendWith(GrpcTestContextExtension::class)
 class AuthenticateTest {

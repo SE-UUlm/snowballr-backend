@@ -1,13 +1,13 @@
 package se.uulm.snowballr.backend.auth
 
 import io.grpc.Context
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.model.SnowballRException.MissingContextException
 import snowballr.Authentication.AuthenticationStatus
 import java.util.UUID
-import kotlin.test.assertEquals
 
 class GrpcContextTest {
     @Nested

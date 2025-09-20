@@ -3,6 +3,8 @@ package se.uulm.snowballr.backend.repository
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
@@ -11,8 +13,6 @@ import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.utils.assertResultFailure
 import se.uulm.snowballr.backend.utils.assertResultSuccess
 import java.util.UUID
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 
 class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
     private val repo = PaperTableRepo(db)
