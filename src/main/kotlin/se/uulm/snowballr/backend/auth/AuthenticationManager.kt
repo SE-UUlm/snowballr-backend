@@ -88,7 +88,7 @@ class AuthenticationManager(private val jwtManager: IJwtManager) : IAuthenticati
             }
 
             parsedRefreshToken
-        }.onFailure { e ->
+        }.onFailure { _ ->
             if (!skipRefresh) {
                 logger.debug { "Refresh token is invalid or expired. Clearing cookies." }
                 cookiesToSet[GrpcContext.ACCESS_TOKEN_COOKIE_NAME] = null
