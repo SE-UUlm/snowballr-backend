@@ -4,8 +4,6 @@ import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertNotNull
@@ -36,9 +34,9 @@ class CookieManagerTest {
     inner class ParseCookies {
         @Test
         fun `When parsing a null or blank header, then an empty map is returned`() {
-            assertTrue(cookieManager.parseCookies(null).isEmpty())
-            assertTrue(cookieManager.parseCookies("").isEmpty())
-            assertTrue(cookieManager.parseCookies("   ").isEmpty())
+            assertThat(cookieManager.parseCookies(null)).isEmpty()
+            assertThat(cookieManager.parseCookies("")).isEmpty()
+            assertThat(cookieManager.parseCookies("   ")).isEmpty()
         }
 
         @Test
@@ -75,11 +73,11 @@ class CookieManagerTest {
             val cookie = cookieManager.buildAuthCookieString(GrpcContext.ACCESS_TOKEN_COOKIE_NAME, "token123")
 
             assertNotNull(cookie)
-            assertTrue(cookie.contains("${GrpcContext.ACCESS_TOKEN_COOKIE_NAME}=token123"))
-            assertTrue(cookie.contains("Max-Age=${JwtManager.ACCESS_TOKEN_EXPIRATION_MS}"))
-            assertTrue(cookie.contains("SameSite=Strict"))
-            assertTrue(cookie.contains("HttpOnly"))
-            assertTrue(cookie.contains("Secure"))
+            assertThat(cookie).contains("${GrpcContext.ACCESS_TOKEN_COOKIE_NAME}=token123")
+            assertThat(cookie).contains("Max-Age=${JwtManager.ACCESS_TOKEN_EXPIRATION_MS}")
+            assertThat(cookie).contains("SameSite=Strict")
+            assertThat(cookie).contains("HttpOnly")
+            assertThat(cookie).contains("Secure")
         }
 
         @Test
@@ -87,8 +85,8 @@ class CookieManagerTest {
             val cookie = cookieManager.buildAuthCookieString(GrpcContext.ACCESS_TOKEN_COOKIE_NAME, null)
 
             assertNotNull(cookie)
-            assertTrue(cookie.contains("${GrpcContext.ACCESS_TOKEN_COOKIE_NAME}="))
-            assertTrue(cookie.contains("Max-Age=0"))
+            assertThat(cookie).contains("${GrpcContext.ACCESS_TOKEN_COOKIE_NAME}=")
+            assertThat(cookie).contains("Max-Age=0")
         }
 
         @Test
@@ -96,11 +94,11 @@ class CookieManagerTest {
             val cookie = cookieManager.buildAuthCookieString(GrpcContext.REFRESH_TOKEN_COOKIE_NAME, "refresh456")
 
             assertNotNull(cookie)
-            assertTrue(cookie.contains("${GrpcContext.REFRESH_TOKEN_COOKIE_NAME}=refresh456"))
-            assertTrue(cookie.contains("Max-Age=${JwtManager.REFRESH_TOKEN_EXPIRATION_MS}"))
-            assertTrue(cookie.contains("SameSite=Strict"))
-            assertTrue(cookie.contains("HttpOnly"))
-            assertTrue(cookie.contains("Secure"))
+            assertThat(cookie).contains("${GrpcContext.REFRESH_TOKEN_COOKIE_NAME}=refresh456")
+            assertThat(cookie).contains("Max-Age=${JwtManager.REFRESH_TOKEN_EXPIRATION_MS}")
+            assertThat(cookie).contains("SameSite=Strict")
+            assertThat(cookie).contains("HttpOnly")
+            assertThat(cookie).contains("Secure")
         }
 
         @Test
@@ -108,8 +106,8 @@ class CookieManagerTest {
             val cookie = cookieManager.buildAuthCookieString(GrpcContext.REFRESH_TOKEN_COOKIE_NAME, "")
 
             assertNotNull(cookie)
-            assertTrue(cookie.contains("${GrpcContext.REFRESH_TOKEN_COOKIE_NAME}="))
-            assertTrue(cookie.contains("Max-Age=0"))
+            assertThat(cookie).contains("${GrpcContext.REFRESH_TOKEN_COOKIE_NAME}=")
+            assertThat(cookie).contains("Max-Age=0")
         }
 
         @Test
@@ -125,7 +123,7 @@ class CookieManagerTest {
             val cookie = cookieManager.buildAuthCookieString(GrpcContext.REFRESH_TOKEN_COOKIE_NAME, "value")
 
             assertNotNull(cookie)
-            assertFalse(cookie.contains("Secure"))
+            assertThat(cookie).doesNotContain("Secure")
         }
 
         @Test
@@ -134,7 +132,7 @@ class CookieManagerTest {
             val cookie = cookieManager.buildAuthCookieString(GrpcContext.REFRESH_TOKEN_COOKIE_NAME, "value")
 
             assertNotNull(cookie)
-            assertTrue(cookie.contains("Secure"))
+            assertThat(cookie).contains("Secure")
         }
     }
 
@@ -144,12 +142,12 @@ class CookieManagerTest {
         fun `When creating a cookie string with default config, then the expected string is generated`() {
             val cookie = cookieManager.createCookieString(CookieConfig("session", "abc123", 3600))
 
-            assertTrue(cookie.contains("session=abc123"))
-            assertTrue(cookie.contains("Path=/"))
-            assertTrue(cookie.contains("Max-Age=3600"))
-            assertTrue(cookie.contains("SameSite=Lax"))
-            assertTrue(cookie.contains("HttpOnly"))
-            assertTrue(cookie.contains("Secure"))
+            assertThat(cookie).contains("session=abc123")
+            assertThat(cookie).contains("Path=/")
+            assertThat(cookie).contains("Max-Age=3600")
+            assertThat(cookie).contains("SameSite=Lax")
+            assertThat(cookie).contains("HttpOnly")
+            assertThat(cookie).contains("Secure")
         }
 
         @Test
@@ -157,7 +155,7 @@ class CookieManagerTest {
             val cookie =
                 cookieManager.createCookieString(CookieConfig("session", "abc123", 3600, domain = "example.com"))
 
-            assertTrue(cookie.contains("Domain=example.com"))
+            assertThat(cookie).contains("Domain=example.com")
         }
 
         @Test
@@ -173,8 +171,8 @@ class CookieManagerTest {
                     ),
                 )
 
-            assertFalse(cookie.contains("HttpOnly"))
-            assertFalse(cookie.contains("Secure"))
+            assertThat(cookie).doesNotContain("HttpOnly")
+            assertThat(cookie).doesNotContain("Secure")
         }
     }
 }

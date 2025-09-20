@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.auth
 import io.jsonwebtoken.JwtException
 import io.mockk.every
 import io.mockk.mockk
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -79,7 +80,7 @@ class AuthenticateTest {
             Authentication.AuthenticationStatus.AUTHENTICATION_STATUS_ACCESS_TOKEN_EXPIRED,
             GrpcContext.getAuthenticationStatusFromContext(),
         )
-        assertTrue(cookiesMap.isEmpty())
+        assertThat(cookiesMap).isEmpty()
     }
 
     @Test
@@ -134,6 +135,6 @@ class AuthenticateTest {
             Authentication.AuthenticationStatus.AUTHENTICATION_STATUS_UNAUTHENTICATED,
             GrpcContext.getAuthenticationStatusFromContext(),
         )
-        assertTrue(cookiesMap.isEmpty())
+        assertThat(cookiesMap).isEmpty()
     }
 }
