@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertNotNull
+import org.junit.jupiter.api.assertNull
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
@@ -147,9 +149,9 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
             val projects = repo.getAllProjects()
             assertThat(projects).hasSize(2)
             val firstProject = projects.find { it.id == project1Id }
-            assertThat(firstProject).isNotNull
+            assertNotNull(firstProject)
             val secondProject = projects.find { it.id == project2Id }
-            assertThat(secondProject).isNotNull
+            assertNotNull(secondProject)
         }
 
         @Test
@@ -164,11 +166,11 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
             val projects = repo.getAllProjects()
             assertThat(projects).hasSize(1)
             val firstProject = projects.find { it.id == project1Id }
-            assertThat(firstProject).isNotNull
+            assertNotNull(firstProject)
             val secondProject = projects.find { it.id == project2Id }
-            assertThat(secondProject).isNull()
+            assertNull(secondProject)
             val thirdProject = projects.find { it.id == project3Id }
-            assertThat(thirdProject).isNull()
+            assertNull(thirdProject)
         }
     }
 
@@ -346,10 +348,10 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
                 val activeUserProjects = repo.getUserProjects(userId)
                 assertThat(activeUserProjects).hasSize(2)
 
-                assertThat(activeUserProjects.find { it.id == project1Id }).isNotNull
-                assertThat(activeUserProjects.find { it.id == project2Id }).isNotNull
-                assertThat(activeUserProjects.find { it.id == project3Id }).isNull()
-                assertThat(activeUserProjects.find { it.id == project4Id }).isNull()
+                assertNotNull(activeUserProjects.find { it.id == project1Id })
+                assertNotNull(activeUserProjects.find { it.id == project2Id })
+                assertNull(activeUserProjects.find { it.id == project3Id })
+                assertNull(activeUserProjects.find { it.id == project4Id })
             }
 
         @Test
@@ -385,10 +387,10 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
                 val archivedUserProjects = repo.getUserProjects(userId, setOf(ProjectStatus.PROJECT_STATUS_ARCHIVED))
                 assertThat(archivedUserProjects).hasSize(1)
 
-                assertThat(archivedUserProjects.find { it.id == project1Id }).isNull()
-                assertThat(archivedUserProjects.find { it.id == project2Id }).isNull()
-                assertThat(archivedUserProjects.find { it.id == project3Id }).isNotNull
-                assertThat(archivedUserProjects.find { it.id == project4Id }).isNull()
+                assertNull(archivedUserProjects.find { it.id == project1Id })
+                assertNull(archivedUserProjects.find { it.id == project2Id })
+                assertNotNull(archivedUserProjects.find { it.id == project3Id })
+                assertNull(archivedUserProjects.find { it.id == project4Id })
             }
 
         @Test
@@ -424,10 +426,10 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
                 val deletedUserProjects = repo.getUserProjects(userId, setOf(ProjectStatus.PROJECT_STATUS_DELETED))
                 assertThat(deletedUserProjects).hasSize(1)
 
-                assertThat(deletedUserProjects.find { it.id == project1Id }).isNull()
-                assertThat(deletedUserProjects.find { it.id == project2Id }).isNull()
-                assertThat(deletedUserProjects.find { it.id == project3Id }).isNotNull
-                assertThat(deletedUserProjects.find { it.id == project4Id }).isNull()
+                assertNull(deletedUserProjects.find { it.id == project1Id })
+                assertNull(deletedUserProjects.find { it.id == project2Id })
+                assertNotNull(deletedUserProjects.find { it.id == project3Id })
+                assertNull(deletedUserProjects.find { it.id == project4Id })
             }
 
         @Test
@@ -445,8 +447,8 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
             val activeUserProjects = repo.getUserProjects(userId, setOf(ProjectStatus.PROJECT_STATUS_ACTIVE))
             assertThat(activeUserProjects).hasSize(0)
 
-            assertThat(activeUserProjects.find { it.id == project1Id }).isNull()
-            assertThat(activeUserProjects.find { it.id == project2Id }).isNull()
+            assertNull(activeUserProjects.find { it.id == project1Id })
+            assertNull(activeUserProjects.find { it.id == project2Id })
         }
 
         @Test

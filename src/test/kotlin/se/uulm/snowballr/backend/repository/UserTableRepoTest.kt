@@ -11,6 +11,8 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.assertNotNull
+import org.junit.jupiter.api.assertNull
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
@@ -139,9 +141,9 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
             val users = repo.getAllUsers()
             assertThat(users).hasSize(2)
             val firstUser = users.find { it.id == userId1 }
-            assertThat(firstUser).isNotNull
+            assertNotNull(firstUser)
             val secondUser = users.find { it.id == userId2 }
-            assertThat(secondUser).isNotNull
+            assertNotNull(secondUser)
         }
 
         @Test
@@ -152,9 +154,9 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
             val users = repo.getAllUsers()
             assertThat(users).hasSize(1)
             val firstUser = users.find { it.id == userId1 }
-            assertThat(firstUser).isNotNull
+            assertNotNull(firstUser)
             val secondUser = users.find { it.id == userId2 }
-            assertThat(secondUser).isNull()
+            assertNull(secondUser)
         }
     }
 
