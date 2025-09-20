@@ -13,7 +13,6 @@ import se.uulm.snowballr.backend.utils.GrpcEnumSourceTest
 import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.UserOuterClass.UserRole
-import java.util.UUID
 import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
 
 class CreateCriterionTest : MainServiceTest() {
@@ -122,7 +121,7 @@ class CreateCriterionTest : MainServiceTest() {
     @Test
     fun `When a criterion is correctly created, then no exception is thrown`() = runTest {
         val request = GrpcCriterion.Create.getDefaultInstance()
-        val user = DataBuilder.createExampleUser(id = UUID.randomUUID())
+        val user = DataBuilder.createExampleUser()
         val criterion = DataBuilder.createExampleProjectCriterion()
 
         mockCurrentUser(user)
