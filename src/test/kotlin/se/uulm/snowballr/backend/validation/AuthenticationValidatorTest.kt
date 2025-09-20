@@ -157,7 +157,7 @@ class AuthenticationValidatorTest {
             EitherAssert.assertThat(result).isLeft()
             val issues = (result as Either.Left).value
 
-            assertEquals(5, issues.size)
+            assertThat(issues).hasSize(5)
             assertThat(issues).contains(InvalidPassword("", InvalidPassword.Reason.TOO_SHORT))
             assertThat(issues).contains(InvalidPassword("", InvalidPassword.Reason.NOT_ENOUGH_LOWERCASE_CHARS))
             assertThat(issues).contains(InvalidPassword("", InvalidPassword.Reason.NOT_ENOUGH_UPPERCASE_CHARS))

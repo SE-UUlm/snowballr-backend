@@ -384,7 +384,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
 
             val matchingUsers = repo.getUsersMatchingSearchQuery("john", emptySet())
 
-            assertEquals(0, matchingUsers.size)
+            assertThat(matchingUsers).hasSize(0)
         }
 
         @Test
@@ -393,7 +393,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
 
             val matchingUsers = repo.getUsersMatchingSearchQuery("nonexistent", emptySet())
 
-            assertEquals(0, matchingUsers.size)
+            assertThat(matchingUsers).hasSize(0)
         }
 
         @Test
@@ -405,7 +405,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
 
                 val matchingUsers = repo.getUsersMatchingSearchQuery("john", emptySet())
 
-                assertEquals(10, matchingUsers.size)
+                assertThat(matchingUsers).hasSize(10)
             }
 
         @Test
@@ -415,7 +415,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
 
                 val matchingUsers = repo.getUsersMatchingSearchQuery("john", setOf(userId))
 
-                assertEquals(0, matchingUsers.size)
+                assertThat(matchingUsers).hasSize(0)
             }
     }
 }

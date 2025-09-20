@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.auth
 
 import io.mockk.every
 import io.mockk.mockk
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -44,7 +45,7 @@ class CookieManagerTest {
         fun `When parsing a single cookie header, then the cookie is parsed correctly`() {
             val result = cookieManager.parseCookies("session=abc123")
 
-            assertEquals(1, result.size)
+            assertThat(result).hasSize(1)
             assertEquals("abc123", result["session"])
         }
 
@@ -52,7 +53,7 @@ class CookieManagerTest {
         fun `When parsing multiple cookies with spaces, then all cookies are parsed correctly`() {
             val result = cookieManager.parseCookies("key1=val1; key2=val2; key3=val3")
 
-            assertEquals(3, result.size)
+            assertThat(result).hasSize(3)
             assertEquals("val1", result["key1"])
             assertEquals("val2", result["key2"])
             assertEquals("val3", result["key3"])
@@ -62,7 +63,7 @@ class CookieManagerTest {
         fun `When parsing cookies with duplicate keys, then the last value is taken`() {
             val result = cookieManager.parseCookies("token=abc; token=xyz")
 
-            assertEquals(1, result.size)
+            assertThat(result).hasSize(1)
             assertEquals("xyz", result["token"])
         }
     }
