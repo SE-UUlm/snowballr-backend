@@ -58,7 +58,7 @@ interface IProjectService {
     /**
      * Service implementation of [SnowballRService.getProjectMembers].
      */
-    suspend fun getProjectMembers(request: Base.Id): GrpcProject.Member.List
+    suspend fun getProjectMembers(request: Base.Id): GrpcProjectMember.List
 }
 
 /**
