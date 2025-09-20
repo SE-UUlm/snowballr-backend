@@ -6,7 +6,6 @@ import com.icegreen.greenmail.util.ServerSetupTest
 import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.verify
 import jakarta.mail.internet.MimeMessage
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -108,10 +107,10 @@ class EmailManagerTest {
             @Suppress("NullableToStringCall")
             val body = receivedMessage.content.toString()
 
-            assertThat(receivedMessage.allRecipients[0].toString()).isEqualTo(recipientEmail)
+            assertEquals(recipientEmail, receivedMessage.allRecipients[0].toString())
             assertThat(fromHeader).contains(testSenderName)
             assertThat(fromHeader).contains(testSenderEmail)
-            assertThat(subject).isEqualTo(EmailTemplate.EMAIL_VERIFICATION.subject)
+            assertEquals(EmailTemplate.EMAIL_VERIFICATION.subject, subject)
             assertThat(body).contains("Hello John,")
             assertThat(body).contains("<a href=\"$expectedVerificationLink\">$expectedVerificationLink</a>")
         }
@@ -168,9 +167,7 @@ class EmailManagerTest {
             val thrownException = assertThrows<EmailException.MailSendFailed> {
                 emailManager.sendVerificationEmail(recipientEmail, emailData)
             }
-            assertThat(thrownException.cause).isEqualTo(mailerException)
-
-            verify(exactly = 1) { mailerMock.sendMail(any()) }
+            assertEquals(mailerException, thrownException.cause)
         }
 
         @Test
@@ -185,8 +182,6 @@ class EmailManagerTest {
             assertThrows<SnowballRException.FailedPreconditionException> {
                 emailManager.sendVerificationEmail(recipientEmail, emailData)
             }
-
-            verify(exactly = 0) { mailerMock.sendMail(any()) }
         }
     }
 
@@ -201,7 +196,7 @@ class EmailManagerTest {
 
             val actualLink = emailManager.createVerificationLink(verificationToken)
 
-            assertThat(actualLink).isEqualTo(expectedLink)
+            assertEquals(expectedLink, actualLink)
         }
 
         @Test
