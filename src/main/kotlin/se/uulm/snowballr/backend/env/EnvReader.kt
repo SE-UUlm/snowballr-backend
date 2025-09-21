@@ -64,7 +64,10 @@ class EnvReader(
         val port = envService.getRequiredOrDefault(PORT, defaults.port?.toString()).toInt()
         val host = envService.getRequiredOrDefault(DATABASE_HOST, defaults.databaseHost)
         val logLevel = envService.getOrDefault(LOG_LEVEL, defaults.logLevel)
-        val frontendBaseUrl = envService.getRequiredOrDefault(FRONTEND_BASE_URL, defaults.frontendBaseUrl)
+        val frontendBaseUrl = envService.getRequiredOrDefault(
+            FRONTEND_BASE_URL,
+            defaults.frontendBaseUrl,
+        ).trim().trimEnd('/')
         val smtpTransportLoggingOnlyEnabled =
             envService.getBooleanOrDefault(
                 SMTP_TRANSPORT_LOGGING_ONLY_ENABLED,
