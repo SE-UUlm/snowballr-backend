@@ -93,6 +93,9 @@ class ProjectService(
 
         val project = repo.createProject(request, currentUser.id, userSettings)
 
+        projectMemberRepo.addUserToProject(currentUser.id, project.id)
+        projectMemberRepo.promoteProjectMemberToAdmin(project.id, currentUser.id)
+
         for (criterion in userDefaultCriteria) {
             val criterionRequest = GrpcCriterion.Create
                 .newBuilder()

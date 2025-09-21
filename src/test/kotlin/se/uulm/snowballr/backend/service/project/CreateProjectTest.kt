@@ -2,11 +2,13 @@ package se.uulm.snowballr.backend.service.project
 
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import se.uulm.snowballr.backend.DataBuilder
+import se.uulm.snowballr.backend.model.dto.ProjectMember
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.UserOuterClass.UserRole
 import java.util.UUID
@@ -26,6 +28,10 @@ class CreateProjectTest : MainServiceTest() {
         coEvery { userRepoMock.getUserSettings(user.id) } returns Result.success(userSettings)
         coEvery { criterionRepoMock.getCriteriaByIds(emptyList()) } returns emptyList()
         coEvery { projectRepoMock.createProject(any(), any(), userSettings) } returns project
+        coEvery { projectMemberRepoMock.addUserToProject(user.id, project.id) } returns
+            mockk<ProjectMember>()
+        coEvery { projectMemberRepoMock.promoteProjectMemberToAdmin(project.id, user.id) } returns
+            mockk<ProjectMember>()
 
         assertDoesNotThrow { mainService.createProject(getExampleRequest()) }
         coVerify(exactly = 0) { criterionRepoMock.createCriterion(any(), any()) }
@@ -45,6 +51,10 @@ class CreateProjectTest : MainServiceTest() {
             coEvery { criterionRepoMock.getCriteriaByIds(capture(criteriaIdsSlot)) } returns listOf(criterion)
             coEvery { projectRepoMock.createProject(any(), user.id, userSettings) } returns project
             coEvery { criterionRepoMock.createCriterion(any(), user.id) } returns criterion
+            coEvery { projectMemberRepoMock.addUserToProject(user.id, project.id) } returns
+                mockk<ProjectMember>()
+            coEvery { projectMemberRepoMock.promoteProjectMemberToAdmin(project.id, user.id) } returns
+                mockk<ProjectMember>()
 
             assertDoesNotThrow { mainService.createProject(getExampleRequest()) }
             assertEquals(listOf(criterion.id), criteriaIdsSlot.captured)
