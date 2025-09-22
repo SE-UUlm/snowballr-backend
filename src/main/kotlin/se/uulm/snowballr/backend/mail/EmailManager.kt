@@ -5,7 +5,7 @@ import org.simplejavamail.MailException
 import org.simplejavamail.api.mailer.Mailer
 import org.simplejavamail.email.EmailBuilder
 import se.uulm.snowballr.backend.env.EnvReader
-import se.uulm.snowballr.backend.model.SnowballRException
+import se.uulm.snowballr.backend.model.SnowballRException.EmailException.MailSendFailed
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.email.EmailTemplate
 
@@ -67,10 +67,24 @@ class EmailManager(
     private val mailer: Mailer,
     private val emailTemplateManager: EmailTemplateManager,
 ) : IEmailManager {
+    /**
+     * Sends a verification email to the specified recipient.
+     *
+     * @param to The recipient's email address.
+     * @param data The email verification data model.
+     * @throws MailSendFailed if the email could not be sent.
+     */
     override fun sendVerificationEmail(to: String, data: EmailData.EmailVerification) {
         sendEmail(to, EmailTemplate.EMAIL_VERIFICATION, data)
     }
 
+    /**
+     * Sends an 'accept project invitation' email to the specified recipient.
+     *
+     * @param to The recipient's email address.
+     * @param data The accept project invitation data model.
+     * @throws MailSendFailed if the email could not be sent.
+     */
     override fun sendAcceptProjectInvitationEmail(to: String, data: EmailData.AcceptProjectInvitation) {
         sendEmail(to, EmailTemplate.ACCEPT_PROJECT_INVITATION, data)
     }
@@ -99,7 +113,7 @@ class EmailManager(
             logger.info { "Successfully queued email for delivery to $to with template '${template.name}'" }
         } catch (e: MailException) {
             logger.error(e) { "Mailer failed to send email to $to with template '${template.name}'" }
-            throw SnowballRException.EmailException.MailSendFailed(to, e)
+            throw MailSendFailed(to, e)
         }
     }
 
