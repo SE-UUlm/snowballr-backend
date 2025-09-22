@@ -39,7 +39,9 @@ class AuthenticateTest {
     }
 
     @Test
-    fun `When access token is invalid but refresh token is valid, then token is refreshed and authentication succeeds`() {
+    fun `When access token is invalid but refresh token is valid, then token is refreshed and authentication succeeds`(
+        cookiesMap: MutableMap<String, String?>,
+    ) {
         val parsedRefreshClaims = ParsedJwtAuthClaims(UUID.randomUUID(), Date(), Date())
         every { jwtManagerMock.parseAuthToken("invalidAccessToken") } throws JwtException("Invalid access token")
         every { jwtManagerMock.parseAuthToken("validRefreshToken") } returns parsedRefreshClaims
@@ -56,12 +58,14 @@ class AuthenticateTest {
         )
         assertEquals(
             "newAccessToken",
-            GrpcContext.COOKIES_TO_SET_CONTEXT_KEY.get()[GrpcContext.ACCESS_TOKEN_COOKIE_NAME],
+            cookiesMap[GrpcContext.ACCESS_TOKEN_COOKIE_NAME],
         )
     }
 
     @Test
-    fun `When access token is invalid, refresh token is valid, and skipRefresh is true, then auth succeeds without refresh`() {
+    fun `When access token is invalid, refresh token is valid, and skipRefresh is true, then auth succeeds without refresh`(
+        cookiesMap: MutableMap<String, String?>,
+    ) {
         val parsedRefreshClaims = ParsedJwtAuthClaims(UUID.randomUUID(), Date(), Date())
         every { jwtManagerMock.parseAuthToken("invalidAccessToken") } throws JwtException("Invalid access token")
         every { jwtManagerMock.parseAuthToken("validRefreshToken") } returns parsedRefreshClaims
@@ -75,11 +79,13 @@ class AuthenticateTest {
             Authentication.AuthenticationStatus.AUTHENTICATION_STATUS_ACCESS_TOKEN_EXPIRED,
             GrpcContext.getAuthenticationStatusFromContext(),
         )
-        assertTrue(GrpcContext.COOKIES_TO_SET_CONTEXT_KEY.get().isEmpty())
+        assertTrue(cookiesMap.isEmpty())
     }
 
     @Test
-    fun `When both access and refresh tokens are invalid, then authentication fails and cookies are cleared`() {
+    fun `When both access and refresh tokens are invalid, then authentication fails and cookies are cleared`(
+        cookiesMap: MutableMap<String, String?>,
+    ) {
         every { jwtManagerMock.parseAuthToken("invalidAccessToken") } throws JwtException("Invalid access token")
         every { jwtManagerMock.parseAuthToken("invalidRefreshToken") } throws JwtException("Invalid refresh token")
 
@@ -91,12 +97,14 @@ class AuthenticateTest {
             Authentication.AuthenticationStatus.AUTHENTICATION_STATUS_UNAUTHENTICATED,
             GrpcContext.getAuthenticationStatusFromContext(),
         )
-        assertNull(GrpcContext.COOKIES_TO_SET_CONTEXT_KEY.get()[GrpcContext.ACCESS_TOKEN_COOKIE_NAME])
-        assertNull(GrpcContext.COOKIES_TO_SET_CONTEXT_KEY.get()[GrpcContext.REFRESH_TOKEN_COOKIE_NAME])
+        assertNull(cookiesMap[GrpcContext.ACCESS_TOKEN_COOKIE_NAME])
+        assertNull(cookiesMap[GrpcContext.REFRESH_TOKEN_COOKIE_NAME])
     }
 
     @Test
-    fun `When access token is invalid and refresh token is missing, then authentication fails`() {
+    fun `When access token is invalid and refresh token is missing, then authentication fails`(
+        cookiesMap: MutableMap<String, String?>,
+    ) {
         every { jwtManagerMock.parseAuthToken("invalidAccessToken") } throws JwtException("Invalid access token")
 
         val authResult = authenticationManager.authenticate("invalidAccessToken", null, false)
@@ -107,12 +115,14 @@ class AuthenticateTest {
             Authentication.AuthenticationStatus.AUTHENTICATION_STATUS_UNAUTHENTICATED,
             GrpcContext.getAuthenticationStatusFromContext(),
         )
-        assertNull(GrpcContext.COOKIES_TO_SET_CONTEXT_KEY.get()[GrpcContext.ACCESS_TOKEN_COOKIE_NAME])
-        assertNull(GrpcContext.COOKIES_TO_SET_CONTEXT_KEY.get()[GrpcContext.REFRESH_TOKEN_COOKIE_NAME])
+        assertNull(cookiesMap[GrpcContext.ACCESS_TOKEN_COOKIE_NAME])
+        assertNull(cookiesMap[GrpcContext.REFRESH_TOKEN_COOKIE_NAME])
     }
 
     @Test
-    fun `When both tokens are invalid and skipRefresh is true, then authentication fails and cookies are not cleared`() {
+    fun `When both tokens are invalid and skipRefresh is true, then authentication fails and cookies are not cleared`(
+        cookiesMap: MutableMap<String, String?>,
+    ) {
         every { jwtManagerMock.parseAuthToken("invalidAccessToken") } throws JwtException("Invalid access token")
         every { jwtManagerMock.parseAuthToken("invalidRefreshToken") } throws JwtException("Invalid refresh token")
 
@@ -124,6 +134,6 @@ class AuthenticateTest {
             Authentication.AuthenticationStatus.AUTHENTICATION_STATUS_UNAUTHENTICATED,
             GrpcContext.getAuthenticationStatusFromContext(),
         )
-        assertTrue(GrpcContext.COOKIES_TO_SET_CONTEXT_KEY.get().isEmpty())
+        assertTrue(cookiesMap.isEmpty())
     }
 }

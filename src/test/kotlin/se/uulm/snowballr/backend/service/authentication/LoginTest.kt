@@ -109,7 +109,9 @@ class LoginTest : MainServiceTest() {
     }
 
     @Test
-    fun `When an active user provides valid credentials, then the user is logged in successfully`() = runTest {
+    fun `When an active user provides valid credentials, then the user is logged in successfully`(
+        cookiesMap: MutableMap<String, String?>,
+    ) = runTest {
         val testUser = DataBuilder.createExampleUser(status = UserStatus.USER_STATUS_ACTIVE)
         val userPassword = "AAbb__00"
         val passwordHash = PasswordUtils.hashPassword(userPassword)
@@ -126,13 +128,7 @@ class LoginTest : MainServiceTest() {
 
         assertDoesNotThrow { mainService.login(request) }
 
-        assertEquals(
-            tokens.accessToken,
-            GrpcContext.COOKIES_TO_SET_CONTEXT_KEY.get()[GrpcContext.ACCESS_TOKEN_COOKIE_NAME],
-        )
-        assertEquals(
-            tokens.refreshToken,
-            GrpcContext.COOKIES_TO_SET_CONTEXT_KEY.get()[GrpcContext.REFRESH_TOKEN_COOKIE_NAME],
-        )
+        assertEquals(tokens.accessToken, cookiesMap[GrpcContext.ACCESS_TOKEN_COOKIE_NAME])
+        assertEquals(tokens.refreshToken, cookiesMap[GrpcContext.REFRESH_TOKEN_COOKIE_NAME])
     }
 }
