@@ -11,6 +11,7 @@ import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.UserOuterClass.UserRole
 import java.util.UUID
 import kotlin.test.assertEquals
+import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
 import snowballr.ProjectOuterClass.Project as GrpcProject
 
 class CreateProjectTest : MainServiceTest() {
@@ -25,7 +26,7 @@ class CreateProjectTest : MainServiceTest() {
         mockCurrentUser(user)
         coEvery { userRepoMock.getUserSettings(user.id) } returns Result.success(userSettings)
         coEvery { criterionRepoMock.getCriteriaByIds(emptyList()) } returns emptyList()
-        coEvery { projectRepoMock.createProject(any(), any(), userSettings) } returns project
+        coEvery { projectRepoMock.createProject(getExampleRequest(), user.id, userSettings) } returns project
 
         assertDoesNotThrow { mainService.createProject(getExampleRequest()) }
         coVerify(exactly = 0) { criterionRepoMock.createCriterion(any(), any()) }
@@ -40,11 +41,19 @@ class CreateProjectTest : MainServiceTest() {
             val userSettings = DataBuilder.createExampleUserSettings(criteriaIds = listOf(criterion.id))
             val criteriaIdsSlot = slot<List<UUID>>()
 
+            val criterionCreateRequest = GrpcCriterion.Create.newBuilder()
+                .setProjectId(project.id.toString())
+                .setTag(criterion.tag)
+                .setName(criterion.name)
+                .setDescription(criterion.description)
+                .setCategory(criterion.category)
+                .build()
+
             mockCurrentUser(user)
             coEvery { userRepoMock.getUserSettings(user.id) } returns Result.success(userSettings)
             coEvery { criterionRepoMock.getCriteriaByIds(capture(criteriaIdsSlot)) } returns listOf(criterion)
-            coEvery { projectRepoMock.createProject(any(), user.id, userSettings) } returns project
-            coEvery { criterionRepoMock.createCriterion(any(), user.id) } returns criterion
+            coEvery { projectRepoMock.createProject(getExampleRequest(), user.id, userSettings) } returns project
+            coEvery { criterionRepoMock.createCriterion(criterionCreateRequest, user.id) } returns criterion
 
             assertDoesNotThrow { mainService.createProject(getExampleRequest()) }
             assertEquals(listOf(criterion.id), criteriaIdsSlot.captured)

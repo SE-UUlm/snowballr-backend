@@ -18,8 +18,10 @@ import snowballr.UserOuterClass.User as GrpcUser
 class VerifyEmailTest : MainServiceTest() {
     @Test
     fun `When the verification token is not found, then a VerificationTokenNotFoundException is thrown`() = runTest {
-        val request = Authentication.VerifyEmailRequest.newBuilder().setToken("non-existent-token").build()
-        coEvery { verificationTokenRepoMock.getVerificationTokenByValue(any()) } returns null
+        val token = "non-existent-token"
+        val request = Authentication.VerifyEmailRequest.newBuilder().setToken(token).build()
+
+        coEvery { verificationTokenRepoMock.getVerificationTokenByValue(token) } returns null
 
         assertThrows<VerificationTokenNotFoundException> { mainService.verifyEmail(request) }
     }
@@ -42,7 +44,7 @@ class VerifyEmailTest : MainServiceTest() {
         val token = DataBuilder.createExampleVerificationToken()
         val request = Authentication.VerifyEmailRequest.newBuilder().setToken(token.token).build()
 
-        coEvery { verificationTokenRepoMock.getVerificationTokenByValue(any()) } returns token
+        coEvery { verificationTokenRepoMock.getVerificationTokenByValue(token.token) } returns token
         coEvery { userRepoMock.getUserById(token.userId) } returns Result.failure(TestSpecificException())
 
         assertThrows<TestSpecificException> { mainService.verifyEmail(request) }

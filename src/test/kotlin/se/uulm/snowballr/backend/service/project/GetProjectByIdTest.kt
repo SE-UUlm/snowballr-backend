@@ -27,7 +27,7 @@ class GetProjectByIdTest : MainServiceTest() {
         val noAccessUser = DataBuilder.createExampleUser()
 
         mockCurrentUser(noAccessUser)
-        coEvery { projectMemberRepoMock.getProjectMembers(any()) } returns emptyList()
+        coEvery { projectMemberRepoMock.getProjectMembers(projectId) } returns emptyList()
 
         assertThrows<UnauthorizedException> { mainService.getProjectById(request) }
     }
@@ -65,8 +65,8 @@ class GetProjectByIdTest : MainServiceTest() {
         val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
 
         mockCurrentUser(adminUser)
-        coEvery { projectMemberRepoMock.getProjectMembers(any()) } returns emptyList()
-        coEvery { projectRepoMock.getProjectById(any()) } returns Result.failure(TestSpecificException())
+        coEvery { projectMemberRepoMock.getProjectMembers(projectId) } returns emptyList()
+        coEvery { projectRepoMock.getProjectById(projectId) } returns Result.failure(TestSpecificException())
 
         assertThrows<TestSpecificException> { mainService.getProjectById(request) }
     }

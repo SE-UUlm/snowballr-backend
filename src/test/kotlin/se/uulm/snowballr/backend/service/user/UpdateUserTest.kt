@@ -17,11 +17,12 @@ import snowballr.UserOuterClass.User as GrpcUser
 
 class UpdateUserTest : MainServiceTest() {
     private val requestedUserId = UUID.randomUUID()
+    private val requestEmail = "newemail@example.com"
 
     private fun getExampleRequest(): GrpcUser.Update {
         val user = GrpcUser.newBuilder()
             .setId(requestedUserId.toString())
-            .setEmail("newemail@example.com")
+            .setEmail(requestEmail)
             .setRole(UserRole.USER_ROLE_ADMIN)
             .build()
 
@@ -76,11 +77,11 @@ class UpdateUserTest : MainServiceTest() {
     @Test
     fun `When updating email to existent email, then a DuplicateEntityException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-        val requestedUser = DataBuilder.createExampleUser(id = requestedUserId)
+        val requestedUser = DataBuilder.createExampleUser(id = requestedUserId, email = requestEmail)
 
         mockCurrentUser(currentUser)
         coEvery { userRepoMock.getUserById(requestedUserId) } returns Result.success(requestedUser)
-        coEvery { userRepoMock.doesUserExistByEmail(any()) } returns true
+        coEvery { userRepoMock.doesUserExistByEmail(requestedUser.email) } returns true
 
         assertThrows<DuplicateEntityException> { mainService.updateUser(getExampleRequest()) }
     }
@@ -127,12 +128,12 @@ class UpdateUserTest : MainServiceTest() {
     @Test
     fun `When admin updates all fields of another user, then it succeeds`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-        val requestedUser = DataBuilder.createExampleUser(id = requestedUserId)
+        val requestedUser = DataBuilder.createExampleUser(id = requestedUserId, email = requestEmail)
 
         mockCurrentUser(currentUser)
         coEvery { userRepoMock.getUserById(requestedUserId) } returns Result.success(requestedUser)
-        coEvery { userRepoMock.doesUserExistByEmail(any()) } returns false
-        coEvery { userRepoMock.updateUser(any()) } returns requestedUser
+        coEvery { userRepoMock.doesUserExistByEmail(requestedUser.email) } returns false
+        coEvery { userRepoMock.updateUser(getExampleRequest()) } returns requestedUser
 
         assertDoesNotThrow { mainService.updateUser(getExampleRequest()) }
     }
