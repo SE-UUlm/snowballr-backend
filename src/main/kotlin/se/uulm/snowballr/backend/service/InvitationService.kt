@@ -76,8 +76,8 @@ class InvitationService(
 
             val excludedUsersFromSearch = mutableSetOf(currentUser.id)
             try {
-                val projectMembers =
-                    projectMemberRepo.getProjectMembers(parseUUID(request.projectId, EntityType.PROJECT))
+                val projectId = parseUUID(request.projectId, EntityType.PROJECT)
+                val projectMembers = projectMemberRepo.getProjectMembers(projectId)
                 excludedUsersFromSearch += projectMembers.map { it.userId }
             } catch (_: InvalidIdException.UUID) {
                 Logger.warn { "Invalid project ID in invite candidates request: ${request.projectId}" }
