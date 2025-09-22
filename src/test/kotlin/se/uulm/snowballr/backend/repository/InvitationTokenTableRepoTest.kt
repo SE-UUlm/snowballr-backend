@@ -53,9 +53,12 @@ class InvitationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, ProjectTa
         }
 
         @Test
-        fun `When a token does not exist, then the call returns a failed result`() = runTest {
-            assertResultFailure<InvitationTokenNotFoundException>(repo.getInvitationTokenByValue("non-existent-token"))
-        }
+        fun `When a token does not exist, then a failed result with an InvitationTokenNotFoundException is returned`() =
+            runTest {
+                assertResultFailure<InvitationTokenNotFoundException>(
+                    repo.getInvitationTokenByValue("non-existent-token"),
+                )
+            }
     }
 
     @Nested
@@ -72,44 +75,47 @@ class InvitationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, ProjectTa
         }
 
         @Test
-        fun `When a token exists for the email but not the project, then the call returns a failed result`() = runTest {
-            val projectId = insertProjectAndGetId(createdBy = testUserId)
+        fun `When a token exists for the email but not the project, then a failed result with an InvitationTokenNotFoundException is returned`() =
+            runTest {
+                val projectId = insertProjectAndGetId(createdBy = testUserId)
 
-            insertTestToken(testEmail, projectId)
-            val anotherProjectId = UUID.randomUUID()
+                insertTestToken(testEmail, projectId)
+                val anotherProjectId = UUID.randomUUID()
 
-            assertResultFailure<InvitationTokenNotFoundException>(
-                repo.getInvitationTokenByEmailAndProjectId(
-                    testEmail,
-                    anotherProjectId,
-                ),
-            )
-        }
-
-        @Test
-        fun `When a token exists for the project but not the email, then the call returns a failed result`() = runTest {
-            val projectId = insertProjectAndGetId(createdBy = testUserId)
-
-            insertTestToken(testEmail, projectId)
-            val anotherEmail = "another.email@example.com"
-
-            assertResultFailure<InvitationTokenNotFoundException>(
-                repo.getInvitationTokenByEmailAndProjectId(
-                    anotherEmail,
-                    projectId,
-                ),
-            )
-        }
+                assertResultFailure<InvitationTokenNotFoundException>(
+                    repo.getInvitationTokenByEmailAndProjectId(
+                        testEmail,
+                        anotherProjectId,
+                    ),
+                )
+            }
 
         @Test
-        fun `When no token exists for the email and project, then the call returns a failed result`() = runTest {
-            assertResultFailure<InvitationTokenNotFoundException>(
-                repo.getInvitationTokenByEmailAndProjectId(
-                    "no.such.email@example.com",
-                    UUID.randomUUID(),
-                ),
-            )
-        }
+        fun `When a token exists for the project but not the email, then a failed result with an InvitationTokenNotFoundException is returned`() =
+            runTest {
+                val projectId = insertProjectAndGetId(createdBy = testUserId)
+
+                insertTestToken(testEmail, projectId)
+                val anotherEmail = "another.email@example.com"
+
+                assertResultFailure<InvitationTokenNotFoundException>(
+                    repo.getInvitationTokenByEmailAndProjectId(
+                        anotherEmail,
+                        projectId,
+                    ),
+                )
+            }
+
+        @Test
+        fun `When no token exists for the email and project, then a failed result with an InvitationTokenNotFoundException is returned`() =
+            runTest {
+                assertResultFailure<InvitationTokenNotFoundException>(
+                    repo.getInvitationTokenByEmailAndProjectId(
+                        "no.such.email@example.com",
+                        UUID.randomUUID(),
+                    ),
+                )
+            }
     }
 
     @Nested

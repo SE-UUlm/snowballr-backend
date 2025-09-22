@@ -42,11 +42,12 @@ class VerificationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, Verific
         }
 
         @Test
-        fun `When a token does not exist, then the call returns a failed result`() = runTest {
-            assertResultFailure<VerificationTokenNotFoundException>(
-                repo.getVerificationTokenByValue("non-existent-token"),
-            )
-        }
+        fun `When a token does not exist, then a failed result with a VerificationTokenNotFoundException is returned`() =
+            runTest {
+                assertResultFailure<VerificationTokenNotFoundException>(
+                    repo.getVerificationTokenByValue("non-existent-token"),
+                )
+            }
     }
 
     @Nested
