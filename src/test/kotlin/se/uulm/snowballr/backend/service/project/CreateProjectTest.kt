@@ -7,7 +7,10 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import se.uulm.snowballr.backend.DataBuilder
+import se.uulm.snowballr.backend.model.dto.Project
+import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.service.MainServiceTest
+import snowballr.ProjectOuterClass.MemberRole
 import snowballr.UserOuterClass.UserRole
 import java.util.UUID
 import kotlin.test.assertEquals
@@ -16,6 +19,14 @@ import snowballr.ProjectOuterClass.Project as GrpcProject
 
 class CreateProjectTest : MainServiceTest() {
     private fun getExampleRequest() = GrpcProject.Create.getDefaultInstance()
+
+    private fun mockProjectAdminCreation(project: Project, user: User) {
+        val projectMember = DataBuilder.createExampleProjectMember(project.id, user.id, MemberRole.MEMBER_ROLE_DEFAULT)
+        val projectAdmin = DataBuilder.createExampleProjectMember(project.id, user.id, MemberRole.MEMBER_ROLE_ADMIN)
+
+        coEvery { projectMemberRepoMock.addUserToProject(user.id, project.id) } returns projectMember
+        coEvery { projectMemberRepoMock.promoteProjectMemberToAdmin(project.id, user.id) } returns projectAdmin
+    }
 
     @Test
     fun `When a project is correctly created, then no exception is thrown`() = runTest {
@@ -27,9 +38,13 @@ class CreateProjectTest : MainServiceTest() {
         coEvery { userRepoMock.getUserSettings(user.id) } returns Result.success(userSettings)
         coEvery { criterionRepoMock.getCriteriaByIds(emptyList()) } returns emptyList()
         coEvery { projectRepoMock.createProject(getExampleRequest(), user.id, userSettings) } returns project
+        mockProjectAdminCreation(project, user)
 
         assertDoesNotThrow { mainService.createProject(getExampleRequest()) }
-        coVerify(exactly = 0) { criterionRepoMock.createCriterion(any(), any()) }
+
+        coVerify(exactly = 0) { criterionRepoMock.createCriterion(any(), user.id) }
+        coVerify(exactly = 1) { projectMemberRepoMock.addUserToProject(user.id, project.id) }
+        coVerify(exactly = 1) { projectMemberRepoMock.promoteProjectMemberToAdmin(project.id, user.id) }
     }
 
     @Test
@@ -54,6 +69,7 @@ class CreateProjectTest : MainServiceTest() {
             coEvery { criterionRepoMock.getCriteriaByIds(capture(criteriaIdsSlot)) } returns listOf(criterion)
             coEvery { projectRepoMock.createProject(getExampleRequest(), user.id, userSettings) } returns project
             coEvery { criterionRepoMock.createCriterion(criterionCreateRequest, user.id) } returns criterion
+            mockProjectAdminCreation(project, user)
 
             assertDoesNotThrow { mainService.createProject(getExampleRequest()) }
             assertEquals(listOf(criterion.id), criteriaIdsSlot.captured)
