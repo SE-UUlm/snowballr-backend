@@ -86,7 +86,7 @@ class ReviewTableRepoTest : RepositoryTest(arrayOf(ReviewTable, ProjectTable, Pr
         }
 
         @Test
-        fun `When the project paper has no reviews and other reviews exist, then only the project paper reviews are returned`() =
+        fun `When the project paper has reviews and other reviews exist too, then only the project paper reviews are returned`() =
             runTest {
                 val projectId = insertProjectAndGetId(createdBy = testUserId)
                 val paperId1 = insertPaperAndGetId()
