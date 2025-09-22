@@ -16,7 +16,7 @@ import snowballr.UserOuterClass.UserRole
 import java.util.UUID
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class GetAllProjectPapersForProjectTest : MainServiceTest() {
+ class GetAllProjectPapersForProjectTest : MainServiceTest() {
     private val requestId = UUID.randomUUID()
 
     private fun getExampleRequest() = Base.Id.newBuilder().setId(requestId.toString()).build()
