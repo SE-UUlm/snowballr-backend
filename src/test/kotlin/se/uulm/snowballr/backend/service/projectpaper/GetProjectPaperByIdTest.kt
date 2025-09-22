@@ -21,9 +21,9 @@ import kotlin.reflect.KFunction
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class GetProjectPaperByIdTest : MainServiceTest() {
-    private val requestId = UUID.randomUUID()
+    private val projectPaperId = UUID.randomUUID()
 
-    private fun getExampleRequest() = Base.Id.newBuilder().setId(requestId.toString()).build()
+    private fun getExampleRequest() = Base.Id.newBuilder().setId(projectPaperId.toString()).build()
 
     fun failingFunctions(): Stream<Arguments?> = Stream.of(
         Arguments.of(projectPaperRepoMock::getProjectPaperById),
@@ -42,7 +42,7 @@ class GetProjectPaperByIdTest : MainServiceTest() {
         val project = DataBuilder.createExampleProject()
         val paper = DataBuilder.createExamplePaper()
         val projectPaper = DataBuilder.createExampleProjectPaper(
-            id = requestId,
+            id = projectPaperId,
             projectId = project.id,
             paperId = paper.id,
         )
@@ -112,7 +112,7 @@ class GetProjectPaperByIdTest : MainServiceTest() {
         val project = DataBuilder.createExampleProject()
         val paper = DataBuilder.createExamplePaper()
         val projectPaper = DataBuilder.createExampleProjectPaper(
-            id = requestId,
+            id = projectPaperId,
             projectId = project.id,
             paperId = paper.id,
         )

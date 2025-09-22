@@ -21,9 +21,9 @@ import kotlin.reflect.KFunction
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class GetAllReviewsForProjectPaperTest : MainServiceTest() {
-    private val requestId = UUID.randomUUID()
+    private val projectPaperId = UUID.randomUUID()
 
-    private fun getExampleRequest() = Base.Id.newBuilder().setId(requestId.toString()).build()
+    private fun getExampleRequest() = Base.Id.newBuilder().setId(projectPaperId.toString()).build()
 
     fun failingFunctions(): Stream<Arguments?> = Stream.of(
         Arguments.of(projectPaperRepoMock::getProjectPaperById),
@@ -40,7 +40,7 @@ class GetAllReviewsForProjectPaperTest : MainServiceTest() {
             },
         )
         val project = DataBuilder.createExampleProject()
-        val projectPaper = DataBuilder.createExampleProjectPaper(id = requestId, projectId = project.id)
+        val projectPaper = DataBuilder.createExampleProjectPaper(id = projectPaperId, projectId = project.id)
         val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
         val review = DataBuilder.createExampleReview(userId = currentUser.id)
         val selectedCriteriaIds = listOf<UUID>(UUID.randomUUID())
@@ -102,7 +102,7 @@ class GetAllReviewsForProjectPaperTest : MainServiceTest() {
         runTest {
             val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
             val project = DataBuilder.createExampleProject()
-            val projectPaper = DataBuilder.createExampleProjectPaper(id = requestId, projectId = project.id)
+            val projectPaper = DataBuilder.createExampleProjectPaper(id = projectPaperId, projectId = project.id)
 
             mockCurrentUser(currentUser)
             coEvery { projectPaperRepoMock.getProjectPaperById(projectPaper.id) } returns Result.success(projectPaper)

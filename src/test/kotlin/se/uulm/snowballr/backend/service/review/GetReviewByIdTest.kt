@@ -21,9 +21,9 @@ import kotlin.reflect.KFunction
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class GetReviewByIdTest : MainServiceTest() {
-    private val requestId = UUID.randomUUID()
+    private val reviewId = UUID.randomUUID()
 
-    private fun getExampleRequest() = Base.Id.newBuilder().setId(requestId.toString()).build()
+    private fun getExampleRequest() = Base.Id.newBuilder().setId(reviewId.toString()).build()
 
     fun failingFunctions(): Stream<Arguments?> = Stream.of(
         Arguments.of(reviewRepoMock::getReviewById),
@@ -40,7 +40,7 @@ class GetReviewByIdTest : MainServiceTest() {
                 UserRole.USER_ROLE_DEFAULT
             },
         )
-        val review = DataBuilder.createExampleReview(id = requestId, userId = currentUser.id)
+        val review = DataBuilder.createExampleReview(id = reviewId, userId = currentUser.id)
         val project = DataBuilder.createExampleProject()
         val projectPaper = DataBuilder.createExampleProjectPaper(id = review.projectPaperId, projectId = project.id)
         val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
@@ -106,7 +106,7 @@ class GetReviewByIdTest : MainServiceTest() {
     @Test
     fun `When a non project member retrieves the review, then an UnauthorizedException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-        val review = DataBuilder.createExampleReview(id = requestId, userId = currentUser.id)
+        val review = DataBuilder.createExampleReview(id = reviewId, userId = currentUser.id)
         val project = DataBuilder.createExampleProject()
         val projectPaper = DataBuilder.createExampleProjectPaper(id = review.projectPaperId, projectId = project.id)
 
