@@ -23,6 +23,7 @@ data class Env(
     data class Miscellaneous(
         val logLevel: String,
         val authBypassEnabled: Boolean,
+        // Guaranteed to not contain a trailing slash
         val frontendBaseUrl: String,
     )
 
