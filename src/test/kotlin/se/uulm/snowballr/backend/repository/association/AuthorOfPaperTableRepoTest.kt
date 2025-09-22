@@ -6,6 +6,7 @@ import org.jetbrains.exposed.sql.insertAndGetId
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import se.uulm.snowballr.backend.repository.AuthorTableRepo
+import se.uulm.snowballr.backend.repository.RepositoryHelper.insertAuthorAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertPaperAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryTest
 import se.uulm.snowballr.backend.table.AuthorTable
@@ -16,18 +17,6 @@ import java.util.UUID
 class AuthorOfPaperTableRepoTest : RepositoryTest(arrayOf(AuthorTable, PaperTable, AuthorOfPaperTable), false) {
     private val repo = AuthorOfPaperTableRepo(db)
     private val authorRepo = AuthorTableRepo(db)
-
-    private suspend fun insertAuthorAndGetId(
-        firstName: String = "FirstName",
-        lastName: String = "LastName",
-        orcid: String? = null,
-    ): UUID = db.query {
-        AuthorTable.insertAndGetId {
-            it[AuthorTable.firstName] = firstName
-            it[AuthorTable.lastName] = lastName
-            it[AuthorTable.orcid] = orcid
-        }.value
-    }
 
     private suspend fun addAuthorToPaper(authorId: UUID, paperId: UUID) = db.query {
         AuthorOfPaperTable.insertAndGetId {

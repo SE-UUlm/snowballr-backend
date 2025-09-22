@@ -289,7 +289,7 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
             runTest {
                 val (project, _) = setupProject()
                 val user = userRepo.getUserById(testUserId).getOrThrow()
-                val nonProjectMemberUserId = RepositoryHelper.createExampleUser("test-user@example.com")
+                val nonProjectMemberUserId = RepositoryHelper.insertUserAndGetId("test-user@example.com")
                 val nonProjectMemberUser = userRepo.getUserById(nonProjectMemberUserId).getOrThrow()
                 val normalMember = repo.getProjectMemberByComposedId(project.id, testUserId).getOrThrow()
                 val projectMembersWithUsers = repo.getProjectMembersWithUsers(project.id)

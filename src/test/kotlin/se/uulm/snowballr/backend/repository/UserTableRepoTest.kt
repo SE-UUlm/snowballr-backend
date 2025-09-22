@@ -3,7 +3,6 @@ package se.uulm.snowballr.backend.repository
 import com.google.protobuf.util.FieldMaskUtil
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
-import org.jetbrains.exposed.sql.insertAndGetId
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
@@ -19,6 +18,7 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.toGrpcUser
+import se.uulm.snowballr.backend.repository.RepositoryHelper.insertUserAndGetId
 import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.utils.assertResultFailure
 import se.uulm.snowballr.backend.utils.assertResultSuccess
@@ -35,25 +35,6 @@ import java.util.UUID
 class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
     private val repo = UserTableRepo(db)
 
-    @Suppress("LongParameterList")
-    private suspend fun insertTestUserAndGetId(
-        email: String = "test.user@example.com",
-        firstName: String = "Test",
-        lastName: String = "User",
-        passwordHash: String = "passwordHash",
-        role: UserRole = UserRole.USER_ROLE_DEFAULT,
-        status: UserStatus = UserStatus.USER_STATUS_ACTIVE,
-    ): UUID = db.query {
-        UserTable.insertAndGetId {
-            it[UserTable.email] = email
-            it[UserTable.firstName] = firstName
-            it[UserTable.lastName] = lastName
-            it[UserTable.passwordHash] = passwordHash
-            it[UserTable.role] = role
-            it[UserTable.status] = status
-        }.value
-    }
-
     companion object {
         @JvmStatic
         fun validFieldMasks(): List<Arguments> = listOf(
@@ -69,7 +50,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
     inner class GetUserById {
         @Test
         fun `When a user is found by their ID, then a successful result with the correct user is returned`() = runTest {
-            val userId = insertTestUserAndGetId()
+            val userId = insertUserAndGetId()
             val result = repo.getUserById(userId)
 
             val user = assertResultSuccess(result)
@@ -95,7 +76,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
         @Test
         fun `When a user is found by their email, then a successful result with the correct user is returned`() =
             runTest {
-                val userId = insertTestUserAndGetId()
+                val userId = insertUserAndGetId()
                 val result = repo.getUserByEmail("test.user@example.com")
 
                 val user = assertResultSuccess(result)
@@ -120,7 +101,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
     inner class DoesUserExistByEmail {
         @Test
         fun `When a user with the given email exists, then true is returned`() = runTest {
-            insertTestUserAndGetId()
+            insertUserAndGetId()
 
             assertTrue(repo.doesUserExistByEmail("test.user@example.com"))
         }
@@ -135,8 +116,8 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
     inner class GetAllUsers {
         @Test
         fun `When users are found, then all users are returned`() = runTest {
-            val userId1 = insertTestUserAndGetId(email = "test.user1@example.com", lastName = "User 2")
-            val userId2 = insertTestUserAndGetId(email = "test.user2@example.com", lastName = "User 1")
+            val userId1 = insertUserAndGetId(email = "test.user1@example.com", lastName = "User 2")
+            val userId2 = insertUserAndGetId(email = "test.user2@example.com", lastName = "User 1")
 
             val users = repo.getAllUsers()
             assertThat(users).hasSize(2)
@@ -148,8 +129,8 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
 
         @Test
         fun `When permanently deleted users exist, then only the existent users are returned`() = runTest {
-            val userId1 = insertTestUserAndGetId(email = "test.user1@example.com", lastName = "User 1")
-            val userId2 = insertTestUserAndGetId(email = "", firstName = "", lastName = "")
+            val userId1 = insertUserAndGetId(email = "test.user1@example.com", lastName = "User 1")
+            val userId2 = insertUserAndGetId(email = "", firstName = "", lastName = "")
 
             val users = repo.getAllUsers()
             assertThat(users).hasSize(1)
@@ -230,7 +211,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
         fun `When a user is updated, then only the fields specified in the field mask are updated and the updated user is returned`(
             fieldMask: List<String>,
         ) = runTest {
-            val userId = insertTestUserAndGetId(email = "test.user@example.com")
+            val userId = insertUserAndGetId(email = "test.user@example.com")
             val originalUser = repo.getUserById(userId).getOrThrow()
 
             val updatedUserDetails = originalUser.toGrpcUser().toBuilder()
@@ -277,9 +258,9 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
 
         @Test
         fun `When a user's email should be updated to an existent email, then an SQLException is thrown`() = runTest {
-            insertTestUserAndGetId(email = "alice.smith@example.com")
+            insertUserAndGetId(email = "alice.smith@example.com")
 
-            val user2Id = insertTestUserAndGetId(email = "bob.smith@example.com")
+            val user2Id = insertUserAndGetId(email = "bob.smith@example.com")
             val user2Builder = repo.getUserById(user2Id).getOrThrow().toGrpcUser().toBuilder()
 
             val updateRequest =
@@ -299,7 +280,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
     inner class DeleteUser {
         @Test
         fun `When the user is found, then the status of the user is set to USER_STATUS_DELETED`() = runTest {
-            val userId1 = insertTestUserAndGetId()
+            val userId1 = insertUserAndGetId()
             val before = OffsetDateTime.now()
 
             repo.softDeleteUser(userId1)
@@ -322,7 +303,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
         @Test
         fun `When a user is found, then a successful result with the password hash is returned`() = runTest {
             val passwordHash = "hashedPassword"
-            insertTestUserAndGetId(email = "test.user@example.com", passwordHash = passwordHash)
+            insertUserAndGetId(email = "test.user@example.com", passwordHash = passwordHash)
             val result = repo.getPasswordHashByEmail("test.user@example.com")
 
             val retrievedPasswordHash = assertResultSuccess(result)
@@ -341,7 +322,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
     inner class GetUserSettings {
         @Test
         fun `When a user is found, then a successful result with the user settings is returned`() = runTest {
-            val userId = insertTestUserAndGetId()
+            val userId = insertUserAndGetId()
             val result = repo.getUserSettings(userId)
 
             val userSettings = assertResultSuccess(result)
@@ -367,9 +348,9 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
     inner class GetUsersMatchingSearchQuery {
         @Test
         fun `When a user is matching the search query, then this user is returned`() = runTest {
-            val userId1 = insertTestUserAndGetId(firstName = "Johnathan", email = "jonathan.doe@example.com")
-            val userId2 = insertTestUserAndGetId(lastName = "John", email = "doe.john@example.com")
-            val userId3 = insertTestUserAndGetId(email = "john@example.com")
+            val userId1 = insertUserAndGetId(firstName = "Johnathan", email = "jonathan.doe@example.com")
+            val userId2 = insertUserAndGetId(lastName = "John", email = "doe.john@example.com")
+            val userId3 = insertUserAndGetId(email = "john@example.com")
 
             val matchingUsers = repo.getUsersMatchingSearchQuery("john", emptySet())
 
@@ -380,7 +361,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
 
         @Test
         fun `When a deleted user is matching the search query, then this user is not returned`() = runTest {
-            insertTestUserAndGetId(firstName = "john", lastName = "doe", status = UserStatus.USER_STATUS_DELETED)
+            insertUserAndGetId(firstName = "john", lastName = "doe", status = UserStatus.USER_STATUS_DELETED)
 
             val matchingUsers = repo.getUsersMatchingSearchQuery("john", emptySet())
 
@@ -389,7 +370,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
 
         @Test
         fun `When no user is matching the search query, then an empty list is returned`() = runTest {
-            insertTestUserAndGetId(firstName = "johnathan")
+            insertUserAndGetId(firstName = "johnathan")
 
             val matchingUsers = repo.getUsersMatchingSearchQuery("nonexistent", emptySet())
 
@@ -400,7 +381,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
         fun `When more than 10 users match the search query, then only the first 10 matching users are returned`() =
             runTest {
                 for (i in 1..15) {
-                    insertTestUserAndGetId(firstName = "John the $i-th", email = "john$i@example.com")
+                    insertUserAndGetId(firstName = "John the $i-th", email = "john$i@example.com")
                 }
 
                 val matchingUsers = repo.getUsersMatchingSearchQuery("john", emptySet())
@@ -411,7 +392,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
         @Test
         fun `When a user is matching the search query but should be excluded, then this user is not returned`() =
             runTest {
-                val userId = insertTestUserAndGetId(firstName = "johnathan")
+                val userId = insertUserAndGetId(firstName = "johnathan")
 
                 val matchingUsers = repo.getUsersMatchingSearchQuery("john", setOf(userId))
 

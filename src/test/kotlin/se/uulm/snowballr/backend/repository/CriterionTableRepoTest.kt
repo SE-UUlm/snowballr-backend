@@ -18,9 +18,9 @@ import se.uulm.snowballr.backend.model.dto.Criterion.ProjectCriterion
 import se.uulm.snowballr.backend.model.dto.Criterion.UserCriterion
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.toGrpcCriterion
-import se.uulm.snowballr.backend.repository.RepositoryHelper.createExampleUser
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertCriterionAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectAndGetId
+import se.uulm.snowballr.backend.repository.RepositoryHelper.insertUserAndGetId
 import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.utils.GrpcEnumSourceTest
@@ -185,7 +185,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
         @Test
         fun `When all criteria of a specific user are requested, then the only criteria created by the according user are returned`() =
             runTest {
-                val userId = createExampleUser("test@email.com")
+                val userId = insertUserAndGetId("test@email.com")
                 val projectId = createExampleProject().id
 
                 val baseRequestBuilder = GrpcCriterion.Create.newBuilder()

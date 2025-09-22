@@ -19,8 +19,8 @@ import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.toGrpcProject
 import se.uulm.snowballr.backend.repository.RepositoryHelper.assignUserToProject
-import se.uulm.snowballr.backend.repository.RepositoryHelper.createExampleUser
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectAndGetId
+import se.uulm.snowballr.backend.repository.RepositoryHelper.insertUserAndGetId
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.utils.assertResultFailure
@@ -339,7 +339,7 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
                 val project4Id =
                     insertProjectAndGetId("Test Project 4", ProjectStatus.PROJECT_STATUS_ACTIVE, createdBy = testUserId)
 
-                val userId = createExampleUser("userWithActiveProjects@example.com")
+                val userId = insertUserAndGetId("userWithActiveProjects@example.com")
 
                 assignUserToProject(userId, project1Id)
                 assignUserToProject(userId, project2Id)
@@ -378,7 +378,7 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
                         createdBy = testUserId,
                     )
 
-                val userId = createExampleUser("userWithActiveProjects@example.com")
+                val userId = insertUserAndGetId("userWithActiveProjects@example.com")
 
                 assignUserToProject(userId, project1Id)
                 assignUserToProject(userId, project2Id)
@@ -417,7 +417,7 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
                         createdBy = testUserId,
                     )
 
-                val userId = createExampleUser("userWithActiveProjects@example.com")
+                val userId = insertUserAndGetId("userWithActiveProjects@example.com")
 
                 assignUserToProject(userId, project1Id)
                 assignUserToProject(userId, project2Id)
@@ -439,7 +439,7 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
             val project2Id =
                 insertProjectAndGetId("Test Project 2", ProjectStatus.PROJECT_STATUS_DELETED, createdBy = testUserId)
 
-            val userId = createExampleUser("userWithActiveProjects@example.com")
+            val userId = insertUserAndGetId("userWithActiveProjects@example.com")
 
             assignUserToProject(userId, project1Id)
             assignUserToProject(userId, project2Id)
@@ -454,7 +454,7 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
         @Test
         fun `When an invalid project status is used to filter user projects, then an IllegalArgumentException is thrown`() =
             runTest {
-                val userId = createExampleUser("userWithActiveProjects@example.com")
+                val userId = insertUserAndGetId("userWithActiveProjects@example.com")
 
                 assertThrows<IllegalArgumentException> {
                     repo.getUserProjects(
