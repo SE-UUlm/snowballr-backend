@@ -1,5 +1,7 @@
 package se.uulm.snowballr.backend.service
 
+import com.google.protobuf.timestamp
+import com.google.protobuf.util.FieldMaskUtil
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
@@ -14,6 +16,7 @@ import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
+import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import se.uulm.snowballr.backend.service.accessrules.andAlso
 import se.uulm.snowballr.backend.service.accessrules.checkFor
 import se.uulm.snowballr.backend.service.accessrules.forProperty
@@ -70,6 +73,11 @@ interface IProjectService {
      * Service implementation of [SnowballRService.getProjectMembers].
      */
     suspend fun getProjectMembers(request: Base.Id): GrpcProjectMember.List
+
+    /**
+     * Service implementation of [SnowballRService.getProjectInformation].
+     */
+    suspend fun getProjectInformation(request: GrpcProject.Information.Get): GrpcProject.Information
 }
 
 /**
@@ -82,12 +90,14 @@ interface IProjectService {
  * @param repo The repository responsible for managing persistence operations for projects.
  * @param userRepo The repository responsible for managing persistence operations for users.
  * @param projectMemberRepo The repository responsible for managing persistence operations for project members.
+ * @param projectPaperRepo The repository responsible for managing persistence operations for project papers.
  * @param criterionRepo The repository responsible for managing persistence operations for criteria.
  */
 class ProjectService(
     private val repo: IProjectTableRepo,
     private val userRepo: IUserTableRepo,
     private val projectMemberRepo: IProjectMemberTableRepo,
+    private val projectPaperRepo: IProjectPaperTableRepo,
     private val criterionRepo: ICriterionTableRepo,
 ) : IProjectService {
     override suspend fun getProjectById(request: Base.Id): GrpcProject = withUser(userRepo) { currentUser ->
@@ -193,5 +203,38 @@ class ProjectService(
 
             val projectMembersWithUsers = projectMemberRepo.getProjectMembersWithUsers(projectId)
             projectMembersWithUsers.toGrpcProjectMembers()
+        }
+
+    override suspend fun getProjectInformation(request: GrpcProject.Information.Get): GrpcProject.Information =
+        withUser(userRepo) { currentUser ->
+            val projectId = parseUUID(request.projectId, EntityType.PROJECT)
+
+            isProjectExistent(repo)
+                .andAlso(isAllowedToReadProject(projectMemberRepo))
+                .checkFor(currentUser, projectId)
+
+            val project = repo.getProjectById(projectId).getOrThrow()
+            val progress = projectPaperRepo.getProjectProgress(projectId)
+            val builder = GrpcProject.Information.newBuilder()
+            val has = if (request.hasMask() && request.mask.pathsList.isNotEmpty()) {
+                val fieldMaskPaths = FieldMaskUtil.normalize(request.mask).pathsList.toSet();
+                { path: String -> path in fieldMaskPaths }
+            } else {
+                { _ -> true }
+            }
+
+            if (has("project_progress")) {
+                builder.setProjectProgress(progress)
+            }
+
+            if (has("creation_date")) {
+                builder.setCreationDate(timestamp { seconds = project.createdAt.toEpochSecond() })
+            }
+
+            if (has("last_stage_started")) {
+                builder.setLastStageStarted(timestamp { seconds = project.currentStageStartedAt.toEpochSecond() })
+            }
+
+            builder.build()
         }
 }

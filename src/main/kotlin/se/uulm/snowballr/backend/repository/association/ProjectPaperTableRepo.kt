@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.repository.association
 import org.jetbrains.exposed.sql.JoinType
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
@@ -87,6 +88,17 @@ interface IProjectPaperTableRepo {
      *         and the project.
      */
     suspend fun addPaperToProject(request: GrpcProjectPaper.Add, userId: UUID): ProjectPaper
+
+    /**
+     * Calculates and returns the progress of a project as a float value between 0.0 and 1.0.
+     *
+     * The progress is determined by evaluating the ratio of fully reviewed papers to all papers
+     * in a project.
+     *
+     * @param projectId The unique identifier of the project.
+     * @return A float between 0.0 and 1.0 representing the project progress.
+     */
+    suspend fun getProjectProgress(projectId: UUID): Float
 }
 
 /**
@@ -167,5 +179,21 @@ class ProjectPaperTableRepo(
                 it[decision] = PaperDecision.PAPER_DECISION_UNSPECIFIED
                 it[createdBy] = userId
             }
+    }
+
+    override suspend fun getProjectProgress(projectId: UUID): Float = db.query {
+        val allPapersCount = ProjectPaperTable.selectAll().where { ProjectPaperTable.projectId eq projectId }.count()
+        if (allPapersCount == 0L) {
+            0.0f
+        } else {
+            val fullyReviewedPapersCount = ProjectPaperTable.selectAll().where {
+                val paperReviewedOp = (ProjectPaperTable.decision eq PaperDecision.PAPER_DECISION_ACCEPTED) or
+                    (ProjectPaperTable.decision eq PaperDecision.PAPER_DECISION_DECLINED)
+
+                paperReviewedOp and (ProjectPaperTable.projectId eq projectId)
+            }.count()
+            val progress = fullyReviewedPapersCount.toFloat() / allPapersCount
+            progress
+        }
     }
 }

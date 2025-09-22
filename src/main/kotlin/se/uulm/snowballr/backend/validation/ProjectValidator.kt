@@ -80,6 +80,20 @@ object ProjectValidator {
         ensureFieldNonBlank("token", request.token)
     }.toEitherNel()
 
+    fun validateGetInformationRequest(request: Project.Information.Get): EitherNel<ValidationIssue, Unit> = either {
+        // Validate the field mask
+        val fieldMaskResult = either {
+            ensureFieldMaskIsValid(request.mask, Project.Information.getDescriptor(), allowEmpty = true)
+        }
+
+        // If field mask validation fails, return early
+        if (fieldMaskResult is Either.Left) {
+            fieldMaskResult.toEitherNel().bind()
+        }
+
+        either { ensureIdValidity("project_id", request.projectId) }.toEitherNel().bind()
+    }
+
     /**
      * Ensures that the provided project name is valid.
      * It checks that the project name is not blank and does not exceed the maximum length defined by [NAME_MAX_LENGTH].
