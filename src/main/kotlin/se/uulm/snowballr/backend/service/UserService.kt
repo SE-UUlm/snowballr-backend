@@ -147,10 +147,10 @@ class UserService(
                 userRepo.getUserById(targetUserId).getOrThrow()
             }
 
-        // TODO: question for reviewer: What do you think, may a server admin request a deleted user by its id?
-        isTargetUserActive.orElseThrow(
-            NotFoundException(EntityType.USER, request.id),
-        ).checkFor(currentUser, targetUser)
+        isServerAdmin.forTarget<User>()
+            .orElse(isTargetUserActive)
+            .orElseThrow(NotFoundException(EntityType.USER, request.id))
+            .checkFor(currentUser, targetUser)
 
         targetUser.toGrpcUser()
     }

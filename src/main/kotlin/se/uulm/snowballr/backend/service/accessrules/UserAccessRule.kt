@@ -5,6 +5,7 @@ package se.uulm.snowballr.backend.service.accessrules
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.SnowballRException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.repository.IUserTableRepo
@@ -24,7 +25,7 @@ fun interface UserAccessRule : AccessRule<User>
 fun interface UUIDAccessRule : AccessRule<UUID>
 
 /**
- * Check whether the requesting user and the target user are the same, by checking
+ * Check whether the requesting user and the target user are the same by checking
  * whether they have the same user id.
  */
 val isSameUserById = UUIDAccessRule { requester, targetId -> requester.id == targetId }
@@ -56,10 +57,10 @@ fun isInSameProject(projectMemberRepo: IProjectMemberTableRepo) = UUIDAccessRule
 /**
  * Verifies that the [user] has the role [UserRole.USER_ROLE_ADMIN].
  *
- * If the user is not a server admin, a [se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException] is thrown.
+ * If the user is not a server admin, a [UnauthorizedException] is thrown.
  *
  * @param user The user to verify
- * @param getException Getter method for the subtype of [se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException], which is thrown
+ * @param getException Getter method for the subtype of [UnauthorizedException], which is thrown
  * when the user is not a server admin.
  */
 suspend fun verifyServerAdminRole(user: User, getException: (String) -> UnauthorizedException) {

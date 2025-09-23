@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.service.accessrules
 import se.uulm.snowballr.backend.model.SnowballRException
 import se.uulm.snowballr.backend.model.SnowballRException.AccessRuleCheckFailedException
 import se.uulm.snowballr.backend.model.dto.User
+import java.util.UUID
 import kotlin.reflect.KProperty1
 
 /**
@@ -10,10 +11,10 @@ import kotlin.reflect.KProperty1
  * that can be evaluated in a chain.
  *
  * This interface is `suspend` as some access checks require asynchronous
- * operations, such as: fetching data from a database (e.g., project memberships).
+ * operations, such as fetching data from a database (e.g., project memberships).
  * By making every access rule `suspend`, we can easily chain rules that actually need to
- * suspend with rules that does not necessarily need to suspend without any checking, whether
- * one rule in the chain needs to suspend. Moreover, it no data need to be fetcher or similar tasks
+ * suspend with rules that do not necessarily need to suspend without any checking, whether
+ * one rule in the chain needs to suspend. Moreover, if no data need to be fetcher or similar tasks
  * to be performed, suspended functions are not significantly slower than the equal not suspended functions.
  */
 fun interface AccessRule<T> {
@@ -50,7 +51,7 @@ fun <T> AccessRule<T>.andAlso(next: AccessRule<T>): AccessRule<T> = AccessRule {
 
 /**
  * Checks whether this rule holds; if so, the next rule is checked.
- * Otherwise, the given exception is thrown and the chains terminates.
+ * Otherwise, the given exception is thrown and the chains terminate.
  *
  * @param T The accessed entity type.
  * @param exception Throw the [SnowballRException] if this rule does not hold.
@@ -64,7 +65,17 @@ fun <T> AccessRule<T>.orElseThrow(exception: SnowballRException): AccessRule<T> 
     }
 
 /**
- * Lifts a rule that ignores the target entity type (Unit) to work with any target entity type [T].
+ * Lifts a rule that ignores the target entity so that it can be applied to any target type [T].
+ *
+ * This is useful for rules that depend only on the requesting [User] and not on
+ * the target entity. For example, "isServerAdmin" checks only the requester,
+ * so it can be used regardless of what entity type is being accessed.
+ *
+ * Usage example:
+ * ```
+ * val ruleOnUnit: AccessRule<Unit> = isServerAdmin
+ * val ruleOnUser: AccessRule<User> = adminRule.forTarget()
+ * ```
  *
  * @return An [AccessRule] for the target type [T] that applies the same logic.
  */
@@ -72,6 +83,26 @@ fun <T> AccessRule<Unit>.forTarget(): AccessRule<T> = AccessRule { requester, _ 
     this.isAllowedToAccess(requester, Unit)
 }
 
+/**
+ * Adapts a rule defined on a property of type [TOld]
+ * so that it can be applied to an entity of type [TNew] that contains
+ * this property.
+ *
+ * This allows rules to be reused without redefining them for every entity type.
+ * For example, if you already have a rule that checks access to a [UUID] (like
+ * a `userId`), you can lift it to work on a whole [User] object by passing
+ * `User::id` as the property reference.
+ *
+ * Usage example:
+ * ```
+ * val ruleOnId: AccessRule<UUID> = ...
+ * val ruleOnUser: AccessRule<User> = ruleOnId.forProperty(User::id)
+ * ```
+ * @param TNew The target type of the adapted rule.
+ * @param TOld The type of the property that the rule is defined on.
+ * @param prop The property of [TNew] whose value should be passed into the original rule.
+ * @return An [AccessRule] for target type [TNew] that delegates to this rule using the value of [prop].
+ */
 fun <TNew, TOld> AccessRule<TOld>.forProperty(prop: KProperty1<TNew, TOld>): AccessRule<TNew> =
     AccessRule { requester, newTarget -> this.isAllowedToAccess(requester, prop.get(newTarget)) }
 
