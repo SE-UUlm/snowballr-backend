@@ -53,7 +53,7 @@ import javax.sql.DataSource
  *                 val example = repo.createExample(request)
  *
  *                 // Assert that the example was created correctly
- *                 assertThat(example.name).isEqualTo("Test Example")
+ *                 assertEquals("Test Example", example.name)
  *             }
  *     }
  * }

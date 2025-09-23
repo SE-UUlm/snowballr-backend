@@ -5,12 +5,13 @@ import io.mockk.coVerify
 import io.mockk.confirmVerified
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
-import kotlin.test.assertEquals
 
 class FetcherManagerTest {
     private var fetcherManager = FetcherManager()
@@ -34,7 +35,7 @@ class FetcherManagerTest {
         assertEquals(setOf("foo"), fetcherManager.getAvailableFetchers())
 
         fetcherManager.removeFetcher("foo")
-        assertEquals(emptySet(), fetcherManager.getAvailableFetchers())
+        assertThat(fetcherManager.getAvailableFetchers()).isEmpty()
     }
 
     @Test

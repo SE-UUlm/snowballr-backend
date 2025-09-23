@@ -3,6 +3,8 @@ package se.uulm.snowballr.backend.repository
 import com.google.protobuf.util.FieldMaskUtil
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -60,12 +62,12 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
 
             val criterion = assertResultSuccess(result)
             assertIs<ProjectCriterion>(criterion)
-            assertThat(criterion.id).isEqualTo(criterionId)
-            assertThat(criterion.tag).isEqualTo("Test Tag")
-            assertThat(criterion.name).isEqualTo("Test Criterion")
-            assertThat(criterion.description).isEqualTo("Test Description")
-            assertThat(criterion.category).isEqualTo(CriterionCategory.CRITERION_CATEGORY_EXCLUSION)
-            assertThat(criterion.projectId).isEqualTo(projectId)
+            assertEquals(criterionId, criterion.id)
+            assertEquals("Test Tag", criterion.tag)
+            assertEquals("Test Criterion", criterion.name)
+            assertEquals("Test Description", criterion.description)
+            assertEquals(CriterionCategory.CRITERION_CATEGORY_EXCLUSION, criterion.category)
+            assertEquals(projectId, criterion.projectId)
         }
 
         @Test
@@ -95,12 +97,12 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                 val criterion = repo.createCriterion(request, testUserId)
 
                 assertIs<ProjectCriterion>(criterion)
-                assertThat(criterion.tag).isEqualTo("Test Tag")
-                assertThat(criterion.name).isEqualTo("Test Criterion")
-                assertThat(criterion.description).isEqualTo("Test Description")
-                assertThat(criterion.category).isEqualTo(category)
-                assertThat(criterion.projectId).isEqualTo(project.id)
-                assertThat(criterion.createdBy).isEqualTo(testUserId)
+                assertEquals("Test Tag", criterion.tag)
+                assertEquals("Test Criterion", criterion.name)
+                assertEquals("Test Description", criterion.description)
+                assertEquals(category, criterion.category)
+                assertEquals(project.id, criterion.projectId)
+                assertEquals(testUserId, criterion.createdBy)
             }
 
         @GrpcEnumSourceTest(CriterionCategory::class)
@@ -117,11 +119,11 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                 val criterion = repo.createCriterion(request, testUserId)
 
                 assertIs<UserCriterion>(criterion)
-                assertThat(criterion.tag).isEqualTo("Test Tag")
-                assertThat(criterion.name).isEqualTo("Test Criterion")
-                assertThat(criterion.description).isEqualTo("Test Description")
-                assertThat(criterion.category).isEqualTo(category)
-                assertThat(criterion.createdBy).isEqualTo(testUserId)
+                assertEquals("Test Tag", criterion.tag)
+                assertEquals("Test Criterion", criterion.name)
+                assertEquals("Test Description", criterion.description)
+                assertEquals(category, criterion.category)
+                assertEquals(testUserId, criterion.createdBy)
             }
 
         @Test
@@ -156,7 +158,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
             val criterion1 = repo.createCriterion(request, testUserId)
             val criterion2 = repo.createCriterion(request, testUserId)
 
-            assertThat(criterion1.id).isNotEqualTo(criterion2.id)
+            assertNotEquals(criterion2.id, criterion1.id)
         }
 
         @GrpcEnumSourceTest(CriterionCategory::class)
@@ -313,24 +315,24 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
             val updatedCriterion = repo.updateCriterion(request)
 
             if ("criterion.tag" in fieldMask) {
-                assertThat(updatedCriterion.tag).isEqualTo("Updated Tag")
+                assertEquals("Updated Tag", updatedCriterion.tag)
             } else {
-                assertThat(updatedCriterion.tag).isEqualTo("Test Tag")
+                assertEquals("Test Tag", updatedCriterion.tag)
             }
             if ("criterion.name" in fieldMask) {
-                assertThat(updatedCriterion.name).isEqualTo("Updated Criterion")
+                assertEquals("Updated Criterion", updatedCriterion.name)
             } else {
-                assertThat(updatedCriterion.name).isEqualTo("Test Criterion")
+                assertEquals("Test Criterion", updatedCriterion.name)
             }
             if ("criterion.description" in fieldMask) {
-                assertThat(updatedCriterion.description).isEqualTo("Updated Description")
+                assertEquals("Updated Description", updatedCriterion.description)
             } else {
-                assertThat(updatedCriterion.description).isEqualTo("Test Description")
+                assertEquals("Test Description", updatedCriterion.description)
             }
             if ("criterion.category" in fieldMask) {
-                assertThat(updatedCriterion.category).isEqualTo(CriterionCategory.CRITERION_CATEGORY_INCLUSION)
+                assertEquals(CriterionCategory.CRITERION_CATEGORY_INCLUSION, updatedCriterion.category)
             } else {
-                assertThat(updatedCriterion.category).isEqualTo(CriterionCategory.CRITERION_CATEGORY_EXCLUSION)
+                assertEquals(CriterionCategory.CRITERION_CATEGORY_EXCLUSION, updatedCriterion.category)
             }
         }
     }

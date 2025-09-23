@@ -5,7 +5,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import kotlinx.coroutines.test.runTest
-import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -45,13 +45,13 @@ class ServiceHelperTest {
 
         @Test
         fun `When the user is retrieved successfully, then the block is executed with the current user`() = runTest {
-            val currenUser = DataBuilder.createExampleUser()
-            every { GrpcContext.getUserIdFromContext() } returns currenUser.id
-            coEvery { userRepoMock.getUserById(currenUser.id) } returns Result.success(currenUser)
+            val currentUser = DataBuilder.createExampleUser()
+            every { GrpcContext.getUserIdFromContext() } returns currentUser.id
+            coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
 
             assertDoesNotThrow {
                 withUser(userRepoMock) {
-                    assertThat(it).isEqualTo(currenUser)
+                    assertEquals(currentUser, it)
                 }
             }
         }

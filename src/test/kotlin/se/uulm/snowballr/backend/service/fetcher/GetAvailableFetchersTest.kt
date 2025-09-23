@@ -2,9 +2,9 @@ package se.uulm.snowballr.backend.service.fetcher
 
 import io.mockk.coEvery
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import se.uulm.snowballr.backend.service.MainServiceTest
-import kotlin.test.assertEquals
 
 class GetAvailableFetchersTest : MainServiceTest() {
     @Test

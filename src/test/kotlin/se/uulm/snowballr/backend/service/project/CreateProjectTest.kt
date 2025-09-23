@@ -4,6 +4,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.slot
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import se.uulm.snowballr.backend.DataBuilder
@@ -13,7 +14,6 @@ import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.ProjectOuterClass.MemberRole
 import snowballr.UserOuterClass.UserRole
 import java.util.UUID
-import kotlin.test.assertEquals
 import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
 import snowballr.ProjectOuterClass.Project as GrpcProject
 

@@ -3,6 +3,8 @@ package se.uulm.snowballr.backend.service.readinglist
 import io.mockk.coEvery
 import io.mockk.coVerify
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
@@ -10,8 +12,6 @@ import se.uulm.snowballr.backend.DataBuilder.toGrpcId
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import java.util.UUID
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 
 class IsPaperOnReadingListTest : MainServiceTest() {
     @Test

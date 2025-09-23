@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.service.invitations
 
 import io.mockk.coEvery
 import kotlinx.coroutines.test.runTest
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertNull
@@ -9,8 +10,6 @@ import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.ProjectOuterClass.Project.InviteCandidatesRequest
 import java.util.UUID
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 class GetInviteCandidatesTest : MainServiceTest() {
     private val searchQuery = "john"
@@ -27,7 +26,7 @@ class GetInviteCandidatesTest : MainServiceTest() {
         mockCurrentUser(DataBuilder.createExampleUser())
 
         val candidates = assertDoesNotThrow { mainService.getInviteCandidates(shortSearchQuery) }
-        assertTrue { candidates.usersList.isEmpty() }
+        assertThat(candidates.usersList).isEmpty()
     }
 
     @Test
@@ -65,7 +64,7 @@ class GetInviteCandidatesTest : MainServiceTest() {
         coEvery { userRepoMock.getUsersMatchingSearchQuery(searchQuery, setOf(currentUser.id)) } returns emptyList()
 
         val candidates = assertDoesNotThrow { mainService.getInviteCandidates(validInviteCandidatesRequest) }
-        assertTrue { candidates.usersList.isEmpty() }
+        assertThat(candidates.usersList).isEmpty()
     }
 
     @Test
@@ -83,8 +82,8 @@ class GetInviteCandidatesTest : MainServiceTest() {
             } returns users.filterNot { it.id in excludedUsers }
 
             val inviteCandidates = mainService.getInviteCandidates(validInviteCandidatesRequest)
-            assertEquals(1, inviteCandidates.usersList.size)
-            assertNull(inviteCandidates.usersList.find { user -> user.id == currentUser.id.toString() })
+            assertThat(inviteCandidates.usersList).hasSize(1)
+            assertNull(inviteCandidates.usersList.find { it.id == currentUser.id.toString() })
         }
 
     @Test
@@ -104,6 +103,6 @@ class GetInviteCandidatesTest : MainServiceTest() {
             } returns users.filterNot { it.id in excludedUsers }
 
             val inviteCandidates = mainService.getInviteCandidates(validInviteCandidatesRequest)
-            assertTrue { inviteCandidates.usersList.isEmpty() }
+            assertThat(inviteCandidates.usersList).isEmpty()
         }
 }

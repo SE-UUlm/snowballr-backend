@@ -2,6 +2,9 @@ package se.uulm.snowballr.backend.repository
 
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
@@ -10,8 +13,6 @@ import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.utils.assertResultFailure
 import se.uulm.snowballr.backend.utils.assertResultSuccess
 import java.util.UUID
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 
 class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
     private val repo = PaperTableRepo(db)
@@ -25,13 +26,13 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
 
             val paper = assertResultSuccess(result)
             with(paper) {
-                assertThat(title).isEqualTo("Title")
-                assertThat(externalId).isEqualTo("ExternalId")
-                assertThat(abstract).isEqualTo("Abstract")
-                assertThat(year).isEqualTo(2025)
-                assertThat(publisher).isEqualTo("Publisher")
-                assertThat(publicationType).isEqualTo("PublicationType")
-                assertThat(publicationName).isEqualTo("PublicationName")
+                assertEquals("Title", title)
+                assertEquals("ExternalId", externalId)
+                assertEquals("Abstract", abstract)
+                assertEquals(2025, year)
+                assertEquals("Publisher", publisher)
+                assertEquals("PublicationType", publicationType)
+                assertEquals("PublicationName", publicationName)
                 assertThat(fetcherMetadata).isEmpty()
             }
         }
@@ -46,12 +47,12 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
         @Test
         fun `When a paper is existent, then doesPaperExistById returns true`() = runTest {
             val paperId = insertPaperAndGetId()
-            assertTrue { repo.doesPaperExistById(paperId) }
+            assertTrue(repo.doesPaperExistById(paperId))
         }
 
         @Test
         fun `When a paper is non-existent, then doesPaperExistById returns false`() = runTest {
-            assertFalse { repo.doesPaperExistById(UUID.randomUUID()) }
+            assertFalse(repo.doesPaperExistById(UUID.randomUUID()))
         }
     }
 

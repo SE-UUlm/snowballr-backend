@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.service.authentication
 import io.mockk.coEvery
 import io.mockk.every
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
@@ -19,7 +20,6 @@ import se.uulm.snowballr.backend.model.jwt.JwtAuthTokens
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.Authentication.LoginRequest
 import snowballr.UserOuterClass.UserStatus
-import kotlin.test.assertEquals
 
 @ExtendWith(GrpcTestContextExtension::class)
 class LoginTest : MainServiceTest() {

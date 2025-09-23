@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.repository
 
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
@@ -33,10 +34,10 @@ class ReviewTableRepoTest : RepositoryTest(arrayOf(ReviewTable, ProjectTable, Pr
             val result = repo.getReviewById(reviewId)
 
             val review = assertResultSuccess(result)
-            assertThat(review.id).isEqualTo(reviewId)
-            assertThat(review.projectPaperId).isEqualTo(projectPaperId)
-            assertThat(review.userId).isEqualTo(testUserId)
-            assertThat(review.decision).isEqualTo(ReviewDecision.REVIEW_DECISION_ACCEPTED)
+            assertEquals(reviewId, review.id)
+            assertEquals(projectPaperId, review.projectPaperId)
+            assertEquals(testUserId, review.userId)
+            assertEquals(ReviewDecision.REVIEW_DECISION_ACCEPTED, review.decision)
         }
 
         @Test

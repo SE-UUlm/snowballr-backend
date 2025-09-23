@@ -5,6 +5,7 @@ import io.mockk.every
 import io.mockk.slot
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
@@ -79,7 +80,7 @@ class RegisterTest : MainServiceTest() {
             val capturedEmailData = emailDataSlot.captured
             val expectedVerificationLink = "$testFrontendURL/verifyemail?token=$capturedToken"
 
-            assertThat(capturedEmailData.firstName).isEqualTo(user.firstName)
-            assertThat(capturedEmailData.verificationLink).isEqualTo(expectedVerificationLink)
+            assertEquals(user.firstName, capturedEmailData.firstName)
+            assertEquals(expectedVerificationLink, capturedEmailData.verificationLink)
         }
 }
