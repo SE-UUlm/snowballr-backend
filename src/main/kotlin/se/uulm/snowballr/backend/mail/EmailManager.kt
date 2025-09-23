@@ -5,7 +5,7 @@ import org.simplejavamail.MailException
 import org.simplejavamail.api.mailer.Mailer
 import org.simplejavamail.email.EmailBuilder
 import se.uulm.snowballr.backend.env.EnvReader
-import se.uulm.snowballr.backend.model.SnowballRException
+import se.uulm.snowballr.backend.model.SnowballRException.EmailException.MailSendFailed
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.email.EmailTemplate
 
@@ -21,6 +21,14 @@ interface IEmailManager {
     fun sendVerificationEmail(to: String, data: EmailData.EmailVerification)
 
     /**
+     * Sends an 'accept project invitation' email to the specified recipient.
+     *
+     * @param to The recipient's email address.
+     * @param data The data model containing the user's data.
+     */
+    fun sendAcceptProjectInvitationEmail(to: String, data: EmailData.AcceptProjectInvitation)
+
+    /**
      * Creates a verification link for email verification.
      *
      * This method generates a complete URL that includes the base URL of the frontend and appends the verification token as a query parameter.
@@ -29,6 +37,16 @@ interface IEmailManager {
      * @return A string representing the complete email verification link.
      */
     fun createVerificationLink(token: String): String
+
+    /**
+     * Creates a link for accepting a project invitation.
+     *
+     * This method generates a complete URL that includes the base URL of the frontend and appends the invitation token as a query parameter.
+     *
+     * @param token The invitation token to include in the link.
+     * @return A string representing the complete project invitation link.
+     */
+    fun createAcceptProjectInvitationLink(token: String): String
 }
 
 /**
@@ -49,8 +67,26 @@ class EmailManager(
     private val mailer: Mailer,
     private val emailTemplateManager: EmailTemplateManager,
 ) : IEmailManager {
+    /**
+     * Sends a verification email to the specified recipient.
+     *
+     * @param to The recipient's email address.
+     * @param data The email verification data model.
+     * @throws MailSendFailed if the email could not be sent.
+     */
     override fun sendVerificationEmail(to: String, data: EmailData.EmailVerification) {
         sendEmail(to, EmailTemplate.EMAIL_VERIFICATION, data)
+    }
+
+    /**
+     * Sends an 'accept project invitation' email to the specified recipient.
+     *
+     * @param to The recipient's email address.
+     * @param data The accept project invitation data model.
+     * @throws MailSendFailed if the email could not be sent.
+     */
+    override fun sendAcceptProjectInvitationEmail(to: String, data: EmailData.AcceptProjectInvitation) {
+        sendEmail(to, EmailTemplate.ACCEPT_PROJECT_INVITATION, data)
     }
 
     /**
@@ -77,10 +113,13 @@ class EmailManager(
             logger.info { "Successfully queued email for delivery to $to with template '${template.name}'" }
         } catch (e: MailException) {
             logger.error(e) { "Mailer failed to send email to $to with template '${template.name}'" }
-            throw SnowballRException.EmailException.MailSendFailed(to, e)
+            throw MailSendFailed(to, e)
         }
     }
 
     override fun createVerificationLink(token: String): String =
         "${envReader.env.miscellaneous.frontendBaseUrl}/verifyemail?token=$token"
+
+    override fun createAcceptProjectInvitationLink(token: String): String =
+        "${envReader.env.miscellaneous.frontendBaseUrl}/acceptprojectinvitation?token=$token"
 }

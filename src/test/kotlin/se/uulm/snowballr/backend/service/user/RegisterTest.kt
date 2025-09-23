@@ -40,7 +40,7 @@ class RegisterTest : MainServiceTest() {
     fun `When sending the verification email fails, then a TestSpecificException is thrown`() = runTest {
         val user = DataBuilder.createExampleUser()
         val verificationLink = "verification-link"
-        val userData = EmailData.EmailVerification(user.firstName, user.lastName, verificationLink)
+        val userData = EmailData.EmailVerification(user.firstName, verificationLink)
 
         coEvery { userRepoMock.doesUserExistByEmail(user.email) } returns false
         coEvery { userRepoMock.createUser(getExampleRequest(user), any()) } returns user
@@ -80,7 +80,6 @@ class RegisterTest : MainServiceTest() {
             val expectedVerificationLink = "$testFrontendURL/verifyemail?token=$capturedToken"
 
             assertThat(capturedEmailData.firstName).isEqualTo(user.firstName)
-            assertThat(capturedEmailData.lastName).isEqualTo(user.lastName)
             assertThat(capturedEmailData.verificationLink).isEqualTo(expectedVerificationLink)
         }
 }

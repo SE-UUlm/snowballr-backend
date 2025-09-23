@@ -264,4 +264,11 @@ sealed class SnowballRException(
      * @constructor Creates a [VerificationTokenNotFoundException].
      */
     class VerificationTokenNotFoundException : SnowballRException("Verification token not found.")
+
+    /**
+     * Represents an exception that occurs when an invitation token is not found.
+     *
+     * @constructor Creates a [InvitationTokenNotFoundException].
+     */
+    class InvitationTokenNotFoundException : SnowballRException("Invitation token not found.")
 }

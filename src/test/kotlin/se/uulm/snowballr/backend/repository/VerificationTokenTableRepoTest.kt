@@ -2,25 +2,18 @@ package se.uulm.snowballr.backend.repository
 
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
-import org.jetbrains.exposed.sql.insert
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
+import se.uulm.snowballr.backend.model.SnowballRException.VerificationTokenNotFoundException
+import se.uulm.snowballr.backend.repository.RepositoryHelper.insertTestVerificationToken
 import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.VerificationTokenTable
-import java.util.UUID
+import se.uulm.snowballr.backend.utils.assertResultFailure
+import se.uulm.snowballr.backend.utils.assertResultSuccess
 
 class VerificationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, VerificationTokenTable), true) {
     private val repo = VerificationTokenTableRepo(db)
-
-    private suspend fun insertTestToken(userId: UUID = testUserId, token: String = "secure-random-token-123") {
-        db.query {
-            VerificationTokenTable.insert {
-                it[VerificationTokenTable.userId] = userId
-                it[VerificationTokenTable.token] = token
-            }
-        }
-    }
 
     @Nested
     inner class SaveVerificationToken {
@@ -30,9 +23,8 @@ class VerificationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, Verific
 
             repo.saveVerificationToken(testUserId, tokenValue)
 
-            val retrievedToken = repo.getVerificationTokenByValue(tokenValue)
-            assertThat(retrievedToken).isNotNull()
-            assertThat(retrievedToken!!.userId).isEqualTo(testUserId)
+            val retrievedToken = assertResultSuccess(repo.getVerificationTokenByValue(tokenValue))
+            assertThat(retrievedToken.userId).isEqualTo(testUserId)
             assertThat(retrievedToken.token).isEqualTo(tokenValue)
         }
     }
@@ -42,21 +34,20 @@ class VerificationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, Verific
         @Test
         fun `When a token exists, then the correct token is returned`() = runTest {
             val tokenValue = "a-token-that-exists"
-            insertTestToken(userId = testUserId, token = tokenValue)
+            insertTestVerificationToken(userId = testUserId, token = tokenValue)
 
-            val result = repo.getVerificationTokenByValue(tokenValue)
-
-            assertThat(result).isNotNull()
-            assertThat(result!!.userId).isEqualTo(testUserId)
+            val result = assertResultSuccess(repo.getVerificationTokenByValue(tokenValue))
+            assertThat(result.userId).isEqualTo(testUserId)
             assertThat(result.token).isEqualTo(tokenValue)
         }
 
         @Test
-        fun `When a token does not exist, then null is returned`() = runTest {
-            val result = repo.getVerificationTokenByValue("non-existent-token")
-
-            assertThat(result).isNull()
-        }
+        fun `When a token does not exist, then a failed result with a VerificationTokenNotFoundException is returned`() =
+            runTest {
+                assertResultFailure<VerificationTokenNotFoundException>(
+                    repo.getVerificationTokenByValue("non-existent-token"),
+                )
+            }
     }
 
     @Nested
@@ -64,15 +55,13 @@ class VerificationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, Verific
         @Test
         fun `When a token exists, then it is deleted successfully`() = runTest {
             val tokenValue = "a-token-to-be-deleted"
-            insertTestToken(userId = testUserId, token = tokenValue)
+            insertTestVerificationToken(userId = testUserId, token = tokenValue)
 
-            val beforeDelete = repo.getVerificationTokenByValue(tokenValue)
-            assertThat(beforeDelete).isNotNull()
+            assertResultSuccess(repo.getVerificationTokenByValue(tokenValue))
 
             repo.deleteVerificationToken(tokenValue)
 
-            val afterDelete = repo.getVerificationTokenByValue(tokenValue)
-            assertThat(afterDelete).isNull()
+            assertResultFailure<VerificationTokenNotFoundException>(repo.getVerificationTokenByValue(tokenValue))
         }
 
         @Test

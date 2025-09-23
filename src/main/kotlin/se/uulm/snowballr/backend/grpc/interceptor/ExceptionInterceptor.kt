@@ -73,12 +73,14 @@ private class ExceptionCall<ReqT, RespT>(
     /**
      * The [SnowballRException]s are deliberately thrown in this application, e.g., when preconditions aren't met.
      */
+    @Suppress("CyclomaticComplexMethod")
     private fun getStatusForSnowballRException(e: SnowballRException): Status {
         val status =
             when (e) {
                 is SnowballRException.InvalidIdException -> Status.INVALID_ARGUMENT
                 is SnowballRException.OutOfRangeException -> Status.INVALID_ARGUMENT
                 is SnowballRException.VerificationTokenNotFoundException -> Status.DEADLINE_EXCEEDED
+                is SnowballRException.InvitationTokenNotFoundException -> Status.DEADLINE_EXCEEDED
                 is SnowballRException.NotFoundException -> Status.NOT_FOUND
                 is SnowballRException.DuplicateEntityException -> Status.ALREADY_EXISTS
                 is SnowballRException.UnauthorizedException -> Status.PERMISSION_DENIED

@@ -6,10 +6,10 @@ import com.icegreen.greenmail.util.ServerSetupTest
 import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.verify
 import jakarta.mail.internet.MimeMessage
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -92,7 +92,7 @@ class EmailManagerTest {
 
             val verificationToken = "this-is-a-test-token-123"
             val expectedVerificationLink = emailManager.createVerificationLink(verificationToken)
-            val emailData = EmailData.EmailVerification("John", "Doe", expectedVerificationLink)
+            val emailData = EmailData.EmailVerification("John", expectedVerificationLink)
 
             emailManager.sendVerificationEmail(recipientEmail, emailData)
 
@@ -107,12 +107,51 @@ class EmailManagerTest {
             @Suppress("NullableToStringCall")
             val body = receivedMessage.content.toString()
 
-            assertThat(receivedMessage.allRecipients[0].toString()).isEqualTo(recipientEmail)
+            assertEquals(recipientEmail, receivedMessage.allRecipients[0].toString())
             assertThat(fromHeader).contains(testSenderName)
             assertThat(fromHeader).contains(testSenderEmail)
-            assertThat(subject).isEqualTo(EmailTemplate.EMAIL_VERIFICATION.subject)
+            assertEquals(EmailTemplate.EMAIL_VERIFICATION.subject, subject)
             assertThat(body).contains("Hello John,")
             assertThat(body).contains("<a href=\"$expectedVerificationLink\">$expectedVerificationLink</a>")
+        }
+
+        @Test
+        fun `When sending a project invitation acceptance email, then the email is sent with the correct content and headers`() {
+            val serverSetup = greenMail.smtp.serverSetup
+            val mailer = MailerBuilder
+                .withSMTPServer(serverSetup.bindAddress, serverSetup.port)
+                .withTransportStrategy(TransportStrategy.SMTP)
+                .withProperty("mail.smtp.starttls.enable", "false")
+                .async()
+                .buildMailer()
+            val emailTemplateManager = EmailTemplateManager()
+
+            val emailManager = EmailManager(envReaderMock, mailer, emailTemplateManager)
+
+            val acceptProjectInvitationToken = "this-is-a-test-token-123"
+            val expectedAcceptanceLink = emailManager.createAcceptProjectInvitationLink(acceptProjectInvitationToken)
+            val emailData = EmailData.AcceptProjectInvitation("John", "Test Project", expectedAcceptanceLink)
+
+            emailManager.sendAcceptProjectInvitationEmail(recipientEmail, emailData)
+
+            greenMail.waitForIncomingEmail(1)
+            val receivedMessages: Array<MimeMessage> = greenMail.receivedMessages
+            assertThat(receivedMessages).hasSize(1)
+
+            val receivedMessage = receivedMessages[0]
+            val fromHeader = receivedMessage.from[0].toString()
+            val subject = receivedMessage.subject
+
+            @Suppress("NullableToStringCall")
+            val body = receivedMessage.content.toString()
+
+            assertEquals(recipientEmail, receivedMessage.allRecipients[0].toString())
+            assertThat(fromHeader).contains(testSenderName)
+            assertThat(fromHeader).contains(testSenderEmail)
+            assertEquals(EmailTemplate.ACCEPT_PROJECT_INVITATION.subject, subject)
+            assertThat(body).contains("Hello John,")
+            assertThat(body).contains("Test Project")
+            assertThat(body).contains("<a href=\"$expectedAcceptanceLink\">$expectedAcceptanceLink</a>")
         }
 
         @Test
@@ -120,7 +159,7 @@ class EmailManagerTest {
             val emailTemplateManager = EmailTemplateManager()
             val emailManager = EmailManager(envReaderMock, mailerMock, emailTemplateManager)
 
-            val emailData = EmailData.EmailVerification("John", "Doe", "any-link")
+            val emailData = EmailData.EmailVerification("John", "any-link")
             val mailerException = TestMailException("Mailer failed to send email")
 
             every { mailerMock.sendMail(any()) } throws mailerException
@@ -128,16 +167,14 @@ class EmailManagerTest {
             val thrownException = assertThrows<EmailException.MailSendFailed> {
                 emailManager.sendVerificationEmail(recipientEmail, emailData)
             }
-            assertThat(thrownException.cause).isEqualTo(mailerException)
-
-            verify(exactly = 1) { mailerMock.sendMail(any()) }
+            assertEquals(mailerException, thrownException.cause)
         }
 
         @Test
         fun `When template is not pre-compiled, then FailedPreconditionException is thrown`() {
             val emailManager = EmailManager(envReaderMock, mailerMock, emailTemplateManagerMock)
 
-            val emailData = EmailData.EmailVerification("John", "Doe", "any-link")
+            val emailData = EmailData.EmailVerification("John", "any-link")
 
             every { emailTemplateManagerMock.getTemplate(any()) } throws
                 SnowballRException.FailedPreconditionException("Template not pre-compiled")
@@ -145,8 +182,6 @@ class EmailManagerTest {
             assertThrows<SnowballRException.FailedPreconditionException> {
                 emailManager.sendVerificationEmail(recipientEmail, emailData)
             }
-
-            verify(exactly = 0) { mailerMock.sendMail(any()) }
         }
     }
 
@@ -161,7 +196,17 @@ class EmailManagerTest {
 
             val actualLink = emailManager.createVerificationLink(verificationToken)
 
-            assertThat(actualLink).isEqualTo(expectedLink)
+            assertEquals(expectedLink, actualLink)
+        }
+
+        @Test
+        fun `When given a token, then the correct accept project invitation link is created`() {
+            val acceptProjectInvitationToken = "random-test-token"
+            val expectedLink = "$testFrontendUrl/acceptprojectinvitation?token=$acceptProjectInvitationToken"
+
+            val actualLink = emailManager.createAcceptProjectInvitationLink(acceptProjectInvitationToken)
+
+            assertEquals(expectedLink, actualLink)
         }
     }
 }

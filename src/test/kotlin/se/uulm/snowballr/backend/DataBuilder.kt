@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend
 
 import se.uulm.snowballr.backend.model.dto.Author
 import se.uulm.snowballr.backend.model.dto.Criterion
+import se.uulm.snowballr.backend.model.dto.InvitationToken
 import se.uulm.snowballr.backend.model.dto.Paper
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.ProjectMember
@@ -261,6 +262,20 @@ object DataBuilder {
     ) = VerificationToken(
         id = id,
         userId = userId,
+        token = token,
+        expiresAt = expiresAt,
+    )
+
+    fun createExampleInvitationToken(
+        id: UUID = UUID.randomUUID(),
+        email: String = "example-email",
+        projectId: UUID = UUID.randomUUID(),
+        token: String = "example-token",
+        expiresAt: OffsetDateTime = OffsetDateTime.now().plusDays(1),
+    ) = InvitationToken(
+        id = id,
+        email = email,
+        projectId = projectId,
         token = token,
         expiresAt = expiresAt,
     )

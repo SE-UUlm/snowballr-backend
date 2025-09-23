@@ -11,4 +11,8 @@ enum class EmailTemplate(val templateFileName: String, val subject: String) {
         templateFileName = "email-verification",
         subject = "Verify your SnowballR Account",
     ),
+    ACCEPT_PROJECT_INVITATION(
+        templateFileName = "accept-project-invitation",
+        subject = "You're Invited to a Project",
+    ),
 }

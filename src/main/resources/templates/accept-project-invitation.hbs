@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>You're Invited to a Project</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+            color: #333333;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border: 1px solid #dddddd;
+            border-radius: 8px;
+            max-width: 600px;
+            margin: auto;
+            line-height: 1.6;
+        }
+
+        .header {
+            font-size: 24px;
+            color: #0056b3;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eeeeee;
+            padding-bottom: 10px;
+        }
+
+        .content p {
+            margin-bottom: 20px;
+        }
+
+        .project-name {
+            font-weight: bold;
+        }
+
+        .button-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .button {
+            background-color: #007bff;
+            color: #ffffff;
+            padding: 12px 25px;
+            text-decoration: none;
+            border-radius: 5px;
+            display: inline-block;
+            font-weight: bold;
+        }
+
+        .fallback-link {
+            font-size: 12px;
+            color: #666666;
+            word-break: break-all;
+        }
+
+        .footer {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #888888;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1 class="header">You've Been Invited!</h1>
+
+    <div class="content">
+        <p>Hello {{firstName}},</p>
+
+        <p>You have been invited to join the project <span class="project-name">{{projectName}}</span> on SnowballR.
+            Please click the button below to accept your invitation and start collaborating.</p>
+
+        <div class="button-container">
+            <a href="{{{acceptanceLink}}}" class="button">Accept Invitation</a>
+        </div>
+
+        <p>If you were not expecting this invitation, you can safely ignore this email.</p>
+
+        <hr>
+
+        <p class="fallback-link">
+            If you're having trouble with the button, copy and paste this URL into your web browser:<br>
+            <a href="{{{acceptanceLink}}}">{{{acceptanceLink}}}</a>
+        </p>
+    </div>
+
+    <p class="footer">
+        Best regards,<br>
+        The SnowballR Team
+    </p>
+</div>
+</body>
+</html>
