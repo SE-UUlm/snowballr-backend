@@ -8,8 +8,8 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import se.uulm.snowballr.backend.repository.PaperTableRepo
-import se.uulm.snowballr.backend.repository.RepositoryHelper.createExampleUser
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertPaperAndGetId
+import se.uulm.snowballr.backend.repository.RepositoryHelper.insertUserAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryTest
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.UserTable
@@ -25,7 +25,7 @@ class ReadingListTableRepoTest : RepositoryTest(arrayOf(UserTable, PaperTable, R
         @Test
         fun `When a paper is added to the reading list of a user, then it can be retrieved`() = runTest {
             val paperId = insertPaperAndGetId()
-            val userId = createExampleUser("test.user@example.com")
+            val userId = insertUserAndGetId("test.user@example.com")
             repo.createReadingListEntry(userId, paperId)
             val actualReadingListEntries = repo.getAllReadingListEntries(userId)
             assertThat(actualReadingListEntries).hasSize(1)
@@ -35,7 +35,7 @@ class ReadingListTableRepoTest : RepositoryTest(arrayOf(UserTable, PaperTable, R
         @Test
         fun `When a paper is added to the reading list of a user twice, then only one entry is created`() = runTest {
             val paperId = insertPaperAndGetId()
-            val userId = createExampleUser("test.user@example.com")
+            val userId = insertUserAndGetId("test.user@example.com")
             repo.createReadingListEntry(userId, paperId)
             repo.createReadingListEntry(userId, paperId)
             val actualReadingListEntries = repo.getAllReadingListEntries(userId)
@@ -50,7 +50,7 @@ class ReadingListTableRepoTest : RepositoryTest(arrayOf(UserTable, PaperTable, R
         fun `When a paper is removed from the reading list of a user, then it can not be retrieved anymore`() =
             runTest {
                 val paperId = insertPaperAndGetId()
-                val userId = createExampleUser("test.user@example.com")
+                val userId = insertUserAndGetId("test.user@example.com")
                 repo.createReadingListEntry(userId, paperId)
                 assertThat(repo.getAllReadingListEntries(userId)).hasSize(1)
                 repo.removeReadingListEntry(userId, paperId)
@@ -61,7 +61,7 @@ class ReadingListTableRepoTest : RepositoryTest(arrayOf(UserTable, PaperTable, R
         fun `When a paper that is not on the reading list of a user is removed from it, then no exception is thrown`() =
             runTest {
                 val paperId = insertPaperAndGetId()
-                val userId = createExampleUser("test.user@example.com")
+                val userId = insertUserAndGetId("test.user@example.com")
                 assertDoesNotThrow {
                     repo.removeReadingListEntry(userId, paperId)
                 }
@@ -79,7 +79,7 @@ class ReadingListTableRepoTest : RepositoryTest(arrayOf(UserTable, PaperTable, R
         @Test
         fun `When a nonexistent paper is removed from the reading list of a user, then no exception is thrown`() =
             runTest {
-                val userId = createExampleUser("test.user@example.com")
+                val userId = insertUserAndGetId("test.user@example.com")
                 assertDoesNotThrow {
                     repo.removeReadingListEntry(userId, UUID.randomUUID())
                 }
@@ -91,7 +91,7 @@ class ReadingListTableRepoTest : RepositoryTest(arrayOf(UserTable, PaperTable, R
         @Test
         fun `When a paper is on the reading list of a user, then isPaperOnReadingList returns true`() = runTest {
             val paperId = insertPaperAndGetId()
-            val userId = createExampleUser("test.user@example.com")
+            val userId = insertUserAndGetId("test.user@example.com")
             repo.createReadingListEntry(userId, paperId)
             assertTrue(repo.isPaperOnReadingList(userId, paperId))
         }
@@ -99,13 +99,13 @@ class ReadingListTableRepoTest : RepositoryTest(arrayOf(UserTable, PaperTable, R
         @Test
         fun `When a paper is not on the reading list of a user, then isPaperOnReadingList returns false`() = runTest {
             val paperId = insertPaperAndGetId()
-            val userId = createExampleUser("test.user@example.com")
+            val userId = insertUserAndGetId("test.user@example.com")
             assertFalse(repo.isPaperOnReadingList(userId, paperId))
         }
 
         @Test
         fun `When a nonexistent paper is provided to isPaperOnReadingList, then it returns false`() = runTest {
-            val userId = createExampleUser("test.user@example.com")
+            val userId = insertUserAndGetId("test.user@example.com")
             assertFalse(repo.isPaperOnReadingList(userId, UUID.randomUUID()))
         }
 
@@ -121,7 +121,7 @@ class ReadingListTableRepoTest : RepositoryTest(arrayOf(UserTable, PaperTable, R
         @Test
         fun `When there are no papers on a user's reading list, then getAllReadingListEntries returns an empty list`() =
             runTest {
-                val userId = createExampleUser("test.user@example.com")
+                val userId = insertUserAndGetId("test.user@example.com")
                 assertThat(repo.getAllReadingListEntries(userId)).isEmpty()
             }
 
@@ -129,7 +129,7 @@ class ReadingListTableRepoTest : RepositoryTest(arrayOf(UserTable, PaperTable, R
         fun `When there is one paper on a user's reading list, then getAllReadingListEntries returns a list with that paper`() =
             runTest {
                 val paperId = insertPaperAndGetId()
-                val userId = createExampleUser("test.user@example.com")
+                val userId = insertUserAndGetId("test.user@example.com")
                 repo.createReadingListEntry(userId, paperId)
 
                 val actualReadingListEntries = repo.getAllReadingListEntries(userId)
@@ -142,7 +142,7 @@ class ReadingListTableRepoTest : RepositoryTest(arrayOf(UserTable, PaperTable, R
             runTest {
                 val paperId1 = insertPaperAndGetId(externalId = "1")
                 val paperId2 = insertPaperAndGetId(externalId = "2")
-                val userId = createExampleUser("test.user@example.com")
+                val userId = insertUserAndGetId("test.user@example.com")
                 repo.createReadingListEntry(userId, paperId1)
                 repo.createReadingListEntry(userId, paperId2)
 

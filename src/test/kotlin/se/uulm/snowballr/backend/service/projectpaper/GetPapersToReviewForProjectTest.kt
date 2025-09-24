@@ -20,8 +20,8 @@ import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class GetPapersToReviewForProjectTest : MainServiceTest() {
-    private val requestId = UUID.randomUUID()
-    private fun getExampleRequest() = Base.Id.newBuilder().setId(requestId.toString()).build()
+    private val projectId = UUID.randomUUID()
+    private fun getExampleRequest() = Base.Id.newBuilder().setId(projectId.toString()).build()
 
     @Suppress("LongMethod")
     private fun mockHappyPath(isUserAdmin: Boolean) {
@@ -32,8 +32,8 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
                 UserRole.USER_ROLE_DEFAULT
             },
         )
-        val project = DataBuilder.createExampleProject(id = requestId)
-        val paper = DataBuilder.createExamplePaper(id = requestId)
+        val project = DataBuilder.createExampleProject(id = projectId)
+        val paper = DataBuilder.createExamplePaper(id = projectId)
         val projectPaper = DataBuilder.createExampleProjectPaper(projectId = project.id, paperId = paper.id)
         val projectPaperWithPaper = ProjectPaperWithPaper(projectPaper, paper)
         val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
@@ -79,7 +79,7 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
     fun `When a non project member requests the project papers to review, then an UnauthorizedException is thrown`() =
         runTest {
             val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-            val project = DataBuilder.createExampleProject(id = requestId)
+            val project = DataBuilder.createExampleProject(id = projectId)
 
             mockCurrentUser(currentUser)
             coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
@@ -93,8 +93,8 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
     @Test
     fun `When the project papers to review are requested, then only the undecided papers are returned`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-        val project = DataBuilder.createExampleProject(id = requestId)
-        val paper = DataBuilder.createExamplePaper(id = requestId)
+        val project = DataBuilder.createExampleProject(id = projectId)
+        val paper = DataBuilder.createExamplePaper(id = projectId)
         val projectPaperAlreadyDecided = DataBuilder.createExampleProjectPaper(
             projectId = project.id,
             paperId = paper.id,
@@ -141,8 +141,8 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
     fun `When the project papers to review are requested, then only undecided papers that were not already reviewed by the current user are returned`() =
         runTest {
             val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-            val project = DataBuilder.createExampleProject(id = requestId)
-            val paper = DataBuilder.createExamplePaper(id = requestId)
+            val project = DataBuilder.createExampleProject(id = projectId)
+            val paper = DataBuilder.createExamplePaper(id = projectId)
             val projectPaperWithCurrentUserReview = DataBuilder.createExampleProjectPaper(
                 projectId = project.id,
                 paperId = paper.id,
@@ -194,7 +194,7 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
     @Test
     fun `When a nonexistent project is requested, then a NotFoundException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-        val project = DataBuilder.createExampleProject(id = requestId)
+        val project = DataBuilder.createExampleProject(id = projectId)
 
         mockCurrentUser(currentUser)
         coEvery { projectRepoMock.doesProjectExistById(project.id) } returns false

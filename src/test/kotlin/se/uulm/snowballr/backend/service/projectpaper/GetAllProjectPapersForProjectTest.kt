@@ -17,9 +17,9 @@ import java.util.UUID
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class GetAllProjectPapersForProjectTest : MainServiceTest() {
-    private val requestId = UUID.randomUUID()
+    private val projectId = UUID.randomUUID()
 
-    private fun getExampleRequest() = Base.Id.newBuilder().setId(requestId.toString()).build()
+    private fun getExampleRequest() = Base.Id.newBuilder().setId(projectId.toString()).build()
 
     @Suppress("LongMethod")
     private fun mockHappyPath(isUserAdmin: Boolean) {
@@ -30,8 +30,8 @@ class GetAllProjectPapersForProjectTest : MainServiceTest() {
                 UserRole.USER_ROLE_DEFAULT
             },
         )
-        val project = DataBuilder.createExampleProject(id = requestId)
-        val paper = DataBuilder.createExamplePaper(id = requestId)
+        val project = DataBuilder.createExampleProject(id = projectId)
+        val paper = DataBuilder.createExamplePaper(id = projectId)
         val projectPaper = DataBuilder.createExampleProjectPaper(projectId = project.id, paperId = paper.id)
         val projectPaperWithPaper = ProjectPaperWithPaper(projectPaper, paper)
         val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
@@ -74,7 +74,7 @@ class GetAllProjectPapersForProjectTest : MainServiceTest() {
     @Test
     fun `When a non project member requests the project papers, then an UnauthorizedException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-        val project = DataBuilder.createExampleProject(id = requestId)
+        val project = DataBuilder.createExampleProject(id = projectId)
 
         mockCurrentUser(currentUser)
         coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
@@ -88,7 +88,7 @@ class GetAllProjectPapersForProjectTest : MainServiceTest() {
     @Test
     fun `When a nonexistent project is requested, then a NotFoundException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-        val project = DataBuilder.createExampleProject(id = requestId)
+        val project = DataBuilder.createExampleProject(id = projectId)
 
         mockCurrentUser(currentUser)
         coEvery { projectRepoMock.doesProjectExistById(project.id) } returns false

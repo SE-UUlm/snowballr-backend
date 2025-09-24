@@ -11,16 +11,14 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
-import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.Criterion
 import se.uulm.snowballr.backend.model.dto.Criterion.ProjectCriterion
 import se.uulm.snowballr.backend.model.dto.Criterion.UserCriterion
-import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.toGrpcCriterion
-import se.uulm.snowballr.backend.repository.RepositoryHelper.createExampleUser
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertCriterionAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectAndGetId
+import se.uulm.snowballr.backend.repository.RepositoryHelper.insertUserAndGetId
 import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.utils.GrpcEnumSourceTest
@@ -31,16 +29,9 @@ import java.sql.SQLException
 import java.util.UUID
 import kotlin.test.assertIs
 import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
-import snowballr.ProjectOuterClass.Project as GrpcProject
 
 class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTable), true) {
     private val repo = CriterionTableRepo(db)
-    private val projectRepo = ProjectTableRepo(db)
-
-    private suspend fun createExampleProject(): Project {
-        val request = GrpcProject.Create.newBuilder().build()
-        return projectRepo.createProject(request, testUserId, DataBuilder.createExampleUserSettings())
-    }
 
     companion object {
         @JvmStatic
@@ -56,7 +47,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
     inner class GetCriterionById {
         @Test
         fun `When a criterion is found, then a successful result with the correct criterion is returned`() = runTest {
-            val projectId = createExampleProject().id
+            val projectId = insertProjectAndGetId(createdBy = testUserId)
             val criterionId = insertCriterionAndGetId(projectId = projectId, createdBy = testUserId)
             val result = repo.getCriterionById(criterionId)
 
@@ -83,7 +74,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
         @GrpcEnumSourceTest(CriterionCategory::class)
         fun `When a project criterion is created, then the values are correctly assigned`(category: CriterionCategory) =
             runTest {
-                val project = createExampleProject()
+                val projectId = insertProjectAndGetId(createdBy = testUserId)
 
                 val request =
                     GrpcCriterion.Create
@@ -92,7 +83,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                         .setName("Test Criterion")
                         .setDescription("Test Description")
                         .setCategory(category)
-                        .setProjectId(project.id.toString())
+                        .setProjectId(projectId.toString())
                         .build()
                 val criterion = repo.createCriterion(request, testUserId)
 
@@ -101,7 +92,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                 assertEquals("Test Criterion", criterion.name)
                 assertEquals("Test Description", criterion.description)
                 assertEquals(category, criterion.category)
-                assertEquals(project.id, criterion.projectId)
+                assertEquals(projectId, criterion.projectId)
                 assertEquals(testUserId, criterion.createdBy)
             }
 
@@ -144,7 +135,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
 
         @Test
         fun `When two criteria are created, then they have different IDs`() = runTest {
-            val project = createExampleProject()
+            val projectId = insertProjectAndGetId(createdBy = testUserId)
 
             val request =
                 GrpcCriterion.Create
@@ -153,7 +144,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                     .setName("Test Criterion")
                     .setDescription("Test Description")
                     .setCategory(CriterionCategory.CRITERION_CATEGORY_EXCLUSION)
-                    .setProjectId(project.id.toString())
+                    .setProjectId(projectId.toString())
                     .build()
             val criterion1 = repo.createCriterion(request, testUserId)
             val criterion2 = repo.createCriterion(request, testUserId)
@@ -185,8 +176,8 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
         @Test
         fun `When all criteria of a specific user are requested, then the only criteria created by the according user are returned`() =
             runTest {
-                val userId = createExampleUser("test@email.com")
-                val projectId = createExampleProject().id
+                val userId = insertUserAndGetId("test@email.com")
+                val projectId = insertProjectAndGetId(createdBy = testUserId)
 
                 val baseRequestBuilder = GrpcCriterion.Create.newBuilder()
                     .setTag("Test Tag")
@@ -217,7 +208,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
         @Test
         fun `When all criteria of the given ids are requested and exist, then all those criteria are returned`() =
             runTest {
-                val projectId = createExampleProject().id
+                val projectId = insertProjectAndGetId(createdBy = testUserId)
 
                 val baseRequestBuilder = GrpcCriterion.Create.newBuilder()
                     .setTag("Test Tag")
@@ -296,7 +287,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
         fun `When a criterion is updated, then only the fields specified in the field mask are updated and the updated criterion is returned`(
             fieldMask: List<String>,
         ) = runTest {
-            val projectId = createExampleProject().id
+            val projectId = insertProjectAndGetId(createdBy = testUserId)
             val criterionId = insertCriterionAndGetId(projectId = projectId, createdBy = testUserId)
             val originalCriterion = repo.getCriterionById(criterionId).getOrThrow()
 
@@ -342,8 +333,8 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
         @Test
         fun `When all criteria of a specific project are requested, then the only criteria associated with this project are returned`() =
             runTest {
-                val projectId1 = createExampleProject().id
-                val projectId2 = createExampleProject().id
+                val projectId1 = insertProjectAndGetId(createdBy = testUserId)
+                val projectId2 = insertProjectAndGetId(createdBy = testUserId)
 
                 val baseRequestBuilder = GrpcCriterion.Create.newBuilder()
                     .setTag("Test Tag")

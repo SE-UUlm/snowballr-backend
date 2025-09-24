@@ -5,6 +5,7 @@ import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.insertAndGetId
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.table.AuthorTable
 import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.InvitationTokenTable
 import se.uulm.snowballr.backend.table.PaperTable
@@ -34,29 +35,36 @@ object RepositoryHelper {
     lateinit var db: IDatabase
 
     /**
-     * Creates an example user in the database with the specified email and fake user details.
+     * Creates an example user in the database with the specified properties.
      *
-     * @param email The email address for the example user to be created.
-     * @return The uuid of the created user
+     * @return The UUID of the created user.
      */
-    suspend fun createExampleUser(email: String) = db.query {
+    @Suppress("LongParameterList")
+    suspend fun insertUserAndGetId(
+        email: String = "test.user@example.com",
+        firstName: String = "Test",
+        lastName: String = "User",
+        passwordHash: String = "passwordHash",
+        role: UserRole = UserRole.USER_ROLE_DEFAULT,
+        status: UserStatus = UserStatus.USER_STATUS_ACTIVE,
+    ) = db.query {
         UserTable
             .insertAndGetId {
                 it[UserTable.email] = email
-                it[firstName] = "Test"
-                it[lastName] = "User"
-                it[passwordHash] = "1234"
-                it[role] = UserRole.USER_ROLE_DEFAULT
-                it[status] = UserStatus.USER_STATUS_ACTIVE
+                it[UserTable.firstName] = firstName
+                it[UserTable.lastName] = lastName
+                it[UserTable.passwordHash] = passwordHash
+                it[UserTable.role] = role
+                it[UserTable.status] = status
             }.value
     }
 
     /**
-     * Assigns a user to a project by inserting an entry into the ProjectMemberTable with the default member role.
+     * Assigns a user to a project by creating an entry in the [ProjectMemberTable].
      *
-     * @param userId The unique identifier of the user to be assigned to the project.
-     * @param projectId The unique identifier of the project to which the user is being assigned.
-     * @return The created project member instance
+     * @param userId The ID of the user to be assigned to the project.
+     * @param projectId The ID of the project to which the user is being assigned.
+     * @return The created project member entity.
      */
     suspend fun assignUserToProject(userId: UUID, projectId: UUID) = db.query {
         ProjectMemberTable.insertAndGet(ResultRow::toProjectMember, EntityType.PROJECT_MEMBER) {
@@ -67,18 +75,20 @@ object RepositoryHelper {
     }
 
     /**
-     * Creates a user with the specified email and assigns the user to a project.
+     * Creates a user with the specified email and assigns them to a project.
      *
      * @param email The email address of the user to be created.
-     * @param projectId The unique identifier of the project to which the user will be assigned.
+     * @param projectId The ID of the project to which the user will be assigned.
      */
     suspend fun createAndAssignUserToProject(email: String, projectId: UUID) = db.query {
-        val userId = createExampleUser(email)
+        val userId = insertUserAndGetId(email)
         assignUserToProject(userId, projectId)
     }
 
     /**
      * Creates an example paper in the database with the specified properties.
+     *
+     * @return The UUID of the created paper.
      */
     @Suppress("LongParameterList")
     suspend fun insertPaperAndGetId(
@@ -103,6 +113,11 @@ object RepositoryHelper {
         }.value
     }
 
+    /**
+     * Creates an example project in the database with the specified properties.
+     *
+     * @return The UUID of the created project.
+     */
     @Suppress("LongParameterList")
     suspend fun insertProjectAndGetId(
         name: String = "Test Project",
@@ -131,6 +146,11 @@ object RepositoryHelper {
             }.value
     }
 
+    /**
+     * Creates an example project paper in the database with the specified properties.
+     *
+     * @return The UUID of the created project paper.
+     */
     @Suppress("LongParameterList")
     suspend fun insertProjectPaperAndGetId(
         paperId: UUID,
@@ -150,6 +170,11 @@ object RepositoryHelper {
         }.value
     }
 
+    /**
+     * Creates an example review in the database with the specified properties.
+     *
+     * @return The UUID of the created review.
+     */
     @Suppress("LongParameterList")
     suspend fun insertReviewAndGetId(
         projectPaperId: UUID,
@@ -163,6 +188,11 @@ object RepositoryHelper {
         }.value
     }
 
+    /**
+     * Creates an example criterion in the database with the specified properties.
+     *
+     * @return The UUID of the created criterion.
+     */
     @Suppress("LongParameterList")
     suspend fun insertCriterionAndGetId(
         tag: String = "Test Tag",
@@ -182,6 +212,12 @@ object RepositoryHelper {
         }.value
     }
 
+    /**
+     * Assigns a criterion to a review by inserting an association into the [ReviewHasCriterionTable].
+     *
+     * @param reviewId The ID of the review to which the criterion is assigned.
+     * @param criterionId The ID of the criterion to be assigned to the review.
+     */
     suspend fun assignCriterionToReview(reviewId: UUID, criterionId: UUID) = db.query {
         ReviewHasCriterionTable.insert {
             it[ReviewHasCriterionTable.reviewId] = reviewId
@@ -189,6 +225,26 @@ object RepositoryHelper {
         }
     }
 
+    /**
+     * Creates an example author in the database with the specified properties.
+     *
+     * @return The UUID of the created author.
+     */
+    suspend fun insertAuthorAndGetId(
+        firstName: String = "FirstName",
+        lastName: String = "LastName",
+        orcid: String? = null,
+    ): UUID = db.query {
+        AuthorTable.insertAndGetId {
+            it[AuthorTable.firstName] = firstName
+            it[AuthorTable.lastName] = lastName
+            it[AuthorTable.orcid] = orcid
+        }.value
+    }
+
+    /**
+     * Creates a test verification token (default "secure-random-token-123") in the database for the specified user.
+     */
     suspend fun insertTestVerificationToken(userId: UUID, token: String = "secure-random-token-123") {
         db.query {
             VerificationTokenTable.insert {
@@ -198,6 +254,10 @@ object RepositoryHelper {
         }
     }
 
+    /**
+     * Creates a test invitation token (default "secure-random-invitation-token-123") in the database
+     * with the specified properties.
+     */
     suspend fun insertTestToken(email: String, projectId: UUID, token: String = "secure-random-invitation-token-123") {
         db.query {
             InvitationTokenTable.insert {
