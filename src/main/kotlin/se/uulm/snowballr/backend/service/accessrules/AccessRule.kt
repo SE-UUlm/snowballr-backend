@@ -54,7 +54,22 @@ fun <T> AccessRule<T>.andAlso(next: AccessRule<T>): AccessRule<T> = AccessRule {
  * Otherwise, the given exception is thrown and the chains terminate.
  *
  * @param T The accessed entity type.
- * @param exception Throw the [SnowballRException] if this rule does not hold.
+ * @param exceptionProvider Creating the [SnowballRException] that is thrown if this rule does not hold.
+ */
+fun <T> AccessRule<T>.orElseThrow(exceptionProvider: (User, T) -> SnowballRException): AccessRule<T> =
+    AccessRule { requester: User, target: T ->
+        if (!this.isAllowedToAccess(requester, target)) {
+            throw exceptionProvider(requester, target)
+        }
+        true
+    }
+
+/**
+ * Checks whether this rule holds; if so, the next rule is checked.
+ * Otherwise, the given exception is thrown and the chains terminate.
+ *
+ * @param T The accessed entity type.
+ * @param exception The [SnowballRException] that is thrown if this rule does not hold.
  */
 fun <T> AccessRule<T>.orElseThrow(exception: SnowballRException): AccessRule<T> =
     AccessRule { requester: User, target: T ->

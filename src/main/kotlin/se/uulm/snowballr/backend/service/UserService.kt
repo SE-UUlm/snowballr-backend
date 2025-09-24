@@ -113,29 +113,25 @@ class UserService(
         const val MINIMUM_LENGTH_OF_SEARCH_QUERY = 3
     }
 
-    private fun isAllowedToReadUser(
-        currentUser: User,
-        targetUserId: UUID,
-        identifierType: IdentifierType,
-    ): AccessRule<UUID> {
+    private fun isAllowedToReadUser(identifierType: IdentifierType = IdentifierType.ID): AccessRule<UUID> {
         return isServerAdmin.forTarget<UUID>()
             .orElse(isSameUserById)
             .orElse(isInSameProject(projectMemberRepo))
-            .orElseThrow(
+            .orElseThrow { currentUser, targetUserId ->
                 UnauthorizedException.Single(
                     EntityType.USER,
                     targetUserId.toString(),
                     AccessType.READ,
                     currentUser.id.toString(),
                     identifierType,
-                ),
-            )
+                )
+            }
     }
 
     override suspend fun getUserById(request: Base.Id): GrpcUser = withUser(userRepo) { currentUser ->
         val targetUserId = parseUUID(request.id, EntityType.USER)
 
-        isAllowedToReadUser(currentUser, targetUserId, IdentifierType.ID).checkFor(currentUser, targetUserId)
+        isAllowedToReadUser().checkFor(currentUser, targetUserId)
 
         val isRequestedUser = currentUser.id == targetUserId
 
@@ -147,8 +143,7 @@ class UserService(
                 userRepo.getUserById(targetUserId).getOrThrow()
             }
 
-        isServerAdmin.forTarget<User>()
-            .orElse(isTargetUserActive)
+        isTargetUserActive
             .orElseThrow(NotFoundException(EntityType.USER, request.id))
             .checkFor(currentUser, targetUser)
 
@@ -159,7 +154,7 @@ class UserService(
         // We have to request the user first to get the ID for the access checks
         val targetUser = userRepo.getUserByEmail(request.email).getOrThrow()
 
-        isAllowedToReadUser(currentUser, targetUser.id, IdentifierType.EMAIL)
+        isAllowedToReadUser(IdentifierType.EMAIL)
             .forProperty(User::id)
             .andAlso(
                 isTargetUserActive
