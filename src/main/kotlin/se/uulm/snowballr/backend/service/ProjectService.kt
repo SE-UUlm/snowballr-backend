@@ -4,7 +4,9 @@ import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
+import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
+import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.toGrpcProject
 import se.uulm.snowballr.backend.model.dto.toGrpcProjectMembers
 import se.uulm.snowballr.backend.model.dto.toGrpcProjects
@@ -13,11 +15,16 @@ import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
-import se.uulm.snowballr.backend.service.accessrules.authorizeAccessTo
-import se.uulm.snowballr.backend.service.accessrules.ensureCurrentUserIsProjectMember
-import se.uulm.snowballr.backend.service.accessrules.verifyServerAdminRole
+import se.uulm.snowballr.backend.service.accessrules.checkFor
+import se.uulm.snowballr.backend.service.accessrules.forProperty
+import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadProject
+import se.uulm.snowballr.backend.service.accessrules.isServerAdmin
+import se.uulm.snowballr.backend.service.accessrules.isServerAdminOrSameUser
+import se.uulm.snowballr.backend.service.accessrules.isServerOrProjectAdmin
+import se.uulm.snowballr.backend.service.accessrules.orElseThrow
 import snowballr.Base
 import snowballr.ProjectOuterClass.ProjectStatus
+import kotlin.getOrThrow
 import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
 import snowballr.ProjectOuterClass.Project as GrpcProject
 import snowballr.ProjectOuterClass.Project.Member as GrpcProjectMember
@@ -85,7 +92,7 @@ class ProjectService(
     override suspend fun getProjectById(request: Base.Id): GrpcProject = withUser(userRepo) { currentUser ->
         val projectId = parseUUID(request.id, EntityType.PROJECT)
 
-        ensureCurrentUserIsProjectMember(projectMemberRepo, projectId, currentUser)
+        isAllowedToReadProject(projectMemberRepo).checkFor(currentUser, projectId)
 
         repo.getProjectById(projectId).getOrThrow().toGrpcProject()
     }
@@ -117,7 +124,9 @@ class ProjectService(
     }
 
     override suspend fun getAllProjects(): GrpcProject.List = withUser(userRepo) { currentUser ->
-        verifyServerAdminRole(currentUser) { UnauthorizedException.All(EntityType.PROJECT, AccessType.READ, it) }
+        isServerAdmin
+            .orElseThrow(UnauthorizedException.All(EntityType.PROJECT, AccessType.READ, currentUser.id.toString()))
+            .checkFor(currentUser, Unit)
 
         repo.getAllProjects().toGrpcProjects()
     }
@@ -127,7 +136,19 @@ class ProjectService(
         statuses: Set<ProjectStatus>,
     ): GrpcProject.List = withUser(userRepo) { currentUser ->
         val requestedUserId = parseUUID(request.id, EntityType.USER)
-        authorizeAccessTo(requestedUserId, userRepo, AccessType.READ)
+        val requestedUser = userRepo.getUserById(requestedUserId).getOrThrow()
+
+        isServerAdminOrSameUser
+            .forProperty(User::id)
+            .orElseThrow { requestingUser, _ ->
+                UnauthorizedException.Single(
+                    EntityType.USER,
+                    requestedUserId.toString(),
+                    AccessType.READ,
+                    requestingUser.id.toString(),
+                )
+            }
+            .checkFor(currentUser, requestedUser)
 
         repo.getUserProjects(requestedUserId, statuses).toGrpcProjects()
     }
@@ -146,14 +167,11 @@ class ProjectService(
     override suspend fun updateProject(request: GrpcProject.Update): GrpcProject = withUser(userRepo) { currentUser ->
         val projectId = parseUUID(request.project.id, EntityType.PROJECT)
         val project = repo.getProjectById(projectId).getOrThrow()
-        val isProjectAdmin = projectMemberRepo.getAllProjectAdmins(projectId).any { it.userId == currentUser.id }
-        val projectStatus = project.status
 
-        if (!isProjectAdmin) {
-            verifyServerAdminRole(currentUser) {
-                UnauthorizedException.Single(EntityType.PROJECT, request.project.id, AccessType.UPDATE, it)
-            }
-        }
+        isServerOrProjectAdmin(projectMemberRepo, AccessType.UPDATE).checkFor(currentUser, projectId)
+
+        // TODO (see #314): correct status handling: if a project is archived, you should only be able to activate it
+        // and if it is active, you can do everything, but deleting / restoring it never allowed.
         if (project.status == ProjectStatus.PROJECT_STATUS_DELETED) {
             throw FailedPreconditionException("The project with the id ${request.project.id} is deleted.")
         }
@@ -161,21 +179,20 @@ class ProjectService(
             throw FailedPreconditionException("The project status can not be set to deleted by an update call.")
         }
 
-        repo.updateProject(request, projectStatus).toGrpcProject()
+        repo.updateProject(request, project.status).toGrpcProject()
     }
 
     override suspend fun getProjectMembers(request: Base.Id): GrpcProjectMember.List =
         withUser(userRepo) { currentUser ->
             val projectId = parseUUID(request.id, EntityType.PROJECT)
-            repo.getProjectById(projectId).getOrThrow()
-            val projectMembersWithUsers = projectMemberRepo.getProjectMembersWithUsers(projectId)
 
-            if (!projectMembersWithUsers.any { it.user.id == currentUser.id }) {
-                verifyServerAdminRole(currentUser) {
-                    UnauthorizedException.Single(EntityType.PROJECT, projectId.toString(), AccessType.READ, it)
-                }
+            if (!repo.doesProjectExistById(projectId)) {
+                throw NotFoundException(EntityType.PROJECT, projectId.toString())
             }
 
+            isAllowedToReadProject(projectMemberRepo).checkFor(currentUser, projectId)
+
+            val projectMembersWithUsers = projectMemberRepo.getProjectMembersWithUsers(projectId)
             projectMembersWithUsers.toGrpcProjectMembers()
         }
 }

@@ -30,6 +30,7 @@ import se.uulm.snowballr.backend.service.accessrules.forTarget
 import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadUser
 import se.uulm.snowballr.backend.service.accessrules.isSameUserById
 import se.uulm.snowballr.backend.service.accessrules.isServerAdmin
+import se.uulm.snowballr.backend.service.accessrules.isServerAdminOrSameUser
 import se.uulm.snowballr.backend.service.accessrules.isTargetUserActive
 import se.uulm.snowballr.backend.service.accessrules.orElse
 import se.uulm.snowballr.backend.service.accessrules.orElseThrow
@@ -150,9 +151,9 @@ class UserService(
     }
 
     override suspend fun getAllUsers(): GrpcUser.List = withUser(userRepo) { currentUser ->
-        isServerAdmin.forTarget<User>()
+        isServerAdmin
             .orElseThrow(UnauthorizedException.All(EntityType.USER, AccessType.READ, currentUser.id.toString()))
-            .checkFor(currentUser, currentUser)
+            .checkFor(currentUser, Unit)
 
         userRepo.getAllUsers().toGrpcUsers()
     }
@@ -225,8 +226,7 @@ class UserService(
     override suspend fun softDeleteUser(request: Base.Id): Base.Nothing = withUser(userRepo) { currentUser ->
         val targetUser = userRepo.getUserById(parseUUID(request.id, EntityType.USER)).getOrThrow()
 
-        isServerAdmin.forTarget<UUID>()
-            .orElse(isSameUserById)
+        isServerAdminOrSameUser
             .orElseThrow(
                 UnauthorizedException.Single(
                     EntityType.USER,

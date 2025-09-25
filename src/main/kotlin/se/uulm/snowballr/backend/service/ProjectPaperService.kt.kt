@@ -23,7 +23,8 @@ import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.IReviewHasCriterionTableRepo
-import se.uulm.snowballr.backend.service.accessrules.ensureCurrentUserIsProjectMember
+import se.uulm.snowballr.backend.service.accessrules.checkFor
+import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadProject
 import snowballr.Base
 import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ProjectOuterClass.Project
@@ -102,7 +103,7 @@ class ProjectPaperService(
      */
     private suspend fun loadAndAuthorizeProjectPaper(projectPaper: ProjectPaper, projectId: UUID): GrpcProjectPaper =
         withUser(userRepo) { currentUser ->
-            ensureCurrentUserIsProjectMember(projectMemberRepo, projectId, currentUser)
+            isAllowedToReadProject(projectMemberRepo).checkFor(currentUser, projectId)
 
             val paper = paperRepo.getPaperById(projectPaper.paperId).getOrThrow()
             val authors = authorOfPaperTableRepo
@@ -145,7 +146,7 @@ class ProjectPaperService(
             throw NotFoundException(EntityType.PROJECT, projectId.toString())
         }
 
-        ensureCurrentUserIsProjectMember(projectMemberRepo, projectId, currentUser)
+        isAllowedToReadProject(projectMemberRepo).checkFor(currentUser, projectId)
 
         var projectPapersWithPapers = repo.getAllProjectPapersWithPapers(projectId)
         val paperAuthorsMap = mutableMapOf<Paper, List<GrpcAuthor>>()
@@ -230,7 +231,7 @@ class ProjectPaperService(
         withUser(userRepo) { currentUser ->
             val projectId = parseUUID(request.projectId, EntityType.PROJECT)
 
-            ensureCurrentUserIsProjectMember(projectMemberRepo, projectId, currentUser)
+            isAllowedToReadProject(projectMemberRepo).checkFor(currentUser, projectId)
 
             val paperId = parseUUID(request.paperId, EntityType.PAPER)
             val project = projectRepo.getProjectById(projectId).getOrThrow()

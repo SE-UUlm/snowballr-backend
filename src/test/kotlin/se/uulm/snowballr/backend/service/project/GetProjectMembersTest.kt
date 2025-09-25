@@ -36,9 +36,10 @@ class GetProjectMembersTest : MainServiceTest() {
         val projectMemberWithUser = ProjectMemberWithUser(projectMember, projectMemberUser)
 
         mockCurrentUser(adminUser)
-        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-        coEvery { projectMemberRepoMock.getProjectMembersWithUsers(project.id) } returns
-            listOf(projectMemberWithUser)
+        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
+        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns
+            listOf(projectMember)
+        coEvery { projectMemberRepoMock.getProjectMembersWithUsers(project.id) } returns listOf(projectMemberWithUser)
 
         assertDoesNotThrow { mainService.getProjectMembers(request) }
     }
@@ -52,9 +53,10 @@ class GetProjectMembersTest : MainServiceTest() {
         val projectMemberWithUser = ProjectMemberWithUser(projectMember, user)
 
         mockCurrentUser(user)
-        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-        coEvery { projectMemberRepoMock.getProjectMembersWithUsers(project.id) } returns
-            listOf(projectMemberWithUser)
+        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
+        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns
+            listOf(projectMember)
+        coEvery { projectMemberRepoMock.getProjectMembersWithUsers(project.id) } returns listOf(projectMemberWithUser)
 
         assertDoesNotThrow { mainService.getProjectMembers(request) }
     }
@@ -66,8 +68,8 @@ class GetProjectMembersTest : MainServiceTest() {
         val project = DataBuilder.createExampleProject(id = projectId)
 
         mockCurrentUser(user)
-        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-        coEvery { projectMemberRepoMock.getProjectMembersWithUsers(project.id) } returns emptyList()
+        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
+        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
         assertThrows<UnauthorizedException> { mainService.getProjectMembers(request) }
     }
@@ -80,8 +82,8 @@ class GetProjectMembersTest : MainServiceTest() {
 
             mockCurrentUser(user)
             coEvery {
-                projectRepoMock.getProjectById(projectId)
-            } returns Result.failure(NotFoundException(EntityType.PROJECT, request.id))
+                projectRepoMock.doesProjectExistById(projectId)
+            } returns false
 
             assertThrows<NotFoundException> { mainService.getProjectMembers(request) }
         }
