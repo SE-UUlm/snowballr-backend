@@ -53,6 +53,21 @@ sealed class SnowballRException(
     )
 
     /**
+     * Represents a [NotFoundException] indicating that a [User] could not be found by its identifier, i.e., UUID or email address.
+     *
+     * @param entityId The identifier of the missing [User].
+     * @param identifierType The type of the entity's identifier. Defaults to [IdentifierType.ID].
+     */
+    class UserNotFoundException(
+        entityId: String,
+        identifierType: IdentifierType = IdentifierType.ID,
+    ) : NotFoundException(
+        EntityType.USER,
+        entityId,
+        identifierType = identifierType,
+    )
+
+    /**
      * Represents an exception that occurs when an entity already exists in the system
      * and creation is not allowed.
      *
@@ -220,9 +235,20 @@ sealed class SnowballRException(
      * @constructor Creates a [FailedPreconditionException] with the description of the failed precondition.
      * @param description The description of the failed precondition.
      */
-    class FailedPreconditionException(
+    open class FailedPreconditionException(
         description: String,
     ) : SnowballRException(description)
+
+    /**
+     * Represents a [FailedPreconditionException] that indicates that an entity is not active.
+     *
+     * @param entityType The type of the entity.
+     * @param entityId The ID of the entity.
+     */
+    class EntityNotActiveException(
+        entityType: EntityType,
+        entityId: String,
+    ) : FailedPreconditionException("${entityType.singularUpper()} with ID '$entityId' is not active.")
 
     /**
      * Represents an exception that occurs within the [EmailManager].

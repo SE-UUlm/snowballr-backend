@@ -18,7 +18,6 @@ import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
-import se.uulm.snowballr.backend.service.UserService.Companion.MINIMUM_LENGTH_OF_SEARCH_QUERY
 import se.uulm.snowballr.backend.service.accessrules.verifyServerAdminRole
 import snowballr.Base
 import snowballr.ProjectOuterClass.Project
@@ -46,6 +45,7 @@ interface IInvitationService {
 }
 
 private const val INVITATION_TOKEN_LENGTH = 48
+private const val MINIMUM_LENGTH_OF_SEARCH_QUERY = 3
 
 /**
  * The [InvitationService] class handles operations related to normal papers by implementing the [IInvitationService] interface.

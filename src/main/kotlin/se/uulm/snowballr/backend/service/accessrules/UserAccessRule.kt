@@ -5,6 +5,7 @@ package se.uulm.snowballr.backend.service.accessrules
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.IdentifierType
 import se.uulm.snowballr.backend.model.SnowballRException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.User
@@ -13,6 +14,7 @@ import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
 import java.util.UUID
+import javax.annotation.CheckReturnValue
 
 /**
  * Represents an [AccessRule] to a user entity.
@@ -48,10 +50,37 @@ val targetUserIsNotAdmin = UserAccessRule { _, target -> target.role != UserRole
  *
  * @param projectMemberRepo The repository to check project membership.
  */
+@CheckReturnValue
 fun isInSameProject(projectMemberRepo: IProjectMemberTableRepo) = UUIDAccessRule { requester, targetId ->
     projectMemberRepo
         .getMembersInSameProjectsAsUser(targetId)
         .any { it.userId == requester.id }
+}
+
+/**
+ * Check whether the current user is allowed to read the target user based on specific access control rules.
+ *
+ * @param projectMemberRepo The repository to check project membership.
+ * @param identifierType The identifier type used to identify the target user (used for constructing the correct exception message, defaults to [IdentifierType.ID]).
+ * @return An [AccessRule] that checks whether the current user has read permissions for a target user.
+ */
+@CheckReturnValue
+fun isAllowedToReadUser(
+    projectMemberRepo: IProjectMemberTableRepo,
+    identifierType: IdentifierType = IdentifierType.ID,
+): AccessRule<UUID> {
+    return isServerAdmin.forTarget<UUID>()
+        .orElse(isSameUserById)
+        .orElse(isInSameProject(projectMemberRepo))
+        .orElseThrow { currentUser, targetUserId ->
+            UnauthorizedException.Single(
+                EntityType.USER,
+                targetUserId.toString(),
+                AccessType.READ,
+                currentUser.id.toString(),
+                identifierType,
+            )
+        }
 }
 
 /**
