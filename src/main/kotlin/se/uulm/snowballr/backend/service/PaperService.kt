@@ -2,10 +2,7 @@ package se.uulm.snowballr.backend.service
 
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.SnowballRException
-import se.uulm.snowballr.backend.model.dto.Author
-import se.uulm.snowballr.backend.model.dto.toGrpcAuthor
-import se.uulm.snowballr.backend.model.dto.toGrpcPaper
+import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.toGrpcPapers
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
@@ -52,10 +49,7 @@ class PaperService(
         val paperId = parseUUID(request.id, EntityType.PAPER)
         val paper = repo.getPaperById(paperId).getOrThrow()
 
-        val authors = authorOfPapersRepo.getAuthorsOfPaperById(paperId).map { it.toGrpcAuthor() }
-        val backwardReferencedIds = citationRepo.getBackwardsReferencedPaperIdsOfPaperById(paperId)
-            .map { it.toString() }
-        return paper.toGrpcPaper(authors, backwardReferencedIds)
+        return paper.toGrpcPaperWithAuthorsAndBackwardReferences(authorOfPapersRepo, citationRepo)
     }
 
     override suspend fun getBackwardReferencedPapers(request: Base.Id): GrpcPaper.List =
@@ -72,23 +66,18 @@ class PaperService(
      * @param request The request containing the ID of the paper for which references are to be retrieved.
      * @param function A function that takes a paper ID and returns a list of UUIDs of the references.
      * @return A list of gRPC-compatible paper objects containing reference information.
-     * @throws SnowballRException.NotFoundException If the paper specified in the request does not exist.
+     * @throws NotFoundException If the paper specified in the request does not exist.
      */
     private suspend fun getReferencePapers(request: Base.Id, function: suspend (UUID) -> List<UUID>): GrpcPaper.List {
         val paperId = parseUUID(request.id, EntityType.PAPER)
         if (!repo.doesPaperExistById(paperId)) {
-            throw SnowballRException.NotFoundException(EntityType.PAPER, paperId.toString())
+            throw NotFoundException(EntityType.PAPER, paperId.toString())
         }
 
         val referenceIds = function.invoke(paperId)
         val papers = referenceIds.map {
             val referencedPaper = repo.getPaperById(it).getOrThrow()
-            val authors = authorOfPapersRepo.getAuthorsOfPaperById(referencedPaper.id)
-                .map(Author::toGrpcAuthor)
-            val backwardReferences = citationRepo
-                .getBackwardsReferencedPaperIdsOfPaperById(referencedPaper.id)
-                .map(UUID::toString)
-            referencedPaper.toGrpcPaper(authors, backwardReferences)
+            referencedPaper.toGrpcPaperWithAuthorsAndBackwardReferences(authorOfPapersRepo, citationRepo)
         }
         return papers.toGrpcPapers()
     }

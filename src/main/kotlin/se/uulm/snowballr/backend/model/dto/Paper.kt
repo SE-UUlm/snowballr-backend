@@ -5,6 +5,7 @@ import snowballr.PaperOuterClass
 import snowballr.paper
 import java.time.OffsetDateTime
 import java.util.UUID
+import snowballr.PaperOuterClass.Paper as GrpcPaper
 
 /**
  * DTO of [PaperTable].
@@ -26,12 +27,9 @@ data class Paper(
 )
 
 /**
- * Creates a [PaperOuterClass.Paper] from this [Paper].
+ * Creates a [GrpcPaper] from this [Paper].
  */
-fun Paper.toGrpcPaper(
-    authorList: List<PaperOuterClass.Author>,
-    backwardReferencedIdsList: List<String>,
-): PaperOuterClass.Paper {
+fun Paper.toGrpcPaper(authorList: List<PaperOuterClass.Author>, backwardReferencedIdsList: List<String>): GrpcPaper {
     val paper = this
     return paper {
         id = paper.id.toString()
@@ -49,9 +47,9 @@ fun Paper.toGrpcPaper(
 }
 
 /**
- * Converts a list of [PaperOuterClass.Paper] objects into a [PaperOuterClass.Paper.List].
+ * Converts a list of [GrpcPaper] objects into a [GrpcPaper.List].
  */
-fun List<PaperOuterClass.Paper>.toGrpcPapers(): PaperOuterClass.Paper.List = PaperOuterClass.Paper.List
+fun List<GrpcPaper>.toGrpcPapers(): GrpcPaper.List = GrpcPaper.List
     .newBuilder()
     .addAllPapers(this)
     .build()
