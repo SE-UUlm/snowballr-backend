@@ -50,6 +50,8 @@ class GetProjectPaperByIdTest : MainServiceTest() {
         val author = DataBuilder.createExampleAuthor()
         val review = DataBuilder.createExampleReview()
 
+        mockCurrentUser(currentUser)
+
         if (failAt == projectPaperRepoMock::getProjectPaperById) {
             coEvery {
                 projectPaperRepoMock.getProjectPaperById(projectPaper.id)
@@ -58,7 +60,6 @@ class GetProjectPaperByIdTest : MainServiceTest() {
         }
         coEvery { projectPaperRepoMock.getProjectPaperById(projectPaper.id) } returns Result.success(projectPaper)
 
-        mockCurrentUser(currentUser)
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns
             if (isUserAdmin) {
                 emptyList()

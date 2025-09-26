@@ -1,11 +1,14 @@
 package se.uulm.snowballr.backend.service
 
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
+import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.DuplicateEntityException
+import se.uulm.snowballr.backend.model.SnowballRException.EntityNotActiveException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.OutOfRangeException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
+import se.uulm.snowballr.backend.model.dto.Author
 import se.uulm.snowballr.backend.model.dto.Paper
 import se.uulm.snowballr.backend.model.dto.ProjectPaper
 import se.uulm.snowballr.backend.model.dto.ProjectPaperWithPaper
@@ -25,6 +28,9 @@ import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.IReviewHasCriterionTableRepo
 import se.uulm.snowballr.backend.service.accessrules.checkFor
 import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadProject
+import se.uulm.snowballr.backend.service.accessrules.isProjectActive
+import se.uulm.snowballr.backend.service.accessrules.isServerOrProjectAdmin
+import se.uulm.snowballr.backend.service.accessrules.orElseThrow
 import snowballr.Base
 import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ProjectOuterClass.Project
@@ -92,37 +98,29 @@ class ProjectPaperService(
     private val reviewHasCriterionTableRepo: IReviewHasCriterionTableRepo,
 ) : IProjectPaperService {
     /**
-     * Retrieves the gRPC representation of a project's paper, including associated data such as authors,
-     * backward references, and reviews. Furthermore, it ensures that the current user has the necessary permissions to access
-     * the project's paper.
+     * Populates the given [ProjectPaper] with its authors, backward references, and reviews.
      *
-     * @param projectPaper The project paper, containing the ids linking to the associated data.
-     * @param projectId The unique identifier of the project to which the paper belongs.
-     * @return The gRPC representation of the project's paper, including associated data.
-     * @throws UnauthorizedException.Single If the current user does not have the required read access to the project.
+     * @param associatedPaper The [Paper] that is associated with this [ProjectPaper]. If not provided, it is requested
+     * from the database using the paper id from the project paper.
+     * @return The gRPC representation of the project paper, including the associated data.
      */
-    private suspend fun loadAndAuthorizeProjectPaper(projectPaper: ProjectPaper, projectId: UUID): GrpcProjectPaper =
-        withUser(userRepo) { currentUser ->
-            isAllowedToReadProject(projectMemberRepo).checkFor(currentUser, projectId)
+    private suspend fun ProjectPaper.toGrpcProjectPaperWithData(associatedPaper: Paper? = null): GrpcProjectPaper {
+        val paper = associatedPaper ?: paperRepo.getPaperById(paperId).getOrThrow()
 
-            val paper = paperRepo.getPaperById(projectPaper.paperId).getOrThrow()
-            val authors = authorOfPaperTableRepo
-                .getAuthorsOfPaperById(paper.id)
-                .map { it.toGrpcAuthor() }
+        val authors = authorOfPaperTableRepo.getAuthorsOfPaperById(paper.id).map(Author::toGrpcAuthor)
 
-            val backwardReferences = citationTableRepo
-                .getBackwardsReferencedPaperIdsOfPaperById(paper.id)
-                .map { it.toString() }
+        val backwardReferences = citationTableRepo
+            .getBackwardsReferencedPaperIdsOfPaperById(paper.id).map(UUID::toString)
 
-            val reviews = reviewTableRepo
-                .getAllReviewsForProjectPaper(projectPaper.id)
-                .map {
-                    val selectedCriteriaIds = reviewHasCriterionTableRepo.getSelectedCriteriaIdsForReviewById(it.id)
-                    it.toGrpcReview(selectedCriteriaIds.map(UUID::toString))
-                }
+        val reviews = reviewTableRepo
+            .getAllReviewsForProjectPaper(id)
+            .map {
+                val selectedCriteriaIds = reviewHasCriterionTableRepo.getSelectedCriteriaIdsForReviewById(it.id)
+                it.toGrpcReview(selectedCriteriaIds.map(UUID::toString))
+            }
 
-            ProjectPaperWithPaper(projectPaper, paper).toGrpcProjectPaper(authors, backwardReferences, reviews)
-        }
+        return ProjectPaperWithPaper(this, paper).toGrpcProjectPaper(authors, backwardReferences, reviews)
+    }
 
     /**
      * Retrieves a list of [ProjectPaper] associated with a specified project id. This method also ensures access
@@ -152,10 +150,11 @@ class ProjectPaperService(
         val paperAuthorsMap = mutableMapOf<Paper, List<GrpcAuthor>>()
         val paperBackwardReferencesMap = mutableMapOf<Paper, List<String>>()
         val projectPaperReviewsMap = mutableMapOf<ProjectPaper, List<GrpcReview>>()
+
         for (projectPaper in projectPapersWithPapers) {
             val paper = projectPaper.paper
             paperAuthorsMap[paper] = authorOfPaperTableRepo
-                .getAuthorsOfPaperById(paper.id).map { it.toGrpcAuthor() }
+                .getAuthorsOfPaperById(paper.id).map(Author::toGrpcAuthor)
             paperBackwardReferencesMap[paper] = citationTableRepo
                 .getBackwardsReferencedPaperIdsOfPaperById(paper.id).map(UUID::toString)
             projectPaperReviewsMap[projectPaper.projectPaper] = reviewTableRepo
@@ -165,6 +164,7 @@ class ProjectPaperService(
                     it.toGrpcReview(selectedCriteriaIds.map(UUID::toString))
                 }
         }
+
         projectPapersWithPapers = predicate?.let { pred ->
             projectPapersWithPapers.filter { pred(it, projectPaperReviewsMap, currentUser.id.toString()) }
         } ?: projectPapersWithPapers
@@ -172,34 +172,18 @@ class ProjectPaperService(
         projectPapersWithPapers.toGrpcProjectPapers(paperAuthorsMap, paperBackwardReferencesMap, projectPaperReviewsMap)
     }
 
-    /**
-     * Converts a combination of [Paper] and [ProjectPaper] into a gRPC-compatible [GrpcProjectPaper] object.
-     * This includes enriching the data with associated authors, backward references, and reviews.
-     *
-     * @param paper The [Paper] containing base paper details.
-     * @param projectPaper The [ProjectPaper] linking the [Paper] to a specific project and its metadata.
-     * @return A [GrpcProjectPaper] object that encapsulates the paper, associated metadata, authors,
-     * backward references, and reviews.
-     */
-    private suspend fun getGrpcProjectPaper(paper: Paper, projectPaper: ProjectPaper): GrpcProjectPaper {
-        val authors = authorOfPaperTableRepo.getAuthorsOfPaperById(paper.id).map { it.toGrpcAuthor() }
-        val backwardReferences = citationTableRepo
-            .getBackwardsReferencedPaperIdsOfPaperById(paper.id).map(UUID::toString)
-        val reviews = reviewTableRepo.getAllReviewsForProjectPaper(projectPaper.id)
-            .map {
-                val selectedCriteriaIds = reviewHasCriterionTableRepo.getSelectedCriteriaIdsForReviewById(it.id)
-                it.toGrpcReview(selectedCriteriaIds.map(UUID::toString))
-            }
-        return ProjectPaperWithPaper(projectPaper, paper).toGrpcProjectPaper(authors, backwardReferences, reviews)
-    }
-
-    override suspend fun getProjectPaperById(request: Base.Id): GrpcProjectPaper {
+    override suspend fun getProjectPaperById(request: Base.Id): GrpcProjectPaper = withUser(userRepo) { currentUser ->
         val projectPaperId = parseUUID(request.id, EntityType.PROJECT_PAPER)
         val projectPaper = repo.getProjectPaperById(projectPaperId).getOrThrow()
-        return loadAndAuthorizeProjectPaper(projectPaper, projectPaper.projectId)
+
+        isAllowedToReadProject(projectMemberRepo).checkFor(currentUser, projectPaper.projectId)
+
+        projectPaper.toGrpcProjectPaperWithData()
     }
 
-    override suspend fun getProjectPaperByRelativeId(request: GrpcProjectPaper.Get): GrpcProjectPaper {
+    override suspend fun getProjectPaperByRelativeId(request: GrpcProjectPaper.Get): GrpcProjectPaper = withUser(
+        userRepo,
+    ) { currentUser ->
         val projectId = parseUUID(request.projectId, EntityType.PROJECT)
         if (!projectRepo.doesProjectExistById(projectId)) {
             throw NotFoundException(EntityType.PROJECT, projectId.toString())
@@ -207,7 +191,10 @@ class ProjectPaperService(
 
         val relativeId = request.relativeProjectPaperId.toLong()
         val projectPaper = repo.getProjectPaperByRelativeId(projectId, relativeId).getOrThrow()
-        return loadAndAuthorizeProjectPaper(projectPaper, projectId)
+
+        isAllowedToReadProject(projectMemberRepo).checkFor(currentUser, projectPaper.projectId)
+
+        projectPaper.toGrpcProjectPaperWithData()
     }
 
     override suspend fun getAllProjectPapersForProject(request: Base.Id): GrpcProjectPaper.List =
@@ -230,15 +217,20 @@ class ProjectPaperService(
     override suspend fun addPaperToProject(request: GrpcProjectPaper.Add): GrpcProjectPaper =
         withUser(userRepo) { currentUser ->
             val projectId = parseUUID(request.projectId, EntityType.PROJECT)
-
-            isAllowedToReadProject(projectMemberRepo).checkFor(currentUser, projectId)
-
             val paperId = parseUUID(request.paperId, EntityType.PAPER)
+
             val project = projectRepo.getProjectById(projectId).getOrThrow()
             val paper = paperRepo.getPaperById(paperId).getOrThrow()
+
             if (repo.doesProjectPaperExist(projectId, paperId)) {
                 throw DuplicateEntityException(EntityType.PROJECT_PAPER, projectId.toString(), paperId.toString())
             }
+
+            isProjectActive
+                .orElseThrow(EntityNotActiveException(EntityType.PROJECT, projectId.toString()))
+                .checkFor(currentUser, project)
+
+            isServerOrProjectAdmin(projectMemberRepo, AccessType.CREATE).checkFor(currentUser, projectId)
 
             if (request.stage !in 0..project.maxStage) {
                 throw OutOfRangeException.Stage(request.stage, project.maxStage)
@@ -246,6 +238,6 @@ class ProjectPaperService(
 
             val projectPaper = repo.addPaperToProject(request, currentUser.id)
 
-            getGrpcProjectPaper(paper, projectPaper)
+            projectPaper.toGrpcProjectPaperWithData(paper)
         }
 }
