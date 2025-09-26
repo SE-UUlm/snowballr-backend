@@ -39,9 +39,12 @@ class InviteUserToProjectTest : MainServiceTest() {
     @Test
     fun `When the project is not active, then a FailedPreconditionException is thrown`() = runTest {
         val project = DataBuilder.createExampleProject(status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ARCHIVED)
+        val currentUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_DEFAULT)
         val request = ProjectOuterClass.Project.Member.Invite.newBuilder()
             .setProjectId(project.id.toString())
             .build()
+
+        mockCurrentUser(currentUser)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
         assertThrows<FailedPreconditionException> { mainService.inviteUserToProject(request) }

@@ -6,11 +6,11 @@ import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.mail.IEmailManager
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.SnowballRException.EntityNotActiveException
 import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
 import se.uulm.snowballr.backend.model.SnowballRException.InvalidIdException
 import se.uulm.snowballr.backend.model.SnowballRException.InvitationTokenNotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
-import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.toGrpcUsers
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.parseUUID
@@ -18,10 +18,12 @@ import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
-import se.uulm.snowballr.backend.service.accessrules.verifyServerAdminRole
+import se.uulm.snowballr.backend.service.accessrules.checkFor
+import se.uulm.snowballr.backend.service.accessrules.isProjectActive
+import se.uulm.snowballr.backend.service.accessrules.isServerOrProjectAdmin
+import se.uulm.snowballr.backend.service.accessrules.orElseThrow
 import snowballr.Base
 import snowballr.ProjectOuterClass.Project
-import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.UserOuterClass.UserStatus
 import java.time.OffsetDateTime
 import snowballr.ProjectOuterClass.Project as GrpcProject
@@ -92,28 +94,14 @@ class InvitationService(
         // Check whether a project with the given id exists
         val projectId = parseUUID(request.projectId, EntityType.PROJECT)
         val project = projectRepo.getProjectById(projectId).getOrThrow()
-
-        // Check whether the project is active
-        if (project.status != ProjectStatus.PROJECT_STATUS_ACTIVE) {
-            throw FailedPreconditionException(
-                "The project with the id $projectId is not active.",
-            )
-        }
-
-        // Check whether the current user is a server admin or a project admin
         val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
 
-        val isProjectAdmin = projectMemberRepo.getAllProjectAdmins(projectId).any { it.userId == currentUser.id }
-        if (!isProjectAdmin) {
-            verifyServerAdminRole(currentUser) {
-                throw UnauthorizedException.Single(
-                    EntityType.PROJECT,
-                    projectId.toString(),
-                    AccessType.READ,
-                    it,
-                )
-            }
-        }
+        isProjectActive
+            .orElseThrow(EntityNotActiveException(EntityType.PROJECT, projectId.toString()))
+            .checkFor(currentUser, project)
+
+        isServerOrProjectAdmin(projectMemberRepo, AccessType.READ)
+            .checkFor(currentUser, projectId)
 
         // Generate and save invitation token
         val invitationToken = NanoId.generate(INVITATION_TOKEN_LENGTH)

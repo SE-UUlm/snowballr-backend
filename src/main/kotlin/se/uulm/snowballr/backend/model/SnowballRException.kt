@@ -248,7 +248,7 @@ sealed class SnowballRException(
     class EntityNotActiveException(
         entityType: EntityType,
         entityId: String,
-    ) : FailedPreconditionException("${entityType.singularUpper()} with ID '$entityId' is not active.")
+    ) : FailedPreconditionException("The ${entityType.singularUpper()} with ID '$entityId' is not active.")
 
     /**
      * Represents an exception that occurs within the [EmailManager].

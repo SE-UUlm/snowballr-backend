@@ -5,9 +5,21 @@ package se.uulm.snowballr.backend.service.accessrules
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
+import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
+import snowballr.ProjectOuterClass.ProjectStatus
 import java.util.UUID
 import javax.annotation.CheckReturnValue
+
+/**
+ * Represents an [AccessRule] to a project entity.
+ */
+fun interface ProjectAccessRule : AccessRule<Project>
+
+val isProjectActive = ProjectAccessRule { _, project ->
+    project.status == ProjectStatus.PROJECT_STATUS_ACTIVE ||
+        project.status == ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED
+}
 
 /**
  * Check whether the requesting user is a member of a specific project.

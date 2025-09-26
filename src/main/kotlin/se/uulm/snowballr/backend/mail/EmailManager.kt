@@ -17,6 +17,7 @@ interface IEmailManager {
      *
      * @param to The recipient's email address.
      * @param data The data model containing the user's data.
+     * @throws MailSendFailed if the email could not be sent.
      */
     fun sendVerificationEmail(to: String, data: EmailData.EmailVerification)
 
@@ -25,6 +26,7 @@ interface IEmailManager {
      *
      * @param to The recipient's email address.
      * @param data The data model containing the user's data.
+     * @throws MailSendFailed if the email could not be sent.
      */
     fun sendAcceptProjectInvitationEmail(to: String, data: EmailData.AcceptProjectInvitation)
 
@@ -67,24 +69,10 @@ class EmailManager(
     private val mailer: Mailer,
     private val emailTemplateManager: EmailTemplateManager,
 ) : IEmailManager {
-    /**
-     * Sends a verification email to the specified recipient.
-     *
-     * @param to The recipient's email address.
-     * @param data The email verification data model.
-     * @throws MailSendFailed if the email could not be sent.
-     */
     override fun sendVerificationEmail(to: String, data: EmailData.EmailVerification) {
         sendEmail(to, EmailTemplate.EMAIL_VERIFICATION, data)
     }
 
-    /**
-     * Sends an 'accept project invitation' email to the specified recipient.
-     *
-     * @param to The recipient's email address.
-     * @param data The accept project invitation data model.
-     * @throws MailSendFailed if the email could not be sent.
-     */
     override fun sendAcceptProjectInvitationEmail(to: String, data: EmailData.AcceptProjectInvitation) {
         sendEmail(to, EmailTemplate.ACCEPT_PROJECT_INVITATION, data)
     }
