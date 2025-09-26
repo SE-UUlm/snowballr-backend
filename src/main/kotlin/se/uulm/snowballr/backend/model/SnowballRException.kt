@@ -125,7 +125,11 @@ sealed class SnowballRException(
             identifierType: IdentifierType = IdentifierType.ID,
         ) : UnauthorizedException(
             currentUserId,
-            "${accessedEntityType.singular} with ${identifierType.displayName} '$accessedEntityId'.",
+            if (accessType == AccessType.CREATE) {
+                "${accessedEntityType.singular}."
+            } else {
+                "${accessedEntityType.singular} with ${identifierType.displayName} '$accessedEntityId'."
+            },
             accessType,
         )
 

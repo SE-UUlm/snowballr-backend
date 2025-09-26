@@ -16,6 +16,9 @@ import javax.annotation.CheckReturnValue
  */
 fun interface ProjectAccessRule : AccessRule<Project>
 
+/**
+ * Check whether the project is active (or active, but settings are locked).
+ */
 val isProjectActive = ProjectAccessRule { _, project ->
     project.status == ProjectStatus.PROJECT_STATUS_ACTIVE ||
         project.status == ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED
@@ -38,7 +41,7 @@ private fun isProjectMember(projectMemberRepo: IProjectMemberTableRepo) = UUIDAc
  * @param projectMemberRepo The project member repository used to retrieve a project admins list.
  */
 @CheckReturnValue
-private fun isProjectAdmin(projectMemberRepo: IProjectMemberTableRepo) = UUIDAccessRule { requester, targetId ->
+fun isProjectAdmin(projectMemberRepo: IProjectMemberTableRepo) = UUIDAccessRule { requester, targetId ->
     val projectAdmins = projectMemberRepo.getAllProjectAdmins(targetId)
     projectAdmins.any { it.userId == requester.id }
 }

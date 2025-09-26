@@ -85,7 +85,7 @@ class CreateCriterionTest : MainServiceTest() {
 
     @GrpcEnumSourceTest(
         ProjectStatus::class,
-        excludes = ["PROJECT_STATUS_ACTIVE", "PROJECT_STATUS_UNSPECIFIED"],
+        excludes = ["PROJECT_STATUS_ACTIVE", "PROJECT_STATUS_ACTIVE_LOCKED", "PROJECT_STATUS_UNSPECIFIED"],
     )
     fun `When a project admin creates a project criterion for a non active project, then a FailedPreconditionException is thrown`(
         status: ProjectStatus,
@@ -100,7 +100,6 @@ class CreateCriterionTest : MainServiceTest() {
 
         mockCurrentUser(user)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-        coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
 
         assertThrows<FailedPreconditionException> { mainService.createCriterion(request) }
     }

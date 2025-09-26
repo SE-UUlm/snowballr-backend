@@ -78,18 +78,3 @@ fun isAllowedToReadUser(
             )
         }
 }
-
-/**
- * Verifies that the [user] has the role [UserRole.USER_ROLE_ADMIN].
- *
- * If the user is not a server admin, a [UnauthorizedException] is thrown.
- *
- * @param user The user to verify
- * @param getException Getter method for the subtype of [UnauthorizedException], which is thrown
- * when the user is not a server admin.
- */
-suspend fun verifyServerAdminRole(user: User, getException: (String) -> UnauthorizedException) {
-    isServerAdmin.forTarget<User>()
-        .orElseThrow(getException(user.id.toString()))
-        .checkFor(user, user)
-}

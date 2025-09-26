@@ -34,7 +34,6 @@ class GetCriterionByIdTest : MainServiceTest() {
         )
 
         mockCurrentUser(adminUser)
-        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
         coEvery { criterionRepoMock.getCriterionById(criterionId) } returns Result.success(criterion)
 
@@ -57,7 +56,6 @@ class GetCriterionByIdTest : MainServiceTest() {
 
             mockCurrentUser(user)
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
-            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
             coEvery { criterionRepoMock.getCriterionById(criterionId) } returns Result.success(criterion)
 
             assertDoesNotThrow { mainService.getCriterionById(request) }
@@ -77,7 +75,6 @@ class GetCriterionByIdTest : MainServiceTest() {
             )
 
             mockCurrentUser(noAccessUser)
-            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
             coEvery { criterionRepoMock.getCriterionById(criterionId) } returns Result.success(criterion)
 

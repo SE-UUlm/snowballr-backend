@@ -31,7 +31,7 @@ private fun isUserInProjectOfReview(
 }
 
 /**
- * Check whether the current user is a member of the specified project. If the user is not a project member,
+ * Check whether the current user is a member of the project. If the user is not a project member,
  * the user has to be a server admin; otherwise, throws an [UnauthorizedException.Single].
  *
  * Actually, this rule should be used to check whether the current user is allowed to read the review,
