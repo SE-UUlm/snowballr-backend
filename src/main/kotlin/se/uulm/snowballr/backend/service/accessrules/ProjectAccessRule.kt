@@ -5,15 +5,9 @@ package se.uulm.snowballr.backend.service.accessrules
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
-import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import java.util.UUID
 import javax.annotation.CheckReturnValue
-
-/**
- * Represents an [AccessRule] to a project entity.
- */
-fun interface ProjectAccessRule : AccessRule<Project>
 
 /**
  * Check whether the requesting user is a member of a specific project.
