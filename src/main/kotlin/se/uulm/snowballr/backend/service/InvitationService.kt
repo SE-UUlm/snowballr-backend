@@ -150,12 +150,12 @@ class InvitationService(
 
         // Check if the user is registered and verified
         val user = try {
-            userRepo.getUserByEmail(invitationToken.email)
+            userRepo.getUserByEmail(invitationToken.email).getOrThrow()
         } catch (_: NotFoundException) {
             throw FailedPreconditionException(
                 "The user with the email ${invitationToken.email} is not registered.",
             )
-        }.getOrThrow()
+        }
 
         if (user.status != UserStatus.USER_STATUS_ACTIVE) {
             throw FailedPreconditionException(
