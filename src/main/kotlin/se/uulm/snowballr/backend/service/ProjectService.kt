@@ -124,7 +124,7 @@ class ProjectService(
     }
 
     override suspend fun getAllProjects(): GrpcProject.List = withUser(userRepo) { currentUser ->
-        isServerAdmin
+        isServerAdmin()
             .orElseThrow(UnauthorizedException.All(EntityType.PROJECT, AccessType.READ, currentUser.id.toString()))
             .checkFor(currentUser, Unit)
 
@@ -138,7 +138,7 @@ class ProjectService(
         val requestedUserId = parseUUID(request.id, EntityType.USER)
         val requestedUser = userRepo.getUserById(requestedUserId).getOrThrow()
 
-        isServerAdminOrSameUser
+        isServerAdminOrSameUser()
             .forProperty(User::id)
             .orElseThrow { requestingUser, _ ->
                 UnauthorizedException.Single(

@@ -16,6 +16,7 @@ import javax.annotation.CheckReturnValue
  * @param projectMemberRepo The repository used to access project membership data.
  * @param projectPaperRepo The repository used to access project-papers.
  */
+@CheckReturnValue
 private fun isUserInProjectOfReview(
     projectMemberRepo: IProjectMemberTableRepo,
     projectPaperRepo: IProjectPaperTableRepo,
@@ -41,7 +42,7 @@ fun isAllowedToReadReview(
     projectPaperRepo: IProjectPaperTableRepo,
 ): AccessRule<Review> {
     return isUserInProjectOfReview(projectMemberRepo, projectPaperRepo)
-        .orElse(isServerAdmin.forTarget())
+        .orElse(isServerAdmin().forTarget())
         .orElseThrow { currentUser, target ->
             UnauthorizedException.Single(
                 EntityType.REVIEW,

@@ -125,8 +125,8 @@ class UserService(
             }
 
         // Only active or active unconfirmed users can be retrieved if the requester is not a server admin
-        isServerAdmin.forTarget<User>()
-            .orElse(isTargetUserActive)
+        isServerAdmin().forTarget<User>()
+            .orElse(isTargetUserActive())
             .orElseThrow(UserNotFoundException(request.id))
             .checkFor(currentUser, targetUser)
 
@@ -141,8 +141,8 @@ class UserService(
             .forProperty(User::id)
             // Only active or active unconfirmed users can be retrieved if the requester is not a server admin
             .andAlso(
-                isServerAdmin.forTarget<User>()
-                    .orElse(isTargetUserActive)
+                isServerAdmin().forTarget<User>()
+                    .orElse(isTargetUserActive())
                     .orElseThrow(UserNotFoundException(request.email, IdentifierType.EMAIL)),
             )
             .checkFor(currentUser, targetUser)
@@ -151,7 +151,7 @@ class UserService(
     }
 
     override suspend fun getAllUsers(): GrpcUser.List = withUser(userRepo) { currentUser ->
-        isServerAdmin
+        isServerAdmin()
             .orElseThrow(UnauthorizedException.All(EntityType.USER, AccessType.READ, currentUser.id.toString()))
             .checkFor(currentUser, Unit)
 
@@ -196,12 +196,12 @@ class UserService(
             currentUser.id.toString(),
         )
 
-        isSameUserById
+        isSameUserById()
             .forProperty(User::id)
             .orElse(
-                isServerAdmin.forTarget<User>()
+                isServerAdmin().forTarget<User>()
                     .andAlso(
-                        isTargetUserActive
+                        isTargetUserActive()
                             .orElseThrow(EntityNotActiveException(EntityType.USER, targetUserId.toString())),
                     ),
             )
@@ -210,7 +210,7 @@ class UserService(
 
         // If the role is changed, the requesting user must be a server admin.
         if (request.mask.pathsList.contains("role")) {
-            isServerAdmin.forTarget<UUID>()
+            isServerAdmin().forTarget<UUID>()
                 .orElseThrow(notAllowedToUpdateException)
                 .checkFor(currentUser, targetUserId)
         }
@@ -226,7 +226,7 @@ class UserService(
     override suspend fun softDeleteUser(request: Base.Id): Base.Nothing = withUser(userRepo) { currentUser ->
         val targetUser = userRepo.getUserById(parseUUID(request.id, EntityType.USER)).getOrThrow()
 
-        isServerAdminOrSameUser
+        isServerAdminOrSameUser()
             .orElseThrow(
                 UnauthorizedException.Single(
                     EntityType.USER,
@@ -237,8 +237,8 @@ class UserService(
             )
             .forProperty(User::id)
             .andAlso(
-                targetUserIsNotAdmin
-                    .orElse(isSameUserById.forProperty(User::id))
+                targetUserIsNotAdmin()
+                    .orElse(isSameUserById().forProperty(User::id))
                     .orElseThrow(
                         FailedPreconditionException(
                             "The user with the id ${targetUser.id} can not be deleted because the user is an admin.",

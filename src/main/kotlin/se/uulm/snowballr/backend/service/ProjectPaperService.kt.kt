@@ -226,7 +226,7 @@ class ProjectPaperService(
                 throw DuplicateEntityException(EntityType.PROJECT_PAPER, projectId.toString(), paperId.toString())
             }
 
-            isProjectActive
+            isProjectActive()
                 .orElseThrow(EntityNotActiveException(EntityType.PROJECT, projectId.toString()))
                 .checkFor(currentUser, project)
 

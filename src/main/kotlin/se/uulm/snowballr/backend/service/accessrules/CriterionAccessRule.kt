@@ -12,7 +12,8 @@ import javax.annotation.CheckReturnValue
  * Check whether the current user created the target criterion.
  * Additionally, the criterion must be a user criterion.
  */
-val isCreatorOfCriterion = AccessRule<Criterion> { currentUser, criterion ->
+@CheckReturnValue
+fun isCreatorOfCriterion() = AccessRule<Criterion> { currentUser, criterion ->
     criterion is UserCriterion && currentUser.id == criterion.createdBy
 }
 

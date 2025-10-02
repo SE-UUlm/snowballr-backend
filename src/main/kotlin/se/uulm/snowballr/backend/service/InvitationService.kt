@@ -96,7 +96,7 @@ class InvitationService(
         val project = projectRepo.getProjectById(projectId).getOrThrow()
         val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
 
-        isProjectActive
+        isProjectActive()
             .orElseThrow(EntityNotActiveException(EntityType.PROJECT, projectId.toString()))
             .checkFor(currentUser, project)
 

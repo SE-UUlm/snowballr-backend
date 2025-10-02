@@ -14,7 +14,8 @@ import javax.annotation.CheckReturnValue
 /**
  * Check whether the project is active (or active, but settings are locked).
  */
-val isProjectActive = AccessRule<Project> { _, project ->
+@CheckReturnValue
+fun isProjectActive() = AccessRule<Project> { _, project ->
     project.status == ProjectStatus.PROJECT_STATUS_ACTIVE ||
         project.status == ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED
 }
@@ -50,7 +51,7 @@ fun isProjectAdmin(projectMemberRepo: IProjectMemberTableRepo) = AccessRule<UUID
 @CheckReturnValue
 fun isAllowedToReadProject(projectMemberRepo: IProjectMemberTableRepo): AccessRule<UUID> {
     return isProjectMember(projectMemberRepo)
-        .orElse(isServerAdmin.forTarget())
+        .orElse(isServerAdmin().forTarget())
         .orElseThrow { currentUser, targetId ->
             UnauthorizedException.Single(
                 EntityType.PROJECT,
@@ -68,7 +69,7 @@ fun isAllowedToReadProject(projectMemberRepo: IProjectMemberTableRepo): AccessRu
 @CheckReturnValue
 fun isServerOrProjectAdmin(projectMemberRepo: IProjectMemberTableRepo, accessType: AccessType): AccessRule<UUID> {
     return isProjectAdmin(projectMemberRepo)
-        .orElse(isServerAdmin.forTarget())
+        .orElse(isServerAdmin().forTarget())
         .orElseThrow { currentUser, targetId ->
             UnauthorizedException.Single(EntityType.PROJECT, targetId.toString(), accessType, currentUser.id.toString())
         }

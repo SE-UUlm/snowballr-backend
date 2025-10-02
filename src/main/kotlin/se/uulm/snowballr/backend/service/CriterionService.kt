@@ -78,9 +78,9 @@ class CriterionService(
         val criterionId = parseUUID(request.id, EntityType.CRITERION)
         val criterion = repo.getCriterionById(criterionId).getOrThrow()
 
-        isCreatorOfCriterion
+        isCreatorOfCriterion()
             .orElse(isUserInProjectOfCriterion(projectMemberRepo))
-            .orElse(isServerAdmin.forTarget())
+            .orElse(isServerAdmin().forTarget())
             .orElseThrow { user, target ->
                 UnauthorizedException.Single(
                     EntityType.CRITERION,
@@ -99,12 +99,12 @@ class CriterionService(
             if (request.projectId.isNotEmpty()) {
                 val project = projectRepo.getProjectById(parseUUID(request.projectId, EntityType.PROJECT)).getOrThrow()
 
-                isProjectActive
+                isProjectActive()
                     .orElseThrow(EntityNotActiveException(EntityType.PROJECT, project.id.toString()))
                     .checkFor(currentUser, project)
 
                 isProjectAdmin(projectMemberRepo)
-                    .orElse(isServerAdmin.forTarget())
+                    .orElse(isServerAdmin().forTarget())
                     .orElseThrow { user, target ->
                         UnauthorizedException.Single(
                             EntityType.CRITERION,
@@ -127,14 +127,14 @@ class CriterionService(
             if (criterion is Criterion.ProjectCriterion) {
                 val project = projectRepo.getProjectById(criterion.projectId).getOrThrow()
 
-                isProjectActive
+                isProjectActive()
                     .orElseThrow(EntityNotActiveException(EntityType.PROJECT, project.id.toString()))
                     .checkFor(currentUser, project)
             }
 
-            isCreatorOfCriterion
+            isCreatorOfCriterion()
                 .orElse(isUserAdminInProjectOfCriterion(projectMemberRepo))
-                .orElse(isServerAdmin.forTarget())
+                .orElse(isServerAdmin().forTarget())
                 .orElseThrow { user, target ->
                     UnauthorizedException.Single(
                         EntityType.CRITERION,
