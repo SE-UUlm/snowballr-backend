@@ -93,15 +93,16 @@ class InvitationService(
     override suspend fun inviteUserToProject(request: GrpcProject.Member.Invite): Base.Nothing {
         // Check whether a project with the given id exists
         val projectId = parseUUID(request.projectId, EntityType.PROJECT)
-        val project = projectRepo.getProjectById(projectId).getOrThrow()
         val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
+
+        isServerOrProjectAdmin(projectMemberRepo, AccessType.READ)
+            .checkFor(currentUser, projectId)
+
+        val project = projectRepo.getProjectById(projectId).getOrThrow()
 
         isProjectActive()
             .orElseThrow(EntityNotActiveException(EntityType.PROJECT, projectId.toString()))
             .checkFor(currentUser, project)
-
-        isServerOrProjectAdmin(projectMemberRepo, AccessType.READ)
-            .checkFor(currentUser, projectId)
 
         // Generate and save invitation token
         val invitationToken = NanoId.generate(INVITATION_TOKEN_LENGTH)

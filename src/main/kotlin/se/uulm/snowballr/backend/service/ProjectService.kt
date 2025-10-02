@@ -186,11 +186,11 @@ class ProjectService(
         withUser(userRepo) { currentUser ->
             val projectId = parseUUID(request.id, EntityType.PROJECT)
 
+            isAllowedToReadProject(projectMemberRepo).checkFor(currentUser, projectId)
+
             if (!repo.doesProjectExistById(projectId)) {
                 throw NotFoundException(EntityType.PROJECT, projectId.toString())
             }
-
-            isAllowedToReadProject(projectMemberRepo).checkFor(currentUser, projectId)
 
             val projectMembersWithUsers = projectMemberRepo.getProjectMembersWithUsers(projectId)
             projectMembersWithUsers.toGrpcProjectMembers()

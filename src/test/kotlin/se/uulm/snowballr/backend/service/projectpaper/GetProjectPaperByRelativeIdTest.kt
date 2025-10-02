@@ -59,6 +59,13 @@ class GetProjectPaperByRelativeIdTest : MainServiceTest() {
 
         mockCurrentUser(currentUser)
 
+        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns
+            if (isUserAdmin) {
+                emptyList()
+            } else {
+                listOf(projectMember)
+            }
+
         coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
 
         if (failAt == projectPaperRepoMock::getProjectPaperByRelativeId) {
@@ -70,13 +77,6 @@ class GetProjectPaperByRelativeIdTest : MainServiceTest() {
         coEvery {
             projectPaperRepoMock.getProjectPaperByRelativeId(project.id, projectPaper.localPaperId)
         } returns Result.success(projectPaper)
-
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns
-            if (isUserAdmin) {
-                emptyList()
-            } else {
-                listOf(projectMember)
-            }
 
         if (failAt == paperRepoMock::getPaperById) {
             coEvery { paperRepoMock.getPaperById(projectPaper.paperId) } returns Result.failure(TestSpecificException())
@@ -130,10 +130,6 @@ class GetProjectPaperByRelativeIdTest : MainServiceTest() {
         )
 
         mockCurrentUser(currentUser)
-        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
-        coEvery {
-            projectPaperRepoMock.getProjectPaperByRelativeId(project.id, projectPaper.localPaperId)
-        } returns Result.success(projectPaper)
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
         assertThrows<UnauthorizedException> {
@@ -143,10 +139,11 @@ class GetProjectPaperByRelativeIdTest : MainServiceTest() {
 
     @Test
     fun `When a nonexistent project is requested, then a NotFoundException is thrown`() = runTest {
-        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
+        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val project = DataBuilder.createExampleProject(id = projectId)
 
         mockCurrentUser(currentUser)
+        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
         coEvery { projectRepoMock.doesProjectExistById(project.id) } returns false
 
         assertThrows<NotFoundException> { mainService.getProjectPaperByRelativeId(getExampleRequest()) }

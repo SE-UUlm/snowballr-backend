@@ -44,9 +44,9 @@ class CreateCriterionTest : MainServiceTest() {
         val request = getProjectCriterionRequest(project.id.toString())
 
         mockCurrentUser(user)
-        coEvery { criterionRepoMock.createCriterion(request, user.id) } returns criterion
-        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
+        coEvery { criterionRepoMock.createCriterion(request, user.id) } returns criterion
 
         assertDoesNotThrow { mainService.createCriterion(request) }
     }
@@ -61,10 +61,9 @@ class CreateCriterionTest : MainServiceTest() {
         val request = getProjectCriterionRequest(project.id.toString())
 
         mockCurrentUser(user)
-        coEvery { criterionRepoMock.createCriterion(request, user.id) } returns criterion
-
-        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
+        coEvery { criterionRepoMock.createCriterion(request, user.id) } returns criterion
 
         assertDoesNotThrow { mainService.createCriterion(request) }
     }
@@ -77,7 +76,6 @@ class CreateCriterionTest : MainServiceTest() {
         val request = getProjectCriterionRequest(project.id.toString())
 
         mockCurrentUser(user)
-        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
 
         assertThrows<UnauthorizedException> { mainService.createCriterion(request) }
@@ -94,11 +92,12 @@ class CreateCriterionTest : MainServiceTest() {
         val project = DataBuilder.createExampleProject(
             status = status,
         )
-        val projectMember = DataBuilder.createExampleProjectMember(userId = user.id, projectId = project.id)
+        val projectAdmin = DataBuilder.createExampleProjectMember(userId = user.id, projectId = project.id)
 
         val request = getProjectCriterionRequest(project.id.toString())
 
         mockCurrentUser(user)
+        coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectAdmin)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
         assertThrows<FailedPreconditionException> { mainService.createCriterion(request) }
@@ -110,18 +109,6 @@ class CreateCriterionTest : MainServiceTest() {
 
         val criterion = DataBuilder.createExampleUserCriterion()
         val request = getUserCriterionRequest()
-
-        mockCurrentUser(user)
-        coEvery { criterionRepoMock.createCriterion(request, user.id) } returns criterion
-
-        assertDoesNotThrow { mainService.createCriterion(request) }
-    }
-
-    @Test
-    fun `When a criterion is correctly created, then no exception is thrown`() = runTest {
-        val request = GrpcCriterion.Create.getDefaultInstance()
-        val user = DataBuilder.createExampleUser()
-        val criterion = DataBuilder.createExampleProjectCriterion()
 
         mockCurrentUser(user)
         coEvery { criterionRepoMock.createCriterion(request, user.id) } returns criterion

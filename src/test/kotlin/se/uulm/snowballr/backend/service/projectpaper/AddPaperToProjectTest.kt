@@ -61,6 +61,12 @@ class AddPaperToProjectTest : MainServiceTest() {
         val review = DataBuilder.createExampleReview()
 
         mockCurrentUser(currentUser)
+        coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns
+            if (isUserAdmin) {
+                emptyList()
+            } else {
+                listOf(projectMember)
+            }
 
         if (failAt == projectRepoMock::getProjectById) {
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.failure(TestSpecificException())
@@ -75,12 +81,6 @@ class AddPaperToProjectTest : MainServiceTest() {
         coEvery { paperRepoMock.getPaperById(projectPaper.paperId) } returns Result.success(paper)
 
         coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, paper.id) } returns false
-        coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns
-            if (isUserAdmin) {
-                emptyList()
-            } else {
-                listOf(projectMember)
-            }
         coEvery {
             projectPaperRepoMock.addPaperToProject(getExampleRequest(), currentUser.id)
         } returns projectPaper
@@ -122,9 +122,6 @@ class AddPaperToProjectTest : MainServiceTest() {
         val paper = DataBuilder.createExamplePaper(id = paperId)
 
         mockCurrentUser(currentUser)
-        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-        coEvery { paperRepoMock.getPaperById(paper.id) } returns Result.success(paper)
-        coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, paper.id) } returns false
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
 
         assertThrows<UnauthorizedException> { mainService.addPaperToProject(getExampleRequest()) }
@@ -132,11 +129,12 @@ class AddPaperToProjectTest : MainServiceTest() {
 
     @Test
     fun `When a project paper already exists, then a DuplicateEntityException is thrown`() = runTest {
-        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
+        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val project = DataBuilder.createExampleProject(id = projectId)
         val paper = DataBuilder.createExamplePaper(id = paperId)
 
         mockCurrentUser(currentUser)
+        coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { paperRepoMock.getPaperById(paper.id) } returns Result.success(paper)
         coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, paper.id) } returns true
@@ -161,9 +159,9 @@ class AddPaperToProjectTest : MainServiceTest() {
                 .build()
 
             mockCurrentUser(currentUser)
+            coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
             coEvery { paperRepoMock.getPaperById(paper.id) } returns Result.success(paper)
-            coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
             coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, paper.id) } returns false
 
             assertThrows<OutOfRangeException> { mainService.addPaperToProject(request) }

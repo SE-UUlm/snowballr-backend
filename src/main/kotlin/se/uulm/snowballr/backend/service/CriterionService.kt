@@ -97,11 +97,7 @@ class CriterionService(
     override suspend fun createCriterion(request: GrpcCriterion.Create): GrpcCriterion =
         withUser(userRepo) { currentUser ->
             if (request.projectId.isNotEmpty()) {
-                val project = projectRepo.getProjectById(parseUUID(request.projectId, EntityType.PROJECT)).getOrThrow()
-
-                isProjectActive()
-                    .orElseThrow(EntityNotActiveException(EntityType.PROJECT, project.id.toString()))
-                    .checkFor(currentUser, project)
+                val projectId = parseUUID(request.projectId, EntityType.PROJECT)
 
                 isProjectAdmin(projectMemberRepo)
                     .orElse(isServerAdmin().forTarget())
@@ -113,7 +109,13 @@ class CriterionService(
                             user.id.toString(),
                         )
                     }
-                    .checkFor(currentUser, project.id)
+                    .checkFor(currentUser, projectId)
+
+                val project = projectRepo.getProjectById(projectId).getOrThrow()
+
+                isProjectActive()
+                    .orElseThrow(EntityNotActiveException(EntityType.PROJECT, project.id.toString()))
+                    .checkFor(currentUser, project)
             }
 
             repo.createCriterion(request, currentUser.id).toGrpcCriterion()

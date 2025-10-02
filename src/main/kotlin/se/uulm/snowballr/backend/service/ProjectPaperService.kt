@@ -140,11 +140,12 @@ class ProjectPaperService(
         predicate: (suspend (ProjectPaperWithPaper, Map<ProjectPaper, List<GrpcReview>>, String) -> Boolean)? = null,
     ): GrpcProjectPaper.List = withUser(userRepo) { currentUser ->
         val projectId = parseUUID(request.id, EntityType.PROJECT)
+
+        isAllowedToReadProject(projectMemberRepo).checkFor(currentUser, projectId)
+
         if (!projectRepo.doesProjectExistById(projectId)) {
             throw NotFoundException(EntityType.PROJECT, projectId.toString())
         }
-
-        isAllowedToReadProject(projectMemberRepo).checkFor(currentUser, projectId)
 
         var projectPapersWithPapers = repo.getAllProjectPapersWithPapers(projectId)
         val paperAuthorsMap = mutableMapOf<Paper, List<GrpcAuthor>>()
@@ -185,14 +186,15 @@ class ProjectPaperService(
         userRepo,
     ) { currentUser ->
         val projectId = parseUUID(request.projectId, EntityType.PROJECT)
+
+        isAllowedToReadProject(projectMemberRepo).checkFor(currentUser, projectId)
+
         if (!projectRepo.doesProjectExistById(projectId)) {
             throw NotFoundException(EntityType.PROJECT, projectId.toString())
         }
 
         val relativeId = request.relativeProjectPaperId.toLong()
         val projectPaper = repo.getProjectPaperByRelativeId(projectId, relativeId).getOrThrow()
-
-        isAllowedToReadProject(projectMemberRepo).checkFor(currentUser, projectPaper.projectId)
 
         projectPaper.toGrpcProjectPaperWithData()
     }
@@ -219,18 +221,17 @@ class ProjectPaperService(
             val projectId = parseUUID(request.projectId, EntityType.PROJECT)
             val paperId = parseUUID(request.paperId, EntityType.PAPER)
 
+            isServerOrProjectAdmin(projectMemberRepo, AccessType.CREATE).checkFor(currentUser, projectId)
+
             val project = projectRepo.getProjectById(projectId).getOrThrow()
-            val paper = paperRepo.getPaperById(paperId).getOrThrow()
-
-            if (repo.doesProjectPaperExist(projectId, paperId)) {
-                throw DuplicateEntityException(EntityType.PROJECT_PAPER, projectId.toString(), paperId.toString())
-            }
-
             isProjectActive()
                 .orElseThrow(EntityNotActiveException(EntityType.PROJECT, projectId.toString()))
                 .checkFor(currentUser, project)
 
-            isServerOrProjectAdmin(projectMemberRepo, AccessType.CREATE).checkFor(currentUser, projectId)
+            val paper = paperRepo.getPaperById(paperId).getOrThrow()
+            if (repo.doesProjectPaperExist(projectId, paperId)) {
+                throw DuplicateEntityException(EntityType.PROJECT_PAPER, projectId.toString(), paperId.toString())
+            }
 
             if (request.stage !in 0..project.maxStage) {
                 throw OutOfRangeException.Stage(request.stage, project.maxStage)

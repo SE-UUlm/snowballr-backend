@@ -35,9 +35,9 @@ class GetProjectMembersTest : MainServiceTest() {
         val projectMemberWithUser = ProjectMemberWithUser(projectMember, projectMemberUser)
 
         mockCurrentUser(adminUser)
-        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns
             listOf(projectMember)
+        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
         coEvery { projectMemberRepoMock.getProjectMembersWithUsers(project.id) } returns listOf(projectMemberWithUser)
 
         assertDoesNotThrow { mainService.getProjectMembers(request) }
@@ -52,9 +52,9 @@ class GetProjectMembersTest : MainServiceTest() {
         val projectMemberWithUser = ProjectMemberWithUser(projectMember, user)
 
         mockCurrentUser(user)
-        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns
             listOf(projectMember)
+        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
         coEvery { projectMemberRepoMock.getProjectMembersWithUsers(project.id) } returns listOf(projectMemberWithUser)
 
         assertDoesNotThrow { mainService.getProjectMembers(request) }
@@ -67,7 +67,6 @@ class GetProjectMembersTest : MainServiceTest() {
         val project = DataBuilder.createExampleProject(id = projectId)
 
         mockCurrentUser(user)
-        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
         assertThrows<UnauthorizedException> { mainService.getProjectMembers(request) }
@@ -77,9 +76,10 @@ class GetProjectMembersTest : MainServiceTest() {
     fun `When project members are requested from a nonexistent project, then a NotFoundException is thrown`() =
         runTest {
             val request = getExampleRequest()
-            val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
+            val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
 
             mockCurrentUser(user)
+            coEvery { projectMemberRepoMock.getProjectMembers(any()) } returns emptyList()
             coEvery {
                 projectRepoMock.doesProjectExistById(projectId)
             } returns false
