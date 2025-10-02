@@ -65,6 +65,9 @@ fun isAllowedToReadProject(projectMemberRepo: IProjectMemberTableRepo): AccessRu
 /**
  * Check whether the current user is an admin of the specified project. If the user is not a project admin,
  * the user has to be a server admin; otherwise, throws an [UnauthorizedException.Single].
+ *
+ * @param projectMemberRepo The repository used to access project membership data.
+ * @param accessType The type of access that is being checked.
  */
 @CheckReturnValue
 fun isServerOrProjectAdmin(projectMemberRepo: IProjectMemberTableRepo, accessType: AccessType): AccessRule<UUID> {
