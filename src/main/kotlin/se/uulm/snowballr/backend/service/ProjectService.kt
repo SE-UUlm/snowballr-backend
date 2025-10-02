@@ -126,7 +126,7 @@ class ProjectService(
     override suspend fun getAllProjects(): GrpcProject.List = withUser(userRepo) { currentUser ->
         isServerAdmin()
             .orElseThrow(UnauthorizedException.All(EntityType.PROJECT, AccessType.READ, currentUser.id.toString()))
-            .checkFor(currentUser, Unit)
+            .checkFor(currentUser)
 
         repo.getAllProjects().toGrpcProjects()
     }

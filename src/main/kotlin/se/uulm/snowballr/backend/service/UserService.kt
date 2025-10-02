@@ -153,7 +153,7 @@ class UserService(
     override suspend fun getAllUsers(): GrpcUser.List = withUser(userRepo) { currentUser ->
         isServerAdmin()
             .orElseThrow(UnauthorizedException.All(EntityType.USER, AccessType.READ, currentUser.id.toString()))
-            .checkFor(currentUser, Unit)
+            .checkFor(currentUser)
 
         userRepo.getAllUsers().toGrpcUsers()
     }

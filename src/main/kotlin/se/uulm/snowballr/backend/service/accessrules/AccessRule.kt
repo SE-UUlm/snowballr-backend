@@ -141,3 +141,12 @@ suspend fun <T> AccessRule<T>.checkFor(requester: User, target: T) {
         throw AccessRuleCheckFailedException()
     }
 }
+
+/**
+ * Executes the access rule for the given requesting user but **no** target entity.
+ *
+ * @param requester The requesting user that wants access.
+ * @throws AccessRuleCheckFailedException if the rule chain evaluates to false
+ *         without throwing a specific exception while evaluating the chain.
+ */
+suspend fun AccessRule<Unit>.checkFor(requester: User) = checkFor(requester, Unit)
