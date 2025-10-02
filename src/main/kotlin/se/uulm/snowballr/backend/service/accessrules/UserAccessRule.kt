@@ -14,20 +14,15 @@ import java.util.UUID
 import javax.annotation.CheckReturnValue
 
 /**
- * Represents an [AccessRule] to a user entity.
- */
-fun interface UserAccessRule : AccessRule<User>
-
-/**
  * Check whether the requesting user and the target user are the same by checking
  * whether they have the same user id.
  */
-val isSameUserById = UUIDAccessRule { requester, targetId -> requester.id == targetId }
+val isSameUserById = AccessRule<UUID> { requester, targetId -> requester.id == targetId }
 
 /**
  * Check whether the target user is active, i.e., has the status `USER_STATUS_ACTIVE` or `USER_STATUS_ACTIVE_UNCONFIRMED`.
  */
-val isTargetUserActive = UserAccessRule { _, target ->
+val isTargetUserActive = AccessRule<User> { _, target ->
     target.status == UserStatus.USER_STATUS_ACTIVE ||
         target.status == UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED
 }
@@ -35,7 +30,7 @@ val isTargetUserActive = UserAccessRule { _, target ->
 /**
  * Check whether the target user is *not* a server admin.
  */
-val targetUserIsNotAdmin = UserAccessRule { _, target -> target.role != UserRole.USER_ROLE_ADMIN }
+val targetUserIsNotAdmin = AccessRule<User> { _, target -> target.role != UserRole.USER_ROLE_ADMIN }
 
 /**
  * Check whether the requesting user is a server admin or the same user as the target user.
@@ -48,7 +43,7 @@ val isServerAdminOrSameUser = isServerAdmin.forTarget<UUID>().orElse(isSameUserB
  * @param projectMemberRepo The repository to check project membership.
  */
 @CheckReturnValue
-fun isInSameProject(projectMemberRepo: IProjectMemberTableRepo) = UUIDAccessRule { requester, targetId ->
+fun isInSameProject(projectMemberRepo: IProjectMemberTableRepo) = AccessRule<UUID> { requester, targetId ->
     projectMemberRepo
         .getMembersInSameProjectsAsUser(targetId)
         .any { it.userId == requester.id }

@@ -11,11 +11,6 @@ import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import javax.annotation.CheckReturnValue
 
 /**
- * Represents an [AccessRule] to a review entity.
- */
-fun interface ReviewAccessRule : AccessRule<Review>
-
-/**
  * Check whether the requester is a member of the project the review was created in.
  *
  * @param projectMemberRepo The repository used to access project membership data.
@@ -24,7 +19,7 @@ fun interface ReviewAccessRule : AccessRule<Review>
 private fun isUserInProjectOfReview(
     projectMemberRepo: IProjectMemberTableRepo,
     projectPaperRepo: IProjectPaperTableRepo,
-) = ReviewAccessRule { requester, target ->
+) = AccessRule<Review> { requester, target ->
     val projectPaper = projectPaperRepo.getProjectPaperById(target.projectPaperId).getOrThrow()
     val projectMembers = projectMemberRepo.getProjectMembers(projectPaper.projectId)
     projectMembers.any { it.userId == requester.id }

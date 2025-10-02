@@ -12,14 +12,9 @@ import java.util.UUID
 import javax.annotation.CheckReturnValue
 
 /**
- * Represents an [AccessRule] to a project entity.
- */
-fun interface ProjectAccessRule : AccessRule<Project>
-
-/**
  * Check whether the project is active (or active, but settings are locked).
  */
-val isProjectActive = ProjectAccessRule { _, project ->
+val isProjectActive = AccessRule<Project> { _, project ->
     project.status == ProjectStatus.PROJECT_STATUS_ACTIVE ||
         project.status == ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED
 }
@@ -30,7 +25,7 @@ val isProjectActive = ProjectAccessRule { _, project ->
  * @param projectMemberRepo The project member repository used to retrieve a project member list.
  */
 @CheckReturnValue
-private fun isProjectMember(projectMemberRepo: IProjectMemberTableRepo) = UUIDAccessRule { requester, targetId ->
+private fun isProjectMember(projectMemberRepo: IProjectMemberTableRepo) = AccessRule<UUID> { requester, targetId ->
     val projectMembers = projectMemberRepo.getProjectMembers(targetId)
     projectMembers.any { it.userId == requester.id }
 }
@@ -41,7 +36,7 @@ private fun isProjectMember(projectMemberRepo: IProjectMemberTableRepo) = UUIDAc
  * @param projectMemberRepo The project member repository used to retrieve a project admins list.
  */
 @CheckReturnValue
-fun isProjectAdmin(projectMemberRepo: IProjectMemberTableRepo) = UUIDAccessRule { requester, targetId ->
+fun isProjectAdmin(projectMemberRepo: IProjectMemberTableRepo) = AccessRule<UUID> { requester, targetId ->
     val projectAdmins = projectMemberRepo.getAllProjectAdmins(targetId)
     projectAdmins.any { it.userId == requester.id }
 }
