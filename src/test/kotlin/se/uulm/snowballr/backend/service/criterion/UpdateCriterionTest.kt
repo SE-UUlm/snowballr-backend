@@ -106,7 +106,6 @@ class UpdateCriterionTest : MainServiceTest() {
             mockCurrentUser(user)
             coEvery { criterionRepoMock.getCriterionById(criterionId) } returns Result.success(criterion)
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-            coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
 
             assertThrows<FailedPreconditionException> { mainService.updateCriterion(request) }
         }

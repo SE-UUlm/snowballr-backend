@@ -9,9 +9,10 @@ import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.IdentifierType
 import se.uulm.snowballr.backend.model.SnowballRException.DuplicateEntityException
+import se.uulm.snowballr.backend.model.SnowballRException.EntityNotActiveException
 import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
-import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
+import se.uulm.snowballr.backend.model.SnowballRException.UserNotFoundException
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.toGrpcUser
 import se.uulm.snowballr.backend.model.dto.toGrpcUserSettings
@@ -22,10 +23,20 @@ import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.IVerificationTokenTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
+import se.uulm.snowballr.backend.service.accessrules.andAlso
+import se.uulm.snowballr.backend.service.accessrules.checkFor
+import se.uulm.snowballr.backend.service.accessrules.forProperty
+import se.uulm.snowballr.backend.service.accessrules.forTarget
+import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadUser
+import se.uulm.snowballr.backend.service.accessrules.isSameUserById
+import se.uulm.snowballr.backend.service.accessrules.isServerAdmin
+import se.uulm.snowballr.backend.service.accessrules.isServerAdminOrSameUser
+import se.uulm.snowballr.backend.service.accessrules.isTargetUserActive
+import se.uulm.snowballr.backend.service.accessrules.orElse
+import se.uulm.snowballr.backend.service.accessrules.orElseThrow
+import se.uulm.snowballr.backend.service.accessrules.targetUserIsNotAdmin
 import snowballr.Authentication
 import snowballr.Base
-import snowballr.UserOuterClass.UserRole
-import snowballr.UserOuterClass.UserStatus
 import snowballr.nothing
 import java.util.UUID
 import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
@@ -98,77 +109,51 @@ class UserService(
     private val verificationTokenRepo: IVerificationTokenTableRepo,
     private val emailManager: IEmailManager,
 ) : IUserService {
-    companion object {
-        const val MINIMUM_LENGTH_OF_SEARCH_QUERY = 3
-    }
-
-    private suspend fun verifyUserAccess(currentUser: User, targetUserId: UUID, identifierType: IdentifierType) {
-        // Check whether the requesting user is server admin
-        if (currentUser.role == UserRole.USER_ROLE_ADMIN) return
-
-        // Check whether requesting user is requested user
-        if (targetUserId == currentUser.id) return
-
-        // Check whether requesting user is in a same project as the requested user
-        val isInSameProject =
-            projectMemberRepo
-                .getMembersInSameProjectsAsUser(targetUserId)
-                .any { it.userId == currentUser.id }
-        if (isInSameProject) return
-
-        // Requesting user is not authorized
-        throw UnauthorizedException.Single(
-            EntityType.USER,
-            targetUserId.toString(),
-            AccessType.READ,
-            currentUser.id.toString(),
-            identifierType,
-        )
-    }
-
     override suspend fun getUserById(request: Base.Id): GrpcUser = withUser(userRepo) { currentUser ->
         val targetUserId = parseUUID(request.id, EntityType.USER)
 
-        verifyUserAccess(currentUser, targetUserId, IdentifierType.ID)
+        isAllowedToReadUser(projectMemberRepo).checkFor(currentUser, targetUserId)
 
         val isRequestedUser = currentUser.id == targetUserId
 
         // Don't re-request the user if it is the current user itself
-        val result =
+        val targetUser =
             if (isRequestedUser) {
                 currentUser
             } else {
                 userRepo.getUserById(targetUserId).getOrThrow()
             }
 
-        // Only active or active unconfirmed users can be retrieved
-        if (result.status != UserStatus.USER_STATUS_ACTIVE &&
-            result.status != UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED
-        ) {
-            throw NotFoundException(EntityType.USER, request.id)
-        }
+        // Only active or active unconfirmed users can be retrieved if the requester is not a server admin
+        isServerAdmin().forTarget<User>()
+            .orElse(isTargetUserActive())
+            .orElseThrow(UserNotFoundException(request.id))
+            .checkFor(currentUser, targetUser)
 
-        result.toGrpcUser()
+        targetUser.toGrpcUser()
     }
 
     override suspend fun getUserByEmail(request: Base.Email): GrpcUser = withUser(userRepo) { currentUser ->
         // We have to request the user first to get the ID for the access checks
         val targetUser = userRepo.getUserByEmail(request.email).getOrThrow()
 
-        verifyUserAccess(currentUser, targetUser.id, IdentifierType.EMAIL)
-
-        // Only active or active unconfirmed users can be retrieved
-        if (targetUser.status != UserStatus.USER_STATUS_ACTIVE &&
-            targetUser.status != UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED
-        ) {
-            throw NotFoundException(EntityType.USER, request.email, identifierType = IdentifierType.EMAIL)
-        }
+        isAllowedToReadUser(projectMemberRepo, IdentifierType.EMAIL)
+            .forProperty(User::id)
+            // Only active or active unconfirmed users can be retrieved if the requester is not a server admin
+            .andAlso(
+                isServerAdmin().forTarget<User>()
+                    .orElse(isTargetUserActive())
+                    .orElseThrow(UserNotFoundException(request.email, IdentifierType.EMAIL)),
+            )
+            .checkFor(currentUser, targetUser)
 
         targetUser.toGrpcUser()
     }
 
     override suspend fun getAllUsers(): GrpcUser.List = withUser(userRepo) { currentUser ->
-        verifyServerAdminRole(currentUser) { UnauthorizedException.All(EntityType.USER, AccessType.READ, it) }
+        isServerAdmin()
+            .orElseThrow(UnauthorizedException.All(EntityType.USER, AccessType.READ, currentUser.id.toString()))
+            .checkFor(currentUser)
 
         userRepo.getAllUsers().toGrpcUsers()
     }
@@ -201,19 +186,36 @@ class UserService(
     }
 
     override suspend fun updateUser(request: GrpcUser.Update): GrpcUser = withUser(userRepo) { currentUser ->
-        // Check that user to update exists in the database
         val targetUserId = parseUUID(request.user.id, EntityType.USER)
         val targetUser = userRepo.getUserById(targetUserId).getOrThrow()
 
-        // Check whether the current user is a server admin if the role is changed or the requested user is different
-        // from the current user
-        if (request.mask.pathsList.contains("role") || currentUser.id != targetUser.id) {
-            verifyServerAdminRole(currentUser) {
-                UnauthorizedException.Single(EntityType.USER, targetUser.id.toString(), AccessType.UPDATE, it)
-            }
+        val notAllowedToUpdateException = UnauthorizedException.Single(
+            EntityType.USER,
+            targetUser.id.toString(),
+            AccessType.UPDATE,
+            currentUser.id.toString(),
+        )
+
+        isSameUserById()
+            .forProperty(User::id)
+            .orElse(
+                isServerAdmin().forTarget<User>()
+                    .andAlso(
+                        isTargetUserActive()
+                            .orElseThrow(EntityNotActiveException(EntityType.USER, targetUserId.toString())),
+                    ),
+            )
+            .orElseThrow(notAllowedToUpdateException)
+            .checkFor(currentUser, targetUser)
+
+        // If the role is changed, the requesting user must be a server admin.
+        if (request.mask.pathsList.contains("role")) {
+            isServerAdmin().forTarget<UUID>()
+                .orElseThrow(notAllowedToUpdateException)
+                .checkFor(currentUser, targetUserId)
         }
 
-        // Check whether a user with the given email already exists if the email should be changed
+        // If the email is changed, there must not yet exist an account with that email address.
         if (request.mask.pathsList.contains("email") && userRepo.doesUserExistByEmail(request.user.email)) {
             throw DuplicateEntityException(EntityType.USER, request.user.email, identifierType = IdentifierType.EMAIL)
         }
@@ -223,22 +225,27 @@ class UserService(
 
     override suspend fun softDeleteUser(request: Base.Id): Base.Nothing = withUser(userRepo) { currentUser ->
         val targetUser = userRepo.getUserById(parseUUID(request.id, EntityType.USER)).getOrThrow()
-        val isSameUser = currentUser.id == targetUser.id
 
-        // Checks if the user tries to delete another user without being an admin
-        if (!isSameUser) {
-            verifyServerAdminRole(currentUser) {
-                UnauthorizedException.Single(EntityType.USER, targetUser.id.toString(), AccessType.DELETE, it)
-            }
-        }
-        // Checks, if the user tries to delete another user that is an admin (not possible even if the current user is
-        // an admin)
-        if (targetUser.role == UserRole.USER_ROLE_ADMIN && !isSameUser) {
-            throw FailedPreconditionException(
-                "The user with the id ${targetUser.id} can not be deleted " +
-                    "because he is an admin.",
+        isServerAdminOrSameUser()
+            .orElseThrow(
+                UnauthorizedException.Single(
+                    EntityType.USER,
+                    targetUser.id.toString(),
+                    AccessType.DELETE,
+                    currentUser.id.toString(),
+                ),
             )
-        }
+            .forProperty(User::id)
+            .andAlso(
+                targetUserIsNotAdmin()
+                    .orElse(isSameUserById().forProperty(User::id))
+                    .orElseThrow(
+                        FailedPreconditionException(
+                            "The user with the id ${targetUser.id} can not be deleted because the user is an admin.",
+                        ),
+                    ),
+            )
+            .checkFor(currentUser, targetUser)
 
         userRepo.softDeleteUser(targetUser.id)
 

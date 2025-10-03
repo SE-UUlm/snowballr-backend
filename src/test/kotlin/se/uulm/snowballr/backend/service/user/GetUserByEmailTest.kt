@@ -42,7 +42,7 @@ class GetUserByEmailTest : MainServiceTest() {
 
     @Test
     fun `When requested user is inactive, then a NotFoundException is thrown`() = runTest {
-        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+        val currentUser = DataBuilder.createExampleUser(email = exampleEmail)
 
         mockCurrentUser(currentUser)
 
@@ -51,7 +51,11 @@ class GetUserByEmailTest : MainServiceTest() {
         }
 
         inactiveStatuses.forEach { status ->
-            val requestedUser = DataBuilder.createExampleUser(email = exampleEmail, status = status)
+            val requestedUser = DataBuilder.createExampleUser(
+                id = currentUser.id,
+                email = exampleEmail,
+                status = status,
+            )
 
             coEvery { userRepoMock.getUserByEmail(exampleEmail) } returns Result.success(requestedUser)
 

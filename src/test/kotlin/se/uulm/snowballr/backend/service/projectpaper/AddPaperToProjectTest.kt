@@ -15,6 +15,7 @@ import se.uulm.snowballr.backend.model.SnowballRException.DuplicateEntityExcepti
 import se.uulm.snowballr.backend.model.SnowballRException.OutOfRangeException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
+import snowballr.ProjectOuterClass.MemberRole
 import snowballr.UserOuterClass.UserRole
 import java.util.UUID
 import java.util.stream.Stream
@@ -51,12 +52,16 @@ class AddPaperToProjectTest : MainServiceTest() {
             projectId = project.id,
             paperId = paper.id,
         )
-        val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
+        val projectMember = DataBuilder.createExampleProjectMember(
+            projectId = project.id,
+            userId = currentUser.id,
+            role = MemberRole.MEMBER_ROLE_ADMIN,
+        )
         val author = DataBuilder.createExampleAuthor()
         val review = DataBuilder.createExampleReview()
 
         mockCurrentUser(currentUser)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns
+        coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns
             if (isUserAdmin) {
                 emptyList()
             } else {
@@ -105,31 +110,31 @@ class AddPaperToProjectTest : MainServiceTest() {
     }
 
     @Test
-    fun `When a project member adds a paper to a project, then no exception is thrown`() = runTest {
+    fun `When a project admin adds a paper to a project, then no exception is thrown`() = runTest {
         mockHappyPathUntil(null, false)
         assertDoesNotThrow { mainService.addPaperToProject(getExampleRequest()) }
     }
 
     @Test
-    fun `When a non project member adds a paper to a project, then an UnauthorizedException is thrown`() = runTest {
+    fun `When a non project admin adds a paper to a project, then an UnauthorizedException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject(id = projectId)
+        val paper = DataBuilder.createExamplePaper(id = paperId)
 
         mockCurrentUser(currentUser)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
+        coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
 
         assertThrows<UnauthorizedException> { mainService.addPaperToProject(getExampleRequest()) }
     }
 
     @Test
     fun `When a project paper already exists, then a DuplicateEntityException is thrown`() = runTest {
-        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
+        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val project = DataBuilder.createExampleProject(id = projectId)
         val paper = DataBuilder.createExamplePaper(id = paperId)
-        val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
 
         mockCurrentUser(currentUser)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
+        coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { paperRepoMock.getPaperById(paper.id) } returns Result.success(paper)
         coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, paper.id) } returns true
@@ -154,7 +159,7 @@ class AddPaperToProjectTest : MainServiceTest() {
                 .build()
 
             mockCurrentUser(currentUser)
-            coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
+            coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
             coEvery { paperRepoMock.getPaperById(paper.id) } returns Result.success(paper)
             coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, paper.id) } returns false

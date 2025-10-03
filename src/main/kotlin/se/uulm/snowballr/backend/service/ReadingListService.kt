@@ -3,8 +3,6 @@ package se.uulm.snowballr.backend.service
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
-import se.uulm.snowballr.backend.model.dto.toGrpcAuthor
-import se.uulm.snowballr.backend.model.dto.toGrpcPaper
 import se.uulm.snowballr.backend.model.dto.toGrpcPapers
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
@@ -47,7 +45,7 @@ interface IReadingListService {
  * This class serves as a layer that abstracts the responsibility of user CRUD operations,
  * delegating the actual persistence operations to the [IReadingListTableRepo] repository.
  *
- * @constructor Initializes the [ReadingListService] with the needed repositories.
+ * @constructor Initializes the [ReadingListService] with the necessary repositories.
  * @param userRepo The repository responsible for managing persistence operations for users.
  * @param paperRepo The repository responsible for managing persistence operations for papers.
  * @param authorOfPaperRepo The repository responsible for managing persistence operations for author-paper associations.
@@ -62,9 +60,11 @@ class ReadingListService(
     private val repo: IReadingListTableRepo,
 ) : IReadingListService {
     /**
-     * Throws a [NotFoundException] if the paper with the passed [id] doesn't exist.
+     * Checks whether the paper with the given [id] exists.
+     *
+     * @throws [NotFoundException] If the paper doesn't exist.
      */
-    private suspend fun throwIfPaperDoesNotExist(id: UUID) {
+    private suspend fun ensurePaperExists(id: UUID) {
         if (!paperRepo.doesPaperExistById(id)) {
             throw NotFoundException(EntityType.PAPER, id.toString())
         }
@@ -72,11 +72,7 @@ class ReadingListService(
 
     override suspend fun getReadingList(): GrpcPaper.List = withUser(userRepo) { currentUser ->
         val papers = repo.getAllReadingListEntries(currentUser.id).map { paper ->
-            val authors = authorOfPaperRepo.getAuthorsOfPaperById(paper.id).map { it.toGrpcAuthor() }
-            val backwardReferences = citationRepo
-                .getBackwardsReferencedPaperIdsOfPaperById(paper.id)
-                .map(UUID::toString)
-            paper.toGrpcPaper(authors, backwardReferences)
+            paper.toGrpcPaperWithAuthorsAndBackwardReferences(authorOfPaperRepo, citationRepo)
         }
 
         papers.toGrpcPapers()
@@ -84,15 +80,15 @@ class ReadingListService(
 
     override suspend fun isPaperOnReadingList(request: Base.Id): Base.BoolValue = withUser(userRepo) { currentUser ->
         val paperId = parseUUID(request.id, EntityType.PAPER)
-        throwIfPaperDoesNotExist(paperId)
+        ensurePaperExists(paperId)
 
         boolValue { value = repo.isPaperOnReadingList(currentUser.id, paperId) }
     }
 
     override suspend fun addPaperToReadingList(request: Base.Id): Base.Nothing = withUser(userRepo) { currentUser ->
         val paperId = parseUUID(request.id, EntityType.PAPER)
+        ensurePaperExists(paperId)
 
-        throwIfPaperDoesNotExist(paperId)
         repo.createReadingListEntry(currentUser.id, paperId)
 
         nothing { }
@@ -101,8 +97,8 @@ class ReadingListService(
     override suspend fun removePaperFromReadingList(request: Base.Id): Base.Nothing =
         withUser(userRepo) { currentUser ->
             val paperId = parseUUID(request.id, EntityType.PAPER)
+            ensurePaperExists(paperId)
 
-            throwIfPaperDoesNotExist(paperId)
             repo.removeReadingListEntry(currentUser.id, paperId)
 
             nothing { }

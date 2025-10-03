@@ -41,13 +41,13 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
         val review = DataBuilder.createExampleReview()
 
         mockCurrentUser(currentUser)
-        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns
             if (isUserAdmin) {
                 emptyList()
             } else {
                 listOf(projectMember)
             }
+        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
         coEvery {
             projectPaperRepoMock.getAllProjectPapersWithPapers(project.id)
         } returns listOf(projectPaperWithPaper)
@@ -82,7 +82,6 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
             val project = DataBuilder.createExampleProject(id = projectId)
 
             mockCurrentUser(currentUser)
-            coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
             assertThrows<UnauthorizedException> {
@@ -111,8 +110,8 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
         val review = DataBuilder.createExampleReview(userId = UUID.randomUUID())
 
         mockCurrentUser(currentUser)
-        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
+        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
         coEvery {
             projectPaperRepoMock.getAllProjectPapersWithPapers(project.id)
         } returns listOf(projectPaperWithPaper1, projectPaperWithPaper2)
@@ -160,8 +159,8 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
             val reviewByOtherUser = DataBuilder.createExampleReview(userId = UUID.randomUUID())
 
             mockCurrentUser(currentUser)
-            coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
+            coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
             coEvery {
                 projectPaperRepoMock.getAllProjectPapersWithPapers(project.id)
             } returns listOf(projectPaperWithPaper1, projectPaperWithPaper2)
@@ -193,10 +192,11 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
 
     @Test
     fun `When a nonexistent project is requested, then a NotFoundException is thrown`() = runTest {
-        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
+        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val project = DataBuilder.createExampleProject(id = projectId)
 
         mockCurrentUser(currentUser)
+        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
         coEvery { projectRepoMock.doesProjectExistById(project.id) } returns false
 
         assertThrows<NotFoundException> {

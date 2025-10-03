@@ -28,7 +28,6 @@ class GetReviewByIdTest : MainServiceTest() {
     fun failingFunctions(): Stream<Arguments?> = Stream.of(
         Arguments.of(reviewRepoMock::getReviewById),
         Arguments.of(projectPaperRepoMock::getProjectPaperById),
-        Arguments.of(projectRepoMock::getProjectById),
     )
 
     @Suppress("ReturnCount")
@@ -61,12 +60,6 @@ class GetReviewByIdTest : MainServiceTest() {
             return
         }
         coEvery { projectPaperRepoMock.getProjectPaperById(review.projectPaperId) } returns Result.success(projectPaper)
-
-        if (failAt == projectRepoMock::getProjectById) {
-            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.failure(TestSpecificException())
-            return
-        }
-        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns
             if (isUserAdmin) {
@@ -113,7 +106,6 @@ class GetReviewByIdTest : MainServiceTest() {
         mockCurrentUser(currentUser)
         coEvery { reviewRepoMock.getReviewById(review.id) } returns Result.success(review)
         coEvery { projectPaperRepoMock.getProjectPaperById(review.projectPaperId) } returns Result.success(projectPaper)
-        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
         assertThrows<UnauthorizedException> { mainService.getReviewById(getExampleRequest()) }

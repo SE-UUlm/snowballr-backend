@@ -53,6 +53,21 @@ sealed class SnowballRException(
     )
 
     /**
+     * Represents a [NotFoundException] indicating that a [User] could not be found by its identifier, i.e., UUID or email address.
+     *
+     * @param entityId The identifier of the missing [User].
+     * @param identifierType The type of the entity's identifier. Defaults to [IdentifierType.ID].
+     */
+    class UserNotFoundException(
+        entityId: String,
+        identifierType: IdentifierType = IdentifierType.ID,
+    ) : NotFoundException(
+        EntityType.USER,
+        entityId,
+        identifierType = identifierType,
+    )
+
+    /**
      * Represents an exception that occurs when an entity already exists in the system
      * and creation is not allowed.
      *
@@ -110,7 +125,11 @@ sealed class SnowballRException(
             identifierType: IdentifierType = IdentifierType.ID,
         ) : UnauthorizedException(
             currentUserId,
-            "${accessedEntityType.singular} with ${identifierType.displayName} '$accessedEntityId'.",
+            if (accessType == AccessType.CREATE) {
+                "${accessedEntityType.singular}."
+            } else {
+                "${accessedEntityType.singular} with ${identifierType.displayName} '$accessedEntityId'."
+            },
             accessType,
         )
 
@@ -220,9 +239,20 @@ sealed class SnowballRException(
      * @constructor Creates a [FailedPreconditionException] with the description of the failed precondition.
      * @param description The description of the failed precondition.
      */
-    class FailedPreconditionException(
+    open class FailedPreconditionException(
         description: String,
     ) : SnowballRException(description)
+
+    /**
+     * Represents a [FailedPreconditionException] that indicates that an entity is not active.
+     *
+     * @param entityType The type of the entity.
+     * @param entityId The ID of the entity.
+     */
+    class EntityNotActiveException(
+        entityType: EntityType,
+        entityId: String,
+    ) : FailedPreconditionException("The ${entityType.singularUpper()} with ID '$entityId' is not active.")
 
     /**
      * Represents an exception that occurs within the [EmailManager].
@@ -271,4 +301,29 @@ sealed class SnowballRException(
      * @constructor Creates a [InvitationTokenNotFoundException].
      */
     class InvitationTokenNotFoundException : SnowballRException("Invitation token not found.")
+
+    /**
+     * Represents an exception that occurs when an access rule chain completes
+     * with the final access check result of `false` without throwing a
+     * specific exception.
+     *
+     * This indicates that the rule chain was built without covering all
+     * failure paths with explicit `orElseThrow(...)` calls.
+     * In production, this exception should not be thrown and specific exceptions should be defined.
+     *
+     * Example cause:
+     * ```
+     * val rule = isAdmin.orElse(isSameUser)
+     * rule.checkFor(currentUser, target)
+     * ```
+     * The check would return `false`, as the user is neither an admin nor the same user.
+     * In this case it should be explicitly specified, which exception should be thrown.
+     *
+     * The recommended fix is to attach an explicit exception to each logical branch so that the user gets
+     * an appropriate `UnauthorizedException` in the example
+     */
+    class AccessRuleCheckFailedException : SnowballRException(
+        "Access rule check failed without throwing a specified exception. " +
+            "Please add a more specific exception to each path in the rule chain.",
+    )
 }

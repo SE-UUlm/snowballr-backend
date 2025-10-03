@@ -89,6 +89,7 @@ private class ExceptionCall<ReqT, RespT>(
                 is SnowballRException.MissingContextException -> Status.INTERNAL
                 is SnowballRException.EmailException -> Status.INTERNAL
                 is SnowballRException.UnauthenticatedException -> Status.UNAUTHENTICATED
+                is SnowballRException.AccessRuleCheckFailedException -> Status.INTERNAL
             }.withDescription(e.message).withCause(e.cause)
 
         logger.debug {

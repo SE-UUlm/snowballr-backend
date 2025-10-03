@@ -83,7 +83,7 @@ class GetUserByIdTest : MainServiceTest() {
 
     @Test
     fun `When requested user is inactive, then a NotFoundException is thrown`() = runTest {
-        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+        val currentUser = DataBuilder.createExampleUser(id = requestedUserId)
 
         mockCurrentUser(currentUser)
 
