@@ -178,12 +178,12 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
     inner class UpdateProject {
         @ParameterizedTest(name = "Update the fields {0}")
         @MethodSource("se.uulm.snowballr.backend.repository.ProjectTableRepoTest#validFieldMasks")
-        fun `When a project is active and updated, then only the fields specified in the field mask are updated and the updated project is returned`(
+        fun `When a project is updated, then only the fields specified in the field mask are updated and the updated project is returned`(
             fieldMask: List<String>,
         ) = runTest {
-            val projectStatus = ProjectStatus.PROJECT_STATUS_ACTIVE
+            val originalStatus = ProjectStatus.PROJECT_STATUS_ACTIVE
             val projectId =
-                insertProjectAndGetId(name = "Test Project", projectStatus, createdBy = testUserId)
+                insertProjectAndGetId(name = "Test Project", originalStatus, createdBy = testUserId)
             val originalProject = repo.getProjectById(projectId).getOrThrow()
 
             val updatedProjectDetails = originalProject.toGrpcProject().toBuilder()
@@ -203,7 +203,7 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
                 .setMask(FieldMaskUtil.fromStringList(fieldMask))
                 .build()
 
-            val updatedProject = repo.updateProject(request, projectStatus)
+            val updatedProject = repo.updateProject(request)
 
             if ("project.name" in fieldMask) {
                 assertEquals("Updated Project", updatedProject.name)
@@ -213,7 +213,7 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
             if ("project.status" in fieldMask) {
                 assertEquals(ProjectStatus.PROJECT_STATUS_ARCHIVED, updatedProject.status)
             } else {
-                assertEquals(projectStatus, updatedProject.status)
+                assertEquals(originalStatus, updatedProject.status)
             }
             if ("project.settings.similarity_threshold" in fieldMask) {
                 assertEquals(1F, updatedProject.similarityThreshold)
@@ -230,90 +230,6 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
             } else {
                 assertTrue(updatedProject.reviewMaybeAllowed)
             }
-        }
-
-        @ParameterizedTest(name = "Update the fields {0}")
-        @MethodSource("se.uulm.snowballr.backend.repository.ProjectTableRepoTest#validFieldMasks")
-        fun `When a project is active locked and updated, then only the project name and status are updated and the updated project is returned`(
-            fieldMask: List<String>,
-        ) = runTest {
-            val projectStatus = ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED
-            val projectId =
-                insertProjectAndGetId(name = "Test Project", projectStatus, createdBy = testUserId)
-            val originalProject = repo.getProjectById(projectId).getOrThrow()
-
-            val updatedProjectDetails = originalProject.toGrpcProject().toBuilder()
-                .setName("Updated Project")
-                .setStatus(ProjectStatus.PROJECT_STATUS_ARCHIVED)
-                .setSettings(
-                    Project.Settings.newBuilder()
-                        .setSimilarityThreshold(1F)
-                        .setSnowballingType(SnowballingType.SNOWBALLING_TYPE_FORWARD)
-                        .setReviewMaybeAllowed(false)
-                        .build(),
-                )
-                .build()
-
-            val request = Project.Update.newBuilder()
-                .setProject(updatedProjectDetails)
-                .setMask(FieldMaskUtil.fromStringList(fieldMask))
-                .build()
-
-            val updatedProject = repo.updateProject(request, projectStatus)
-
-            if ("project.name" in fieldMask) {
-                assertEquals("Updated Project", updatedProject.name)
-            } else {
-                assertEquals("Test Project", updatedProject.name)
-            }
-            if ("project.status" in fieldMask) {
-                assertEquals(ProjectStatus.PROJECT_STATUS_ARCHIVED, updatedProject.status)
-            } else {
-                assertEquals(projectStatus, updatedProject.status)
-            }
-            assertEquals(0F, updatedProject.similarityThreshold)
-            assertEquals(SnowballingType.SNOWBALLING_TYPE_BOTH, updatedProject.snowballingType)
-            assertTrue(updatedProject.reviewMaybeAllowed)
-        }
-
-        @ParameterizedTest(name = "Update the fields {0}")
-        @MethodSource("se.uulm.snowballr.backend.repository.ProjectTableRepoTest#validFieldMasks")
-        fun `When a project is archived and updated, then only the project status is updated and the updated project is returned`(
-            fieldMask: List<String>,
-        ) = runTest {
-            val projectStatus = ProjectStatus.PROJECT_STATUS_ARCHIVED
-            val projectId =
-                insertProjectAndGetId(name = "Test Project", projectStatus, createdBy = testUserId)
-            val originalProject = repo.getProjectById(projectId).getOrThrow()
-
-            val updatedProjectDetails = originalProject.toGrpcProject().toBuilder()
-                .setName("Updated Project")
-                .setStatus(ProjectStatus.PROJECT_STATUS_ACTIVE)
-                .setSettings(
-                    Project.Settings.newBuilder()
-                        .setSimilarityThreshold(1F)
-                        .setSnowballingType(SnowballingType.SNOWBALLING_TYPE_FORWARD)
-                        .setReviewMaybeAllowed(false)
-                        .build(),
-                )
-                .build()
-
-            val request = Project.Update.newBuilder()
-                .setProject(updatedProjectDetails)
-                .setMask(FieldMaskUtil.fromStringList(fieldMask))
-                .build()
-
-            val updatedProject = repo.updateProject(request, projectStatus)
-
-            assertEquals("Test Project", updatedProject.name)
-            if ("project.status" in fieldMask) {
-                assertEquals(ProjectStatus.PROJECT_STATUS_ACTIVE, updatedProject.status)
-            } else {
-                assertEquals(projectStatus, updatedProject.status)
-            }
-            assertEquals(0F, updatedProject.similarityThreshold)
-            assertEquals(SnowballingType.SNOWBALLING_TYPE_BOTH, updatedProject.snowballingType)
-            assertTrue(updatedProject.reviewMaybeAllowed)
         }
     }
 

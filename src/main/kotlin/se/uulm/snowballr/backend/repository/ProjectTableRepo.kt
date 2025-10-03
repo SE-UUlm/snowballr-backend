@@ -88,12 +88,9 @@ interface IProjectTableRepo {
      * - review_maybe_allowed
      *
      * @param request The update request containing the new project details, such as the new name.
-     * @param projectStatus The current status of the project, which shall be updated. The status is used to check
-     *  whether the project can be updated and which parts are eligible for updates depending on the current project
-     *  status.
      * @return The updated [Project] object reflecting the changes from the [request].
      */
-    suspend fun updateProject(request: GrpcProject.Update, projectStatus: ProjectStatus): Project
+    suspend fun updateProject(request: GrpcProject.Update): Project
 }
 
 /**
@@ -159,20 +156,14 @@ class ProjectTableRepo(
             .map { it.toProject() }
     }
 
-    override suspend fun updateProject(request: GrpcProject.Update, projectStatus: ProjectStatus): Project = db.query {
+    override suspend fun updateProject(request: GrpcProject.Update): Project = db.query {
         val projectId = parseUUID(request.project.id, EntityType.PROJECT)
         val fieldMaskPaths = FieldMaskUtil.normalize(request.mask).pathsList.toSet()
 
         ProjectTable.updateByIdAndGet(projectId, ResultRow::toProject, EntityType.PROJECT) {
             it.applyProjectStatusUpdate(request.project, fieldMaskPaths)
-            if (projectStatus == ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED ||
-                projectStatus == ProjectStatus.PROJECT_STATUS_ACTIVE
-            ) {
-                it.applyProjectNameUpdate(request.project, fieldMaskPaths)
-            }
-            if (projectStatus == ProjectStatus.PROJECT_STATUS_ACTIVE) {
-                it.applySlrProjectUpdates(request.project.settings, fieldMaskPaths)
-            }
+            it.applyProjectNameUpdate(request.project, fieldMaskPaths)
+            it.applySlrProjectUpdates(request.project.settings, fieldMaskPaths)
             it[modifiedAt] = OffsetDateTime.now()
         }
     }
