@@ -1,19 +1,25 @@
 package se.uulm.snowballr.backend.repository
 
 import com.google.protobuf.util.FieldMaskUtil
+import org.jetbrains.exposed.sql.JoinType
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.or
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.statements.UpdateStatement
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.Project
+import se.uulm.snowballr.backend.model.dto.ProjectPaper
+import se.uulm.snowballr.backend.model.dto.Review
 import se.uulm.snowballr.backend.model.dto.UserSettings
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.table.ProjectTable
+import se.uulm.snowballr.backend.table.ReviewTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
+import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.table.toProject
 import snowballr.ProjectOuterClass.ProjectStatus
 import java.time.OffsetDateTime
@@ -91,6 +97,21 @@ interface IProjectTableRepo {
      * @return The updated [Project] object reflecting the changes from the [request].
      */
     suspend fun updateProject(request: GrpcProject.Update): Project
+
+    /**
+     * Checks if the project with the given [projectId] is locked.
+     *
+     * A project is considered **locked** if at least one [ProjectPaper] with at least one [Review]
+     * is associated with this project.
+     *
+     * **Note:** This functions returns `true` or `false` regardless of the project's current state.
+     * However, the result is only meaningful if the project is in an active state
+     * (i.e., [ProjectStatus.PROJECT_STATUS_ACTIVE] or [ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED]).
+     *
+     * @param projectId The ID of the project to check for locked status.
+     * @return `true` if the project is locked, `false` otherwise.
+     */
+    suspend fun isProjectLocked(projectId: UUID): Boolean
 }
 
 /**
@@ -102,6 +123,7 @@ interface IProjectTableRepo {
  *
  * @param db The database abstraction used for executing queries within a transaction.
  */
+@Suppress("TooManyFunctions")
 class ProjectTableRepo(
     private val db: IDatabase,
 ) : IProjectTableRepo {
@@ -166,6 +188,15 @@ class ProjectTableRepo(
             it.applySlrProjectUpdates(request.project.settings, fieldMaskPaths)
             it[modifiedAt] = OffsetDateTime.now()
         }
+    }
+
+    override suspend fun isProjectLocked(projectId: UUID): Boolean = db.query {
+        ProjectPaperTable
+            .join(ReviewTable, JoinType.INNER, ProjectPaperTable.id, ReviewTable.projectPaperId)
+            .selectAll()
+            .where { ProjectPaperTable.projectId eq projectId }
+            .limit(1)
+            .any()
     }
 
     private fun UpdateStatement.applyProjectNameUpdate(project: GrpcProject, paths: Set<String>) {
