@@ -214,7 +214,7 @@ class SnowballRServer(
             mainService.getPapersToReviewForProject(request)
 
         override suspend fun getNextPaper(request: Base.Id): ProjectOuterClass.Project.Paper =
-            super.getNextPaper(request)
+            mainService.getNextPaper(request)
 
         override suspend fun getNextPaperToReview(request: Base.Id): ProjectOuterClass.Project.Paper =
             super.getNextPaperToReview(request)
