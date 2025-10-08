@@ -2,11 +2,13 @@ package se.uulm.snowballr.backend.repository.association
 
 import org.jetbrains.exposed.sql.JoinType
 import org.jetbrains.exposed.sql.ResultRow
+import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.ProjectPaperNotFoundException
 import se.uulm.snowballr.backend.model.dto.ProjectPaper
@@ -69,6 +71,16 @@ interface IProjectPaperTableRepo {
      * @return A list of [ProjectPaper] instances associated with the given project.
      */
     suspend fun getAllProjectPapersForProject(projectId: UUID): List<ProjectPaper>
+
+    /**
+     * Retrieves the succeeding local paper ID for the project paper with the given local paper ID.
+     *
+     * @param projectId The unique identifier of the project for which the next local paper ID is being requested.
+     * @param localPaperId The current local paper ID used as a reference to compute the next ID.
+     * @return A [Result] containing the next available local paper ID as a [Long] or a [FailedPreconditionException]
+     * if it cannot be determined.
+     */
+    suspend fun getNextPaperLocalId(projectId: UUID, localPaperId: Long): Result<Long>
 
     /**
      * Retrieves a list of project papers along with their associated papers for the specified project.
@@ -168,6 +180,28 @@ class ProjectPaperTableRepo(
 
     override suspend fun getAllProjectPapersForProject(projectId: UUID): List<ProjectPaper> = db.query {
         ProjectPaperTable.getEntities(ResultRow::toProjectPaper) { ProjectPaperTable.projectId eq projectId }
+    }
+
+    override suspend fun getNextPaperLocalId(projectId: UUID, localPaperId: Long): Result<Long> = db.query {
+        val nextId = ProjectPaperTable
+            .selectAll()
+            .where {
+                (ProjectPaperTable.projectId eq projectId) and
+                    (ProjectPaperTable.localPaperId greater localPaperId)
+            }
+            .orderBy(ProjectPaperTable.localPaperId, SortOrder.ASC)
+            .map { it[ProjectPaperTable.localPaperId] }
+            .firstOrNull()
+
+        if (nextId != null) {
+            Result.success(nextId)
+        } else {
+            Result.failure(
+                FailedPreconditionException(
+                    "There is no next project paper in the project.",
+                ),
+            )
+        }
     }
 
     override suspend fun getAllProjectPapersWithPapers(projectId: UUID): List<ProjectPaperWithPaper> = db.query {
