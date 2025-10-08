@@ -4,7 +4,6 @@ import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
-import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.toGrpcProject
@@ -15,9 +14,11 @@ import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
+import se.uulm.snowballr.backend.service.accessrules.andAlso
 import se.uulm.snowballr.backend.service.accessrules.checkFor
 import se.uulm.snowballr.backend.service.accessrules.forProperty
 import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadProject
+import se.uulm.snowballr.backend.service.accessrules.isProjectExistent
 import se.uulm.snowballr.backend.service.accessrules.isServerAdmin
 import se.uulm.snowballr.backend.service.accessrules.isServerAdminOrSameUser
 import se.uulm.snowballr.backend.service.accessrules.isServerOrProjectAdmin
@@ -186,11 +187,9 @@ class ProjectService(
         withUser(userRepo) { currentUser ->
             val projectId = parseUUID(request.id, EntityType.PROJECT)
 
-            isAllowedToReadProject(projectMemberRepo).checkFor(currentUser, projectId)
-
-            if (!repo.doesProjectExistById(projectId)) {
-                throw NotFoundException(EntityType.PROJECT, projectId.toString())
-            }
+            isAllowedToReadProject(projectMemberRepo)
+                .andAlso(isProjectExistent(repo))
+                .checkFor(currentUser, projectId)
 
             val projectMembersWithUsers = projectMemberRepo.getProjectMembersWithUsers(projectId)
             projectMembersWithUsers.toGrpcProjectMembers()

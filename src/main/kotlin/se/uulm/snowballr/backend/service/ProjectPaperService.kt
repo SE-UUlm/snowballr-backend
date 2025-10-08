@@ -5,7 +5,6 @@ import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.DuplicateEntityException
 import se.uulm.snowballr.backend.model.SnowballRException.EntityNotActiveException
-import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.OutOfRangeException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.Author
@@ -26,9 +25,11 @@ import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.IReviewHasCriterionTableRepo
+import se.uulm.snowballr.backend.service.accessrules.andAlso
 import se.uulm.snowballr.backend.service.accessrules.checkFor
 import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadProject
 import se.uulm.snowballr.backend.service.accessrules.isProjectActive
+import se.uulm.snowballr.backend.service.accessrules.isProjectExistent
 import se.uulm.snowballr.backend.service.accessrules.isServerOrProjectAdmin
 import se.uulm.snowballr.backend.service.accessrules.orElseThrow
 import snowballr.Base
@@ -141,11 +142,9 @@ class ProjectPaperService(
     ): GrpcProjectPaper.List = withUser(userRepo) { currentUser ->
         val projectId = parseUUID(request.id, EntityType.PROJECT)
 
-        isAllowedToReadProject(projectMemberRepo).checkFor(currentUser, projectId)
-
-        if (!projectRepo.doesProjectExistById(projectId)) {
-            throw NotFoundException(EntityType.PROJECT, projectId.toString())
-        }
+        isAllowedToReadProject(projectMemberRepo)
+            .andAlso(isProjectExistent(projectRepo))
+            .checkFor(currentUser, projectId)
 
         var projectPapersWithPapers = repo.getAllProjectPapersWithPapers(projectId)
         val paperAuthorsMap = mutableMapOf<Paper, List<GrpcAuthor>>()
@@ -187,11 +186,9 @@ class ProjectPaperService(
     ) { currentUser ->
         val projectId = parseUUID(request.projectId, EntityType.PROJECT)
 
-        isAllowedToReadProject(projectMemberRepo).checkFor(currentUser, projectId)
-
-        if (!projectRepo.doesProjectExistById(projectId)) {
-            throw NotFoundException(EntityType.PROJECT, projectId.toString())
-        }
+        isAllowedToReadProject(projectMemberRepo)
+            .andAlso(isProjectExistent(projectRepo))
+            .checkFor(currentUser, projectId)
 
         val relativeId = request.relativeProjectPaperId.toLong()
         val projectPaper = repo.getProjectPaperByRelativeId(projectId, relativeId).getOrThrow()

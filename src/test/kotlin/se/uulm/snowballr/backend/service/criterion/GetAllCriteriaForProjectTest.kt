@@ -25,9 +25,11 @@ class GetAllCriteriaForProjectTest : MainServiceTest() {
     fun `When the project doesn't exist, then a NotFoundException is thrown`() = runTest {
         val request = getExampleRequest()
 
+        val project = DataBuilder.createExampleProject(id = projectId)
         val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
 
         mockCurrentUser(adminUser)
+        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
         coEvery { projectRepoMock.doesProjectExistById(projectId) } returns false
 
         assertThrows<NotFoundException> { mainService.getAllCriteriaForProject(request) }
@@ -45,8 +47,8 @@ class GetAllCriteriaForProjectTest : MainServiceTest() {
         val project = DataBuilder.createExampleProject(id = projectId)
 
         mockCurrentUser(adminUser)
-        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
+        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
         coEvery { criterionRepoMock.getAllProjectCriteria(project.id) } returns listOf(criterion)
 
         assertDoesNotThrow { mainService.getAllCriteriaForProject(request) }
@@ -66,8 +68,8 @@ class GetAllCriteriaForProjectTest : MainServiceTest() {
             val project = DataBuilder.createExampleProject(id = projectId)
 
             mockCurrentUser(user)
-            coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
+            coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
             coEvery { criterionRepoMock.getAllProjectCriteria(project.id) } returns listOf(criterion)
 
             assertDoesNotThrow { mainService.getAllCriteriaForProject(request) }
@@ -82,7 +84,6 @@ class GetAllCriteriaForProjectTest : MainServiceTest() {
             val project = DataBuilder.createExampleProject(id = projectId)
 
             mockCurrentUser(user)
-            coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
             assertThrows<UnauthorizedException> { mainService.getAllCriteriaForProject(request) }

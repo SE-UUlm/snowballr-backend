@@ -4,12 +4,28 @@ package se.uulm.snowballr.backend.service.accessrules
 
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.Project
+import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import snowballr.ProjectOuterClass.ProjectStatus
 import java.util.UUID
 import javax.annotation.CheckReturnValue
+
+/**
+ * Check whether a project with the given ID exists; otherwise, throws a [NotFoundException].
+ *
+ * @param projectRepo The repository used to verify project existence.
+ */
+@CheckReturnValue
+fun isProjectExistent(projectRepo: IProjectTableRepo): AccessRule<UUID> {
+    return AccessRule<UUID> { _, projectId ->
+        projectRepo.doesProjectExistById(projectId)
+    }.orElseThrow { _, projectId ->
+        NotFoundException(EntityType.PROJECT, projectId.toString())
+    }
+}
 
 /**
  * Check whether the project is active (or active, but settings are locked).
