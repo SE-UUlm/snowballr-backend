@@ -65,6 +65,11 @@ interface IProjectPaperService {
      * Service implementation of [SnowballRService.addPaperToProject].
      */
     suspend fun addPaperToProject(request: GrpcProjectPaper.Add): GrpcProjectPaper
+
+    /**
+     * Service implementation of [SnowballRService.getNextPaper].
+     */
+    suspend fun getNextPaper(request: Base.Id): GrpcProjectPaper
 }
 
 /**
@@ -238,4 +243,18 @@ class ProjectPaperService(
 
             projectPaper.toGrpcProjectPaperWithData(paper)
         }
+
+    override suspend fun getNextPaper(request: Base.Id): GrpcProjectPaper = withUser(userRepo) { currentUser ->
+        val projectPaperId = parseUUID(request.id, EntityType.PROJECT_PAPER)
+        val projectPaper = repo.getProjectPaperById(projectPaperId).getOrThrow()
+
+        isAllowedToReadProject(projectMemberRepo).checkFor(currentUser, projectPaper.projectId)
+
+        val projectId = projectRepo.getProjectById(projectPaper.projectId).getOrThrow().id
+        val nextProjectPaperId = repo.getNextPaperLocalId(projectId, projectPaper.localPaperId).getOrThrow()
+        val nextProjectPaper = repo.getProjectPaperByRelativeId(projectId, nextProjectPaperId).getOrThrow()
+        val paper = paperRepo.getPaperById(nextProjectPaper.paperId).getOrThrow()
+
+        nextProjectPaper.toGrpcProjectPaperWithData(paper)
+    }
 }
