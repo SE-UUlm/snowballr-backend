@@ -26,6 +26,7 @@ import snowballr.ProjectOuterClass.SnowballingType
 import snowballr.ReviewOuterClass.ReviewDecision
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
+import java.time.OffsetDateTime
 import java.util.UUID
 
 /**
@@ -258,12 +259,18 @@ object RepositoryHelper {
      * Creates a test invitation token (default "secure-random-invitation-token-123") in the database
      * with the specified properties.
      */
-    suspend fun insertTestToken(email: String, projectId: UUID, token: String = "secure-random-invitation-token-123") {
+    suspend fun insertTestToken(
+        email: String,
+        projectId: UUID,
+        token: String = "secure-random-invitation-token-123",
+        expiresAt: OffsetDateTime = OffsetDateTime.now().plusDays(1),
+    ) {
         db.query {
             InvitationTokenTable.insert {
                 it[InvitationTokenTable.email] = email
                 it[InvitationTokenTable.projectId] = projectId
                 it[InvitationTokenTable.token] = token
+                it[InvitationTokenTable.expiresAt] = expiresAt
             }
         }
     }
