@@ -30,6 +30,8 @@ import se.uulm.snowballr.backend.service.accessrules.orElseThrow
 import snowballr.Base
 import snowballr.ProjectOuterClass.MemberRole
 import snowballr.ProjectOuterClass.ProjectStatus
+import snowballr.copy
+import java.util.UUID
 import kotlin.getOrThrow
 import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
 import snowballr.ProjectOuterClass.Project as GrpcProject
@@ -186,20 +188,120 @@ class ProjectService(
 
     override suspend fun updateProject(request: GrpcProject.Update): GrpcProject = withUser(userRepo) { currentUser ->
         val projectId = parseUUID(request.project.id, EntityType.PROJECT)
-        val project = repo.getProjectById(projectId).getOrThrow()
 
         isServerOrProjectAdmin(projectMemberRepo, AccessType.UPDATE).checkFor(currentUser, projectId)
 
-        // TODO (see #314): correct status handling: if a project is archived, you should only be able to activate it
-        // and if it is active, you can do everything, but deleting / restoring it never allowed.
-        if (project.status == ProjectStatus.PROJECT_STATUS_DELETED) {
-            throw FailedPreconditionException("The project with the id ${request.project.id} is deleted.")
-        }
-        if (request.project.status == ProjectStatus.PROJECT_STATUS_DELETED) {
-            throw FailedPreconditionException("The project status can not be set to deleted by an update call.")
+        val project = repo.getProjectById(projectId).getOrThrow()
+        val currentStatus = project.status
+
+        val fieldMask = request.mask.pathsList
+        val requestedStatus = request.project.status
+
+        validateProjectUpdate(currentStatus, requestedStatus, fieldMask)
+
+        val finalStatus = determineEffectiveProjectStatus(projectId, requestedStatus)
+        val finalRequest = request.copy {
+            this.project = request.project.copy {
+                this.status = finalStatus
+            }
         }
 
-        repo.updateProject(request, project.status).toGrpcProject()
+        repo.updateProject(finalRequest).toGrpcProject()
+    }
+
+    /**
+     * Validates the update of a project based on the current status and the requested status.
+     *
+     * If the project is `PROJECT_STATUS_DELETED`, nothing can be updated.
+     * If the project is `PROJECT_STATUS_ARCHIVED`, only the status can be updated (back to an active project).
+     * If the project is `PROJECT_STATUS_ACTIVE`, then everything can be updated.
+     * If the project is `PROJECT_STATUS_ACTIVE_LOCKED`, then everything except the slr settings can be updated.
+     *
+     * In addition, the status can never be set to `PROJECT_STATUS_DELETED` via the update method.
+     *
+     * @throws FailedPreconditionException if the update fails for any reason.
+     */
+    @Suppress("ThrowsCount")
+    private fun validateProjectUpdate(
+        currentStatus: ProjectStatus,
+        requestedStatus: ProjectStatus,
+        fieldMask: List<String>,
+    ) {
+        require(!(fieldMask.contains("project.status") && requestedStatus == ProjectStatus.PROJECT_STATUS_DELETED)) {
+            "The project status cannot be set to DELETED via the update method. Use SoftDeleteProject instead."
+        }
+
+        when (currentStatus) {
+            ProjectStatus.PROJECT_STATUS_DELETED -> {
+                throw FailedPreconditionException(
+                    "The project has been deleted and can therefore not be updated anymore.",
+                )
+            }
+
+            ProjectStatus.PROJECT_STATUS_ARCHIVED -> {
+                val isOnlyStatusUpdate = fieldMask.size == 1 && fieldMask.contains("project.status")
+                if (!isOnlyStatusUpdate) {
+                    throw FailedPreconditionException(
+                        "The project is archived and therefore only the 'status' field can be updated.",
+                    )
+                }
+                if (
+                    requestedStatus != ProjectStatus.PROJECT_STATUS_ACTIVE &&
+                    requestedStatus != ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED &&
+                    requestedStatus != ProjectStatus.PROJECT_STATUS_ARCHIVED
+                ) {
+                    throw FailedPreconditionException(
+                        "An archived project can only be unarchived by setting its status to ACTIVE or ACTIVE_LOCKED.",
+                    )
+                }
+            }
+
+            ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED -> {
+                // all project settings are SLR settings
+                val isChangingSettings = fieldMask.any { it.startsWith("project.settings.") }
+                if (isChangingSettings) {
+                    throw FailedPreconditionException(
+                        "The project is locked and therefore no SLR settings can be modified.",
+                    )
+                }
+            }
+
+            ProjectStatus.PROJECT_STATUS_ACTIVE -> {}
+
+            ProjectStatus.PROJECT_STATUS_UNSPECIFIED,
+            ProjectStatus.UNRECOGNIZED,
+            -> {
+                error("Project is an unspecified status: $currentStatus")
+            }
+        }
+    }
+
+    /**
+     * Determines the effective status of a project based on the current status and the requested status.
+     *
+     * If the requested status is ACTIVE or ACTIVE_LOCKED, it checks if the project has any papers with reviews. If so,
+     * the project is ACTIVE_LOCKED; otherwise, it is set to ACTIVE.
+     * If the requested status is not an active status, it is returned unchanged.
+     *
+     * @param projectId The ID of the project to be updated.
+     * @param requestedStatus The status that is requested for the project.
+     * @return The final status of the project.
+     */
+    private suspend fun determineEffectiveProjectStatus(
+        projectId: UUID,
+        requestedStatus: ProjectStatus,
+    ): ProjectStatus {
+        if (requestedStatus != ProjectStatus.PROJECT_STATUS_ACTIVE &&
+            requestedStatus != ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED
+        ) {
+            return requestedStatus
+        }
+
+        return if (repo.isProjectLocked(projectId)) {
+            ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED
+        } else {
+            ProjectStatus.PROJECT_STATUS_ACTIVE
+        }
     }
 
     override suspend fun getProjectMembers(request: Base.Id): GrpcProjectMember.List =
