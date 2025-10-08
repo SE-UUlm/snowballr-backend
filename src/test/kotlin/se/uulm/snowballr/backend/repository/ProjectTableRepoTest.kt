@@ -19,10 +19,16 @@ import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.toGrpcProject
 import se.uulm.snowballr.backend.repository.RepositoryHelper.assignUserToProject
+import se.uulm.snowballr.backend.repository.RepositoryHelper.insertPaperAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectAndGetId
+import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectPaperAndGetId
+import se.uulm.snowballr.backend.repository.RepositoryHelper.insertReviewAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertUserAndGetId
+import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.ProjectTable
+import se.uulm.snowballr.backend.table.ReviewTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
+import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.utils.assertResultFailure
 import se.uulm.snowballr.backend.utils.assertResultSuccess
 import snowballr.ProjectOuterClass.Project
@@ -32,7 +38,8 @@ import snowballr.ProjectOuterClass.SnowballingType
 import java.sql.SQLException
 import java.util.UUID
 
-class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberTable), true) {
+class ProjectTableRepoTest :
+    RepositoryTest(arrayOf(ProjectTable, ProjectMemberTable, ProjectPaperTable, PaperTable, ReviewTable), true) {
     private val repo = ProjectTableRepo(db)
 
     companion object {
@@ -379,5 +386,38 @@ class ProjectTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberT
                     )
                 }
             }
+    }
+
+    @Nested
+    inner class IsProjectLocked {
+        @Test
+        fun `When a project has no project papers, then the project is not locked`() = runTest {
+            val projectId =
+                insertProjectAndGetId(status = ProjectStatus.PROJECT_STATUS_ACTIVE, createdBy = testUserId)
+
+            assertFalse(repo.isProjectLocked(projectId))
+        }
+
+        @Test
+        fun `When a project has project papers without reviews, then the project is not locked`() = runTest {
+            val projectId =
+                insertProjectAndGetId(status = ProjectStatus.PROJECT_STATUS_ACTIVE, createdBy = testUserId)
+            val paperId = insertPaperAndGetId()
+            insertProjectPaperAndGetId(paperId = paperId, projectId = projectId, createdBy = testUserId)
+
+            assertFalse(repo.isProjectLocked(projectId))
+        }
+
+        @Test
+        fun `When a project has project papers with reviews, then the project is locked`() = runTest {
+            val projectId =
+                insertProjectAndGetId(status = ProjectStatus.PROJECT_STATUS_ACTIVE, createdBy = testUserId)
+            val paperId = insertPaperAndGetId()
+            val projectPaperId =
+                insertProjectPaperAndGetId(paperId = paperId, projectId = projectId, createdBy = testUserId)
+            insertReviewAndGetId(projectPaperId, userId = testUserId)
+
+            assertTrue(repo.isProjectLocked(projectId))
+        }
     }
 }
