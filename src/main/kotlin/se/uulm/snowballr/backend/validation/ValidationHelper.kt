@@ -125,15 +125,24 @@ fun Raise<ValidationIssue>.ensureLastNameValidity(lastName: String) =
     ensureTextFieldValidity("last_name", lastName, LAST_NAME_MAX_LENGTH)
 
 /**
- * Ensures that the provided field mask contains only valid fields for the given object type and
- * is non-blank.
+ * Ensures that the provided field mask is non-blank and contains only fields that are valid and allowed for the given
+ * object type.
+ * If the field mask is not valid, a [InvalidFieldMask] validation issue is raised.
  *
  * @param fieldMask The [FieldMask] to validate.
  * @param descriptor The object descriptor to validate against.
+ * @param unallowedFields A list of paths that must not appear in the field mask.
  */
-fun Raise<ValidationIssue>.ensureFieldMaskIsValid(fieldMask: FieldMask, descriptor: Descriptor) {
+fun Raise<ValidationIssue>.ensureFieldMaskIsValid(
+    fieldMask: FieldMask,
+    descriptor: Descriptor,
+    unallowedFields: List<String> = emptyList(),
+) {
     ensure(fieldMask.pathsList.isNotEmpty()) { InvalidFieldMask(null) }
     ensure(FieldMaskUtil.isValid(descriptor, fieldMask)) {
+        InvalidFieldMask(fieldMask.toString())
+    }
+    ensure(fieldMask.pathsList.toSet().none { unallowedFields.contains(it) }) {
         InvalidFieldMask(fieldMask.toString())
     }
 }
