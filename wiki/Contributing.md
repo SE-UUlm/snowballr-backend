@@ -54,7 +54,7 @@ To set up the development environment, follow the steps in
 
 When adding a new use case/API request, it makes sense to implement and test the feature layer-by-layer. The following
 sections describe how each layer is implemented. Head over to the
-[Testing page](https://github.com/SE-UUlm/snowballr-backend/wiki/Testing) to see, how these implementations are tested.
+[Testing page](https://github.com/SE-UUlm/snowballr-backend/wiki/Testing) to see how these implementations are tested.
 Start at the table layer and then work your way up until the input validation layer.
 
 ### Table
@@ -62,7 +62,7 @@ Start at the table layer and then work your way up until the input validation la
 The table layer isn't a layer per se, but it defines the database schema and therefore represents it. Each entity is
 in another table with the pattern `[Entity Name]Table`. The tables use the
 [Exposed](https://github.com/JetBrains/Exposed) syntax to define the database schema. In most cases, it makes sense to
-inherit from a base table, such as `IntIdTable`, which represents a table that has an `id` property of the type `Int`.
+inherit from a base table, such as `UUIDTable`, which represents a table that has an `id` property of the type `UUID`.
 Follow these few conventions when creating or modifying a table:
 
 * always use `text(...)` for properties that contain a text
@@ -97,7 +97,7 @@ for an example.
 The repository layer implements CRUD operations for entities in the database. If there doesn't already exist a
 repository associated with your use case, add a new one with the pattern `[Entity Name]TableRepo`. Then, add the
 required method first to the interface and then to the repository implementation. All repositories accept the database
-as argument. Furthermore, a method always consists of a `db.dbQuey { ... }` block, which represents a transaction to the
+as an argument. Furthermore, a method always consists of a `db.dbQuey { ... }` block, which represents a transaction to the
 database. Only ever invoke database statements in such a block, otherwise an exception will be thrown upon execution.
 
 Here, you can use the [Exposed](https://github.com/JetBrains/Exposed) DSL to build SQL statements:
@@ -149,7 +149,7 @@ class MainService(
 For the dependency injection to work, add all repositories and services to the `snowballRModule` in
 [Module.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/Module.kt).
 Build the service method implementation in a way that preconditions are checked first. We want to fail as fast as
-possible, and if the associated entity doesn't exist or the user doesn't even have access to the operation, we don't
+possible, and if the user doesn't have access to the operation or the associated entity does not exist, we don't
 want to have already persisted data. Only if every precondition is met, make changes to the persisted data and finish
 the method with returning required data, such as the updated entity for an update request.
 
