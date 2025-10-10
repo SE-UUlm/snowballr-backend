@@ -1,4 +1,4 @@
-For our architecture, we follow the use case driven design methodology.
+For our architecture, we follow the use-case-driven design methodology.
 Our [system context](https://c4model.com/diagrams/system-context) is as follows:
 
 ![system-context.drawio.svg](assets/system-context.drawio.svg)
@@ -89,7 +89,7 @@ sequenceDiagram
     deactivate gRPC Server
 ```
 
-When an unexpected error occurs at any time in this diagram, an `INTERNAL` status code is sent to the Frontend.
+When an unexpected error occurs at any time in this diagram, an `INTERNAL` status code is sent to the frontend.
 
 ## Layers
 
@@ -103,9 +103,9 @@ When an unexpected error occurs at any time in this diagram, an `INTERNAL` statu
 ### Input Validation (4 - 5)
 
 - Is an interceptor
-- Validate the request fields if necessary
-    - Is string field non-blank and not too long?
-    - Is numeric field in specific range?
+- Validate the request fields if necessary, e.g.
+    - Is the string field non-blank and not too long?
+    - Is the numeric field in a specific range?
 - **Note that no semantic validation takes place**
     - e.g., it isn't checked whether an entity ID refers to an existing item
     - Semantic validation takes place in the [Service layer](#service-7-13---15-20---21)
@@ -114,7 +114,7 @@ When an unexpected error occurs at any time in this diagram, an `INTERNAL` statu
 
 - Mainly serves as a multiplexer for the [Service layer](#service-7-13---15-20---21)
 - Call the according service method
-- If the call was successful, the response payload is sent back to the Frontend
+- If the call was successful, the response payload is sent back to the frontend
 
 ### Service (7, 13 - 15, 20 - 21)
 
@@ -127,7 +127,7 @@ When an unexpected error occurs at any time in this diagram, an `INTERNAL` statu
 ### Repository (8 - 12, 16 - 19)
 
 - Implementation of the [Repository Pattern](https://medium.com/@pererikbergman/repository-design-pattern-e28c0f3e4a30)
-- Works as direct abstraction layer above the database
+- Works as a direct abstraction layer above the database
 - Uses DSL to execute CRUD operations
 
 ## Database

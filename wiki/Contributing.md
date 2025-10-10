@@ -54,7 +54,7 @@ To set up the development environment, follow the steps in
 
 When adding a new use case/API request, it makes sense to implement and test the feature layer-by-layer. The following
 sections describe how each layer is implemented. Head over to the
-[Testing page](https://github.com/SE-UUlm/snowballr-backend/wiki/Testing) to see, how these implementations are tested.
+[Testing page](https://github.com/SE-UUlm/snowballr-backend/wiki/Testing) to see how these implementations are tested.
 Start at the table layer and then work your way up until the input validation layer.
 
 ### Table
@@ -62,7 +62,7 @@ Start at the table layer and then work your way up until the input validation la
 The table layer isn't a layer per se, but it defines the database schema and therefore represents it. Each entity is
 in another table with the pattern `[Entity Name]Table`. The tables use the
 [Exposed](https://github.com/JetBrains/Exposed) syntax to define the database schema. In most cases, it makes sense to
-inherit from a base table, such as `IntIdTable`, which represents a table that has an `id` property of the type `Int`.
+inherit from a base table, such as `UUIDTable`, which represents a table that has an `id` property of the type `UUID`.
 Follow these few conventions when creating or modifying a table:
 
 * always use `text(...)` for properties that contain a text
@@ -97,7 +97,7 @@ for an example.
 The repository layer implements CRUD operations for entities in the database. If there doesn't already exist a
 repository associated with your use case, add a new one with the pattern `[Entity Name]TableRepo`. Then, add the
 required method first to the interface and then to the repository implementation. All repositories accept the database
-as argument. Furthermore, a method always consists of a `db.dbQuey { ... }` block, which represents a transaction to the
+as an argument. Furthermore, a method always consists of a `db.dbQuey { ... }` block, which represents a transaction to the
 database. Only ever invoke database statements in such a block, otherwise an exception will be thrown upon execution.
 
 Here, you can use the [Exposed](https://github.com/JetBrains/Exposed) DSL to build SQL statements:
@@ -149,13 +149,92 @@ class MainService(
 For the dependency injection to work, add all repositories and services to the `snowballRModule` in
 [Module.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/Module.kt).
 Build the service method implementation in a way that preconditions are checked first. We want to fail as fast as
-possible, and if the associated entity doesn't exist or the user doesn't even have access to the operation, we don't
+possible, and if the user doesn't have access to the operation or the associated entity does not exist, we don't
 want to have already persisted data. Only if every precondition is met, make changes to the persisted data and finish
 the method with returning required data, such as the updated entity for an update request.
 
 See
 [ProjectService.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/service/ProjectService.kt)
 for an example.
+
+#### Access Rules and Authorization Checks
+
+To provide a composable and reusable way to enforce authorization logic across the service layer, we use
+**access rules**. These rules ensure consistent permission enforcement and centralize authorization logic within
+dedicated functions. An `AccessRule<T>` is a functional interface that determines whether a given `User` (the requester)
+is allowed to access a target entity of type `T`. The interface is *suspendable* to support asynchronous operations such
+as database queries.
+
+Access rules can be combined using operators like `andAlso()`, `orElse()`, and `orElseThrow()`, all of which support
+short-circuit behavior, to form complex authorization logic. If two access rules operate on different target types —
+where one target type is a property of the other — the rule can be adapted using the `forProperty()` helper.
+If an access rule was designed for no specific target type, it can be adapted to a concrete type using the `forTarget()`
+helper. For more details about these operators and helpers, see
+[`AccessRule.kt`](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/service/accessrules/AccessRule.kt).
+
+```kotlin
+// Chain multiple checks using AND and OR logic
+isEntityActive()
+    .andAlso(isEntityOwner())
+    .orElseThrow(EntityNotDeletableException())
+```
+
+Custom access rules should be defined in the
+[`service/accessrules/`](https://github.com/SE-UUlm/snowballr-backend/tree/develop/src/main/kotlin/se/uulm/snowballr/backend/service/accessrules)
+directory.
+Each access rule should:
+
+1. Override the `suspend fun isAllowedToAccess(requester: User, target: T): Boolean` function, possibly as lambda function.
+2. Be annotated with `@CheckReturnValue` to ensure that the rule is executed.
+3. Return an instance of `AccessRule<T>`.
+
+```kotlin
+// Checks if the current user is the same as the target user and is active.
+@CheckReturnValue
+fun isSameUserAndActive() = AccessRule<User> { currentUser, entity ->
+    currentUser.id == entity.id && entity.status == UserStatus.USER_STATUS_ACTIVE
+}
+```
+
+Access rules are applied within service methods using the `checkFor()` function.
+This function evaluates the rule chain for the given user and target entity and throws an exception if access is denied,
+or an `AccessRuleCheckFailedException` if no specific exception is defined and the access not granted.
+
+```kotlin
+val userId = parseUUID(request.id, EntityType.USER)
+val user = userRepo.getUserById(userId).getOrThrow()
+
+isSameUserAndActive().checkFor(currentUser, user)
+// ...
+```
+
+Combining multiple access rules now allows for more complex authorization logic, such as controlling whether an entity can
+be deleted.
+
+```kotlin
+// In EntityAccessRule.kt
+@CheckReturnValue
+fun isAllowedToDeleteEntity(): AccessRule<UUID> {
+    return isEntityActive()
+        .andAlso(isEntityOwner())
+        .orElseThrow(EntityNotDeletableException())
+}
+
+// In EntityService.kt
+override suspend fun deleteEntity(request: Base.Id): Base.Nothing =
+    withUser(userRepo) { currentUser ->
+        val entityId = parseUUID(request.id, EntityType.ENTITY)
+        val entity = repo.getEntityById(entityId).getOrThrow()
+
+        // Check authorization using the composed rule
+        isAllowedToDeleteEntity()
+            .forProperty(Entity::id)
+            .orElse(isServerAdmin().forTarget())
+            .orElseThrow { user, entity -> UnauthorizedException(user, entity.description) }
+            .checkFor(currentUser, entity)
+        // ...
+    }
+```
 
 ### Input Validation
 

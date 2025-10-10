@@ -48,11 +48,13 @@ When implementing the layers as described in
 [Layer Implementation](https://github.com/SE-UUlm/snowballr-backend/wiki/Contributing#layer-implementation), the layers
 can be tested independent of each other as described in the following sections.
 
-Use the [AssertJ](https://github.com/assertj/assertj?tab=readme-ov-file) test assertions to keep it consistent with the
-already existing tests and to make the assertions easy to read by using their fluent API.
+Use the [JUnit](https://docs.junit.org/5.0.1/api/org/junit/jupiter/api/Assertions.html) test assertions whenever it is
+possible to keep it consistent with the already existing tests and to make the assertions easy to read.
+If the _JUnit_ assertions are not easily usable, then use the
+[AssertJ](https://github.com/assertj/assertj?tab=readme-ov-file) test assertions.
 
 All test classes must have the same relative path under `./src/test` as the implementation class under
-`./src/test` and the same name with an additional `Test` at the end. This ensures a clear structure and an easy way to
+`./src/main` and the same name with an additional `Test` at the end. This ensures a clear structure and an easy way to
 find the according test class. The service test classes break this convention as described below.
 
 ### Repository
@@ -91,6 +93,9 @@ To keep a clean structure, we group all tests in inner classes according to the 
 For parameterized tests using gRPC enums, we provide the custom `GrpcEnumSourceTest` annotation, which skips the
 `UNRECOGNIZED` value because using this value to create an object will lead to an exception being thrown.
 
+If you need a test user, set the `needsTestUser` argument of the `RepositoryTest` superclass constructor to true.
+This automatically inserts a dummy user into the database. You can access this user’s ID through the `testUserId` variable.
+
 See
 [CriterionTableRepoTest.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/test/kotlin/se/uulm/snowballr/backend/repository/CriterionTableRepoTest.kt)
 for an example.
@@ -108,11 +113,6 @@ has the following test structure:
 
 ```kotlin
 class CreateExampleTest : MainServiceTest() {
-    @BeforeEach
-    fun setupTest() {
-        coEvery { userRepoMock.createExample(any()) } throws NotImplementedError()
-    }
-
     @Test
     fun `When an example is correctly created, then no exception is thrown`() =
         runTest {
@@ -127,7 +127,7 @@ class CreateExampleTest : MainServiceTest() {
         }
 
     @Test
-    fun `When an error occurs during example creation, then an exception is thrown`() =
+    fun `When an error occurs during example creation, then a TestSpecificException is thrown`() =
         runTest {
             val request = ExampleOuterClass.Example.Create.getDefaultInstance()
 
@@ -140,12 +140,10 @@ class CreateExampleTest : MainServiceTest() {
 }
 ```
 
-It is important that we mock each external dependency such as the call to the repository. In the example above, we first
-mock that the repository call throws a `NotImplementedError` and after that in each test case that the repository always
-returns a specific object or throws an exception. This way, we can ensure that every call that is made in the service
-method is also mocked and then test the behavior of the service method according to the behavior of our dependencies.
-For more complex mocks such as how often a method is called, refer to the rich documentation of the used mocking library
-[MockK](https://mockk.io/).
+It is important that we mock each external dependency, such as the call to the repository. In the example above, we mock
+that the repository returns a specific object or throws an exception. We then test the behavior of the service method
+according to the behavior of our dependencies. For more complex mocks such as how often a method is called, refer to the
+rich documentation of the used mocking library [MockK](https://mockk.io/).
 
 ### Input Validation
 
@@ -186,7 +184,7 @@ See
 [CriterionValidatorTest](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/test/kotlin/se/uulm/snowballr/backend/validation/CriterionValidatorTest.kt)
 for an example.
 
-> [!TIP] Local Developement and Manual Testing
+> [!TIP] Local Development and Manual Testing
 >
 > For details on helpers for local development and manual testing, such as user seeding and authentication bypass, see
 > the [Configuration](https://github.com/SE-UUlm/snowballr-backend/wiki/Configuration#authentication-bypass-and-user-seeding)
