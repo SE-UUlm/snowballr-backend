@@ -173,9 +173,9 @@ helper. For more details about these operators and helpers, see
 [`AccessRule.kt`](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/service/accessrules/AccessRule.kt).
 
 ```kotlin
-// Chain multiple checks using AND logic
+// Chain multiple checks using AND and OR logic
 isEntityActive()
-    .andAlso(isServerAdmin().forTarget())
+    .andAlso(isEntityOwner())
     .orElseThrow(EntityNotDeletableException())
 ```
 
@@ -216,7 +216,7 @@ be deleted.
 @CheckReturnValue
 fun isAllowedToDeleteEntity(): AccessRule<UUID> {
     return isEntityActive()
-        .andAlso(isServerAdmin().forTarget())
+        .andAlso(isEntityOwner())
         .orElseThrow(EntityNotDeletableException())
 }
 
@@ -229,7 +229,8 @@ override suspend fun deleteEntity(request: Base.Id): Base.Nothing =
         // Check authorization using the composed rule
         isAllowedToDeleteEntity()
             .forProperty(Entity::id)
-            .orElseThrow { _, entity -> EntityNotDeletableException(entity.description) }
+            .orElse(isServerAdmin().forTarget())
+            .orElseThrow { user, entity -> UnauthorizedException(user, entity.description) }
             .checkFor(currentUser, entity)
         // ...
     }
