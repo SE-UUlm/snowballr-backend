@@ -53,6 +53,8 @@ dependencies {
     implementation(libs.hikaricp)
     testImplementation(libs.testcontainers)
 
+    implementation(libs.quartz.scheduler)
+
     implementation(libs.password4j)
     implementation(libs.jjwt.api)
     runtimeOnly(libs.jjwt.impl)

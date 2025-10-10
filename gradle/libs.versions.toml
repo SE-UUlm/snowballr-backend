@@ -5,6 +5,7 @@ koin = "4.1.1"
 logback = "1.5.18"
 logger = "7.0.7"
 exposed = "0.61.0"
+quartz = "2.5.0"
 junit = "5.13.4"
 hikari-cp = "6.3.0"
 postgresql = "42.7.7"
@@ -45,6 +46,8 @@ exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "e
 exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "exposed" }
 exposed-datetime = { module = "org.jetbrains.exposed:exposed-kotlin-datetime", version.ref = "exposed" }
 exposed-json = { module = "org.jetbrains.exposed:exposed-json", version.ref = "exposed" }
+
+quartz-scheduler = { module = "org.quartz-scheduler:quartz", version.ref = "quartz" }
 
 password4j = { module = "com.password4j:password4j", version.ref = "password4j" }
 
