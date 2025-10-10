@@ -24,7 +24,7 @@ object PaperValidator {
 
     fun validateUpdateRequest(request: Paper.Update): EitherNel<ValidationIssue, Unit> = either {
         val fieldMaskResult = either {
-            ensureFieldMaskIsValid(request.mask, Paper.Update.getDescriptor())
+            ensureFieldMaskIsValid(request.mask, Paper.Update.getDescriptor(), listOf("paper.has_pdf"))
         }
 
         if (fieldMaskResult is Either.Left) {

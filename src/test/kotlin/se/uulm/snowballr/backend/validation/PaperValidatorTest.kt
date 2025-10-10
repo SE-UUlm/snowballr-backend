@@ -41,13 +41,20 @@ class PaperValidatorTest {
             )
 
         @JvmStatic
+        fun invalidFields(): List<Arguments> = listOf(
+            Arguments.of(emptyList<String>(), "no paths"),
+            Arguments.of(listOf("non_existent_field"), "a non-existent field"),
+            Arguments.of(listOf("has_pdf"), "a field that is not allowed in the mask"),
+        )
+
+        @JvmStatic
         fun blankFieldTestProvider(): List<Arguments> {
             val testName: (String, Boolean) -> String = { fieldName, isFieldInMask ->
                 if (isFieldInMask) {
-                    "When a blank $fieldName field is validated and specified in the field mask, then the " +
+                    "When a blank '$fieldName' field is validated and specified in the field mask, then the " +
                         "'BlankField' issue is returned"
                 } else {
-                    "When a blank $fieldName field is validated but not specified in the field mask, then " +
+                    "When a blank '$fieldName' field is validated but not specified in the field mask, then " +
                         "no issue is returned"
                 }
             }
@@ -64,10 +71,10 @@ class PaperValidatorTest {
         fun tooLongFieldTestProvider(): List<Arguments> {
             val testName: (String, Int, Boolean) -> String = { fieldName, maxLength, isFieldInMask ->
                 if (isFieldInMask) {
-                    "When a too long $fieldName field ($maxLength chars) is validated and specified in the " +
+                    "When a too long field '$fieldName' ($maxLength chars) is validated and specified in the " +
                         "field mask, then the 'TooLongField' issue is returned"
                 } else {
-                    "When a too long $fieldName field ($maxLength chars) is validated but not specified in the " +
+                    "When a too long field '$fieldName' ($maxLength chars) is validated but not specified in the " +
                         "field mask, then no issue is returned"
                 }
             }
@@ -129,22 +136,16 @@ class PaperValidatorTest {
             EitherAssert.assertThat(result).isRight()
         }
 
-        @Test
-        fun `When a blank field mask is validated, then the 'InvalidFieldMask' issue is returned`() {
-            val invalidFieldMask = FieldMaskUtil.fromStringList(emptyList())
+        @ParameterizedTest(
+            name = "When a field mask is validated with {1}, then the 'InvalidFieldMask' issue is returned",
+        )
+        @MethodSource("se.uulm.snowballr.backend.validation.PaperValidatorTest#invalidFields")
+        fun `When an invalid field mask is validated, then the 'InvalidFieldMask' issue is returned`(
+            paths: List<String>,
+            @Suppress("unused") testNameDescription: String,
+        ) {
             val request = validUpdateRequestBuilder
-                .setMask(invalidFieldMask)
-                .build()
-
-            val result = validateRequest(request)
-
-            assertInvalidResult<InvalidFieldMask>(result)
-        }
-
-        @Test
-        fun `When a field mask containing a non-existing field is validated, then the 'InvalidFieldMask' issue is returned`() {
-            val request = validUpdateRequestBuilder
-                .setMask(FieldMaskUtil.fromStringList(listOf("non_existing_field")))
+                .setMask(FieldMaskUtil.fromStringList(paths))
                 .build()
 
             val result = validateRequest(request)
