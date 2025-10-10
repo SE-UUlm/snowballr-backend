@@ -66,6 +66,14 @@ class UserValidatorTest {
         }
 
         @Test
+        fun `When a field mask contains the 'status' field, then the 'InvalidFieldMask' issue is returned`() {
+            val request = validUpdateRequestBuilder.setMask(FieldMaskUtil.fromStringList(listOf("user.status"))).build()
+            val result = validateRequest(request)
+
+            assertInvalidResult<InvalidFieldMask>(result)
+        }
+
+        @Test
         fun `When an invalid ID is validated, then the 'InvalidId' issue is returned`() {
             val user = validUpdatedUser.setId("invalid-id").build()
             val request = validUpdateRequestBuilder

@@ -16,7 +16,7 @@ object UserValidator {
     fun validateUpdateRequest(request: User.Update): EitherNel<ValidationIssue, Unit> = either {
         // Validate the field mask
         val fieldMaskResult = either {
-            ensureFieldMaskIsValid(request.mask, User.Update.getDescriptor())
+            ensureFieldMaskIsValid(request.mask, User.Update.getDescriptor(), listOf("user.status"))
         }
 
         // If field mask validation fails, return early

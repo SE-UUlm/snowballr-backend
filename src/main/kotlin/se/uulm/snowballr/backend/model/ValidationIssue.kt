@@ -127,19 +127,23 @@ data class InvalidPassword(
 }
 
 /**
- * Represents a validation issue where a provided field mask contains invalid fields or is blank.
+ * Represents a validation issue where a provided field mask is invalid.
  *
- * This class is utilized to indicate that some fields in the provided field mask
- * are not valid, i.e., do not exist in the generated gRPC class or the field mask is blank
- * and the entire object would be overwritten. If this is intended, every field should be specified
- * instead of leaving the field mask blank.
+ * This issue occurs when the field mask is not valid, i.e., it is either blank or contains at least one invalid field.
+ * If the field mask is blank the entire object would be overwritten.To prevent unintended overwrites, all intended
+ * fields should be explicitly listed in the field mask rather than leaving the mask empty.
  *
- * @property fieldMask The invalid field mask causing the issue.
+ * A field is considered invalid if:
+ *  - It does not exist in the corresponding generated gRPC class.
+ *  - It corresponds to a field that cannot be modified or set.
+ *
+ * @property fieldMask The invalid or empty field mask that caused the issue.
  */
 data class InvalidFieldMask(val fieldMask: String?) : ValidationIssue {
     override fun toString(): String = if (fieldMask.isNullOrBlank()) {
         "Field mask must be not blank."
     } else {
-        "Field mask contains invalid fields: $fieldMask."
+        "Field mask $fieldMask contains invalid fields. A field is considered invalid, if it does not exist or " +
+            "corresponds to a field that cannot be changed."
     }
 }

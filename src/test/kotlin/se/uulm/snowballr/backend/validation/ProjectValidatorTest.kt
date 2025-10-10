@@ -120,6 +120,16 @@ class ProjectValidatorTest {
         }
 
         @Test
+        fun `When a field mask contains the 'current_stage' or 'max_stage' field, then the 'InvalidFieldMask' issue is returned`() {
+            val request = validUpdateRequestBuilder
+                .setMask(FieldMaskUtil.fromStringList(listOf("project.current_stage", "project.max_stage")))
+                .build()
+            val result = validateRequest(request)
+
+            assertInvalidResult<InvalidFieldMask>(result)
+        }
+
+        @Test
         fun `When an invalid ID is validated, then the 'InvalidId' issue is returned`() {
             val project = validUpdatedProject.setId("invalid-id").build()
             val request = validUpdateRequestBuilder
