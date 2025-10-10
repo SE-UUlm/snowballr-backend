@@ -93,7 +93,7 @@ To keep a clean structure, we group all tests in inner classes according to the 
 For parameterized tests using gRPC enums, we provide the custom `GrpcEnumSourceTest` annotation, which skips the
 `UNRECOGNIZED` value because using this value to create an object will lead to an exception being thrown.
 
-If you need a test user, set the second argument of the `RepositoryTest` superclass constructor to true.
+If you need a test user, set the `needsTestUser` argument of the `RepositoryTest` superclass constructor to true.
 This automatically inserts a dummy user into the database. You can access this user’s ID through the `testUserId` variable.
 
 See
@@ -141,10 +141,9 @@ class CreateExampleTest : MainServiceTest() {
 ```
 
 It is important that we mock each external dependency, such as the call to the repository. In the example above, we mock
-that the repository always returns a specific object or throws an exception. This way, we can ensure that every call
-made in the service method is also mocked and then test the behavior of the service method according to the behavior of
-our dependencies. For more complex mocks such as how often a method is called, refer to the rich documentation of the
-used mocking library [MockK](https://mockk.io/).
+that the repository returns a specific object or throws an exception. We then test the behavior of the service method
+according to the behavior of our dependencies. For more complex mocks such as how often a method is called, refer to the
+rich documentation of the used mocking library [MockK](https://mockk.io/).
 
 ### Input Validation
 

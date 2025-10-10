@@ -179,7 +179,9 @@ isEntityActive()
     .orElseThrow(EntityNotDeletableException())
 ```
 
-Custom access rules should be defined in the `service/accessrules/` directory.
+Custom access rules should be defined in the
+[`service/accessrules/`](https://github.com/SE-UUlm/snowballr-backend/tree/develop/src/main/kotlin/se/uulm/snowballr/backend/service/accessrules)
+directory.
 Each access rule should:
 
 1. Override the `suspend fun isAllowedToAccess(requester: User, target: T): Boolean` function, possibly as lambda function.
@@ -188,6 +190,7 @@ Each access rule should:
 
 ```kotlin
 // Checks if the current user is the same as the target user and is active.
+@CheckReturnValue
 fun isSameUserAndActive() = AccessRule<User> { currentUser, entity ->
     currentUser.id == entity.id && entity.status == UserStatus.USER_STATUS_ACTIVE
 }
@@ -205,7 +208,7 @@ isSameUserAndActive().checkFor(currentUser, user)
 // ...
 ```
 
-Combining multiple access rules now allows for more complex permission logic, such as controlling whether an entity can
+Combining multiple access rules now allows for more complex authorization logic, such as controlling whether an entity can
 be deleted.
 
 ```kotlin
@@ -216,11 +219,12 @@ fun isAllowedToDeleteEntity(): AccessRule<UUID> {
         .andAlso(isServerAdmin().forTarget())
         .orElseThrow(EntityNotDeletableException())
 }
+
 // In EntityService.kt
 override suspend fun deleteEntity(request: Base.Id): Base.Nothing =
     withUser(userRepo) { currentUser ->
         val entityId = parseUUID(request.id, EntityType.ENTITY)
-        val entity = repo.getProjectById(projectId).getOrThrow()
+        val entity = repo.getEntityById(entityId).getOrThrow()
 
         // Check authorization using the composed rule
         isAllowedToDeleteEntity()
