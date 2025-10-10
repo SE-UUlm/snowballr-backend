@@ -1,8 +1,8 @@
 package se.uulm.snowballr.backend.repository
 
 import kotlinx.coroutines.test.runTest
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -144,7 +144,7 @@ class InvitationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, ProjectTa
             insertInactiveTestToken(projectId)
 
             val activeInvitationTokenInProject = repo.getActiveInvitationTokensForProject(projectId)
-            assertEquals(1, activeInvitationTokenInProject.size)
+            assertThat(activeInvitationTokenInProject).hasSize(1)
             assertEquals("an-active-token", activeInvitationTokenInProject.first().token)
         }
 
@@ -154,7 +154,7 @@ class InvitationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, ProjectTa
             insertInactiveTestToken(projectId)
 
             val activeInvitationTokenInProject = repo.getActiveInvitationTokensForProject(projectId)
-            assertTrue(activeInvitationTokenInProject.isEmpty())
+            assertThat(activeInvitationTokenInProject).isEmpty()
         }
 
         @Test
@@ -163,7 +163,7 @@ class InvitationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, ProjectTa
             insertActiveTestToken(projectId, "token-in-another-project")
 
             val activeInvitationTokenInProject = repo.getActiveInvitationTokensForProject(UUID.randomUUID())
-            assertTrue(activeInvitationTokenInProject.isEmpty())
+            assertThat(activeInvitationTokenInProject).isEmpty()
         }
     }
 
