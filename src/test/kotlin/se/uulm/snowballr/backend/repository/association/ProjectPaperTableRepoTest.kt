@@ -9,6 +9,9 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.ProjectPaperNotFoundException
 import se.uulm.snowballr.backend.repository.PaperTableRepo
@@ -256,5 +259,75 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
                 assertEquals(0, projectPaper1.localPaperId)
                 assertEquals(0, projectPaper2.localPaperId)
             }
+    }
+
+    @Nested
+    inner class GetProjectInformation {
+        @Test
+        fun `When there are no papers, then the project progress is 0,0`() = runTest {
+            val projectId = insertProjectAndGetId(createdBy = testUserId)
+            assertEquals(0.0f, repo.getProjectProgress(projectId))
+        }
+
+        @ParameterizedTest
+        @MethodSource(
+            "se.uulm.snowballr.backend.repository.association.ProjectPaperTableRepoTest#reviewDecisionProgressCases",
+        )
+        fun `When the only paper has a specific review decision, then the correct project progress is returned`(
+            decision: PaperDecision,
+            progress: Float,
+        ) = runTest {
+            val projectId = insertProjectAndGetId(createdBy = testUserId)
+            val paperId = insertPaperAndGetId()
+            insertProjectPaperAndGetId(paperId, projectId, createdBy = testUserId, decision = decision)
+            assertEquals(progress, repo.getProjectProgress(projectId))
+        }
+
+        @Test
+        fun `When half of the project papers are fully reviewed, then 0,5 is returned`() = runTest {
+            val projectId = insertProjectAndGetId(createdBy = testUserId)
+
+            val paperId1 = insertPaperAndGetId()
+            val paperId2 = insertPaperAndGetId()
+            val paperId3 = insertPaperAndGetId()
+            val paperId4 = insertPaperAndGetId()
+
+            insertProjectPaperAndGetId(
+                paperId1,
+                projectId,
+                createdBy = testUserId,
+                decision = PaperDecision.PAPER_DECISION_UNREVIEWED,
+            )
+            insertProjectPaperAndGetId(
+                paperId2,
+                projectId,
+                createdBy = testUserId,
+                decision = PaperDecision.PAPER_DECISION_IN_REVIEW,
+            )
+            insertProjectPaperAndGetId(
+                paperId3,
+                projectId,
+                createdBy = testUserId,
+                decision = PaperDecision.PAPER_DECISION_DECLINED,
+            )
+            insertProjectPaperAndGetId(
+                paperId4,
+                projectId,
+                createdBy = testUserId,
+                decision = PaperDecision.PAPER_DECISION_ACCEPTED,
+            )
+
+            assertEquals(0.5f, repo.getProjectProgress(projectId))
+        }
+    }
+
+    companion object {
+        @JvmStatic
+        fun reviewDecisionProgressCases(): List<Arguments> = listOf(
+            Arguments.of(PaperDecision.PAPER_DECISION_UNREVIEWED, 0.0f),
+            Arguments.of(PaperDecision.PAPER_DECISION_IN_REVIEW, 0.0f),
+            Arguments.of(PaperDecision.PAPER_DECISION_ACCEPTED, 1.0f),
+            Arguments.of(PaperDecision.PAPER_DECISION_DECLINED, 1.0f),
+        )
     }
 }

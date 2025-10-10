@@ -132,13 +132,15 @@ fun Raise<ValidationIssue>.ensureLastNameValidity(lastName: String) =
  * @param fieldMask The [FieldMask] to validate.
  * @param descriptor The object descriptor to validate against.
  * @param unallowedFields A list of paths that must not appear in the field mask.
+ * @param allowEmpty Whether to allow an empty field mask. Defaults to false.
  */
 fun Raise<ValidationIssue>.ensureFieldMaskIsValid(
     fieldMask: FieldMask,
     descriptor: Descriptor,
     unallowedFields: List<String> = emptyList(),
+    allowEmpty: Boolean = false,
 ) {
-    ensure(fieldMask.pathsList.isNotEmpty()) { InvalidFieldMask(null) }
+    ensure(allowEmpty || fieldMask.pathsList.isNotEmpty()) { InvalidFieldMask(null) }
     ensure(FieldMaskUtil.isValid(descriptor, fieldMask)) {
         InvalidFieldMask(fieldMask.toString())
     }

@@ -327,4 +327,46 @@ class ProjectValidatorTest {
             assertInvalidResult<BlankField>(result)
         }
     }
+
+    @Nested
+    inner class InformationGetRequest {
+        private val validId = UUID.randomUUID().toString()
+        private fun getRequest(projectId: String, paths: List<String>?) = Project.Information.Get
+            .newBuilder()
+            .setProjectId(projectId)
+            .also { if (paths != null) it.setMask(FieldMaskUtil.fromStringList(paths)) }
+            .build()
+
+        @Test
+        fun `When a valid field mask and project id are validated, then no issue is returned`() {
+            val request = getRequest(validId, listOf("project_progress"))
+            val result = validateRequest(request)
+
+            EitherAssert.assertThat(result).isRight()
+        }
+
+        @Test
+        fun `When a blank field mask is validated, then no issue is returned`() {
+            val request = getRequest(validId, null)
+            val result = validateRequest(request)
+
+            EitherAssert.assertThat(result).isRight()
+        }
+
+        @Test
+        fun `When a field mask containing a nonexistent field is validated, then the 'InvalidFieldMask' issue is returned`() {
+            val request = getRequest(validId, listOf("non_existent_field"))
+            val result = validateRequest(request)
+
+            assertInvalidResult<InvalidFieldMask>(result)
+        }
+
+        @Test
+        fun `When an invalid ID is validated, then the 'InvalidId' issue is returned`() {
+            val request = getRequest("invalid-id", null)
+            val result = validateRequest(request)
+
+            assertInvalidResult<InvalidId>(result)
+        }
+    }
 }

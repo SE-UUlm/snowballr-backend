@@ -298,7 +298,7 @@ class SnowballRServer(
 
         override suspend fun getProjectInformation(
             request: ProjectOuterClass.Project.Information.Get,
-        ): ProjectOuterClass.Project.Information = super.getProjectInformation(request)
+        ): ProjectOuterClass.Project.Information = mainService.getProjectInformation(request)
 
         override suspend fun getDecisionStatisticsForStage(
             request: ProjectOuterClass.Project.Information.DecisionStatistics.Get,
