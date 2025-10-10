@@ -49,7 +49,7 @@ interface IInvitationTokenTableRepo {
      * @param projectId The ID of the project for which to retrieve the invitation tokens.
      * @return A list of active [InvitationToken]s associated with the given project.
      */
-    suspend fun getActiveInvitationTokenForProject(projectId: UUID): List<InvitationToken>
+    suspend fun getActiveInvitationTokensForProject(projectId: UUID): List<InvitationToken>
 
     /**
      * Deletes an invitation token by its value.
@@ -98,12 +98,12 @@ class InvitationTokenTableRepo(
         }
     }
 
-    override suspend fun getActiveInvitationTokenForProject(projectId: UUID): List<InvitationToken> = db.query {
-        val allToken = InvitationTokenTable.getEntities(ResultRow::toInvitationToken) {
+    override suspend fun getActiveInvitationTokensForProject(projectId: UUID): List<InvitationToken> = db.query {
+        val allTokens = InvitationTokenTable.getEntities(ResultRow::toInvitationToken) {
             InvitationTokenTable.projectId eq projectId
         }
 
-        allToken.filter { token -> OffsetDateTime.now().isBefore(token.expiresAt) }
+        allTokens.filter { token -> OffsetDateTime.now().isBefore(token.expiresAt) }
     }
 
     override suspend fun deleteInvitationToken(token: String) {

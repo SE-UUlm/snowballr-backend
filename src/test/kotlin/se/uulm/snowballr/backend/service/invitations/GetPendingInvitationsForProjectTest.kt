@@ -29,7 +29,7 @@ class GetPendingInvitationsForProjectTest : MainServiceTest() {
         mockCurrentUser(currentUser)
         coEvery { projectMemberRepoMock.getProjectMembers(projectId) } returns emptyList()
         coEvery { projectRepoMock.doesProjectExistById(projectId) } returns true
-        coEvery { invitationTokenRepoMock.getActiveInvitationTokenForProject(projectId) } returns emptyList()
+        coEvery { invitationTokenRepoMock.getActiveInvitationTokensForProject(projectId) } returns emptyList()
 
         assertDoesNotThrow { mainService.getPendingInvitationsForProject(createRequest()) }
     }
@@ -43,7 +43,7 @@ class GetPendingInvitationsForProjectTest : MainServiceTest() {
             mockCurrentUser(currentUser)
             coEvery { projectMemberRepoMock.getProjectMembers(projectId) } returns listOf(projectMember)
             coEvery { projectRepoMock.doesProjectExistById(projectId) } returns true
-            coEvery { invitationTokenRepoMock.getActiveInvitationTokenForProject(projectId) } returns emptyList()
+            coEvery { invitationTokenRepoMock.getActiveInvitationTokensForProject(projectId) } returns emptyList()
 
             assertDoesNotThrow { mainService.getPendingInvitationsForProject(createRequest()) }
         }
@@ -69,7 +69,7 @@ class GetPendingInvitationsForProjectTest : MainServiceTest() {
             mockCurrentUser(currentUser)
             coEvery { projectMemberRepoMock.getProjectMembers(projectId) } returns emptyList()
             coEvery { projectRepoMock.doesProjectExistById(projectId) } returns true
-            coEvery { invitationTokenRepoMock.getActiveInvitationTokenForProject(projectId) } returns listOf(
+            coEvery { invitationTokenRepoMock.getActiveInvitationTokensForProject(projectId) } returns listOf(
                 invitationTokenForRegisteredUser,
                 invitationTokenForNotRegisteredUser,
             )

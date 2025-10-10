@@ -143,7 +143,7 @@ class InvitationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, ProjectTa
             insertActiveTestToken(projectId2, "token-in-another-project")
             insertInactiveTestToken(projectId)
 
-            val activeInvitationTokenInProject = repo.getActiveInvitationTokenForProject(projectId)
+            val activeInvitationTokenInProject = repo.getActiveInvitationTokensForProject(projectId)
             assertEquals(1, activeInvitationTokenInProject.size)
             assertEquals("an-active-token", activeInvitationTokenInProject.first().token)
         }
@@ -153,7 +153,7 @@ class InvitationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, ProjectTa
             val projectId = insertProjectAndGetId(createdBy = testUserId)
             insertInactiveTestToken(projectId)
 
-            val activeInvitationTokenInProject = repo.getActiveInvitationTokenForProject(projectId)
+            val activeInvitationTokenInProject = repo.getActiveInvitationTokensForProject(projectId)
             assertTrue(activeInvitationTokenInProject.isEmpty())
         }
 
@@ -162,7 +162,7 @@ class InvitationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, ProjectTa
             val projectId = insertProjectAndGetId(createdBy = testUserId)
             insertActiveTestToken(projectId, "token-in-another-project")
 
-            val activeInvitationTokenInProject = repo.getActiveInvitationTokenForProject(UUID.randomUUID())
+            val activeInvitationTokenInProject = repo.getActiveInvitationTokensForProject(UUID.randomUUID())
             assertTrue(activeInvitationTokenInProject.isEmpty())
         }
     }

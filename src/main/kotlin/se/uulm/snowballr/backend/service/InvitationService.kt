@@ -181,7 +181,7 @@ class InvitationService(
             .andAlso(isProjectExistent(projectRepo))
             .checkFor(currentUser, projectId)
 
-        val tokens = invitationTokenRepo.getActiveInvitationTokenForProject(projectId)
+        val tokens = invitationTokenRepo.getActiveInvitationTokensForProject(projectId)
 
         val invitees = tokens.map { token ->
             try {
