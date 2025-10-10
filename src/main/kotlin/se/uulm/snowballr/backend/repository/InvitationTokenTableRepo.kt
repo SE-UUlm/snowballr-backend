@@ -10,6 +10,7 @@ import se.uulm.snowballr.backend.model.SnowballRException.InvitationTokenNotFoun
 import se.uulm.snowballr.backend.model.dto.InvitationToken
 import se.uulm.snowballr.backend.table.InvitationTokenTable
 import se.uulm.snowballr.backend.table.toInvitationToken
+import java.time.OffsetDateTime
 import java.util.UUID
 
 interface IInvitationTokenTableRepo {
@@ -40,6 +41,15 @@ interface IInvitationTokenTableRepo {
      * [InvitationTokenNotFoundException] if the token doesn't exist.
      */
     suspend fun getInvitationTokenByEmailAndProjectId(email: String, projectId: UUID): Result<InvitationToken>
+
+    /**
+     * Retrieves all invitation tokens for a given project.
+     * Only invitation tokens that are still active and not yet expired will be returned.
+     *
+     * @param projectId The ID of the project for which to retrieve the invitation tokens.
+     * @return A list of active [InvitationToken]s associated with the given project.
+     */
+    suspend fun getActiveInvitationTokensForProject(projectId: UUID): List<InvitationToken>
 
     /**
      * Deletes an invitation token by its value.
@@ -86,6 +96,14 @@ class InvitationTokenTableRepo(
         } else {
             Result.failure(InvitationTokenNotFoundException())
         }
+    }
+
+    override suspend fun getActiveInvitationTokensForProject(projectId: UUID): List<InvitationToken> = db.query {
+        val allTokens = InvitationTokenTable.getEntities(ResultRow::toInvitationToken) {
+            InvitationTokenTable.projectId eq projectId
+        }
+
+        allTokens.filter { token -> OffsetDateTime.now().isBefore(token.expiresAt) }
     }
 
     override suspend fun deleteInvitationToken(token: String) {

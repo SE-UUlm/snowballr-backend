@@ -11,6 +11,7 @@ import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionExce
 import se.uulm.snowballr.backend.model.SnowballRException.InvalidIdException
 import se.uulm.snowballr.backend.model.SnowballRException.InvitationTokenNotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
+import se.uulm.snowballr.backend.model.dto.toGrpcUser
 import se.uulm.snowballr.backend.model.dto.toGrpcUsers
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.parseUUID
@@ -18,12 +19,16 @@ import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
+import se.uulm.snowballr.backend.service.accessrules.andAlso
 import se.uulm.snowballr.backend.service.accessrules.checkFor
+import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadProject
 import se.uulm.snowballr.backend.service.accessrules.isProjectActive
+import se.uulm.snowballr.backend.service.accessrules.isProjectExistent
 import se.uulm.snowballr.backend.service.accessrules.isServerOrProjectAdmin
 import se.uulm.snowballr.backend.service.accessrules.orElseThrow
 import snowballr.Base
 import snowballr.ProjectOuterClass.Project
+import snowballr.UserOuterClass.User
 import snowballr.UserOuterClass.UserStatus
 import java.time.OffsetDateTime
 import snowballr.ProjectOuterClass.Project as GrpcProject
@@ -44,6 +49,11 @@ interface IInvitationService {
      * Service implementation of [SnowballRService.acceptProjectInvitation].
      */
     suspend fun acceptProjectInvitation(request: GrpcProject.Member.Accept): Base.Nothing
+
+    /**
+     * Service implementation of [SnowballRService.getPendingInvitationsForProject].
+     */
+    suspend fun getPendingInvitationsForProject(request: Base.Id): GrpcUser.List
 }
 
 private const val INVITATION_TOKEN_LENGTH = 48
@@ -160,5 +170,27 @@ class InvitationService(
         invitationTokenRepo.deleteInvitationToken(invitationToken.token)
 
         return Base.Nothing.getDefaultInstance()
+    }
+
+    override suspend fun getPendingInvitationsForProject(request: Base.Id): GrpcUser.List = withUser(
+        userRepo,
+    ) { currentUser ->
+        val projectId = parseUUID(request.id, EntityType.PROJECT)
+
+        isAllowedToReadProject(projectMemberRepo)
+            .andAlso(isProjectExistent(projectRepo))
+            .checkFor(currentUser, projectId)
+
+        val tokens = invitationTokenRepo.getActiveInvitationTokensForProject(projectId)
+
+        val invitees = tokens.map { token ->
+            try {
+                userRepo.getUserByEmail(token.email).getOrThrow().toGrpcUser()
+            } catch (_: NotFoundException) {
+                User.newBuilder().setEmail(token.email).build()
+            }
+        }
+
+        User.List.newBuilder().addAllUsers(invitees).build()
     }
 }

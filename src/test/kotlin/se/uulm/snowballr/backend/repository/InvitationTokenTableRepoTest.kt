@@ -1,6 +1,7 @@
 package se.uulm.snowballr.backend.repository
 
 import kotlinx.coroutines.test.runTest
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -13,6 +14,7 @@ import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.utils.assertResultFailure
 import se.uulm.snowballr.backend.utils.assertResultSuccess
+import java.time.OffsetDateTime
 import java.util.UUID
 
 class InvitationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, ProjectTable, InvitationTokenTable), true) {
@@ -116,6 +118,53 @@ class InvitationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, ProjectTa
                     ),
                 )
             }
+    }
+
+    @Nested
+    inner class GetActiveInvitationTokenForProject {
+        private fun getRandomTestEmail() = "${UUID.randomUUID().toString().substring(0, 5)}@example.com"
+
+        private suspend fun insertActiveTestToken(projectId: UUID, token: String) =
+            insertTestToken(getRandomTestEmail(), projectId, token)
+
+        private suspend fun insertInactiveTestToken(projectId: UUID) = insertTestToken(
+            getRandomTestEmail(),
+            projectId,
+            "an-inactive-token",
+            expiresAt = OffsetDateTime.now().minusDays(1),
+        )
+
+        @Test
+        fun `When active tokens exist, then they are returned`() = runTest {
+            val projectId = insertProjectAndGetId(createdBy = testUserId)
+            val projectId2 = insertProjectAndGetId(createdBy = testUserId)
+
+            insertActiveTestToken(projectId, "an-active-token")
+            insertActiveTestToken(projectId2, "token-in-another-project")
+            insertInactiveTestToken(projectId)
+
+            val activeInvitationTokenInProject = repo.getActiveInvitationTokensForProject(projectId)
+            assertThat(activeInvitationTokenInProject).hasSize(1)
+            assertEquals("an-active-token", activeInvitationTokenInProject.first().token)
+        }
+
+        @Test
+        fun `When tokens exist but none are active, then an empty list is returned`() = runTest {
+            val projectId = insertProjectAndGetId(createdBy = testUserId)
+            insertInactiveTestToken(projectId)
+
+            val activeInvitationTokenInProject = repo.getActiveInvitationTokensForProject(projectId)
+            assertThat(activeInvitationTokenInProject).isEmpty()
+        }
+
+        @Test
+        fun `When no token exist for the project, then an empty list is returned`() = runTest {
+            val projectId = insertProjectAndGetId(createdBy = testUserId)
+            insertActiveTestToken(projectId, "token-in-another-project")
+
+            val activeInvitationTokenInProject = repo.getActiveInvitationTokensForProject(UUID.randomUUID())
+            assertThat(activeInvitationTokenInProject).isEmpty()
+        }
     }
 
     @Nested

@@ -4,7 +4,6 @@ import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.EntityNotActiveException
-import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.Criterion
 import se.uulm.snowballr.backend.model.dto.toGrpcCriteria
@@ -14,12 +13,14 @@ import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
+import se.uulm.snowballr.backend.service.accessrules.andAlso
 import se.uulm.snowballr.backend.service.accessrules.checkFor
 import se.uulm.snowballr.backend.service.accessrules.forTarget
 import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadProject
 import se.uulm.snowballr.backend.service.accessrules.isCreatorOfCriterion
 import se.uulm.snowballr.backend.service.accessrules.isProjectActive
 import se.uulm.snowballr.backend.service.accessrules.isProjectAdmin
+import se.uulm.snowballr.backend.service.accessrules.isProjectExistent
 import se.uulm.snowballr.backend.service.accessrules.isServerAdmin
 import se.uulm.snowballr.backend.service.accessrules.isUserAdminInProjectOfCriterion
 import se.uulm.snowballr.backend.service.accessrules.isUserInProjectOfCriterion
@@ -154,11 +155,9 @@ class CriterionService(
         withUser(userRepo) { currentUser ->
             val projectId = parseUUID(request.id, EntityType.PROJECT)
 
-            if (!projectRepo.doesProjectExistById(projectId)) {
-                throw NotFoundException(EntityType.PROJECT, projectId.toString())
-            }
-
-            isAllowedToReadProject(projectMemberRepo).checkFor(currentUser, projectId)
+            isAllowedToReadProject(projectMemberRepo)
+                .andAlso(isProjectExistent(projectRepo))
+                .checkFor(currentUser, projectId)
 
             repo.getAllProjectCriteria(projectId).toGrpcCriteria()
         }
