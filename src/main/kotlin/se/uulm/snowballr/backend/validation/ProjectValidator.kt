@@ -25,7 +25,11 @@ object ProjectValidator {
     fun validateUpdateRequest(request: Project.Update): EitherNel<ValidationIssue, Unit> = either {
         // Validate the field mask
         val fieldMaskResult = either {
-            ensureFieldMaskIsValid(request.mask, Project.Update.getDescriptor())
+            ensureFieldMaskIsValid(
+                request.mask,
+                Project.Update.getDescriptor(),
+                listOf("project.current_stage", "project.max_stage"),
+            )
         }
 
         // If field mask validation fails, return early

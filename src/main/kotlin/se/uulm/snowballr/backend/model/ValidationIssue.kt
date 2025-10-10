@@ -143,6 +143,7 @@ data class InvalidFieldMask(val fieldMask: String?) : ValidationIssue {
     override fun toString(): String = if (fieldMask.isNullOrBlank()) {
         "Field mask must be not blank."
     } else {
-        "Field mask contains invalid fields: $fieldMask."
+        "Field mask $fieldMask contains invalid fields. A field is considered invalid, if it does not exist or " +
+            "corresponds to a field that cannot be changed."
     }
 }
