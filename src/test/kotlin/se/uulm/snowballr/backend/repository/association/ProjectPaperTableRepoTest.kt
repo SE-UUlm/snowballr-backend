@@ -137,6 +137,47 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
     }
 
     @Nested
+    inner class GetAllProjectPapersForProject {
+        @Test
+        fun `When no project with the given ID exists, then an empty list is returned`() = runTest {
+            val projectId = UUID.randomUUID()
+
+            val result = repo.getAllProjectPapersForProject(projectId)
+
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        fun `When the project exists and has no project papers, then an empty list is returned`() = runTest {
+            val projectId = insertProjectAndGetId(createdBy = testUserId)
+            val anotherProject = insertProjectAndGetId(createdBy = testUserId)
+            val paperId = insertPaperAndGetId()
+            insertProjectPaperAndGetId(paperId = paperId, projectId = anotherProject, createdBy = testUserId)
+
+            val result = repo.getAllProjectPapersForProject(projectId)
+
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        fun `When a project with project papers exists, then all project papers are returned`() = runTest {
+            val projectId = insertProjectAndGetId(createdBy = testUserId)
+            val paperId1 = insertPaperAndGetId()
+            val paperId2 = insertPaperAndGetId()
+            val projectPaperId1 =
+                insertProjectPaperAndGetId(paperId = paperId1, projectId = projectId, createdBy = testUserId)
+            val projectPaperId2 =
+                insertProjectPaperAndGetId(paperId = paperId2, projectId = projectId, createdBy = testUserId)
+
+            val result = repo.getAllProjectPapersForProject(projectId)
+
+            assertThat(result).hasSize(2)
+            assertThat(result).anyMatch { it.id == projectPaperId1 }
+            assertThat(result).anyMatch { it.id == projectPaperId2 }
+        }
+    }
+
+    @Nested
     inner class GetProjectMembersWithUsers {
         @Test
         fun `When a project, a project paper and the corresponding paper exists, then the project paper with paper is correctly returned`() =
