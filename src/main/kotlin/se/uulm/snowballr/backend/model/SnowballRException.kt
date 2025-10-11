@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.model
 import org.simplejavamail.MailException
 import se.uulm.snowballr.backend.mail.EmailManager
 import se.uulm.snowballr.backend.model.dto.ProjectPaper
+import se.uulm.snowballr.backend.model.dto.User
 import java.io.IOException
 
 /**
