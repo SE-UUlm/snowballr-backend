@@ -302,7 +302,7 @@ class SnowballRServer(
 
         override suspend fun getDecisionStatisticsForStage(
             request: ProjectOuterClass.Project.Information.DecisionStatistics.Get,
-        ): ProjectOuterClass.Project.Information.DecisionStatistics = super.getDecisionStatisticsForStage(request)
+        ): ProjectOuterClass.Project.Information.DecisionStatistics = mainService.getDecisionStatisticsForStage(request)
 
         override suspend fun updateProjectMemberRole(request: ProjectOuterClass.Project.Member.Update): Base.Nothing =
             mainService.updateProjectMemberRole(request)
