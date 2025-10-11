@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.model
 
 import org.simplejavamail.MailException
 import se.uulm.snowballr.backend.mail.EmailManager
+import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.ProjectPaper
 import se.uulm.snowballr.backend.model.dto.User
 import java.io.IOException
@@ -302,6 +303,11 @@ sealed class SnowballRException(
      * @constructor Creates a [InvitationTokenNotFoundException].
      */
     class InvitationTokenNotFoundException : SnowballRException("Invitation token not found.")
+
+    /**
+     * Represents an exception that occurs when a stage in a [Project] is not found.
+     */
+    class StageNotFoundException(stage: Long) : SnowballRException("Stage '$stage' not found.")
 
     /**
      * Represents an exception that occurs when an access rule chain completes
