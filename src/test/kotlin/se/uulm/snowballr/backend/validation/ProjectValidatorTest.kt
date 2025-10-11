@@ -441,4 +441,47 @@ class ProjectValidatorTest {
             assertInvalidResult<EnumUnspecified>(result)
         }
     }
+
+    @Nested
+    inner class GetDecisionStatisticsRequest {
+        private val validGetDecisionStatisticsRequestBuilder = Project.Information.DecisionStatistics.Get.newBuilder()
+            .setProjectId(UUID.randomUUID().toString())
+            .setStage(0L)
+
+        @Test
+        fun `When a valid request is validated, then no issue is returned`() {
+            val request = validGetDecisionStatisticsRequestBuilder.build()
+
+            val result = validateRequest(request)
+
+            EitherAssert.assertThat(result).isRight()
+        }
+
+        @Test
+        fun `When the stage is negative, then the 'OutOfRangeValue' issue is returned`() {
+            val request = validGetDecisionStatisticsRequestBuilder.setStage(-1L).build()
+
+            val result = validateRequest(request)
+
+            assertInvalidResult<OutOfRangeValue<Long>>(result)
+        }
+
+        @Test
+        fun `When the project ID is blank, then the 'InvalidId' issue is returned`() {
+            val request = validGetDecisionStatisticsRequestBuilder.setProjectId("").build()
+
+            val result = validateRequest(request)
+
+            assertInvalidResult<InvalidId>(result)
+        }
+
+        @Test
+        fun `When the project ID is invalid, then the 'InvalidId' issue is returned`() {
+            val request = validGetDecisionStatisticsRequestBuilder.setProjectId("invalid-id").build()
+
+            val result = validateRequest(request)
+
+            assertInvalidResult<InvalidId>(result)
+        }
+    }
 }
