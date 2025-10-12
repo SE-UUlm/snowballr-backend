@@ -4,15 +4,17 @@ import com.google.protobuf.util.FieldMaskUtil
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
+import se.uulm.snowballr.backend.model.dto.Author
 import se.uulm.snowballr.backend.model.dto.Paper
 import se.uulm.snowballr.backend.model.dto.toGrpcPapers
 import se.uulm.snowballr.backend.model.parseUUID
+import se.uulm.snowballr.backend.repository.IAuthorTableRepo
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
-import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IAuthorOfPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
 import snowballr.Base
 import java.util.UUID
+import snowballr.PaperOuterClass.Author as GrpcAuthor
 import snowballr.PaperOuterClass.Paper as GrpcPaper
 
 interface IPaperService {
@@ -47,13 +49,13 @@ interface IPaperService {
  * @param repo The repository responsible for managing persistence operations for normal papers.
  * @param authorOfPapersRepo The repository responsible for managing persistence operations for author-paper associations.
  * @param citationRepo The repository responsible for managing persistence operations for paper citations.
- * @param userRepo The repository responsible for managing persistence operations for user data.
+ * @param authorRepo The repository responsible for managing persistence operations for authors.
  */
 class PaperService(
     private val repo: IPaperTableRepo,
     private val authorOfPapersRepo: IAuthorOfPaperTableRepo,
     private val citationRepo: ICitationTableRepo,
-    private val userRepo: IUserTableRepo,
+    private val authorRepo: IAuthorTableRepo,
 ) : IPaperService {
     override suspend fun getPaperById(request: Base.Id): GrpcPaper {
         val paperId = parseUUID(request.id, EntityType.PAPER)
@@ -68,7 +70,7 @@ class PaperService(
     override suspend fun getForwardReferencedPapers(request: Base.Id): GrpcPaper.List =
         getReferencePapers(request, citationRepo::getForwardReferencedPaperIdsOfPaperById)
 
-    override suspend fun updatePaper(request: GrpcPaper.Update): GrpcPaper = withUser(userRepo) { currentUser ->
+    override suspend fun updatePaper(request: GrpcPaper.Update): GrpcPaper {
         val paperId = parseUUID(request.paper.id, EntityType.PAPER)
 
         if (!repo.doesPaperExistById(paperId)) {
@@ -78,10 +80,10 @@ class PaperService(
         val fieldMask = FieldMaskUtil.normalize(request.mask)
 
         if (fieldMask.pathsList.contains("paper.authors")) {
-            // TODO: handle author update
+            handleAuthorsUpdate(request.paper, paperId)
         }
 
-        repo.updatePaper(request).toGrpcPaper()
+        return repo.updatePaper(request).toGrpcPaper()
     }
 
     /**
@@ -110,4 +112,33 @@ class PaperService(
 
     private suspend fun Paper.toGrpcPaper(): GrpcPaper =
         this.toGrpcPaperWithAuthorsAndBackwardReferences(authorOfPapersRepo, citationRepo)
+
+    private suspend fun handleAuthorsUpdate(paper: GrpcPaper, paperId: UUID) {
+        val updatedAuthors = paper.authorsList.toList()
+        val existingAuthors = authorOfPapersRepo.getAuthorsOfPaperById(paperId)
+
+        val authorsToRemove = getAuthorsToRemove(existingAuthors, updatedAuthors)
+        for (author in authorsToRemove) {
+            authorOfPapersRepo.removeAuthorFromPaper(author.id, paperId)
+        }
+
+        val authorsToAdd = getAuthorsToAdd(existingAuthors, updatedAuthors)
+        val addedAuthors = authorsToAdd.map { authorRepo.createAuthor(it) }
+        for (author in addedAuthors) {
+            authorOfPapersRepo.addAuthorToPaper(author.id, paperId)
+        }
+    }
+
+    private fun getAuthorsToAdd(existingAuthors: List<Author>, updatedAuthors: List<GrpcAuthor>) =
+        updatedAuthors.filter { updatedAuthor ->
+            existingAuthors.none { areAuthorsEqual(it, updatedAuthor) }
+        }
+
+    private fun getAuthorsToRemove(existingAuthors: List<Author>, updatedAuthors: List<GrpcAuthor>) =
+        existingAuthors.filter { existingAuthor ->
+            updatedAuthors.none { areAuthorsEqual(existingAuthor, it) }
+        }
+
+    private fun areAuthorsEqual(author: Author, grpcAuthor: GrpcAuthor) = author.orcid == grpcAuthor.orcid ||
+        (author.firstName == grpcAuthor.firstName && author.lastName == grpcAuthor.lastName)
 }

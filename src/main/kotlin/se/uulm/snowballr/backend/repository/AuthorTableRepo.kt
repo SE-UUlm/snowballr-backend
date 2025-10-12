@@ -8,6 +8,7 @@ import se.uulm.snowballr.backend.model.dto.Author
 import se.uulm.snowballr.backend.table.AuthorTable
 import se.uulm.snowballr.backend.table.toAuthor
 import java.util.UUID
+import snowballr.PaperOuterClass.Author as GrpcAuthor
 
 /**
  * Defines an interface for repository operations related to the [AuthorTable].
@@ -22,6 +23,11 @@ interface IAuthorTableRepo {
      * doesn't exist.
      */
     suspend fun getAuthorById(id: UUID): Result<Author>
+
+    /**
+     * Creates a new author in the database with the provided values.
+     */
+    suspend fun createAuthor(author: GrpcAuthor): Author
 }
 
 /**
@@ -46,5 +52,13 @@ class AuthorTableRepo(
 
     override suspend fun getAuthorById(id: UUID): Result<Author> = db.query {
         getEntityByKeyAsResult(::getAuthorByIdOrNull, EntityType.AUTHOR, id)
+    }
+
+    override suspend fun createAuthor(author: GrpcAuthor): Author = db.query {
+        AuthorTable.insertAndGet(ResultRow::toAuthor, EntityType.AUTHOR) {
+            it[orcid] = author.orcid.ifBlank { null }
+            it[firstName] = author.firstName
+            it[lastName] = author.lastName
+        }
     }
 }
