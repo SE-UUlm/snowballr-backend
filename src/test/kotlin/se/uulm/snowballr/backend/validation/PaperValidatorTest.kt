@@ -30,15 +30,21 @@ import java.util.UUID
 
 class PaperValidatorTest {
     companion object {
-        private val textFields =
+        private val blankableTextFields =
             listOf(
                 Pair("external_id", EXTERNAL_ID_MAX_LENGTH),
-                Pair("title", TITLE_MAX_LENGTH),
                 Pair("abstrakt", ABSTRACT_MAX_LENGTH),
                 Pair("publisher", PUBLISHER_MAX_LENGTH),
                 Pair("publication_name", PUBLICATION_NAME_MAX_LENGTH),
                 Pair("publication_type", PUBLICATION_TYPE_MAX_LENGTH),
             )
+
+        private val nonBlankableTextFields =
+            listOf(
+                Pair("title", TITLE_MAX_LENGTH),
+            )
+
+        private val allTextFields = blankableTextFields + nonBlankableTextFields
 
         @JvmStatic
         fun invalidFields(): List<Arguments> = listOf(
@@ -59,7 +65,7 @@ class PaperValidatorTest {
                 }
             }
 
-            return textFields.map { (fieldName) ->
+            return nonBlankableTextFields.map { (fieldName) ->
                 listOf(
                     Arguments.of(fieldName, false, testName(fieldName, false)),
                     Arguments.of(fieldName, true, testName(fieldName, true)),
@@ -79,7 +85,7 @@ class PaperValidatorTest {
                 }
             }
 
-            return textFields.map { (fieldName, maxLength) ->
+            return allTextFields.map { (fieldName, maxLength) ->
                 listOf(
                     Arguments.of(fieldName, maxLength, false, testName(fieldName, maxLength, false)),
                     Arguments.of(fieldName, maxLength, true, testName(fieldName, maxLength, true)),

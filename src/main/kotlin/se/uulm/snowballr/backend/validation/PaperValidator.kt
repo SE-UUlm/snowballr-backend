@@ -46,7 +46,7 @@ object PaperValidator {
             { ensureIdValidity("id", paper.id) },
             {
                 if ("paper.external_id" in selectedFields) {
-                    ensureTextFieldValidity("external_id", paper.externalId, EXTERNAL_ID_MAX_LENGTH)
+                    ensureFieldLength("external_id", paper.externalId, EXTERNAL_ID_MAX_LENGTH)
                 }
             },
             {
@@ -56,7 +56,7 @@ object PaperValidator {
             },
             {
                 if ("paper.abstrakt" in selectedFields) {
-                    ensureTextFieldValidity("abstrakt", paper.abstrakt, ABSTRACT_MAX_LENGTH)
+                    ensureFieldLength("abstrakt", paper.abstrakt, ABSTRACT_MAX_LENGTH)
                 }
             },
             {
@@ -67,17 +67,17 @@ object PaperValidator {
             },
             {
                 if ("paper.publisher" in selectedFields) {
-                    ensureTextFieldValidity("publisher", paper.publisher, PUBLISHER_MAX_LENGTH)
+                    ensureFieldLength("publisher", paper.publisher, PUBLISHER_MAX_LENGTH)
                 }
             },
             {
                 if ("paper.publication_name" in selectedFields) {
-                    ensureTextFieldValidity("publication_name", paper.publicationName, PUBLICATION_NAME_MAX_LENGTH)
+                    ensureFieldLength("publication_name", paper.publicationName, PUBLICATION_NAME_MAX_LENGTH)
                 }
             },
             {
                 if ("paper.publication_type" in selectedFields) {
-                    ensureTextFieldValidity("publication_type", paper.publicationType, PUBLICATION_TYPE_MAX_LENGTH)
+                    ensureFieldLength("publication_type", paper.publicationType, PUBLICATION_TYPE_MAX_LENGTH)
                 }
             },
             {
