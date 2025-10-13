@@ -10,6 +10,7 @@ import se.uulm.snowballr.backend.table.AuthorTable
 import se.uulm.snowballr.backend.utils.assertResultFailure
 import se.uulm.snowballr.backend.utils.assertResultSuccess
 import java.util.UUID
+import snowballr.PaperOuterClass.Author as GrpcAuthor
 
 class AuthorTableRepoTest : RepositoryTest(arrayOf(AuthorTable), false) {
     private val repo = AuthorTableRepo(db)
@@ -41,7 +42,7 @@ class AuthorTableRepoTest : RepositoryTest(arrayOf(AuthorTable), false) {
     inner class CreateAuthor {
         @Test
         fun `When creating an author, then the returned author contains the correct values`() = runTest {
-            val grpcAuthor = snowballr.PaperOuterClass.Author.newBuilder()
+            val grpcAuthor = GrpcAuthor.newBuilder()
                 .setFirstName("John")
                 .setLastName("Doe")
                 .setOrcid("1234")
@@ -56,7 +57,7 @@ class AuthorTableRepoTest : RepositoryTest(arrayOf(AuthorTable), false) {
 
         @Test
         fun `When creating an author without ORCID, then the returned author contains null for ORCID`() = runTest {
-            val grpcAuthor = snowballr.PaperOuterClass.Author.newBuilder()
+            val grpcAuthor = GrpcAuthor.newBuilder()
                 .setFirstName("Jane")
                 .setLastName("Smith")
                 .build()
@@ -66,6 +67,26 @@ class AuthorTableRepoTest : RepositoryTest(arrayOf(AuthorTable), false) {
             assertEquals("Jane", author.firstName)
             assertEquals("Smith", author.lastName)
             assertEquals(null, author.orcid)
+        }
+    }
+
+    @Nested
+    inner class UpdateAuthor {
+        @Test
+        fun `When updating an existent author, then the returned author contains the updated values`() = runTest {
+            val authorId = insertAuthorAndGetId("John", "Doe", orcid = "1234")
+            val grpcAuthor = GrpcAuthor.newBuilder()
+                .setFirstName("Jane")
+                .setLastName("Smith")
+                .setOrcid("5678")
+                .build()
+
+            val updatedAuthor = repo.updateAuthor(authorId, grpcAuthor)
+
+            assertEquals(authorId, updatedAuthor.id)
+            assertEquals("Jane", updatedAuthor.firstName)
+            assertEquals("Smith", updatedAuthor.lastName)
+            assertEquals("5678", updatedAuthor.orcid)
         }
     }
 }

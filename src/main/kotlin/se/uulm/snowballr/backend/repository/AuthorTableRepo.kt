@@ -28,6 +28,11 @@ interface IAuthorTableRepo {
      * Creates a new author in the database with the provided values.
      */
     suspend fun createAuthor(author: GrpcAuthor): Author
+
+    /**
+     * Updates an existing author in the database with the provided values.
+     */
+    suspend fun updateAuthor(authorId: UUID, authorData: GrpcAuthor): Author
 }
 
 /**
@@ -59,6 +64,14 @@ class AuthorTableRepo(
             it[orcid] = author.orcid.ifBlank { null }
             it[firstName] = author.firstName
             it[lastName] = author.lastName
+        }
+    }
+
+    override suspend fun updateAuthor(authorId: UUID, authorData: GrpcAuthor): Author = db.query {
+        AuthorTable.updateByIdAndGet(authorId, ResultRow::toAuthor, EntityType.AUTHOR) {
+            it[orcid] = authorData.orcid
+            it[firstName] = authorData.firstName
+            it[lastName] = authorData.lastName
         }
     }
 }

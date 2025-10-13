@@ -51,6 +51,7 @@ interface IPaperService {
  * @param citationRepo The repository responsible for managing persistence operations for paper citations.
  * @param authorRepo The repository responsible for managing persistence operations for authors.
  */
+@Suppress("TooManyFunctions")
 class PaperService(
     private val repo: IPaperTableRepo,
     private val authorOfPapersRepo: IAuthorOfPaperTableRepo,
@@ -80,7 +81,7 @@ class PaperService(
         val fieldMask = FieldMaskUtil.normalize(request.mask)
 
         if (fieldMask.pathsList.contains("paper.authors")) {
-            handleAuthorsUpdate(request.paper, paperId)
+            handleAuthorsChanges(request.paper, paperId)
         }
 
         return repo.updatePaper(request).toGrpcPaper()
@@ -113,30 +114,65 @@ class PaperService(
     private suspend fun Paper.toGrpcPaper(): GrpcPaper =
         this.toGrpcPaperWithAuthorsAndBackwardReferences(authorOfPapersRepo, citationRepo)
 
-    private suspend fun handleAuthorsUpdate(paper: GrpcPaper, paperId: UUID) {
-        val updatedAuthors = paper.authorsList.toList()
+    private suspend fun handleAuthorsChanges(paper: GrpcPaper, paperId: UUID) {
+        val newAuthors = paper.authorsList.toList()
         val existingAuthors = authorOfPapersRepo.getAuthorsOfPaperById(paperId)
 
-        val authorsToRemove = getAuthorsToRemove(existingAuthors, updatedAuthors)
-        for (author in authorsToRemove) {
-            authorOfPapersRepo.removeAuthorFromPaper(author.id, paperId)
-        }
+        handleAuthorsRemoval(paperId, existingAuthors, newAuthors)
+        handleAuthorsAdditionAndUpdate(paperId, existingAuthors, newAuthors)
+    }
 
-        val authorsToAdd = getAuthorsToAdd(existingAuthors, updatedAuthors)
+    private suspend fun handleAuthorsAdditionAndUpdate(
+        paperId: UUID,
+        existingAuthors: List<Author>,
+        newAuthors: List<GrpcAuthor>,
+    ) {
+        val (authorsToAdd, authorsToUpdate) = getAuthorsToAddAndUpdate(existingAuthors, newAuthors)
+
         val addedAuthors = authorsToAdd.map { authorRepo.createAuthor(it) }
         for (author in addedAuthors) {
             authorOfPapersRepo.addAuthorToPaper(author.id, paperId)
         }
+
+        for ((existingAuthor, newAuthor) in authorsToUpdate) {
+            authorRepo.updateAuthor(existingAuthor.id, newAuthor)
+        }
     }
 
-    private fun getAuthorsToAdd(existingAuthors: List<Author>, updatedAuthors: List<GrpcAuthor>) =
-        updatedAuthors.filter { updatedAuthor ->
-            existingAuthors.none { areAuthorsEqual(it, updatedAuthor) }
+    private fun getAuthorsToAddAndUpdate(
+        existingAuthors: List<Author>,
+        newAuthors: List<GrpcAuthor>,
+    ): Pair<List<GrpcAuthor>, List<Pair<Author, GrpcAuthor>>> {
+        val authorsToAdd = mutableListOf<GrpcAuthor>()
+        val authorsToUpdate = mutableListOf<Pair<Author, GrpcAuthor>>()
+
+        for (newAuthor in newAuthors) {
+            val matchingAuthor = existingAuthors.find { areAuthorsEqual(it, newAuthor) }
+
+            if (matchingAuthor != null) {
+                authorsToUpdate.add(Pair(matchingAuthor, newAuthor))
+            } else {
+                authorsToAdd.add(newAuthor)
+            }
         }
 
-    private fun getAuthorsToRemove(existingAuthors: List<Author>, updatedAuthors: List<GrpcAuthor>) =
+        return Pair(authorsToAdd, authorsToUpdate)
+    }
+
+    private suspend fun handleAuthorsRemoval(
+        paperId: UUID,
+        existingAuthors: List<Author>,
+        newAuthors: List<GrpcAuthor>,
+    ) {
+        val authorsToRemove = getAuthorsToRemove(existingAuthors, newAuthors)
+        for (author in authorsToRemove) {
+            authorOfPapersRepo.removeAuthorFromPaper(author.id, paperId)
+        }
+    }
+
+    private fun getAuthorsToRemove(existingAuthors: List<Author>, newAuthors: List<GrpcAuthor>): List<Author> =
         existingAuthors.filter { existingAuthor ->
-            updatedAuthors.none { areAuthorsEqual(existingAuthor, it) }
+            newAuthors.none { areAuthorsEqual(existingAuthor, it) }
         }
 
     private fun areAuthorsEqual(author: Author, grpcAuthor: GrpcAuthor) = author.orcid == grpcAuthor.orcid ||

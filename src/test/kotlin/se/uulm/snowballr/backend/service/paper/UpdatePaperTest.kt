@@ -126,6 +126,8 @@ class UpdatePaperTest : MainServiceTest() {
         coEvery {
             authorOfPaperRepoMock.getAuthorsOfPaperById(paperId)
         } returns listOf(existingAuthor1, existingAuthor2)
+        coEvery { authorRepoMock.updateAuthor(existingAuthor1.id, newAuthor1) } returns existingAuthor1
+        coEvery { authorRepoMock.updateAuthor(existingAuthor2.id, newAuthor2) } returns existingAuthor2
         coEvery { paperRepoMock.updatePaper(request) } returns DataBuilder.createExamplePaper(id = paperId)
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paperId) } returns emptyList()
 
@@ -133,5 +135,7 @@ class UpdatePaperTest : MainServiceTest() {
 
         coVerify(exactly = 0) { authorOfPaperRepoMock.removeAuthorFromPaper(any(), any()) }
         coVerify(exactly = 0) { authorOfPaperRepoMock.addAuthorToPaper(any(), any()) }
+        coVerify(exactly = 1) { authorRepoMock.updateAuthor(existingAuthor1.id, newAuthor1) }
+        coVerify(exactly = 1) { authorRepoMock.updateAuthor(existingAuthor2.id, newAuthor2) }
     }
 }
