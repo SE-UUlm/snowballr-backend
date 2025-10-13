@@ -6,6 +6,7 @@ import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
+import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.toGrpcProject
@@ -27,12 +28,14 @@ import se.uulm.snowballr.backend.service.accessrules.isServerAdminOrSameUser
 import se.uulm.snowballr.backend.service.accessrules.isServerOrProjectAdmin
 import se.uulm.snowballr.backend.service.accessrules.orElseThrow
 import snowballr.Base
+import snowballr.ProjectOuterClass.MemberRole
 import snowballr.ProjectOuterClass.ProjectStatus
 import kotlin.getOrThrow
 import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
 import snowballr.ProjectOuterClass.Project as GrpcProject
 import snowballr.ProjectOuterClass.Project.Member as GrpcProjectMember
 
+@Suppress("ComplexInterface")
 interface IProjectService {
     /**
      * Service implementation of [SnowballRService.getProjectById].
@@ -78,6 +81,11 @@ interface IProjectService {
      * Service implementation of [SnowballRService.getProjectInformation].
      */
     suspend fun getProjectInformation(request: GrpcProject.Information.Get): GrpcProject.Information
+
+    /**
+     * Service implementation of [SnowballRService.updateProjectMemberRole].
+     */
+    suspend fun updateProjectMemberRole(request: GrpcProjectMember.Update): Base.Nothing
 }
 
 /**
@@ -93,6 +101,7 @@ interface IProjectService {
  * @param projectPaperRepo The repository responsible for managing persistence operations for project papers.
  * @param criterionRepo The repository responsible for managing persistence operations for criteria.
  */
+@Suppress("TooManyFunctions")
 class ProjectService(
     private val repo: IProjectTableRepo,
     private val userRepo: IUserTableRepo,
@@ -237,4 +246,35 @@ class ProjectService(
 
             builder.build()
         }
+
+    override suspend fun updateProjectMemberRole(request: GrpcProjectMember.Update): Base.Nothing {
+        withUser(userRepo) { currentUser ->
+            val projectId = parseUUID(request.projectId, EntityType.PROJECT)
+            val userId = parseUUID(request.userId, EntityType.USER)
+
+            isServerOrProjectAdmin(projectMemberRepo, AccessType.UPDATE).checkFor(currentUser, projectId)
+
+            repo.getProjectById(projectId).getOrThrow()
+            userRepo.getUserById(userId).getOrThrow()
+
+            val currentMember = try {
+                projectMemberRepo.getProjectMemberByComposedId(projectId, userId).getOrThrow()
+            } catch (_: NotFoundException) {
+                throw FailedPreconditionException(
+                    "User with ID '$userId' is not a member of project with ID '$projectId'.",
+                )
+            }
+
+            if (currentMember.role == MemberRole.MEMBER_ROLE_ADMIN && request.newRole != MemberRole.MEMBER_ROLE_ADMIN) {
+                val projectAdmins = projectMemberRepo.getAllProjectAdmins(projectId)
+                if (projectAdmins.size <= 1) {
+                    throw FailedPreconditionException("Cannot demote the last admin of a project.")
+                }
+            }
+
+            projectMemberRepo.updateProjectMemberRole(projectId, userId, request.newRole)
+        }
+
+        return Base.Nothing.getDefaultInstance()
+    }
 }
