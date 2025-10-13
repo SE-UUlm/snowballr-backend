@@ -305,7 +305,7 @@ class SnowballRServer(
         ): ProjectOuterClass.Project.Information.DecisionStatistics = super.getDecisionStatisticsForStage(request)
 
         override suspend fun updateProjectMemberRole(request: ProjectOuterClass.Project.Member.Update): Base.Nothing =
-            super.updateProjectMemberRole(request)
+            mainService.updateProjectMemberRole(request)
 
         override suspend fun getCriterionById(request: Base.Id): CriterionOuterClass.Criterion =
             mainService.getCriterionById(request)

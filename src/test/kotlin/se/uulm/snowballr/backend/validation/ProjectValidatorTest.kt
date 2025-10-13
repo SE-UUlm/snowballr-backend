@@ -13,6 +13,7 @@ import se.uulm.snowballr.backend.model.InvalidId
 import se.uulm.snowballr.backend.model.OutOfRangeValue
 import se.uulm.snowballr.backend.model.TooLongField
 import se.uulm.snowballr.backend.validation.ProjectValidator.NAME_MAX_LENGTH
+import snowballr.ProjectOuterClass.MemberRole
 import snowballr.ProjectOuterClass.Project
 import snowballr.ProjectOuterClass.Project.Create
 import snowballr.ProjectOuterClass.Project.Update
@@ -291,7 +292,16 @@ class ProjectValidatorTest {
 
             val result = validateRequest(request)
 
-            assertInvalidResult<BlankField>(result)
+            assertInvalidResult<InvalidId>(result)
+        }
+
+        @Test
+        fun `When the project ID is invalid, then the 'InvalidId' issue is returned`() {
+            val request = validInviteRequestBuilder.setProjectId("invalid-id").build()
+
+            val result = validateRequest(request)
+
+            assertInvalidResult<InvalidId>(result)
         }
 
         @Test
@@ -367,6 +377,68 @@ class ProjectValidatorTest {
             val result = validateRequest(request)
 
             assertInvalidResult<InvalidId>(result)
+        }
+    }
+
+    @Nested
+    inner class MemberUpdateRequest {
+        private val validMemberUpdateRequestBuilder = Project.Member.Update.newBuilder()
+            .setProjectId(UUID.randomUUID().toString())
+            .setUserId(UUID.randomUUID().toString())
+            .setNewRole(MemberRole.MEMBER_ROLE_ADMIN)
+
+        @Test
+        fun `When a valid request is validated, the no issue is returned`() {
+            val request = validMemberUpdateRequestBuilder.build()
+
+            val result = validateRequest(request)
+
+            EitherAssert.assertThat(result).isRight()
+        }
+
+        @Test
+        fun `When the project ID is blank, then the 'InvalidId' issue is returned`() {
+            val request = validMemberUpdateRequestBuilder.setProjectId("").build()
+
+            val result = validateRequest(request)
+
+            assertInvalidResult<InvalidId>(result)
+        }
+
+        @Test
+        fun `When the project ID is invalid, then the 'InvalidId' issue is returned`() {
+            val request = validMemberUpdateRequestBuilder.setProjectId("invalid-id").build()
+
+            val result = validateRequest(request)
+
+            assertInvalidResult<InvalidId>(result)
+        }
+
+        @Test
+        fun `When the user ID is blank, then the 'InvalidId' issue is returned`() {
+            val request = validMemberUpdateRequestBuilder.setUserId("").build()
+
+            val result = validateRequest(request)
+
+            assertInvalidResult<InvalidId>(result)
+        }
+
+        @Test
+        fun `When the user ID is invalid, then the 'InvalidId' issue is returned`() {
+            val request = validMemberUpdateRequestBuilder.setUserId("invalid-id").build()
+
+            val result = validateRequest(request)
+
+            assertInvalidResult<InvalidId>(result)
+        }
+
+        @Test
+        fun `When the new role is unspecified, then the 'EnumUnspecified' issue is returned`() {
+            val request = validMemberUpdateRequestBuilder.setNewRole(MemberRole.MEMBER_ROLE_UNSPECIFIED).build()
+
+            val result = validateRequest(request)
+
+            assertInvalidResult<EnumUnspecified>(result)
         }
     }
 }

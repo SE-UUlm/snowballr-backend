@@ -13,6 +13,7 @@ import snowballr.ProjectOuterClass.Project.Create
 /**
  * A validator for [Project] related requests.
  */
+@Suppress("StringLiteralDuplication")
 object ProjectValidator {
     const val NAME_MAX_LENGTH = 100
     const val SIMILARITY_THRESHOLD_MIN_VALUE = 0.0f
@@ -72,7 +73,7 @@ object ProjectValidator {
     }
 
     fun validateInviteRequest(request: Project.Member.Invite): EitherNel<ValidationIssue, Unit> = either {
-        ensureFieldNonBlank("projectId", request.projectId)
+        ensureIdValidity("project_id", request.projectId)
         ensureEmailValidity(request.userEmail)
     }.toEitherNel()
 
@@ -93,6 +94,12 @@ object ProjectValidator {
 
         either { ensureIdValidity("project_id", request.projectId) }.toEitherNel().bind()
     }
+
+    fun validateMemberUpdateRequest(request: Project.Member.Update): EitherNel<ValidationIssue, Unit> = either {
+        ensureIdValidity("project_id", request.projectId)
+        ensureIdValidity("user_id", request.userId)
+        ensureEnumNotUnspecified("new_role", request.newRole)
+    }.toEitherNel()
 
     /**
      * Ensures that the provided project name is valid.

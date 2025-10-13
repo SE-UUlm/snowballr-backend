@@ -195,8 +195,8 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
                 assertEquals(MemberRole.MEMBER_ROLE_DEFAULT, firstMember.role)
                 assertEquals(MemberRole.MEMBER_ROLE_DEFAULT, secondMember.role)
 
-                repo.promoteProjectMemberToAdmin(projectId, firstMember.userId)
-                repo.promoteProjectMemberToAdmin(projectId, secondMember.userId)
+                repo.updateProjectMemberRole(projectId, firstMember.userId, MemberRole.MEMBER_ROLE_ADMIN)
+                repo.updateProjectMemberRole(projectId, secondMember.userId, MemberRole.MEMBER_ROLE_ADMIN)
 
                 val projectAdmins = repo.getAllProjectAdmins(projectId)
 
@@ -216,7 +216,7 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
                 assertEquals(MemberRole.MEMBER_ROLE_DEFAULT, firstMember.role)
                 assertEquals(MemberRole.MEMBER_ROLE_DEFAULT, secondMember.role)
 
-                repo.promoteProjectMemberToAdmin(projectId, firstMember.userId)
+                repo.updateProjectMemberRole(projectId, firstMember.userId, MemberRole.MEMBER_ROLE_ADMIN)
 
                 val projectAdmins = repo.getAllProjectAdmins(projectId)
 
@@ -235,7 +235,7 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
                 val normalMember = repo.getProjectMemberByComposedId(projectId, testUserId).getOrThrow()
                 assertEquals(MemberRole.MEMBER_ROLE_DEFAULT, normalMember.role)
 
-                val promotedMember = repo.promoteProjectMemberToAdmin(projectId, testUserId)
+                val promotedMember = repo.updateProjectMemberRole(projectId, testUserId, MemberRole.MEMBER_ROLE_ADMIN)
 
                 assertEquals(projectId, promotedMember.projectId)
                 assertEquals(testUserId, promotedMember.userId)
@@ -245,14 +245,30 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
         @Test
         fun `When a project admin is promoted, then the role of the project admin does not change`() = runTest {
             val (projectId, _) = setupProject()
-            var promotedMember = repo.promoteProjectMemberToAdmin(projectId, testUserId)
+            var promotedMember = repo.updateProjectMemberRole(projectId, testUserId, MemberRole.MEMBER_ROLE_ADMIN)
             assertEquals(MemberRole.MEMBER_ROLE_ADMIN, promotedMember.role)
 
-            promotedMember = repo.promoteProjectMemberToAdmin(projectId, testUserId)
+            promotedMember = repo.updateProjectMemberRole(projectId, testUserId, MemberRole.MEMBER_ROLE_ADMIN)
 
             assertEquals(projectId, promotedMember.projectId)
             assertEquals(testUserId, promotedMember.userId)
             assertEquals(MemberRole.MEMBER_ROLE_ADMIN, promotedMember.role)
+        }
+    }
+
+    @Nested
+    inner class UpdateProjectMemberRole {
+        @Test
+        fun `When a project member is updated, then the role of the project member is correctly updated`() = runTest {
+            val (projectId, _) = setupProject()
+            val normalMember = repo.getProjectMemberByComposedId(projectId, testUserId).getOrThrow()
+            assertEquals(MemberRole.MEMBER_ROLE_DEFAULT, normalMember.role)
+
+            val updatedMember = repo.updateProjectMemberRole(projectId, testUserId, MemberRole.MEMBER_ROLE_ADMIN)
+
+            assertEquals(projectId, updatedMember.projectId)
+            assertEquals(testUserId, updatedMember.userId)
+            assertEquals(MemberRole.MEMBER_ROLE_ADMIN, updatedMember.role)
         }
     }
 

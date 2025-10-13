@@ -61,13 +61,14 @@ interface IProjectMemberTableRepo {
     suspend fun getAllProjectAdmins(projectId: UUID): List<ProjectMember>
 
     /**
-     * Promotes a project member to an admin role in the specified project.
+     * Updates the role of a project member.
      *
      * @param projectId The unique identifier of the project to which the member belongs.
-     * @param userId The unique identifier of the user to be promoted to admin.
-     * @return The updated [ProjectMember] including the new role as an admin.
+     * @param userId The unique identifier of the user whose role is to be updated.
+     * @param role The new role to be assigned to the project member.
+     * @return The updated [ProjectMember] with the new role.
      */
-    suspend fun promoteProjectMemberToAdmin(projectId: UUID, userId: UUID): ProjectMember
+    suspend fun updateProjectMemberRole(projectId: UUID, userId: UUID, role: MemberRole): ProjectMember
 
     /**
      * Retrieves a list of all project members along with their associated user details for a given project.
@@ -152,18 +153,19 @@ class ProjectMemberTableRepo(
         }
     }
 
-    override suspend fun promoteProjectMemberToAdmin(projectId: UUID, userId: UUID): ProjectMember = db.query {
-        ProjectMemberTable.updateAndGet(
-            mapper = ResultRow::toProjectMember,
-            entityType = EntityType.PROJECT_MEMBER,
-            id = projectId.toString(),
-            where = {
-                (ProjectMemberTable.projectId eq projectId) and (ProjectMemberTable.userId eq userId)
-            },
-        ) {
-            it[role] = MemberRole.MEMBER_ROLE_ADMIN
+    override suspend fun updateProjectMemberRole(projectId: UUID, userId: UUID, role: MemberRole): ProjectMember =
+        db.query {
+            ProjectMemberTable.updateAndGet(
+                mapper = ResultRow::toProjectMember,
+                entityType = EntityType.PROJECT_MEMBER,
+                id = projectId.toString(),
+                where = {
+                    (ProjectMemberTable.projectId eq projectId) and (ProjectMemberTable.userId eq userId)
+                },
+            ) {
+                it[ProjectMemberTable.role] = role
+            }
         }
-    }
 
     override suspend fun getProjectMembersWithUsers(projectId: UUID): List<ProjectMemberWithUser> = db.query {
         ProjectMemberTable

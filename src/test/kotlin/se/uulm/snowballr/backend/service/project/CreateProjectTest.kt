@@ -25,7 +25,13 @@ class CreateProjectTest : MainServiceTest() {
         val projectAdmin = DataBuilder.createExampleProjectMember(project.id, user.id, MemberRole.MEMBER_ROLE_ADMIN)
 
         coEvery { projectMemberRepoMock.addUserToProject(user.id, project.id) } returns projectMember
-        coEvery { projectMemberRepoMock.promoteProjectMemberToAdmin(project.id, user.id) } returns projectAdmin
+        coEvery {
+            projectMemberRepoMock.updateProjectMemberRole(
+                project.id,
+                user.id,
+                MemberRole.MEMBER_ROLE_ADMIN,
+            )
+        } returns projectAdmin
     }
 
     @Test
@@ -44,7 +50,13 @@ class CreateProjectTest : MainServiceTest() {
 
         coVerify(exactly = 0) { criterionRepoMock.createCriterion(any(), user.id) }
         coVerify(exactly = 1) { projectMemberRepoMock.addUserToProject(user.id, project.id) }
-        coVerify(exactly = 1) { projectMemberRepoMock.promoteProjectMemberToAdmin(project.id, user.id) }
+        coVerify(exactly = 1) {
+            projectMemberRepoMock.updateProjectMemberRole(
+                project.id,
+                user.id,
+                MemberRole.MEMBER_ROLE_ADMIN,
+            )
+        }
     }
 
     @Test
