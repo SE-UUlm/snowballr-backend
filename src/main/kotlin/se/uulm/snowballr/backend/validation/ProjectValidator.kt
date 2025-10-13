@@ -73,7 +73,7 @@ object ProjectValidator {
     }
 
     fun validateInviteRequest(request: Project.Member.Invite): EitherNel<ValidationIssue, Unit> = either {
-        ensureFieldNonBlank("projectId", request.projectId)
+        ensureIdValidity("project_id", request.projectId)
         ensureEmailValidity(request.userEmail)
     }.toEitherNel()
 

@@ -292,7 +292,16 @@ class ProjectValidatorTest {
 
             val result = validateRequest(request)
 
-            assertInvalidResult<BlankField>(result)
+            assertInvalidResult<InvalidId>(result)
+        }
+
+        @Test
+        fun `When the project ID is invalid, then the 'InvalidId' issue is returned`() {
+            val request = validInviteRequestBuilder.setProjectId("invalid-id").build()
+
+            val result = validateRequest(request)
+
+            assertInvalidResult<InvalidId>(result)
         }
 
         @Test
