@@ -109,7 +109,7 @@ private class ExceptionCall<ReqT, RespT>(
             "gRPC call failed due to unexpected ${e::class.simpleName ?: "<unknown class>"} " +
                 "with message: ${e.message ?: "<no message>"}."
         }
-        return status
+        return status.withDescription(e.message).withCause(e.cause)
     }
 
     /**
