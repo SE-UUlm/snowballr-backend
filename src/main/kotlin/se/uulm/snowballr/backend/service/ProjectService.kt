@@ -129,7 +129,7 @@ class ProjectService(
         }
 
         projectMemberRepo.addUserToProject(currentUser.id, project.id)
-        projectMemberRepo.promoteProjectMemberToAdmin(project.id, currentUser.id)
+        projectMemberRepo.updateProjectMemberRole(project.id, currentUser.id, MemberRole.MEMBER_ROLE_ADMIN)
 
         project.toGrpcProject()
     }
