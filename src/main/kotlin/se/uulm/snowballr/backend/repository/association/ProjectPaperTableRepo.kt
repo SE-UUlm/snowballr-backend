@@ -13,6 +13,7 @@ import se.uulm.snowballr.backend.model.dto.ProjectPaper
 import se.uulm.snowballr.backend.model.dto.ProjectPaperWithPaper
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.doesEntityExist
+import se.uulm.snowballr.backend.repository.getEntities
 import se.uulm.snowballr.backend.repository.getEntityByIdOrNull
 import se.uulm.snowballr.backend.repository.getEntityByKeyAsResult
 import se.uulm.snowballr.backend.repository.getEntityOrNull
@@ -60,6 +61,14 @@ interface IProjectPaperTableRepo {
      * @return `true` if the project paper exists, otherwise `false`.
      */
     suspend fun doesProjectPaperExist(projectId: UUID, paperId: UUID): Boolean
+
+    /**
+     * Retrieves all project papers for the specified project.
+     *
+     * @param projectId The unique identifier of the project for which the project papers should be retrieved.
+     * @return A list of [ProjectPaper] instances associated with the given project.
+     */
+    suspend fun getAllProjectPapersForProject(projectId: UUID): List<ProjectPaper>
 
     /**
      * Retrieves a list of project papers along with their associated papers for the specified project.
@@ -155,6 +164,10 @@ class ProjectPaperTableRepo(
         ProjectPaperTable.doesEntityExist {
             (ProjectPaperTable.paperId eq paperId) and (ProjectPaperTable.projectId eq projectId)
         }
+    }
+
+    override suspend fun getAllProjectPapersForProject(projectId: UUID): List<ProjectPaper> = db.query {
+        ProjectPaperTable.getEntities(ResultRow::toProjectPaper) { ProjectPaperTable.projectId eq projectId }
     }
 
     override suspend fun getAllProjectPapersWithPapers(projectId: UUID): List<ProjectPaperWithPaper> = db.query {

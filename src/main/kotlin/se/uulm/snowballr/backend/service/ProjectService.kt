@@ -7,6 +7,7 @@ import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
+import se.uulm.snowballr.backend.model.SnowballRException.StageNotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.toGrpcProject
@@ -29,15 +30,17 @@ import se.uulm.snowballr.backend.service.accessrules.isServerOrProjectAdmin
 import se.uulm.snowballr.backend.service.accessrules.orElseThrow
 import snowballr.Base
 import snowballr.ProjectOuterClass.MemberRole
+import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.copy
 import java.util.UUID
 import kotlin.getOrThrow
 import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
 import snowballr.ProjectOuterClass.Project as GrpcProject
+import snowballr.ProjectOuterClass.Project.Information.DecisionStatistics as GrpcProjectDecisionStatistics
 import snowballr.ProjectOuterClass.Project.Member as GrpcProjectMember
 
-@Suppress("ComplexInterface")
+@Suppress("ComplexInterface", "TooManyFunctions")
 interface IProjectService {
     /**
      * Service implementation of [SnowballRService.getProjectById].
@@ -88,6 +91,11 @@ interface IProjectService {
      * Service implementation of [SnowballRService.updateProjectMemberRole].
      */
     suspend fun updateProjectMemberRole(request: GrpcProjectMember.Update): Base.Nothing
+
+    /**
+     * Service implementation of [SnowballRService.getDecisionStatisticsForStage].
+     */
+    suspend fun getDecisionStatisticsForStage(request: GrpcProjectDecisionStatistics.Get): GrpcProjectDecisionStatistics
 }
 
 /**
@@ -378,5 +386,56 @@ class ProjectService(
         }
 
         return Base.Nothing.getDefaultInstance()
+    }
+
+    override suspend fun getDecisionStatisticsForStage(
+        request: GrpcProjectDecisionStatistics.Get,
+    ): GrpcProjectDecisionStatistics = withUser(userRepo) { currentUser ->
+        val projectId = parseUUID(request.projectId, EntityType.PROJECT)
+
+        isAllowedToReadProject(projectMemberRepo).checkFor(currentUser, projectId)
+
+        val project = repo.getProjectById(projectId).getOrThrow()
+        val maxStage = project.maxStage
+
+        if (request.stage > maxStage) {
+            throw StageNotFoundException(request.stage)
+        }
+
+        val statistics = createStatistics(projectId, request.stage)
+        GrpcProjectDecisionStatistics
+            .newBuilder()
+            .addAllStatistics(statistics)
+            .build()
+    }
+
+    /**
+     * Creates a list of [GrpcProjectDecisionStatistics.Statistic] objects for the given [stage]
+     * in the project with the ID [projectId].
+     *
+     * @param projectId The ID of the project for which the statistics should be created.
+     * @param stage The stage for which the statistics should be created.
+     * @return A list of [GrpcProjectDecisionStatistics.Statistic] objects.
+     */
+    private suspend fun createStatistics(projectId: UUID, stage: Long): List<GrpcProjectDecisionStatistics.Statistic> {
+        val counts = projectPaperRepo.getAllProjectPapersForProject(projectId)
+            .asSequence()
+            .filter { it.stage == stage }
+            .groupingBy { it.decision }
+            .eachCount()
+            .mapValues { it.value.toLong() }
+
+        fun createStatistic(decision: PaperDecision): GrpcProjectDecisionStatistics.Statistic =
+            GrpcProjectDecisionStatistics.Statistic.newBuilder()
+                .setDecision(decision)
+                .setCount(counts[decision] ?: 0)
+                .build()
+
+        return listOf(
+            PaperDecision.PAPER_DECISION_ACCEPTED,
+            PaperDecision.PAPER_DECISION_DECLINED,
+            PaperDecision.PAPER_DECISION_UNREVIEWED,
+            PaperDecision.PAPER_DECISION_IN_REVIEW,
+        ).map(::createStatistic)
     }
 }

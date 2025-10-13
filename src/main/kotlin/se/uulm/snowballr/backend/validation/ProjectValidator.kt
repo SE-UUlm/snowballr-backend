@@ -101,6 +101,13 @@ object ProjectValidator {
         ensureEnumNotUnspecified("new_role", request.newRole)
     }.toEitherNel()
 
+    fun validateGetDecisionStatisticsRequest(
+        request: Project.Information.DecisionStatistics.Get,
+    ): EitherNel<ValidationIssue, Unit> = either {
+        ensureIdValidity("project_id", request.projectId)
+        ensureStageValidity(request.stage)
+    }.toEitherNel()
+
     /**
      * Ensures that the provided project name is valid.
      * It checks that the project name is not blank and does not exceed the maximum length defined by [NAME_MAX_LENGTH].
