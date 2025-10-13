@@ -292,7 +292,7 @@ class ProjectValidatorTest {
 
             val result = validateRequest(request)
 
-            assertInvalidResult<InvalidId>(result)
+            assertInvalidResult<BlankField>(result)
         }
 
         @Test

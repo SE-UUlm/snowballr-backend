@@ -41,16 +41,17 @@ fun <T> validateRequest(request: T): EitherNel<ValidationIssue, Unit> = when (re
     is ProjectOuterClass.Project.Create -> ProjectValidator.validateCreateRequest(request)
     is ProjectOuterClass.Project.Update -> ProjectValidator.validateUpdateRequest(request)
     is ProjectOuterClass.Project.InviteCandidatesRequest -> Either.Right(Unit)
-    is ProjectOuterClass.Project.Member.Invite -> ProjectValidator.validateInviteRequest(request)
-    is ProjectOuterClass.Project.Member.Accept -> ProjectValidator.validateAcceptRequest(request)
     is ProjectOuterClass.Project.Information.Get -> ProjectValidator.validateGetInformationRequest(request)
     is ProjectOuterClass.Project.Information.DecisionStatistics.Get ->
         ProjectValidator.validateGetDecisionStatisticsRequest(request)
-    // Project Member
-    is ProjectOuterClass.Project.Member.Update -> ProjectValidator.validateMemberUpdateRequest(request)
     // Project Paper
     is ProjectOuterClass.Project.Paper.Get -> ProjectPaperValidator.validateGetRequest(request)
     is ProjectOuterClass.Project.Paper.Add -> ProjectPaperValidator.validateAddRequest(request)
+    // Project Member
+    is ProjectOuterClass.Project.Member.Invite -> ProjectMemberValidator.validateInviteRequest(request)
+    is ProjectOuterClass.Project.Member.Accept -> ProjectMemberValidator.validateAcceptRequest(request)
+    is ProjectOuterClass.Project.Member.Remove -> ProjectMemberValidator.validateRemoveRequest(request)
+    is ProjectOuterClass.Project.Member.Update -> ProjectMemberValidator.validateMemberUpdateRequest(request)
     // Criterion
     is CriterionOuterClass.Criterion.Create -> CriterionValidator.validateCreateRequest(request)
     is CriterionOuterClass.Criterion.Update -> CriterionValidator.validateUpdateRequest(request)
