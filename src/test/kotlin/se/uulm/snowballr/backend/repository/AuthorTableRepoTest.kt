@@ -36,4 +36,36 @@ class AuthorTableRepoTest : RepositoryTest(arrayOf(AuthorTable), false) {
             assertResultFailure<NotFoundException>(result)
         }
     }
+
+    @Nested
+    inner class CreateAuthor {
+        @Test
+        fun `When creating an author, then the returned author contains the correct values`() = runTest {
+            val grpcAuthor = snowballr.PaperOuterClass.Author.newBuilder()
+                .setFirstName("John")
+                .setLastName("Doe")
+                .setOrcid("1234")
+                .build()
+
+            val author = repo.createAuthor(grpcAuthor)
+
+            assertEquals("John", author.firstName)
+            assertEquals("Doe", author.lastName)
+            assertEquals("1234", author.orcid)
+        }
+
+        @Test
+        fun `When creating an author without ORCID, then the returned author contains null for ORCID`() = runTest {
+            val grpcAuthor = snowballr.PaperOuterClass.Author.newBuilder()
+                .setFirstName("Jane")
+                .setLastName("Smith")
+                .build()
+
+            val author = repo.createAuthor(grpcAuthor)
+
+            assertEquals("Jane", author.firstName)
+            assertEquals("Smith", author.lastName)
+            assertEquals(null, author.orcid)
+        }
+    }
 }
