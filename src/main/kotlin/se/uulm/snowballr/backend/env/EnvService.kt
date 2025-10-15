@@ -7,7 +7,6 @@ interface IEnvService {
      * Returns the value of the env variable with the specified [key] or throws an
      * [EnvVariableNotFoundException] if the env variable couldn't be found.
      */
-    @kotlin.jvm.Throws(EnvVariableNotFoundException::class)
     operator fun get(key: String): String
 
     /**
@@ -26,7 +25,6 @@ interface IEnvService {
      * Returns the boolean value of the env variable with the specified [key] or throws an
      * [EnvVariableNotFoundException] if the env variable couldn't be found or is not a valid boolean.
      */
-    @kotlin.jvm.Throws(EnvVariableNotFoundException::class)
     fun getBoolean(key: String): Boolean
 
     /**
@@ -48,14 +46,12 @@ interface IEnvService {
 class EnvService : IEnvService {
     private val dotenv = getEnv()
 
-    @kotlin.jvm.Throws(EnvVariableNotFoundException::class)
     override fun get(key: String): String = dotenv[key] ?: throw EnvVariableNotFoundException(key)
 
     override fun getOrDefault(key: String, default: String): String = dotenv[key] ?: default
 
     override fun getOrNull(key: String): String? = dotenv[key]
 
-    @kotlin.jvm.Throws(EnvVariableNotFoundException::class)
     override fun getBoolean(key: String): Boolean {
         val value = get(key)
         return value.toBooleanStrictOrNull()
