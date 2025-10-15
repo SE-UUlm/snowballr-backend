@@ -3,10 +3,12 @@ package se.uulm.snowballr.backend.validation
 import arrow.core.Either
 import arrow.core.EitherNel
 import arrow.core.Nel
+import arrow.core.nonEmptyListOf
 import arrow.core.raise.Raise
 import arrow.core.raise.either
 import arrow.core.raise.ensure
 import arrow.core.raise.zipOrAccumulate
+import se.uulm.snowballr.backend.model.CompositeIssue
 import se.uulm.snowballr.backend.model.TooLongList
 import se.uulm.snowballr.backend.model.ValidationIssue
 import snowballr.PaperOuterClass.Paper
@@ -93,7 +95,16 @@ object PaperValidator {
     private fun Raise<Nel<ValidationIssue>>.validateAuthors(paper: Paper, selectedFields: Set<String>) {
         if ("paper.authors" !in selectedFields) return
 
-        val validations = paper.authorsList.map(AuthorValidator::validateAuthor)
+        val validations = paper.authorsList.mapIndexed { i, author ->
+            val result = AuthorValidator.validateAuthor(author)
+            if (result is Either.Left) {
+                val issues = result.value.toList()
+                val compositeIssue = CompositeIssue("Issues of author at index $i", issues)
+                Either.Left(nonEmptyListOf(compositeIssue))
+            } else {
+                result
+            }
+        }
         val issues = validations.filterIsInstance<Either.Left<Nel<ValidationIssue>>>().map { it.value }
         issues.reduceOrNull { acc, nel -> acc + nel }?.let { raise(it) }
     }

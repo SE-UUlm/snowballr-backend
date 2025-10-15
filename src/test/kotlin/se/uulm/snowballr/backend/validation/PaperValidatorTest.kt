@@ -1,8 +1,11 @@
 package se.uulm.snowballr.backend.validation
 
+import arrow.core.Either
+import arrow.core.NonEmptyList
 import com.google.protobuf.FieldMask
 import com.google.protobuf.util.FieldMaskUtil
 import `in`.rcard.assertj.arrowcore.EitherAssert
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
@@ -10,11 +13,13 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.DataBuilder.createValidOrcid
 import se.uulm.snowballr.backend.model.BlankField
+import se.uulm.snowballr.backend.model.CompositeIssue
 import se.uulm.snowballr.backend.model.InvalidFieldMask
 import se.uulm.snowballr.backend.model.InvalidId
 import se.uulm.snowballr.backend.model.OutOfRangeValue
 import se.uulm.snowballr.backend.model.TooLongField
 import se.uulm.snowballr.backend.model.TooLongList
+import se.uulm.snowballr.backend.model.ValidationIssue
 import se.uulm.snowballr.backend.validation.PaperValidator.ABSTRACT_MAX_LENGTH
 import se.uulm.snowballr.backend.validation.PaperValidator.EXTERNAL_ID_MAX_LENGTH
 import se.uulm.snowballr.backend.validation.PaperValidator.MAX_AUTHOR_COUNT
@@ -27,6 +32,7 @@ import snowballr.PaperOuterClass.Paper
 import snowballr.author
 import java.time.LocalDate
 import java.util.UUID
+import kotlin.test.assertIs
 
 class PaperValidatorTest {
     companion object {
@@ -302,7 +308,12 @@ class PaperValidatorTest {
 
             val result = validateRequest(request)
 
-            EitherAssert.assertThat(result).isLeft()
+            assertIs<Either.Left<NonEmptyList<ValidationIssue>>>(result)
+            val issues = result.value.toList()
+            assertThat(issues).hasSize(1)
+            val compositeIssue = issues[0]
+            assertIs<CompositeIssue>(compositeIssue)
+            assertThat(compositeIssue.toString()).startsWith("Issues of author at index 0")
         }
     }
 }

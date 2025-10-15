@@ -172,3 +172,16 @@ data class InvalidOrcid(val orcid: String, val reason: Reason) : ValidationIssue
         INVALID_CHECK_DIGIT("The ORCID must have a valid check digit"),
     }
 }
+
+/**
+ * Represents a composite validation issue that aggregates multiple individual [ValidationIssue]s.
+ *
+ * This is useful for scenarios where multiple validation errors need to be reported together,
+ * providing a comprehensive overview of all issues encountered during the validation process.
+ *
+ * @property baseMessage A general message summarizing the composite issue.
+ * @property issues A list of individual [ValidationIssue]s that make up the composite issue.
+ */
+data class CompositeIssue(val baseMessage: String, val issues: List<ValidationIssue>) : ValidationIssue {
+    override fun toString(): String = "$baseMessage: ${issues.joinToString("; ")}"
+}
