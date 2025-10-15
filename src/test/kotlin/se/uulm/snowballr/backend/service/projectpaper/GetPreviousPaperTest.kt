@@ -14,19 +14,19 @@ import snowballr.Base
 import snowballr.UserOuterClass.UserRole
 import java.util.UUID
 
-class GetNextPaperTest : MainServiceTest() {
+class GetPreviousPaperTest : MainServiceTest() {
     private val projectPaperId = UUID.randomUUID()
 
     private fun getExampleRequest() = Base.Id.newBuilder().setId(projectPaperId.toString()).build()
 
     @Test
-    fun `When a server admin requests the next project paper, then no exception is thrown`() = runTest {
+    fun `When a server admin requests the previous project paper, then no exception is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val project = DataBuilder.createExampleProject()
         val paper = DataBuilder.createExamplePaper()
         val projectPaper =
             DataBuilder.createExampleProjectPaper(id = projectPaperId, projectId = project.id, paperId = paper.id)
-        val nextProjectPaper = DataBuilder.createExampleProjectPaper()
+        val previousProjectPaper = DataBuilder.createExampleProjectPaper()
         val author = DataBuilder.createExampleAuthor()
 
         mockCurrentUser(currentUser)
@@ -38,25 +38,25 @@ class GetNextPaperTest : MainServiceTest() {
         coEvery {
             projectPaperRepoMock.getAdjacentPaper(
                 project.id, projectPaper.localPaperId,
-                PaperNavigationDirection.NEXT,
+                PaperNavigationDirection.PREVIOUS,
             )
-        } returns Result.success(nextProjectPaper)
-        coEvery { paperRepoMock.getPaperById(nextProjectPaper.paperId) } returns Result.success(paper)
+        } returns Result.success(previousProjectPaper)
+        coEvery { paperRepoMock.getPaperById(previousProjectPaper.paperId) } returns Result.success(paper)
         coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(paper.id) } returns listOf(author)
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id) } returns emptyList()
-        coEvery { reviewRepoMock.getAllReviewsForProjectPaper(nextProjectPaper.id) } returns emptyList()
+        coEvery { reviewRepoMock.getAllReviewsForProjectPaper(previousProjectPaper.id) } returns emptyList()
 
-        assertDoesNotThrow { mainService.getNextPaper(getExampleRequest()) }
+        assertDoesNotThrow { mainService.getPreviousPaper(getExampleRequest()) }
     }
 
     @Test
-    fun `When a project member requests the next project paper, then no exception is thrown`() = runTest {
+    fun `When a project member requests the previous project paper, then no exception is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject()
         val paper = DataBuilder.createExamplePaper()
         val projectPaper =
             DataBuilder.createExampleProjectPaper(id = projectPaperId, projectId = project.id, paperId = paper.id)
-        val nextProjectPaper = DataBuilder.createExampleProjectPaper()
+        val previousProjectPaper = DataBuilder.createExampleProjectPaper()
         val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
         val author = DataBuilder.createExampleAuthor()
 
@@ -69,19 +69,19 @@ class GetNextPaperTest : MainServiceTest() {
         coEvery {
             projectPaperRepoMock.getAdjacentPaper(
                 project.id, projectPaper.localPaperId,
-                PaperNavigationDirection.NEXT,
+                PaperNavigationDirection.PREVIOUS,
             )
-        } returns Result.success(nextProjectPaper)
-        coEvery { paperRepoMock.getPaperById(nextProjectPaper.paperId) } returns Result.success(paper)
+        } returns Result.success(previousProjectPaper)
+        coEvery { paperRepoMock.getPaperById(previousProjectPaper.paperId) } returns Result.success(paper)
         coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(paper.id) } returns listOf(author)
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id) } returns emptyList()
-        coEvery { reviewRepoMock.getAllReviewsForProjectPaper(nextProjectPaper.id) } returns emptyList()
+        coEvery { reviewRepoMock.getAllReviewsForProjectPaper(previousProjectPaper.id) } returns emptyList()
 
-        assertDoesNotThrow { mainService.getNextPaper(getExampleRequest()) }
+        assertDoesNotThrow { mainService.getPreviousPaper(getExampleRequest()) }
     }
 
     @Test
-    fun `When a non project member requests the next project paper, then an UnauthorizedException is thrown`() =
+    fun `When a non project member requests the previous project paper, then an UnauthorizedException is thrown`() =
         runTest {
             val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
             val project = DataBuilder.createExampleProject()
@@ -93,11 +93,11 @@ class GetNextPaperTest : MainServiceTest() {
             } returns Result.success(projectPaper)
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
-            assertThrows<UnauthorizedException> { mainService.getNextPaper(getExampleRequest()) }
+            assertThrows<UnauthorizedException> { mainService.getPreviousPaper(getExampleRequest()) }
         }
 
     @Test
-    fun `When no next paper exists, then a FailedPreconditionException is thrown`() = runTest {
+    fun `When no previous paper exists, then a FailedPreconditionException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject()
         val paper = DataBuilder.createExamplePaper()
@@ -114,10 +114,10 @@ class GetNextPaperTest : MainServiceTest() {
         coEvery {
             projectPaperRepoMock.getAdjacentPaper(
                 project.id, projectPaper.localPaperId,
-                PaperNavigationDirection.NEXT,
+                PaperNavigationDirection.PREVIOUS,
             )
-        } returns Result.failure(FailedPreconditionException("No next paper exists"))
+        } returns Result.failure(FailedPreconditionException("No previous paper exists"))
 
-        assertThrows<FailedPreconditionException> { mainService.getNextPaper(getExampleRequest()) }
+        assertThrows<FailedPreconditionException> { mainService.getPreviousPaper(getExampleRequest()) }
     }
 }
