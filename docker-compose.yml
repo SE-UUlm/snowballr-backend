@@ -22,12 +22,23 @@ services:
         build:
             context: .
         environment:
+            PROFILE: ${PROFILE:-}
             PORT: ${PORT:-8080}
-            LOG_LEVEL: ${LOG_LEVEL:-DEBUG}
-            DATABASE_PASSWORD: ${DATABASE_PASSWORD}
             DATABASE_HOST: db # use db service as db host
-            JWT_PRIVATE_KEY_BASE64: ${JWT_PRIVATE_KEY_BASE64}
-            JWT_PUBLIC_KEY_BASE64: ${JWT_PUBLIC_KEY_BASE64}
+            LOG_LEVEL: ${LOG_LEVEL:-}
+            AUTH_BYPASS_ENABLED: ${AUTH_BYPASS_ENABLED:-}
+            FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-}
+            DATABASE_SEED_USER_ENABLED: ${DATABASE_SEED_USER_ENABLED:-}
+            DATABASE_PASSWORD: ${DATABASE_PASSWORD:-}
+            JWT_PRIVATE_KEY_BASE64: ${JWT_PRIVATE_KEY_BASE64:-}
+            JWT_PUBLIC_KEY_BASE64: ${JWT_PUBLIC_KEY_BASE64:-}
+            SMTP_HOST: ${SMTP_HOST:-}
+            SMTP_PORT: ${SMTP_PORT:-}
+            SMTP_USER: ${SMTP_USER:-}
+            SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+            SMTP_TRANSPORT_LOGGING_ONLY_ENABLED: ${SMTP_TRANSPORT_LOGGING_ONLY_ENABLED:-}
+            SMTP_SENDER_NAME: ${SMTP_SENDER_NAME:-}
+            SMTP_SENDER_EMAIL: ${SMTP_SENDER_EMAIL:-}
         ports:
             - ${PORT:-8080}:${PORT:-8080}
         depends_on:
@@ -64,12 +75,23 @@ services:
     backend-registry:
         image: ghcr.io/se-uulm/snowballr-backend:${BACKEND_TAG:-latest-dev}
         environment:
+            PROFILE: ${PROFILE:-}
             PORT: ${PORT:-8080}
-            LOG_LEVEL: ${LOG_LEVEL:-DEBUG}
-            DATABASE_PASSWORD: ${DATABASE_PASSWORD}
             DATABASE_HOST: db # use db service as db host
-            JWT_PRIVATE_KEY_BASE64: ${JWT_PRIVATE_KEY_BASE64}
-            JWT_PUBLIC_KEY_BASE64: ${JWT_PUBLIC_KEY_BASE64}
+            LOG_LEVEL: ${LOG_LEVEL:-}
+            AUTH_BYPASS_ENABLED: ${AUTH_BYPASS_ENABLED:-}
+            FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-}
+            DATABASE_SEED_USER_ENABLED: ${DATABASE_SEED_USER_ENABLED:-}
+            DATABASE_PASSWORD: ${DATABASE_PASSWORD:-}
+            JWT_PRIVATE_KEY_BASE64: ${JWT_PRIVATE_KEY_BASE64:-}
+            JWT_PUBLIC_KEY_BASE64: ${JWT_PUBLIC_KEY_BASE64:-}
+            SMTP_HOST: ${SMTP_HOST:-}
+            SMTP_PORT: ${SMTP_PORT:-}
+            SMTP_USER: ${SMTP_USER:-}
+            SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+            SMTP_TRANSPORT_LOGGING_ONLY_ENABLED: ${SMTP_TRANSPORT_LOGGING_ONLY_ENABLED:-}
+            SMTP_SENDER_NAME: ${SMTP_SENDER_NAME:-}
+            SMTP_SENDER_EMAIL: ${SMTP_SENDER_EMAIL:-}
         ports:
             - ${PORT:-8080}:${PORT:-8080}
         depends_on:
