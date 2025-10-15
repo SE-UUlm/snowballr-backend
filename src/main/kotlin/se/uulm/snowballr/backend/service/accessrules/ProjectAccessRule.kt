@@ -42,7 +42,7 @@ fun isProjectActive() = AccessRule<Project> { _, project ->
  * @param projectMemberRepo The project member repository used to retrieve a project member list.
  */
 @CheckReturnValue
-private fun isProjectMember(projectMemberRepo: IProjectMemberTableRepo) = AccessRule<UUID> { requester, targetId ->
+fun isProjectMember(projectMemberRepo: IProjectMemberTableRepo) = AccessRule<UUID> { requester, targetId ->
     val projectMembers = projectMemberRepo.getProjectMembers(targetId)
     projectMembers.any { it.userId == requester.id }
 }
