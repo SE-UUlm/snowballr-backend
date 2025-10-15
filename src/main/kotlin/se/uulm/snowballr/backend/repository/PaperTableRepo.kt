@@ -32,6 +32,11 @@ interface IPaperTableRepo {
     suspend fun doesPaperExistById(id: UUID): Boolean
 
     /**
+     * Creates a new paper in the database with the provided values.
+     */
+    suspend fun createPaper(request: GrpcPaper): Paper
+
+    /**
      * Updates an existing paper in the database with the provided new values.
      * The following fields can be updated:
      * - [GrpcPaper.externalId_]
@@ -65,6 +70,19 @@ class PaperTableRepo(
 
     override suspend fun doesPaperExistById(id: UUID): Boolean = db.query {
         PaperTable.doesEntityExistById(id)
+    }
+
+    override suspend fun createPaper(request: GrpcPaper): Paper = db.query {
+        PaperTable.insertAndGet(ResultRow::toPaper, EntityType.PAPER) {
+            it[title] = request.title
+            it[externalId] = request.externalId
+            it[abstract] = request.abstrakt
+            it[year] = request.year
+            it[publisher] = request.publisher
+            it[publicationName] = request.publicationName
+            it[publicationType] = request.publicationType
+            it[createdAt] = OffsetDateTime.now()
+        }
     }
 
     override suspend fun updatePaper(request: GrpcPaper.Update): Paper = db.query {

@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
@@ -18,6 +19,7 @@ import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.utils.assertResultFailure
 import se.uulm.snowballr.backend.utils.assertResultSuccess
 import snowballr.PaperOuterClass.Paper
+import java.sql.SQLException
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -81,6 +83,60 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
 
             assertFalse(isPaperExistent)
         }
+    }
+
+    @Nested
+    inner class CreatePaper {
+        @Test
+        fun `When a paper is created, then the created paper is returned`() = runTest {
+            val request = Paper.newBuilder()
+                .setExternalId("ExternalId")
+                .setTitle("Title")
+                .setAbstrakt("Abstract")
+                .setYear(2025)
+                .setPublisher("Publisher")
+                .setPublicationName("PublicationName")
+                .setPublicationType("PublicationType")
+                .build()
+
+            val start = OffsetDateTime.now()
+            val createdPaper = repo.createPaper(request)
+            val end = OffsetDateTime.now()
+
+            with(createdPaper) {
+                assertThat(id).isNotNull
+                assertEquals("Title", title)
+                assertEquals("ExternalId", externalId)
+                assertEquals("Abstract", abstract)
+                assertEquals(2025, year)
+                assertEquals("Publisher", publisher)
+                assertEquals("PublicationType", publicationType)
+                assertEquals("PublicationName", publicationName)
+                assertThat(fetcherMetadata).isEmpty()
+                assertThat(createdAt).isBetween(start, end)
+                assertThat(modifiedAt).isNull()
+                assertThat(modifiedBy).isNull()
+            }
+        }
+
+        @Test
+        fun `When a paper is created with a external ID that already exists, then creating the paper fails`() =
+            runTest {
+                val externalId = "ExternalId"
+                insertPaperAndGetId(externalId = externalId)
+
+                val request = Paper.newBuilder()
+                    .setExternalId(externalId)
+                    .setTitle("Title")
+                    .setAbstrakt("Abstract")
+                    .setYear(2025)
+                    .setPublisher("Publisher")
+                    .setPublicationName("PublicationName")
+                    .setPublicationType("PublicationType")
+                    .build()
+
+                assertThrows<SQLException> { repo.createPaper(request) }
+            }
     }
 
     @Nested

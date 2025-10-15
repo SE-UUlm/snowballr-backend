@@ -41,7 +41,7 @@ object PaperTable : UUIDTable("paper") {
 
     // Metadata
 
-    val fetcherMetadata = stringMap("fetcher_metadata")
+    val fetcherMetadata = stringMap("fetcher_metadata").clientDefault { emptyMap() }
     val createdAt = createdAt()
     val modifiedAt = modifiedAt()
     val modifiedBy = modifiedBy()
