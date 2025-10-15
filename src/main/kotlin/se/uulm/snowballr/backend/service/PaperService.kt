@@ -37,6 +37,11 @@ interface IPaperService {
      * Service implementation of [SnowballRService.updatePaper].
      */
     suspend fun updatePaper(request: GrpcPaper.Update): GrpcPaper
+
+    /**
+     * Service implementation of [SnowballRService.createPaper].
+     */
+    suspend fun createPaper(request: GrpcPaper): GrpcPaper
 }
 
 /**
@@ -86,6 +91,8 @@ class PaperService(
 
         return repo.updatePaper(request).toGrpcPaper()
     }
+
+    override suspend fun createPaper(request: GrpcPaper): GrpcPaper = repo.createPaper(request).toGrpcPaper()
 
     /**
      * Retrieves a list of reference papers based on the provided paper ID and a specified function for fetching
