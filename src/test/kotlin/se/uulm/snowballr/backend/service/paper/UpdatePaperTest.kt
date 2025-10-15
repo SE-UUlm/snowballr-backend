@@ -27,11 +27,14 @@ class UpdatePaperTest : MainServiceTest() {
         .setExternalId("10.1000/updateddoi")
         .setYear(2023)
 
+    private fun getExampleRequest() = GrpcPaper.Update
+        .newBuilder()
+        .setPaper(getExamplePaperBuilder().build())
+        .build()
+
     @Test
     fun `When an existent paper is updated, then no exception is thrown`() = runTest {
-        val request = GrpcPaper.Update.newBuilder()
-            .setPaper(getExamplePaperBuilder().build())
-            .build()
+        val request = getExampleRequest()
         val examplePaper = DataBuilder.createExamplePaper(id = paperId)
         val exampleAuthor = DataBuilder.createExampleAuthor()
 
@@ -45,9 +48,7 @@ class UpdatePaperTest : MainServiceTest() {
 
     @Test
     fun `When a non-existent paper is updated, then a NotFoundException is thrown`() = runTest {
-        val request = GrpcPaper.Update.newBuilder()
-            .setPaper(getExamplePaperBuilder().build())
-            .build()
+        val request = getExampleRequest()
 
         coEvery { paperRepoMock.doesPaperExistById(paperId) } returns false
 
