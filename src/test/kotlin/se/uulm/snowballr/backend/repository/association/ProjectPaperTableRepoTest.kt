@@ -12,6 +12,7 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import se.uulm.snowballr.backend.model.PaperNavigationDirection
 import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.ProjectPaperNotFoundException
@@ -179,7 +180,7 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
     }
 
     @Nested
-    inner class GetNextPaperLocalId {
+    inner class GetAdjacentPaperLocalId {
         @Test
         fun `When a project paper with a succeeding local paper ID exists, then the local paper ID of this paper is returned`() =
             runTest {
@@ -193,7 +194,7 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
                     localPaperId = 1,
                     createdBy = testUserId,
                 )
-                insertProjectPaperAndGetId(
+                val nextPaperId = insertProjectPaperAndGetId(
                     paperId = paperId2,
                     projectId = projectId,
                     localPaperId = 3,
@@ -201,10 +202,17 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
                 )
                 val projectPaper = repo.getProjectPaperById(projectPaperId).getOrThrow()
 
-                val nextPaperLocalId = repo.getNextPaperLocalId(projectId, projectPaper.localPaperId)
+                val nextPaper = repo.getAdjacentPaper(
+                    projectId,
+                    projectPaper.localPaperId,
+                    PaperNavigationDirection.NEXT,
+                )
 
-                val result = assertResultSuccess(nextPaperLocalId)
-                assertEquals(3, result)
+                val result = assertResultSuccess(nextPaper)
+                assertEquals(nextPaperId, result.id)
+                assertEquals(3, result.localPaperId)
+                assertEquals(paperId2, result.paperId)
+                assertEquals(projectId, result.projectId)
             }
 
         @Test
@@ -221,9 +229,70 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
                 )
                 val projectPaper = repo.getProjectPaperById(projectPaperId).getOrThrow()
 
-                val nextPaperLocalId = repo.getNextPaperLocalId(projectId, projectPaper.localPaperId)
+                val nextPaper = repo.getAdjacentPaper(
+                    projectId,
+                    projectPaper.localPaperId,
+                    PaperNavigationDirection.NEXT,
+                )
 
-                assertResultFailure<FailedPreconditionException>(nextPaperLocalId)
+                assertResultFailure<FailedPreconditionException>(nextPaper)
+            }
+
+        @Test
+        fun `When a project paper with a preceding local paper ID exists, then the local paper ID of this paper is returned`() =
+            runTest {
+                val projectId =
+                    insertProjectAndGetId(createdBy = testUserId)
+                val paperId1 = insertPaperAndGetId()
+                val paperId2 = insertPaperAndGetId()
+                val previousPaperId = insertProjectPaperAndGetId(
+                    paperId = paperId1,
+                    projectId = projectId,
+                    localPaperId = 1,
+                    createdBy = testUserId,
+                )
+                val projectPaperId = insertProjectPaperAndGetId(
+                    paperId = paperId2,
+                    projectId = projectId,
+                    localPaperId = 3,
+                    createdBy = testUserId,
+                )
+                val projectPaper = repo.getProjectPaperById(projectPaperId).getOrThrow()
+
+                val previousPaper = repo.getAdjacentPaper(
+                    projectId,
+                    projectPaper.localPaperId,
+                    PaperNavigationDirection.PREVIOUS,
+                )
+
+                val result = assertResultSuccess(previousPaper)
+                assertEquals(previousPaperId, result.id)
+                assertEquals(1, result.localPaperId)
+                assertEquals(paperId1, result.paperId)
+                assertEquals(projectId, result.projectId)
+            }
+
+        @Test
+        fun `When no project paper with a preceding local paper ID exists, then a FailedPreconditionException is returned`() =
+            runTest {
+                val projectId =
+                    insertProjectAndGetId(createdBy = testUserId)
+                val paperId1 = insertPaperAndGetId()
+                val projectPaperId = insertProjectPaperAndGetId(
+                    paperId = paperId1,
+                    projectId = projectId,
+                    localPaperId = 1,
+                    createdBy = testUserId,
+                )
+                val projectPaper = repo.getProjectPaperById(projectPaperId).getOrThrow()
+
+                val previousPaper = repo.getAdjacentPaper(
+                    projectId,
+                    projectPaper.localPaperId,
+                    PaperNavigationDirection.PREVIOUS,
+                )
+
+                assertResultFailure<FailedPreconditionException>(previousPaper)
             }
     }
 

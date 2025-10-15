@@ -9,6 +9,7 @@ import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.update
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.PaperNavigationDirection
 import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.ProjectPaperNotFoundException
@@ -74,14 +75,20 @@ interface IProjectPaperTableRepo {
     suspend fun getAllProjectPapersForProject(projectId: UUID): List<ProjectPaper>
 
     /**
-     * Retrieves the succeeding local paper ID for the project paper with the given local paper ID.
+     * Retrieves the preceding local paper ID for the project paper with the given local paper ID.
      *
-     * @param projectId The unique identifier of the project for which the next local paper ID is being requested.
-     * @param localPaperId The current local paper ID used as a reference to compute the next ID.
-     * @return A [Result] containing the next available local paper ID as a [Long] or a [FailedPreconditionException]
-     * if it cannot be determined.
+     * @param projectId The unique identifier of the project for which the previous local paper ID is being requested.
+     * @param localPaperId The current local paper ID used as a reference to compute the previous ID.
+     * @param direction The navigation direction indicating whether to retrieve the next or previous paper.
+     * Must be one of the values from [PaperNavigationDirection].
+     * @return A [Result] containing the previous available local paper ID as a [Long] or a
+     * [FailedPreconditionException] if it cannot be determined.
      */
-    suspend fun getNextPaperLocalId(projectId: UUID, localPaperId: Long): Result<Long>
+    suspend fun getAdjacentPaper(
+        projectId: UUID,
+        localPaperId: Long,
+        direction: PaperNavigationDirection,
+    ): Result<ProjectPaper>
 
     /**
      * Retrieves a list of project papers along with their associated papers for the specified project.
@@ -165,6 +172,49 @@ class ProjectPaperTableRepo(
             ?: 0L
     }
 
+    /**
+     * Retrieves the local paper ID for a project based on the specified conditions and order.
+     *
+     * @param projectId The unique identifier of the project.
+     * @param localPaperId The reference local paper ID used in the condition.
+     * @param direction The direction to navigate for finding the adjacent paper, either NEXT or PREVIOUS.
+     * @return A [Result] containing the local paper ID if found, or a failure if the specified conditions do not match
+     * any paper.
+     */
+    override suspend fun getAdjacentPaper(
+        projectId: UUID,
+        localPaperId: Long,
+        direction: PaperNavigationDirection,
+    ): Result<ProjectPaper> = db.query {
+        val isNext = direction == PaperNavigationDirection.NEXT
+        val paperId = ProjectPaperTable
+            .selectAll()
+            .where {
+                (ProjectPaperTable.projectId eq projectId) and
+                    if (isNext) {
+                        ProjectPaperTable.localPaperId greater localPaperId
+                    } else {
+                        ProjectPaperTable.localPaperId less localPaperId
+                    }
+            }
+            .orderBy(
+                ProjectPaperTable.localPaperId to if (isNext) SortOrder.ASC else SortOrder.DESC,
+            )
+            .map { it.toProjectPaper() }
+            .firstOrNull()
+
+        if (paperId != null) {
+            Result.success(paperId)
+        } else {
+            Result.failure(
+                FailedPreconditionException(
+                    "There is no $direction project paper " +
+                        "in the project.",
+                ),
+            )
+        }
+    }
+
     override suspend fun getProjectPaperById(id: UUID): Result<ProjectPaper> = db.query {
         getEntityByKeyAsResult(::getProjectPaperByIdOrNull, EntityType.PROJECT_PAPER, id)
     }
@@ -192,31 +242,14 @@ class ProjectPaperTableRepo(
         ProjectPaperTable.getEntities(ResultRow::toProjectPaper) { ProjectPaperTable.projectId eq projectId }
     }
 
-    override suspend fun getNextPaperLocalId(projectId: UUID, localPaperId: Long): Result<Long> = db.query {
-        val nextId = ProjectPaperTable
-            .selectAll()
-            .where {
-                (ProjectPaperTable.projectId eq projectId) and
-                    (ProjectPaperTable.localPaperId greater localPaperId)
-            }
-            .orderBy(ProjectPaperTable.localPaperId, SortOrder.ASC)
-            .map { it[ProjectPaperTable.localPaperId] }
-            .firstOrNull()
-
-        if (nextId != null) {
-            Result.success(nextId)
-        } else {
-            Result.failure(
-                FailedPreconditionException(
-                    "There is no next project paper in the project.",
-                ),
-            )
-        }
-    }
-
     override suspend fun getAllProjectPapersWithPapers(projectId: UUID): List<ProjectPaperWithPaper> = db.query {
         ProjectPaperTable
-            .join(PaperTable, JoinType.INNER, onColumn = ProjectPaperTable.paperId, otherColumn = PaperTable.id)
+            .join(
+                PaperTable,
+                JoinType.INNER,
+                onColumn = ProjectPaperTable.paperId,
+                otherColumn = PaperTable.id,
+            )
             .selectAll()
             .where { ProjectPaperTable.projectId eq projectId }
             .map { it.toProjectPaperWithPaper() }
@@ -239,13 +272,15 @@ class ProjectPaperTableRepo(
     }
 
     override suspend fun getProjectProgress(projectId: UUID): Float = db.query {
-        val allPapersCount = ProjectPaperTable.selectAll().where { ProjectPaperTable.projectId eq projectId }.count()
+        val allPapersCount =
+            ProjectPaperTable.selectAll().where { ProjectPaperTable.projectId eq projectId }.count()
         if (allPapersCount == 0L) {
             0.0f
         } else {
             val fullyReviewedPapersCount = ProjectPaperTable.selectAll().where {
-                val paperReviewedOp = (ProjectPaperTable.decision eq PaperDecision.PAPER_DECISION_ACCEPTED) or
-                    (ProjectPaperTable.decision eq PaperDecision.PAPER_DECISION_DECLINED)
+                val paperReviewedOp =
+                    (ProjectPaperTable.decision eq PaperDecision.PAPER_DECISION_ACCEPTED) or
+                        (ProjectPaperTable.decision eq PaperDecision.PAPER_DECISION_DECLINED)
 
                 paperReviewedOp and (ProjectPaperTable.projectId eq projectId)
             }.count()
