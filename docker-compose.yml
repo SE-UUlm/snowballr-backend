@@ -124,6 +124,38 @@ services:
         networks:
             - grpc_network
 
+    # Backend only (profile: backend-only)
+    backend:
+        profiles: [ "backend-only" ]
+        build:
+            context: .
+        environment:
+            PROFILE: ${PROFILE:-}
+            PORT: ${PORT:-8080}
+            DATABASE_HOST: ${DATABASE_HOST:-db}
+            LOG_LEVEL: ${LOG_LEVEL:-}
+            AUTH_BYPASS_ENABLED: ${AUTH_BYPASS_ENABLED:-}
+            FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-}
+            DATABASE_SEED_USER_ENABLED: ${DATABASE_SEED_USER_ENABLED:-}
+            DATABASE_PASSWORD: ${DATABASE_PASSWORD:-}
+            JWT_PRIVATE_KEY_BASE64: ${JWT_PRIVATE_KEY_BASE64:-}
+            JWT_PUBLIC_KEY_BASE64: ${JWT_PUBLIC_KEY_BASE64:-}
+            SMTP_HOST: ${SMTP_HOST:-}
+            SMTP_PORT: ${SMTP_PORT:-}
+            SMTP_USER: ${SMTP_USER:-}
+            SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+            SMTP_TRANSPORT_LOGGING_ONLY_ENABLED: ${SMTP_TRANSPORT_LOGGING_ONLY_ENABLED:-}
+            SMTP_SENDER_NAME: ${SMTP_SENDER_NAME:-}
+            SMTP_SENDER_EMAIL: ${SMTP_SENDER_EMAIL:-}
+        ports:
+            - ${PORT:-8080}:${PORT:-8080}
+        healthcheck:
+            start_period: 4s # wait 4s to let backend get ready for accepting connections
+            start_interval: 2s # start first healthcheck after 2s
+        networks:
+            - db_network
+            - grpc_network
+
     # Proxy only (profile: proxy-only)
     proxy:
         profiles: [ "proxy-only" ]
