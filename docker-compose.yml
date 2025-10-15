@@ -1,6 +1,7 @@
 services:
-    # PostgreSQL Database
+    # PostgreSQL Database (profile: default, db-only, registry)
     db:
+        profiles: [ "", "db-only", "registry" ]
         image: postgres:16.1-alpine3.19
         restart: always
         environment:
@@ -15,10 +16,10 @@ services:
             start_interval: 2s # start first healthcheck after 2s
         networks:
             - db_network
-        profiles: [ "", "db-only", "registry" ]
 
-    # Use local backend
+    # Local Backend + Proxy (profile: default)
     backend-local:
+        profiles: [ "" ]
         build:
             context: .
         environment:
@@ -50,9 +51,9 @@ services:
         networks:
             - db_network
             - grpc_network
-        profiles: [ "" ]
 
     proxy-local:
+        profiles: [ "" ]
         build:
             context: .
             dockerfile: Dockerfile.proxy
@@ -69,10 +70,10 @@ services:
                 condition: service_healthy
         networks:
             - grpc_network
-        profiles: [ "" ]
 
-    # Use the published backend with the specified tag
+    # Registry Backend + Proxy (profile: registry)
     backend-registry:
+        profiles: [ "registry" ]
         image: ghcr.io/se-uulm/snowballr-backend:${BACKEND_TAG:-latest-dev}
         environment:
             PROFILE: ${PROFILE:-}
@@ -103,9 +104,9 @@ services:
         networks:
             - db_network
             - grpc_network
-        profiles: [ "registry" ]
 
     proxy-registry:
+        profiles: [ "registry" ]
         build:
             context: .
             dockerfile: Dockerfile.proxy
@@ -122,10 +123,10 @@ services:
                 condition: service_healthy
         networks:
             - grpc_network
-        profiles: [ "registry" ]
 
-    # Proxy that listens to localhost instead of a service; can be used for local development
+    # Proxy only (profile: proxy-only)
     proxy:
+        profiles: [ "proxy-only" ]
         build:
             context: .
             dockerfile: Dockerfile.proxy
@@ -137,7 +138,6 @@ services:
             - --allow_all_origins # Crucial for local dev where frontend is on different origin
             - --run_tls_server=false # Don't require TLS
             - --server_http_debug_port=${WEB_PORT:-8081} # Proxy listens on this port inside the container
-        profiles: [ "proxy-only" ]
 
 networks:
     db_network:
