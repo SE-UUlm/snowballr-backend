@@ -37,6 +37,7 @@ import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
  * operations for project papers. By using this interface, the functionality for creating
  * project papers can remain decoupled from the specifics of the database layer.
  */
+@Suppress("ComplexInterface")
 interface IProjectPaperTableRepo {
     /**
      * Returns a [Result] containing the project paper by its ID or a [NotFoundException] if the project paper with the
@@ -128,6 +129,19 @@ interface IProjectPaperTableRepo {
      * @return A float between 0.0 and 1.0 representing the project progress.
      */
     suspend fun getProjectProgress(projectId: UUID): Float
+
+    /**
+     * Retrieves a list of later project papers from a given starting point defined by `localPaperId` and `stage`.
+     *
+     * This method fetches all project papers within the same project that come after the specified
+     * paper (`localPaperId`) and are part of the given `stage` or a later `stage`.
+     *
+     * @param projectId The unique identifier of the project to which the papers belong.
+     * @param localPaperId The local ID of the starting paper in the project from which the later papers are retrieved.
+     * @param stage The stage of the papers that should be considered when retrieving later project papers.
+     * @return A list of subsequent [ProjectPaper] instances meeting the specified criteria.
+     */
+    suspend fun getLaterProjectPapers(projectId: UUID, localPaperId: Long, stage: Long): List<ProjectPaper>
 
     /**
      * Updates the decision of a project paper.
@@ -285,4 +299,19 @@ class ProjectPaperTableRepo(
             it[ProjectPaperTable.decision] = decision
         }
     }
+
+    override suspend fun getLaterProjectPapers(projectId: UUID, localPaperId: Long, stage: Long): List<ProjectPaper> =
+        db.query {
+            ProjectPaperTable
+                .selectAll()
+                .where {
+                    (ProjectPaperTable.projectId eq projectId) and
+                        (
+                            (ProjectPaperTable.stage eq stage and (ProjectPaperTable.localPaperId greater localPaperId))
+                                or (ProjectPaperTable.stage greater stage)
+                            )
+                }
+                .orderBy(ProjectPaperTable.stage to SortOrder.ASC, ProjectPaperTable.localPaperId to SortOrder.ASC)
+                .map { it.toProjectPaper() }
+        }
 }
