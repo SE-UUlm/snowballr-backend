@@ -11,6 +11,7 @@ import snowballr.Base
 import snowballr.CriterionOuterClass
 import snowballr.PaperOuterClass.Paper
 import snowballr.ProjectOuterClass
+import snowballr.ReviewOuterClass
 import snowballr.UserOuterClass
 
 /**
@@ -55,6 +56,8 @@ fun <T> validateRequest(request: T): EitherNel<ValidationIssue, Unit> = when (re
     // Criterion
     is CriterionOuterClass.Criterion.Create -> CriterionValidator.validateCreateRequest(request)
     is CriterionOuterClass.Criterion.Update -> CriterionValidator.validateUpdateRequest(request)
+    // Review
+    is ReviewOuterClass.Review.Create -> ReviewValidator.validateCreateRequest(request)
     // Base
     is Base.Id -> BaseValidator.validateId(request)
     is Base.Email -> BaseValidator.validateEmail(request)
