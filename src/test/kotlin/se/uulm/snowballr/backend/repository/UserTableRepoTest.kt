@@ -98,6 +98,21 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
     }
 
     @Nested
+    inner class DoesUserExitsById {
+        @Test
+        fun `When a user with the given id exists, then true is returned`() = runTest {
+            val userId = insertUserAndGetId()
+
+            assertTrue(repo.doesUserExistById(userId))
+        }
+
+        @Test
+        fun `When a user with the given id does not exist, then false is returned`() = runTest {
+            assertFalse(repo.doesUserExistByEmail(UUID.randomUUID().toString()))
+        }
+    }
+
+    @Nested
     inner class DoesUserExistByEmail {
         @Test
         fun `When a user with the given email exists, then true is returned`() = runTest {

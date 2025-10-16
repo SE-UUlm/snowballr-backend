@@ -2,8 +2,10 @@ package se.uulm.snowballr.backend.repository.association
 
 import org.jetbrains.exposed.sql.JoinType
 import org.jetbrains.exposed.sql.ResultRow
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.alias
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
@@ -77,6 +79,14 @@ interface IProjectMemberTableRepo {
      * @return A list of [ProjectMemberWithUser] objects, each containing a project member and the corresponding user information.
      */
     suspend fun getProjectMembersWithUsers(projectId: UUID): List<ProjectMemberWithUser>
+
+    /**
+     * Removes a project member with the given [userId] from the project with the given [projectId].
+     *
+     * @param projectId The unique identifier of the project whose member should be removed.
+     * @param userId The unique identifier of the user, who should be removed.
+     */
+    suspend fun removeProjectMember(projectId: UUID, userId: UUID)
 }
 
 /**
@@ -173,5 +183,12 @@ class ProjectMemberTableRepo(
             .selectAll()
             .where { ProjectMemberTable.projectId eq projectId }
             .map { it.toProjectMemberWithUser() }
+    }
+
+    override suspend fun removeProjectMember(projectId: UUID, userId: UUID) {
+        db.query {
+            ProjectMemberTable
+                .deleteWhere { (ProjectMemberTable.projectId eq projectId) and (ProjectMemberTable.userId eq userId) }
+        }
     }
 }

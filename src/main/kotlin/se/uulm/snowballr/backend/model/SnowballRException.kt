@@ -55,7 +55,7 @@ sealed class SnowballRException(
     )
 
     /**
-     * Represents a [NotFoundException] indicating that a [User] could not be found by its identifier, i.e., UUID or email address.
+     * Represents a [NotFoundException] indicating that a [User] could not be found by its identifier, i.e., UUID, or email address.
      *
      * @param entityId The identifier of the missing [User].
      * @param identifierType The type of the entity's identifier. Defaults to [IdentifierType.ID].
@@ -148,6 +148,33 @@ sealed class SnowballRException(
             accessType: AccessType = AccessType.READ,
             currentUserId: String,
         ) : UnauthorizedException(currentUserId, "all ${accessedEntityType.plural}.", accessType)
+
+        /**
+         * Represents an [UnauthorizedException] that occurs when the current user performs an action on an entity.
+         *
+         * @param accessedEntityType The type of entity that the action was attempted on, represented as [EntityType].
+         * @param accessedEntityId The unique identifier of the entity being accessed.
+         * @param accessType The type of access being attempted, such as READ, CREATE, UPDATE, or DELETE.
+         *                   Defaults to [AccessType.DELETE].
+         * @param currentUserId The identifier of the user attempting the unauthorized action.
+         * @param identifierType The type of identifier used for the entity, typically from [IdentifierType].
+         *                       Defaults to [IdentifierType.ID].
+         */
+        class Action(
+            accessedEntityType: EntityType,
+            accessedEntityId: String,
+            accessType: AccessType = AccessType.DELETE,
+            currentUserId: String,
+            identifierType: IdentifierType = IdentifierType.ID,
+        ) : UnauthorizedException(
+            currentUserId,
+            "something ${if (accessType in listOf(AccessType.DELETE, AccessType.READ)) {
+                "from"
+            } else {
+                "in"
+            }} ${accessedEntityType.singular} with ${identifierType.displayName} '$accessedEntityId'.",
+            accessType,
+        )
     }
 
     /**

@@ -72,15 +72,6 @@ object ProjectValidator {
         ) { _, _, _, _, _ -> }
     }
 
-    fun validateInviteRequest(request: Project.Member.Invite): EitherNel<ValidationIssue, Unit> = either {
-        ensureIdValidity("project_id", request.projectId)
-        ensureEmailValidity(request.userEmail)
-    }.toEitherNel()
-
-    fun validateAcceptRequest(request: Project.Member.Accept): EitherNel<ValidationIssue, Unit> = either {
-        ensureFieldNonBlank("token", request.token)
-    }.toEitherNel()
-
     fun validateGetInformationRequest(request: Project.Information.Get): EitherNel<ValidationIssue, Unit> = either {
         // Validate the field mask
         val fieldMaskResult = either {
@@ -94,12 +85,6 @@ object ProjectValidator {
 
         either { ensureIdValidity("project_id", request.projectId) }.toEitherNel().bind()
     }
-
-    fun validateMemberUpdateRequest(request: Project.Member.Update): EitherNel<ValidationIssue, Unit> = either {
-        ensureIdValidity("project_id", request.projectId)
-        ensureIdValidity("user_id", request.userId)
-        ensureEnumNotUnspecified("new_role", request.newRole)
-    }.toEitherNel()
 
     fun validateGetDecisionStatisticsRequest(
         request: Project.Information.DecisionStatistics.Get,

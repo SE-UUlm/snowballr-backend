@@ -261,7 +261,7 @@ class SnowballRServer(
             mainService.getProjectMembers(request)
 
         override suspend fun removeProjectMember(request: ProjectOuterClass.Project.Member.Remove): Base.Nothing =
-            super.removeProjectMember(request)
+            mainService.removeProjectMember(request)
 
         override suspend fun getAllProjects(request: Base.Nothing): ProjectOuterClass.Project.List =
             mainService.getAllProjects()
