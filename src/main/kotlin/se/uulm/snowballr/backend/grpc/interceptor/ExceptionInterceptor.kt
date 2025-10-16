@@ -84,6 +84,7 @@ private class ExceptionCall<ReqT, RespT>(
                 is SnowballRException.StageNotFoundException -> Status.NOT_FOUND
                 is SnowballRException.NotFoundException -> Status.NOT_FOUND
                 is SnowballRException.DuplicateEntityException -> Status.ALREADY_EXISTS
+                is SnowballRException.DuplicateReviewException -> Status.ALREADY_EXISTS
                 is SnowballRException.UnauthorizedException -> Status.PERMISSION_DENIED
                 is SnowballRException.FailedPreconditionException -> Status.FAILED_PRECONDITION
                 is SnowballRException.EntityNotPersistedException -> Status.INTERNAL

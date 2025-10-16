@@ -87,6 +87,17 @@ sealed class SnowballRException(
     )
 
     /**
+     * Represents an exception that occurs when a user attempts to review a project paper that has already been reviewed by this user.
+     *
+     * @param projectPaperId The ID of the project paper that has already been reviewed.
+     * @param userId The ID of the user who has already reviewed the project paper.
+     */
+    class DuplicateReviewException(
+        projectPaperId: String,
+        userId: String,
+    ) : SnowballRException("Project paper with ID '$projectPaperId' was already reviewed by user with ID '$userId'.")
+
+    /**
      * Represents an exception that occurs when an entity creation was triggered, but it couldn't be fetched afterward.
      *
      * @param entityType The type of the entity that was not persisted.
