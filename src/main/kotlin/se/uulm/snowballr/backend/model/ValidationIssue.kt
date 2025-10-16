@@ -147,3 +147,41 @@ data class InvalidFieldMask(val fieldMask: String?) : ValidationIssue {
             "corresponds to a field that cannot be changed."
     }
 }
+
+/**
+ * Represents a validation issue where a list field exceeds its maximum allowed length.
+ *
+ * @property name The name of the list field that exceeded the maximum length.
+ * @property maxLength The maximum allowed length for the list field.
+ */
+data class TooLongList(val name: String, val maxLength: Int) : ValidationIssue {
+    override fun toString(): String = "The list '$name' must not contain more than $maxLength elements."
+}
+
+/**
+ * Represents a validation issue where an ORCID has an invalid format.
+ */
+data class InvalidOrcid(val orcid: String, val reason: Reason) : ValidationIssue {
+    override fun toString(): String = "The ORCID '$orcid' is invalid: ${reason.message}"
+
+    /**
+     * Lists possible reasons for ORCID invalidity.
+     */
+    enum class Reason(val message: String) {
+        INVALID_FORMAT("The ORCID must be a 16-digit identifier, split into four groups separated by hyphens"),
+        INVALID_CHECK_DIGIT("The ORCID must have a valid check digit"),
+    }
+}
+
+/**
+ * Represents a composite validation issue that aggregates multiple individual [ValidationIssue]s.
+ *
+ * This is useful for scenarios where multiple validation errors need to be reported together,
+ * providing a comprehensive overview of all issues encountered during the validation process.
+ *
+ * @property baseMessage A general message summarizing the composite issue.
+ * @property issues A list of individual [ValidationIssue]s that make up the composite issue.
+ */
+data class CompositeIssue(val baseMessage: String, val issues: List<ValidationIssue>) : ValidationIssue {
+    override fun toString(): String = "$baseMessage: ${issues.joinToString("; ")}"
+}

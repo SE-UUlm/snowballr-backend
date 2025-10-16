@@ -1,5 +1,9 @@
 package se.uulm.snowballr.backend.repository.association
 
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.deleteWhere
+import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.dto.Author
@@ -23,6 +27,22 @@ interface IAuthorOfPaperTableRepo {
      * @param paperId The ID of the paper for which the authors should be retrieved.
      */
     suspend fun getAuthorsOfPaperById(paperId: UUID): List<Author>
+
+    /**
+     * Adds an author to a paper.
+     *
+     * @param authorId The ID of the author to be added.
+     * @param paperId The ID of the paper to which the author should be added.
+     */
+    suspend fun addAuthorToPaper(authorId: UUID, paperId: UUID)
+
+    /**
+     * Removes an author from a paper.
+     *
+     * @param authorId The ID of the author to be removed.
+     * @param paperId The ID of the paper from which the author should be removed.
+     */
+    suspend fun removeAuthorFromPaper(authorId: UUID, paperId: UUID)
 }
 
 /**
@@ -43,5 +63,20 @@ class AuthorOfPaperTableRepo(
             .where { AuthorOfPaperTable.paperId eq paperId }
             .map { it.toAuthor() }
             .toList()
+    }
+
+    override suspend fun addAuthorToPaper(authorId: UUID, paperId: UUID) = db.query {
+        AuthorOfPaperTable.insert {
+            it[AuthorOfPaperTable.authorId] = authorId
+            it[AuthorOfPaperTable.paperId] = paperId
+        }
+        Unit
+    }
+
+    override suspend fun removeAuthorFromPaper(authorId: UUID, paperId: UUID) = db.query {
+        AuthorOfPaperTable.deleteWhere {
+            (AuthorOfPaperTable.paperId eq paperId) and (AuthorOfPaperTable.authorId eq authorId)
+        }
+        Unit
     }
 }
