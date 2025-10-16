@@ -5,18 +5,22 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertPaperAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectPaperAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertReviewAndGetId
+import se.uulm.snowballr.backend.repository.RepositoryHelper.insertUserAndGetId
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.ReviewTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.utils.assertResultFailure
 import se.uulm.snowballr.backend.utils.assertResultSuccess
+import snowballr.ReviewOuterClass.Review
 import snowballr.ReviewOuterClass.ReviewDecision
+import java.sql.SQLException
 import java.util.UUID
 
 class ReviewTableRepoTest : RepositoryTest(arrayOf(ReviewTable, ProjectTable, ProjectPaperTable, PaperTable), true) {
@@ -109,5 +113,54 @@ class ReviewTableRepoTest : RepositoryTest(arrayOf(ReviewTable, ProjectTable, Pr
                 assertThat(reviews).anyMatch { it.id == reviewId1 }
                 assertThat(reviews).noneMatch { it.id == reviewId2 }
             }
+    }
+
+    @Nested
+    inner class CreateReview {
+        private fun createReviewRequest(projectPaperId: UUID) = Review.Create.newBuilder()
+            .setProjectPaperId(projectPaperId.toString())
+            .setDecision(ReviewDecision.REVIEW_DECISION_ACCEPTED)
+            .build()
+
+        @Test
+        fun `When a review is created, then the correct review is returned`() = runTest {
+            val projectId = insertProjectAndGetId(createdBy = testUserId)
+            val paperId = insertPaperAndGetId()
+            val projectPaperId =
+                insertProjectPaperAndGetId(paperId = paperId, projectId = projectId, createdBy = testUserId)
+            val userId = insertUserAndGetId(email = "existing.reviewer@example.com")
+
+            val review = repo.createReview(createReviewRequest(projectPaperId), userId)
+
+            assertEquals(projectPaperId, review.projectPaperId)
+            assertEquals(ReviewDecision.REVIEW_DECISION_ACCEPTED, review.decision)
+            assertEquals(userId, review.userId)
+        }
+
+        @Test
+        fun `When a review is created, but the assigned user does not exist, then a SQLException is thrown`() =
+            runTest {
+                val projectId = insertProjectAndGetId(createdBy = testUserId)
+                val paperId = insertPaperAndGetId()
+                val projectPaperId =
+                    insertProjectPaperAndGetId(paperId = paperId, projectId = projectId, createdBy = testUserId)
+
+                assertThrows<SQLException> { repo.createReview(createReviewRequest(projectPaperId), UUID.randomUUID()) }
+            }
+
+        @Test
+        fun `When a review is created, but the user already reviewed this project paper, then a SQLException is thrown`() =
+            runTest {
+                val projectId = insertProjectAndGetId(createdBy = testUserId)
+                val paperId = insertPaperAndGetId()
+                val projectPaperId =
+                    insertProjectPaperAndGetId(paperId = paperId, projectId = projectId, createdBy = testUserId)
+                val userId = insertUserAndGetId(email = "double.reviewing.user@example.com")
+                insertReviewAndGetId(projectPaperId, userId)
+
+                assertThrows<SQLException> { repo.createReview(createReviewRequest(projectPaperId), userId) }
+            }
+
+        // TODO: (question for reviewer): Check whether the selected criteria are correctly stored for the review
     }
 }
