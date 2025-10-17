@@ -117,6 +117,17 @@ object PaperValidator {
         issues.reduceOrNull { acc, nel -> acc + nel }?.let { raise(it) }
     }
 
+    /**
+     * Checks whether the given path is included in the selected fields or if no fields are selected.
+     *
+     * Either use this with a set of selected fields from a field mask, or an empty set to indicate that all fields are
+     * selected, i.e., no field mask was provided.
+     *
+     * @param selectedFields The set of selected field paths.
+     * @param path The specific field path to check.
+     * @return `true` if the selected fields are empty or if the path is included in the selected fields; `false`
+     * otherwise.
+     */
     private fun hasPathOrIsEmpty(selectedFields: Set<String>, path: String) =
         selectedFields.isEmpty() || path in selectedFields
 }
