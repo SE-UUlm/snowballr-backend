@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.service
 import com.google.protobuf.util.FieldMaskUtil
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.SnowballRException.DuplicateEntityException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.Author
 import se.uulm.snowballr.backend.model.dto.Paper
@@ -92,7 +93,13 @@ class PaperService(
         return repo.updatePaper(request).toGrpcPaper()
     }
 
-    override suspend fun createPaper(request: GrpcPaper): GrpcPaper = repo.createPaper(request).toGrpcPaper()
+    override suspend fun createPaper(request: GrpcPaper): GrpcPaper {
+        if (repo.doesPaperExistByExternalId(request.externalId)) {
+            throw DuplicateEntityException(EntityType.PAPER, request.externalId)
+        }
+
+        return repo.createPaper(request).toGrpcPaper()
+    }
 
     /**
      * Retrieves a list of reference papers based on the provided paper ID and a specified function for fetching

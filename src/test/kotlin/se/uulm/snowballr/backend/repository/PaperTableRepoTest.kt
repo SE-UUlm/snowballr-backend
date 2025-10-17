@@ -86,6 +86,28 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
     }
 
     @Nested
+    inner class DoesPaperExistByExternalId {
+        @Test
+        fun `When a paper with the given external id exists, then true is returned`() = runTest {
+            val externalId = "ExternalId"
+            insertPaperAndGetId(externalId = externalId)
+
+            val isPaperExistent = repo.doesPaperExistByExternalId(externalId)
+
+            assertTrue(isPaperExistent)
+        }
+
+        @Test
+        fun `When a paper with the given external id does not exist, then false returned`() = runTest {
+            val externalId = "NonExistentExternalId"
+
+            val isPaperExistent = repo.doesPaperExistByExternalId(externalId)
+
+            assertFalse(isPaperExistent)
+        }
+    }
+
+    @Nested
     inner class CreatePaper {
         @Test
         fun `When a paper is created, then the created paper is returned`() = runTest {

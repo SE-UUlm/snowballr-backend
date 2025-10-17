@@ -27,9 +27,14 @@ interface IPaperTableRepo {
     suspend fun getPaperById(id: UUID): Result<Paper>
 
     /**
-     * @return whether the paper with the passed [id] exists.
+     * Checks whether the paper with the passed [id] exists.
      */
     suspend fun doesPaperExistById(id: UUID): Boolean
+
+    /**
+     * Checks whether a paper with the passed [externalId] exists.
+     */
+    suspend fun doesPaperExistByExternalId(externalId: String): Boolean
 
     /**
      * Creates a new paper in the database with the provided values.
@@ -70,6 +75,10 @@ class PaperTableRepo(
 
     override suspend fun doesPaperExistById(id: UUID): Boolean = db.query {
         PaperTable.doesEntityExistById(id)
+    }
+
+    override suspend fun doesPaperExistByExternalId(externalId: String): Boolean = db.query {
+        PaperTable.doesEntityExist { PaperTable.externalId eq externalId }
     }
 
     override suspend fun createPaper(request: GrpcPaper): Paper = db.query {
