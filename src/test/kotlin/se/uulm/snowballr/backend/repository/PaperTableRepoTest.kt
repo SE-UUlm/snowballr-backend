@@ -109,17 +109,19 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
 
     @Nested
     inner class CreatePaper {
+        fun getExamplePaperRequest(externalId: String = "ExternalId"): Paper = Paper.newBuilder()
+            .setExternalId(externalId)
+            .setTitle("Title")
+            .setAbstrakt("Abstract")
+            .setYear(2025)
+            .setPublisher("Publisher")
+            .setPublicationName("PublicationName")
+            .setPublicationType("PublicationType")
+            .build()
+
         @Test
         fun `When a paper is created, then the created paper is returned`() = runTest {
-            val request = Paper.newBuilder()
-                .setExternalId("ExternalId")
-                .setTitle("Title")
-                .setAbstrakt("Abstract")
-                .setYear(2025)
-                .setPublisher("Publisher")
-                .setPublicationName("PublicationName")
-                .setPublicationType("PublicationType")
-                .build()
+            val request = getExamplePaperRequest()
 
             val start = OffsetDateTime.now()
             val createdPaper = repo.createPaper(request)
@@ -147,15 +149,7 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
                 val externalId = "ExternalId"
                 insertPaperAndGetId(externalId = externalId)
 
-                val request = Paper.newBuilder()
-                    .setExternalId(externalId)
-                    .setTitle("Title")
-                    .setAbstrakt("Abstract")
-                    .setYear(2025)
-                    .setPublisher("Publisher")
-                    .setPublicationName("PublicationName")
-                    .setPublicationType("PublicationType")
-                    .build()
+                val request = getExamplePaperRequest(externalId = externalId)
 
                 assertThrows<SQLException> { repo.createPaper(request) }
             }
@@ -163,15 +157,7 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
         @Test
         fun `When a paper is created with an empty external ID, then the paper is created with a null external ID`() =
             runTest {
-                val request = Paper.newBuilder()
-                    .setExternalId("")
-                    .setTitle("Title")
-                    .setAbstrakt("Abstract")
-                    .setYear(2025)
-                    .setPublisher("Publisher")
-                    .setPublicationName("PublicationName")
-                    .setPublicationType("PublicationType")
-                    .build()
+                val request = getExamplePaperRequest(externalId = "")
 
                 val createdPaper = repo.createPaper(request)
 
