@@ -55,6 +55,7 @@ object PaperValidator {
             { ensureIdValidity("id", paper.id) },
             {
                 if (has("paper.external_id")) {
+                    ensureFieldEmptyOrNonBlank("external_id", paper.externalId)
                     ensureFieldLength("external_id", paper.externalId, EXTERNAL_ID_MAX_LENGTH)
                 }
             },

@@ -263,6 +263,13 @@ class PaperValidatorTest {
             .setPaper(validPaperBuilder)
             .setMask(validFieldMask)
 
+        private fun getExampleRequest(paper: Paper? = null, paths: List<String>? = null): Paper.Update {
+            val builder = validUpdateRequestBuilder
+            if (paper != null) builder.setPaper(paper)
+            if (paths != null) builder.setMask(FieldMaskUtil.fromStringList(paths))
+            return builder.build()
+        }
+
         @Test
         fun `When a valid request is validated, then no issue is returned`() {
             val request = validUpdateRequestBuilder.build()
@@ -280,9 +287,7 @@ class PaperValidatorTest {
             paths: List<String>,
             @Suppress("unused") testNameDescription: String,
         ) {
-            val request = validUpdateRequestBuilder
-                .setMask(FieldMaskUtil.fromStringList(paths))
-                .build()
+            val request = getExampleRequest(paths = paths)
 
             val result = validateRequest(request)
 
@@ -291,9 +296,8 @@ class PaperValidatorTest {
 
         @Test
         fun `When an invalid ID is validated, then the 'InvalidId' issue is returned`() {
-            val request = validUpdateRequestBuilder
-                .setPaper(validPaperBuilder.setId("invalid-id"))
-                .build()
+            val paper = validPaperBuilder.setId("invalid-id").build()
+            val request = getExampleRequest(paper)
 
             val result = validateRequest(request)
 
@@ -309,11 +313,8 @@ class PaperValidatorTest {
         ) {
             val fieldDescriptor = Paper.getDescriptor().findFieldByName(fieldName)
             val paper = validPaperBuilder.setField(fieldDescriptor, " ").build()
-            val fieldMask = if (isFieldInMask) "paper.$fieldName" else "paper.id"
-            val request = validUpdateRequestBuilder
-                .setPaper(paper)
-                .setMask(FieldMaskUtil.fromStringList(listOf(fieldMask)))
-                .build()
+            val path = if (isFieldInMask) "paper.$fieldName" else "paper.id"
+            val request = getExampleRequest(paper, listOf(path))
 
             val result = validateRequest(request)
 
@@ -334,11 +335,8 @@ class PaperValidatorTest {
         ) {
             val fieldDescriptor = Paper.getDescriptor().findFieldByName(fieldName)
             val paper = validPaperBuilder.setField(fieldDescriptor, "a".repeat(maxLength + 1)).build()
-            val fieldMask = if (isFieldInMask) "paper.$fieldName" else "paper.id"
-            val request = validUpdateRequestBuilder
-                .setPaper(paper)
-                .setMask(FieldMaskUtil.fromStringList(listOf(fieldMask)))
-                .build()
+            val path = if (isFieldInMask) "paper.$fieldName" else "paper.id"
+            val request = getExampleRequest(paper, listOf(path))
 
             val result = validateRequest(request)
 
@@ -352,12 +350,7 @@ class PaperValidatorTest {
         @Test
         fun `When a too low year field is validated, then an 'OutOfRangeValue' issue is returned`() {
             val paper = validPaperBuilder.setYear(-1).build()
-            val fieldMask = FieldMaskUtil.fromStringList(listOf("paper.year"))
-            val request = validUpdateRequestBuilder
-                .setPaper(paper)
-                .setMask(fieldMask)
-                .build()
-
+            val request = getExampleRequest(paper, listOf("paper.year"))
             val result = validateRequest(request)
 
             assertInvalidResult<OutOfRangeValue<Int>>(result)
@@ -366,11 +359,7 @@ class PaperValidatorTest {
         @Test
         fun `When a too high year field is validated, then an 'OutOfRangeValue' issue is returned`() {
             val paper = validPaperBuilder.setYear(LocalDate.now().year + 2).build()
-            val fieldMask = FieldMaskUtil.fromStringList(listOf("paper.year"))
-            val request = validUpdateRequestBuilder
-                .setPaper(paper)
-                .setMask(fieldMask)
-                .build()
+            val request = getExampleRequest(paper, listOf("paper.year"))
 
             val result = validateRequest(request)
 
@@ -389,11 +378,7 @@ class PaperValidatorTest {
                 )
             }
             val paper = validPaperBuilder.clearAuthors().addAllAuthors(authors).build()
-            val fieldMask = FieldMaskUtil.fromStringList(listOf("paper.authors"))
-            val request = validUpdateRequestBuilder
-                .setPaper(paper)
-                .setMask(fieldMask)
-                .build()
+            val request = getExampleRequest(paper, listOf("paper.authors"))
 
             val result = validateRequest(request)
 
@@ -403,11 +388,7 @@ class PaperValidatorTest {
         @Test
         fun `When the authors list is empty, then no issue is returned`() {
             val paper = validPaperBuilder.clearAuthors().build()
-            val fieldMask = FieldMaskUtil.fromStringList(listOf("paper.authors"))
-            val request = validUpdateRequestBuilder
-                .setPaper(paper)
-                .setMask(fieldMask)
-                .build()
+            val request = getExampleRequest(paper, listOf("paper.authors"))
 
             val result = validateRequest(request)
 
@@ -424,11 +405,7 @@ class PaperValidatorTest {
                 },
             )
             val paper = validPaperBuilder.clearAuthors().addAllAuthors(authors).build()
-            val fieldMask = FieldMaskUtil.fromStringList(listOf("paper.authors"))
-            val request = validUpdateRequestBuilder
-                .setPaper(paper)
-                .setMask(fieldMask)
-                .build()
+            val request = getExampleRequest(paper, listOf("paper.authors"))
 
             val result = validateRequest(request)
 
@@ -438,6 +415,26 @@ class PaperValidatorTest {
             val compositeIssue = issues[0]
             assertIs<CompositeIssue>(compositeIssue)
             assertThat(compositeIssue.toString()).startsWith("Issues of author at index 0")
+        }
+
+        @Test
+        fun `When the externalId is empty, then no issue is returned`() {
+            val paper = validPaperBuilder.setExternalId("").build()
+            val request = getExampleRequest(paper, listOf("paper.external_id"))
+
+            val result = validateRequest(request)
+
+            EitherAssert.assertThat(result).isRight()
+        }
+
+        @Test
+        fun `When the externalId is blank, then a 'BlankField' issue is returned`() {
+            val paper = validPaperBuilder.setExternalId("   ").build()
+            val request = getExampleRequest(paper, listOf("paper.external_id"))
+
+            val result = validateRequest(request)
+
+            assertInvalidResult<BlankField>(result)
         }
     }
 }

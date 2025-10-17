@@ -137,6 +137,24 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
 
                 assertThrows<SQLException> { repo.createPaper(request) }
             }
+
+        @Test
+        fun `When a paper is created with an empty external ID, then the paper is created with a null external ID`() =
+            runTest {
+                val request = Paper.newBuilder()
+                    .setExternalId("")
+                    .setTitle("Title")
+                    .setAbstrakt("Abstract")
+                    .setYear(2025)
+                    .setPublisher("Publisher")
+                    .setPublicationName("PublicationName")
+                    .setPublicationType("PublicationType")
+                    .build()
+
+                val createdPaper = repo.createPaper(request)
+
+                assertThat(createdPaper.externalId).isNull()
+            }
     }
 
     @Nested

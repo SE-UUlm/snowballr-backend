@@ -75,7 +75,7 @@ class PaperTableRepo(
     override suspend fun createPaper(request: GrpcPaper): Paper = db.query {
         PaperTable.insertAndGet(ResultRow::toPaper, EntityType.PAPER) {
             it[title] = request.title
-            it[externalId] = request.externalId
+            it[externalId] = request.externalId.ifBlank { null }
             it[abstract] = request.abstrakt
             it[year] = request.year
             it[publisher] = request.publisher
