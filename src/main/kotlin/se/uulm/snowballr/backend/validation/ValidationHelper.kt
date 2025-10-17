@@ -41,6 +41,13 @@ fun Raise<ValidationIssue>.ensureFieldNonBlank(name: String, value: String) =
     ensure(value.isNotBlank()) { BlankField(name) }
 
 /**
+ * Ensures that the given field value is either empty or non-blank (i.e., it contains at least one non-whitespace
+ * character). If the value is non-empty and blank, a [BlankField] validation issue is raised.
+ */
+fun Raise<ValidationIssue>.ensureFieldEmptyOrNonBlank(name: String, value: String) =
+    ensure(value.isEmpty() || value.isNotBlank()) { BlankField(name) }
+
+/**
  * Ensures that the given field value does not exceed the specified maximum length.
  * If the value exceeds the maximum length, a [TooLongField] validation issue is raised.
  *

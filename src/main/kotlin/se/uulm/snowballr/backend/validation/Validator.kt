@@ -61,6 +61,7 @@ fun <T> validateRequest(request: T): EitherNel<ValidationIssue, Unit> = when (re
     is Base.Nothing -> Either.Right(Unit)
     // Paper
     is Paper.Update -> PaperValidator.validateUpdateRequest(request)
+    is Paper -> PaperValidator.validateCreateRequest(request)
     else -> Either.Left(nonEmptyListOf(UnknownRequest))
 }
 
