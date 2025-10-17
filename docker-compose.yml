@@ -14,8 +14,6 @@ services:
             test: "pg_isready -U postgres"
             start_period: 4s # wait 4s to let db get ready for accepting connections
             start_interval: 2s # start first healthcheck after 2s
-        networks:
-            - db_network
 
     # Local Backend + Proxy (profile: default)
     backend-local:
@@ -48,9 +46,6 @@ services:
         healthcheck:
             start_period: 4s # wait 4s to let backend get ready for accepting connections
             start_interval: 2s # start first healthcheck after 2s
-        networks:
-            - db_network
-            - grpc_network
 
     proxy-local:
         profiles: [ "" ]
@@ -68,8 +63,6 @@ services:
         depends_on:
             backend-local:
                 condition: service_healthy
-        networks:
-            - grpc_network
 
     # Registry Backend + Proxy (profile: registry)
     backend-registry:
@@ -101,9 +94,6 @@ services:
         healthcheck:
             start_period: 4s # wait 4s to let backend get ready for accepting connections
             start_interval: 2s # start first healthcheck after 2s
-        networks:
-            - db_network
-            - grpc_network
 
     proxy-registry:
         profiles: [ "registry" ]
@@ -121,8 +111,6 @@ services:
         depends_on:
             backend-registry:
                 condition: service_healthy
-        networks:
-            - grpc_network
 
     # Backend only (profile: backend-only)
     backend:
@@ -152,9 +140,6 @@ services:
         healthcheck:
             start_period: 4s # wait 4s to let backend get ready for accepting connections
             start_interval: 2s # start first healthcheck after 2s
-        networks:
-            - db_network
-            - grpc_network
 
     # Proxy only (profile: proxy-only)
     proxy:
@@ -166,7 +151,7 @@ services:
             - "${WEB_PORT:-8081}:${WEB_PORT:-8081}"
         command:
             # Point to the backend on the machine's host
-            - --backend_addr=host.docker.internal:${PORT:-8080}
+            - --backend_addr=backend:${PORT:-8080}
             - --allow_all_origins # Crucial for local dev where frontend is on different origin
             - --run_tls_server=false # Don't require TLS
             - --server_http_debug_port=${WEB_PORT:-8081} # Proxy listens on this port inside the container
