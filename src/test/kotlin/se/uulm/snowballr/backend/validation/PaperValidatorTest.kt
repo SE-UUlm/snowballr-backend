@@ -145,7 +145,9 @@ class PaperValidatorTest {
     inner class CreateRequest {
         @Test
         fun `When a valid request is validated, then no issue is returned`() {
-            val request = validPaperBuilder.build()
+            val request = validPaperBuilder
+                .setId("   ") // ID is ignored during creation, so it can be blank
+                .build()
 
             val result = validateRequest(request)
 

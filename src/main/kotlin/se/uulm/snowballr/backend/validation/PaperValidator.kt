@@ -25,7 +25,7 @@ object PaperValidator {
     const val MAX_AUTHOR_COUNT = 500
 
     fun validateCreateRequest(request: Paper): EitherNel<ValidationIssue, Unit> = either {
-        validatePaperProps(request)
+        validatePaperProps(request, ignoreId = true)
         validateAuthors(request)
     }
 
@@ -47,12 +47,20 @@ object PaperValidator {
     }
 
     @Suppress("CognitiveComplexMethod", "kotlin:S3776")
-    private fun Raise<Nel<ValidationIssue>>.validatePaperProps(paper: Paper, selectedFields: Set<String> = emptySet()) {
+    private fun Raise<Nel<ValidationIssue>>.validatePaperProps(
+        paper: Paper,
+        selectedFields: Set<String> = emptySet(),
+        ignoreId: Boolean = false,
+    ) {
         val has = { path: String -> hasPathOrIsEmpty(selectedFields, path) }
 
         @Suppress("NamedArguments")
         zipOrAccumulate(
-            { ensureIdValidity("id", paper.id) },
+            {
+                if (!ignoreId) {
+                    ensureIdValidity("id", paper.id)
+                }
+            },
             {
                 if (has("paper.external_id")) {
                     ensureFieldEmptyOrNonBlank("external_id", paper.externalId)
