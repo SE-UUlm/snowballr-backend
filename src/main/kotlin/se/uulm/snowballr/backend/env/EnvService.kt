@@ -4,38 +4,56 @@ import io.github.cdimascio.dotenv.dotenv
 
 interface IEnvService {
     /**
-     * Returns the value of the env variable with the specified [key] or throws an
-     * [EnvVariableNotFoundException] if the env variable couldn't be found.
+     * Returns the value of the environment variable with the specified [key].
+     *
+     * @param key Name of the environment variable to read.
+     * @return The value of the environment variable.
+     * @throws EnvVariableNotFoundException if the environment variable is not set.
      */
     operator fun get(key: String): String
 
     /**
-     * Returns the value of the env variable with the specified [key] or returns the [default]
-     * value if the env variable couldn't be found.
+     * Returns the value of the environment variable with the specified [key].
+     *
+     * @param key Name of the environment variable to read.
+     * @param default The value to return if the environment variable is not set.
+     * @return The value of the environment variable, or [default] if not found.
      */
     fun getOrDefault(key: String, default: String): String
 
     /**
-     * Returns the value of the env variable with the specified [key] or null if the env variable
-     * couldn't be found.
+     * Returns the value of the environment variable with the specified [key].
+     *
+     * @param key Name of the environment variable to read.
+     * @return The value of the environment variable, or `null` if not found.
      */
     fun getOrNull(key: String): String?
 
     /**
-     * Returns the boolean value of the env variable with the specified [key] or throws an
-     * [EnvVariableNotFoundException] if the env variable couldn't be found or is not a valid boolean.
+     * Returns the boolean value of the environment variable with the specified [key].
+     *
+     * @param key Name of the environment variable to read.
+     * @return The boolean value of the environment variable.
+     * @throws EnvVariableNotFoundException if the variable is not found or is not a valid boolean.
      */
     fun getBoolean(key: String): Boolean
 
     /**
-     * Returns the boolean value of the env variable with the specified [key] or returns the [default]
-     * value if the env variable couldn't be found or is not a valid boolean.
+     * Returns the boolean value of the environment variable with the specified [key].
+     *
+     * @param key Name of the environment variable to read.
+     * @param default The value to return if the environment variable is not set.
+     * @return The boolean value of the environment variable, or [default] if not found.
      */
     fun getBooleanOrDefault(key: String, default: Boolean): Boolean
 
     /**
-     * Retrieves the value of the environment variable identified by [key], or returns [default] if [default]
-     * is non-null. If [default] is null, throws [EnvVariableNotFoundException] if the environment variable is not set.
+     * Retrieves the value of the environment variable identified by [key].
+     *
+     * @param key Name of the environment variable to read.
+     * @param default An optional value to return if the environment variable is not set.
+     * @return The value of the environment variable, or [default] if provided and the variable is not found.
+     * @throws EnvVariableNotFoundException if the environment variable is not set and [default] is `null`.
      */
     fun getRequiredOrDefault(key: String, default: String?): String
 }
