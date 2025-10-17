@@ -6,6 +6,7 @@ import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.update
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
@@ -120,6 +121,14 @@ interface IProjectPaperTableRepo {
      * @return A float between 0.0 and 1.0 representing the project progress.
      */
     suspend fun getProjectProgress(projectId: UUID): Float
+
+    /**
+     * Updates the decision of a project paper.
+     *
+     * @param projectPaperId The unique identifier of the project paper to be updated.
+     * @param decision The new [PaperDecision] to be set.
+     */
+    suspend fun updateProjectPaperDecision(projectPaperId: UUID, decision: PaperDecision): Unit
 }
 
 /**
@@ -132,6 +141,7 @@ interface IProjectPaperTableRepo {
  *
  * @param db The database abstraction used for executing queries within a transaction.
  */
+@Suppress("TooManyFunctions")
 class ProjectPaperTableRepo(
     private val db: IDatabase,
 ) : IProjectPaperTableRepo {
@@ -241,6 +251,12 @@ class ProjectPaperTableRepo(
             }.count()
             val progress = fullyReviewedPapersCount.toFloat() / allPapersCount
             progress
+        }
+    }
+
+    override suspend fun updateProjectPaperDecision(projectPaperId: UUID, decision: PaperDecision): Unit = db.query {
+        ProjectPaperTable.update({ ProjectPaperTable.id eq projectPaperId }) {
+            it[ProjectPaperTable.decision] = decision
         }
     }
 }

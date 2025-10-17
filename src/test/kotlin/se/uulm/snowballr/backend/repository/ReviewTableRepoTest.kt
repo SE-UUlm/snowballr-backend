@@ -29,9 +29,17 @@ import java.sql.SQLException
 import java.util.UUID
 import kotlin.test.assertContains
 
-class ReviewTableRepoTest : RepositoryTest(arrayOf(ReviewTable, ProjectTable, ProjectPaperTable, PaperTable,
-    ReviewHasCriterionTable, CriterionTable
-), true) {
+class ReviewTableRepoTest : RepositoryTest(
+    arrayOf(
+        ReviewTable,
+        ProjectTable,
+        ProjectPaperTable,
+        PaperTable,
+        ReviewHasCriterionTable,
+        CriterionTable,
+    ),
+    true,
+) {
     private val repo = ReviewTableRepo(db)
     private val reviewHasCriterionRepo = ReviewHasCriterionTableRepo(db)
 
@@ -130,7 +138,6 @@ class ReviewTableRepoTest : RepositoryTest(arrayOf(ReviewTable, ProjectTable, Pr
             .setProjectPaperId(projectPaperId.toString())
             .setDecision(ReviewDecision.REVIEW_DECISION_ACCEPTED)
 
-
         @Test
         fun `When a review is created, then the correct review is returned`() = runTest {
             val projectId = insertProjectAndGetId(createdBy = testUserId)
@@ -154,7 +161,9 @@ class ReviewTableRepoTest : RepositoryTest(arrayOf(ReviewTable, ProjectTable, Pr
                 val projectPaperId =
                     insertProjectPaperAndGetId(paperId = paperId, projectId = projectId, createdBy = testUserId)
 
-                assertThrows<SQLException> { repo.createReview(createReviewRequest(projectPaperId).build(), UUID.randomUUID()) }
+                assertThrows<SQLException> {
+                    repo.createReview(createReviewRequest(projectPaperId).build(), UUID.randomUUID())
+                }
             }
 
         @Test
@@ -171,19 +180,24 @@ class ReviewTableRepoTest : RepositoryTest(arrayOf(ReviewTable, ProjectTable, Pr
             }
 
         @Test
-        fun `When a review is created with criteria, then the correct review is created and the criteria are stored correctly`() = runTest {
-            val projectId = insertProjectAndGetId(createdBy = testUserId)
-            val paperId = insertPaperAndGetId()
-            val projectPaperId =
-                insertProjectPaperAndGetId(paperId = paperId, projectId = projectId, createdBy = testUserId)
-            val userId = insertUserAndGetId(email = "reviewing.user.with.criteria@example.com")
-            val selectedCriterion = insertCriterionAndGetId(projectId = projectId, createdBy = testUserId)
+        fun `When a review is created with criteria, then the correct review is created and the criteria are stored correctly`() =
+            runTest {
+                val projectId = insertProjectAndGetId(createdBy = testUserId)
+                val paperId = insertPaperAndGetId()
+                val projectPaperId =
+                    insertProjectPaperAndGetId(paperId = paperId, projectId = projectId, createdBy = testUserId)
+                val userId = insertUserAndGetId(email = "reviewing.user.with.criteria@example.com")
+                val selectedCriterion = insertCriterionAndGetId(projectId = projectId, createdBy = testUserId)
 
-            val review = assertDoesNotThrow { repo.createReview(createReviewRequest(projectPaperId).addSelectedCriteriaIds(selectedCriterion.toString()).build(), userId) }
+                val createReviewWithCriteriaRequest = createReviewRequest(projectPaperId)
+                    .addSelectedCriteriaIds(selectedCriterion.toString())
+                    .build()
 
-            val selectedCriteria = reviewHasCriterionRepo.getSelectedCriteriaIdsForReviewById(review.id)
-            assertThat(selectedCriteria).hasSize(1)
-            assertContains(selectedCriteria, selectedCriterion)
-        }
+                val review = assertDoesNotThrow { repo.createReview(createReviewWithCriteriaRequest, userId) }
+
+                val selectedCriteria = reviewHasCriterionRepo.getSelectedCriteriaIdsForReviewById(review.id)
+                assertThat(selectedCriteria).hasSize(1)
+                assertContains(selectedCriteria, selectedCriterion)
+            }
     }
 }

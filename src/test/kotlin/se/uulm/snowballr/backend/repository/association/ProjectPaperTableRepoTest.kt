@@ -421,4 +421,24 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
             Arguments.of(PaperDecision.PAPER_DECISION_DECLINED, 1.0f),
         )
     }
+
+    @Nested
+    inner class UpdateProjectPaperDecisionTest {
+        @Test
+        fun `When a project paper decision is updated, then the project paper is updated`() = runTest {
+            val projectId = insertProjectAndGetId(createdBy = testUserId)
+            val paperId = insertPaperAndGetId()
+            val projectPaperId = insertProjectPaperAndGetId(
+                paperId,
+                projectId,
+                decision = PaperDecision.PAPER_DECISION_IN_REVIEW,
+                createdBy = testUserId,
+            )
+
+            repo.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_ACCEPTED)
+
+            val projectPaper = assertResultSuccess(repo.getProjectPaperById(projectPaperId))
+            assertEquals(PaperDecision.PAPER_DECISION_ACCEPTED, projectPaper.decision)
+        }
+    }
 }

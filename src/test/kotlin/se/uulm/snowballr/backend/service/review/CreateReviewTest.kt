@@ -95,6 +95,9 @@ class CreateReviewTest : MainServiceTest() {
         coEvery {
             reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(review.id)
         } returns selectedCriteriaIds
+        coEvery {
+            projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_IN_REVIEW)
+        } returns Unit
     }
 
     @ParameterizedTest
@@ -131,6 +134,29 @@ class CreateReviewTest : MainServiceTest() {
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
         assertThrows<UnauthorizedException> { mainService.createReview(validCreateReviewRequest.build()) }
+        coVerify(exactly = 0) { reviewRepoMock.createReview(any(), any()) }
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+        value = [
+            "PROJECT_STATUS_ARCHIVED",
+            "PROJECT_STATUS_DELETED",
+        ],
+    )
+    fun `When the project paper to review is in an inactive project, then a FailedPreconditionException is thrown`(
+        statusName: String,
+    ) = runTest {
+        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+        val project = DataBuilder.createExampleProject(status = ProjectStatus.valueOf(statusName))
+        val projectPaper = DataBuilder.createExampleProjectPaper(id = projectPaperId, projectId = project.id)
+
+        mockCurrentUser(currentUser)
+        coEvery { projectPaperRepoMock.getProjectPaperById(projectPaperId) } returns Result.success(projectPaper)
+        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
+
+        assertThrows<FailedPreconditionException> { mainService.createReview(validCreateReviewRequest.build()) }
         coVerify(exactly = 0) { reviewRepoMock.createReview(any(), any()) }
     }
 
@@ -192,32 +218,12 @@ class CreateReviewTest : MainServiceTest() {
             coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaperId) } returns listOf(reviewByAnotherUser)
             coEvery { reviewRepoMock.createReview(validCreateReviewRequest.build(), currentUser.id) } returns review
             coEvery { reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(review.id) } returns emptyList()
+            coEvery {
+                projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_ACCEPTED)
+            } returns Unit
 
             assertDoesNotThrow { mainService.createReview(validCreateReviewRequest.build()) }
         }
-
-    @ParameterizedTest
-    @CsvSource(
-        value = [
-            "PROJECT_STATUS_ARCHIVED",
-            "PROJECT_STATUS_DELETED",
-        ],
-    )
-    fun `When the project paper to review is in an inactive project, then a FailedPreconditionException is thrown`(
-        statusName: String,
-    ) = runTest {
-        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-        val project = DataBuilder.createExampleProject(status = ProjectStatus.valueOf(statusName))
-        val projectPaper = DataBuilder.createExampleProjectPaper(id = projectPaperId, projectId = project.id)
-
-        mockCurrentUser(currentUser)
-        coEvery { projectPaperRepoMock.getProjectPaperById(projectPaperId) } returns Result.success(projectPaper)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
-        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-
-        assertThrows<FailedPreconditionException> { mainService.createReview(validCreateReviewRequest.build()) }
-        coVerify(exactly = 0) { reviewRepoMock.createReview(any(), any()) }
-    }
 
     @Test
     fun `When the project paper is already finally decided, then a FailedPreconditionException is thrown`() = runTest {
@@ -238,4 +244,107 @@ class CreateReviewTest : MainServiceTest() {
         assertThrows<FailedPreconditionException> { mainService.createReview(validCreateReviewRequest.build()) }
         coVerify(exactly = 0) { reviewRepoMock.createReview(any(), any()) }
     }
+
+    @Test
+    @Suppress("LongMethod")
+    fun `When the project paper is not finally decided, then the paper decision is updated accordingly to the review`() =
+        runTest {
+            val firstReviewer = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+            val secondReviewer = DataBuilder.createExampleUser(
+                email = "second.reviewer@example.com",
+                role = UserRole.USER_ROLE_ADMIN,
+            )
+            val thirdReviewer = DataBuilder.createExampleUser(
+                email = "third.reviewer@example.com",
+                role = UserRole.USER_ROLE_ADMIN,
+            )
+            val project = DataBuilder.createExampleProject()
+            val projectPaper = DataBuilder.createExampleProjectPaper(
+                id = projectPaperId,
+                projectId = project.id,
+                decision = PaperDecision.PAPER_DECISION_UNREVIEWED,
+            )
+
+            mockCurrentUser(firstReviewer)
+            coEvery { projectPaperRepoMock.getProjectPaperById(projectPaperId) } returns Result.success(projectPaper)
+            coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
+            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
+
+            coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaperId) } returns emptyList()
+            val firstReview = DataBuilder.createExampleReview(
+                projectPaperId = projectPaperId,
+                userId = firstReviewer.id,
+                decision = ReviewDecision.REVIEW_DECISION_ACCEPTED,
+            )
+            val createFirstReviewRequest = validCreateReviewRequest.setDecision(
+                ReviewDecision.REVIEW_DECISION_ACCEPTED,
+            ).build()
+            coEvery {
+                reviewRepoMock.createReview(createFirstReviewRequest, firstReviewer.id)
+            } returns firstReview
+            coEvery {
+                reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(firstReview.id)
+            } returns selectedCriteriaIds
+            coEvery {
+                projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_IN_REVIEW)
+            } returns Unit
+
+            assertDoesNotThrow { mainService.createReview(createFirstReviewRequest) }
+
+            mockCurrentUser(secondReviewer)
+            coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaperId) } returns listOf(firstReview)
+            val secondReview = DataBuilder.createExampleReview(
+                projectPaperId = projectPaperId,
+                userId = secondReviewer.id,
+                decision = ReviewDecision.REVIEW_DECISION_DECLINED,
+            )
+            val createSecondReviewRequest = validCreateReviewRequest.setDecision(
+                ReviewDecision.REVIEW_DECISION_DECLINED,
+            ).build()
+            coEvery {
+                reviewRepoMock.createReview(createSecondReviewRequest, secondReviewer.id)
+            } returns secondReview
+            coEvery {
+                reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(secondReview.id)
+            } returns selectedCriteriaIds
+            coEvery {
+                projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_IN_REVIEW)
+            } returns Unit
+
+            assertDoesNotThrow { mainService.createReview(createSecondReviewRequest) }
+
+            mockCurrentUser(thirdReviewer)
+            coEvery {
+                reviewRepoMock.getAllReviewsForProjectPaper(projectPaperId)
+            } returns listOf(firstReview, secondReview)
+            val thirdReview = DataBuilder.createExampleReview(
+                projectPaperId = projectPaperId,
+                userId = thirdReviewer.id,
+                decision = ReviewDecision.REVIEW_DECISION_ACCEPTED,
+            )
+            val createThirdReviewRequest = validCreateReviewRequest.setDecision(
+                ReviewDecision.REVIEW_DECISION_ACCEPTED,
+            ).build()
+            coEvery {
+                reviewRepoMock.createReview(createThirdReviewRequest, thirdReviewer.id)
+            } returns thirdReview
+            coEvery {
+                reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(thirdReview.id)
+            } returns selectedCriteriaIds
+            coEvery {
+                projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_ACCEPTED)
+            } returns Unit
+
+            assertDoesNotThrow { mainService.createReview(createThirdReviewRequest) }
+
+            coVerify(exactly = 2) {
+                projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_IN_REVIEW)
+            }
+            coVerify(exactly = 1) {
+                projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_ACCEPTED)
+            }
+            coVerify(exactly = 0) {
+                projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_DECLINED)
+            }
+        }
 }
