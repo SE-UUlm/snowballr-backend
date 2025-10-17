@@ -8,6 +8,8 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertNotNull
+import org.junit.jupiter.api.assertNull
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
@@ -128,7 +130,7 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
             val end = OffsetDateTime.now()
 
             with(createdPaper) {
-                assertThat(id).isNotNull
+                assertNotNull(id)
                 assertEquals("Title", title)
                 assertEquals("ExternalId", externalId)
                 assertEquals("Abstract", abstract)
@@ -138,8 +140,8 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
                 assertEquals("PublicationName", publicationName)
                 assertThat(fetcherMetadata).isEmpty()
                 assertThat(createdAt).isBetween(start, end)
-                assertThat(modifiedAt).isNull()
-                assertThat(modifiedBy).isNull()
+                assertNull(modifiedAt)
+                assertNull(modifiedBy)
             }
         }
 
@@ -161,7 +163,7 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
 
                 val createdPaper = repo.createPaper(request)
 
-                assertThat(createdPaper.externalId).isNull()
+                assertNull(createdPaper.externalId)
             }
     }
 
