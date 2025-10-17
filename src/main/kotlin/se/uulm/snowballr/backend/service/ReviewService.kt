@@ -2,7 +2,6 @@ package se.uulm.snowballr.backend.service
 
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.SnowballRException
 import se.uulm.snowballr.backend.model.SnowballRException.DuplicateReviewException
 import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
 import se.uulm.snowballr.backend.model.dto.Review
@@ -19,7 +18,6 @@ import se.uulm.snowballr.backend.service.accessrules.checkFor
 import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadProject
 import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadReview
 import se.uulm.snowballr.backend.service.accessrules.isProjectActive
-import se.uulm.snowballr.backend.service.accessrules.orElseThrow
 import snowballr.Base
 import snowballr.ProjectOuterClass.PaperDecision
 import java.util.UUID
@@ -102,9 +100,7 @@ class ReviewService(
         isAllowedToReadProject(projectMemberRepo).checkFor(currentUser, projectPaper.projectId)
 
         val project = projectRepo.getProjectById(projectPaper.projectId).getOrThrow()
-        isProjectActive()
-            .orElseThrow(SnowballRException.EntityNotActiveException(EntityType.PROJECT, project.id.toString()))
-            .checkFor(currentUser, project)
+        isProjectActive().checkFor(currentUser, project)
 
         val reviewsForProjectPaper = repo.getAllReviewsForProjectPaper(projectPaperId)
         val hasUserAlreadyReviewed = reviewsForProjectPaper.any { review -> review.userId == currentUser.id }

@@ -4,6 +4,7 @@ package se.uulm.snowballr.backend.service.accessrules
 
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.SnowballRException.EntityNotActiveException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.Project
@@ -28,12 +29,15 @@ fun isProjectExistent(projectRepo: IProjectTableRepo): AccessRule<UUID> {
 }
 
 /**
- * Check whether the project is active (or active, but settings are locked).
+ * Check whether the project is active (or active, but settings are locked);
+ * otherwise, throws an [EntityNotActiveException].
  */
 @CheckReturnValue
-fun isProjectActive() = AccessRule<Project> { _, project ->
-    project.status == ProjectStatus.PROJECT_STATUS_ACTIVE ||
-        project.status == ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED
+fun isProjectActive(): AccessRule<Project> {
+    return AccessRule<Project> { _, project ->
+        project.status == ProjectStatus.PROJECT_STATUS_ACTIVE ||
+            project.status == ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED
+    }.orElseThrow { _, project -> EntityNotActiveException(EntityType.PROJECT, project.id.toString()) }
 }
 
 /**
