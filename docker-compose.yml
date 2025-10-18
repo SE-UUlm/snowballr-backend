@@ -1,6 +1,7 @@
 services:
-    # PostgreSQL Database
+    # PostgreSQL Database (profile: default, db-only, registry)
     db:
+        profiles: [ "", "db-only", "registry" ]
         image: postgres:16.1-alpine3.19
         restart: always
         environment:
@@ -13,21 +14,30 @@ services:
             test: "pg_isready -U postgres"
             start_period: 4s # wait 4s to let db get ready for accepting connections
             start_interval: 2s # start first healthcheck after 2s
-        networks:
-            - db_network
-        profiles: [ "", "db-only", "registry" ]
 
-    # Use local backend
+    # Local Backend + Proxy (profile: default)
     backend-local:
+        profiles: [ "" ]
         build:
             context: .
         environment:
+            PROFILE: ${PROFILE:-}
             PORT: ${PORT:-8080}
-            LOG_LEVEL: ${LOG_LEVEL:-DEBUG}
-            DATABASE_PASSWORD: ${DATABASE_PASSWORD}
             DATABASE_HOST: db # use db service as db host
-            JWT_PRIVATE_KEY_BASE64: ${JWT_PRIVATE_KEY_BASE64}
-            JWT_PUBLIC_KEY_BASE64: ${JWT_PUBLIC_KEY_BASE64}
+            LOG_LEVEL: ${LOG_LEVEL:-}
+            AUTH_BYPASS_ENABLED: ${AUTH_BYPASS_ENABLED:-}
+            FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-}
+            DATABASE_SEED_USER_ENABLED: ${DATABASE_SEED_USER_ENABLED:-}
+            DATABASE_PASSWORD: ${DATABASE_PASSWORD:-}
+            JWT_PRIVATE_KEY_BASE64: ${JWT_PRIVATE_KEY_BASE64:-}
+            JWT_PUBLIC_KEY_BASE64: ${JWT_PUBLIC_KEY_BASE64:-}
+            SMTP_HOST: ${SMTP_HOST:-}
+            SMTP_PORT: ${SMTP_PORT:-}
+            SMTP_USER: ${SMTP_USER:-}
+            SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+            SMTP_TRANSPORT_LOGGING_ONLY_ENABLED: ${SMTP_TRANSPORT_LOGGING_ONLY_ENABLED:-}
+            SMTP_SENDER_NAME: ${SMTP_SENDER_NAME:-}
+            SMTP_SENDER_EMAIL: ${SMTP_SENDER_EMAIL:-}
         ports:
             - ${PORT:-8080}:${PORT:-8080}
         depends_on:
@@ -36,12 +46,9 @@ services:
         healthcheck:
             start_period: 4s # wait 4s to let backend get ready for accepting connections
             start_interval: 2s # start first healthcheck after 2s
-        networks:
-            - db_network
-            - grpc_network
-        profiles: [ "" ]
 
     proxy-local:
+        profiles: [ "" ]
         build:
             context: .
             dockerfile: Dockerfile.proxy
@@ -56,20 +63,29 @@ services:
         depends_on:
             backend-local:
                 condition: service_healthy
-        networks:
-            - grpc_network
-        profiles: [ "" ]
 
-    # Use the published backend with the specified tag
+    # Registry Backend + Proxy (profile: registry)
     backend-registry:
+        profiles: [ "registry" ]
         image: ghcr.io/se-uulm/snowballr-backend:${BACKEND_TAG:-latest-dev}
         environment:
+            PROFILE: ${PROFILE:-}
             PORT: ${PORT:-8080}
-            LOG_LEVEL: ${LOG_LEVEL:-DEBUG}
-            DATABASE_PASSWORD: ${DATABASE_PASSWORD}
             DATABASE_HOST: db # use db service as db host
-            JWT_PRIVATE_KEY_BASE64: ${JWT_PRIVATE_KEY_BASE64}
-            JWT_PUBLIC_KEY_BASE64: ${JWT_PUBLIC_KEY_BASE64}
+            LOG_LEVEL: ${LOG_LEVEL:-}
+            AUTH_BYPASS_ENABLED: ${AUTH_BYPASS_ENABLED:-}
+            FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-}
+            DATABASE_SEED_USER_ENABLED: ${DATABASE_SEED_USER_ENABLED:-}
+            DATABASE_PASSWORD: ${DATABASE_PASSWORD:-}
+            JWT_PRIVATE_KEY_BASE64: ${JWT_PRIVATE_KEY_BASE64:-}
+            JWT_PUBLIC_KEY_BASE64: ${JWT_PUBLIC_KEY_BASE64:-}
+            SMTP_HOST: ${SMTP_HOST:-}
+            SMTP_PORT: ${SMTP_PORT:-}
+            SMTP_USER: ${SMTP_USER:-}
+            SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+            SMTP_TRANSPORT_LOGGING_ONLY_ENABLED: ${SMTP_TRANSPORT_LOGGING_ONLY_ENABLED:-}
+            SMTP_SENDER_NAME: ${SMTP_SENDER_NAME:-}
+            SMTP_SENDER_EMAIL: ${SMTP_SENDER_EMAIL:-}
         ports:
             - ${PORT:-8080}:${PORT:-8080}
         depends_on:
@@ -78,12 +94,9 @@ services:
         healthcheck:
             start_period: 4s # wait 4s to let backend get ready for accepting connections
             start_interval: 2s # start first healthcheck after 2s
-        networks:
-            - db_network
-            - grpc_network
-        profiles: [ "registry" ]
 
     proxy-registry:
+        profiles: [ "registry" ]
         build:
             context: .
             dockerfile: Dockerfile.proxy
@@ -98,12 +111,39 @@ services:
         depends_on:
             backend-registry:
                 condition: service_healthy
-        networks:
-            - grpc_network
-        profiles: [ "registry" ]
 
-    # Proxy that listens to localhost instead of a service; can be used for local development
+    # Backend only (profile: backend-only)
+    backend:
+        profiles: [ "backend-only" ]
+        build:
+            context: .
+        environment:
+            PROFILE: ${PROFILE:-}
+            PORT: ${PORT:-8080}
+            DATABASE_HOST: ${DATABASE_HOST:-db}
+            LOG_LEVEL: ${LOG_LEVEL:-}
+            AUTH_BYPASS_ENABLED: ${AUTH_BYPASS_ENABLED:-}
+            FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-}
+            DATABASE_SEED_USER_ENABLED: ${DATABASE_SEED_USER_ENABLED:-}
+            DATABASE_PASSWORD: ${DATABASE_PASSWORD:-}
+            JWT_PRIVATE_KEY_BASE64: ${JWT_PRIVATE_KEY_BASE64:-}
+            JWT_PUBLIC_KEY_BASE64: ${JWT_PUBLIC_KEY_BASE64:-}
+            SMTP_HOST: ${SMTP_HOST:-}
+            SMTP_PORT: ${SMTP_PORT:-}
+            SMTP_USER: ${SMTP_USER:-}
+            SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+            SMTP_TRANSPORT_LOGGING_ONLY_ENABLED: ${SMTP_TRANSPORT_LOGGING_ONLY_ENABLED:-}
+            SMTP_SENDER_NAME: ${SMTP_SENDER_NAME:-}
+            SMTP_SENDER_EMAIL: ${SMTP_SENDER_EMAIL:-}
+        ports:
+            - ${PORT:-8080}:${PORT:-8080}
+        healthcheck:
+            start_period: 4s # wait 4s to let backend get ready for accepting connections
+            start_interval: 2s # start first healthcheck after 2s
+
+    # Proxy only (profile: proxy-only)
     proxy:
+        profiles: [ "proxy-only" ]
         build:
             context: .
             dockerfile: Dockerfile.proxy
@@ -111,11 +151,10 @@ services:
             - "${WEB_PORT:-8081}:${WEB_PORT:-8081}"
         command:
             # Point to the backend on the machine's host
-            - --backend_addr=host.docker.internal:${PORT:-8080}
+            - --backend_addr=backend:${PORT:-8080}
             - --allow_all_origins # Crucial for local dev where frontend is on different origin
             - --run_tls_server=false # Don't require TLS
             - --server_http_debug_port=${WEB_PORT:-8081} # Proxy listens on this port inside the container
-        profiles: [ "proxy-only" ]
 
 networks:
     db_network:
