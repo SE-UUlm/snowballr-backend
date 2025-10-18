@@ -14,6 +14,7 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import se.uulm.snowballr.backend.isBetweenWithDelta
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.toGrpcPaper
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertPaperAndGetId
@@ -139,7 +140,7 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
                 assertEquals("PublicationType", publicationType)
                 assertEquals("PublicationName", publicationName)
                 assertThat(fetcherMetadata).isEmpty()
-                assertThat(createdAt).isBetween(start, end)
+                assertThat(createdAt).isBetweenWithDelta(start, end)
                 assertNull(modifiedAt)
                 assertNull(modifiedBy)
             }
@@ -233,7 +234,7 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
                 assertThat(updatedPaper.publicationType).isEqualTo("PublicationType")
             }
 
-            assertThat(updatedPaper.modifiedAt).isBetween(start, end)
+            assertThat(updatedPaper.modifiedAt).isBetweenWithDelta(start, end)
         }
 
         @Test
