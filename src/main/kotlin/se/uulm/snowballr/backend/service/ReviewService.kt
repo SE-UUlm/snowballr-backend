@@ -20,6 +20,7 @@ import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadReview
 import se.uulm.snowballr.backend.service.accessrules.isProjectActive
 import snowballr.Base
 import snowballr.ProjectOuterClass.PaperDecision
+import snowballr.ProjectOuterClass.ReviewDecisionMatrix
 import snowballr.ReviewOuterClass
 import java.util.UUID
 import snowballr.ReviewOuterClass.Review as GrpcReview
@@ -105,16 +106,19 @@ class ReviewService(
      * TODO: Exchange this by loading the decision matrix and calculating the final decision based on the matrix (see #345)
      *
      * @param projectPaperId ID of the project paper for which the final paper decision is to be determined.
+     * @param decisionMatrix Decision matrix of the project, where the project paper is in, that can be used to define
+     * the final paper decision.
      * @param reviews List of reviews to be considered for the final paper decision.
      */
-    @Suppress("MagicNumber")
-    private suspend fun updatePaperDecision(projectPaperId: UUID, reviews: List<Review>) {
-
-        val requiredReviews = 2
+    private suspend fun updatePaperDecision(
+        projectPaperId: UUID,
+        decisionMatrix: ReviewDecisionMatrix,
+        reviews: List<Review>,
+    ) {
         if (reviews.isEmpty()) {
             projectPaperRepo.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_UNREVIEWED)
             return
-        } else if (reviews.size < requiredReviews) {
+        } else if (reviews.size < decisionMatrix.numberOfReviewers) {
             projectPaperRepo.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_IN_REVIEW)
             return
         }
@@ -157,7 +161,7 @@ class ReviewService(
             projectPaper.decision == PaperDecision.PAPER_DECISION_UNREVIEWED
         if (!isPaperNotFinallyDecided) {
             throw FailedPreconditionException(
-                "The project paper must be either unreviewed or still in review." +
+                "The project paper must be either unreviewed or still in review. " +
                     "Finally decided project papers cannot be reviewed anymore.",
             )
         }
@@ -165,10 +169,8 @@ class ReviewService(
         val review = repo.createReview(request, currentUser.id)
         val selectedCriteriaIds = reviewHasCriterionRepo.getSelectedCriteriaIdsForReviewById(review.id)
 
-        updatePaperDecision(projectPaper.id, reviewsForProjectPaper + review)
+        updatePaperDecision(projectPaper.id, project.reviewDecisionMatrix, reviewsForProjectPaper + review)
 
-        // TODO: (question for reviewer): Think about directly injecting the selected criteria ids instead of requesting
-        // them from the repo.
         review.toGrpcReview(selectedCriteriaIds.map(UUID::toString))
     }
 }

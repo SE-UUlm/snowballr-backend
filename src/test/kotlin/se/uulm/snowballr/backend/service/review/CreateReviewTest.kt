@@ -17,6 +17,7 @@ import se.uulm.snowballr.backend.model.SnowballRException.DuplicateReviewExcepti
 import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
+import snowballr.ProjectOuterClass
 import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.ReviewOuterClass
@@ -28,6 +29,9 @@ import kotlin.reflect.KFunction
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CreateReviewTest : MainServiceTest() {
+    private val project = DataBuilder.createExampleProject(
+        reviewDecisionMatrix = ProjectOuterClass.ReviewDecisionMatrix.newBuilder().setNumberOfReviewers(2).build(),
+    )
     private val projectPaperId = UUID.randomUUID()
     private val decision = ReviewDecision.REVIEW_DECISION_ACCEPTED
     private val selectedCriteriaIds = listOf<UUID>(UUID.randomUUID())
@@ -52,7 +56,6 @@ class CreateReviewTest : MainServiceTest() {
                 UserRole.USER_ROLE_DEFAULT
             },
         )
-        val project = DataBuilder.createExampleProject()
         val projectPaper = DataBuilder.createExampleProjectPaper(
             id = projectPaperId,
             projectId = project.id,
@@ -126,7 +129,6 @@ class CreateReviewTest : MainServiceTest() {
     @Test
     fun `When a non project member creates a review, then an UnauthorizedException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-        val project = DataBuilder.createExampleProject()
         val projectPaper = DataBuilder.createExampleProjectPaper(id = projectPaperId, projectId = project.id)
 
         mockCurrentUser(currentUser)
@@ -148,7 +150,10 @@ class CreateReviewTest : MainServiceTest() {
         statusName: String,
     ) = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-        val project = DataBuilder.createExampleProject(status = ProjectStatus.valueOf(statusName))
+        val project = DataBuilder.createExampleProject(
+            status = ProjectStatus.valueOf(statusName),
+            reviewDecisionMatrix = ProjectOuterClass.ReviewDecisionMatrix.newBuilder().setNumberOfReviewers(2).build(),
+        )
         val projectPaper = DataBuilder.createExampleProjectPaper(id = projectPaperId, projectId = project.id)
 
         mockCurrentUser(currentUser)
@@ -163,7 +168,6 @@ class CreateReviewTest : MainServiceTest() {
     @Test
     fun `When the user already reviewed the project paper, then a DuplicateReviewException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-        val project = DataBuilder.createExampleProject()
         val projectPaper = DataBuilder.createExampleProjectPaper(id = projectPaperId, projectId = project.id)
         val review = DataBuilder.createExampleReview(
             projectPaperId = projectPaperId,
@@ -190,7 +194,6 @@ class CreateReviewTest : MainServiceTest() {
                 email = "another.user@example.com",
                 role = UserRole.USER_ROLE_DEFAULT,
             )
-            val project = DataBuilder.createExampleProject()
             val projectPaper = DataBuilder.createExampleProjectPaper(
                 id = projectPaperId,
                 projectId = project.id,
@@ -228,7 +231,6 @@ class CreateReviewTest : MainServiceTest() {
     @Test
     fun `When the project paper is already finally decided, then a FailedPreconditionException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-        val project = DataBuilder.createExampleProject()
         val projectPaper = DataBuilder.createExampleProjectPaper(
             id = projectPaperId,
             projectId = project.id,
@@ -258,7 +260,6 @@ class CreateReviewTest : MainServiceTest() {
                 email = "third.reviewer@example.com",
                 role = UserRole.USER_ROLE_ADMIN,
             )
-            val project = DataBuilder.createExampleProject()
             val projectPaper = DataBuilder.createExampleProjectPaper(
                 id = projectPaperId,
                 projectId = project.id,
@@ -276,9 +277,9 @@ class CreateReviewTest : MainServiceTest() {
                 userId = firstReviewer.id,
                 decision = ReviewDecision.REVIEW_DECISION_ACCEPTED,
             )
-            val createFirstReviewRequest = validCreateReviewRequest.setDecision(
-                ReviewDecision.REVIEW_DECISION_ACCEPTED,
-            ).build()
+            val createFirstReviewRequest = validCreateReviewRequest
+                .setDecision(ReviewDecision.REVIEW_DECISION_ACCEPTED)
+                .build()
             coEvery {
                 reviewRepoMock.createReview(createFirstReviewRequest, firstReviewer.id)
             } returns firstReview
@@ -298,9 +299,9 @@ class CreateReviewTest : MainServiceTest() {
                 userId = secondReviewer.id,
                 decision = ReviewDecision.REVIEW_DECISION_DECLINED,
             )
-            val createSecondReviewRequest = validCreateReviewRequest.setDecision(
-                ReviewDecision.REVIEW_DECISION_DECLINED,
-            ).build()
+            val createSecondReviewRequest = validCreateReviewRequest
+                .setDecision(ReviewDecision.REVIEW_DECISION_DECLINED)
+                .build()
             coEvery {
                 reviewRepoMock.createReview(createSecondReviewRequest, secondReviewer.id)
             } returns secondReview
@@ -322,9 +323,9 @@ class CreateReviewTest : MainServiceTest() {
                 userId = thirdReviewer.id,
                 decision = ReviewDecision.REVIEW_DECISION_ACCEPTED,
             )
-            val createThirdReviewRequest = validCreateReviewRequest.setDecision(
-                ReviewDecision.REVIEW_DECISION_ACCEPTED,
-            ).build()
+            val createThirdReviewRequest = validCreateReviewRequest
+                .setDecision(ReviewDecision.REVIEW_DECISION_ACCEPTED)
+                .build()
             coEvery {
                 reviewRepoMock.createReview(createThirdReviewRequest, thirdReviewer.id)
             } returns thirdReview
