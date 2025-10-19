@@ -299,7 +299,7 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
                 assertEquals(projectId, projectPaper.projectId)
                 assertEquals(0, projectPaper.localPaperId)
                 assertEquals(0, projectPaper.stage)
-                assertEquals(PaperDecision.PAPER_DECISION_UNSPECIFIED, projectPaper.decision)
+                assertEquals(PaperDecision.PAPER_DECISION_UNREVIEWED, projectPaper.decision)
                 assertEquals(testUserId, projectPaper.createdBy)
             }
 

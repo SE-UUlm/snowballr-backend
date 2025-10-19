@@ -233,7 +233,7 @@ class ProjectPaperTableRepo(
                 it[ProjectPaperTable.projectId] = projectId
                 it[ProjectPaperTable.localPaperId] = localPaperId
                 it[stage] = request.stage
-                it[decision] = PaperDecision.PAPER_DECISION_UNSPECIFIED
+                it[decision] = PaperDecision.PAPER_DECISION_UNREVIEWED
                 it[createdBy] = userId
             }
     }
