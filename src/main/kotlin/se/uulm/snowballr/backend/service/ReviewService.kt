@@ -95,19 +95,21 @@ class ReviewService(
         }
 
     /**
-     * Determines the final paper decision based on the given list of reviews.
+     * Determines the final paper decision based on the given list of reviews and updates the project paper decision
+     * accordingly.
      *
      * At the moment, this is a simple sum function that adds one for each accepted review, subtracts one for each rejected,
      * and leaves the sum unchanged for each maybe review. If the entire sum is above 0, the paper is accepted,
      * if it is below 0, the paper is declined, if it is 0, the paper is in review. If the list is empty, the paper
      * is considered to be unreviewed. At least two reviews are required to make a final decision.
-     * Exchange this by loading the decision matrix and calculating the final decision based on the matrix (see #345)
+     * TODO: Exchange this by loading the decision matrix and calculating the final decision based on the matrix (see #345)
      *
      * @param projectPaperId ID of the project paper for which the final paper decision is to be determined.
      * @param reviews List of reviews to be considered for the final paper decision.
      */
     @Suppress("MagicNumber")
-    private suspend fun determinePaperDecision(projectPaperId: UUID, reviews: List<Review>) {
+    private suspend fun updatePaperDecision(projectPaperId: UUID, reviews: List<Review>) {
+
         val requiredReviews = 2
         if (reviews.isEmpty()) {
             projectPaperRepo.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_UNREVIEWED)
@@ -163,7 +165,7 @@ class ReviewService(
         val review = repo.createReview(request, currentUser.id)
         val selectedCriteriaIds = reviewHasCriterionRepo.getSelectedCriteriaIdsForReviewById(review.id)
 
-        determinePaperDecision(projectPaper.id, reviewsForProjectPaper + review)
+        updatePaperDecision(projectPaper.id, reviewsForProjectPaper + review)
 
         // TODO: (question for reviewer): Think about directly injecting the selected criteria ids instead of requesting
         // them from the repo.
