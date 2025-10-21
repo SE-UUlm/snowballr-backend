@@ -4,7 +4,6 @@ import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.DuplicateEntityException
-import se.uulm.snowballr.backend.model.SnowballRException.EntityNotActiveException
 import se.uulm.snowballr.backend.model.SnowballRException.OutOfRangeException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.Author
@@ -31,7 +30,6 @@ import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadProject
 import se.uulm.snowballr.backend.service.accessrules.isProjectActive
 import se.uulm.snowballr.backend.service.accessrules.isProjectExistent
 import se.uulm.snowballr.backend.service.accessrules.isServerOrProjectAdmin
-import se.uulm.snowballr.backend.service.accessrules.orElseThrow
 import snowballr.Base
 import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ProjectOuterClass.Project
@@ -226,9 +224,7 @@ class ProjectPaperService(
             isServerOrProjectAdmin(projectMemberRepo, AccessType.CREATE).checkFor(currentUser, projectId)
 
             val project = projectRepo.getProjectById(projectId).getOrThrow()
-            isProjectActive()
-                .orElseThrow(EntityNotActiveException(EntityType.PROJECT, projectId.toString()))
-                .checkFor(currentUser, project)
+            isProjectActive().checkFor(currentUser, project)
 
             val paper = paperRepo.getPaperById(paperId).getOrThrow()
             if (repo.doesProjectPaperExist(projectId, paperId)) {

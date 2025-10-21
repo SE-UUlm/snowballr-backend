@@ -3,7 +3,6 @@ package se.uulm.snowballr.backend.service
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.SnowballRException.EntityNotActiveException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.Criterion
 import se.uulm.snowballr.backend.model.dto.toGrpcCriteria
@@ -114,9 +113,7 @@ class CriterionService(
 
                 val project = projectRepo.getProjectById(projectId).getOrThrow()
 
-                isProjectActive()
-                    .orElseThrow(EntityNotActiveException(EntityType.PROJECT, project.id.toString()))
-                    .checkFor(currentUser, project)
+                isProjectActive().checkFor(currentUser, project)
             }
 
             repo.createCriterion(request, currentUser.id).toGrpcCriterion()
@@ -130,9 +127,7 @@ class CriterionService(
             if (criterion is Criterion.ProjectCriterion) {
                 val project = projectRepo.getProjectById(criterion.projectId).getOrThrow()
 
-                isProjectActive()
-                    .orElseThrow(EntityNotActiveException(EntityType.PROJECT, project.id.toString()))
-                    .checkFor(currentUser, project)
+                isProjectActive().checkFor(currentUser, project)
             }
 
             isCreatorOfCriterion()

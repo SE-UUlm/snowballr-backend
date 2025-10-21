@@ -338,6 +338,10 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
         @Test
         fun `When a user is found, then a successful result with the user settings is returned`() = runTest {
             val userId = insertUserAndGetId()
+            val decisionMatrix = ReviewDecisionMatrix.newBuilder()
+                .setNumberOfReviewers(2)
+                .build()
+
             val result = repo.getUserSettings(userId)
 
             val userSettings = assertResultSuccess(result)
@@ -345,7 +349,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
             assertFalse(userSettings.isReviewModeEnabled)
             assertThat(userSettings.criteriaIds).isEmpty()
             assertEquals(0F, userSettings.similarityThreshold)
-            assertEquals(ReviewDecisionMatrix.getDefaultInstance(), userSettings.decisionMatrix)
+            assertEquals(decisionMatrix, userSettings.decisionMatrix)
             assertThat(userSettings.fetchers).isEmpty()
             assertEquals(SnowballingType.SNOWBALLING_TYPE_BOTH, userSettings.snowballingType)
             assertTrue(userSettings.reviewMaybeAllowed)

@@ -6,7 +6,6 @@ import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.mail.IEmailManager
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.SnowballRException.EntityNotActiveException
 import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
 import se.uulm.snowballr.backend.model.SnowballRException.InvalidIdException
 import se.uulm.snowballr.backend.model.SnowballRException.InvitationTokenNotFoundException
@@ -25,7 +24,6 @@ import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadProject
 import se.uulm.snowballr.backend.service.accessrules.isProjectActive
 import se.uulm.snowballr.backend.service.accessrules.isProjectExistent
 import se.uulm.snowballr.backend.service.accessrules.isServerOrProjectAdmin
-import se.uulm.snowballr.backend.service.accessrules.orElseThrow
 import snowballr.Base
 import snowballr.ProjectOuterClass.Project
 import snowballr.UserOuterClass.User
@@ -110,9 +108,7 @@ class InvitationService(
 
         val project = projectRepo.getProjectById(projectId).getOrThrow()
 
-        isProjectActive()
-            .orElseThrow(EntityNotActiveException(EntityType.PROJECT, projectId.toString()))
-            .checkFor(currentUser, project)
+        isProjectActive().checkFor(currentUser, project)
 
         // Generate and save invitation token
         val invitationToken = NanoId.generate(INVITATION_TOKEN_LENGTH)

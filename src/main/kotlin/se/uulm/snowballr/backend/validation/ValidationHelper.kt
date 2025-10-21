@@ -96,6 +96,16 @@ fun Raise<ValidationIssue>.ensureIdValidity(name: String, id: String) =
     ensure(runCatching { UUID.fromString(id) }.isSuccess) { InvalidId(name, id) }
 
 /**
+ * Ensures that the provided list of [ids] has a valid format.
+ *
+ * @param name The name of the id list being validated.
+ * @param ids The list of IDs to check for validity.
+ */
+fun Raise<ValidationIssue>.ensureIdListValidity(name: String, ids: List<String>) {
+    ids.forEach { ensureIdValidity(name, it) }
+}
+
+/**
  * Ensures that the provided email has a valid format.
  * If the email does not match the [EMAIL_REGEX], an [InvalidEmail] validation issue is raised.
  *

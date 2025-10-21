@@ -352,7 +352,7 @@ class SnowballRServer(
             mainService.getAllReviewsForProjectPaper(request)
 
         override suspend fun createReview(request: ReviewOuterClass.Review.Create): ReviewOuterClass.Review =
-            super.createReview(request)
+            mainService.createReview(request)
 
         override suspend fun updateReview(request: ReviewOuterClass.Review.Update): ReviewOuterClass.Review =
             super.updateReview(request)

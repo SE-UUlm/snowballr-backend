@@ -14,11 +14,16 @@ import snowballr.UserOuterClass.UserStatus
 import java.time.OffsetDateTime
 import java.util.UUID
 
+private const val REQUIRED_REVIEWERS = 2
+
 private const val ARE_HOTKEYS_SHOWN_DEFAULT = true
 private const val IS_REVIEW_MODE_ENABLED_DEFAULT = false
 private val CRITERIA_IDS_DEFAULT = emptyList<UUID>()
 private const val SIMILARITY_THRESHOLD_DEFAULT = 0F
-private val DECISION_MATRIX_DEFAULT: ByteArray = ReviewDecisionMatrix.getDefaultInstance().toByteArray()
+private val DECISION_MATRIX_DEFAULT: ByteArray = ReviewDecisionMatrix.newBuilder()
+    .setNumberOfReviewers(REQUIRED_REVIEWERS)
+    .build()
+    .toByteArray()
 private val FETCHERS_DEFAULT = emptyMap<String, Map<String, String>>()
 private val SNOWBALLING_TYPE_DEFAULT = SnowballingType.SNOWBALLING_TYPE_BOTH
 private const val REVIEW_MAYBE_ALLOWED_DEFAULT = true
