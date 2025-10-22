@@ -159,21 +159,6 @@ data class TooLongList(val name: String, val maxLength: Int) : ValidationIssue {
 }
 
 /**
- * Represents a validation issue where an ORCID has an invalid format.
- */
-data class InvalidOrcid(val orcid: String, val reason: Reason) : ValidationIssue {
-    override fun toString(): String = "The ORCID '$orcid' is invalid: ${reason.message}"
-
-    /**
-     * Lists possible reasons for ORCID invalidity.
-     */
-    enum class Reason(val message: String) {
-        INVALID_FORMAT("The ORCID must be a 16-digit identifier, split into four groups separated by hyphens"),
-        INVALID_CHECK_DIGIT("The ORCID must have a valid check digit"),
-    }
-}
-
-/**
  * Represents a composite validation issue that aggregates multiple individual [ValidationIssue]s.
  *
  * This is useful for scenarios where multiple validation errors need to be reported together,
