@@ -5,7 +5,6 @@ import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.insertAndGetId
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.table.AuthorTable
 import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.InvitationTokenTable
 import se.uulm.snowballr.backend.table.PaperTable
@@ -111,6 +110,7 @@ object RepositoryHelper {
             it[PaperTable.publicationType] = publicationType
             it[PaperTable.publicationName] = publicationName
             it[PaperTable.fetcherMetadata] = fetcherMetadata
+            it[PaperTable.authors] = emptyList()
         }.value
     }
 
@@ -224,23 +224,6 @@ object RepositoryHelper {
             it[ReviewHasCriterionTable.reviewId] = reviewId
             it[ReviewHasCriterionTable.criterionId] = criterionId
         }
-    }
-
-    /**
-     * Creates an example author in the database with the specified properties.
-     *
-     * @return The UUID of the created author.
-     */
-    suspend fun insertAuthorAndGetId(
-        firstName: String = "FirstName",
-        lastName: String = "LastName",
-        orcid: String? = null,
-    ): UUID = db.query {
-        AuthorTable.insertAndGetId {
-            it[AuthorTable.firstName] = firstName
-            it[AuthorTable.lastName] = lastName
-            it[AuthorTable.orcid] = orcid
-        }.value
     }
 
     /**

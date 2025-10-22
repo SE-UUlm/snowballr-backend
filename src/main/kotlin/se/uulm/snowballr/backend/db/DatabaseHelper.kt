@@ -3,7 +3,6 @@ package se.uulm.snowballr.backend.db
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.Transaction
-import se.uulm.snowballr.backend.table.AuthorTable
 import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.InvitationTokenTable
 import se.uulm.snowballr.backend.table.PaperTable
@@ -12,7 +11,6 @@ import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.ReviewTable
 import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.VerificationTokenTable
-import se.uulm.snowballr.backend.table.association.AuthorOfPaperTable
 import se.uulm.snowballr.backend.table.association.CitationTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
@@ -30,13 +28,11 @@ object DatabaseHelper {
         PdfTable,
         ProjectTable,
         PaperTable,
-        AuthorTable,
         CriterionTable,
         VerificationTokenTable,
         InvitationTokenTable,
         // Many-to-many tables
         ProjectPaperTable,
-        AuthorOfPaperTable,
         CitationTable,
         ReadingListTable,
         ProjectMemberTable,

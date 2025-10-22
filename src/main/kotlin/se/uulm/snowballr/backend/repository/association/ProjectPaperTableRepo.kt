@@ -135,7 +135,7 @@ interface IProjectPaperTableRepo {
      * @param projectPaperId The unique identifier of the project paper to be updated.
      * @param decision The new [PaperDecision] to be set.
      */
-    suspend fun updateProjectPaperDecision(projectPaperId: UUID, decision: PaperDecision): Unit
+    suspend fun updateProjectPaperDecision(projectPaperId: UUID, decision: PaperDecision)
 }
 
 /**
