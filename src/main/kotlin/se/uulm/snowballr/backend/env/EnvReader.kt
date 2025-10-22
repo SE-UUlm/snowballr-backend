@@ -12,6 +12,7 @@ private const val PORT = "PORT"
 private const val LOG_LEVEL = "LOG_LEVEL"
 private const val AUTH_BYPASS_ENABLED = "AUTH_BYPASS_ENABLED"
 private const val FRONTEND_BASE_URL = "FRONTEND_BASE_URL"
+private const val SENSITIVE_INFORMATION_RETENTION_DAYS = "SENSITIVE_INFORMATION_RETENTION_DAYS"
 
 // Database
 private const val DATABASE_PASSWORD = "DATABASE_PASSWORD"
@@ -35,6 +36,7 @@ private const val SMTP_SENDER_EMAIL = "SMTP_SENDER_EMAIL"
 private val DEFAULT_PROFILE = AppProfile.PRODUCTION
 private const val DEFAULT_PORT = 8080
 const val DEFAULT_LOG_LEVEL = "DEBUG"
+private const val DEFAULT_SENSITIVE_INFORMATION_RETENTION_DAYS = 30
 private const val DEFAULT_DATABASE_HOST = "localhost"
 
 private val logger = KotlinLogging.logger {}
@@ -64,6 +66,10 @@ class EnvReader(
         val port = envService.getRequiredOrDefault(PORT, defaults.port?.toString()).toInt()
         val host = envService.getRequiredOrDefault(DATABASE_HOST, defaults.databaseHost)
         val logLevel = envService.getOrDefault(LOG_LEVEL, defaults.logLevel)
+        val sensitiveInformationRetentionDays = envService.getRequiredOrDefault(
+            SENSITIVE_INFORMATION_RETENTION_DAYS,
+            defaults.sensitiveInformationRetentionDays.toString(),
+        ).toInt()
         val frontendBaseUrl = envService.getRequiredOrDefault(
             FRONTEND_BASE_URL,
             defaults.frontendBaseUrl,
@@ -88,7 +94,12 @@ class EnvReader(
 
         env = Env(
             http = Env.Http(port),
-            miscellaneous = Env.Miscellaneous(logLevel, authBypassEnabled, frontendBaseUrl),
+            miscellaneous = Env.Miscellaneous(
+                logLevel,
+                authBypassEnabled,
+                frontendBaseUrl,
+                sensitiveInformationRetentionDays,
+            ),
             database = Env.Database(
                 password = envService[DATABASE_PASSWORD],
                 host = host,
@@ -122,6 +133,7 @@ class EnvReader(
             port = DEFAULT_PORT,
             databaseHost = DEFAULT_DATABASE_HOST,
             logLevel = "TRACE",
+            sensitiveInformationRetentionDays = DEFAULT_SENSITIVE_INFORMATION_RETENTION_DAYS,
             authBypassEnabled = true,
             frontendBaseUrl = "http://localhost:5173",
             seedUserEnabled = true,
@@ -132,6 +144,7 @@ class EnvReader(
             port = DEFAULT_PORT,
             databaseHost = DEFAULT_DATABASE_HOST,
             logLevel = "DEBUG",
+            sensitiveInformationRetentionDays = DEFAULT_SENSITIVE_INFORMATION_RETENTION_DAYS,
             authBypassEnabled = false,
             frontendBaseUrl = "http://localhost:5173",
             seedUserEnabled = true,
@@ -142,6 +155,7 @@ class EnvReader(
             port = null,
             databaseHost = null,
             logLevel = "INFO",
+            sensitiveInformationRetentionDays = DEFAULT_SENSITIVE_INFORMATION_RETENTION_DAYS,
             authBypassEnabled = false,
             frontendBaseUrl = null,
             seedUserEnabled = false,
@@ -155,6 +169,7 @@ class EnvReader(
      * @property port The port number for the HTTP server, or null if not set.
      * @property databaseHost The host for the database, or null if not set.
      * @property logLevel The logging level for the application.
+     * @property sensitiveInformationRetentionDays The number of days to retain sensitive information.
      * @property authBypassEnabled Whether authentication bypass is enabled.
      * @property frontendBaseUrl The base URL for the frontend application.
      * @property seedUserEnabled Whether the seed user is enabled.
@@ -164,6 +179,7 @@ class EnvReader(
         val port: Int?,
         val databaseHost: String?,
         val logLevel: String,
+        val sensitiveInformationRetentionDays: Int,
         val authBypassEnabled: Boolean,
         val frontendBaseUrl: String?,
         val seedUserEnabled: Boolean,
