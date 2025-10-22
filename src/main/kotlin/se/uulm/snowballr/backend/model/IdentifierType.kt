@@ -9,4 +9,5 @@ enum class IdentifierType(val displayName: String) {
     ID("ID"),
     EMAIL("email"),
     LOCAL_ID("local ID"),
+    EXTERNAL_ID("external ID"),
 }

@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.service
 
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.IdentifierType
 import se.uulm.snowballr.backend.model.SnowballRException.DuplicateEntityException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.Paper
@@ -78,8 +79,12 @@ class PaperService(
     }
 
     override suspend fun createPaper(request: GrpcPaper): GrpcPaper {
-        if (repo.doesPaperExistByExternalId(request.externalId)) {
-            throw DuplicateEntityException(EntityType.PAPER, request.externalId)
+        if (request.externalId.isNotEmpty() && repo.doesPaperExistByExternalId(request.externalId)) {
+            throw DuplicateEntityException(
+                EntityType.PAPER,
+                request.externalId,
+                identifierType = IdentifierType.EXTERNAL_ID,
+            )
         }
 
         return repo.createPaper(request).toGrpcPaper()
