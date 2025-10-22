@@ -57,7 +57,6 @@ class AddPaperToProjectTest : MainServiceTest() {
             userId = currentUser.id,
             role = MemberRole.MEMBER_ROLE_ADMIN,
         )
-        val author = DataBuilder.createExampleAuthor()
         val review = DataBuilder.createExampleReview()
 
         mockCurrentUser(currentUser)
@@ -84,7 +83,6 @@ class AddPaperToProjectTest : MainServiceTest() {
         coEvery {
             projectPaperRepoMock.addPaperToProject(getExampleRequest(), currentUser.id)
         } returns projectPaper
-        coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(paper.id) } returns listOf(author)
         coEvery {
             citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
         } returns listOf(UUID.randomUUID())

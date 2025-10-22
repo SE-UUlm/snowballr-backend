@@ -37,7 +37,6 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
         val projectPaper = DataBuilder.createExampleProjectPaper(projectId = project.id, paperId = paper.id)
         val projectPaperWithPaper = ProjectPaperWithPaper(projectPaper, paper)
         val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
-        val author = DataBuilder.createExampleAuthor()
         val review = DataBuilder.createExampleReview()
 
         mockCurrentUser(currentUser)
@@ -51,7 +50,6 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
         coEvery {
             projectPaperRepoMock.getAllProjectPapersWithPapers(project.id)
         } returns listOf(projectPaperWithPaper)
-        coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(paper.id) } returns listOf(author)
         coEvery {
             citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
         } returns listOf(UUID.randomUUID())
@@ -106,7 +104,6 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
         )
         val projectPaperWithPaper1 = ProjectPaperWithPaper(projectPaperAlreadyDecided, paper)
         val projectPaperWithPaper2 = ProjectPaperWithPaper(projectPaperNotAlreadyDecided, paper)
-        val author = DataBuilder.createExampleAuthor()
         val review = DataBuilder.createExampleReview(userId = UUID.randomUUID())
 
         mockCurrentUser(currentUser)
@@ -115,7 +112,6 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
         coEvery {
             projectPaperRepoMock.getAllProjectPapersWithPapers(project.id)
         } returns listOf(projectPaperWithPaper1, projectPaperWithPaper2)
-        coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(paper.id) } returns listOf(author)
         coEvery {
             citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
         } returns listOf(UUID.randomUUID())
@@ -154,7 +150,6 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
             )
             val projectPaperWithPaper1 = ProjectPaperWithPaper(projectPaperWithCurrentUserReview, paper)
             val projectPaperWithPaper2 = ProjectPaperWithPaper(projectPaperWithoutCurrentUserReview, paper)
-            val author = DataBuilder.createExampleAuthor()
             val reviewByCurrentUser = DataBuilder.createExampleReview(userId = currentUser.id)
             val reviewByOtherUser = DataBuilder.createExampleReview(userId = UUID.randomUUID())
 
@@ -164,7 +159,6 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
             coEvery {
                 projectPaperRepoMock.getAllProjectPapersWithPapers(project.id)
             } returns listOf(projectPaperWithPaper1, projectPaperWithPaper2)
-            coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(paper.id) } returns listOf(author)
             coEvery {
                 citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
             } returns listOf(UUID.randomUUID())

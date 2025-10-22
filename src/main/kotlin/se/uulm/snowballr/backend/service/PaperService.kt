@@ -1,21 +1,16 @@
 package se.uulm.snowballr.backend.service
 
-import com.google.protobuf.util.FieldMaskUtil
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.DuplicateEntityException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
-import se.uulm.snowballr.backend.model.dto.Author
 import se.uulm.snowballr.backend.model.dto.Paper
 import se.uulm.snowballr.backend.model.dto.toGrpcPapers
 import se.uulm.snowballr.backend.model.parseUUID
-import se.uulm.snowballr.backend.repository.IAuthorTableRepo
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
-import se.uulm.snowballr.backend.repository.association.IAuthorOfPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
 import snowballr.Base
 import java.util.UUID
-import snowballr.PaperOuterClass.Author as GrpcAuthor
 import snowballr.PaperOuterClass.Paper as GrpcPaper
 
 interface IPaperService {
@@ -53,16 +48,11 @@ interface IPaperService {
  *
  * @constructor Initializes the [PaperService] with a paper repository.
  * @param repo The repository responsible for managing persistence operations for normal papers.
- * @param authorOfPapersRepo The repository responsible for managing persistence operations for author-paper associations.
  * @param citationRepo The repository responsible for managing persistence operations for paper citations.
- * @param authorRepo The repository responsible for managing persistence operations for authors.
  */
-@Suppress("TooManyFunctions")
 class PaperService(
     private val repo: IPaperTableRepo,
-    private val authorOfPapersRepo: IAuthorOfPaperTableRepo,
     private val citationRepo: ICitationTableRepo,
-    private val authorRepo: IAuthorTableRepo,
 ) : IPaperService {
     override suspend fun getPaperById(request: Base.Id): GrpcPaper {
         val paperId = parseUUID(request.id, EntityType.PAPER)
@@ -82,12 +72,6 @@ class PaperService(
 
         if (!repo.doesPaperExistById(paperId)) {
             throw NotFoundException(EntityType.PAPER, paperId.toString())
-        }
-
-        val fieldMask = FieldMaskUtil.normalize(request.mask)
-
-        if (fieldMask.pathsList.contains("paper.authors")) {
-            handleAuthorsChanges(request.paper, paperId)
         }
 
         return repo.updatePaper(request).toGrpcPaper()
@@ -125,70 +109,5 @@ class PaperService(
         return papers.toGrpcPapers()
     }
 
-    private suspend fun Paper.toGrpcPaper(): GrpcPaper =
-        this.toGrpcPaperWithAuthorsAndBackwardReferences(authorOfPapersRepo, citationRepo)
-
-    private suspend fun handleAuthorsChanges(paper: GrpcPaper, paperId: UUID) {
-        val newAuthors = paper.authorsList.toList()
-        val existingAuthors = authorOfPapersRepo.getAuthorsOfPaperById(paperId)
-
-        handleAuthorsRemoval(paperId, existingAuthors, newAuthors)
-        handleAuthorsAdditionAndUpdate(paperId, existingAuthors, newAuthors)
-    }
-
-    private suspend fun handleAuthorsAdditionAndUpdate(
-        paperId: UUID,
-        existingAuthors: List<Author>,
-        newAuthors: List<GrpcAuthor>,
-    ) {
-        val (authorsToAdd, authorsToUpdate) = getAuthorsToAddAndUpdate(existingAuthors, newAuthors)
-
-        val addedAuthors = authorsToAdd.map { authorRepo.createAuthor(it) }
-        for (author in addedAuthors) {
-            authorOfPapersRepo.addAuthorToPaper(author.id, paperId)
-        }
-
-        for ((existingAuthor, newAuthor) in authorsToUpdate) {
-            authorRepo.updateAuthor(existingAuthor.id, newAuthor)
-        }
-    }
-
-    private fun getAuthorsToAddAndUpdate(
-        existingAuthors: List<Author>,
-        newAuthors: List<GrpcAuthor>,
-    ): Pair<List<GrpcAuthor>, List<Pair<Author, GrpcAuthor>>> {
-        val authorsToAdd = mutableListOf<GrpcAuthor>()
-        val authorsToUpdate = mutableListOf<Pair<Author, GrpcAuthor>>()
-
-        for (newAuthor in newAuthors) {
-            val matchingAuthor = existingAuthors.find { areAuthorsEqual(it, newAuthor) }
-
-            if (matchingAuthor != null) {
-                authorsToUpdate.add(Pair(matchingAuthor, newAuthor))
-            } else {
-                authorsToAdd.add(newAuthor)
-            }
-        }
-
-        return Pair(authorsToAdd, authorsToUpdate)
-    }
-
-    private suspend fun handleAuthorsRemoval(
-        paperId: UUID,
-        existingAuthors: List<Author>,
-        newAuthors: List<GrpcAuthor>,
-    ) {
-        val authorsToRemove = getAuthorsToRemove(existingAuthors, newAuthors)
-        for (author in authorsToRemove) {
-            authorOfPapersRepo.removeAuthorFromPaper(author.id, paperId)
-        }
-    }
-
-    private fun getAuthorsToRemove(existingAuthors: List<Author>, newAuthors: List<GrpcAuthor>): List<Author> =
-        existingAuthors.filter { existingAuthor ->
-            newAuthors.none { areAuthorsEqual(existingAuthor, it) }
-        }
-
-    private fun areAuthorsEqual(author: Author, grpcAuthor: GrpcAuthor) = author.orcid == grpcAuthor.orcid ||
-        (author.firstName == grpcAuthor.firstName && author.lastName == grpcAuthor.lastName)
+    private suspend fun Paper.toGrpcPaper(): GrpcPaper = this.toGrpcPaperWithAuthorsAndBackwardReferences(citationRepo)
 }

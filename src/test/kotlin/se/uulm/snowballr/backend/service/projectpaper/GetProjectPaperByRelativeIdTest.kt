@@ -54,7 +54,6 @@ class GetProjectPaperByRelativeIdTest : MainServiceTest() {
             localPaperId = localPaperId,
         )
         val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
-        val author = DataBuilder.createExampleAuthor()
         val review = DataBuilder.createExampleReview()
 
         mockCurrentUser(currentUser)
@@ -84,7 +83,6 @@ class GetProjectPaperByRelativeIdTest : MainServiceTest() {
         }
         coEvery { paperRepoMock.getPaperById(projectPaper.paperId) } returns Result.success(paper)
 
-        coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(paper.id) } returns listOf(author)
         coEvery {
             citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
         } returns listOf(UUID.randomUUID())
@@ -122,12 +120,6 @@ class GetProjectPaperByRelativeIdTest : MainServiceTest() {
     fun `When a non project member retrieves the project paper, then an UnauthorizedException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject(projectId)
-        val paper = DataBuilder.createExamplePaper()
-        val projectPaper = DataBuilder.createExampleProjectPaper(
-            projectId = project.id,
-            paperId = paper.id,
-            localPaperId = localPaperId,
-        )
 
         mockCurrentUser(currentUser)
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()

@@ -284,7 +284,9 @@ class ProjectService(
                 }
             }
 
-            ProjectStatus.PROJECT_STATUS_ACTIVE -> {}
+            ProjectStatus.PROJECT_STATUS_ACTIVE -> {
+                // no restrictions
+            }
 
             ProjectStatus.PROJECT_STATUS_UNSPECIFIED,
             ProjectStatus.UNRECOGNIZED,

@@ -23,7 +23,6 @@ import se.uulm.snowballr.backend.fetcher.FetcherManager
 import se.uulm.snowballr.backend.mail.EmailTemplateManager
 import se.uulm.snowballr.backend.mail.IEmailManager
 import se.uulm.snowballr.backend.model.dto.User
-import se.uulm.snowballr.backend.repository.IAuthorTableRepo
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
@@ -31,7 +30,6 @@ import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IReviewTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.IVerificationTokenTableRepo
-import se.uulm.snowballr.backend.repository.association.IAuthorOfPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
@@ -92,8 +90,6 @@ open class MainServiceTest : KoinTest {
     val userRepoMock = mockk<IUserTableRepo>()
     val projectMemberRepoMock = mockk<IProjectMemberTableRepo>()
     val projectPaperRepoMock = mockk<IProjectPaperTableRepo>()
-    val authorOfPaperRepoMock = mockk<IAuthorOfPaperTableRepo>()
-    val authorRepoMock = mockk<IAuthorTableRepo>()
     val citationRepoMock = mockk<ICitationTableRepo>()
     val readingListRepoMock = mockk<IReadingListTableRepo>()
     val paperRepoMock = mockk<IPaperTableRepo>()
@@ -120,8 +116,6 @@ open class MainServiceTest : KoinTest {
         mailerMock,
         emailTemplateManagerMock,
         projectPaperRepoMock,
-        authorOfPaperRepoMock,
-        authorRepoMock,
         citationRepoMock,
         readingListRepoMock,
         paperRepoMock,
@@ -145,8 +139,6 @@ open class MainServiceTest : KoinTest {
         single { userRepoMock }
         single { projectMemberRepoMock }
         single { projectPaperRepoMock }
-        single { authorOfPaperRepoMock }
-        single { authorRepoMock }
         single { citationRepoMock }
         single { readingListRepoMock }
         single { paperRepoMock }

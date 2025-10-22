@@ -19,7 +19,6 @@ class CreatePaperTest : MainServiceTest() {
 
         coEvery { paperRepoMock.doesPaperExistByExternalId(request.externalId) } returns false
         coEvery { paperRepoMock.createPaper(request) } returns DataBuilder.createExamplePaper(id = paperId)
-        coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(paperId) } returns emptyList()
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paperId) } returns emptyList()
 
         assertDoesNotThrow { mainService.createPaper(request) }

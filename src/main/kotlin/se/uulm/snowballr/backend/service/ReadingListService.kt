@@ -7,7 +7,6 @@ import se.uulm.snowballr.backend.model.dto.toGrpcPapers
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
-import se.uulm.snowballr.backend.repository.association.IAuthorOfPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
 import se.uulm.snowballr.backend.repository.association.IReadingListTableRepo
 import snowballr.Base
@@ -48,14 +47,12 @@ interface IReadingListService {
  * @constructor Initializes the [ReadingListService] with the necessary repositories.
  * @param userRepo The repository responsible for managing persistence operations for users.
  * @param paperRepo The repository responsible for managing persistence operations for papers.
- * @param authorOfPaperRepo The repository responsible for managing persistence operations for author-paper associations.
  * @param citationRepo The repository responsible for managing persistence operations for paper citations.
  * @param repo The repository responsible for managing persistence operations for reading list entries.
  */
 class ReadingListService(
     private val userRepo: IUserTableRepo,
     private val paperRepo: IPaperTableRepo,
-    private val authorOfPaperRepo: IAuthorOfPaperTableRepo,
     private val citationRepo: ICitationTableRepo,
     private val repo: IReadingListTableRepo,
 ) : IReadingListService {
@@ -72,7 +69,7 @@ class ReadingListService(
 
     override suspend fun getReadingList(): GrpcPaper.List = withUser(userRepo) { currentUser ->
         val papers = repo.getAllReadingListEntries(currentUser.id).map { paper ->
-            paper.toGrpcPaperWithAuthorsAndBackwardReferences(authorOfPaperRepo, citationRepo)
+            paper.toGrpcPaperWithAuthorsAndBackwardReferences(citationRepo)
         }
 
         papers.toGrpcPapers()

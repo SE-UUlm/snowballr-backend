@@ -52,14 +52,12 @@ class GetForwardReferencedPapersTest : MainServiceTest() {
             val paper = DataBuilder.createExamplePaper(id = paperId)
             val forwardReferenceId = UUID.randomUUID()
             val citingPaper = DataBuilder.createExamplePaper(id = forwardReferenceId)
-            val author = DataBuilder.createExampleAuthor()
 
             coEvery { paperRepoMock.doesPaperExistById(paper.id) } returns true
             coEvery {
                 citationRepoMock.getForwardReferencedPaperIdsOfPaperById(paper.id)
             } returns listOf(forwardReferenceId)
             coEvery { paperRepoMock.getPaperById(forwardReferenceId) } returns Result.success(citingPaper)
-            coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(forwardReferenceId) } returns listOf(author)
             coEvery {
                 citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(forwardReferenceId)
             } returns listOf(UUID.randomUUID())
