@@ -5,6 +5,7 @@ import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.insertAndGetId
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.dto.Author
 import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.InvitationTokenTable
 import se.uulm.snowballr.backend.table.PaperTable
@@ -100,6 +101,7 @@ object RepositoryHelper {
         publicationType: String = "PublicationType",
         publicationName: String = "PublicationName",
         fetcherMetadata: Map<String, String> = emptyMap(),
+        authors: List<Author> = emptyList(),
     ): UUID = db.query {
         PaperTable.insertAndGetId {
             it[PaperTable.title] = title
@@ -110,7 +112,7 @@ object RepositoryHelper {
             it[PaperTable.publicationType] = publicationType
             it[PaperTable.publicationName] = publicationName
             it[PaperTable.fetcherMetadata] = fetcherMetadata
-            it[PaperTable.authors] = emptyList()
+            it[PaperTable.authors] = authors
         }.value
     }
 

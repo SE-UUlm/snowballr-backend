@@ -25,6 +25,11 @@ fun Author.toGrpcAuthor(): GrpcAuthor = GrpcAuthor.newBuilder()
     .build()
 
 /**
+ * Creates an [Author] from this [GrpcAuthor].
+ */
+fun GrpcAuthor.toAuthor(): Author = Author(firstName, lastName)
+
+/**
  * Creates a list of [GrpcAuthor] from this list of [Author].
  */
 fun List<Author>.toGrpcAuthors(): List<GrpcAuthor> = this.map(Author::toGrpcAuthor)

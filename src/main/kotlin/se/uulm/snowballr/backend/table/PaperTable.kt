@@ -1,8 +1,11 @@
 package se.uulm.snowballr.backend.table
 
+import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.ResultRow
+import org.jetbrains.exposed.sql.json.json
+import se.uulm.snowballr.backend.model.dto.Author
 import se.uulm.snowballr.backend.model.dto.Paper
 import java.time.OffsetDateTime
 
@@ -30,6 +33,7 @@ object PaperTable : UUIDTable("paper") {
     val publisher = text("publisher")
     val publicationType = text("publication_type")
     val publicationName = text("publication_name")
+    val authors = json<List<Author>>("authors", Json)
 
     /**
      * Optional reference to the PDF of the paper.
@@ -61,6 +65,7 @@ fun ResultRow.toPaper() = Paper(
     publicationName = this[PaperTable.publicationName],
     pdfId = this[PaperTable.pdfId]?.value,
     fetcherMetadata = this[PaperTable.fetcherMetadata],
+    authors = this[PaperTable.authors],
     createdAt = this[PaperTable.createdAt],
     modifiedAt = this[PaperTable.modifiedAt],
     modifiedBy = this[PaperTable.modifiedBy]?.value,
