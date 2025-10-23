@@ -492,7 +492,7 @@ class ProjectService(
             val projectMembers = projectMemberRepo.getProjectMembers(projectId)
             val projectAdmins = projectMemberRepo.getAllProjectAdmins(projectId)
             if (projectMembers.size == 1 && projectMembers.any { it.userId == requestedUserId }) {
-                // TODO soft delete the project asa the call is implemented in #87.
+                repo.softDeleteProject(projectId)
             } else if (projectAdmins.size == 1 && projectAdmins.any { it.userId == requestedUserId }) {
                 throw FailedPreconditionException(
                     "The user can not be removed from the project, because this user is the last " +

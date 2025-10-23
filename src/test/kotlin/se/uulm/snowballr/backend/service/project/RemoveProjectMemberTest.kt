@@ -1,6 +1,7 @@
 package se.uulm.snowballr.backend.service.project
 
 import io.mockk.coEvery
+import io.mockk.coVerify
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -172,5 +173,29 @@ class RemoveProjectMemberTest : MainServiceTest() {
             assertThrows<SnowballRException.FailedPreconditionException> {
                 mainService.removeProjectMember(getExampleRequest())
             }
+        }
+
+    @Test
+    fun `When a project member to be deleted is the last member, then no exception is thrown and the project marked as deleted`() =
+        runTest {
+            val currentUser = DataBuilder.createExampleUser(id = userId)
+            val project = DataBuilder.createExampleProject(id = projectId)
+            val lastProjectMember = DataBuilder.createExampleProjectMember(
+                projectId = project.id,
+                userId = currentUser.id,
+            )
+
+            mockCurrentUser(currentUser)
+            coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(lastProjectMember)
+            coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(lastProjectMember)
+            coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
+            coEvery { userRepoMock.doesUserExistById(currentUser.id) } returns true
+            coEvery { projectRepoMock.softDeleteProject(project.id) } returns Unit
+            coEvery {
+                projectMemberRepoMock.removeProjectMember(project.id, currentUser.id)
+            } returns Unit
+
+            assertDoesNotThrow { mainService.removeProjectMember(getExampleRequest()) }
+            coVerify(exactly = 1) { projectRepoMock.softDeleteProject(project.id) }
         }
 }
