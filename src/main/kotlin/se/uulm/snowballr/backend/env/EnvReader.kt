@@ -52,7 +52,7 @@ private val logger = KotlinLogging.logger {}
  * @param envService The underlying service that provides methods to access variables by their key.
  */
 class EnvReader(
-    envService: IEnvService,
+    private val envService: IEnvService,
 ) {
     val env: Env
 
@@ -62,23 +62,46 @@ class EnvReader(
 
         val defaults = defaultsForProfile(activeProfile)
 
-        // Read final values, applying defaults and allowing overrides
-        val port = envService.getRequiredOrDefault(PORT, defaults.port?.toString()).toInt()
-        val host = envService.getRequiredOrDefault(DATABASE_HOST, defaults.databaseHost)
-        val logLevel = envService.getOrDefault(LOG_LEVEL, defaults.logLevel)
-        val sensitiveInformationRetentionDays = envService.getRequiredOrDefault(
-            SENSITIVE_INFORMATION_RETENTION_DAYS,
-            defaults.sensitiveInformationRetentionDays.toString(),
-        ).toInt()
+        // Build miscellaneous config to access `authBypassEnabled` for database config
+        val miscellaneous = buildMiscellaneous(defaults)
+        val database = buildDatabase(defaults, miscellaneous.authBypassEnabled)
+
+        env = Env(
+            http = buildHttp(defaults),
+            miscellaneous = miscellaneous,
+            database = database,
+            encryption = buildEncryption(),
+            smtp = buildSmtp(defaults),
+        )
+    }
+
+    /**
+     * Builds the HTTP configuration by reading and processing related environment variables.
+     *
+     * @param defaults Default values for the HTTP configuration.
+     * @return An [Env.Http] object containing the HTTP configuration.
+     */
+    private fun buildHttp(defaults: ProfileDefaults): Env.Http {
+        return Env.Http(
+            port = envService.getRequiredOrDefault(PORT, defaults.port?.toString()).toInt(),
+        )
+    }
+
+    /**
+     * Builds the miscellaneous configuration by reading and processing related environment variables.
+     *
+     * @param defaults Default values for the miscellaneous configuration.
+     * @return An [Env.Miscellaneous] object containing the miscellaneous configuration.
+     */
+    private fun buildMiscellaneous(defaults: ProfileDefaults): Env.Miscellaneous {
         val frontendBaseUrl = envService.getRequiredOrDefault(
             FRONTEND_BASE_URL,
             defaults.frontendBaseUrl,
         ).trim().trimEnd('/')
-        val smtpTransportLoggingOnlyEnabled =
-            envService.getBooleanOrDefault(
-                SMTP_TRANSPORT_LOGGING_ONLY_ENABLED,
-                defaults.smtpTransportLoggingOnlyEnabled,
-            )
+        val sensitiveInformationRetentionDays = envService.getRequiredOrDefault(
+            SENSITIVE_INFORMATION_RETENTION_DAYS,
+            defaults.sensitiveInformationRetentionDays.toString(),
+        ).toInt()
 
         if (frontendBaseUrl.startsWith("http:")) {
             logger.warn {
@@ -87,37 +110,63 @@ class EnvReader(
             }
         }
 
-        // If AUTH_BYPASS_ENABLED is `true`, we must also seed the user
-        val authBypassEnabled = envService.getBooleanOrDefault(AUTH_BYPASS_ENABLED, defaults.authBypassEnabled)
+        return Env.Miscellaneous(
+            logLevel = envService.getOrDefault(LOG_LEVEL, defaults.logLevel),
+            authBypassEnabled = envService.getBooleanOrDefault(AUTH_BYPASS_ENABLED, defaults.authBypassEnabled),
+            frontendBaseUrl = frontendBaseUrl,
+            sensitiveInformationRetentionDays = sensitiveInformationRetentionDays,
+        )
+    }
+
+    /**
+     * Builds the database configuration by reading and processing related environment variables.
+     *
+     * @param defaults Default values for the database configuration.
+     * @param authBypassEnabled Whether authentication bypass is enabled.
+     * @return An [Env.Database] object containing the database configuration.
+     */
+    private fun buildDatabase(defaults: ProfileDefaults, authBypassEnabled: Boolean): Env.Database {
         val seedUserEnabled =
             authBypassEnabled || envService.getBooleanOrDefault(DATABASE_SEED_USER_ENABLED, defaults.seedUserEnabled)
 
-        env = Env(
-            http = Env.Http(port),
-            miscellaneous = Env.Miscellaneous(
-                logLevel,
-                authBypassEnabled,
-                frontendBaseUrl,
-                sensitiveInformationRetentionDays,
-            ),
-            database = Env.Database(
-                password = envService[DATABASE_PASSWORD],
-                host = host,
-                seedUserEnabled = seedUserEnabled,
-            ),
-            encryption = Env.Encryption(
-                jwtPrivateKeyBase64 = envService[JWT_PRIVATE_KEY_BASE64],
-                jwtPublicKeyBase64 = envService[JWT_PUBLIC_KEY_BASE64],
-            ),
-            smtp = Env.SMTP(
-                smtpHost = envService[SMTP_HOST],
-                smtpPort = envService[SMTP_PORT].toInt(),
-                smtpUser = envService.getOrNull(SMTP_USER),
-                smtpPassword = envService.getOrNull(SMTP_PASSWORD),
-                smtpTransportLoggingOnlyEnabled = smtpTransportLoggingOnlyEnabled,
-                smtpSenderName = envService[SMTP_SENDER_NAME],
-                smtpSenderEmail = envService[SMTP_SENDER_EMAIL],
-            ),
+        return Env.Database(
+            password = envService[DATABASE_PASSWORD],
+            host = envService.getRequiredOrDefault(DATABASE_HOST, defaults.databaseHost),
+            seedUserEnabled = seedUserEnabled,
+        )
+    }
+
+    /**
+     * Builds the encryption configuration by reading and processing related environment variables.
+     *
+     * @return An [Env.Encryption] object containing the encryption configuration.
+     */
+    private fun buildEncryption(): Env.Encryption = Env.Encryption(
+        jwtPrivateKeyBase64 = envService[JWT_PRIVATE_KEY_BASE64],
+        jwtPublicKeyBase64 = envService[JWT_PUBLIC_KEY_BASE64],
+    )
+
+    /**
+     * Builds the SMTP configuration by reading and processing related environment variables.
+     *
+     * @param defaults Default values for the SMTP configuration.
+     * @return An [Env.SMTP] object containing the SMTP configuration.
+     */
+    private fun buildSmtp(defaults: ProfileDefaults): Env.SMTP {
+        val smtpTransportLoggingOnlyEnabled =
+            envService.getBooleanOrDefault(
+                SMTP_TRANSPORT_LOGGING_ONLY_ENABLED,
+                defaults.smtpTransportLoggingOnlyEnabled,
+            )
+
+        return Env.SMTP(
+            smtpHost = envService[SMTP_HOST],
+            smtpPort = envService[SMTP_PORT].toInt(),
+            smtpUser = envService.getOrNull(SMTP_USER),
+            smtpPassword = envService.getOrNull(SMTP_PASSWORD),
+            smtpTransportLoggingOnlyEnabled = smtpTransportLoggingOnlyEnabled,
+            smtpSenderName = envService[SMTP_SENDER_NAME],
+            smtpSenderEmail = envService[SMTP_SENDER_EMAIL],
         )
     }
 
