@@ -1,7 +1,9 @@
 package se.uulm.snowballr.backend.repository
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.lessEq
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
 import se.uulm.snowballr.backend.db.IDatabase
@@ -12,6 +14,8 @@ import se.uulm.snowballr.backend.table.InvitationTokenTable
 import se.uulm.snowballr.backend.table.toInvitationToken
 import java.time.OffsetDateTime
 import java.util.UUID
+
+private val logger = KotlinLogging.logger { }
 
 interface IInvitationTokenTableRepo {
     /**
@@ -57,6 +61,11 @@ interface IInvitationTokenTableRepo {
      * @param token The invitation token to delete.
      */
     suspend fun deleteInvitationToken(token: String)
+
+    /**
+     * Deletes all invitation tokens that have expired.
+     */
+    suspend fun deleteExpiredInvitationTokens()
 }
 
 class InvitationTokenTableRepo(
@@ -110,5 +119,13 @@ class InvitationTokenTableRepo(
         db.query {
             InvitationTokenTable.deleteWhere { InvitationTokenTable.token eq token }
         }
+    }
+
+    override suspend fun deleteExpiredInvitationTokens() = db.query {
+        val deletedTokens = InvitationTokenTable.deleteWhere {
+            InvitationTokenTable.expiresAt lessEq OffsetDateTime.now()
+        }
+
+        logger.info { "Deleted $deletedTokens expired invitation tokens." }
     }
 }
