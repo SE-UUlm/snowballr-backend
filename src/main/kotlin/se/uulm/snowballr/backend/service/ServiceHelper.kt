@@ -2,13 +2,10 @@ package se.uulm.snowballr.backend.service
 
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
-import se.uulm.snowballr.backend.model.dto.Author
 import se.uulm.snowballr.backend.model.dto.Paper
 import se.uulm.snowballr.backend.model.dto.User
-import se.uulm.snowballr.backend.model.dto.toGrpcAuthor
 import se.uulm.snowballr.backend.model.dto.toGrpcPaper
 import se.uulm.snowballr.backend.repository.IUserTableRepo
-import se.uulm.snowballr.backend.repository.association.IAuthorOfPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
 import java.util.UUID
 import snowballr.PaperOuterClass.Paper as GrpcPaper
@@ -24,13 +21,9 @@ suspend fun <T> withUser(userRepo: IUserTableRepo, block: suspend (User) -> T): 
 }
 
 /**
- * Populates the given [Paper] with its authors and backward references and converts it to a [GrpcPaper].
+ * Populates the given [Paper] with its backward references and converts it to a [GrpcPaper].
  */
-suspend fun Paper.toGrpcPaperWithAuthorsAndBackwardReferences(
-    authorRepo: IAuthorOfPaperTableRepo,
-    citationRepo: ICitationTableRepo,
-): GrpcPaper {
-    val authors = authorRepo.getAuthorsOfPaperById(id).map(Author::toGrpcAuthor)
+suspend fun Paper.toGrpcPaperWithAuthorsAndBackwardReferences(citationRepo: ICitationTableRepo): GrpcPaper {
     val backwardReferences = citationRepo.getBackwardsReferencedPaperIdsOfPaperById(id).map(UUID::toString)
-    return toGrpcPaper(authors, backwardReferences)
+    return toGrpcPaper(backwardReferences)
 }

@@ -1,27 +1,35 @@
 package se.uulm.snowballr.backend.model.dto
 
-import se.uulm.snowballr.backend.table.AuthorTable
-import snowballr.PaperOuterClass
-import java.time.OffsetDateTime
-import java.util.UUID
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import se.uulm.snowballr.backend.table.PaperTable
+import snowballr.PaperOuterClass.Author as GrpcAuthor
 
 /**
- * DTO of [AuthorTable].
+ * Author DTO of [PaperTable].
  */
+@Serializable
 data class Author(
-    val id: UUID,
+    @SerialName("first_name")
     val firstName: String,
+    @SerialName("last_name")
     val lastName: String,
-    val orcid: String?,
-    val createdAt: OffsetDateTime,
-    val modifiedAt: OffsetDateTime?,
 )
 
 /**
- * Creates a [PaperOuterClass.Author] from this [Author].
+ * Creates a [GrpcAuthor] from this [Author].
  */
-fun Author.toGrpcAuthor(): PaperOuterClass.Author = PaperOuterClass.Author.newBuilder()
+fun Author.toGrpcAuthor(): GrpcAuthor = GrpcAuthor.newBuilder()
     .setFirstName(firstName)
     .setLastName(lastName)
-    .also { if (orcid != null) it.setOrcid(orcid) }
     .build()
+
+/**
+ * Creates an [Author] from this [GrpcAuthor].
+ */
+fun GrpcAuthor.toAuthor(): Author = Author(firstName, lastName)
+
+/**
+ * Creates a list of [GrpcAuthor] from this list of [Author].
+ */
+fun List<Author>.toGrpcAuthors(): List<GrpcAuthor> = this.map(Author::toGrpcAuthor)

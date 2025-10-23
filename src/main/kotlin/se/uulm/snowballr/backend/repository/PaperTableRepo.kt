@@ -6,11 +6,13 @@ import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.Paper
+import se.uulm.snowballr.backend.model.dto.toAuthor
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.toPaper
 import java.time.OffsetDateTime
 import java.util.UUID
+import snowballr.PaperOuterClass.Author as GrpcAuthor
 import snowballr.PaperOuterClass.Paper as GrpcPaper
 
 /**
@@ -51,6 +53,7 @@ interface IPaperTableRepo {
      * - [GrpcPaper.publisher_]
      * - [GrpcPaper.publicationName_]
      * - [GrpcPaper.publicationType_]
+     * - [GrpcPaper.authors_]
      */
     suspend fun updatePaper(request: GrpcPaper.Update): Paper
 }
@@ -90,6 +93,7 @@ class PaperTableRepo(
             it[publisher] = request.publisher
             it[publicationName] = request.publicationName
             it[publicationType] = request.publicationType
+            it[authors] = request.authorsList.map(GrpcAuthor::toAuthor)
             it[createdAt] = OffsetDateTime.now()
         }
     }
@@ -112,6 +116,7 @@ class PaperTableRepo(
                     "paper.publisher" -> it[publisher] = request.paper.publisher
                     "paper.publication_name" -> it[publicationName] = request.paper.publicationName
                     "paper.publication_type" -> it[publicationType] = request.paper.publicationType
+                    "paper.authors" -> it[authors] = request.paper.authorsList.map(GrpcAuthor::toAuthor)
                 }
             }
 

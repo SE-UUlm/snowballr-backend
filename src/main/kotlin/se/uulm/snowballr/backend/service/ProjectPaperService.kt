@@ -9,11 +9,9 @@ import se.uulm.snowballr.backend.model.SnowballRException.InvalidIdException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.OutOfRangeException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
-import se.uulm.snowballr.backend.model.dto.Author
 import se.uulm.snowballr.backend.model.dto.Paper
 import se.uulm.snowballr.backend.model.dto.ProjectPaper
 import se.uulm.snowballr.backend.model.dto.ProjectPaperWithPaper
-import se.uulm.snowballr.backend.model.dto.toGrpcAuthor
 import se.uulm.snowballr.backend.model.dto.toGrpcProjectPaper
 import se.uulm.snowballr.backend.model.dto.toGrpcProjectPapers
 import se.uulm.snowballr.backend.model.dto.toGrpcReview
@@ -22,7 +20,6 @@ import se.uulm.snowballr.backend.repository.IPaperTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IReviewTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
-import se.uulm.snowballr.backend.repository.association.IAuthorOfPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
@@ -37,7 +34,6 @@ import snowballr.Base
 import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ProjectOuterClass.Project
 import java.util.UUID
-import snowballr.PaperOuterClass.Author as GrpcAuthor
 import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 import snowballr.ReviewOuterClass.Review as GrpcReview
 
@@ -91,8 +87,6 @@ interface IProjectPaperService {
  * @param projectRepo The repository responsible for managing persistence operations for projects.
  * @param paperRepo The repository responsible for managing persistence operations for papers.
  * @param projectMemberRepo The repository responsible for managing persistence operations for project members.
- * @param authorOfPaperTableRepo The repository responsible for managing persistence operations for the author
- * paper relation.
  * @param citationTableRepo The repository responsible for managing persistence operations for the citation relation.
  * @param reviewTableRepo The repository responsible for managing persistence operations for the reviews
  * @param reviewHasCriterionTableRepo The repository responsible for managing persistence operations for the review has
@@ -104,7 +98,6 @@ class ProjectPaperService(
     private val projectRepo: IProjectTableRepo,
     private val paperRepo: IPaperTableRepo,
     private val projectMemberRepo: IProjectMemberTableRepo,
-    private val authorOfPaperTableRepo: IAuthorOfPaperTableRepo,
     private val citationTableRepo: ICitationTableRepo,
     private val reviewTableRepo: IReviewTableRepo,
     private val reviewHasCriterionTableRepo: IReviewHasCriterionTableRepo,
@@ -119,8 +112,6 @@ class ProjectPaperService(
     private suspend fun ProjectPaper.toGrpcProjectPaperWithData(associatedPaper: Paper? = null): GrpcProjectPaper {
         val paper = associatedPaper ?: paperRepo.getPaperById(paperId).getOrThrow()
 
-        val authors = authorOfPaperTableRepo.getAuthorsOfPaperById(paper.id).map(Author::toGrpcAuthor)
-
         val backwardReferences = citationTableRepo
             .getBackwardsReferencedPaperIdsOfPaperById(paper.id).map(UUID::toString)
 
@@ -131,7 +122,7 @@ class ProjectPaperService(
                 it.toGrpcReview(selectedCriteriaIds.map(UUID::toString))
             }
 
-        return ProjectPaperWithPaper(this, paper).toGrpcProjectPaper(authors, backwardReferences, reviews)
+        return ProjectPaperWithPaper(this, paper).toGrpcProjectPaper(backwardReferences, reviews)
     }
 
     /**
@@ -158,14 +149,11 @@ class ProjectPaperService(
             .checkFor(currentUser, projectId)
 
         var projectPapersWithPapers = repo.getAllProjectPapersWithPapers(projectId)
-        val paperAuthorsMap = mutableMapOf<Paper, List<GrpcAuthor>>()
         val paperBackwardReferencesMap = mutableMapOf<Paper, List<String>>()
         val projectPaperReviewsMap = mutableMapOf<ProjectPaper, List<GrpcReview>>()
 
         for (projectPaper in projectPapersWithPapers) {
             val paper = projectPaper.paper
-            paperAuthorsMap[paper] = authorOfPaperTableRepo
-                .getAuthorsOfPaperById(paper.id).map(Author::toGrpcAuthor)
             paperBackwardReferencesMap[paper] = citationTableRepo
                 .getBackwardsReferencedPaperIdsOfPaperById(paper.id).map(UUID::toString)
             projectPaperReviewsMap[projectPaper.projectPaper] = reviewTableRepo
@@ -180,7 +168,7 @@ class ProjectPaperService(
             projectPapersWithPapers.filter { pred(it, projectPaperReviewsMap, currentUser.id.toString()) }
         } ?: projectPapersWithPapers
 
-        projectPapersWithPapers.toGrpcProjectPapers(paperAuthorsMap, paperBackwardReferencesMap, projectPaperReviewsMap)
+        projectPapersWithPapers.toGrpcProjectPapers(paperBackwardReferencesMap, projectPaperReviewsMap)
     }
 
     /**

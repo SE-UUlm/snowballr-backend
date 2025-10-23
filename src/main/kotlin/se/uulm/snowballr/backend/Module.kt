@@ -23,9 +23,7 @@ import se.uulm.snowballr.backend.fetcher.FetcherManager
 import se.uulm.snowballr.backend.mail.EmailManager
 import se.uulm.snowballr.backend.mail.EmailTemplateManager
 import se.uulm.snowballr.backend.mail.IEmailManager
-import se.uulm.snowballr.backend.repository.AuthorTableRepo
 import se.uulm.snowballr.backend.repository.CriterionTableRepo
-import se.uulm.snowballr.backend.repository.IAuthorTableRepo
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
@@ -39,9 +37,7 @@ import se.uulm.snowballr.backend.repository.ProjectTableRepo
 import se.uulm.snowballr.backend.repository.ReviewTableRepo
 import se.uulm.snowballr.backend.repository.UserTableRepo
 import se.uulm.snowballr.backend.repository.VerificationTokenTableRepo
-import se.uulm.snowballr.backend.repository.association.AuthorOfPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.CitationTableRepo
-import se.uulm.snowballr.backend.repository.association.IAuthorOfPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
@@ -127,8 +123,6 @@ private fun Module.repositoryLayerDeps() {
     singleOf(::UserTableRepo) { bind<IUserTableRepo>() }
     singleOf(::ProjectMemberTableRepo) { bind<IProjectMemberTableRepo>() }
     singleOf(::PaperTableRepo) { bind<IPaperTableRepo>() }
-    singleOf(::AuthorTableRepo) { bind<IAuthorTableRepo>() }
-    singleOf(::AuthorOfPaperTableRepo) { bind<IAuthorOfPaperTableRepo>() }
     singleOf(::CitationTableRepo) { bind<ICitationTableRepo>() }
     singleOf(::ReadingListTableRepo) { bind<IReadingListTableRepo>() }
     singleOf(::VerificationTokenTableRepo) { bind<IVerificationTokenTableRepo>() }

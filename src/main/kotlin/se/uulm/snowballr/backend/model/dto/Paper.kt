@@ -1,7 +1,6 @@
 package se.uulm.snowballr.backend.model.dto
 
 import se.uulm.snowballr.backend.table.PaperTable
-import snowballr.PaperOuterClass
 import snowballr.paper
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -20,6 +19,7 @@ data class Paper(
     val publicationType: String,
     val publicationName: String,
     val pdfId: UUID?,
+    val authors: List<Author>,
     val fetcherMetadata: Map<String, String>,
     val createdAt: OffsetDateTime,
     val modifiedAt: OffsetDateTime?,
@@ -29,7 +29,7 @@ data class Paper(
 /**
  * Creates a [GrpcPaper] from this [Paper].
  */
-fun Paper.toGrpcPaper(authorList: List<PaperOuterClass.Author>, backwardReferencedIdsList: List<String>): GrpcPaper {
+fun Paper.toGrpcPaper(backwardReferencedIdsList: List<String>): GrpcPaper {
     val paper = this
     return paper {
         id = paper.id.toString()
@@ -41,7 +41,7 @@ fun Paper.toGrpcPaper(authorList: List<PaperOuterClass.Author>, backwardReferenc
         publicationType = paper.publicationType
         publicationName = paper.publicationName
         hasPdf = paper.pdfId != null
-        authors.addAll(authorList)
+        authors.addAll(paper.authors.toGrpcAuthors())
         backwardReferencedIds.addAll(backwardReferencedIdsList)
     }
 }

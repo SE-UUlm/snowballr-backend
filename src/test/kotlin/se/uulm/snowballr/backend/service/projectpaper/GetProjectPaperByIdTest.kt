@@ -40,14 +40,14 @@ class GetProjectPaperByIdTest : MainServiceTest() {
             },
         )
         val project = DataBuilder.createExampleProject()
-        val paper = DataBuilder.createExamplePaper()
+        val author = DataBuilder.createExampleAuthor()
+        val paper = DataBuilder.createExamplePaper(authors = listOf(author))
         val projectPaper = DataBuilder.createExampleProjectPaper(
             id = projectPaperId,
             projectId = project.id,
             paperId = paper.id,
         )
         val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
-        val author = DataBuilder.createExampleAuthor()
         val review = DataBuilder.createExampleReview()
 
         mockCurrentUser(currentUser)
@@ -73,7 +73,6 @@ class GetProjectPaperByIdTest : MainServiceTest() {
         }
         coEvery { paperRepoMock.getPaperById(projectPaper.paperId) } returns Result.success(paper)
 
-        coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(paper.id) } returns listOf(author)
         coEvery {
             citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
         } returns listOf(UUID.randomUUID())

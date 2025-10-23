@@ -11,7 +11,6 @@ import se.uulm.snowballr.backend.model.dto.Review
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.UserSettings
 import se.uulm.snowballr.backend.model.dto.VerificationToken
-import se.uulm.snowballr.backend.validation.AuthorValidator.generateCheckDigit
 import snowballr.Base
 import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass.MemberRole
@@ -24,7 +23,6 @@ import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
 import java.time.OffsetDateTime
 import java.util.UUID
-import kotlin.random.Random
 
 /**
  * This class acts as a collection of builder methods to create DTOs for testing purposes.
@@ -178,6 +176,7 @@ object DataBuilder {
         publicationName: String = "PublicationName",
         pdfId: UUID? = UUID.randomUUID(),
         fetcherMetadata: Map<String, String> = emptyMap(),
+        authors: List<Author> = emptyList(),
         createdAt: OffsetDateTime = OffsetDateTime.now(),
         modifiedAt: OffsetDateTime? = null,
         modifiedBy: UUID? = null,
@@ -191,6 +190,7 @@ object DataBuilder {
         publicationType,
         publicationName,
         pdfId,
+        authors,
         fetcherMetadata,
         createdAt,
         modifiedAt,
@@ -221,20 +221,9 @@ object DataBuilder {
         modifiedBy,
     )
 
-    fun createExampleAuthor(
-        id: UUID = UUID.randomUUID(),
-        firstName: String = "FirstName",
-        lastName: String = "LastName",
-        orcid: String? = "Orcid",
-        createdAt: OffsetDateTime = OffsetDateTime.now(),
-        modifiedAt: OffsetDateTime? = null,
-    ) = Author(
-        id,
+    fun createExampleAuthor(firstName: String = "FirstName", lastName: String = "LastName") = Author(
         firstName,
         lastName,
-        orcid,
-        createdAt,
-        modifiedAt,
     )
 
     fun createExampleReview(
@@ -280,11 +269,4 @@ object DataBuilder {
         token = token,
         expiresAt = expiresAt,
     )
-
-    fun createValidOrcid(): String {
-        val baseDigits = (1..15).map { Random.nextInt(0, 10) }.joinToString("")
-        val checkDigit = generateCheckDigit(baseDigits)
-        val code = baseDigits + checkDigit
-        return code.take(4) + "-" + code.substring(4, 8) + "-" + code.substring(8, 12) + "-" + code.substring(12)
-    }
 }

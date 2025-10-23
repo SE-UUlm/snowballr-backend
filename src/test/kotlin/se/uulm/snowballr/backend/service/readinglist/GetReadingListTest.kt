@@ -6,7 +6,6 @@ import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import se.uulm.snowballr.backend.DataBuilder
-import se.uulm.snowballr.backend.model.dto.toGrpcAuthor
 import se.uulm.snowballr.backend.model.dto.toGrpcPaper
 import se.uulm.snowballr.backend.service.MainServiceTest
 
@@ -16,19 +15,17 @@ class GetReadingListTest : MainServiceTest() {
         runTest {
             val user = DataBuilder.createExampleUser()
             val paper1 = DataBuilder.createExamplePaper()
-            val paper2 = DataBuilder.createExamplePaper(externalId = "ExternalId2")
             val author = DataBuilder.createExampleAuthor()
+            val paper2 = DataBuilder.createExamplePaper(externalId = "ExternalId2", authors = listOf(author))
 
             mockCurrentUser(user)
-            coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(paper1.id) } returns emptyList()
-            coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(paper2.id) } returns listOf(author)
             coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper2.id) } returns listOf(paper1.id)
             coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper1.id) } returns emptyList()
             coEvery { readingListRepoMock.getAllReadingListEntries(user.id) } returns listOf(paper1, paper2)
 
             assertThat(mainService.getReadingList().papersList).containsExactlyInAnyOrder(
-                paper1.toGrpcPaper(emptyList(), emptyList()),
-                paper2.toGrpcPaper(listOf(author.toGrpcAuthor()), listOf(paper1.id.toString())),
+                paper1.toGrpcPaper(emptyList()),
+                paper2.toGrpcPaper(listOf(paper1.id.toString())),
             )
             coVerify(exactly = 1) { readingListRepoMock.getAllReadingListEntries(user.id) }
         }
@@ -43,7 +40,6 @@ class GetReadingListTest : MainServiceTest() {
         val papers = mainService.getReadingList().papersList
         assertThat(papers).isEmpty()
         coVerify(exactly = 1) { readingListRepoMock.getAllReadingListEntries(user.id) }
-        coVerify(exactly = 0) { authorOfPaperRepoMock.getAuthorsOfPaperById(any()) }
         coVerify(exactly = 0) { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(any()) }
     }
 }

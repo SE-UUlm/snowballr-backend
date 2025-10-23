@@ -1,6 +1,5 @@
 package se.uulm.snowballr.backend.model.dto
 
-import snowballr.PaperOuterClass.Author as GrpcAuthor
 import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 import snowballr.ReviewOuterClass.Review as GrpcReview
 
@@ -22,19 +21,18 @@ data class ProjectPaperWithPaper(
 /**
  * Converts a [ProjectPaperWithPaper] instance into a gRPC [GrpcProjectPaper] object.
  *
- * @param authors A list of authors represented as [GrpcAuthor], associated with the [Paper].
  * @param backwardReferencedIds A list of strings representing the IDs of [Paper]s referenced by the current [Paper].
  * @param reviews A list of reviews represented as [GrpcReview], associated with the [Paper].
- * @return A [GrpcProjectPaper] object constructed with data from the [ProjectPaperWithPaper] instance and the provided [Author]s, backward references, and [Review]s.
+ * @return A [GrpcProjectPaper] object constructed with data from the [ProjectPaperWithPaper] instance and the provided
+ * backward references and [Review]s.
  */
 fun ProjectPaperWithPaper.toGrpcProjectPaper(
-    authors: List<GrpcAuthor>,
     backwardReferencedIds: List<String>,
     reviews: List<GrpcReview>,
 ): GrpcProjectPaper = GrpcProjectPaper
     .newBuilder()
     .setId(projectPaper.id.toString())
-    .setPaper(paper.toGrpcPaper(authors, backwardReferencedIds))
+    .setPaper(paper.toGrpcPaper(backwardReferencedIds))
     .setStage(projectPaper.stage)
     .setDecision(projectPaper.decision)
     .addAllReviews(reviews)
@@ -47,22 +45,16 @@ fun ProjectPaperWithPaper.toGrpcProjectPaper(
  * @return A [GrpcProjectPaper.List] containing the gRPC representation of the [ProjectPaper]s.
  */
 fun List<ProjectPaperWithPaper>.toGrpcProjectPapers(
-    paperAuthorsMap: Map<Paper, List<GrpcAuthor>>,
     paperBackwardReferencesMap: Map<Paper, List<String>>,
     paperReviewsMap: Map<ProjectPaper, List<GrpcReview>>,
 ): GrpcProjectPaper.List = GrpcProjectPaper.List
     .newBuilder()
     .addAllProjectPapers(
         this.map { projectPaper ->
-            val authors = paperAuthorsMap[projectPaper.paper].orEmpty()
             val backwardRefs = paperBackwardReferencesMap[projectPaper.paper].orEmpty()
             val reviews = paperReviewsMap[projectPaper.projectPaper].orEmpty()
 
-            projectPaper.toGrpcProjectPaper(
-                authors,
-                backwardRefs,
-                reviews,
-            )
+            projectPaper.toGrpcProjectPaper(backwardRefs, reviews)
         },
     )
     .build()

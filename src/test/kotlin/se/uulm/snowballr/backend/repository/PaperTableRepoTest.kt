@@ -14,13 +14,16 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import se.uulm.snowballr.backend.isBetweenWithDelta
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.toGrpcPaper
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertPaperAndGetId
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.utils.assertResultFailure
 import se.uulm.snowballr.backend.utils.assertResultSuccess
+import snowballr.PaperOuterClass.Author
 import snowballr.PaperOuterClass.Paper
+import snowballr.author
 import java.sql.SQLException
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -36,6 +39,7 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
             Arguments.of(listOf("paper.year")),
             Arguments.of(listOf("paper.publisher")),
             Arguments.of(listOf("paper.publication_name", "paper.publication_type")),
+            Arguments.of(listOf("paper.authors")),
         )
     }
 
@@ -56,6 +60,7 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
                 assertEquals("PublicationType", publicationType)
                 assertEquals("PublicationName", publicationName)
                 assertThat(fetcherMetadata).isEmpty()
+                assertThat(authors).isEmpty()
             }
         }
 
@@ -119,6 +124,14 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
             .setPublisher("Publisher")
             .setPublicationName("PublicationName")
             .setPublicationType("PublicationType")
+            .addAllAuthors(
+                listOf(
+                    author {
+                        firstName = "FirstName"
+                        lastName = "LastName"
+                    },
+                ),
+            )
             .build()
 
         @Test
@@ -139,7 +152,10 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
                 assertEquals("PublicationType", publicationType)
                 assertEquals("PublicationName", publicationName)
                 assertThat(fetcherMetadata).isEmpty()
-                assertThat(createdAt).isBetween(start, end)
+                assertThat(authors).hasSize(1)
+                assertThat(authors[0].firstName).isEqualTo("FirstName")
+                assertThat(authors[0].lastName).isEqualTo("LastName")
+                assertThat(createdAt).isBetweenWithDelta(start, end)
                 assertNull(modifiedAt)
                 assertNull(modifiedBy)
             }
@@ -171,6 +187,7 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
     inner class UpdatePaper {
         @ParameterizedTest(name = "Update the fields {0}")
         @MethodSource("se.uulm.snowballr.backend.repository.PaperTableRepoTest#validFieldMasks")
+        @Suppress("LongMethod")
         fun `When a paper is updated, then only the fields specified in the field mask are updated and the updated paper is returned`(
             fieldMask: List<String>,
         ) = runTest {
@@ -178,7 +195,7 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
             val paperId = insertPaperAndGetId(externalId = externalId)
             val paper = repo.getPaperById(paperId).getOrThrow()
 
-            val updatedPaperDetails = paper.toGrpcPaper(emptyList(), emptyList()).toBuilder()
+            val updatedPaperDetails = paper.toGrpcPaper(emptyList()).toBuilder()
                 .setExternalId("updated-external-id")
                 .setTitle("Updated Title")
                 .setAbstrakt("Updated Abstract")
@@ -186,6 +203,14 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
                 .setPublisher("Updated Publisher")
                 .setPublicationName("Updated PublicationName")
                 .setPublicationType("Updated PublicationType")
+                .addAllAuthors(
+                    listOf(
+                        Author.newBuilder()
+                            .setFirstName("UpdatedFirstName")
+                            .setLastName("UpdatedLastName")
+                            .build(),
+                    ),
+                )
                 .build()
 
             val request = Paper.Update.newBuilder()
@@ -232,8 +257,15 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
             } else {
                 assertThat(updatedPaper.publicationType).isEqualTo("PublicationType")
             }
+            if ("paper.authors" in fieldMask) {
+                assertThat(updatedPaper.authors).hasSize(1)
+                assertThat(updatedPaper.authors[0].firstName).isEqualTo("UpdatedFirstName")
+                assertThat(updatedPaper.authors[0].lastName).isEqualTo("UpdatedLastName")
+            } else {
+                assertThat(updatedPaper.authors).isEmpty()
+            }
 
-            assertThat(updatedPaper.modifiedAt).isBetween(start, end)
+            assertThat(updatedPaper.modifiedAt).isBetweenWithDelta(start, end)
         }
 
         @Test
@@ -242,7 +274,7 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
             val paper = repo.getPaperById(paperId).getOrThrow()
 
             val request = Paper.Update.newBuilder()
-                .setPaper(paper.toGrpcPaper(emptyList(), emptyList()))
+                .setPaper(paper.toGrpcPaper(emptyList()))
                 .setMask(FieldMaskUtil.fromStringList(emptyList()))
                 .build()
 

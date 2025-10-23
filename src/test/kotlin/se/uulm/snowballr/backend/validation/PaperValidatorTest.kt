@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
-import se.uulm.snowballr.backend.DataBuilder.createValidOrcid
 import se.uulm.snowballr.backend.model.BlankField
 import se.uulm.snowballr.backend.model.CompositeIssue
 import se.uulm.snowballr.backend.model.InvalidFieldMask
@@ -136,7 +135,6 @@ class PaperValidatorTest {
                 author {
                     firstName = "John$it"
                     lastName = "Doe$it"
-                    orcid = createValidOrcid()
                 }
             },
         )
@@ -234,7 +232,6 @@ class PaperValidatorTest {
                 author {
                     firstName = ""
                     lastName = ""
-                    orcid = "invalid-orcid"
                 },
             )
             val request = validPaperBuilder.clearAuthors().addAllAuthors(authors).build()
@@ -403,7 +400,6 @@ class PaperValidatorTest {
                 author {
                     firstName = ""
                     lastName = ""
-                    orcid = "invalid-orcid"
                 },
             )
             val paper = validPaperBuilder.clearAuthors().addAllAuthors(authors).build()
