@@ -229,9 +229,10 @@ object RepositoryHelper {
     }
 
     /**
-     * Creates a test verification token (default "secure-random-token-123") in the database for the specified user.
+     * Creates a test verification token (default "secure-random-invitation-token-123") in the database
+     * for the specified user.
      */
-    suspend fun insertTestVerificationToken(userId: UUID, token: String = "secure-random-token-123") {
+    suspend fun insertTestVerificationToken(userId: UUID, token: String = "secure-random-invitation-token-123") {
         db.query {
             VerificationTokenTable.insert {
                 it[VerificationTokenTable.userId] = userId
@@ -242,9 +243,9 @@ object RepositoryHelper {
 
     /**
      * Creates a test invitation token (default "secure-random-invitation-token-123") in the database
-     * with the specified properties.
+     * for the specified properties.
      */
-    suspend fun insertTestToken(
+    suspend fun insertTestInvitationToken(
         email: String,
         projectId: UUID,
         token: String = "secure-random-invitation-token-123",

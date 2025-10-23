@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import se.uulm.snowballr.backend.model.SnowballRException.InvitationTokenNotFoundException
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectAndGetId
-import se.uulm.snowballr.backend.repository.RepositoryHelper.insertTestToken
+import se.uulm.snowballr.backend.repository.RepositoryHelper.insertTestInvitationToken
 import se.uulm.snowballr.backend.table.InvitationTokenTable
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.UserTable
@@ -46,7 +46,7 @@ class InvitationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, ProjectTa
             val projectId = insertProjectAndGetId(createdBy = testUserId)
 
             val tokenValue = "a-token-that-exists"
-            insertTestToken(testEmail, projectId, tokenValue)
+            insertTestInvitationToken(testEmail, projectId, tokenValue)
 
             val result = assertResultSuccess(repo.getInvitationTokenByValue(tokenValue))
             assertEquals(testEmail, result.email)
@@ -70,7 +70,7 @@ class InvitationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, ProjectTa
             val projectId = insertProjectAndGetId(createdBy = testUserId)
 
             val tokenValue = "a-token-for-email-and-project"
-            insertTestToken(testEmail, projectId, tokenValue)
+            insertTestInvitationToken(testEmail, projectId, tokenValue)
 
             val result = assertResultSuccess(repo.getInvitationTokenByEmailAndProjectId(testEmail, projectId))
             assertEquals(tokenValue, result.token)
@@ -81,7 +81,7 @@ class InvitationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, ProjectTa
             runTest {
                 val projectId = insertProjectAndGetId(createdBy = testUserId)
 
-                insertTestToken(testEmail, projectId)
+                insertTestInvitationToken(testEmail, projectId)
                 val anotherProjectId = UUID.randomUUID()
 
                 assertResultFailure<InvitationTokenNotFoundException>(
@@ -97,7 +97,7 @@ class InvitationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, ProjectTa
             runTest {
                 val projectId = insertProjectAndGetId(createdBy = testUserId)
 
-                insertTestToken(testEmail, projectId)
+                insertTestInvitationToken(testEmail, projectId)
                 val anotherEmail = "another.email@example.com"
 
                 assertResultFailure<InvitationTokenNotFoundException>(
@@ -125,9 +125,9 @@ class InvitationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, ProjectTa
         private fun getRandomTestEmail() = "${UUID.randomUUID().toString().substring(0, 5)}@example.com"
 
         private suspend fun insertActiveTestToken(projectId: UUID, token: String) =
-            insertTestToken(getRandomTestEmail(), projectId, token)
+            insertTestInvitationToken(getRandomTestEmail(), projectId, token)
 
-        private suspend fun insertInactiveTestToken(projectId: UUID) = insertTestToken(
+        private suspend fun insertInactiveTestToken(projectId: UUID) = insertTestInvitationToken(
             getRandomTestEmail(),
             projectId,
             "an-inactive-token",
@@ -174,7 +174,7 @@ class InvitationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, ProjectTa
             val projectId = insertProjectAndGetId(createdBy = testUserId)
 
             val tokenValue = "a-token-to-be-deleted"
-            insertTestToken(testEmail, projectId, tokenValue)
+            insertTestInvitationToken(testEmail, projectId, tokenValue)
 
             assertResultSuccess(repo.getInvitationTokenByValue(tokenValue))
 

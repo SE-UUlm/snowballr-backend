@@ -293,7 +293,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
     }
 
     @Nested
-    inner class DeleteUser {
+    inner class SoftDeleteUser {
         @Test
         fun `When the user is found, then the status of the user is set to USER_STATUS_DELETED`() = runTest {
             val userId1 = insertUserAndGetId()
