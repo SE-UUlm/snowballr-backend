@@ -58,7 +58,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
         @Test
         fun `When a user is found by their ID, then a successful result with the correct user is returned`() = runTest {
             val userId = insertUserAndGetId()
-            val result = repo.getUserById(userId)
+            val result = assertDoesNotThrow { repo.getUserById(userId) }
 
             val user = assertResultSuccess(result)
             assertEquals(userId, user.id)
@@ -72,7 +72,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
         @Test
         fun `When a user is not found by their ID, then a failed result with a NotFoundException is returned`() =
             runTest {
-                val result = repo.getUserById(UUID.randomUUID())
+                val result = assertDoesNotThrow { repo.getUserById(UUID.randomUUID()) }
 
                 assertResultFailure<NotFoundException>(result)
             }
@@ -84,7 +84,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
         fun `When a user is found by their email, then a successful result with the correct user is returned`() =
             runTest {
                 val userId = insertUserAndGetId()
-                val result = repo.getUserByEmail("test.user@example.com")
+                val result = assertDoesNotThrow { repo.getUserByEmail("test.user@example.com") }
 
                 val user = assertResultSuccess(result)
                 assertEquals(userId, user.id)
@@ -98,7 +98,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
         @Test
         fun `When a user is not found by their email, then a failed result with a NotFoundException is returned`() =
             runTest {
-                val result = repo.getUserByEmail("nonexistent email")
+                val result = assertDoesNotThrow { repo.getUserByEmail("nonexistent email") }
 
                 assertResultFailure<NotFoundException>(result)
             }
@@ -141,7 +141,8 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
             val userId1 = insertUserAndGetId(email = "test.user1@example.com", lastName = "User 2")
             val userId2 = insertUserAndGetId(email = "test.user2@example.com", lastName = "User 1")
 
-            val users = repo.getAllUsers()
+            val users = assertDoesNotThrow { repo.getAllUsers() }
+
             assertThat(users).hasSize(2)
             val firstUser = users.find { it.id == userId1 }
             assertNotNull(firstUser)
@@ -154,7 +155,8 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
             val userId1 = insertUserAndGetId(email = "test.user1@example.com", lastName = "User 1")
             val userId2 = insertUserAndGetId(email = "", firstName = "", lastName = "")
 
-            val users = repo.getAllUsers()
+            val users = assertDoesNotThrow { repo.getAllUsers() }
+
             assertThat(users).hasSize(1)
             val firstUser = users.find { it.id == userId1 }
             assertNotNull(firstUser)
@@ -175,7 +177,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
                     .setLastName("Smith")
                     .setPassword("AAbb__00")
                     .build()
-            val user = repo.createUser(request, "hashedPassword")
+            val user = assertDoesNotThrow { repo.createUser(request, "hashedPassword") }
 
             assertEquals("alice.smith@example.com", user.email)
             assertEquals("Alice", user.firstName)
@@ -194,7 +196,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
                     .setLastName("Smith")
                     .setPassword("AAbb__00")
                     .build()
-            repo.createUser(request, "hashedPassword")
+            assertDoesNotThrow { repo.createUser(request, "hashedPassword") }
 
             assertThrows<SQLException> {
                 repo.createUser(request, "hashedPassword2")
@@ -211,7 +213,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
                     .setLastName("Smith")
                     .setPassword("AAbb__00")
                     .build()
-            val user1 = repo.createUser(request1, "hashedPassword1")
+            val user1 = assertDoesNotThrow { repo.createUser(request1, "hashedPassword1") }
             val request2 =
                 Authentication.RegisterRequest
                     .newBuilder()
@@ -220,7 +222,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
                     .setLastName("Smith")
                     .setPassword("BBaa__00")
                     .build()
-            val user2 = repo.createUser(request2, "hashedPassword2")
+            val user2 = assertDoesNotThrow { repo.createUser(request2, "hashedPassword2") }
 
             assertNotEquals(user2.id, user1.id)
         }
@@ -249,7 +251,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
                 .setMask(FieldMaskUtil.fromStringList(fieldMask))
                 .build()
 
-            val updatedUser = repo.updateUser(request)
+            val updatedUser = assertDoesNotThrow { repo.updateUser(request) }
 
             if ("user.email" in fieldMask) {
                 assertEquals("updated.user@example.com", updatedUser.email)
@@ -305,7 +307,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
             val userId1 = insertUserAndGetId()
             val before = OffsetDateTime.now()
 
-            repo.softDeleteUser(userId1)
+            assertDoesNotThrow { repo.softDeleteUser(userId1) }
 
             val after = OffsetDateTime.now()
             val deletedUser = repo.getUserById(userId1).getOrThrow()
@@ -471,7 +473,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
                 .setNumberOfReviewers(2)
                 .build()
 
-            val result = repo.getUserSettings(userId)
+            val result = assertDoesNotThrow { repo.getUserSettings(userId) }
 
             val userSettings = assertResultSuccess(result)
             assertTrue(userSettings.areHotkeysShown)
@@ -486,9 +488,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
 
         @Test
         fun `When a user is not found, then a failed result with a NotFoundException is returned`() = runTest {
-            val result = repo.getUserSettings(UUID.randomUUID())
-
-            assertResultFailure<NotFoundException>(result)
+            assertResultFailure<NotFoundException>(repo.getUserSettings(UUID.randomUUID()))
         }
     }
 
@@ -500,7 +500,9 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
             val userId2 = insertUserAndGetId(lastName = "John", email = "doe.john@example.com")
             val userId3 = insertUserAndGetId(email = "john@example.com")
 
-            val matchingUsers = repo.getUsersMatchingSearchQuery("john", emptySet())
+            val matchingUsers = assertDoesNotThrow {
+                repo.getUsersMatchingSearchQuery("john", emptySet())
+            }
 
             assertThat(matchingUsers).hasSize(3)
 
@@ -511,7 +513,9 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
         fun `When a deleted user is matching the search query, then this user is not returned`() = runTest {
             insertUserAndGetId(firstName = "john", lastName = "doe", status = UserStatus.USER_STATUS_DELETED)
 
-            val matchingUsers = repo.getUsersMatchingSearchQuery("john", emptySet())
+            val matchingUsers = assertDoesNotThrow {
+                repo.getUsersMatchingSearchQuery("john", emptySet())
+            }
 
             assertThat(matchingUsers).hasSize(0)
         }
@@ -520,7 +524,9 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
         fun `When no user is matching the search query, then an empty list is returned`() = runTest {
             insertUserAndGetId(firstName = "johnathan")
 
-            val matchingUsers = repo.getUsersMatchingSearchQuery("nonexistent", emptySet())
+            val matchingUsers = assertDoesNotThrow {
+                repo.getUsersMatchingSearchQuery("nonexistent", emptySet())
+            }
 
             assertThat(matchingUsers).hasSize(0)
         }
@@ -532,7 +538,9 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
                     insertUserAndGetId(firstName = "John the $i-th", email = "john$i@example.com")
                 }
 
-                val matchingUsers = repo.getUsersMatchingSearchQuery("john", emptySet())
+                val matchingUsers = assertDoesNotThrow {
+                    repo.getUsersMatchingSearchQuery("john", emptySet())
+                }
 
                 assertThat(matchingUsers).hasSize(10)
             }
@@ -543,7 +551,9 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
                 val userEmail = "johnathan@example.com"
                 insertUserAndGetId(email = userEmail, firstName = "johnathan")
 
-                val matchingUsers = repo.getUsersMatchingSearchQuery("john", setOf(userEmail))
+                val matchingUsers = assertDoesNotThrow {
+                    repo.getUsersMatchingSearchQuery("john", setOf(userEmail))
+                }
 
                 assertThat(matchingUsers).hasSize(0)
             }

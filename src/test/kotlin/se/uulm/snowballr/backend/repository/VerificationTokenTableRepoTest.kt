@@ -22,7 +22,7 @@ class VerificationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, Verific
         fun `When a token is saved for an existent user, then it can be retrieved by its value`() = runTest {
             val tokenValue = "a-unique-token-for-saving"
 
-            repo.saveVerificationToken(testUserId, tokenValue)
+            assertDoesNotThrow { repo.saveVerificationToken(testUserId, tokenValue) }
 
             val retrievedToken = assertResultSuccess(repo.getVerificationTokenByValue(tokenValue))
             assertEquals(testUserId, retrievedToken.userId)
@@ -60,7 +60,7 @@ class VerificationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, Verific
 
             assertResultSuccess(repo.getVerificationTokenByValue(tokenValue))
 
-            repo.deleteVerificationToken(tokenValue)
+            assertDoesNotThrow { repo.deleteVerificationToken(tokenValue) }
 
             assertResultFailure<VerificationTokenNotFoundException>(repo.getVerificationTokenByValue(tokenValue))
         }
