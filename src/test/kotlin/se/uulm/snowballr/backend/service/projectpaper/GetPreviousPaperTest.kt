@@ -6,8 +6,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
+import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.PaperNavigationDirection
-import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.Base
@@ -97,7 +97,7 @@ class GetPreviousPaperTest : MainServiceTest() {
         }
 
     @Test
-    fun `When no previous paper exists, then a FailedPreconditionException is thrown`() = runTest {
+    fun `When no previous paper exists, then a TestSpecificException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject()
         val paper = DataBuilder.createExamplePaper()
@@ -116,8 +116,7 @@ class GetPreviousPaperTest : MainServiceTest() {
                 project.id, projectPaper.localPaperId,
                 PaperNavigationDirection.PREVIOUS,
             )
-        } returns Result.failure(FailedPreconditionException("No previous paper exists"))
-
-        assertThrows<FailedPreconditionException> { mainService.getPreviousPaper(getExampleRequest()) }
+        } returns Result.failure(TestSpecificException())
+        assertThrows<TestSpecificException> { mainService.getPreviousPaper(getExampleRequest()) }
     }
 }

@@ -6,8 +6,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
+import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.PaperNavigationDirection
-import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.Base
@@ -97,7 +97,7 @@ class GetNextPaperTest : MainServiceTest() {
         }
 
     @Test
-    fun `When no next paper exists, then a FailedPreconditionException is thrown`() = runTest {
+    fun `When no next paper exists, then a TestSpecificException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject()
         val paper = DataBuilder.createExamplePaper()
@@ -116,8 +116,8 @@ class GetNextPaperTest : MainServiceTest() {
                 project.id, projectPaper.localPaperId,
                 PaperNavigationDirection.NEXT,
             )
-        } returns Result.failure(FailedPreconditionException("No next paper exists"))
+        } returns Result.failure(TestSpecificException())
 
-        assertThrows<FailedPreconditionException> { mainService.getNextPaper(getExampleRequest()) }
+        assertThrows<TestSpecificException> { mainService.getNextPaper(getExampleRequest()) }
     }
 }

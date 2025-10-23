@@ -75,13 +75,13 @@ interface IProjectPaperTableRepo {
     suspend fun getAllProjectPapersForProject(projectId: UUID): List<ProjectPaper>
 
     /**
-     * Retrieves the preceding local paper ID for the project paper with the given local paper ID.
+     * Retrieves the adjacent local paper ID for the project paper with the given local paper ID.
      *
-     * @param projectId The unique identifier of the project for which the previous local paper ID is being requested.
-     * @param localPaperId The current local paper ID used as a reference to compute the previous ID.
+     * @param projectId The unique identifier of the project for which the adjacent local paper ID is requested.
+     * @param localPaperId The current local paper ID used as a reference to compute the adjacent ID.
      * @param direction The navigation direction indicating whether to retrieve the next or previous paper.
      * Must be one of the values from [PaperNavigationDirection].
-     * @return A [Result] containing the previous available local paper ID as a [Long] or a
+     * @return A [Result] containing the adjacent available local paper ID as a [Long] or a
      * [FailedPreconditionException] if it cannot be determined.
      */
     suspend fun getAdjacentPaper(
@@ -172,15 +172,6 @@ class ProjectPaperTableRepo(
             ?: 0L
     }
 
-    /**
-     * Retrieves the local paper ID for a project based on the specified conditions and order.
-     *
-     * @param projectId The unique identifier of the project.
-     * @param localPaperId The reference local paper ID used in the condition.
-     * @param direction The direction to navigate for finding the adjacent paper, either NEXT or PREVIOUS.
-     * @return A [Result] containing the local paper ID if found, or a failure if the specified conditions do not match
-     * any paper.
-     */
     override suspend fun getAdjacentPaper(
         projectId: UUID,
         localPaperId: Long,
