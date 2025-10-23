@@ -106,6 +106,11 @@ interface IProjectService {
      * Service implementation of [SnowballRService.removeProjectMember]
      */
     suspend fun removeProjectMember(request: GrpcProjectMember.Remove): Base.Nothing
+
+    /**
+     * Service implementation of [SnowballRService.softDeleteProject]
+     */
+    suspend fun softDeleteProject(request: Base.Id): Base.Nothing
 }
 
 /**
@@ -496,6 +501,20 @@ class ProjectService(
             }
 
             projectMemberRepo.removeProjectMember(projectId, requestedUserId)
-            Base.Nothing.newBuilder().build()
+            Base.Nothing.getDefaultInstance()
         }
+
+    override suspend fun softDeleteProject(request: Base.Id): Base.Nothing = withUser(userRepo) { currentUser ->
+        val projectId = parseUUID(request.id, EntityType.PROJECT)
+
+        isServerOrProjectAdmin(projectMemberRepo, AccessType.DELETE).checkFor(currentUser, projectId)
+
+        if (!repo.doesProjectExistById(projectId)) {
+            throw NotFoundException(EntityType.PROJECT, projectId.toString())
+        }
+
+        repo.softDeleteProject(projectId)
+
+        Base.Nothing.getDefaultInstance()
+    }
 }
