@@ -21,7 +21,7 @@ suspend fun <T> withUser(userRepo: IUserTableRepo, block: suspend (User) -> T): 
 }
 
 /**
- * Populates the given [Paper] with its authors and backward references and converts it to a [GrpcPaper].
+ * Populates the given [Paper] with its backward references and converts it to a [GrpcPaper].
  */
 suspend fun Paper.toGrpcPaperWithAuthorsAndBackwardReferences(citationRepo: ICitationTableRepo): GrpcPaper {
     val backwardReferences = citationRepo.getBackwardsReferencedPaperIdsOfPaperById(id).map(UUID::toString)

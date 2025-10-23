@@ -133,19 +133,21 @@ data class InvalidPassword(
  * contains fields that are not allowed.
  * If the field mask is blank, the entire object would be overwritten. To prevent unintended overwrites, all intended
  * fields should be explicitly listed in the field mask rather than leaving the mask empty.
- * A field is considered invalid if itt does not exist in the corresponding generated gRPC class.
+ * A field is considered invalid if it does not exist in the corresponding generated gRPC class.
  */
 data class InvalidFieldMask(val message: String) : ValidationIssue {
     companion object {
         fun createForBlankFieldMask(): InvalidFieldMask = InvalidFieldMask("Field mask must be non-blank.")
 
-        fun createForContainsInvalidFields(fields: List<String>): InvalidFieldMask = InvalidFieldMask(
-            "One or more of the following fields are invalid: ${fields.joinToString(", ")}.",
-        )
+        fun createForContainsInvalidFields(fields: List<String>): InvalidFieldMask {
+            val fieldsString = fields.joinToString(", ") { field -> "'$field'" }
+            return InvalidFieldMask("One or more of the following fields are invalid: $fieldsString")
+        }
 
-        fun createForContainsUnallowedFields(fields: List<String>): InvalidFieldMask = InvalidFieldMask(
-            "One or more of the following fields are not allowed: ${fields.joinToString(", ")}.",
-        )
+        fun createForContainsUnallowedFields(fields: List<String>): InvalidFieldMask {
+            val fieldsString = fields.joinToString(", ") { field -> "'$field'" }
+            return InvalidFieldMask("One or more of the following fields are not allowed: $fieldsString")
+        }
     }
 
     override fun toString(): String = message
