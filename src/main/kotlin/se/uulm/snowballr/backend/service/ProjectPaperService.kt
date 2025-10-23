@@ -3,7 +3,10 @@ package se.uulm.snowballr.backend.service
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.PaperNavigationDirection
 import se.uulm.snowballr.backend.model.SnowballRException.DuplicateEntityException
+import se.uulm.snowballr.backend.model.SnowballRException.InvalidIdException
+import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.OutOfRangeException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.Author
@@ -68,6 +71,11 @@ interface IProjectPaperService {
      * Service implementation of [SnowballRService.getNextPaper].
      */
     suspend fun getNextPaper(request: Base.Id): GrpcProjectPaper
+
+    /**
+     * Service implementation of [SnowballRService.getPreviousPaper].
+     */
+    suspend fun getPreviousPaper(request: Base.Id): GrpcProjectPaper
 }
 
 /**
@@ -175,6 +183,32 @@ class ProjectPaperService(
         projectPapersWithPapers.toGrpcProjectPapers(paperAuthorsMap, paperBackwardReferencesMap, projectPaperReviewsMap)
     }
 
+    /**
+     * Retrieves the following project paper based on the provided project paper ID and the following paper computation
+     * logic.
+     *
+     * @param id The unique identifier of the current project paper as a string.
+     * @param direction The navigation direction indicating whether to retrieve the next or previous paper.
+     * Containing the relative ID of the following paper.
+     * @return The gRPC representation of the following project paper, including its associated metadata.
+     * @throws NotFoundException If the project, project paper, or associated paper cannot be found.
+     * @throws InvalidIdException.UUID If the given project paper ID is not a valid UUID.
+     * @throws UnauthorizedException If the user does not have the required access to the project.
+     */
+    private suspend fun getAdjacentPaper(id: String, direction: PaperNavigationDirection): GrpcProjectPaper =
+        withUser(userRepo) { currentUser ->
+            val projectPaperId = parseUUID(id, EntityType.PROJECT_PAPER)
+            val projectPaper = repo.getProjectPaperById(projectPaperId).getOrThrow()
+
+            isAllowedToReadProject(projectMemberRepo).checkFor(currentUser, projectPaper.projectId)
+
+            val projectId = projectRepo.getProjectById(projectPaper.projectId).getOrThrow().id
+            val adjacentPaper = repo.getAdjacentPaper(projectId, projectPaper.localPaperId, direction).getOrThrow()
+            val paper = paperRepo.getPaperById(adjacentPaper.paperId).getOrThrow()
+
+            adjacentPaper.toGrpcProjectPaperWithData(paper)
+        }
+
     override suspend fun getProjectPaperById(request: Base.Id): GrpcProjectPaper = withUser(userRepo) { currentUser ->
         val projectPaperId = parseUUID(request.id, EntityType.PROJECT_PAPER)
         val projectPaper = repo.getProjectPaperById(projectPaperId).getOrThrow()
@@ -240,17 +274,9 @@ class ProjectPaperService(
             projectPaper.toGrpcProjectPaperWithData(paper)
         }
 
-    override suspend fun getNextPaper(request: Base.Id): GrpcProjectPaper = withUser(userRepo) { currentUser ->
-        val projectPaperId = parseUUID(request.id, EntityType.PROJECT_PAPER)
-        val projectPaper = repo.getProjectPaperById(projectPaperId).getOrThrow()
+    override suspend fun getNextPaper(request: Base.Id): GrpcProjectPaper =
+        getAdjacentPaper(request.id, PaperNavigationDirection.NEXT)
 
-        isAllowedToReadProject(projectMemberRepo).checkFor(currentUser, projectPaper.projectId)
-
-        val projectId = projectRepo.getProjectById(projectPaper.projectId).getOrThrow().id
-        val nextProjectPaperId = repo.getNextPaperLocalId(projectId, projectPaper.localPaperId).getOrThrow()
-        val nextProjectPaper = repo.getProjectPaperByRelativeId(projectId, nextProjectPaperId).getOrThrow()
-        val paper = paperRepo.getPaperById(nextProjectPaper.paperId).getOrThrow()
-
-        nextProjectPaper.toGrpcProjectPaperWithData(paper)
-    }
+    override suspend fun getPreviousPaper(request: Base.Id): GrpcProjectPaper =
+        getAdjacentPaper(request.id, PaperNavigationDirection.PREVIOUS)
 }
