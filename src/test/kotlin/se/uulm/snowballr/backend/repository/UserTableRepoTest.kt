@@ -20,6 +20,8 @@ import se.uulm.snowballr.backend.isBetweenWithDelta
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.toGrpcUser
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertUserAndGetId
+import se.uulm.snowballr.backend.table.CriterionTable
+import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.utils.assertResultFailure
 import se.uulm.snowballr.backend.utils.assertResultSuccess
@@ -33,8 +35,9 @@ import java.sql.SQLException
 import java.time.OffsetDateTime
 import java.util.UUID
 
-class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
+class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, ProjectTable)) {
     private val repo = UserTableRepo(db)
+    private val criterionTableRepo = CriterionTableRepo(db)
 
     companion object {
         @JvmStatic
@@ -312,6 +315,66 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
         fun `When a user is not found, then no exception is thrown`() = runTest {
             assertDoesNotThrow { repo.softDeleteUser(UUID.randomUUID()) }
         }
+    }
+
+    @Nested
+    inner class ClearSoftDeletedUsers {
+        private val defaultThresholdDate = OffsetDateTime.now().minusDays(30)
+
+        @Test
+        fun `When no soft-deleted users exist, then no users are cleared`() = runTest {
+            val userId = insertUserAndGetId(status = UserStatus.USER_STATUS_ACTIVE)
+
+            assertDoesNotThrow { repo.clearSoftDeletedUsers(defaultThresholdDate) }
+
+            val user = assertResultSuccess(repo.getUserById(userId))
+            assertEquals(UserStatus.USER_STATUS_ACTIVE, user.status)
+            assertNull(user.deletedAt)
+        }
+
+        @Test
+        fun `When soft-deleted users exist but their threshold date is not reached, then no users are cleared`() =
+            runTest {
+                val userId = insertUserAndGetId(status = UserStatus.USER_STATUS_ACTIVE)
+                repo.softDeleteUser(userId)
+
+                assertDoesNotThrow { repo.clearSoftDeletedUsers(defaultThresholdDate) }
+
+                val user = assertResultSuccess(repo.getUserById(userId))
+                assertEquals(UserStatus.USER_STATUS_DELETED, user.status)
+                assertNotNull(user.deletedAt)
+                assertThat(user.deletedAt).isAfter(defaultThresholdDate)
+                assertThat(user.firstName).isNotEmpty()
+            }
+
+        @Test
+        fun `When soft-deleted users exist and their threshold date is reached, then all soft-deleted users and their criteria are cleared`() =
+            runTest {
+                // Manually "soft-delete" user to set the `deletedAt` date
+                val userId1 = insertUserAndGetId(
+                    email = "user1@test.de",
+                    status = UserStatus.USER_STATUS_DELETED,
+                    deletedAt = defaultThresholdDate.minusDays(1),
+                )
+                val userId2 = insertUserAndGetId(email = "user2@test.de", status = UserStatus.USER_STATUS_ACTIVE)
+                val criteria1 = RepositoryHelper.insertCriterionAndGetId(createdBy = userId1)
+                val criteria2 = RepositoryHelper.insertCriterionAndGetId(createdBy = userId2)
+
+                assertDoesNotThrow { repo.clearSoftDeletedUsers(defaultThresholdDate) }
+
+                val user1 = assertResultSuccess(repo.getUserById(userId1))
+                assertEquals(UserStatus.USER_STATUS_UNSPECIFIED, user1.status)
+                assertNotNull(user1.deletedAt)
+                assertThat(user1.deletedAt).isBefore(defaultThresholdDate)
+                assertThat(user1.firstName).isEmpty()
+                assertResultFailure<NotFoundException>(criterionTableRepo.getCriterionById(criteria1))
+
+                val user2 = assertResultSuccess(repo.getUserById(userId2))
+                assertEquals(UserStatus.USER_STATUS_ACTIVE, user2.status)
+                assertNull(user2.deletedAt)
+                assertThat(user2.firstName).isNotEmpty()
+                assertResultSuccess(criterionTableRepo.getCriterionById(criteria2))
+            }
     }
 
     @Nested

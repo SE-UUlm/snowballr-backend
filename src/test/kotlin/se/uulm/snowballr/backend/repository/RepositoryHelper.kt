@@ -48,6 +48,7 @@ object RepositoryHelper {
         passwordHash: String = "passwordHash",
         role: UserRole = UserRole.USER_ROLE_DEFAULT,
         status: UserStatus = UserStatus.USER_STATUS_ACTIVE,
+        deletedAt: OffsetDateTime? = null,
     ) = db.query {
         UserTable
             .insertAndGetId {
@@ -57,6 +58,7 @@ object RepositoryHelper {
                 it[UserTable.passwordHash] = passwordHash
                 it[UserTable.role] = role
                 it[UserTable.status] = status
+                it[UserTable.deletedAt] = deletedAt
             }.value
     }
 
