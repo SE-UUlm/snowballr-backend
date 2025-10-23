@@ -47,7 +47,8 @@ class AddPaperToProjectTest : MainServiceTest() {
             },
         )
         val project = DataBuilder.createExampleProject(id = projectId)
-        val paper = DataBuilder.createExamplePaper(id = paperId)
+        val author = DataBuilder.createExampleAuthor()
+        val paper = DataBuilder.createExamplePaper(id = paperId, authors = listOf(author))
         val projectPaper = DataBuilder.createExampleProjectPaper(
             projectId = project.id,
             paperId = paper.id,

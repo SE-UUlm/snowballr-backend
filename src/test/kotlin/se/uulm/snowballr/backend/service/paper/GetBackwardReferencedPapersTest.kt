@@ -49,7 +49,8 @@ class GetBackwardReferencedPapersTest : MainServiceTest() {
     @Test
     fun `When the backward references of an existent paper are retrieved successfully, then no exception is thrown`() =
         runTest {
-            val paper = DataBuilder.createExamplePaper(id = paperId)
+            val author = DataBuilder.createExampleAuthor()
+            val paper = DataBuilder.createExamplePaper(id = paperId, authors = listOf(author))
             val backwardReferenceId = UUID.randomUUID()
             val referencedPaper = DataBuilder.createExamplePaper(id = backwardReferenceId)
 

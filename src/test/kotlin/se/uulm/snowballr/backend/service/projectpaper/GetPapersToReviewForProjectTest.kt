@@ -33,7 +33,8 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
             },
         )
         val project = DataBuilder.createExampleProject(id = projectId)
-        val paper = DataBuilder.createExamplePaper(id = projectId)
+        val author = DataBuilder.createExampleAuthor()
+        val paper = DataBuilder.createExamplePaper(id = projectId, authors = listOf(author))
         val projectPaper = DataBuilder.createExampleProjectPaper(projectId = project.id, paperId = paper.id)
         val projectPaperWithPaper = ProjectPaperWithPaper(projectPaper, paper)
         val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
@@ -91,7 +92,8 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
     fun `When the project papers to review are requested, then only the undecided papers are returned`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val project = DataBuilder.createExampleProject(id = projectId)
-        val paper = DataBuilder.createExamplePaper(id = projectId)
+        val author = DataBuilder.createExampleAuthor()
+        val paper = DataBuilder.createExamplePaper(id = projectId, authors = listOf(author))
         val projectPaperAlreadyDecided = DataBuilder.createExampleProjectPaper(
             projectId = project.id,
             paperId = paper.id,
@@ -137,7 +139,8 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
         runTest {
             val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
             val project = DataBuilder.createExampleProject(id = projectId)
-            val paper = DataBuilder.createExamplePaper(id = projectId)
+            val author = DataBuilder.createExampleAuthor()
+            val paper = DataBuilder.createExamplePaper(id = projectId, authors = listOf(author))
             val projectPaperWithCurrentUserReview = DataBuilder.createExampleProjectPaper(
                 projectId = project.id,
                 paperId = paper.id,

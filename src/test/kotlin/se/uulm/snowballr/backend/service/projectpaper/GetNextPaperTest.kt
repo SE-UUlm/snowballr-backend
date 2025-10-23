@@ -23,11 +23,11 @@ class GetNextPaperTest : MainServiceTest() {
     fun `When a server admin requests the next project paper, then no exception is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val project = DataBuilder.createExampleProject()
-        val paper = DataBuilder.createExamplePaper()
+        val author = DataBuilder.createExampleAuthor()
+        val paper = DataBuilder.createExamplePaper(authors = listOf(author))
         val projectPaper =
             DataBuilder.createExampleProjectPaper(id = projectPaperId, projectId = project.id, paperId = paper.id)
         val nextProjectPaper = DataBuilder.createExampleProjectPaper()
-        val nextRelativeId = 1L
 
         mockCurrentUser(currentUser)
         coEvery {
@@ -52,12 +52,12 @@ class GetNextPaperTest : MainServiceTest() {
     fun `When a project member requests the next project paper, then no exception is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject()
-        val paper = DataBuilder.createExamplePaper()
+        val author = DataBuilder.createExampleAuthor()
+        val paper = DataBuilder.createExamplePaper(authors = listOf(author))
         val projectPaper =
             DataBuilder.createExampleProjectPaper(id = projectPaperId, projectId = project.id, paperId = paper.id)
         val nextProjectPaper = DataBuilder.createExampleProjectPaper()
         val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
-        val nextRelativeId = 1L
 
         mockCurrentUser(currentUser)
         coEvery {

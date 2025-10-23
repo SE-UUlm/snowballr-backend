@@ -221,6 +221,11 @@ object DataBuilder {
         modifiedBy,
     )
 
+    fun createExampleAuthor(firstName: String = "FirstName", lastName: String = "LastName") = Author(
+        firstName,
+        lastName,
+    )
+
     fun createExampleReview(
         id: UUID = UUID.randomUUID(),
         projectPaperId: UUID = UUID.randomUUID(),

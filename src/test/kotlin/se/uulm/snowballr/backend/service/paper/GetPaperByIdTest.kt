@@ -28,7 +28,8 @@ class GetPaperByIdTest : MainServiceTest() {
 
     @Test
     fun `When a paper is retrieved successfully, then no exception is thrown`() = runTest {
-        val paper = DataBuilder.createExamplePaper(id = paperId)
+        val author = DataBuilder.createExampleAuthor()
+        val paper = DataBuilder.createExamplePaper(id = paperId, authors = listOf(author))
 
         coEvery { paperRepoMock.getPaperById(paper.id) } returns Result.success(paper)
         coEvery {

@@ -30,7 +30,8 @@ class UpdatePaperTest : MainServiceTest() {
     @Test
     fun `When an existent paper is updated, then no exception is thrown`() = runTest {
         val request = getExampleRequest()
-        val examplePaper = DataBuilder.createExamplePaper(id = paperId)
+        val exampleAuthor = DataBuilder.createExampleAuthor()
+        val examplePaper = DataBuilder.createExamplePaper(id = paperId, authors = listOf(exampleAuthor))
 
         coEvery { paperRepoMock.doesPaperExistById(paperId) } returns true
         coEvery { paperRepoMock.updatePaper(request) } returns examplePaper

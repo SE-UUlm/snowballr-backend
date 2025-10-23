@@ -49,7 +49,8 @@ class GetForwardReferencedPapersTest : MainServiceTest() {
     @Test
     fun `When the forward references of an existent paper are retrieved successfully, then no exception is thrown`() =
         runTest {
-            val paper = DataBuilder.createExamplePaper(id = paperId)
+            val author = DataBuilder.createExampleAuthor()
+            val paper = DataBuilder.createExamplePaper(id = paperId, authors = listOf(author))
             val forwardReferenceId = UUID.randomUUID()
             val citingPaper = DataBuilder.createExamplePaper(id = forwardReferenceId)
 

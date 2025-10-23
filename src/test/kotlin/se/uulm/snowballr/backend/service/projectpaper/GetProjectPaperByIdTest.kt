@@ -40,7 +40,8 @@ class GetProjectPaperByIdTest : MainServiceTest() {
             },
         )
         val project = DataBuilder.createExampleProject()
-        val paper = DataBuilder.createExamplePaper()
+        val author = DataBuilder.createExampleAuthor()
+        val paper = DataBuilder.createExamplePaper(authors = listOf(author))
         val projectPaper = DataBuilder.createExampleProjectPaper(
             id = projectPaperId,
             projectId = project.id,
