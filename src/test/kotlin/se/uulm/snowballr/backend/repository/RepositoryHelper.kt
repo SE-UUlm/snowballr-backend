@@ -232,11 +232,16 @@ object RepositoryHelper {
      * Creates a test verification token (default "secure-random-invitation-token-123") in the database
      * for the specified user.
      */
-    suspend fun insertTestVerificationToken(userId: UUID, token: String = "secure-random-invitation-token-123") {
+    suspend fun insertTestVerificationToken(
+        userId: UUID,
+        token: String = "secure-random-invitation-token-123",
+        expiresAt: OffsetDateTime = OffsetDateTime.now().plusDays(1),
+    ) {
         db.query {
             VerificationTokenTable.insert {
                 it[VerificationTokenTable.userId] = userId
                 it[VerificationTokenTable.token] = token
+                it[VerificationTokenTable.expiresAt] = expiresAt
             }
         }
     }

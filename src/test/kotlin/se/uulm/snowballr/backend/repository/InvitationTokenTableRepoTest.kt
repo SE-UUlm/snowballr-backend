@@ -190,4 +190,50 @@ class InvitationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, ProjectTa
             }
         }
     }
+
+    @Nested
+    inner class DeleteExpiredInvitationTokens {
+        @Test
+        fun `When no expired tokens exist, then no tokens are deleted`() = runTest {
+            val projectId1 = insertProjectAndGetId(createdBy = testUserId)
+            val projectId2 = insertProjectAndGetId(createdBy = testUserId)
+
+            insertTestInvitationToken(testEmail, projectId1, "token-in-project-1")
+            insertTestInvitationToken(testEmail, projectId2, "token-in-project-2")
+
+            assertDoesNotThrow { repo.deleteExpiredInvitationTokens() }
+
+            assertResultSuccess(repo.getInvitationTokenByEmailAndProjectId(testEmail, projectId1))
+            assertResultSuccess(repo.getInvitationTokenByEmailAndProjectId(testEmail, projectId2))
+        }
+
+        @Test
+        fun `When expired tokens exist, then they are deleted`() = runTest {
+            val projectId1 = insertProjectAndGetId(createdBy = testUserId)
+            val projectId2 = insertProjectAndGetId(createdBy = testUserId)
+
+            insertTestInvitationToken(testEmail, projectId1, "token-in-project-1")
+            insertTestInvitationToken(
+                testEmail,
+                projectId2,
+                "token-in-project-2",
+                OffsetDateTime.now().minusDays(1),
+            )
+
+            assertDoesNotThrow { repo.deleteExpiredInvitationTokens() }
+
+            assertResultSuccess(
+                repo.getInvitationTokenByEmailAndProjectId(
+                    testEmail,
+                    projectId1,
+                ),
+            )
+            assertResultFailure<InvitationTokenNotFoundException>(
+                repo.getInvitationTokenByEmailAndProjectId(
+                    testEmail,
+                    projectId2,
+                ),
+            )
+        }
+    }
 }
