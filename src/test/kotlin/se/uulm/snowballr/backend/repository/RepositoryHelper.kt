@@ -202,7 +202,7 @@ object RepositoryHelper {
         name: String = "Test Criterion",
         description: String = "Test Description",
         category: CriterionCategory = CriterionCategory.CRITERION_CATEGORY_EXCLUSION,
-        projectId: UUID,
+        projectId: UUID? = null,
         createdBy: UUID,
     ): UUID = db.query {
         CriterionTable.insertAndGetId {
