@@ -2,11 +2,14 @@ package se.uulm.snowballr.backend.repository
 
 import com.google.protobuf.util.FieldMaskUtil
 import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.exceptions.ExposedSQLException
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.isNull
 import org.jetbrains.exposed.sql.TextColumnType
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.deleteWhere
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.statements.StatementType
 import org.jetbrains.exposed.sql.update
 import se.uulm.snowballr.backend.db.IDatabase
@@ -127,6 +130,11 @@ interface IUserTableRepo {
      * @param thresholdDate The date up to which soft-deleted users are to be cleared.
      */
     suspend fun clearSoftDeletedUsers(thresholdDate: OffsetDateTime)
+
+    /**
+     * Tries to hard-delete all users that were soft-deleted, cleared, and are no longer referenced by any other entity.
+     */
+    suspend fun hardDeleteClearedUsers()
 
     /**
      * Returns a [Result] containing the password hash for a user by their email address or a [NotFoundException] if the
@@ -327,6 +335,46 @@ class UserTableRepo(
         }
 
         logger.info { "Cleared $clearedUsers soft-deleted users older than $thresholdDate." }
+    }
+
+    override suspend fun hardDeleteClearedUsers() {
+        val userIdsToDelete = db.query {
+            UserTable
+                .selectAll()
+                .where {
+                    (UserTable.status eq USER_STATUS_UNSPECIFIED).and(UserTable.deletedAt.isNotNull())
+                }
+                .map { it[UserTable.id].value }
+        }
+
+        if (userIdsToDelete.isEmpty()) {
+            logger.info { "No users to hard-delete." }
+            return
+        }
+
+        val (successfulDeletedIds, failedToDeleteIds) = userIdsToDelete.partition { userId ->
+            attemptToDeleteUser(userId)
+        }
+
+        logger.info {
+            "Hard-deleted ${successfulDeletedIds.size} users, failed to delete ${failedToDeleteIds.size} users."
+        }
+    }
+
+    /**
+     * Attempts to delete a single user by their ID.
+     *
+     * @param userId The ID of the user to be deleted.
+     * @return `true` if the user was successfully deleted, `false` otherwise.
+     */
+    private suspend fun attemptToDeleteUser(userId: UUID): Boolean = db.query {
+        try {
+            val deletedRows = UserTable.deleteWhere { UserTable.id eq userId }
+            deletedRows > 0
+        } catch (e: ExposedSQLException) {
+            logger.debug(e) { "Failed to hard-delete user $userId, likely due to existing references." }
+            false
+        }
     }
 
     override suspend fun getPasswordHashByEmail(email: String): Result<String> = db.query {
