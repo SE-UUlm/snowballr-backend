@@ -144,6 +144,8 @@ services:
     # Proxy only (profile: proxy-only)
     proxy:
         profiles: [ "proxy-only" ]
+        extra_hosts:
+            - "host.docker.internal:host-gateway"
         build:
             context: .
             dockerfile: Dockerfile.proxy
@@ -151,13 +153,7 @@ services:
             - "${WEB_PORT:-8081}:${WEB_PORT:-8081}"
         command:
             # Point to the backend on the machine's host
-            - --backend_addr=backend:${PORT:-8080}
+            - --backend_addr=host.docker.internal:${PORT:-8080}
             - --allow_all_origins # Crucial for local dev where frontend is on different origin
             - --run_tls_server=false # Don't require TLS
             - --server_http_debug_port=${WEB_PORT:-8081} # Proxy listens on this port inside the container
-
-networks:
-    db_network:
-        driver: bridge
-    grpc_network:
-        driver: bridge
