@@ -1,0 +1,39 @@
+package se.uulm.snowballr.backend.scheduler
+
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
+import se.uulm.snowballr.backend.env.EnvReader
+import se.uulm.snowballr.backend.repository.IUserTableRepo
+import java.time.OffsetDateTime
+import java.time.ZoneId
+
+/**
+ * Service interface for maintaining user data.
+ *
+ * Implementations may provide various maintenance operations such as
+ * cleaning up old data, anonymizing sensitive information, or performing
+ * other user-related maintenance tasks.
+ */
+interface IUserMaintenanceService {
+    /**
+     * Clears sensitive data for users that were soft-deleted.
+     */
+    suspend fun clearSoftDeletedUsers()
+}
+
+/**
+ * Default implementation of [IUserMaintenanceService].
+ *
+ * Provides basic user data maintenance operations using the configured database.
+ */
+class UserMaintenanceService : IUserMaintenanceService, KoinComponent {
+    private val envReader: EnvReader by inject()
+    private val userTableRepo: IUserTableRepo by inject()
+
+    override suspend fun clearSoftDeletedUsers() {
+        val thresholdDate = OffsetDateTime.now(ZoneId.systemDefault()).minusDays(
+            envReader.env.miscellaneous.sensitiveInformationRetentionDays.toLong(),
+        )
+        userTableRepo.clearSoftDeletedUsers(thresholdDate)
+    }
+}
