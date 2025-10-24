@@ -47,8 +47,10 @@ import se.uulm.snowballr.backend.repository.association.ProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.ProjectPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.ReadingListTableRepo
 import se.uulm.snowballr.backend.repository.association.ReviewHasCriterionTableRepo
+import se.uulm.snowballr.backend.scheduler.IProjectMaintenanceService
 import se.uulm.snowballr.backend.scheduler.ITokenMaintenanceService
 import se.uulm.snowballr.backend.scheduler.IUserMaintenanceService
+import se.uulm.snowballr.backend.scheduler.ProjectMaintenanceService
 import se.uulm.snowballr.backend.scheduler.TokenMaintenanceService
 import se.uulm.snowballr.backend.scheduler.UserMaintenanceService
 import se.uulm.snowballr.backend.service.AuthenticationService
@@ -118,6 +120,7 @@ private fun Module.dbDeps() {
     }
     single<ITokenMaintenanceService> { TokenMaintenanceService() }
     single<IUserMaintenanceService> { UserMaintenanceService() }
+    single<IProjectMaintenanceService> { ProjectMaintenanceService() }
 }
 
 /**

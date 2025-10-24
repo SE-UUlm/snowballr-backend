@@ -20,6 +20,7 @@ private val logger = KotlinLogging.logger { }
  */
 class HardDeleteSoftDeletedEntitiesJob : Job, KoinComponent {
     private val userMaintenanceService: IUserMaintenanceService by inject()
+    private val projectMaintenanceService: IProjectMaintenanceService by inject()
 
     override fun execute(context: JobExecutionContext?) {
         logger.info { "Starting hard-delete of soft-deleted entities..." }
@@ -29,6 +30,13 @@ class HardDeleteSoftDeletedEntitiesJob : Job, KoinComponent {
                 userMaintenanceService.hardDeleteClearedUsers()
             } catch (e: CancellationException) {
                 logger.warn { "Hard-deleting, already soft-deleted users, was cancelled: ${e.message}" }
+                throw e
+            }
+
+            try {
+                projectMaintenanceService.hardDeleteClearedProjects()
+            } catch (e: CancellationException) {
+                logger.warn { "Hard-deleting, already soft-deleted projects, was cancelled: ${e.message}" }
                 throw e
             }
         }

@@ -20,6 +20,7 @@ private val logger = KotlinLogging.logger {}
  */
 class ClearSoftDeletedEntitiesJob : Job, KoinComponent {
     private val userMaintenanceService: IUserMaintenanceService by inject()
+    private val projectMaintenanceService: IProjectMaintenanceService by inject()
 
     override fun execute(context: JobExecutionContext?) {
         logger.info { "Starting soft-deleted entity cleanup..." }
@@ -29,6 +30,13 @@ class ClearSoftDeletedEntitiesJob : Job, KoinComponent {
                 userMaintenanceService.clearSoftDeletedUsers()
             } catch (e: CancellationException) {
                 logger.warn { "Soft-deleted user cleanup was cancelled: ${e.message}" }
+                throw e
+            }
+
+            try {
+                projectMaintenanceService.clearSoftDeletedProjects()
+            } catch (e: CancellationException) {
+                logger.warn { "Soft-deleted project cleanup was cancelled: ${e.message}" }
                 throw e
             }
         }
