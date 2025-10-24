@@ -57,6 +57,7 @@ class SoftDeleteUserTest : MainServiceTest() {
 
         mockCurrentUser(currentUser)
         coEvery { userRepoMock.getUserById(requestedUserId) } returns Result.success(userToDelete)
+        coEvery { projectRepoMock.getUserProjects(requestedUserId, any()) } returns emptyList()
         coEvery { userRepoMock.softDeleteUser(requestedUserId) } returns Unit
 
         assertDoesNotThrow { mainService.softDeleteUser(getExampleRequest()) }
@@ -67,6 +68,7 @@ class SoftDeleteUserTest : MainServiceTest() {
         val currentUser = DataBuilder.createExampleUser(id = requestedUserId, role = UserRole.USER_ROLE_DEFAULT)
 
         mockCurrentUser(currentUser)
+        coEvery { projectRepoMock.getUserProjects(requestedUserId, any()) } returns emptyList()
         coEvery { userRepoMock.softDeleteUser(currentUser.id) } returns Unit
 
         assertDoesNotThrow { mainService.softDeleteUser(getExampleRequest()) }
@@ -77,8 +79,51 @@ class SoftDeleteUserTest : MainServiceTest() {
         val currentUser = DataBuilder.createExampleUser(id = requestedUserId, role = UserRole.USER_ROLE_ADMIN)
 
         mockCurrentUser(currentUser)
+        coEvery { projectRepoMock.getUserProjects(requestedUserId, any()) } returns emptyList()
         coEvery { userRepoMock.softDeleteUser(currentUser.id) } returns Unit
 
         assertDoesNotThrow { mainService.softDeleteUser(getExampleRequest()) }
     }
+
+    @Test
+    fun `When trying to delete a user that still is the last project admin in any project, then a FailedPrecondition is thrown`() =
+        runTest {
+            val currentUser = DataBuilder.createExampleUser(id = requestedUserId, role = UserRole.USER_ROLE_ADMIN)
+            val userToDelete = DataBuilder.createExampleUser(id = requestedUserId)
+            val project = DataBuilder.createExampleProject()
+            val projectAdmin = DataBuilder.createExampleProjectMember(projectId = project.id, userId = requestedUserId)
+
+            mockCurrentUser(currentUser)
+            coEvery { userRepoMock.getUserById(requestedUserId) } returns Result.success(userToDelete)
+            coEvery { projectRepoMock.getUserProjects(requestedUserId, any()) } returns listOf(project)
+            coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectAdmin)
+
+            assertThrows<FailedPreconditionException> { mainService.softDeleteUser(getExampleRequest()) }
+        }
+
+    @Test
+    fun `When trying to delete a user that is not the last project admin in a project, then no exception is thrown`() =
+        runTest {
+            val currentUser = DataBuilder.createExampleUser(id = requestedUserId, role = UserRole.USER_ROLE_ADMIN)
+            val userToDelete = DataBuilder.createExampleUser(id = requestedUserId)
+            val project = DataBuilder.createExampleProject()
+            val projectAdmin = DataBuilder.createExampleProjectMember(
+                projectId = project.id,
+                userId = UUID.randomUUID(),
+            )
+            val secondProjectAdmin = DataBuilder.createExampleProjectMember(
+                projectId = project.id,
+                userId = currentUser.id,
+            )
+
+            mockCurrentUser(currentUser)
+            coEvery { userRepoMock.getUserById(requestedUserId) } returns Result.success(userToDelete)
+            coEvery { projectRepoMock.getUserProjects(requestedUserId, any()) } returns listOf(project)
+            coEvery {
+                projectMemberRepoMock.getAllProjectAdmins(project.id)
+            } returns listOf(projectAdmin, secondProjectAdmin)
+            coEvery { userRepoMock.softDeleteUser(currentUser.id) } returns Unit
+
+            assertDoesNotThrow { mainService.softDeleteUser(getExampleRequest()) }
+        }
 }
