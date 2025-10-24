@@ -1,10 +1,15 @@
 package se.uulm.snowballr.backend.scheduler
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import org.quartz.CronScheduleBuilder
+import org.quartz.JobBuilder
 import org.quartz.Scheduler
+import org.quartz.TriggerBuilder
 import org.quartz.impl.StdSchedulerFactory
 
 private val logger = KotlinLogging.logger {}
+
+private const val MAINTENANCE = "maintenance"
 
 /**
  * Central manager for registering and controlling scheduled maintenance jobs.
@@ -18,10 +23,32 @@ class SchedulerManager {
     fun start() {
         logger.info { "Start Quartz scheduler..." }
         scheduler.start()
+
+        // Register all recurring jobs
+        scheduleCleanExpiredTokens()
     }
 
     fun stop() {
         logger.info { "Shutting down Quartz scheduler..." }
         scheduler.shutdown(true)
     }
+
+    /**
+     * Schedules a recurring job that cleans up expired verification and invitation tokens.
+     *
+     * The job runs every day at midnight.
+     */
+    private fun scheduleCleanExpiredTokens() {
+        val job = JobBuilder.newJob(CleanExpiredTokensJob::class.java)
+            .withIdentity("cleanExpiredTokens", MAINTENANCE)
+            .build()
+
+        val trigger = TriggerBuilder.newTrigger()
+            .withIdentity("cleanExpiredTokensTrigger", MAINTENANCE)
+            .withSchedule(CronScheduleBuilder.cronSchedule("0 0 0 * * ?"))
+            .build()
+
+        scheduler.scheduleJob(job, trigger)
+    }
+
 }

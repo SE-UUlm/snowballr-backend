@@ -47,6 +47,8 @@ import se.uulm.snowballr.backend.repository.association.ProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.ProjectPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.ReadingListTableRepo
 import se.uulm.snowballr.backend.repository.association.ReviewHasCriterionTableRepo
+import se.uulm.snowballr.backend.scheduler.ITokenMaintenanceService
+import se.uulm.snowballr.backend.scheduler.TokenMaintenanceService
 import se.uulm.snowballr.backend.service.AuthenticationService
 import se.uulm.snowballr.backend.service.CriterionService
 import se.uulm.snowballr.backend.service.FetcherService
@@ -112,6 +114,7 @@ private fun Module.dbDeps() {
         createdAtStart()
         bind<IDatabase>()
     }
+    single<ITokenMaintenanceService> { TokenMaintenanceService() }
 }
 
 /**
