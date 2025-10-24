@@ -5,6 +5,7 @@ import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.alias
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
@@ -21,7 +22,9 @@ import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.table.association.toProjectMember
 import se.uulm.snowballr.backend.table.association.toProjectMemberWithUser
+import se.uulm.snowballr.backend.table.toUser
 import snowballr.ProjectOuterClass.MemberRole
+import snowballr.UserOuterClass.UserStatus
 import java.util.UUID
 
 /**
@@ -30,6 +33,9 @@ import java.util.UUID
  * This interface provides abstraction for handling persistence and retrieval
  * operations for project members. By using this interface, the functionality for creating
  * project members can remain decoupled from the specifics of the database layer.
+ *
+ * **Note**: A user that was soft-deleted is still in the project member relation in case the user is restored but
+ * is not considered an active member of a project anymore and thus not returned when project members / admin are queried.
  */
 interface IProjectMemberTableRepo {
     /**
@@ -103,6 +109,15 @@ class ProjectMemberTableRepo(
     private val db: IDatabase,
 ) : IProjectMemberTableRepo {
     /**
+     * Retrieves a list of UUID from these users that are marked as deleted.
+     *
+     * @return A list of UUIDs representing users that are soft-deleted.
+     */
+    private fun getSoftDeletedUsers(): List<UUID> = UserTable
+        .getEntities(ResultRow::toUser) { UserTable.status eq UserStatus.USER_STATUS_DELETED }
+        .map { it.id }
+
+    /**
      * Requesting a project member from the database.
      *
      * @param projectId The ID of the requested project.
@@ -111,7 +126,9 @@ class ProjectMemberTableRepo(
      */
     private fun getProjectMemberByComposedIdOrNull(projectId: UUID, userId: UUID): ProjectMember? = ProjectMemberTable
         .getEntityOrNull(ResultRow::toProjectMember) {
-            (ProjectMemberTable.projectId eq projectId) and (ProjectMemberTable.userId eq userId)
+            (ProjectMemberTable.projectId eq projectId) and
+                (ProjectMemberTable.userId eq userId) and
+                (ProjectMemberTable.userId notInList getSoftDeletedUsers())
         }
 
     override suspend fun getProjectMemberByComposedId(projectId: UUID, userId: UUID): Result<ProjectMember> = db.query {
@@ -134,7 +151,9 @@ class ProjectMemberTableRepo(
     }
 
     override suspend fun getProjectMembers(projectId: UUID): List<ProjectMember> = db.query {
-        ProjectMemberTable.getEntities(ResultRow::toProjectMember) { ProjectMemberTable.projectId eq projectId }
+        ProjectMemberTable.getEntities(ResultRow::toProjectMember) {
+            (ProjectMemberTable.projectId eq projectId) and (ProjectMemberTable.userId notInList getSoftDeletedUsers())
+        }
     }
 
     override suspend fun getMembersInSameProjectsAsUser(userId: UUID): List<ProjectMember> = db.query {
@@ -151,15 +170,17 @@ class ProjectMemberTableRepo(
                 // Condition to find projects where the specific user is a member
                 userMembership[ProjectMemberTable.userId] eq userId
             }.selectAll()
-            // Filter out the calling user
+            // Filter out the calling user and soft-deleted users
             .where { ProjectMemberTable.userId neq userId }
+            .andWhere { ProjectMemberTable.userId notInList getSoftDeletedUsers() }
             .map { it.toProjectMember() }
     }
 
     override suspend fun getAllProjectAdmins(projectId: UUID): List<ProjectMember> = db.query {
         ProjectMemberTable.getEntities(ResultRow::toProjectMember) {
             (ProjectMemberTable.projectId eq projectId) and
-                (ProjectMemberTable.role eq MemberRole.MEMBER_ROLE_ADMIN)
+                (ProjectMemberTable.role eq MemberRole.MEMBER_ROLE_ADMIN) and
+                (ProjectMemberTable.userId notInList getSoftDeletedUsers())
         }
     }
 
@@ -182,6 +203,7 @@ class ProjectMemberTableRepo(
             .join(UserTable, JoinType.INNER, onColumn = ProjectMemberTable.userId, otherColumn = UserTable.id)
             .selectAll()
             .where { ProjectMemberTable.projectId eq projectId }
+            .andWhere { UserTable.status neq UserStatus.USER_STATUS_DELETED }
             .map { it.toProjectMemberWithUser() }
     }
 
