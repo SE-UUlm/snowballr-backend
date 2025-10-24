@@ -8,11 +8,15 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.ProjectMember
-import se.uulm.snowballr.backend.repository.RepositoryHelper
+import se.uulm.snowballr.backend.model.dto.ProjectMemberWithUser
+import se.uulm.snowballr.backend.repository.RepositoryHelper.assignUserToProject
 import se.uulm.snowballr.backend.repository.RepositoryHelper.createAndAssignUserToProject
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectAndGetId
+import se.uulm.snowballr.backend.repository.RepositoryHelper.insertUserAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryTest
 import se.uulm.snowballr.backend.repository.UserTableRepo
 import se.uulm.snowballr.backend.table.ProjectTable
@@ -20,6 +24,7 @@ import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.utils.assertResultFailure
 import se.uulm.snowballr.backend.utils.assertResultSuccess
 import snowballr.ProjectOuterClass.MemberRole
+import snowballr.UserOuterClass.UserStatus
 import java.sql.SQLException
 import java.util.UUID
 
@@ -28,21 +33,43 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
     private val userRepo = UserTableRepo(db)
 
     private suspend fun setupProject(
-        numberOfTestMembers: Int = 0,
+        numberOfAdditionalMembers: Int = 0,
         addTestUser: Boolean = true,
+        addDeletedUser: Boolean = false,
     ): Pair<UUID, List<ProjectMember>> {
         val projectId = insertProjectAndGetId(createdBy = testUserId)
         val members = mutableListOf<ProjectMember>()
 
         if (addTestUser) {
-            repo.addUserToProject(testUserId, projectId).also { members.add(it) }
+            members += assignUserToProject(testUserId, projectId)
         }
 
-        for (i in 1..numberOfTestMembers) {
-            createAndAssignUserToProject("test.user$i@example.com", projectId).also { members.add(it) }
+        if (addDeletedUser) {
+            val deletedUser = insertUserAndGetId(
+                email = "deleted.user@example.com",
+                status = UserStatus.USER_STATUS_DELETED,
+            )
+            members += assignUserToProject(deletedUser, projectId)
+        }
+
+        for (i in 1..numberOfAdditionalMembers) {
+            val userEmail = "test.user$i.in.${projectId.toString().substring(0,3)}@example.com"
+            members += createAndAssignUserToProject(userEmail, projectId)
         }
 
         return projectId to members
+    }
+
+    /**
+     * Checks that the given [expected] and [actual] project members are equal, i.e., that they have the same
+     *   - project ID
+     *   - user ID
+     *   - role
+     */
+    private fun assertSameMember(expected: ProjectMember, actual: ProjectMember) {
+        assertThat(actual.projectId).isEqualTo(expected.projectId)
+        assertThat(actual.userId).isEqualTo(expected.userId)
+        assertThat(actual.role).isEqualTo(expected.role)
     }
 
     @Nested
@@ -51,12 +78,10 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
         fun `When a project member is found, then a successful result with the correct project member is returned`() =
             runTest {
                 val (projectId, members) = setupProject()
-                val result = repo.getProjectMemberByComposedId(projectId, members[0].userId)
+                val result = repo.getProjectMemberByComposedId(projectId, members.first().userId)
 
-                val projectMember = assertResultSuccess(result)
-                assertEquals(projectId, projectMember.projectId)
-                assertEquals(testUserId, projectMember.userId)
-                assertEquals(members[0].role, projectMember.role)
+                val member = assertResultSuccess(result)
+                assertSameMember(members.first(), member)
             }
 
         @Test
@@ -66,31 +91,42 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
 
                 assertResultFailure<NotFoundException>(result)
             }
+
+        @Test
+        fun `When a project member is found, but the user is marked as deleted, then a failed result with a NotFoundException is returned`() =
+            runTest {
+                val (projectId, members) = setupProject(addTestUser = false, addDeletedUser = true)
+
+                val result = repo.getProjectMemberByComposedId(projectId, members.first().userId)
+
+                assertResultFailure<NotFoundException>(result)
+            }
     }
 
     @Nested
     inner class AddUserToProject {
         @Test
         fun `When a user is added to a project, then they can be retrieved as project member`() = runTest {
-            val (projectId, members) = setupProject()
-            val member = members.first()
+            val (projectId, _) = setupProject()
 
-            assertEquals(testUserId, member.userId)
-            assertEquals(projectId, member.projectId)
-            assertEquals(MemberRole.MEMBER_ROLE_DEFAULT, member.role)
+            val members = repo.getProjectMembers(projectId)
+            assertThat(members).hasSize(1)
 
-            val actualMembers = repo.getProjectMembers(projectId)
-            assertThat(actualMembers).hasSize(1)
-            assertThat(actualMembers).containsExactly(member)
+            val newUser = insertUserAndGetId("new.user@example.com")
+            val newMember = repo.addUserToProject(newUser, projectId)
+
+            val newMembers = repo.getProjectMembers(projectId)
+            assertThat(newMembers).hasSize(2)
+            assertThat(newMembers).containsExactlyInAnyOrder(members.first(), newMember)
         }
 
         @Test
         fun `When a user is added to a project twice, then only one member is created`() = runTest {
             val (projectId, members) = setupProject()
             val member = members.first()
-            val member1 = repo.addUserToProject(testUserId, projectId)
+            val sameMember = repo.addUserToProject(member.userId, member.projectId)
 
-            assertEquals(member, member1)
+            assertSameMember(member, sameMember)
 
             val actualMembers = repo.getProjectMembers(projectId)
             assertThat(actualMembers).hasSize(1)
@@ -99,18 +135,14 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
 
         @Test
         fun `When a user is added to a nonexistent project, then an SQLException is thrown`() = runTest {
-            assertThrows<SQLException> {
-                repo.addUserToProject(testUserId, UUID.randomUUID())
-            }
+            assertThrows<SQLException> { repo.addUserToProject(testUserId, UUID.randomUUID()) }
         }
 
         @Test
         fun `When a nonexistent user is added to a project, then an SQLException is thrown`() = runTest {
             val projectId = insertProjectAndGetId(createdBy = testUserId)
 
-            assertThrows<SQLException> {
-                repo.addUserToProject(UUID.randomUUID(), projectId)
-            }
+            assertThrows<SQLException> { repo.addUserToProject(UUID.randomUUID(), projectId) }
         }
     }
 
@@ -127,28 +159,29 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
 
         @Test
         fun `When one member is in a project, then they are part of the list`() = runTest {
-            val (projectId, _) = setupProject()
+            val (projectId, members) = setupProject()
 
             val actualMembers = repo.getProjectMembers(projectId)
 
             assertThat(actualMembers).hasSize(1)
-            val member = actualMembers.first()
-            assertEquals(testUserId, member.userId)
+            assertSameMember(members.first(), actualMembers.first())
         }
 
         @Test
-        fun `When several members are in a project, then they are part of the list`() = runTest {
-            val (projectId, members) = setupProject(3)
+        fun `When several members are in a project, then they are part of the list, except the user is soft-deleted`() =
+            runTest {
+                val (projectId, members) = setupProject(
+                    numberOfAdditionalMembers = 3,
+                    addTestUser = true,
+                    addDeletedUser = true,
+                )
 
-            val actualMembers = repo.getProjectMembers(projectId)
+                val actualMembers = repo.getProjectMembers(projectId)
 
-            assertThat(actualMembers).hasSize(4)
-            assertEquals(testUserId, actualMembers[0].userId)
-            assertEquals(members[0], actualMembers[0])
-            assertEquals(members[1], actualMembers[1])
-            assertEquals(members[2], actualMembers[2])
-            assertEquals(members[3], actualMembers[3])
-        }
+                assertThat(actualMembers).hasSize(4)
+                // The deleted user is the second member if the test user and deleted user are assigned to the project
+                assertThat(actualMembers).doesNotContain(members[1])
+            }
     }
 
     @Nested
@@ -161,44 +194,54 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
         }
 
         @Test
-        fun `When the user is in a project, then they are not part of the list of members`() = runTest {
-            setupProject()
+        fun `When the user is in a project without other users, then they are not part of the list of members`() =
+            runTest {
+                val (_, members) = setupProject()
+                assertThat(members).hasSize(1)
+
+                val result = repo.getMembersInSameProjectsAsUser(testUserId)
+
+                assertThat(result).isEmpty()
+            }
+
+        @Test
+        fun `When the user is in projects with other users, then they are part of the list of members`() = runTest {
+            val (_, members1) = setupProject(numberOfAdditionalMembers = 1)
+            val (_, members2) = setupProject(numberOfAdditionalMembers = 1)
 
             val result = repo.getMembersInSameProjectsAsUser(testUserId)
 
-            assertThat(result).isEmpty()
+            assertThat(result).hasSize(2)
+            assertThat(result).containsExactlyInAnyOrder(members1[1], members2[1])
         }
 
         @Test
-        fun `When the user is in projects with other users, then all members are part of the list`() = runTest {
-            val project1Id = setupProject().first
-            val project2Id = setupProject().first
-            val project3Id = setupProject().first
+        fun `When the user is in a project with another user who is soft-deleted, then they are not part of the list of members`() =
+            runTest {
+                val (_, members1) = setupProject(addDeletedUser = true)
+                val (_, members2) = setupProject(numberOfAdditionalMembers = 1)
 
-            val member1 = createAndAssignUserToProject("test.user1@example.com", project1Id)
-            val member2 = createAndAssignUserToProject("test.user2@example.com", project2Id)
-            val member3 = createAndAssignUserToProject("test.user3@example.com", project3Id)
+                val result = repo.getMembersInSameProjectsAsUser(testUserId)
 
-            val result = repo.getMembersInSameProjectsAsUser(testUserId)
-
-            assertThat(result).hasSize(3)
-            assertThat(result).containsExactlyInAnyOrder(member1, member2, member3)
-        }
+                assertThat(result).hasSize(1)
+                assertThat(result).containsExactlyInAnyOrder(members2[1])
+                assertThat(result).doesNotContain(members1[1])
+            }
     }
 
     @Nested
     inner class GetAllProjectAdmins {
         @Test
-        fun `When all project members are project admins, then the correct list of project admins is returned`() =
+        fun `When all project members are project admins, then they are all part of the list of project admins`() =
             runTest {
                 val (projectId, members) = setupProject(1)
-                val firstMember = repo.getProjectMemberByComposedId(projectId, testUserId).getOrThrow()
-                val secondMember = repo.getProjectMemberByComposedId(projectId, members[1].userId).getOrThrow()
-                assertEquals(MemberRole.MEMBER_ROLE_DEFAULT, firstMember.role)
-                assertEquals(MemberRole.MEMBER_ROLE_DEFAULT, secondMember.role)
 
-                repo.updateProjectMemberRole(projectId, firstMember.userId, MemberRole.MEMBER_ROLE_ADMIN)
-                repo.updateProjectMemberRole(projectId, secondMember.userId, MemberRole.MEMBER_ROLE_ADMIN)
+                members.forEach { member ->
+                    val actualMember = repo.getProjectMemberByComposedId(projectId, member.userId).getOrThrow()
+                    assertEquals(MemberRole.MEMBER_ROLE_DEFAULT, actualMember.role)
+
+                    repo.updateProjectMemberRole(projectId, actualMember.userId, MemberRole.MEMBER_ROLE_ADMIN)
+                }
 
                 val projectAdmins = repo.getAllProjectAdmins(projectId)
 
@@ -210,67 +253,74 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
             }
 
         @Test
-        fun `When not all project members are project admins, then the correct list of project admins is returned`() =
+        fun `When a project member is not project admin, then they are not part of the list of project admins`() =
             runTest {
                 val (projectId, members) = setupProject(1)
-                val firstMember = repo.getProjectMemberByComposedId(projectId, testUserId).getOrThrow()
-                val secondMember = repo.getProjectMemberByComposedId(projectId, members[1].userId).getOrThrow()
-                assertEquals(MemberRole.MEMBER_ROLE_DEFAULT, firstMember.role)
-                assertEquals(MemberRole.MEMBER_ROLE_DEFAULT, secondMember.role)
+                members.forEach { member ->
+                    val actualMember = repo.getProjectMemberByComposedId(projectId, member.userId).getOrThrow()
+                    assertEquals(MemberRole.MEMBER_ROLE_DEFAULT, actualMember.role)
+                }
 
-                repo.updateProjectMemberRole(projectId, firstMember.userId, MemberRole.MEMBER_ROLE_ADMIN)
+                val projectAdmin = repo.updateProjectMemberRole(
+                    projectId,
+                    members.first().userId,
+                    MemberRole.MEMBER_ROLE_ADMIN,
+                )
 
                 val projectAdmins = repo.getAllProjectAdmins(projectId)
 
                 assertThat(projectAdmins).hasSize(1)
-                assertThat(projectAdmins).anyMatch { it.userId == firstMember.userId }
-                assertThat(projectAdmins).noneMatch { it.userId == secondMember.userId }
+                assertThat(projectAdmins).containsExactlyInAnyOrder(projectAdmin)
+                assertThat(projectAdmins).doesNotContain(members.last())
             }
-    }
 
-    @Nested
-    inner class PromoteProjectMemberToAdmin {
         @Test
-        fun `When a project member is promoted to admin, then the role of the project member is correctly updated`() =
+        fun `When a user is project admin but soft-deleted, then they are not part of the list of project admins`() =
             runTest {
-                val (projectId, _) = setupProject()
-                val normalMember = repo.getProjectMemberByComposedId(projectId, testUserId).getOrThrow()
-                assertEquals(MemberRole.MEMBER_ROLE_DEFAULT, normalMember.role)
+                val (projectId, members) = setupProject(addTestUser = true, addDeletedUser = true)
 
-                val promotedMember = repo.updateProjectMemberRole(projectId, testUserId, MemberRole.MEMBER_ROLE_ADMIN)
+                val projectAdmin = repo.updateProjectMemberRole(
+                    projectId,
+                    members[0].userId,
+                    MemberRole.MEMBER_ROLE_ADMIN,
+                )
+                val deletedAdmin = repo.updateProjectMemberRole(
+                    projectId,
+                    members[1].userId,
+                    MemberRole.MEMBER_ROLE_ADMIN,
+                )
 
-                assertEquals(projectId, promotedMember.projectId)
-                assertEquals(testUserId, promotedMember.userId)
-                assertEquals(MemberRole.MEMBER_ROLE_ADMIN, promotedMember.role)
+                val projectAdmins = repo.getAllProjectAdmins(projectId)
+
+                assertThat(projectAdmins).hasSize(1)
+                assertThat(projectAdmins).containsExactlyInAnyOrder(projectAdmin)
+                assertThat(projectAdmins).doesNotContain(deletedAdmin)
             }
-
-        @Test
-        fun `When a project admin is promoted, then the role of the project admin does not change`() = runTest {
-            val (projectId, _) = setupProject()
-            var promotedMember = repo.updateProjectMemberRole(projectId, testUserId, MemberRole.MEMBER_ROLE_ADMIN)
-            assertEquals(MemberRole.MEMBER_ROLE_ADMIN, promotedMember.role)
-
-            promotedMember = repo.updateProjectMemberRole(projectId, testUserId, MemberRole.MEMBER_ROLE_ADMIN)
-
-            assertEquals(projectId, promotedMember.projectId)
-            assertEquals(testUserId, promotedMember.userId)
-            assertEquals(MemberRole.MEMBER_ROLE_ADMIN, promotedMember.role)
-        }
     }
 
     @Nested
     inner class UpdateProjectMemberRole {
-        @Test
-        fun `When a project member is updated, then the role of the project member is correctly updated`() = runTest {
-            val (projectId, _) = setupProject()
-            val normalMember = repo.getProjectMemberByComposedId(projectId, testUserId).getOrThrow()
-            assertEquals(MemberRole.MEMBER_ROLE_DEFAULT, normalMember.role)
+        @ParameterizedTest(name = "When role changes from {0} to {1}, then the final role should be {2}")
+        @CsvSource(
+            "MEMBER_ROLE_DEFAULT, MEMBER_ROLE_DEFAULT, MEMBER_ROLE_DEFAULT",
+            "MEMBER_ROLE_DEFAULT, MEMBER_ROLE_ADMIN, MEMBER_ROLE_ADMIN",
+            "MEMBER_ROLE_ADMIN, MEMBER_ROLE_DEFAULT, MEMBER_ROLE_DEFAULT",
+            "MEMBER_ROLE_ADMIN, MEMBER_ROLE_ADMIN, MEMBER_ROLE_ADMIN",
+        )
+        fun `When a project member is updated, then the role of the project member is correctly updated`(
+            initialRole: MemberRole,
+            updatedRole: MemberRole,
+            expectedRole: MemberRole,
+        ) = runTest {
+            val (projectId, members) = setupProject()
+            val member = repo.updateProjectMemberRole(projectId, members.first().userId, initialRole)
+            assertEquals(initialRole, member.role)
 
-            val updatedMember = repo.updateProjectMemberRole(projectId, testUserId, MemberRole.MEMBER_ROLE_ADMIN)
+            val updatedMember = repo.updateProjectMemberRole(projectId, member.userId, updatedRole)
 
             assertEquals(projectId, updatedMember.projectId)
-            assertEquals(testUserId, updatedMember.userId)
-            assertEquals(MemberRole.MEMBER_ROLE_ADMIN, updatedMember.role)
+            assertEquals(member.userId, updatedMember.userId)
+            assertEquals(expectedRole, updatedMember.role)
         }
     }
 
@@ -285,24 +335,39 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
                 val projectMembersWithUsers = repo.getProjectMembersWithUsers(projectId)
 
                 assertThat(projectMembersWithUsers).hasSize(1)
-                assertThat(projectMembersWithUsers).anyMatch { it.projectMember == normalMember }
-                assertThat(projectMembersWithUsers).anyMatch { it.user == user }
+                assertThat(projectMembersWithUsers).containsExactlyInAnyOrder(ProjectMemberWithUser(normalMember, user))
             }
 
         @Test
         fun `When not all users are project members, then only the correct project members with users are returned`() =
             runTest {
-                val (projectId, _) = setupProject()
-                val user = userRepo.getUserById(testUserId).getOrThrow()
-                val nonProjectMemberUserId = RepositoryHelper.insertUserAndGetId("test-user@example.com")
-                val nonProjectMemberUser = userRepo.getUserById(nonProjectMemberUserId).getOrThrow()
-                val normalMember = repo.getProjectMemberByComposedId(projectId, testUserId).getOrThrow()
+                val (projectId, members) = setupProject()
+                val nonProjectMemberUserId = insertUserAndGetId("test-user@example.com")
+                val user = userRepo.getUserById(members.first().userId).getOrThrow()
+
                 val projectMembersWithUsers = repo.getProjectMembersWithUsers(projectId)
 
                 assertThat(projectMembersWithUsers).hasSize(1)
-                assertThat(projectMembersWithUsers).anyMatch { it.projectMember == normalMember }
+                assertThat(projectMembersWithUsers).anyMatch { it.projectMember == members.first() }
                 assertThat(projectMembersWithUsers).anyMatch { it.user == user }
-                assertThat(projectMembersWithUsers).noneMatch { it.projectMember.userId == nonProjectMemberUser.id }
+                assertThat(projectMembersWithUsers).noneMatch { it.projectMember.userId == nonProjectMemberUserId }
+            }
+
+        @Test
+        fun `When a project member exists but the corresponding user is soft-deleted, then they are not returned`() =
+            runTest {
+                val (projectId, members) = setupProject(addTestUser = true, addDeletedUser = true)
+                assertThat(members).hasSize(2)
+                val activeUser = userRepo.getUserById(members[0].userId).getOrThrow()
+                val deletedUser = userRepo.getUserById(members[1].userId).getOrThrow()
+
+                val projectMembersWithUsers = repo.getProjectMembersWithUsers(projectId)
+
+                assertThat(projectMembersWithUsers).hasSize(1)
+                assertThat(projectMembersWithUsers).anyMatch { it.projectMember == members[0] }
+                assertThat(projectMembersWithUsers).anyMatch { it.user == activeUser }
+                assertThat(projectMembersWithUsers).noneMatch { it.projectMember == members[1] }
+                assertThat(projectMembersWithUsers).noneMatch { it.user == deletedUser }
             }
     }
 
@@ -311,6 +376,7 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
         @Test
         fun `When a project member is found, then the correct project member is removed`() = runTest {
             val (projectId, members) = setupProject()
+
             repo.removeProjectMember(projectId, members[0].userId)
 
             assertTrue(repo.getProjectMemberByComposedId(projectId, members[0].userId).isFailure)

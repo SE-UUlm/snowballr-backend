@@ -109,7 +109,8 @@ class ProjectMemberTableRepo(
     private val db: IDatabase,
 ) : IProjectMemberTableRepo {
     /**
-     * Retrieves a list of UUID from these users that are marked as deleted.
+     * Retrieves a list of UUIDs from these users that are marked as deleted.
+     * As users are automatically hard-deleted after some time, this list should not be that long.
      *
      * @return A list of UUIDs representing users that are soft-deleted.
      */
@@ -121,7 +122,7 @@ class ProjectMemberTableRepo(
      * Requesting a project member from the database.
      *
      * @param projectId The ID of the requested project.
-     * @param userId The id of the requested user.
+     * @param userId The ID of the requested user.
      * @return The [ProjectMember] object or null, if no project with the given [projectId] and [userId] was found.
      */
     private fun getProjectMemberByComposedIdOrNull(projectId: UUID, userId: UUID): ProjectMember? = ProjectMemberTable
@@ -170,7 +171,6 @@ class ProjectMemberTableRepo(
                 // Condition to find projects where the specific user is a member
                 userMembership[ProjectMemberTable.userId] eq userId
             }.selectAll()
-            // Filter out the calling user and soft-deleted users
             .where { ProjectMemberTable.userId neq userId }
             .andWhere { ProjectMemberTable.userId notInList getSoftDeletedUsers() }
             .map { it.toProjectMember() }
@@ -199,8 +199,7 @@ class ProjectMemberTableRepo(
         }
 
     override suspend fun getProjectMembersWithUsers(projectId: UUID): List<ProjectMemberWithUser> = db.query {
-        ProjectMemberTable
-            .join(UserTable, JoinType.INNER, onColumn = ProjectMemberTable.userId, otherColumn = UserTable.id)
+        (ProjectMemberTable innerJoin UserTable)
             .selectAll()
             .where { ProjectMemberTable.projectId eq projectId }
             .andWhere { UserTable.status neq UserStatus.USER_STATUS_DELETED }
