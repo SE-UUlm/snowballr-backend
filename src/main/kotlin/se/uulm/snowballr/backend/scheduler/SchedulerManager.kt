@@ -27,6 +27,7 @@ class SchedulerManager {
         // Register all recurring jobs
         scheduleCleanExpiredTokens()
         scheduleClearSoftDeletedEntities()
+        scheduleHardDeleteSoftDeletedEntities()
     }
 
     fun stop() {
@@ -65,6 +66,24 @@ class SchedulerManager {
         val trigger = TriggerBuilder.newTrigger()
             .withIdentity("clearSoftDeletedEntitiesTrigger", MAINTENANCE)
             .withSchedule(CronScheduleBuilder.cronSchedule("0 0 0 * * ?"))
+            .build()
+
+        scheduler.scheduleJob(job, trigger)
+    }
+
+    /**
+     * Schedules a recurring job that hard-deletes soft-deleted entities.
+     *
+     * This job runs every month on the first day at midnight.
+     */
+    private fun scheduleHardDeleteSoftDeletedEntities() {
+        val job = JobBuilder.newJob(HardDeleteSoftDeletedEntitiesJob::class.java)
+            .withIdentity("hardDeleteSoftDeletedEntities", MAINTENANCE)
+            .build()
+
+        val trigger = TriggerBuilder.newTrigger()
+            .withIdentity("hardDeleteSoftDeletedEntitiesTrigger", MAINTENANCE)
+            .withSchedule(CronScheduleBuilder.cronSchedule("0 0 0 1 * ?"))
             .build()
 
         scheduler.scheduleJob(job, trigger)

@@ -19,6 +19,11 @@ interface IUserMaintenanceService {
      * Clears sensitive data for users that were soft-deleted.
      */
     suspend fun clearSoftDeletedUsers()
+
+    /**
+     * Hard-deletes all users that were soft-deleted and are no longer referenced by any other entity.
+     */
+    suspend fun hardDeleteClearedUsers()
 }
 
 /**
@@ -35,5 +40,9 @@ class UserMaintenanceService : IUserMaintenanceService, KoinComponent {
             envReader.env.miscellaneous.sensitiveInformationRetentionDays.toLong(),
         )
         userTableRepo.clearSoftDeletedUsers(thresholdDate)
+    }
+
+    override suspend fun hardDeleteClearedUsers() {
+        userTableRepo.hardDeleteClearedUsers()
     }
 }
