@@ -17,6 +17,7 @@ import se.uulm.snowballr.backend.service.accessrules.checkFor
 import se.uulm.snowballr.backend.service.accessrules.forProperty
 import se.uulm.snowballr.backend.service.accessrules.forTarget
 import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadProject
+import se.uulm.snowballr.backend.service.accessrules.isNotLastProjectAdmin
 import se.uulm.snowballr.backend.service.accessrules.isProjectAdmin
 import se.uulm.snowballr.backend.service.accessrules.isProjectExistent
 import se.uulm.snowballr.backend.service.accessrules.isProjectMember
@@ -82,7 +83,7 @@ class ProjectMemberService(
             isServerOrProjectAdmin(repo, AccessType.UPDATE).checkFor(currentUser, projectId)
 
             projectRepo.getProjectById(projectId).getOrThrow()
-            userRepo.getUserById(userId).getOrThrow()
+            val user = userRepo.getUserById(userId).getOrThrow()
 
             val currentMember = try {
                 repo.getProjectMemberByComposedId(projectId, userId).getOrThrow()
@@ -93,10 +94,8 @@ class ProjectMemberService(
             }
 
             if (currentMember.role == MemberRole.MEMBER_ROLE_ADMIN && request.newRole != MemberRole.MEMBER_ROLE_ADMIN) {
-                val projectAdmins = repo.getAllProjectAdmins(projectId)
-                if (projectAdmins.size <= 1) {
-                    throw FailedPreconditionException("Cannot demote the last admin of a project.")
-                }
+                isNotLastProjectAdmin(repo, "Cannot demote the user")
+                    .checkFor(user, projectId)
             }
 
             repo.updateProjectMemberRole(projectId, userId, request.newRole)
@@ -139,14 +138,13 @@ class ProjectMemberService(
             }
 
             val projectMembers = repo.getProjectMembers(projectId)
-            val projectAdmins = repo.getAllProjectAdmins(projectId)
-            if (projectMembers.size == 1 && projectMembers.any { it.userId == requestedUserId }) {
+            val isLastMember = projectMembers.size == 1 && projectMembers.first().userId == requestedUserId
+            if (isLastMember) {
                 projectRepo.softDeleteProject(projectId)
-            } else if (projectAdmins.size == 1 && projectAdmins.any { it.userId == requestedUserId }) {
-                throw FailedPreconditionException(
-                    "The user can not be removed from the project, because this user is the last " +
-                        "project admin.",
-                )
+            } else {
+                val user = userRepo.getUserById(requestedUserId).getOrThrow()
+                isNotLastProjectAdmin(repo, "The user cannot be removed from the project")
+                    .checkFor(user, projectId)
             }
 
             repo.removeProjectMember(projectId, requestedUserId)

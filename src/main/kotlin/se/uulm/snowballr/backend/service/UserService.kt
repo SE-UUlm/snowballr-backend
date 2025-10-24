@@ -29,6 +29,7 @@ import se.uulm.snowballr.backend.service.accessrules.checkFor
 import se.uulm.snowballr.backend.service.accessrules.forProperty
 import se.uulm.snowballr.backend.service.accessrules.forTarget
 import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadUser
+import se.uulm.snowballr.backend.service.accessrules.isNotLastProjectAdmin
 import se.uulm.snowballr.backend.service.accessrules.isSameUserById
 import se.uulm.snowballr.backend.service.accessrules.isServerAdmin
 import se.uulm.snowballr.backend.service.accessrules.isServerAdminOrSameUser
@@ -260,14 +261,9 @@ class UserService(
                 ProjectStatus.PROJECT_STATUS_ARCHIVED,
             ),
         )
-        val isLastProjectAdminInAnyProject = projectsOfTargetUser.any { project ->
-            projectMemberRepo.getAllProjectAdmins(project.id).all { it.userId == targetUser.id }
-        }
-        if (isLastProjectAdminInAnyProject) {
-            throw FailedPreconditionException(
-                "The user with the ID '${targetUser.id}' is the last project admin in one or more projects. " +
-                    "Please assign a new project admin in the affected projects before deleting this user.",
-            )
+        projectsOfTargetUser.forEach { project ->
+            isNotLastProjectAdmin(projectMemberRepo, "The user cannot be (soft-)deleted")
+                .checkFor(targetUser, project.id)
         }
 
         userRepo.softDeleteUser(targetUser.id)
