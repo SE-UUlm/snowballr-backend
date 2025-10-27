@@ -131,13 +131,10 @@ class PaperService(
     override suspend fun setPaperPdf(request: GrpcPaper.PdfUpdate): Base.Nothing {
         val paperId = parseUUID(request.paperId, EntityType.PAPER)
 
-        // Verify paper exists
-        if (!repo.doesPaperExistById(paperId)) {
+        // Get current paper to check if it has an existing PDF
+        val paper = repo.getPaperById(paperId).getOrElse {
             throw NotFoundException(EntityType.PAPER, paperId.toString())
         }
-
-        // Get current paper to check if it has an existing PDF
-        val paper = repo.getPaperById(paperId).getOrThrow()
 
         // Delete old PDF if it exists
         if (paper.pdfId != null) {
@@ -145,7 +142,7 @@ class PaperService(
         }
 
         // If new PDF data is provided, create it and update the paper
-        if (request.hasPdf() && request.pdf.data.size() > 0) {
+        if (request.hasPdf() && !request.pdf.data.isEmpty) {
             val newPdf = pdfRepo.createPdf(request.pdf.data.toByteArray())
             repo.updatePaperPdfId(paperId, newPdf.id)
         } else {

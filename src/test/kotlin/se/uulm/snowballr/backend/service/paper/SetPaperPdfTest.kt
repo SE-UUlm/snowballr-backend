@@ -34,7 +34,12 @@ class SetPaperPdfTest : MainServiceTest() {
 
     @Test
     fun `When fetching the paper fails, then a TestSpecificException is thrown`() = runTest {
-        coEvery { paperRepoMock.doesPaperExistById(paperId) } returns false
+        coEvery { paperRepoMock.getPaperById(paperId) } returns Result.failure(
+            NotFoundException(
+                se.uulm.snowballr.backend.model.EntityType.PAPER,
+                paperId.toString(),
+            ),
+        )
 
         assertThrows<NotFoundException> { mainService.setPaperPdf(getExampleRequest()) }
     }
@@ -45,7 +50,6 @@ class SetPaperPdfTest : MainServiceTest() {
         val newPdf = DataBuilder.createExamplePdf(id = pdfId, data = pdfData)
         val updatedPaper = paper.copy(pdfId = pdfId)
 
-        coEvery { paperRepoMock.doesPaperExistById(paperId) } returns true
         coEvery { paperRepoMock.getPaperById(paperId) } returns Result.success(paper)
         coEvery { pdfRepoMock.createPdf(pdfData) } returns newPdf
         coEvery { paperRepoMock.updatePaperPdfId(paperId, pdfId) } returns updatedPaper
@@ -63,7 +67,6 @@ class SetPaperPdfTest : MainServiceTest() {
         val newPdf = DataBuilder.createExamplePdf(id = pdfId, data = pdfData)
         val updatedPaper = paper.copy(pdfId = pdfId)
 
-        coEvery { paperRepoMock.doesPaperExistById(paperId) } returns true
         coEvery { paperRepoMock.getPaperById(paperId) } returns Result.success(paper)
         coEvery { pdfRepoMock.deletePdfById(oldPdfId) } returns Unit
         coEvery { pdfRepoMock.createPdf(pdfData) } returns newPdf
@@ -81,7 +84,6 @@ class SetPaperPdfTest : MainServiceTest() {
         val paper = DataBuilder.createExamplePaper(id = paperId, pdfId = pdfId)
         val updatedPaper = paper.copy(pdfId = null)
 
-        coEvery { paperRepoMock.doesPaperExistById(paperId) } returns true
         coEvery { paperRepoMock.getPaperById(paperId) } returns Result.success(paper)
         coEvery { pdfRepoMock.deletePdfById(pdfId) } returns Unit
         coEvery { paperRepoMock.updatePaperPdfId(paperId, null) } returns updatedPaper
@@ -96,7 +98,6 @@ class SetPaperPdfTest : MainServiceTest() {
     fun `When an error occurs during PDF creation, then a TestSpecificException is thrown`() = runTest {
         val paper = DataBuilder.createExamplePaper(id = paperId, pdfId = null)
 
-        coEvery { paperRepoMock.doesPaperExistById(paperId) } returns true
         coEvery { paperRepoMock.getPaperById(paperId) } returns Result.success(paper)
         coEvery { pdfRepoMock.createPdf(pdfData) } throws TestSpecificException()
 
