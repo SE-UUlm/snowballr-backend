@@ -231,6 +231,9 @@ object DataBuilder {
         lastName,
     )
 
+    fun createExamplePdf(id: UUID = UUID.randomUUID(), data: ByteArray = "PDF data content".toByteArray()) =
+        se.uulm.snowballr.backend.model.dto.Pdf(id, data)
+
     fun createExampleReview(
         id: UUID = UUID.randomUUID(),
         projectPaperId: UUID = UUID.randomUUID(),

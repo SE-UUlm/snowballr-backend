@@ -28,6 +28,7 @@ import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
+import se.uulm.snowballr.backend.repository.IPdfTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IReviewTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
@@ -95,6 +96,7 @@ open class MainServiceTest : KoinTest {
     val citationRepoMock = mockk<ICitationTableRepo>()
     val readingListRepoMock = mockk<IReadingListTableRepo>()
     val paperRepoMock = mockk<IPaperTableRepo>()
+    val pdfRepoMock = mockk<IPdfTableRepo>()
     val reviewRepoMock = mockk<IReviewTableRepo>()
     val reviewHasCriterionRepoMock = mockk<IReviewHasCriterionTableRepo>()
     val verificationTokenRepoMock = mockk<IVerificationTokenTableRepo>()
@@ -118,6 +120,7 @@ open class MainServiceTest : KoinTest {
         citationRepoMock,
         readingListRepoMock,
         paperRepoMock,
+        pdfRepoMock,
         reviewRepoMock,
         reviewHasCriterionRepoMock,
         verificationTokenRepoMock,
@@ -151,6 +154,7 @@ open class MainServiceTest : KoinTest {
         single { citationRepoMock }
         single { readingListRepoMock }
         single { paperRepoMock }
+        single { pdfRepoMock }
         single { reviewRepoMock }
         single { reviewHasCriterionRepoMock }
         single { verificationTokenRepoMock }

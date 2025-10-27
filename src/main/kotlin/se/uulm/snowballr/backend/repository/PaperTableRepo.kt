@@ -66,6 +66,15 @@ interface IPaperTableRepo {
      * - [GrpcPaper.authors_]
      */
     suspend fun updatePaper(request: GrpcPaper.Update): Paper
+
+    /**
+     * Updates the PDF ID of a paper.
+     *
+     * @param paperId The ID of the paper to update.
+     * @param pdfId The new PDF ID to set (nullable to support removing PDF).
+     * @return The updated [Paper] entity.
+     */
+    suspend fun updatePaperPdfId(paperId: UUID, pdfId: UUID?): Paper
 }
 
 /**
@@ -139,6 +148,13 @@ class PaperTableRepo(
                 }
             }
 
+            it[modifiedAt] = OffsetDateTime.now()
+        }
+    }
+
+    override suspend fun updatePaperPdfId(paperId: UUID, pdfId: UUID?): Paper = db.query {
+        PaperTable.updateByIdAndGet(paperId, ResultRow::toPaper, EntityType.PAPER) {
+            it[PaperTable.pdfId] = pdfId
             it[modifiedAt] = OffsetDateTime.now()
         }
     }

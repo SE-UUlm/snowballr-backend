@@ -41,12 +41,14 @@ import se.uulm.snowballr.backend.repository.CriterionTableRepo
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
+import se.uulm.snowballr.backend.repository.IPdfTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IReviewTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.IVerificationTokenTableRepo
 import se.uulm.snowballr.backend.repository.InvitationTokenTableRepo
 import se.uulm.snowballr.backend.repository.PaperTableRepo
+import se.uulm.snowballr.backend.repository.PdfTableRepo
 import se.uulm.snowballr.backend.repository.ProjectTableRepo
 import se.uulm.snowballr.backend.repository.ReviewTableRepo
 import se.uulm.snowballr.backend.repository.UserTableRepo
@@ -149,6 +151,7 @@ fun Module.repositoryLayerDeps() {
     singleOf(::UserTableRepo) { bind<IUserTableRepo>() }
     singleOf(::ProjectMemberTableRepo) { bind<IProjectMemberTableRepo>() }
     singleOf(::PaperTableRepo) { bind<IPaperTableRepo>() }
+    singleOf(::PdfTableRepo) { bind<IPdfTableRepo>() }
     singleOf(::CitationTableRepo) { bind<ICitationTableRepo>() }
     singleOf(::ReadingListTableRepo) { bind<IReadingListTableRepo>() }
     singleOf(::VerificationTokenTableRepo) { bind<IVerificationTokenTableRepo>() }
