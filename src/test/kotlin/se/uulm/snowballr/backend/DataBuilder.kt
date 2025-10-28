@@ -295,6 +295,7 @@ object DataBuilder {
     )
 
     fun createExampleReviewDecisionMatrix(
+        numberOfReviewers: Int = 2,
         pattern: List<ReviewDecisionMatrix.Pattern> = listOf(
             ACCEPT_DECLINE_PATTERN,
             ACCEPT_ANY_PATTERN,
@@ -302,7 +303,7 @@ object DataBuilder {
             MAYBE_MAYBE_PATTERN,
         ),
     ): ReviewDecisionMatrix = ReviewDecisionMatrix.newBuilder()
-        .setNumberOfReviewers(2)
+        .setNumberOfReviewers(numberOfReviewers)
         .addAllPatterns(pattern)
         .build()
 

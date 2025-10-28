@@ -123,9 +123,6 @@ class ReviewService(
      * @return The computed [PaperDecision] based on the given reviews.
      */
     private fun determinePaperDecision(reviews: List<Review>, decisionMatrix: ReviewDecisionMatrix): PaperDecision {
-        if (reviews.isEmpty()) {
-            return PaperDecision.PAPER_DECISION_UNREVIEWED
-        }
         if (reviews.size < decisionMatrix.numberOfReviewers) {
             return PaperDecision.PAPER_DECISION_IN_REVIEW
         }
@@ -185,10 +182,10 @@ class ReviewService(
         val isAnySelectedCriteriaHardExclusion = selectedCriteriaIds.any { id -> hardExclusionCriteria.contains(id) }
         if (isAnySelectedCriteriaHardExclusion && review.decision == ReviewDecision.REVIEW_DECISION_DECLINED) {
             projectPaperRepo.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_DECLINED)
+        } else {
+            val updatedDecision = determinePaperDecision(reviewsForProjectPaper + review, project.reviewDecisionMatrix)
+            projectPaperRepo.updateProjectPaperDecision(projectPaperId, updatedDecision)
         }
-
-        val updatedDecision = determinePaperDecision(reviewsForProjectPaper + review, project.reviewDecisionMatrix)
-        projectPaperRepo.updateProjectPaperDecision(projectPaperId, updatedDecision)
 
         review.toGrpcReview(selectedCriteriaIds.map(UUID::toString))
     }
