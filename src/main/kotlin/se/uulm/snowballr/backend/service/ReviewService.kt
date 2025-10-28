@@ -8,6 +8,7 @@ import se.uulm.snowballr.backend.model.dto.toGrpcReviews
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.alreadyexists.DuplicateReviewException
 import se.uulm.snowballr.backend.model.parseUUID
+import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IReviewTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
@@ -19,6 +20,7 @@ import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadProject
 import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadReview
 import se.uulm.snowballr.backend.service.accessrules.isProjectActive
 import snowballr.Base
+import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
 import snowballr.ReviewOuterClass.ReviewDecision
@@ -57,14 +59,17 @@ interface IReviewService {
  * @param projectPaperRepo Interface for persistence and retrieval operations related to project papers.
  * @param projectRepo Interface for persistence and retrieval operations related to projects.
  * @param projectMemberRepo Interface for persistence and retrieval operations related to project members.
- * @param reviewHasCriterionRepo Interface for persistence and retrieval operations related to review criteria.
+ * @param criteriaRepo Interface for persistence and retrieval operations related to criteria.
+ * @param reviewHasCriterionRepo Interface for persistence and retrieval operations related to review-criteria relation.
  */
+@Suppress("LongParameterList")
 class ReviewService(
     private val repo: IReviewTableRepo,
     private val userRepo: IUserTableRepo,
     private val projectPaperRepo: IProjectPaperTableRepo,
     private val projectRepo: IProjectTableRepo,
     private val projectMemberRepo: IProjectMemberTableRepo,
+    private val criteriaRepo: ICriterionTableRepo,
     private val reviewHasCriterionRepo: IReviewHasCriterionTableRepo,
 ) : IReviewService {
     override suspend fun getReviewById(request: Base.Id): GrpcReview = withUser(userRepo) { currentUser ->
@@ -173,6 +178,14 @@ class ReviewService(
 
         val review = repo.createReview(request, currentUser.id)
         val selectedCriteriaIds = reviewHasCriterionRepo.getSelectedCriteriaIdsForReviewById(review.id)
+
+        val hardExclusionCriteria = criteriaRepo.getAllProjectCriteria(project.id)
+            .filter { criterion -> criterion.category == CriterionCategory.CRITERION_CATEGORY_HARD_EXCLUSION }
+            .map { criterion -> criterion.id }
+        val isAnySelectedCriteriaHardExclusion = selectedCriteriaIds.any { id -> hardExclusionCriteria.contains(id) }
+        if (isAnySelectedCriteriaHardExclusion && review.decision == ReviewDecision.REVIEW_DECISION_DECLINED) {
+            projectPaperRepo.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_DECLINED)
+        }
 
         val updatedDecision = determinePaperDecision(reviewsForProjectPaper + review, project.reviewDecisionMatrix)
         projectPaperRepo.updateProjectPaperDecision(projectPaperId, updatedDecision)
