@@ -176,7 +176,7 @@ class RemoveProjectMemberTest : MainServiceTest() {
         }
 
     @Test
-    fun `When a project member to be deleted is the last member, then no exception is thrown and the project marked as deleted`() =
+    fun `When a project member to be deleted is the last member, then no exception is thrown and the project is marked as deleted`() =
         runTest {
             val currentUser = DataBuilder.createExampleUser(id = userId)
             val project = DataBuilder.createExampleProject(id = projectId)

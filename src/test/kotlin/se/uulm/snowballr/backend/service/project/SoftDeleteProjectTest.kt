@@ -65,7 +65,7 @@ class SoftDeleteProjectTest : MainServiceTest() {
     }
 
     @Test
-    fun `When a normal project member deletes a project, then a UnauthorizedException is thrown`() = runTest {
+    fun `When a normal project member deletes a project, then an UnauthorizedException is thrown`() = runTest {
         mockSoftDeleteProject(false, projectId, projectMemberRepoMock::getAllProjectAdmins)
         coEvery { projectMemberRepoMock.getAllProjectAdmins(projectId) } returns emptyList()
 
