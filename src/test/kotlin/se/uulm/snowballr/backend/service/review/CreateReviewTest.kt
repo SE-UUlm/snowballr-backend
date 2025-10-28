@@ -12,6 +12,7 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.DataBuilder
+import se.uulm.snowballr.backend.DataBuilder.createExampleReviewDecisionMatrix
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.UnauthorizedException
@@ -29,9 +30,7 @@ import kotlin.reflect.KFunction
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CreateReviewTest : MainServiceTest() {
-    private val project = DataBuilder.createExampleProject(
-        reviewDecisionMatrix = ProjectOuterClass.ReviewDecisionMatrix.newBuilder().setNumberOfReviewers(2).build(),
-    )
+    private val project = DataBuilder.createExampleProject(reviewDecisionMatrix = createExampleReviewDecisionMatrix())
     private val projectPaperId = UUID.randomUUID()
     private val decision = ReviewDecision.REVIEW_DECISION_ACCEPTED
     private val selectedCriteriaIds = listOf<UUID>(UUID.randomUUID())

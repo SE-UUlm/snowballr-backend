@@ -21,7 +21,7 @@ import se.uulm.snowballr.backend.service.accessrules.isProjectActive
 import snowballr.Base
 import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
-import snowballr.ReviewOuterClass
+import snowballr.ReviewOuterClass.ReviewDecision
 import java.util.UUID
 import snowballr.ReviewOuterClass.Review as GrpcReview
 
@@ -96,49 +96,54 @@ class ReviewService(
         }
 
     /**
-     * Determines the final paper decision based on the given list of reviews and updates the project paper decision
-     * accordingly.
+     * Determines the final paper decision based on the given list of reviews.
      *
-     * At the moment, this is a simple sum function that adds one for each accepted review, subtracts one for each rejected,
-     * and leaves the sum unchanged for each maybe review. If the entire sum is above 0, the paper is accepted,
-     * if it is below 0, the paper is declined, if it is 0, the paper is in review. If the list is empty, the paper
-     * is considered to be unreviewed. At least two reviews are required to make a final decision.
-     * TODO: Exchange this by loading the decision matrix and calculating the final decision based on the matrix (see #345)
+     * This function follows the following decision process:
+     * - If there are no reviews, the paper is marked as [PaperDecision.PAPER_DECISION_UNREVIEWED].
+     * - If the number of reviews is below the required threshold (as defined in the decision matrix),
+     *   the paper remains with [PaperDecision.PAPER_DECISION_IN_REVIEW].
+     * - Once the expected number of reviews is reached, the function attempts to match the current review distribution
+     *   against the configured decision matrix patterns. If a matching pattern is found (order-sensitive),
+     *   its associated final decision is returned.
+     * - If no matrix pattern matches, the default decision is [PaperDecision.PAPER_DECISION_IN_REVIEW]
+     * - If the required number of reviews were not enough to determine a final decision
+     *   [PaperDecision.PAPER_DECISION_ACCEPTED] or [PaperDecision.PAPER_DECISION_DECLINED]), the latest review
+     *   (assumed to be the deciding one) determines final decision. The paper is then only set to
+     *   [PaperDecision.PAPER_DECISION_ACCEPTED] in case the latest review was [ReviewDecision.REVIEW_DECISION_ACCEPTED];
+     *   otherwise, it is set to [PaperDecision.PAPER_DECISION_DECLINED].
      *
-     * @param projectPaperId ID of the project paper for which the final paper decision is to be determined.
+     * @param reviews List of reviews to be considered for the final paper decision. The latest review is assumed to be the last one in the list.
      * @param decisionMatrix Decision matrix of the project, where the project paper is in, that can be used to define
      * the final paper decision.
-     * @param reviews List of reviews to be considered for the final paper decision.
+     * @return The computed [PaperDecision] based on the given reviews.
      */
-    private suspend fun updatePaperDecision(
-        projectPaperId: UUID,
-        decisionMatrix: ReviewDecisionMatrix,
-        reviews: List<Review>,
-    ) {
+    private fun determinePaperDecision(reviews: List<Review>, decisionMatrix: ReviewDecisionMatrix): PaperDecision {
         if (reviews.isEmpty()) {
-            projectPaperRepo.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_UNREVIEWED)
-            return
-        } else if (reviews.size < decisionMatrix.numberOfReviewers) {
-            projectPaperRepo.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_IN_REVIEW)
-            return
+            return PaperDecision.PAPER_DECISION_UNREVIEWED
         }
+        if (reviews.size < decisionMatrix.numberOfReviewers) {
+            return PaperDecision.PAPER_DECISION_IN_REVIEW
+        }
+        if (reviews.size == decisionMatrix.numberOfReviewers) {
+            val counts = reviews.groupingBy { it.decision }.eachCount()
 
-        val sum = reviews.sumOf { review ->
-            when (review.decision) {
-                ReviewOuterClass.ReviewDecision.REVIEW_DECISION_UNSPECIFIED -> 0
-                ReviewOuterClass.ReviewDecision.REVIEW_DECISION_DECLINED -> -1
-                ReviewOuterClass.ReviewDecision.REVIEW_DECISION_MAYBE -> 0
-                ReviewOuterClass.ReviewDecision.REVIEW_DECISION_ACCEPTED -> 1
-                ReviewOuterClass.ReviewDecision.UNRECOGNIZED -> 0
+            for (pattern in decisionMatrix.patternsList) {
+                val doesFoundMatch = pattern.entriesList.all { entry ->
+                    (counts[entry.reviewDecision] ?: 0) >= entry.count.toInt()
+                }
+                if (doesFoundMatch) {
+                    return pattern.decision
+                }
             }
+
+            return PaperDecision.PAPER_DECISION_IN_REVIEW
         }
 
-        if (sum > 0) {
-            projectPaperRepo.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_ACCEPTED)
-        } else if (sum < 0) {
-            projectPaperRepo.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_DECLINED)
+        val decidingReview = reviews.last()
+        return if (decidingReview.decision == ReviewDecision.REVIEW_DECISION_ACCEPTED) {
+            PaperDecision.PAPER_DECISION_ACCEPTED
         } else {
-            projectPaperRepo.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_IN_REVIEW)
+            PaperDecision.PAPER_DECISION_DECLINED
         }
     }
 
@@ -169,7 +174,8 @@ class ReviewService(
         val review = repo.createReview(request, currentUser.id)
         val selectedCriteriaIds = reviewHasCriterionRepo.getSelectedCriteriaIdsForReviewById(review.id)
 
-        updatePaperDecision(projectPaper.id, project.reviewDecisionMatrix, reviewsForProjectPaper + review)
+        val updatedDecision = determinePaperDecision(reviewsForProjectPaper + review, project.reviewDecisionMatrix)
+        projectPaperRepo.updateProjectPaperDecision(projectPaperId, updatedDecision)
 
         review.toGrpcReview(selectedCriteriaIds.map(UUID::toString))
     }
