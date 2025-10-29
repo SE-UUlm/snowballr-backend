@@ -133,10 +133,12 @@ interface IProjectPaperTableRepo {
     suspend fun getProjectProgress(projectId: UUID): Float
 
     /**
-     * Retrieves a list of later project papers from a given starting point defined by `localPaperId` and `stage`.
+     * Retrieves a list of subsequent project papers from a given starting point defined by `localPaperId` and `stage`.
      *
-     * This method fetches all project papers within the same project that come after the specified
-     * paper (`localPaperId`) and are part of the given `stage` or a later `stage`.
+     * Subsequent project papers are defined as project papers
+     *  - within the same project
+     *  - with a greater `localPaperId` than the given project paper and
+     *  - are part of the given `stage` or a subsequent `stage`.
      *
      * @param projectId The unique identifier of the project to which the papers belong.
      * @param localPaperId The local ID of the starting paper in the project from which the later papers are retrieved.

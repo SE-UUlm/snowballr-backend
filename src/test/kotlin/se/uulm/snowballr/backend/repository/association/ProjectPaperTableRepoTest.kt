@@ -584,7 +584,7 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
         }
 
         @Test
-        fun `When later projectPapers are found, then only the project papers in the correct project are returned`() =
+        fun `When subsequent projectPapers are found, then only the project papers in the correct project are returned`() =
             runTest {
                 val projectId1 = insertProjectAndGetId(createdBy = testUserId, maxStage = 2)
                 val projectId2 = insertProjectAndGetId(createdBy = testUserId)
