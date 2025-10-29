@@ -33,7 +33,6 @@ class GetNextPaperToReviewTest : MainServiceTest() {
             localPaperId = 0,
         )
         val nextProjectPaper = DataBuilder.createExampleProjectPaper(stage = 0, localPaperId = 1)
-        val author = DataBuilder.createExampleAuthor()
         val review = DataBuilder.createExampleReview(projectPaperId = projectPaper.id)
 
         mockCurrentUser(currentUser)
@@ -42,7 +41,7 @@ class GetNextPaperToReviewTest : MainServiceTest() {
         } returns Result.success(projectPaper)
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
         coEvery {
-            projectPaperRepoMock.getLaterProjectPapers(
+            projectPaperRepoMock.getSubsequentProjectPapers(
                 project.id, projectPaper.localPaperId, projectPaper.stage,
             )
         } returns listOf(nextProjectPaper)
@@ -50,7 +49,6 @@ class GetNextPaperToReviewTest : MainServiceTest() {
             reviewRepoMock.getAllReviewsForProjectPaper(nextProjectPaper.id)
         } returns listOf(review)
         coEvery { paperRepoMock.getPaperById(nextProjectPaper.paperId) } returns Result.success(paper)
-        coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(paper.id) } returns listOf(author)
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id) } returns emptyList()
         coEvery { reviewRepoMock.getAllReviewsForProjectPaper(nextProjectPaper.id) } returns emptyList()
 
@@ -71,7 +69,6 @@ class GetNextPaperToReviewTest : MainServiceTest() {
             localPaperId = 0,
         )
         val nextProjectPaper = DataBuilder.createExampleProjectPaper(stage = 0, localPaperId = 1)
-        val author = DataBuilder.createExampleAuthor()
         val review = DataBuilder.createExampleReview(projectPaperId = projectPaper.id)
 
         mockCurrentUser(currentUser)
@@ -80,7 +77,7 @@ class GetNextPaperToReviewTest : MainServiceTest() {
         } returns Result.success(projectPaper)
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
         coEvery {
-            projectPaperRepoMock.getLaterProjectPapers(
+            projectPaperRepoMock.getSubsequentProjectPapers(
                 project.id, projectPaper.localPaperId, projectPaper.stage,
             )
         } returns listOf(nextProjectPaper)
@@ -88,7 +85,6 @@ class GetNextPaperToReviewTest : MainServiceTest() {
             reviewRepoMock.getAllReviewsForProjectPaper(nextProjectPaper.id)
         } returns listOf(review)
         coEvery { paperRepoMock.getPaperById(nextProjectPaper.paperId) } returns Result.success(paper)
-        coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(paper.id) } returns listOf(author)
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id) } returns emptyList()
         coEvery { reviewRepoMock.getAllReviewsForProjectPaper(nextProjectPaper.id) } returns emptyList()
 
@@ -133,7 +129,7 @@ class GetNextPaperToReviewTest : MainServiceTest() {
         } returns Result.success(projectPaper)
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
         coEvery {
-            projectPaperRepoMock.getLaterProjectPapers(
+            projectPaperRepoMock.getSubsequentProjectPapers(
                 project.id, projectPaper.localPaperId, projectPaper.stage,
             )
         } returns listOf(nextProjectPaper)
@@ -174,7 +170,6 @@ class GetNextPaperToReviewTest : MainServiceTest() {
                 localPaperId = 2,
                 decision = PaperDecision.PAPER_DECISION_UNREVIEWED,
             )
-            val author = DataBuilder.createExampleAuthor()
             val review = DataBuilder.createExampleReview(projectPaperId = projectPaper1.id, userId = currentUser.id)
 
             mockCurrentUser(currentUser)
@@ -183,7 +178,7 @@ class GetNextPaperToReviewTest : MainServiceTest() {
             } returns Result.success(currentProjectPaper)
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
             coEvery {
-                projectPaperRepoMock.getLaterProjectPapers(
+                projectPaperRepoMock.getSubsequentProjectPapers(
                     project.id, currentProjectPaper.localPaperId, currentProjectPaper.stage,
                 )
             } returns listOf(projectPaper1, projectPaper2)
@@ -191,7 +186,6 @@ class GetNextPaperToReviewTest : MainServiceTest() {
             coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper2.id) } returns emptyList()
 
             coEvery { paperRepoMock.getPaperById(paper2.id) } returns Result.success(paper2)
-            coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(paper2.id) } returns listOf(author)
             coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper2.id) } returns emptyList()
 
             assertDoesNotThrow { mainService.getNextPaperToReview(getExampleRequest()) }
@@ -237,7 +231,6 @@ class GetNextPaperToReviewTest : MainServiceTest() {
                 localPaperId = 3,
                 decision = PaperDecision.PAPER_DECISION_UNSPECIFIED,
             )
-            val author = DataBuilder.createExampleAuthor()
             val review = DataBuilder.createExampleReview(projectPaperId = projectPaper1.id, userId = UUID.randomUUID())
 
             mockCurrentUser(currentUser)
@@ -246,7 +239,7 @@ class GetNextPaperToReviewTest : MainServiceTest() {
             } returns Result.success(currentProjectPaper)
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
             coEvery {
-                projectPaperRepoMock.getLaterProjectPapers(
+                projectPaperRepoMock.getSubsequentProjectPapers(
                     project.id, currentProjectPaper.localPaperId, currentProjectPaper.stage,
                 )
             } returns listOf(projectPaper1, projectPaper2, projectPaper3)
@@ -255,7 +248,6 @@ class GetNextPaperToReviewTest : MainServiceTest() {
             coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper3.id) } returns emptyList()
 
             coEvery { paperRepoMock.getPaperById(paper3.id) } returns Result.success(paper3)
-            coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(paper3.id) } returns listOf(author)
             coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper3.id) } returns emptyList()
 
             assertDoesNotThrow { mainService.getNextPaperToReview(getExampleRequest()) }
@@ -294,7 +286,6 @@ class GetNextPaperToReviewTest : MainServiceTest() {
                 localPaperId = 2,
                 decision = PaperDecision.PAPER_DECISION_UNSPECIFIED,
             )
-            val author = DataBuilder.createExampleAuthor()
 
             mockCurrentUser(currentUser)
             coEvery {
@@ -302,7 +293,7 @@ class GetNextPaperToReviewTest : MainServiceTest() {
             } returns Result.success(currentProjectPaper)
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
             coEvery {
-                projectPaperRepoMock.getLaterProjectPapers(
+                projectPaperRepoMock.getSubsequentProjectPapers(
                     project.id, currentProjectPaper.localPaperId, currentProjectPaper.stage,
                 )
             } returns listOf(projectPaper1, projectPaper2)
@@ -310,7 +301,6 @@ class GetNextPaperToReviewTest : MainServiceTest() {
             coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper2.id) } returns emptyList()
 
             coEvery { paperRepoMock.getPaperById(paper2.id) } returns Result.success(paper2)
-            coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(paper2.id) } returns listOf(author)
             coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper2.id) } returns emptyList()
 
             assertDoesNotThrow { mainService.getNextPaperToReview(getExampleRequest()) }
@@ -348,7 +338,6 @@ class GetNextPaperToReviewTest : MainServiceTest() {
                 localPaperId = 2,
                 decision = PaperDecision.PAPER_DECISION_ACCEPTED,
             )
-            val author = DataBuilder.createExampleAuthor()
 
             mockCurrentUser(currentUser)
             coEvery {
@@ -356,7 +345,7 @@ class GetNextPaperToReviewTest : MainServiceTest() {
             } returns Result.success(currentProjectPaper)
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
             coEvery {
-                projectPaperRepoMock.getLaterProjectPapers(
+                projectPaperRepoMock.getSubsequentProjectPapers(
                     project.id, currentProjectPaper.localPaperId, currentProjectPaper.stage,
                 )
             } returns listOf(projectPaper1, projectPaper2)
@@ -364,7 +353,7 @@ class GetNextPaperToReviewTest : MainServiceTest() {
             coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper2.id) } returns emptyList()
 
             coEvery { paperRepoMock.getPaperById(paper1.id) } returns Result.success(paper1)
-            coEvery { authorOfPaperRepoMock.getAuthorsOfPaperById(paper1.id) } returns listOf(author)
+
             coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper1.id) } returns emptyList()
 
             assertDoesNotThrow { mainService.getNextPaperToReview(getExampleRequest()) }

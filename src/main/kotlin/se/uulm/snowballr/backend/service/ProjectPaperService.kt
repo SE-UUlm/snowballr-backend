@@ -13,8 +13,7 @@ import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.Paper
 import se.uulm.snowballr.backend.model.dto.ProjectPaper
 import se.uulm.snowballr.backend.model.dto.ProjectPaperWithPaper
-import se.uulm.snowballr.backend.model.dto.Review
-import se.uulm.snowballr.backend.model.dto.User
+import se.uulm.snowballr.backend.model.dto.ProjectPaperWithReviewsCount
 import se.uulm.snowballr.backend.model.dto.toGrpcProjectPaper
 import se.uulm.snowballr.backend.model.dto.toGrpcProjectPapers
 import se.uulm.snowballr.backend.model.dto.toGrpcReview
@@ -206,35 +205,27 @@ class ProjectPaperService(
         }
 
     /**
-     * Filters a list of [ProjectPaper]s paired with their associated reviews to retrieve those
-     * that the current user has not reviewed.
+     * Sorts a list of project papers paired with their corresponding review counts.
      *
-     * @param papersWithReviews A list of pairs, where each pair contains a [ProjectPaper] and a list of its [Review]s.
-     * @param currentUser The [User] object representing the current user whose reviews are to be excluded.
-     * @return A list of pairs, where each pair consists of a [ProjectPaper] and the count of its associated reviews.
+     * The result only contains the sorted project papers, excluding the review counts.
+     *
+     * @param projectPapersWithReviewsCount A list of [ProjectPaperWithReviewsCount] objects to be sorted.
+     * @return A list of [ProjectPaper] objects sorted by stage (ascending) and reviews count (ascending).
      */
-    private fun getProjectPapersWithoutOwnReview(
-        papersWithReviews: List<Pair<ProjectPaper, List<Review>>>,
-        currentUser: User,
-    ) = papersWithReviews
-        .filter { (_, reviews) ->
-            reviews.none { review -> review.userId == currentUser.id }
-        }
-        .map { (paper, reviews) -> paper to reviews.size }
+    private fun sortPapersByStageAndReviewsCount(projectPapersWithReviewsCount: List<ProjectPaperWithReviewsCount>) =
+        projectPapersWithReviewsCount.sorted().map { it.projectPaper }
 
     /**
-     * Sorts a list of project papers paired with their corresponding review counts. The sorting is done primarily by
-     * the stage of the project paper in ascending order, and secondarily by the review count in ascending order. The
-     * result includes only the sorted project papers, excluding the review counts from the output.
+     * Determines whether the given project paper lacks a final decision.
+     * A project paper is considered to have no final decision if its decision state
+     * is either `PAPER_DECISION_UNSPECIFIED` or `PAPER_DECISION_UNREVIEWED`.
      *
-     * @param projectPapersWithReviewCount A list of pairs, where each pair contains a [ProjectPaper] and its
-     * corresponding review count, represented as an integer.
-     * @return A list of [ProjectPaper] objects sorted by stage and review count.
+     * @param projectPaper The [ProjectPaper] object whose decision state is to be evaluated.
+     * @return `true` if the project paper has no final decision; otherwise, `false`.
      */
-    private fun sortPapersByStageAndReviewCount(projectPapersWithReviewCount: List<Pair<ProjectPaper, Int>>) =
-        projectPapersWithReviewCount
-            .sortedWith(compareBy<Pair<ProjectPaper, Int>> { it.first.stage }.thenBy { it.second })
-            .map { it.first }
+    private fun hasNoFinalDecision(projectPaper: ProjectPaper): Boolean =
+        projectPaper.decision == PaperDecision.PAPER_DECISION_UNSPECIFIED ||
+            projectPaper.decision == PaperDecision.PAPER_DECISION_UNREVIEWED
 
     override suspend fun getProjectPaperById(request: Base.Id): GrpcProjectPaper = withUser(userRepo) { currentUser ->
         val projectPaperId = parseUUID(request.id, EntityType.PROJECT_PAPER)
@@ -314,32 +305,32 @@ class ProjectPaperService(
 
         isAllowedToReadProject(projectMemberRepo).checkFor(currentUser, projectId)
 
-        val projectPapers = repo.getLaterProjectPapers(
-            projectId,
-            projectPaper.localPaperId,
-            projectPaper.stage,
-        )
-        val projectPapersWithReviews: List<Pair<ProjectPaper, List<Review>>> = projectPapers
-            .map { paper ->
-                val reviews = reviewTableRepo.getAllReviewsForProjectPaper(paper.id)
-                paper to reviews
-            }
+        val projectPapers = repo.getSubsequentProjectPapers(projectId, projectPaper.localPaperId, projectPaper.stage)
+        val projectPapersWithReviewsCount = getProjectPapersWithReviewsCount(projectPapers, currentUser.id)
 
-        val projectPapersWithoutOwnReview = getProjectPapersWithoutOwnReview(projectPapersWithReviews, currentUser)
-
-        if (projectPapersWithoutOwnReview.isEmpty()) {
+        if (projectPapersWithReviewsCount.isEmpty()) {
             throw FailedPreconditionException(
                 "There is no next project paper available to review in the project with ID $projectId",
             )
         }
 
-        val sortedPapers = sortPapersByStageAndReviewCount(projectPapersWithoutOwnReview)
-
-        val papersWithoutFinalDecision = sortedPapers.filter {
-            it.decision == PaperDecision.PAPER_DECISION_UNSPECIFIED ||
-                it.decision == PaperDecision.PAPER_DECISION_UNREVIEWED
-        }
+        val sortedPapers = sortPapersByStageAndReviewsCount(projectPapersWithReviewsCount)
+        val papersWithoutFinalDecision = sortedPapers.filter(::hasNoFinalDecision)
 
         (papersWithoutFinalDecision.firstOrNull() ?: sortedPapers.first()).toGrpcProjectPaperWithData()
     }
+
+    private suspend fun getProjectPapersWithReviewsCount(projectPapers: List<ProjectPaper>, currentUserId: UUID) =
+        projectPapers
+            .map { projectPaper ->
+                val reviews = reviewTableRepo.getAllReviewsForProjectPaper(projectPaper.id)
+
+                val hasOwnReview = reviews.any { it.userId == currentUserId }
+                if (hasOwnReview) {
+                    ProjectPaperWithReviewsCount(projectPaper, -1)
+                } else {
+                    ProjectPaperWithReviewsCount(projectPaper, reviews.size)
+                }
+            }
+            .filter { it.reviewsCount >= 0 }
 }
