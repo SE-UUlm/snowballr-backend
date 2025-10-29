@@ -60,6 +60,9 @@ private class StructureRules {
             // DB layer
             .layer("DB")
             .definedBy("$BASE_PACKAGE.db..")
+            // Scheduler / Cron Jobs
+            .layer("Scheduler")
+            .definedBy("$BASE_PACKAGE.scheduler..")
             // Checks
             .whereLayer("Input Validation")
             .mayOnlyBeAccessedByLayers("gRPC Server")
@@ -68,11 +71,13 @@ private class StructureRules {
             .whereLayer("Service")
             .mayOnlyBeAccessedByLayers("gRPC Server", "Main")
             .whereLayer("Repository")
-            .mayOnlyBeAccessedByLayers("Service", "Main")
+            .mayOnlyBeAccessedByLayers("Service", "Scheduler", "Main")
             .whereLayer("Table")
             .mayOnlyBeAccessedByLayers("Repository", "DB")
             .whereLayer("DB")
             .mayOnlyBeAccessedByLayers("Main", "Repository")
+            .whereLayer("Scheduler")
+            .mayOnlyBeAccessedByLayers("gRPC Server", "Main")
             .check(classes)
     }
 
@@ -101,15 +106,18 @@ private class StructureRules {
             // DB layer
             .layer("DB")
             .definedBy("$BASE_PACKAGE.db..")
+            // Scheduler / Cron Jobs
+            .layer("Scheduler")
+            .definedBy("$BASE_PACKAGE.scheduler..")
             // Checks
             .whereLayer("Main")
             .mayNotBeAccessedByAnyLayer()
             .whereLayer("Main")
-            .mayOnlyAccessLayers("gRPC Server", "Service", "Repository", "DB")
+            .mayOnlyAccessLayers("gRPC Server", "Service", "Repository", "DB", "Scheduler")
             .whereLayer("Input Validation")
             .mayNotAccessAnyLayer()
             .whereLayer("gRPC Server")
-            .mayOnlyAccessLayers("Service", "Input Validation")
+            .mayOnlyAccessLayers("Service", "Input Validation", "Scheduler")
             .whereLayer("Service")
             .mayOnlyAccessLayers("Repository")
             .whereLayer("Repository")
@@ -118,6 +126,8 @@ private class StructureRules {
             .mayNotAccessAnyLayer()
             .whereLayer("DB")
             .mayOnlyAccessLayers("Table")
+            .whereLayer("Scheduler")
+            .mayOnlyAccessLayers("Repository")
             .check(classes)
     }
 
