@@ -25,6 +25,7 @@ class HardDeleteSoftDeletedEntitiesJob : Job, KoinComponent {
     override fun execute(context: JobExecutionContext?) {
         logger.info { "Starting hard-delete of soft-deleted entities..." }
 
+        @Suppress("InjectDispatcher")
         runBlocking(Dispatchers.IO) {
             try {
                 userMaintenanceService.hardDeleteClearedUsers()

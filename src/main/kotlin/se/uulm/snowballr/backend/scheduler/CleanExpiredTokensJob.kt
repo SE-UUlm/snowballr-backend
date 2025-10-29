@@ -24,6 +24,7 @@ class CleanExpiredTokensJob : Job, KoinComponent {
     override fun execute(context: JobExecutionContext?) {
         logger.info { "Starting expired token cleanup..." }
 
+        @Suppress("InjectDispatcher")
         runBlocking(Dispatchers.IO) {
             try {
                 tokenMaintenanceService.deleteExpiredTokens()
