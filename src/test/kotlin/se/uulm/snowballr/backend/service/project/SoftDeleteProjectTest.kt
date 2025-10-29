@@ -66,7 +66,7 @@ class SoftDeleteProjectTest : MainServiceTest() {
 
     @Test
     fun `When a normal project member deletes a project, then an UnauthorizedException is thrown`() = runTest {
-        mockSoftDeleteProject(false, projectId, projectMemberRepoMock::getAllProjectAdmins)
+        mockSoftDeleteProject(false, projectId, stopBefore = projectMemberRepoMock::getAllProjectAdmins)
         coEvery { projectMemberRepoMock.getAllProjectAdmins(projectId) } returns emptyList()
 
         assertThrows<UnauthorizedException> { mainService.softDeleteProject(validSoftDeleteProjectRequest.build()) }
@@ -77,7 +77,7 @@ class SoftDeleteProjectTest : MainServiceTest() {
     fun `When the project to delete does not exist, then a NotFoundException is thrown`() = runTest {
         val nonExistentProjectId = UUID.randomUUID()
 
-        mockSoftDeleteProject(false, nonExistentProjectId, projectRepoMock::doesProjectExistById)
+        mockSoftDeleteProject(false, nonExistentProjectId, stopBefore = projectRepoMock::doesProjectExistById)
         coEvery { projectRepoMock.doesProjectExistById(nonExistentProjectId) } returns false
 
         val invalidSoftDeleteProjectRequest = validSoftDeleteProjectRequest
