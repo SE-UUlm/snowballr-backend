@@ -135,6 +135,7 @@ object RepositoryHelper {
         reviewDecisionMatrix: ReviewDecisionMatrix = ReviewDecisionMatrix.getDefaultInstance(),
         fetcherApis: Map<String, Map<String, String>> = emptyMap(),
         createdBy: UUID,
+        deletedAt: OffsetDateTime? = null,
     ): UUID = db.query {
         ProjectTable
             .insertAndGetId {
@@ -148,6 +149,7 @@ object RepositoryHelper {
                 it[ProjectTable.reviewDecisionMatrixBinary] = reviewDecisionMatrix.toByteArray()
                 it[ProjectTable.fetchers] = fetcherApis
                 it[ProjectTable.createdBy] = createdBy
+                it[ProjectTable.deletedAt] = deletedAt
             }.value
     }
 
