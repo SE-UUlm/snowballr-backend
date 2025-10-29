@@ -26,6 +26,7 @@ import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectAndGet
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectPaperAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertReviewAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertUserAndGetId
+import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.ReviewTable
@@ -42,8 +43,19 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 class ProjectTableRepoTest :
-    RepositoryTest(arrayOf(ProjectTable, ProjectMemberTable, ProjectPaperTable, PaperTable, ReviewTable), true) {
+    RepositoryTest(
+        arrayOf(
+            ProjectTable,
+            ProjectMemberTable,
+            ProjectPaperTable,
+            PaperTable,
+            ReviewTable,
+            CriterionTable,
+        ),
+        true,
+    ) {
     private val repo = ProjectTableRepo(db)
+    private val criterionRepo = CriterionTableRepo(db)
 
     private val defaultThresholdDate = OffsetDateTime.now().minusDays(30)
 
@@ -508,6 +520,62 @@ class ProjectTableRepoTest :
                 assertEquals(ProjectStatus.PROJECT_STATUS_ACTIVE, project2.status)
                 assertNull(project2.deletedAt)
                 assertThat(project2.name).isNotEmpty()
+            }
+    }
+
+    @Nested
+    inner class HardDeleteClearedProjects {
+        @Test
+        fun `When no cleared projects exist that have reached their threshold date to be cleared, then no projects are hard deleted`() =
+            runTest {
+                val projectId1 = insertProjectAndGetId(name = "Project1", createdBy = testUserId)
+                val projectId2 = insertProjectAndGetId(name = "Project2", createdBy = testUserId)
+                repo.softDeleteProject(projectId1)
+
+                assertDoesNotThrow { repo.hardDeleteClearedProjects() }
+
+                val project1 = assertResultSuccess(repo.getProjectById(projectId1))
+                assertEquals(ProjectStatus.PROJECT_STATUS_DELETED, project1.status)
+                assertNotNull(project1.deletedAt)
+                assertThat(project1.name).isNotEmpty()
+
+                val project2 = assertResultSuccess(repo.getProjectById(projectId2))
+                assertEquals(ProjectStatus.PROJECT_STATUS_ACTIVE, project2.status)
+                assertNull(project2.deletedAt)
+                assertThat(project2.name).isNotEmpty()
+            }
+
+        @Test
+        fun `When cleared projects exist that have reached their threshold date to be cleared, then they are hard deleted`() =
+            runTest {
+                // Manually "soft-delete" project to set the `deletedAt` date
+                val projectId1 = insertProjectAndGetId(
+                    name = "Project 1",
+                    status = ProjectStatus.PROJECT_STATUS_DELETED,
+                    deletedAt = defaultThresholdDate.minusDays(1),
+                    createdBy = testUserId,
+                )
+                val projectId2 = insertProjectAndGetId(name = "Project2", createdBy = testUserId)
+                val criterionId1 = RepositoryHelper.insertCriterionAndGetId(
+                    projectId = projectId1,
+                    createdBy = testUserId,
+                )
+                val criterionId2 = RepositoryHelper.insertCriterionAndGetId(
+                    projectId = projectId2,
+                    createdBy = testUserId,
+                )
+                repo.clearSoftDeletedProjects(defaultThresholdDate)
+
+                assertDoesNotThrow { repo.hardDeleteClearedProjects() }
+
+                assertResultFailure<NotFoundException>(repo.getProjectById(projectId1))
+                assertResultFailure<NotFoundException>(criterionRepo.getCriterionById(criterionId1))
+
+                val project2 = assertResultSuccess(repo.getProjectById(projectId2))
+                assertEquals(ProjectStatus.PROJECT_STATUS_ACTIVE, project2.status)
+                assertNull(project2.deletedAt)
+                assertThat(project2.name).isNotEmpty()
+                assertResultSuccess(criterionRepo.getCriterionById(criterionId2))
             }
     }
 }
