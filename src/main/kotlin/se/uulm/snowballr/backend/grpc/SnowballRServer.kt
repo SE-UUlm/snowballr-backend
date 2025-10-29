@@ -292,7 +292,7 @@ class SnowballRServer(
 
         override suspend fun exportProject(request: Export.ExportRequest): Base.Blob = super.exportProject(request)
 
-        override suspend fun softDeleteProject(request: Base.Id): Base.Nothing = super.softDeleteProject(request)
+        override suspend fun softDeleteProject(request: Base.Id): Base.Nothing = mainService.softDeleteProject(request)
 
         override suspend fun softUndeleteProject(request: Base.Id): Base.Nothing = super.softUndeleteProject(request)
 

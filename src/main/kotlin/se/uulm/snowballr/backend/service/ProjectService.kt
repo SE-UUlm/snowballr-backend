@@ -106,6 +106,11 @@ interface IProjectService {
      * Service implementation of [SnowballRService.removeProjectMember]
      */
     suspend fun removeProjectMember(request: GrpcProjectMember.Remove): Base.Nothing
+
+    /**
+     * Service implementation of [SnowballRService.softDeleteProject]
+     */
+    suspend fun softDeleteProject(request: Base.Id): Base.Nothing
 }
 
 /**
@@ -487,7 +492,7 @@ class ProjectService(
             val projectMembers = projectMemberRepo.getProjectMembers(projectId)
             val projectAdmins = projectMemberRepo.getAllProjectAdmins(projectId)
             if (projectMembers.size == 1 && projectMembers.any { it.userId == requestedUserId }) {
-                // TODO soft delete the project asa the call is implemented in #87.
+                repo.softDeleteProject(projectId)
             } else if (projectAdmins.size == 1 && projectAdmins.any { it.userId == requestedUserId }) {
                 throw FailedPreconditionException(
                     "The user can not be removed from the project, because this user is the last " +
@@ -496,6 +501,20 @@ class ProjectService(
             }
 
             projectMemberRepo.removeProjectMember(projectId, requestedUserId)
-            Base.Nothing.newBuilder().build()
+            Base.Nothing.getDefaultInstance()
         }
+
+    override suspend fun softDeleteProject(request: Base.Id): Base.Nothing = withUser(userRepo) { currentUser ->
+        val projectId = parseUUID(request.id, EntityType.PROJECT)
+
+        isServerOrProjectAdmin(projectMemberRepo, AccessType.DELETE).checkFor(currentUser, projectId)
+
+        if (!repo.doesProjectExistById(projectId)) {
+            throw NotFoundException(EntityType.PROJECT, projectId.toString())
+        }
+
+        repo.softDeleteProject(projectId)
+
+        Base.Nothing.getDefaultInstance()
+    }
 }

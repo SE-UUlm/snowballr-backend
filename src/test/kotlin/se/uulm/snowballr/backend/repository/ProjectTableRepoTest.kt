@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertNotNull
 import org.junit.jupiter.api.assertNull
 import org.junit.jupiter.api.assertThrows
@@ -16,6 +17,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.DataBuilder
+import se.uulm.snowballr.backend.isBetweenWithDelta
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.toGrpcProject
 import se.uulm.snowballr.backend.repository.RepositoryHelper.assignUserToProject
@@ -36,6 +38,7 @@ import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
 import snowballr.ProjectOuterClass.SnowballingType
 import java.sql.SQLException
+import java.time.OffsetDateTime
 import java.util.UUID
 
 class ProjectTableRepoTest :
@@ -418,6 +421,31 @@ class ProjectTableRepoTest :
             insertReviewAndGetId(projectPaperId, userId = testUserId)
 
             assertTrue(repo.isProjectLocked(projectId))
+        }
+    }
+
+    @Nested
+    inner class SoftDeleteProject {
+        @Test
+        fun `When a project is soft deleted, then it is marked as deleted`() = runTest {
+            val projectId =
+                insertProjectAndGetId(status = ProjectStatus.PROJECT_STATUS_ACTIVE, createdBy = testUserId)
+
+            val before = OffsetDateTime.now()
+            repo.softDeleteProject(projectId)
+            val after = OffsetDateTime.now()
+
+            val deletedProject = repo.getProjectById(projectId).getOrThrow()
+
+            assertTrue(deletedProject.status == ProjectStatus.PROJECT_STATUS_DELETED)
+            assertThat(deletedProject.deletedAt).isBetweenWithDelta(before, after)
+        }
+
+        @Test
+        fun `When the project to be soft deleted is not found, then nothing happens`() = runTest {
+            val projectId = UUID.randomUUID()
+
+            assertDoesNotThrow { repo.softDeleteProject(projectId) }
         }
     }
 }

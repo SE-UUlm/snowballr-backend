@@ -8,6 +8,7 @@ import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.statements.UpdateStatement
+import org.jetbrains.exposed.sql.update
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
@@ -112,6 +113,12 @@ interface IProjectTableRepo {
      * @return `true` if the project is locked, `false` otherwise.
      */
     suspend fun isProjectLocked(projectId: UUID): Boolean
+
+    /**
+     * Performs a soft delete of the project with the given [projectId], i.e., does not remove the
+     * project from the database but marks it as deleted by setting the status to [ProjectStatus.PROJECT_STATUS_DELETED].
+     */
+    suspend fun softDeleteProject(projectId: UUID)
 }
 
 /**
@@ -197,6 +204,15 @@ class ProjectTableRepo(
             .where { ProjectPaperTable.projectId eq projectId }
             .limit(1)
             .any()
+    }
+
+    override suspend fun softDeleteProject(projectId: UUID) {
+        db.query {
+            ProjectTable.update({ ProjectTable.id eq projectId }) {
+                it[status] = ProjectStatus.PROJECT_STATUS_DELETED
+                it[deletedAt] = OffsetDateTime.now()
+            }
+        }
     }
 
     private fun UpdateStatement.applyProjectNameUpdate(project: GrpcProject, paths: Set<String>) {
