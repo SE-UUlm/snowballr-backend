@@ -1,9 +1,11 @@
 package se.uulm.snowballr.backend.repository
 
 import com.google.protobuf.util.FieldMaskUtil
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.exposed.sql.JoinType
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.selectAll
@@ -23,9 +25,12 @@ import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.table.toProject
 import snowballr.ProjectOuterClass.ProjectStatus
+import snowballr.ProjectOuterClass.SnowballingType
 import java.time.OffsetDateTime
 import java.util.UUID
 import snowballr.ProjectOuterClass.Project as GrpcProject
+
+private val logger = KotlinLogging.logger { }
 
 /**
  * Defines an interface for repository operations related to the [ProjectTable].
@@ -119,6 +124,13 @@ interface IProjectTableRepo {
      * project from the database but marks it as deleted by setting the status to [ProjectStatus.PROJECT_STATUS_DELETED].
      */
     suspend fun softDeleteProject(projectId: UUID)
+
+    /**
+     * Clears all soft-deleted projects whose deletion date is older than the given [thresholdDate].
+     *
+     * @param thresholdDate The date up to which soft-deleted projects are to be cleared.
+     */
+    suspend fun clearSoftDeletedProjects(thresholdDate: OffsetDateTime)
 }
 
 /**
@@ -213,6 +225,29 @@ class ProjectTableRepo(
                 it[deletedAt] = OffsetDateTime.now()
             }
         }
+    }
+
+    override suspend fun clearSoftDeletedProjects(thresholdDate: OffsetDateTime) = db.query {
+        val clearedProjects = ProjectTable.update(
+            {
+                (ProjectTable.status eq ProjectStatus.PROJECT_STATUS_DELETED)
+                    .and(ProjectTable.deletedAt lessEq thresholdDate)
+            },
+        ) {
+            it[name] = ""
+            it[status] = ProjectStatus.PROJECT_STATUS_UNSPECIFIED
+            it[fetchers] = emptyMap()
+            it[snowballingType] = SnowballingType.SNOWBALLING_TYPE_UNSPECIFIED
+            it[similarityThreshold] = 0f
+            it[fetchers] = emptyMap()
+
+            it[modifiedBy] = null
+            it[modifiedAt] = OffsetDateTime.now()
+            it[deletedBy] = null
+            it[archivedBy] = null
+        }
+
+        logger.info { "Cleared $clearedProjects soft-deleted projects older than $thresholdDate." }
     }
 
     private fun UpdateStatement.applyProjectNameUpdate(project: GrpcProject, paths: Set<String>) {
