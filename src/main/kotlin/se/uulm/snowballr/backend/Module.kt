@@ -56,6 +56,7 @@ import se.uulm.snowballr.backend.service.IFetcherService
 import se.uulm.snowballr.backend.service.IInvitationService
 import se.uulm.snowballr.backend.service.IMainService
 import se.uulm.snowballr.backend.service.IPaperService
+import se.uulm.snowballr.backend.service.IProjectMemberService
 import se.uulm.snowballr.backend.service.IProjectPaperService
 import se.uulm.snowballr.backend.service.IProjectService
 import se.uulm.snowballr.backend.service.IReadingListService
@@ -64,6 +65,7 @@ import se.uulm.snowballr.backend.service.IUserService
 import se.uulm.snowballr.backend.service.InvitationService
 import se.uulm.snowballr.backend.service.MainService
 import se.uulm.snowballr.backend.service.PaperService
+import se.uulm.snowballr.backend.service.ProjectMemberService
 import se.uulm.snowballr.backend.service.ProjectPaperService
 import se.uulm.snowballr.backend.service.ProjectService
 import se.uulm.snowballr.backend.service.ReadingListService
@@ -199,6 +201,7 @@ fun Module.serviceLayerDeps() {
     singleOf(::ProjectPaperService) { bind<IProjectPaperService>() }
     singleOf(::AuthenticationService) { bind<IAuthenticationService>() }
     singleOf(::InvitationService) { bind<IInvitationService>() }
+    singleOf(::ProjectMemberService) { bind<IProjectMemberService>() }
     // The main service comes last
     singleOf(::MainService) { bind<IMainService>() }
 }

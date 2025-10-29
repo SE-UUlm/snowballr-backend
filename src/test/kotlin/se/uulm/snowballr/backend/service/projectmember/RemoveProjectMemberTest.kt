@@ -1,4 +1,4 @@
-package se.uulm.snowballr.backend.service.project
+package se.uulm.snowballr.backend.service.projectmember
 
 import io.mockk.coEvery
 import io.mockk.coVerify
