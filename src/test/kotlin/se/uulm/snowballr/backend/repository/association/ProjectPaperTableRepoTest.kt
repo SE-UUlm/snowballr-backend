@@ -512,61 +512,62 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
     }
 
     @Nested
-    inner class GetLaterProjectPapers {
+    inner class GetSubsequentProjectPapersTest {
         @Test
-        fun `When later projectPapers are found, then a list of only the later project paper is returned`() = runTest {
-            val projectId = insertProjectAndGetId(createdBy = testUserId, maxStage = 2)
-            val paperId1 = insertPaperAndGetId()
-            val paperId2 = insertPaperAndGetId()
-            val paperId3 = insertPaperAndGetId()
-            val paperId4 = insertPaperAndGetId()
-            val paperId5 = insertPaperAndGetId()
+        fun `When subsequent projectPapers are found, then a list of only the subsequent project papers is returned`() =
+            runTest {
+                val projectId = insertProjectAndGetId(createdBy = testUserId, maxStage = 2)
+                val paperId1 = insertPaperAndGetId()
+                val paperId2 = insertPaperAndGetId()
+                val paperId3 = insertPaperAndGetId()
+                val paperId4 = insertPaperAndGetId()
+                val paperId5 = insertPaperAndGetId()
 
-            val currentId = insertProjectPaperAndGetId(
-                paperId = paperId1,
-                projectId = projectId,
-                localPaperId = 2,
-                stage = 1,
-                createdBy = testUserId,
-            )
-            val nextInSameStageId = insertProjectPaperAndGetId(
-                paperId = paperId2,
-                projectId = projectId,
-                localPaperId = 3,
-                stage = 1,
-                createdBy = testUserId,
-            )
-            val nextInHigherStageId = insertProjectPaperAndGetId(
-                paperId = paperId3,
-                projectId = projectId,
-                localPaperId = 1,
-                stage = 2,
-                createdBy = testUserId,
-            )
-            val lowerStageId = insertProjectPaperAndGetId(
-                paperId = paperId4,
-                projectId = projectId,
-                localPaperId = 4,
-                stage = 0,
-                createdBy = testUserId,
-            )
-            val sameStageLowerId = insertProjectPaperAndGetId(
-                paperId = paperId5,
-                projectId = projectId,
-                localPaperId = 0,
-                stage = 1,
-                createdBy = testUserId,
-            )
+                val currentId = insertProjectPaperAndGetId(
+                    paperId = paperId1,
+                    projectId = projectId,
+                    localPaperId = 2,
+                    stage = 1,
+                    createdBy = testUserId,
+                )
+                val nextInSameStageId = insertProjectPaperAndGetId(
+                    paperId = paperId2,
+                    projectId = projectId,
+                    localPaperId = 3,
+                    stage = 1,
+                    createdBy = testUserId,
+                )
+                val nextInHigherStageId = insertProjectPaperAndGetId(
+                    paperId = paperId3,
+                    projectId = projectId,
+                    localPaperId = 1,
+                    stage = 2,
+                    createdBy = testUserId,
+                )
+                val lowerStageId = insertProjectPaperAndGetId(
+                    paperId = paperId4,
+                    projectId = projectId,
+                    localPaperId = 4,
+                    stage = 0,
+                    createdBy = testUserId,
+                )
+                val sameStageLowerId = insertProjectPaperAndGetId(
+                    paperId = paperId5,
+                    projectId = projectId,
+                    localPaperId = 0,
+                    stage = 1,
+                    createdBy = testUserId,
+                )
 
-            val projectPaperIds = repo.getLaterProjectPapers(projectId, 2, 1).map { it.id }
+                val projectPaperIds = repo.getSubsequentProjectPapers(projectId, 2, 1).map { it.id }
 
-            assertThat(projectPaperIds).hasSize(2)
-            assertThat(projectPaperIds).containsExactly(nextInSameStageId, nextInHigherStageId)
-            assertThat(projectPaperIds).doesNotContain(currentId, lowerStageId, sameStageLowerId)
-        }
+                assertThat(projectPaperIds).hasSize(2)
+                assertThat(projectPaperIds).containsExactly(nextInSameStageId, nextInHigherStageId)
+                assertThat(projectPaperIds).doesNotContain(currentId, lowerStageId, sameStageLowerId)
+            }
 
         @Test
-        fun `When no later projectPapers are found, then an empty list is returned`() = runTest {
+        fun `When no subsequent projectPapers are found, then an empty list is returned`() = runTest {
             val projectId = insertProjectAndGetId(createdBy = testUserId, maxStage = 2)
             val paperId1 = insertPaperAndGetId()
             insertProjectPaperAndGetId(
@@ -577,69 +578,13 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
                 createdBy = testUserId,
             )
 
-            val projectPaperIds = repo.getLaterProjectPapers(projectId, 0, 1).map { it.id }
+            val projectPaperIds = repo.getSubsequentProjectPapers(projectId, 0, 1).map { it.id }
 
             assertThat(projectPaperIds).isEmpty()
         }
 
         @Test
-        fun `When later projectPapers are found, then a list with the correct order is returned`() = runTest {
-            val projectId = insertProjectAndGetId(createdBy = testUserId, maxStage = 2)
-            val paperId1 = insertPaperAndGetId()
-            val paperId2 = insertPaperAndGetId()
-            val paperId3 = insertPaperAndGetId()
-            val paperId4 = insertPaperAndGetId()
-            val paperId5 = insertPaperAndGetId()
-            val currentId = insertProjectPaperAndGetId(
-                paperId = paperId1,
-                projectId = projectId,
-                localPaperId = 0,
-                stage = 1,
-                createdBy = testUserId,
-            )
-            val nextInHigherStageId2 = insertProjectPaperAndGetId(
-                paperId = paperId5,
-                projectId = projectId,
-                localPaperId = 5,
-                stage = 2,
-                createdBy = testUserId,
-            )
-            val nextInSameStageId2 = insertProjectPaperAndGetId(
-                paperId = paperId3,
-                projectId = projectId,
-                localPaperId = 4,
-                stage = 1,
-                createdBy = testUserId,
-            )
-            val nextInHigherStageId1 = insertProjectPaperAndGetId(
-                paperId = paperId4,
-                projectId = projectId,
-                localPaperId = 3,
-                stage = 2,
-                createdBy = testUserId,
-            )
-            val nextInSameStageId1 = insertProjectPaperAndGetId(
-                paperId = paperId2,
-                projectId = projectId,
-                localPaperId = 2,
-                stage = 1,
-                createdBy = testUserId,
-            )
-
-            val projectPaperIds = repo.getLaterProjectPapers(projectId, 0, 1).map { it.id }
-
-            assertThat(projectPaperIds).hasSize(4)
-            assertThat(projectPaperIds).containsExactly(
-                nextInSameStageId1,
-                nextInSameStageId2,
-                nextInHigherStageId1,
-                nextInHigherStageId2,
-            )
-            assertThat(projectPaperIds).doesNotContain(currentId)
-        }
-
-        @Test
-        fun `When later projectPapers are found,only the project papers in the correct project are returned`() =
+        fun `When later projectPapers are found, then only the project papers in the correct project are returned`() =
             runTest {
                 val projectId1 = insertProjectAndGetId(createdBy = testUserId, maxStage = 2)
                 val projectId2 = insertProjectAndGetId(createdBy = testUserId)
@@ -668,7 +613,7 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
                     createdBy = testUserId,
                 )
 
-                val projectPaperIds = repo.getLaterProjectPapers(projectId1, 0, 1).map { it.id }
+                val projectPaperIds = repo.getSubsequentProjectPapers(projectId1, 0, 1).map { it.id }
 
                 assertThat(projectPaperIds).hasSize(1)
                 assertThat(projectPaperIds).containsExactly(nextProjectPaperId)

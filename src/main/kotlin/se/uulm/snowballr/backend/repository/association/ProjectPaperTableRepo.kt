@@ -3,6 +3,8 @@ package se.uulm.snowballr.backend.repository.association
 import org.jetbrains.exposed.sql.JoinType
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.selectAll
@@ -141,7 +143,7 @@ interface IProjectPaperTableRepo {
      * @param stage The stage of the papers that should be considered when retrieving later project papers.
      * @return A list of subsequent [ProjectPaper] instances meeting the specified criteria.
      */
-    suspend fun getLaterProjectPapers(projectId: UUID, localPaperId: Long, stage: Long): List<ProjectPaper>
+    suspend fun getSubsequentProjectPapers(projectId: UUID, localPaperId: Long, stage: Long): List<ProjectPaper>
 
     /**
      * Updates the decision of a project paper.
@@ -300,18 +302,19 @@ class ProjectPaperTableRepo(
         }
     }
 
-    override suspend fun getLaterProjectPapers(projectId: UUID, localPaperId: Long, stage: Long): List<ProjectPaper> =
-        db.query {
-            ProjectPaperTable
-                .selectAll()
-                .where {
-                    (ProjectPaperTable.projectId eq projectId) and
-                        (
-                            (ProjectPaperTable.stage eq stage and (ProjectPaperTable.localPaperId greater localPaperId))
-                                or (ProjectPaperTable.stage greater stage)
-                            )
-                }
-                .orderBy(ProjectPaperTable.stage to SortOrder.ASC, ProjectPaperTable.localPaperId to SortOrder.ASC)
-                .map { it.toProjectPaper() }
-        }
+    override suspend fun getSubsequentProjectPapers(
+        projectId: UUID,
+        localPaperId: Long,
+        stage: Long,
+    ): List<ProjectPaper> = db.query {
+        val sameStageButGreaterLocalIdOp =
+            (ProjectPaperTable.stage eq stage) and (ProjectPaperTable.localPaperId greater localPaperId)
+        val greaterStageOp = ProjectPaperTable.stage greater stage
+        ProjectPaperTable
+            .selectAll()
+            .where {
+                (ProjectPaperTable.projectId eq projectId) and (sameStageButGreaterLocalIdOp or greaterStageOp)
+            }
+            .map { it.toProjectPaper() }
+    }
 }
