@@ -114,7 +114,7 @@ class ProjectMemberTableRepo(
      *
      * @return A list of UUIDs representing users that are soft-deleted.
      */
-    private fun getSoftDeletedUsers(): List<UUID> = UserTable
+    private fun getSoftDeletedUserIds(): List<UUID> = UserTable
         .getEntities(ResultRow::toUser) { UserTable.status eq UserStatus.USER_STATUS_DELETED }
         .map { it.id }
 
@@ -129,7 +129,7 @@ class ProjectMemberTableRepo(
         .getEntityOrNull(ResultRow::toProjectMember) {
             (ProjectMemberTable.projectId eq projectId) and
                 (ProjectMemberTable.userId eq userId) and
-                (ProjectMemberTable.userId notInList getSoftDeletedUsers())
+                (ProjectMemberTable.userId notInList getSoftDeletedUserIds())
         }
 
     override suspend fun getProjectMemberByComposedId(projectId: UUID, userId: UUID): Result<ProjectMember> = db.query {
@@ -153,7 +153,8 @@ class ProjectMemberTableRepo(
 
     override suspend fun getProjectMembers(projectId: UUID): List<ProjectMember> = db.query {
         ProjectMemberTable.getEntities(ResultRow::toProjectMember) {
-            (ProjectMemberTable.projectId eq projectId) and (ProjectMemberTable.userId notInList getSoftDeletedUsers())
+            (ProjectMemberTable.projectId eq projectId) and
+                (ProjectMemberTable.userId notInList getSoftDeletedUserIds())
         }
     }
 
@@ -172,7 +173,7 @@ class ProjectMemberTableRepo(
                 userMembership[ProjectMemberTable.userId] eq userId
             }.selectAll()
             .where { ProjectMemberTable.userId neq userId }
-            .andWhere { ProjectMemberTable.userId notInList getSoftDeletedUsers() }
+            .andWhere { ProjectMemberTable.userId notInList getSoftDeletedUserIds() }
             .map { it.toProjectMember() }
     }
 
@@ -180,7 +181,7 @@ class ProjectMemberTableRepo(
         ProjectMemberTable.getEntities(ResultRow::toProjectMember) {
             (ProjectMemberTable.projectId eq projectId) and
                 (ProjectMemberTable.role eq MemberRole.MEMBER_ROLE_ADMIN) and
-                (ProjectMemberTable.userId notInList getSoftDeletedUsers())
+                (ProjectMemberTable.userId notInList getSoftDeletedUserIds())
         }
     }
 
