@@ -135,10 +135,9 @@ interface IProjectPaperTableRepo {
     /**
      * Retrieves a list of subsequent project papers from a given starting point defined by `localPaperId` and `stage`.
      *
-     * Subsequent project papers are defined as project papers
-     *  - within the same project
-     *  - with a greater `localPaperId` than the given project paper and
-     *  - are part of the given `stage` or a subsequent `stage`.
+     * Subsequent project papers are defined as project papers within the same project that are either:
+     * - in the same `stage` but have a greater `localPaperId`, or
+     * - in a subsequent `stage` regardless of their `localPaperId`.
      *
      * @param projectId The unique identifier of the project to which the papers belong.
      * @param localPaperId The local ID of the starting paper in the project from which the later papers are retrieved.
