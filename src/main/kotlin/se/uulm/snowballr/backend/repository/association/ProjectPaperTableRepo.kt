@@ -3,6 +3,8 @@ package se.uulm.snowballr.backend.repository.association
 import org.jetbrains.exposed.sql.JoinType
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.selectAll
@@ -37,6 +39,7 @@ import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
  * operations for project papers. By using this interface, the functionality for creating
  * project papers can remain decoupled from the specifics of the database layer.
  */
+@Suppress("ComplexInterface")
 interface IProjectPaperTableRepo {
     /**
      * Returns a [Result] containing the project paper by its ID or a [NotFoundException] if the project paper with the
@@ -128,6 +131,20 @@ interface IProjectPaperTableRepo {
      * @return A float between 0.0 and 1.0 representing the project progress.
      */
     suspend fun getProjectProgress(projectId: UUID): Float
+
+    /**
+     * Retrieves a list of subsequent project papers from a given starting point defined by `localPaperId` and `stage`.
+     *
+     * Subsequent project papers are defined as project papers within the same project that are either:
+     * - in the same `stage` but have a greater `localPaperId`, or
+     * - in a subsequent `stage` regardless of their `localPaperId`.
+     *
+     * @param projectId The unique identifier of the project to which the papers belong.
+     * @param localPaperId The local ID of the starting paper in the project from which the later papers are retrieved.
+     * @param stage The stage of the papers that should be considered when retrieving later project papers.
+     * @return A list of subsequent [ProjectPaper] instances meeting the specified criteria.
+     */
+    suspend fun getSubsequentProjectPapers(projectId: UUID, localPaperId: Long, stage: Long): List<ProjectPaper>
 
     /**
      * Updates the decision of a project paper.
@@ -284,5 +301,21 @@ class ProjectPaperTableRepo(
         ProjectPaperTable.update({ ProjectPaperTable.id eq projectPaperId }) {
             it[ProjectPaperTable.decision] = decision
         }
+    }
+
+    override suspend fun getSubsequentProjectPapers(
+        projectId: UUID,
+        localPaperId: Long,
+        stage: Long,
+    ): List<ProjectPaper> = db.query {
+        val sameStageButGreaterLocalIdOp =
+            (ProjectPaperTable.stage eq stage) and (ProjectPaperTable.localPaperId greater localPaperId)
+        val greaterStageOp = ProjectPaperTable.stage greater stage
+        ProjectPaperTable
+            .selectAll()
+            .where {
+                (ProjectPaperTable.projectId eq projectId) and (sameStageButGreaterLocalIdOp or greaterStageOp)
+            }
+            .map { it.toProjectPaper() }
     }
 }

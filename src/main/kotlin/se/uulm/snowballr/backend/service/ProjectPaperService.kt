@@ -5,6 +5,7 @@ import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.PaperNavigationDirection
 import se.uulm.snowballr.backend.model.SnowballRException.DuplicateEntityException
+import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
 import se.uulm.snowballr.backend.model.SnowballRException.InvalidIdException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.OutOfRangeException
@@ -12,6 +13,7 @@ import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.Paper
 import se.uulm.snowballr.backend.model.dto.ProjectPaper
 import se.uulm.snowballr.backend.model.dto.ProjectPaperWithPaper
+import se.uulm.snowballr.backend.model.dto.ProjectPaperWithReviewsCount
 import se.uulm.snowballr.backend.model.dto.toGrpcProjectPaper
 import se.uulm.snowballr.backend.model.dto.toGrpcProjectPapers
 import se.uulm.snowballr.backend.model.dto.toGrpcReview
@@ -72,6 +74,11 @@ interface IProjectPaperService {
      * Service implementation of [SnowballRService.getPreviousPaper].
      */
     suspend fun getPreviousPaper(request: Base.Id): GrpcProjectPaper
+
+    /**
+     * Service implementation of [SnowballRService.getNextPaperToReview].
+     */
+    suspend fun getNextPaperToReview(request: Base.Id): GrpcProjectPaper
 }
 
 /**
@@ -91,7 +98,7 @@ interface IProjectPaperService {
  * @param reviewTableRepo The repository responsible for managing persistence operations for the reviews
  * @param reviewHasCriterionTableRepo The repository responsible for managing persistence operations for the review has
  */
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 class ProjectPaperService(
     private val repo: IProjectPaperTableRepo,
     private val userRepo: IUserTableRepo,
@@ -197,6 +204,29 @@ class ProjectPaperService(
             adjacentPaper.toGrpcProjectPaperWithData(paper)
         }
 
+    /**
+     * Sorts a list of project papers paired with their corresponding review counts.
+     *
+     * The result only contains the sorted project papers, excluding the review counts.
+     *
+     * @param projectPapersWithReviewsCount A list of [ProjectPaperWithReviewsCount] objects to be sorted.
+     * @return A list of [ProjectPaper] objects sorted by stage (ascending) and reviews count (ascending).
+     */
+    private fun sortPapersByStageAndReviewsCount(projectPapersWithReviewsCount: List<ProjectPaperWithReviewsCount>) =
+        projectPapersWithReviewsCount.sorted().map { it.projectPaper }
+
+    /**
+     * Determines whether the given project paper lacks a final decision.
+     * A project paper is considered to have no final decision if its decision state
+     * is either `PAPER_DECISION_UNSPECIFIED` or `PAPER_DECISION_UNREVIEWED`.
+     *
+     * @param projectPaper The [ProjectPaper] object whose decision state is to be evaluated.
+     * @return `true` if the project paper has no final decision; otherwise, `false`.
+     */
+    private fun hasNoFinalDecision(projectPaper: ProjectPaper): Boolean =
+        projectPaper.decision == PaperDecision.PAPER_DECISION_UNSPECIFIED ||
+            projectPaper.decision == PaperDecision.PAPER_DECISION_UNREVIEWED
+
     override suspend fun getProjectPaperById(request: Base.Id): GrpcProjectPaper = withUser(userRepo) { currentUser ->
         val projectPaperId = parseUUID(request.id, EntityType.PROJECT_PAPER)
         val projectPaper = repo.getProjectPaperById(projectPaperId).getOrThrow()
@@ -267,4 +297,40 @@ class ProjectPaperService(
 
     override suspend fun getPreviousPaper(request: Base.Id): GrpcProjectPaper =
         getAdjacentPaper(request.id, PaperNavigationDirection.PREVIOUS)
+
+    override suspend fun getNextPaperToReview(request: Base.Id): GrpcProjectPaper = withUser(userRepo) { currentUser ->
+        val projectPaperId = parseUUID(request.id, EntityType.PROJECT_PAPER)
+        val projectPaper = repo.getProjectPaperById(projectPaperId).getOrThrow()
+        val projectId = projectPaper.projectId
+
+        isAllowedToReadProject(projectMemberRepo).checkFor(currentUser, projectId)
+
+        val projectPapers = repo.getSubsequentProjectPapers(projectId, projectPaper.localPaperId, projectPaper.stage)
+        val projectPapersWithReviewsCount = getProjectPapersWithReviewsCount(projectPapers, currentUser.id)
+
+        if (projectPapersWithReviewsCount.isEmpty()) {
+            throw FailedPreconditionException(
+                "There is no next project paper available to review in the project with ID $projectId",
+            )
+        }
+
+        val sortedPapers = sortPapersByStageAndReviewsCount(projectPapersWithReviewsCount)
+        val papersWithoutFinalDecision = sortedPapers.filter(::hasNoFinalDecision)
+
+        (papersWithoutFinalDecision.firstOrNull() ?: sortedPapers.first()).toGrpcProjectPaperWithData()
+    }
+
+    private suspend fun getProjectPapersWithReviewsCount(projectPapers: List<ProjectPaper>, currentUserId: UUID) =
+        projectPapers
+            .map { projectPaper ->
+                val reviews = reviewTableRepo.getAllReviewsForProjectPaper(projectPaper.id)
+
+                val hasOwnReview = reviews.any { it.userId == currentUserId }
+                if (hasOwnReview) {
+                    ProjectPaperWithReviewsCount(projectPaper, -1)
+                } else {
+                    ProjectPaperWithReviewsCount(projectPaper, reviews.size)
+                }
+            }
+            .filter { it.reviewsCount >= 0 }
 }
