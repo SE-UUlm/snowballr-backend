@@ -5,6 +5,7 @@ package se.uulm.snowballr.backend.service.accessrules
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.EntityNotActiveException
+import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.Project
@@ -60,6 +61,25 @@ fun isProjectMember(projectMemberRepo: IProjectMemberTableRepo) = AccessRule<UUI
 fun isProjectAdmin(projectMemberRepo: IProjectMemberTableRepo) = AccessRule<UUID> { requester, targetId ->
     val projectAdmins = projectMemberRepo.getAllProjectAdmins(targetId)
     projectAdmins.any { it.userId == requester.id }
+}
+
+/**
+ * Check whether the user is not the last project admin of a specific project; otherwise, throws a [FailedPreconditionException].
+ *
+ * @param projectMemberRepo The project member repository used to retrieve a project admins list.
+ * @param action The action that is being performed and wherefore the user must not be the last project admin.
+ */
+@CheckReturnValue
+fun isNotLastProjectAdmin(projectMemberRepo: IProjectMemberTableRepo, action: String): AccessRule<UUID> {
+    return AccessRule<UUID> { user, targetId ->
+        val projectAdmins = projectMemberRepo.getAllProjectAdmins(targetId)
+        !(projectAdmins.size == 1 && projectAdmins.first().userId == user.id)
+    }.orElseThrow { user, projectId ->
+        FailedPreconditionException(
+            "$action, because the user with the ID '${user.id}' " +
+                "is the last admin of the project with the ID '$projectId'.",
+        )
+    }
 }
 
 /**

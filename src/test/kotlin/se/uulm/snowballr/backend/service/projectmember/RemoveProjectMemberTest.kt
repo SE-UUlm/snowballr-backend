@@ -24,6 +24,10 @@ class RemoveProjectMemberTest : MainServiceTest() {
     @Test
     fun `When a server admin removes a project member, then no exception is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_ADMIN)
+        val userToRemove = DataBuilder.createExampleUser(
+            id = userId,
+            status = UserOuterClass.UserStatus.USER_STATUS_ACTIVE,
+        )
         val project = DataBuilder.createExampleProject(id = projectId)
         val projectMember1 = DataBuilder.createExampleProjectMember(projectId = project.id, userId = userId)
         val projectMember2 = DataBuilder.createExampleProjectMember(projectId = project.id, userId = UUID.randomUUID())
@@ -35,6 +39,7 @@ class RemoveProjectMemberTest : MainServiceTest() {
         coEvery {
             projectMemberRepoMock.getProjectMembers(project.id)
         } returns listOf(projectMember1, projectMember2)
+        coEvery { userRepoMock.getUserById(userId) } returns Result.success(userToRemove)
         coEvery { projectMemberRepoMock.removeProjectMember(project.id, userId) } returns Unit
 
         assertDoesNotThrow { mainService.removeProjectMember(getExampleRequest()) }
@@ -43,10 +48,13 @@ class RemoveProjectMemberTest : MainServiceTest() {
     @Test
     fun `When a project admin removes another project member, then no exception is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
+        val userToRemove = DataBuilder.createExampleUser(
+            id = userId,
+            status = UserOuterClass.UserStatus.USER_STATUS_ACTIVE,
+        )
         val project = DataBuilder.createExampleProject(id = projectId)
         val projectAdmin = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
-        val projectMember1 = DataBuilder.createExampleProjectMember(projectId = project.id, userId = userId)
-        val projectMember2 = DataBuilder.createExampleProjectMember(projectId = project.id, userId = UUID.randomUUID())
+        val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = userId)
 
         mockCurrentUser(currentUser)
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectAdmin)
@@ -54,7 +62,8 @@ class RemoveProjectMemberTest : MainServiceTest() {
         coEvery { userRepoMock.doesUserExistById(userId) } returns true
         coEvery {
             projectMemberRepoMock.getProjectMembers(project.id)
-        } returns listOf(projectMember1, projectMember2)
+        } returns listOf(projectMember, projectAdmin)
+        coEvery { userRepoMock.getUserById(userId) } returns Result.success(userToRemove)
         coEvery { projectMemberRepoMock.removeProjectMember(project.id, userId) } returns Unit
 
         assertDoesNotThrow { mainService.removeProjectMember(getExampleRequest()) }
@@ -187,7 +196,6 @@ class RemoveProjectMemberTest : MainServiceTest() {
 
             mockCurrentUser(currentUser)
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(lastProjectMember)
-            coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(lastProjectMember)
             coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
             coEvery { userRepoMock.doesUserExistById(currentUser.id) } returns true
             coEvery { projectRepoMock.softDeleteProject(project.id) } returns Unit

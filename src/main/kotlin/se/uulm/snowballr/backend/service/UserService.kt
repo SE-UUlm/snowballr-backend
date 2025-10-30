@@ -20,6 +20,7 @@ import se.uulm.snowballr.backend.model.dto.toGrpcUsers
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
+import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.IVerificationTokenTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
@@ -28,6 +29,7 @@ import se.uulm.snowballr.backend.service.accessrules.checkFor
 import se.uulm.snowballr.backend.service.accessrules.forProperty
 import se.uulm.snowballr.backend.service.accessrules.forTarget
 import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadUser
+import se.uulm.snowballr.backend.service.accessrules.isNotLastProjectAdmin
 import se.uulm.snowballr.backend.service.accessrules.isSameUserById
 import se.uulm.snowballr.backend.service.accessrules.isServerAdmin
 import se.uulm.snowballr.backend.service.accessrules.isServerAdminOrSameUser
@@ -37,6 +39,7 @@ import se.uulm.snowballr.backend.service.accessrules.orElseThrow
 import se.uulm.snowballr.backend.service.accessrules.targetUserIsNotAdmin
 import snowballr.Authentication
 import snowballr.Base
+import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.nothing
 import java.util.UUID
 import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
@@ -98,6 +101,7 @@ private const val VERIFICATION_TOKEN_LENGTH = 48
  * @constructor Initializes the [UserService] with a user repository.
  * @param userRepo The repository responsible for managing persistence operations for users.
  * @param projectMemberRepo The repository responsible for managing persistence operations for project members.
+ * @param projectRepo The repository responsible for managing persistence operations for projects.
  * @param criterionRepo The repository responsible for managing persistence operations for criteria.
  * @param verificationTokenRepo The repository responsible for managing persistence operations for verification tokens.
  * @param emailManager The manager responsible for sending emails.
@@ -105,6 +109,7 @@ private const val VERIFICATION_TOKEN_LENGTH = 48
 class UserService(
     private val userRepo: IUserTableRepo,
     private val projectMemberRepo: IProjectMemberTableRepo,
+    private val projectRepo: IProjectTableRepo,
     private val criterionRepo: ICriterionTableRepo,
     private val verificationTokenRepo: IVerificationTokenTableRepo,
     private val emailManager: IEmailManager,
@@ -246,6 +251,20 @@ class UserService(
                     ),
             )
             .checkFor(currentUser, targetUser)
+
+        // Verify that the user to be deleted is no project admin in any active or archived project anymore.
+        val projectsOfTargetUser = projectRepo.getUserProjects(
+            targetUser.id,
+            setOf(
+                ProjectStatus.PROJECT_STATUS_ACTIVE,
+                ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED,
+                ProjectStatus.PROJECT_STATUS_ARCHIVED,
+            ),
+        )
+        projectsOfTargetUser.forEach { project ->
+            isNotLastProjectAdmin(projectMemberRepo, "The user cannot be (soft-)deleted")
+                .checkFor(targetUser, project.id)
+        }
 
         userRepo.softDeleteUser(targetUser.id)
 
