@@ -18,7 +18,7 @@ version = "0.0.0"
 
 gitVersioning.apply {
     refs {
-        tag("v(?<version>.*)") {
+        tag("v(?<version>\\d+\\.\\d+\\.\\d+)") {
             version = "\${ref.version}"
         }
     }
