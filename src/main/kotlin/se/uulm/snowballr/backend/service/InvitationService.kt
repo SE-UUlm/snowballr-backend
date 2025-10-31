@@ -110,12 +110,9 @@ class InvitationService(
         isProjectActive().checkFor(currentUser, project)
 
         // Check if the user is already invited
-        val isAlreadyInvited = invitationTokenRepo.getInvitationTokenByEmailAndProjectId(
-            request.userEmail,
-            projectId,
-        ).isSuccess
+        val isAlreadyInvited =
+            invitationTokenRepo.getInvitationTokenByEmailAndProjectId(request.userEmail, projectId).isSuccess
         if (isAlreadyInvited) {
-            Logger.warn { "The user ${request.userEmail} was already invited to the project $projectId." }
             return@withUser Base.Nothing.getDefaultInstance()
         }
 
@@ -141,7 +138,7 @@ class InvitationService(
             ),
         )
 
-        return@withUser Base.Nothing.getDefaultInstance()
+        Base.Nothing.getDefaultInstance()
     }
 
     override suspend fun acceptProjectInvitation(request: GrpcProject.Member.Accept): Base.Nothing {
