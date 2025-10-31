@@ -110,6 +110,16 @@ class InvitationService(
 
         isProjectActive().checkFor(currentUser, project)
 
+        // Check if the user is already invited
+        val isAlreadyInvited = invitationTokenRepo.getInvitationTokenByEmailAndProjectId(
+            request.userEmail,
+            projectId,
+        ).isSuccess
+        if (isAlreadyInvited) {
+            Logger.warn { "The user ${request.userEmail} was already invited to the project $projectId." }
+            return Base.Nothing.getDefaultInstance()
+        }
+
         // Generate and save invitation token
         val invitationToken = NanoId.generate(INVITATION_TOKEN_LENGTH)
         invitationTokenRepo.saveInvitationToken(request.userEmail, projectId, invitationToken)
