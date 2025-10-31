@@ -1,7 +1,6 @@
 package se.uulm.snowballr.backend.service
 
 import io.viascom.nanoid.NanoId
-import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.mail.IEmailManager
 import se.uulm.snowballr.backend.model.AccessType
@@ -98,10 +97,10 @@ class InvitationService(
             candidates.toGrpcUsers()
         }
 
-    override suspend fun inviteUserToProject(request: GrpcProject.Member.Invite): Base.Nothing {
-        // Check whether a project with the given id exists
+    override suspend fun inviteUserToProject(request: GrpcProject.Member.Invite): Base.Nothing = withUser(
+        userRepo,
+    ) { currentUser ->
         val projectId = parseUUID(request.projectId, EntityType.PROJECT)
-        val currentUser = userRepo.getUserById(GrpcContext.getUserIdFromContext()).getOrThrow()
 
         isServerOrProjectAdmin(projectMemberRepo, AccessType.READ)
             .checkFor(currentUser, projectId)
@@ -117,7 +116,7 @@ class InvitationService(
         ).isSuccess
         if (isAlreadyInvited) {
             Logger.warn { "The user ${request.userEmail} was already invited to the project $projectId." }
-            return Base.Nothing.getDefaultInstance()
+            return@withUser Base.Nothing.getDefaultInstance()
         }
 
         // Generate and save invitation token
@@ -142,7 +141,7 @@ class InvitationService(
             ),
         )
 
-        return Base.Nothing.getDefaultInstance()
+        return@withUser Base.Nothing.getDefaultInstance()
     }
 
     override suspend fun acceptProjectInvitation(request: GrpcProject.Member.Accept): Base.Nothing {
