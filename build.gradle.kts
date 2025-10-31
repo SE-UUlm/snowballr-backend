@@ -9,11 +9,25 @@ plugins {
     alias(libs.plugins.protobuf)
     alias(libs.plugins.shadow.jar)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.git.versioning)
     application
 }
 
 group = "se.uulm.snowballr.backend"
-version = "0.1.0"
+version = "0.0.0"
+
+gitVersioning.apply {
+    refs {
+        tag("v(?<version>\\d+\\.\\d+\\.\\d+)") {
+            version = "\${ref.version}"
+        }
+    }
+
+    // optional fallback configuration in case of no matching ref configuration
+    rev {
+        version = "\${commit}"
+    }
+}
 
 application {
     mainClass.set("se.uulm.snowballr.backend.MainKt")
