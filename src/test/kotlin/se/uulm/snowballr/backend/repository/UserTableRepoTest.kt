@@ -412,9 +412,10 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable)) {
         @Test
         fun `When a user is matching the search query but should be excluded, then this user is not returned`() =
             runTest {
-                val userId = insertUserAndGetId(firstName = "johnathan")
+                val userEmail = "johnathan@example.com"
+                insertUserAndGetId(email = userEmail, firstName = "johnathan")
 
-                val matchingUsers = repo.getUsersMatchingSearchQuery("john", setOf(userId))
+                val matchingUsers = repo.getUsersMatchingSearchQuery("john", setOf(userEmail))
 
                 assertThat(matchingUsers).hasSize(0)
             }

@@ -75,10 +75,10 @@ interface IUserTableRepo {
      * their similarity to the search query.
      *
      * @param searchQuery The query against which the firstnames, lastnames, and emails of the users are checked.
-     * @param excludedUsers A list of user ids to be excluded from the results.
+     * @param excludedUsers A list of user emails to be excluded from the results.
      * @return A list of up to 10 matching users.
      */
-    suspend fun getUsersMatchingSearchQuery(searchQuery: String, excludedUsers: Set<UUID>): List<User>
+    suspend fun getUsersMatchingSearchQuery(searchQuery: String, excludedUsers: Set<String>): List<User>
 
     /**
      * Creates a new user in the database with the provided registration request and password hash.
@@ -191,17 +191,16 @@ class UserTableRepo(
     }
 
     @Suppress("MagicNumber")
-    override suspend fun getUsersMatchingSearchQuery(searchQuery: String, excludedUsers: Set<UUID>): List<User> =
+    override suspend fun getUsersMatchingSearchQuery(searchQuery: String, excludedUsers: Set<String>): List<User> =
         db.query {
             val userTable = "\"${UserTable.tableName}\""
-            val idCol = "$userTable.${UserTable.id.name}"
             val firstNameCol = "$userTable.${UserTable.firstName.name}"
             val lastNameCol = "$userTable.${UserTable.lastName.name}"
             val emailCol = "$userTable.${UserTable.email.name}"
             val statusCol = "$userTable.${UserTable.status.name}"
 
             val excludeUsersClause = if (excludedUsers.isNotEmpty()) {
-                "AND $idCol NOT IN (${excludedUsers.joinToString(",") { "'$it'" }})"
+                "AND $emailCol NOT IN (${excludedUsers.joinToString(",") { "'$it'" }})"
             } else {
                 ""
             }
