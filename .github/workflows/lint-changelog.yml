@@ -25,6 +25,6 @@ jobs:
               run: hallmark CHANGELOG.md
 
             - name: Check for broken references in CHANGELOG.md
-              uses: becheran/mlc@v0.21.0
+              uses: becheran/mlc@v1.0.0
               with:
                   args: --ignore-links "https://github.com/SE-UUlm/snowballr-backend/releases/tag/*" CHANGELOG.md
