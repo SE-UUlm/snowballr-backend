@@ -1,0 +1,155 @@
+name: Build
+
+on:
+    push:
+        branches: ["develop"]
+        tags: ["v*.*.*"]
+    pull_request:
+    workflow_dispatch:
+
+env:
+    java_version: ${{ vars.JAVA_VERSION }}
+    java_distribution: ${{ vars.JAVA_DISTRIBUTION }}
+    REGISTRY: ghcr.io
+    IMAGE_NAME: ${{github.repository}}
+
+jobs:
+    build-jar:
+        name: Building the application as jar file
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v5
+              with:
+                  submodules: "recursive"
+
+            - name: Setup
+              uses: ./.github/workflows/setup/
+              with:
+                  java_version: ${{ env.java_version }}
+                  java_distribution: ${{ env.java_distribution }}
+
+            - name: Build the jar file
+              run: ./gradlew shadowJar --stacktrace
+
+            - name: Upload jar file
+              uses: actions/upload-artifact@v4
+              with:
+                  name: snowballr-backend-jar
+                  path: build/libs/*.jar
+                  if-no-files-found: error
+
+    build-and-push-docker-image:
+        name: Building and pushing the docker image
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+            packages: write
+            attestations: write
+            id-token: write
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v5
+              with:
+                  submodules: "recursive"
+
+            # Only push artifacts on the develop branch or on a new tag
+            - name: Determine if artifacts should be pushed
+              id: check-push
+              run: |
+                  echo "should_push=${{ github.ref_type == 'tag' || (github.ref_type == 'branch' && github.ref_name == 'develop') }}" >> $GITHUB_OUTPUT
+
+            - name: Set up QEMU
+              uses: docker/setup-qemu-action@v3
+
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
+
+            # This step uses metadata-action to extract tags and labels that will be
+            # applied to the specified image. The `id` "meta" allows the output of
+            # this step to be referenced in a subsequent step. The `images` value
+            # provides the base name for the tags and labels.
+            # We add the following tags
+            # - version tags: for v1.2.3 -> v1, v1.2, v1.2.3
+            # - latest tags: for develop -> latest-dev; for tag -> latest
+            - name: Extract metadata (tags, labels) for Docker
+              id: meta
+              uses: docker/metadata-action@v5
+              with:
+                  images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+                  tags: |
+                      type=semver,pattern={{version}},enable=${{ github.ref_type == 'tag' }}
+                      type=semver,pattern={{major}}.{{minor}},enable=${{ github.ref_type == 'tag' }}
+                      type=semver,pattern={{major}},enable=${{ github.ref_type == 'tag' }}
+                      type=raw,value=latest,enable=${{ github.ref_type == 'tag' }}
+                      type=raw,value=latest-dev,enable=${{ github.ref_name == 'develop' }}
+                  flavor: |
+                      latest=false
+
+            - name: Login to GitHub Container Registry
+              if: ${{ steps.check-push.outputs.should_push == 'true' }}
+              uses: docker/login-action@v3
+              with:
+                  registry: ${{ env.REGISTRY }}
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Build and push Docker image
+              id: push
+              uses: docker/build-push-action@v6
+              with:
+                  context: .
+                  push: ${{ steps.check-push.outputs.should_push == 'true' }}
+                  # Only build for ARM when we intend to push the image, as the emulation takes a lot of time
+                  platforms: linux/amd64 ${{ steps.check-push.outputs.should_push == 'true' && ', linux/arm64' || '' }}
+                  tags: ${{ steps.meta.outputs.tags }}
+                  labels: ${{ steps.meta.outputs.labels }}
+
+            - name: Generate artifact attestation
+              if: ${{ steps.check-push.outputs.should_push == 'true' }}
+              uses: actions/attest-build-provenance@v3
+              with:
+                  subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}
+                  subject-digest: ${{ steps.push.outputs.digest }}
+                  push-to-registry: true
+
+    release:
+        name: Create a new release
+        runs-on: ubuntu-latest
+        needs: build-jar
+        if: ${{ github.ref_type == 'tag' }}
+        permissions:
+            contents: write
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v5
+
+            - name: Download jar file
+              uses: actions/download-artifact@v4
+              with:
+                  name: snowballr-backend-jar
+
+            - name: Create Release
+              uses: docker://antonyurchenko/git-release:v5
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              with:
+                  args: snowballr-backend-*.jar
+
+    update-main:
+        name: Update main branch
+        runs-on: ubuntu-latest
+        needs:
+            - release
+        permissions:
+            contents: write
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v5
+
+            - name: Merge develop -> main
+              uses: devmasx/merge-branch@master
+              with:
+                  type: now
+                  target_branch: main
+                  github_token: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,241 @@
+package se.uulm.snowballr.backend.repository
+
+import com.google.protobuf.util.FieldMaskUtil
+import org.jetbrains.exposed.sql.JoinType
+import org.jetbrains.exposed.sql.ResultRow
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.andWhere
+import org.jetbrains.exposed.sql.or
+import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.statements.UpdateStatement
+import org.jetbrains.exposed.sql.update
+import se.uulm.snowballr.backend.db.IDatabase
+import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
+import se.uulm.snowballr.backend.model.dto.Project
+import se.uulm.snowballr.backend.model.dto.ProjectPaper
+import se.uulm.snowballr.backend.model.dto.Review
+import se.uulm.snowballr.backend.model.dto.UserSettings
+import se.uulm.snowballr.backend.model.parseUUID
+import se.uulm.snowballr.backend.table.ProjectTable
+import se.uulm.snowballr.backend.table.ReviewTable
+import se.uulm.snowballr.backend.table.association.ProjectMemberTable
+import se.uulm.snowballr.backend.table.association.ProjectPaperTable
+import se.uulm.snowballr.backend.table.toProject
+import snowballr.ProjectOuterClass.ProjectStatus
+import java.time.OffsetDateTime
+import java.util.UUID
+import snowballr.ProjectOuterClass.Project as GrpcProject
+
+/**
+ * Defines an interface for repository operations related to the [ProjectTable].
+ *
+ * This interface is used to handle persistence and retrieval operations for projects by providing
+ * abstraction over the underlying database implementation. By using this interface, the logic
+ * for creating and managing projects can remain decoupled from the specifics of the database layer.
+ */
+interface IProjectTableRepo {
+    /**
+     * Returns a [Result] containing the project by its ID or a [NotFoundException] if the project with the passed [id]
+     * doesn't exist.
+     */
+    suspend fun getProjectById(id: UUID): Result<Project>
+
+    /**
+     * Checks whether the project with the passed [id] exists.
+     */
+    suspend fun doesProjectExistById(id: UUID): Boolean
+
+    /**
+     * Creates a new project in the database with the provided project creation request and user ID.
+     *
+     * @param request The project creation request containing project details
+     * @param userId The ID of the user creating the project.
+     * @param userSettings The user's current settings, such as default criteria IDs, similarity threshold, and other
+     * relevant preferences.
+     * @return The created [Project] object representing the newly created project.
+     */
+    suspend fun createProject(request: GrpcProject.Create, userId: UUID, userSettings: UserSettings): Project
+
+    /**
+     * Returns all active projects stored in the database.
+     */
+    suspend fun getAllProjects(): List<Project>
+
+    /**
+     * Retrieves a list of projects from the database in which the user with the specified [userId] is a member.
+     *
+     * These projects can be filtered by their status, e.g., this function can be used to retrieve all archived
+     * and deleted projects of a user.
+     *
+     * @param userId The unique identifier of the user whose associated projects are to be fetched.
+     * @param statusFilters (optional) Set of filters to specify which project status the fetched projects should have.
+     * By default, [ProjectStatus.PROJECT_STATUS_ACTIVE] and [ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED] are used,
+     * which includes both active and active-locked projects, i.e., projects where settings cannot be changed anymore.
+     * If set to another value (e.g., [ProjectStatus.PROJECT_STATUS_DELETED]), only projects
+     * matching one of the statuses (e.g., deleted) will be returned.
+     *
+     * @return A list of [Project] objects matching the specified filters where the given user is member of.
+     */
+    suspend fun getUserProjects(
+        userId: UUID,
+        statusFilters: Set<ProjectStatus> = setOf(
+            ProjectStatus.PROJECT_STATUS_ACTIVE,
+            ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED,
+        ),
+    ): List<Project>
+
+    /**
+     * Updates an existent project in the database with the provided new information.
+     * The following fields can be updated:
+     * - name
+     * - status
+     * - similarity_threshold
+     * - snowballing_type
+     * - review_maybe_allowed
+     *
+     * @param request The update request containing the new project details, such as the new name.
+     * @return The updated [Project] object reflecting the changes from the [request].
+     */
+    suspend fun updateProject(request: GrpcProject.Update): Project
+
+    /**
+     * Checks if the project with the given [projectId] is locked.
+     *
+     * A project is considered **locked** if at least one [ProjectPaper] with at least one [Review]
+     * is associated with this project.
+     *
+     * **Note:** This functions returns `true` or `false` regardless of the project's current state.
+     * However, the result is only meaningful if the project is in an active state
+     * (i.e., [ProjectStatus.PROJECT_STATUS_ACTIVE] or [ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED]).
+     *
+     * @param projectId The ID of the project to check for locked status.
+     * @return `true` if the project is locked, `false` otherwise.
+     */
+    suspend fun isProjectLocked(projectId: UUID): Boolean
+
+    /**
+     * Performs a soft delete of the project with the given [projectId], i.e., does not remove the
+     * project from the database but marks it as deleted by setting the status to [ProjectStatus.PROJECT_STATUS_DELETED].
+     */
+    suspend fun softDeleteProject(projectId: UUID)
+}
+
+/**
+ * Repository implementation for managing the [ProjectTable] in the database.
+ *
+ * This class handles the persistence and retrieval of project data by integrating
+ * with the underlying database through the [IDatabase] interface. It provides
+ * concrete methods for CRUD operations on project records within the database.
+ *
+ * @param db The database abstraction used for executing queries within a transaction.
+ */
+@Suppress("TooManyFunctions")
+class ProjectTableRepo(
+    private val db: IDatabase,
+) : IProjectTableRepo {
+    private fun getProjectByIdOrNull(id: UUID): Project? = ProjectTable.getEntityByIdOrNull(id, ResultRow::toProject)
+
+    override suspend fun getProjectById(id: UUID): Result<Project> = db.query {
+        getEntityByKeyAsResult(::getProjectByIdOrNull, EntityType.PROJECT, id)
+    }
+
+    override suspend fun doesProjectExistById(id: UUID): Boolean = db.query {
+        ProjectTable.doesEntityExistById(id)
+    }
+
+    override suspend fun createProject(request: GrpcProject.Create, userId: UUID, userSettings: UserSettings): Project =
+        db.query {
+            ProjectTable.insertAndGet(ResultRow::toProject, EntityType.PROJECT) {
+                it[name] = request.name
+                it[status] = ProjectStatus.PROJECT_STATUS_ACTIVE
+                it[currentStage] = 0
+                it[maxStage] = 0
+                it[similarityThreshold] = userSettings.similarityThreshold
+                it[snowballingType] = userSettings.snowballingType
+                it[reviewMaybeAllowed] = userSettings.reviewMaybeAllowed
+                it[reviewDecisionMatrixBinary] = userSettings.decisionMatrix.toByteArray()
+                it[fetchers] = emptyMap()
+                it[createdBy] = userId
+            }
+        }
+
+    override suspend fun getAllProjects(): List<Project> = db.query {
+        ProjectTable.getEntities(ResultRow::toProject) {
+            (ProjectTable.status eq ProjectStatus.PROJECT_STATUS_ACTIVE) or
+                (ProjectTable.status eq ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
+        }
+    }
+
+    override suspend fun getUserProjects(userId: UUID, statusFilters: Set<ProjectStatus>): List<Project> = db.query {
+        val excludedStatuses = listOf(ProjectStatus.PROJECT_STATUS_UNSPECIFIED)
+        val projectFilter = statusFilters
+            .filterNot { it in excludedStatuses }
+            .map { ProjectTable.status eq it }
+            .reduceOrNull { acc, filter -> acc or filter }
+
+        requireNotNull(projectFilter) {
+            "Unsupported filter statuses: ${statusFilters.joinToString(", ") { it.name }}."
+        }
+
+        (ProjectTable innerJoin ProjectMemberTable)
+            .select(ProjectTable.columns)
+            .where { ProjectMemberTable.userId eq userId }
+            .andWhere { projectFilter }
+            .map { it.toProject() }
+    }
+
+    override suspend fun updateProject(request: GrpcProject.Update): Project = db.query {
+        val projectId = parseUUID(request.project.id, EntityType.PROJECT)
+        val fieldMaskPaths = FieldMaskUtil.normalize(request.mask).pathsList.toSet()
+
+        ProjectTable.updateByIdAndGet(projectId, ResultRow::toProject, EntityType.PROJECT) {
+            it.applyProjectStatusUpdate(request.project, fieldMaskPaths)
+            it.applyProjectNameUpdate(request.project, fieldMaskPaths)
+            it.applySlrProjectUpdates(request.project.settings, fieldMaskPaths)
+            it[modifiedAt] = OffsetDateTime.now()
+        }
+    }
+
+    override suspend fun isProjectLocked(projectId: UUID): Boolean = db.query {
+        ProjectPaperTable
+            .join(ReviewTable, JoinType.INNER, ProjectPaperTable.id, ReviewTable.projectPaperId)
+            .selectAll()
+            .where { ProjectPaperTable.projectId eq projectId }
+            .limit(1)
+            .any()
+    }
+
+    override suspend fun softDeleteProject(projectId: UUID) {
+        db.query {
+            ProjectTable.update({ ProjectTable.id eq projectId }) {
+                it[status] = ProjectStatus.PROJECT_STATUS_DELETED
+                it[deletedAt] = OffsetDateTime.now()
+            }
+        }
+    }
+
+    private fun UpdateStatement.applyProjectNameUpdate(project: GrpcProject, paths: Set<String>) {
+        if ("project.name" in paths) {
+            this[ProjectTable.name] = project.name
+        }
+    }
+
+    private fun UpdateStatement.applyProjectStatusUpdate(project: GrpcProject, paths: Set<String>) {
+        if ("project.status" in paths) {
+            this[ProjectTable.status] = project.status
+        }
+    }
+
+    private fun UpdateStatement.applySlrProjectUpdates(settings: GrpcProject.Settings, paths: Set<String>) {
+        if ("project.settings.similarity_threshold" in paths) {
+            this[ProjectTable.similarityThreshold] = settings.similarityThreshold
+        }
+        if ("project.settings.snowballing_type" in paths) {
+            this[ProjectTable.snowballingType] = settings.snowballingType
+        }
+        if ("project.settings.review_maybe_allowed" in paths) {
+            this[ProjectTable.reviewMaybeAllowed] = settings.reviewMaybeAllowed
+        }
+    }
+}

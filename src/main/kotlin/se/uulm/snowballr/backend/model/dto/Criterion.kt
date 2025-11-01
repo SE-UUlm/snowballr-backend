@@ -1,0 +1,67 @@
+package se.uulm.snowballr.backend.model.dto
+
+import se.uulm.snowballr.backend.table.CriterionTable
+import snowballr.CriterionOuterClass
+import java.time.OffsetDateTime
+import java.util.UUID
+
+/**
+ * DTO of [CriterionTable].
+ */
+sealed class Criterion {
+    abstract val id: UUID
+    abstract val tag: String
+    abstract val name: String
+    abstract val description: String
+    abstract val category: CriterionOuterClass.CriterionCategory
+    abstract val createdAt: OffsetDateTime
+    abstract val createdBy: UUID
+
+    /**
+     * [Criterion] that is owned by the project.
+     */
+    data class ProjectCriterion(
+        override val id: UUID,
+        override val tag: String,
+        override val name: String,
+        override val description: String,
+        override val category: CriterionOuterClass.CriterionCategory,
+        override val createdAt: OffsetDateTime,
+        override val createdBy: UUID,
+        val projectId: UUID,
+    ) : Criterion()
+
+    /**
+     * [Criterion] that is owned by the user.
+     */
+    data class UserCriterion(
+        override val id: UUID,
+        override val tag: String,
+        override val name: String,
+        override val description: String,
+        override val category: CriterionOuterClass.CriterionCategory,
+        override val createdAt: OffsetDateTime,
+        override val createdBy: UUID,
+    ) : Criterion()
+}
+
+/**
+ * Creates a [CriterionOuterClass.Criterion] from this [Criterion].
+ */
+fun Criterion.toGrpcCriterion(): CriterionOuterClass.Criterion = CriterionOuterClass.Criterion
+    .newBuilder()
+    .setId(this.id.toString())
+    .setTag(this.tag)
+    .setName(this.name)
+    .setDescription(this.description)
+    .setCategory(this.category)
+    .build()
+
+/**
+ * Creates a list of [CriterionOuterClass.Criterion]s from this list of [Criterion]s.
+ */
+fun List<Criterion>.toGrpcCriteria(): CriterionOuterClass.Criterion.List {
+    val builder = CriterionOuterClass.Criterion.List.newBuilder()
+    this.forEach { builder.addCriteria(it.toGrpcCriterion()) }
+    return builder.build()
+}

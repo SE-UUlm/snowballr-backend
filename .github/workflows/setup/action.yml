@@ -1,0 +1,23 @@
+name: Setup
+description: Setup Backend CI/CD pipeline
+inputs:
+    java_version:
+        description: "Java version"
+        required: true
+    java_distribution:
+        description: "Java distribution"
+        required: true
+runs:
+    using: composite
+    steps:
+        - name: Setup Java
+          uses: actions/setup-java@v4
+          with:
+              java-version: ${{ inputs.java_version }}
+              distribution: ${{ inputs.java_distribution }}
+
+        - name: Setup Gradle
+          uses: gradle/actions/setup-gradle@v4
+          with:
+              # Only write to cache on main or develop branch
+              cache-read-only: ${{ github.ref_name != 'main' && github.ref_name != 'develop' }}

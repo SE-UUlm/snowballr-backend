@@ -1,0 +1,148 @@
+package se.uulm.snowballr.backend.repository
+
+import com.google.protobuf.util.FieldMaskUtil
+import org.jetbrains.exposed.sql.ResultRow
+import org.jetbrains.exposed.sql.and
+import se.uulm.snowballr.backend.db.IDatabase
+import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
+import se.uulm.snowballr.backend.model.dto.Criterion
+import se.uulm.snowballr.backend.model.parseUUID
+import se.uulm.snowballr.backend.table.CriterionTable
+import se.uulm.snowballr.backend.table.toCriterion
+import se.uulm.snowballr.backend.table.toProjectCriterion
+import se.uulm.snowballr.backend.table.toUserCriterion
+import java.util.UUID
+import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
+
+/**
+ * Defines an interface for repository operations related to the [CriterionTable].
+ *
+ * This interface provides abstraction for handling persistence and retrieval
+ * operations for criteria. By using this interface, the functionality for creating
+ * criteria can remain decoupled from the specifics of the database layer.
+ */
+interface ICriterionTableRepo {
+    /**
+     * Returns a [Result] containing the criterion by its ID or a [NotFoundException] if the criterion with the passed
+     * [id] doesn't exist.
+     */
+    suspend fun getCriterionById(id: UUID): Result<Criterion>
+
+    /**
+     * Creates a new criterion in the database based on the provided request and user ID.
+     *
+     * @param request The creation request containing details for the new criterion.
+     * @param userId The ID of the user creating the criterion.
+     * @return The created [Criterion] object representing the newly created criterion.
+     */
+    suspend fun createCriterion(request: GrpcCriterion.Create, userId: UUID): Criterion
+
+    /**
+     * Retrieves all criteria associated with a specific user.
+     *
+     * @param userId The unique identifier of the user for whom the criteria are being retrieved.
+     * @return A list of [Criterion] objects associated with the given user.
+     */
+    suspend fun getAllUserCriteria(userId: UUID): List<Criterion>
+
+    /**
+     * Updates an existent criterion in the database with the provided new information.
+     * The following fields can be updated:
+     * - tag
+     * - name
+     * - description
+     * - category
+     *
+     * @param request The update request containing the new criterion details, such as the new name.
+     * @return The updated [Criterion] object reflecting the changes from the [request].
+     */
+    suspend fun updateCriterion(request: GrpcCriterion.Update): Criterion
+
+    /**
+     * Retrieves a list of criteria based on their unique identifiers.
+     *
+     * @param ids A list of unique identifiers (UUIDs) for the criteria to be fetched.
+     * @return A list of [Criterion] objects corresponding to the provided IDs.
+     *         If no criteria are found for certain IDs, they may be excluded from the result.
+     */
+    suspend fun getCriteriaByIds(ids: List<UUID>): List<Criterion>
+
+    /**
+     * Retrieves all criteria associated with a specific project.
+     *
+     * @param projectId The unique identifier of the project for which the criteria are being retrieved.
+     * @return A list of [Criterion] objects associated with the given project.
+     */
+    suspend fun getAllProjectCriteria(projectId: UUID): List<Criterion>
+}
+
+/**
+ * Repository implementation for managing the [CriterionTable] in the database.
+ *
+ * This class provides functionality to handle persistence and retrieval operations
+ * for criteria data by leveraging the database abstraction defined in [IDatabase]. It
+ * facilitates CRUD operations on criterion records associated with a given project and
+ * ensures database transactions are handled properly.
+ *
+ * @param db The database abstraction used for executing queries within a transaction.
+ */
+class CriterionTableRepo(
+    private val db: IDatabase,
+) : ICriterionTableRepo {
+    private fun getCriterionByIdOrNull(id: UUID): Criterion? =
+        CriterionTable.getEntityByIdOrNull(id, ResultRow::toCriterion)
+
+    override suspend fun getCriterionById(id: UUID): Result<Criterion> = db.query {
+        getEntityByKeyAsResult(::getCriterionByIdOrNull, EntityType.CRITERION, id)
+    }
+
+    override suspend fun createCriterion(request: GrpcCriterion.Create, userId: UUID): Criterion = db.query {
+        val projectId = if (request.projectId.isNotEmpty()) {
+            parseUUID(request.projectId, EntityType.PROJECT)
+        } else {
+            null
+        }
+
+        CriterionTable.insertAndGet(ResultRow::toCriterion, EntityType.CRITERION) {
+            it[tag] = request.tag
+            it[name] = request.name
+            it[description] = request.description
+            it[category] = request.category
+            it[this.projectId] = projectId
+            it[createdBy] = userId
+        }
+    }
+
+    override suspend fun updateCriterion(request: GrpcCriterion.Update): Criterion = db.query {
+        val criterionId = parseUUID(request.criterion.id, EntityType.CRITERION)
+        val fieldMask = FieldMaskUtil.normalize(request.mask)
+
+        CriterionTable.updateByIdAndGet(criterionId, ResultRow::toCriterion, EntityType.CRITERION) {
+            for (field in fieldMask.pathsList) {
+                when (field) {
+                    "criterion.tag" -> it[tag] = request.criterion.tag
+                    "criterion.name" -> it[name] = request.criterion.name
+                    "criterion.description" -> it[description] = request.criterion.description
+                    "criterion.category" -> it[category] = request.criterion.category
+                }
+            }
+        }
+    }
+
+    override suspend fun getCriteriaByIds(ids: List<UUID>): List<Criterion> = db.query {
+        CriterionTable.getEntitiesByIds(ids, ResultRow::toCriterion)
+    }
+
+    override suspend fun getAllUserCriteria(userId: UUID): List<Criterion.UserCriterion> = db.query {
+        CriterionTable.getEntities(ResultRow::toUserCriterion) {
+            CriterionTable.createdBy eq userId and CriterionTable.projectId.isNull()
+        }
+    }
+
+    override suspend fun getAllProjectCriteria(projectId: UUID): List<Criterion> = db.query {
+        CriterionTable.getEntities(ResultRow::toProjectCriterion) {
+            CriterionTable.projectId eq projectId
+        }
+    }
+}

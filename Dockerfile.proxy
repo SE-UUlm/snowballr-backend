@@ -1,0 +1,43 @@
+FROM alpine:3.22.0 AS final
+
+# Asset IDs of v0.14.0 release of grpcwebproxy
+# https://github.com/improbable-eng/grpc-web/releases/tag/v0.14.0
+ARG AMD64_ID=31683788
+ARG ARM64_ID=31688932
+
+# Install unzip and curl utility
+RUN apk add --no-cache unzip curl
+
+# Download binaries based on the architecture, unzip them and make them executable
+RUN ARCH=$(uname -m) && \
+    if [ "$ARCH" = "x86_64" ]; then \
+      export ASSET_ID=${AMD64_ID}; \
+    elif [ "$ARCH" = "aarch64" ]; then \
+      export ASSET_ID=${ARM64_ID}; \
+    else \
+      # unsupported architecture
+      exit 1; \
+    fi && \
+    curl -L \
+      -H "Accept:application/octet-stream" \
+      -H "X-GitHub-Api-Version: 2022-11-28" \
+      https://api.github.com/repos/improbable-eng/grpc-web/releases/assets/${ASSET_ID} \
+      -o grpcwebproxy.zip \
+    && unzip grpcwebproxy.zip -d /app \
+    && chmod +x /app/dist/grpcwebproxy*
+
+# Create a wrapper script for the entrypoint
+RUN ARCH=$(uname -m) && \
+    if [ "$ARCH" = "x86_64" ]; then \
+      BINARY_SUFFIX="linux-x86_64"; \
+    elif [ "$ARCH" = "aarch64" ]; then \
+      BINARY_SUFFIX="arm64"; \
+    else \
+      exit 1; \
+    fi && \
+    echo "#!/bin/sh" > /entrypoint.sh && \
+    echo "/app/dist/grpcwebproxy-v0.14.0-${BINARY_SUFFIX} \$@" >> /entrypoint.sh && \
+    chmod +x /entrypoint.sh
+
+# Use the wrapper script as entrypoint
+ENTRYPOINT ["/entrypoint.sh"]
