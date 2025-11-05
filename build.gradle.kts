@@ -127,6 +127,7 @@ kover {
                     "se.uulm.snowballr.backend.db", // production database
                     "se.uulm.snowballr.backend.env", // environment variables
                     "se.uulm.snowballr.backend.grpc", // grpc server implementation
+                    "se.uulm.snowballr.backend.scheduler", // job scheduler
                 )
             }
         }
