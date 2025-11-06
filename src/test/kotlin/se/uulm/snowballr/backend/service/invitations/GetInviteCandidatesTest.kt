@@ -19,7 +19,7 @@ class GetInviteCandidatesTest : MainServiceTest() {
     private val requestingUserEmail = "test.user@example.com"
     private val searchQuery = "john"
     private val projectId = UUID.randomUUID()
-    private val validGetInviteCandidatesRequest = InviteCandidatesRequest.newBuilder()
+    private val validGetInviteCandidatesRequestBuilder = InviteCandidatesRequest.newBuilder()
         .setQuery(searchQuery)
         .setProjectId(projectId.toString())
 
@@ -55,7 +55,7 @@ class GetInviteCandidatesTest : MainServiceTest() {
     fun `When the search query is too short, then an empty list is returned`() = runTest {
         mockGetInviteCandidates(stopBefore = projectMemberRepoMock::getProjectMembersWithUsers)
 
-        val shortGetInviteCandidatesRequest = validGetInviteCandidatesRequest.setQuery("jo")
+        val shortGetInviteCandidatesRequest = validGetInviteCandidatesRequestBuilder.setQuery("jo")
 
         val candidates = assertDoesNotThrow { mainService.getInviteCandidates(shortGetInviteCandidatesRequest.build()) }
         assertThat(candidates.usersList).isEmpty()
@@ -68,7 +68,7 @@ class GetInviteCandidatesTest : MainServiceTest() {
             userRepoMock.getUsersMatchingSearchQuery(searchQuery, any())
         } returns emptyList()
 
-        val requestWithInvalidProjectId = validGetInviteCandidatesRequest.setProjectId("invalid-uuid")
+        val requestWithInvalidProjectId = validGetInviteCandidatesRequestBuilder.setProjectId("invalid-uuid")
 
         assertDoesNotThrow { mainService.getInviteCandidates(requestWithInvalidProjectId.build()) }
         coVerify(exactly = 0) { projectMemberRepoMock.getProjectMembersWithUsers(any()) }
@@ -79,7 +79,7 @@ class GetInviteCandidatesTest : MainServiceTest() {
     fun `When no project members exist, then no users except for the current user are excluded`() = runTest {
         mockGetInviteCandidates()
 
-        assertDoesNotThrow { mainService.getInviteCandidates(validGetInviteCandidatesRequest.build()) }
+        assertDoesNotThrow { mainService.getInviteCandidates(validGetInviteCandidatesRequestBuilder.build()) }
         coVerify(exactly = 1) { userRepoMock.getUsersMatchingSearchQuery(searchQuery, setOf(requestingUserEmail)) }
     }
 
@@ -88,7 +88,7 @@ class GetInviteCandidatesTest : MainServiceTest() {
         runTest {
             mockGetInviteCandidates()
 
-            val inviteCandidates = mainService.getInviteCandidates(validGetInviteCandidatesRequest.build())
+            val inviteCandidates = mainService.getInviteCandidates(validGetInviteCandidatesRequestBuilder.build())
             assertThat(inviteCandidates.usersList).hasSize(1)
             assertNull(inviteCandidates.usersList.find { it.email == requestingUserEmail })
         }
@@ -99,7 +99,7 @@ class GetInviteCandidatesTest : MainServiceTest() {
             val projectMember = DataBuilder.createExampleUser(email = "project.member@example.com")
             mockGetInviteCandidates(projectMembers = listOf(projectMember))
 
-            val inviteCandidates = mainService.getInviteCandidates(validGetInviteCandidatesRequest.build())
+            val inviteCandidates = mainService.getInviteCandidates(validGetInviteCandidatesRequestBuilder.build())
             assertNull(inviteCandidates.usersList.find { it.email == projectMember.email })
         }
 
@@ -109,7 +109,7 @@ class GetInviteCandidatesTest : MainServiceTest() {
             val invitee = DataBuilder.createExampleUser(email = "invited.user@example.com")
             mockGetInviteCandidates(invitees = listOf(invitee))
 
-            val inviteCandidates = mainService.getInviteCandidates(validGetInviteCandidatesRequest.build())
+            val inviteCandidates = mainService.getInviteCandidates(validGetInviteCandidatesRequestBuilder.build())
             assertNull(inviteCandidates.usersList.find { it.email == invitee.email })
         }
 }
