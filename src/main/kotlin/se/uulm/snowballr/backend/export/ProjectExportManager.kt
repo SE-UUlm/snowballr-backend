@@ -29,17 +29,14 @@ object ProjectExportManager {
         projectMembers: List<ProjectMemberWithUser>,
         projectPapers: List<ProjectPaperFull>,
     ): ByteArray {
+        val exporter = exporters[format] ?: throw IllegalArgumentException("Unsupported export format: $format")
+
         val projectMembersExport = projectMembers.mapIndexed { id, member -> member.toProjectMemberExport(id) }
         val stageToPapersExport = projectPapers.toPapersExportByStage(projectMembers)
         val stages = stageToPapersExport.toProjectStagesExport()
 
-        val projectExport = ProjectExport(
-            name = project.name,
-            members = projectMembersExport,
-            stages = stages,
-        )
+        val projectExport = ProjectExport(name = project.name, members = projectMembersExport, stages = stages)
 
-        val exporter = exporters[format] ?: throw IllegalArgumentException("Unsupported export format: $format")
         return exporter.export(projectExport)
     }
 
@@ -78,7 +75,8 @@ object ProjectExportManager {
         )
 
     private fun Review.toPaperReviewExport(projectMembers: List<ProjectMemberWithUser>): PaperReviewExport {
-        val reviewerId = projectMembers.firstOrNull { it.user.id == userId }?.toString() ?: "unknown"
+        val projectMemberId = projectMembers.indexOfFirst { it.user.id == userId }
+        val reviewerId = if (projectMemberId == -1) "unknown" else projectMemberId.toString()
         return PaperReviewExport(reviewerId, decision)
     }
 

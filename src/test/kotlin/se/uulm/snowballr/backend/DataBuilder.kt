@@ -6,6 +6,7 @@ import se.uulm.snowballr.backend.model.dto.InvitationToken
 import se.uulm.snowballr.backend.model.dto.Paper
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.ProjectMember
+import se.uulm.snowballr.backend.model.dto.ProjectMemberWithUser
 import se.uulm.snowballr.backend.model.dto.ProjectPaper
 import se.uulm.snowballr.backend.model.dto.Review
 import se.uulm.snowballr.backend.model.dto.User
@@ -268,5 +269,23 @@ object DataBuilder {
         projectId = projectId,
         token = token,
         expiresAt = expiresAt,
+    )
+
+    fun createExampleProjectMemberWithUser(
+        projectMember: ProjectMember = createExampleProjectMember(),
+        user: User = createExampleUser(),
+    ) = ProjectMemberWithUser(
+        projectMember = projectMember,
+        user = user,
+    )
+
+    fun createExampleProjectPaperFull(
+        projectPaper: ProjectPaper = createExampleProjectPaper(),
+        paper: Paper = createExamplePaper(),
+        reviews: List<Review> = emptyList(),
+    ) = se.uulm.snowballr.backend.model.dto.ProjectPaperFull(
+        projectPaper = projectPaper,
+        paper = paper,
+        reviews = reviews,
     )
 }
