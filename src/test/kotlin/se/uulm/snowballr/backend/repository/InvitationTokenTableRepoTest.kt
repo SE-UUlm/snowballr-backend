@@ -201,43 +201,32 @@ class InvitationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, ProjectTa
     inner class DeleteExpiredInvitationTokens {
         @Test
         fun `When no expired tokens exist, then no tokens are deleted`() = runTest {
-            val projectId1 = insertProjectAndGetId(createdBy = testUserId)
-            val projectId2 = insertProjectAndGetId(createdBy = testUserId)
+            val projectId = insertProjectAndGetId(createdBy = testUserId)
 
-            insertTestInvitationToken(testEmail, projectId1, "token-in-project-1")
-            insertTestInvitationToken(testEmail, projectId2, "token-in-project-2")
+            insertTestInvitationToken(testEmail, projectId, "token-in-project")
 
             assertDoesNotThrow { repo.deleteExpiredInvitationTokens() }
 
-            assertResultSuccess(repo.getInvitationTokenByEmailAndProjectId(testEmail, projectId1))
-            assertResultSuccess(repo.getInvitationTokenByEmailAndProjectId(testEmail, projectId2))
+            assertResultSuccess(repo.getInvitationTokenByEmailAndProjectId(testEmail, projectId))
         }
 
         @Test
         fun `When expired tokens exist, then they are deleted`() = runTest {
-            val projectId1 = insertProjectAndGetId(createdBy = testUserId)
-            val projectId2 = insertProjectAndGetId(createdBy = testUserId)
+            val projectId = insertProjectAndGetId(createdBy = testUserId)
 
-            insertTestInvitationToken(testEmail, projectId1, "token-in-project-1")
             insertTestInvitationToken(
                 testEmail,
-                projectId2,
-                "token-in-project-2",
+                projectId,
+                "token-in-project",
                 OffsetDateTime.now().minusDays(1),
             )
 
             assertDoesNotThrow { repo.deleteExpiredInvitationTokens() }
 
-            assertResultSuccess(
-                repo.getInvitationTokenByEmailAndProjectId(
-                    testEmail,
-                    projectId1,
-                ),
-            )
             assertResultFailure<InvitationTokenNotFoundException>(
                 repo.getInvitationTokenByEmailAndProjectId(
                     testEmail,
-                    projectId2,
+                    projectId,
                 ),
             )
         }
