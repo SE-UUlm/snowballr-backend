@@ -2,13 +2,17 @@ package se.uulm.snowballr.backend.validation
 
 import arrow.core.Either
 import arrow.core.EitherNel
+import arrow.core.NonEmptyList
 import arrow.core.nonEmptyListOf
+import arrow.core.raise.either
+import arrow.core.raise.zipOrAccumulate
 import io.grpc.health.v1.HealthCheckRequest
 import se.uulm.snowballr.backend.model.UnknownRequest
 import se.uulm.snowballr.backend.model.ValidationIssue
 import snowballr.Authentication
 import snowballr.Base
 import snowballr.CriterionOuterClass
+import snowballr.Export
 import snowballr.PaperOuterClass.Paper
 import snowballr.ProjectOuterClass
 import snowballr.ReviewOuterClass
@@ -65,15 +69,18 @@ fun <T> validateRequest(request: T): EitherNel<ValidationIssue, Unit> = when (re
     // Paper
     is Paper.Update -> PaperValidator.validateUpdateRequest(request)
     is Paper -> PaperValidator.validateCreateRequest(request)
+    // Export
+    is Export.ExportRequest -> ExportValidator.validateExportRequest(request)
+    // Fallback for unknown request types
     else -> Either.Left(nonEmptyListOf(UnknownRequest))
 }
 
 /**
- * Creates a [arrow.core.NonEmptyList] from this [Either].
+ * Creates a [NonEmptyList] from this [Either].
  *
- * While some validation methods use [arrow.core.raise.zipOrAccumulate] to process several input validation conditions,
- * others might require only validating one parameter and use a simple [arrow.core.raise.either].
- * For the latter, one can use this method to create a [arrow.core.NonEmptyList] to get the same data type as the other
+ * While some validation methods use [zipOrAccumulate] to process several input validation conditions,
+ * others might require only validating one parameter and use a simple [either].
+ * For the latter, one can use this method to create a [NonEmptyList] to get the same data type as the other
  * methods that accumulate the validation results.
  */
 fun Either<ValidationIssue, Unit>.toEitherNel() = when (this) {
