@@ -39,7 +39,7 @@ The `PROFILE` variable determines the default behavior of the application.
 | `SMTP_TRANSPORT_LOGGING_ONLY_ENABLED`  |                 :x:                  | Profile-based | SMTP transport logging to only log emails instead of actually sending them.       |
 | `SMTP_SENDER_NAME`                     |          :white_check_mark:          |       -       | Name of the sender for emails.                                                    |
 | `SMTP_SENDER_EMAIL`                    |          :white_check_mark:          |       -       | Email address of the sender for emails.                                           |
-| `SENSITIVE_INFORMATION_RETENTION_DAYS` |                 :x:                  |      30       | Amount of days sensitive information will be kept after an entity got deleted.    |
+| `SENSITIVE_INFORMATION_RETENTION_DAYS` |                 :x:                  |      30       | Number of days sensitive information will be kept after an entity got deleted.    |
 | `WEB_PORT`                             |                 :x:*                 |     8081      | The port where the proxy is served (used for gRPC-Web).                           |
 | `BACKEND_TAG`                          |                 :x:*                 | `latest-dev`  | Tag of registry backend image to use for `registry` docker compose profile.       |
 

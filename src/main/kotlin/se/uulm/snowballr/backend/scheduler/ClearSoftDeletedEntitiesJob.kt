@@ -12,10 +12,10 @@ import org.quartz.JobExecutionContext
 private val logger = KotlinLogging.logger {}
 
 /**
- * Quartz Job responsible for clearing soft-deleted users of sensitive data.
+ * Quartz Job responsible for clearing soft-deleted entities of sensitive data.
  *
  * This job runs synchronously within the Quartz thread pool and delegates
- * actual cleanup logic to [TokenMaintenanceService]. It wraps the suspended call
+ * actual cleanup logic to [UserMaintenanceService] and [ProjectMaintenanceService]. It wraps the suspended call
  * in a controlled [runBlocking] boundary, using [Dispatchers.IO] for blocking safety.
  */
 class ClearSoftDeletedEntitiesJob : Job, KoinComponent {
