@@ -338,14 +338,7 @@ class UserTableRepo(
     }
 
     override suspend fun hardDeleteClearedUsers() {
-        val userIdsToDelete = db.query {
-            UserTable
-                .selectAll()
-                .where {
-                    (UserTable.status eq USER_STATUS_UNSPECIFIED).and(UserTable.deletedAt.isNotNull())
-                }
-                .map { it[UserTable.id].value }
-        }
+        val userIdsToDelete = getUserIdsToDelete()
 
         if (userIdsToDelete.isEmpty()) {
             logger.info { "No users to hard-delete." }
@@ -359,6 +352,20 @@ class UserTableRepo(
         logger.info {
             "Hard-deleted ${successfulDeletedIds.size} users, failed to delete ${failedToDeleteIds.size} users."
         }
+    }
+
+    /**
+     * Retrieves a list of user IDs that are eligible for hard deletion.
+     *
+     * @return A list of user IDs that are eligible for hard deletion.
+     */
+    private suspend fun getUserIdsToDelete(): List<UUID> = db.query {
+        UserTable
+            .selectAll()
+            .where {
+                (UserTable.status eq USER_STATUS_UNSPECIFIED).and(UserTable.deletedAt.isNotNull())
+            }
+            .map { it[UserTable.id].value }
     }
 
     /**

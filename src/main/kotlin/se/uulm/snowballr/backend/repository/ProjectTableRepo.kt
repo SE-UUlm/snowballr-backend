@@ -260,16 +260,7 @@ class ProjectTableRepo(
     }
 
     override suspend fun hardDeleteClearedProjects() {
-        val projectIdsToDelete = db.query {
-            ProjectTable
-                .selectAll()
-                .where {
-                    (ProjectTable.status eq ProjectStatus.PROJECT_STATUS_UNSPECIFIED).and(
-                        ProjectTable.deletedAt.isNotNull(),
-                    )
-                }
-                .map { it[ProjectTable.id].value }
-        }
+        val projectIdsToDelete = getProjectIdsToDelete()
 
         if (projectIdsToDelete.isEmpty()) {
             logger.info { "No projects to hard-delete." }
@@ -283,6 +274,22 @@ class ProjectTableRepo(
         logger.info {
             "Hard-deleted ${successfulDeletedIds.size} projects, failed to delete ${failedToDeleteIds.size} projects."
         }
+    }
+
+    /**
+     * Retrieves a list of project IDs that are eligible for hard deletion.
+     *
+     * @return A list of project IDs that are eligible for hard deletion.
+     */
+    private suspend fun getProjectIdsToDelete(): List<UUID> = db.query {
+        ProjectTable
+            .selectAll()
+            .where {
+                (ProjectTable.status eq ProjectStatus.PROJECT_STATUS_UNSPECIFIED).and(
+                    ProjectTable.deletedAt.isNotNull(),
+                )
+            }
+            .map { it[ProjectTable.id].value }
     }
 
     /**
