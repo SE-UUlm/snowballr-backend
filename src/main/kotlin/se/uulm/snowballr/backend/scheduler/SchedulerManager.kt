@@ -77,7 +77,7 @@ class SchedulerManager {
      * This job runs every month on the first day at midnight.
      */
     private fun scheduleHardDeleteSoftDeletedEntities() {
-        val job = JobBuilder.newJob(HardDeleteSoftDeletedEntitiesJob::class.java)
+        val job = JobBuilder.newJob(HardDeleteEntitiesJob::class.java)
             .withIdentity("hardDeleteSoftDeletedEntities", MAINTENANCE)
             .build()
 

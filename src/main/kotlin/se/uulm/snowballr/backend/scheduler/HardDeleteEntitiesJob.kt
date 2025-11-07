@@ -18,7 +18,7 @@ private val logger = KotlinLogging.logger { }
  * actual cleanup logic to [TokenMaintenanceService]. It wraps the suspended call
  * in a controlled [runBlocking] boundary, using [Dispatchers.IO] for blocking safety.
  */
-class HardDeleteSoftDeletedEntitiesJob : Job, KoinComponent {
+class HardDeleteEntitiesJob : Job, KoinComponent {
     private val userMaintenanceService: IUserMaintenanceService by inject()
     private val projectMaintenanceService: IProjectMaintenanceService by inject()
 
