@@ -351,7 +351,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
             }
 
         @Test
-        fun `When soft-deleted users exist and their threshold date is reached, then all soft-deleted users and their criteria are cleared`() =
+        fun `When soft-deleted users exist and their threshold date is reached, then all soft-deleted users and their according user-criteria are cleared`() =
             runTest {
                 // Manually "soft-delete" user to set the `deletedAt` date
                 val userId1 = insertUserAndGetId(
@@ -383,7 +383,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
     @Nested
     inner class HardDeleteClearedUsers {
         @Test
-        fun `When no cleared users exist that have reached their threshold date to be cleared, then no users are hard deleted`() =
+        fun `When no cleared users exist that have reached their threshold date to be cleared, then no users are hard-deleted`() =
             runTest {
                 val userId1 = insertUserAndGetId(email = "user1@test.de", status = UserStatus.USER_STATUS_ACTIVE)
                 val userId2 = insertUserAndGetId(email = "user2@test.de", status = UserStatus.USER_STATUS_ACTIVE)
@@ -403,7 +403,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
             }
 
         @Test
-        fun `When cleared users exist that have reached their threshold data to be cleared and are cleared, then they are hard deleted`() =
+        fun `When cleared users exist that have reached their threshold data to be cleared and are cleared, then they are hard-deleted`() =
             runTest {
                 // Manually "soft-delete" user to set the `deletedAt` date
                 val userId1 = insertUserAndGetId(
@@ -425,7 +425,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
             }
 
         @Test
-        fun `When a cleared user exists that is still referenced, then this user is not hard deleted`() = runTest {
+        fun `When a cleared user exists that is still referenced, then this user is not hard-deleted`() = runTest {
             // Manually "soft-delete" user to set the `deletedAt` date
             val userId = insertUserAndGetId(
                 status = UserStatus.USER_STATUS_DELETED,

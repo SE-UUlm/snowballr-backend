@@ -441,7 +441,7 @@ class ProjectTableRepoTest :
     @Nested
     inner class SoftDeleteProject {
         @Test
-        fun `When a project is soft deleted, then it is marked as deleted`() = runTest {
+        fun `When a project is soft-deleted, then it is marked as deleted`() = runTest {
             val projectId =
                 insertProjectAndGetId(status = ProjectStatus.PROJECT_STATUS_ACTIVE, createdBy = testUserId)
 
@@ -456,7 +456,7 @@ class ProjectTableRepoTest :
         }
 
         @Test
-        fun `When the project to be soft deleted is not found, then nothing happens`() = runTest {
+        fun `When the project to be soft-deleted is not found, then nothing happens`() = runTest {
             val projectId = UUID.randomUUID()
 
             assertDoesNotThrow { repo.softDeleteProject(projectId) }
@@ -526,7 +526,7 @@ class ProjectTableRepoTest :
     @Nested
     inner class HardDeleteClearedProjects {
         @Test
-        fun `When no cleared projects exist that have reached their threshold date to be cleared, then no projects are hard deleted`() =
+        fun `When no cleared projects exist that have reached their threshold date to be cleared, then no projects are hard-deleted`() =
             runTest {
                 val projectId1 = insertProjectAndGetId(name = "Project1", createdBy = testUserId)
                 val projectId2 = insertProjectAndGetId(name = "Project2", createdBy = testUserId)
@@ -546,7 +546,7 @@ class ProjectTableRepoTest :
             }
 
         @Test
-        fun `When cleared projects exist that have reached their threshold date to be cleared, then they are hard deleted`() =
+        fun `When cleared projects exist that have reached their threshold date to be cleared, then they are hard-deleted`() =
             runTest {
                 // Manually "soft-delete" project to set the `deletedAt` date
                 val projectId1 = insertProjectAndGetId(

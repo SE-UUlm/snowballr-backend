@@ -123,7 +123,7 @@ interface IProjectTableRepo {
     suspend fun isProjectLocked(projectId: UUID): Boolean
 
     /**
-     * Performs a soft delete of the project with the given [projectId], i.e., does not remove the
+     * Performs a soft-delete of the project with the given [projectId], i.e., does not remove the
      * project from the database but marks it as deleted by setting the status to [ProjectStatus.PROJECT_STATUS_DELETED].
      */
     suspend fun softDeleteProject(projectId: UUID)

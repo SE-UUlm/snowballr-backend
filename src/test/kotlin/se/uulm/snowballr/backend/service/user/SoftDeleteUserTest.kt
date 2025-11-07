@@ -51,7 +51,7 @@ class SoftDeleteUserTest : MainServiceTest() {
     }
 
     @Test
-    fun `When admin soft deletes other user, then it succeeds`() = runTest {
+    fun `When admin soft-deletes other user, then it succeeds`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val userToDelete = DataBuilder.createExampleUser(id = requestedUserId)
 

@@ -116,7 +116,7 @@ interface IUserTableRepo {
     suspend fun updateUser(request: GrpcUser.Update): User
 
     /**
-     * Performs a soft delete meaning the user with the given [id] is not removed from the database, but only the
+     * Performs a soft-delete meaning the user with the given [id] is not removed from the database, but only the
      * status is set to [UserStatus.USER_STATUS_DELETED].
      */
     suspend fun softDeleteUser(id: UUID)
