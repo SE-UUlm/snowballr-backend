@@ -1,108 +1,115 @@
 package se.uulm.snowballr.backend.service.invitations
 
 import io.mockk.coEvery
+import io.mockk.coVerify
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertNull
 import se.uulm.snowballr.backend.DataBuilder
+import se.uulm.snowballr.backend.model.dto.ProjectMemberWithUser
+import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.ProjectOuterClass.Project.InviteCandidatesRequest
 import java.util.UUID
+import kotlin.reflect.KFunction
 
 class GetInviteCandidatesTest : MainServiceTest() {
+    private val requestingUserEmail = "test.user@example.com"
     private val searchQuery = "john"
     private val projectId = UUID.randomUUID()
-    private val validInviteCandidatesRequest = InviteCandidatesRequest.newBuilder()
+    private val validGetInviteCandidatesRequestBuilder = InviteCandidatesRequest.newBuilder()
         .setQuery(searchQuery)
         .setProjectId(projectId.toString())
-        .build()
+
+    private fun mockGetInviteCandidates(
+        projectMembers: List<User> = emptyList(),
+        invitees: List<User> = emptyList(),
+        stopBefore: KFunction<*>? = null,
+    ) {
+        val currentUser = DataBuilder.createExampleUser(email = requestingUserEmail)
+        val anotherUser = DataBuilder.createExampleUser(email = "another.user@example.com")
+        val users = listOf(currentUser, anotherUser) + projectMembers + invitees
+        val projectMembersWithUsers = projectMembers.map {
+            ProjectMemberWithUser(DataBuilder.createExampleProjectMember(projectId, it.id), it)
+        }
+        val inviteeToken = invitees.map {
+            DataBuilder.createExampleInvitationToken(email = it.email, projectId = projectId)
+        }
+
+        val excludedUsers = setOf(currentUser.email) + projectMembers.map { it.email } + invitees.map { it.email }
+
+        mockCurrentUser(currentUser)
+        if (stopBefore == projectMemberRepoMock::getProjectMembersWithUsers) {
+            return
+        }
+        coEvery { projectMemberRepoMock.getProjectMembersWithUsers(projectId) } returns projectMembersWithUsers
+        coEvery { invitationTokenRepoMock.getActiveInvitationTokensForProject(projectId) } returns inviteeToken
+        coEvery {
+            userRepoMock.getUsersMatchingSearchQuery(searchQuery, excludedUsers)
+        } returns users.filterNot { it.email in excludedUsers }
+    }
 
     @Test
     fun `When the search query is too short, then an empty list is returned`() = runTest {
-        val shortSearchQuery = InviteCandidatesRequest.newBuilder().setQuery("j").build()
+        mockGetInviteCandidates(stopBefore = projectMemberRepoMock::getProjectMembersWithUsers)
 
-        mockCurrentUser(DataBuilder.createExampleUser())
+        val shortGetInviteCandidatesRequest = validGetInviteCandidatesRequestBuilder.setQuery("jo")
 
-        val candidates = assertDoesNotThrow { mainService.getInviteCandidates(shortSearchQuery) }
+        val candidates = assertDoesNotThrow { mainService.getInviteCandidates(shortGetInviteCandidatesRequest.build()) }
         assertThat(candidates.usersList).isEmpty()
     }
 
     @Test
     fun `When parsing the project id fails, then only a warning is logged`() = runTest {
-        val currentUser = DataBuilder.createExampleUser()
-        val requestWithInvalidProjectId = InviteCandidatesRequest
-            .newBuilder()
-            .setQuery(searchQuery)
-            .setProjectId("invalid-uuid")
-            .build()
+        mockGetInviteCandidates(stopBefore = projectMemberRepoMock::getProjectMembersWithUsers)
+        coEvery {
+            userRepoMock.getUsersMatchingSearchQuery(searchQuery, any())
+        } returns emptyList()
 
-        mockCurrentUser(currentUser)
-        coEvery { userRepoMock.getUsersMatchingSearchQuery(searchQuery, setOf(currentUser.id)) } returns emptyList()
+        val requestWithInvalidProjectId = validGetInviteCandidatesRequestBuilder.setProjectId("invalid-uuid")
 
-        assertDoesNotThrow { mainService.getInviteCandidates(requestWithInvalidProjectId) }
+        assertDoesNotThrow { mainService.getInviteCandidates(requestWithInvalidProjectId.build()) }
+        coVerify(exactly = 0) { projectMemberRepoMock.getProjectMembersWithUsers(any()) }
+        coVerify(exactly = 0) { invitationTokenRepoMock.getActiveInvitationTokensForProject(any()) }
     }
 
     @Test
     fun `When no project members exist, then no users except for the current user are excluded`() = runTest {
-        val currentUser = DataBuilder.createExampleUser()
+        mockGetInviteCandidates()
 
-        mockCurrentUser(currentUser)
-        coEvery { projectMemberRepoMock.getProjectMembers(projectId) } returns emptyList()
-        coEvery { userRepoMock.getUsersMatchingSearchQuery(searchQuery, setOf(currentUser.id)) } returns emptyList()
-
-        assertDoesNotThrow { mainService.getInviteCandidates(validInviteCandidatesRequest) }
-    }
-
-    @Test
-    fun `When retrieving the users matching the search query fails, then an empty list is returned`() = runTest {
-        val currentUser = DataBuilder.createExampleUser()
-
-        mockCurrentUser(currentUser)
-        coEvery { projectMemberRepoMock.getProjectMembers(projectId) } returns emptyList()
-        coEvery { userRepoMock.getUsersMatchingSearchQuery(searchQuery, setOf(currentUser.id)) } returns emptyList()
-
-        val candidates = assertDoesNotThrow { mainService.getInviteCandidates(validInviteCandidatesRequest) }
-        assertThat(candidates.usersList).isEmpty()
+        assertDoesNotThrow { mainService.getInviteCandidates(validGetInviteCandidatesRequestBuilder.build()) }
+        coVerify(exactly = 1) { userRepoMock.getUsersMatchingSearchQuery(searchQuery, setOf(requestingUserEmail)) }
     }
 
     @Test
     fun `When retrieving the invite candidates is successful, then these are returned except for the current user`() =
         runTest {
-            val currentUser = DataBuilder.createExampleUser(email = "current.user@example.com")
-            val anotherUser = DataBuilder.createExampleUser(email = "another.user@example.com")
-            val users = listOf(currentUser, anotherUser)
-            val excludedUsers = setOf(currentUser.id)
+            mockGetInviteCandidates()
 
-            mockCurrentUser(currentUser)
-            coEvery { projectMemberRepoMock.getProjectMembers(projectId) } returns emptyList()
-            coEvery {
-                userRepoMock.getUsersMatchingSearchQuery(searchQuery, setOf(currentUser.id))
-            } returns users.filterNot { it.id in excludedUsers }
-
-            val inviteCandidates = mainService.getInviteCandidates(validInviteCandidatesRequest)
+            val inviteCandidates = mainService.getInviteCandidates(validGetInviteCandidatesRequestBuilder.build())
             assertThat(inviteCandidates.usersList).hasSize(1)
-            assertNull(inviteCandidates.usersList.find { it.id == currentUser.id.toString() })
+            assertNull(inviteCandidates.usersList.find { it.email == requestingUserEmail })
         }
 
     @Test
     fun `When retrieving the project members is successful, then these members are not returned as invite candidates`() =
         runTest {
-            val currentUser = DataBuilder.createExampleUser(email = "current.user@example.com")
             val projectMember = DataBuilder.createExampleUser(email = "project.member@example.com")
-            val users = listOf(currentUser, projectMember)
-            val excludedUsers = setOf(currentUser.id, projectMember.id)
+            mockGetInviteCandidates(projectMembers = listOf(projectMember))
 
-            mockCurrentUser(currentUser)
-            coEvery {
-                projectMemberRepoMock.getProjectMembers(projectId)
-            } returns listOf(DataBuilder.createExampleProjectMember(userId = projectMember.id))
-            coEvery {
-                userRepoMock.getUsersMatchingSearchQuery(searchQuery, setOf(currentUser.id, projectMember.id))
-            } returns users.filterNot { it.id in excludedUsers }
+            val inviteCandidates = mainService.getInviteCandidates(validGetInviteCandidatesRequestBuilder.build())
+            assertNull(inviteCandidates.usersList.find { it.email == projectMember.email })
+        }
 
-            val inviteCandidates = mainService.getInviteCandidates(validInviteCandidatesRequest)
-            assertThat(inviteCandidates.usersList).isEmpty()
+    @Test
+    fun `When retrieving the invitees is successful, then these invitees are not returned as invite candidates`() =
+        runTest {
+            val invitee = DataBuilder.createExampleUser(email = "invited.user@example.com")
+            mockGetInviteCandidates(invitees = listOf(invitee))
+
+            val inviteCandidates = mainService.getInviteCandidates(validGetInviteCandidatesRequestBuilder.build())
+            assertNull(inviteCandidates.usersList.find { it.email == invitee.email })
         }
 }

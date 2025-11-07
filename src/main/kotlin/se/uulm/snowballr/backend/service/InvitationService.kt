@@ -84,11 +84,14 @@ class InvitationService(
                 return@withUser GrpcUser.List.getDefaultInstance()
             }
 
-            val excludedUsersFromSearch = mutableSetOf(currentUser.id)
+            val excludedUsersFromSearch = mutableSetOf(currentUser.email)
             try {
                 val projectId = parseUUID(request.projectId, EntityType.PROJECT)
-                val projectMembers = projectMemberRepo.getProjectMembers(projectId)
-                excludedUsersFromSearch += projectMembers.map { it.userId }
+                val projectMembers = projectMemberRepo.getProjectMembersWithUsers(projectId)
+                excludedUsersFromSearch += projectMembers.map { it.user.email }
+
+                val invitedMembers = invitationTokenRepo.getActiveInvitationTokensForProject(projectId)
+                excludedUsersFromSearch += invitedMembers.map { it.email }
             } catch (_: InvalidIdException.UUID) {
                 Logger.warn { "Invalid project ID in invite candidates request: ${request.projectId}" }
             }
