@@ -20,7 +20,8 @@ interface IMainService :
     IProjectPaperService,
     IAuthenticationService,
     IInvitationService,
-    IProjectMemberService
+    IProjectMemberService,
+    IExportService
 
 /**
  * The [MainService] class serves as the primary service implementation layer that aggregates multiple sub-services.
@@ -39,6 +40,7 @@ interface IMainService :
  * @param authenticationService The service responsible for handling business logic related to user authentication
  * @param invitationService The service responsible for handling business logic related to user invitations
  * @param projectMemberService The service responsible for handling business logic related to project members.
+ * @param exportService The service responsible for handling business logic related to exporting projects
  */
 @Suppress("LongParameterList")
 class MainService(
@@ -53,6 +55,7 @@ class MainService(
     private val authenticationService: IAuthenticationService,
     private val invitationService: IInvitationService,
     private val projectMemberService: IProjectMemberService,
+    private val exportService: IExportService,
 ) : IMainService,
     IProjectService by projectService,
     ICriterionService by criterionService,
@@ -64,4 +67,5 @@ class MainService(
     IProjectPaperService by projectPaperService,
     IAuthenticationService by authenticationService,
     IInvitationService by invitationService,
-    IProjectMemberService by projectMemberService
+    IProjectMemberService by projectMemberService,
+    IExportService by exportService

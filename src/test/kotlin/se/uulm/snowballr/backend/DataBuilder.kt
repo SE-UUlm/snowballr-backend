@@ -288,4 +288,12 @@ object DataBuilder {
         paper = paper,
         reviews = reviews,
     )
+
+    fun createExampleProjectPaperWithPaper(
+        projectPaper: ProjectPaper = createExampleProjectPaper(),
+        paper: Paper = createExamplePaper(),
+    ) = se.uulm.snowballr.backend.model.dto.ProjectPaperWithPaper(
+        projectPaper = projectPaper,
+        paper = paper,
+    )
 }

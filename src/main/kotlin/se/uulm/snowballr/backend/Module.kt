@@ -55,9 +55,11 @@ import se.uulm.snowballr.backend.scheduler.TokenMaintenanceService
 import se.uulm.snowballr.backend.scheduler.UserMaintenanceService
 import se.uulm.snowballr.backend.service.AuthenticationService
 import se.uulm.snowballr.backend.service.CriterionService
+import se.uulm.snowballr.backend.service.ExportService
 import se.uulm.snowballr.backend.service.FetcherService
 import se.uulm.snowballr.backend.service.IAuthenticationService
 import se.uulm.snowballr.backend.service.ICriterionService
+import se.uulm.snowballr.backend.service.IExportService
 import se.uulm.snowballr.backend.service.IFetcherService
 import se.uulm.snowballr.backend.service.IInvitationService
 import se.uulm.snowballr.backend.service.IMainService
@@ -211,6 +213,7 @@ fun Module.serviceLayerDeps() {
     singleOf(::AuthenticationService) { bind<IAuthenticationService>() }
     singleOf(::InvitationService) { bind<IInvitationService>() }
     singleOf(::ProjectMemberService) { bind<IProjectMemberService>() }
+    singleOf(::ExportService) { bind<IExportService>() }
     // The main service comes last
     singleOf(::MainService) { bind<IMainService>() }
 }
