@@ -36,13 +36,16 @@ class ProjectExportManagerTest {
         @ParameterizedTest(name = "When exporting a project in the {0} format, then no exception is thrown")
         @MethodSource("se.uulm.snowballr.backend.export.ProjectExportManagerTest#supportedFormats")
         fun `When exporting a project in a format, then no exception is thrown`(format: ExportFormat) {
-            val project = DataBuilder.createExampleProject()
+            val project = DataBuilder.createExampleProject(name = "Exported Project")
             val projectMembers = listOf(DataBuilder.createExampleProjectMemberWithUser())
             val projectPapers = listOf(DataBuilder.createExampleProjectPaperFull())
 
-            val exportedBytes = ProjectExportManager.exportProject(format, project, projectMembers, projectPapers)
+            val fileExport = ProjectExportManager.exportProject(format, project, projectMembers, projectPapers)
 
-            assertThat(exportedBytes).isNotEmpty()
+            assertThat(fileExport.data).isNotEmpty()
+            val filename = fileExport.filename
+            assertThat(filename).startsWith("Exported_Project-")
+            assertThat(filename.split('.').last()).isNotEmpty
         }
 
         @Test
@@ -94,9 +97,9 @@ class ProjectExportManagerTest {
             )
 
             val format = ExportFormat.JSON
-            val exportedBytes = ProjectExportManager.exportProject(format, project, projectMembers, projectPapers)
+            val fileExport = ProjectExportManager.exportProject(format, project, projectMembers, projectPapers)
 
-            val projectExport = Json.decodeFromString<ProjectExport>(String(exportedBytes))
+            val projectExport = Json.decodeFromString<ProjectExport>(String(fileExport.data))
 
             assertThat(projectExport.name).isEqualTo(project.name)
             assertThat(projectExport.members).hasSize(projectMembers.size)

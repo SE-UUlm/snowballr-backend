@@ -2,7 +2,7 @@ package se.uulm.snowballr.backend.export
 
 import se.uulm.snowballr.backend.model.export.ProjectExport
 
-fun interface IExporter {
+interface IExporter {
     /**
      * Exports the given [ProjectExport] to a byte array in the implementor's format.
      *
@@ -10,4 +10,9 @@ fun interface IExporter {
      * @return A byte array representing the exported project data.
      */
     fun export(export: ProjectExport): ByteArray
+
+    /**
+     * @return The file extension that is used for this exporter (without the dot).
+     */
+    fun getExtension(): String
 }

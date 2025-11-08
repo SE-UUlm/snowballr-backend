@@ -6,12 +6,14 @@ import se.uulm.snowballr.backend.model.dto.ProjectMemberWithUser
 import se.uulm.snowballr.backend.model.dto.ProjectPaperFull
 import se.uulm.snowballr.backend.model.dto.Review
 import se.uulm.snowballr.backend.model.export.ExportFormat
+import se.uulm.snowballr.backend.model.export.FileExport
 import se.uulm.snowballr.backend.model.export.PaperExport
 import se.uulm.snowballr.backend.model.export.PaperReviewExport
 import se.uulm.snowballr.backend.model.export.ProjectExport
 import se.uulm.snowballr.backend.model.export.ProjectMemberExport
 import se.uulm.snowballr.backend.model.export.ProjectStageExport
 import snowballr.ProjectOuterClass.PaperDecision
+import java.time.Instant
 
 /**
  * Manager responsible for exporting projects in various formats.
@@ -28,7 +30,7 @@ object ProjectExportManager {
         project: Project,
         projectMembers: List<ProjectMemberWithUser>,
         projectPapers: List<ProjectPaperFull>,
-    ): ByteArray {
+    ): FileExport {
         val exporter = exporters[format] ?: throw IllegalArgumentException("Unsupported export format: $format")
 
         val projectMembersExport = projectMembers.mapIndexed { id, member -> member.toProjectMemberExport(id) }
@@ -36,8 +38,10 @@ object ProjectExportManager {
         val stages = stageToPapersExport.toProjectStagesExport()
 
         val projectExport = ProjectExport(name = project.name, members = projectMembersExport, stages = stages)
-
-        return exporter.export(projectExport)
+        val data = exporter.export(projectExport)
+        val timestamp = Instant.now().toString()
+        val filename = "${project.name}-${timestamp}.${exporter.getExtension()}"
+        return FileExport(data, sanitizeFilename(filename))
     }
 
     private fun ProjectMemberWithUser.toProjectMemberExport(id: Int): ProjectMemberExport = ProjectMemberExport(
@@ -84,4 +88,19 @@ object ProjectExportManager {
         this.map { (stage, papers) ->
             ProjectStageExport(id = "$stage", papers = papers)
         }
+
+    private fun sanitizeFilename(input: String): String {
+        // Define characters not allowed in filenames (Windows + UNIX safe set)
+        val illegalChars = """[\\/:*?"<>|\p{Cntrl}]""".toRegex()
+
+        var sanitized = input.replace(illegalChars, "_")
+
+        // Trim spaces and dots (Windows doesn't like names ending with . or space)
+        sanitized = sanitized.trim().trimEnd('.')
+
+        // Fallback for empty filenames
+        if (sanitized.isEmpty()) sanitized = "unnamed"
+
+        return sanitized
+    }
 }

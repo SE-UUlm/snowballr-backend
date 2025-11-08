@@ -306,7 +306,7 @@ class SnowballRServer(
         override suspend fun getAvailableExportFormats(request: Base.Nothing): Export.AvailableExportFormatsReply =
             mainService.getAvailableExportFormats()
 
-        override suspend fun exportProject(request: Export.ExportRequest): Base.Blob =
+        override suspend fun exportProject(request: Export.ExportRequest): Export.ExportResponse =
             mainService.exportProject(request)
 
         override suspend fun softDeleteProject(request: Base.Id): Base.Nothing = mainService.softDeleteProject(request)

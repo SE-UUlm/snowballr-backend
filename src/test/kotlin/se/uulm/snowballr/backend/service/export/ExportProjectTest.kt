@@ -10,6 +10,7 @@ import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.export.ProjectExportManager
 import se.uulm.snowballr.backend.model.export.ExportFormat
+import se.uulm.snowballr.backend.model.export.FileExport
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.copy
 import snowballr.exportRequest
@@ -46,7 +47,9 @@ class ExportProjectTest : MainServiceTest() {
             projectPaperRepoMock.getAllProjectPapersWithPapers(projectId)
         } returns listOf(DataBuilder.createExampleProjectPaperWithPaper())
         coEvery { reviewRepoMock.getAllReviewsForProjectPaper(any()) } returns emptyList()
-        every { ProjectExportManager.exportProject(any(), any(), any(), any()) } returns ByteArray(0)
+        every {
+            ProjectExportManager.exportProject(any(), any(), any(), any())
+        } returns FileExport(ByteArray(0), "test.json")
 
         mainService.exportProject(request)
     }

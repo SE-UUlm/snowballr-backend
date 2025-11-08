@@ -11,10 +11,10 @@ import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IReviewTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
-import snowballr.Base
 import snowballr.Export.AvailableExportFormatsReply
 import snowballr.Export.ExportRequest
-import snowballr.blob
+import snowballr.Export.ExportResponse
+import snowballr.exportResponse
 
 interface IExportService {
     /**
@@ -25,7 +25,7 @@ interface IExportService {
     /**
      * Service implementation of [SnowballRService.exportProject].
      */
-    suspend fun exportProject(request: ExportRequest): Base.Blob
+    suspend fun exportProject(request: ExportRequest): ExportResponse
 }
 
 /**
@@ -51,7 +51,7 @@ class ExportService(
             .addAllFormats(ProjectExportManager.getSupportedFormats().map { it.toString() })
             .build()
 
-    override suspend fun exportProject(request: ExportRequest): Base.Blob {
+    override suspend fun exportProject(request: ExportRequest): ExportResponse {
         val format = ProjectExportManager.getSupportedFormats().first { it.toString() == request.format }
         val projectId = parseUUID(request.id, EntityType.PROJECT)
 
@@ -60,9 +60,10 @@ class ExportService(
         val projectPapers = projectPaperRepo.getAllProjectPapersWithPapers(projectId)
             .map { it.toProjectPaperFull() }
 
-        val bytes = ProjectExportManager.exportProject(format, project, projectMembers, projectPapers)
-        return blob {
-            data = bytes.toByteString()
+        val fileExport = ProjectExportManager.exportProject(format, project, projectMembers, projectPapers)
+        return exportResponse {
+            data = fileExport.data.toByteString()
+            fileName = fileExport.filename
         }
     }
 

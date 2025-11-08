@@ -13,4 +13,6 @@ class JsonExporter : IExporter {
         val jsonString = json.encodeToString<ProjectExport>(export)
         return jsonString.toByteArray()
     }
+
+    override fun getExtension() = "json"
 }
