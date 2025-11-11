@@ -1,10 +1,12 @@
 package se.uulm.snowballr.backend.export.testdata
 
+import se.uulm.snowballr.backend.model.export.CriterionExport
 import se.uulm.snowballr.backend.model.export.PaperExport
 import se.uulm.snowballr.backend.model.export.PaperReviewExport
 import se.uulm.snowballr.backend.model.export.ProjectExport
 import se.uulm.snowballr.backend.model.export.ProjectMemberExport
 import se.uulm.snowballr.backend.model.export.ProjectStageExport
+import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass.MemberRole
 import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ReviewOuterClass.ReviewDecision
@@ -13,6 +15,7 @@ val emptyProjectExport = ProjectExport(
     name = "Empty Project",
     members = emptyList(),
     stages = emptyList(),
+    criteria = emptyList(),
 )
 
 @Suppress("NamedArguments")
@@ -37,9 +40,9 @@ val fullProjectExport = ProjectExport(
                     "Publication Name 1",
                     authors = listOf("Author 1", "Author 2"),
                     reviews = listOf(
-                        PaperReviewExport("1", ReviewDecision.REVIEW_DECISION_ACCEPTED),
-                        PaperReviewExport("2", ReviewDecision.REVIEW_DECISION_DECLINED),
-                        PaperReviewExport("3", ReviewDecision.REVIEW_DECISION_ACCEPTED),
+                        PaperReviewExport("1", ReviewDecision.REVIEW_DECISION_ACCEPTED, listOf("0")),
+                        PaperReviewExport("2", ReviewDecision.REVIEW_DECISION_DECLINED, listOf("1")),
+                        PaperReviewExport("3", ReviewDecision.REVIEW_DECISION_ACCEPTED, listOf("2")),
                     ),
                     finalDecision = PaperDecision.PAPER_DECISION_ACCEPTED,
                 ),
@@ -53,9 +56,9 @@ val fullProjectExport = ProjectExport(
                     "Publication Name 2",
                     authors = listOf("Author 3", "Author 4"),
                     reviews = listOf(
-                        PaperReviewExport("1", ReviewDecision.REVIEW_DECISION_ACCEPTED),
-                        PaperReviewExport("2", ReviewDecision.REVIEW_DECISION_ACCEPTED),
-                        PaperReviewExport("3", ReviewDecision.REVIEW_DECISION_ACCEPTED),
+                        PaperReviewExport("1", ReviewDecision.REVIEW_DECISION_ACCEPTED, listOf("0")),
+                        PaperReviewExport("2", ReviewDecision.REVIEW_DECISION_ACCEPTED, listOf("1")),
+                        PaperReviewExport("3", ReviewDecision.REVIEW_DECISION_ACCEPTED, listOf("2")),
                     ),
                     finalDecision = PaperDecision.PAPER_DECISION_ACCEPTED,
                 ),
@@ -74,9 +77,9 @@ val fullProjectExport = ProjectExport(
                     "Publication Name 3",
                     authors = listOf("Author 5", "Author 6"),
                     reviews = listOf(
-                        PaperReviewExport("1", ReviewDecision.REVIEW_DECISION_ACCEPTED),
-                        PaperReviewExport("2", ReviewDecision.REVIEW_DECISION_ACCEPTED),
-                        PaperReviewExport("3", ReviewDecision.REVIEW_DECISION_ACCEPTED),
+                        PaperReviewExport("1", ReviewDecision.REVIEW_DECISION_ACCEPTED, listOf("0")),
+                        PaperReviewExport("2", ReviewDecision.REVIEW_DECISION_ACCEPTED, listOf("1")),
+                        PaperReviewExport("3", ReviewDecision.REVIEW_DECISION_ACCEPTED, listOf("2")),
                     ),
                     finalDecision = PaperDecision.PAPER_DECISION_ACCEPTED,
                 ),
@@ -90,9 +93,9 @@ val fullProjectExport = ProjectExport(
                     "Publication Name 4",
                     authors = listOf("Author 7", "Author 8"),
                     reviews = listOf(
-                        PaperReviewExport("1", ReviewDecision.REVIEW_DECISION_DECLINED),
-                        PaperReviewExport("2", ReviewDecision.REVIEW_DECISION_DECLINED),
-                        PaperReviewExport("3", ReviewDecision.REVIEW_DECISION_DECLINED),
+                        PaperReviewExport("1", ReviewDecision.REVIEW_DECISION_DECLINED, listOf("0")),
+                        PaperReviewExport("2", ReviewDecision.REVIEW_DECISION_DECLINED, listOf("1")),
+                        PaperReviewExport("3", ReviewDecision.REVIEW_DECISION_DECLINED, listOf("2")),
                     ),
                     finalDecision = PaperDecision.PAPER_DECISION_DECLINED,
                 ),
@@ -111,7 +114,7 @@ val fullProjectExport = ProjectExport(
                     "Publication Name 5",
                     authors = listOf("Author 9", "Author 10"),
                     reviews = listOf(
-                        PaperReviewExport("1", ReviewDecision.REVIEW_DECISION_ACCEPTED),
+                        PaperReviewExport("1", ReviewDecision.REVIEW_DECISION_ACCEPTED, listOf("0")),
                     ),
                     finalDecision = PaperDecision.PAPER_DECISION_ACCEPTED,
                 ),
@@ -125,12 +128,35 @@ val fullProjectExport = ProjectExport(
                     "Publication Name 6",
                     authors = listOf("Author 11", "Author 12"),
                     reviews = listOf(
-                        PaperReviewExport("1", ReviewDecision.REVIEW_DECISION_MAYBE),
-                        PaperReviewExport("2", ReviewDecision.REVIEW_DECISION_DECLINED),
+                        PaperReviewExport("1", ReviewDecision.REVIEW_DECISION_MAYBE, listOf("0")),
+                        PaperReviewExport("2", ReviewDecision.REVIEW_DECISION_DECLINED, listOf("1")),
                     ),
                     finalDecision = PaperDecision.PAPER_DECISION_DECLINED,
                 ),
             ),
+        ),
+    ),
+    criteria = listOf(
+        CriterionExport(
+            id = "0",
+            tag = "C1",
+            name = "Criterion 1",
+            description = "Description for Criterion 1",
+            category = CriterionCategory.CRITERION_CATEGORY_INCLUSION,
+        ),
+        CriterionExport(
+            id = "1",
+            tag = "C2",
+            name = "Criterion 2",
+            description = "Description for Criterion 2",
+            category = CriterionCategory.CRITERION_CATEGORY_EXCLUSION,
+        ),
+        CriterionExport(
+            id = "2",
+            tag = "C3",
+            name = "Criterion 3",
+            description = "Description for Criterion 3",
+            category = CriterionCategory.CRITERION_CATEGORY_HARD_EXCLUSION,
         ),
     ),
 )

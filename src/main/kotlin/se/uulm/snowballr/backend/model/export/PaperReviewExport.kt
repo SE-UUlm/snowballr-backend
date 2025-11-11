@@ -10,4 +10,6 @@ data class PaperReviewExport(
     val reviewerId: String,
     @SerialName("decision")
     val decision: ReviewOuterClass.ReviewDecision,
+    @SerialName("selected_criteria_ids")
+    val selectedCriteriaIds: List<String>,
 )

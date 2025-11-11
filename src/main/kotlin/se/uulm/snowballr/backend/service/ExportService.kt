@@ -7,6 +7,7 @@ import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.ProjectPaperFull
 import se.uulm.snowballr.backend.model.dto.ProjectPaperWithPaper
 import se.uulm.snowballr.backend.model.parseUUID
+import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IReviewTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
@@ -39,12 +40,14 @@ interface IExportService {
  * @param projectMemberRepo Repository interface to manage operations related to project members.
  * @param projectPaperRepo Repository interface to manage operations related to project papers.
  * @param reviewRepo Repository interface to manage operations related to reviews of project papers.
+ * @param criterionRepo Repository interface to manage operations related to project criteria.
  */
 class ExportService(
     private val projectRepo: IProjectTableRepo,
     private val projectMemberRepo: IProjectMemberTableRepo,
     private val projectPaperRepo: IProjectPaperTableRepo,
     private val reviewRepo: IReviewTableRepo,
+    private val criterionRepo: ICriterionTableRepo,
 ) : IExportService {
     override suspend fun getAvailableExportFormats(): AvailableExportFormatsReply =
         AvailableExportFormatsReply.newBuilder()
@@ -59,8 +62,10 @@ class ExportService(
         val projectMembers = projectMemberRepo.getProjectMembersWithUsers(projectId)
         val projectPapers = projectPaperRepo.getAllProjectPapersWithPapers(projectId)
             .map { it.toProjectPaperFull() }
+        val projectCriteria = criterionRepo.getAllProjectCriteria(projectId)
 
-        val fileExport = ProjectExportManager.exportProject(format, project, projectMembers, projectPapers)
+        val fileExport =
+            ProjectExportManager.exportProject(format, project, projectMembers, projectPapers, projectCriteria)
         return exportResponse {
             data = fileExport.data.toByteString()
             fileName = fileExport.filename
@@ -68,11 +73,13 @@ class ExportService(
     }
 
     private suspend fun ProjectPaperWithPaper.toProjectPaperFull(): ProjectPaperFull {
-        val reviews = reviewRepo.getAllReviewsForProjectPaper(this.projectPaper.id)
+        val reviewsWithSelectedCriteriaIds =
+            reviewRepo.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(this.projectPaper.id)
+
         return ProjectPaperFull(
             projectPaper = this.projectPaper,
             paper = this.paper,
-            reviews = reviews,
+            reviewsWithSelectedCriteria = reviewsWithSelectedCriteriaIds,
         )
     }
 }

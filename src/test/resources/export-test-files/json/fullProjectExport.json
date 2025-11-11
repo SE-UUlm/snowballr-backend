@@ -42,15 +42,24 @@
                     "reviews": [
                         {
                             "reviewer_id": "1",
-                            "decision": "REVIEW_DECISION_ACCEPTED"
+                            "decision": "REVIEW_DECISION_ACCEPTED",
+                            "selected_criteria_ids": [
+                                "0"
+                            ]
                         },
                         {
                             "reviewer_id": "2",
-                            "decision": "REVIEW_DECISION_DECLINED"
+                            "decision": "REVIEW_DECISION_DECLINED",
+                            "selected_criteria_ids": [
+                                "1"
+                            ]
                         },
                         {
                             "reviewer_id": "3",
-                            "decision": "REVIEW_DECISION_ACCEPTED"
+                            "decision": "REVIEW_DECISION_ACCEPTED",
+                            "selected_criteria_ids": [
+                                "2"
+                            ]
                         }
                     ],
                     "final_decision": "PAPER_DECISION_ACCEPTED"
@@ -70,15 +79,24 @@
                     "reviews": [
                         {
                             "reviewer_id": "1",
-                            "decision": "REVIEW_DECISION_ACCEPTED"
+                            "decision": "REVIEW_DECISION_ACCEPTED",
+                            "selected_criteria_ids": [
+                                "0"
+                            ]
                         },
                         {
                             "reviewer_id": "2",
-                            "decision": "REVIEW_DECISION_ACCEPTED"
+                            "decision": "REVIEW_DECISION_ACCEPTED",
+                            "selected_criteria_ids": [
+                                "1"
+                            ]
                         },
                         {
                             "reviewer_id": "3",
-                            "decision": "REVIEW_DECISION_ACCEPTED"
+                            "decision": "REVIEW_DECISION_ACCEPTED",
+                            "selected_criteria_ids": [
+                                "2"
+                            ]
                         }
                     ],
                     "final_decision": "PAPER_DECISION_ACCEPTED"
@@ -103,15 +121,24 @@
                     "reviews": [
                         {
                             "reviewer_id": "1",
-                            "decision": "REVIEW_DECISION_ACCEPTED"
+                            "decision": "REVIEW_DECISION_ACCEPTED",
+                            "selected_criteria_ids": [
+                                "0"
+                            ]
                         },
                         {
                             "reviewer_id": "2",
-                            "decision": "REVIEW_DECISION_ACCEPTED"
+                            "decision": "REVIEW_DECISION_ACCEPTED",
+                            "selected_criteria_ids": [
+                                "1"
+                            ]
                         },
                         {
                             "reviewer_id": "3",
-                            "decision": "REVIEW_DECISION_ACCEPTED"
+                            "decision": "REVIEW_DECISION_ACCEPTED",
+                            "selected_criteria_ids": [
+                                "2"
+                            ]
                         }
                     ],
                     "final_decision": "PAPER_DECISION_ACCEPTED"
@@ -131,15 +158,24 @@
                     "reviews": [
                         {
                             "reviewer_id": "1",
-                            "decision": "REVIEW_DECISION_DECLINED"
+                            "decision": "REVIEW_DECISION_DECLINED",
+                            "selected_criteria_ids": [
+                                "0"
+                            ]
                         },
                         {
                             "reviewer_id": "2",
-                            "decision": "REVIEW_DECISION_DECLINED"
+                            "decision": "REVIEW_DECISION_DECLINED",
+                            "selected_criteria_ids": [
+                                "1"
+                            ]
                         },
                         {
                             "reviewer_id": "3",
-                            "decision": "REVIEW_DECISION_DECLINED"
+                            "decision": "REVIEW_DECISION_DECLINED",
+                            "selected_criteria_ids": [
+                                "2"
+                            ]
                         }
                     ],
                     "final_decision": "PAPER_DECISION_DECLINED"
@@ -164,7 +200,10 @@
                     "reviews": [
                         {
                             "reviewer_id": "1",
-                            "decision": "REVIEW_DECISION_ACCEPTED"
+                            "decision": "REVIEW_DECISION_ACCEPTED",
+                            "selected_criteria_ids": [
+                                "0"
+                            ]
                         }
                     ],
                     "final_decision": "PAPER_DECISION_ACCEPTED"
@@ -184,16 +223,45 @@
                     "reviews": [
                         {
                             "reviewer_id": "1",
-                            "decision": "REVIEW_DECISION_MAYBE"
+                            "decision": "REVIEW_DECISION_MAYBE",
+                            "selected_criteria_ids": [
+                                "0"
+                            ]
                         },
                         {
                             "reviewer_id": "2",
-                            "decision": "REVIEW_DECISION_DECLINED"
+                            "decision": "REVIEW_DECISION_DECLINED",
+                            "selected_criteria_ids": [
+                                "1"
+                            ]
                         }
                     ],
                     "final_decision": "PAPER_DECISION_DECLINED"
                 }
             ]
+        }
+    ],
+    "criteria": [
+        {
+            "id": "0",
+            "tag": "C1",
+            "name": "Criterion 1",
+            "description": "Description for Criterion 1",
+            "category": "CRITERION_CATEGORY_INCLUSION"
+        },
+        {
+            "id": "1",
+            "tag": "C2",
+            "name": "Criterion 2",
+            "description": "Description for Criterion 2",
+            "category": "CRITERION_CATEGORY_EXCLUSION"
+        },
+        {
+            "id": "2",
+            "tag": "C3",
+            "name": "Criterion 3",
+            "description": "Description for Criterion 3",
+            "category": "CRITERION_CATEGORY_HARD_EXCLUSION"
         }
     ]
 }

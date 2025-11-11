@@ -11,4 +11,6 @@ data class ProjectExport(
     val members: List<ProjectMemberExport>,
     @SerialName("stages")
     val stages: List<ProjectStageExport>,
+    @SerialName("criteria")
+    val criteria: List<CriterionExport>,
 )

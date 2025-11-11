@@ -1,10 +1,12 @@
 package se.uulm.snowballr.backend.export
 
+import se.uulm.snowballr.backend.model.dto.Criterion
 import se.uulm.snowballr.backend.model.dto.Paper
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.ProjectMemberWithUser
 import se.uulm.snowballr.backend.model.dto.ProjectPaperFull
-import se.uulm.snowballr.backend.model.dto.Review
+import se.uulm.snowballr.backend.model.dto.ReviewWithSelectedCriteriaIds
+import se.uulm.snowballr.backend.model.export.CriterionExport
 import se.uulm.snowballr.backend.model.export.ExportFormat
 import se.uulm.snowballr.backend.model.export.FileExport
 import se.uulm.snowballr.backend.model.export.PaperExport
@@ -13,11 +15,13 @@ import se.uulm.snowballr.backend.model.export.ProjectExport
 import se.uulm.snowballr.backend.model.export.ProjectMemberExport
 import se.uulm.snowballr.backend.model.export.ProjectStageExport
 import snowballr.ProjectOuterClass.PaperDecision
-import java.time.Instant
+import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 
 /**
  * Manager responsible for exporting projects in various formats.
  */
+@Suppress("TooManyFunctions")
 object ProjectExportManager {
     private val exporters = mapOf<ExportFormat, IExporter>(
         ExportFormat.JSON to JsonExporter(),
@@ -30,18 +34,19 @@ object ProjectExportManager {
         project: Project,
         projectMembers: List<ProjectMemberWithUser>,
         projectPapers: List<ProjectPaperFull>,
+        projectCriteria: List<Criterion>,
     ): FileExport {
         val exporter = exporters[format] ?: throw IllegalArgumentException("Unsupported export format: $format")
 
         val projectMembersExport = projectMembers.mapIndexed { id, member -> member.toProjectMemberExport(id) }
         val stageToPapersExport = projectPapers.toPapersExportByStage(projectMembers)
         val stages = stageToPapersExport.toProjectStagesExport()
+        val criteria = projectCriteria.toCriteriaExport()
 
-        val projectExport = ProjectExport(name = project.name, members = projectMembersExport, stages = stages)
+        val projectExport = ProjectExport(project.name, projectMembersExport, stages, criteria)
         val data = exporter.export(projectExport)
-        val timestamp = Instant.now().toString()
-        val filename = "${project.name}-${timestamp}.${exporter.getExtension()}"
-        return FileExport(data, sanitizeFilename(filename))
+        val filename = createFilename(project.name, exporter.getExtension())
+        return FileExport(data, filename)
     }
 
     private fun ProjectMemberWithUser.toProjectMemberExport(id: Int): ProjectMemberExport = ProjectMemberExport(
@@ -74,20 +79,37 @@ object ProjectExportManager {
 
     private fun ProjectPaperFull.toPaperExport(projectMembers: List<ProjectMemberWithUser>): PaperExport =
         paper.toPaperExport(
-            reviews = reviews.map { it.toPaperReviewExport(projectMembers) },
+            reviews = reviewsWithSelectedCriteria.map { it.toPaperReviewExport(projectMembers) },
             finalDecision = projectPaper.decision,
         )
 
-    private fun Review.toPaperReviewExport(projectMembers: List<ProjectMemberWithUser>): PaperReviewExport {
-        val projectMemberId = projectMembers.indexOfFirst { it.user.id == userId }
+    private fun ReviewWithSelectedCriteriaIds.toPaperReviewExport(
+        projectMembers: List<ProjectMemberWithUser>,
+    ): PaperReviewExport {
+        val projectMemberId = projectMembers.indexOfFirst { it.user.id == review.userId }
         val reviewerId = if (projectMemberId == -1) "unknown" else projectMemberId.toString()
-        return PaperReviewExport(reviewerId, decision)
+        return PaperReviewExport(reviewerId, review.decision, selectedCriteriaIds.map { "$it" })
     }
 
     private fun Map<Long, List<PaperExport>>.toProjectStagesExport(): List<ProjectStageExport> =
         this.map { (stage, papers) ->
             ProjectStageExport(id = "$stage", papers = papers)
         }
+
+    private fun List<Criterion>.toCriteriaExport(): List<CriterionExport> = this.mapIndexed { index, criterion ->
+        CriterionExport(
+            id = "$index",
+            tag = criterion.tag,
+            name = criterion.name,
+            description = criterion.description,
+            category = criterion.category,
+        )
+    }
+
+    private fun createFilename(projectName: String, fileExtension: String): String {
+        val timestamp = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS).toString()
+        return sanitizeFilename("$projectName-$timestamp.$fileExtension")
+    }
 
     private fun sanitizeFilename(input: String): String {
         // Define characters not allowed in filenames (Windows + UNIX safe set)

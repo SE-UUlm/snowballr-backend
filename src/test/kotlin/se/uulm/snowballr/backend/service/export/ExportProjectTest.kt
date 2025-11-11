@@ -46,9 +46,10 @@ class ExportProjectTest : MainServiceTest() {
         coEvery {
             projectPaperRepoMock.getAllProjectPapersWithPapers(projectId)
         } returns listOf(DataBuilder.createExampleProjectPaperWithPaper())
-        coEvery { reviewRepoMock.getAllReviewsForProjectPaper(any()) } returns emptyList()
+        coEvery { reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(any()) } returns emptyList()
+        coEvery { criterionRepoMock.getAllProjectCriteria(any()) } returns emptyList()
         every {
-            ProjectExportManager.exportProject(any(), any(), any(), any())
+            ProjectExportManager.exportProject(any(), any(), any(), any(), any())
         } returns FileExport(ByteArray(0), "test.json")
 
         mainService.exportProject(request)

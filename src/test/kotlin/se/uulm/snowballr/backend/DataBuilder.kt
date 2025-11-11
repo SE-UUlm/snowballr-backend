@@ -8,6 +8,8 @@ import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.ProjectMember
 import se.uulm.snowballr.backend.model.dto.ProjectMemberWithUser
 import se.uulm.snowballr.backend.model.dto.ProjectPaper
+import se.uulm.snowballr.backend.model.dto.ProjectPaperFull
+import se.uulm.snowballr.backend.model.dto.ProjectPaperWithPaper
 import se.uulm.snowballr.backend.model.dto.Review
 import se.uulm.snowballr.backend.model.dto.ReviewWithSelectedCriteriaIds
 import se.uulm.snowballr.backend.model.dto.User
@@ -283,17 +285,17 @@ object DataBuilder {
     fun createExampleProjectPaperFull(
         projectPaper: ProjectPaper = createExampleProjectPaper(),
         paper: Paper = createExamplePaper(),
-        reviews: List<Review> = emptyList(),
-    ) = se.uulm.snowballr.backend.model.dto.ProjectPaperFull(
+        reviewsWithSelectedCriteria: List<ReviewWithSelectedCriteriaIds> = emptyList(),
+    ) = ProjectPaperFull(
         projectPaper = projectPaper,
         paper = paper,
-        reviews = reviews,
+        reviewsWithSelectedCriteria = reviewsWithSelectedCriteria,
     )
 
     fun createExampleProjectPaperWithPaper(
         projectPaper: ProjectPaper = createExampleProjectPaper(),
         paper: Paper = createExamplePaper(),
-    ) = se.uulm.snowballr.backend.model.dto.ProjectPaperWithPaper(
+    ) = ProjectPaperWithPaper(
         projectPaper = projectPaper,
         paper = paper,
     )

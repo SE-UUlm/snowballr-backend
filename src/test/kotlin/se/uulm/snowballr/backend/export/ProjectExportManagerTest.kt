@@ -10,6 +10,7 @@ import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.model.export.ExportFormat
 import se.uulm.snowballr.backend.model.export.ProjectExport
+import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass.MemberRole
 import snowballr.ReviewOuterClass.ReviewDecision
 import java.util.UUID
@@ -39,8 +40,10 @@ class ProjectExportManagerTest {
             val project = DataBuilder.createExampleProject(name = "Exported Project")
             val projectMembers = listOf(DataBuilder.createExampleProjectMemberWithUser())
             val projectPapers = listOf(DataBuilder.createExampleProjectPaperFull())
+            val projectCriteria = listOf(DataBuilder.createExampleProjectCriterion())
 
-            val fileExport = ProjectExportManager.exportProject(format, project, projectMembers, projectPapers)
+            val fileExport =
+                ProjectExportManager.exportProject(format, project, projectMembers, projectPapers, projectCriteria)
 
             assertThat(fileExport.data).isNotEmpty()
             val filename = fileExport.filename
@@ -65,39 +68,60 @@ class ProjectExportManagerTest {
                     projectMember = DataBuilder.createExampleProjectMember(role = MemberRole.MEMBER_ROLE_DEFAULT),
                 ),
             )
+            val projectCriteria = listOf(
+                DataBuilder.createExampleProjectCriterion(
+                    category = CriterionCategory.CRITERION_CATEGORY_HARD_EXCLUSION,
+                ),
+                DataBuilder.createExampleProjectCriterion(
+                    category = CriterionCategory.CRITERION_CATEGORY_EXCLUSION,
+                ),
+                DataBuilder.createExampleProjectCriterion(
+                    category = CriterionCategory.CRITERION_CATEGORY_INCLUSION,
+                ),
+            )
             val projectPapers = listOf(
                 DataBuilder.createExampleProjectPaperFull(
                     projectPaper = DataBuilder.createExampleProjectPaper(stage = 0),
                     paper = DataBuilder.createExamplePaper(externalId = null),
-                    reviews = listOf(
-                        DataBuilder.createExampleReview(
-                            decision = ReviewDecision.REVIEW_DECISION_ACCEPTED,
-                            userId = projectMembers[0].user.id,
+                    reviewsWithSelectedCriteria = listOf(
+                        DataBuilder.createExampleReviewWithSelectedCriteriaIds(
+                            review = DataBuilder.createExampleReview(
+                                decision = ReviewDecision.REVIEW_DECISION_ACCEPTED,
+                                userId = projectMembers[0].user.id,
+                            ),
+                            selectedCriteriaIds = listOf(projectCriteria[0].id),
                         ),
                     ),
                 ),
                 DataBuilder.createExampleProjectPaperFull(
                     projectPaper = DataBuilder.createExampleProjectPaper(stage = 1),
-                    reviews = listOf(
-                        DataBuilder.createExampleReview(
-                            decision = ReviewDecision.REVIEW_DECISION_MAYBE,
-                            userId = projectMembers[1].user.id,
+                    reviewsWithSelectedCriteria = listOf(
+                        DataBuilder.createExampleReviewWithSelectedCriteriaIds(
+                            review = DataBuilder.createExampleReview(
+                                decision = ReviewDecision.REVIEW_DECISION_MAYBE,
+                                userId = projectMembers[1].user.id,
+                            ),
+                            selectedCriteriaIds = listOf(projectCriteria[1].id),
                         ),
                     ),
                 ),
                 DataBuilder.createExampleProjectPaperFull(
                     projectPaper = DataBuilder.createExampleProjectPaper(stage = 2),
-                    reviews = listOf(
-                        DataBuilder.createExampleReview(
-                            decision = ReviewDecision.REVIEW_DECISION_DECLINED,
-                            userId = UUID.randomUUID(),
+                    reviewsWithSelectedCriteria = listOf(
+                        DataBuilder.createExampleReviewWithSelectedCriteriaIds(
+                            review = DataBuilder.createExampleReview(
+                                decision = ReviewDecision.REVIEW_DECISION_DECLINED,
+                                userId = UUID.randomUUID(),
+                            ),
+                            selectedCriteriaIds = listOf(projectCriteria[2].id),
                         ),
                     ),
                 ),
             )
 
             val format = ExportFormat.JSON
-            val fileExport = ProjectExportManager.exportProject(format, project, projectMembers, projectPapers)
+            val fileExport =
+                ProjectExportManager.exportProject(format, project, projectMembers, projectPapers, projectCriteria)
 
             val projectExport = Json.decodeFromString<ProjectExport>(String(fileExport.data))
 
@@ -133,10 +157,11 @@ class ProjectExportManagerTest {
                     val authorExport = paperExport.authors[authorIndex]
                     assertEquals("${author.firstName} ${author.lastName}", authorExport)
                 }
-                assertThat(paperExport.reviews).hasSize(paperInStage.reviews.size)
-                paperInStage.reviews.forEachIndexed { reviewIndex, review ->
+                assertThat(paperExport.reviews).hasSize(paperInStage.reviewsWithSelectedCriteria.size)
+                paperInStage.reviewsWithSelectedCriteria.forEachIndexed { reviewIndex, reviewWithSelectedCriteriaIds ->
                     val reviewExport = paperExport.reviews[reviewIndex]
                     val projectMemberIndex = stageIndex.toString()
+                    val review = reviewWithSelectedCriteriaIds.review
                     if (stageIndex != 2) {
                         assertEquals(projectMemberIndex, reviewExport.reviewerId)
                     } else {
@@ -144,8 +169,25 @@ class ProjectExportManagerTest {
                         assertEquals("unknown", reviewExport.reviewerId)
                     }
                     assertEquals(review.decision, reviewExport.decision)
+
+                    val selectedCriteriaIds = reviewWithSelectedCriteriaIds.selectedCriteriaIds
+                    assertThat(reviewExport.selectedCriteriaIds).hasSize(selectedCriteriaIds.size)
+                    selectedCriteriaIds.forEachIndexed { criterionIdIndex, criterionId ->
+                        val criterionIdExport = reviewExport.selectedCriteriaIds[criterionIdIndex]
+                        assertEquals("$criterionId", criterionIdExport)
+                    }
                 }
                 assertEquals(paperInStage.projectPaper.decision, paperExport.finalDecision)
+            }
+
+            val projectCriteriaExport = projectExport.criteria
+            projectCriteria.forEachIndexed { index, criterion ->
+                val criterionExport = projectCriteriaExport[index]
+                assertEquals(index.toString(), criterionExport.id)
+                assertEquals(criterion.tag, criterionExport.tag)
+                assertEquals(criterion.name, criterionExport.name)
+                assertEquals(criterion.description, criterionExport.description)
+                assertEquals(criterion.category, criterionExport.category)
             }
         }
     }
