@@ -9,6 +9,7 @@ import se.uulm.snowballr.backend.model.dto.ProjectMember
 import se.uulm.snowballr.backend.model.dto.ProjectMemberWithUser
 import se.uulm.snowballr.backend.model.dto.ProjectPaper
 import se.uulm.snowballr.backend.model.dto.Review
+import se.uulm.snowballr.backend.model.dto.ReviewWithSelectedCriteriaIds
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.UserSettings
 import se.uulm.snowballr.backend.model.dto.VerificationToken
@@ -295,5 +296,13 @@ object DataBuilder {
     ) = se.uulm.snowballr.backend.model.dto.ProjectPaperWithPaper(
         projectPaper = projectPaper,
         paper = paper,
+    )
+
+    fun createExampleReviewWithSelectedCriteriaIds(
+        review: Review = createExampleReview(),
+        selectedCriteriaIds: List<UUID> = emptyList(),
+    ) = ReviewWithSelectedCriteriaIds(
+        review = review,
+        selectedCriteriaIds = selectedCriteriaIds,
     )
 }

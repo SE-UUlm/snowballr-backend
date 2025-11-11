@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.model.exception.NotFoundException
+import se.uulm.snowballr.backend.repository.RepositoryHelper.assignCriterionToReview
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertCriterionAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertPaperAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectAndGetId
@@ -129,6 +130,86 @@ class ReviewTableRepoTest : RepositoryTest(
                 assertThat(reviews).hasSize(1)
                 assertThat(reviews).anyMatch { it.id == reviewId1 }
                 assertThat(reviews).noneMatch { it.id == reviewId2 }
+            }
+    }
+
+    @Nested
+    inner class GetAllReviewsWithSelectedCriteriaIdsForProjectPaper {
+        @Test
+        fun `When the project paper has reviews with selected criteria, then the reviews are correctly returned`() =
+            runTest {
+                val projectId = insertProjectAndGetId(createdBy = testUserId)
+                val paperId = insertPaperAndGetId()
+                val projectPaperId =
+                    insertProjectPaperAndGetId(paperId = paperId, projectId = projectId, createdBy = testUserId)
+                val reviewId = insertReviewAndGetId(projectPaperId, userId = testUserId)
+                val criterionId1 = insertCriterionAndGetId(projectId = projectId, createdBy = testUserId)
+                assignCriterionToReview(reviewId, criterionId1)
+                val criterionId2 = insertCriterionAndGetId(projectId = projectId, createdBy = testUserId)
+                assignCriterionToReview(reviewId, criterionId2)
+                val reviews = repo.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaperId)
+
+                assertThat(reviews).hasSize(1)
+                assertThat(reviews).anyMatch { it.review.id == reviewId }
+                val reviewWithCriteria = reviews[0]
+                assertThat(reviewWithCriteria.selectedCriteriaIds).hasSize(2)
+                assertThat(reviewWithCriteria.selectedCriteriaIds).contains(criterionId1, criterionId2)
+            }
+
+        @Test
+        fun `When the project paper has no reviews, then an empty list is returned`() = runTest {
+            val projectId = insertProjectAndGetId(createdBy = testUserId)
+            val paperId1 = insertPaperAndGetId()
+            val paperId2 = insertPaperAndGetId()
+            val noReviewProjectPaperId = insertProjectPaperAndGetId(
+                paperId = paperId1,
+                projectId = projectId,
+                createdBy = testUserId,
+            )
+            val reviewProjectPaperId = insertProjectPaperAndGetId(
+                paperId = paperId2,
+                projectId = projectId,
+                createdBy = testUserId,
+            )
+            val reviewId = insertReviewAndGetId(reviewProjectPaperId, userId = testUserId)
+            val criterionId = insertCriterionAndGetId(projectId = projectId, createdBy = testUserId)
+            assignCriterionToReview(reviewId, criterionId)
+            val reviews = repo.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(noReviewProjectPaperId)
+
+            assertThat(reviews).hasSize(0)
+            assertThat(reviews).noneMatch { it.review.id == reviewId }
+        }
+
+        @Test
+        fun `When the project paper has reviews and other reviews exist too, then only the project paper reviews are returned`() =
+            runTest {
+                val projectId = insertProjectAndGetId(createdBy = testUserId)
+                val paperId1 = insertPaperAndGetId()
+                val paperId2 = insertPaperAndGetId()
+                val projectPaperId1 = insertProjectPaperAndGetId(
+                    paperId = paperId1,
+                    projectId = projectId,
+                    createdBy = testUserId,
+                )
+                val projectPaperId2 = insertProjectPaperAndGetId(
+                    paperId = paperId2,
+                    projectId = projectId,
+                    createdBy = testUserId,
+                )
+                val reviewId1 = insertReviewAndGetId(projectPaperId1, userId = testUserId)
+                val criterionId1 = insertCriterionAndGetId(projectId = projectId, createdBy = testUserId)
+                assignCriterionToReview(reviewId1, criterionId1)
+                val reviewId2 = insertReviewAndGetId(projectPaperId2, userId = testUserId)
+                val criterionId2 = insertCriterionAndGetId(projectId = projectId, createdBy = testUserId)
+                assignCriterionToReview(reviewId2, criterionId2)
+                val reviews = repo.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaperId1)
+
+                assertThat(reviews).hasSize(1)
+                assertThat(reviews).anyMatch { it.review.id == reviewId1 }
+                assertThat(reviews).noneMatch { it.review.id == reviewId2 }
+                val review = reviews[0]
+                assertThat(review.selectedCriteriaIds).hasSize(1)
+                assertThat(review.selectedCriteriaIds).contains(criterionId1)
             }
     }
 

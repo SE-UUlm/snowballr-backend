@@ -1,10 +1,13 @@
 package se.uulm.snowballr.backend.repository
 
+import org.jetbrains.exposed.sql.JoinType
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.Review
+import se.uulm.snowballr.backend.model.dto.ReviewWithSelectedCriteriaIds
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.table.ReviewTable
@@ -34,6 +37,17 @@ interface IReviewTableRepo {
      * @return A list of reviews associated with the given project paper.
      */
     suspend fun getAllReviewsForProjectPaper(projectPaperId: UUID): List<Review>
+
+    /**
+     * Retrieves all reviews along with their selected criteria for the specified project paper.
+     *
+     * @param projectPaperId The unique identifier of the project paper whose reviews with selected criteria are to be
+     * fetched.
+     * @return A list of [ReviewWithSelectedCriteriaIds] associated with the given project paper.
+     */
+    suspend fun getAllReviewsWithSelectedCriteriaIdsForProjectPaper(
+        projectPaperId: UUID,
+    ): List<ReviewWithSelectedCriteriaIds>
 
     /**
      * Creates a new review in the database with the provided [request] data.
@@ -66,6 +80,26 @@ class ReviewTableRepo(
 
     override suspend fun getAllReviewsForProjectPaper(projectPaperId: UUID): List<Review> = db.query {
         ReviewTable.getEntities(ResultRow::toReview) { ReviewTable.projectPaperId eq projectPaperId }
+    }
+
+    override suspend fun getAllReviewsWithSelectedCriteriaIdsForProjectPaper(
+        projectPaperId: UUID,
+    ): List<ReviewWithSelectedCriteriaIds> = db.query {
+        ReviewTable.join(
+            ReviewHasCriterionTable,
+            onColumn = ReviewTable.id,
+            otherColumn = ReviewHasCriterionTable.reviewId,
+            joinType = JoinType.LEFT,
+        ).selectAll()
+            .where { ReviewTable.projectPaperId eq projectPaperId }
+            .groupBy { it[ReviewTable.id].value }
+            .map { (_, rows) ->
+                val review = rows.first().toReview()
+                val selectedCriteriaIds = rows.mapNotNull { row ->
+                    row.getOrNull(ReviewHasCriterionTable.criterionId)?.value
+                }
+                ReviewWithSelectedCriteriaIds(review, selectedCriteriaIds)
+            }
     }
 
     override suspend fun createReview(request: GrpcReview.Create, userId: UUID): Review = db.query {
