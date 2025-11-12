@@ -172,6 +172,12 @@ class UserTableRepo(
         const val MAXIMUM_NUMBER_OF_INVITE_CANDIDATES = 10
     }
 
+    /**
+     * Extracts and converts rows from a [ResultSet] to a list of [User] objects.
+     *
+     * @param result The [ResultSet] containing user data.
+     * @return A list of [User] objects extracted from the result set.
+     */
     private fun extractUserRows(result: ResultSet): List<User> {
         return generateSequence {
             if (result.next()) {
@@ -197,6 +203,36 @@ class UserTableRepo(
 
     private fun getUserSettingsByUserIdOrNull(userId: UUID): UserSettings? =
         UserTable.getEntityByIdOrNull(userId, ResultRow::toUserSettings)
+
+    /**
+     * Retrieves a list of user IDs that are eligible for hard deletion.
+     *
+     * @return A list of user IDs that are eligible for hard deletion.
+     */
+    private suspend fun getUserIdsToDelete(): List<UUID> = db.query {
+        UserTable
+            .selectAll()
+            .where {
+                (UserTable.status eq USER_STATUS_UNSPECIFIED).and(UserTable.deletedAt.isNotNull())
+            }
+            .map { it[UserTable.id].value }
+    }
+
+    /**
+     * Attempts to delete a single user by their ID.
+     *
+     * @param userId The ID of the user to be deleted.
+     * @return `true` if the user was successfully deleted, `false` otherwise.
+     */
+    private suspend fun attemptToDeleteUser(userId: UUID): Boolean = db.query {
+        try {
+            val deletedRows = UserTable.deleteWhere { UserTable.id eq userId }
+            deletedRows > 0
+        } catch (e: ExposedSQLException) {
+            logger.debug(e) { "Failed to hard-delete user $userId, likely due to existing references." }
+            false
+        }
+    }
 
     override suspend fun getUserById(id: UUID): Result<User> = db.query {
         getEntityByKeyAsResult(::getUserByIdOrNull, EntityType.USER, id)
@@ -351,36 +387,6 @@ class UserTableRepo(
 
         logger.info {
             "Hard-deleted ${successfulDeletedIds.size} users, failed to delete ${failedToDeleteIds.size} users."
-        }
-    }
-
-    /**
-     * Retrieves a list of user IDs that are eligible for hard deletion.
-     *
-     * @return A list of user IDs that are eligible for hard deletion.
-     */
-    private suspend fun getUserIdsToDelete(): List<UUID> = db.query {
-        UserTable
-            .selectAll()
-            .where {
-                (UserTable.status eq USER_STATUS_UNSPECIFIED).and(UserTable.deletedAt.isNotNull())
-            }
-            .map { it[UserTable.id].value }
-    }
-
-    /**
-     * Attempts to delete a single user by their ID.
-     *
-     * @param userId The ID of the user to be deleted.
-     * @return `true` if the user was successfully deleted, `false` otherwise.
-     */
-    private suspend fun attemptToDeleteUser(userId: UUID): Boolean = db.query {
-        try {
-            val deletedRows = UserTable.deleteWhere { UserTable.id eq userId }
-            deletedRows > 0
-        } catch (e: ExposedSQLException) {
-            logger.debug(e) { "Failed to hard-delete user $userId, likely due to existing references." }
-            false
         }
     }
 
