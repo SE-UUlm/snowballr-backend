@@ -205,6 +205,20 @@ class UserTableRepo(
         UserTable.getEntityByIdOrNull(userId, ResultRow::toUserSettings)
 
     /**
+     * Retrieves a list of user IDs that are eligible for clearing sensitive data.
+     *
+     * @param thresholdDate The date up to which users are to be cleared.
+     * @return A list of user IDs that are eligible for clearing sensitive data.
+     */
+    private suspend fun getUserIdsToClear(thresholdDate: OffsetDateTime): List<UUID> = db.query {
+        UserTable.selectAll()
+            .where {
+                (UserTable.status eq UserStatus.USER_STATUS_DELETED).and(UserTable.deletedAt lessEq thresholdDate)
+            }
+            .map { it[UserTable.id].value }
+    }
+
+    /**
      * Retrieves a list of user IDs that are eligible for hard deletion.
      *
      * @return A list of user IDs that are eligible for hard deletion.
@@ -338,11 +352,7 @@ class UserTableRepo(
 
     override suspend fun clearSoftDeletedUsers(thresholdDate: OffsetDateTime) = db.query {
         // Clear (user-)criteria for each user to be cleared
-        val usersToBeCleared = UserTable.selectAll()
-            .where {
-                (UserTable.status eq UserStatus.USER_STATUS_DELETED).and(UserTable.deletedAt lessEq thresholdDate)
-            }
-            .map { it[UserTable.id].value }
+        val usersToBeCleared = getUserIdsToClear(thresholdDate)
 
         usersToBeCleared.forEach { userId ->
             CriterionTable.deleteWhere {
