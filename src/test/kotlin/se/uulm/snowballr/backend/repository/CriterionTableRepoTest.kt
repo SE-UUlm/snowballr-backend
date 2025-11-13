@@ -366,6 +366,18 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
     }
 
     @Nested
+    inner class DeleteUserCriteriaByUserId {
+        @Test
+        fun `When a user ID is given, then all user criteria associated with this user should be deleted`() = runTest {
+            val criterionId = insertCriterionAndGetId(createdBy = testUserId)
+
+            assertDoesNotThrow { repo.deleteUserCriteriaByUserId(testUserId) }
+
+            assertResultFailure<NotFoundException>(repo.getCriterionById(criterionId))
+        }
+    }
+
+    @Nested
     inner class GetAllProjectCriteria {
         @Test
         fun `When all criteria of a specific project are requested, then the only criteria associated with this project are returned`() =
