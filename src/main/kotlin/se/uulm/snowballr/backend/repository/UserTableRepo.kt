@@ -5,7 +5,6 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.exposed.exceptions.ExposedSQLException
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.isNull
 import org.jetbrains.exposed.sql.TextColumnType
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
@@ -19,7 +18,6 @@ import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.UserSettings
 import se.uulm.snowballr.backend.model.parseUUID
-import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.toUser
 import se.uulm.snowballr.backend.table.toUserSettings
@@ -124,17 +122,23 @@ interface IUserTableRepo {
     /**
      * Clears all soft-deleted users whose deletion date is older than the given [thresholdDate].
      *
-     * **Note:** In contrast to all other repository functions, this is the only one that is allowed to access
-     * functions of other repositories.
-     *
      * @param thresholdDate The date up to which soft-deleted users are to be cleared.
      */
     suspend fun clearSoftDeletedUsers(thresholdDate: OffsetDateTime)
 
     /**
-     * Tries to hard-delete all users that were soft-deleted, cleared, and are no longer referenced by any other entity.
+     * Retrieves a list of user IDs that are eligible for hard deletion.
+     *
+     * @return A list of user IDs that are eligible for hard deletion.
      */
-    suspend fun hardDeleteClearedUsers()
+    suspend fun getUserIdsToDelete(): List<UUID>
+
+    /**
+     * Tries to hard-delete the users in the given [userIdsToDelete] list.
+     *
+     * @param userIdsToDelete The list of user IDs to be hard-deleted.
+     */
+    suspend fun hardDeleteClearedUsers(userIdsToDelete: List<UUID>)
 
     /**
      * Returns a [Result] containing the password hash for a user by their email address or a [NotFoundException] if the
@@ -214,20 +218,6 @@ class UserTableRepo(
         UserTable.selectAll()
             .where {
                 (UserTable.status eq UserStatus.USER_STATUS_DELETED).and(UserTable.deletedAt lessEq thresholdDate)
-            }
-            .map { it[UserTable.id].value }
-    }
-
-    /**
-     * Retrieves a list of user IDs that are eligible for hard deletion.
-     *
-     * @return A list of user IDs that are eligible for hard deletion.
-     */
-    private suspend fun getUserIdsToDelete(): List<UUID> = db.query {
-        UserTable
-            .selectAll()
-            .where {
-                (UserTable.status eq USER_STATUS_UNSPECIFIED).and(UserTable.deletedAt.isNotNull())
             }
             .map { it[UserTable.id].value }
     }
@@ -351,14 +341,7 @@ class UserTableRepo(
     }
 
     override suspend fun clearSoftDeletedUsers(thresholdDate: OffsetDateTime) = db.query {
-        // Clear (user-)criteria for each user to be cleared
         val usersToBeCleared = getUserIdsToClear(thresholdDate)
-
-        usersToBeCleared.forEach { userId ->
-            CriterionTable.deleteWhere {
-                (CriterionTable.createdBy eq userId).and(CriterionTable.projectId.isNull())
-            }
-        }
 
         val clearedUsers = UserTable.update(
             {
@@ -372,7 +355,7 @@ class UserTableRepo(
             it[role] = USER_ROLE_UNSPECIFIED
             it[status] = USER_STATUS_UNSPECIFIED
 
-            it[criteriaIds] = emptyList() // Criteria should be deleted before the user is deleted!
+            it[criteriaIds] = emptyList()
 
             it[fetchers] = emptyMap()
             it[snowballingType] = SNOWBALLING_TYPE_UNSPECIFIED
@@ -383,9 +366,16 @@ class UserTableRepo(
         logger.info { "Cleared $clearedUsers soft-deleted users older than $thresholdDate." }
     }
 
-    override suspend fun hardDeleteClearedUsers() {
-        val userIdsToDelete = getUserIdsToDelete()
+    override suspend fun getUserIdsToDelete(): List<UUID> = db.query {
+        UserTable
+            .selectAll()
+            .where {
+                (UserTable.status eq USER_STATUS_UNSPECIFIED).and(UserTable.deletedAt.isNotNull())
+            }
+            .map { it[UserTable.id].value }
+    }
 
+    override suspend fun hardDeleteClearedUsers(userIdsToDelete: List<UUID>) {
         if (userIdsToDelete.isEmpty()) {
             logger.info { "No users to hard-delete." }
             return
