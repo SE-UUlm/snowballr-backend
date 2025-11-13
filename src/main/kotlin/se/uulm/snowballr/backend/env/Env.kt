@@ -25,6 +25,7 @@ data class Env(
         val authBypassEnabled: Boolean,
         // Guaranteed to not contain a trailing slash
         val frontendBaseUrl: String,
+        val sensitiveInformationRetentionDays: Int,
     )
 
     data class Database(

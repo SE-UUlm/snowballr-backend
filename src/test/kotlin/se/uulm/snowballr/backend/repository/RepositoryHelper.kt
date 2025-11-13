@@ -48,6 +48,7 @@ object RepositoryHelper {
         passwordHash: String = "passwordHash",
         role: UserRole = UserRole.USER_ROLE_DEFAULT,
         status: UserStatus = UserStatus.USER_STATUS_ACTIVE,
+        deletedAt: OffsetDateTime? = null,
     ) = db.query {
         UserTable
             .insertAndGetId {
@@ -57,6 +58,7 @@ object RepositoryHelper {
                 it[UserTable.passwordHash] = passwordHash
                 it[UserTable.role] = role
                 it[UserTable.status] = status
+                it[UserTable.deletedAt] = deletedAt
             }.value
     }
 
@@ -133,6 +135,7 @@ object RepositoryHelper {
         reviewDecisionMatrix: ReviewDecisionMatrix = ReviewDecisionMatrix.getDefaultInstance(),
         fetcherApis: Map<String, Map<String, String>> = emptyMap(),
         createdBy: UUID,
+        deletedAt: OffsetDateTime? = null,
     ): UUID = db.query {
         ProjectTable
             .insertAndGetId {
@@ -146,6 +149,7 @@ object RepositoryHelper {
                 it[ProjectTable.reviewDecisionMatrixBinary] = reviewDecisionMatrix.toByteArray()
                 it[ProjectTable.fetchers] = fetcherApis
                 it[ProjectTable.createdBy] = createdBy
+                it[ProjectTable.deletedAt] = deletedAt
             }.value
     }
 
@@ -202,7 +206,7 @@ object RepositoryHelper {
         name: String = "Test Criterion",
         description: String = "Test Description",
         category: CriterionCategory = CriterionCategory.CRITERION_CATEGORY_EXCLUSION,
-        projectId: UUID,
+        projectId: UUID? = null,
         createdBy: UUID,
     ): UUID = db.query {
         CriterionTable.insertAndGetId {
@@ -229,22 +233,28 @@ object RepositoryHelper {
     }
 
     /**
-     * Creates a test verification token (default "secure-random-token-123") in the database for the specified user.
+     * Creates a test verification token (default "secure-random-invitation-token-123") in the database
+     * for the specified user.
      */
-    suspend fun insertTestVerificationToken(userId: UUID, token: String = "secure-random-token-123") {
+    suspend fun insertTestVerificationToken(
+        userId: UUID,
+        token: String = "secure-random-invitation-token-123",
+        expiresAt: OffsetDateTime = OffsetDateTime.now().plusDays(1),
+    ) {
         db.query {
             VerificationTokenTable.insert {
                 it[VerificationTokenTable.userId] = userId
                 it[VerificationTokenTable.token] = token
+                it[VerificationTokenTable.expiresAt] = expiresAt
             }
         }
     }
 
     /**
      * Creates a test invitation token (default "secure-random-invitation-token-123") in the database
-     * with the specified properties.
+     * for the specified properties.
      */
-    suspend fun insertTestToken(
+    suspend fun insertTestInvitationToken(
         email: String,
         projectId: UUID,
         token: String = "secure-random-invitation-token-123",

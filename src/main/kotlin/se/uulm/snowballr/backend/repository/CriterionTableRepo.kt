@@ -1,8 +1,13 @@
 package se.uulm.snowballr.backend.repository
 
 import com.google.protobuf.util.FieldMaskUtil
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.exposed.sql.ResultRow
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.isNull
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.deleteWhere
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
@@ -14,6 +19,8 @@ import se.uulm.snowballr.backend.table.toProjectCriterion
 import se.uulm.snowballr.backend.table.toUserCriterion
 import java.util.UUID
 import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
+
+private val logger = KotlinLogging.logger {}
 
 /**
  * Defines an interface for repository operations related to the [CriterionTable].
@@ -58,6 +65,20 @@ interface ICriterionTableRepo {
      * @return The updated [Criterion] object reflecting the changes from the [request].
      */
     suspend fun updateCriterion(request: GrpcCriterion.Update): Criterion
+
+    /**
+     * Deletes a list of criteria from the database based on their IDs.
+     *
+     * @param ids A list of [UUID]s for the criteria to be deleted.
+     */
+    suspend fun deleteCriteriaByIds(ids: List<UUID>)
+
+    /**
+     * Deletes all user criteria associated with a specific user.
+     *
+     * @param userId The unique identifier of the user whose criteria are to be deleted.
+     */
+    suspend fun deleteUserCriteriaByUserId(userId: UUID)
 
     /**
      * Retrieves a list of criteria based on their unique identifiers.
@@ -128,6 +149,24 @@ class CriterionTableRepo(
                 }
             }
         }
+    }
+
+    override suspend fun deleteCriteriaByIds(ids: List<UUID>) {
+        val deletedIds = db.query {
+            CriterionTable.deleteWhere { CriterionTable.id inList ids }
+        }
+
+        logger.info { "Deleted $deletedIds criteria." }
+    }
+
+    override suspend fun deleteUserCriteriaByUserId(userId: UUID) {
+        val deletedIds = db.query {
+            CriterionTable.deleteWhere {
+                (CriterionTable.createdBy eq userId).and(CriterionTable.projectId.isNull())
+            }
+        }
+
+        logger.info { "Deleted $deletedIds user criteria." }
     }
 
     override suspend fun getCriteriaByIds(ids: List<UUID>): List<Criterion> = db.query {

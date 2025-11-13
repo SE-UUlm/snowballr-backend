@@ -1,10 +1,14 @@
 package se.uulm.snowballr.backend.repository
 
 import com.google.protobuf.util.FieldMaskUtil
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.exceptions.ExposedSQLException
 import org.jetbrains.exposed.sql.JoinType
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.andWhere
+import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.statements.UpdateStatement
@@ -23,9 +27,12 @@ import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.table.toProject
 import snowballr.ProjectOuterClass.ProjectStatus
+import snowballr.ProjectOuterClass.SnowballingType
 import java.time.OffsetDateTime
 import java.util.UUID
 import snowballr.ProjectOuterClass.Project as GrpcProject
+
+private val logger = KotlinLogging.logger { }
 
 /**
  * Defines an interface for repository operations related to the [ProjectTable].
@@ -34,6 +41,7 @@ import snowballr.ProjectOuterClass.Project as GrpcProject
  * abstraction over the underlying database implementation. By using this interface, the logic
  * for creating and managing projects can remain decoupled from the specifics of the database layer.
  */
+@Suppress("ComplexInterface")
 interface IProjectTableRepo {
     /**
      * Returns a [Result] containing the project by its ID or a [NotFoundException] if the project with the passed [id]
@@ -115,10 +123,23 @@ interface IProjectTableRepo {
     suspend fun isProjectLocked(projectId: UUID): Boolean
 
     /**
-     * Performs a soft delete of the project with the given [projectId], i.e., does not remove the
+     * Performs a soft-delete of the project with the given [projectId], i.e., does not remove the
      * project from the database but marks it as deleted by setting the status to [ProjectStatus.PROJECT_STATUS_DELETED].
      */
     suspend fun softDeleteProject(projectId: UUID)
+
+    /**
+     * Clears all soft-deleted projects whose deletion date is older than the given [thresholdDate].
+     *
+     * @param thresholdDate The date up to which soft-deleted projects are to be cleared.
+     */
+    suspend fun clearSoftDeletedProjects(thresholdDate: OffsetDateTime)
+
+    /**
+     * Tries to hard-delete all projects that were soft-deleted, cleared, and are no longer referenced by any other
+     * entity.
+     */
+    suspend fun hardDeleteClearedProjects()
 }
 
 /**
@@ -212,6 +233,78 @@ class ProjectTableRepo(
                 it[status] = ProjectStatus.PROJECT_STATUS_DELETED
                 it[deletedAt] = OffsetDateTime.now()
             }
+        }
+    }
+
+    override suspend fun clearSoftDeletedProjects(thresholdDate: OffsetDateTime) = db.query {
+        val clearedProjects = ProjectTable.update(
+            {
+                (ProjectTable.status eq ProjectStatus.PROJECT_STATUS_DELETED)
+                    .and(ProjectTable.deletedAt lessEq thresholdDate)
+            },
+        ) {
+            it[name] = ""
+            it[status] = ProjectStatus.PROJECT_STATUS_UNSPECIFIED
+            it[fetchers] = emptyMap()
+            it[snowballingType] = SnowballingType.SNOWBALLING_TYPE_UNSPECIFIED
+            it[similarityThreshold] = 0f
+            it[fetchers] = emptyMap()
+
+            it[modifiedBy] = null
+            it[modifiedAt] = OffsetDateTime.now()
+            it[deletedBy] = null
+            it[archivedBy] = null
+        }
+
+        logger.info { "Cleared $clearedProjects soft-deleted projects older than $thresholdDate." }
+    }
+
+    override suspend fun hardDeleteClearedProjects() {
+        val projectIdsToDelete = getProjectIdsToDelete()
+
+        if (projectIdsToDelete.isEmpty()) {
+            logger.info { "No projects to hard-delete." }
+            return
+        }
+
+        val (successfulDeletedIds, failedToDeleteIds) = projectIdsToDelete.partition { projectId ->
+            attemptToDeleteProject(projectId)
+        }
+
+        logger.info {
+            "Hard-deleted ${successfulDeletedIds.size} projects, failed to delete ${failedToDeleteIds.size} projects."
+        }
+    }
+
+    /**
+     * Retrieves a list of project IDs that are eligible for hard deletion.
+     *
+     * @return A list of project IDs that are eligible for hard deletion.
+     */
+    private suspend fun getProjectIdsToDelete(): List<UUID> = db.query {
+        ProjectTable
+            .selectAll()
+            .where {
+                (ProjectTable.status eq ProjectStatus.PROJECT_STATUS_UNSPECIFIED).and(
+                    ProjectTable.deletedAt.isNotNull(),
+                )
+            }
+            .map { it[ProjectTable.id].value }
+    }
+
+    /**
+     * Attempts to delete a single project by its ID.
+     *
+     * @param projectId The ID of the project to be deleted.
+     * @return `true` if the project was successfully deleted, `false` otherwise.
+     */
+    private suspend fun attemptToDeleteProject(projectId: UUID): Boolean = db.query {
+        try {
+            val deletedRows = ProjectTable.deleteWhere { ProjectTable.id eq projectId }
+            deletedRows > 0
+        } catch (e: ExposedSQLException) {
+            logger.debug(e) { "Failed to hard-delete project $projectId, likely due to existing references." }
+            false
         }
     }
 

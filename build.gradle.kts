@@ -53,6 +53,8 @@ dependencies {
     implementation(libs.hikaricp)
     testImplementation(libs.testcontainers)
 
+    implementation(libs.quartz.scheduler)
+
     implementation(libs.password4j)
     implementation(libs.jjwt.api)
     runtimeOnly(libs.jjwt.impl)
@@ -125,6 +127,7 @@ kover {
                     "se.uulm.snowballr.backend.db", // production database
                     "se.uulm.snowballr.backend.env", // environment variables
                     "se.uulm.snowballr.backend.grpc", // grpc server implementation
+                    "se.uulm.snowballr.backend.scheduler", // job scheduler
                 )
             }
         }

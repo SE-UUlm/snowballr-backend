@@ -13,6 +13,7 @@ import se.uulm.snowballr.backend.grpc.interceptor.authenticationInterceptor
 import se.uulm.snowballr.backend.grpc.interceptor.exceptionInterceptor
 import se.uulm.snowballr.backend.grpc.interceptor.loggingInterceptor
 import se.uulm.snowballr.backend.grpc.interceptor.validationInterceptor
+import se.uulm.snowballr.backend.scheduler.SchedulerManager
 import se.uulm.snowballr.backend.service.IMainService
 import snowballr.Authentication
 import snowballr.Base
@@ -70,6 +71,14 @@ class SnowballRServer(
     private val reflectionService = ProtoReflectionService.newInstance()
 
     /**
+     * Manages the scheduling of tasks in the application.
+     *
+     * This manager is responsible for scheduling tasks in the application, such as periodic maintenance jobs.
+     * It is used to start and stop the scheduler when the server starts and stops, respectively.
+     */
+    private val schedulerManager = SchedulerManager()
+
+    /**
      * Represents the gRPC server instance used for handling incoming requests.
      *
      * This server is configured to:
@@ -100,16 +109,19 @@ class SnowballRServer(
      *
      * This method performs the following operations:
      * - Starts the gRPC server, making it listen on the specified port.
+     * - Starts the [SchedulerManager] to handle scheduling of tasks.
      * - Registers a shutdown hook to handle the server shutdown process when the JVM is shutting down.
      *   The shutdown hook stops the server and confirms the server has been shut down.
      */
     fun start() {
         server.start()
+        schedulerManager.start()
         logger.info { "Server started, listening on $port" }
         Runtime.getRuntime().addShutdownHook(
             Thread {
                 logger.info { "*** shutting down gRPC server since JVM is shutting down" }
                 healthManager.enterTerminalState()
+                schedulerManager.stop()
                 this@SnowballRServer.stop()
                 logger.info { "*** server shut down" }
             },

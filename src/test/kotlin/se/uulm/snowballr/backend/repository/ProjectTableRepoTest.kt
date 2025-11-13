@@ -26,6 +26,7 @@ import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectAndGet
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectPaperAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertReviewAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertUserAndGetId
+import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.ReviewTable
@@ -42,8 +43,21 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 class ProjectTableRepoTest :
-    RepositoryTest(arrayOf(ProjectTable, ProjectMemberTable, ProjectPaperTable, PaperTable, ReviewTable), true) {
+    RepositoryTest(
+        arrayOf(
+            ProjectTable,
+            ProjectMemberTable,
+            ProjectPaperTable,
+            PaperTable,
+            ReviewTable,
+            CriterionTable,
+        ),
+        true,
+    ) {
     private val repo = ProjectTableRepo(db)
+    private val criterionRepo = CriterionTableRepo(db)
+
+    private val defaultThresholdDate = OffsetDateTime.now().minusDays(30)
 
     companion object {
         @JvmStatic
@@ -427,7 +441,7 @@ class ProjectTableRepoTest :
     @Nested
     inner class SoftDeleteProject {
         @Test
-        fun `When a project is soft deleted, then it is marked as deleted`() = runTest {
+        fun `When a project is soft-deleted, then it is marked as deleted`() = runTest {
             val projectId =
                 insertProjectAndGetId(status = ProjectStatus.PROJECT_STATUS_ACTIVE, createdBy = testUserId)
 
@@ -442,10 +456,126 @@ class ProjectTableRepoTest :
         }
 
         @Test
-        fun `When the project to be soft deleted is not found, then nothing happens`() = runTest {
+        fun `When the project to be soft-deleted is not found, then nothing happens`() = runTest {
             val projectId = UUID.randomUUID()
 
             assertDoesNotThrow { repo.softDeleteProject(projectId) }
         }
+    }
+
+    @Nested
+    inner class ClearSoftDeletedProjects {
+        @Test
+        fun `When no soft-deleted projects exist, then no project are cleared`() = runTest {
+            val projectId = insertProjectAndGetId(status = ProjectStatus.PROJECT_STATUS_ACTIVE, createdBy = testUserId)
+
+            assertDoesNotThrow { repo.clearSoftDeletedProjects(defaultThresholdDate) }
+
+            val project = assertResultSuccess(repo.getProjectById(projectId))
+            assertEquals(ProjectStatus.PROJECT_STATUS_ACTIVE, project.status)
+            assertNull(project.deletedAt)
+        }
+
+        @Test
+        fun `When soft-deleted projects exist but their threshold date is not reached, then no projects are cleared`() =
+            runTest {
+                val projectId =
+                    insertProjectAndGetId(status = ProjectStatus.PROJECT_STATUS_ACTIVE, createdBy = testUserId)
+                repo.softDeleteProject(projectId)
+
+                assertDoesNotThrow { repo.clearSoftDeletedProjects(defaultThresholdDate) }
+
+                val project = assertResultSuccess(repo.getProjectById(projectId))
+                assertEquals(ProjectStatus.PROJECT_STATUS_DELETED, project.status)
+                assertNotNull(project.deletedAt)
+                assertThat(project.deletedAt).isAfter(defaultThresholdDate)
+                assertThat(project.name).isNotEmpty()
+            }
+
+        @Test
+        fun `When soft-deleted projects exist and their threshold date is reached, then all soft-deleted projects are cleared`() =
+            runTest {
+                // Manually "soft-delete" project to set the `deletedAt` date
+                val projectId1 = insertProjectAndGetId(
+                    name = "Project 1",
+                    status = ProjectStatus.PROJECT_STATUS_DELETED,
+                    deletedAt = defaultThresholdDate.minusDays(1),
+                    createdBy = testUserId,
+                )
+                val projectId2 = insertProjectAndGetId(
+                    name = "Project 2",
+                    status = ProjectStatus.PROJECT_STATUS_ACTIVE,
+                    createdBy = testUserId,
+                )
+
+                assertDoesNotThrow { repo.clearSoftDeletedProjects(defaultThresholdDate) }
+
+                val project1 = assertResultSuccess(repo.getProjectById(projectId1))
+                assertEquals(ProjectStatus.PROJECT_STATUS_UNSPECIFIED, project1.status)
+                assertNotNull(project1.deletedAt)
+                assertThat(project1.deletedAt).isBefore(defaultThresholdDate)
+                assertThat(project1.name).isEmpty()
+
+                val project2 = assertResultSuccess(repo.getProjectById(projectId2))
+                assertEquals(ProjectStatus.PROJECT_STATUS_ACTIVE, project2.status)
+                assertNull(project2.deletedAt)
+                assertThat(project2.name).isNotEmpty()
+            }
+    }
+
+    @Nested
+    inner class HardDeleteClearedProjects {
+        @Test
+        fun `When no cleared projects exist that have reached their threshold date to be cleared, then no projects are hard-deleted`() =
+            runTest {
+                val projectId1 = insertProjectAndGetId(name = "Project1", createdBy = testUserId)
+                val projectId2 = insertProjectAndGetId(name = "Project2", createdBy = testUserId)
+                repo.softDeleteProject(projectId1)
+
+                assertDoesNotThrow { repo.hardDeleteClearedProjects() }
+
+                val project1 = assertResultSuccess(repo.getProjectById(projectId1))
+                assertEquals(ProjectStatus.PROJECT_STATUS_DELETED, project1.status)
+                assertNotNull(project1.deletedAt)
+                assertThat(project1.name).isNotEmpty()
+
+                val project2 = assertResultSuccess(repo.getProjectById(projectId2))
+                assertEquals(ProjectStatus.PROJECT_STATUS_ACTIVE, project2.status)
+                assertNull(project2.deletedAt)
+                assertThat(project2.name).isNotEmpty()
+            }
+
+        @Test
+        fun `When cleared projects exist that have reached their threshold date to be cleared, then they are hard-deleted`() =
+            runTest {
+                // Manually "soft-delete" project to set the `deletedAt` date
+                val projectId1 = insertProjectAndGetId(
+                    name = "Project 1",
+                    status = ProjectStatus.PROJECT_STATUS_DELETED,
+                    deletedAt = defaultThresholdDate.minusDays(1),
+                    createdBy = testUserId,
+                )
+                val projectId2 = insertProjectAndGetId(name = "Project2", createdBy = testUserId)
+                val criterionId1 = RepositoryHelper.insertCriterionAndGetId(
+                    projectId = projectId1,
+                    createdBy = testUserId,
+                )
+                val criterionId2 = RepositoryHelper.insertCriterionAndGetId(
+                    projectId = projectId2,
+                    createdBy = testUserId,
+                )
+                repo.clearSoftDeletedProjects(defaultThresholdDate)
+
+                assertDoesNotThrow { repo.hardDeleteClearedProjects() }
+
+                assertResultFailure<NotFoundException>(repo.getProjectById(projectId1))
+                assertResultFailure<NotFoundException>(criterionRepo.getCriterionById(criterionId1))
+
+                val project2 = assertResultSuccess(repo.getProjectById(projectId2))
+                assertEquals(ProjectStatus.PROJECT_STATUS_ACTIVE, project2.status)
+                assertNull(project2.deletedAt)
+                assertThat(project2.name).isNotEmpty()
+                assertResultSuccess(criterionRepo.getCriterionById(criterionId2))
+            }
     }
 }
