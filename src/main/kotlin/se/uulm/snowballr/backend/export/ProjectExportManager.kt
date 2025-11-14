@@ -112,8 +112,8 @@ object ProjectExportManager {
     }
 
     private fun sanitizeFilename(input: String): String {
-        // Define characters not allowed in filenames (Windows + UNIX safe set)
-        val illegalChars = """[\\/:*?"<>|\p{Cntrl}]""".toRegex()
+        // Define characters not allowed in filenames (Windows + UNIX safe set) + white-space
+        val illegalChars = """[\\/:*?"<>|\p{Cntrl}\s]""".toRegex()
 
         var sanitized = input.replace(illegalChars, "_")
 
