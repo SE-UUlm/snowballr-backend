@@ -174,7 +174,8 @@ class ProjectExportManagerTest {
                     assertThat(reviewExport.selectedCriteriaIds).hasSize(selectedCriteriaIds.size)
                     selectedCriteriaIds.forEachIndexed { criterionIdIndex, criterionId ->
                         val criterionIdExport = reviewExport.selectedCriteriaIds[criterionIdIndex]
-                        assertEquals("$criterionId", criterionIdExport)
+                        val expectedCriterionId = projectCriteria.indexOfFirst { it.id == criterionId }
+                        assertEquals("$expectedCriterionId", criterionIdExport)
                     }
                 }
                 assertEquals(paperInStage.projectPaper.decision, paperExport.finalDecision)
