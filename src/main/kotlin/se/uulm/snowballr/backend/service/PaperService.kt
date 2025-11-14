@@ -75,6 +75,14 @@ class PaperService(
             throw PaperNotFoundException(paperId)
         }
 
+        if (repo.doesPaperExistByExternalId(request.paper.externalId)) {
+            throw DuplicateEntityException(
+                EntityType.PAPER,
+                request.paper.externalId,
+                identifierType = IdentifierType.EXTERNAL_ID,
+            )
+        }
+
         return repo.updatePaper(request).toGrpcPaper()
     }
 
