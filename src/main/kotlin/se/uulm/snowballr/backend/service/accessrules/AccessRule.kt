@@ -157,10 +157,14 @@ suspend fun AccessRule<Unit>.checkFor(requester: User) = checkFor(requester, Uni
  * This class is typically used in scenarios where access control requires validation involving
  * two related targets, such as ensuring permissions across multiple associated entities.
  *
+ * @param T1 The type of the first target identifier.
+ * @param T2 The type of the second target identifier.
  * @property firstTargetId The unique identifier of the first target.
  * @property secondTargetId The unique identifier of the second target.
  */
-data class AccessRuleCompoundObject(
-    val firstTargetId: UUID,
-    val secondTargetId: UUID,
+data class AccessRuleCompoundObject<T1, T2>(
+    val firstTargetId: T1,
+    val secondTargetId: T2,
 )
+
+typealias AccessRuleCompoundUUID = AccessRuleCompoundObject<UUID, UUID>

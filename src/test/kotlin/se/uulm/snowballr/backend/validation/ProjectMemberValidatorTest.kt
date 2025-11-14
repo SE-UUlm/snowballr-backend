@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.validation
 import `in`.rcard.assertj.arrowcore.EitherAssert
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import se.uulm.snowballr.backend.model.InvalidEmail
 import se.uulm.snowballr.backend.model.InvalidId
 import snowballr.ProjectOuterClass.Project.Member.Remove
 import java.util.UUID
@@ -14,7 +15,7 @@ class ProjectMemberValidatorTest {
             Remove
                 .newBuilder()
                 .setProjectId(UUID.randomUUID().toString())
-                .setUserId(UUID.randomUUID().toString())
+                .setUserEmail("user@example.com")
 
         @Test
         fun `When a valid request is validated, then no issue is returned`() {
@@ -34,10 +35,10 @@ class ProjectMemberValidatorTest {
 
         @Test
         fun `When a request with an invalid user ID is validated, then the 'InvalidId' issue is returned`() {
-            val request = validRemoveRequestBuilder.setUserId("invalid-id").build()
+            val request = validRemoveRequestBuilder.setUserEmail("invalid-email").build()
             val result = validateRequest(request)
 
-            assertInvalidResult<InvalidId>(result)
+            assertInvalidResult<InvalidEmail>(result)
         }
     }
 }

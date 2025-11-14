@@ -185,17 +185,17 @@ class InviteUserToProjectTest : MainServiceTest() {
     @Test
     fun `When the invited user does not exist, then the first name defaults to 'User'`() = runTest {
         val emailDataSlot = slot<EmailData.AcceptProjectInvitation>()
-        val emailOfNonExistingUser = "non-existing-user@example.com"
+        val emailOfNonExistentUser = "non-existing-user@example.com"
 
-        mockInviteUserToProject(invitedUserEmail = emailOfNonExistingUser, stopBefore = userRepoMock::getUserByEmail)
+        mockInviteUserToProject(invitedUserEmail = emailOfNonExistentUser, stopBefore = userRepoMock::getUserByEmail)
 
         val emailNotFoundException =
             NotFoundException(EntityType.USER, invitedUserEmail, identifierType = IdentifierType.EMAIL)
-        coEvery { userRepoMock.getUserByEmail(emailOfNonExistingUser) } returns Result.failure(emailNotFoundException)
+        coEvery { userRepoMock.getUserByEmail(emailOfNonExistentUser) } returns Result.failure(emailNotFoundException)
         every { emailManagerMock.createAcceptProjectInvitationLink(any()) } returns "http://invitation-link"
         coEvery { emailManagerMock.sendAcceptProjectInvitationEmail(any(), capture(emailDataSlot)) } returns Unit
 
-        val inviteNonExistentUserRequest = validInviteUserRequest.setUserEmail(emailOfNonExistingUser)
+        val inviteNonExistentUserRequest = validInviteUserRequest.setUserEmail(emailOfNonExistentUser)
 
         assertDoesNotThrow { mainService.inviteUserToProject(inviteNonExistentUserRequest.build()) }
 
