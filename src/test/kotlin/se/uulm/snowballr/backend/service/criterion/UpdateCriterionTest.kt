@@ -56,8 +56,8 @@ class UpdateCriterionTest : MainServiceTest() {
 
         mockCurrentUser(user)
         coEvery { criterionRepoMock.getCriterionById(criterionId) } returns Result.success(criterion)
-        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { criterionRepoMock.updateCriterion(request) } returns criterion
 
         assertDoesNotThrow { mainService.updateCriterion(request) }
@@ -80,8 +80,8 @@ class UpdateCriterionTest : MainServiceTest() {
 
         mockCurrentUser(user)
         coEvery { criterionRepoMock.getCriterionById(criterionId) } returns Result.success(criterion)
-        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { criterionRepoMock.updateCriterion(request) } returns criterion
 
         assertDoesNotThrow { mainService.updateCriterion(request) }
@@ -105,6 +105,7 @@ class UpdateCriterionTest : MainServiceTest() {
 
             mockCurrentUser(user)
             coEvery { criterionRepoMock.getCriterionById(criterionId) } returns Result.success(criterion)
+            coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
             assertThrows<FailedPreconditionException> { mainService.updateCriterion(request) }
@@ -126,7 +127,6 @@ class UpdateCriterionTest : MainServiceTest() {
 
         mockCurrentUser(user)
         coEvery { criterionRepoMock.getCriterionById(criterionId) } returns Result.success(criterion)
-        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
 
         assertThrows<UnauthorizedException> { mainService.updateCriterion(request) }

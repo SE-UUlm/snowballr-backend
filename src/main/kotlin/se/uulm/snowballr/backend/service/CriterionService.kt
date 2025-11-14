@@ -115,12 +115,6 @@ class CriterionService(
             val criterionId = parseUUID(request.criterion.id, EntityType.CRITERION)
             val criterion = repo.getCriterionById(criterionId).getOrThrow()
 
-            if (criterion is Criterion.ProjectCriterion) {
-                val project = projectRepo.getProjectById(criterion.projectId).getOrThrow()
-
-                isProjectActive().checkFor(currentUser, project)
-            }
-
             isCreatorOfCriterion()
                 .orElse(isUserAdminInProjectOfCriterion(projectMemberRepo))
                 .orElse(isServerAdmin().forTarget())
@@ -128,6 +122,12 @@ class CriterionService(
                     UnauthorizedUpdateException(user.id, target.id, EntityType.CRITERION)
                 }
                 .checkFor(currentUser, criterion)
+
+            if (criterion is Criterion.ProjectCriterion) {
+                val project = projectRepo.getProjectById(criterion.projectId).getOrThrow()
+
+                isProjectActive().checkFor(currentUser, project)
+            }
 
             repo.updateCriterion(request).toGrpcCriterion()
         }
