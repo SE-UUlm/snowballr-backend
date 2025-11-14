@@ -38,6 +38,7 @@ class RemoveProjectMemberTest : MainServiceTest() {
 
         mockCurrentUser(currentUser)
         coEvery { userRepoMock.getUserByEmail(userEmail) } returns Result.success(userToRemove)
+        coEvery { projectMemberRepoMock.isProjectMember(projectId, userToRemove.id) } returns true
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
         coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
         coEvery {
@@ -61,6 +62,7 @@ class RemoveProjectMemberTest : MainServiceTest() {
 
         mockCurrentUser(currentUser)
         coEvery { userRepoMock.getUserByEmail(userEmail) } returns Result.success(userToRemove)
+        coEvery { projectMemberRepoMock.isProjectMember(projectId, userToRemove.id) } returns true
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectAdmin)
         coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
         coEvery {
@@ -81,7 +83,8 @@ class RemoveProjectMemberTest : MainServiceTest() {
             val projectAdmin2 = DataBuilder.createExampleProjectMember(projectId = project.id, userId = otherUser.id)
 
             mockCurrentUser(currentUser)
-            coEvery { userRepoMock.getUserByEmail(userEmail) } returns Result.success(currentUser)
+            coEvery { userRepoMock.getUserByEmail(currentUser.email) } returns Result.success(currentUser)
+            coEvery { projectMemberRepoMock.isProjectMember(project.id, currentUser.id) } returns true
             coEvery {
                 projectMemberRepoMock.getProjectMembers(project.id)
             } returns listOf(projectAdmin1, projectAdmin2)
@@ -107,6 +110,7 @@ class RemoveProjectMemberTest : MainServiceTest() {
 
             mockCurrentUser(currentUser)
             coEvery { userRepoMock.getUserByEmail(userEmail) } returns Result.success(currentUser)
+            coEvery { projectMemberRepoMock.isProjectMember(projectId, currentUser.id) } returns true
             coEvery {
                 projectMemberRepoMock.getProjectMembers(project.id)
             } returns listOf(projectMember, projectAdmin)
@@ -123,11 +127,10 @@ class RemoveProjectMemberTest : MainServiceTest() {
     fun `When a project admin removes a project member from a non-existent project, then a NotFoundException is thrown`() =
         runTest {
             val currentUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_DEFAULT)
-            val projectAdmin = DataBuilder.createExampleProjectMember(projectId = projectId, userId = currentUser.id)
 
             mockCurrentUser(currentUser)
             coEvery { userRepoMock.getUserByEmail(userEmail) } returns Result.success(currentUser)
-            coEvery { projectMemberRepoMock.getProjectMembers(projectId) } returns listOf(projectAdmin)
+            coEvery { projectMemberRepoMock.isProjectMember(projectId, currentUser.id) } returns true
             coEvery { projectRepoMock.doesProjectExistById(projectId) } returns false
 
             assertThrows<NotFoundException> {
@@ -162,11 +165,10 @@ class RemoveProjectMemberTest : MainServiceTest() {
                 status = UserOuterClass.UserStatus.USER_STATUS_ACTIVE,
             )
             val project = DataBuilder.createExampleProject(id = projectId)
-            val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = otherUser.id)
 
             mockCurrentUser(currentUser)
-            coEvery { userRepoMock.getUserByEmail(userEmail) } returns Result.success(otherUser)
-            coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
+            coEvery { userRepoMock.getUserByEmail(otherUser.email) } returns Result.success(otherUser)
+            coEvery { projectMemberRepoMock.isProjectMember(projectId, otherUser.id) } returns true
             coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
 
             assertThrows<UnauthorizedException> {
@@ -185,6 +187,7 @@ class RemoveProjectMemberTest : MainServiceTest() {
 
             mockCurrentUser(currentUser)
             coEvery { userRepoMock.getUserByEmail(userEmail) } returns Result.success(currentUser)
+            coEvery { projectMemberRepoMock.isProjectMember(projectId, currentUser.id) } returns true
             coEvery {
                 projectMemberRepoMock.getProjectMembers(project.id)
             } returns listOf(projectAdmin, projectMember)
@@ -208,6 +211,7 @@ class RemoveProjectMemberTest : MainServiceTest() {
 
             mockCurrentUser(currentUser)
             coEvery { userRepoMock.getUserByEmail(userEmail) } returns Result.success(currentUser)
+            coEvery { projectMemberRepoMock.isProjectMember(projectId, currentUser.id) } returns true
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(lastProjectMember)
             coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
             coEvery { projectRepoMock.softDeleteProject(project.id) } returns Unit
@@ -287,4 +291,17 @@ class RemoveProjectMemberTest : MainServiceTest() {
             mainService.removeProjectMember(getExampleRequest())
         }
     }
+
+    @Test
+    fun `When the user to be removed is not a project member and has no invitation, then nothing is removed`() =
+        runTest {
+            val currentUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_DEFAULT)
+            val otherUser = DataBuilder.createExampleUser(email = userEmail)
+
+            mockCurrentUser(currentUser)
+            coEvery { userRepoMock.getUserByEmail(otherUser.email) } returns Result.success(otherUser)
+            coEvery { projectMemberRepoMock.isProjectMember(projectId, otherUser.id) } returns false
+
+            assertDoesNotThrow { mainService.removeProjectMember(getExampleRequest()) }
+        }
 }

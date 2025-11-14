@@ -60,14 +60,12 @@ interface IProjectMemberService {
  * @param repo The repository responsible for managing persistence operations for project members.
  * @param projectRepo The repository responsible for managing persistence operations for projects.
  * @param userRepo The repository responsible for managing persistence operations for users.
- * @param projectMemberRepo The repository responsible for managing persistence operations for project members.
  * @param invitationTokenRepo The repository responsible for managing persistence operations for invitation tokens.
  */
 class ProjectMemberService(
     private val repo: IProjectMemberTableRepo,
     private val projectRepo: IProjectTableRepo,
     private val userRepo: IUserTableRepo,
-    private val projectMemberRepo: IProjectMemberTableRepo,
     private val invitationTokenRepo: IInvitationTokenTableRepo,
 ) : IProjectMemberService {
     override suspend fun getProjectMembers(request: Base.Id): GrpcProjectMember.List =
@@ -129,7 +127,7 @@ class ProjectMemberService(
     private suspend fun removeProjectMemberUser(currentUser: User, requestedUser: User, projectId: UUID) {
         val userProjectCompound = AccessRuleCompoundUUID(requestedUser.id, projectId)
 
-        if (projectMemberRepo.getProjectMembers(projectId).none { it.userId == requestedUser.id }) {
+        if (!repo.isProjectMember(projectId, requestedUser.id)) {
             return
         }
 
