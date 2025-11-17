@@ -132,7 +132,7 @@ class ProjectMemberService(
         }
 
         isSameUserById()
-            .forProperty(AccessRuleCompoundUUID::firstTargetId)
+            .forProperty(AccessRuleCompoundUUID::firstTarget)
             .orElse(
                 isProjectAdmin(repo)
                     .orElse(isServerAdmin().forTarget())
@@ -144,7 +144,7 @@ class ProjectMemberService(
                             user.id.toString(),
                         )
                     }
-                    .forProperty(AccessRuleCompoundUUID::secondTargetId),
+                    .forProperty(AccessRuleCompoundUUID::secondTarget),
             )
             .checkFor(currentUser, userProjectCompound)
 
@@ -177,7 +177,7 @@ class ProjectMemberService(
                     user.id.toString(),
                 )
             }
-            .forProperty(AccessRuleCompoundObject<String, UUID>::secondTargetId)
+            .forProperty(AccessRuleCompoundObject<String, UUID>::secondTarget)
             .checkFor(currentUser, userProjectCompound)
 
         val invitationToken = invitationTokenRepo.getInvitationTokenByEmailAndProjectId(userEmail, projectId)
