@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.service
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.IdentifierType
 import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
@@ -13,7 +14,6 @@ import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
-import se.uulm.snowballr.backend.service.accessrules.AccessRuleCompoundObject
 import se.uulm.snowballr.backend.service.accessrules.AccessRuleCompoundUUID
 import se.uulm.snowballr.backend.service.accessrules.andAlso
 import se.uulm.snowballr.backend.service.accessrules.checkFor
@@ -165,8 +165,6 @@ class ProjectMemberService(
     }
 
     private suspend fun removeProjectMemberInvitation(currentUser: User, userEmail: String, projectId: UUID) {
-        val userProjectCompound = AccessRuleCompoundObject(userEmail, projectId)
-
         isProjectAdmin(repo)
             .orElse(isServerAdmin().forTarget())
             .orElseThrow { user, targetId ->
@@ -177,11 +175,12 @@ class ProjectMemberService(
                     user.id.toString(),
                 )
             }
-            .forProperty(AccessRuleCompoundObject<String, UUID>::secondTarget)
-            .checkFor(currentUser, userProjectCompound)
+            .checkFor(currentUser, projectId)
 
-        val invitationToken = invitationTokenRepo.getInvitationTokenByEmailAndProjectId(userEmail, projectId)
-            .getOrThrow()
+        val invitationToken =
+            invitationTokenRepo.getInvitationTokenByEmailAndProjectId(userEmail, projectId).getOrNull()
+                ?: throw NotFoundException(EntityType.USER, userEmail, identifierType = IdentifierType.EMAIL)
+
         invitationTokenRepo.deleteInvitationToken(invitationToken.token)
     }
 }

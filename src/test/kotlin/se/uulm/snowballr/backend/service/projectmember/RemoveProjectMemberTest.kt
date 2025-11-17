@@ -139,22 +139,21 @@ class RemoveProjectMemberTest : MainServiceTest() {
         }
 
     @Test
-    fun `When a project admin removes a non-existent project member, then a TestSpecificException is thrown`() =
-        runTest {
-            val currentUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_DEFAULT)
-            val projectAdmin = DataBuilder.createExampleProjectMember(projectId = projectId, userId = currentUser.id)
+    fun `When a project admin removes a non-existent project member, then a NotFoundException is thrown`() = runTest {
+        val currentUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_DEFAULT)
+        val projectAdmin = DataBuilder.createExampleProjectMember(projectId = projectId, userId = currentUser.id)
 
-            mockCurrentUser(currentUser)
-            coEvery { userRepoMock.getUserByEmail(userEmail) } returns Result.failure(TestSpecificException())
-            coEvery { projectMemberRepoMock.getAllProjectAdmins(projectId) } returns listOf(projectAdmin)
-            coEvery {
-                invitationTokenRepoMock.getInvitationTokenByEmailAndProjectId(userEmail, projectId)
-            } returns Result.failure(TestSpecificException())
+        mockCurrentUser(currentUser)
+        coEvery { userRepoMock.getUserByEmail(userEmail) } returns Result.failure(TestSpecificException())
+        coEvery { projectMemberRepoMock.getAllProjectAdmins(projectId) } returns listOf(projectAdmin)
+        coEvery {
+            invitationTokenRepoMock.getInvitationTokenByEmailAndProjectId(userEmail, projectId)
+        } returns Result.failure(TestSpecificException())
 
-            assertThrows<TestSpecificException> {
-                mainService.removeProjectMember(getExampleRequest())
-            }
+        assertThrows<NotFoundException> {
+            mainService.removeProjectMember(getExampleRequest())
         }
+    }
 
     @Test
     fun `When a normal project member removes another project member, then an UnauthorizedException is thrown`() =
@@ -276,7 +275,7 @@ class RemoveProjectMemberTest : MainServiceTest() {
     }
 
     @Test
-    fun `When retrieving the invitation token fails, then a TestSpecificException is thrown`() = runTest {
+    fun `When retrieving the invitation token fails, then a NotFoundException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_DEFAULT)
         val projectAdmin = DataBuilder.createExampleProjectMember(projectId = projectId, userId = currentUser.id)
 
@@ -287,7 +286,7 @@ class RemoveProjectMemberTest : MainServiceTest() {
             invitationTokenRepoMock.getInvitationTokenByEmailAndProjectId(userEmail, projectId)
         } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> {
+        assertThrows<NotFoundException> {
             mainService.removeProjectMember(getExampleRequest())
         }
     }
