@@ -35,7 +35,7 @@ class UpdatePaperTest : MainServiceTest() {
         val examplePaper = DataBuilder.createExamplePaper(id = paperId, authors = listOf(exampleAuthor))
 
         coEvery { paperRepoMock.doesPaperExistById(paperId) } returns true
-        coEvery { paperRepoMock.doesPaperExistByExternalId(request.paper.externalId!!) } returns false
+        coEvery { paperRepoMock.getPaperByExternalId(request.paper.externalId) } returns Result.failure(Exception())
         coEvery { paperRepoMock.updatePaper(request) } returns examplePaper
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paperId) } returns emptyList()
 
@@ -62,9 +62,15 @@ class UpdatePaperTest : MainServiceTest() {
                     getExamplePaperBuilder().setExternalId("10.1000/existingdoi").build(),
                 )
                 .build()
+            val existingPaperWithSameExternalId = DataBuilder.createExamplePaper(
+                id = UUID.randomUUID(),
+                externalId = "10.1000/existingdoi",
+            )
 
             coEvery { paperRepoMock.doesPaperExistById(paperId) } returns true
-            coEvery { paperRepoMock.doesPaperExistByExternalId(request.paper.externalId!!) } returns true
+            coEvery { paperRepoMock.getPaperByExternalId("10.1000/existingdoi") } returns Result.success(
+                existingPaperWithSameExternalId,
+            )
 
             assertThrows<SnowballRException.DuplicateEntityException> { mainService.updatePaper(request) }
         }
