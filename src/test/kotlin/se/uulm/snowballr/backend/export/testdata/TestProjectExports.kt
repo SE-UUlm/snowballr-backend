@@ -16,6 +16,7 @@ val emptyProjectExport = ProjectExport(
     members = emptyList(),
     stages = emptyList(),
     criteria = emptyList(),
+    createdAt = "2023-03-15T10:00:00Z",
 )
 
 @Suppress("NamedArguments")
@@ -45,6 +46,8 @@ val fullProjectExport = ProjectExport(
                         PaperReviewExport("3", ReviewDecision.REVIEW_DECISION_ACCEPTED, listOf("2")),
                     ),
                     finalDecision = PaperDecision.PAPER_DECISION_ACCEPTED,
+                    createdAt = "2023-03-15T10:00:00Z",
+                    modifiedAt = "",
                 ),
                 PaperExport(
                     "Paper Title 2",
@@ -61,6 +64,8 @@ val fullProjectExport = ProjectExport(
                         PaperReviewExport("3", ReviewDecision.REVIEW_DECISION_ACCEPTED, listOf("2")),
                     ),
                     finalDecision = PaperDecision.PAPER_DECISION_ACCEPTED,
+                    createdAt = "2023-03-15T10:00:00Z",
+                    modifiedAt = "",
                 ),
             ),
         ),
@@ -82,6 +87,8 @@ val fullProjectExport = ProjectExport(
                         PaperReviewExport("3", ReviewDecision.REVIEW_DECISION_ACCEPTED, listOf("2")),
                     ),
                     finalDecision = PaperDecision.PAPER_DECISION_ACCEPTED,
+                    createdAt = "2023-03-15T10:00:00Z",
+                    modifiedAt = "",
                 ),
                 PaperExport(
                     "Paper Title 4",
@@ -98,6 +105,8 @@ val fullProjectExport = ProjectExport(
                         PaperReviewExport("3", ReviewDecision.REVIEW_DECISION_DECLINED, listOf("2")),
                     ),
                     finalDecision = PaperDecision.PAPER_DECISION_DECLINED,
+                    createdAt = "2023-03-15T10:00:00Z",
+                    modifiedAt = "2025-03-15T10:00:00Z",
                 ),
             ),
         ),
@@ -117,6 +126,8 @@ val fullProjectExport = ProjectExport(
                         PaperReviewExport("1", ReviewDecision.REVIEW_DECISION_ACCEPTED, listOf("0")),
                     ),
                     finalDecision = PaperDecision.PAPER_DECISION_ACCEPTED,
+                    createdAt = "2023-03-15T10:00:00Z",
+                    modifiedAt = "",
                 ),
                 PaperExport(
                     "Paper Title 6",
@@ -132,6 +143,8 @@ val fullProjectExport = ProjectExport(
                         PaperReviewExport("2", ReviewDecision.REVIEW_DECISION_DECLINED, listOf("1")),
                     ),
                     finalDecision = PaperDecision.PAPER_DECISION_DECLINED,
+                    createdAt = "2023-03-15T10:00:00Z",
+                    modifiedAt = "2024-03-15T10:00:00Z",
                 ),
             ),
         ),
@@ -159,4 +172,5 @@ val fullProjectExport = ProjectExport(
             category = CriterionCategory.CRITERION_CATEGORY_HARD_EXCLUSION,
         ),
     ),
+    createdAt = "2021-03-15T10:00:00Z",
 )

@@ -26,4 +26,8 @@ data class PaperExport(
     val reviews: List<PaperReviewExport>,
     @SerialName("final_decision")
     val finalDecision: ProjectOuterClass.PaperDecision,
+    @SerialName("created_at")
+    val createdAt: String,
+    @SerialName("modified_at")
+    val modifiedAt: String,
 )

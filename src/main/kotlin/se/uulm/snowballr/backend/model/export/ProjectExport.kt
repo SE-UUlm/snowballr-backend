@@ -13,4 +13,6 @@ data class ProjectExport(
     val stages: List<ProjectStageExport>,
     @SerialName("criteria")
     val criteria: List<CriterionExport>,
+    @SerialName("created_at")
+    val createdAt: String,
 )

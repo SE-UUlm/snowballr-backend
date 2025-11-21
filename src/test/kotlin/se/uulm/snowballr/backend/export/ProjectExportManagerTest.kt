@@ -13,6 +13,8 @@ import se.uulm.snowballr.backend.model.export.ProjectExport
 import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass.MemberRole
 import snowballr.ReviewOuterClass.ReviewDecision
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 import java.util.UUID
 import kotlin.test.assertEquals
 
@@ -54,8 +56,12 @@ class ProjectExportManagerTest {
         @Test
         @Suppress("LongMethod")
         fun `When exporting a project with members and papers, then exported bytes are returned`() {
+            val exampleDateTime = OffsetDateTime.of(2023, 3, 15, 10, 0, 0, 0, ZoneOffset.UTC)
+            val exampleDateTimeString = "2023-03-15T10:00Z"
+
             val project = DataBuilder.createExampleProject(
                 maxStage = 2,
+                createdAt = exampleDateTime,
             )
             val projectMembers = listOf(
                 DataBuilder.createExampleProjectMemberWithUser(
@@ -82,7 +88,11 @@ class ProjectExportManagerTest {
             val projectPapers = listOf(
                 DataBuilder.createExampleProjectPaperFull(
                     projectPaper = DataBuilder.createExampleProjectPaper(stage = 0),
-                    paper = DataBuilder.createExamplePaper(externalId = null),
+                    paper = DataBuilder.createExamplePaper(
+                        externalId = null,
+                        createdAt = exampleDateTime,
+                        modifiedAt = null,
+                    ),
                     reviewsWithSelectedCriteria = listOf(
                         DataBuilder.createExampleReviewWithSelectedCriteriaIds(
                             review = DataBuilder.createExampleReview(
@@ -95,6 +105,7 @@ class ProjectExportManagerTest {
                 ),
                 DataBuilder.createExampleProjectPaperFull(
                     projectPaper = DataBuilder.createExampleProjectPaper(stage = 1),
+                    paper = DataBuilder.createExamplePaper(createdAt = exampleDateTime, modifiedAt = null),
                     reviewsWithSelectedCriteria = listOf(
                         DataBuilder.createExampleReviewWithSelectedCriteriaIds(
                             review = DataBuilder.createExampleReview(
@@ -107,6 +118,7 @@ class ProjectExportManagerTest {
                 ),
                 DataBuilder.createExampleProjectPaperFull(
                     projectPaper = DataBuilder.createExampleProjectPaper(stage = 2),
+                    paper = DataBuilder.createExamplePaper(createdAt = exampleDateTime, modifiedAt = exampleDateTime),
                     reviewsWithSelectedCriteria = listOf(
                         DataBuilder.createExampleReviewWithSelectedCriteriaIds(
                             review = DataBuilder.createExampleReview(
@@ -128,6 +140,8 @@ class ProjectExportManagerTest {
             assertThat(projectExport.name).isEqualTo(project.name)
             assertThat(projectExport.members).hasSize(projectMembers.size)
             assertThat(projectExport.stages).hasSize(3)
+            assertThat(projectExport.criteria).hasSize(projectCriteria.size)
+            assertEquals(exampleDateTimeString, projectExport.createdAt)
 
             val projectMembersExport = projectExport.members
             projectMembers.forEachIndexed { index, member ->
@@ -179,6 +193,12 @@ class ProjectExportManagerTest {
                     }
                 }
                 assertEquals(paperInStage.projectPaper.decision, paperExport.finalDecision)
+                assertEquals(exampleDateTimeString, paperExport.createdAt)
+                if (stageIndex == 2) {
+                    assertEquals(exampleDateTimeString, paperExport.modifiedAt)
+                } else {
+                    assertEquals("", paperExport.modifiedAt)
+                }
             }
 
             val projectCriteriaExport = projectExport.criteria

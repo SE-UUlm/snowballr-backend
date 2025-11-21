@@ -34,7 +34,7 @@ class ProjectExportBuilder(
         val stages = stageToPapersExport.toProjectStagesExport()
         val criteria = projectCriteria.toCriteriaExport()
 
-        return ProjectExport(project.name, projectMembersExport, stages, criteria)
+        return ProjectExport(project.name, projectMembersExport, stages, criteria, project.createdAt.toString())
     }
 
     private fun ProjectMemberWithUser.toProjectMemberExport(id: Int): ProjectMemberExport = ProjectMemberExport(
@@ -57,6 +57,8 @@ class ProjectExportBuilder(
             authors = authors.map { "${it.firstName} ${it.lastName}" },
             reviews = reviews,
             finalDecision = finalDecision,
+            createdAt = createdAt.toString(),
+            modifiedAt = modifiedAt?.toString().orEmpty(),
         )
 
     private fun List<ProjectPaperFull>.toPapersExportByStage(): Map<Long, List<PaperExport>> =
