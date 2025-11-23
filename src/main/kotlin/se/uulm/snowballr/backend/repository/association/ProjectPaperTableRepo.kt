@@ -165,7 +165,6 @@ interface IProjectPaperTableRepo {
  *
  * @param db The database abstraction used for executing queries within a transaction.
  */
-@Suppress("TooManyFunctions")
 class ProjectPaperTableRepo(
     private val db: IDatabase,
 ) : IProjectPaperTableRepo {

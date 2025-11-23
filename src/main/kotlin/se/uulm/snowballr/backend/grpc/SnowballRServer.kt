@@ -302,7 +302,11 @@ class SnowballRServer(
         override suspend fun updateProject(request: ProjectOuterClass.Project.Update): ProjectOuterClass.Project =
             mainService.updateProject(request)
 
-        override suspend fun exportProject(request: Export.ExportRequest): Base.Blob = super.exportProject(request)
+        override suspend fun getAvailableExportFormats(request: Base.Nothing): Export.AvailableExportFormatsReply =
+            super.getAvailableExportFormats(request)
+
+        override suspend fun exportProject(request: Export.ExportRequest): Export.ExportResponse =
+            super.exportProject(request)
 
         override suspend fun softDeleteProject(request: Base.Id): Base.Nothing = mainService.softDeleteProject(request)
 
@@ -356,9 +360,8 @@ class SnowballRServer(
         override suspend fun removePaperFromProject(request: Base.Id): Base.Nothing =
             super.removePaperFromProject(request)
 
-        override suspend fun getReviewById(request: Base.Id): ReviewOuterClass.Review = mainService.getReviewById(
-            request,
-        )
+        override suspend fun getReviewById(request: Base.Id): ReviewOuterClass.Review =
+            mainService.getReviewById(request)
 
         override suspend fun getAllReviewsForProjectPaper(request: Base.Id): ReviewOuterClass.Review.List =
             mainService.getAllReviewsForProjectPaper(request)
@@ -372,6 +375,13 @@ class SnowballRServer(
         override suspend fun deleteReview(request: Base.Id): Base.Nothing = super.deleteReview(request)
 
         override suspend fun getPaperById(request: Base.Id): PaperOuterClass.Paper = mainService.getPaperById(request)
+
+        override suspend fun searchLocalPapers(request: PaperOuterClass.Paper.SearchQuery): PaperOuterClass.Paper.List =
+            super.searchLocalPapers(request)
+
+        override suspend fun searchFetcherPapers(
+            request: ProjectOuterClass.Project.Paper.SearchQuery,
+        ): PaperOuterClass.Paper.List = super.searchFetcherPapers(request)
 
         override suspend fun createPaper(request: PaperOuterClass.Paper): PaperOuterClass.Paper =
             mainService.createPaper(request)

@@ -3,15 +3,18 @@ package se.uulm.snowballr.backend.service
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.IdentifierType
 import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
+import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.toGrpcProjectMembers
 import se.uulm.snowballr.backend.model.parseUUID
+import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
-import se.uulm.snowballr.backend.service.accessrules.AccessRuleCompoundObject
+import se.uulm.snowballr.backend.service.accessrules.AccessRuleCompoundUUID
 import se.uulm.snowballr.backend.service.accessrules.andAlso
 import se.uulm.snowballr.backend.service.accessrules.checkFor
 import se.uulm.snowballr.backend.service.accessrules.forProperty
@@ -20,7 +23,6 @@ import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadProject
 import se.uulm.snowballr.backend.service.accessrules.isNotLastProjectAdmin
 import se.uulm.snowballr.backend.service.accessrules.isProjectAdmin
 import se.uulm.snowballr.backend.service.accessrules.isProjectExistent
-import se.uulm.snowballr.backend.service.accessrules.isProjectMember
 import se.uulm.snowballr.backend.service.accessrules.isSameUserById
 import se.uulm.snowballr.backend.service.accessrules.isServerAdmin
 import se.uulm.snowballr.backend.service.accessrules.isServerOrProjectAdmin
@@ -28,6 +30,7 @@ import se.uulm.snowballr.backend.service.accessrules.orElse
 import se.uulm.snowballr.backend.service.accessrules.orElseThrow
 import snowballr.Base
 import snowballr.ProjectOuterClass.MemberRole
+import java.util.UUID
 import snowballr.ProjectOuterClass.Project.Member as GrpcProjectMember
 
 interface IProjectMemberService {
@@ -57,11 +60,13 @@ interface IProjectMemberService {
  * @param repo The repository responsible for managing persistence operations for project members.
  * @param projectRepo The repository responsible for managing persistence operations for projects.
  * @param userRepo The repository responsible for managing persistence operations for users.
+ * @param invitationTokenRepo The repository responsible for managing persistence operations for invitation tokens.
  */
 class ProjectMemberService(
     private val repo: IProjectMemberTableRepo,
     private val projectRepo: IProjectTableRepo,
     private val userRepo: IUserTableRepo,
+    private val invitationTokenRepo: IInvitationTokenTableRepo,
 ) : IProjectMemberService {
     override suspend fun getProjectMembers(request: Base.Id): GrpcProjectMember.List =
         withUser(userRepo) { currentUser ->
@@ -107,47 +112,75 @@ class ProjectMemberService(
     override suspend fun removeProjectMember(request: GrpcProjectMember.Remove): Base.Nothing =
         withUser(userRepo) { currentUser ->
             val projectId = parseUUID(request.projectId, EntityType.PROJECT)
-            val requestedUserId = parseUUID(request.userId, EntityType.USER)
+            val requestedUserResult = userRepo.getUserByEmail(request.userEmail)
 
-            val userProjectCompound = AccessRuleCompoundObject(requestedUserId, projectId)
-
-            isSameUserById()
-                .forProperty(AccessRuleCompoundObject::firstTargetId)
-                .andAlso(isProjectMember(repo).forProperty(AccessRuleCompoundObject::secondTargetId))
-                .orElse(
-                    isProjectAdmin(repo)
-                        .orElse(isServerAdmin().forTarget())
-                        .orElseThrow { user, targetId ->
-                            UnauthorizedException.Action(
-                                EntityType.PROJECT,
-                                targetId.toString(),
-                                AccessType.DELETE,
-                                user.id.toString(),
-                            )
-                        }
-                        .forProperty(AccessRuleCompoundObject::secondTargetId),
-                )
-                .checkFor(currentUser, userProjectCompound)
-
-            when {
-                !projectRepo.doesProjectExistById(projectId)
-                -> throw NotFoundException(EntityType.PROJECT, projectId.toString())
-
-                !userRepo.doesUserExistById(requestedUserId)
-                -> throw NotFoundException(EntityType.USER, projectId.toString())
-            }
-
-            val projectMembers = repo.getProjectMembers(projectId)
-            val isLastMember = projectMembers.size == 1 && projectMembers.first().userId == requestedUserId
-            if (isLastMember) {
-                projectRepo.softDeleteProject(projectId)
+            if (requestedUserResult.isSuccess) {
+                val requestedUser = requestedUserResult.getOrThrow()
+                removeProjectMemberUser(currentUser, requestedUser, projectId)
             } else {
-                val user = userRepo.getUserById(requestedUserId).getOrThrow()
-                isNotLastProjectAdmin(repo, "The user cannot be removed from the project")
-                    .checkFor(user, projectId)
+                removeProjectMemberInvitation(currentUser, request.userEmail, projectId)
             }
 
-            repo.removeProjectMember(projectId, requestedUserId)
             Base.Nothing.getDefaultInstance()
         }
+
+    private suspend fun removeProjectMemberUser(currentUser: User, requestedUser: User, projectId: UUID) {
+        val userProjectCompound = AccessRuleCompoundUUID(requestedUser.id, projectId)
+
+        if (!repo.isProjectMember(projectId, requestedUser.id)) {
+            return
+        }
+
+        isSameUserById()
+            .forProperty(AccessRuleCompoundUUID::firstTarget)
+            .orElse(
+                isProjectAdmin(repo)
+                    .orElse(isServerAdmin().forTarget())
+                    .orElseThrow { user, targetId ->
+                        UnauthorizedException.Action(
+                            EntityType.PROJECT,
+                            targetId.toString(),
+                            AccessType.DELETE,
+                            user.id.toString(),
+                        )
+                    }
+                    .forProperty(AccessRuleCompoundUUID::secondTarget),
+            )
+            .checkFor(currentUser, userProjectCompound)
+
+        if (!projectRepo.doesProjectExistById(projectId)) {
+            throw NotFoundException(EntityType.PROJECT, projectId.toString())
+        }
+
+        val projectMembers = repo.getProjectMembers(projectId)
+        val isLastMember = projectMembers.size == 1 && projectMembers.first().userId == requestedUser.id
+        if (isLastMember) {
+            projectRepo.softDeleteProject(projectId)
+        } else {
+            isNotLastProjectAdmin(repo, "The user cannot be removed from the project")
+                .checkFor(requestedUser, projectId)
+        }
+
+        repo.removeProjectMember(projectId, requestedUser.id)
+    }
+
+    private suspend fun removeProjectMemberInvitation(currentUser: User, userEmail: String, projectId: UUID) {
+        isProjectAdmin(repo)
+            .orElse(isServerAdmin().forTarget())
+            .orElseThrow { user, targetId ->
+                UnauthorizedException.Action(
+                    EntityType.PROJECT,
+                    targetId.toString(),
+                    AccessType.DELETE,
+                    user.id.toString(),
+                )
+            }
+            .checkFor(currentUser, projectId)
+
+        val invitationToken =
+            invitationTokenRepo.getInvitationTokenByEmailAndProjectId(userEmail, projectId).getOrNull()
+                ?: throw NotFoundException(EntityType.USER, userEmail, identifierType = IdentifierType.EMAIL)
+
+        invitationTokenRepo.deleteInvitationToken(invitationToken.token)
+    }
 }

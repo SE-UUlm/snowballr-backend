@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.repository.association
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -389,6 +390,37 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
             assertDoesNotThrow { repo.removeProjectMember(projectId, UUID.randomUUID()) }
             assertDoesNotThrow { repo.removeProjectMember(UUID.randomUUID(), members[0].userId) }
             assertTrue(repo.getProjectMemberByComposedId(projectId, members[0].userId).isSuccess)
+        }
+    }
+
+    @Nested
+    inner class IsProjectMember {
+        @Test
+        fun `When the user is a project member, then true is returned`() = runTest {
+            val (projectId, members) = setupProject()
+
+            val isMember = repo.isProjectMember(projectId, members[0].userId)
+
+            assertTrue(isMember)
+        }
+
+        @Test
+        fun `When the user is not a project member, then false is returned`() = runTest {
+            val (projectId, _) = setupProject()
+            val nonMemberUserId = insertUserAndGetId(email = "non-member-user@example.com")
+
+            val isMember = repo.isProjectMember(projectId, nonMemberUserId)
+
+            assertFalse(isMember)
+        }
+
+        @Test
+        fun `When the user is soft-deleted, then false is returned`() = runTest {
+            val (projectId, members) = setupProject(addTestUser = false, addDeletedUser = true)
+
+            val isMember = repo.isProjectMember(projectId, members[0].userId)
+
+            assertFalse(isMember)
         }
     }
 }

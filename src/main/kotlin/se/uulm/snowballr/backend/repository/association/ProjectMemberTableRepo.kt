@@ -13,6 +13,7 @@ import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.ProjectMember
 import se.uulm.snowballr.backend.model.dto.ProjectMemberWithUser
+import se.uulm.snowballr.backend.repository.doesEntityExist
 import se.uulm.snowballr.backend.repository.getEntities
 import se.uulm.snowballr.backend.repository.getEntityByKeysAsResult
 import se.uulm.snowballr.backend.repository.getEntityOrNull
@@ -93,6 +94,15 @@ interface IProjectMemberTableRepo {
      * @param userId The unique identifier of the user, who should be removed.
      */
     suspend fun removeProjectMember(projectId: UUID, userId: UUID)
+
+    /**
+     * Checks whether the user with the given [userId] is a member of the project with the given [projectId].
+     *
+     * @param projectId The unique identifier of the project.
+     * @param userId The unique identifier of the user.
+     * @return `true` if the user is a member of the project, `false` otherwise.
+     */
+    suspend fun isProjectMember(projectId: UUID, userId: UUID): Boolean
 }
 
 /**
@@ -211,6 +221,14 @@ class ProjectMemberTableRepo(
         db.query {
             ProjectMemberTable
                 .deleteWhere { (ProjectMemberTable.projectId eq projectId) and (ProjectMemberTable.userId eq userId) }
+        }
+    }
+
+    override suspend fun isProjectMember(projectId: UUID, userId: UUID): Boolean = db.query {
+        ProjectMemberTable.doesEntityExist {
+            (ProjectMemberTable.projectId eq projectId) and
+                (ProjectMemberTable.userId eq userId) and
+                (ProjectMemberTable.userId notInList getSoftDeletedUserIds())
         }
     }
 }
