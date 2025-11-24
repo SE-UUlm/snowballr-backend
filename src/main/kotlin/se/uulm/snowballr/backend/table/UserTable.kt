@@ -47,8 +47,7 @@ private val DECLINE_ANY_PATTERN = patternOf(
     result = PaperDecision.PAPER_DECISION_DECLINED,
 )
 private val MAYBE_MAYBE_PATTERN = patternOf(
-    ReviewDecision.REVIEW_DECISION_MAYBE to 1L,
-    ReviewDecision.REVIEW_DECISION_MAYBE to 1L,
+    ReviewDecision.REVIEW_DECISION_MAYBE to REQUIRED_REVIEWERS.toLong(),
     result = PaperDecision.PAPER_DECISION_IN_REVIEW,
 )
 
@@ -60,7 +59,9 @@ private const val SIMILARITY_THRESHOLD_DEFAULT = 0F
 /**
  * This default decision matrix assumes two reviewers by default.
  *
- * It encodes the basic rules for combining reviewer decisions:
+ * It encodes the basic rules for combining reviewer decisions.
+ * Patterns are checked in order, and the first pattern whose entry count requirements
+ * are satisfied determines the result:
  *  - Accept + Decline → still in review (need final decision)
  *  - Accept + Anything not already matched → Accepted
  *  - Decline + Anything not already matched → Declined

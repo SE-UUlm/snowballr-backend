@@ -289,8 +289,7 @@ object DataBuilder {
         result = PaperDecision.PAPER_DECISION_DECLINED,
     )
     private val MAYBE_MAYBE_PATTERN = patternOf(
-        ReviewDecision.REVIEW_DECISION_MAYBE to 1L,
-        ReviewDecision.REVIEW_DECISION_MAYBE to 1L,
+        ReviewDecision.REVIEW_DECISION_MAYBE to 2L,
         result = PaperDecision.PAPER_DECISION_IN_REVIEW,
     )
 
