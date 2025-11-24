@@ -123,6 +123,9 @@ class ReviewService(
      * @return The computed [PaperDecision] based on the given reviews.
      */
     private fun determinePaperDecision(reviews: List<Review>, decisionMatrix: ReviewDecisionMatrix): PaperDecision {
+        if (reviews.isEmpty()) {
+            return PaperDecision.PAPER_DECISION_UNREVIEWED
+        }
         if (reviews.size < decisionMatrix.numberOfReviewers) {
             return PaperDecision.PAPER_DECISION_IN_REVIEW
         }
