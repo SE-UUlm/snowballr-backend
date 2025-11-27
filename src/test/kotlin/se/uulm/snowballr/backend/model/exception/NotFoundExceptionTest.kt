@@ -6,8 +6,10 @@ import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.IdentifierType
 import se.uulm.snowballr.backend.model.exception.notfound.EntityNotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.InvitationTokenNotFoundException
+import se.uulm.snowballr.backend.model.exception.notfound.StageNotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.VerificationTokenNotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.PaperNotFoundException
+import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectMemberNotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectPaperNotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundByEmailException
@@ -21,7 +23,7 @@ class NotFoundExceptionTest {
     @Nested
     inner class EntityNotFoundExceptions {
         @Test
-        fun `When creating a EntityNotFoundException, then the message is correctly formatted`() {
+        fun `When creating an EntityNotFoundException, then the message is correctly formatted`() {
             val id = "id-1"
             val exception = EntityNotFoundException(
                 EntityType.USER,
@@ -38,6 +40,14 @@ class NotFoundExceptionTest {
             val exception = PaperNotFoundException(testId)
 
             assertEquals("Paper with ID '$testId' not found.", exception.message)
+        }
+
+        @Test
+        fun `When creating a ProjectMemberNotFoundException, then the message is correctly formatted`() {
+            val testId2 = UUID.randomUUID()
+            val exception = ProjectMemberNotFoundException(testId, testId2)
+
+            assertEquals("Project member with ID '$testId' and '$testId2' not found.", exception.message)
         }
 
         @Test
@@ -74,17 +84,33 @@ class NotFoundExceptionTest {
         }
     }
 
-    @Test
-    fun `When creating a InvitationTokenNotFoundException, the the message is correctly formatted`() {
-        val exception = InvitationTokenNotFoundException()
+    @Nested
+    inner class InvitationTokenNotFoundExceptions {
+        @Test
+        fun `When creating an InvitationTokenNotFoundException, the the message is correctly formatted`() {
+            val exception = InvitationTokenNotFoundException()
 
-        assertEquals("Invitation token not found.", exception.message)
+            assertEquals("Invitation token not found.", exception.message)
+        }
     }
 
-    @Test
-    fun `When creating a VerificationTokenNotFoundException, the the message is correctly formatted`() {
-        val exception = VerificationTokenNotFoundException()
+    @Nested
+    inner class StageNotFoundExceptions {
+        @Test
+        fun `When creating a StageNotFoundException, the the message is correctly formatted`() {
+            val exception = StageNotFoundException(42)
 
-        assertEquals("Verification token not found.", exception.message)
+            assertEquals("Stage '42' not found.", exception.message)
+        }
+    }
+
+    @Nested
+    inner class VerificationTokenNotFoundExceptions {
+        @Test
+        fun `When creating a VerificationTokenNotFoundException, the the message is correctly formatted`() {
+            val exception = VerificationTokenNotFoundException()
+
+            assertEquals("Verification token not found.", exception.message)
+        }
     }
 }
