@@ -1,6 +1,5 @@
 package se.uulm.snowballr.backend.model.exception
 
-import io.grpc.Status
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
@@ -8,7 +7,6 @@ import org.junit.jupiter.params.provider.EnumSource
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.IdentifierType
-import se.uulm.snowballr.backend.model.exception.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedActionException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedAllException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedCreateException
@@ -22,15 +20,6 @@ import kotlin.test.assertEquals
 
 class UnauthorizedExceptionTest {
     private val currentUserId = UUID.randomUUID()
-
-    @Test
-    fun `When creating an UnauthorizedException, then the message is correctly formatted and the status code is PERMISSION_DENIED`() {
-        val exceptionMessage = "Test message"
-        val exception = UnauthorizedException(currentUserId, AccessType.CREATE, exceptionMessage)
-
-        assertEquals("User with ID '$currentUserId' is not authorized to create $exceptionMessage", exception.message)
-        assertEquals(Status.PERMISSION_DENIED, exception.getGrpcStatus())
-    }
 
     @Nested
     inner class UnauthorizedActionExceptions {

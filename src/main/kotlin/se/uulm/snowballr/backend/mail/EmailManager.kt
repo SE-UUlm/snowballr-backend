@@ -7,7 +7,7 @@ import org.simplejavamail.email.EmailBuilder
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.email.EmailTemplate
-import se.uulm.snowballr.backend.model.exception.SnowballRException.EmailException.MailSendFailed
+import se.uulm.snowballr.backend.model.exception.EmailException.MailSendFailed
 
 private val logger = KotlinLogging.logger {}
 

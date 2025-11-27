@@ -2,7 +2,7 @@ package se.uulm.snowballr.backend.model.exception.unauthorized
 
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.exception.SnowballRException.UnauthorizedException
+import se.uulm.snowballr.backend.model.exception.UnauthorizedException
 import java.util.UUID
 
 /**

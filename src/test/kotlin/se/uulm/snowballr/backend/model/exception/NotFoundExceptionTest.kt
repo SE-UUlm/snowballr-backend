@@ -1,11 +1,9 @@
 package se.uulm.snowballr.backend.model.exception
 
-import io.grpc.Status
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.IdentifierType
-import se.uulm.snowballr.backend.model.exception.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.EntityNotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.InvitationTokenNotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.VerificationTokenNotFoundException
@@ -19,15 +17,6 @@ import kotlin.test.assertEquals
 
 class NotFoundExceptionTest {
     private val testId = UUID.randomUUID()
-
-    @Test
-    fun `When creating a NotFoundException, then the message is correctly formatted and the status code is NOT_FOUND`() {
-        val exceptionMessage = "Test message"
-        val exception = NotFoundException(exceptionMessage)
-
-        assertEquals(exceptionMessage, exception.message)
-        assertEquals(Status.NOT_FOUND, exception.getGrpcStatus())
-    }
 
     @Nested
     inner class EntityNotFoundExceptions {

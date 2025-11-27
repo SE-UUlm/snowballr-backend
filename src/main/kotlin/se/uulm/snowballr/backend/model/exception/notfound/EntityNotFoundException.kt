@@ -3,7 +3,7 @@ package se.uulm.snowballr.backend.model.exception.notfound
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.IdentifierType
 import se.uulm.snowballr.backend.model.displayEntityIds
-import se.uulm.snowballr.backend.model.exception.SnowballRException.NotFoundException
+import se.uulm.snowballr.backend.model.exception.NotFoundException
 
 /**
  * Represents an exception that occurs when an entity could not be found by its identifier(s).

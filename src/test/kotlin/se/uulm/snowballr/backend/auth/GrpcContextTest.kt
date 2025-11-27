@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import se.uulm.snowballr.backend.model.exception.SnowballRException.MissingContextException
+import se.uulm.snowballr.backend.model.exception.MissingContextException
 import snowballr.Authentication.AuthenticationStatus
 import java.util.UUID
 

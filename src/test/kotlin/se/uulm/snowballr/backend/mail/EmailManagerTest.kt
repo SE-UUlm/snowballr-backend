@@ -24,8 +24,8 @@ import se.uulm.snowballr.backend.env.Env
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.email.EmailTemplate
-import se.uulm.snowballr.backend.model.exception.SnowballRException
-import se.uulm.snowballr.backend.model.exception.SnowballRException.EmailException
+import se.uulm.snowballr.backend.model.exception.EmailException
+import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 
 /**
  * A base class for testing the [EmailManager].
@@ -177,9 +177,9 @@ class EmailManagerTest {
             val emailData = EmailData.EmailVerification("John", "any-link")
 
             every { emailTemplateManagerMock.getTemplate(any()) } throws
-                SnowballRException.FailedPreconditionException("Template not pre-compiled")
+                FailedPreconditionException("Template not pre-compiled")
 
-            assertThrows<SnowballRException.FailedPreconditionException> {
+            assertThrows<FailedPreconditionException> {
                 emailManager.sendVerificationEmail(recipientEmail, emailData)
             }
         }

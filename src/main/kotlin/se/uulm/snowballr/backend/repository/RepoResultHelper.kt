@@ -2,8 +2,8 @@ package se.uulm.snowballr.backend.repository
 
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.IdentifierType
+import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.SnowballRException
-import se.uulm.snowballr.backend.model.exception.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.EntityNotFoundException
 
 /**

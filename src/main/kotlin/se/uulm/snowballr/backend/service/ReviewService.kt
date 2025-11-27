@@ -5,8 +5,8 @@ import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.Review
 import se.uulm.snowballr.backend.model.dto.toGrpcReview
 import se.uulm.snowballr.backend.model.dto.toGrpcReviews
-import se.uulm.snowballr.backend.model.exception.SnowballRException.DuplicateReviewException
-import se.uulm.snowballr.backend.model.exception.SnowballRException.FailedPreconditionException
+import se.uulm.snowballr.backend.model.exception.DuplicateReviewException
+import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IReviewTableRepo

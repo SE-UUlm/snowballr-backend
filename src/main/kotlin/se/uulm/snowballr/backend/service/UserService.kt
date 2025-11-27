@@ -12,9 +12,9 @@ import se.uulm.snowballr.backend.model.dto.toGrpcUser
 import se.uulm.snowballr.backend.model.dto.toGrpcUserSettings
 import se.uulm.snowballr.backend.model.dto.toGrpcUsers
 import se.uulm.snowballr.backend.model.email.EmailData
-import se.uulm.snowballr.backend.model.exception.SnowballRException.DuplicateEntityException
-import se.uulm.snowballr.backend.model.exception.SnowballRException.EntityNotActiveException
-import se.uulm.snowballr.backend.model.exception.SnowballRException.FailedPreconditionException
+import se.uulm.snowballr.backend.model.exception.DuplicateEntityException
+import se.uulm.snowballr.backend.model.exception.EntityNotActiveException
+import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundByEmailException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadAllException

@@ -5,10 +5,10 @@ package se.uulm.snowballr.backend.service.accessrules
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.Project
-import se.uulm.snowballr.backend.model.exception.SnowballRException.EntityNotActiveException
-import se.uulm.snowballr.backend.model.exception.SnowballRException.FailedPreconditionException
-import se.uulm.snowballr.backend.model.exception.SnowballRException.NotFoundException
-import se.uulm.snowballr.backend.model.exception.SnowballRException.UnauthorizedException
+import se.uulm.snowballr.backend.model.exception.EntityNotActiveException
+import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
+import se.uulm.snowballr.backend.model.exception.NotFoundException
+import se.uulm.snowballr.backend.model.exception.UnauthorizedException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedExceptionFactory
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadException

@@ -1,8 +1,8 @@
 package se.uulm.snowballr.backend.service.accessrules
 
 import se.uulm.snowballr.backend.model.dto.User
+import se.uulm.snowballr.backend.model.exception.AccessRuleCheckFailedException
 import se.uulm.snowballr.backend.model.exception.SnowballRException
-import se.uulm.snowballr.backend.model.exception.SnowballRException.AccessRuleCheckFailedException
 import java.util.UUID
 import kotlin.reflect.KProperty1
 
