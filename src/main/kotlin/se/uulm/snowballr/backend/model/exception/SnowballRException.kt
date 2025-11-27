@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.model.exception
 
+import io.grpc.Status
 import org.simplejavamail.MailException
 import se.uulm.snowballr.backend.mail.EmailManager
 import se.uulm.snowballr.backend.model.AccessType
@@ -15,17 +16,21 @@ import java.util.UUID
  * Used to encapsulate specific error details and provide a consistent exception structure.
  * Can be extended to create more detailed exceptions specific to various error scenarios.
  *
+ * @param grpcStatus The gRPC status code that should be returned to the client when the exception is thrown.
  * @param message Detailed message describing the reason for the exception, or null if not provided.
  * @param cause The cause of the exception, which can be another exception, or null if not provided.
  */
 sealed class SnowballRException(
+    private val grpcStatus: Status,
     message: String? = null,
     cause: Throwable? = null,
 ) : RuntimeException(message, cause) {
+    fun getGrpcStatus(): Status = grpcStatus
+
     /**
      * Represents an exception that occurs when something could not be found.
      */
-    open class NotFoundException(message: String) : SnowballRException(message)
+    open class NotFoundException(message: String) : SnowballRException(Status.NOT_FOUND, message)
 
     /**
      * Represents an exception that occurs when an entity already exists in the system
@@ -40,6 +45,7 @@ sealed class SnowballRException(
         vararg entityIds: String,
         identifierType: IdentifierType = IdentifierType.ID,
     ) : SnowballRException(
+        Status.ALREADY_EXISTS,
         "${entityType.singularUpper()} ${displayEntityIds(entityIds.toList(), identifierType)} already exists.",
     )
 
@@ -53,7 +59,10 @@ sealed class SnowballRException(
     class DuplicateReviewException(
         projectPaperId: String,
         userId: String,
-    ) : SnowballRException("Project paper with ID '$projectPaperId' was already reviewed by user with ID '$userId'.")
+    ) : SnowballRException(
+        Status.ALREADY_EXISTS,
+        "Project paper with ID '$projectPaperId' was already reviewed by user with ID '$userId'.",
+    )
 
     /**
      * Represents an exception that occurs when an entity creation was triggered, but it couldn't be fetched afterward.
@@ -64,7 +73,7 @@ sealed class SnowballRException(
     class EntityNotPersistedException(
         entityType: EntityType,
         entityId: String,
-    ) : SnowballRException("${entityType.singularUpper()} with ID '$entityId' was not persisted.")
+    ) : SnowballRException(Status.INTERNAL, "${entityType.singularUpper()} with ID '$entityId' was not persisted.")
 
     /**
      * Represents an exception that occurs when the current user accesses one or more entities without permission.
@@ -77,7 +86,10 @@ sealed class SnowballRException(
         currentUserId: UUID,
         accessType: AccessType,
         accessedEntityMessage: String,
-    ) : SnowballRException("User with ID '$currentUserId' is not authorized to $accessType $accessedEntityMessage")
+    ) : SnowballRException(
+        Status.PERMISSION_DENIED,
+        "User with ID '$currentUserId' is not authorized to $accessType $accessedEntityMessage",
+    )
 
     /**
      * Represents a specific type of exception that occurs when a user is not authenticated.
@@ -87,7 +99,7 @@ sealed class SnowballRException(
      *
      * @constructor Creates an [UnauthenticatedException] with a default message.
      */
-    class UnauthenticatedException : SnowballRException("User is not authenticated.")
+    class UnauthenticatedException : SnowballRException(Status.UNAUTHENTICATED, "User is not authenticated.")
 
     /**
      * Represents a specific type of exception that occurs when an ID is in an invalid format.
@@ -100,7 +112,10 @@ sealed class SnowballRException(
         entityType: EntityType,
         entityId: String,
         format: String,
-    ) : SnowballRException("The ID '$entityId' of the ${entityType.singular} is not a valid $format.") {
+    ) : SnowballRException(
+        Status.INVALID_ARGUMENT,
+        "The ID '$entityId' of the ${entityType.singular} is not a valid $format.",
+    ) {
         /**
          * Represents an [InvalidIdException] that occurs when a [UUID] is in an invalid format.
          *
@@ -124,7 +139,7 @@ sealed class SnowballRException(
         value: Number,
         from: Number,
         to: Number,
-    ) : SnowballRException("The value $value is not in the range of from $from to $to.") {
+    ) : SnowballRException(Status.INVALID_ARGUMENT, "The value $value is not in the range of from $from to $to.") {
         /**
          * Represents an [OutOfRangeException] that occurs when a [Stage] value is not in the correct range.
          *
@@ -147,7 +162,7 @@ sealed class SnowballRException(
      */
     sealed class MissingContextException(
         keyDescription: String,
-    ) : SnowballRException("Missing context value: $keyDescription") {
+    ) : SnowballRException(Status.INTERNAL, "Missing context value: $keyDescription") {
         /**
          * Represents a [MissingContextException] that occurs when the authentication status is missing in the context.
          */
@@ -172,7 +187,7 @@ sealed class SnowballRException(
      */
     open class FailedPreconditionException(
         description: String,
-    ) : SnowballRException(description)
+    ) : SnowballRException(Status.FAILED_PRECONDITION, description)
 
     /**
      * Represents a [FailedPreconditionException] that indicates that an entity is not active.
@@ -194,7 +209,7 @@ sealed class SnowballRException(
     sealed class EmailException(
         message: String,
         cause: Throwable? = null,
-    ) : SnowballRException(message, cause) {
+    ) : SnowballRException(Status.INTERNAL, message, cause) {
         /**
          * Thrown when an email template file cannot be found or compiled during application startup.
          * This is a fatal startup error.
@@ -240,6 +255,7 @@ sealed class SnowballRException(
      * an appropriate `UnauthorizedException` in the example
      */
     class AccessRuleCheckFailedException : SnowballRException(
+        Status.INTERNAL,
         "Access rule check failed without throwing a specified exception. " +
             "Please add a more specific exception to each path in the rule chain.",
     )
