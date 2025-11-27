@@ -10,6 +10,8 @@ import se.uulm.snowballr.backend.model.exception.SnowballRException.FailedPrecon
 import se.uulm.snowballr.backend.model.exception.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.exception.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
+import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedExceptionFactory
+import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadException
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import snowballr.ProjectOuterClass.ProjectStatus
@@ -85,7 +87,7 @@ fun isNotLastProjectAdmin(projectMemberRepo: IProjectMemberTableRepo, action: St
 
 /**
  * Check whether the current user is a member of the specified project. If the user is not a project member,
- * the user has to be a server admin; otherwise, throws an [UnauthorizedException.Single].
+ * the user has to be a server admin; otherwise, throws an [UnauthorizedException].
  *
  * @param projectMemberRepo The repository used to access project membership data.
  */
@@ -94,18 +96,13 @@ fun isAllowedToReadProject(projectMemberRepo: IProjectMemberTableRepo): AccessRu
     return isProjectMember(projectMemberRepo)
         .orElse(isServerAdmin().forTarget())
         .orElseThrow { currentUser, targetId ->
-            UnauthorizedException.Single(
-                EntityType.PROJECT,
-                targetId.toString(),
-                AccessType.READ,
-                currentUser.id.toString(),
-            )
+            UnauthorizedReadException(currentUser.id, targetId, EntityType.PROJECT)
         }
 }
 
 /**
  * Check whether the current user is an admin of the specified project. If the user is not a project admin,
- * the user has to be a server admin; otherwise, throws an [UnauthorizedException.Single].
+ * the user has to be a server admin; otherwise, throws an [UnauthorizedException].
  *
  * @param projectMemberRepo The repository used to access project membership data.
  * @param accessType The type of access that is being checked.
@@ -115,6 +112,6 @@ fun isServerOrProjectAdmin(projectMemberRepo: IProjectMemberTableRepo, accessTyp
     return isProjectAdmin(projectMemberRepo)
         .orElse(isServerAdmin().forTarget())
         .orElseThrow { currentUser, targetId ->
-            UnauthorizedException.Single(EntityType.PROJECT, targetId.toString(), accessType, currentUser.id.toString())
+            UnauthorizedExceptionFactory.createForAccessType(accessType, currentUser.id, targetId, EntityType.PROJECT)
         }
 }

@@ -1,12 +1,13 @@
 package se.uulm.snowballr.backend.model.exception
 
 import org.simplejavamail.MailException
+import se.uulm.snowballr.backend.mail.EmailManager
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.IdentifierType
 import se.uulm.snowballr.backend.model.displayEntityIds
-import se.uulm.snowballr.backend.mail.EmailManager
 import java.io.IOException
+import java.util.UUID
 
 /**
  * Base class for all exceptions in the SnowballR application.
@@ -24,8 +25,7 @@ sealed class SnowballRException(
     /**
      * Represents an exception that occurs when something could not be found.
      */
-    @Suppress("UnnecessaryAbstractClass")
-    abstract class NotFoundException(message: String) : SnowballRException(message)
+    open class NotFoundException(message: String) : SnowballRException(message)
 
     /**
      * Represents an exception that occurs when an entity already exists in the system
@@ -70,83 +70,14 @@ sealed class SnowballRException(
      * Represents an exception that occurs when the current user accesses one or more entities without permission.
      *
      * @param currentUserId The ID of the user that is accessing the entity/entities.
+     * @param accessType The type of access, i.e., the CRUD operation.
      * @param accessedEntityMessage The message of what is accessed.
-     * @param accessType The type of access, i.e., an update, read access, ...
      */
-    sealed class UnauthorizedException(
-        currentUserId: String,
-        accessedEntityMessage: String,
+    open class UnauthorizedException(
+        currentUserId: UUID,
         accessType: AccessType,
-    ) : SnowballRException("User with ID '$currentUserId' is not authorized to $accessType $accessedEntityMessage") {
-        /**
-         * Represents an [UnauthorizedException] that occurs when the current user accesses a single entity without
-         * permission.
-         *
-         * @param accessedEntityType The type of the entity that was accessed without permission.
-         * @param accessedEntityId The ID of the entity that was accessed without permission.
-         * @param accessType The type of access (see [AccessType] for possible types).
-         * @param currentUserId The ID of the user that is accessing the entity.
-         * @param identifierType The type of the identifier used to access the entity.
-         */
-        class Single(
-            accessedEntityType: EntityType,
-            accessedEntityId: String,
-            accessType: AccessType = AccessType.READ,
-            currentUserId: String,
-            identifierType: IdentifierType = IdentifierType.ID,
-        ) : UnauthorizedException(
-            currentUserId,
-            if (accessType == AccessType.CREATE) {
-                "${accessedEntityType.singular}."
-            } else {
-                "${accessedEntityType.singular} with ${identifierType.displayName} '$accessedEntityId'."
-            },
-            accessType,
-        )
-
-        /**
-         * Represents an [UnauthorizedException] that occurs when the current user accesses several entities without
-         * permission.
-         *
-         * @param accessedEntityType The type of the entities that were accessed without permission.
-         * @param accessType The type of access (see [AccessType] for possible types).
-         * @param currentUserId The ID of the user that is accessing the entities.
-         */
-        class All(
-            accessedEntityType: EntityType,
-            accessType: AccessType = AccessType.READ,
-            currentUserId: String,
-        ) : UnauthorizedException(currentUserId, "all ${accessedEntityType.plural}.", accessType)
-
-        /**
-         * Represents an [UnauthorizedException] that occurs when the current user performs an action on an entity.
-         *
-         * @param accessedEntityType The type of entity that the action was attempted on, represented as [EntityType].
-         * @param accessedEntityId The unique identifier of the entity being accessed.
-         * @param accessType The type of access being attempted, such as READ, CREATE, UPDATE, or DELETE.
-         *                   Defaults to [AccessType.DELETE].
-         * @param currentUserId The identifier of the user attempting the unauthorized action.
-         * @param identifierType The type of identifier used for the entity, typically from [IdentifierType].
-         *                       Defaults to [IdentifierType.ID].
-         */
-        class Action(
-            accessedEntityType: EntityType,
-            accessedEntityId: String,
-            accessType: AccessType = AccessType.DELETE,
-            currentUserId: String,
-            identifierType: IdentifierType = IdentifierType.ID,
-        ) : UnauthorizedException(
-            currentUserId,
-            "something ${
-                if (accessType in listOf(AccessType.DELETE, AccessType.READ)) {
-                    "from"
-                } else {
-                    "in"
-                }
-            } ${accessedEntityType.singular} with ${identifierType.displayName} '$accessedEntityId'.",
-            accessType,
-        )
-    }
+        accessedEntityMessage: String,
+    ) : SnowballRException("User with ID '$currentUserId' is not authorized to $accessType $accessedEntityMessage")
 
     /**
      * Represents a specific type of exception that occurs when a user is not authenticated.

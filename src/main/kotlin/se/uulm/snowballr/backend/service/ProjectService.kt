@@ -9,9 +9,10 @@ import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.toGrpcProject
 import se.uulm.snowballr.backend.model.dto.toGrpcProjects
 import se.uulm.snowballr.backend.model.exception.SnowballRException.FailedPreconditionException
-import se.uulm.snowballr.backend.model.exception.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.exception.notfound.StageNotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
+import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadAllException
+import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadException
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
@@ -146,7 +147,7 @@ class ProjectService(
 
     override suspend fun getAllProjects(): GrpcProject.List = withUser(userRepo) { currentUser ->
         isServerAdmin()
-            .orElseThrow(UnauthorizedException.All(EntityType.PROJECT, AccessType.READ, currentUser.id.toString()))
+            .orElseThrow(UnauthorizedReadAllException(currentUser.id, EntityType.PROJECT))
             .checkFor(currentUser)
 
         repo.getAllProjects().toGrpcProjects()
@@ -162,12 +163,7 @@ class ProjectService(
         isServerAdminOrSameUser()
             .forProperty(User::id)
             .orElseThrow { requestingUser, _ ->
-                UnauthorizedException.Single(
-                    EntityType.USER,
-                    requestedUserId.toString(),
-                    AccessType.READ,
-                    requestingUser.id.toString(),
-                )
+                UnauthorizedReadException(requestingUser.id, requestedUserId, EntityType.USER)
             }
             .checkFor(currentUser, requestedUser)
 

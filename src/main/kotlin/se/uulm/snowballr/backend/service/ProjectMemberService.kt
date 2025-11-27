@@ -7,9 +7,9 @@ import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.toGrpcProjectMembers
 import se.uulm.snowballr.backend.model.exception.SnowballRException.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.SnowballRException.NotFoundException
-import se.uulm.snowballr.backend.model.exception.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundByEmailException
+import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedActionException
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
@@ -138,12 +138,7 @@ class ProjectMemberService(
                 isProjectAdmin(repo)
                     .orElse(isServerAdmin().forTarget())
                     .orElseThrow { user, targetId ->
-                        UnauthorizedException.Action(
-                            EntityType.PROJECT,
-                            targetId.toString(),
-                            AccessType.DELETE,
-                            user.id.toString(),
-                        )
+                        UnauthorizedActionException(EntityType.PROJECT, targetId, AccessType.DELETE, user.id)
                     }
                     .forProperty(AccessRuleCompoundUUID::secondTarget),
             )
@@ -169,12 +164,7 @@ class ProjectMemberService(
         isProjectAdmin(repo)
             .orElse(isServerAdmin().forTarget())
             .orElseThrow { user, targetId ->
-                UnauthorizedException.Action(
-                    EntityType.PROJECT,
-                    targetId.toString(),
-                    AccessType.DELETE,
-                    user.id.toString(),
-                )
+                UnauthorizedActionException(EntityType.PROJECT, targetId, AccessType.DELETE, user.id)
             }
             .checkFor(currentUser, projectId)
 

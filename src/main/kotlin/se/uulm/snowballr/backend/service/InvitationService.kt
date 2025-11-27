@@ -134,11 +134,7 @@ class InvitationService(
         val invitationLink = emailManager.createAcceptProjectInvitationLink(invitationToken)
         emailManager.sendAcceptProjectInvitationEmail(
             request.userEmail,
-            EmailData.AcceptProjectInvitation(
-                userFirstName,
-                project.name,
-                invitationLink,
-            ),
+            EmailData.AcceptProjectInvitation(userFirstName, project.name, invitationLink),
         )
 
         Base.Nothing.getDefaultInstance()

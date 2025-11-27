@@ -5,7 +5,6 @@ import io.viascom.nanoid.NanoId
 import se.uulm.snowballr.backend.auth.PasswordUtils
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.mail.IEmailManager
-import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.IdentifierType
 import se.uulm.snowballr.backend.model.dto.User
@@ -16,9 +15,11 @@ import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.exception.SnowballRException.DuplicateEntityException
 import se.uulm.snowballr.backend.model.exception.SnowballRException.EntityNotActiveException
 import se.uulm.snowballr.backend.model.exception.SnowballRException.FailedPreconditionException
-import se.uulm.snowballr.backend.model.exception.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundByEmailException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundException
+import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadAllException
+import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadException
+import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedUpdateException
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
@@ -158,7 +159,7 @@ class UserService(
 
     override suspend fun getAllUsers(): GrpcUser.List = withUser(userRepo) { currentUser ->
         isServerAdmin()
-            .orElseThrow(UnauthorizedException.All(EntityType.USER, AccessType.READ, currentUser.id.toString()))
+            .orElseThrow(UnauthorizedReadAllException(currentUser.id, EntityType.USER))
             .checkFor(currentUser)
 
         userRepo.getAllUsers().toGrpcUsers()
@@ -195,12 +196,7 @@ class UserService(
         val targetUserId = parseUUID(request.user.id, EntityType.USER)
         val targetUser = userRepo.getUserById(targetUserId).getOrThrow()
 
-        val notAllowedToUpdateException = UnauthorizedException.Single(
-            EntityType.USER,
-            targetUser.id.toString(),
-            AccessType.UPDATE,
-            currentUser.id.toString(),
-        )
+        val notAllowedToUpdateException = UnauthorizedUpdateException(currentUser.id, targetUserId, EntityType.USER)
 
         isSameUserById()
             .forProperty(User::id)
@@ -233,14 +229,7 @@ class UserService(
         val targetUser = userRepo.getUserById(parseUUID(request.id, EntityType.USER)).getOrThrow()
 
         isServerAdminOrSameUser()
-            .orElseThrow(
-                UnauthorizedException.Single(
-                    EntityType.USER,
-                    targetUser.id.toString(),
-                    AccessType.DELETE,
-                    currentUser.id.toString(),
-                ),
-            )
+            .orElseThrow(UnauthorizedReadException(currentUser.id, targetUser.id, EntityType.USER))
             .forProperty(User::id)
             .andAlso(
                 targetUserIsNotAdmin()

@@ -2,10 +2,10 @@
 
 package se.uulm.snowballr.backend.service.accessrules
 
-import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.Review
 import se.uulm.snowballr.backend.model.exception.SnowballRException.UnauthorizedException
+import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadException
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import javax.annotation.CheckReturnValue
@@ -28,7 +28,7 @@ private fun isUserInProjectOfReview(
 
 /**
  * Check whether the current user is a member of the project. If the user is not a project member,
- * the user has to be a server admin; otherwise, throws an [UnauthorizedException.Single].
+ * the user has to be a server admin; otherwise, throws an [UnauthorizedException].
  *
  * Actually, this rule should be used to check whether the current user is allowed to read the review,
  * and this check includes that the current user must be a member of the project the review belongs to.
@@ -44,11 +44,6 @@ fun isAllowedToReadReview(
     return isUserInProjectOfReview(projectMemberRepo, projectPaperRepo)
         .orElse(isServerAdmin().forTarget())
         .orElseThrow { currentUser, target ->
-            UnauthorizedException.Single(
-                EntityType.REVIEW,
-                target.id.toString(),
-                AccessType.READ,
-                currentUser.id.toString(),
-            )
+            UnauthorizedReadException(currentUser.id, target.id, EntityType.REVIEW)
         }
 }

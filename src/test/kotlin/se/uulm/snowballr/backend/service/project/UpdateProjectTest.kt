@@ -105,7 +105,7 @@ class UpdateProjectTest : MainServiceTest() {
             mockCurrentUser(user)
             coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
 
-            assertThrows<UnauthorizedException.Single> { mainService.updateProject(request) }
+            assertThrows<UnauthorizedException> { mainService.updateProject(request) }
         }
 
     @Test
