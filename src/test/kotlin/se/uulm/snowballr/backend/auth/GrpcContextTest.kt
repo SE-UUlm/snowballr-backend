@@ -5,7 +5,9 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import se.uulm.snowballr.backend.model.exception.MissingContextException
+import se.uulm.snowballr.backend.model.exception.internal.missingcontext.MissingAuthenticationStatusException
+import se.uulm.snowballr.backend.model.exception.internal.missingcontext.MissingCookiesMapException
+import se.uulm.snowballr.backend.model.exception.internal.missingcontext.MissingUserIdException
 import snowballr.Authentication.AuthenticationStatus
 import java.util.UUID
 
@@ -28,7 +30,7 @@ class GrpcContextTest {
             val context = Context.current()
 
             withContext(context) {
-                assertThrows<MissingContextException.MissingAuthenticationStatus> {
+                assertThrows<MissingAuthenticationStatusException> {
                     GrpcContext.getAuthenticationStatusFromContext()
                 }
             }
@@ -53,7 +55,7 @@ class GrpcContextTest {
             val context = Context.current()
 
             withContext(context) {
-                assertThrows<MissingContextException.MissingUserId> {
+                assertThrows<MissingUserIdException> {
                     GrpcContext.getUserIdFromContext()
                 }
             }
@@ -83,7 +85,7 @@ class GrpcContextTest {
             val context = Context.current()
 
             withContext(context) {
-                assertThrows<MissingContextException.MissingCookiesMap> {
+                assertThrows<MissingCookiesMapException> {
                     GrpcContext.setAuthCookiesInContext("access", "refresh")
                 }
             }

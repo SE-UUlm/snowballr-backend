@@ -4,7 +4,7 @@ import com.github.jknack.handlebars.Handlebars
 import com.github.jknack.handlebars.Template
 import com.github.jknack.handlebars.io.ClassPathTemplateLoader
 import se.uulm.snowballr.backend.model.email.EmailTemplate
-import se.uulm.snowballr.backend.model.exception.EmailException
+import se.uulm.snowballr.backend.model.exception.internal.email.TemplateCompilationFailedException
 import java.io.IOException
 
 /**
@@ -22,7 +22,7 @@ class EmailTemplateManager(templatePath: String = "/templates") {
             try {
                 handlebars.compile(template.templateFileName)
             } catch (e: IOException) {
-                throw EmailException.TemplateCompilationFailed(template.templateFileName, e)
+                throw TemplateCompilationFailedException(template.templateFileName, e)
             }
         }
     }

@@ -14,7 +14,7 @@ import io.grpc.Status
  */
 open class SnowballRException protected constructor(
     private val grpcStatus: Status,
-    message: String? = null,
+    message: String,
     cause: Throwable? = null,
 ) : RuntimeException(message, cause) {
     fun getGrpcStatus(): Status = grpcStatus

@@ -24,8 +24,8 @@ import se.uulm.snowballr.backend.env.Env
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.email.EmailTemplate
-import se.uulm.snowballr.backend.model.exception.EmailException
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
+import se.uulm.snowballr.backend.model.exception.internal.email.MailSendFailedException
 
 /**
  * A base class for testing the [EmailManager].
@@ -164,7 +164,7 @@ class EmailManagerTest {
 
             every { mailerMock.sendMail(any()) } throws mailerException
 
-            val thrownException = assertThrows<EmailException.MailSendFailed> {
+            val thrownException = assertThrows<MailSendFailedException> {
                 emailManager.sendVerificationEmail(recipientEmail, emailData)
             }
             assertEquals(mailerException, thrownException.cause)

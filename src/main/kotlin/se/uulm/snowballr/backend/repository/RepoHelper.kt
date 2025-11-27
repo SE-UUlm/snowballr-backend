@@ -11,7 +11,7 @@ import org.jetbrains.exposed.sql.statements.InsertStatement
 import org.jetbrains.exposed.sql.statements.UpdateStatement
 import org.jetbrains.exposed.sql.update
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.exception.EntityNotPersistedException
+import se.uulm.snowballr.backend.model.exception.internal.EntityNotPersistedException
 import java.util.UUID
 
 /**

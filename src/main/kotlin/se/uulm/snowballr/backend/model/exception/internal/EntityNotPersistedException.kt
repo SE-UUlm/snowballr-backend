@@ -1,7 +1,7 @@
-package se.uulm.snowballr.backend.model.exception
+package se.uulm.snowballr.backend.model.exception.internal
 
-import io.grpc.Status
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.exception.InternalException
 
 /**
  * Represents an exception that occurs when an entity creation was triggered, but it couldn't be fetched afterward.
@@ -12,4 +12,4 @@ import se.uulm.snowballr.backend.model.EntityType
 class EntityNotPersistedException(
     entityType: EntityType,
     entityId: String,
-) : SnowballRException(Status.INTERNAL, "${entityType.singularUpper()} with ID '$entityId' was not persisted.")
+) : InternalException("${entityType.singularUpper()} with ID '$entityId' was not persisted.")
