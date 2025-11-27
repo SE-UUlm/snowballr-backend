@@ -13,10 +13,10 @@ import se.uulm.snowballr.backend.model.dto.toGrpcProjectPapers
 import se.uulm.snowballr.backend.model.dto.toGrpcReview
 import se.uulm.snowballr.backend.model.exception.DuplicateEntityException
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
-import se.uulm.snowballr.backend.model.exception.InvalidIdException
 import se.uulm.snowballr.backend.model.exception.NotFoundException
-import se.uulm.snowballr.backend.model.exception.OutOfRangeException
 import se.uulm.snowballr.backend.model.exception.UnauthorizedException
+import se.uulm.snowballr.backend.model.exception.invalidargument.InvalidUUIDException
+import se.uulm.snowballr.backend.model.exception.invalidargument.StageOutOfRangeException
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
@@ -187,7 +187,7 @@ class ProjectPaperService(
      * Containing the relative ID of the following paper.
      * @return The gRPC representation of the following project paper, including its associated metadata.
      * @throws NotFoundException If the project, project paper, or associated paper cannot be found.
-     * @throws InvalidIdException.UUID If the given project paper ID is not a valid UUID.
+     * @throws InvalidUUIDException If the given project paper ID is not a valid UUID.
      * @throws UnauthorizedException If the user does not have the required access to the project.
      */
     private suspend fun getAdjacentPaper(id: String, direction: PaperNavigationDirection): GrpcProjectPaper =
@@ -284,7 +284,7 @@ class ProjectPaperService(
             }
 
             if (request.stage !in 0..project.maxStage) {
-                throw OutOfRangeException.Stage(request.stage, project.maxStage)
+                throw StageOutOfRangeException(request.stage, project.maxStage)
             }
 
             val projectPaper = repo.addPaperToProject(request, currentUser.id)

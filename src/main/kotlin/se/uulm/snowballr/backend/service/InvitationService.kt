@@ -9,8 +9,8 @@ import se.uulm.snowballr.backend.model.dto.toGrpcUser
 import se.uulm.snowballr.backend.model.dto.toGrpcUsers
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
-import se.uulm.snowballr.backend.model.exception.InvalidIdException
 import se.uulm.snowballr.backend.model.exception.NotFoundException
+import se.uulm.snowballr.backend.model.exception.invalidargument.InvalidUUIDException
 import se.uulm.snowballr.backend.model.exception.notfound.InvitationTokenNotFoundException
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
@@ -92,7 +92,7 @@ class InvitationService(
 
                 val invitedMembers = invitationTokenRepo.getActiveInvitationTokensForProject(projectId)
                 excludedUsersFromSearch += invitedMembers.map { it.email }
-            } catch (_: InvalidIdException.UUID) {
+            } catch (_: InvalidUUIDException) {
                 Logger.warn { "Invalid project ID in invite candidates request: ${request.projectId}" }
             }
 

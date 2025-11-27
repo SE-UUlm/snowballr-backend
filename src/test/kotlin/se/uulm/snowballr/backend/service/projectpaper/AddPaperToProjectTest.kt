@@ -12,8 +12,8 @@ import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.exception.DuplicateEntityException
-import se.uulm.snowballr.backend.model.exception.OutOfRangeException
 import se.uulm.snowballr.backend.model.exception.UnauthorizedException
+import se.uulm.snowballr.backend.model.exception.invalidargument.StageOutOfRangeException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.ProjectOuterClass.MemberRole
 import snowballr.UserOuterClass.UserRole
@@ -118,7 +118,6 @@ class AddPaperToProjectTest : MainServiceTest() {
     fun `When a non project admin adds a paper to a project, then an UnauthorizedException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject(id = projectId)
-        val paper = DataBuilder.createExamplePaper(id = paperId)
 
         mockCurrentUser(currentUser)
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
@@ -144,7 +143,7 @@ class AddPaperToProjectTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the requested stage is greater than the projects max stage, then an OutOfRangeException is thrown`() =
+    fun `When the requested stage is greater than the projects max stage, then an StageOutOfRangeException is thrown`() =
         runTest {
             val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
             val project = DataBuilder.createExampleProject(id = projectId)
@@ -163,6 +162,6 @@ class AddPaperToProjectTest : MainServiceTest() {
             coEvery { paperRepoMock.getPaperById(paper.id) } returns Result.success(paper)
             coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, paper.id) } returns false
 
-            assertThrows<OutOfRangeException> { mainService.addPaperToProject(request) }
+            assertThrows<StageOutOfRangeException> { mainService.addPaperToProject(request) }
         }
 }
