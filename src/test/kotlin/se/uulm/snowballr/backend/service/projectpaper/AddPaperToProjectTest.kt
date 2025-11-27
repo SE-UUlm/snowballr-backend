@@ -11,8 +11,8 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.model.exception.DuplicateEntityException
 import se.uulm.snowballr.backend.model.exception.UnauthorizedException
+import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateProjectPaperException
 import se.uulm.snowballr.backend.model.exception.invalidargument.StageOutOfRangeException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.ProjectOuterClass.MemberRole
@@ -126,7 +126,7 @@ class AddPaperToProjectTest : MainServiceTest() {
     }
 
     @Test
-    fun `When a project paper already exists, then a DuplicateEntityException is thrown`() = runTest {
+    fun `When a project paper already exists, then a DuplicateProjectPaperException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val project = DataBuilder.createExampleProject(id = projectId)
         val paper = DataBuilder.createExamplePaper(id = paperId)
@@ -137,7 +137,7 @@ class AddPaperToProjectTest : MainServiceTest() {
         coEvery { paperRepoMock.getPaperById(paper.id) } returns Result.success(paper)
         coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, paper.id) } returns true
 
-        assertThrows<DuplicateEntityException> {
+        assertThrows<DuplicateProjectPaperException> {
             mainService.addPaperToProject(getExampleRequest())
         }
     }

@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
-import se.uulm.snowballr.backend.model.exception.DuplicateEntityException
+import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicatePaperException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.PaperOuterClass
 import java.util.UUID
@@ -28,14 +28,14 @@ class CreatePaperTest : MainServiceTest() {
     }
 
     @Test
-    fun `When a paper is created with an existent external ID, then a DuplicateEntityException is thrown`() = runTest {
+    fun `When a paper is created with an existent external ID, then a DuplicatePaperException is thrown`() = runTest {
         val request = PaperOuterClass.Paper.newBuilder()
             .setExternalId("existing-external-id")
             .build()
 
         coEvery { paperRepoMock.doesPaperExistByExternalId(request.externalId) } returns true
 
-        assertThrows<DuplicateEntityException> { mainService.createPaper(request) }
+        assertThrows<DuplicatePaperException> { mainService.createPaper(request) }
     }
 
     @Test

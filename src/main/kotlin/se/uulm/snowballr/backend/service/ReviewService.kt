@@ -5,8 +5,8 @@ import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.Review
 import se.uulm.snowballr.backend.model.dto.toGrpcReview
 import se.uulm.snowballr.backend.model.dto.toGrpcReviews
-import se.uulm.snowballr.backend.model.exception.DuplicateReviewException
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
+import se.uulm.snowballr.backend.model.exception.alreadyexists.DuplicateReviewException
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IReviewTableRepo
@@ -154,7 +154,7 @@ class ReviewService(
         val reviewsForProjectPaper = repo.getAllReviewsForProjectPaper(projectPaperId)
         val hasUserAlreadyReviewed = reviewsForProjectPaper.any { review -> review.userId == currentUser.id }
         if (hasUserAlreadyReviewed) {
-            throw DuplicateReviewException(projectPaperId.toString(), currentUser.id.toString())
+            throw DuplicateReviewException(projectPaperId, currentUser.id)
         }
 
         val isPaperNotFinallyDecided = projectPaper.decision == PaperDecision.PAPER_DECISION_IN_REVIEW ||

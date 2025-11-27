@@ -12,9 +12,9 @@ import se.uulm.snowballr.backend.model.dto.toGrpcUser
 import se.uulm.snowballr.backend.model.dto.toGrpcUserSettings
 import se.uulm.snowballr.backend.model.dto.toGrpcUsers
 import se.uulm.snowballr.backend.model.email.EmailData
-import se.uulm.snowballr.backend.model.exception.DuplicateEntityException
 import se.uulm.snowballr.backend.model.exception.EntityNotActiveException
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
+import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateUserException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundByEmailException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadAllException
@@ -168,7 +168,7 @@ class UserService(
     override suspend fun register(request: Authentication.RegisterRequest): Base.Nothing {
         // Check whether a user with the given email already exists
         if (userRepo.doesUserExistByEmail(request.email)) {
-            throw DuplicateEntityException(EntityType.USER, request.email, identifierType = IdentifierType.EMAIL)
+            throw DuplicateUserException(request.email)
         }
 
         // Hash the password and create the user
@@ -219,7 +219,7 @@ class UserService(
 
         // If the email is changed, there must not yet exist an account with that email address.
         if (request.mask.pathsList.contains("email") && userRepo.doesUserExistByEmail(request.user.email)) {
-            throw DuplicateEntityException(EntityType.USER, request.user.email, identifierType = IdentifierType.EMAIL)
+            throw DuplicateUserException(request.user.email)
         }
 
         userRepo.updateUser(request).toGrpcUser()

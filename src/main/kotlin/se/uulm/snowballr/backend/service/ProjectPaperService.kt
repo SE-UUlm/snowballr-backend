@@ -11,10 +11,10 @@ import se.uulm.snowballr.backend.model.dto.ProjectPaperWithReviewsCount
 import se.uulm.snowballr.backend.model.dto.toGrpcProjectPaper
 import se.uulm.snowballr.backend.model.dto.toGrpcProjectPapers
 import se.uulm.snowballr.backend.model.dto.toGrpcReview
-import se.uulm.snowballr.backend.model.exception.DuplicateEntityException
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.UnauthorizedException
+import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateProjectPaperException
 import se.uulm.snowballr.backend.model.exception.invalidargument.InvalidUUIDException
 import se.uulm.snowballr.backend.model.exception.invalidargument.StageOutOfRangeException
 import se.uulm.snowballr.backend.model.parseUUID
@@ -280,7 +280,7 @@ class ProjectPaperService(
 
             val paper = paperRepo.getPaperById(paperId).getOrThrow()
             if (repo.doesProjectPaperExist(projectId, paperId)) {
-                throw DuplicateEntityException(EntityType.PROJECT_PAPER, projectId.toString(), paperId.toString())
+                throw DuplicateProjectPaperException(projectId, paperId)
             }
 
             if (request.stage !in 0..project.maxStage) {
