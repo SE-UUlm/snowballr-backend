@@ -2,9 +2,6 @@ package se.uulm.snowballr.backend.model
 
 import org.simplejavamail.MailException
 import se.uulm.snowballr.backend.mail.EmailManager
-import se.uulm.snowballr.backend.model.dto.Project
-import se.uulm.snowballr.backend.model.dto.ProjectPaper
-import se.uulm.snowballr.backend.model.dto.User
 import java.io.IOException
 
 /**
@@ -21,53 +18,10 @@ sealed class SnowballRException(
     cause: Throwable? = null,
 ) : RuntimeException(message, cause) {
     /**
-     * Represents an exception that occurs when an entity cannot be found by its identifier.
-     *
-     * @param entityType The type of the entity that could not be found.
-     * @param entityIds The missing entity's ID(s).
-     * @param identifierType The type of the entity's identifier. Defaults to [IdentifierType.ID].
-     * @param location The location where the entity could not be found, e.g., the project or paper. Should start with " in ...".
+     * Represents an exception that occurs when something could not be found.
      */
-    open class NotFoundException(
-        entityType: EntityType,
-        vararg entityIds: String,
-        identifierType: IdentifierType = IdentifierType.ID,
-        location: String = "",
-    ) : SnowballRException(
-        "${entityType.singularUpper()} ${displayEntityIds(entityIds.toList(), identifierType)} not found$location.",
-    )
-
-    /**
-     * Represents an exception indicating that a [ProjectPaper] entity could not be found within the context of a
-     * specific project.
-     *
-     * @param localProjectPaperId The local identifier of the missing [ProjectPaper] entity.
-     * @param projectId The identifier of the project in which the [ProjectPaper] could not be found.
-     */
-    open class ProjectPaperNotFoundException(
-        localProjectPaperId: String,
-        projectId: String,
-    ) : NotFoundException(
-        EntityType.PROJECT_PAPER,
-        localProjectPaperId,
-        identifierType = IdentifierType.LOCAL_ID,
-        location = " in project with ID $projectId",
-    )
-
-    /**
-     * Represents a [NotFoundException] indicating that a [User] could not be found by its identifier, i.e., UUID, or email address.
-     *
-     * @param entityId The identifier of the missing [User].
-     * @param identifierType The type of the entity's identifier. Defaults to [IdentifierType.ID].
-     */
-    class UserNotFoundException(
-        entityId: String,
-        identifierType: IdentifierType = IdentifierType.ID,
-    ) : NotFoundException(
-        EntityType.USER,
-        entityId,
-        identifierType = identifierType,
-    )
+    @Suppress("UnnecessaryAbstractClass")
+    abstract class NotFoundException(message: String) : SnowballRException(message)
 
     /**
      * Represents an exception that occurs when an entity already exists in the system
@@ -82,8 +36,7 @@ sealed class SnowballRException(
         vararg entityIds: String,
         identifierType: IdentifierType = IdentifierType.ID,
     ) : SnowballRException(
-        "${entityType.singularUpper()} ${displayEntityIds(entityIds.toList(), identifierType)}" +
-            " already exists.",
+        "${entityType.singularUpper()} ${displayEntityIds(entityIds.toList(), identifierType)} already exists.",
     )
 
     /**
@@ -179,11 +132,13 @@ sealed class SnowballRException(
             identifierType: IdentifierType = IdentifierType.ID,
         ) : UnauthorizedException(
             currentUserId,
-            "something ${if (accessType in listOf(AccessType.DELETE, AccessType.READ)) {
-                "from"
-            } else {
-                "in"
-            }} ${accessedEntityType.singular} with ${identifierType.displayName} '$accessedEntityId'.",
+            "something ${
+                if (accessType in listOf(AccessType.DELETE, AccessType.READ)) {
+                    "from"
+                } else {
+                    "in"
+                }
+            } ${accessedEntityType.singular} with ${identifierType.displayName} '$accessedEntityId'.",
             accessType,
         )
     }
@@ -327,25 +282,6 @@ sealed class SnowballRException(
             cause: MailException,
         ) : EmailException("Mailer failed to send email to '$recipient'.", cause)
     }
-
-    /**
-     * Represents an exception that occurs when a verification token is not found.
-     *
-     * @constructor Creates a [VerificationTokenNotFoundException].
-     */
-    class VerificationTokenNotFoundException : SnowballRException("Verification token not found.")
-
-    /**
-     * Represents an exception that occurs when an invitation token is not found.
-     *
-     * @constructor Creates a [InvitationTokenNotFoundException].
-     */
-    class InvitationTokenNotFoundException : SnowballRException("Invitation token not found.")
-
-    /**
-     * Represents an exception that occurs when a stage in a [Project] is not found.
-     */
-    class StageNotFoundException(stage: Long) : SnowballRException("Stage '$stage' not found.")
 
     /**
      * Represents an exception that occurs when an access rule chain completes

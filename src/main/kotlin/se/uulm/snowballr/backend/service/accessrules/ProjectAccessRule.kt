@@ -9,6 +9,7 @@ import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionExce
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.Project
+import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import snowballr.ProjectOuterClass.ProjectStatus
@@ -25,7 +26,7 @@ fun isProjectExistent(projectRepo: IProjectTableRepo): AccessRule<UUID> {
     return AccessRule<UUID> { _, projectId ->
         projectRepo.doesProjectExistById(projectId)
     }.orElseThrow { _, projectId ->
-        NotFoundException(EntityType.PROJECT, projectId.toString())
+        ProjectNotFoundException(projectId)
     }
 }
 

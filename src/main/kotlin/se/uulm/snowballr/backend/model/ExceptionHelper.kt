@@ -8,7 +8,7 @@ package se.uulm.snowballr.backend.model
  * @param identifierType The type of identifier associated with the entity IDs. Defaults to [IdentifierType.ID].
  * @return A string containing the formatted representation of the entity IDs prefixed with the specified identifier type.
  */
-fun displayEntityIds(entityIds: List<String>, identifierType: IdentifierType = IdentifierType.ID): String {
+fun displayEntityIds(entityIds: List<Any>, identifierType: IdentifierType = IdentifierType.ID): String {
     require(entityIds.isNotEmpty()) { "Cannot display empty list of entity IDs." }
     if (entityIds.size == 1) {
         return "with ${identifierType.displayName} '${entityIds[0]}'"

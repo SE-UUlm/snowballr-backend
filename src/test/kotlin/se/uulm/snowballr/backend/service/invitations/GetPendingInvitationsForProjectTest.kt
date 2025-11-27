@@ -8,9 +8,9 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
-import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
+import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundByEmailException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.Base
 import snowballr.UserOuterClass.UserRole
@@ -76,7 +76,7 @@ class GetPendingInvitationsForProjectTest : MainServiceTest() {
             coEvery { userRepoMock.getUserByEmail(registeredUser.email) } returns Result.success(registeredUser)
             coEvery {
                 userRepoMock.getUserByEmail(notRegisteredEmail)
-            } returns Result.failure(NotFoundException(EntityType.USER, notRegisteredEmail))
+            } returns Result.failure(UserNotFoundByEmailException(notRegisteredEmail))
 
             val pendingInvitations = assertDoesNotThrow { mainService.getPendingInvitationsForProject(createRequest()) }
 

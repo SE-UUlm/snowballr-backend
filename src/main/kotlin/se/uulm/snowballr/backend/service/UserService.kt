@@ -12,12 +12,13 @@ import se.uulm.snowballr.backend.model.SnowballRException.DuplicateEntityExcepti
 import se.uulm.snowballr.backend.model.SnowballRException.EntityNotActiveException
 import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
-import se.uulm.snowballr.backend.model.SnowballRException.UserNotFoundException
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.toGrpcUser
 import se.uulm.snowballr.backend.model.dto.toGrpcUserSettings
 import se.uulm.snowballr.backend.model.dto.toGrpcUsers
 import se.uulm.snowballr.backend.model.email.EmailData
+import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundByEmailException
+import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundException
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
@@ -132,7 +133,7 @@ class UserService(
         // Only active or active unconfirmed users can be retrieved if the requester is not a server admin
         isServerAdmin().forTarget<User>()
             .orElse(isTargetUserActive())
-            .orElseThrow(UserNotFoundException(request.id))
+            .orElseThrow(UserNotFoundException(targetUserId))
             .checkFor(currentUser, targetUser)
 
         targetUser.toGrpcUser()
@@ -148,7 +149,7 @@ class UserService(
             .andAlso(
                 isServerAdmin().forTarget<User>()
                     .orElse(isTargetUserActive())
-                    .orElseThrow(UserNotFoundException(request.email, IdentifierType.EMAIL)),
+                    .orElseThrow(UserNotFoundByEmailException(request.email)),
             )
             .checkFor(currentUser, targetUser)
 

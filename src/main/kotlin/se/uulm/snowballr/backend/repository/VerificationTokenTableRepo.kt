@@ -7,8 +7,8 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.lessEq
 import org.jetbrains.exposed.sql.deleteWhere
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.SnowballRException.VerificationTokenNotFoundException
 import se.uulm.snowballr.backend.model.dto.VerificationToken
+import se.uulm.snowballr.backend.model.exception.notfound.VerificationTokenNotFoundException
 import se.uulm.snowballr.backend.table.VerificationTokenTable
 import se.uulm.snowballr.backend.table.toVerificationToken
 import java.time.OffsetDateTime
@@ -60,16 +60,11 @@ class VerificationTokenTableRepo(
     }
 
     override suspend fun getVerificationTokenByValue(token: String): Result<VerificationToken> = db.query {
-        val result =
-            VerificationTokenTable.getEntityOrNull(
-                ResultRow::toVerificationToken,
-            ) { VerificationTokenTable.token eq token }
-
-        if (result != null) {
-            Result.success(result)
-        } else {
-            Result.failure(VerificationTokenNotFoundException())
+        val result = VerificationTokenTable.getEntityOrNull(ResultRow::toVerificationToken) {
+            VerificationTokenTable.token eq token
         }
+
+        wrapAsResult(result, VerificationTokenNotFoundException())
     }
 
     override suspend fun deleteVerificationToken(token: String) {

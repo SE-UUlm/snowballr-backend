@@ -7,11 +7,9 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.IdentifierType
 import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
-import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
+import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectMemberNotFoundException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.ProjectOuterClass
 import snowballr.ProjectOuterClass.MemberRole
@@ -176,14 +174,7 @@ class UpdateProjectMemberRoleTest : MainServiceTest() {
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
             coEvery { userRepoMock.getUserById(userToBeUpdated.id) } returns Result.success(userToBeUpdated)
             coEvery { projectMemberRepoMock.getProjectMemberByComposedId(project.id, userToBeUpdated.id) } returns
-                Result.failure(
-                    NotFoundException(
-                        EntityType.PROJECT_MEMBER,
-                        user.id.toString(),
-                        project.id.toString(),
-                        identifierType = IdentifierType.ID,
-                    ),
-                )
+                Result.failure(ProjectMemberNotFoundException(user.id, project.id))
 
             assertThrows<FailedPreconditionException> { mainService.updateProjectMemberRole(request) }
         }

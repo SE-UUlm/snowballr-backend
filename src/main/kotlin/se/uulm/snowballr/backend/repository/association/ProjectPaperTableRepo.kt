@@ -14,9 +14,9 @@ import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.PaperNavigationDirection
 import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
-import se.uulm.snowballr.backend.model.SnowballRException.ProjectPaperNotFoundException
 import se.uulm.snowballr.backend.model.dto.ProjectPaper
 import se.uulm.snowballr.backend.model.dto.ProjectPaperWithPaper
+import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectPaperNotFoundException
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.doesEntityExist
 import se.uulm.snowballr.backend.repository.getEntities
@@ -24,6 +24,7 @@ import se.uulm.snowballr.backend.repository.getEntityByIdOrNull
 import se.uulm.snowballr.backend.repository.getEntityByKeyAsResult
 import se.uulm.snowballr.backend.repository.getEntityOrNull
 import se.uulm.snowballr.backend.repository.insertAndGet
+import se.uulm.snowballr.backend.repository.wrapAsResult
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.table.association.toProjectPaper
@@ -210,16 +211,7 @@ class ProjectPaperTableRepo(
             .map { it.toProjectPaper() }
             .firstOrNull()
 
-        if (paperId != null) {
-            Result.success(paperId)
-        } else {
-            Result.failure(
-                FailedPreconditionException(
-                    "There is no $direction project paper " +
-                        "in the project.",
-                ),
-            )
-        }
+        wrapAsResult(paperId, FailedPreconditionException("There is no $direction project paper in the project."))
     }
 
     override suspend fun getProjectPaperById(id: UUID): Result<ProjectPaper> = db.query {
@@ -232,11 +224,7 @@ class ProjectPaperTableRepo(
                 (ProjectPaperTable.projectId eq projectId) and (ProjectPaperTable.localPaperId eq relativeId)
             }
 
-            if (projectPaper != null) {
-                Result.success(projectPaper)
-            } else {
-                Result.failure(ProjectPaperNotFoundException(relativeId.toString(), projectId.toString()))
-            }
+            wrapAsResult(projectPaper, ProjectPaperNotFoundException(relativeId, projectId))
         }
 
     override suspend fun doesProjectPaperExist(projectId: UUID, paperId: UUID): Boolean = db.query {

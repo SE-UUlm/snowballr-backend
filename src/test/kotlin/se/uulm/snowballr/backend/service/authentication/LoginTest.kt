@@ -12,10 +12,8 @@ import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.GrpcTestContextExtension
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.auth.PasswordUtils
-import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.IdentifierType
-import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.SnowballRException.UnauthenticatedException
+import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundByEmailException
 import se.uulm.snowballr.backend.model.jwt.JwtAuthTokens
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.Authentication.LoginRequest
@@ -28,7 +26,7 @@ class LoginTest : MainServiceTest() {
         val email = "wrongEmail"
         val request = LoginRequest.newBuilder().setEmail(email).build()
 
-        val exception = NotFoundException(EntityType.USER, "wrongEmail", identifierType = IdentifierType.EMAIL)
+        val exception = UserNotFoundByEmailException("wrongEmail")
         coEvery { userRepoMock.getUserByEmail(email) } returns Result.failure(exception)
 
         assertThrows<UnauthenticatedException> { mainService.login(request) }
@@ -85,7 +83,7 @@ class LoginTest : MainServiceTest() {
             .build()
 
         coEvery { userRepoMock.getUserByEmail(testUser.email) } returns Result.success(testUser)
-        val exception = NotFoundException(EntityType.USER, testUser.email, identifierType = IdentifierType.EMAIL)
+        val exception = UserNotFoundByEmailException(testUser.email)
         coEvery { userRepoMock.getPasswordHashByEmail(testUser.email) } returns Result.failure(exception)
 
         assertThrows<UnauthenticatedException> { mainService.login(request) }

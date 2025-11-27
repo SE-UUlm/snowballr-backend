@@ -79,9 +79,6 @@ private class ExceptionCall<ReqT, RespT>(
             when (e) {
                 is SnowballRException.InvalidIdException -> Status.INVALID_ARGUMENT
                 is SnowballRException.OutOfRangeException -> Status.INVALID_ARGUMENT
-                is SnowballRException.VerificationTokenNotFoundException -> Status.NOT_FOUND
-                is SnowballRException.InvitationTokenNotFoundException -> Status.NOT_FOUND
-                is SnowballRException.StageNotFoundException -> Status.NOT_FOUND
                 is SnowballRException.NotFoundException -> Status.NOT_FOUND
                 is SnowballRException.DuplicateEntityException -> Status.ALREADY_EXISTS
                 is SnowballRException.DuplicateReviewException -> Status.ALREADY_EXISTS

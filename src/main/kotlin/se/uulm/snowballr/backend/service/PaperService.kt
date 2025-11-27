@@ -7,6 +7,7 @@ import se.uulm.snowballr.backend.model.SnowballRException.DuplicateEntityExcepti
 import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.Paper
 import se.uulm.snowballr.backend.model.dto.toGrpcPapers
+import se.uulm.snowballr.backend.model.exception.notfound.entity.PaperNotFoundException
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
@@ -72,7 +73,7 @@ class PaperService(
         val paperId = parseUUID(request.paper.id, EntityType.PAPER)
 
         if (!repo.doesPaperExistById(paperId)) {
-            throw NotFoundException(EntityType.PAPER, paperId.toString())
+            throw PaperNotFoundException(paperId)
         }
 
         return repo.updatePaper(request).toGrpcPaper()
@@ -103,7 +104,7 @@ class PaperService(
     private suspend fun getReferencePapers(request: Base.Id, function: suspend (UUID) -> List<UUID>): GrpcPaper.List {
         val paperId = parseUUID(request.id, EntityType.PAPER)
         if (!repo.doesPaperExistById(paperId)) {
-            throw NotFoundException(EntityType.PAPER, paperId.toString())
+            throw PaperNotFoundException(paperId)
         }
 
         val referenceIds = function.invoke(paperId)
