@@ -9,7 +9,7 @@ import java.util.UUID
  * Represents an exception that occurs when a project paper could not be found within the context of a specific
  * project.
  *
- * @param localProjectPaperId The local ID of the missing project paper.
+ * @param localProjectPaperId The project-local ID of the missing project paper.
  * @param projectId The ID of the project in which the project paper could not be found.
  */
 open class ProjectPaperNotFoundException(
@@ -19,5 +19,5 @@ open class ProjectPaperNotFoundException(
     EntityType.PROJECT_PAPER,
     localProjectPaperId,
     identifierType = IdentifierType.LOCAL_ID,
-    location = " in project with ID $projectId",
+    location = " in the project with ID $projectId",
 )

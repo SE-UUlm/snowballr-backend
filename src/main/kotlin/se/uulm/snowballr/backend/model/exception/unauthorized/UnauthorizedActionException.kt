@@ -20,7 +20,7 @@ import java.util.UUID
 class UnauthorizedActionException(
     accessedEntityType: EntityType,
     accessedEntityId: Any,
-    accessType: AccessType = AccessType.DELETE,
+    accessType: AccessType,
     currentUserId: UUID,
     identifierType: IdentifierType = IdentifierType.ID,
 ) : UnauthorizedException(
