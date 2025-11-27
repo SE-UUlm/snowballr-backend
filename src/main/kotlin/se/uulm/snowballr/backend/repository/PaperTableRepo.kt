@@ -85,7 +85,7 @@ class PaperTableRepo(
     }
 
     override suspend fun createPaper(request: GrpcPaper): Paper = db.query {
-        PaperTable.insertAndGet(ResultRow::toPaper, EntityType.PAPER) {
+        PaperTable.insertAndGet(ResultRow::toPaper) {
             it[title] = request.title
             it[externalId] = request.externalId.ifBlank { null }
             it[abstract] = request.abstrakt
@@ -106,7 +106,7 @@ class PaperTableRepo(
             return@query getPaperById(paperId).getOrThrow()
         }
 
-        PaperTable.updateByIdAndGet(paperId, ResultRow::toPaper, EntityType.PAPER) {
+        PaperTable.updateByIdAndGet(paperId, ResultRow::toPaper) {
             for (field in fieldMask.pathsList) {
                 when (field) {
                     "paper.external_id" -> it[externalId] = request.paper.externalId

@@ -154,7 +154,7 @@ class ProjectMemberTableRepo(
             return@query existentMember
         }
 
-        ProjectMemberTable.insertAndGet(ResultRow::toProjectMember, EntityType.PROJECT_MEMBER) {
+        ProjectMemberTable.insertAndGet(ResultRow::toProjectMember) {
             it[this.userId] = userId
             it[this.projectId] = projectId
             it[role] = MemberRole.MEMBER_ROLE_DEFAULT
@@ -199,8 +199,6 @@ class ProjectMemberTableRepo(
         db.query {
             ProjectMemberTable.updateAndGet(
                 mapper = ResultRow::toProjectMember,
-                entityType = EntityType.PROJECT_MEMBER,
-                id = projectId.toString(),
                 where = {
                     (ProjectMemberTable.projectId eq projectId) and (ProjectMemberTable.userId eq userId)
                 },

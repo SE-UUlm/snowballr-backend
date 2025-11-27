@@ -256,7 +256,7 @@ class ProjectPaperTableRepo(
         val localPaperId = getNextLocalIdForProject(projectId)
 
         ProjectPaperTable
-            .insertAndGet(ResultRow::toProjectPaper, EntityType.PROJECT_PAPER) {
+            .insertAndGet(ResultRow::toProjectPaper) {
                 it[ProjectPaperTable.paperId] = paperId
                 it[ProjectPaperTable.projectId] = projectId
                 it[ProjectPaperTable.localPaperId] = localPaperId

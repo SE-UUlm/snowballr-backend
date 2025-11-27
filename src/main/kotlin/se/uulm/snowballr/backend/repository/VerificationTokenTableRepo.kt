@@ -6,7 +6,6 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.lessEq
 import org.jetbrains.exposed.sql.deleteWhere
 import se.uulm.snowballr.backend.db.IDatabase
-import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.VerificationToken
 import se.uulm.snowballr.backend.model.exception.notfound.VerificationTokenNotFoundException
 import se.uulm.snowballr.backend.table.VerificationTokenTable
@@ -52,7 +51,7 @@ class VerificationTokenTableRepo(
 ) : IVerificationTokenTableRepo {
     override suspend fun saveVerificationToken(userId: UUID, token: String) {
         db.query {
-            VerificationTokenTable.insertAndGet(ResultRow::toVerificationToken, EntityType.VERIFICATION_TOKEN) {
+            VerificationTokenTable.insertAndGet(ResultRow::toVerificationToken) {
                 it[VerificationTokenTable.userId] = userId
                 it[VerificationTokenTable.token] = token
             }

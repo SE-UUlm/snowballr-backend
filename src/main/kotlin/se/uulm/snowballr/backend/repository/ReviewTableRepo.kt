@@ -71,7 +71,7 @@ class ReviewTableRepo(
     override suspend fun createReview(request: GrpcReview.Create, userId: UUID): Review = db.query {
         val projectPaperId = parseUUID(request.projectPaperId, EntityType.PROJECT_PAPER)
 
-        val review = ReviewTable.insertAndGet(ResultRow::toReview, EntityType.REVIEW) {
+        val review = ReviewTable.insertAndGet(ResultRow::toReview) {
             it[ReviewTable.projectPaperId] = projectPaperId
             it[ReviewTable.userId] = userId
             it[decision] = request.decision
