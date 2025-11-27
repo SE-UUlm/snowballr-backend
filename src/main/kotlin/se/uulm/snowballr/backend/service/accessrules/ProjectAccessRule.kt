@@ -5,10 +5,10 @@ package se.uulm.snowballr.backend.service.accessrules
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.Project
-import se.uulm.snowballr.backend.model.exception.EntityNotActiveException
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.UnauthorizedException
+import se.uulm.snowballr.backend.model.exception.failedprecondition.EntityNotActiveException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedExceptionFactory
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadException
@@ -41,7 +41,7 @@ fun isProjectActive(): AccessRule<Project> {
     return AccessRule<Project> { _, project ->
         project.status == ProjectStatus.PROJECT_STATUS_ACTIVE ||
             project.status == ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED
-    }.orElseThrow { _, project -> EntityNotActiveException(EntityType.PROJECT, project.id.toString()) }
+    }.orElseThrow { _, project -> EntityNotActiveException(EntityType.PROJECT, project.id) }
 }
 
 /**

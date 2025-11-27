@@ -12,9 +12,9 @@ import se.uulm.snowballr.backend.model.dto.toGrpcUser
 import se.uulm.snowballr.backend.model.dto.toGrpcUserSettings
 import se.uulm.snowballr.backend.model.dto.toGrpcUsers
 import se.uulm.snowballr.backend.model.email.EmailData
-import se.uulm.snowballr.backend.model.exception.EntityNotActiveException
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateUserException
+import se.uulm.snowballr.backend.model.exception.failedprecondition.EntityNotActiveException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundByEmailException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadAllException
@@ -204,7 +204,7 @@ class UserService(
                 isServerAdmin().forTarget<User>()
                     .andAlso(
                         isTargetUserActive()
-                            .orElseThrow(EntityNotActiveException(EntityType.USER, targetUserId.toString())),
+                            .orElseThrow(EntityNotActiveException(EntityType.USER, targetUserId)),
                     ),
             )
             .orElseThrow(notAllowedToUpdateException)
