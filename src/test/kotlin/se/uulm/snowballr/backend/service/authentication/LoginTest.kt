@@ -12,7 +12,7 @@ import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.GrpcTestContextExtension
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.auth.PasswordUtils
-import se.uulm.snowballr.backend.model.SnowballRException.UnauthenticatedException
+import se.uulm.snowballr.backend.model.exception.SnowballRException.UnauthenticatedException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundByEmailException
 import se.uulm.snowballr.backend.model.jwt.JwtAuthTokens
 import se.uulm.snowballr.backend.service.MainServiceTest

@@ -22,10 +22,10 @@ import org.simplejavamail.api.mailer.config.TransportStrategy
 import org.simplejavamail.mailer.MailerBuilder
 import se.uulm.snowballr.backend.env.Env
 import se.uulm.snowballr.backend.env.EnvReader
-import se.uulm.snowballr.backend.model.SnowballRException
-import se.uulm.snowballr.backend.model.SnowballRException.EmailException
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.email.EmailTemplate
+import se.uulm.snowballr.backend.model.exception.SnowballRException
+import se.uulm.snowballr.backend.model.exception.SnowballRException.EmailException
 
 /**
  * A base class for testing the [EmailManager].

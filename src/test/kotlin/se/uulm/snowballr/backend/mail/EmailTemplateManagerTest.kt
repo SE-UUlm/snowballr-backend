@@ -4,8 +4,8 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertNotNull
 import org.junit.jupiter.api.assertThrows
-import se.uulm.snowballr.backend.model.SnowballRException.EmailException
 import se.uulm.snowballr.backend.model.email.EmailTemplate
+import se.uulm.snowballr.backend.model.exception.SnowballRException.EmailException
 import java.nio.file.Files
 
 class EmailTemplateManagerTest {

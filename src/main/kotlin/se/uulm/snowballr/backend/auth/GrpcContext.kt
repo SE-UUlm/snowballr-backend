@@ -3,7 +3,7 @@ package se.uulm.snowballr.backend.auth
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.grpc.Context
 import io.grpc.Metadata
-import se.uulm.snowballr.backend.model.SnowballRException.MissingContextException
+import se.uulm.snowballr.backend.model.exception.SnowballRException.MissingContextException
 import snowballr.Authentication.AuthenticationStatus
 import java.util.UUID
 

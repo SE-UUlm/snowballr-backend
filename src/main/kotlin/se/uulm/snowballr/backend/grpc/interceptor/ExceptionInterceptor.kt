@@ -7,7 +7,7 @@ import io.grpc.ServerCall
 import io.grpc.ServerCallHandler
 import io.grpc.ServerInterceptor
 import io.grpc.Status
-import se.uulm.snowballr.backend.model.SnowballRException
+import se.uulm.snowballr.backend.model.exception.SnowballRException
 
 private val logger = KotlinLogging.logger {}
 

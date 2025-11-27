@@ -1,6 +1,10 @@
-package se.uulm.snowballr.backend.model
+package se.uulm.snowballr.backend.model.exception
 
 import org.simplejavamail.MailException
+import se.uulm.snowballr.backend.model.AccessType
+import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.IdentifierType
+import se.uulm.snowballr.backend.model.displayEntityIds
 import se.uulm.snowballr.backend.mail.EmailManager
 import java.io.IOException
 
@@ -40,7 +44,8 @@ sealed class SnowballRException(
     )
 
     /**
-     * Represents an exception that occurs when a user attempts to review a project paper that has already been reviewed by this user.
+     * Represents an exception that occurs when a user attempts to review a project paper that has already been reviewed
+     * by this user.
      *
      * @param projectPaperId The ID of the project paper that has already been reviewed.
      * @param userId The ID of the user who has already reviewed the project paper.

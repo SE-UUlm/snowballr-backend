@@ -1,6 +1,6 @@
 package se.uulm.snowballr.backend.model
 
-import se.uulm.snowballr.backend.model.SnowballRException.InvalidIdException
+import se.uulm.snowballr.backend.model.exception.SnowballRException.InvalidIdException
 import java.util.UUID
 
 /**

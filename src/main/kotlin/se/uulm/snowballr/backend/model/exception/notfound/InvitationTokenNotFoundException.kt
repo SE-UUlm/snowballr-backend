@@ -1,6 +1,6 @@
 package se.uulm.snowballr.backend.model.exception.notfound
 
-import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
+import se.uulm.snowballr.backend.model.exception.SnowballRException.NotFoundException
 
 /**
  * Represents an exception that occurs when an invitation token could not be found.
