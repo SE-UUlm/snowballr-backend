@@ -12,7 +12,7 @@ import io.grpc.Status
  * @param message Detailed message describing the reason for the exception, or null if not provided.
  * @param cause The cause of the exception, which can be another exception, or null if not provided.
  */
-open class SnowballRException protected constructor(
+sealed class SnowballRException(
     private val grpcStatus: Status,
     message: String,
     cause: Throwable? = null,
