@@ -15,7 +15,7 @@ import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.UnauthorizedException
-import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundException
+import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundByEmailException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.ProjectOuterClass
 import snowballr.UserOuterClass.UserRole
@@ -187,7 +187,7 @@ class InviteUserToProjectTest : MainServiceTest() {
 
         mockInviteUserToProject(invitedUserEmail = emailOfNonExistentUser, stopBefore = userRepoMock::getUserByEmail)
 
-        val emailNotFoundException = UserNotFoundException(UUID.randomUUID())
+        val emailNotFoundException = UserNotFoundByEmailException(emailOfNonExistentUser)
         coEvery { userRepoMock.getUserByEmail(emailOfNonExistentUser) } returns Result.failure(emailNotFoundException)
         every { emailManagerMock.createAcceptProjectInvitationLink(any()) } returns "http://invitation-link"
         coEvery { emailManagerMock.sendAcceptProjectInvitationEmail(any(), capture(emailDataSlot)) } returns Unit
