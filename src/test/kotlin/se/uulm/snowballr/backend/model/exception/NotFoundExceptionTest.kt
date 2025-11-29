@@ -47,7 +47,10 @@ class NotFoundExceptionTest {
             val testId2 = UUID.randomUUID()
             val exception = ProjectMemberNotFoundException(testId, testId2)
 
-            assertEquals("Project member with ID '$testId' and '$testId2' not found.", exception.message)
+            assertEquals(
+                "Project member with ID '$testId' not found in the project with ID '$testId2'.",
+                exception.message,
+            )
         }
 
         @Test
@@ -63,7 +66,7 @@ class NotFoundExceptionTest {
             val exception = ProjectPaperNotFoundException(localId, testId)
 
             assertEquals(
-                "Project paper with local ID '$localId' not found in the project with ID $testId.",
+                "Project paper with local ID '$localId' not found in the project with ID '$testId'.",
                 exception.message,
             )
         }
