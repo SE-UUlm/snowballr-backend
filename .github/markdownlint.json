@@ -7,5 +7,6 @@
     "indentation": {
         "indent": 4
     },
-    "first-line-heading": false
+    "first-line-heading": false,
+    "table-column-style": "aligned"
 }
