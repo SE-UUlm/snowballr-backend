@@ -9,7 +9,7 @@ import io.grpc.Status
  * Can be extended to create more detailed exceptions specific to various error scenarios.
  *
  * @param grpcStatus The gRPC status code that should be returned to the client when the exception is thrown.
- * @param message Detailed message describing the reason for the exception, or null if not provided.
+ * @param message Detailed message describing the reason for the exception.
  * @param cause The cause of the exception, which can be another exception, or null if not provided.
  */
 sealed class SnowballRException(

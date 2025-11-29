@@ -7,7 +7,7 @@ import se.uulm.snowballr.backend.model.exception.InternalException
  * Represents an exception that occurs within the [EmailManager].
  *
  * @param message The message describing the email-related error.
- * @param cause The cause of the exception, which can be another exception, or null.
+ * @param cause The cause of the exception, which can be another exception.
  */
 open class EmailException protected constructor(
     message: String,
