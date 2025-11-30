@@ -5,7 +5,6 @@ on:
         branches: ["develop"]
         tags: ["v*.*.*"]
     pull_request:
-    workflow_dispatch:
 
 env:
     java_version: ${{ vars.JAVA_VERSION }}
@@ -38,41 +37,13 @@ jobs:
                   if-no-files-found: error
 
     release:
-        name: Create a new release
-        runs-on: ubuntu-latest
+        name: Release
         needs: build-jar
         if: ${{ github.ref_type == 'tag' }}
         permissions:
             contents: write
-        steps:
-            - name: Checkout repository
-              uses: actions/checkout@v6
-
-            - name: Download jar file
-              uses: actions/download-artifact@v6
-              with:
-                  name: snowballr-backend-jar
-
-            - name: Create Release
-              uses: docker://antonyurchenko/git-release:v5
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-              with:
-                  args: snowballr-backend-*.jar
-
-    update-main:
-        name: Update main branch
-        runs-on: ubuntu-latest
-        needs: release
-        permissions:
-            contents: write
-        steps:
-            - name: Checkout repository
-              uses: actions/checkout@v6
-
-            - name: Merge develop -> main
-              uses: devmasx/merge-branch@master
-              with:
-                  type: now
-                  target_branch: main
-                  github_token: ${{ secrets.GITHUB_TOKEN }}
+        uses: SE-UUlm/snowballr-ci/.github/workflows/release.yml@feat/1-feature-add-initial-workflows
+        with:
+            artifact-name: snowballr-backend-jar
+            asset-path: snowballr-backend-*.jar
+            target-branch: main
