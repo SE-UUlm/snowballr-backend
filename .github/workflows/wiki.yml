@@ -53,7 +53,7 @@ jobs:
             - name: Check for Broken Links in Wiki
               uses: becheran/mlc@v1.0.0
               with:
-                  args: --ignore-links "https://stackoverflow.com/questions/6720050/foreign-key-constraints-when-to-use-on-update-and-on-delete/6720458#6720458" wiki/
+                  args: --ignore-links "https://stackoverflow.com/questions/6720050/foreign-key-constraints-when-to-use-on-update-and-on-delete/6720458#6720458,https://medium.com/@pererikbergman/repository-design-pattern-e28c0f3e4a30" wiki/
 
             - name: Calculate implementation progress (dry run)
               run: node scripts/calc-impl-progress.js update-wiki
