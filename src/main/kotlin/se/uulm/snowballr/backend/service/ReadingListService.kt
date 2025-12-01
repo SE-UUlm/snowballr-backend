@@ -2,8 +2,9 @@ package se.uulm.snowballr.backend.service
 
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.toGrpcPapers
+import se.uulm.snowballr.backend.model.exception.NotFoundException
+import se.uulm.snowballr.backend.model.exception.notfound.entity.PaperNotFoundException
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
@@ -63,7 +64,7 @@ class ReadingListService(
      */
     private suspend fun ensurePaperExists(id: UUID) {
         if (!paperRepo.doesPaperExistById(id)) {
-            throw NotFoundException(EntityType.PAPER, id.toString())
+            throw PaperNotFoundException(id)
         }
     }
 

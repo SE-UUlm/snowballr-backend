@@ -9,9 +9,9 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import se.uulm.snowballr.backend.DataBuilder
-import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
-import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.toGrpcProject
+import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
+import se.uulm.snowballr.backend.model.exception.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.UserOuterClass.UserRole
@@ -105,7 +105,7 @@ class UpdateProjectTest : MainServiceTest() {
             mockCurrentUser(user)
             coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
 
-            assertThrows<UnauthorizedException.Single> { mainService.updateProject(request) }
+            assertThrows<UnauthorizedException> { mainService.updateProject(request) }
         }
 
     @Test

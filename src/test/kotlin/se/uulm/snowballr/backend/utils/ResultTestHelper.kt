@@ -1,7 +1,7 @@
 package se.uulm.snowballr.backend.utils
 
 import org.junit.jupiter.api.Assertions.assertTrue
-import se.uulm.snowballr.backend.model.SnowballRException
+import se.uulm.snowballr.backend.model.exception.SnowballRException
 import kotlin.test.assertIs
 
 /**

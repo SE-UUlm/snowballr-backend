@@ -8,9 +8,9 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.model.SnowballRException
-import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
-import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
+import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
+import se.uulm.snowballr.backend.model.exception.NotFoundException
+import se.uulm.snowballr.backend.model.exception.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.ProjectOuterClass
 import snowballr.UserOuterClass
@@ -193,7 +193,7 @@ class RemoveProjectMemberTest : MainServiceTest() {
             coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectAdmin)
             coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
 
-            assertThrows<SnowballRException.FailedPreconditionException> {
+            assertThrows<FailedPreconditionException> {
                 mainService.removeProjectMember(getExampleRequest())
             }
         }

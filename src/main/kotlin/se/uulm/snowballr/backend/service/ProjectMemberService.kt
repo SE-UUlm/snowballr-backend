@@ -3,12 +3,13 @@ package se.uulm.snowballr.backend.service
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.IdentifierType
-import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
-import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
-import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.toGrpcProjectMembers
+import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
+import se.uulm.snowballr.backend.model.exception.NotFoundException
+import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
+import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundByEmailException
+import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedActionException
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
@@ -137,19 +138,14 @@ class ProjectMemberService(
                 isProjectAdmin(repo)
                     .orElse(isServerAdmin().forTarget())
                     .orElseThrow { user, targetId ->
-                        UnauthorizedException.Action(
-                            EntityType.PROJECT,
-                            targetId.toString(),
-                            AccessType.DELETE,
-                            user.id.toString(),
-                        )
+                        UnauthorizedActionException(EntityType.PROJECT, targetId, AccessType.DELETE, user.id)
                     }
                     .forProperty(AccessRuleCompoundUUID::secondTarget),
             )
             .checkFor(currentUser, userProjectCompound)
 
         if (!projectRepo.doesProjectExistById(projectId)) {
-            throw NotFoundException(EntityType.PROJECT, projectId.toString())
+            throw ProjectNotFoundException(projectId)
         }
 
         val projectMembers = repo.getProjectMembers(projectId)
@@ -168,18 +164,13 @@ class ProjectMemberService(
         isProjectAdmin(repo)
             .orElse(isServerAdmin().forTarget())
             .orElseThrow { user, targetId ->
-                UnauthorizedException.Action(
-                    EntityType.PROJECT,
-                    targetId.toString(),
-                    AccessType.DELETE,
-                    user.id.toString(),
-                )
+                UnauthorizedActionException(EntityType.PROJECT, targetId, AccessType.DELETE, user.id)
             }
             .checkFor(currentUser, projectId)
 
         val invitationToken =
             invitationTokenRepo.getInvitationTokenByEmailAndProjectId(userEmail, projectId).getOrNull()
-                ?: throw NotFoundException(EntityType.USER, userEmail, identifierType = IdentifierType.EMAIL)
+                ?: throw UserNotFoundByEmailException(userEmail)
 
         invitationTokenRepo.deleteInvitationToken(invitationToken.token)
     }

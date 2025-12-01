@@ -14,9 +14,9 @@ import org.jetbrains.exposed.sql.update
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.IdentifierType
-import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.UserSettings
+import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.toUser
@@ -302,7 +302,7 @@ class UserTableRepo(
         }
 
     override suspend fun createUser(request: Authentication.RegisterRequest, passwordHash: String): User = db.query {
-        UserTable.insertAndGet(ResultRow::toUser, EntityType.USER) {
+        UserTable.insertAndGet(ResultRow::toUser) {
             it[email] = request.email
             it[firstName] = request.firstName
             it[lastName] = request.lastName
@@ -316,7 +316,7 @@ class UserTableRepo(
         val userId = parseUUID(request.user.id, EntityType.USER)
         val fieldMask = FieldMaskUtil.normalize(request.mask)
 
-        UserTable.updateByIdAndGet(userId, ResultRow::toUser, EntityType.USER) {
+        UserTable.updateByIdAndGet(userId, ResultRow::toUser) {
             for (field in fieldMask.pathsList) {
                 when (field) {
                     "user.email" -> it[email] = request.user.email

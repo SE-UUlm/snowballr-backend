@@ -8,7 +8,7 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.DataBuilder.toGrpcId
-import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
+import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import java.util.UUID
 

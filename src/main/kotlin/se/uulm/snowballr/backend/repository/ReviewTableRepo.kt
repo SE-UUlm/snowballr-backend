@@ -4,8 +4,8 @@ import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.insert
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.Review
+import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.table.ReviewTable
 import se.uulm.snowballr.backend.table.association.ReviewHasCriterionTable
@@ -71,7 +71,7 @@ class ReviewTableRepo(
     override suspend fun createReview(request: GrpcReview.Create, userId: UUID): Review = db.query {
         val projectPaperId = parseUUID(request.projectPaperId, EntityType.PROJECT_PAPER)
 
-        val review = ReviewTable.insertAndGet(ResultRow::toReview, EntityType.REVIEW) {
+        val review = ReviewTable.insertAndGet(ResultRow::toReview) {
             it[ReviewTable.projectPaperId] = projectPaperId
             it[ReviewTable.userId] = userId
             it[decision] = request.decision

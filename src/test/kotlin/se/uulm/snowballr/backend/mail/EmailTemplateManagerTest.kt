@@ -4,8 +4,8 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertNotNull
 import org.junit.jupiter.api.assertThrows
-import se.uulm.snowballr.backend.model.SnowballRException.EmailException
 import se.uulm.snowballr.backend.model.email.EmailTemplate
+import se.uulm.snowballr.backend.model.exception.internal.email.TemplateCompilationFailedException
 import java.nio.file.Files
 
 class EmailTemplateManagerTest {
@@ -15,7 +15,7 @@ class EmailTemplateManagerTest {
     inner class Init {
         @Test
         fun `When the path doesn't exist, then a TemplateCompilationFailed exception is thrown`() {
-            assertThrows<EmailException.TemplateCompilationFailed> {
+            assertThrows<TemplateCompilationFailedException> {
                 EmailTemplateManager("foo/bar/not/existent")
             }
         }
@@ -25,7 +25,7 @@ class EmailTemplateManagerTest {
             val tmpDir = Files.createTempDirectory("tmp-template-dir").toFile()
             tmpDir.deleteOnExit()
 
-            assertThrows<EmailException.TemplateCompilationFailed> {
+            assertThrows<TemplateCompilationFailedException> {
                 EmailTemplateManager(tmpDir.absolutePath)
             }
         }

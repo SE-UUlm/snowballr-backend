@@ -99,8 +99,9 @@ for an example.
 The repository layer implements CRUD operations for entities in the database. If there doesn't already exist a
 repository associated with your use case, add a new one with the pattern `[Entity Name]TableRepo`. Then, add the
 required method first to the interface and then to the repository implementation. All repositories accept the database
-as an argument. Furthermore, a method always consists of a `db.dbQuey { ... }` block, which represents a transaction to the
-database. Only ever invoke database statements in such a block, otherwise an exception will be thrown upon execution.
+as an argument. Furthermore, a method always consists of a `db.dbQuey { ... }` block, which represents a transaction to
+the database. Only ever invoke database statements in such a block, otherwise an exception will be thrown upon
+execution.
 
 Here, you can use the [Exposed](https://github.com/JetBrains/Exposed) DSL to build SQL statements:
 
@@ -119,6 +120,9 @@ val entity = ExampleTable
     .single()
     .toExample()
 ```
+
+In this layer, we assume that all preconditions are already met, such as access checks and existence of associated
+entities. The repository methods should only focus on interacting with the database and nothing else.
 
 See
 [ProjectTableRepo.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/repository/ProjectTableRepo.kt)

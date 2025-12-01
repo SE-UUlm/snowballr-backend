@@ -10,8 +10,8 @@ import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.Criterion
+import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.toCriterion
@@ -125,7 +125,7 @@ class CriterionTableRepo(
             null
         }
 
-        CriterionTable.insertAndGet(ResultRow::toCriterion, EntityType.CRITERION) {
+        CriterionTable.insertAndGet(ResultRow::toCriterion) {
             it[tag] = request.tag
             it[name] = request.name
             it[description] = request.description
@@ -139,7 +139,7 @@ class CriterionTableRepo(
         val criterionId = parseUUID(request.criterion.id, EntityType.CRITERION)
         val fieldMask = FieldMaskUtil.normalize(request.mask)
 
-        CriterionTable.updateByIdAndGet(criterionId, ResultRow::toCriterion, EntityType.CRITERION) {
+        CriterionTable.updateByIdAndGet(criterionId, ResultRow::toCriterion) {
             for (field in fieldMask.pathsList) {
                 when (field) {
                     "criterion.tag" -> it[tag] = request.criterion.tag

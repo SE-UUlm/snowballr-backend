@@ -7,9 +7,8 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.lessEq
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
 import se.uulm.snowballr.backend.db.IDatabase
-import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.SnowballRException.InvitationTokenNotFoundException
 import se.uulm.snowballr.backend.model.dto.InvitationToken
+import se.uulm.snowballr.backend.model.exception.notfound.InvitationTokenNotFoundException
 import se.uulm.snowballr.backend.table.InvitationTokenTable
 import se.uulm.snowballr.backend.table.toInvitationToken
 import java.time.OffsetDateTime
@@ -73,7 +72,7 @@ class InvitationTokenTableRepo(
 ) : IInvitationTokenTableRepo {
     override suspend fun saveInvitationToken(email: String, projectId: UUID, token: String) {
         db.query {
-            InvitationTokenTable.insertAndGet(ResultRow::toInvitationToken, EntityType.INVITATION_TOKEN) {
+            InvitationTokenTable.insertAndGet(ResultRow::toInvitationToken) {
                 it[InvitationTokenTable.email] = email
                 it[InvitationTokenTable.projectId] = projectId
                 it[InvitationTokenTable.token] = token
@@ -85,11 +84,7 @@ class InvitationTokenTableRepo(
         val result =
             InvitationTokenTable.getEntityOrNull(ResultRow::toInvitationToken) { InvitationTokenTable.token eq token }
 
-        if (result != null) {
-            Result.success(result)
-        } else {
-            Result.failure(InvitationTokenNotFoundException())
-        }
+        wrapAsResult(result, InvitationTokenNotFoundException())
     }
 
     override suspend fun getInvitationTokenByEmailAndProjectId(
@@ -100,11 +95,7 @@ class InvitationTokenTableRepo(
             (InvitationTokenTable.email eq email) and (InvitationTokenTable.projectId eq projectId)
         }
 
-        if (token != null) {
-            Result.success(token)
-        } else {
-            Result.failure(InvitationTokenNotFoundException())
-        }
+        wrapAsResult(token, InvitationTokenNotFoundException())
     }
 
     override suspend fun getActiveInvitationTokensForProject(projectId: UUID): List<InvitationToken> = db.query {

@@ -6,8 +6,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
-import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
+import se.uulm.snowballr.backend.model.exception.NotFoundException
+import se.uulm.snowballr.backend.model.exception.notfound.entity.PaperNotFoundException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.Base
 import java.util.UUID
@@ -37,9 +37,7 @@ class GetBackwardReferencedPapersTest : MainServiceTest() {
         coEvery {
             citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
         } returns listOf(backwardReferenceId)
-        coEvery {
-            paperRepoMock.getPaperById(backwardReferenceId)
-        } throws NotFoundException(entityType = EntityType.PAPER, paperId.toString())
+        coEvery { paperRepoMock.getPaperById(backwardReferenceId) } throws PaperNotFoundException(paperId)
 
         assertThrows<NotFoundException> {
             mainService.getBackwardReferencedPapers(getExampleRequest())

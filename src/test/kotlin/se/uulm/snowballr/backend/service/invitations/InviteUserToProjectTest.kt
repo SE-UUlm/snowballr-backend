@@ -12,12 +12,10 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.IdentifierType
-import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
-import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
-import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.email.EmailData
+import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
+import se.uulm.snowballr.backend.model.exception.UnauthorizedException
+import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundByEmailException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.ProjectOuterClass
 import snowballr.UserOuterClass.UserRole
@@ -189,8 +187,7 @@ class InviteUserToProjectTest : MainServiceTest() {
 
         mockInviteUserToProject(invitedUserEmail = emailOfNonExistentUser, stopBefore = userRepoMock::getUserByEmail)
 
-        val emailNotFoundException =
-            NotFoundException(EntityType.USER, invitedUserEmail, identifierType = IdentifierType.EMAIL)
+        val emailNotFoundException = UserNotFoundByEmailException(emailOfNonExistentUser)
         coEvery { userRepoMock.getUserByEmail(emailOfNonExistentUser) } returns Result.failure(emailNotFoundException)
         every { emailManagerMock.createAcceptProjectInvitationLink(any()) } returns "http://invitation-link"
         coEvery { emailManagerMock.sendAcceptProjectInvitationEmail(any(), capture(emailDataSlot)) } returns Unit

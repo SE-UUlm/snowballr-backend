@@ -5,19 +5,21 @@ import io.viascom.nanoid.NanoId
 import se.uulm.snowballr.backend.auth.PasswordUtils
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.mail.IEmailManager
-import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.IdentifierType
-import se.uulm.snowballr.backend.model.SnowballRException.DuplicateEntityException
-import se.uulm.snowballr.backend.model.SnowballRException.EntityNotActiveException
-import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
-import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
-import se.uulm.snowballr.backend.model.SnowballRException.UserNotFoundException
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.toGrpcUser
 import se.uulm.snowballr.backend.model.dto.toGrpcUserSettings
 import se.uulm.snowballr.backend.model.dto.toGrpcUsers
 import se.uulm.snowballr.backend.model.email.EmailData
+import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
+import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateUserException
+import se.uulm.snowballr.backend.model.exception.failedprecondition.EntityNotActiveException
+import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundByEmailException
+import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundException
+import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadAllException
+import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadException
+import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedUpdateException
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
@@ -132,7 +134,7 @@ class UserService(
         // Only active or active unconfirmed users can be retrieved if the requester is not a server admin
         isServerAdmin().forTarget<User>()
             .orElse(isTargetUserActive())
-            .orElseThrow(UserNotFoundException(request.id))
+            .orElseThrow(UserNotFoundException(targetUserId))
             .checkFor(currentUser, targetUser)
 
         targetUser.toGrpcUser()
@@ -148,7 +150,7 @@ class UserService(
             .andAlso(
                 isServerAdmin().forTarget<User>()
                     .orElse(isTargetUserActive())
-                    .orElseThrow(UserNotFoundException(request.email, IdentifierType.EMAIL)),
+                    .orElseThrow(UserNotFoundByEmailException(request.email)),
             )
             .checkFor(currentUser, targetUser)
 
@@ -157,7 +159,7 @@ class UserService(
 
     override suspend fun getAllUsers(): GrpcUser.List = withUser(userRepo) { currentUser ->
         isServerAdmin()
-            .orElseThrow(UnauthorizedException.All(EntityType.USER, AccessType.READ, currentUser.id.toString()))
+            .orElseThrow(UnauthorizedReadAllException(currentUser.id, EntityType.USER))
             .checkFor(currentUser)
 
         userRepo.getAllUsers().toGrpcUsers()
@@ -166,7 +168,7 @@ class UserService(
     override suspend fun register(request: Authentication.RegisterRequest): Base.Nothing {
         // Check whether a user with the given email already exists
         if (userRepo.doesUserExistByEmail(request.email)) {
-            throw DuplicateEntityException(EntityType.USER, request.email, identifierType = IdentifierType.EMAIL)
+            throw DuplicateUserException(request.email)
         }
 
         // Hash the password and create the user
@@ -194,12 +196,7 @@ class UserService(
         val targetUserId = parseUUID(request.user.id, EntityType.USER)
         val targetUser = userRepo.getUserById(targetUserId).getOrThrow()
 
-        val notAllowedToUpdateException = UnauthorizedException.Single(
-            EntityType.USER,
-            targetUser.id.toString(),
-            AccessType.UPDATE,
-            currentUser.id.toString(),
-        )
+        val notAllowedToUpdateException = UnauthorizedUpdateException(currentUser.id, targetUserId, EntityType.USER)
 
         isSameUserById()
             .forProperty(User::id)
@@ -207,7 +204,7 @@ class UserService(
                 isServerAdmin().forTarget<User>()
                     .andAlso(
                         isTargetUserActive()
-                            .orElseThrow(EntityNotActiveException(EntityType.USER, targetUserId.toString())),
+                            .orElseThrow(EntityNotActiveException(EntityType.USER, targetUserId)),
                     ),
             )
             .orElseThrow(notAllowedToUpdateException)
@@ -222,7 +219,7 @@ class UserService(
 
         // If the email is changed, there must not yet exist an account with that email address.
         if (request.mask.pathsList.contains("email") && userRepo.doesUserExistByEmail(request.user.email)) {
-            throw DuplicateEntityException(EntityType.USER, request.user.email, identifierType = IdentifierType.EMAIL)
+            throw DuplicateUserException(request.user.email)
         }
 
         userRepo.updateUser(request).toGrpcUser()
@@ -232,14 +229,7 @@ class UserService(
         val targetUser = userRepo.getUserById(parseUUID(request.id, EntityType.USER)).getOrThrow()
 
         isServerAdminOrSameUser()
-            .orElseThrow(
-                UnauthorizedException.Single(
-                    EntityType.USER,
-                    targetUser.id.toString(),
-                    AccessType.DELETE,
-                    currentUser.id.toString(),
-                ),
-            )
+            .orElseThrow(UnauthorizedReadException(currentUser.id, targetUser.id, EntityType.USER))
             .forProperty(User::id)
             .andAlso(
                 targetUserIsNotAdmin()

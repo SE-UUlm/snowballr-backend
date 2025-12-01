@@ -8,8 +8,8 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.model.SnowballRException.DuplicateEntityException
-import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
+import se.uulm.snowballr.backend.model.exception.UnauthorizedException
+import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateUserException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
@@ -78,7 +78,7 @@ class UpdateUserTest : MainServiceTest() {
     }
 
     @Test
-    fun `When updating email to existent email, then a DuplicateEntityException is thrown`() = runTest {
+    fun `When updating email to existent email, then a DuplicateUserException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val requestedUser = DataBuilder.createExampleUser(
             id = requestedUserId,
@@ -90,7 +90,7 @@ class UpdateUserTest : MainServiceTest() {
         coEvery { userRepoMock.getUserById(requestedUserId) } returns Result.success(requestedUser)
         coEvery { userRepoMock.doesUserExistByEmail(requestedUser.email) } returns true
 
-        assertThrows<DuplicateEntityException> { mainService.updateUser(getExampleRequest()) }
+        assertThrows<DuplicateUserException> { mainService.updateUser(getExampleRequest()) }
     }
 
     @Test

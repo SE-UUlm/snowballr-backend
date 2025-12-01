@@ -15,11 +15,11 @@ import org.jetbrains.exposed.sql.statements.UpdateStatement
 import org.jetbrains.exposed.sql.update
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.ProjectPaper
 import se.uulm.snowballr.backend.model.dto.Review
 import se.uulm.snowballr.backend.model.dto.UserSettings
+import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.ReviewTable
@@ -167,7 +167,7 @@ class ProjectTableRepo(
 
     override suspend fun createProject(request: GrpcProject.Create, userId: UUID, userSettings: UserSettings): Project =
         db.query {
-            ProjectTable.insertAndGet(ResultRow::toProject, EntityType.PROJECT) {
+            ProjectTable.insertAndGet(ResultRow::toProject) {
                 it[name] = request.name
                 it[status] = ProjectStatus.PROJECT_STATUS_ACTIVE
                 it[currentStage] = 0
@@ -210,7 +210,7 @@ class ProjectTableRepo(
         val projectId = parseUUID(request.project.id, EntityType.PROJECT)
         val fieldMaskPaths = FieldMaskUtil.normalize(request.mask).pathsList.toSet()
 
-        ProjectTable.updateByIdAndGet(projectId, ResultRow::toProject, EntityType.PROJECT) {
+        ProjectTable.updateByIdAndGet(projectId, ResultRow::toProject) {
             it.applyProjectStatusUpdate(request.project, fieldMaskPaths)
             it.applyProjectNameUpdate(request.project, fieldMaskPaths)
             it.applySlrProjectUpdates(request.project.settings, fieldMaskPaths)

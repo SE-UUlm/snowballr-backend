@@ -5,13 +5,13 @@ import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.mail.IEmailManager
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
-import se.uulm.snowballr.backend.model.SnowballRException.InvalidIdException
-import se.uulm.snowballr.backend.model.SnowballRException.InvitationTokenNotFoundException
-import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.toGrpcUser
 import se.uulm.snowballr.backend.model.dto.toGrpcUsers
 import se.uulm.snowballr.backend.model.email.EmailData
+import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
+import se.uulm.snowballr.backend.model.exception.NotFoundException
+import se.uulm.snowballr.backend.model.exception.invalidargument.InvalidUUIDException
+import se.uulm.snowballr.backend.model.exception.notfound.InvitationTokenNotFoundException
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
@@ -92,7 +92,7 @@ class InvitationService(
 
                 val invitedMembers = invitationTokenRepo.getActiveInvitationTokensForProject(projectId)
                 excludedUsersFromSearch += invitedMembers.map { it.email }
-            } catch (_: InvalidIdException.UUID) {
+            } catch (_: InvalidUUIDException) {
                 Logger.warn { "Invalid project ID in invite candidates request: ${request.projectId}" }
             }
 
@@ -134,11 +134,7 @@ class InvitationService(
         val invitationLink = emailManager.createAcceptProjectInvitationLink(invitationToken)
         emailManager.sendAcceptProjectInvitationEmail(
             request.userEmail,
-            EmailData.AcceptProjectInvitation(
-                userFirstName,
-                project.name,
-                invitationLink,
-            ),
+            EmailData.AcceptProjectInvitation(userFirstName, project.name, invitationLink),
         )
 
         Base.Nothing.getDefaultInstance()

@@ -2,11 +2,10 @@
 
 package se.uulm.snowballr.backend.service.accessrules
 
-import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.IdentifierType
-import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.User
+import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadException
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
@@ -25,8 +24,7 @@ fun isSameUserById() = AccessRule<UUID> { requester, targetId -> requester.id ==
  */
 @CheckReturnValue
 fun isTargetUserActive() = AccessRule<User> { _, target ->
-    target.status == UserStatus.USER_STATUS_ACTIVE ||
-        target.status == UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED
+    target.status == UserStatus.USER_STATUS_ACTIVE || target.status == UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED
 }
 
 /**
@@ -68,12 +66,6 @@ fun isAllowedToReadUser(
     return isServerAdminOrSameUser()
         .orElse(isInSameProject(projectMemberRepo))
         .orElseThrow { currentUser, targetUserId ->
-            UnauthorizedException.Single(
-                EntityType.USER,
-                targetUserId.toString(),
-                AccessType.READ,
-                currentUser.id.toString(),
-                identifierType,
-            )
+            UnauthorizedReadException(currentUser.id, targetUserId, EntityType.USER, identifierType)
         }
 }

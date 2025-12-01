@@ -11,9 +11,9 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
-import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.ProjectMember
 import se.uulm.snowballr.backend.model.dto.ProjectMemberWithUser
+import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.repository.RepositoryHelper.assignUserToProject
 import se.uulm.snowballr.backend.repository.RepositoryHelper.createAndAssignUserToProject
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectAndGetId

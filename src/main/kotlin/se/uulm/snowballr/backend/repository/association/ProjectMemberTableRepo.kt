@@ -10,9 +10,9 @@ import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
 import se.uulm.snowballr.backend.model.dto.ProjectMember
 import se.uulm.snowballr.backend.model.dto.ProjectMemberWithUser
+import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.repository.doesEntityExist
 import se.uulm.snowballr.backend.repository.getEntities
 import se.uulm.snowballr.backend.repository.getEntityByKeysAsResult
@@ -154,7 +154,7 @@ class ProjectMemberTableRepo(
             return@query existentMember
         }
 
-        ProjectMemberTable.insertAndGet(ResultRow::toProjectMember, EntityType.PROJECT_MEMBER) {
+        ProjectMemberTable.insertAndGet(ResultRow::toProjectMember) {
             it[this.userId] = userId
             it[this.projectId] = projectId
             it[role] = MemberRole.MEMBER_ROLE_DEFAULT
@@ -199,8 +199,6 @@ class ProjectMemberTableRepo(
         db.query {
             ProjectMemberTable.updateAndGet(
                 mapper = ResultRow::toProjectMember,
-                entityType = EntityType.PROJECT_MEMBER,
-                id = projectId.toString(),
                 where = {
                     (ProjectMemberTable.projectId eq projectId) and (ProjectMemberTable.userId eq userId)
                 },

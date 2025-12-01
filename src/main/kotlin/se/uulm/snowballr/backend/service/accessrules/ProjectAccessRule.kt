@@ -4,11 +4,14 @@ package se.uulm.snowballr.backend.service.accessrules
 
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.SnowballRException.EntityNotActiveException
-import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
-import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
-import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.Project
+import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
+import se.uulm.snowballr.backend.model.exception.NotFoundException
+import se.uulm.snowballr.backend.model.exception.UnauthorizedException
+import se.uulm.snowballr.backend.model.exception.failedprecondition.EntityNotActiveException
+import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
+import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedExceptionFactory
+import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadException
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import snowballr.ProjectOuterClass.ProjectStatus
@@ -25,7 +28,7 @@ fun isProjectExistent(projectRepo: IProjectTableRepo): AccessRule<UUID> {
     return AccessRule<UUID> { _, projectId ->
         projectRepo.doesProjectExistById(projectId)
     }.orElseThrow { _, projectId ->
-        NotFoundException(EntityType.PROJECT, projectId.toString())
+        ProjectNotFoundException(projectId)
     }
 }
 
@@ -38,7 +41,7 @@ fun isProjectActive(): AccessRule<Project> {
     return AccessRule<Project> { _, project ->
         project.status == ProjectStatus.PROJECT_STATUS_ACTIVE ||
             project.status == ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED
-    }.orElseThrow { _, project -> EntityNotActiveException(EntityType.PROJECT, project.id.toString()) }
+    }.orElseThrow { _, project -> EntityNotActiveException(EntityType.PROJECT, project.id) }
 }
 
 /**
@@ -84,7 +87,7 @@ fun isNotLastProjectAdmin(projectMemberRepo: IProjectMemberTableRepo, action: St
 
 /**
  * Check whether the current user is a member of the specified project. If the user is not a project member,
- * the user has to be a server admin; otherwise, throws an [UnauthorizedException.Single].
+ * the user has to be a server admin; otherwise, throws an [UnauthorizedException].
  *
  * @param projectMemberRepo The repository used to access project membership data.
  */
@@ -93,18 +96,13 @@ fun isAllowedToReadProject(projectMemberRepo: IProjectMemberTableRepo): AccessRu
     return isProjectMember(projectMemberRepo)
         .orElse(isServerAdmin().forTarget())
         .orElseThrow { currentUser, targetId ->
-            UnauthorizedException.Single(
-                EntityType.PROJECT,
-                targetId.toString(),
-                AccessType.READ,
-                currentUser.id.toString(),
-            )
+            UnauthorizedReadException(currentUser.id, targetId, EntityType.PROJECT)
         }
 }
 
 /**
  * Check whether the current user is an admin of the specified project. If the user is not a project admin,
- * the user has to be a server admin; otherwise, throws an [UnauthorizedException.Single].
+ * the user has to be a server admin; otherwise, throws an [UnauthorizedException].
  *
  * @param projectMemberRepo The repository used to access project membership data.
  * @param accessType The type of access that is being checked.
@@ -114,6 +112,6 @@ fun isServerOrProjectAdmin(projectMemberRepo: IProjectMemberTableRepo, accessTyp
     return isProjectAdmin(projectMemberRepo)
         .orElse(isServerAdmin().forTarget())
         .orElseThrow { currentUser, targetId ->
-            UnauthorizedException.Single(EntityType.PROJECT, targetId.toString(), accessType, currentUser.id.toString())
+            UnauthorizedExceptionFactory.createForAccessType(accessType, currentUser.id, targetId, EntityType.PROJECT)
         }
 }

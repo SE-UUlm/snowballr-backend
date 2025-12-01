@@ -1,12 +1,13 @@
 package se.uulm.snowballr.backend.service
 
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
-import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
 import se.uulm.snowballr.backend.model.dto.Criterion
 import se.uulm.snowballr.backend.model.dto.toGrpcCriteria
 import se.uulm.snowballr.backend.model.dto.toGrpcCriterion
+import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedCreateException
+import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadException
+import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedUpdateException
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
@@ -82,12 +83,7 @@ class CriterionService(
             .orElse(isUserInProjectOfCriterion(projectMemberRepo))
             .orElse(isServerAdmin().forTarget())
             .orElseThrow { user, target ->
-                UnauthorizedException.Single(
-                    EntityType.CRITERION,
-                    target.id.toString(),
-                    AccessType.READ,
-                    user.id.toString(),
-                )
+                UnauthorizedReadException(user.id, target.id, EntityType.CRITERION)
             }
             .checkFor(currentUser, criterion)
 
@@ -102,12 +98,7 @@ class CriterionService(
                 isProjectAdmin(projectMemberRepo)
                     .orElse(isServerAdmin().forTarget())
                     .orElseThrow { user, target ->
-                        UnauthorizedException.Single(
-                            EntityType.CRITERION,
-                            target.toString(),
-                            AccessType.CREATE,
-                            user.id.toString(),
-                        )
+                        UnauthorizedCreateException(user.id, target, EntityType.CRITERION)
                     }
                     .checkFor(currentUser, projectId)
 
@@ -134,12 +125,7 @@ class CriterionService(
                 .orElse(isUserAdminInProjectOfCriterion(projectMemberRepo))
                 .orElse(isServerAdmin().forTarget())
                 .orElseThrow { user, target ->
-                    UnauthorizedException.Single(
-                        EntityType.CRITERION,
-                        target.id.toString(),
-                        AccessType.UPDATE,
-                        user.id.toString(),
-                    )
+                    UnauthorizedUpdateException(user.id, target.id, EntityType.CRITERION)
                 }
                 .checkFor(currentUser, criterion)
 

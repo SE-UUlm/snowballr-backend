@@ -2,7 +2,9 @@ package se.uulm.snowballr.backend.repository
 
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.IdentifierType
-import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
+import se.uulm.snowballr.backend.model.exception.NotFoundException
+import se.uulm.snowballr.backend.model.exception.SnowballRException
+import se.uulm.snowballr.backend.model.exception.notfound.EntityNotFoundException
 
 /**
  * Returns an entity by its key encapsulated by a [Result]. If the entity couldn't be found, a [Result.Failure] is
@@ -22,12 +24,7 @@ fun <KeyT : Any, EntT> getEntityByKeyAsResult(
     identifierType: IdentifierType = IdentifierType.ID,
 ): Result<EntT> {
     val entity = getter(key)
-
-    return if (entity != null) {
-        Result.success(entity)
-    } else {
-        Result.failure(NotFoundException(entityType, key.toString(), identifierType = identifierType))
-    }
+    return wrapAsResult(entity, EntityNotFoundException(entityType, key, identifierType = identifierType))
 }
 
 /**
@@ -48,10 +45,15 @@ fun <KeyT : Any, EntT> getEntityByKeysAsResult(
     key2: KeyT,
 ): Result<EntT> {
     val entity = getter(key1, key2)
+    return wrapAsResult(entity, EntityNotFoundException(entityType, key1, key2))
+}
 
-    return if (entity != null) {
-        Result.success(entity)
-    } else {
-        Result.failure(NotFoundException(entityType, key1.toString(), key2.toString()))
-    }
+/**
+ * Wraps the given entity in a [Result] if it's not null, otherwise returns a [Result.Failure] containing the given
+ * [exception].
+ */
+fun <T> wrapAsResult(entity: T?, exception: SnowballRException): Result<T> = if (entity != null) {
+    Result.success(entity)
+} else {
+    Result.failure(exception)
 }

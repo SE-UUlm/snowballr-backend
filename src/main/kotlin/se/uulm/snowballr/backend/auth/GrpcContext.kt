@@ -3,7 +3,9 @@ package se.uulm.snowballr.backend.auth
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.grpc.Context
 import io.grpc.Metadata
-import se.uulm.snowballr.backend.model.SnowballRException.MissingContextException
+import se.uulm.snowballr.backend.model.exception.internal.missingcontext.MissingAuthenticationStatusException
+import se.uulm.snowballr.backend.model.exception.internal.missingcontext.MissingCookiesMapException
+import se.uulm.snowballr.backend.model.exception.internal.missingcontext.MissingUserIdException
 import snowballr.Authentication.AuthenticationStatus
 import java.util.UUID
 
@@ -41,14 +43,14 @@ object GrpcContext {
     /**
      * Retrieves the authentication status from the gRPC context.
      *
-     * @throws MissingContextException.MissingAuthenticationStatus if the authentication status is not in the context.
+     * @throws MissingAuthenticationStatusException if the authentication status is not in the context.
      * @return The current [AuthenticationStatus] from the context.
      */
     fun getAuthenticationStatusFromContext(): AuthenticationStatus {
         val authStatus = AUTHENTICATION_STATUS.get()
         if (authStatus == null) {
             logger.warn { "Authentication status is missing from the gRPC context." }
-            throw MissingContextException.MissingAuthenticationStatus()
+            throw MissingAuthenticationStatusException()
         }
         return authStatus
     }
@@ -56,14 +58,14 @@ object GrpcContext {
     /**
      * Retrieves the user ID from the gRPC context.
      *
-     * @throws MissingContextException.MissingUserId if the user ID is not in the context.
+     * @throws MissingUserIdException if the user ID is not in the context.
      * @return The user ID as a [UUID].
      */
     fun getUserIdFromContext(): UUID {
         val userId = USER_ID_CONTEXT_KEY.get()
         if (userId == null) {
             logger.error { "User ID is missing from the gRPC context." }
-            throw MissingContextException.MissingUserId()
+            throw MissingUserIdException()
         }
 
         return userId
@@ -85,13 +87,13 @@ object GrpcContext {
      *
      * @param accessToken The new access token.
      * @param refreshToken The new refresh token.
-     * @throws MissingContextException.MissingCookiesMap if the cookie context has not been initialized
+     * @throws MissingCookiesMapException if the cookie context has not been initialized
      */
     fun setAuthCookiesInContext(accessToken: String, refreshToken: String) {
         val cookiesToSet = COOKIES_TO_SET_CONTEXT_KEY.get()
         if (cookiesToSet == null) {
             logger.error { "Attempted to set auth cookies, but the cookie map is missing from the context." }
-            throw MissingContextException.MissingCookiesMap()
+            throw MissingCookiesMapException()
         }
 
         cookiesToSet[ACCESS_TOKEN_COOKIE_NAME] = accessToken

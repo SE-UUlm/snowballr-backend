@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
-import se.uulm.snowballr.backend.model.SnowballRException.InvalidIdException
+import se.uulm.snowballr.backend.model.exception.invalidargument.InvalidUUIDException
 
 class ParserTest {
     @Nested
@@ -16,9 +16,9 @@ class ParserTest {
         }
 
         @Test
-        fun `When an invalid UUID is passed, then an InvalidIdException is thrown`() {
+        fun `When an invalid UUID is passed, then an InvalidUUIDException is thrown`() {
             val uuid = "invalid-uuid"
-            assertThrows<InvalidIdException> { parseUUID(uuid, EntityType.USER) }
+            assertThrows<InvalidUUIDException> { parseUUID(uuid, EntityType.USER) }
         }
     }
 }
