@@ -39,7 +39,7 @@ jobs:
     release:
         name: Release
         needs: build-jar
-        if: ${{ github.ref_type == 'tag' }}
+        if: github.ref_type == 'tag'
         permissions:
             contents: write
         uses: SE-UUlm/snowballr-ci/.github/workflows/release.yml@feat/1-feature-add-initial-workflows
