@@ -6,8 +6,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
-import se.uulm.snowballr.backend.model.SnowballRException
-import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
+import se.uulm.snowballr.backend.model.exception.NotFoundException
+import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicatePaperException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import java.util.UUID
 import snowballr.PaperOuterClass.Paper as GrpcPaper
@@ -72,6 +72,6 @@ class UpdatePaperTest : MainServiceTest() {
                 existingPaperWithSameExternalId,
             )
 
-            assertThrows<SnowballRException.DuplicateEntityException> { mainService.updatePaper(request) }
+            assertThrows<DuplicatePaperException> { mainService.updatePaper(request) }
         }
 }

@@ -78,11 +78,7 @@ class PaperService(
         if (request.paper.externalId.isNotEmpty()) {
             val existingPaper = repo.getPaperByExternalId(request.paper.externalId).getOrNull()
             if (existingPaper != null && existingPaper.id != paperId) {
-                throw DuplicateEntityException(
-                    EntityType.PAPER,
-                    request.paper.externalId,
-                    identifierType = IdentifierType.EXTERNAL_ID,
-                )
+                throw DuplicatePaperException(request.paper.externalId)
             }
         }
 
