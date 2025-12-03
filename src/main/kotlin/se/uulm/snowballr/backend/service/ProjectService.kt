@@ -305,8 +305,8 @@ class ProjectService(
         withUser(userRepo) { currentUser ->
             val projectId = parseUUID(request.projectId, EntityType.PROJECT)
 
-            isProjectExistent(repo)
-                .andAlso(isAllowedToReadProject(projectMemberRepo))
+            isAllowedToReadProject(projectMemberRepo)
+                .andAlso(isProjectExistent(repo))
                 .checkFor(currentUser, projectId)
 
             val project = repo.getProjectById(projectId).getOrThrow()

@@ -73,6 +73,35 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
     }
 
     @Nested
+    inner class GetPaperByExternalId {
+        @Test
+        fun `When a paper is found, then a successful result with the correct paper is returned`() = runTest {
+            val externalId = "ExternalId"
+            insertPaperAndGetId(externalId = externalId)
+
+            val paper = assertResultSuccess(repo.getPaperByExternalId(externalId))
+
+            with(paper) {
+                assertEquals("Title", title)
+                assertEquals("ExternalId", externalId)
+                assertEquals("Abstract", abstract)
+                assertEquals(2025, year)
+                assertEquals("Publisher", publisher)
+                assertEquals("PublicationType", publicationType)
+                assertEquals("PublicationName", publicationName)
+                assertThat(fetcherMetadata).isEmpty()
+            }
+        }
+
+        @Test
+        fun `When a paper is not found, then a failed result with a NotFoundException is returned`() = runTest {
+            val result = repo.getPaperByExternalId("NonExistentExternalId")
+
+            assertResultFailure<NotFoundException>(result)
+        }
+    }
+
+    @Nested
     inner class DoesPaperExistById {
         @Test
         fun `When a paper with the given id exists, then true returned`() = runTest {

@@ -7,6 +7,7 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.model.exception.NotFoundException
+import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicatePaperException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import java.util.UUID
 import snowballr.PaperOuterClass.Paper as GrpcPaper
@@ -34,6 +35,7 @@ class UpdatePaperTest : MainServiceTest() {
         val examplePaper = DataBuilder.createExamplePaper(id = paperId, authors = listOf(exampleAuthor))
 
         coEvery { paperRepoMock.doesPaperExistById(paperId) } returns true
+        coEvery { paperRepoMock.getPaperByExternalId(request.paper.externalId) } returns Result.failure(Exception())
         coEvery { paperRepoMock.updatePaper(request) } returns examplePaper
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paperId) } returns emptyList()
 
@@ -50,4 +52,26 @@ class UpdatePaperTest : MainServiceTest() {
             mainService.updatePaper(request)
         }
     }
+
+    @Test
+    fun `When a paper is updated with an external ID that already exists, then a DuplicateEntityException is thrown`() =
+        runTest {
+            val request = GrpcPaper.Update
+                .newBuilder()
+                .setPaper(
+                    getExamplePaperBuilder().setExternalId("10.1000/existingdoi").build(),
+                )
+                .build()
+            val existingPaperWithSameExternalId = DataBuilder.createExamplePaper(
+                id = UUID.randomUUID(),
+                externalId = "10.1000/existingdoi",
+            )
+
+            coEvery { paperRepoMock.doesPaperExistById(paperId) } returns true
+            coEvery { paperRepoMock.getPaperByExternalId("10.1000/existingdoi") } returns Result.success(
+                existingPaperWithSameExternalId,
+            )
+
+            assertThrows<DuplicatePaperException> { mainService.updatePaper(request) }
+        }
 }

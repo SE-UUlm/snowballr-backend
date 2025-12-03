@@ -86,9 +86,10 @@ class ProjectMemberService(
             val projectId = parseUUID(request.projectId, EntityType.PROJECT)
             val userId = parseUUID(request.userId, EntityType.USER)
 
-            isServerOrProjectAdmin(repo, AccessType.UPDATE).checkFor(currentUser, projectId)
+            isServerOrProjectAdmin(repo, AccessType.UPDATE)
+                .andAlso(isProjectExistent(projectRepo))
+                .checkFor(currentUser, projectId)
 
-            projectRepo.getProjectById(projectId).getOrThrow()
             val user = userRepo.getUserById(userId).getOrThrow()
 
             val currentMember = try {

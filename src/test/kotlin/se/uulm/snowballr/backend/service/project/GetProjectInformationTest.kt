@@ -25,8 +25,10 @@ class GetProjectInformationTest : MainServiceTest() {
     fun `When the project does not exist, then a NotFoundException is thrown`() = runTest {
         val user = DataBuilder.createExampleUser()
         val projectId = UUID.randomUUID()
+        val member = DataBuilder.createExampleProjectMember(projectId = projectId, userId = user.id)
 
         mockCurrentUser(user)
+        coEvery { projectMemberRepoMock.getProjectMembers(projectId) } returns listOf(member)
         coEvery { projectRepoMock.doesProjectExistById(projectId) } returns false
 
         assertThrows<NotFoundException> { mainService.getProjectInformation(getRequest(projectId)) }
@@ -39,7 +41,6 @@ class GetProjectInformationTest : MainServiceTest() {
 
         mockCurrentUser(user)
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
-        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
 
         assertThrows<UnauthorizedException> { mainService.getProjectInformation(getRequest(project.id)) }
     }

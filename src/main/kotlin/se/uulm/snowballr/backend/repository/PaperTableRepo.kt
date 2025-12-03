@@ -29,6 +29,12 @@ interface IPaperTableRepo {
     suspend fun getPaperById(id: UUID): Result<Paper>
 
     /**
+     * Returns a [Result] containing the paper by its external ID or a [NotFoundException] if the paper with the
+     * passed [externalId] doesn't exist.
+     */
+    suspend fun getPaperByExternalId(externalId: String): Result<Paper>
+
+    /**
      * Checks whether the paper with the passed [id] exists.
      */
     suspend fun doesPaperExistById(id: UUID): Boolean
@@ -72,8 +78,15 @@ class PaperTableRepo(
 ) : IPaperTableRepo {
     private fun getPaperByIdOrNull(id: UUID): Paper? = PaperTable.getEntityByIdOrNull(id, ResultRow::toPaper)
 
+    private fun getPaperByExternalIdOrNull(externalId: String): Paper? =
+        PaperTable.getEntityOrNull(ResultRow::toPaper) { PaperTable.externalId eq externalId }
+
     override suspend fun getPaperById(id: UUID): Result<Paper> = db.query {
         getEntityByKeyAsResult(::getPaperByIdOrNull, EntityType.PAPER, id)
+    }
+
+    override suspend fun getPaperByExternalId(externalId: String): Result<Paper> = db.query {
+        getEntityByKeyAsResult(::getPaperByExternalIdOrNull, EntityType.PAPER, externalId)
     }
 
     override suspend fun doesPaperExistById(id: UUID): Boolean = db.query {

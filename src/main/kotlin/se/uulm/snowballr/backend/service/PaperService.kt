@@ -75,6 +75,13 @@ class PaperService(
             throw PaperNotFoundException(paperId)
         }
 
+        if (request.paper.externalId.isNotEmpty()) {
+            val existingPaper = repo.getPaperByExternalId(request.paper.externalId).getOrNull()
+            if (existingPaper != null && existingPaper.id != paperId) {
+                throw DuplicatePaperException(request.paper.externalId)
+            }
+        }
+
         return repo.updatePaper(request).toGrpcPaper()
     }
 
