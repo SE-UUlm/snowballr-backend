@@ -8,7 +8,6 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.update
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.PaperNavigationDirection
@@ -18,12 +17,10 @@ import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectPaperNotFoundException
 import se.uulm.snowballr.backend.model.parseUUID
-import se.uulm.snowballr.backend.repository.doesEntityExist
-import se.uulm.snowballr.backend.repository.getEntities
-import se.uulm.snowballr.backend.repository.getEntityByIdOrNull
-import se.uulm.snowballr.backend.repository.getEntityByKeyAsResult
-import se.uulm.snowballr.backend.repository.getEntityOrNull
-import se.uulm.snowballr.backend.repository.insertAndGet
+import se.uulm.snowballr.backend.model.repository.DualIdColumnQuery
+import se.uulm.snowballr.backend.model.repository.DualMixedIdColumnQuery
+import se.uulm.snowballr.backend.model.repository.ProjectPaperId
+import se.uulm.snowballr.backend.repository.abstractions.SingleIdRepository
 import se.uulm.snowballr.backend.repository.wrapAsResult
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
@@ -168,9 +165,18 @@ interface IProjectPaperTableRepo {
  */
 class ProjectPaperTableRepo(
     private val db: IDatabase,
-) : IProjectPaperTableRepo {
-    private fun getProjectPaperByIdOrNull(id: UUID): ProjectPaper? =
-        ProjectPaperTable.getEntityByIdOrNull(id, ResultRow::toProjectPaper)
+) : IProjectPaperTableRepo,
+    SingleIdRepository<ProjectPaper, ProjectPaperTable, ProjectPaperId>(
+        ProjectPaperTable,
+        ResultRow::toProjectPaper,
+        EntityType.PROJECT_PAPER,
+    ) {
+    val paperAndProjectQuery = { paperId: UUID, projectId: UUID ->
+        DualIdColumnQuery(ProjectPaperTable.paperId, paperId, ProjectPaperTable.projectId, projectId)
+    }
+    val projectAndLocalIdQuery = { projectId: UUID, localPaperId: Long ->
+        DualMixedIdColumnQuery(ProjectPaperTable.projectId, projectId, ProjectPaperTable.localPaperId, localPaperId)
+    }
 
     override suspend fun getAdjacentPaper(
         projectId: UUID,
@@ -198,26 +204,23 @@ class ProjectPaperTableRepo(
     }
 
     override suspend fun getProjectPaperById(id: UUID): Result<ProjectPaper> = db.query {
-        getEntityByKeyAsResult(::getProjectPaperByIdOrNull, EntityType.PROJECT_PAPER, id)
+        getEntityById(ProjectPaperId(id))
     }
 
     override suspend fun getProjectPaperByRelativeId(projectId: UUID, relativeId: Long): Result<ProjectPaper> =
         db.query {
-            val projectPaper = ProjectPaperTable.getEntityOrNull(ResultRow::toProjectPaper) {
-                (ProjectPaperTable.projectId eq projectId) and (ProjectPaperTable.localPaperId eq relativeId)
-            }
-
-            wrapAsResult(projectPaper, ProjectPaperNotFoundException(relativeId, projectId))
+            getEntityByKey(
+                projectAndLocalIdQuery(projectId, relativeId),
+                ProjectPaperNotFoundException(relativeId, projectId),
+            )
         }
 
     override suspend fun doesProjectPaperExist(projectId: UUID, paperId: UUID): Boolean = db.query {
-        ProjectPaperTable.doesEntityExist {
-            (ProjectPaperTable.paperId eq paperId) and (ProjectPaperTable.projectId eq projectId)
-        }
+        doesEntityExistByKey(paperAndProjectQuery(paperId, projectId))
     }
 
     override suspend fun getAllProjectPapersForProject(projectId: UUID): List<ProjectPaper> = db.query {
-        ProjectPaperTable.getEntities(ResultRow::toProjectPaper) { ProjectPaperTable.projectId eq projectId }
+        getAllEntitiesWhere { ProjectPaperTable.projectId eq projectId }
     }
 
     override suspend fun getAllProjectPapersWithPapers(projectId: UUID): List<ProjectPaperWithPaper> = db.query {
@@ -238,15 +241,14 @@ class ProjectPaperTableRepo(
         val projectId = parseUUID(request.projectId, EntityType.PROJECT)
         val localPaperId = getNextLocalIdForProject(projectId)
 
-        ProjectPaperTable
-            .insertAndGet(ResultRow::toProjectPaper) {
-                it[ProjectPaperTable.paperId] = paperId
-                it[ProjectPaperTable.projectId] = projectId
-                it[ProjectPaperTable.localPaperId] = localPaperId
-                it[stage] = request.stage
-                it[decision] = PaperDecision.PAPER_DECISION_UNREVIEWED
-                it[createdBy] = userId
-            }
+        createEntity {
+            it[ProjectPaperTable.paperId] = paperId
+            it[ProjectPaperTable.projectId] = projectId
+            it[ProjectPaperTable.localPaperId] = localPaperId
+            it[stage] = request.stage
+            it[decision] = PaperDecision.PAPER_DECISION_UNREVIEWED
+            it[createdBy] = userId
+        }
     }
 
     override suspend fun getProjectProgress(projectId: UUID): Float = db.query {
@@ -268,7 +270,7 @@ class ProjectPaperTableRepo(
     }
 
     override suspend fun updateProjectPaperDecision(projectPaperId: UUID, decision: PaperDecision): Unit = db.query {
-        ProjectPaperTable.update({ ProjectPaperTable.id eq projectPaperId }) {
+        updateEntityById(ProjectPaperId(projectPaperId)) {
             it[ProjectPaperTable.decision] = decision
         }
     }
