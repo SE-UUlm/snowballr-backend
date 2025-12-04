@@ -333,37 +333,5 @@ For information about our testing setup, see [Testing](https://github.com/SE-UUl
 ## Release procedure
 
 We create a new release whenever a set of features, bug fixes, or changes is ready to be deployed and used by the
-frontend.
-To release a new version of the backend, follow these steps:
-
-1. Create a release branch for the release:
-
-   ```bash
-   git checkout -b releases/vX.Y.Z
-   ```
-
-   Replace `X`, `Y`, `Z` with the correct version numbers according to semantic versioning.
-
-2. Add an entry to the *CHANGELOG.md*. Prefer using [hallmark](https://github.com/vweevers/hallmark) to add the entry:
-
-   ```bash
-   hallmark cc add major|minor|patch
-   ```
-
-   Follow the guidelines of [Common Changelog](https://common-changelog.org/), i.e. especially use imperative mood.
-
-   > **Note**: To use hallmark locally install it globally with `npm install -g hallmark`
-
-3. Commit and push changes to the *CHANGELOG.md*.
-
-4. Create a pull request and request a review, so the *CHANGELOG.md* syntax and content is validated.
-
-5. After the pull request is merged, create a tag with the same version - so "vX.Y.Z" - at the merge commit.
-
-   ```bash
-   git pull main
-   git tag vX.Y.Z
-   git push origin vX.Y.Z
-   ```
-
-   Then the CI automatically creates the release.
+frontend. To release a new version of the backend, follow the steps in the
+[SnowballR Wiki](https://github.com/SE-UUlm/snowballr/wiki/Contributing#release-procedure).

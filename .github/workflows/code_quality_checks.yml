@@ -75,53 +75,31 @@ jobs:
 
             - name: Upload coverage report
               uses: actions/upload-artifact@v5
+              if: ${{ !cancelled() }}
               with:
                   name: coverage-report
                   path: ${{ github.workspace }}/build/coverageXml/report.xml
+                  retention-days: 1
+                  if-no-files-found: error
 
     teamscale-upload:
-        name: Upload coverage to Teamscale
+        name: Teamscale Upload
         runs-on: ubuntu-latest
         needs: testing
         steps:
             - name: Checkout repository
-              uses: actions/checkout@v5
+              uses: actions/checkout@v6
 
-            - name: Download jar file
+            - name: Download coverage report
               uses: actions/download-artifact@v6
               with:
                   name: coverage-report
-
-            # We have to trigger this job on "pull_request" so that the coverage is commented in the PR,
-            # but Teamscale requires a revision. Therefore, we retrieve the latest commit and set the revision manually.
-            - name: Retrieve latest commit of PR
-              if: ${{ github.event_name == 'pull_request' }}
-              run: |
-                  # Fetch commits of PR
-                  response=$(curl --request GET \
-                      --url 'https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/commits' \
-                      --header 'Accept: application/vnd.github.v3+json' \
-                      --header 'Content-Type: application/json')
-                  # Store response in JSON file and retrieve SHA of latest commit
-                  echo $response > response.json
-                  length=$(jq 'length' response.json)
-                  index=$(($length - 1))
-                  latest_commit=$(jq --argjson index $index '.[$index]' response.json)
-                  latest_commit_sha=$(echo "$latest_commit" | jq -r '.sha')
-                  echo "Latest Commit SHA: $latest_commit_sha"
-                  echo "LATEST_COMMIT_SHA=$latest_commit_sha" >> $GITHUB_ENV
+                  path: .
 
             - name: Teamscale Upload
-              if: github.actor != 'dependabot[bot]'
-              uses: cqse/teamscale-upload-action@v2.9.6
+              uses: SE-UUlm/snowballr-ci/src/teamscale-upload@v1.0.0
               with:
-                  server: "https://exia.informatik.uni-ulm.de/teamscale"
                   project: "29382a84-6015-4ecd-b7dd-7f578cae4040"
-                  user: "slartibartfass2"
-                  accesskey: ${{ secrets.TEAMSCALE_ACCESS_KEY }}
-                  partition: "Github Action > ${{ github.ref_name }} ${{ github.run_id }}"
+                  access-key: ${{ secrets.TEAMSCALE_ACCESS_KEY }}
                   format: JACOCO
-                  message: "Code coverage from GitHub Actions"
                   files: ${{ github.workspace }}/report.xml
-                  # When the event is a PR, use the previously defined env variable; otherwise the `github.sha` is fine.
-                  revision: ${{ github.event_name == 'pull_request' && env.LATEST_COMMIT_SHA || github.sha }}
