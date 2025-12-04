@@ -118,30 +118,6 @@ interface IProjectMemberTableRepo {
 class ProjectMemberTableRepo(
     private val db: IDatabase,
 ) : IProjectMemberTableRepo {
-    /**
-     * Retrieves a list of UUIDs from these users that are marked as deleted.
-     * As users are automatically hard-deleted after some time, this list should not be that long.
-     *
-     * @return A list of UUIDs representing users that are soft-deleted.
-     */
-    private fun getSoftDeletedUserIds(): List<UUID> = UserTable
-        .getEntities(ResultRow::toUser) { UserTable.status eq UserStatus.USER_STATUS_DELETED }
-        .map { it.id }
-
-    /**
-     * Requesting a project member from the database.
-     *
-     * @param projectId The ID of the requested project.
-     * @param userId The ID of the requested user.
-     * @return The [ProjectMember] object or null, if no project with the given [projectId] and [userId] was found.
-     */
-    private fun getProjectMemberByComposedIdOrNull(projectId: UUID, userId: UUID): ProjectMember? = ProjectMemberTable
-        .getEntityOrNull(ResultRow::toProjectMember) {
-            (ProjectMemberTable.projectId eq projectId) and
-                (ProjectMemberTable.userId eq userId) and
-                (ProjectMemberTable.userId notInList getSoftDeletedUserIds())
-        }
-
     override suspend fun getProjectMemberByComposedId(projectId: UUID, userId: UUID): Result<ProjectMember> = db.query {
         getEntityByKeysAsResult(::getProjectMemberByComposedIdOrNull, EntityType.PROJECT_MEMBER, projectId, userId)
     }
@@ -229,4 +205,28 @@ class ProjectMemberTableRepo(
                 (ProjectMemberTable.userId notInList getSoftDeletedUserIds())
         }
     }
+
+    /**
+     * Retrieves a list of UUIDs from these users that are marked as deleted.
+     * As users are automatically hard-deleted after some time, this list should not be that long.
+     *
+     * @return A list of UUIDs representing users that are soft-deleted.
+     */
+    private fun getSoftDeletedUserIds(): List<UUID> = UserTable
+        .getEntities(ResultRow::toUser) { UserTable.status eq UserStatus.USER_STATUS_DELETED }
+        .map { it.id }
+
+    /**
+     * Requesting a project member from the database.
+     *
+     * @param projectId The ID of the requested project.
+     * @param userId The ID of the requested user.
+     * @return The [ProjectMember] object or null, if no project with the given [projectId] and [userId] was found.
+     */
+    private fun getProjectMemberByComposedIdOrNull(projectId: UUID, userId: UUID): ProjectMember? = ProjectMemberTable
+        .getEntityOrNull(ResultRow::toProjectMember) {
+            (ProjectMemberTable.projectId eq projectId) and
+                (ProjectMemberTable.userId eq userId) and
+                (ProjectMemberTable.userId notInList getSoftDeletedUserIds())
+        }
 }

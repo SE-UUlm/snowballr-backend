@@ -176,25 +176,6 @@ class UserTableRepo(
         const val MAXIMUM_NUMBER_OF_INVITE_CANDIDATES = 10
     }
 
-    /**
-     * Extracts and converts rows from a [ResultSet] to a list of [User] objects.
-     *
-     * @param result The [ResultSet] containing user data.
-     * @return A list of [User] objects extracted from the result set.
-     */
-    private fun extractUserRows(result: ResultSet): List<User> {
-        return generateSequence {
-            if (result.next()) {
-                ResultRow.create(
-                    result,
-                    UserTable.fields.withIndex().associate { it.value to it.index },
-                )
-            } else {
-                null
-            }
-        }.map { it.toUser() }.toList()
-    }
-
     private fun getUserByIdOrNull(id: UUID): User? = UserTable.getEntityByIdOrNull(id, ResultRow::toUser)
 
     private fun getUserByEmailOrNull(email: String): User? =
@@ -207,36 +188,6 @@ class UserTableRepo(
 
     private fun getUserSettingsByUserIdOrNull(userId: UUID): UserSettings? =
         UserTable.getEntityByIdOrNull(userId, ResultRow::toUserSettings)
-
-    /**
-     * Retrieves a list of user IDs that are eligible for clearing sensitive data.
-     *
-     * @param thresholdDate The date up to which users are to be cleared.
-     * @return A list of user IDs that are eligible for clearing sensitive data.
-     */
-    private suspend fun getUserIdsToClear(thresholdDate: OffsetDateTime): List<UUID> = db.query {
-        UserTable.selectAll()
-            .where {
-                (UserTable.status eq UserStatus.USER_STATUS_DELETED).and(UserTable.deletedAt lessEq thresholdDate)
-            }
-            .map { it[UserTable.id].value }
-    }
-
-    /**
-     * Attempts to delete a single user by their ID.
-     *
-     * @param userId The ID of the user to be deleted.
-     * @return `true` if the user was successfully deleted, `false` otherwise.
-     */
-    private suspend fun attemptToDeleteUser(userId: UUID): Boolean = db.query {
-        try {
-            val deletedRows = UserTable.deleteWhere { UserTable.id eq userId }
-            deletedRows > 0
-        } catch (e: ExposedSQLException) {
-            logger.debug(e) { "Failed to hard-delete user $userId, likely due to existing references." }
-            false
-        }
-    }
 
     override suspend fun getUserById(id: UUID): Result<User> = db.query {
         getEntityByKeyAsResult(::getUserByIdOrNull, EntityType.USER, id)
@@ -396,5 +347,54 @@ class UserTableRepo(
 
     override suspend fun getUserSettings(id: UUID): Result<UserSettings> = db.query {
         getEntityByKeyAsResult(::getUserSettingsByUserIdOrNull, EntityType.USER, id)
+    }
+
+    /**
+     * Extracts and converts rows from a [ResultSet] to a list of [User] objects.
+     *
+     * @param result The [ResultSet] containing user data.
+     * @return A list of [User] objects extracted from the result set.
+     */
+    private fun extractUserRows(result: ResultSet): List<User> {
+        return generateSequence {
+            if (result.next()) {
+                ResultRow.create(
+                    result,
+                    UserTable.fields.withIndex().associate { it.value to it.index },
+                )
+            } else {
+                null
+            }
+        }.map { it.toUser() }.toList()
+    }
+
+    /**
+     * Retrieves a list of user IDs that are eligible for clearing sensitive data.
+     *
+     * @param thresholdDate The date up to which users are to be cleared.
+     * @return A list of user IDs that are eligible for clearing sensitive data.
+     */
+    private suspend fun getUserIdsToClear(thresholdDate: OffsetDateTime): List<UUID> = db.query {
+        UserTable.selectAll()
+            .where {
+                (UserTable.status eq UserStatus.USER_STATUS_DELETED).and(UserTable.deletedAt lessEq thresholdDate)
+            }
+            .map { it[UserTable.id].value }
+    }
+
+    /**
+     * Attempts to delete a single user by their ID.
+     *
+     * @param userId The ID of the user to be deleted.
+     * @return `true` if the user was successfully deleted, `false` otherwise.
+     */
+    private suspend fun attemptToDeleteUser(userId: UUID): Boolean = db.query {
+        try {
+            val deletedRows = UserTable.deleteWhere { UserTable.id eq userId }
+            deletedRows > 0
+        } catch (e: ExposedSQLException) {
+            logger.debug(e) { "Failed to hard-delete user $userId, likely due to existing references." }
+            false
+        }
     }
 }

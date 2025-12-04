@@ -172,23 +172,6 @@ class ProjectPaperTableRepo(
     private fun getProjectPaperByIdOrNull(id: UUID): ProjectPaper? =
         ProjectPaperTable.getEntityByIdOrNull(id, ResultRow::toProjectPaper)
 
-    /**
-     * Generates the next available local paper ID for the specified project by checking the existent maximum local
-     * paper ID within the project and incrementing it by one. If no local paper IDs exist for the given project, it
-     * returns 0.
-     *
-     * @param projectId The unique identifier of the project for which the next local paper ID is to be generated.
-     * @return The next available local paper ID as a [Long].
-     */
-    private suspend fun getNextLocalIdForProject(projectId: UUID): Long = db.query {
-        ProjectPaperTable
-            .selectAll()
-            .where { ProjectPaperTable.projectId eq projectId }
-            .maxOfOrNull { it[ProjectPaperTable.localPaperId] }
-            ?.plus(1)
-            ?: 0L
-    }
-
     override suspend fun getAdjacentPaper(
         projectId: UUID,
         localPaperId: Long,
@@ -304,5 +287,22 @@ class ProjectPaperTableRepo(
                 (ProjectPaperTable.projectId eq projectId) and (sameStageButGreaterLocalIdOp or greaterStageOp)
             }
             .map { it.toProjectPaper() }
+    }
+
+    /**
+     * Generates the next available local paper ID for the specified project by checking the existent maximum local
+     * paper ID within the project and incrementing it by one. If no local paper IDs exist for the given project, it
+     * returns 0.
+     *
+     * @param projectId The unique identifier of the project for which the next local paper ID is to be generated.
+     * @return The next available local paper ID as a [Long].
+     */
+    private suspend fun getNextLocalIdForProject(projectId: UUID): Long = db.query {
+        ProjectPaperTable
+            .selectAll()
+            .where { ProjectPaperTable.projectId eq projectId }
+            .maxOfOrNull { it[ProjectPaperTable.localPaperId] }
+            ?.plus(1)
+            ?: 0L
     }
 }
