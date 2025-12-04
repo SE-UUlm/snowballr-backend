@@ -9,7 +9,7 @@ on:
 jobs:
     build-and-publish-docker-image:
         name: Build and Publish Docker Image
-        uses: SE-UUlm/snowballr-ci/.github/workflows/docker.yml@feat/1-feature-add-initial-workflows
+        uses: SE-UUlm/snowballr-ci/.github/workflows/docker.yml@v1.0.0
         permissions:
             contents: read
             packages: write

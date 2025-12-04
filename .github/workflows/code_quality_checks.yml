@@ -97,7 +97,7 @@ jobs:
                   path: .
 
             - name: Teamscale Upload
-              uses: SE-UUlm/snowballr-ci/src/teamscale-upload@feat/1-feature-add-initial-workflows
+              uses: SE-UUlm/snowballr-ci/src/teamscale-upload@v1.0.0
               with:
                   project: "29382a84-6015-4ecd-b7dd-7f578cae4040"
                   access-key: ${{ secrets.TEAMSCALE_ACCESS_KEY }}
