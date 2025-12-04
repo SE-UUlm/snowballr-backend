@@ -3,22 +3,19 @@ package se.uulm.snowballr.backend.repository.association
 import org.jetbrains.exposed.sql.JoinType
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.notInList
 import org.jetbrains.exposed.sql.alias
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.andWhere
-import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.ProjectMember
 import se.uulm.snowballr.backend.model.dto.ProjectMemberWithUser
 import se.uulm.snowballr.backend.model.exception.NotFoundException
-import se.uulm.snowballr.backend.repository.doesEntityExist
+import se.uulm.snowballr.backend.model.repository.ProjectMemberId
+import se.uulm.snowballr.backend.repository.abstractions.DualIdRepository
 import se.uulm.snowballr.backend.repository.getEntities
-import se.uulm.snowballr.backend.repository.getEntityByKeysAsResult
-import se.uulm.snowballr.backend.repository.getEntityOrNull
-import se.uulm.snowballr.backend.repository.insertAndGet
-import se.uulm.snowballr.backend.repository.updateAndGet
 import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.table.association.toProjectMember
@@ -117,9 +114,24 @@ interface IProjectMemberTableRepo {
  */
 class ProjectMemberTableRepo(
     private val db: IDatabase,
-) : IProjectMemberTableRepo {
+) : IProjectMemberTableRepo,
+    DualIdRepository<ProjectMember, ProjectMemberTable, ProjectMemberId>(
+        ProjectMemberTable,
+        ResultRow::toProjectMember,
+        EntityType.PROJECT_MEMBER,
+        ProjectMemberTable.projectId,
+        ProjectMemberTable.userId,
+    ) {
+    private val getProjectMemberOp = { projectId: UUID ->
+        ProjectMemberTable.projectId eq projectId and
+            (ProjectMemberTable.userId notInList getSoftDeletedUserIds())
+    }
+    private val getProjectAdminOp = { projectId: UUID ->
+        getProjectMemberOp(projectId) and (ProjectMemberTable.role eq MemberRole.MEMBER_ROLE_ADMIN)
+    }
+
     override suspend fun getProjectMemberByComposedId(projectId: UUID, userId: UUID): Result<ProjectMember> = db.query {
-        getEntityByKeysAsResult(::getProjectMemberByComposedIdOrNull, EntityType.PROJECT_MEMBER, projectId, userId)
+        getEntityById(ProjectMemberId(projectId, userId))
     }
 
     override suspend fun addUserToProject(userId: UUID, projectId: UUID) = db.query {
@@ -130,7 +142,7 @@ class ProjectMemberTableRepo(
             return@query existentMember
         }
 
-        ProjectMemberTable.insertAndGet(ResultRow::toProjectMember) {
+        createEntity {
             it[this.userId] = userId
             it[this.projectId] = projectId
             it[role] = MemberRole.MEMBER_ROLE_DEFAULT
@@ -138,10 +150,7 @@ class ProjectMemberTableRepo(
     }
 
     override suspend fun getProjectMembers(projectId: UUID): List<ProjectMember> = db.query {
-        ProjectMemberTable.getEntities(ResultRow::toProjectMember) {
-            (ProjectMemberTable.projectId eq projectId) and
-                (ProjectMemberTable.userId notInList getSoftDeletedUserIds())
-        }
+        getAllEntitiesWhere { getProjectMemberOp(projectId) }
     }
 
     override suspend fun getMembersInSameProjectsAsUser(userId: UUID): List<ProjectMember> = db.query {
@@ -164,21 +173,12 @@ class ProjectMemberTableRepo(
     }
 
     override suspend fun getAllProjectAdmins(projectId: UUID): List<ProjectMember> = db.query {
-        ProjectMemberTable.getEntities(ResultRow::toProjectMember) {
-            (ProjectMemberTable.projectId eq projectId) and
-                (ProjectMemberTable.role eq MemberRole.MEMBER_ROLE_ADMIN) and
-                (ProjectMemberTable.userId notInList getSoftDeletedUserIds())
-        }
+        getAllEntitiesWhere { getProjectAdminOp(projectId) }
     }
 
     override suspend fun updateProjectMemberRole(projectId: UUID, userId: UUID, role: MemberRole): ProjectMember =
         db.query {
-            ProjectMemberTable.updateAndGet(
-                mapper = ResultRow::toProjectMember,
-                where = {
-                    (ProjectMemberTable.projectId eq projectId) and (ProjectMemberTable.userId eq userId)
-                },
-            ) {
+            updateEntityById(ProjectMemberId(projectId, userId)) {
                 it[ProjectMemberTable.role] = role
             }
         }
@@ -193,17 +193,12 @@ class ProjectMemberTableRepo(
 
     override suspend fun removeProjectMember(projectId: UUID, userId: UUID) {
         db.query {
-            ProjectMemberTable
-                .deleteWhere { (ProjectMemberTable.projectId eq projectId) and (ProjectMemberTable.userId eq userId) }
+            deleteEntityById(ProjectMemberId(projectId, userId))
         }
     }
 
     override suspend fun isProjectMember(projectId: UUID, userId: UUID): Boolean = db.query {
-        ProjectMemberTable.doesEntityExist {
-            (ProjectMemberTable.projectId eq projectId) and
-                (ProjectMemberTable.userId eq userId) and
-                (ProjectMemberTable.userId notInList getSoftDeletedUserIds())
-        }
+        doesEntityExistByKey { getProjectMemberOp(projectId) and (ProjectMemberTable.userId eq userId) }
     }
 
     /**
@@ -215,18 +210,4 @@ class ProjectMemberTableRepo(
     private fun getSoftDeletedUserIds(): List<UUID> = UserTable
         .getEntities(ResultRow::toUser) { UserTable.status eq UserStatus.USER_STATUS_DELETED }
         .map { it.id }
-
-    /**
-     * Requesting a project member from the database.
-     *
-     * @param projectId The ID of the requested project.
-     * @param userId The ID of the requested user.
-     * @return The [ProjectMember] object or null, if no project with the given [projectId] and [userId] was found.
-     */
-    private fun getProjectMemberByComposedIdOrNull(projectId: UUID, userId: UUID): ProjectMember? = ProjectMemberTable
-        .getEntityOrNull(ResultRow::toProjectMember) {
-            (ProjectMemberTable.projectId eq projectId) and
-                (ProjectMemberTable.userId eq userId) and
-                (ProjectMemberTable.userId notInList getSoftDeletedUserIds())
-        }
 }
