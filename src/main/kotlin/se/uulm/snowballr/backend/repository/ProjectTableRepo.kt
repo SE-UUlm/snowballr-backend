@@ -21,6 +21,8 @@ import se.uulm.snowballr.backend.model.dto.Review
 import se.uulm.snowballr.backend.model.dto.UserSettings
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.parseUUID
+import se.uulm.snowballr.backend.model.repository.ProjectId
+import se.uulm.snowballr.backend.repository.abstractions.SingleIdRepository
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.ReviewTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
@@ -152,22 +154,22 @@ interface IProjectTableRepo {
  * @param db The database abstraction used for executing queries within a transaction.
  */
 @Suppress("TooManyFunctions")
-class ProjectTableRepo(
-    private val db: IDatabase,
-) : IProjectTableRepo {
-    private fun getProjectByIdOrNull(id: UUID): Project? = ProjectTable.getEntityByIdOrNull(id, ResultRow::toProject)
+class ProjectTableRepo(private val db: IDatabase) : IProjectTableRepo,
+    SingleIdRepository<Project, ProjectTable, ProjectId>(ProjectTable, ResultRow::toProject, EntityType.PROJECT) {
+    private val activeProjectsOp = (ProjectTable.status eq ProjectStatus.PROJECT_STATUS_ACTIVE) or
+        (ProjectTable.status eq ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
 
     override suspend fun getProjectById(id: UUID): Result<Project> = db.query {
-        getEntityByKeyAsResult(::getProjectByIdOrNull, EntityType.PROJECT, id)
+        getEntityById(ProjectId(id))
     }
 
     override suspend fun doesProjectExistById(id: UUID): Boolean = db.query {
-        ProjectTable.doesEntityExistById(id)
+        doesEntityExistById(ProjectId(id))
     }
 
     override suspend fun createProject(request: GrpcProject.Create, userId: UUID, userSettings: UserSettings): Project =
         db.query {
-            ProjectTable.insertAndGet(ResultRow::toProject) {
+            createEntity {
                 it[name] = request.name
                 it[status] = ProjectStatus.PROJECT_STATUS_ACTIVE
                 it[currentStage] = 0
@@ -182,10 +184,7 @@ class ProjectTableRepo(
         }
 
     override suspend fun getAllProjects(): List<Project> = db.query {
-        ProjectTable.getEntities(ResultRow::toProject) {
-            (ProjectTable.status eq ProjectStatus.PROJECT_STATUS_ACTIVE) or
-                (ProjectTable.status eq ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
-        }
+        getAllEntitiesWhere { activeProjectsOp }
     }
 
     override suspend fun getUserProjects(userId: UUID, statusFilters: Set<ProjectStatus>): List<Project> = db.query {
@@ -210,11 +209,10 @@ class ProjectTableRepo(
         val projectId = parseUUID(request.project.id, EntityType.PROJECT)
         val fieldMaskPaths = FieldMaskUtil.normalize(request.mask).pathsList.toSet()
 
-        ProjectTable.updateByIdAndGet(projectId, ResultRow::toProject) {
+        updateEntityById(ProjectId(projectId)) {
             it.applyProjectStatusUpdate(request.project, fieldMaskPaths)
             it.applyProjectNameUpdate(request.project, fieldMaskPaths)
             it.applySlrProjectUpdates(request.project.settings, fieldMaskPaths)
-            it[modifiedAt] = OffsetDateTime.now()
         }
     }
 
@@ -229,7 +227,7 @@ class ProjectTableRepo(
 
     override suspend fun softDeleteProject(projectId: UUID) {
         db.query {
-            ProjectTable.update({ ProjectTable.id eq projectId }) {
+            justUpdateEntityById(ProjectId(projectId)) {
                 it[status] = ProjectStatus.PROJECT_STATUS_DELETED
                 it[deletedAt] = OffsetDateTime.now()
             }
