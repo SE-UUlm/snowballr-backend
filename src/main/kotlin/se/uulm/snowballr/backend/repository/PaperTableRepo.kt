@@ -4,10 +4,14 @@ import com.google.protobuf.util.FieldMaskUtil
 import org.jetbrains.exposed.sql.ResultRow
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.IdentifierType
 import se.uulm.snowballr.backend.model.dto.Paper
 import se.uulm.snowballr.backend.model.dto.toAuthor
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.parseUUID
+import se.uulm.snowballr.backend.model.repository.PaperId
+import se.uulm.snowballr.backend.model.repository.SingleColumnQuery
+import se.uulm.snowballr.backend.repository.abstractions.SingleIdRepository
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.toPaper
 import java.time.OffsetDateTime
@@ -75,30 +79,27 @@ interface IPaperTableRepo {
  */
 class PaperTableRepo(
     private val db: IDatabase,
-) : IPaperTableRepo {
-    private fun getPaperByIdOrNull(id: UUID): Paper? = PaperTable.getEntityByIdOrNull(id, ResultRow::toPaper)
-
-    private fun getPaperByExternalIdOrNull(externalId: String): Paper? =
-        PaperTable.getEntityOrNull(ResultRow::toPaper) { PaperTable.externalId eq externalId }
+) : IPaperTableRepo, SingleIdRepository<Paper, PaperTable, PaperId>(PaperTable, ResultRow::toPaper, EntityType.PAPER) {
+    val externalIdQuery = { externalId: String? -> SingleColumnQuery(PaperTable.externalId, externalId) }
 
     override suspend fun getPaperById(id: UUID): Result<Paper> = db.query {
-        getEntityByKeyAsResult(::getPaperByIdOrNull, EntityType.PAPER, id)
+        getEntityById(PaperId(id))
     }
 
     override suspend fun getPaperByExternalId(externalId: String): Result<Paper> = db.query {
-        getEntityByKeyAsResult(::getPaperByExternalIdOrNull, EntityType.PAPER, externalId)
+        getEntityByKey(externalIdQuery(externalId), IdentifierType.EXTERNAL_ID)
     }
 
     override suspend fun doesPaperExistById(id: UUID): Boolean = db.query {
-        PaperTable.doesEntityExistById(id)
+        doesEntityExistById(PaperId(id))
     }
 
     override suspend fun doesPaperExistByExternalId(externalId: String): Boolean = db.query {
-        PaperTable.doesEntityExist { PaperTable.externalId eq externalId }
+        doesEntityExistByKey(externalIdQuery(externalId))
     }
 
     override suspend fun createPaper(request: GrpcPaper): Paper = db.query {
-        PaperTable.insertAndGet(ResultRow::toPaper) {
+        createEntity {
             it[title] = request.title
             it[externalId] = request.externalId.ifBlank { null }
             it[abstract] = request.abstrakt
@@ -119,7 +120,7 @@ class PaperTableRepo(
             return@query getPaperById(paperId).getOrThrow()
         }
 
-        PaperTable.updateByIdAndGet(paperId, ResultRow::toPaper) {
+        updateEntityById(PaperId(paperId)) {
             for (field in fieldMask.pathsList) {
                 when (field) {
                     "paper.external_id" -> it[externalId] = request.paper.externalId
