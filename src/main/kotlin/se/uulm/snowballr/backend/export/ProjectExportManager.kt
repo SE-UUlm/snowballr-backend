@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.export
 
+import se.uulm.snowballr.backend.export.ProjectExportManager.getSupportedFormats
 import se.uulm.snowballr.backend.model.dto.Criterion
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.ProjectMemberWithUser
@@ -51,11 +52,30 @@ object ProjectExportManager {
         return FileExport(data, filename)
     }
 
+    /**
+     * Creates a sanitized filename using the project name and current timestamp.
+     *
+     * @param projectName The name of the project.
+     * @param fileExtension The file extension for the export format.
+     * @return A sanitized filename in the format "{projectName}-{timestamp}.{fileExtension}".
+     */
     private fun createFilename(projectName: String, fileExtension: String): String {
         val timestamp = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS).toString()
         return sanitizeFilename("$projectName-$timestamp.$fileExtension")
     }
 
+    /**
+     * Sanitizes a filename by removing or replacing illegal characters.
+     *
+     * This includes:
+     * - Replacing characters not allowed in filenames (such as \ / : * ? " < > | and control characters) with
+     * underscores.
+     * - Trimming leading and trailing whitespace and dots.
+     * - Providing a fallback name ("unnamed") if the resulting filename is empty.
+     *
+     * @param input The original filename.
+     * @return A sanitized filename safe for use in file systems.
+     */
     private fun sanitizeFilename(input: String): String {
         // Define characters not allowed in filenames (Windows + UNIX safe set) + white-space
         val illegalChars = """[\\/:*?"<>|\p{Cntrl}\s]""".toRegex()
