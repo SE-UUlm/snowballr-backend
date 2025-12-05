@@ -17,8 +17,23 @@ object ProjectExportManager {
         ExportFormat.JSON to JsonExporter(),
     )
 
+    /**
+     * Returns the set of supported export formats.
+     */
     fun getSupportedFormats(): Set<ExportFormat> = exporters.keys
 
+    /**
+     * Exports the given project and its associated data in the specified format.
+     *
+     * @param format The desired export format.
+     * @param project The project to export.
+     * @param projectMembers The members associated with the project.
+     * @param projectPapers The papers associated with the project.
+     * @param projectCriteria The criteria associated with the project.
+     * @return A [FileExport] containing the exported data and filename.
+     * @throws IllegalArgumentException if the specified format is not supported. Check with [getSupportedFormats]
+     * first.
+     */
     fun exportProject(
         format: ExportFormat,
         project: Project,
