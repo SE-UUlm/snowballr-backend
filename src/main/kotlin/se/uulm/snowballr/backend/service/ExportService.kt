@@ -4,8 +4,7 @@ import com.google.protobuf.kotlin.toByteString
 import se.uulm.snowballr.backend.export.ProjectExportManager
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.dto.ProjectPaperFull
-import se.uulm.snowballr.backend.model.dto.ProjectPaperWithPaper
+import se.uulm.snowballr.backend.model.dto.toProjectPaperFull
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
@@ -72,7 +71,11 @@ class ExportService(
         val project = projectRepo.getProjectById(projectId).getOrThrow()
         val projectMembers = projectMemberRepo.getProjectMembersWithUsers(projectId)
         val projectPapers = projectPaperRepo.getAllProjectPapersWithPapers(projectId)
-            .map { it.toProjectPaperFull() }
+            .map {
+                val reviewsWithSelectedCriteriaIds =
+                    reviewRepo.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(it.projectPaper.id)
+                it.toProjectPaperFull(reviewsWithSelectedCriteriaIds)
+            }
         val projectCriteria = criterionRepo.getAllProjectCriteria(projectId)
 
         val fileExport =
@@ -81,16 +84,5 @@ class ExportService(
             data = fileExport.data.toByteString()
             fileName = fileExport.filename
         }
-    }
-
-    private suspend fun ProjectPaperWithPaper.toProjectPaperFull(): ProjectPaperFull {
-        val reviewsWithSelectedCriteriaIds =
-            reviewRepo.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(this.projectPaper.id)
-
-        return ProjectPaperFull(
-            projectPaper = this.projectPaper,
-            paper = this.paper,
-            reviewsWithSelectedCriteria = reviewsWithSelectedCriteriaIds,
-        )
     }
 }
