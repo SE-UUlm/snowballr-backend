@@ -10,8 +10,13 @@ import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IReviewTableRepo
+import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
+import se.uulm.snowballr.backend.service.accessrules.andAlso
+import se.uulm.snowballr.backend.service.accessrules.checkFor
+import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadProject
+import se.uulm.snowballr.backend.service.accessrules.isProjectExistent
 import snowballr.Export.AvailableExportFormatsReply
 import snowballr.Export.ExportRequest
 import snowballr.Export.ExportResponse
@@ -41,6 +46,7 @@ interface IExportService {
  * @param projectPaperRepo Repository interface to manage operations related to project papers.
  * @param reviewRepo Repository interface to manage operations related to reviews of project papers.
  * @param criterionRepo Repository interface to manage operations related to project criteria.
+ * @param userRepo Repository interface to manage operations related to user data.
  */
 class ExportService(
     private val projectRepo: IProjectTableRepo,
@@ -48,15 +54,20 @@ class ExportService(
     private val projectPaperRepo: IProjectPaperTableRepo,
     private val reviewRepo: IReviewTableRepo,
     private val criterionRepo: ICriterionTableRepo,
+    private val userRepo: IUserTableRepo,
 ) : IExportService {
     override suspend fun getAvailableExportFormats(): AvailableExportFormatsReply =
         AvailableExportFormatsReply.newBuilder()
             .addAllFormats(ProjectExportManager.getSupportedFormats().map { it.toString() })
             .build()
 
-    override suspend fun exportProject(request: ExportRequest): ExportResponse {
+    override suspend fun exportProject(request: ExportRequest): ExportResponse = withUser(userRepo) { currentUser ->
         val format = ProjectExportManager.getSupportedFormats().first { it.toString() == request.format }
         val projectId = parseUUID(request.id, EntityType.PROJECT)
+
+        isAllowedToReadProject(projectMemberRepo)
+            .andAlso(isProjectExistent(projectRepo))
+            .checkFor(currentUser, projectId)
 
         val project = projectRepo.getProjectById(projectId).getOrThrow()
         val projectMembers = projectMemberRepo.getProjectMembersWithUsers(projectId)
@@ -66,7 +77,7 @@ class ExportService(
 
         val fileExport =
             ProjectExportManager.exportProject(format, project, projectMembers, projectPapers, projectCriteria)
-        return exportResponse {
+        exportResponse {
             data = fileExport.data.toByteString()
             fileName = fileExport.filename
         }
