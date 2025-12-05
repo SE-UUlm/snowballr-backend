@@ -254,9 +254,6 @@ class SnowballRServer(
         override suspend fun removePaperFromReadingList(request: Base.Id): Base.Nothing =
             mainService.removePaperFromReadingList(request)
 
-        override suspend fun getPendingInvitationsForUser(request: Base.Id): ProjectOuterClass.Project.List =
-            super.getPendingInvitationsForUser(request)
-
         override suspend fun getInviteCandidates(
             request: ProjectOuterClass.Project.InviteCandidatesRequest,
         ): UserOuterClass.User.List = mainService.getInviteCandidates(request)
@@ -303,7 +300,7 @@ class SnowballRServer(
         override suspend fun updateProject(request: ProjectOuterClass.Project.Update): ProjectOuterClass.Project =
             mainService.updateProject(request)
 
-        override suspend fun getAvailableExportFormats(request: Base.Nothing): Export.AvailableExportFormatsReply =
+        override suspend fun getAvailableExportFormats(request: Base.Nothing): Export.AvailableExportFormatsResponse =
             mainService.getAvailableExportFormats()
 
         override suspend fun exportProject(request: Export.ExportRequest): Export.ExportResponse =

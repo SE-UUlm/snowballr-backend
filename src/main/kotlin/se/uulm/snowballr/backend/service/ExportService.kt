@@ -17,7 +17,7 @@ import se.uulm.snowballr.backend.service.accessrules.andAlso
 import se.uulm.snowballr.backend.service.accessrules.checkFor
 import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadProject
 import se.uulm.snowballr.backend.service.accessrules.isProjectExistent
-import snowballr.Export.AvailableExportFormatsReply
+import snowballr.Export.AvailableExportFormatsResponse
 import snowballr.Export.ExportRequest
 import snowballr.Export.ExportResponse
 import snowballr.exportResponse
@@ -26,7 +26,7 @@ interface IExportService {
     /**
      * Service implementation of [SnowballRService.getAvailableExportFormats].
      */
-    suspend fun getAvailableExportFormats(): AvailableExportFormatsReply
+    suspend fun getAvailableExportFormats(): AvailableExportFormatsResponse
 
     /**
      * Service implementation of [SnowballRService.exportProject].
@@ -56,8 +56,8 @@ class ExportService(
     private val criterionRepo: ICriterionTableRepo,
     private val userRepo: IUserTableRepo,
 ) : IExportService {
-    override suspend fun getAvailableExportFormats(): AvailableExportFormatsReply =
-        AvailableExportFormatsReply.newBuilder()
+    override suspend fun getAvailableExportFormats(): AvailableExportFormatsResponse =
+        AvailableExportFormatsResponse.newBuilder()
             .addAllFormats(ProjectExportManager.getSupportedFormats().map { it.toString() })
             .build()
 
