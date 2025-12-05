@@ -1,3 +1,5 @@
+@file:Suppress("LongParameterList")
+
 package se.uulm.snowballr.backend.repository
 
 import org.jetbrains.exposed.sql.ResultRow
@@ -39,7 +41,6 @@ object RepositoryHelper {
      *
      * @return The UUID of the created user.
      */
-    @Suppress("LongParameterList")
     suspend fun insertUserAndGetId(
         email: String = "test.user@example.com",
         firstName: String = "Test",
@@ -92,7 +93,6 @@ object RepositoryHelper {
      *
      * @return The UUID of the created paper.
      */
-    @Suppress("LongParameterList")
     suspend fun insertPaperAndGetId(
         title: String = "Title",
         externalId: String = UUID.randomUUID().toString(),
@@ -122,7 +122,6 @@ object RepositoryHelper {
      *
      * @return The UUID of the created project.
      */
-    @Suppress("LongParameterList")
     suspend fun insertProjectAndGetId(
         name: String = "Test Project",
         status: ProjectStatus = ProjectStatus.PROJECT_STATUS_ACTIVE,
@@ -157,7 +156,6 @@ object RepositoryHelper {
      *
      * @return The UUID of the created project paper.
      */
-    @Suppress("LongParameterList")
     suspend fun insertProjectPaperAndGetId(
         paperId: UUID,
         projectId: UUID,
@@ -181,7 +179,6 @@ object RepositoryHelper {
      *
      * @return The UUID of the created review.
      */
-    @Suppress("LongParameterList")
     suspend fun insertReviewAndGetId(
         projectPaperId: UUID,
         userId: UUID,
@@ -199,7 +196,6 @@ object RepositoryHelper {
      *
      * @return The UUID of the created criterion.
      */
-    @Suppress("LongParameterList")
     suspend fun insertCriterionAndGetId(
         tag: String = "Test Tag",
         name: String = "Test Criterion",

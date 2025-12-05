@@ -175,3 +175,12 @@ data class TooLongList(val name: String, val maxLength: Int) : ValidationIssue {
 data class CompositeIssue(val baseMessage: String, val issues: List<ValidationIssue>) : ValidationIssue {
     override fun toString(): String = "$baseMessage: ${issues.joinToString("; ")}"
 }
+
+/**
+ * Represents a validation issue where an unsupported export format is requested.
+ *
+ * @property format The unsupported export format.
+ */
+data class UnsupportedExportFormat(val format: String) : ValidationIssue {
+    override fun toString(): String = "The export format '$format' is not supported."
+}

@@ -58,3 +58,18 @@ fun List<ProjectPaperWithPaper>.toGrpcProjectPapers(
         },
     )
     .build()
+
+/**
+ * Converts a [ProjectPaperWithPaper] instance into a [ProjectPaperFull] object.
+ *
+ * @param reviewsWithSelectedCriteriaIds A list of [ReviewWithSelectedCriteriaIds] associated with the project paper.
+ * @return A [ProjectPaperFull] object containing the project paper, paper, and associated reviews with selected
+ * criteria.
+ */
+fun ProjectPaperWithPaper.toProjectPaperFull(
+    reviewsWithSelectedCriteriaIds: List<ReviewWithSelectedCriteriaIds>,
+): ProjectPaperFull = ProjectPaperFull(
+    projectPaper = this.projectPaper,
+    paper = this.paper,
+    reviewsWithSelectedCriteria = reviewsWithSelectedCriteriaIds,
+)
