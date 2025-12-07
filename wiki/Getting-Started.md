@@ -9,12 +9,11 @@ page.
 
 The fastest way to get started is to use the provided Docker setup.
 
-1. Clone the repository and its submodule:
+1. Clone the repository:
 
     ```bash
     git clone git@github.com:SE-UUlm/snowballr-backend.git
     cd snowballr-backend
-    git submodule update --init --recursive
     docker compose up
     ```
 
@@ -49,12 +48,11 @@ the backend with the desired profile.
 
 To build the project from source, run the following commands:
 
-1. Clone the repository and its submodule:
+1. Clone the repository:
 
     ```bash
     git clone git@github.com:SE-UUlm/snowballr-backend.git
     cd snowballr-backend
-    git submodule update --init --recursive
     ./gradlew shadowJar
     ```
 
@@ -65,11 +63,6 @@ To build the project from source, run the following commands:
     ```
 
    The built JAR file can be found in the `build/libs` directory, named `snowballr-backend-<version>.jar`.
-
-   > [!NOTE] API Code Generation
-   >
-   > In comparison to the frontend repository, we don't have to manually generate the API code, as it is done
-   > automatically. You can find the generated API code in the `build/generated` directory.*
 
 3. Run the application:
 

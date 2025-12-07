@@ -31,7 +31,6 @@ To set up the development environment, follow the steps in
 
 ```plaintext
 .
-├── api/                     (snowballr-api submodule)
 ├── src/
 │   ├── main/
 │   │   ├── kotlin/
