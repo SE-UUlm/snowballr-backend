@@ -7,21 +7,72 @@ import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.json.json
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.UserSettings
+import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
+import snowballr.ProjectOuterClass.ReviewDecisionMatrix.Pattern
 import snowballr.ProjectOuterClass.SnowballingType
+import snowballr.ReviewOuterClass.ReviewDecision
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
 import java.time.OffsetDateTime
 import java.util.UUID
 
+fun patternOf(vararg decisions: Pair<ReviewDecision, Long>, result: PaperDecision): Pattern {
+    val builder = Pattern.newBuilder()
+    decisions.forEach { (decision, count) ->
+        builder.addEntries(
+            Pattern.Entry.newBuilder()
+                .setReviewDecision(decision)
+                .setCount(count)
+                .build(),
+        )
+    }
+    builder.setDecision(result)
+
+    return builder.build()
+}
+
 private const val REQUIRED_REVIEWERS = 2
+private val ACCEPT_DECLINE_PATTERN = patternOf(
+    ReviewDecision.REVIEW_DECISION_ACCEPTED to 1L,
+    ReviewDecision.REVIEW_DECISION_DECLINED to 1L,
+    result = PaperDecision.PAPER_DECISION_IN_REVIEW,
+)
+private val ACCEPT_ANY_PATTERN = patternOf(
+    ReviewDecision.REVIEW_DECISION_ACCEPTED to 1L,
+    result = PaperDecision.PAPER_DECISION_ACCEPTED,
+)
+private val DECLINE_ANY_PATTERN = patternOf(
+    ReviewDecision.REVIEW_DECISION_DECLINED to 1L,
+    result = PaperDecision.PAPER_DECISION_DECLINED,
+)
+private val MAYBE_MAYBE_PATTERN = patternOf(
+    ReviewDecision.REVIEW_DECISION_MAYBE to REQUIRED_REVIEWERS.toLong(),
+    result = PaperDecision.PAPER_DECISION_IN_REVIEW,
+)
 
 private const val ARE_HOTKEYS_SHOWN_DEFAULT = true
 private const val IS_REVIEW_MODE_ENABLED_DEFAULT = false
 private val CRITERIA_IDS_DEFAULT = emptyList<UUID>()
 private const val SIMILARITY_THRESHOLD_DEFAULT = 0F
+
+/**
+ * This default decision matrix assumes two reviewers by default.
+ *
+ * It encodes the basic rules for combining reviewer decisions.
+ * Patterns are checked in order, and the first pattern whose entry count requirements
+ * are satisfied determines the result:
+ *  - Accept + Decline → still in review (need final decision)
+ *  - Accept + Anything not already matched → Accepted
+ *  - Decline + Anything not already matched → Declined
+ *  - Maybe + Maybe → still in review (need final decision)
+ */
 private val DECISION_MATRIX_DEFAULT: ByteArray = ReviewDecisionMatrix.newBuilder()
     .setNumberOfReviewers(REQUIRED_REVIEWERS)
+    .addPatterns(ACCEPT_DECLINE_PATTERN)
+    .addPatterns(ACCEPT_ANY_PATTERN)
+    .addPatterns(DECLINE_ANY_PATTERN)
+    .addPatterns(MAYBE_MAYBE_PATTERN)
     .build()
     .toByteArray()
 private val FETCHERS_DEFAULT = emptyMap<String, Map<String, String>>()

@@ -15,6 +15,7 @@ import se.uulm.snowballr.backend.model.dto.ReviewWithSelectedCriteriaIds
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.UserSettings
 import se.uulm.snowballr.backend.model.dto.VerificationToken
+import se.uulm.snowballr.backend.table.patternOf
 import snowballr.Base
 import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass.MemberRole
@@ -273,6 +274,37 @@ object DataBuilder {
         token = token,
         expiresAt = expiresAt,
     )
+
+    private val ACCEPT_DECLINE_PATTERN = patternOf(
+        ReviewDecision.REVIEW_DECISION_ACCEPTED to 1L,
+        ReviewDecision.REVIEW_DECISION_DECLINED to 1L,
+        result = PaperDecision.PAPER_DECISION_IN_REVIEW,
+    )
+    private val ACCEPT_ANY_PATTERN = patternOf(
+        ReviewDecision.REVIEW_DECISION_ACCEPTED to 1L,
+        result = PaperDecision.PAPER_DECISION_ACCEPTED,
+    )
+    private val DECLINE_ANY_PATTERN = patternOf(
+        ReviewDecision.REVIEW_DECISION_DECLINED to 1L,
+        result = PaperDecision.PAPER_DECISION_DECLINED,
+    )
+    private val MAYBE_MAYBE_PATTERN = patternOf(
+        ReviewDecision.REVIEW_DECISION_MAYBE to 2L,
+        result = PaperDecision.PAPER_DECISION_IN_REVIEW,
+    )
+
+    fun createExampleReviewDecisionMatrix(
+        numberOfReviewers: Int = 2,
+        pattern: List<ReviewDecisionMatrix.Pattern> = listOf(
+            ACCEPT_DECLINE_PATTERN,
+            ACCEPT_ANY_PATTERN,
+            DECLINE_ANY_PATTERN,
+            MAYBE_MAYBE_PATTERN,
+        ),
+    ): ReviewDecisionMatrix = ReviewDecisionMatrix.newBuilder()
+        .setNumberOfReviewers(numberOfReviewers)
+        .addAllPatterns(pattern)
+        .build()
 
     fun createExampleProjectMemberWithUser(
         projectMember: ProjectMember = createExampleProjectMember(),
