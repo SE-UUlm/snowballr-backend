@@ -270,7 +270,7 @@ tasks.register<Download>("downloadApiFiles") {
     val isTag = apiVersion.matches(Regex("""\d+.\d+.\d+"""))
     val isCommit = apiVersion.matches(Regex("""[a-f0-9]{40}"""))
     val isBranch = !isTag && !isCommit
-    println("Using API version: $apiVersion (isTag: $isTag, isCommit: $isCommit)")
+    println("Using API version: $apiVersion (isTag: $isTag, isCommit: $isCommit, isBranch: $isBranch)")
 
     val zipUrl =
         if (isTag) "https://github.com/SE-UUlm/snowballr-api/archive/refs/tags/v${apiVersion}.zip"
@@ -283,6 +283,7 @@ tasks.register<Download>("downloadApiFiles") {
     // Declare inputs & outputs for caching
     inputs.property("apiVersion", apiVersion)
     outputs.dir(protoDir)
+    outputs.cacheIf { !isBranch } // don't cache if apiVersion is a branch
 
     src(zipUrl)
     dest(zipFile)
