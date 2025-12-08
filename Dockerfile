@@ -16,7 +16,6 @@ COPY settings.gradle.kts .
 
 # Copy the project's source code and proto files
 COPY src/main src/main
-COPY api/proto api/proto
 
 # Grant execution rights to the Gradle wrapper script and build the jar file
 RUN chmod +x gradlew \

@@ -20,6 +20,7 @@ On this page, we explain how to contribute to the SnowballR backend project. We 
     * [Formatting](#formatting)
     * [Linting](#linting)
   * [Release procedure](#release-procedure)
+  * [Use another API Version](#use-another-api-version)
 <!-- TOC -->
 <!-- @formatter:on -->
 <!-- markdownlint-enable MD007 -->
@@ -31,7 +32,6 @@ To set up the development environment, follow the steps in
 
 ```plaintext
 .
-├── api/                     (snowballr-api submodule)
 ├── src/
 │   ├── main/
 │   │   ├── kotlin/
@@ -335,3 +335,10 @@ For information about our testing setup, see [Testing](https://github.com/SE-UUl
 We create a new release whenever a set of features, bug fixes, or changes is ready to be deployed and used by the
 frontend. To release a new version of the backend, follow the steps in the
 [SnowballR Wiki](https://github.com/SE-UUlm/snowballr/wiki/Contributing#release-procedure).
+
+## Use another API Version
+
+To use another API version than the currently used one, go to the `build.gradle.kts` file and change the
+`apiVersion` variable to the desired version. Make sure that the version exists in the
+[API repository](https://github.com/SE-UUlm/snowballr-api). After changing the version, recompile the code using
+`./gradlew compileKotlin`.

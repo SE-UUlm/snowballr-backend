@@ -1,6 +1,11 @@
+import de.undercouch.gradle.tasks.download.Download
+import io.gitlab.arturbosch.detekt.Detekt
+import io.gitlab.arturbosch.detekt.DetektCreateBaselineTask
 import kotlinx.kover.gradle.plugin.dsl.AggregationType
 import kotlinx.kover.gradle.plugin.dsl.CoverageUnit
 import kotlinx.kover.gradle.plugin.dsl.GroupingEntityType
+import java.util.zip.ZipEntry
+import java.util.zip.ZipFile
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
@@ -10,11 +15,16 @@ plugins {
     alias(libs.plugins.shadow.jar)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.git.versioning)
+    alias(libs.plugins.undercouch.download)
     application
 }
 
 group = "se.uulm.snowballr.backend"
 version = "0.0.0"
+
+// Snowballr API version to use for the proto files
+val apiVersion = "0.13.0" // can be a tag (e.g., "1.2.3"), commit hash, or branch name like "main"
+val protoDir = layout.buildDirectory.dir("snowballr-api/${apiVersion}")
 
 gitVersioning.apply {
     refs {
@@ -206,14 +216,14 @@ protobuf {
 sourceSets {
     main {
         proto {
-            srcDir("api/proto")
+            srcDir(protoDir)
             include("*.proto")
         }
     }
 }
 
 // Alias for regular detekt lint check
-tasks.register<io.gitlab.arturbosch.detekt.Detekt>("lint") {
+tasks.register<Detekt>("lint") {
     group = "verification"
     description = "Runs Detekt linter"
 
@@ -222,7 +232,7 @@ tasks.register<io.gitlab.arturbosch.detekt.Detekt>("lint") {
 }
 
 // Custom format task as alias for "detekt --auto-correct"
-tasks.register<io.gitlab.arturbosch.detekt.Detekt>("format") {
+tasks.register<Detekt>("format") {
     group = "verification"
     description = "Runs Detekt with the auto-correct flag to format the code."
 
@@ -230,7 +240,7 @@ tasks.register<io.gitlab.arturbosch.detekt.Detekt>("format") {
     autoCorrect = true
 }
 
-tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
+tasks.withType<Detekt>().configureEach {
     setSource(files("src"))
     include("**/*.kt", "**/*.kts")
     exclude {
@@ -242,7 +252,7 @@ tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
     parallel = true
 }
 
-tasks.withType<io.gitlab.arturbosch.detekt.DetektCreateBaselineTask>().configureEach {
+tasks.withType<DetektCreateBaselineTask>().configureEach {
     setSource(files("src"))
     include("**/*.kt", "**/*.kts")
     exclude {
@@ -251,4 +261,73 @@ tasks.withType<io.gitlab.arturbosch.detekt.DetektCreateBaselineTask>().configure
     jvmTarget = "1.8"
     classpath = sourceSets["main"].runtimeClasspath
     parallel = true
+}
+
+tasks.register<Download>("downloadApiFiles") {
+    group = "other"
+    description = "Downloads the API definition files from the snowballr-api repository."
+
+    val isTag = apiVersion.matches(Regex("""\d+.\d+.\d+"""))
+    val isCommit = apiVersion.matches(Regex("""[a-f0-9]{40}"""))
+    val isBranch = !isTag && !isCommit
+    println("Using API version: $apiVersion (isTag: $isTag, isCommit: $isCommit, isBranch: $isBranch)")
+
+    val zipUrl =
+        if (isTag) "https://github.com/SE-UUlm/snowballr-api/archive/refs/tags/v${apiVersion}.zip"
+        else if (isCommit) "https://github.com/SE-UUlm/snowballr-api/archive/${apiVersion}.zip"
+        else "https://github.com/SE-UUlm/snowballr-api/archive/refs/heads/${apiVersion}.zip"
+
+    val zipFile = layout.buildDirectory.file("snowballr-api-${apiVersion}.zip").get().asFile
+    val protoDirAsFile = protoDir.get().asFile
+
+    // Declare inputs & outputs for caching
+    inputs.property("apiVersion", apiVersion)
+    outputs.dir(protoDir)
+    outputs.cacheIf { !isBranch } // don't cache if apiVersion is a branch
+
+    src(zipUrl)
+    dest(zipFile)
+    overwrite(isBranch) // don't re-download unless file missing or apiVersion is a branch
+
+    doLast {
+        // Only unzip if the directory is empty
+        if (protoDirAsFile.list()?.isNotEmpty() == true && !isBranch) {
+            println("API proto files already extracted - skipping unzip")
+            return@doLast
+        }
+
+        println("Extracting $zipFile to $protoDirAsFile")
+
+        fun unzipFile(zip: ZipFile, entry: ZipEntry) {
+            // We only want the proto files
+            if (!entry.name.startsWith("snowballr-api-${apiVersion}/proto/")) return
+            val entryName = entry.name.removePrefix("snowballr-api-${apiVersion}/proto/")
+
+            val outputFile = protoDirAsFile.resolve(entryName)
+            if (entry.isDirectory) {
+                outputFile.mkdirs()
+            } else {
+                outputFile.parentFile?.mkdirs()
+                zip.getInputStream(entry).use { input ->
+                    outputFile.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
+            }
+        }
+
+        ZipFile(zipFile).use { zip ->
+            zip.entries().asSequence().forEach { entry ->
+                unzipFile(zip, entry)
+            }
+        }
+    }
+}
+
+tasks.named("extractProto") {
+    dependsOn("downloadApiFiles")
+}
+
+tasks.named("processResources") {
+    dependsOn("downloadApiFiles")
 }
