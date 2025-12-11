@@ -1,3 +1,9 @@
+<div align="center">
+  <picture>
+    <img alt="SnowballR Logo" src="images/snowballr-logo-with-text.png" width="700"/>
+  </picture>
+</div>
+
 # SnowballR Backend
 
 This repository contains the backend of the SnowballR application.
