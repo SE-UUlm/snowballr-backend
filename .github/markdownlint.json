@@ -8,5 +8,12 @@
         "indent": 4
     },
     "first-line-heading": false,
-    "table-column-style": "aligned"
+    "table-column-style": "aligned",
+    "no-inline-html": {
+        "allowed_elements": [
+            "div",
+            "picture",
+            "img"
+        ]
+    }
 }
