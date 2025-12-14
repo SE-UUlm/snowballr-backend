@@ -13,7 +13,8 @@
         "allowed_elements": [
             "div",
             "picture",
-            "img"
+            "img",
+            "a"
         ]
     }
 }
