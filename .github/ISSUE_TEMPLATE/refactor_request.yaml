@@ -1,0 +1,15 @@
+name: Refactor request
+description: Suggest a refactoring for this project
+title: "[Refactor]: <title>"
+labels: ["refactor"]
+projects: ["SE-UUlm/2"]
+
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: What do you think needs to change? Please describe
+      description: A clear and concise description of what the problem is.
+      placeholder: The method [...| should return [...] instead of [...]
+    validations:
+      required: true
