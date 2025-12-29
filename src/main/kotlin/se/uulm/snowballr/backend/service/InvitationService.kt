@@ -111,6 +111,13 @@ class InvitationService(
 
             isProjectActive().checkFor(currentUser, project)
 
+            // Check if the user is already a member
+            val projectMembers = projectMemberRepo.getProjectMembersWithUsers(projectId)
+            val doesAlreadyExists = projectMembers.any { it.user.email == request.userEmail }
+            if (doesAlreadyExists) {
+                return@withUser Base.Nothing.getDefaultInstance()
+            }
+
             // Check if the user is already invited
             val isAlreadyInvited =
                 invitationTokenRepo.getInvitationTokenByEmailAndProjectId(request.userEmail, projectId).isSuccess
