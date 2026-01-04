@@ -50,6 +50,7 @@ class InviteUserToProjectTest : MainServiceTest() {
             userId = currentUser.id,
             role = ProjectOuterClass.MemberRole.MEMBER_ROLE_ADMIN,
         )
+        val projectAdminWithUser = DataBuilder.createExampleProjectMemberWithUser(projectAdmin, currentUser)
 
         mockCurrentUser(currentUser)
         if (stopBefore == projectMemberRepoMock::getAllProjectAdmins) {
@@ -60,6 +61,10 @@ class InviteUserToProjectTest : MainServiceTest() {
             return
         }
         coEvery { projectRepoMock.getProjectById(projectId) } returns Result.success(project)
+        if (stopBefore == projectMemberRepoMock::getProjectMembersWithUsers) {
+            return
+        }
+        coEvery { projectMemberRepoMock.getProjectMembersWithUsers(projectId) } returns listOf(projectAdminWithUser)
         if (stopBefore == invitationTokenRepoMock::getInvitationTokenByEmailAndProjectId) {
             return
         }
@@ -148,7 +153,6 @@ class InviteUserToProjectTest : MainServiceTest() {
     }
 
     @Test
-    @Suppress("LongMethod")
     fun `When the invitation is valid, then a token is saved and an email is sent`() = runTest {
         val invitedUser = DataBuilder.createExampleUser(email = invitedUserEmail)
         val tokenSlot = slot<String>()
@@ -198,4 +202,22 @@ class InviteUserToProjectTest : MainServiceTest() {
 
         assertEquals("User", emailDataSlot.captured.firstName)
     }
+
+    @Test
+    fun `When the invitation email refers to an already existent member, then it is not invited and the call is successful`() =
+        runTest {
+            val projectMemberWithUser = DataBuilder.createExampleProjectMemberWithUser(
+                DataBuilder.createExampleProjectMember(projectId),
+                DataBuilder.createExampleUser(email = invitedUserEmail),
+            )
+
+            mockInviteUserToProject(stopBefore = projectMemberRepoMock::getProjectMembersWithUsers)
+            coEvery {
+                projectMemberRepoMock.getProjectMembersWithUsers(projectId)
+            } returns listOf(projectMemberWithUser)
+
+            assertDoesNotThrow { mainService.inviteUserToProject(validInviteUserRequest.build()) }
+
+            coVerify(exactly = 0) { invitationTokenRepoMock.saveInvitationToken(invitedUserEmail, projectId, any()) }
+        }
 }
