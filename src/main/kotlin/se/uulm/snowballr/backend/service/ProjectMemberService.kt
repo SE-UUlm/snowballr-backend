@@ -3,12 +3,12 @@ package se.uulm.snowballr.backend.service
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.dto.InvitationToken
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.toGrpcProjectMembers
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
-import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundByEmailException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedActionException
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
@@ -114,13 +114,14 @@ class ProjectMemberService(
     override suspend fun removeProjectMember(request: GrpcProjectMember.Remove): Base.Nothing =
         withUser(userRepo) { currentUser ->
             val projectId = parseUUID(request.projectId, EntityType.PROJECT)
-            val requestedUserResult = userRepo.getUserByEmail(request.userEmail)
+            val invitationToken =
+                invitationTokenRepo.getInvitationTokenByEmailAndProjectId(request.userEmail, projectId).getOrNull()
 
-            if (requestedUserResult.isSuccess) {
-                val requestedUser = requestedUserResult.getOrThrow()
-                removeProjectMemberUser(currentUser, requestedUser, projectId)
+            if (invitationToken != null) {
+                removeProjectMemberInvitation(currentUser, projectId, invitationToken)
             } else {
-                removeProjectMemberInvitation(currentUser, request.userEmail, projectId)
+                val requestedUser = userRepo.getUserByEmail(request.userEmail).getOrThrow()
+                removeProjectMemberUser(currentUser, requestedUser, projectId)
             }
 
             Base.Nothing.getDefaultInstance()
@@ -161,17 +162,17 @@ class ProjectMemberService(
         repo.removeProjectMember(projectId, requestedUser.id)
     }
 
-    private suspend fun removeProjectMemberInvitation(currentUser: User, userEmail: String, projectId: UUID) {
+    private suspend fun removeProjectMemberInvitation(
+        currentUser: User,
+        projectId: UUID,
+        invitationToken: InvitationToken,
+    ) {
         isProjectAdmin(repo)
             .orElse(isServerAdmin().forTarget())
             .orElseThrow { user, targetId ->
                 UnauthorizedActionException(EntityType.PROJECT, targetId, AccessType.DELETE, user.id)
             }
             .checkFor(currentUser, projectId)
-
-        val invitationToken =
-            invitationTokenRepo.getInvitationTokenByEmailAndProjectId(userEmail, projectId).getOrNull()
-                ?: throw UserNotFoundByEmailException(userEmail)
 
         invitationTokenRepo.deleteInvitationToken(invitationToken.token)
     }

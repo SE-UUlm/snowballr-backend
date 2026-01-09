@@ -37,6 +37,9 @@ class RemoveProjectMemberTest : MainServiceTest() {
         val projectMember2 = DataBuilder.createExampleProjectMember(projectId = project.id, userId = UUID.randomUUID())
 
         mockCurrentUser(currentUser)
+        coEvery {
+            invitationTokenRepoMock.getInvitationTokenByEmailAndProjectId(userEmail, projectId)
+        } returns Result.failure(TestSpecificException())
         coEvery { userRepoMock.getUserByEmail(userEmail) } returns Result.success(userToRemove)
         coEvery { projectMemberRepoMock.isProjectMember(projectId, userToRemove.id) } returns true
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
@@ -61,6 +64,9 @@ class RemoveProjectMemberTest : MainServiceTest() {
         val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = userToRemove.id)
 
         mockCurrentUser(currentUser)
+        coEvery {
+            invitationTokenRepoMock.getInvitationTokenByEmailAndProjectId(userEmail, projectId)
+        } returns Result.failure(TestSpecificException())
         coEvery { userRepoMock.getUserByEmail(userEmail) } returns Result.success(userToRemove)
         coEvery { projectMemberRepoMock.isProjectMember(projectId, userToRemove.id) } returns true
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectAdmin)
@@ -83,6 +89,9 @@ class RemoveProjectMemberTest : MainServiceTest() {
             val projectAdmin2 = DataBuilder.createExampleProjectMember(projectId = project.id, userId = otherUser.id)
 
             mockCurrentUser(currentUser)
+            coEvery {
+                invitationTokenRepoMock.getInvitationTokenByEmailAndProjectId(userEmail, projectId)
+            } returns Result.failure(TestSpecificException())
             coEvery { userRepoMock.getUserByEmail(currentUser.email) } returns Result.success(currentUser)
             coEvery { projectMemberRepoMock.isProjectMember(project.id, currentUser.id) } returns true
             coEvery {
@@ -109,6 +118,9 @@ class RemoveProjectMemberTest : MainServiceTest() {
             val projectAdmin = DataBuilder.createExampleProjectMember(projectId = project.id, userId = otherUser.id)
 
             mockCurrentUser(currentUser)
+            coEvery {
+                invitationTokenRepoMock.getInvitationTokenByEmailAndProjectId(userEmail, projectId)
+            } returns Result.failure(TestSpecificException())
             coEvery { userRepoMock.getUserByEmail(userEmail) } returns Result.success(currentUser)
             coEvery { projectMemberRepoMock.isProjectMember(projectId, currentUser.id) } returns true
             coEvery {
@@ -129,6 +141,9 @@ class RemoveProjectMemberTest : MainServiceTest() {
             val currentUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_DEFAULT)
 
             mockCurrentUser(currentUser)
+            coEvery {
+                invitationTokenRepoMock.getInvitationTokenByEmailAndProjectId(userEmail, projectId)
+            } returns Result.failure(TestSpecificException())
             coEvery { userRepoMock.getUserByEmail(userEmail) } returns Result.success(currentUser)
             coEvery { projectMemberRepoMock.isProjectMember(projectId, currentUser.id) } returns true
             coEvery { projectRepoMock.doesProjectExistById(projectId) } returns false
@@ -139,18 +154,16 @@ class RemoveProjectMemberTest : MainServiceTest() {
         }
 
     @Test
-    fun `When a project admin removes a non-existent project member, then a NotFoundException is thrown`() = runTest {
+    fun `When a non-existent project member is removed, then a TestSpecificException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_DEFAULT)
-        val projectAdmin = DataBuilder.createExampleProjectMember(projectId = projectId, userId = currentUser.id)
 
         mockCurrentUser(currentUser)
-        coEvery { userRepoMock.getUserByEmail(userEmail) } returns Result.failure(TestSpecificException())
-        coEvery { projectMemberRepoMock.getAllProjectAdmins(projectId) } returns listOf(projectAdmin)
         coEvery {
             invitationTokenRepoMock.getInvitationTokenByEmailAndProjectId(userEmail, projectId)
         } returns Result.failure(TestSpecificException())
+        coEvery { userRepoMock.getUserByEmail(userEmail) } returns Result.failure(TestSpecificException())
 
-        assertThrows<NotFoundException> {
+        assertThrows<TestSpecificException> {
             mainService.removeProjectMember(getExampleRequest())
         }
     }
@@ -166,6 +179,9 @@ class RemoveProjectMemberTest : MainServiceTest() {
             val project = DataBuilder.createExampleProject(id = projectId)
 
             mockCurrentUser(currentUser)
+            coEvery {
+                invitationTokenRepoMock.getInvitationTokenByEmailAndProjectId(userEmail, projectId)
+            } returns Result.failure(TestSpecificException())
             coEvery { userRepoMock.getUserByEmail(otherUser.email) } returns Result.success(otherUser)
             coEvery { projectMemberRepoMock.isProjectMember(projectId, otherUser.id) } returns true
             coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
@@ -185,6 +201,9 @@ class RemoveProjectMemberTest : MainServiceTest() {
             val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = otherUser.id)
 
             mockCurrentUser(currentUser)
+            coEvery {
+                invitationTokenRepoMock.getInvitationTokenByEmailAndProjectId(userEmail, projectId)
+            } returns Result.failure(TestSpecificException())
             coEvery { userRepoMock.getUserByEmail(userEmail) } returns Result.success(currentUser)
             coEvery { projectMemberRepoMock.isProjectMember(projectId, currentUser.id) } returns true
             coEvery {
@@ -209,6 +228,9 @@ class RemoveProjectMemberTest : MainServiceTest() {
             )
 
             mockCurrentUser(currentUser)
+            coEvery {
+                invitationTokenRepoMock.getInvitationTokenByEmailAndProjectId(userEmail, projectId)
+            } returns Result.failure(TestSpecificException())
             coEvery { userRepoMock.getUserByEmail(userEmail) } returns Result.success(currentUser)
             coEvery { projectMemberRepoMock.isProjectMember(projectId, currentUser.id) } returns true
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(lastProjectMember)
@@ -226,17 +248,13 @@ class RemoveProjectMemberTest : MainServiceTest() {
     fun `When a project admin removes an invitee, then the invitee is removed`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_DEFAULT)
         val projectAdmin = DataBuilder.createExampleProjectMember(projectId = projectId, userId = currentUser.id)
-        val token = DataBuilder.createExampleInvitationToken(
-            email = userEmail,
-            projectId = projectId,
-        )
+        val token = DataBuilder.createExampleInvitationToken(email = userEmail, projectId = projectId)
 
         mockCurrentUser(currentUser)
-        coEvery { userRepoMock.getUserByEmail(userEmail) } returns Result.failure(TestSpecificException())
-        coEvery { projectMemberRepoMock.getAllProjectAdmins(projectId) } returns listOf(projectAdmin)
         coEvery {
             invitationTokenRepoMock.getInvitationTokenByEmailAndProjectId(userEmail, projectId)
         } returns Result.success(token)
+        coEvery { projectMemberRepoMock.getAllProjectAdmins(projectId) } returns listOf(projectAdmin)
         coEvery { invitationTokenRepoMock.deleteInvitationToken(token.token) } returns Unit
 
         assertDoesNotThrow { mainService.removeProjectMember(getExampleRequest()) }
@@ -245,17 +263,13 @@ class RemoveProjectMemberTest : MainServiceTest() {
     @Test
     fun `When a server admin removes an invitee, then the invitee is removed`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_ADMIN)
-        val token = DataBuilder.createExampleInvitationToken(
-            email = userEmail,
-            projectId = projectId,
-        )
+        val token = DataBuilder.createExampleInvitationToken(email = userEmail, projectId = projectId)
 
         mockCurrentUser(currentUser)
-        coEvery { userRepoMock.getUserByEmail(userEmail) } returns Result.failure(TestSpecificException())
-        coEvery { projectMemberRepoMock.getAllProjectAdmins(projectId) } returns emptyList()
         coEvery {
             invitationTokenRepoMock.getInvitationTokenByEmailAndProjectId(userEmail, projectId)
         } returns Result.success(token)
+        coEvery { projectMemberRepoMock.getAllProjectAdmins(projectId) } returns emptyList()
         coEvery { invitationTokenRepoMock.deleteInvitationToken(token.token) } returns Unit
 
         assertDoesNotThrow { mainService.removeProjectMember(getExampleRequest()) }
@@ -264,9 +278,12 @@ class RemoveProjectMemberTest : MainServiceTest() {
     @Test
     fun `When a normal project member removes an invitee, then an UnauthorizedException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_DEFAULT)
+        val token = DataBuilder.createExampleInvitationToken(email = userEmail, projectId = projectId)
 
         mockCurrentUser(currentUser)
-        coEvery { userRepoMock.getUserByEmail(userEmail) } returns Result.failure(TestSpecificException())
+        coEvery {
+            invitationTokenRepoMock.getInvitationTokenByEmailAndProjectId(userEmail, projectId)
+        } returns Result.success(token)
         coEvery { projectMemberRepoMock.getAllProjectAdmins(projectId) } returns emptyList()
 
         assertThrows<UnauthorizedException> {
@@ -275,32 +292,17 @@ class RemoveProjectMemberTest : MainServiceTest() {
     }
 
     @Test
-    fun `When retrieving the invitation token fails, then a NotFoundException is thrown`() = runTest {
+    fun `When the user to be removed is not a project member nor an invitee, then nothing is removed`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_DEFAULT)
-        val projectAdmin = DataBuilder.createExampleProjectMember(projectId = projectId, userId = currentUser.id)
+        val otherUser = DataBuilder.createExampleUser(email = userEmail)
 
         mockCurrentUser(currentUser)
-        coEvery { userRepoMock.getUserByEmail(userEmail) } returns Result.failure(TestSpecificException())
-        coEvery { projectMemberRepoMock.getAllProjectAdmins(projectId) } returns listOf(projectAdmin)
         coEvery {
             invitationTokenRepoMock.getInvitationTokenByEmailAndProjectId(userEmail, projectId)
         } returns Result.failure(TestSpecificException())
+        coEvery { userRepoMock.getUserByEmail(otherUser.email) } returns Result.success(otherUser)
+        coEvery { projectMemberRepoMock.isProjectMember(projectId, otherUser.id) } returns false
 
-        assertThrows<NotFoundException> {
-            mainService.removeProjectMember(getExampleRequest())
-        }
+        assertDoesNotThrow { mainService.removeProjectMember(getExampleRequest()) }
     }
-
-    @Test
-    fun `When the user to be removed is not a project member and has no invitation, then nothing is removed`() =
-        runTest {
-            val currentUser = DataBuilder.createExampleUser(role = UserOuterClass.UserRole.USER_ROLE_DEFAULT)
-            val otherUser = DataBuilder.createExampleUser(email = userEmail)
-
-            mockCurrentUser(currentUser)
-            coEvery { userRepoMock.getUserByEmail(otherUser.email) } returns Result.success(otherUser)
-            coEvery { projectMemberRepoMock.isProjectMember(projectId, otherUser.id) } returns false
-
-            assertDoesNotThrow { mainService.removeProjectMember(getExampleRequest()) }
-        }
 }
