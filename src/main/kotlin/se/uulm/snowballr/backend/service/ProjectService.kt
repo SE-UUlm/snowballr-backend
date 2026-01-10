@@ -15,6 +15,7 @@ import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadAl
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadException
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
+import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
@@ -103,6 +104,7 @@ interface IProjectService {
  * @param projectMemberRepo The repository responsible for managing persistence operations for project members.
  * @param projectPaperRepo The repository responsible for managing persistence operations for project papers.
  * @param criterionRepo The repository responsible for managing persistence operations for criteria.
+ * @param invitationTokenRepo The repository responsible for managing persistence operations for invitation tokens.
  */
 class ProjectService(
     private val repo: IProjectTableRepo,
@@ -110,6 +112,7 @@ class ProjectService(
     private val projectMemberRepo: IProjectMemberTableRepo,
     private val projectPaperRepo: IProjectPaperTableRepo,
     private val criterionRepo: ICriterionTableRepo,
+    private val invitationTokenRepo: IInvitationTokenTableRepo,
 ) : IProjectService {
     override suspend fun getProjectById(request: Base.Id): GrpcProject = withUser(userRepo) { currentUser ->
         val projectId = parseUUID(request.id, EntityType.PROJECT)
@@ -251,6 +254,7 @@ class ProjectService(
         }
 
         repo.softDeleteProject(projectId)
+        invitationTokenRepo.deleteInvitationTokensForProject(projectId)
 
         Base.Nothing.getDefaultInstance()
     }

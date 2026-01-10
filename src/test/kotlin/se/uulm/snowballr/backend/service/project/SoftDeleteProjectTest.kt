@@ -48,6 +48,7 @@ class SoftDeleteProjectTest : MainServiceTest() {
         coEvery { projectRepoMock.doesProjectExistById(projectId) } returns true
 
         coEvery { projectRepoMock.softDeleteProject(projectId) } returns Unit
+        coEvery { invitationTokenRepoMock.deleteInvitationTokensForProject(projectId) } returns Unit
     }
 
     @Test
