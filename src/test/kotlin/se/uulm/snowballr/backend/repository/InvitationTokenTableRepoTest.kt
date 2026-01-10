@@ -231,4 +231,45 @@ class InvitationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, ProjectTa
             )
         }
     }
+
+    @Nested
+    inner class DeleteInvitationTokensForProject {
+        @Test
+        fun `When tokens exist for a project, then they are deleted`() = runTest {
+            val projectId = insertProjectAndGetId(createdBy = testUserId)
+
+            insertTestInvitationToken(testEmail, projectId, "token-to-be-deleted")
+
+            assertDoesNotThrow { repo.deleteInvitationTokensForProject(projectId) }
+
+            assertResultFailure<InvitationTokenNotFoundException>(
+                repo.getInvitationTokenByEmailAndProjectId(testEmail, projectId),
+            )
+        }
+
+        @Test
+        fun `When no tokens exist for a project, then no exception is thrown`() = runTest {
+            val projectId = insertProjectAndGetId(createdBy = testUserId)
+
+            assertDoesNotThrow { repo.deleteInvitationTokensForProject(projectId) }
+        }
+
+        @Test
+        fun `When deleting token for one project, tokens for other projects are not affected`() = runTest {
+            val projectId1 = insertProjectAndGetId(createdBy = testUserId)
+            val projectId2 = insertProjectAndGetId(createdBy = testUserId)
+
+            insertTestInvitationToken(testEmail, projectId1, "token-in-project-1")
+            insertTestInvitationToken(testEmail, projectId2, "token-in-project-2")
+
+            assertDoesNotThrow { repo.deleteInvitationTokensForProject(projectId1) }
+
+            assertResultFailure<InvitationTokenNotFoundException>(
+                repo.getInvitationTokenByEmailAndProjectId(testEmail, projectId1),
+            )
+
+            // Token for project 2 should still exist
+            assertResultSuccess(repo.getInvitationTokenByEmailAndProjectId(testEmail, projectId2))
+        }
+    }
 }
