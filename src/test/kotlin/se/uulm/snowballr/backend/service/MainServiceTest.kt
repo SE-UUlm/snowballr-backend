@@ -15,15 +15,14 @@ import org.koin.core.context.stopKoin
 import org.koin.dsl.module
 import org.koin.test.KoinTest
 import org.simplejavamail.api.mailer.Mailer
-import se.uulm.snowballr.backend.RandomKeyGenerator
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.auth.IJwtManager
-import se.uulm.snowballr.backend.env.Env
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.env.IEnvService
 import se.uulm.snowballr.backend.fetcher.IFetcherManager
 import se.uulm.snowballr.backend.mail.EmailTemplateManager
 import se.uulm.snowballr.backend.mail.IEmailManager
+import se.uulm.snowballr.backend.mockEnvWithDefaultValues
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
@@ -108,15 +107,12 @@ open class MainServiceTest : KoinTest {
     val emailTemplateManagerMock = mockk<EmailTemplateManager>()
 
     val allMocks = arrayOf(
+        envServiceMock,
+        envReaderMock,
         projectRepoMock,
         criterionRepoMock,
         userRepoMock,
         projectMemberRepoMock,
-        jwtManagerMock,
-        emailManagerMock,
-        fetcherManagerMock,
-        mailerMock,
-        emailTemplateManagerMock,
         projectPaperRepoMock,
         citationRepoMock,
         readingListRepoMock,
@@ -125,42 +121,14 @@ open class MainServiceTest : KoinTest {
         reviewHasCriterionRepoMock,
         verificationTokenRepoMock,
         invitationTokenRepoMock,
+        jwtManagerMock,
+        emailManagerMock,
+        fetcherManagerMock,
+        mailerMock,
+        emailTemplateManagerMock,
     )
 
     val mainService: IMainService by inject()
-
-    private fun mockEnv() {
-        val miscellaneousMock = mockk<Env.Miscellaneous>()
-        every { miscellaneousMock.frontendBaseUrl } returns ""
-        every { miscellaneousMock.logLevel } returns "DEBUG"
-
-        val encryptionMock = mockk<Env.Encryption>()
-        val (privateKeyBase64, publicKeyBase64) = RandomKeyGenerator.generateKeyPair()
-        every { encryptionMock.jwtPrivateKeyBase64 } returns privateKeyBase64
-        every { encryptionMock.jwtPublicKeyBase64 } returns publicKeyBase64
-
-        val smtpMock = mockk<Env.SMTP>()
-        every { smtpMock.smtpHost } returns ""
-        every { smtpMock.smtpPort } returns 0
-        every { smtpMock.smtpUser } returns ""
-        every { smtpMock.smtpPassword } returns ""
-        every { smtpMock.smtpTransportLoggingOnlyEnabled } returns true
-        every { smtpMock.smtpSenderName } returns ""
-        every { smtpMock.smtpSenderEmail } returns ""
-
-        val lifetimeMock = mockk<Env.Lifetime>()
-        every { lifetimeMock.sensitiveInformationRetentionDays } returns 30
-        every { lifetimeMock.invitationTokenLifeTimeInDays } returns 7
-        every { lifetimeMock.verificationTokenLifeTimeInDays } returns 1
-
-        val envMock = mockk<Env>()
-        every { envMock.miscellaneous } returns miscellaneousMock
-        every { envMock.encryption } returns encryptionMock
-        every { envMock.smtp } returns smtpMock
-        every { envMock.lifetime } returns lifetimeMock
-
-        every { envReaderMock.env } returns envMock
-    }
 
     // Note that we cannot use the list of all mocks to add it to the module.
     private val serviceTestModule = module {
@@ -169,7 +137,7 @@ open class MainServiceTest : KoinTest {
         single { envReaderMock }
 
         // Mock env variables
-        mockEnv()
+        every { envReaderMock.env } returns mockEnvWithDefaultValues()
 
         // Repository layer
         single { projectRepoMock }

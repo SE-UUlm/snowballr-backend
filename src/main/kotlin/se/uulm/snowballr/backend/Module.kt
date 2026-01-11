@@ -143,7 +143,7 @@ private fun Module.dbDeps() {
  *
  * Consists of all repositories.
  */
-private fun Module.repositoryLayerDeps() {
+fun Module.repositoryLayerDeps() {
     singleOf(::ProjectTableRepo) { bind<IProjectTableRepo>() }
     singleOf(::CriterionTableRepo) { bind<ICriterionTableRepo>() }
     singleOf(::UserTableRepo) { bind<IUserTableRepo>() }
@@ -163,7 +163,7 @@ private fun Module.repositoryLayerDeps() {
  *
  * Consists of the [Mailer] and the [Template]s used for sending mails.
  */
-private fun Module.mailServiceDeps() {
+fun Module.mailServiceDeps() {
     single<Mailer> { createMailer(get()) }
     single<EmailTemplateManager> { EmailTemplateManager() }
 }
@@ -171,7 +171,7 @@ private fun Module.mailServiceDeps() {
 /**
  * Creates the Mailer instance based on the environment configuration.
  */
-fun createMailer(envReader: EnvReader): Mailer {
+private fun createMailer(envReader: EnvReader): Mailer {
     val env = envReader.env
 
     // Enable debug logging if the log level is DEBUG or TRACE
