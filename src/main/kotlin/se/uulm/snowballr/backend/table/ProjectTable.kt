@@ -30,7 +30,7 @@ import java.time.OffsetDateTime
  * as a [Boolean].
  * - [reviewDecisionMatrixBinary]: Represents the decision matrix on how the [PaperDecision] for a paper should be
  * determined as a [ByteArray].
- * - [fetchers]: Represents the fetchers used by the project as a json object mapping the fetcher names to their
+ * - [fetchers]: Represents the fetchers used by the project as a JSON object mapping the fetcher names to their
  * options.
  * - [currentStageStartedAt]: Represents the timestamp of when the current stage of the project was started as a
  * [OffsetDateTime].
