@@ -6,6 +6,7 @@ import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.insertAndGetId
 import se.uulm.snowballr.backend.db.IDatabase
+import se.uulm.snowballr.backend.fetcher.FetcherMap
 import se.uulm.snowballr.backend.model.dto.Author
 import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.InvitationTokenTable
@@ -131,7 +132,7 @@ object RepositoryHelper {
         snowballingType: SnowballingType = SnowballingType.SNOWBALLING_TYPE_BOTH,
         reviewMaybeAllowed: Boolean = true,
         reviewDecisionMatrix: ReviewDecisionMatrix = ReviewDecisionMatrix.getDefaultInstance(),
-        fetcherApis: Map<String, Map<String, String>> = emptyMap(),
+        fetcherApis: FetcherMap = emptyMap(),
         createdBy: UUID,
         deletedAt: OffsetDateTime? = null,
     ): UUID = db.query {

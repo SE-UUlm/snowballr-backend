@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.auth
 
+import se.uulm.snowballr.backend.fetcher.FetcherMap
 import snowballr.ProjectOuterClass
 import snowballr.UserOuterClass
 import java.util.UUID
@@ -28,7 +29,7 @@ object DummyUser {
     var criteriaIds: List<UUID> = emptyList()
     var similarityThreshold: Float = 0F
     var decisionMatrix: ByteArray = ProjectOuterClass.ReviewDecisionMatrix.getDefaultInstance().toByteArray()
-    var fetchers: Map<String, Map<String, String>> = emptyMap()
+    var fetchers: FetcherMap = emptyMap()
     var snowballingType: ProjectOuterClass.SnowballingType = ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_BOTH
     var reviewMaybeAllowed: Boolean = true
 }
