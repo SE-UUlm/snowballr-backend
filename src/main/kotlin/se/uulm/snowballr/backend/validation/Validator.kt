@@ -13,6 +13,7 @@ import snowballr.Authentication
 import snowballr.Base
 import snowballr.CriterionOuterClass
 import snowballr.Export
+import snowballr.Fetcher
 import snowballr.PaperOuterClass.Paper
 import snowballr.ProjectOuterClass
 import snowballr.ReviewOuterClass
@@ -71,6 +72,8 @@ fun <T> validateRequest(request: T): EitherNel<ValidationIssue, Unit> = when (re
     is Paper -> PaperValidator.validateCreateRequest(request)
     // Export
     is Export.ExportRequest -> ExportValidator.validateExportRequest(request)
+    // Fetcher
+    is Fetcher.GetAvailableFetcherOptionsRequest -> FetcherValidator.validateGetAvailableFetcherOptionsRequest(request)
     // Fallback for unknown request types
     else -> Either.Left(nonEmptyListOf(UnknownRequest))
 }
