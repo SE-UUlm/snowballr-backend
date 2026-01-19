@@ -15,6 +15,7 @@ import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadAl
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadException
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
+import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
@@ -103,6 +104,7 @@ interface IProjectService {
  * @param projectMemberRepo The repository responsible for managing persistence operations for project members.
  * @param projectPaperRepo The repository responsible for managing persistence operations for project papers.
  * @param criterionRepo The repository responsible for managing persistence operations for criteria.
+ * @param invitationTokenRepo The repository responsible for managing persistence operations for invitation tokens.
  */
 class ProjectService(
     private val repo: IProjectTableRepo,
@@ -110,6 +112,7 @@ class ProjectService(
     private val projectMemberRepo: IProjectMemberTableRepo,
     private val projectPaperRepo: IProjectPaperTableRepo,
     private val criterionRepo: ICriterionTableRepo,
+    private val invitationTokenRepo: IInvitationTokenTableRepo,
 ) : IProjectService {
     override suspend fun getProjectById(request: Base.Id): GrpcProject = withUser(userRepo) { currentUser ->
         val projectId = parseUUID(request.id, EntityType.PROJECT)
@@ -153,23 +156,6 @@ class ProjectService(
         repo.getAllProjects().toGrpcProjects()
     }
 
-    private suspend fun getAllProjectsForUserAndStatus(
-        request: Base.Id,
-        statuses: Set<ProjectStatus>,
-    ): GrpcProject.List = withUser(userRepo) { currentUser ->
-        val requestedUserId = parseUUID(request.id, EntityType.USER)
-        val requestedUser = userRepo.getUserById(requestedUserId).getOrThrow()
-
-        isServerAdminOrSameUser()
-            .forProperty(User::id)
-            .orElseThrow { requestingUser, _ ->
-                UnauthorizedReadException(requestingUser.id, requestedUserId, EntityType.USER)
-            }
-            .checkFor(currentUser, requestedUser)
-
-        repo.getUserProjects(requestedUserId, statuses).toGrpcProjects()
-    }
-
     override suspend fun getAllProjectsForUser(request: Base.Id): GrpcProject.List = getAllProjectsForUserAndStatus(
         request,
         setOf(ProjectStatus.PROJECT_STATUS_ACTIVE, ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED),
@@ -202,6 +188,92 @@ class ProjectService(
         }
 
         repo.updateProject(finalRequest).toGrpcProject()
+    }
+
+    override suspend fun getProjectInformation(request: GrpcProject.Information.Get): GrpcProject.Information =
+        withUser(userRepo) { currentUser ->
+            val projectId = parseUUID(request.projectId, EntityType.PROJECT)
+
+            isAllowedToReadProject(projectMemberRepo)
+                .andAlso(isProjectExistent(repo))
+                .checkFor(currentUser, projectId)
+
+            val project = repo.getProjectById(projectId).getOrThrow()
+            val progress = projectPaperRepo.getProjectProgress(projectId)
+            val builder = GrpcProject.Information.newBuilder()
+            val has = if (request.hasMask() && request.mask.pathsList.isNotEmpty()) {
+                val fieldMaskPaths = FieldMaskUtil.normalize(request.mask).pathsList.toSet();
+                { path: String -> path in fieldMaskPaths }
+            } else {
+                { _ -> true }
+            }
+
+            if (has("project_progress")) {
+                builder.setProjectProgress(progress)
+            }
+
+            if (has("creation_date")) {
+                builder.setCreationDate(timestamp { seconds = project.createdAt.toEpochSecond() })
+            }
+
+            if (has("last_stage_started")) {
+                builder.setLastStageStarted(timestamp { seconds = project.currentStageStartedAt.toEpochSecond() })
+            }
+
+            builder.build()
+        }
+
+    override suspend fun getDecisionStatisticsForStage(
+        request: GrpcProjectDecisionStatistics.Get,
+    ): GrpcProjectDecisionStatistics = withUser(userRepo) { currentUser ->
+        val projectId = parseUUID(request.projectId, EntityType.PROJECT)
+
+        isAllowedToReadProject(projectMemberRepo).checkFor(currentUser, projectId)
+
+        val project = repo.getProjectById(projectId).getOrThrow()
+        val maxStage = project.maxStage
+
+        if (request.stage > maxStage) {
+            throw StageNotFoundException(request.stage)
+        }
+
+        val statistics = createStatistics(projectId, request.stage)
+        GrpcProjectDecisionStatistics
+            .newBuilder()
+            .addAllStatistics(statistics)
+            .build()
+    }
+
+    override suspend fun softDeleteProject(request: Base.Id): Base.Nothing = withUser(userRepo) { currentUser ->
+        val projectId = parseUUID(request.id, EntityType.PROJECT)
+
+        isServerOrProjectAdmin(projectMemberRepo, AccessType.DELETE).checkFor(currentUser, projectId)
+
+        if (!repo.doesProjectExistById(projectId)) {
+            throw ProjectNotFoundException(projectId)
+        }
+
+        repo.softDeleteProject(projectId)
+        invitationTokenRepo.deleteInvitationTokensForProject(projectId)
+
+        Base.Nothing.getDefaultInstance()
+    }
+
+    private suspend fun getAllProjectsForUserAndStatus(
+        request: Base.Id,
+        statuses: Set<ProjectStatus>,
+    ): GrpcProject.List = withUser(userRepo) { currentUser ->
+        val requestedUserId = parseUUID(request.id, EntityType.USER)
+        val requestedUser = userRepo.getUserById(requestedUserId).getOrThrow()
+
+        isServerAdminOrSameUser()
+            .forProperty(User::id)
+            .orElseThrow { requestingUser, _ ->
+                UnauthorizedReadException(requestingUser.id, requestedUserId, EntityType.USER)
+            }
+            .checkFor(currentUser, requestedUser)
+
+        repo.getUserProjects(requestedUserId, statuses).toGrpcProjects()
     }
 
     /**
@@ -301,60 +373,6 @@ class ProjectService(
         }
     }
 
-    override suspend fun getProjectInformation(request: GrpcProject.Information.Get): GrpcProject.Information =
-        withUser(userRepo) { currentUser ->
-            val projectId = parseUUID(request.projectId, EntityType.PROJECT)
-
-            isAllowedToReadProject(projectMemberRepo)
-                .andAlso(isProjectExistent(repo))
-                .checkFor(currentUser, projectId)
-
-            val project = repo.getProjectById(projectId).getOrThrow()
-            val progress = projectPaperRepo.getProjectProgress(projectId)
-            val builder = GrpcProject.Information.newBuilder()
-            val has = if (request.hasMask() && request.mask.pathsList.isNotEmpty()) {
-                val fieldMaskPaths = FieldMaskUtil.normalize(request.mask).pathsList.toSet();
-                { path: String -> path in fieldMaskPaths }
-            } else {
-                { _ -> true }
-            }
-
-            if (has("project_progress")) {
-                builder.setProjectProgress(progress)
-            }
-
-            if (has("creation_date")) {
-                builder.setCreationDate(timestamp { seconds = project.createdAt.toEpochSecond() })
-            }
-
-            if (has("last_stage_started")) {
-                builder.setLastStageStarted(timestamp { seconds = project.currentStageStartedAt.toEpochSecond() })
-            }
-
-            builder.build()
-        }
-
-    override suspend fun getDecisionStatisticsForStage(
-        request: GrpcProjectDecisionStatistics.Get,
-    ): GrpcProjectDecisionStatistics = withUser(userRepo) { currentUser ->
-        val projectId = parseUUID(request.projectId, EntityType.PROJECT)
-
-        isAllowedToReadProject(projectMemberRepo).checkFor(currentUser, projectId)
-
-        val project = repo.getProjectById(projectId).getOrThrow()
-        val maxStage = project.maxStage
-
-        if (request.stage > maxStage) {
-            throw StageNotFoundException(request.stage)
-        }
-
-        val statistics = createStatistics(projectId, request.stage)
-        GrpcProjectDecisionStatistics
-            .newBuilder()
-            .addAllStatistics(statistics)
-            .build()
-    }
-
     /**
      * Creates a list of [GrpcProjectDecisionStatistics.Statistic] objects for the given [stage]
      * in the project with the ID [projectId].
@@ -383,19 +401,5 @@ class ProjectService(
             PaperDecision.PAPER_DECISION_UNREVIEWED,
             PaperDecision.PAPER_DECISION_IN_REVIEW,
         ).map(::createStatistic)
-    }
-
-    override suspend fun softDeleteProject(request: Base.Id): Base.Nothing = withUser(userRepo) { currentUser ->
-        val projectId = parseUUID(request.id, EntityType.PROJECT)
-
-        isServerOrProjectAdmin(projectMemberRepo, AccessType.DELETE).checkFor(currentUser, projectId)
-
-        if (!repo.doesProjectExistById(projectId)) {
-            throw ProjectNotFoundException(projectId)
-        }
-
-        repo.softDeleteProject(projectId)
-
-        Base.Nothing.getDefaultInstance()
     }
 }

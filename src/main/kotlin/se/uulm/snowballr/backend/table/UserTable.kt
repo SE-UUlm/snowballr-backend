@@ -118,7 +118,7 @@ object UserTable : UUIDTable("user") {
 
     // Project settings defaults
     val similarityThreshold = float("similarity_threshold").clientDefault { SIMILARITY_THRESHOLD_DEFAULT }
-    val decisionMatrix = binary("review_decision_matrix").clientDefault { DECISION_MATRIX_DEFAULT }
+    val decisionMatrix = redactedBinary("review_decision_matrix").clientDefault { DECISION_MATRIX_DEFAULT }
     val fetchers = json<Map<String, Map<String, String>>>("fetchers", Json).clientDefault { FETCHERS_DEFAULT }
     val snowballingType =
         enumeration<SnowballingType>("snowballing_type").clientDefault { SNOWBALLING_TYPE_DEFAULT }

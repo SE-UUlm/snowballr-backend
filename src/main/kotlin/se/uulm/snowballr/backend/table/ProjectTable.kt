@@ -50,7 +50,7 @@ object ProjectTable : UUIDTable("project") {
     val similarityThreshold = float("similarity_threshold")
     val snowballingType = enumeration<SnowballingType>("snowballing_type")
     val reviewMaybeAllowed = bool("review_maybe_allowed")
-    val reviewDecisionMatrixBinary = binary("review_decision_matrix")
+    val reviewDecisionMatrixBinary = redactedBinary("review_decision_matrix")
     val fetchers = json<Map<String, Map<String, String>>>("fetchers", Json)
     val currentStageStartedAt = timestampWithTimeZone("current_stage_started_at").clientDefault { OffsetDateTime.now() }
 

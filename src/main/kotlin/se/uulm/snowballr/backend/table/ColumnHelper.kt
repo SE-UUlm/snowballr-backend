@@ -1,6 +1,7 @@
 package se.uulm.snowballr.backend.table
 
 import arrow.core.mapValuesNotNull
+import org.jetbrains.exposed.sql.BasicBinaryColumnType
 import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.Table
@@ -54,6 +55,11 @@ fun Table.expiresAt() = timestampWithTimeZone("expires_at").clientDefault { Offs
  */
 fun Table.obfuscatedText(name: String, collate: String? = null, eagerLoading: Boolean = false) =
     registerColumn(name, ObfuscatedTextColumnType(collate, eagerLoading))
+
+/**
+ * Same as [Table.binary], but with the [RedactedBinaryColumnType] instead of the [BasicBinaryColumnType].
+ */
+fun Table.redactedBinary(name: String) = registerColumn(name, RedactedBinaryColumnType())
 
 /**
  * Stores a Map<String, String> inside an [HStoreColumnType]. Unallowed characters are automatically escaped.

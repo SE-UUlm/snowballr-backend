@@ -65,6 +65,11 @@ interface IInvitationTokenTableRepo {
      * Deletes all invitation tokens that have expired.
      */
     suspend fun deleteExpiredInvitationTokens()
+
+    /**
+     * Deletes all invitation tokens associated with a given project.
+     */
+    suspend fun deleteInvitationTokensForProject(projectId: UUID)
 }
 
 class InvitationTokenTableRepo(
@@ -118,5 +123,11 @@ class InvitationTokenTableRepo(
         }
 
         logger.info { "Deleted $deletedTokens expired invitation tokens." }
+    }
+
+    override suspend fun deleteInvitationTokensForProject(projectId: UUID) {
+        db.query {
+            InvitationTokenTable.deleteWhere { InvitationTokenTable.projectId eq projectId }
+        }
     }
 }
