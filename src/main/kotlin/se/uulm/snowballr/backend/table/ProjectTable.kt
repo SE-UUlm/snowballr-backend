@@ -6,6 +6,7 @@ import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.json.json
 import org.jetbrains.exposed.sql.kotlin.datetime.timestampWithTimeZone
+import se.uulm.snowballr.backend.fetcher.FetcherMap
 import se.uulm.snowballr.backend.model.dto.Project
 import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ProjectOuterClass.ProjectStatus
@@ -29,7 +30,7 @@ import java.time.OffsetDateTime
  * as a [Boolean].
  * - [reviewDecisionMatrixBinary]: Represents the decision matrix on how the [PaperDecision] for a paper should be
  * determined as a [ByteArray].
- * - [fetchers]: Represents the fetchers used by the project as a json object mapping the fetcher names to their
+ * - [fetchers]: Represents the fetchers used by the project as a JSON object mapping the fetcher names to their
  * options.
  * - [currentStageStartedAt]: Represents the timestamp of when the current stage of the project was started as a
  * [OffsetDateTime].
@@ -51,7 +52,7 @@ object ProjectTable : UUIDTable("project") {
     val snowballingType = enumeration<SnowballingType>("snowballing_type")
     val reviewMaybeAllowed = bool("review_maybe_allowed")
     val reviewDecisionMatrixBinary = redactedBinary("review_decision_matrix")
-    val fetchers = json<Map<String, Map<String, String>>>("fetchers", Json)
+    val fetchers = json<FetcherMap>("fetchers", Json)
     val currentStageStartedAt = timestampWithTimeZone("current_stage_started_at").clientDefault { OffsetDateTime.now() }
 
     // Metadata

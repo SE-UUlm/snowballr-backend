@@ -34,6 +34,7 @@ import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.utils.assertResultFailure
 import se.uulm.snowballr.backend.utils.assertResultSuccess
+import snowballr.Fetcher.FetcherOptions
 import snowballr.ProjectOuterClass.Project
 import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
@@ -67,6 +68,7 @@ class ProjectTableRepoTest :
             Arguments.of(listOf("project.settings.similarity_threshold")),
             Arguments.of(listOf("project.settings.snowballing_type")),
             Arguments.of(listOf("project.settings.review_maybe_allowed")),
+            Arguments.of(listOf("project.settings.fetchers")),
         )
     }
 
@@ -202,6 +204,7 @@ class ProjectTableRepoTest :
     inner class UpdateProject {
         @ParameterizedTest(name = "Update the fields {0}")
         @MethodSource("se.uulm.snowballr.backend.repository.ProjectTableRepoTest#validFieldMasks")
+        @Suppress("LongMethod")
         fun `When a project is updated, then only the fields specified in the field mask are updated and the updated project is returned`(
             fieldMask: List<String>,
         ) = runTest {
@@ -218,6 +221,12 @@ class ProjectTableRepoTest :
                         .setSimilarityThreshold(1F)
                         .setSnowballingType(SnowballingType.SNOWBALLING_TYPE_FORWARD)
                         .setReviewMaybeAllowed(false)
+                        .putFetchers(
+                            "test fetcher",
+                            FetcherOptions.newBuilder()
+                                .putOptions("Opt1", "Val1")
+                                .build(),
+                        )
                         .build(),
                 )
                 .build()
@@ -253,6 +262,19 @@ class ProjectTableRepoTest :
                 assertFalse(updatedProject.reviewMaybeAllowed)
             } else {
                 assertTrue(updatedProject.reviewMaybeAllowed)
+            }
+            val fetchers = updatedProject.fetchers
+            val fetcher = fetchers["test fetcher"]
+            if ("project.settings.fetchers" in fieldMask) {
+                assertEquals(1, fetchers.size)
+                assertNotNull(fetcher)
+                val fetcherOption1 = fetcher["Opt1"]
+                assertEquals("Val1", fetcherOption1)
+                val fetcherOption2 = fetcher["Opt2"]
+                assertNull(fetcherOption2)
+            } else {
+                assertEquals(0, fetchers.size)
+                assertNull(fetcher)
             }
         }
     }

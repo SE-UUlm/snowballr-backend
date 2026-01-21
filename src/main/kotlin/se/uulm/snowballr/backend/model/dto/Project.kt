@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.model.dto
 
+import se.uulm.snowballr.backend.fetcher.FetcherMap
 import se.uulm.snowballr.backend.table.ProjectTable
 import snowballr.Fetcher.FetcherOptions
 import snowballr.ProjectOuterClass
@@ -19,7 +20,7 @@ data class Project(
     val snowballingType: ProjectOuterClass.SnowballingType,
     val reviewMaybeAllowed: Boolean,
     val reviewDecisionMatrix: ProjectOuterClass.ReviewDecisionMatrix,
-    val fetchers: Map<String, Map<String, String>>,
+    val fetchers: FetcherMap,
     val currentStageStartedAt: OffsetDateTime,
     val createdAt: OffsetDateTime,
     val createdBy: UUID,

@@ -5,6 +5,7 @@ import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.json.json
+import se.uulm.snowballr.backend.fetcher.FetcherMap
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.UserSettings
 import snowballr.ProjectOuterClass.PaperDecision
@@ -75,7 +76,7 @@ private val DECISION_MATRIX_DEFAULT: ByteArray = ReviewDecisionMatrix.newBuilder
     .addPatterns(MAYBE_MAYBE_PATTERN)
     .build()
     .toByteArray()
-private val FETCHERS_DEFAULT = emptyMap<String, Map<String, String>>()
+private val FETCHERS_DEFAULT: FetcherMap = emptyMap()
 private val SNOWBALLING_TYPE_DEFAULT = SnowballingType.SNOWBALLING_TYPE_BOTH
 private const val REVIEW_MAYBE_ALLOWED_DEFAULT = true
 
@@ -119,7 +120,7 @@ object UserTable : UUIDTable("user") {
     // Project settings defaults
     val similarityThreshold = float("similarity_threshold").clientDefault { SIMILARITY_THRESHOLD_DEFAULT }
     val decisionMatrix = redactedBinary("review_decision_matrix").clientDefault { DECISION_MATRIX_DEFAULT }
-    val fetchers = json<Map<String, Map<String, String>>>("fetchers", Json).clientDefault { FETCHERS_DEFAULT }
+    val fetchers = json<FetcherMap>("fetchers", Json).clientDefault { FETCHERS_DEFAULT }
     val snowballingType =
         enumeration<SnowballingType>("snowballing_type").clientDefault { SNOWBALLING_TYPE_DEFAULT }
     val reviewMaybeAllowed = bool("review_maybe_allowed").clientDefault { REVIEW_MAYBE_ALLOWED_DEFAULT }

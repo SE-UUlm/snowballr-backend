@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend
 
+import se.uulm.snowballr.backend.fetcher.FetcherMap
 import se.uulm.snowballr.backend.model.dto.Author
 import se.uulm.snowballr.backend.model.dto.Criterion
 import se.uulm.snowballr.backend.model.dto.InvitationToken
@@ -44,7 +45,7 @@ object DataBuilder {
         snowballingType: SnowballingType = SnowballingType.SNOWBALLING_TYPE_BOTH,
         reviewMaybeAllowed: Boolean = true,
         reviewDecisionMatrix: ReviewDecisionMatrix = ReviewDecisionMatrix.getDefaultInstance(),
-        fetchers: Map<String, Map<String, String>> = emptyMap(),
+        fetchers: FetcherMap = emptyMap(),
         currentStageStartedAt: OffsetDateTime = OffsetDateTime.now(),
         createdAt: OffsetDateTime = OffsetDateTime.now(),
         createdBy: UUID = UUID.randomUUID(),
@@ -156,7 +157,7 @@ object DataBuilder {
         criteriaIds: List<UUID> = emptyList(),
         similarityThreshold: Float = 0.5f,
         decisionMatrix: ReviewDecisionMatrix = ReviewDecisionMatrix.getDefaultInstance(),
-        fetchers: Map<String, Map<String, String>> = emptyMap(),
+        fetchers: FetcherMap = emptyMap(),
         snowballingType: SnowballingType = SnowballingType.SNOWBALLING_TYPE_BOTH,
         reviewMaybeAllowed: Boolean = false,
     ) = UserSettings(

@@ -330,5 +330,9 @@ class ProjectTableRepo(
         if ("project.settings.review_maybe_allowed" in paths) {
             this[ProjectTable.reviewMaybeAllowed] = settings.reviewMaybeAllowed
         }
+        if ("project.settings.fetchers" in paths) {
+            val fetcherMap = settings.fetchersMap.mapValues { (_, value) -> value.optionsMap }
+            this[ProjectTable.fetchers] = fetcherMap
+        }
     }
 }

@@ -54,9 +54,8 @@ class FetcherManager {
      * @param fetcher The name of the fetcher whose options should be retrieved.
      * @return A set of names for options the fetcher has specified it would accept.
      */
-    suspend fun getAvailableOptions(fetcher: String): Map<String, String> = getFetcherOrThrow(
-        fetcher,
-    ).getAvailableOptions()
+    suspend fun getAvailableOptions(fetcher: String): Map<String, String> =
+        getFetcherOrThrow(fetcher).getAvailableOptions()
 
     /**
      * Search for papers using a search query.
@@ -67,16 +66,16 @@ class FetcherManager {
      * @return A set of papers best matching the provided searchQuery.
      */
     suspend fun searchPapers(fetcher: String, searchQuery: String, options: Map<String, String>): Set<Paper> =
-        getFetcherOrThrow(
-            fetcher,
-        ).searchPapers(searchQuery, options)
+        getFetcherOrThrow(fetcher).searchPapers(searchQuery, options)
 
     /**
      * Get the papers that are forward references of the specified paper.
-     * Paper A is a forward reference of Paper B if it is referred to in B:
+     * Paper C is a forward reference of Paper B if it cites B.
      *
-     *    Paper A <-referring-- Paper B <-referring-- Paper C
-     *  forward ref.                                backward ref.
+     * ```
+     *     Paper A <-citing-- Paper B <-citing-- Paper C
+     *  backward ref.                          forward ref.
+     * ```
      *
      * @param fetcher The name of the fetcher to be used for this request.
      * @param paper The paper from which the forward references should be fetched.
@@ -88,10 +87,12 @@ class FetcherManager {
 
     /**
      * Get the papers that are backward references of the specified paper.
-     * Paper C is a backward reference of Paper B if it is referring to B:
+     * Paper A is a backward reference of Paper B if it is cited by B:
      *
-     *    Paper A <-referring-- Paper B <-referring-- Paper C
-     *  forward ref.                                backward ref.
+     * ```
+     *     Paper A <-citing-- Paper B <-citing-- Paper C
+     *  backward ref.                          forward ref.
+     * ```
      *
      * @param fetcher The name of the fetcher to be used for this request.
      * @param paper The paper from which the backward references should be fetched.

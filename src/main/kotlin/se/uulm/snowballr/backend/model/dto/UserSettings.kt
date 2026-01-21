@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.model.dto
 
+import se.uulm.snowballr.backend.fetcher.FetcherMap
 import snowballr.CriterionOuterClass
 import snowballr.Fetcher.FetcherOptions
 import snowballr.ProjectOuterClass
@@ -12,7 +13,7 @@ data class UserSettings(
     val criteriaIds: List<UUID>,
     val similarityThreshold: Float,
     val decisionMatrix: ProjectOuterClass.ReviewDecisionMatrix,
-    val fetchers: Map<String, Map<String, String>>,
+    val fetchers: FetcherMap,
     val snowballingType: ProjectOuterClass.SnowballingType,
     val reviewMaybeAllowed: Boolean,
 )
