@@ -59,6 +59,7 @@ class ExportProjectTest : MainServiceTest() {
         mockCurrentUser(user)
         mockkObject(ProjectExportManager)
         every { ProjectExportManager.getSupportedFormats() } returns setOf(ExportFormat.JSON)
+        coEvery { projectRepoMock.doesProjectExistById(projectId) } returns true
         coEvery { projectMemberRepoMock.getProjectMembers(projectId) } returns emptyList()
 
         assertThrows<UnauthorizedReadException> {
@@ -102,7 +103,6 @@ class ExportProjectTest : MainServiceTest() {
         mockCurrentUser(user)
         mockkObject(ProjectExportManager)
         every { ProjectExportManager.getSupportedFormats() } returns setOf(ExportFormat.JSON)
-        coEvery { projectMemberRepoMock.getProjectMembers(projectId) } returns emptyList()
         coEvery { projectRepoMock.doesProjectExistById(projectId) } returns false
 
         assertThrows<NotFoundException> { mainService.exportProject(request) }

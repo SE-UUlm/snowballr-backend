@@ -41,6 +41,7 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
         val review = DataBuilder.createExampleReview()
 
         mockCurrentUser(currentUser)
+        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns
             if (isUserAdmin) {
                 emptyList()
@@ -81,6 +82,7 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
             val project = DataBuilder.createExampleProject(id = projectId)
 
             mockCurrentUser(currentUser)
+            coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
             assertThrows<UnauthorizedException> {
@@ -109,6 +111,7 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
         val review = DataBuilder.createExampleReview(userId = UUID.randomUUID())
 
         mockCurrentUser(currentUser)
+        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
         coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
         coEvery {
@@ -193,7 +196,6 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
         val project = DataBuilder.createExampleProject(id = projectId)
 
         mockCurrentUser(currentUser)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
         coEvery { projectRepoMock.doesProjectExistById(project.id) } returns false
 
         assertThrows<NotFoundException> {

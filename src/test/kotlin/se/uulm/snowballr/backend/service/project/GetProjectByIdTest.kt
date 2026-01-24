@@ -27,6 +27,7 @@ class GetProjectByIdTest : MainServiceTest() {
         val noAccessUser = DataBuilder.createExampleUser()
 
         mockCurrentUser(noAccessUser)
+        coEvery { projectRepoMock.doesProjectExistById(projectId) } returns true
         coEvery { projectMemberRepoMock.getProjectMembers(projectId) } returns emptyList()
 
         assertThrows<UnauthorizedException> { mainService.getProjectById(request) }
@@ -39,6 +40,7 @@ class GetProjectByIdTest : MainServiceTest() {
         val project = DataBuilder.createExampleProject(id = projectId)
 
         mockCurrentUser(adminUser)
+        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
@@ -53,6 +55,7 @@ class GetProjectByIdTest : MainServiceTest() {
         val projectMember = DataBuilder.createExampleProjectMember(userId = user.id, projectId = projectId)
 
         mockCurrentUser(user)
+        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
@@ -65,6 +68,7 @@ class GetProjectByIdTest : MainServiceTest() {
         val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
 
         mockCurrentUser(adminUser)
+        coEvery { projectRepoMock.doesProjectExistById(projectId) } returns true
         coEvery { projectMemberRepoMock.getProjectMembers(projectId) } returns emptyList()
         coEvery { projectRepoMock.getProjectById(projectId) } returns Result.failure(TestSpecificException())
 

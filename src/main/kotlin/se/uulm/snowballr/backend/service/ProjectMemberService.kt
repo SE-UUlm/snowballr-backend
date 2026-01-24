@@ -73,9 +73,7 @@ class ProjectMemberService(
         withUser(userRepo) { currentUser ->
             val projectId = parseUUID(request.id, EntityType.PROJECT)
 
-            isAllowedToReadProject(repo)
-                .andAlso(isProjectExistent(projectRepo))
-                .checkFor(currentUser, projectId)
+            isAllowedToReadProject(projectRepo, repo).checkFor(currentUser, projectId)
 
             val projectMembersWithUsers = repo.getProjectMembersWithUsers(projectId)
             projectMembersWithUsers.toGrpcProjectMembers()

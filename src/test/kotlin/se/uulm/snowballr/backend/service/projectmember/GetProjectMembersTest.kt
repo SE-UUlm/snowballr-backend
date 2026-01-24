@@ -35,8 +35,8 @@ class GetProjectMembersTest : MainServiceTest() {
         val projectMemberWithUser = ProjectMemberWithUser(projectMember, projectMemberUser)
 
         mockCurrentUser(adminUser)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns
-            listOf(projectMember)
+        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
+        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
         coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
         coEvery { projectMemberRepoMock.getProjectMembersWithUsers(project.id) } returns listOf(projectMemberWithUser)
 
@@ -67,6 +67,7 @@ class GetProjectMembersTest : MainServiceTest() {
         val project = DataBuilder.createExampleProject(id = projectId)
 
         mockCurrentUser(user)
+        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
         assertThrows<UnauthorizedException> { mainService.getProjectMembers(request) }
@@ -79,10 +80,7 @@ class GetProjectMembersTest : MainServiceTest() {
             val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
 
             mockCurrentUser(user)
-            coEvery { projectMemberRepoMock.getProjectMembers(any()) } returns emptyList()
-            coEvery {
-                projectRepoMock.doesProjectExistById(projectId)
-            } returns false
+            coEvery { projectRepoMock.doesProjectExistById(projectId) } returns false
 
             assertThrows<NotFoundException> { mainService.getProjectMembers(request) }
         }

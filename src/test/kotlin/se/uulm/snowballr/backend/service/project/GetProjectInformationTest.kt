@@ -28,7 +28,6 @@ class GetProjectInformationTest : MainServiceTest() {
         val member = DataBuilder.createExampleProjectMember(projectId = projectId, userId = user.id)
 
         mockCurrentUser(user)
-        coEvery { projectMemberRepoMock.getProjectMembers(projectId) } returns listOf(member)
         coEvery { projectRepoMock.doesProjectExistById(projectId) } returns false
 
         assertThrows<NotFoundException> { mainService.getProjectInformation(getRequest(projectId)) }
@@ -40,6 +39,7 @@ class GetProjectInformationTest : MainServiceTest() {
         val project = DataBuilder.createExampleProject()
 
         mockCurrentUser(user)
+        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
         assertThrows<UnauthorizedException> { mainService.getProjectInformation(getRequest(project.id)) }

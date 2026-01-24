@@ -12,10 +12,8 @@ import se.uulm.snowballr.backend.repository.IReviewTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
-import se.uulm.snowballr.backend.service.accessrules.andAlso
 import se.uulm.snowballr.backend.service.accessrules.checkFor
 import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadProject
-import se.uulm.snowballr.backend.service.accessrules.isProjectExistent
 import snowballr.Export.AvailableExportFormatsResponse
 import snowballr.Export.ExportRequest
 import snowballr.Export.ExportResponse
@@ -64,9 +62,7 @@ class ExportService(
         val format = ProjectExportManager.getSupportedFormats().first { it.toString() == request.format }
         val projectId = parseUUID(request.id, EntityType.PROJECT)
 
-        isAllowedToReadProject(projectMemberRepo)
-            .andAlso(isProjectExistent(projectRepo))
-            .checkFor(currentUser, projectId)
+        isAllowedToReadProject(projectRepo, projectMemberRepo).checkFor(currentUser, projectId)
 
         val project = projectRepo.getProjectById(projectId).getOrThrow()
         val projectMembers = projectMemberRepo.getProjectMembersWithUsers(projectId)

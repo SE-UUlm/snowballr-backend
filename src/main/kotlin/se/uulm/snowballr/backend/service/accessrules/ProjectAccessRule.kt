@@ -86,14 +86,24 @@ fun isNotLastProjectAdmin(projectMemberRepo: IProjectMemberTableRepo, action: St
 }
 
 /**
- * Check whether the current user is a member of the specified project. If the user is not a project member,
- * the user has to be a server admin; otherwise, throws an [UnauthorizedException].
+ * Check whether the current user is allowed to read the specified project.
  *
+ * The user can read the project if the following conditions are met:
+ * 1. The project exists; otherwise a [ProjectNotFoundException] is thrown.
+ * 2. The user is a member of the project or a server admin.
+ *
+ * If neither condition is met, an [UnauthorizedReadException] is thrown.
+ *
+ * @param projectRepo The repository used to access project data.
  * @param projectMemberRepo The repository used to access project membership data.
  */
 @CheckReturnValue
-fun isAllowedToReadProject(projectMemberRepo: IProjectMemberTableRepo): AccessRule<UUID> {
-    return isProjectMember(projectMemberRepo)
+fun isAllowedToReadProject(
+    projectRepo: IProjectTableRepo,
+    projectMemberRepo: IProjectMemberTableRepo,
+): AccessRule<UUID> {
+    return isProjectExistent(projectRepo)
+        .andAlso(isProjectMember(projectMemberRepo))
         .orElse(isServerAdmin().forTarget())
         .orElseThrow { currentUser, targetId ->
             UnauthorizedReadException(currentUser.id, targetId, EntityType.PROJECT)

@@ -60,12 +60,16 @@ class GetAllProjectPapersForProjectTest : MainServiceTest() {
     fun `When a server admin requests the project papers, then no exception is thrown`() = runTest {
         mockHappyPath(true)
 
+        coEvery { projectRepoMock.doesProjectExistById(projectId) } returns true
+
         assertDoesNotThrow { mainService.getAllProjectPapersForProject(getExampleRequest()) }
     }
 
     @Test
     fun `When a project member requests the project papers, then no exception is thrown`() = runTest {
         mockHappyPath(false)
+
+        coEvery { projectRepoMock.doesProjectExistById(projectId) } returns true
 
         assertDoesNotThrow { mainService.getAllProjectPapersForProject(getExampleRequest()) }
     }
@@ -76,6 +80,7 @@ class GetAllProjectPapersForProjectTest : MainServiceTest() {
         val project = DataBuilder.createExampleProject(id = projectId)
 
         mockCurrentUser(currentUser)
+        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
         assertThrows<UnauthorizedException> {
@@ -89,7 +94,6 @@ class GetAllProjectPapersForProjectTest : MainServiceTest() {
         val project = DataBuilder.createExampleProject(id = projectId)
 
         mockCurrentUser(currentUser)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
         coEvery { projectRepoMock.doesProjectExistById(project.id) } returns false
 
         assertThrows<NotFoundException> {

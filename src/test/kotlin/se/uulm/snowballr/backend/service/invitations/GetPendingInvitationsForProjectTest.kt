@@ -41,8 +41,8 @@ class GetPendingInvitationsForProjectTest : MainServiceTest() {
             val projectMember = DataBuilder.createExampleProjectMember(userId = currentUser.id, projectId = projectId)
 
             mockCurrentUser(currentUser)
-            coEvery { projectMemberRepoMock.getProjectMembers(projectId) } returns listOf(projectMember)
             coEvery { projectRepoMock.doesProjectExistById(projectId) } returns true
+            coEvery { projectMemberRepoMock.getProjectMembers(projectId) } returns listOf(projectMember)
             coEvery { invitationTokenRepoMock.getActiveInvitationTokensForProject(projectId) } returns emptyList()
 
             assertDoesNotThrow { mainService.getPendingInvitationsForProject(createRequest()) }
@@ -103,6 +103,7 @@ class GetPendingInvitationsForProjectTest : MainServiceTest() {
             val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
 
             mockCurrentUser(currentUser)
+            coEvery { projectRepoMock.doesProjectExistById(projectId) } returns true
             coEvery { projectMemberRepoMock.getProjectMembers(projectId) } returns emptyList()
 
             assertThrows<UnauthorizedException> { mainService.getPendingInvitationsForProject(createRequest()) }
@@ -115,13 +116,10 @@ class GetPendingInvitationsForProjectTest : MainServiceTest() {
             val nonExistentProjectId = UUID.randomUUID()
 
             mockCurrentUser(currentUser)
-            coEvery { projectMemberRepoMock.getProjectMembers(nonExistentProjectId) } returns emptyList()
             coEvery { projectRepoMock.doesProjectExistById(nonExistentProjectId) } returns false
 
             assertThrows<NotFoundException> {
-                mainService.getPendingInvitationsForProject(
-                    createRequest(nonExistentProjectId),
-                )
+                mainService.getPendingInvitationsForProject(createRequest(nonExistentProjectId))
             }
         }
 }

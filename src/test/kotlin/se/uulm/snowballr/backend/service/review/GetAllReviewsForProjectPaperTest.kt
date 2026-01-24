@@ -54,6 +54,7 @@ class GetAllReviewsForProjectPaperTest : MainServiceTest() {
         }
         coEvery { projectPaperRepoMock.getProjectPaperById(projectPaper.id) } returns Result.success(projectPaper)
 
+        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns
             if (isUserAdmin) {
                 emptyList()
@@ -99,6 +100,7 @@ class GetAllReviewsForProjectPaperTest : MainServiceTest() {
 
             mockCurrentUser(currentUser)
             coEvery { projectPaperRepoMock.getProjectPaperById(projectPaper.id) } returns Result.success(projectPaper)
+            coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
             assertThrows<UnauthorizedException> {

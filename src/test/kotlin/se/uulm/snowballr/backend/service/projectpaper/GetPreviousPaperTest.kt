@@ -33,6 +33,7 @@ class GetPreviousPaperTest : MainServiceTest() {
         coEvery {
             projectPaperRepoMock.getProjectPaperById(projectPaper.id)
         } returns Result.success(projectPaper)
+        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
         coEvery { projectRepoMock.getProjectById(projectPaper.projectId) } returns Result.success(project)
         coEvery {
@@ -63,6 +64,7 @@ class GetPreviousPaperTest : MainServiceTest() {
         coEvery {
             projectPaperRepoMock.getProjectPaperById(projectPaper.id)
         } returns Result.success(projectPaper)
+        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
         coEvery { projectRepoMock.getProjectById(projectPaper.projectId) } returns Result.success(project)
         coEvery {
@@ -89,6 +91,7 @@ class GetPreviousPaperTest : MainServiceTest() {
             coEvery {
                 projectPaperRepoMock.getProjectPaperById(projectPaper.id)
             } returns Result.success(projectPaper)
+            coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
             assertThrows<UnauthorizedException> { mainService.getPreviousPaper(getExampleRequest()) }
@@ -107,6 +110,7 @@ class GetPreviousPaperTest : MainServiceTest() {
         coEvery {
             projectPaperRepoMock.getProjectPaperById(projectPaper.id)
         } returns Result.success(projectPaper)
+        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
         coEvery { projectRepoMock.getProjectById(projectPaper.projectId) } returns Result.success(project)
         coEvery {

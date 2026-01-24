@@ -20,11 +20,9 @@ import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
-import se.uulm.snowballr.backend.service.accessrules.andAlso
 import se.uulm.snowballr.backend.service.accessrules.checkFor
 import se.uulm.snowballr.backend.service.accessrules.forProperty
 import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadProject
-import se.uulm.snowballr.backend.service.accessrules.isProjectExistent
 import se.uulm.snowballr.backend.service.accessrules.isServerAdmin
 import se.uulm.snowballr.backend.service.accessrules.isServerAdminOrSameUser
 import se.uulm.snowballr.backend.service.accessrules.isServerOrProjectAdmin
@@ -117,7 +115,7 @@ class ProjectService(
     override suspend fun getProjectById(request: Base.Id): GrpcProject = withUser(userRepo) { currentUser ->
         val projectId = parseUUID(request.id, EntityType.PROJECT)
 
-        isAllowedToReadProject(projectMemberRepo).checkFor(currentUser, projectId)
+        isAllowedToReadProject(repo, projectMemberRepo).checkFor(currentUser, projectId)
 
         repo.getProjectById(projectId).getOrThrow().toGrpcProject()
     }
@@ -194,9 +192,7 @@ class ProjectService(
         withUser(userRepo) { currentUser ->
             val projectId = parseUUID(request.projectId, EntityType.PROJECT)
 
-            isAllowedToReadProject(projectMemberRepo)
-                .andAlso(isProjectExistent(repo))
-                .checkFor(currentUser, projectId)
+            isAllowedToReadProject(repo, projectMemberRepo).checkFor(currentUser, projectId)
 
             val project = repo.getProjectById(projectId).getOrThrow()
             val progress = projectPaperRepo.getProjectProgress(projectId)
@@ -228,7 +224,7 @@ class ProjectService(
     ): GrpcProjectDecisionStatistics = withUser(userRepo) { currentUser ->
         val projectId = parseUUID(request.projectId, EntityType.PROJECT)
 
-        isAllowedToReadProject(projectMemberRepo).checkFor(currentUser, projectId)
+        isAllowedToReadProject(repo, projectMemberRepo).checkFor(currentUser, projectId)
 
         val project = repo.getProjectById(projectId).getOrThrow()
         val maxStage = project.maxStage

@@ -88,7 +88,7 @@ class ReviewService(
             val projectPaperId = parseUUID(request.id, EntityType.PROJECT_PAPER)
             val projectPaper = projectPaperRepo.getProjectPaperById(projectPaperId).getOrThrow()
 
-            isAllowedToReadProject(projectMemberRepo).checkFor(currentUser, projectPaper.projectId)
+            isAllowedToReadProject(projectRepo, projectMemberRepo).checkFor(currentUser, projectPaper.projectId)
 
             val reviews = repo.getAllReviewsForProjectPaper(projectPaperId)
             val reviewSelectedCriteriaMap = mutableMapOf<Review, List<String>>()
@@ -156,7 +156,7 @@ class ReviewService(
         val projectPaperId = parseUUID(request.projectPaperId, EntityType.PROJECT_PAPER)
         val projectPaper = projectPaperRepo.getProjectPaperById(projectPaperId).getOrThrow()
 
-        isAllowedToReadProject(projectMemberRepo).checkFor(currentUser, projectPaper.projectId)
+        isAllowedToReadProject(projectRepo, projectMemberRepo).checkFor(currentUser, projectPaper.projectId)
 
         val project = projectRepo.getProjectById(projectPaper.projectId).getOrThrow()
         isProjectActive().checkFor(currentUser, project)

@@ -17,11 +17,9 @@ import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
-import se.uulm.snowballr.backend.service.accessrules.andAlso
 import se.uulm.snowballr.backend.service.accessrules.checkFor
 import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadProject
 import se.uulm.snowballr.backend.service.accessrules.isProjectActive
-import se.uulm.snowballr.backend.service.accessrules.isProjectExistent
 import se.uulm.snowballr.backend.service.accessrules.isServerOrProjectAdmin
 import snowballr.Base
 import snowballr.ProjectOuterClass.Project
@@ -183,9 +181,7 @@ class InvitationService(
         withUser(userRepo) { currentUser ->
             val projectId = parseUUID(request.id, EntityType.PROJECT)
 
-            isAllowedToReadProject(projectMemberRepo)
-                .andAlso(isProjectExistent(projectRepo))
-                .checkFor(currentUser, projectId)
+            isAllowedToReadProject(projectRepo, projectMemberRepo).checkFor(currentUser, projectId)
 
             val tokens = invitationTokenRepo.getActiveInvitationTokensForProject(projectId)
 

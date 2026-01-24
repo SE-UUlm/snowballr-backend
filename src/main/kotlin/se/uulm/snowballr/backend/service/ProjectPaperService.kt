@@ -26,11 +26,9 @@ import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.IReviewHasCriterionTableRepo
-import se.uulm.snowballr.backend.service.accessrules.andAlso
 import se.uulm.snowballr.backend.service.accessrules.checkFor
 import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadProject
 import se.uulm.snowballr.backend.service.accessrules.isProjectActive
-import se.uulm.snowballr.backend.service.accessrules.isProjectExistent
 import se.uulm.snowballr.backend.service.accessrules.isServerOrProjectAdmin
 import snowballr.Base
 import snowballr.ProjectOuterClass.PaperDecision
@@ -151,9 +149,7 @@ class ProjectPaperService(
     ): GrpcProjectPaper.List = withUser(userRepo) { currentUser ->
         val projectId = parseUUID(request.id, EntityType.PROJECT)
 
-        isAllowedToReadProject(projectMemberRepo)
-            .andAlso(isProjectExistent(projectRepo))
-            .checkFor(currentUser, projectId)
+        isAllowedToReadProject(projectRepo, projectMemberRepo).checkFor(currentUser, projectId)
 
         var projectPapersWithPapers = repo.getAllProjectPapersWithPapers(projectId)
         val paperBackwardReferencesMap = mutableMapOf<Paper, List<String>>()
@@ -195,7 +191,7 @@ class ProjectPaperService(
             val projectPaperId = parseUUID(id, EntityType.PROJECT_PAPER)
             val projectPaper = repo.getProjectPaperById(projectPaperId).getOrThrow()
 
-            isAllowedToReadProject(projectMemberRepo).checkFor(currentUser, projectPaper.projectId)
+            isAllowedToReadProject(projectRepo, projectMemberRepo).checkFor(currentUser, projectPaper.projectId)
 
             val projectId = projectRepo.getProjectById(projectPaper.projectId).getOrThrow().id
             val adjacentPaper = repo.getAdjacentPaper(projectId, projectPaper.localPaperId, direction).getOrThrow()
@@ -231,7 +227,7 @@ class ProjectPaperService(
         val projectPaperId = parseUUID(request.id, EntityType.PROJECT_PAPER)
         val projectPaper = repo.getProjectPaperById(projectPaperId).getOrThrow()
 
-        isAllowedToReadProject(projectMemberRepo).checkFor(currentUser, projectPaper.projectId)
+        isAllowedToReadProject(projectRepo, projectMemberRepo).checkFor(currentUser, projectPaper.projectId)
 
         projectPaper.toGrpcProjectPaperWithData()
     }
@@ -241,9 +237,7 @@ class ProjectPaperService(
     ) { currentUser ->
         val projectId = parseUUID(request.projectId, EntityType.PROJECT)
 
-        isAllowedToReadProject(projectMemberRepo)
-            .andAlso(isProjectExistent(projectRepo))
-            .checkFor(currentUser, projectId)
+        isAllowedToReadProject(projectRepo, projectMemberRepo).checkFor(currentUser, projectId)
 
         val relativeId = request.relativeProjectPaperId.toLong()
         val projectPaper = repo.getProjectPaperByRelativeId(projectId, relativeId).getOrThrow()
@@ -303,7 +297,7 @@ class ProjectPaperService(
         val projectPaper = repo.getProjectPaperById(projectPaperId).getOrThrow()
         val projectId = projectPaper.projectId
 
-        isAllowedToReadProject(projectMemberRepo).checkFor(currentUser, projectId)
+        isAllowedToReadProject(projectRepo, projectMemberRepo).checkFor(currentUser, projectId)
 
         val projectPapers = repo.getSubsequentProjectPapers(projectId, projectPaper.localPaperId, projectPaper.stage)
         val projectPapersWithReviewsCount = getProjectPapersWithReviewsCount(projectPapers, currentUser.id)

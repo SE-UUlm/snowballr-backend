@@ -6,9 +6,9 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
-import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.exception.UnauthorizedException
 import se.uulm.snowballr.backend.model.exception.notfound.StageNotFoundException
+import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.UserOuterClass.UserRole
@@ -32,6 +32,7 @@ class GetDecisionStatisticsForStageTest : MainServiceTest() {
             .build()
 
         mockCurrentUser(user)
+        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectPaperRepoMock.getAllProjectPapersForProject(project.id) } returns emptyList()
@@ -50,6 +51,7 @@ class GetDecisionStatisticsForStageTest : MainServiceTest() {
             .build()
 
         mockCurrentUser(user)
+        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectPaperRepoMock.getAllProjectPapersForProject(project.id) } returns emptyList()
@@ -67,24 +69,25 @@ class GetDecisionStatisticsForStageTest : MainServiceTest() {
             .build()
 
         mockCurrentUser(user)
+        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
         assertThrows<UnauthorizedException> { mainService.getDecisionStatisticsForStage(request) }
     }
 
     @Test
-    fun `When a nonexistent project is requested, then a TestSpecificException is thrown`() = runTest {
+    fun `When a nonexistent project is requested, then a ProjectNotFoundException is thrown`() = runTest {
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+        val project = DataBuilder.createExampleProject()
 
         val request = validRequestBuilder
-            .setProjectId(UUID.randomUUID().toString())
+            .setProjectId(project.id.toString())
             .build()
 
         mockCurrentUser(user)
-        coEvery { projectMemberRepoMock.getProjectMembers(any()) } returns emptyList()
-        coEvery { projectRepoMock.getProjectById(any()) } returns Result.failure(TestSpecificException())
+        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns false
 
-        assertThrows<TestSpecificException> { mainService.getDecisionStatisticsForStage(request) }
+        assertThrows<ProjectNotFoundException> { mainService.getDecisionStatisticsForStage(request) }
     }
 
     @Test
@@ -98,6 +101,7 @@ class GetDecisionStatisticsForStageTest : MainServiceTest() {
             .build()
 
         mockCurrentUser(user)
+        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
@@ -116,6 +120,7 @@ class GetDecisionStatisticsForStageTest : MainServiceTest() {
 
         mockCurrentUser(user)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
+        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
         coEvery { projectPaperRepoMock.getAllProjectPapersForProject(project.id) } returns emptyList()
 
@@ -164,6 +169,7 @@ class GetDecisionStatisticsForStageTest : MainServiceTest() {
             .build()
 
         mockCurrentUser(user)
+        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectPaperRepoMock.getAllProjectPapersForProject(project.id) } returns

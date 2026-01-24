@@ -93,6 +93,7 @@ class CreateReviewTest : MainServiceTest() {
         }
         coEvery { projectPaperRepoMock.getProjectPaperById(projectPaperId) } returns Result.success(projectPaper)
 
+        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
         if (stopBefore == projectMemberRepoMock::getProjectMembers) {
             return
         }

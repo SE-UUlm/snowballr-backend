@@ -29,8 +29,7 @@ class GetAllCriteriaForProjectTest : MainServiceTest() {
         val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
 
         mockCurrentUser(adminUser)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
-        coEvery { projectRepoMock.doesProjectExistById(projectId) } returns false
+        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns false
 
         assertThrows<NotFoundException> { mainService.getAllCriteriaForProject(request) }
     }
@@ -84,6 +83,7 @@ class GetAllCriteriaForProjectTest : MainServiceTest() {
             val project = DataBuilder.createExampleProject(id = projectId)
 
             mockCurrentUser(user)
+            coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
             assertThrows<UnauthorizedException> { mainService.getAllCriteriaForProject(request) }
