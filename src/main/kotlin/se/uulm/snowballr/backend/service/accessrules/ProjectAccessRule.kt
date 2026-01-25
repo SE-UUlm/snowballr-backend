@@ -5,6 +5,7 @@ package se.uulm.snowballr.backend.service.accessrules
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.Project
+import se.uulm.snowballr.backend.model.dto.isActive
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.UnauthorizedException
@@ -14,7 +15,6 @@ import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedExcept
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadException
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
-import snowballr.ProjectOuterClass.ProjectStatus
 import java.util.UUID
 import javax.annotation.CheckReturnValue
 
@@ -38,10 +38,8 @@ fun isProjectExistent(projectRepo: IProjectTableRepo): AccessRule<UUID> {
  */
 @CheckReturnValue
 fun isProjectActive(): AccessRule<Project> {
-    return AccessRule<Project> { _, project ->
-        project.status == ProjectStatus.PROJECT_STATUS_ACTIVE ||
-            project.status == ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED
-    }.orElseThrow { _, project -> EntityNotActiveException(EntityType.PROJECT, project.id) }
+    return AccessRule<Project> { _, project -> project.isActive() }
+        .orElseThrow { _, project -> EntityNotActiveException(EntityType.PROJECT, project.id) }
 }
 
 /**
