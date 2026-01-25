@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.model.dto
 
 import se.uulm.snowballr.backend.table.UserTable
 import snowballr.UserOuterClass
+import snowballr.UserOuterClass.UserRole
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -13,7 +14,7 @@ data class User(
     val email: String,
     val firstName: String,
     val lastName: String,
-    val role: UserOuterClass.UserRole,
+    val role: UserRole,
     val status: UserOuterClass.UserStatus,
     val createdAt: OffsetDateTime,
     val modifiedAt: OffsetDateTime?,
@@ -41,3 +42,10 @@ fun List<User>.toGrpcUsers(): UserOuterClass.User.List {
     this.forEach { builder.addUsers(it.toGrpcUser()) }
     return builder.build()
 }
+
+/**
+ * Checks whether the user is a server admin.
+ *
+ * A user is considered a server admin if their role is set to [UserRole.USER_ROLE_ADMIN].
+ */
+fun User.isServerAdmin(): Boolean = this.role == UserRole.USER_ROLE_ADMIN

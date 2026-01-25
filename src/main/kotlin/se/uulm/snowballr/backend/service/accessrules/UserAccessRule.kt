@@ -5,9 +5,9 @@ package se.uulm.snowballr.backend.service.accessrules
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.IdentifierType
 import se.uulm.snowballr.backend.model.dto.User
+import se.uulm.snowballr.backend.model.dto.isServerAdmin
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadException
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
-import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
 import java.util.UUID
 import javax.annotation.CheckReturnValue
@@ -31,7 +31,7 @@ fun isTargetUserActive() = AccessRule<User> { _, target ->
  * Check whether the target user is *not* a server admin.
  */
 @CheckReturnValue
-fun targetUserIsNotAdmin() = AccessRule<User> { _, target -> target.role != UserRole.USER_ROLE_ADMIN }
+fun targetUserIsNotAdmin() = AccessRule<User> { _, target -> !target.isServerAdmin() }
 
 /**
  * Check whether the requesting user is a server admin or the same user as the target user.
