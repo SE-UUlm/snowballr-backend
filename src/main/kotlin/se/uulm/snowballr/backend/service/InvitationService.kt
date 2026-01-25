@@ -22,10 +22,10 @@ import se.uulm.snowballr.backend.service.accessrules.checkFor
 import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadProject
 import se.uulm.snowballr.backend.service.accessrules.isProjectActive
 import se.uulm.snowballr.backend.service.accessrules.isServerOrProjectAdmin
-import snowballr.Base
 import snowballr.ProjectOuterClass.Project
 import snowballr.UserOuterClass.User
 import java.time.OffsetDateTime
+import java.util.UUID
 import snowballr.ProjectOuterClass.Project as GrpcProject
 import snowballr.UserOuterClass.User as GrpcUser
 
@@ -48,7 +48,7 @@ interface IInvitationService {
     /**
      * Service implementation of [SnowballRService.getPendingInvitationsForProject].
      */
-    suspend fun getPendingInvitationsForProject(request: Base.Id): GrpcUser.List
+    suspend fun getPendingInvitationsForProject(projectId: UUID): GrpcUser.List
 }
 
 private const val INVITATION_TOKEN_LENGTH = 48
@@ -170,10 +170,8 @@ class InvitationService(
         invitationTokenRepo.deleteInvitationToken(invitationToken.token)
     }
 
-    override suspend fun getPendingInvitationsForProject(request: Base.Id): GrpcUser.List =
+    override suspend fun getPendingInvitationsForProject(projectId: UUID): GrpcUser.List =
         withUser(userRepo) { currentUser ->
-            val projectId = parseUUID(request.id, EntityType.PROJECT)
-
             isAllowedToReadProject(projectRepo, projectMemberRepo).checkFor(currentUser, projectId)
 
             val tokens = invitationTokenRepo.getActiveInvitationTokensForProject(projectId)

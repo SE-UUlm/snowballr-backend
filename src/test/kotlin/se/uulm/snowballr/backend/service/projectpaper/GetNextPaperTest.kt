@@ -10,23 +10,16 @@ import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.PaperNavigationDirection
 import se.uulm.snowballr.backend.model.exception.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
-import snowballr.Base
 import snowballr.UserOuterClass.UserRole
-import java.util.UUID
 
 class GetNextPaperTest : MainServiceTest() {
-    private val projectPaperId = UUID.randomUUID()
-
-    private fun getExampleRequest() = Base.Id.newBuilder().setId(projectPaperId.toString()).build()
-
     @Test
     fun `When a server admin requests the next project paper, then no exception is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val project = DataBuilder.createExampleProject()
         val author = DataBuilder.createExampleAuthor()
         val paper = DataBuilder.createExamplePaper(authors = listOf(author))
-        val projectPaper =
-            DataBuilder.createExampleProjectPaper(id = projectPaperId, projectId = project.id, paperId = paper.id)
+        val projectPaper = DataBuilder.createExampleProjectPaper(projectId = project.id, paperId = paper.id)
         val nextProjectPaper = DataBuilder.createExampleProjectPaper()
 
         mockCurrentUser(currentUser)
@@ -36,16 +29,13 @@ class GetNextPaperTest : MainServiceTest() {
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
         coEvery { projectRepoMock.getProjectById(projectPaper.projectId) } returns Result.success(project)
         coEvery {
-            projectPaperRepoMock.getAdjacentPaper(
-                project.id, projectPaper.localPaperId,
-                PaperNavigationDirection.NEXT,
-            )
+            projectPaperRepoMock.getAdjacentPaper(project.id, projectPaper.localPaperId, PaperNavigationDirection.NEXT)
         } returns Result.success(nextProjectPaper)
         coEvery { paperRepoMock.getPaperById(nextProjectPaper.paperId) } returns Result.success(paper)
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id) } returns emptyList()
         coEvery { reviewRepoMock.getAllReviewsForProjectPaper(nextProjectPaper.id) } returns emptyList()
 
-        assertDoesNotThrow { mainService.getNextPaper(getExampleRequest()) }
+        assertDoesNotThrow { mainService.getNextPaper(projectPaper.id) }
     }
 
     @Test
@@ -54,8 +44,7 @@ class GetNextPaperTest : MainServiceTest() {
         val project = DataBuilder.createExampleProject()
         val author = DataBuilder.createExampleAuthor()
         val paper = DataBuilder.createExamplePaper(authors = listOf(author))
-        val projectPaper =
-            DataBuilder.createExampleProjectPaper(id = projectPaperId, projectId = project.id, paperId = paper.id)
+        val projectPaper = DataBuilder.createExampleProjectPaper(projectId = project.id, paperId = paper.id)
         val nextProjectPaper = DataBuilder.createExampleProjectPaper()
         val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
 
@@ -66,16 +55,13 @@ class GetNextPaperTest : MainServiceTest() {
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
         coEvery { projectRepoMock.getProjectById(projectPaper.projectId) } returns Result.success(project)
         coEvery {
-            projectPaperRepoMock.getAdjacentPaper(
-                project.id, projectPaper.localPaperId,
-                PaperNavigationDirection.NEXT,
-            )
+            projectPaperRepoMock.getAdjacentPaper(project.id, projectPaper.localPaperId, PaperNavigationDirection.NEXT)
         } returns Result.success(nextProjectPaper)
         coEvery { paperRepoMock.getPaperById(nextProjectPaper.paperId) } returns Result.success(paper)
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id) } returns emptyList()
         coEvery { reviewRepoMock.getAllReviewsForProjectPaper(nextProjectPaper.id) } returns emptyList()
 
-        assertDoesNotThrow { mainService.getNextPaper(getExampleRequest()) }
+        assertDoesNotThrow { mainService.getNextPaper(projectPaper.id) }
     }
 
     @Test
@@ -83,14 +69,14 @@ class GetNextPaperTest : MainServiceTest() {
         runTest {
             val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
             val project = DataBuilder.createExampleProject()
-            val projectPaper = DataBuilder.createExampleProjectPaper(id = projectPaperId, projectId = project.id)
+            val projectPaper = DataBuilder.createExampleProjectPaper(projectId = project.id)
 
             mockCurrentUser(currentUser)
             coEvery { projectPaperRepoMock.getProjectPaperById(projectPaper.id) } returns Result.success(projectPaper)
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
-            assertThrows<UnauthorizedException> { mainService.getNextPaper(getExampleRequest()) }
+            assertThrows<UnauthorizedException> { mainService.getNextPaper(projectPaper.id) }
         }
 
     @Test
@@ -98,8 +84,7 @@ class GetNextPaperTest : MainServiceTest() {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject()
         val paper = DataBuilder.createExamplePaper()
-        val projectPaper =
-            DataBuilder.createExampleProjectPaper(id = projectPaperId, projectId = project.id, paperId = paper.id)
+        val projectPaper = DataBuilder.createExampleProjectPaper(projectId = project.id, paperId = paper.id)
         val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
 
         mockCurrentUser(currentUser)
@@ -109,12 +94,9 @@ class GetNextPaperTest : MainServiceTest() {
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
         coEvery { projectRepoMock.getProjectById(projectPaper.projectId) } returns Result.success(project)
         coEvery {
-            projectPaperRepoMock.getAdjacentPaper(
-                project.id, projectPaper.localPaperId,
-                PaperNavigationDirection.NEXT,
-            )
+            projectPaperRepoMock.getAdjacentPaper(project.id, projectPaper.localPaperId, PaperNavigationDirection.NEXT)
         } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { mainService.getNextPaper(getExampleRequest()) }
+        assertThrows<TestSpecificException> { mainService.getNextPaper(projectPaper.id) }
     }
 }

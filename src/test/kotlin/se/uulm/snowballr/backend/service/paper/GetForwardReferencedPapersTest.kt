@@ -11,28 +11,23 @@ import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.PaperNotFoundException
 import se.uulm.snowballr.backend.service.MainServiceTest
-import snowballr.Base
 import java.util.UUID
 
 class GetForwardReferencedPapersTest : MainServiceTest() {
-    private val paperId = UUID.randomUUID()
-
-    private fun getExampleRequest() = Base.Id
-        .newBuilder()
-        .setId(paperId.toString())
-        .build()
-
     @Test
     fun `When the paper doesn't exist, then a PaperNotFoundException is thrown`() = runTest {
+        val paperId = UUID.randomUUID()
+
         coEvery { paperRepoMock.ensurePaperExists(paperId) } throws PaperNotFoundException(paperId)
+
         assertThrows<PaperNotFoundException> {
-            mainService.getForwardReferencedPapers(getExampleRequest())
+            mainService.getForwardReferencedPapers(paperId)
         }
     }
 
     @Test
     fun `When one of the forward references doesn't exist, then a NotFoundException is thrown`() = runTest {
-        val paper = DataBuilder.createExamplePaper(id = paperId)
+        val paper = DataBuilder.createExamplePaper()
         val forwardReferenceId = UUID.randomUUID()
 
         coEvery { paperRepoMock.ensurePaperExists(paper.id) } just Runs
@@ -42,7 +37,7 @@ class GetForwardReferencedPapersTest : MainServiceTest() {
         coEvery { paperRepoMock.getPaperById(forwardReferenceId) } throws PaperNotFoundException(paper.id)
 
         assertThrows<NotFoundException> {
-            mainService.getForwardReferencedPapers(getExampleRequest())
+            mainService.getForwardReferencedPapers(paper.id)
         }
     }
 
@@ -50,7 +45,7 @@ class GetForwardReferencedPapersTest : MainServiceTest() {
     fun `When the forward references of an existent paper are retrieved successfully, then no exception is thrown`() =
         runTest {
             val author = DataBuilder.createExampleAuthor()
-            val paper = DataBuilder.createExamplePaper(id = paperId, authors = listOf(author))
+            val paper = DataBuilder.createExamplePaper(authors = listOf(author))
             val forwardReferenceId = UUID.randomUUID()
             val citingPaper = DataBuilder.createExamplePaper(id = forwardReferenceId)
 
@@ -63,6 +58,6 @@ class GetForwardReferencedPapersTest : MainServiceTest() {
                 citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(forwardReferenceId)
             } returns listOf(UUID.randomUUID())
 
-            assertDoesNotThrow { mainService.getForwardReferencedPapers(getExampleRequest()) }
+            assertDoesNotThrow { mainService.getForwardReferencedPapers(paper.id) }
         }
 }

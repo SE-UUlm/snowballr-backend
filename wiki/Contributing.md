@@ -207,7 +207,6 @@ This function evaluates the rule chain for the given user and target entity and 
 or an `AccessRuleCheckFailedException` if no specific exception is defined and the access not granted.
 
 ```kotlin
-val userId = parseUUID(request.id, EntityType.USER)
 val user = userRepo.getUserById(userId).getOrThrow()
 
 isSameUserAndActive().checkFor(currentUser, user)
@@ -227,8 +226,7 @@ fun isAllowedToDeleteEntity(): AccessRule<UUID> {
 }
 
 // In EntityService.kt
-override suspend fun deleteEntity(request: Base.Id) = withUser(userRepo) { currentUser ->
-    val entityId = parseUUID(request.id, EntityType.ENTITY)
+override suspend fun deleteEntity(entityId: UUID) = withUser(userRepo) { currentUser ->
     val entity = repo.getEntityById(entityId).getOrThrow()
 
     // Check authorization using the composed rule

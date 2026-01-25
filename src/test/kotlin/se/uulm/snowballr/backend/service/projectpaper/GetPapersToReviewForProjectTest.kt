@@ -13,7 +13,6 @@ import se.uulm.snowballr.backend.model.dto.ProjectPaperWithPaper
 import se.uulm.snowballr.backend.model.exception.UnauthorizedException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
 import se.uulm.snowballr.backend.service.MainServiceTest
-import snowballr.Base
 import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.UserOuterClass.UserRole
 import java.util.UUID
@@ -21,11 +20,8 @@ import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class GetPapersToReviewForProjectTest : MainServiceTest() {
-    private val projectId = UUID.randomUUID()
-    private fun getExampleRequest() = Base.Id.newBuilder().setId(projectId.toString()).build()
-
     @Suppress("LongMethod")
-    private fun mockHappyPath(isUserAdmin: Boolean) {
+    private fun mockHappyPath(isUserAdmin: Boolean, projectId: UUID) {
         val currentUser = DataBuilder.createExampleUser(
             role = if (isUserAdmin) {
                 UserRole.USER_ROLE_ADMIN
@@ -63,39 +59,43 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
 
     @Test
     fun `When a server admin requests the project papers to review, then no exception is thrown`() = runTest {
-        mockHappyPath(true)
+        val projectId = UUID.randomUUID()
 
-        assertDoesNotThrow { mainService.getPapersToReviewForProject(getExampleRequest()) }
+        mockHappyPath(true, projectId)
+
+        assertDoesNotThrow { mainService.getPapersToReviewForProject(projectId) }
     }
 
     @Test
     fun `When a project member requests the project papers to review, then no exception is thrown`() = runTest {
-        mockHappyPath(false)
+        val projectId = UUID.randomUUID()
 
-        assertDoesNotThrow { mainService.getPapersToReviewForProject(getExampleRequest()) }
+        mockHappyPath(false, projectId)
+
+        assertDoesNotThrow { mainService.getPapersToReviewForProject(projectId) }
     }
 
     @Test
     fun `When a non project member requests the project papers to review, then an UnauthorizedException is thrown`() =
         runTest {
             val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-            val project = DataBuilder.createExampleProject(id = projectId)
+            val project = DataBuilder.createExampleProject()
 
             mockCurrentUser(currentUser)
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
             assertThrows<UnauthorizedException> {
-                mainService.getPapersToReviewForProject(getExampleRequest())
+                mainService.getPapersToReviewForProject(project.id)
             }
         }
 
     @Test
     fun `When the project papers to review are requested, then only the undecided papers are returned`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-        val project = DataBuilder.createExampleProject(id = projectId)
+        val project = DataBuilder.createExampleProject()
         val author = DataBuilder.createExampleAuthor()
-        val paper = DataBuilder.createExamplePaper(id = projectId, authors = listOf(author))
+        val paper = DataBuilder.createExamplePaper(authors = listOf(author))
         val projectPaperAlreadyDecided = DataBuilder.createExampleProjectPaper(
             projectId = project.id,
             paperId = paper.id,
@@ -130,7 +130,7 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
         } returns listOf(UUID.randomUUID())
 
         var projectPapers: GrpcProjectPaper.List
-        assertDoesNotThrow { projectPapers = mainService.getPapersToReviewForProject(getExampleRequest()) }
+        assertDoesNotThrow { projectPapers = mainService.getPapersToReviewForProject(project.id) }
         assertThat(projectPapers.projectPapersList).hasSize(1)
         assertThat(projectPapers.projectPapersList).anyMatch { it.id == projectPaperNotAlreadyDecided.id.toString() }
         assertThat(projectPapers.projectPapersList).noneMatch { it.id == projectPaperAlreadyDecided.id.toString() }
@@ -140,9 +140,9 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
     fun `When the project papers to review are requested, then only undecided papers that were not already reviewed by the current user are returned`() =
         runTest {
             val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-            val project = DataBuilder.createExampleProject(id = projectId)
+            val project = DataBuilder.createExampleProject()
             val author = DataBuilder.createExampleAuthor()
-            val paper = DataBuilder.createExamplePaper(id = projectId, authors = listOf(author))
+            val paper = DataBuilder.createExamplePaper(authors = listOf(author))
             val projectPaperWithCurrentUserReview = DataBuilder.createExampleProjectPaper(
                 projectId = project.id,
                 paperId = paper.id,
@@ -181,7 +181,7 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
             } returns listOf(UUID.randomUUID())
 
             var projectPapers: GrpcProjectPaper.List
-            assertDoesNotThrow { projectPapers = mainService.getPapersToReviewForProject(getExampleRequest()) }
+            assertDoesNotThrow { projectPapers = mainService.getPapersToReviewForProject(project.id) }
             assertThat(projectPapers.projectPapersList).hasSize(1)
             assertThat(projectPapers.projectPapersList)
                 .anyMatch { it.id == projectPaperWithoutCurrentUserReview.id.toString() }
@@ -192,13 +192,13 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
     @Test
     fun `When a nonexistent project is requested, then a ProjectNotFoundException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-        val project = DataBuilder.createExampleProject(id = projectId)
+        val project = DataBuilder.createExampleProject()
 
         mockCurrentUser(currentUser)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.failure(TestSpecificException())
 
         assertThrows<ProjectNotFoundException> {
-            mainService.getPapersToReviewForProject(getExampleRequest())
+            mainService.getPapersToReviewForProject(project.id)
         }
     }
 }

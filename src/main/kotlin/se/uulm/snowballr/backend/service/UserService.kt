@@ -53,7 +53,7 @@ interface IUserService {
     /**
      * Service implementation of [SnowballRService.getUserById].
      */
-    suspend fun getUserById(request: Base.Id): GrpcUser
+    suspend fun getUserById(userId: UUID): GrpcUser
 
     /**
      * Service implementation of [SnowballRService.getUserByEmail].
@@ -78,7 +78,7 @@ interface IUserService {
     /**
      * Service implementation of [SnowballRService.softDeleteUser].
      */
-    suspend fun softDeleteUser(request: Base.Id)
+    suspend fun softDeleteUser(userId: UUID)
 
     /**
      * Service implementation of [SnowballRService.getUserSettings].
@@ -115,23 +115,21 @@ class UserService(
     private val verificationTokenRepo: IVerificationTokenTableRepo,
     private val emailManager: IEmailManager,
 ) : IUserService {
-    override suspend fun getUserById(request: Base.Id): GrpcUser = withUser(userRepo) { currentUser ->
-        val targetUserId = parseUUID(request.id, EntityType.USER)
-
-        isAllowedToReadUser(projectMemberRepo).checkFor(currentUser, targetUserId)
+    override suspend fun getUserById(userId: UUID): GrpcUser = withUser(userRepo) { currentUser ->
+        isAllowedToReadUser(projectMemberRepo).checkFor(currentUser, userId)
 
         // Don't re-request the user if it is the current user itself
         val targetUser =
-            if (currentUser.id == targetUserId) {
+            if (currentUser.id == userId) {
                 currentUser
             } else {
-                userRepo.getUserById(targetUserId).getOrThrow()
+                userRepo.getUserById(userId).getOrThrow()
             }
 
         // Only active or active unconfirmed users can be retrieved if the requester is not a server admin
         isServerAdmin().forTarget<User>()
             .orElse(isTargetUserActive())
-            .orElseThrow(UserNotFoundException(targetUserId))
+            .orElseThrow(UserNotFoundException(userId))
             .checkFor(currentUser, targetUser)
 
         targetUser.toGrpcUser()
@@ -214,8 +212,8 @@ class UserService(
         userRepo.updateUser(request).toGrpcUser()
     }
 
-    override suspend fun softDeleteUser(request: Base.Id) = withUser(userRepo) { currentUser ->
-        val targetUser = userRepo.getUserById(parseUUID(request.id, EntityType.USER)).getOrThrow()
+    override suspend fun softDeleteUser(userId: UUID) = withUser(userRepo) { currentUser ->
+        val targetUser = userRepo.getUserById(userId).getOrThrow()
 
         isServerAdminOrSameUser()
             .orElseThrow(UnauthorizedReadException(currentUser.id, targetUser.id, EntityType.USER))

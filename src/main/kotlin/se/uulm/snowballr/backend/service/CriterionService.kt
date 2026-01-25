@@ -24,14 +24,14 @@ import se.uulm.snowballr.backend.service.accessrules.isUserAdminInProjectOfCrite
 import se.uulm.snowballr.backend.service.accessrules.isUserInProjectOfCriterion
 import se.uulm.snowballr.backend.service.accessrules.orElse
 import se.uulm.snowballr.backend.service.accessrules.orElseThrow
-import snowballr.Base
+import java.util.UUID
 import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
 
 interface ICriterionService {
     /**
      * Service implementation of [SnowballRService.getCriterionById].
      */
-    suspend fun getCriterionById(request: Base.Id): GrpcCriterion
+    suspend fun getCriterionById(criterionId: UUID): GrpcCriterion
 
     /**
      * Service implementation of [SnowballRService.createCriterion].
@@ -49,7 +49,7 @@ interface ICriterionService {
     /**
      * Service implementation of [SnowballRService.getAllCriteriaForProject].
      */
-    suspend fun getAllCriteriaForProject(request: Base.Id): GrpcCriterion.List
+    suspend fun getAllCriteriaForProject(projectId: UUID): GrpcCriterion.List
 }
 
 /**
@@ -73,8 +73,7 @@ class CriterionService(
     private val projectRepo: IProjectTableRepo,
     private val projectMemberRepo: IProjectMemberTableRepo,
 ) : ICriterionService {
-    override suspend fun getCriterionById(request: Base.Id): GrpcCriterion = withUser(userRepo) { currentUser ->
-        val criterionId = parseUUID(request.id, EntityType.CRITERION)
+    override suspend fun getCriterionById(criterionId: UUID): GrpcCriterion = withUser(userRepo) { currentUser ->
         val criterion = repo.getCriterionById(criterionId).getOrThrow()
 
         isCreatorOfCriterion()
@@ -130,10 +129,8 @@ class CriterionService(
             repo.updateCriterion(request).toGrpcCriterion()
         }
 
-    override suspend fun getAllCriteriaForProject(request: Base.Id): GrpcCriterion.List =
+    override suspend fun getAllCriteriaForProject(projectId: UUID): GrpcCriterion.List =
         withUser(userRepo) { currentUser ->
-            val projectId = parseUUID(request.id, EntityType.PROJECT)
-
             isAllowedToReadProject(projectRepo, projectMemberRepo).checkFor(currentUser, projectId)
 
             repo.getAllProjectCriteria(projectId).toGrpcCriteria()

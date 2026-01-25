@@ -30,7 +30,6 @@ import se.uulm.snowballr.backend.service.accessrules.isServerAdmin
 import se.uulm.snowballr.backend.service.accessrules.isServerOrProjectAdmin
 import se.uulm.snowballr.backend.service.accessrules.orElse
 import se.uulm.snowballr.backend.service.accessrules.orElseThrow
-import snowballr.Base
 import snowballr.ProjectOuterClass.MemberRole
 import java.util.UUID
 import snowballr.ProjectOuterClass.Project.Member as GrpcProjectMember
@@ -39,7 +38,7 @@ interface IProjectMemberService {
     /**
      * Service implementation of [SnowballRService.getProjectMembers].
      */
-    suspend fun getProjectMembers(request: Base.Id): GrpcProjectMember.List
+    suspend fun getProjectMembers(projectId: UUID): GrpcProjectMember.List
 
     /**
      * Service implementation of [SnowballRService.updateProjectMemberRole].
@@ -70,10 +69,8 @@ class ProjectMemberService(
     private val userRepo: IUserTableRepo,
     private val invitationTokenRepo: IInvitationTokenTableRepo,
 ) : IProjectMemberService {
-    override suspend fun getProjectMembers(request: Base.Id): GrpcProjectMember.List =
+    override suspend fun getProjectMembers(projectId: UUID): GrpcProjectMember.List =
         withUser(userRepo) { currentUser ->
-            val projectId = parseUUID(request.id, EntityType.PROJECT)
-
             isAllowedToReadProject(projectRepo, repo).checkFor(currentUser, projectId)
 
             val projectMembersWithUsers = repo.getProjectMembersWithUsers(projectId)

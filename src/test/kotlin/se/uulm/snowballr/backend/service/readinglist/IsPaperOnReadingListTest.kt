@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
-import se.uulm.snowballr.backend.DataBuilder.toGrpcId
 import se.uulm.snowballr.backend.model.exception.notfound.entity.PaperNotFoundException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import java.util.UUID
@@ -29,10 +28,10 @@ class IsPaperOnReadingListTest : MainServiceTest() {
             coEvery { paperRepoMock.ensurePaperExists(paper1.id) } just Runs
             coEvery { paperRepoMock.ensurePaperExists(paper2.id) } just Runs
 
-            assertTrue(mainService.isPaperOnReadingList(paper1.id.toGrpcId()))
+            assertTrue(mainService.isPaperOnReadingList(paper1.id))
             coVerify(exactly = 1) { readingListRepoMock.isPaperOnReadingList(user.id, paper1.id) }
 
-            assertFalse(mainService.isPaperOnReadingList(paper2.id.toGrpcId()))
+            assertFalse(mainService.isPaperOnReadingList(paper2.id))
             coVerify(exactly = 1) { readingListRepoMock.isPaperOnReadingList(user.id, paper2.id) }
         }
 
@@ -46,7 +45,7 @@ class IsPaperOnReadingListTest : MainServiceTest() {
             coEvery { paperRepoMock.ensurePaperExists(paperId) } throws PaperNotFoundException(paperId)
 
             assertThrows<PaperNotFoundException> {
-                mainService.isPaperOnReadingList(paperId.toGrpcId())
+                mainService.isPaperOnReadingList(paperId)
             }
         }
 }
