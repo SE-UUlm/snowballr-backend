@@ -42,7 +42,6 @@ import se.uulm.snowballr.backend.service.accessrules.targetUserIsNotAdmin
 import snowballr.Authentication
 import snowballr.Base
 import snowballr.ProjectOuterClass.ProjectStatus
-import snowballr.nothing
 import java.util.UUID
 import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
 import snowballr.UserOuterClass.User as GrpcUser
@@ -69,7 +68,7 @@ interface IUserService {
     /**
      * Service implementation of [SnowballRService.register].
      */
-    suspend fun register(request: Authentication.RegisterRequest): Base.Nothing
+    suspend fun register(request: Authentication.RegisterRequest)
 
     /**
      * Service implementation of [SnowballRService.updateUser].
@@ -79,7 +78,7 @@ interface IUserService {
     /**
      * Service implementation of [SnowballRService.softDeleteUser].
      */
-    suspend fun softDeleteUser(request: Base.Id): Base.Nothing
+    suspend fun softDeleteUser(request: Base.Id)
 
     /**
      * Service implementation of [SnowballRService.getUserSettings].
@@ -163,7 +162,7 @@ class UserService(
         userRepo.getAllUsers().toGrpcUsers()
     }
 
-    override suspend fun register(request: Authentication.RegisterRequest): Base.Nothing {
+    override suspend fun register(request: Authentication.RegisterRequest) {
         // Check whether a user with the given email already exists
         if (userRepo.doesUserExistByEmail(request.email)) {
             throw DuplicateUserException(request.email)
@@ -180,8 +179,6 @@ class UserService(
         // Send verification email
         val verificationLink = emailManager.createVerificationLink(verificationToken)
         emailManager.sendVerificationEmail(user.email, EmailData.EmailVerification(user.firstName, verificationLink))
-
-        return Base.Nothing.getDefaultInstance()
     }
 
     override suspend fun updateUser(request: GrpcUser.Update): GrpcUser = withUser(userRepo) { currentUser ->
@@ -217,7 +214,7 @@ class UserService(
         userRepo.updateUser(request).toGrpcUser()
     }
 
-    override suspend fun softDeleteUser(request: Base.Id): Base.Nothing = withUser(userRepo) { currentUser ->
+    override suspend fun softDeleteUser(request: Base.Id) = withUser(userRepo) { currentUser ->
         val targetUser = userRepo.getUserById(parseUUID(request.id, EntityType.USER)).getOrThrow()
 
         isServerAdminOrSameUser()
@@ -249,8 +246,6 @@ class UserService(
         }
 
         userRepo.softDeleteUser(targetUser.id)
-
-        nothing { }
     }
 
     override suspend fun getCurrentUser(): GrpcUser = withUser(userRepo, User::toGrpcUser)

@@ -10,7 +10,6 @@ import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
 import se.uulm.snowballr.backend.repository.association.IReadingListTableRepo
 import snowballr.Base
 import snowballr.boolValue
-import snowballr.nothing
 import snowballr.PaperOuterClass.Paper as GrpcPaper
 
 interface IReadingListService {
@@ -27,12 +26,12 @@ interface IReadingListService {
     /**
      * Service implementation of [SnowballRService.addPaperToReadingList].
      */
-    suspend fun addPaperToReadingList(request: Base.Id): Base.Nothing
+    suspend fun addPaperToReadingList(request: Base.Id)
 
     /**
      * Service implementation of [SnowballRService.removePaperFromReadingList].
      */
-    suspend fun removePaperFromReadingList(request: Base.Id): Base.Nothing
+    suspend fun removePaperFromReadingList(request: Base.Id)
 }
 
 /**
@@ -70,24 +69,19 @@ class ReadingListService(
         boolValue { value = repo.isPaperOnReadingList(currentUser.id, paperId) }
     }
 
-    override suspend fun addPaperToReadingList(request: Base.Id): Base.Nothing = withUser(userRepo) { currentUser ->
+    override suspend fun addPaperToReadingList(request: Base.Id) = withUser(userRepo) { currentUser ->
         val paperId = parseUUID(request.id, EntityType.PAPER)
 
         paperRepo.ensurePaperExists(paperId)
 
         repo.createReadingListEntry(currentUser.id, paperId)
-
-        nothing { }
     }
 
-    override suspend fun removePaperFromReadingList(request: Base.Id): Base.Nothing =
-        withUser(userRepo) { currentUser ->
-            val paperId = parseUUID(request.id, EntityType.PAPER)
+    override suspend fun removePaperFromReadingList(request: Base.Id) = withUser(userRepo) { currentUser ->
+        val paperId = parseUUID(request.id, EntityType.PAPER)
 
-            paperRepo.ensurePaperExists(paperId)
+        paperRepo.ensurePaperExists(paperId)
 
-            repo.removeReadingListEntry(currentUser.id, paperId)
-
-            nothing { }
-        }
+        repo.removeReadingListEntry(currentUser.id, paperId)
+    }
 }

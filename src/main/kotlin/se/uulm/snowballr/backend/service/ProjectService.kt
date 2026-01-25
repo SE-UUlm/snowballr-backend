@@ -87,7 +87,7 @@ interface IProjectService {
     /**
      * Service implementation of [SnowballRService.softDeleteProject]
      */
-    suspend fun softDeleteProject(request: Base.Id): Base.Nothing
+    suspend fun softDeleteProject(request: Base.Id)
 }
 
 /**
@@ -240,7 +240,7 @@ class ProjectService(
             .build()
     }
 
-    override suspend fun softDeleteProject(request: Base.Id): Base.Nothing = withUser(userRepo) { currentUser ->
+    override suspend fun softDeleteProject(request: Base.Id) = withUser(userRepo) { currentUser ->
         val projectId = parseUUID(request.id, EntityType.PROJECT)
 
         isServerOrProjectAdmin(projectMemberRepo, AccessType.DELETE).checkFor(currentUser, projectId)
@@ -251,8 +251,6 @@ class ProjectService(
 
         repo.softDeleteProject(projectId)
         invitationTokenRepo.deleteInvitationTokensForProject(projectId)
-
-        Base.Nothing.getDefaultInstance()
     }
 
     private suspend fun getAllProjectsForUserAndStatus(

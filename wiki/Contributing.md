@@ -227,19 +227,18 @@ fun isAllowedToDeleteEntity(): AccessRule<UUID> {
 }
 
 // In EntityService.kt
-override suspend fun deleteEntity(request: Base.Id): Base.Nothing =
-    withUser(userRepo) { currentUser ->
-        val entityId = parseUUID(request.id, EntityType.ENTITY)
-        val entity = repo.getEntityById(entityId).getOrThrow()
+override suspend fun deleteEntity(request: Base.Id) = withUser(userRepo) { currentUser ->
+    val entityId = parseUUID(request.id, EntityType.ENTITY)
+    val entity = repo.getEntityById(entityId).getOrThrow()
 
-        // Check authorization using the composed rule
-        isAllowedToDeleteEntity()
-            .forProperty(Entity::id)
-            .orElse(isServerAdmin().forTarget())
-            .orElseThrow { user, entity -> UnauthorizedException(user, entity.description) }
-            .checkFor(currentUser, entity)
-        // ...
-    }
+    // Check authorization using the composed rule
+    isAllowedToDeleteEntity()
+        .forProperty(Entity::id)
+        .orElse(isServerAdmin().forTarget())
+        .orElseThrow { user, entity -> UnauthorizedException(user, entity.description) }
+        .checkFor(currentUser, entity)
+    // ...
+}
 ```
 
 ### Input Validation

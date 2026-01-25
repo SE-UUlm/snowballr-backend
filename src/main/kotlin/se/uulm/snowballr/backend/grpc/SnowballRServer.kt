@@ -177,15 +177,25 @@ class SnowballRServer(
             request: Fetcher.GetAvailableFetcherOptionsRequest,
         ): Fetcher.FetcherOptions = mainService.getAvailableFetcherOptions(request)
 
-        override suspend fun register(request: Authentication.RegisterRequest): Base.Nothing =
+        override suspend fun register(request: Authentication.RegisterRequest): Base.Nothing {
             mainService.register(request)
+            return Base.Nothing.getDefaultInstance()
+        }
 
-        override suspend fun verifyEmail(request: Authentication.VerifyEmailRequest): Base.Nothing =
+        override suspend fun verifyEmail(request: Authentication.VerifyEmailRequest): Base.Nothing {
             mainService.verifyEmail(request)
+            return Base.Nothing.getDefaultInstance()
+        }
 
-        override suspend fun login(request: Authentication.LoginRequest): Base.Nothing = mainService.login(request)
+        override suspend fun login(request: Authentication.LoginRequest): Base.Nothing {
+            mainService.login(request)
+            return Base.Nothing.getDefaultInstance()
+        }
 
-        override suspend fun logout(request: Base.Nothing): Base.Nothing = mainService.logout()
+        override suspend fun logout(request: Base.Nothing): Base.Nothing {
+            mainService.logout()
+            return Base.Nothing.getDefaultInstance()
+        }
 
         override suspend fun getAuthenticationStatus(
             request: Base.Nothing,
@@ -216,7 +226,10 @@ class SnowballRServer(
         override suspend fun updateUser(request: UserOuterClass.User.Update): UserOuterClass.User =
             mainService.updateUser(request)
 
-        override suspend fun softDeleteUser(request: Base.Id): Base.Nothing = mainService.softDeleteUser(request)
+        override suspend fun softDeleteUser(request: Base.Id): Base.Nothing {
+            mainService.softDeleteUser(request)
+            return Base.Nothing.getDefaultInstance()
+        }
 
         override suspend fun softUndeleteUser(request: Base.Id): Base.Nothing = super.softUndeleteUser(request)
 
@@ -248,21 +261,29 @@ class SnowballRServer(
         override suspend fun isPaperOnReadingList(request: Base.Id): Base.BoolValue =
             mainService.isPaperOnReadingList(request)
 
-        override suspend fun addPaperToReadingList(request: Base.Id): Base.Nothing =
+        override suspend fun addPaperToReadingList(request: Base.Id): Base.Nothing {
             mainService.addPaperToReadingList(request)
+            return Base.Nothing.getDefaultInstance()
+        }
 
-        override suspend fun removePaperFromReadingList(request: Base.Id): Base.Nothing =
+        override suspend fun removePaperFromReadingList(request: Base.Id): Base.Nothing {
             mainService.removePaperFromReadingList(request)
+            return Base.Nothing.getDefaultInstance()
+        }
 
         override suspend fun getInviteCandidates(
             request: ProjectOuterClass.Project.InviteCandidatesRequest,
         ): UserOuterClass.User.List = mainService.getInviteCandidates(request)
 
-        override suspend fun inviteUserToProject(request: ProjectOuterClass.Project.Member.Invite): Base.Nothing =
+        override suspend fun inviteUserToProject(request: ProjectOuterClass.Project.Member.Invite): Base.Nothing {
             mainService.inviteUserToProject(request)
+            return Base.Nothing.getDefaultInstance()
+        }
 
-        override suspend fun acceptProjectInvitation(request: ProjectOuterClass.Project.Member.Accept): Base.Nothing =
+        override suspend fun acceptProjectInvitation(request: ProjectOuterClass.Project.Member.Accept): Base.Nothing {
             mainService.acceptProjectInvitation(request)
+            return Base.Nothing.getDefaultInstance()
+        }
 
         override suspend fun getPendingInvitationsForProject(request: Base.Id): UserOuterClass.User.List =
             mainService.getPendingInvitationsForProject(request)
@@ -270,8 +291,10 @@ class SnowballRServer(
         override suspend fun getProjectMembers(request: Base.Id): ProjectOuterClass.Project.Member.List =
             mainService.getProjectMembers(request)
 
-        override suspend fun removeProjectMember(request: ProjectOuterClass.Project.Member.Remove): Base.Nothing =
+        override suspend fun removeProjectMember(request: ProjectOuterClass.Project.Member.Remove): Base.Nothing {
             mainService.removeProjectMember(request)
+            return Base.Nothing.getDefaultInstance()
+        }
 
         override suspend fun getAllProjects(request: Base.Nothing): ProjectOuterClass.Project.List =
             mainService.getAllProjects()
@@ -306,7 +329,10 @@ class SnowballRServer(
         override suspend fun exportProject(request: Export.ExportRequest): Export.ExportResponse =
             mainService.exportProject(request)
 
-        override suspend fun softDeleteProject(request: Base.Id): Base.Nothing = mainService.softDeleteProject(request)
+        override suspend fun softDeleteProject(request: Base.Id): Base.Nothing {
+            mainService.softDeleteProject(request)
+            return Base.Nothing.getDefaultInstance()
+        }
 
         override suspend fun softUndeleteProject(request: Base.Id): Base.Nothing = super.softUndeleteProject(request)
 
@@ -318,8 +344,10 @@ class SnowballRServer(
             request: ProjectOuterClass.Project.Information.DecisionStatistics.Get,
         ): ProjectOuterClass.Project.Information.DecisionStatistics = mainService.getDecisionStatisticsForStage(request)
 
-        override suspend fun updateProjectMemberRole(request: ProjectOuterClass.Project.Member.Update): Base.Nothing =
+        override suspend fun updateProjectMemberRole(request: ProjectOuterClass.Project.Member.Update): Base.Nothing {
             mainService.updateProjectMemberRole(request)
+            return Base.Nothing.getDefaultInstance()
+        }
 
         override suspend fun getCriterionById(request: Base.Id): CriterionOuterClass.Criterion =
             mainService.getCriterionById(request)

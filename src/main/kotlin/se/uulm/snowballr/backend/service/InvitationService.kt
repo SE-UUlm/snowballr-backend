@@ -38,12 +38,12 @@ interface IInvitationService {
     /**
      * Service implementation of [SnowballRService.inviteUserToProject].
      */
-    suspend fun inviteUserToProject(request: GrpcProject.Member.Invite): Base.Nothing
+    suspend fun inviteUserToProject(request: GrpcProject.Member.Invite)
 
     /**
      * Service implementation of [SnowballRService.acceptProjectInvitation].
      */
-    suspend fun acceptProjectInvitation(request: GrpcProject.Member.Accept): Base.Nothing
+    suspend fun acceptProjectInvitation(request: GrpcProject.Member.Accept)
 
     /**
      * Service implementation of [SnowballRService.getPendingInvitationsForProject].
@@ -98,53 +98,50 @@ class InvitationService(
             candidates.toGrpcUsers()
         }
 
-    override suspend fun inviteUserToProject(request: GrpcProject.Member.Invite): Base.Nothing =
-        withUser(userRepo) { currentUser ->
-            val projectId = parseUUID(request.projectId, EntityType.PROJECT)
+    override suspend fun inviteUserToProject(request: GrpcProject.Member.Invite) = withUser(userRepo) { currentUser ->
+        val projectId = parseUUID(request.projectId, EntityType.PROJECT)
 
-            isServerOrProjectAdmin(projectMemberRepo, AccessType.READ)
-                .checkFor(currentUser, projectId)
+        isServerOrProjectAdmin(projectMemberRepo, AccessType.READ)
+            .checkFor(currentUser, projectId)
 
-            val project = projectRepo.getProjectById(projectId).getOrThrow()
+        val project = projectRepo.getProjectById(projectId).getOrThrow()
 
-            isProjectActive().checkFor(currentUser, project)
+        isProjectActive().checkFor(currentUser, project)
 
-            // Check if the user is already a member
-            val projectMembers = projectMemberRepo.getProjectMembersWithUsers(projectId)
-            val doesAlreadyExists = projectMembers.any { it.user.email == request.userEmail }
-            if (doesAlreadyExists) {
-                return@withUser Base.Nothing.getDefaultInstance()
-            }
-
-            // Check if the user is already invited
-            val isAlreadyInvited =
-                invitationTokenRepo.getInvitationTokenByEmailAndProjectId(request.userEmail, projectId).isSuccess
-            if (isAlreadyInvited) {
-                return@withUser Base.Nothing.getDefaultInstance()
-            }
-
-            // Generate and save invitation token
-            val invitationToken = NanoId.generate(INVITATION_TOKEN_LENGTH)
-            invitationTokenRepo.saveInvitationToken(request.userEmail, projectId, invitationToken)
-
-            // Get first name of user if exists
-            val userFirstName = try {
-                userRepo.getUserByEmail(request.userEmail).getOrThrow().firstName
-            } catch (_: NotFoundException) {
-                "User"
-            }
-
-            // Send invitation email
-            val invitationLink = emailManager.createAcceptProjectInvitationLink(invitationToken)
-            emailManager.sendAcceptProjectInvitationEmail(
-                request.userEmail,
-                EmailData.AcceptProjectInvitation(userFirstName, project.name, invitationLink),
-            )
-
-            Base.Nothing.getDefaultInstance()
+        // Check if the user is already a member
+        val projectMembers = projectMemberRepo.getProjectMembersWithUsers(projectId)
+        val doesAlreadyExists = projectMembers.any { it.user.email == request.userEmail }
+        if (doesAlreadyExists) {
+            return@withUser
         }
 
-    override suspend fun acceptProjectInvitation(request: GrpcProject.Member.Accept): Base.Nothing {
+        // Check if the user is already invited
+        val isAlreadyInvited =
+            invitationTokenRepo.getInvitationTokenByEmailAndProjectId(request.userEmail, projectId).isSuccess
+        if (isAlreadyInvited) {
+            return@withUser
+        }
+
+        // Generate and save invitation token
+        val invitationToken = NanoId.generate(INVITATION_TOKEN_LENGTH)
+        invitationTokenRepo.saveInvitationToken(request.userEmail, projectId, invitationToken)
+
+        // Get first name of user if exists
+        val userFirstName = try {
+            userRepo.getUserByEmail(request.userEmail).getOrThrow().firstName
+        } catch (_: NotFoundException) {
+            "User"
+        }
+
+        // Send invitation email
+        val invitationLink = emailManager.createAcceptProjectInvitationLink(invitationToken)
+        emailManager.sendAcceptProjectInvitationEmail(
+            request.userEmail,
+            EmailData.AcceptProjectInvitation(userFirstName, project.name, invitationLink),
+        )
+    }
+
+    override suspend fun acceptProjectInvitation(request: GrpcProject.Member.Accept) {
         val invitationToken = invitationTokenRepo.getInvitationTokenByValue(request.token).getOrThrow()
 
         // Check if the token has expired
@@ -171,8 +168,6 @@ class InvitationService(
 
         // Remove the invitation token after successful acceptance
         invitationTokenRepo.deleteInvitationToken(invitationToken.token)
-
-        return Base.Nothing.getDefaultInstance()
     }
 
     override suspend fun getPendingInvitationsForProject(request: Base.Id): GrpcUser.List =

@@ -13,7 +13,6 @@ import se.uulm.snowballr.backend.model.exception.notfound.VerificationTokenNotFo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.IVerificationTokenTableRepo
 import snowballr.Authentication
-import snowballr.Base
 import snowballr.UserOuterClass.UserStatus
 import java.time.OffsetDateTime
 import snowballr.UserOuterClass.User as GrpcUser
@@ -22,17 +21,17 @@ interface IAuthenticationService {
     /**
      * Service implementation of [SnowballRService.verifyEmail].
      */
-    suspend fun verifyEmail(request: Authentication.VerifyEmailRequest): Base.Nothing
+    suspend fun verifyEmail(request: Authentication.VerifyEmailRequest)
 
     /**
      * Service implementation of [SnowballRService.logout].
      */
-    suspend fun logout(): Base.Nothing
+    suspend fun logout()
 
     /**
      * Service implementation of [SnowballRService.login].
      */
-    suspend fun login(request: Authentication.LoginRequest): Base.Nothing
+    suspend fun login(request: Authentication.LoginRequest)
 }
 
 /**
@@ -52,7 +51,7 @@ class AuthenticationService(
     private val verificationTokenRepo: IVerificationTokenTableRepo,
     private val jwtManager: IJwtManager,
 ) : IAuthenticationService {
-    override suspend fun verifyEmail(request: Authentication.VerifyEmailRequest): Base.Nothing {
+    override suspend fun verifyEmail(request: Authentication.VerifyEmailRequest) {
         val verificationToken = verificationTokenRepo.getVerificationTokenByValue(request.token).getOrThrow()
 
         // Check if the token has expired
@@ -74,17 +73,13 @@ class AuthenticationService(
 
         // Remove the verification token after successful verification
         verificationTokenRepo.deleteVerificationToken(request.token)
-
-        return Base.Nothing.getDefaultInstance()
     }
 
-    override suspend fun logout(): Base.Nothing {
+    override suspend fun logout() {
         GrpcContext.setAuthCookiesInContext("", "")
-
-        return Base.Nothing.getDefaultInstance()
     }
 
-    override suspend fun login(request: Authentication.LoginRequest): Base.Nothing {
+    override suspend fun login(request: Authentication.LoginRequest) {
         // Check whether a user with the given email exists
         val user =
             try {
@@ -111,7 +106,5 @@ class AuthenticationService(
         // Generate JWT tokens
         val (accessToken, refreshToken) = jwtManager.generateAuthTokens(user.id)
         GrpcContext.setAuthCookiesInContext(accessToken, refreshToken)
-
-        return Base.Nothing.getDefaultInstance()
     }
 }
