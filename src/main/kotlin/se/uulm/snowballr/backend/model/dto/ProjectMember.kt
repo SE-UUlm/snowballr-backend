@@ -1,7 +1,7 @@
 package se.uulm.snowballr.backend.model.dto
 
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
-import snowballr.ProjectOuterClass
+import snowballr.ProjectOuterClass.MemberRole
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -11,7 +11,14 @@ import java.util.UUID
 data class ProjectMember(
     val projectId: UUID,
     val userId: UUID,
-    val role: ProjectOuterClass.MemberRole,
+    val role: MemberRole,
     val createdAt: OffsetDateTime,
     val modifiedAt: OffsetDateTime?,
 )
+
+/**
+ * Checks whether the project member is a project admin.
+ *
+ * A project member is considered a project admin if their role is set to [MemberRole.MEMBER_ROLE_ADMIN].
+ */
+fun ProjectMember.isProjectAdmin() = this.role == MemberRole.MEMBER_ROLE_ADMIN
