@@ -13,8 +13,7 @@ import java.util.UUID
 import javax.annotation.CheckReturnValue
 
 /**
- * Check whether the requesting user and the target user are the same by checking
- * whether they have the same user id.
+ * Check whether the requesting user and the target user are the same by checking whether they have the same user id.
  */
 @CheckReturnValue
 fun isSameUserById() = AccessRule<UUID> { requester, targetId -> requester.id == targetId }
@@ -46,26 +45,23 @@ fun isServerAdminOrSameUser() = isServerAdmin().forTarget<UUID>().orElse(isSameU
  */
 @CheckReturnValue
 private fun isInSameProject(projectMemberRepo: IProjectMemberTableRepo) = AccessRule<UUID> { requester, targetId ->
-    projectMemberRepo
-        .getMembersInSameProjectsAsUser(targetId)
-        .any { it.userId == requester.id }
+    projectMemberRepo.getMembersInSameProjectsAsUser(targetId).any { it.userId == requester.id }
 }
 
 /**
  * Check whether the current user is allowed to read the target user based on specific access control rules.
  *
  * @param projectMemberRepo The repository to check project membership.
- * @param identifierType The identifier type used to identify the target user (used for constructing the correct exception message, defaults to [IdentifierType.ID]).
+ * @param identifierType The identifier type used to identify the target user (used for constructing the correct
+ * exception message, defaults to [IdentifierType.ID]).
  * @return An [AccessRule] that checks whether the current user has read permissions for a target user.
  */
 @CheckReturnValue
 fun isAllowedToReadUser(
     projectMemberRepo: IProjectMemberTableRepo,
     identifierType: IdentifierType = IdentifierType.ID,
-): AccessRule<UUID> {
-    return isServerAdminOrSameUser()
-        .orElse(isInSameProject(projectMemberRepo))
-        .orElseThrow { currentUser, targetUserId ->
-            UnauthorizedReadException(currentUser.id, targetUserId, EntityType.USER, identifierType)
-        }
-}
+) = isServerAdminOrSameUser()
+    .orElse(isInSameProject(projectMemberRepo))
+    .orElseThrow { currentUser, targetUserId ->
+        UnauthorizedReadException(currentUser.id, targetUserId, EntityType.USER, identifierType)
+    }

@@ -37,13 +37,7 @@ private fun isUserInProjectOfReview(
  * @param projectPaperRepo The repository used to access project-papers.
  */
 @CheckReturnValue
-fun isAllowedToReadReview(
-    projectMemberRepo: IProjectMemberTableRepo,
-    projectPaperRepo: IProjectPaperTableRepo,
-): AccessRule<Review> {
-    return isUserInProjectOfReview(projectMemberRepo, projectPaperRepo)
+fun isAllowedToReadReview(projectMemberRepo: IProjectMemberTableRepo, projectPaperRepo: IProjectPaperTableRepo) =
+    isUserInProjectOfReview(projectMemberRepo, projectPaperRepo)
         .orElse(isServerAdmin().forTarget())
-        .orElseThrow { currentUser, target ->
-            UnauthorizedReadException(currentUser.id, target.id, EntityType.REVIEW)
-        }
-}
+        .orElseThrow { currentUser, target -> UnauthorizedReadException(currentUser.id, target.id, EntityType.REVIEW) }
