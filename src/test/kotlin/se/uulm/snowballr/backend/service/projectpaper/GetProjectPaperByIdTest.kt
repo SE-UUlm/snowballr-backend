@@ -60,7 +60,7 @@ class GetProjectPaperByIdTest : MainServiceTest() {
         }
         coEvery { projectPaperRepoMock.getProjectPaperById(projectPaper.id) } returns Result.success(projectPaper)
 
-        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns
             if (isUserAdmin) {
                 emptyList()
@@ -119,7 +119,7 @@ class GetProjectPaperByIdTest : MainServiceTest() {
         )
 
         mockCurrentUser(currentUser)
-        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectPaperRepoMock.getProjectPaperById(projectPaper.id) } returns Result.success(projectPaper)
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 

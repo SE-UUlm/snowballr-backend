@@ -33,7 +33,6 @@ class GetNextPaperTest : MainServiceTest() {
         coEvery {
             projectPaperRepoMock.getProjectPaperById(projectPaper.id)
         } returns Result.success(projectPaper)
-        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
         coEvery { projectRepoMock.getProjectById(projectPaper.projectId) } returns Result.success(project)
         coEvery {
@@ -64,7 +63,6 @@ class GetNextPaperTest : MainServiceTest() {
         coEvery {
             projectPaperRepoMock.getProjectPaperById(projectPaper.id)
         } returns Result.success(projectPaper)
-        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
         coEvery { projectRepoMock.getProjectById(projectPaper.projectId) } returns Result.success(project)
         coEvery {
@@ -88,10 +86,8 @@ class GetNextPaperTest : MainServiceTest() {
             val projectPaper = DataBuilder.createExampleProjectPaper(id = projectPaperId, projectId = project.id)
 
             mockCurrentUser(currentUser)
-            coEvery {
-                projectPaperRepoMock.getProjectPaperById(projectPaper.id)
-            } returns Result.success(projectPaper)
-            coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
+            coEvery { projectPaperRepoMock.getProjectPaperById(projectPaper.id) } returns Result.success(projectPaper)
+            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
             assertThrows<UnauthorizedException> { mainService.getNextPaper(getExampleRequest()) }
@@ -110,7 +106,6 @@ class GetNextPaperTest : MainServiceTest() {
         coEvery {
             projectPaperRepoMock.getProjectPaperById(projectPaper.id)
         } returns Result.success(projectPaper)
-        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
         coEvery { projectRepoMock.getProjectById(projectPaper.projectId) } returns Result.success(project)
         coEvery {

@@ -59,15 +59,13 @@ class GetProjectPaperByRelativeIdTest : MainServiceTest() {
 
         mockCurrentUser(currentUser)
 
-        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns
             if (isUserAdmin) {
                 emptyList()
             } else {
                 listOf(projectMember)
             }
-
-        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
 
         if (failAt == projectPaperRepoMock::getProjectPaperByRelativeId) {
             coEvery {
@@ -124,7 +122,7 @@ class GetProjectPaperByRelativeIdTest : MainServiceTest() {
         val project = DataBuilder.createExampleProject(projectId)
 
         mockCurrentUser(currentUser)
-        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
         assertThrows<UnauthorizedException> {
@@ -138,7 +136,7 @@ class GetProjectPaperByRelativeIdTest : MainServiceTest() {
         val project = DataBuilder.createExampleProject(id = projectId)
 
         mockCurrentUser(currentUser)
-        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns false
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.failure(TestSpecificException())
 
         assertThrows<NotFoundException> { mainService.getProjectPaperByRelativeId(getExampleRequest()) }
     }

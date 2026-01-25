@@ -19,6 +19,7 @@ import se.uulm.snowballr.backend.model.dto.Review
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.UnauthorizedException
 import se.uulm.snowballr.backend.model.exception.alreadyexists.DuplicateReviewException
+import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass.PaperDecision
@@ -49,7 +50,6 @@ class CreateReviewTest : MainServiceTest() {
 
     fun failingFunctions(): Stream<Arguments?> = Stream.of(
         Arguments.of(projectPaperRepoMock::getProjectPaperById),
-        Arguments.of(projectRepoMock::getProjectById),
     )
 
     @Suppress("LongParameterList", "ReturnCount", "LongMethod")
@@ -93,7 +93,14 @@ class CreateReviewTest : MainServiceTest() {
         }
         coEvery { projectPaperRepoMock.getProjectPaperById(projectPaperId) } returns Result.success(projectPaper)
 
-        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
+        if (stopBefore == projectRepoMock::getProjectById) {
+            return
+        } else if (failAt == projectRepoMock::getProjectById) {
+            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.failure(TestSpecificException())
+            return
+        }
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
+
         if (stopBefore == projectMemberRepoMock::getProjectMembers) {
             return
         }
@@ -103,14 +110,6 @@ class CreateReviewTest : MainServiceTest() {
             } else {
                 listOf(projectMember)
             }
-
-        if (stopBefore == projectRepoMock::getProjectById) {
-            return
-        } else if (failAt == projectRepoMock::getProjectById) {
-            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.failure(TestSpecificException())
-            return
-        }
-        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
         if (stopBefore == reviewRepoMock::getAllReviewsForProjectPaper) {
             return
@@ -174,7 +173,8 @@ class CreateReviewTest : MainServiceTest() {
         statusName: String,
     ) = runTest {
         val project = DataBuilder.createExampleProject(status = ProjectStatus.valueOf(statusName))
-        mockCreateReview(project = project, stopBefore = projectRepoMock::getProjectById)
+
+        mockCreateReview(project = project, stopBefore = reviewRepoMock::getAllReviewsForProjectPaper)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
         assertThrows<FailedPreconditionException> { mainService.createReview(validCreateReviewRequest.build()) }
@@ -304,4 +304,13 @@ class CreateReviewTest : MainServiceTest() {
 
             assertDoesNotThrow { mainService.createReview(createReviewRequest) }
         }
+
+    @Test
+    fun `When a review is created for a non existent project, then a ProjectNotFoundException is thrown`() = runTest {
+        mockCreateReview(stopBefore = projectRepoMock::getProjectById)
+
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.failure(TestSpecificException())
+
+        assertThrows<ProjectNotFoundException> { mainService.createReview(validCreateReviewRequest.build()) }
+    }
 }

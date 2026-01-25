@@ -7,9 +7,10 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
+import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.dto.ProjectPaperWithPaper
-import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.UnauthorizedException
+import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.Base
 import snowballr.UserOuterClass.UserRole
@@ -45,7 +46,7 @@ class GetAllProjectPapersForProjectTest : MainServiceTest() {
             } else {
                 listOf(projectMember)
             }
-        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectPaperRepoMock.getAllProjectPapersWithPapers(project.id) } returns listOf(projectPaperWithPaper)
         coEvery {
             citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
@@ -60,16 +61,12 @@ class GetAllProjectPapersForProjectTest : MainServiceTest() {
     fun `When a server admin requests the project papers, then no exception is thrown`() = runTest {
         mockHappyPath(true)
 
-        coEvery { projectRepoMock.doesProjectExistById(projectId) } returns true
-
         assertDoesNotThrow { mainService.getAllProjectPapersForProject(getExampleRequest()) }
     }
 
     @Test
     fun `When a project member requests the project papers, then no exception is thrown`() = runTest {
         mockHappyPath(false)
-
-        coEvery { projectRepoMock.doesProjectExistById(projectId) } returns true
 
         assertDoesNotThrow { mainService.getAllProjectPapersForProject(getExampleRequest()) }
     }
@@ -80,7 +77,7 @@ class GetAllProjectPapersForProjectTest : MainServiceTest() {
         val project = DataBuilder.createExampleProject(id = projectId)
 
         mockCurrentUser(currentUser)
-        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
         assertThrows<UnauthorizedException> {
@@ -89,14 +86,14 @@ class GetAllProjectPapersForProjectTest : MainServiceTest() {
     }
 
     @Test
-    fun `When a nonexistent project is requested, then a NotFoundException is thrown`() = runTest {
+    fun `When a nonexistent project is requested, then a ProjectNotFoundException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val project = DataBuilder.createExampleProject(id = projectId)
 
         mockCurrentUser(currentUser)
-        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns false
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.failure(TestSpecificException())
 
-        assertThrows<NotFoundException> {
+        assertThrows<ProjectNotFoundException> {
             mainService.getAllProjectPapersForProject(getExampleRequest())
         }
     }

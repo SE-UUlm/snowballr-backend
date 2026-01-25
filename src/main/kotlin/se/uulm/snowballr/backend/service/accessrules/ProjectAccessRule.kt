@@ -6,8 +6,9 @@ import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.isActive
+import se.uulm.snowballr.backend.model.dto.isDeleted
+import se.uulm.snowballr.backend.model.dto.isServerAdmin
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
-import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.UnauthorizedException
 import se.uulm.snowballr.backend.model.exception.failedprecondition.EntityNotActiveException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
@@ -19,13 +20,17 @@ import java.util.UUID
 import javax.annotation.CheckReturnValue
 
 /**
- * Check whether a project with the given ID exists; otherwise, throws a [NotFoundException].
+ * Check whether a project with the given ID exists; otherwise, throws a [ProjectNotFoundException].
+ *
+ * A project is considered existent if it exists in the database and is not deleted, unless the requesting user is a
+ * server admin.
  *
  * @param projectRepo The repository used to verify project existence.
  */
 @CheckReturnValue
-fun isProjectExistent(projectRepo: IProjectTableRepo) = AccessRule<UUID> { _, projectId ->
-    projectRepo.doesProjectExistById(projectId)
+fun isProjectExistent(projectRepo: IProjectTableRepo) = AccessRule<UUID> { user, projectId ->
+    val project = projectRepo.getProjectById(projectId).getOrNull()
+    project != null && (!project.isDeleted() || user.isServerAdmin())
 }.orElseThrow { _, projectId -> ProjectNotFoundException(projectId) }
 
 /**

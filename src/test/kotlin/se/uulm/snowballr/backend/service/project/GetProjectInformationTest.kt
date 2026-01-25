@@ -7,8 +7,9 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
-import se.uulm.snowballr.backend.model.exception.NotFoundException
+import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.exception.UnauthorizedException
+import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.ProjectOuterClass
 import java.time.OffsetDateTime
@@ -22,15 +23,14 @@ class GetProjectInformationTest : MainServiceTest() {
         .build()
 
     @Test
-    fun `When the project does not exist, then a NotFoundException is thrown`() = runTest {
+    fun `When the project does not exist, then a ProjectNotFoundException is thrown`() = runTest {
         val user = DataBuilder.createExampleUser()
-        val projectId = UUID.randomUUID()
-        val member = DataBuilder.createExampleProjectMember(projectId = projectId, userId = user.id)
+        val project = DataBuilder.createExampleProject()
 
         mockCurrentUser(user)
-        coEvery { projectRepoMock.doesProjectExistById(projectId) } returns false
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.failure(TestSpecificException())
 
-        assertThrows<NotFoundException> { mainService.getProjectInformation(getRequest(projectId)) }
+        assertThrows<ProjectNotFoundException> { mainService.getProjectInformation(getRequest(project.id)) }
     }
 
     @Test
@@ -39,7 +39,7 @@ class GetProjectInformationTest : MainServiceTest() {
         val project = DataBuilder.createExampleProject()
 
         mockCurrentUser(user)
-        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
         assertThrows<UnauthorizedException> { mainService.getProjectInformation(getRequest(project.id)) }
@@ -59,7 +59,6 @@ class GetProjectInformationTest : MainServiceTest() {
 
             mockCurrentUser(user)
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-            coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(member)
             coEvery { projectPaperRepoMock.getProjectProgress(project.id) } returns 0.5f
 
@@ -83,7 +82,6 @@ class GetProjectInformationTest : MainServiceTest() {
 
             mockCurrentUser(user)
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-            coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(member)
             coEvery { projectPaperRepoMock.getProjectProgress(project.id) } returns 0.5f
 

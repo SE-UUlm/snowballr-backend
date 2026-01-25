@@ -6,8 +6,9 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
-import se.uulm.snowballr.backend.model.exception.NotFoundException
+import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.exception.UnauthorizedException
+import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.Base
 import snowballr.UserOuterClass.UserRole
@@ -22,16 +23,16 @@ class GetAllCriteriaForProjectTest : MainServiceTest() {
         .build()
 
     @Test
-    fun `When the project doesn't exist, then a NotFoundException is thrown`() = runTest {
+    fun `When the project doesn't exist, then a ProjectNotFoundException is thrown`() = runTest {
         val request = getExampleRequest()
 
         val project = DataBuilder.createExampleProject(id = projectId)
         val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
 
         mockCurrentUser(adminUser)
-        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns false
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.failure(TestSpecificException())
 
-        assertThrows<NotFoundException> { mainService.getAllCriteriaForProject(request) }
+        assertThrows<ProjectNotFoundException> { mainService.getAllCriteriaForProject(request) }
     }
 
     @Test
@@ -47,7 +48,7 @@ class GetAllCriteriaForProjectTest : MainServiceTest() {
 
         mockCurrentUser(adminUser)
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
-        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { criterionRepoMock.getAllProjectCriteria(project.id) } returns listOf(criterion)
 
         assertDoesNotThrow { mainService.getAllCriteriaForProject(request) }
@@ -59,16 +60,13 @@ class GetAllCriteriaForProjectTest : MainServiceTest() {
             val request = getExampleRequest()
 
             val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-            val criterion = DataBuilder.createExampleProjectCriterion(
-                projectId = projectId,
-                createdBy = user.id,
-            )
+            val criterion = DataBuilder.createExampleProjectCriterion(projectId = projectId, createdBy = user.id)
             val projectMember = DataBuilder.createExampleProjectMember(userId = user.id, projectId = projectId)
             val project = DataBuilder.createExampleProject(id = projectId)
 
             mockCurrentUser(user)
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
-            coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
+            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
             coEvery { criterionRepoMock.getAllProjectCriteria(project.id) } returns listOf(criterion)
 
             assertDoesNotThrow { mainService.getAllCriteriaForProject(request) }
@@ -83,7 +81,7 @@ class GetAllCriteriaForProjectTest : MainServiceTest() {
             val project = DataBuilder.createExampleProject(id = projectId)
 
             mockCurrentUser(user)
-            coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
+            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
             assertThrows<UnauthorizedException> { mainService.getAllCriteriaForProject(request) }
