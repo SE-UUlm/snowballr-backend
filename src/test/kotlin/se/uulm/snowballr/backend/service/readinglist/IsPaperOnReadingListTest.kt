@@ -29,10 +29,10 @@ class IsPaperOnReadingListTest : MainServiceTest() {
             coEvery { paperRepoMock.ensurePaperExists(paper1.id) } just Runs
             coEvery { paperRepoMock.ensurePaperExists(paper2.id) } just Runs
 
-            assertTrue(mainService.isPaperOnReadingList(paper1.id.toGrpcId()).value)
+            assertTrue(mainService.isPaperOnReadingList(paper1.id.toGrpcId()))
             coVerify(exactly = 1) { readingListRepoMock.isPaperOnReadingList(user.id, paper1.id) }
 
-            assertFalse(mainService.isPaperOnReadingList(paper2.id.toGrpcId()).value)
+            assertFalse(mainService.isPaperOnReadingList(paper2.id.toGrpcId()))
             coVerify(exactly = 1) { readingListRepoMock.isPaperOnReadingList(user.id, paper2.id) }
         }
 

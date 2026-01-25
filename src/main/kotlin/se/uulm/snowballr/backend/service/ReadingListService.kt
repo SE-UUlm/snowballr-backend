@@ -9,7 +9,6 @@ import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
 import se.uulm.snowballr.backend.repository.association.IReadingListTableRepo
 import snowballr.Base
-import snowballr.boolValue
 import snowballr.PaperOuterClass.Paper as GrpcPaper
 
 interface IReadingListService {
@@ -21,7 +20,7 @@ interface IReadingListService {
     /**
      * Service implementation of [SnowballRService.isPaperOnReadingList].
      */
-    suspend fun isPaperOnReadingList(request: Base.Id): Base.BoolValue
+    suspend fun isPaperOnReadingList(request: Base.Id): Boolean
 
     /**
      * Service implementation of [SnowballRService.addPaperToReadingList].
@@ -61,12 +60,12 @@ class ReadingListService(
         papers.toGrpcPapers()
     }
 
-    override suspend fun isPaperOnReadingList(request: Base.Id): Base.BoolValue = withUser(userRepo) { currentUser ->
+    override suspend fun isPaperOnReadingList(request: Base.Id): Boolean = withUser(userRepo) { currentUser ->
         val paperId = parseUUID(request.id, EntityType.PAPER)
 
         paperRepo.ensurePaperExists(paperId)
 
-        boolValue { value = repo.isPaperOnReadingList(currentUser.id, paperId) }
+        repo.isPaperOnReadingList(currentUser.id, paperId)
     }
 
     override suspend fun addPaperToReadingList(request: Base.Id) = withUser(userRepo) { currentUser ->

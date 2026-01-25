@@ -258,8 +258,10 @@ class SnowballRServer(
         override suspend fun getReadingList(request: Base.Nothing): PaperOuterClass.Paper.List =
             mainService.getReadingList()
 
-        override suspend fun isPaperOnReadingList(request: Base.Id): Base.BoolValue =
-            mainService.isPaperOnReadingList(request)
+        override suspend fun isPaperOnReadingList(request: Base.Id): Base.BoolValue {
+            val isOnReadingList = mainService.isPaperOnReadingList(request)
+            return Base.BoolValue.newBuilder().setValue(isOnReadingList).build()
+        }
 
         override suspend fun addPaperToReadingList(request: Base.Id): Base.Nothing {
             mainService.addPaperToReadingList(request)
