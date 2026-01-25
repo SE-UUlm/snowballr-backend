@@ -3,6 +3,9 @@ package se.uulm.snowballr.backend.service
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.Review
+import se.uulm.snowballr.backend.model.dto.doesAcceptPaper
+import se.uulm.snowballr.backend.model.dto.doesDeclinePaper
+import se.uulm.snowballr.backend.model.dto.hasFinalDecision
 import se.uulm.snowballr.backend.model.dto.toGrpcReview
 import se.uulm.snowballr.backend.model.dto.toGrpcReviews
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
@@ -145,7 +148,7 @@ class ReviewService(
         }
 
         val decidingReview = reviews.last()
-        return if (decidingReview.decision == ReviewDecision.REVIEW_DECISION_ACCEPTED) {
+        return if (decidingReview.doesAcceptPaper()) {
             PaperDecision.PAPER_DECISION_ACCEPTED
         } else {
             PaperDecision.PAPER_DECISION_DECLINED
@@ -167,9 +170,7 @@ class ReviewService(
             throw DuplicateReviewException(projectPaperId, currentUser.id)
         }
 
-        val isPaperNotFinallyDecided = projectPaper.decision == PaperDecision.PAPER_DECISION_IN_REVIEW ||
-            projectPaper.decision == PaperDecision.PAPER_DECISION_UNREVIEWED
-        if (!isPaperNotFinallyDecided) {
+        if (projectPaper.hasFinalDecision()) {
             throw FailedPreconditionException(
                 "The project paper must be either unreviewed or still in review. " +
                     "Finally decided project papers cannot be reviewed anymore.",
@@ -183,7 +184,7 @@ class ReviewService(
             .filter { criterion -> criterion.category == CriterionCategory.CRITERION_CATEGORY_HARD_EXCLUSION }
             .map { criterion -> criterion.id }
         val isAnySelectedCriteriaHardExclusion = selectedCriteriaIds.any { id -> hardExclusionCriteria.contains(id) }
-        if (isAnySelectedCriteriaHardExclusion && review.decision == ReviewDecision.REVIEW_DECISION_DECLINED) {
+        if (isAnySelectedCriteriaHardExclusion && review.doesDeclinePaper()) {
             projectPaperRepo.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_DECLINED)
         } else {
             val updatedDecision = determinePaperDecision(reviewsForProjectPaper + review, project.reviewDecisionMatrix)

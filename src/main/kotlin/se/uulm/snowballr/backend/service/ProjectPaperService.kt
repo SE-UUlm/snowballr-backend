@@ -8,6 +8,7 @@ import se.uulm.snowballr.backend.model.dto.Paper
 import se.uulm.snowballr.backend.model.dto.ProjectPaper
 import se.uulm.snowballr.backend.model.dto.ProjectPaperWithPaper
 import se.uulm.snowballr.backend.model.dto.ProjectPaperWithReviewsCount
+import se.uulm.snowballr.backend.model.dto.hasNoFinalDecision
 import se.uulm.snowballr.backend.model.dto.toGrpcProjectPaper
 import se.uulm.snowballr.backend.model.dto.toGrpcProjectPapers
 import se.uulm.snowballr.backend.model.dto.toGrpcReview
@@ -31,7 +32,6 @@ import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadProject
 import se.uulm.snowballr.backend.service.accessrules.isProjectActive
 import se.uulm.snowballr.backend.service.accessrules.isServerOrProjectAdmin
 import snowballr.Base
-import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ProjectOuterClass.Project
 import java.util.UUID
 import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
@@ -211,18 +211,6 @@ class ProjectPaperService(
     private fun sortPapersByStageAndReviewsCount(projectPapersWithReviewsCount: List<ProjectPaperWithReviewsCount>) =
         projectPapersWithReviewsCount.sorted().map { it.projectPaper }
 
-    /**
-     * Determines whether the given project paper lacks a final decision.
-     * A project paper is considered to have no final decision if its decision state
-     * is either `PAPER_DECISION_UNSPECIFIED` or `PAPER_DECISION_UNREVIEWED`.
-     *
-     * @param projectPaper The [ProjectPaper] object whose decision state is to be evaluated.
-     * @return `true` if the project paper has no final decision; otherwise, `false`.
-     */
-    private fun hasNoFinalDecision(projectPaper: ProjectPaper): Boolean =
-        projectPaper.decision == PaperDecision.PAPER_DECISION_UNSPECIFIED ||
-            projectPaper.decision == PaperDecision.PAPER_DECISION_UNREVIEWED
-
     override suspend fun getProjectPaperById(request: Base.Id): GrpcProjectPaper = withUser(userRepo) { currentUser ->
         val projectPaperId = parseUUID(request.id, EntityType.PROJECT_PAPER)
         val projectPaper = repo.getProjectPaperById(projectPaperId).getOrThrow()
@@ -253,11 +241,8 @@ class ProjectPaperService(
             { projectPaper, projectPaperReviewsMap, currentUserId ->
                 val isAlreadyReviewedByCurrentUser = projectPaperReviewsMap[projectPaper.projectPaper]
                     ?.any { review -> review.userId == currentUserId } == true
-                val isStillUndecided =
-                    projectPaper.projectPaper.decision == PaperDecision.PAPER_DECISION_UNREVIEWED ||
-                        projectPaper.projectPaper.decision == PaperDecision.PAPER_DECISION_IN_REVIEW
 
-                !isAlreadyReviewedByCurrentUser && isStillUndecided
+                !isAlreadyReviewedByCurrentUser && projectPaper.hasNoFinalDecision()
             }
         return getProjectPapers(request, predicate)
     }
@@ -309,7 +294,7 @@ class ProjectPaperService(
         }
 
         val sortedPapers = sortPapersByStageAndReviewsCount(projectPapersWithReviewsCount)
-        val papersWithoutFinalDecision = sortedPapers.filter(::hasNoFinalDecision)
+        val papersWithoutFinalDecision = sortedPapers.filter(ProjectPaper::hasNoFinalDecision)
 
         (papersWithoutFinalDecision.firstOrNull() ?: sortedPapers.first()).toGrpcProjectPaperWithData()
     }
