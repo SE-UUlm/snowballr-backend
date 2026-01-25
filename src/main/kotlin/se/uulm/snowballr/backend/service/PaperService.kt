@@ -57,6 +57,7 @@ class PaperService(
 ) : IPaperService {
     override suspend fun getPaperById(request: Base.Id): GrpcPaper {
         val paperId = parseUUID(request.id, EntityType.PAPER)
+
         val paper = repo.getPaperById(paperId).getOrThrow()
 
         return paper.toGrpcPaper()
@@ -71,9 +72,7 @@ class PaperService(
     override suspend fun updatePaper(request: GrpcPaper.Update): GrpcPaper {
         val paperId = parseUUID(request.paper.id, EntityType.PAPER)
 
-        if (!repo.doesPaperExistById(paperId)) {
-            throw PaperNotFoundException(paperId)
-        }
+        throwIfPaperNotExists(paperId)
 
         if (request.paper.externalId.isNotEmpty()) {
             val existingPaper = repo.getPaperByExternalId(request.paper.externalId).getOrNull()
@@ -105,9 +104,8 @@ class PaperService(
      */
     private suspend fun getReferencePapers(request: Base.Id, function: suspend (UUID) -> List<UUID>): GrpcPaper.List {
         val paperId = parseUUID(request.id, EntityType.PAPER)
-        if (!repo.doesPaperExistById(paperId)) {
-            throw PaperNotFoundException(paperId)
-        }
+
+        throwIfPaperNotExists(paperId)
 
         val referenceIds = function.invoke(paperId)
         val papers = referenceIds.map {
@@ -118,4 +116,10 @@ class PaperService(
     }
 
     private suspend fun Paper.toGrpcPaper(): GrpcPaper = this.toGrpcPaperWithAuthorsAndBackwardReferences(citationRepo)
+
+    private suspend fun throwIfPaperNotExists(paperId: UUID) {
+        if (!repo.doesPaperExistById(paperId)) {
+            throw PaperNotFoundException(paperId)
+        }
+    }
 }

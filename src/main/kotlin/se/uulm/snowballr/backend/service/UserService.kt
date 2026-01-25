@@ -121,11 +121,9 @@ class UserService(
 
         isAllowedToReadUser(projectMemberRepo).checkFor(currentUser, targetUserId)
 
-        val isRequestedUser = currentUser.id == targetUserId
-
         // Don't re-request the user if it is the current user itself
         val targetUser =
-            if (isRequestedUser) {
+            if (currentUser.id == targetUserId) {
                 currentUser
             } else {
                 userRepo.getUserById(targetUserId).getOrThrow()
@@ -181,13 +179,7 @@ class UserService(
 
         // Send verification email
         val verificationLink = emailManager.createVerificationLink(verificationToken)
-        emailManager.sendVerificationEmail(
-            user.email,
-            EmailData.EmailVerification(
-                user.firstName,
-                verificationLink,
-            ),
-        )
+        emailManager.sendVerificationEmail(user.email, EmailData.EmailVerification(user.firstName, verificationLink))
 
         return Base.Nothing.getDefaultInstance()
     }
