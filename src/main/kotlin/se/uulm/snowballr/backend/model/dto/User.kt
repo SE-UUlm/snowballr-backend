@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.model.dto
 import se.uulm.snowballr.backend.table.UserTable
 import snowballr.UserOuterClass
 import snowballr.UserOuterClass.UserRole
+import snowballr.UserOuterClass.UserStatus
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -15,7 +16,7 @@ data class User(
     val firstName: String,
     val lastName: String,
     val role: UserRole,
-    val status: UserOuterClass.UserStatus,
+    val status: UserStatus,
     val createdAt: OffsetDateTime,
     val modifiedAt: OffsetDateTime?,
     val deletedAt: OffsetDateTime?,
@@ -48,4 +49,20 @@ fun List<User>.toGrpcUsers(): UserOuterClass.User.List {
  *
  * A user is considered a server admin if their role is set to [UserRole.USER_ROLE_ADMIN].
  */
-fun User.isServerAdmin(): Boolean = this.role == UserRole.USER_ROLE_ADMIN
+fun User.isServerAdmin() = this.role == UserRole.USER_ROLE_ADMIN
+
+/**
+ * Checks whether the user is active and confirmed.
+ *
+ * A user is considered active and confirmed if their status is set to [UserStatus.USER_STATUS_ACTIVE].
+ * The status [UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED] does count as active, but not as confirmed.
+ */
+fun User.isActiveAndConfirmed() = this.status == UserStatus.USER_STATUS_ACTIVE
+
+/**
+ * Checks whether the user is active.
+ *
+ * A user is considered active if their status is either [UserStatus.USER_STATUS_ACTIVE] or
+ * [UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED].
+ */
+fun User.isActive() = this.isActiveAndConfirmed() || this.status == UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED

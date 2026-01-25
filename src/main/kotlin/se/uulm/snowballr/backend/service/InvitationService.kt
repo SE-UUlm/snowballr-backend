@@ -5,6 +5,7 @@ import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.mail.IEmailManager
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.dto.isActiveAndConfirmed
 import se.uulm.snowballr.backend.model.dto.toGrpcUser
 import se.uulm.snowballr.backend.model.dto.toGrpcUsers
 import se.uulm.snowballr.backend.model.email.EmailData
@@ -24,7 +25,6 @@ import se.uulm.snowballr.backend.service.accessrules.isServerOrProjectAdmin
 import snowballr.Base
 import snowballr.ProjectOuterClass.Project
 import snowballr.UserOuterClass.User
-import snowballr.UserOuterClass.UserStatus
 import java.time.OffsetDateTime
 import snowballr.ProjectOuterClass.Project as GrpcProject
 import snowballr.UserOuterClass.User as GrpcUser
@@ -157,12 +157,10 @@ class InvitationService(
         val user = try {
             userRepo.getUserByEmail(invitationToken.email).getOrThrow()
         } catch (_: NotFoundException) {
-            throw FailedPreconditionException(
-                "The user with the email ${invitationToken.email} is not registered.",
-            )
+            throw FailedPreconditionException("The user with the email ${invitationToken.email} is not registered.")
         }
 
-        if (user.status != UserStatus.USER_STATUS_ACTIVE) {
+        if (!user.isActiveAndConfirmed()) {
             throw FailedPreconditionException(
                 "The user with the email ${invitationToken.email} has not verified their email address.",
             )

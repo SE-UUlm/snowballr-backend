@@ -5,6 +5,7 @@ package se.uulm.snowballr.backend.service.accessrules
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.IdentifierType
 import se.uulm.snowballr.backend.model.dto.User
+import se.uulm.snowballr.backend.model.dto.isActive
 import se.uulm.snowballr.backend.model.dto.isServerAdmin
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadException
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
@@ -19,12 +20,11 @@ import javax.annotation.CheckReturnValue
 fun isSameUserById() = AccessRule<UUID> { requester, targetId -> requester.id == targetId }
 
 /**
- * Check whether the target user is active, i.e., has the status `USER_STATUS_ACTIVE` or `USER_STATUS_ACTIVE_UNCONFIRMED`.
+ * Check whether the target user is active, i.e., their status is set to [UserStatus.USER_STATUS_ACTIVE] or
+ * [UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED].
  */
 @CheckReturnValue
-fun isTargetUserActive() = AccessRule<User> { _, target ->
-    target.status == UserStatus.USER_STATUS_ACTIVE || target.status == UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED
-}
+fun isTargetUserActive() = AccessRule<User> { _, target -> target.isActive() }
 
 /**
  * Check whether the target user is *not* a server admin.
