@@ -40,7 +40,6 @@ import se.uulm.snowballr.backend.service.accessrules.orElse
 import se.uulm.snowballr.backend.service.accessrules.orElseThrow
 import se.uulm.snowballr.backend.service.accessrules.targetUserIsNotAdmin
 import snowballr.Authentication
-import snowballr.Base
 import snowballr.ProjectOuterClass.ProjectStatus
 import java.util.UUID
 import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
@@ -58,7 +57,7 @@ interface IUserService {
     /**
      * Service implementation of [SnowballRService.getUserByEmail].
      */
-    suspend fun getUserByEmail(request: Base.Email): GrpcUser
+    suspend fun getUserByEmail(email: String): GrpcUser
 
     /**
      * Service implementation of [SnowballRService.getAllUsers].
@@ -135,9 +134,9 @@ class UserService(
         targetUser.toGrpcUser()
     }
 
-    override suspend fun getUserByEmail(request: Base.Email): GrpcUser = withUser(userRepo) { currentUser ->
+    override suspend fun getUserByEmail(email: String): GrpcUser = withUser(userRepo) { currentUser ->
         // We have to request the user first to get the ID for the access checks
-        val targetUser = userRepo.getUserByEmail(request.email).getOrThrow()
+        val targetUser = userRepo.getUserByEmail(email).getOrThrow()
 
         isAllowedToReadUser(projectMemberRepo, IdentifierType.EMAIL)
             .forProperty(User::id)
@@ -145,7 +144,7 @@ class UserService(
             .andAlso(
                 isServerAdmin().forTarget<User>()
                     .orElse(isTargetUserActive())
-                    .orElseThrow(UserNotFoundByEmailException(request.email)),
+                    .orElseThrow(UserNotFoundByEmailException(email)),
             )
             .checkFor(currentUser, targetUser)
 

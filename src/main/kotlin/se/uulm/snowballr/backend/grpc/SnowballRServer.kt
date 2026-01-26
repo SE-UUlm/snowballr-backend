@@ -221,7 +221,7 @@ class SnowballRServer(
             mainService.getUserById(parseUserId(request))
 
         override suspend fun getUserByEmail(request: Base.Email): UserOuterClass.User =
-            mainService.getUserByEmail(request)
+            mainService.getUserByEmail(request.email)
 
         override suspend fun updateUser(request: UserOuterClass.User.Update): UserOuterClass.User =
             mainService.updateUser(request)
