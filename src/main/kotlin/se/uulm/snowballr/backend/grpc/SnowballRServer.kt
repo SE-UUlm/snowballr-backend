@@ -9,12 +9,18 @@ import io.grpc.protobuf.services.ProtoReflectionService
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import se.uulm.snowballr.backend.auth.GrpcContext
+import se.uulm.snowballr.backend.grpc.GrpcHelpers.parseCriterionId
+import se.uulm.snowballr.backend.grpc.GrpcHelpers.parsePaperId
+import se.uulm.snowballr.backend.grpc.GrpcHelpers.parseProjectId
+import se.uulm.snowballr.backend.grpc.GrpcHelpers.parseProjectPaperId
+import se.uulm.snowballr.backend.grpc.GrpcHelpers.parseReviewId
+import se.uulm.snowballr.backend.grpc.GrpcHelpers.parseUserId
+import se.uulm.snowballr.backend.grpc.GrpcHelpers.returnBoolValue
+import se.uulm.snowballr.backend.grpc.GrpcHelpers.returnNothing
 import se.uulm.snowballr.backend.grpc.interceptor.authenticationInterceptor
 import se.uulm.snowballr.backend.grpc.interceptor.exceptionInterceptor
 import se.uulm.snowballr.backend.grpc.interceptor.loggingInterceptor
 import se.uulm.snowballr.backend.grpc.interceptor.validationInterceptor
-import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.scheduler.SchedulerManager
 import se.uulm.snowballr.backend.service.IMainService
 import snowballr.Authentication
@@ -28,7 +34,6 @@ import snowballr.ReviewOuterClass
 import snowballr.SnowballRGrpcKt
 import snowballr.UserOuterClass
 import snowballr.UserSettingsOuterClass
-import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 private val logger = KotlinLogging.logger {}
@@ -419,28 +424,5 @@ class SnowballRServer(
 
         override suspend fun setPaperPdf(request: PaperOuterClass.Paper.PdfUpdate): Base.Nothing =
             super.setPaperPdf(request)
-
-        private suspend fun returnNothing(block: suspend () -> Unit): Base.Nothing {
-            block()
-            return Base.Nothing.getDefaultInstance()
-        }
-
-        @Suppress("BooleanPropertyNaming")
-        private suspend fun returnBoolValue(block: suspend () -> Boolean): Base.BoolValue {
-            val value = block()
-            return Base.BoolValue.newBuilder().setValue(value).build()
-        }
-
-        private fun parseUserId(request: Base.Id): UUID = parseUUID(request.id, EntityType.USER)
-
-        private fun parseProjectId(request: Base.Id): UUID = parseUUID(request.id, EntityType.PROJECT)
-
-        private fun parseProjectPaperId(request: Base.Id): UUID = parseUUID(request.id, EntityType.PROJECT_PAPER)
-
-        private fun parsePaperId(request: Base.Id): UUID = parseUUID(request.id, EntityType.PAPER)
-
-        private fun parseCriterionId(request: Base.Id): UUID = parseUUID(request.id, EntityType.CRITERION)
-
-        private fun parseReviewId(request: Base.Id): UUID = parseUUID(request.id, EntityType.REVIEW)
     }
 }
