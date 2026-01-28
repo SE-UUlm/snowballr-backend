@@ -1,7 +1,9 @@
 package se.uulm.snowballr.backend.service.readinglist
 
+import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.just
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -9,7 +11,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.DataBuilder.toGrpcId
-import se.uulm.snowballr.backend.model.exception.NotFoundException
+import se.uulm.snowballr.backend.model.exception.notfound.entity.PaperNotFoundException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import java.util.UUID
 
@@ -24,8 +26,8 @@ class IsPaperOnReadingListTest : MainServiceTest() {
             mockCurrentUser(user)
             coEvery { readingListRepoMock.isPaperOnReadingList(user.id, paper1.id) } returns true
             coEvery { readingListRepoMock.isPaperOnReadingList(user.id, paper2.id) } returns false
-            coEvery { paperRepoMock.doesPaperExistById(paper1.id) } returns true
-            coEvery { paperRepoMock.doesPaperExistById(paper2.id) } returns true
+            coEvery { paperRepoMock.ensurePaperExists(paper1.id) } just Runs
+            coEvery { paperRepoMock.ensurePaperExists(paper2.id) } just Runs
 
             assertTrue(mainService.isPaperOnReadingList(paper1.id.toGrpcId()).value)
             coVerify(exactly = 1) { readingListRepoMock.isPaperOnReadingList(user.id, paper1.id) }
@@ -35,15 +37,15 @@ class IsPaperOnReadingListTest : MainServiceTest() {
         }
 
     @Test
-    fun `When the user checks if a non-existent paper is on their reading list, then a NotFoundException is thrown`() =
+    fun `When the user checks if a non-existent paper is on their reading list, then a PaperNotFoundException is thrown`() =
         runTest {
             val user = DataBuilder.createExampleUser()
             val paperId = UUID.randomUUID()
 
             mockCurrentUser(user)
-            coEvery { paperRepoMock.doesPaperExistById(paperId) } returns false
+            coEvery { paperRepoMock.ensurePaperExists(paperId) } throws PaperNotFoundException(paperId)
 
-            assertThrows<NotFoundException> {
+            assertThrows<PaperNotFoundException> {
                 mainService.isPaperOnReadingList(paperId.toGrpcId())
             }
         }

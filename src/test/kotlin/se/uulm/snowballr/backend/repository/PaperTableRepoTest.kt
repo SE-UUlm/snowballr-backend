@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertNotNull
 import org.junit.jupiter.api.assertNull
 import org.junit.jupiter.api.assertThrows
@@ -17,6 +18,7 @@ import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.isBetweenWithDelta
 import se.uulm.snowballr.backend.model.dto.toGrpcPaper
 import se.uulm.snowballr.backend.model.exception.NotFoundException
+import se.uulm.snowballr.backend.model.exception.notfound.entity.PaperNotFoundException
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertPaperAndGetId
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.utils.assertResultFailure
@@ -102,22 +104,19 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
     }
 
     @Nested
-    inner class DoesPaperExistById {
+    inner class EnsurePaperExists {
         @Test
-        fun `When a paper with the given id exists, then true returned`() = runTest {
-            val paperId =
-                insertPaperAndGetId("Test Paper")
-            val isPaperExistent = repo.doesPaperExistById(paperId)
+        fun `When a paper with the given id exists, then no exception is thrown`() = runTest {
+            val paperId = insertPaperAndGetId("Test Paper")
 
-            assertTrue(isPaperExistent)
+            assertDoesNotThrow { repo.ensurePaperExists(paperId) }
         }
 
         @Test
-        fun `When a paper with the given id does not exist, then false returned`() = runTest {
+        fun `When a paper with the given id does not exist, then a PaperNotFoundException is thrown`() = runTest {
             val paperId = UUID.randomUUID()
-            val isPaperExistent = repo.doesPaperExistById(paperId)
 
-            assertFalse(isPaperExistent)
+            assertThrows<PaperNotFoundException> { repo.ensurePaperExists(paperId) }
         }
     }
 

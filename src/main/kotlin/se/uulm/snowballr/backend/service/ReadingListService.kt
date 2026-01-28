@@ -3,7 +3,6 @@ package se.uulm.snowballr.backend.service
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.toGrpcPapers
-import se.uulm.snowballr.backend.model.exception.notfound.entity.PaperNotFoundException
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
@@ -12,7 +11,6 @@ import se.uulm.snowballr.backend.repository.association.IReadingListTableRepo
 import snowballr.Base
 import snowballr.boolValue
 import snowballr.nothing
-import java.util.UUID
 import snowballr.PaperOuterClass.Paper as GrpcPaper
 
 interface IReadingListService {
@@ -67,7 +65,7 @@ class ReadingListService(
     override suspend fun isPaperOnReadingList(request: Base.Id): Base.BoolValue = withUser(userRepo) { currentUser ->
         val paperId = parseUUID(request.id, EntityType.PAPER)
 
-        throwIfPaperNotExists(paperId)
+        paperRepo.ensurePaperExists(paperId)
 
         boolValue { value = repo.isPaperOnReadingList(currentUser.id, paperId) }
     }
@@ -75,7 +73,7 @@ class ReadingListService(
     override suspend fun addPaperToReadingList(request: Base.Id): Base.Nothing = withUser(userRepo) { currentUser ->
         val paperId = parseUUID(request.id, EntityType.PAPER)
 
-        throwIfPaperNotExists(paperId)
+        paperRepo.ensurePaperExists(paperId)
 
         repo.createReadingListEntry(currentUser.id, paperId)
 
@@ -86,16 +84,10 @@ class ReadingListService(
         withUser(userRepo) { currentUser ->
             val paperId = parseUUID(request.id, EntityType.PAPER)
 
-            throwIfPaperNotExists(paperId)
+            paperRepo.ensurePaperExists(paperId)
 
             repo.removeReadingListEntry(currentUser.id, paperId)
 
             nothing { }
         }
-
-    private suspend fun throwIfPaperNotExists(id: UUID) {
-        if (!paperRepo.doesPaperExistById(id)) {
-            throw PaperNotFoundException(id)
-        }
-    }
 }
