@@ -40,9 +40,7 @@ import se.uulm.snowballr.backend.service.accessrules.orElse
 import se.uulm.snowballr.backend.service.accessrules.orElseThrow
 import se.uulm.snowballr.backend.service.accessrules.targetUserIsNotAdmin
 import snowballr.Authentication
-import snowballr.Base
 import snowballr.ProjectOuterClass.ProjectStatus
-import snowballr.nothing
 import java.util.UUID
 import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
 import snowballr.UserOuterClass.User as GrpcUser
@@ -54,12 +52,12 @@ interface IUserService {
     /**
      * Service implementation of [SnowballRService.getUserById].
      */
-    suspend fun getUserById(request: Base.Id): GrpcUser
+    suspend fun getUserById(userId: UUID): GrpcUser
 
     /**
      * Service implementation of [SnowballRService.getUserByEmail].
      */
-    suspend fun getUserByEmail(request: Base.Email): GrpcUser
+    suspend fun getUserByEmail(email: String): GrpcUser
 
     /**
      * Service implementation of [SnowballRService.getAllUsers].
@@ -69,7 +67,7 @@ interface IUserService {
     /**
      * Service implementation of [SnowballRService.register].
      */
-    suspend fun register(request: Authentication.RegisterRequest): Base.Nothing
+    suspend fun register(request: Authentication.RegisterRequest)
 
     /**
      * Service implementation of [SnowballRService.updateUser].
@@ -79,7 +77,7 @@ interface IUserService {
     /**
      * Service implementation of [SnowballRService.softDeleteUser].
      */
-    suspend fun softDeleteUser(request: Base.Id): Base.Nothing
+    suspend fun softDeleteUser(userId: UUID)
 
     /**
      * Service implementation of [SnowballRService.getUserSettings].
@@ -116,31 +114,29 @@ class UserService(
     private val verificationTokenRepo: IVerificationTokenTableRepo,
     private val emailManager: IEmailManager,
 ) : IUserService {
-    override suspend fun getUserById(request: Base.Id): GrpcUser = withUser(userRepo) { currentUser ->
-        val targetUserId = parseUUID(request.id, EntityType.USER)
-
-        isAllowedToReadUser(projectMemberRepo).checkFor(currentUser, targetUserId)
+    override suspend fun getUserById(userId: UUID): GrpcUser = withUser(userRepo) { currentUser ->
+        isAllowedToReadUser(projectMemberRepo).checkFor(currentUser, userId)
 
         // Don't re-request the user if it is the current user itself
         val targetUser =
-            if (currentUser.id == targetUserId) {
+            if (currentUser.id == userId) {
                 currentUser
             } else {
-                userRepo.getUserById(targetUserId).getOrThrow()
+                userRepo.getUserById(userId).getOrThrow()
             }
 
         // Only active or active unconfirmed users can be retrieved if the requester is not a server admin
         isServerAdmin().forTarget<User>()
             .orElse(isTargetUserActive())
-            .orElseThrow(UserNotFoundException(targetUserId))
+            .orElseThrow(UserNotFoundException(userId))
             .checkFor(currentUser, targetUser)
 
         targetUser.toGrpcUser()
     }
 
-    override suspend fun getUserByEmail(request: Base.Email): GrpcUser = withUser(userRepo) { currentUser ->
+    override suspend fun getUserByEmail(email: String): GrpcUser = withUser(userRepo) { currentUser ->
         // We have to request the user first to get the ID for the access checks
-        val targetUser = userRepo.getUserByEmail(request.email).getOrThrow()
+        val targetUser = userRepo.getUserByEmail(email).getOrThrow()
 
         isAllowedToReadUser(projectMemberRepo, IdentifierType.EMAIL)
             .forProperty(User::id)
@@ -148,7 +144,7 @@ class UserService(
             .andAlso(
                 isServerAdmin().forTarget<User>()
                     .orElse(isTargetUserActive())
-                    .orElseThrow(UserNotFoundByEmailException(request.email)),
+                    .orElseThrow(UserNotFoundByEmailException(email)),
             )
             .checkFor(currentUser, targetUser)
 
@@ -163,7 +159,7 @@ class UserService(
         userRepo.getAllUsers().toGrpcUsers()
     }
 
-    override suspend fun register(request: Authentication.RegisterRequest): Base.Nothing {
+    override suspend fun register(request: Authentication.RegisterRequest) {
         // Check whether a user with the given email already exists
         if (userRepo.doesUserExistByEmail(request.email)) {
             throw DuplicateUserException(request.email)
@@ -180,8 +176,6 @@ class UserService(
         // Send verification email
         val verificationLink = emailManager.createVerificationLink(verificationToken)
         emailManager.sendVerificationEmail(user.email, EmailData.EmailVerification(user.firstName, verificationLink))
-
-        return Base.Nothing.getDefaultInstance()
     }
 
     override suspend fun updateUser(request: GrpcUser.Update): GrpcUser = withUser(userRepo) { currentUser ->
@@ -217,8 +211,8 @@ class UserService(
         userRepo.updateUser(request).toGrpcUser()
     }
 
-    override suspend fun softDeleteUser(request: Base.Id): Base.Nothing = withUser(userRepo) { currentUser ->
-        val targetUser = userRepo.getUserById(parseUUID(request.id, EntityType.USER)).getOrThrow()
+    override suspend fun softDeleteUser(userId: UUID) = withUser(userRepo) { currentUser ->
+        val targetUser = userRepo.getUserById(userId).getOrThrow()
 
         isServerAdminOrSameUser()
             .orElseThrow(UnauthorizedReadException(currentUser.id, targetUser.id, EntityType.USER))
@@ -249,8 +243,6 @@ class UserService(
         }
 
         userRepo.softDeleteUser(targetUser.id)
-
-        nothing { }
     }
 
     override suspend fun getCurrentUser(): GrpcUser = withUser(userRepo, User::toGrpcUser)

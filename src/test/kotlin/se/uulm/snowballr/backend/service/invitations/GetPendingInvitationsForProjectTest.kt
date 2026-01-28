@@ -13,14 +13,11 @@ import se.uulm.snowballr.backend.model.exception.UnauthorizedException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundByEmailException
 import se.uulm.snowballr.backend.service.MainServiceTest
-import snowballr.Base
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
 import java.util.UUID
 
 class GetPendingInvitationsForProjectTest : MainServiceTest() {
-    private fun createRequest(id: UUID) = Base.Id.newBuilder().setId(id.toString()).build()
-
     @Test
     fun `When a server admin requests the pending invitations for a project, then no exception is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
@@ -31,7 +28,7 @@ class GetPendingInvitationsForProjectTest : MainServiceTest() {
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { invitationTokenRepoMock.getActiveInvitationTokensForProject(project.id) } returns emptyList()
 
-        assertDoesNotThrow { mainService.getPendingInvitationsForProject(createRequest(project.id)) }
+        assertDoesNotThrow { mainService.getPendingInvitationsForProject(project.id) }
     }
 
     @Test
@@ -46,7 +43,7 @@ class GetPendingInvitationsForProjectTest : MainServiceTest() {
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
             coEvery { invitationTokenRepoMock.getActiveInvitationTokensForProject(project.id) } returns emptyList()
 
-            assertDoesNotThrow { mainService.getPendingInvitationsForProject(createRequest(project.id)) }
+            assertDoesNotThrow { mainService.getPendingInvitationsForProject(project.id) }
         }
 
     @Test
@@ -79,9 +76,7 @@ class GetPendingInvitationsForProjectTest : MainServiceTest() {
                 userRepoMock.getUserByEmail(notRegisteredEmail)
             } returns Result.failure(UserNotFoundByEmailException(notRegisteredEmail))
 
-            val pendingInvitations = assertDoesNotThrow {
-                mainService.getPendingInvitationsForProject(createRequest(project.id))
-            }
+            val pendingInvitations = assertDoesNotThrow { mainService.getPendingInvitationsForProject(project.id) }
 
             val invitationForRegisteredUser = pendingInvitations.usersList.find { it.email == registeredUser.email }
             val invitationForNotRegisteredUser = pendingInvitations.usersList.find { it.email == notRegisteredEmail }
@@ -110,9 +105,7 @@ class GetPendingInvitationsForProjectTest : MainServiceTest() {
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
-            assertThrows<UnauthorizedException> {
-                mainService.getPendingInvitationsForProject(createRequest(project.id))
-            }
+            assertThrows<UnauthorizedException> { mainService.getPendingInvitationsForProject(project.id) }
         }
 
     @Test
@@ -127,7 +120,7 @@ class GetPendingInvitationsForProjectTest : MainServiceTest() {
             } returns Result.failure(TestSpecificException())
 
             assertThrows<ProjectNotFoundException> {
-                mainService.getPendingInvitationsForProject(createRequest(nonExistentProjectId))
+                mainService.getPendingInvitationsForProject(nonExistentProjectId)
             }
         }
 }

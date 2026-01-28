@@ -22,7 +22,6 @@ import se.uulm.snowballr.backend.service.accessrules.checkFor
 import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadProject
 import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadReview
 import se.uulm.snowballr.backend.service.accessrules.isProjectActive
-import snowballr.Base
 import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
@@ -34,12 +33,12 @@ interface IReviewService {
     /**
      * Service implementation of [SnowballRService.getReviewById].
      */
-    suspend fun getReviewById(request: Base.Id): GrpcReview
+    suspend fun getReviewById(reviewId: UUID): GrpcReview
 
     /**
      * Service implementation of [SnowballRService.getAllReviewsForProjectPaper].
      */
-    suspend fun getAllReviewsForProjectPaper(request: Base.Id): GrpcReview.List
+    suspend fun getAllReviewsForProjectPaper(projectPaperId: UUID): GrpcReview.List
 
     /**
      * Service implementation of [SnowballRService.createReview].
@@ -75,9 +74,7 @@ class ReviewService(
     private val criteriaRepo: ICriterionTableRepo,
     private val reviewHasCriterionRepo: IReviewHasCriterionTableRepo,
 ) : IReviewService {
-    override suspend fun getReviewById(request: Base.Id): GrpcReview = withUser(userRepo) { currentUser ->
-        val reviewId = parseUUID(request.id, EntityType.REVIEW)
-
+    override suspend fun getReviewById(reviewId: UUID): GrpcReview = withUser(userRepo) { currentUser ->
         val review = repo.getReviewById(reviewId).getOrThrow()
 
         isAllowedToReadReview(projectMemberRepo, projectPaperRepo).checkFor(currentUser, review)
@@ -86,9 +83,8 @@ class ReviewService(
         review.toGrpcReview(selectedCriteriaIds.map(UUID::toString))
     }
 
-    override suspend fun getAllReviewsForProjectPaper(request: Base.Id): GrpcReview.List =
+    override suspend fun getAllReviewsForProjectPaper(projectPaperId: UUID): GrpcReview.List =
         withUser(userRepo) { currentUser ->
-            val projectPaperId = parseUUID(request.id, EntityType.PROJECT_PAPER)
             val projectPaper = projectPaperRepo.getProjectPaperById(projectPaperId).getOrThrow()
 
             isAllowedToReadProject(projectRepo, projectMemberRepo).checkFor(currentUser, projectPaper.projectId)

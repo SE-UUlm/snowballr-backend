@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
-import se.uulm.snowballr.backend.DataBuilder.toGrpcId
 import se.uulm.snowballr.backend.model.exception.notfound.entity.PaperNotFoundException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import java.util.UUID
@@ -24,7 +23,7 @@ class AddPaperToReadingListTest : MainServiceTest() {
         coEvery { paperRepoMock.ensurePaperExists(paperId) } just Runs
         coEvery { readingListRepoMock.createReadingListEntry(user.id, paperId) } returns Unit
 
-        assertDoesNotThrow { mainService.addPaperToReadingList(paperId.toGrpcId()) }
+        assertDoesNotThrow { mainService.addPaperToReadingList(paperId) }
         coVerify(exactly = 1) { readingListRepoMock.createReadingListEntry(user.id, paperId) }
     }
 
@@ -37,6 +36,6 @@ class AddPaperToReadingListTest : MainServiceTest() {
             mockCurrentUser(user)
             coEvery { paperRepoMock.ensurePaperExists(paperId) } throws PaperNotFoundException(paperId)
 
-            assertThrows<PaperNotFoundException> { mainService.addPaperToReadingList(paperId.toGrpcId()) }
+            assertThrows<PaperNotFoundException> { mainService.addPaperToReadingList(paperId) }
         }
 }

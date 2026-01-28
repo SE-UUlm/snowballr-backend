@@ -30,7 +30,6 @@ import se.uulm.snowballr.backend.service.accessrules.isServerAdmin
 import se.uulm.snowballr.backend.service.accessrules.isServerOrProjectAdmin
 import se.uulm.snowballr.backend.service.accessrules.orElse
 import se.uulm.snowballr.backend.service.accessrules.orElseThrow
-import snowballr.Base
 import snowballr.ProjectOuterClass.MemberRole
 import java.util.UUID
 import snowballr.ProjectOuterClass.Project.Member as GrpcProjectMember
@@ -39,17 +38,17 @@ interface IProjectMemberService {
     /**
      * Service implementation of [SnowballRService.getProjectMembers].
      */
-    suspend fun getProjectMembers(request: Base.Id): GrpcProjectMember.List
+    suspend fun getProjectMembers(projectId: UUID): GrpcProjectMember.List
 
     /**
      * Service implementation of [SnowballRService.updateProjectMemberRole].
      */
-    suspend fun updateProjectMemberRole(request: GrpcProjectMember.Update): Base.Nothing
+    suspend fun updateProjectMemberRole(request: GrpcProjectMember.Update)
 
     /**
      * Service implementation of [SnowballRService.removeProjectMember].
      */
-    suspend fun removeProjectMember(request: GrpcProjectMember.Remove): Base.Nothing
+    suspend fun removeProjectMember(request: GrpcProjectMember.Remove)
 }
 
 /**
@@ -70,17 +69,15 @@ class ProjectMemberService(
     private val userRepo: IUserTableRepo,
     private val invitationTokenRepo: IInvitationTokenTableRepo,
 ) : IProjectMemberService {
-    override suspend fun getProjectMembers(request: Base.Id): GrpcProjectMember.List =
+    override suspend fun getProjectMembers(projectId: UUID): GrpcProjectMember.List =
         withUser(userRepo) { currentUser ->
-            val projectId = parseUUID(request.id, EntityType.PROJECT)
-
             isAllowedToReadProject(projectRepo, repo).checkFor(currentUser, projectId)
 
             val projectMembersWithUsers = repo.getProjectMembersWithUsers(projectId)
             projectMembersWithUsers.toGrpcProjectMembers()
         }
 
-    override suspend fun updateProjectMemberRole(request: GrpcProjectMember.Update): Base.Nothing {
+    override suspend fun updateProjectMemberRole(request: GrpcProjectMember.Update) {
         withUser(userRepo) { currentUser ->
             val projectId = parseUUID(request.projectId, EntityType.PROJECT)
             val userId = parseUUID(request.userId, EntityType.USER)
@@ -106,25 +103,20 @@ class ProjectMemberService(
 
             repo.updateProjectMemberRole(projectId, userId, request.newRole)
         }
-
-        return Base.Nothing.getDefaultInstance()
     }
 
-    override suspend fun removeProjectMember(request: GrpcProjectMember.Remove): Base.Nothing =
-        withUser(userRepo) { currentUser ->
-            val projectId = parseUUID(request.projectId, EntityType.PROJECT)
-            val invitationToken =
-                invitationTokenRepo.getInvitationTokenByEmailAndProjectId(request.userEmail, projectId).getOrNull()
+    override suspend fun removeProjectMember(request: GrpcProjectMember.Remove) = withUser(userRepo) { currentUser ->
+        val projectId = parseUUID(request.projectId, EntityType.PROJECT)
+        val invitationToken =
+            invitationTokenRepo.getInvitationTokenByEmailAndProjectId(request.userEmail, projectId).getOrNull()
 
-            if (invitationToken != null) {
-                removeProjectMemberInvitation(currentUser, projectId, invitationToken)
-            } else {
-                val requestedUser = userRepo.getUserByEmail(request.userEmail).getOrThrow()
-                removeProjectMemberUser(currentUser, requestedUser, projectId)
-            }
-
-            Base.Nothing.getDefaultInstance()
+        if (invitationToken != null) {
+            removeProjectMemberInvitation(currentUser, projectId, invitationToken)
+        } else {
+            val requestedUser = userRepo.getUserByEmail(request.userEmail).getOrThrow()
+            removeProjectMemberUser(currentUser, requestedUser, projectId)
         }
+    }
 
     private suspend fun removeProjectMemberUser(currentUser: User, requestedUser: User, projectId: UUID) {
         val userProjectCompound = AccessRuleCompoundUUID(requestedUser.id, projectId)

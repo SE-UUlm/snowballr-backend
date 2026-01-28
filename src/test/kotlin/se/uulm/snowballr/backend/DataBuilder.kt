@@ -17,7 +17,6 @@ import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.UserSettings
 import se.uulm.snowballr.backend.model.dto.VerificationToken
 import se.uulm.snowballr.backend.table.patternOf
-import snowballr.Base
 import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass.MemberRole
 import snowballr.ProjectOuterClass.PaperDecision
@@ -247,8 +246,6 @@ object DataBuilder {
         createdAt,
         modifiedAt,
     )
-
-    fun UUID.toGrpcId(): Base.Id = Base.Id.newBuilder().setId(this.toString()).build()
 
     fun createExampleVerificationToken(
         id: UUID = UUID.randomUUID(),

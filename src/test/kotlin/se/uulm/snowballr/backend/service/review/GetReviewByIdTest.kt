@@ -13,7 +13,6 @@ import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.exception.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
-import snowballr.Base
 import snowballr.UserOuterClass.UserRole
 import java.util.UUID
 import java.util.stream.Stream
@@ -21,17 +20,13 @@ import kotlin.reflect.KFunction
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class GetReviewByIdTest : MainServiceTest() {
-    private val reviewId = UUID.randomUUID()
-
-    private fun getExampleRequest() = Base.Id.newBuilder().setId(reviewId.toString()).build()
-
     fun failingFunctions(): Stream<Arguments?> = Stream.of(
         Arguments.of(reviewRepoMock::getReviewById),
         Arguments.of(projectPaperRepoMock::getProjectPaperById),
     )
 
     @Suppress("ReturnCount")
-    private fun mockHappyPathUntil(failAt: KFunction<*>?, isUserAdmin: Boolean) {
+    private fun mockHappyPathUntil(failAt: KFunction<*>?, isUserAdmin: Boolean, reviewId: UUID) {
         val currentUser = DataBuilder.createExampleUser(
             role = if (isUserAdmin) {
                 UserRole.USER_ROLE_ADMIN
@@ -75,31 +70,37 @@ class GetReviewByIdTest : MainServiceTest() {
     @ParameterizedTest
     @MethodSource("failingFunctions")
     fun `When a step fails, then a TestSpecificException is thrown`(failAt: KFunction<*>) = runTest {
-        mockHappyPathUntil(failAt, true)
+        val reviewId = UUID.randomUUID()
+
+        mockHappyPathUntil(failAt, true, reviewId)
 
         assertThrows<TestSpecificException> {
-            mainService.getReviewById(getExampleRequest())
+            mainService.getReviewById(reviewId)
         }
     }
 
     @Test
     fun `When a server admin retrieves the review, then no exception is thrown`() = runTest {
-        mockHappyPathUntil(null, true)
+        val reviewId = UUID.randomUUID()
 
-        assertDoesNotThrow { mainService.getReviewById(getExampleRequest()) }
+        mockHappyPathUntil(null, true, reviewId)
+
+        assertDoesNotThrow { mainService.getReviewById(reviewId) }
     }
 
     @Test
     fun `When a project member retrieves the review, then no exception is thrown`() = runTest {
-        mockHappyPathUntil(null, false)
+        val reviewId = UUID.randomUUID()
 
-        assertDoesNotThrow { mainService.getReviewById(getExampleRequest()) }
+        mockHappyPathUntil(null, false, reviewId)
+
+        assertDoesNotThrow { mainService.getReviewById(reviewId) }
     }
 
     @Test
     fun `When a non project member retrieves the review, then an UnauthorizedException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-        val review = DataBuilder.createExampleReview(id = reviewId, userId = currentUser.id)
+        val review = DataBuilder.createExampleReview(userId = currentUser.id)
         val project = DataBuilder.createExampleProject()
         val projectPaper = DataBuilder.createExampleProjectPaper(id = review.projectPaperId, projectId = project.id)
 
@@ -108,6 +109,6 @@ class GetReviewByIdTest : MainServiceTest() {
         coEvery { projectPaperRepoMock.getProjectPaperById(review.projectPaperId) } returns Result.success(projectPaper)
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
-        assertThrows<UnauthorizedException> { mainService.getReviewById(getExampleRequest()) }
+        assertThrows<UnauthorizedException> { mainService.getReviewById(review.id) }
     }
 }

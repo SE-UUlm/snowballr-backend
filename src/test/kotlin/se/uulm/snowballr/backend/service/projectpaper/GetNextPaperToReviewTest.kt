@@ -10,23 +10,17 @@ import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
-import snowballr.Base
 import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.UserOuterClass.UserRole
 import java.util.UUID
 
 class GetNextPaperToReviewTest : MainServiceTest() {
-    private val projectPaperId = UUID.randomUUID()
-
-    private fun getExampleRequest() = Base.Id.newBuilder().setId(projectPaperId.toString()).build()
-
     @Test
     fun `When a server admin requests the next project paper, then no exception is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val project = DataBuilder.createExampleProject()
         val paper = DataBuilder.createExamplePaper()
         val projectPaper = DataBuilder.createExampleProjectPaper(
-            id = projectPaperId,
             projectId = project.id,
             paperId = paper.id,
             stage = 0,
@@ -53,7 +47,7 @@ class GetNextPaperToReviewTest : MainServiceTest() {
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id) } returns emptyList()
         coEvery { reviewRepoMock.getAllReviewsForProjectPaper(nextProjectPaper.id) } returns emptyList()
 
-        assertDoesNotThrow { mainService.getNextPaperToReview(getExampleRequest()) }
+        assertDoesNotThrow { mainService.getNextPaperToReview(projectPaper.id) }
     }
 
     @Test
@@ -63,7 +57,6 @@ class GetNextPaperToReviewTest : MainServiceTest() {
         val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
         val paper = DataBuilder.createExamplePaper()
         val projectPaper = DataBuilder.createExampleProjectPaper(
-            id = projectPaperId,
             projectId = project.id,
             paperId = paper.id,
             stage = 0,
@@ -90,7 +83,7 @@ class GetNextPaperToReviewTest : MainServiceTest() {
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id) } returns emptyList()
         coEvery { reviewRepoMock.getAllReviewsForProjectPaper(nextProjectPaper.id) } returns emptyList()
 
-        assertDoesNotThrow { mainService.getNextPaperToReview(getExampleRequest()) }
+        assertDoesNotThrow { mainService.getNextPaperToReview(projectPaper.id) }
     }
 
     @Test
@@ -98,7 +91,7 @@ class GetNextPaperToReviewTest : MainServiceTest() {
         runTest {
             val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
             val project = DataBuilder.createExampleProject()
-            val projectPaper = DataBuilder.createExampleProjectPaper(id = projectPaperId, projectId = project.id)
+            val projectPaper = DataBuilder.createExampleProjectPaper(projectId = project.id)
 
             mockCurrentUser(currentUser)
             coEvery {
@@ -107,7 +100,7 @@ class GetNextPaperToReviewTest : MainServiceTest() {
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
-            assertThrows<UnauthorizedException> { mainService.getNextPaperToReview(getExampleRequest()) }
+            assertThrows<UnauthorizedException> { mainService.getNextPaperToReview(projectPaper.id) }
         }
 
     @Test
@@ -117,7 +110,6 @@ class GetNextPaperToReviewTest : MainServiceTest() {
         val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
         val paper = DataBuilder.createExamplePaper()
         val projectPaper = DataBuilder.createExampleProjectPaper(
-            id = projectPaperId,
             projectId = project.id,
             paperId = paper.id,
             stage = 0,
@@ -141,7 +133,7 @@ class GetNextPaperToReviewTest : MainServiceTest() {
             reviewRepoMock.getAllReviewsForProjectPaper(nextProjectPaper.id)
         } returns listOf(review)
 
-        assertThrows<FailedPreconditionException> { mainService.getNextPaperToReview(getExampleRequest()) }
+        assertThrows<FailedPreconditionException> { mainService.getNextPaperToReview(projectPaper.id) }
     }
 
     @Test
@@ -154,7 +146,6 @@ class GetNextPaperToReviewTest : MainServiceTest() {
             val paper1 = DataBuilder.createExamplePaper()
             val paper2 = DataBuilder.createExamplePaper()
             val currentProjectPaper = DataBuilder.createExampleProjectPaper(
-                id = projectPaperId,
                 projectId = project.id,
                 paperId = currentPaper.id,
                 stage = 0,
@@ -193,7 +184,7 @@ class GetNextPaperToReviewTest : MainServiceTest() {
             coEvery { paperRepoMock.getPaperById(paper2.id) } returns Result.success(paper2)
             coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper2.id) } returns emptyList()
 
-            assertDoesNotThrow { mainService.getNextPaperToReview(getExampleRequest()) }
+            assertDoesNotThrow { mainService.getNextPaperToReview(currentProjectPaper.id) }
             coVerify(exactly = 1) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper1.id) }
             coVerify(exactly = 2) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper2.id) }
         }
@@ -209,7 +200,6 @@ class GetNextPaperToReviewTest : MainServiceTest() {
             val paper2 = DataBuilder.createExamplePaper()
             val paper3 = DataBuilder.createExamplePaper()
             val currentProjectPaper = DataBuilder.createExampleProjectPaper(
-                id = projectPaperId,
                 projectId = project.id,
                 paperId = currentPaper.id,
                 stage = 0,
@@ -256,7 +246,7 @@ class GetNextPaperToReviewTest : MainServiceTest() {
             coEvery { paperRepoMock.getPaperById(paper3.id) } returns Result.success(paper3)
             coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper3.id) } returns emptyList()
 
-            assertDoesNotThrow { mainService.getNextPaperToReview(getExampleRequest()) }
+            assertDoesNotThrow { mainService.getNextPaperToReview(currentProjectPaper.id) }
             coVerify(exactly = 1) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper1.id) }
             coVerify(exactly = 1) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper2.id) }
             coVerify(exactly = 2) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper3.id) }
@@ -272,7 +262,6 @@ class GetNextPaperToReviewTest : MainServiceTest() {
             val paper1 = DataBuilder.createExamplePaper()
             val paper2 = DataBuilder.createExamplePaper()
             val currentProjectPaper = DataBuilder.createExampleProjectPaper(
-                id = projectPaperId,
                 projectId = project.id,
                 paperId = currentPaper.id,
                 stage = 0,
@@ -310,7 +299,7 @@ class GetNextPaperToReviewTest : MainServiceTest() {
             coEvery { paperRepoMock.getPaperById(paper2.id) } returns Result.success(paper2)
             coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper2.id) } returns emptyList()
 
-            assertDoesNotThrow { mainService.getNextPaperToReview(getExampleRequest()) }
+            assertDoesNotThrow { mainService.getNextPaperToReview(currentProjectPaper.id) }
             coVerify(exactly = 1) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper1.id) }
             coVerify(exactly = 2) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper2.id) }
         }
@@ -325,7 +314,6 @@ class GetNextPaperToReviewTest : MainServiceTest() {
             val paper1 = DataBuilder.createExamplePaper()
             val paper2 = DataBuilder.createExamplePaper()
             val currentProjectPaper = DataBuilder.createExampleProjectPaper(
-                id = projectPaperId,
                 projectId = project.id,
                 paperId = currentPaper.id,
                 stage = 0,
@@ -364,7 +352,7 @@ class GetNextPaperToReviewTest : MainServiceTest() {
 
             coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper1.id) } returns emptyList()
 
-            assertDoesNotThrow { mainService.getNextPaperToReview(getExampleRequest()) }
+            assertDoesNotThrow { mainService.getNextPaperToReview(currentProjectPaper.id) }
             coVerify(exactly = 2) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper1.id) }
             coVerify(exactly = 1) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper2.id) }
         }

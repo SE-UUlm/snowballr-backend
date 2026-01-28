@@ -27,7 +27,6 @@ import se.uulm.snowballr.backend.service.accessrules.isServerAdmin
 import se.uulm.snowballr.backend.service.accessrules.isServerAdminOrSameUser
 import se.uulm.snowballr.backend.service.accessrules.isServerOrProjectAdmin
 import se.uulm.snowballr.backend.service.accessrules.orElseThrow
-import snowballr.Base
 import snowballr.ProjectOuterClass.MemberRole
 import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ProjectOuterClass.ProjectStatus
@@ -42,7 +41,7 @@ interface IProjectService {
     /**
      * Service implementation of [SnowballRService.getProjectById].
      */
-    suspend fun getProjectById(request: Base.Id): GrpcProject
+    suspend fun getProjectById(projectId: UUID): GrpcProject
 
     /**
      * Service implementation of [SnowballRService.createProject].
@@ -57,17 +56,17 @@ interface IProjectService {
     /**
      * Service implementation of [SnowballRService.getAllProjectsForUser].
      */
-    suspend fun getAllProjectsForUser(request: Base.Id): GrpcProject.List
+    suspend fun getAllProjectsForUser(userId: UUID): GrpcProject.List
 
     /**
      * Service implementation of [SnowballRService.getAllArchivedProjectsForUser].
      */
-    suspend fun getAllArchivedProjectsForUser(request: Base.Id): GrpcProject.List
+    suspend fun getAllArchivedProjectsForUser(userId: UUID): GrpcProject.List
 
     /**
      * Service implementation of [SnowballRService.getAllDeletedProjectsForUser].
      */
-    suspend fun getAllDeletedProjectsForUser(request: Base.Id): GrpcProject.List
+    suspend fun getAllDeletedProjectsForUser(userId: UUID): GrpcProject.List
 
     /**
      * Service implementation of [SnowballRService.updateProject].
@@ -87,7 +86,7 @@ interface IProjectService {
     /**
      * Service implementation of [SnowballRService.softDeleteProject]
      */
-    suspend fun softDeleteProject(request: Base.Id): Base.Nothing
+    suspend fun softDeleteProject(projectId: UUID)
 }
 
 /**
@@ -112,9 +111,7 @@ class ProjectService(
     private val criterionRepo: ICriterionTableRepo,
     private val invitationTokenRepo: IInvitationTokenTableRepo,
 ) : IProjectService {
-    override suspend fun getProjectById(request: Base.Id): GrpcProject = withUser(userRepo) { currentUser ->
-        val projectId = parseUUID(request.id, EntityType.PROJECT)
-
+    override suspend fun getProjectById(projectId: UUID): GrpcProject = withUser(userRepo) { currentUser ->
         isAllowedToReadProject(repo, projectMemberRepo).checkFor(currentUser, projectId)
 
         repo.getProjectById(projectId).getOrThrow().toGrpcProject()
@@ -154,16 +151,16 @@ class ProjectService(
         repo.getAllProjects().toGrpcProjects()
     }
 
-    override suspend fun getAllProjectsForUser(request: Base.Id): GrpcProject.List = getAllProjectsForUserAndStatus(
-        request,
+    override suspend fun getAllProjectsForUser(userId: UUID): GrpcProject.List = getAllProjectsForUserAndStatus(
+        userId,
         setOf(ProjectStatus.PROJECT_STATUS_ACTIVE, ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED),
     )
 
-    override suspend fun getAllArchivedProjectsForUser(request: Base.Id): GrpcProject.List =
-        getAllProjectsForUserAndStatus(request, setOf(ProjectStatus.PROJECT_STATUS_ARCHIVED))
+    override suspend fun getAllArchivedProjectsForUser(userId: UUID): GrpcProject.List =
+        getAllProjectsForUserAndStatus(userId, setOf(ProjectStatus.PROJECT_STATUS_ARCHIVED))
 
-    override suspend fun getAllDeletedProjectsForUser(request: Base.Id): GrpcProject.List =
-        getAllProjectsForUserAndStatus(request, setOf(ProjectStatus.PROJECT_STATUS_DELETED))
+    override suspend fun getAllDeletedProjectsForUser(userId: UUID): GrpcProject.List =
+        getAllProjectsForUserAndStatus(userId, setOf(ProjectStatus.PROJECT_STATUS_DELETED))
 
     override suspend fun updateProject(request: GrpcProject.Update): GrpcProject = withUser(userRepo) { currentUser ->
         val projectId = parseUUID(request.project.id, EntityType.PROJECT)
@@ -240,9 +237,7 @@ class ProjectService(
             .build()
     }
 
-    override suspend fun softDeleteProject(request: Base.Id): Base.Nothing = withUser(userRepo) { currentUser ->
-        val projectId = parseUUID(request.id, EntityType.PROJECT)
-
+    override suspend fun softDeleteProject(projectId: UUID) = withUser(userRepo) { currentUser ->
         isServerOrProjectAdmin(projectMemberRepo, AccessType.DELETE).checkFor(currentUser, projectId)
 
         if (!repo.doesProjectExistById(projectId)) {
@@ -251,26 +246,21 @@ class ProjectService(
 
         repo.softDeleteProject(projectId)
         invitationTokenRepo.deleteInvitationTokensForProject(projectId)
-
-        Base.Nothing.getDefaultInstance()
     }
 
-    private suspend fun getAllProjectsForUserAndStatus(
-        request: Base.Id,
-        statuses: Set<ProjectStatus>,
-    ): GrpcProject.List = withUser(userRepo) { currentUser ->
-        val requestedUserId = parseUUID(request.id, EntityType.USER)
-        val requestedUser = userRepo.getUserById(requestedUserId).getOrThrow()
+    private suspend fun getAllProjectsForUserAndStatus(userId: UUID, statuses: Set<ProjectStatus>): GrpcProject.List =
+        withUser(userRepo) { currentUser ->
+            val requestedUser = userRepo.getUserById(userId).getOrThrow()
 
-        isServerAdminOrSameUser()
-            .forProperty(User::id)
-            .orElseThrow { requestingUser, _ ->
-                UnauthorizedReadException(requestingUser.id, requestedUserId, EntityType.USER)
-            }
-            .checkFor(currentUser, requestedUser)
+            isServerAdminOrSameUser()
+                .forProperty(User::id)
+                .orElseThrow { requestingUser, _ ->
+                    UnauthorizedReadException(requestingUser.id, userId, EntityType.USER)
+                }
+                .checkFor(currentUser, requestedUser)
 
-        repo.getUserProjects(requestedUserId, statuses).toGrpcProjects()
-    }
+            repo.getUserProjects(userId, statuses).toGrpcProjects()
+        }
 
     /**
      * Validates the update of a project based on the current status and the requested status.
