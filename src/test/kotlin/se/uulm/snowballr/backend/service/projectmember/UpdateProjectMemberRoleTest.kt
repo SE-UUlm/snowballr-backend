@@ -15,7 +15,6 @@ import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.ProjectOuterClass
 import snowballr.ProjectOuterClass.MemberRole
 import snowballr.UserOuterClass.UserRole
-import snowballr.project
 import java.util.UUID
 
 class UpdateProjectMemberRoleTest : MainServiceTest() {
