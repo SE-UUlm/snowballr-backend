@@ -93,6 +93,7 @@ class RemoveProjectMemberTest : MainServiceTest() {
                 invitationTokenRepoMock.getInvitationTokenByEmailAndProjectId(userEmail, projectId)
             } returns Result.failure(TestSpecificException())
             coEvery { userRepoMock.getUserByEmail(currentUser.email) } returns Result.success(currentUser)
+            coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
             coEvery { projectMemberRepoMock.isProjectMember(project.id, currentUser.id) } returns true
             coEvery {
                 projectMemberRepoMock.getProjectMembers(project.id)

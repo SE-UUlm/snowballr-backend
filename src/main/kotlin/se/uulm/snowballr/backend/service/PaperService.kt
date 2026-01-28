@@ -6,7 +6,6 @@ import se.uulm.snowballr.backend.model.dto.Paper
 import se.uulm.snowballr.backend.model.dto.toGrpcPapers
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicatePaperException
-import se.uulm.snowballr.backend.model.exception.notfound.entity.PaperNotFoundException
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
@@ -57,6 +56,7 @@ class PaperService(
 ) : IPaperService {
     override suspend fun getPaperById(request: Base.Id): GrpcPaper {
         val paperId = parseUUID(request.id, EntityType.PAPER)
+
         val paper = repo.getPaperById(paperId).getOrThrow()
 
         return paper.toGrpcPaper()
@@ -71,9 +71,7 @@ class PaperService(
     override suspend fun updatePaper(request: GrpcPaper.Update): GrpcPaper {
         val paperId = parseUUID(request.paper.id, EntityType.PAPER)
 
-        if (!repo.doesPaperExistById(paperId)) {
-            throw PaperNotFoundException(paperId)
-        }
+        repo.ensurePaperExists(paperId)
 
         if (request.paper.externalId.isNotEmpty()) {
             val existingPaper = repo.getPaperByExternalId(request.paper.externalId).getOrNull()
@@ -105,9 +103,8 @@ class PaperService(
      */
     private suspend fun getReferencePapers(request: Base.Id, function: suspend (UUID) -> List<UUID>): GrpcPaper.List {
         val paperId = parseUUID(request.id, EntityType.PAPER)
-        if (!repo.doesPaperExistById(paperId)) {
-            throw PaperNotFoundException(paperId)
-        }
+
+        repo.ensurePaperExists(paperId)
 
         val referenceIds = function.invoke(paperId)
         val papers = referenceIds.map {

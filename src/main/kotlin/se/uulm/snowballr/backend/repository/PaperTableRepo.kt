@@ -7,6 +7,7 @@ import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.Paper
 import se.uulm.snowballr.backend.model.dto.toAuthor
 import se.uulm.snowballr.backend.model.exception.NotFoundException
+import se.uulm.snowballr.backend.model.exception.notfound.entity.PaperNotFoundException
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.toPaper
@@ -35,9 +36,11 @@ interface IPaperTableRepo {
     suspend fun getPaperByExternalId(externalId: String): Result<Paper>
 
     /**
-     * Checks whether the paper with the passed [id] exists.
+     * Ensures that the paper exists with the passed [id].
+     *
+     * Throws a [PaperNotFoundException] if the paper is missing; otherwise does nothing.
      */
-    suspend fun doesPaperExistById(id: UUID): Boolean
+    suspend fun ensurePaperExists(id: UUID)
 
     /**
      * Checks whether a paper with the passed [externalId] exists.
@@ -89,8 +92,10 @@ class PaperTableRepo(
         getEntityByKeyAsResult(::getPaperByExternalIdOrNull, EntityType.PAPER, externalId)
     }
 
-    override suspend fun doesPaperExistById(id: UUID): Boolean = db.query {
-        PaperTable.doesEntityExistById(id)
+    override suspend fun ensurePaperExists(id: UUID) = db.query {
+        if (!PaperTable.doesEntityExistById(id)) {
+            throw PaperNotFoundException(id)
+        }
     }
 
     override suspend fun doesPaperExistByExternalId(externalId: String): Boolean = db.query {

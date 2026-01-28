@@ -7,8 +7,9 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
+import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.export.ProjectExportManager
-import se.uulm.snowballr.backend.model.exception.NotFoundException
+import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadException
 import se.uulm.snowballr.backend.model.export.ExportFormat
 import se.uulm.snowballr.backend.model.export.FileExport
@@ -35,7 +36,6 @@ class ExportProjectTest : MainServiceTest() {
         mockkObject(ProjectExportManager)
         every { ProjectExportManager.getSupportedFormats() } returns setOf(ExportFormat.JSON)
         coEvery { projectMemberRepoMock.getProjectMembers(projectId) } returns listOf(projectMember)
-        coEvery { projectRepoMock.doesProjectExistById(projectId) } returns true
         coEvery { projectRepoMock.getProjectById(projectId) } returns Result.success(DataBuilder.createExampleProject())
         coEvery { projectMemberRepoMock.getProjectMembersWithUsers(projectId) } returns emptyList()
         coEvery {
@@ -53,13 +53,14 @@ class ExportProjectTest : MainServiceTest() {
     @Test
     fun `When the non-project-member exports a project, then an UnauthorizedReadException is thrown`() = runTest {
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-        val projectId = UUID.randomUUID()
-        val request = getExampleRequest().copy { id = projectId.toString() }
+        val project = DataBuilder.createExampleProject()
+        val request = getExampleRequest().copy { id = project.id.toString() }
 
         mockCurrentUser(user)
         mockkObject(ProjectExportManager)
         every { ProjectExportManager.getSupportedFormats() } returns setOf(ExportFormat.JSON)
-        coEvery { projectMemberRepoMock.getProjectMembers(projectId) } returns emptyList()
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
+        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
         assertThrows<UnauthorizedReadException> {
             mainService.exportProject(request)
@@ -76,7 +77,6 @@ class ExportProjectTest : MainServiceTest() {
         mockkObject(ProjectExportManager)
         every { ProjectExportManager.getSupportedFormats() } returns setOf(ExportFormat.JSON)
         coEvery { projectMemberRepoMock.getProjectMembers(projectId) } returns emptyList()
-        coEvery { projectRepoMock.doesProjectExistById(projectId) } returns true
         coEvery {
             projectRepoMock.getProjectById(projectId)
         } returns Result.success(DataBuilder.createExampleProject(id = projectId))
@@ -94,7 +94,7 @@ class ExportProjectTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the exported project doesn't exist, then a NotFoundException is thrown`() = runTest {
+    fun `When the exported project doesn't exist, then a ProjectNotFoundException is thrown`() = runTest {
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val projectId = UUID.randomUUID()
         val request = getExampleRequest().copy { id = projectId.toString() }
@@ -102,9 +102,8 @@ class ExportProjectTest : MainServiceTest() {
         mockCurrentUser(user)
         mockkObject(ProjectExportManager)
         every { ProjectExportManager.getSupportedFormats() } returns setOf(ExportFormat.JSON)
-        coEvery { projectMemberRepoMock.getProjectMembers(projectId) } returns emptyList()
-        coEvery { projectRepoMock.doesProjectExistById(projectId) } returns false
+        coEvery { projectRepoMock.getProjectById(projectId) } returns Result.failure(TestSpecificException())
 
-        assertThrows<NotFoundException> { mainService.exportProject(request) }
+        assertThrows<ProjectNotFoundException> { mainService.exportProject(request) }
     }
 }

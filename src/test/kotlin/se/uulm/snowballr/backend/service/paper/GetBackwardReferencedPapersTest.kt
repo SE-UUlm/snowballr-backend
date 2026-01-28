@@ -1,6 +1,8 @@
 package se.uulm.snowballr.backend.service.paper
 
+import io.mockk.Runs
 import io.mockk.coEvery
+import io.mockk.just
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -21,9 +23,9 @@ class GetBackwardReferencedPapersTest : MainServiceTest() {
         .build()
 
     @Test
-    fun `When the paper doesn't exist, then a NotFoundException is thrown`() = runTest {
-        coEvery { paperRepoMock.doesPaperExistById(paperId) } returns false
-        assertThrows<NotFoundException> {
+    fun `When the paper doesn't exist, then a PaperNotFoundException is thrown`() = runTest {
+        coEvery { paperRepoMock.ensurePaperExists(paperId) } throws PaperNotFoundException(paperId)
+        assertThrows<PaperNotFoundException> {
             mainService.getBackwardReferencedPapers(getExampleRequest())
         }
     }
@@ -33,7 +35,7 @@ class GetBackwardReferencedPapersTest : MainServiceTest() {
         val paper = DataBuilder.createExamplePaper(id = paperId)
         val backwardReferenceId = UUID.randomUUID()
 
-        coEvery { paperRepoMock.doesPaperExistById(paper.id) } returns true
+        coEvery { paperRepoMock.ensurePaperExists(paper.id) } just Runs
         coEvery {
             citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
         } returns listOf(backwardReferenceId)
@@ -52,7 +54,7 @@ class GetBackwardReferencedPapersTest : MainServiceTest() {
             val backwardReferenceId = UUID.randomUUID()
             val referencedPaper = DataBuilder.createExamplePaper(id = backwardReferenceId)
 
-            coEvery { paperRepoMock.doesPaperExistById(paper.id) } returns true
+            coEvery { paperRepoMock.ensurePaperExists(paper.id) } just Runs
             coEvery {
                 citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
             } returns listOf(backwardReferenceId)

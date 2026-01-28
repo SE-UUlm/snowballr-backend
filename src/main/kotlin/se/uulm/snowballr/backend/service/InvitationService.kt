@@ -5,6 +5,7 @@ import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.mail.IEmailManager
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.dto.isActiveAndConfirmed
 import se.uulm.snowballr.backend.model.dto.toGrpcUser
 import se.uulm.snowballr.backend.model.dto.toGrpcUsers
 import se.uulm.snowballr.backend.model.email.EmailData
@@ -17,16 +18,13 @@ import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
-import se.uulm.snowballr.backend.service.accessrules.andAlso
 import se.uulm.snowballr.backend.service.accessrules.checkFor
 import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadProject
 import se.uulm.snowballr.backend.service.accessrules.isProjectActive
-import se.uulm.snowballr.backend.service.accessrules.isProjectExistent
 import se.uulm.snowballr.backend.service.accessrules.isServerOrProjectAdmin
 import snowballr.Base
 import snowballr.ProjectOuterClass.Project
 import snowballr.UserOuterClass.User
-import snowballr.UserOuterClass.UserStatus
 import java.time.OffsetDateTime
 import snowballr.ProjectOuterClass.Project as GrpcProject
 import snowballr.UserOuterClass.User as GrpcUser
@@ -159,12 +157,10 @@ class InvitationService(
         val user = try {
             userRepo.getUserByEmail(invitationToken.email).getOrThrow()
         } catch (_: NotFoundException) {
-            throw FailedPreconditionException(
-                "The user with the email ${invitationToken.email} is not registered.",
-            )
+            throw FailedPreconditionException("The user with the email ${invitationToken.email} is not registered.")
         }
 
-        if (user.status != UserStatus.USER_STATUS_ACTIVE) {
+        if (!user.isActiveAndConfirmed()) {
             throw FailedPreconditionException(
                 "The user with the email ${invitationToken.email} has not verified their email address.",
             )
@@ -183,9 +179,7 @@ class InvitationService(
         withUser(userRepo) { currentUser ->
             val projectId = parseUUID(request.id, EntityType.PROJECT)
 
-            isAllowedToReadProject(projectMemberRepo)
-                .andAlso(isProjectExistent(projectRepo))
-                .checkFor(currentUser, projectId)
+            isAllowedToReadProject(projectRepo, projectMemberRepo).checkFor(currentUser, projectId)
 
             val tokens = invitationTokenRepo.getActiveInvitationTokensForProject(projectId)
 

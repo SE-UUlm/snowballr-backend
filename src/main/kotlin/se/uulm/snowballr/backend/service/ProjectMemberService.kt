@@ -5,6 +5,7 @@ import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.InvitationToken
 import se.uulm.snowballr.backend.model.dto.User
+import se.uulm.snowballr.backend.model.dto.isProjectAdmin
 import se.uulm.snowballr.backend.model.dto.toGrpcProjectMembers
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.NotFoundException
@@ -73,9 +74,7 @@ class ProjectMemberService(
         withUser(userRepo) { currentUser ->
             val projectId = parseUUID(request.id, EntityType.PROJECT)
 
-            isAllowedToReadProject(repo)
-                .andAlso(isProjectExistent(projectRepo))
-                .checkFor(currentUser, projectId)
+            isAllowedToReadProject(projectRepo, repo).checkFor(currentUser, projectId)
 
             val projectMembersWithUsers = repo.getProjectMembersWithUsers(projectId)
             projectMembersWithUsers.toGrpcProjectMembers()
@@ -100,7 +99,7 @@ class ProjectMemberService(
                 )
             }
 
-            if (currentMember.role == MemberRole.MEMBER_ROLE_ADMIN && request.newRole != MemberRole.MEMBER_ROLE_ADMIN) {
+            if (currentMember.isProjectAdmin() && request.newRole != MemberRole.MEMBER_ROLE_ADMIN) {
                 isNotLastProjectAdmin(repo, "Cannot demote the user")
                     .checkFor(user, projectId)
             }

@@ -6,9 +6,10 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
+import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.dto.ProjectMemberWithUser
-import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.UnauthorizedException
+import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.Base
 import snowballr.UserOuterClass.UserRole
@@ -35,9 +36,8 @@ class GetProjectMembersTest : MainServiceTest() {
         val projectMemberWithUser = ProjectMemberWithUser(projectMember, projectMemberUser)
 
         mockCurrentUser(adminUser)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns
-            listOf(projectMember)
-        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
+        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
         coEvery { projectMemberRepoMock.getProjectMembersWithUsers(project.id) } returns listOf(projectMemberWithUser)
 
         assertDoesNotThrow { mainService.getProjectMembers(request) }
@@ -54,7 +54,7 @@ class GetProjectMembersTest : MainServiceTest() {
         mockCurrentUser(user)
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns
             listOf(projectMember)
-        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getProjectMembersWithUsers(project.id) } returns listOf(projectMemberWithUser)
 
         assertDoesNotThrow { mainService.getProjectMembers(request) }
@@ -67,23 +67,21 @@ class GetProjectMembersTest : MainServiceTest() {
         val project = DataBuilder.createExampleProject(id = projectId)
 
         mockCurrentUser(user)
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
         assertThrows<UnauthorizedException> { mainService.getProjectMembers(request) }
     }
 
     @Test
-    fun `When project members are requested from a nonexistent project, then a NotFoundException is thrown`() =
+    fun `When project members are requested from a nonexistent project, then a ProjectNotFoundException is thrown`() =
         runTest {
             val request = getExampleRequest()
             val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
 
             mockCurrentUser(user)
-            coEvery { projectMemberRepoMock.getProjectMembers(any()) } returns emptyList()
-            coEvery {
-                projectRepoMock.doesProjectExistById(projectId)
-            } returns false
+            coEvery { projectRepoMock.getProjectById(projectId) } returns Result.failure(TestSpecificException())
 
-            assertThrows<NotFoundException> { mainService.getProjectMembers(request) }
+            assertThrows<ProjectNotFoundException> { mainService.getProjectMembers(request) }
         }
 }

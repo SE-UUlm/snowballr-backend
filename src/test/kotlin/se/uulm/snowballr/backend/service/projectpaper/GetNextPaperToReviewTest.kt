@@ -39,6 +39,7 @@ class GetNextPaperToReviewTest : MainServiceTest() {
         coEvery {
             projectPaperRepoMock.getProjectPaperById(projectPaper.id)
         } returns Result.success(projectPaper)
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
         coEvery {
             projectPaperRepoMock.getSubsequentProjectPapers(
@@ -75,6 +76,7 @@ class GetNextPaperToReviewTest : MainServiceTest() {
         coEvery {
             projectPaperRepoMock.getProjectPaperById(projectPaper.id)
         } returns Result.success(projectPaper)
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
         coEvery {
             projectPaperRepoMock.getSubsequentProjectPapers(
@@ -102,6 +104,7 @@ class GetNextPaperToReviewTest : MainServiceTest() {
             coEvery {
                 projectPaperRepoMock.getProjectPaperById(projectPaper.id)
             } returns Result.success(projectPaper)
+            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
             assertThrows<UnauthorizedException> { mainService.getNextPaperToReview(getExampleRequest()) }
@@ -127,6 +130,7 @@ class GetNextPaperToReviewTest : MainServiceTest() {
         coEvery {
             projectPaperRepoMock.getProjectPaperById(projectPaper.id)
         } returns Result.success(projectPaper)
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
         coEvery {
             projectPaperRepoMock.getSubsequentProjectPapers(
@@ -176,6 +180,7 @@ class GetNextPaperToReviewTest : MainServiceTest() {
             coEvery {
                 projectPaperRepoMock.getProjectPaperById(currentProjectPaper.id)
             } returns Result.success(currentProjectPaper)
+            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
             coEvery {
                 projectPaperRepoMock.getSubsequentProjectPapers(
@@ -237,6 +242,7 @@ class GetNextPaperToReviewTest : MainServiceTest() {
             coEvery {
                 projectPaperRepoMock.getProjectPaperById(currentProjectPaper.id)
             } returns Result.success(currentProjectPaper)
+            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
             coEvery {
                 projectPaperRepoMock.getSubsequentProjectPapers(
@@ -291,6 +297,7 @@ class GetNextPaperToReviewTest : MainServiceTest() {
             coEvery {
                 projectPaperRepoMock.getProjectPaperById(currentProjectPaper.id)
             } returns Result.success(currentProjectPaper)
+            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
             coEvery {
                 projectPaperRepoMock.getSubsequentProjectPapers(
@@ -343,6 +350,7 @@ class GetNextPaperToReviewTest : MainServiceTest() {
             coEvery {
                 projectPaperRepoMock.getProjectPaperById(currentProjectPaper.id)
             } returns Result.success(currentProjectPaper)
+            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
             coEvery {
                 projectPaperRepoMock.getSubsequentProjectPapers(

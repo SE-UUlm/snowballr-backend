@@ -4,6 +4,7 @@ import se.uulm.snowballr.backend.fetcher.FetcherMap
 import se.uulm.snowballr.backend.table.ProjectTable
 import snowballr.Fetcher.FetcherOptions
 import snowballr.ProjectOuterClass
+import snowballr.ProjectOuterClass.ProjectStatus
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -13,7 +14,7 @@ import java.util.UUID
 data class Project(
     val id: UUID,
     val name: String,
-    val status: ProjectOuterClass.ProjectStatus,
+    val status: ProjectStatus,
     val currentStage: Long,
     val maxStage: Long,
     val similarityThreshold: Float,
@@ -72,3 +73,19 @@ fun List<Project>.toGrpcProjects(): ProjectOuterClass.Project.List {
     this.forEach { builder.addProjects(it.toGrpcProject()) }
     return builder.build()
 }
+
+/**
+ * Checks whether the project is active.
+ *
+ * A project is considered active if its status is either [ProjectStatus.PROJECT_STATUS_ACTIVE] or
+ * [ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED].
+ */
+fun Project.isActive() = this.status == ProjectStatus.PROJECT_STATUS_ACTIVE ||
+    this.status == ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED
+
+/**
+ * Checks whether the project is deleted.
+ *
+ * A project is considered deleted if its status is [ProjectStatus.PROJECT_STATUS_DELETED].
+ */
+fun Project.isDeleted() = this.status == ProjectStatus.PROJECT_STATUS_DELETED

@@ -86,9 +86,8 @@ class GetPreviousPaperTest : MainServiceTest() {
             val projectPaper = DataBuilder.createExampleProjectPaper(id = projectPaperId, projectId = project.id)
 
             mockCurrentUser(currentUser)
-            coEvery {
-                projectPaperRepoMock.getProjectPaperById(projectPaper.id)
-            } returns Result.success(projectPaper)
+            coEvery { projectPaperRepoMock.getProjectPaperById(projectPaper.id) } returns Result.success(projectPaper)
+            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
             coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
 
             assertThrows<UnauthorizedException> { mainService.getPreviousPaper(getExampleRequest()) }

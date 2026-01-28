@@ -3,8 +3,6 @@ package se.uulm.snowballr.backend.service
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.toGrpcPapers
-import se.uulm.snowballr.backend.model.exception.NotFoundException
-import se.uulm.snowballr.backend.model.exception.notfound.entity.PaperNotFoundException
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
@@ -13,7 +11,6 @@ import se.uulm.snowballr.backend.repository.association.IReadingListTableRepo
 import snowballr.Base
 import snowballr.boolValue
 import snowballr.nothing
-import java.util.UUID
 import snowballr.PaperOuterClass.Paper as GrpcPaper
 
 interface IReadingListService {
@@ -57,17 +54,6 @@ class ReadingListService(
     private val citationRepo: ICitationTableRepo,
     private val repo: IReadingListTableRepo,
 ) : IReadingListService {
-    /**
-     * Checks whether the paper with the given [id] exists.
-     *
-     * @throws [NotFoundException] If the paper doesn't exist.
-     */
-    private suspend fun ensurePaperExists(id: UUID) {
-        if (!paperRepo.doesPaperExistById(id)) {
-            throw PaperNotFoundException(id)
-        }
-    }
-
     override suspend fun getReadingList(): GrpcPaper.List = withUser(userRepo) { currentUser ->
         val papers = repo.getAllReadingListEntries(currentUser.id).map { paper ->
             paper.toGrpcPaperWithAuthorsAndBackwardReferences(citationRepo)
@@ -78,14 +64,16 @@ class ReadingListService(
 
     override suspend fun isPaperOnReadingList(request: Base.Id): Base.BoolValue = withUser(userRepo) { currentUser ->
         val paperId = parseUUID(request.id, EntityType.PAPER)
-        ensurePaperExists(paperId)
+
+        paperRepo.ensurePaperExists(paperId)
 
         boolValue { value = repo.isPaperOnReadingList(currentUser.id, paperId) }
     }
 
     override suspend fun addPaperToReadingList(request: Base.Id): Base.Nothing = withUser(userRepo) { currentUser ->
         val paperId = parseUUID(request.id, EntityType.PAPER)
-        ensurePaperExists(paperId)
+
+        paperRepo.ensurePaperExists(paperId)
 
         repo.createReadingListEntry(currentUser.id, paperId)
 
@@ -95,7 +83,8 @@ class ReadingListService(
     override suspend fun removePaperFromReadingList(request: Base.Id): Base.Nothing =
         withUser(userRepo) { currentUser ->
             val paperId = parseUUID(request.id, EntityType.PAPER)
-            ensurePaperExists(paperId)
+
+            paperRepo.ensurePaperExists(paperId)
 
             repo.removeReadingListEntry(currentUser.id, paperId)
 

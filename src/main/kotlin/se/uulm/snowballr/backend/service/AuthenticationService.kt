@@ -5,6 +5,7 @@ import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.auth.IJwtManager
 import se.uulm.snowballr.backend.auth.PasswordUtils
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
+import se.uulm.snowballr.backend.model.dto.isActiveAndConfirmed
 import se.uulm.snowballr.backend.model.dto.toGrpcUser
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.UnauthenticatedException
@@ -92,8 +93,7 @@ class AuthenticationService(
                 throw UnauthenticatedException()
             }
 
-        // Check whether the user is active (verified email)
-        if (user.status != UserStatus.USER_STATUS_ACTIVE) {
+        if (!user.isActiveAndConfirmed()) {
             throw UnauthenticatedException()
         }
 

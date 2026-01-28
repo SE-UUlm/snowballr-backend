@@ -5,8 +5,10 @@ package se.uulm.snowballr.backend.service.accessrules
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.Project
+import se.uulm.snowballr.backend.model.dto.isActive
+import se.uulm.snowballr.backend.model.dto.isDeleted
+import se.uulm.snowballr.backend.model.dto.isServerAdmin
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
-import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.UnauthorizedException
 import se.uulm.snowballr.backend.model.exception.failedprecondition.EntityNotActiveException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
@@ -14,35 +16,30 @@ import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedExcept
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadException
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
-import snowballr.ProjectOuterClass.ProjectStatus
 import java.util.UUID
 import javax.annotation.CheckReturnValue
 
 /**
- * Check whether a project with the given ID exists; otherwise, throws a [NotFoundException].
+ * Check whether a project with the given ID exists; otherwise, throws a [ProjectNotFoundException].
+ *
+ * A project is considered existent if it exists in the database and is not deleted, unless the requesting user is a
+ * server admin.
  *
  * @param projectRepo The repository used to verify project existence.
  */
 @CheckReturnValue
-fun isProjectExistent(projectRepo: IProjectTableRepo): AccessRule<UUID> {
-    return AccessRule<UUID> { _, projectId ->
-        projectRepo.doesProjectExistById(projectId)
-    }.orElseThrow { _, projectId ->
-        ProjectNotFoundException(projectId)
-    }
-}
+fun isProjectExistent(projectRepo: IProjectTableRepo) = AccessRule<UUID> { user, projectId ->
+    val project = projectRepo.getProjectById(projectId).getOrNull()
+    project != null && (!project.isDeleted() || user.isServerAdmin())
+}.orElseThrow { _, projectId -> ProjectNotFoundException(projectId) }
 
 /**
- * Check whether the project is active (or active, but settings are locked);
- * otherwise, throws an [EntityNotActiveException].
+ * Check whether the project is active (or active, but settings are locked); otherwise, throws an
+ * [EntityNotActiveException].
  */
 @CheckReturnValue
-fun isProjectActive(): AccessRule<Project> {
-    return AccessRule<Project> { _, project ->
-        project.status == ProjectStatus.PROJECT_STATUS_ACTIVE ||
-            project.status == ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED
-    }.orElseThrow { _, project -> EntityNotActiveException(EntityType.PROJECT, project.id) }
-}
+fun isProjectActive() = AccessRule<Project> { _, project -> project.isActive() }
+    .orElseThrow { _, project -> EntityNotActiveException(EntityType.PROJECT, project.id) }
 
 /**
  * Check whether the requesting user is a member of a specific project.
@@ -67,14 +64,15 @@ fun isProjectAdmin(projectMemberRepo: IProjectMemberTableRepo) = AccessRule<UUID
 }
 
 /**
- * Check whether the user is not the last project admin of a specific project; otherwise, throws a [FailedPreconditionException].
+ * Check whether the user is not the last project admin of a specific project; otherwise, throws a
+ * [FailedPreconditionException].
  *
  * @param projectMemberRepo The project member repository used to retrieve a project admins list.
  * @param action The action that is being performed and wherefore the user must not be the last project admin.
  */
 @CheckReturnValue
-fun isNotLastProjectAdmin(projectMemberRepo: IProjectMemberTableRepo, action: String): AccessRule<UUID> {
-    return AccessRule<UUID> { user, targetId ->
+fun isNotLastProjectAdmin(projectMemberRepo: IProjectMemberTableRepo, action: String) =
+    AccessRule<UUID> { user, targetId ->
         val projectAdmins = projectMemberRepo.getAllProjectAdmins(targetId)
         !(projectAdmins.size == 1 && projectAdmins.first().userId == user.id)
     }.orElseThrow { user, projectId ->
@@ -83,35 +81,39 @@ fun isNotLastProjectAdmin(projectMemberRepo: IProjectMemberTableRepo, action: St
                 "is the last admin of the project with the ID '$projectId'.",
         )
     }
-}
 
 /**
- * Check whether the current user is a member of the specified project. If the user is not a project member,
- * the user has to be a server admin; otherwise, throws an [UnauthorizedException].
+ * Check whether the current user is allowed to read the specified project.
  *
+ * The user can read the project if the following conditions are met:
+ * 1. The project exists; otherwise a [ProjectNotFoundException] is thrown.
+ * 2. The user is a member of the project or a server admin.
+ *
+ * If neither condition is met, an [UnauthorizedReadException] is thrown.
+ *
+ * @param projectRepo The repository used to access project data.
  * @param projectMemberRepo The repository used to access project membership data.
  */
 @CheckReturnValue
-fun isAllowedToReadProject(projectMemberRepo: IProjectMemberTableRepo): AccessRule<UUID> {
-    return isProjectMember(projectMemberRepo)
+fun isAllowedToReadProject(projectRepo: IProjectTableRepo, projectMemberRepo: IProjectMemberTableRepo) =
+    isProjectExistent(projectRepo)
+        .andAlso(isProjectMember(projectMemberRepo))
         .orElse(isServerAdmin().forTarget())
         .orElseThrow { currentUser, targetId ->
             UnauthorizedReadException(currentUser.id, targetId, EntityType.PROJECT)
         }
-}
 
 /**
- * Check whether the current user is an admin of the specified project. If the user is not a project admin,
- * the user has to be a server admin; otherwise, throws an [UnauthorizedException].
+ * Check whether the current user is an admin of the specified project. If the user is not a project admin, the user has
+ * to be a server admin; otherwise, throws an [UnauthorizedException].
  *
  * @param projectMemberRepo The repository used to access project membership data.
  * @param accessType The type of access that is being checked.
  */
 @CheckReturnValue
-fun isServerOrProjectAdmin(projectMemberRepo: IProjectMemberTableRepo, accessType: AccessType): AccessRule<UUID> {
-    return isProjectAdmin(projectMemberRepo)
+fun isServerOrProjectAdmin(projectMemberRepo: IProjectMemberTableRepo, accessType: AccessType) =
+    isProjectAdmin(projectMemberRepo)
         .orElse(isServerAdmin().forTarget())
         .orElseThrow { currentUser, targetId ->
             UnauthorizedExceptionFactory.createForAccessType(accessType, currentUser.id, targetId, EntityType.PROJECT)
         }
-}

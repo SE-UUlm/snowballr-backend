@@ -73,3 +73,10 @@ fun ProjectPaperWithPaper.toProjectPaperFull(
     paper = this.paper,
     reviewsWithSelectedCriteria = reviewsWithSelectedCriteriaIds,
 )
+
+/**
+ * Checks if the [ProjectPaper] within this [ProjectPaperWithPaper] has no final decision.
+ *
+ * @see ProjectPaper.hasNoFinalDecision
+ */
+fun ProjectPaperWithPaper.hasNoFinalDecision() = this.projectPaper.hasNoFinalDecision()

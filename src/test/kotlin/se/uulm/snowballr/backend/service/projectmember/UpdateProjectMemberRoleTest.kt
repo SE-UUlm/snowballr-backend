@@ -8,9 +8,9 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
-import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.UnauthorizedException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectMemberNotFoundException
+import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.ProjectOuterClass
 import snowballr.ProjectOuterClass.MemberRole
@@ -19,7 +19,7 @@ import java.util.UUID
 
 class UpdateProjectMemberRoleTest : MainServiceTest() {
     @Test
-    fun `When a server admin updates a member role of a user in a non-existent project, then a NotFoundException is thrown`() =
+    fun `When a server admin updates a member role of a user in a non-existent project, then a ProjectNotFoundException is thrown`() =
         runTest {
             val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
             val userToBeUpdated = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
@@ -34,9 +34,11 @@ class UpdateProjectMemberRoleTest : MainServiceTest() {
 
             mockCurrentUser(user)
             coEvery { projectMemberRepoMock.getAllProjectAdmins(nonExistentProjectId) } returns emptyList()
-            coEvery { projectRepoMock.doesProjectExistById(nonExistentProjectId) } returns false
+            coEvery {
+                projectRepoMock.getProjectById(nonExistentProjectId)
+            } returns Result.failure(TestSpecificException())
 
-            assertThrows<NotFoundException> { mainService.updateProjectMemberRole(request) }
+            assertThrows<ProjectNotFoundException> { mainService.updateProjectMemberRole(request) }
         }
 
     @Test
@@ -55,7 +57,7 @@ class UpdateProjectMemberRoleTest : MainServiceTest() {
 
             mockCurrentUser(user)
             coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
-            coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
+            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
             coEvery { userRepoMock.getUserById(nonExistentUserId) } returns
                 Result.failure(TestSpecificException())
 
@@ -86,7 +88,7 @@ class UpdateProjectMemberRoleTest : MainServiceTest() {
 
         mockCurrentUser(user)
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
-        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { userRepoMock.getUserById(userToBeUpdated.id) } returns Result.success(userToBeUpdated)
         coEvery { projectMemberRepoMock.getProjectMemberByComposedId(project.id, userToBeUpdated.id) } returns
             Result.success(projectMemberToBeUpdated)
@@ -126,7 +128,7 @@ class UpdateProjectMemberRoleTest : MainServiceTest() {
 
         mockCurrentUser(user)
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectAdminMember)
-        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { userRepoMock.getUserById(userToBeUpdated.id) } returns Result.success(userToBeUpdated)
         coEvery { projectMemberRepoMock.getProjectMemberByComposedId(project.id, userToBeUpdated.id) } returns
             Result.success(projectMemberToBeUpdated)
@@ -171,7 +173,7 @@ class UpdateProjectMemberRoleTest : MainServiceTest() {
 
             mockCurrentUser(user)
             coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
-            coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
+            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
             coEvery { userRepoMock.getUserById(userToBeUpdated.id) } returns Result.success(userToBeUpdated)
             coEvery { projectMemberRepoMock.getProjectMemberByComposedId(project.id, userToBeUpdated.id) } returns
                 Result.failure(ProjectMemberNotFoundException(user.id, project.id))
@@ -198,7 +200,7 @@ class UpdateProjectMemberRoleTest : MainServiceTest() {
 
         mockCurrentUser(user)
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectAdminMember)
-        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { userRepoMock.getUserById(userToBeUpdated.id) } returns Result.success(userToBeUpdated)
         coEvery { projectMemberRepoMock.getProjectMemberByComposedId(project.id, userToBeUpdated.id) } returns
             Result.success(projectAdminMember)
@@ -239,16 +241,12 @@ class UpdateProjectMemberRoleTest : MainServiceTest() {
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(
             projectAdminMember1, projectAdminMember2,
         )
-        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { userRepoMock.getUserById(user1ToBeUpdated.id) } returns Result.success(user1ToBeUpdated)
         coEvery { projectMemberRepoMock.getProjectMemberByComposedId(project.id, user1ToBeUpdated.id) } returns
             Result.success(projectAdminMember1)
         coEvery {
-            projectMemberRepoMock.updateProjectMemberRole(
-                project.id,
-                user1ToBeUpdated.id,
-                newRole,
-            )
+            projectMemberRepoMock.updateProjectMemberRole(project.id, user1ToBeUpdated.id, newRole)
         } returns updatedUser
 
         assertDoesNotThrow { mainService.updateProjectMemberRole(request) }

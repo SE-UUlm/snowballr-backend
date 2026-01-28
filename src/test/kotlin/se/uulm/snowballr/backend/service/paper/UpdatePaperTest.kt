@@ -1,13 +1,15 @@
 package se.uulm.snowballr.backend.service.paper
 
+import io.mockk.Runs
 import io.mockk.coEvery
+import io.mockk.just
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
-import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicatePaperException
+import se.uulm.snowballr.backend.model.exception.notfound.entity.PaperNotFoundException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import java.util.UUID
 import snowballr.PaperOuterClass.Paper as GrpcPaper
@@ -34,7 +36,7 @@ class UpdatePaperTest : MainServiceTest() {
         val exampleAuthor = DataBuilder.createExampleAuthor()
         val examplePaper = DataBuilder.createExamplePaper(id = paperId, authors = listOf(exampleAuthor))
 
-        coEvery { paperRepoMock.doesPaperExistById(paperId) } returns true
+        coEvery { paperRepoMock.ensurePaperExists(paperId) } just Runs
         coEvery { paperRepoMock.getPaperByExternalId(request.paper.externalId) } returns Result.failure(Exception())
         coEvery { paperRepoMock.updatePaper(request) } returns examplePaper
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paperId) } returns emptyList()
@@ -43,12 +45,12 @@ class UpdatePaperTest : MainServiceTest() {
     }
 
     @Test
-    fun `When a non-existent paper is updated, then a NotFoundException is thrown`() = runTest {
+    fun `When a non-existent paper is updated, then a PaperNotFoundException is thrown`() = runTest {
         val request = getExampleRequest()
 
-        coEvery { paperRepoMock.doesPaperExistById(paperId) } returns false
+        coEvery { paperRepoMock.ensurePaperExists(paperId) } throws PaperNotFoundException(paperId)
 
-        assertThrows<NotFoundException> {
+        assertThrows<PaperNotFoundException> {
             mainService.updatePaper(request)
         }
     }
@@ -67,7 +69,7 @@ class UpdatePaperTest : MainServiceTest() {
                 externalId = "10.1000/existingdoi",
             )
 
-            coEvery { paperRepoMock.doesPaperExistById(paperId) } returns true
+            coEvery { paperRepoMock.ensurePaperExists(paperId) } just Runs
             coEvery { paperRepoMock.getPaperByExternalId("10.1000/existingdoi") } returns Result.success(
                 existingPaperWithSameExternalId,
             )

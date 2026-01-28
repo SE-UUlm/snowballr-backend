@@ -23,7 +23,7 @@ group = "se.uulm.snowballr.backend"
 version = "0.0.0"
 
 // Snowballr API version to use for the proto files
-val apiVersion = "0.13.0" // can be a tag (e.g., "1.2.3"), commit hash, or branch name like "main"
+val apiVersion = "0.13.1" // can be a tag (e.g., "1.2.3"), commit hash, or branch name like "main"
 val protoDir = layout.buildDirectory.dir("snowballr-api/${apiVersion}")
 
 gitVersioning.apply {
