@@ -2,15 +2,21 @@ package se.uulm.snowballr.backend.repository
 
 import com.google.protobuf.util.FieldMaskUtil
 import io.github.oshai.kotlinlogging.KotlinLogging
-import org.jetbrains.exposed.exceptions.ExposedSQLException
-import org.jetbrains.exposed.sql.ResultRow
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.TextColumnType
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.statements.StatementType
-import org.jetbrains.exposed.sql.update
+import org.jetbrains.exposed.v1.core.ResultRow
+import org.jetbrains.exposed.v1.core.TextColumnType
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.inList
+import org.jetbrains.exposed.v1.core.isNotNull
+import org.jetbrains.exposed.v1.core.lessEq
+import org.jetbrains.exposed.v1.core.neq
+import org.jetbrains.exposed.v1.core.statements.StatementType
+import org.jetbrains.exposed.v1.exceptions.ExposedSQLException
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.statements.jdbc.JdbcResult
+import org.jetbrains.exposed.v1.jdbc.update
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.IdentifierType
@@ -27,7 +33,6 @@ import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserRole.USER_ROLE_UNSPECIFIED
 import snowballr.UserOuterClass.UserStatus
 import snowballr.UserOuterClass.UserStatus.USER_STATUS_UNSPECIFIED
-import java.sql.ResultSet
 import java.time.OffsetDateTime
 import java.util.UUID
 import snowballr.UserOuterClass.User as GrpcUser
@@ -177,12 +182,12 @@ class UserTableRepo(
     }
 
     /**
-     * Extracts and converts rows from a [ResultSet] to a list of [User] objects.
+     * Extracts and converts rows from a [JdbcResult] to a list of [User] objects.
      *
-     * @param result The [ResultSet] containing user data.
+     * @param result The [JdbcResult] containing user data.
      * @return A list of [User] objects extracted from the result set.
      */
-    private fun extractUserRows(result: ResultSet): List<User> {
+    private fun extractUserRows(result: JdbcResult): List<User> {
         return generateSequence {
             if (result.next()) {
                 ResultRow.create(
@@ -295,7 +300,7 @@ class UserTableRepo(
                 stmt = rawSqlQuery,
                 args = List(3) { TextColumnType() to searchQuery },
                 explicitStatementType = StatementType.SELECT,
-                transform = ::extractUserRows,
+                transform = { extractUserRows(JdbcResult(it)) },
             )
 
             matchingUsers.orEmpty()

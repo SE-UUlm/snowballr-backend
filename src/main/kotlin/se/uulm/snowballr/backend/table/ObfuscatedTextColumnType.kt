@@ -1,6 +1,6 @@
 package se.uulm.snowballr.backend.table
 
-import org.jetbrains.exposed.sql.TextColumnType
+import org.jetbrains.exposed.v1.core.TextColumnType
 
 /**
  * [TextColumnType], but the value is obfuscated for logging.

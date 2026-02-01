@@ -1,7 +1,7 @@
 package se.uulm.snowballr.backend.table
 
-import org.jetbrains.exposed.sql.TextColumnType
-import org.jetbrains.exposed.sql.statements.api.PreparedStatementApi
+import org.jetbrains.exposed.v1.core.TextColumnType
+import org.jetbrains.exposed.v1.core.statements.api.PreparedStatementApi
 import org.postgresql.util.PGobject
 
 /**

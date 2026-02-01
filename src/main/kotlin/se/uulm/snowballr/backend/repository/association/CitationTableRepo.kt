@@ -1,5 +1,7 @@
 package se.uulm.snowballr.backend.repository.association
 
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.select
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.table.association.CitationTable
 import java.util.UUID

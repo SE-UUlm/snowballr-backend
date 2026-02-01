@@ -6,11 +6,11 @@ import io.mockk.clearAllMocks
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.Table
-import org.jetbrains.exposed.sql.Transaction
-import org.jetbrains.exposed.sql.insertAndGetId
-import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import kotlinx.coroutines.withContext
+import org.jetbrains.exposed.v1.core.Table
+import org.jetbrains.exposed.v1.jdbc.JdbcTransaction
+import org.jetbrains.exposed.v1.jdbc.insertAndGetId
+import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
@@ -27,6 +27,7 @@ import snowballr.UserOuterClass.UserStatus
 import java.sql.Connection
 import java.util.UUID
 import javax.sql.DataSource
+import org.jetbrains.exposed.v1.jdbc.Database as JdbcDatabase
 
 /**
  * Base class for unit tests that interact with a test PostgreSQL database.
@@ -77,23 +78,24 @@ open class RepositoryTest(
     /**
      * Implementation of [IDatabase] providing a suspension-friendly context for database transactions.
      *
-     * This class uses the [newSuspendedTransaction] function to execute database operations
+     * This class uses the [suspendTransaction] function to execute database operations
      * within a coroutine context, ensuring that all interactions occur within a transactional scope.
      *
      * Transactions executed by this class are performed with a [Dispatchers.IO] context
      * and use the [Connection.TRANSACTION_SERIALIZABLE] isolation level to ensure data consistency.
      */
     protected class TestDatabase(var dataSource: DataSource) : IDatabase {
-        override suspend fun <T> query(dispatcher: CoroutineDispatcher, block: suspend Transaction.() -> T): T =
-            newSuspendedTransaction(
-                dispatcher,
-                Database.connect(dataSource),
-                transactionIsolation = Connection.TRANSACTION_SERIALIZABLE,
-            ) {
-                block()
+        override suspend fun <T> query(dispatcher: CoroutineDispatcher, block: suspend JdbcTransaction.() -> T): T =
+            withContext(dispatcher) {
+                suspendTransaction(
+                    JdbcDatabase.connect(dataSource),
+                    transactionIsolation = Connection.TRANSACTION_SERIALIZABLE,
+                ) {
+                    block()
+                }
             }
 
-        fun <T> queryBlocking(block: suspend Transaction.() -> T): T = runBlocking {
+        fun <T> queryBlocking(block: suspend JdbcTransaction.() -> T): T = runBlocking {
             query {
                 block()
             }
