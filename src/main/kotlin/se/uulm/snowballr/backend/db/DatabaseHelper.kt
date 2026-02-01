@@ -1,8 +1,8 @@
 package se.uulm.snowballr.backend.db
 
-import org.jetbrains.exposed.sql.SchemaUtils
-import org.jetbrains.exposed.sql.Table
-import org.jetbrains.exposed.sql.Transaction
+import org.jetbrains.exposed.v1.core.Table
+import org.jetbrains.exposed.v1.jdbc.JdbcTransaction
+import org.jetbrains.exposed.v1.jdbc.SchemaUtils
 import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.InvitationTokenTable
 import se.uulm.snowballr.backend.table.PaperTable
@@ -43,7 +43,7 @@ object DatabaseHelper {
     /**
      * Adds all required extensions for DB to work.
      */
-    fun Transaction.addExtensions() {
+    fun JdbcTransaction.addExtensions() {
         exec("CREATE EXTENSION IF NOT EXISTS hstore;")
         exec("CREATE EXTENSION IF NOT EXISTS pg_trgm;")
     }
@@ -51,8 +51,9 @@ object DatabaseHelper {
     /**
      * Removes all extensions.
      */
-    fun Transaction.removeExtensions() {
+    fun JdbcTransaction.removeExtensions() {
         exec("DROP EXTENSION IF EXISTS hstore;")
+        exec("DROP EXTENSION IF EXISTS pg_trgm;")
     }
 
     /**

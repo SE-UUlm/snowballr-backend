@@ -1,6 +1,6 @@
 package se.uulm.snowballr.backend.table
 
-import org.jetbrains.exposed.sql.BasicBinaryColumnType
+import org.jetbrains.exposed.v1.core.BasicBinaryColumnType
 
 /**
  * [BasicBinaryColumnType], but the value is redacted for logging.

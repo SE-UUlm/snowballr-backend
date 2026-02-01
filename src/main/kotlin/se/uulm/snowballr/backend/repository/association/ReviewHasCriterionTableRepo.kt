@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.repository.association
 
+import org.jetbrains.exposed.v1.core.eq
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.repository.getEntities
 import se.uulm.snowballr.backend.table.association.ReviewHasCriterionTable
