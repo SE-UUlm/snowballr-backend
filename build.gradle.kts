@@ -24,18 +24,18 @@ version = "0.0.0"
 
 // Snowballr API version to use for the proto files
 val apiVersion = "0.13.1" // can be a tag (e.g., "1.2.3"), commit hash, or branch name like "main"
-val protoDir = layout.buildDirectory.dir("snowballr-api/${apiVersion}")
+val protoDir: Provider<Directory> = layout.buildDirectory.dir("snowballr-api/${apiVersion}")
 
 gitVersioning.apply {
     refs {
         tag("v(?<version>\\d+\\.\\d+\\.\\d+)") {
-            version = "\${ref.version}"
+            version = $$"${ref.version}"
         }
     }
 
     // optional fallback configuration in case of no matching ref configuration
     rev {
-        version = "\${commit}"
+        version = $$"${commit}"
     }
 }
 
