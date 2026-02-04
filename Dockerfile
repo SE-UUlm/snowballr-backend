@@ -1,5 +1,5 @@
 # Stage 1: Build the application
-FROM gradle:8.10.2-jdk21-jammy AS build
+FROM gradle:9.3.1-jdk21-alpine AS build
 
 # Asset IDs of v0.4.38 release of grpc-health-probe
 # https://github.com/grpc-ecosystem/grpc-health-probe/releases/tag/v0.4.38
