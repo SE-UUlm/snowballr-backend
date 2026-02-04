@@ -18,11 +18,12 @@ COPY settings.gradle.kts .
 COPY src/main src/main
 
 # Grant execution rights to the Gradle wrapper script and build the jar file
-RUN chmod +x gradlew \
+RUN apk add libc6-compat \
+    && chmod +x gradlew \
     && ./gradlew shadowJar --no-daemon --stacktrace
 
 # Install curl utility
-RUN apt install curl
+RUN apk add curl
 
 # Download binaries of grpc-health-probe based on the architecture and make them executable
 RUN ARCH=$(uname -m) && \
