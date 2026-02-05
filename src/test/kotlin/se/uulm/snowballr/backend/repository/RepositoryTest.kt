@@ -16,7 +16,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.TestInstance
-import org.testcontainers.containers.PostgreSQLContainer
+import org.testcontainers.postgresql.PostgreSQLContainer
 import se.uulm.snowballr.backend.db.DatabaseHelper.addAllTables
 import se.uulm.snowballr.backend.db.DatabaseHelper.addExtensions
 import se.uulm.snowballr.backend.db.DatabaseHelper.dropAllTables
@@ -70,7 +70,7 @@ open class RepositoryTest(
 ) {
     // Initialize DB with empty dataSource only to set it in the setUp method
     protected val db = TestDatabase(HikariDataSource())
-    private val postgres = PostgreSQLContainer<Nothing>("postgres:16.1-alpine3.19")
+    private val postgres = PostgreSQLContainer("postgres:16.1-alpine3.19")
 
     /** User for testing. This prevents having to create a user for each test. */
     protected var testUserId: UUID = UUID.randomUUID()

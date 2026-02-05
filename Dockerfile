@@ -1,5 +1,5 @@
 # Stage 1: Build the application
-FROM gradle:8.10.2-jdk21-jammy AS build
+FROM gradle:9.3.1-jdk21-alpine AS build
 
 # Asset IDs of v0.4.38 release of grpc-health-probe
 # https://github.com/grpc-ecosystem/grpc-health-probe/releases/tag/v0.4.38
@@ -18,11 +18,12 @@ COPY settings.gradle.kts .
 COPY src/main src/main
 
 # Grant execution rights to the Gradle wrapper script and build the jar file
-RUN chmod +x gradlew \
+RUN apk add libc6-compat \
+    && chmod +x gradlew \
     && ./gradlew shadowJar --no-daemon --stacktrace
 
 # Install curl utility
-RUN apt install curl
+RUN apk add curl
 
 # Download binaries of grpc-health-probe based on the architecture and make them executable
 RUN ARCH=$(uname -m) && \

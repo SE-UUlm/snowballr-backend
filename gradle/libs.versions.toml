@@ -10,7 +10,7 @@ junit = "5.13.4"
 hikari-cp = "7.0.2"
 postgresql = "42.7.7"
 dotenv = "6.5.1"
-assertj = "3.27.6"
+assertj = "3.27.7"
 mockk = "1.14.7"
 arrow = "2.1.2"
 assertj-arrow-core = "2.0.0"
@@ -27,7 +27,7 @@ jjwt = "0.13.0"
 simple-java-mail = "8.12.6"
 greenmail = "2.1.8"
 handlebars = "4.5.0"
-testcontainers = "1.21.4"
+testcontainers = "2.0.3"
 kotlinx-serialization-json = "1.9.0"
 nanoid = "1.0.1"
 git-versioning = "6.4.4"
@@ -64,7 +64,7 @@ junit-platform = { module = "org.junit.platform:junit-platform-launcher" }
 hikaricp = { module = "com.zaxxer:HikariCP", version.ref = "hikari-cp" }
 
 postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
-testcontainers = { module = "org.testcontainers:postgresql", version.ref = "testcontainers" }
+testcontainers = { module = "org.testcontainers:testcontainers-postgresql", version.ref = "testcontainers" }
 
 dotenv-kotlin = { module = "io.github.cdimascio:dotenv-kotlin", version.ref = "dotenv" }
 
