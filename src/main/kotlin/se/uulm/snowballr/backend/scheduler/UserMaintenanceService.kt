@@ -39,7 +39,7 @@ class UserMaintenanceService : IUserMaintenanceService, KoinComponent {
 
     override suspend fun clearSoftDeletedUsers() {
         val thresholdDate = OffsetDateTime.now(ZoneId.systemDefault()).minusDays(
-            envReader.env.miscellaneous.sensitiveInformationRetentionDays.toLong(),
+            envReader.env.lifetime.sensitiveInformationRetentionDays.toLong(),
         )
         userTableRepo.clearSoftDeletedUsers(thresholdDate)
     }

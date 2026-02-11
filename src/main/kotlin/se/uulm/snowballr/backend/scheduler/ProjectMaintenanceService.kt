@@ -38,7 +38,7 @@ class ProjectMaintenanceService : IProjectMaintenanceService, KoinComponent {
 
     override suspend fun clearSoftDeletedProjects() {
         val thresholdDate = OffsetDateTime.now(ZoneId.systemDefault()).minusDays(
-            envReader.env.miscellaneous.sensitiveInformationRetentionDays.toLong(),
+            envReader.env.lifetime.sensitiveInformationRetentionDays.toLong(),
         )
         projectTableRepo.clearSoftDeletedProjects(thresholdDate)
     }
