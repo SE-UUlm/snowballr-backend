@@ -47,9 +47,6 @@ fun Table.deletedAt() = timestampWithTimeZone("deleted_at").nullable()
  */
 fun Table.deletedBy() = userReference("deleted_by", ReferenceOption.RESTRICT, ReferenceOption.CASCADE).nullable()
 
-/** Common column definition for the "expires at" timestamp. */
-fun Table.expiresAt() = timestampWithTimeZone("expires_at").clientDefault { OffsetDateTime.now().plusDays(1) }
-
 /**
  * Same as [Table.text], but with the [ObfuscatedTextColumnType] instead of the [TextColumnType].
  */

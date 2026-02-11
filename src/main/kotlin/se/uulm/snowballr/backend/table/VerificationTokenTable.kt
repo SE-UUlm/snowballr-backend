@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.table
 import org.jetbrains.exposed.v1.core.ReferenceOption
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.dao.id.java.UUIDTable
+import org.jetbrains.exposed.v1.datetime.timestampWithTimeZone
 import se.uulm.snowballr.backend.model.dto.VerificationToken
 import java.time.OffsetDateTime
 
@@ -23,7 +24,7 @@ object VerificationTokenTable : UUIDTable("verification_token") {
      */
     val userId = userReference("user_id", ReferenceOption.CASCADE, ReferenceOption.CASCADE).uniqueIndex()
     val token = obfuscatedText("token").uniqueIndex()
-    val expiresAt = expiresAt()
+    val expiresAt = timestampWithTimeZone("expires_at")
 }
 
 /**

@@ -1,11 +1,13 @@
 package se.uulm.snowballr.backend.repository
 
+import io.mockk.every
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
+import se.uulm.snowballr.backend.isEqualToWithDelta
 import se.uulm.snowballr.backend.model.exception.notfound.InvitationTokenNotFoundException
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertTestInvitationToken
@@ -18,7 +20,7 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 class InvitationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, ProjectTable, InvitationTokenTable), true) {
-    private val repo = InvitationTokenTableRepo(db)
+    private val repo = InvitationTokenTableRepo(db, envReaderMock)
 
     private val testEmail = "test.invite@example.com"
 
@@ -27,15 +29,18 @@ class InvitationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, ProjectTa
         @Test
         fun `When a token is saved, then it can be retrieved by its value`() = runTest {
             val projectId = insertProjectAndGetId(createdBy = testUserId)
-
             val tokenValue = "a-unique-token-for-saving"
 
+            every { envReaderMock.env.lifetime.invitationTokenLifeTimeInDays } returns 7
+
+            val expectedExpirationDate = OffsetDateTime.now().plusDays(7)
             repo.saveInvitationToken(testEmail, projectId, tokenValue)
 
             val retrievedToken = assertResultSuccess(repo.getInvitationTokenByValue(tokenValue))
             assertEquals(testEmail, retrievedToken.email)
             assertEquals(projectId, retrievedToken.projectId)
             assertEquals(tokenValue, retrievedToken.token)
+            assertThat(retrievedToken.expiresAt).isEqualToWithDelta(expectedExpirationDate)
         }
     }
 

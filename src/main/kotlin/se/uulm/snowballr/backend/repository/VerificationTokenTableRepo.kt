@@ -6,6 +6,7 @@ import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.lessEq
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import se.uulm.snowballr.backend.db.IDatabase
+import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.model.dto.VerificationToken
 import se.uulm.snowballr.backend.model.exception.notfound.VerificationTokenNotFoundException
 import se.uulm.snowballr.backend.table.VerificationTokenTable
@@ -48,12 +49,17 @@ interface IVerificationTokenTableRepo {
 
 class VerificationTokenTableRepo(
     private val db: IDatabase,
+    private val envReader: EnvReader,
 ) : IVerificationTokenTableRepo {
     override suspend fun saveVerificationToken(userId: UUID, token: String) {
+        val verificationTokenLifeTimeInDays = envReader.env.lifetime.verificationTokenLifeTimeInDays.toLong()
+        val expirationDate = OffsetDateTime.now().plusDays(verificationTokenLifeTimeInDays)
+
         db.query {
             VerificationTokenTable.insertAndGet(ResultRow::toVerificationToken) {
                 it[VerificationTokenTable.userId] = userId
                 it[VerificationTokenTable.token] = token
+                it[VerificationTokenTable.expiresAt] = expirationDate
             }
         }
     }
