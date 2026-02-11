@@ -51,3 +51,6 @@ bin/
 
 ### Database ###
 db-data
+
+### Plugins ###
+/plugins

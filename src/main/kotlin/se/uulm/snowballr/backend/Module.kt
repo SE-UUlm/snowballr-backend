@@ -20,6 +20,7 @@ import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.env.EnvService
 import se.uulm.snowballr.backend.env.IEnvService
 import se.uulm.snowballr.backend.fetcher.IFetcherManager
+import se.uulm.snowballr.backend.fetcher.PythonPluginFetcherManager
 import se.uulm.snowballr.backend.mail.EmailManager
 import se.uulm.snowballr.backend.mail.EmailTemplateManager
 import se.uulm.snowballr.backend.mail.IEmailManager
@@ -186,6 +187,7 @@ private fun Module.customServicesDeps() {
         createdAtStart()
         bind<IJwtManager>()
     }
+    singleOf(::PythonPluginFetcherManager) { bind<IFetcherManager>() }
     singleOf(::CookieManager) { bind<ICookieManager>() }
     singleOf(::EmailManager) {
         createdAtStart()
