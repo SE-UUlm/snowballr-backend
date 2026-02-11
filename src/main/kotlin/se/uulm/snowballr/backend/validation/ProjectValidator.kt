@@ -5,6 +5,7 @@ import arrow.core.EitherNel
 import arrow.core.raise.Raise
 import arrow.core.raise.either
 import arrow.core.raise.zipOrAccumulate
+import com.google.protobuf.util.FieldMaskUtil
 import se.uulm.snowballr.backend.model.ValidationIssue
 import snowballr.ProjectOuterClass.Project
 import snowballr.ProjectOuterClass.Project.Create
@@ -44,7 +45,7 @@ object ProjectValidator {
         }
 
         // Only proceed with field validation if the mask is valid
-        val selectedFields = request.mask.pathsList.toSet()
+        val selectedFields = FieldMaskUtil.normalize(request.mask).pathsList.toSet()
 
         val project = request.project
         @Suppress("NamedArguments")

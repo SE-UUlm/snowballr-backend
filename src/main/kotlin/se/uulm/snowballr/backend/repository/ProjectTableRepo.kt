@@ -214,7 +214,7 @@ class ProjectTableRepo(
         val fieldMaskPaths = FieldMaskUtil.normalize(request.mask).pathsList.toSet()
 
         val isUpdatingDecisionMatrix = isUpdatingDecisionMatrix(fieldMaskPaths)
-        val project = if (isUpdatingDecisionMatrix) getProjectById(projectId).getOrThrow() else null
+        val project = if (isUpdatingDecisionMatrix) getProjectByIdOrNull(projectId) else null
 
         ProjectTable.updateByIdAndGet(projectId, ResultRow::toProject) {
             it.applyProjectStatusUpdate(request.project, fieldMaskPaths)
