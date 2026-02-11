@@ -180,7 +180,7 @@ class InviteUserToProjectTest : MainServiceTest() {
         assertThat(capturedToken).isNotBlank()
         val capturedEmailData = emailDataSlot.captured
         val expectedInvitationLink = "https://link/$capturedToken"
-        assertEquals(invitedUser.firstName, capturedEmailData.firstName)
+        assertEquals(invitedUser.firstName, capturedEmailData.inviteeFirstName)
         assertEquals(expectedInvitationLink, capturedEmailData.acceptanceLink)
     }
 
@@ -200,7 +200,7 @@ class InviteUserToProjectTest : MainServiceTest() {
 
         assertDoesNotThrow { mainService.inviteUserToProject(inviteNonExistentUserRequest.build()) }
 
-        assertEquals("User", emailDataSlot.captured.firstName)
+        assertEquals("User", emailDataSlot.captured.inviteeFirstName)
     }
 
     @Test

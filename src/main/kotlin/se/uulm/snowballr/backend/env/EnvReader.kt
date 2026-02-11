@@ -12,7 +12,6 @@ private const val PORT = "PORT"
 private const val LOG_LEVEL = "LOG_LEVEL"
 private const val AUTH_BYPASS_ENABLED = "AUTH_BYPASS_ENABLED"
 private const val FRONTEND_BASE_URL = "FRONTEND_BASE_URL"
-private const val SENSITIVE_INFORMATION_RETENTION_DAYS = "SENSITIVE_INFORMATION_RETENTION_DAYS"
 
 // Database
 private const val DATABASE_PASSWORD = "DATABASE_PASSWORD"
@@ -32,12 +31,19 @@ private const val SMTP_TRANSPORT_LOGGING_ONLY_ENABLED = "SMTP_TRANSPORT_LOGGING_
 private const val SMTP_SENDER_NAME = "SMTP_SENDER_NAME"
 private const val SMTP_SENDER_EMAIL = "SMTP_SENDER_EMAIL"
 
+// Lifetime
+private const val SENSITIVE_INFORMATION_RETENTION_DAYS = "SENSITIVE_INFORMATION_RETENTION_DAYS"
+private const val INVITATION_TOKEN_LIFETIME_IN_DAYS = "INVITATION_TOKEN_LIFETIME_IN_DAYS"
+private const val VERIFICATION_TOKEN_LIFETIME_IN_DAYS = "VERIFICATION_TOKEN_LIFETIME_IN_DAYS"
+
 // Default values
 private val DEFAULT_PROFILE = AppProfile.PRODUCTION
 private const val DEFAULT_PORT = 8080
 const val DEFAULT_LOG_LEVEL = "DEBUG"
 private const val DEFAULT_SENSITIVE_INFORMATION_RETENTION_DAYS = 30
 private const val DEFAULT_DATABASE_HOST = "localhost"
+private const val DEFAULT_INVITATION_TOKEN_LIFETIME_IN_DAYS = 7
+private const val DEFAULT_VERIFICATION_TOKEN_LIFETIME_IN_DAYS = 1
 
 private val logger = KotlinLogging.logger {}
 
@@ -57,7 +63,7 @@ class EnvReader(
     val env: Env
 
     init {
-        val activeProfile = AppProfile.fromString(envService.getOrDefault(PROFILE, DEFAULT_PROFILE.toString()))
+        val activeProfile = envService.getOrDefault(PROFILE, DEFAULT_PROFILE, AppProfile::fromString)
         logger.info { "Application starting with profile: $activeProfile" }
 
         val defaults = defaultsForProfile(activeProfile)
@@ -72,6 +78,7 @@ class EnvReader(
             database = database,
             encryption = buildEncryption(),
             smtp = buildSmtp(defaults),
+            lifetime = buildLifetime(defaults),
         )
     }
 
@@ -83,7 +90,7 @@ class EnvReader(
      */
     private fun buildHttp(defaults: ProfileDefaults): Env.Http {
         return Env.Http(
-            port = envService.getRequiredOrDefault(PORT, defaults.port?.toString()).toInt(),
+            port = envService.getRequiredOrDefault(PORT, defaults.port, String::toIntOrNull),
         )
     }
 
@@ -94,14 +101,8 @@ class EnvReader(
      * @return An [Env.Miscellaneous] object containing the miscellaneous configuration.
      */
     private fun buildMiscellaneous(defaults: ProfileDefaults): Env.Miscellaneous {
-        val frontendBaseUrl = envService.getRequiredOrDefault(
-            FRONTEND_BASE_URL,
-            defaults.frontendBaseUrl,
-        ).trim().trimEnd('/')
-        val sensitiveInformationRetentionDays = envService.getRequiredOrDefault(
-            SENSITIVE_INFORMATION_RETENTION_DAYS,
-            defaults.sensitiveInformationRetentionDays.toString(),
-        ).toInt()
+        val frontendBaseUrl = envService.getRequiredStringOrDefault(FRONTEND_BASE_URL, defaults.frontendBaseUrl)
+            .trim().trimEnd('/')
 
         if (frontendBaseUrl.startsWith("http:")) {
             logger.warn {
@@ -111,10 +112,9 @@ class EnvReader(
         }
 
         return Env.Miscellaneous(
-            logLevel = envService.getOrDefault(LOG_LEVEL, defaults.logLevel),
+            logLevel = envService.getStringOrDefault(LOG_LEVEL, defaults.logLevel),
             authBypassEnabled = envService.getBooleanOrDefault(AUTH_BYPASS_ENABLED, defaults.authBypassEnabled),
             frontendBaseUrl = frontendBaseUrl,
-            sensitiveInformationRetentionDays = sensitiveInformationRetentionDays,
         )
     }
 
@@ -131,7 +131,7 @@ class EnvReader(
 
         return Env.Database(
             password = envService[DATABASE_PASSWORD],
-            host = envService.getRequiredOrDefault(DATABASE_HOST, defaults.databaseHost),
+            host = envService.getRequiredStringOrDefault(DATABASE_HOST, defaults.databaseHost),
             seedUserEnabled = seedUserEnabled,
         )
     }
@@ -167,6 +167,27 @@ class EnvReader(
             smtpTransportLoggingOnlyEnabled = smtpTransportLoggingOnlyEnabled,
             smtpSenderName = envService[SMTP_SENDER_NAME],
             smtpSenderEmail = envService[SMTP_SENDER_EMAIL],
+        )
+    }
+
+    private fun buildLifetime(defaults: ProfileDefaults): Env.Lifetime {
+        val sensitiveInformationRetentionDays = envService.getRequiredIntOrDefault(
+            SENSITIVE_INFORMATION_RETENTION_DAYS,
+            defaults.sensitiveInformationRetentionDays,
+        )
+        val invitationTokenLifeTimeInDays = envService.getIntOrDefault(
+            INVITATION_TOKEN_LIFETIME_IN_DAYS,
+            DEFAULT_INVITATION_TOKEN_LIFETIME_IN_DAYS,
+        )
+        val verificationTokenLifeTimeInDays = envService.getIntOrDefault(
+            VERIFICATION_TOKEN_LIFETIME_IN_DAYS,
+            DEFAULT_VERIFICATION_TOKEN_LIFETIME_IN_DAYS,
+        )
+
+        return Env.Lifetime(
+            sensitiveInformationRetentionDays = sensitiveInformationRetentionDays,
+            invitationTokenLifeTimeInDays = invitationTokenLifeTimeInDays,
+            verificationTokenLifeTimeInDays = verificationTokenLifeTimeInDays,
         )
     }
 

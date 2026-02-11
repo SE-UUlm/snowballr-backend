@@ -93,7 +93,7 @@ class EmailManager(
                 .startingBlank()
                 .to(to)
                 .from(envReader.env.smtp.smtpSenderName, envReader.env.smtp.smtpSenderEmail)
-                .withSubject(template.subject)
+                .withSubject(data.subject)
                 .withHTMLText(htmlBody)
                 .buildEmailCompletedWithDefaultsAndOverrides()
 

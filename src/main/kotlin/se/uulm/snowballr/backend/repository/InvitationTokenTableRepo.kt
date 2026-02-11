@@ -7,6 +7,7 @@ import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.lessEq
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import se.uulm.snowballr.backend.db.IDatabase
+import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.model.dto.InvitationToken
 import se.uulm.snowballr.backend.model.exception.notfound.InvitationTokenNotFoundException
 import se.uulm.snowballr.backend.table.InvitationTokenTable
@@ -74,13 +75,18 @@ interface IInvitationTokenTableRepo {
 
 class InvitationTokenTableRepo(
     private val db: IDatabase,
+    private val envReader: EnvReader,
 ) : IInvitationTokenTableRepo {
     override suspend fun saveInvitationToken(email: String, projectId: UUID, token: String) {
+        val verificationTokenLifeTimeInDays = envReader.env.lifetime.invitationTokenLifeTimeInDays.toLong()
+        val expirationDate = OffsetDateTime.now().plusDays(verificationTokenLifeTimeInDays)
+
         db.query {
             InvitationTokenTable.insertAndGet(ResultRow::toInvitationToken) {
                 it[InvitationTokenTable.email] = email
                 it[InvitationTokenTable.projectId] = projectId
                 it[InvitationTokenTable.token] = token
+                it[InvitationTokenTable.expiresAt] = expirationDate
             }
         }
     }

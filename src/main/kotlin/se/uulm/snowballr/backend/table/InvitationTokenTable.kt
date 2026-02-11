@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.table
 import org.jetbrains.exposed.v1.core.ReferenceOption
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.dao.id.java.UUIDTable
+import org.jetbrains.exposed.v1.datetime.timestampWithTimeZone
 import se.uulm.snowballr.backend.model.dto.InvitationToken
 import java.time.OffsetDateTime
 
@@ -26,7 +27,7 @@ object InvitationTokenTable : UUIDTable("invitation_token") {
      */
     val projectId = reference("project_id", ProjectTable, ReferenceOption.CASCADE, ReferenceOption.CASCADE)
     val token = obfuscatedText("token").uniqueIndex()
-    val expiresAt = expiresAt()
+    val expiresAt = timestampWithTimeZone("expires_at")
 
     init {
         uniqueIndex(email, projectId)

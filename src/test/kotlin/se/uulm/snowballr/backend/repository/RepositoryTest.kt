@@ -3,6 +3,8 @@ package se.uulm.snowballr.backend.repository
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import io.mockk.clearAllMocks
+import io.mockk.every
+import io.mockk.mockk
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -16,11 +18,18 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.TestInstance
+import org.koin.core.context.startKoin
+import org.koin.core.context.stopKoin
+import org.koin.dsl.module
 import org.testcontainers.postgresql.PostgreSQLContainer
+import se.uulm.snowballr.backend.RandomKeyGenerator
 import se.uulm.snowballr.backend.db.DatabaseHelper.addAllTables
 import se.uulm.snowballr.backend.db.DatabaseHelper.addExtensions
 import se.uulm.snowballr.backend.db.DatabaseHelper.dropAllTables
 import se.uulm.snowballr.backend.db.IDatabase
+import se.uulm.snowballr.backend.env.Env
+import se.uulm.snowballr.backend.env.EnvReader
+import se.uulm.snowballr.backend.env.IEnvService
 import se.uulm.snowballr.backend.table.UserTable
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
@@ -72,6 +81,19 @@ open class RepositoryTest(
     protected val db = TestDatabase(HikariDataSource())
     private val postgres = PostgreSQLContainer("postgres:16.1-alpine3.19")
 
+    // Environment dependencies
+    val envServiceMock = mockk<IEnvService>()
+    val envReaderMock = mockk<EnvReader>()
+
+    private val repositoryTestModule = module {
+        // Environment dependencies
+        single { envServiceMock }
+        single { envReaderMock }
+
+        // Mock env variables
+        mockEnv()
+    }
+
     /** User for testing. This prevents having to create a user for each test. */
     protected var testUserId: UUID = UUID.randomUUID()
 
@@ -104,6 +126,36 @@ open class RepositoryTest(
 
     private fun getTestTables() = if (needsTestUser) arrayOf(*tables, UserTable) else tables
 
+    private fun mockEnv() {
+        val miscellaneousMock = mockk<Env.Miscellaneous>()
+        every { miscellaneousMock.frontendBaseUrl } returns ""
+        every { miscellaneousMock.logLevel } returns "DEBUG"
+
+        val encryptionMock = mockk<Env.Encryption>()
+        val (privateKeyBase64, publicKeyBase64) = RandomKeyGenerator.generateKeyPair()
+        every { encryptionMock.jwtPrivateKeyBase64 } returns privateKeyBase64
+        every { encryptionMock.jwtPublicKeyBase64 } returns publicKeyBase64
+
+        val smtpMock = mockk<Env.SMTP>()
+        every { smtpMock.smtpHost } returns ""
+        every { smtpMock.smtpPort } returns 0
+        every { smtpMock.smtpUser } returns ""
+        every { smtpMock.smtpPassword } returns ""
+        every { smtpMock.smtpTransportLoggingOnlyEnabled } returns true
+        every { smtpMock.smtpSenderName } returns ""
+        every { smtpMock.smtpSenderEmail } returns ""
+
+        val lifetimeMock = mockk<Env.Lifetime>()
+
+        val envMock = mockk<Env>()
+        every { envMock.miscellaneous } returns miscellaneousMock
+        every { envMock.encryption } returns encryptionMock
+        every { envMock.smtp } returns smtpMock
+        every { envMock.lifetime } returns lifetimeMock
+
+        every { envReaderMock.env } returns envMock
+    }
+
     @BeforeAll
     fun setUp() {
         postgres.start()
@@ -125,6 +177,9 @@ open class RepositoryTest(
             if (needsTestUser) {
                 initTestUser()
             }
+        }
+        startKoin {
+            modules(repositoryTestModule)
         }
     }
 
@@ -151,6 +206,7 @@ open class RepositoryTest(
             // removeExtensions()
         }
         clearAllMocks()
+        stopKoin()
     }
 
     @AfterAll

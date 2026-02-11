@@ -1,10 +1,13 @@
 package se.uulm.snowballr.backend.service
 
 import io.viascom.nanoid.NanoId
+import se.uulm.snowballr.backend.env.EnvReader
+import se.uulm.snowballr.backend.formatting.daysToHumanReadable
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.mail.IEmailManager
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.dto.getFullName
 import se.uulm.snowballr.backend.model.dto.isActiveAndConfirmed
 import se.uulm.snowballr.backend.model.dto.toGrpcUser
 import se.uulm.snowballr.backend.model.dto.toGrpcUsers
@@ -65,6 +68,7 @@ private const val MINIMUM_LENGTH_OF_SEARCH_QUERY = 3
  * @param projectMemberRepo The repository responsible for managing persistence operations for project members.
  * @param invitationTokenRepo The repository responsible for managing persistence operations for invitation tokens.
  * @param emailManager The manager responsible for sending emails.
+ * @param envReader The environment reader that provides access to configuration values.
  */
 class InvitationService(
     private val userRepo: IUserTableRepo,
@@ -72,6 +76,7 @@ class InvitationService(
     private val projectMemberRepo: IProjectMemberTableRepo,
     private val invitationTokenRepo: IInvitationTokenTableRepo,
     private val emailManager: IEmailManager,
+    private val envReader: EnvReader,
 ) : IInvitationService {
     override suspend fun getInviteCandidates(request: Project.InviteCandidatesRequest): GrpcUser.List =
         withUser(userRepo) { currentUser ->
@@ -134,11 +139,17 @@ class InvitationService(
         }
 
         // Send invitation email
+        val inviterName = currentUser.getFullName()
         val invitationLink = emailManager.createAcceptProjectInvitationLink(invitationToken)
-        emailManager.sendAcceptProjectInvitationEmail(
-            request.userEmail,
-            EmailData.AcceptProjectInvitation(userFirstName, project.name, invitationLink),
+        val expirationTimeInDays = envReader.env.lifetime.invitationTokenLifeTimeInDays
+        val data = EmailData.AcceptProjectInvitation(
+            userFirstName,
+            inviterName,
+            project.name,
+            invitationLink,
+            daysToHumanReadable(expirationTimeInDays),
         )
+        emailManager.sendAcceptProjectInvitationEmail(request.userEmail, data)
     }
 
     override suspend fun acceptProjectInvitation(request: GrpcProject.Member.Accept) {
