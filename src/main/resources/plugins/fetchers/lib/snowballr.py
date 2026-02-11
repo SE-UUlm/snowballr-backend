@@ -14,8 +14,8 @@ class Author(JSONWizard):
         key_transform_with_load = 'SNAKE'
         key_transform_with_dump = 'SNAKE'
 
-    first_name: str
-    last_name: str
+    first_name: str = ""
+    last_name: str = ""
 
 @dataclass(unsafe_hash=True)
 class Paper(JSONWizard):
@@ -24,15 +24,15 @@ class Paper(JSONWizard):
         key_transform_with_load = 'SNAKE'
         key_transform_with_dump = 'SNAKE'
 
-    title: str
-    external_id: Optional[str]
-    abstract: str
-    year: int
-    publisher: str
-    publication_type: str
-    publication_name: str
-    authors: list[Author]
-    metadata: dict[str, str]
+    title: str = ""
+    external_id: Optional[str] = None
+    abstract: str = ""
+    year: int = 1970
+    publisher: str = ""
+    publication_type: str = ""
+    publication_name: str = ""
+    authors: list[Author] = field(default_factory=list)
+    metadata: dict[str, str] = field(default_factory=dict)
 
 class EventType(StrEnum):
     OPTIONS = "options"

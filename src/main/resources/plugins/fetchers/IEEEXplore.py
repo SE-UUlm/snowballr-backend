@@ -22,7 +22,7 @@ def backward_references(paper: Paper, options: dict[str, str]) -> list[Paper]:
     return []
 
 def forward_references(paper: Paper, options: dict[str, str]) -> list[Paper]:
-    article_number = paper.metadata.entries.get(metadata_key)
+    article_number = paper.metadata.get(metadata_key)
     if article_number is None:
         return []
 
@@ -56,9 +56,9 @@ def paper_from_response(res) -> Paper:
         None,
         res.get("abstract", ""),
         int(date[:4]),
-        res.get("publisher", None),
-        res.get("content_type", None),
-        res.get("publication_title", None),
+        res.get("publisher", ""),
+        res.get("content_type", ""),
+        res.get("publication_title", ""),
         authors,
         { metadata_key: res["article_number"] },
     )
