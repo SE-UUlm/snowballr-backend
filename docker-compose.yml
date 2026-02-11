@@ -39,6 +39,9 @@ services:
             SMTP_SENDER_NAME: ${SMTP_SENDER_NAME:-}
             SMTP_SENDER_EMAIL: ${SMTP_SENDER_EMAIL:-}
             SENSITIVE_INFORMATION_RETENTION_DAYS: ${SENSITIVE_INFORMATION_RETENTION_DAYS:-}
+            PLUGIN_DIRECTORY: /app/plugins/
+        volumes:
+            - ./plugins:/app/plugins
         ports:
             - ${PORT:-8080}:${PORT:-8080}
         depends_on:
@@ -88,6 +91,9 @@ services:
             SMTP_SENDER_NAME: ${SMTP_SENDER_NAME:-}
             SMTP_SENDER_EMAIL: ${SMTP_SENDER_EMAIL:-}
             SENSITIVE_INFORMATION_RETENTION_DAYS: ${SENSITIVE_INFORMATION_RETENTION_DAYS:-}
+            PLUGIN_DIRECTORY: /app/plugins/
+        volumes:
+            - ./plugins:/app/plugins
         ports:
             - ${PORT:-8080}:${PORT:-8080}
         depends_on:
