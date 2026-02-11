@@ -66,3 +66,17 @@ fun User.isActiveAndConfirmed() = this.status == UserStatus.USER_STATUS_ACTIVE
  * [UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED].
  */
 fun User.isActive() = this.isActiveAndConfirmed() || this.status == UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED
+
+/**
+ * Returns the full name of the user by concatenating the first name and last name.
+ *
+ * If either the first name or last name is empty, it will return the non-empty part as the full name.
+ * If both are empty, it will return an empty string.
+ *
+ * Example:
+ * - If firstName is "John" and lastName is "Doe", it will return "John Doe".
+ * - If firstName is "John" and lastName is "", it will return "John".
+ * - If firstName is "" and lastName is "Doe", it will return "Doe".
+ * - If both firstName and lastName are "", it will return "".
+ */
+fun User.getFullName(): String = "${this.firstName} ${this.lastName}".trim()

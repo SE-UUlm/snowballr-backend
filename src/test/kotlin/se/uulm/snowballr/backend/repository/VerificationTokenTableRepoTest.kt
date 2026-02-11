@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
-import se.uulm.snowballr.backend.isBetweenWithDelta
 import se.uulm.snowballr.backend.isEqualToWithDelta
 import se.uulm.snowballr.backend.model.exception.notfound.VerificationTokenNotFoundException
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertTestVerificationToken

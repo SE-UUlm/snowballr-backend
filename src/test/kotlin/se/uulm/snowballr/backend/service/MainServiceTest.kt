@@ -15,8 +15,10 @@ import org.koin.core.context.stopKoin
 import org.koin.dsl.module
 import org.koin.test.KoinTest
 import org.simplejavamail.api.mailer.Mailer
+import se.uulm.snowballr.backend.RandomKeyGenerator
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.auth.IJwtManager
+import se.uulm.snowballr.backend.env.Env
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.env.IEnvService
 import se.uulm.snowballr.backend.fetcher.FetcherManager
@@ -127,11 +129,47 @@ open class MainServiceTest : KoinTest {
 
     val mainService: IMainService by inject()
 
+    private fun mockEnv() {
+        val miscellaneousMock = mockk<Env.Miscellaneous>()
+        every { miscellaneousMock.frontendBaseUrl } returns ""
+        every { miscellaneousMock.logLevel } returns "DEBUG"
+
+        val encryptionMock = mockk<Env.Encryption>()
+        val (privateKeyBase64, publicKeyBase64) = RandomKeyGenerator.generateKeyPair()
+        every { encryptionMock.jwtPrivateKeyBase64 } returns privateKeyBase64
+        every { encryptionMock.jwtPublicKeyBase64 } returns publicKeyBase64
+
+        val smtpMock = mockk<Env.SMTP>()
+        every { smtpMock.smtpHost } returns ""
+        every { smtpMock.smtpPort } returns 0
+        every { smtpMock.smtpUser } returns ""
+        every { smtpMock.smtpPassword } returns ""
+        every { smtpMock.smtpTransportLoggingOnlyEnabled } returns true
+        every { smtpMock.smtpSenderName } returns ""
+        every { smtpMock.smtpSenderEmail } returns ""
+
+        val lifetimeMock = mockk<Env.Lifetime>()
+        every { lifetimeMock.sensitiveInformationRetentionDays } returns 30
+        every { lifetimeMock.invitationTokenLifeTimeInDays } returns 7
+        every { lifetimeMock.verificationTokenLifeTimeInDays } returns 1
+
+        val envMock = mockk<Env>()
+        every { envMock.miscellaneous } returns miscellaneousMock
+        every { envMock.encryption } returns encryptionMock
+        every { envMock.smtp } returns smtpMock
+        every { envMock.lifetime } returns lifetimeMock
+
+        every { envReaderMock.env } returns envMock
+    }
+
     // Note that we cannot use the list of all mocks to add it to the module.
     private val serviceTestModule = module {
         // Environment dependencies
         single { envServiceMock }
         single { envReaderMock }
+
+        // Mock env variables
+        mockEnv()
 
         // Repository layer
         single { projectRepoMock }

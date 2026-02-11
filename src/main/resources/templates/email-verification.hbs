@@ -54,12 +54,6 @@
             color: #666666;
             word-break: break-all;
         }
-
-        .footer {
-            margin-top: 20px;
-            font-size: 14px;
-            color: #888888;
-        }
     </style>
 </head>
 <body>
@@ -72,12 +66,13 @@
         <p>Thank you for signing up for SnowballR! Please click the button below to verify your email address and
             activate your account.</p>
 
+        This link will expire {{expirationTime}}.
+
         <div class="button-container">
             <a href="{{{verificationLink}}}" class="button">Verify Email Address</a>
         </div>
 
-        <p>This verification link is valid for 24 hours. If you did not sign up for an account, you can safely ignore
-            this email.</p>
+        <p>If you did not sign up for an account, you can safely ignore this email.</p>
 
         <hr>
 
@@ -86,11 +81,6 @@
             <a href="{{{verificationLink}}}">{{{verificationLink}}}</a>
         </p>
     </div>
-
-    <p class="footer">
-        Best regards,<br>
-        The SnowballR Team
-    </p>
 </div>
 </body>
 </html>

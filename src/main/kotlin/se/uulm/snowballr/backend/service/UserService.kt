@@ -3,6 +3,8 @@ package se.uulm.snowballr.backend.service
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.viascom.nanoid.NanoId
 import se.uulm.snowballr.backend.auth.PasswordUtils
+import se.uulm.snowballr.backend.env.EnvReader
+import se.uulm.snowballr.backend.formatting.daysToHumanReadable
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.mail.IEmailManager
 import se.uulm.snowballr.backend.model.EntityType
@@ -105,6 +107,7 @@ private const val VERIFICATION_TOKEN_LENGTH = 48
  * @param criterionRepo The repository responsible for managing persistence operations for criteria.
  * @param verificationTokenRepo The repository responsible for managing persistence operations for verification tokens.
  * @param emailManager The manager responsible for sending emails.
+ * @param envReader The environment reader that provides access to configuration values.
  */
 class UserService(
     private val userRepo: IUserTableRepo,
@@ -113,6 +116,7 @@ class UserService(
     private val criterionRepo: ICriterionTableRepo,
     private val verificationTokenRepo: IVerificationTokenTableRepo,
     private val emailManager: IEmailManager,
+    private val envReader: EnvReader,
 ) : IUserService {
     override suspend fun getUserById(userId: UUID): GrpcUser = withUser(userRepo) { currentUser ->
         isAllowedToReadUser(projectMemberRepo).checkFor(currentUser, userId)
@@ -175,7 +179,13 @@ class UserService(
 
         // Send verification email
         val verificationLink = emailManager.createVerificationLink(verificationToken)
-        emailManager.sendVerificationEmail(user.email, EmailData.EmailVerification(user.firstName, verificationLink))
+        val expirationTimeInDays = envReader.env.lifetime.verificationTokenLifeTimeInDays
+        val data = EmailData.EmailVerification(
+            user.firstName,
+            verificationLink,
+            daysToHumanReadable(expirationTimeInDays),
+        )
+        emailManager.sendVerificationEmail(user.email, data)
     }
 
     override suspend fun updateUser(request: GrpcUser.Update): GrpcUser = withUser(userRepo) { currentUser ->

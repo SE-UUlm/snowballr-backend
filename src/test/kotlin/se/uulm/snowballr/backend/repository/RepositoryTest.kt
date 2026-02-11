@@ -2,7 +2,6 @@ package se.uulm.snowballr.backend.repository
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
-import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk

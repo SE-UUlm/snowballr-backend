@@ -34,5 +34,4 @@ fun AbstractOffsetDateTimeAssert<*>.isBetweenWithDelta(
 fun AbstractOffsetDateTimeAssert<*>.isEqualToWithDelta(
     expected: OffsetDateTime,
     deltaInUs: Long = 1_000_000,
-): AbstractOffsetDateTimeAssert<*> =
-    this.isBetweenWithDelta(expected, expected, deltaInUs)
+): AbstractOffsetDateTimeAssert<*> = this.isBetweenWithDelta(expected, expected, deltaInUs)
