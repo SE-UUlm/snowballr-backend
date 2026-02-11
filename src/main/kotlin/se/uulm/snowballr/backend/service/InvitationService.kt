@@ -53,11 +53,11 @@ interface IInvitationService {
 }
 
 /**
- * The [InvitationService] class handles operations related to normal papers by implementing the [IInvitationService] interface.
+ * The [InvitationService] class handles operations related to normal papers by implementing the [IInvitationService]
+ * interface.
  *
  * This class serves as a layer that abstracts the responsibility of invitations.
  *
- * @constructor Initializes the [InvitationService] with the necessary repositories.
  * @param userRepo The repository responsible for managing persistence operations for users.
  * @param projectRepo The repository responsible for managing persistence operations for projects.
  * @param projectMemberRepo The repository responsible for managing persistence operations for project members.
