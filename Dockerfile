@@ -47,19 +47,32 @@ FROM eclipse-temurin:21-jre-alpine-3.21 AS final
 
 WORKDIR /app
 
-# Run the application as a non-root user.
-RUN adduser -D backend-user && chown -R backend-user /app
-USER backend-user
-
 # Copy built jar file
 COPY --from=build /app/build/libs/snowballr-backend-*.jar app.jar
 # Copy grpc_health_probe
 COPY --from=build /app/grpc_health_probe grpc_health_probe
 
 ENV PORT=8080
+ENV PLUGIN_DIRECTORY=/app/plugins/
+
+VOLUME /app/plugins/
 
 # Healthcheck uses grpc-health-probe
 HEALTHCHECK CMD ./grpc_health_probe -addr=localhost:${PORT} -service "snowballr.SnowballR"
 
+# Install python and some common dependencies for the plugin system using venv
+COPY requirements.txt .
+RUN apk add --no-cache python3 libcurl
+RUN python3 -m venv /app/venv
+# Needed for pycurl
+ENV PYCURL_SSL_LIBRARY=openssl
+RUN apk add --no-cache --virtual .py-build-deps python3-dev build-base curl-dev
+RUN sh -c "source /app/venv/bin/activate && pip install -r requirements.txt"
+RUN apk del .py-build-deps
+
+# Run the application as a non-root user.
+RUN adduser -D backend-user && chown -R backend-user /app
+USER backend-user
+
 # Start execute the jar file when starting the container
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT sh -c "source /app/venv/bin/activate && java -jar app.jar"
