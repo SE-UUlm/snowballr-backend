@@ -42,20 +42,24 @@ The `PROFILE` variable determines the default behavior of the application.
 | `SENSITIVE_INFORMATION_RETENTION_DAYS` |                 :x:                  |      30       | Number of days sensitive information will be kept after an entity got deleted.    |
 | `WEB_PORT`                             |                 :x:*                 |     8081      | The port where the proxy is served (used for gRPC-Web).                           |
 | `BACKEND_TAG`                          |                 :x:*                 | `latest-dev`  | Tag of registry backend image to use for `registry` docker compose profile.       |
+| `SENSITIVE_INFORMATION_RETENTION_DAYS` |                 :x:                  | Profile-based | Number of days sensitive information will be kept after an entity got deleted.    |
+| `INVITATION_TOKEN_LIFETIME_IN_DAYS`    |                 :x:                  |       7       | Lifetime of invitation tokens in days.                                            |
+| `VERIFICATION_TOKEN_LIFETIME_IN_DAYS`  |                 :x:                  |       1       | Lifetime of verification tokens in days.                                          |
 
 \* only used when using the docker compose profiles.
 
 #### Profile-based Defaults
 
-| Profile                               | `PRODUCTION` | `DEVELOPMENT`           | `TESTING`               |
-|---------------------------------------|--------------|-------------------------|-------------------------|
-| `PORT`                                | -            | 8080                    | 8080                    |
-| `DATABASE_HOST`                       | -            | `localhost`             | `localhost`             |
-| `LOG_LEVEL`                           | `INFO`       | `DEBUG`                 | `TRACE`                 |
-| `AUTH_BYPASS_ENABLED`                 | `false`      | `false`                 | `true`                  |
-| `FRONTEND_BASE_URL`                   | -            | `http://localhost:5173` | `http://localhost:5173` |
-| `DATABASE_SEED_USER_ENABLED`          | `false`      | `true`                  | `true`                  |
-| `SMTP_TRANSPORT_LOGGING_ONLY_ENABLED` | `false`      | `true`                  | `true`                  |
+| Profile                                | `PRODUCTION` | `DEVELOPMENT`           | `TESTING`               |
+|----------------------------------------|--------------|-------------------------|-------------------------|
+| `PORT`                                 | -            | 8080                    | 8080                    |
+| `DATABASE_HOST`                        | -            | `localhost`             | `localhost`             |
+| `LOG_LEVEL`                            | `INFO`       | `DEBUG`                 | `TRACE`                 |
+| `SENSITIVE_INFORMATION_RETENTION_DAYS` | `30`         | `30`                    | `30`                    |
+| `AUTH_BYPASS_ENABLED`                  | `false`      | `false`                 | `true`                  |
+| `FRONTEND_BASE_URL`                    | -            | `http://localhost:5173` | `http://localhost:5173` |
+| `DATABASE_SEED_USER_ENABLED`           | `false`      | `true`                  | `true`                  |
+| `SMTP_TRANSPORT_LOGGING_ONLY_ENABLED`  | `false`      | `true`                  | `true`                  |
 
 ### JWT Private/Public Key
 
