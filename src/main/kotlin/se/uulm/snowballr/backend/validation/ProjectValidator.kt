@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.validation
 
 import arrow.core.Either
 import arrow.core.EitherNel
+import arrow.core.Nel
 import arrow.core.raise.Raise
 import arrow.core.raise.either
 import arrow.core.raise.zipOrAccumulate
@@ -14,7 +15,6 @@ import snowballr.ProjectOuterClass.ReviewDecisionMatrix
 /**
  * A validator for [Project] related requests.
  */
-@Suppress("StringLiteralDuplication")
 object ProjectValidator {
     const val NAME_MAX_LENGTH = 100
     const val SIMILARITY_THRESHOLD_MIN_VALUE = 0.0f
@@ -22,67 +22,21 @@ object ProjectValidator {
     const val NUMBER_OF_REVIEWERS_MIN_VALUE = 1
     const val NUMBER_OF_REVIEWERS_MAX_VALUE = 10
 
-    const val FIELD_DECISION_MATRIX = "project.settings.decision_matrix"
+    private const val FIELD_PROJECT_NAME = "project.name"
+    private const val FIELD_PROJECT_STATUS = "project.status"
+    private const val FIELD_SNOWBALLING_TYPE = "project.settings.snowballing_type"
+    private const val FIELD_SIMILARITY_THRESHOLD = "project.settings.similarity_threshold"
+    private const val FIELD_DECISION_MATRIX = "project.settings.decision_matrix"
+    private val UNALLOWED_UPDATE_MASK_FIELDS = listOf("project.current_stage", "project.max_stage")
 
     fun validateCreateRequest(request: Create): EitherNel<ValidationIssue, Unit> = either {
         ensureProjectNameValidity(request.name)
     }.toEitherNel()
 
-    @Suppress("CognitiveComplexMethod", "kotlin:S3776")
     fun validateUpdateRequest(request: Project.Update): EitherNel<ValidationIssue, Unit> = either {
-        // Validate the field mask
-        val fieldMaskResult = either {
-            ensureFieldMaskIsValid(
-                request.mask,
-                Project.Update.getDescriptor(),
-                listOf("project.current_stage", "project.max_stage"),
-            )
-        }
-
-        // If field mask validation fails, return early
-        if (fieldMaskResult is Either.Left) {
-            fieldMaskResult.toEitherNel().bind()
-        }
-
-        // Only proceed with field validation if the mask is valid
+        validateUpdateFieldMask(request).bind()
         val selectedFields = FieldMaskUtil.normalize(request.mask).pathsList.toSet()
-
-        val project = request.project
-        @Suppress("NamedArguments")
-        zipOrAccumulate(
-            { ensureIdValidity("id", project.id) },
-            {
-                if ("project.name" in selectedFields) {
-                    ensureProjectNameValidity(project.name, "project.name")
-                }
-            },
-            {
-                if ("project.status" in selectedFields) {
-                    ensureEnumNotUnspecified("project.status", project.status)
-                }
-            },
-            {
-                if ("project.settings.snowballing_type" in selectedFields) {
-                    ensureEnumNotUnspecified("project.settings.snowballing_type", project.settings.snowballingType)
-                }
-            },
-            {
-                if ("project.settings.similarity_threshold" in selectedFields) {
-                    ensureNumberFieldInRange(
-                        "project.settings.similarity_threshold",
-                        project.settings.similarityThreshold,
-                        SIMILARITY_THRESHOLD_MIN_VALUE,
-                        SIMILARITY_THRESHOLD_MAX_VALUE,
-                    )
-                }
-            },
-            {
-                val decisionMatrixFields = selectedFields.filter { it.startsWith(FIELD_DECISION_MATRIX) }
-                if (decisionMatrixFields.isNotEmpty()) {
-                    ensureDecisionMatrixValidity(decisionMatrixFields, project.settings.decisionMatrix)
-                }
-            },
-        ) { _, _, _, _, _, _ -> }
+        validateUpdateProjectFields(request.project, selectedFields)
     }
 
     fun validateGetInformationRequest(request: Project.Information.Get): EitherNel<ValidationIssue, Unit> = either {
@@ -129,6 +83,58 @@ object ProjectValidator {
                 NUMBER_OF_REVIEWERS_MIN_VALUE,
                 NUMBER_OF_REVIEWERS_MAX_VALUE,
             )
+        }
+    }
+
+    private fun validateUpdateFieldMask(request: Project.Update): EitherNel<ValidationIssue, Unit> = either {
+        ensureFieldMaskIsValid(request.mask, Project.Update.getDescriptor(), UNALLOWED_UPDATE_MASK_FIELDS)
+    }.toEitherNel()
+
+    private fun Raise<Nel<ValidationIssue>>.validateUpdateProjectFields(project: Project, selectedFields: Set<String>) {
+        @Suppress("NamedArguments")
+        zipOrAccumulate(
+            { ensureIdValidity("id", project.id) },
+            { validateProjectName(project, selectedFields) },
+            { validateProjectStatus(project, selectedFields) },
+            { validateSnowballingType(project, selectedFields) },
+            { validateSimilarityThreshold(project, selectedFields) },
+            { validateDecisionMatrix(project, selectedFields) },
+        ) { _, _, _, _, _, _ -> }
+    }
+
+    private fun Raise<ValidationIssue>.validateProjectName(project: Project, selectedFields: Set<String>) {
+        if (FIELD_PROJECT_NAME in selectedFields) {
+            ensureProjectNameValidity(project.name, FIELD_PROJECT_NAME)
+        }
+    }
+
+    private fun Raise<ValidationIssue>.validateProjectStatus(project: Project, selectedFields: Set<String>) {
+        if (FIELD_PROJECT_STATUS in selectedFields) {
+            ensureEnumNotUnspecified(FIELD_PROJECT_STATUS, project.status)
+        }
+    }
+
+    private fun Raise<ValidationIssue>.validateSnowballingType(project: Project, selectedFields: Set<String>) {
+        if (FIELD_SNOWBALLING_TYPE in selectedFields) {
+            ensureEnumNotUnspecified(FIELD_SNOWBALLING_TYPE, project.settings.snowballingType)
+        }
+    }
+
+    private fun Raise<ValidationIssue>.validateSimilarityThreshold(project: Project, selectedFields: Set<String>) {
+        if (FIELD_SIMILARITY_THRESHOLD in selectedFields) {
+            ensureNumberFieldInRange(
+                FIELD_SIMILARITY_THRESHOLD,
+                project.settings.similarityThreshold,
+                SIMILARITY_THRESHOLD_MIN_VALUE,
+                SIMILARITY_THRESHOLD_MAX_VALUE,
+            )
+        }
+    }
+
+    private fun Raise<ValidationIssue>.validateDecisionMatrix(project: Project, selectedFields: Set<String>) {
+        val decisionMatrixFields = selectedFields.filter { it.startsWith(FIELD_DECISION_MATRIX) }
+        if (decisionMatrixFields.isNotEmpty()) {
+            ensureDecisionMatrixValidity(decisionMatrixFields, project.settings.decisionMatrix)
         }
     }
 }

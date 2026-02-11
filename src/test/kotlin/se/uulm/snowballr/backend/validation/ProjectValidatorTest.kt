@@ -14,6 +14,8 @@ import se.uulm.snowballr.backend.model.TooLongField
 import se.uulm.snowballr.backend.validation.ProjectValidator.NAME_MAX_LENGTH
 import se.uulm.snowballr.backend.validation.ProjectValidator.NUMBER_OF_REVIEWERS_MAX_VALUE
 import se.uulm.snowballr.backend.validation.ProjectValidator.NUMBER_OF_REVIEWERS_MIN_VALUE
+import se.uulm.snowballr.backend.validation.ProjectValidator.SIMILARITY_THRESHOLD_MAX_VALUE
+import se.uulm.snowballr.backend.validation.ProjectValidator.SIMILARITY_THRESHOLD_MIN_VALUE
 import snowballr.ProjectOuterClass
 import snowballr.ProjectOuterClass.Project
 import snowballr.ProjectOuterClass.Project.Create
@@ -234,7 +236,7 @@ class ProjectValidatorTest {
         fun `When a too low similarity threshold is provided and specified in the field mask, then the 'OutOfRangeValue' issue is returned`() {
             val project = validUpdatedProject.setSettings(
                 validUpdatedProjectSettings
-                    .setSimilarityThreshold(-1f)
+                    .setSimilarityThreshold(SIMILARITY_THRESHOLD_MIN_VALUE - 1f)
                     .build(),
             ).build()
             val request = validUpdateRequestBuilder
@@ -249,7 +251,7 @@ class ProjectValidatorTest {
         fun `When a too high similarity threshold is provided and specified in the field mask, then the 'OutOfRangeValue' issue is returned`() {
             val project = validUpdatedProject.setSettings(
                 validUpdatedProjectSettings
-                    .setSimilarityThreshold(2f)
+                    .setSimilarityThreshold(SIMILARITY_THRESHOLD_MAX_VALUE + 1f)
                     .build(),
             ).build()
             val request = validUpdateRequestBuilder
@@ -264,7 +266,7 @@ class ProjectValidatorTest {
         fun `When an invalid similarity threshold is provided but not specified in the field mask, then no issue is returned`() {
             val project = validUpdatedProject.setSettings(
                 validUpdatedProjectSettings
-                    .setSimilarityThreshold(2f)
+                    .setSimilarityThreshold(SIMILARITY_THRESHOLD_MAX_VALUE + 1f)
                     .build(),
             ).build()
             val fieldMask = FieldMaskUtil.fromStringList(listOf("project.name"))
