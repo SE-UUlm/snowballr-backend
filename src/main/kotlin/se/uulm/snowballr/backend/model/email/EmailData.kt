@@ -4,6 +4,8 @@ package se.uulm.snowballr.backend.model.email
  * A sealed interface representing the data models for all possible email templates.
  */
 sealed interface EmailData {
+    val subject: String
+
     /**
      * Data required for the email verification email.
      *
@@ -15,7 +17,9 @@ sealed interface EmailData {
         val firstName: String,
         val verificationLink: String,
         val expirationTime: String,
-    ) : EmailData
+    ) : EmailData {
+        override val subject: String = "Verify your SnowballR Account"
+    }
 
     /**
      * Data required for the "accept project invitation" email.
@@ -32,5 +36,7 @@ sealed interface EmailData {
         val projectName: String,
         val acceptanceLink: String,
         val expirationTime: String,
-    ) : EmailData
+    ) : EmailData {
+        override val subject: String = "$inviterName invited you to $projectName"
+    }
 }

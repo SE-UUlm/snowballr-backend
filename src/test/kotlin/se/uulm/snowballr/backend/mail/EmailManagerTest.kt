@@ -23,7 +23,6 @@ import org.simplejavamail.mailer.MailerBuilder
 import se.uulm.snowballr.backend.env.Env
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.model.email.EmailData
-import se.uulm.snowballr.backend.model.email.EmailTemplate
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.internal.email.MailSendFailedException
 
@@ -111,7 +110,7 @@ class EmailManagerTest {
             assertEquals(recipientEmail, receivedMessage.allRecipients[0].toString())
             assertThat(fromHeader).contains(testSenderName)
             assertThat(fromHeader).contains(testSenderEmail)
-            assertEquals(EmailTemplate.EMAIL_VERIFICATION.subject, subject)
+            assertEquals(emailData.subject, subject)
             assertThat(body).contains("Hello John,")
             assertThat(body).contains("<a href=\"$expectedVerificationLink\">$expectedVerificationLink</a>")
             assertThat(body).contains("This link will expire in 24 hours.")
@@ -157,10 +156,10 @@ class EmailManagerTest {
             assertEquals(recipientEmail, receivedMessage.allRecipients[0].toString())
             assertThat(fromHeader).contains(testSenderName)
             assertThat(fromHeader).contains(testSenderEmail)
-            assertEquals(EmailTemplate.ACCEPT_PROJECT_INVITATION.subject, subject)
+            assertEquals(emailData.subject, subject)
             assertThat(body).contains("Hello John,")
             assertThat(body).contains("Jane Doe invited you to join the project")
-            assertThat(body).contains("'Test Project'")
+            assertThat(body).contains("Test Project")
             assertThat(body).contains("<a href=\"$expectedAcceptanceLink\">$expectedAcceptanceLink</a>")
             assertThat(body).contains("This invitation will expire in 24 hours.")
         }

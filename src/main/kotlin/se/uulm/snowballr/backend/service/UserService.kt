@@ -109,6 +109,7 @@ private const val VERIFICATION_TOKEN_LENGTH = 48
  * @param emailManager The manager responsible for sending emails.
  * @param envReader The environment reader that provides access to configuration values.
  */
+@Suppress("LongParameterList")
 class UserService(
     private val userRepo: IUserTableRepo,
     private val projectMemberRepo: IProjectMemberTableRepo,
