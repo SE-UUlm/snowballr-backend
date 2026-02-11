@@ -80,12 +80,12 @@ class PaperValidatorTest {
 
             return blankFieldTestProvider()
                 .map { args -> args.get() }
-                .map { args ->
+                .flatMap { args ->
                     listOf(
                         Arguments.of(args[0], false, testName(args[0], false)),
                         Arguments.of(args[0], true, testName(args[0], true)),
                     )
-                }.flatten()
+                }
         }
 
         @JvmStatic
@@ -112,12 +112,12 @@ class PaperValidatorTest {
 
             return tooLongFieldTestProvider()
                 .map { args -> args.get() }
-                .map { args ->
+                .flatMap { args ->
                     listOf(
                         Arguments.of(args[0], args[1], false, testName(args[0], args[1], false)),
                         Arguments.of(args[0], args[1], true, testName(args[0], args[1], true)),
                     )
-                }.flatten()
+                }
         }
     }
 
