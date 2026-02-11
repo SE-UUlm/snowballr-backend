@@ -1,7 +1,10 @@
 package se.uulm.snowballr.backend.env
 
 import io.github.cdimascio.dotenv.dotenv
+import java.nio.file.InvalidPathException
+import java.nio.file.Path
 
+@Suppress("ComplexInterface")
 interface IEnvService {
     /**
      * Returns the value of the environment variable with the specified [key].
@@ -95,6 +98,15 @@ interface IEnvService {
      * value cannot be parsed as an integer
      */
     fun getRequiredIntOrDefault(key: String, default: Int?): Int
+
+    /**
+     * Returns the path value of the environment variable with the specified [key].
+     *
+     * @param key Name of the environment variable to read.
+     * @param default The path value to return if the environment variable is not set.
+     * @return The value of the environment variable, or [default] if not found.
+     */
+    fun getPathOrDefault(key: String, default: Path): Path
 }
 
 /**
@@ -146,6 +158,14 @@ class EnvService : IEnvService {
         }
 
         return default ?: throw EnvVariableNotFoundException(key)
+    }
+
+    override fun getPathOrDefault(key: String, default: Path): Path = getOrDefault(key, default) {
+        try {
+            Path.of(it)
+        } catch (_: InvalidPathException) {
+            null
+        }
     }
 
     companion object {
