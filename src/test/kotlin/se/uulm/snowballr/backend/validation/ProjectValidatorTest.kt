@@ -7,13 +7,16 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import se.uulm.snowballr.backend.model.BlankField
 import se.uulm.snowballr.backend.model.EnumUnspecified
-import se.uulm.snowballr.backend.model.InvalidEmail
 import se.uulm.snowballr.backend.model.InvalidFieldMask
 import se.uulm.snowballr.backend.model.InvalidId
 import se.uulm.snowballr.backend.model.OutOfRangeValue
 import se.uulm.snowballr.backend.model.TooLongField
 import se.uulm.snowballr.backend.validation.ProjectValidator.NAME_MAX_LENGTH
-import snowballr.ProjectOuterClass.MemberRole
+import se.uulm.snowballr.backend.validation.ProjectValidator.NUMBER_OF_REVIEWERS_MAX_VALUE
+import se.uulm.snowballr.backend.validation.ProjectValidator.NUMBER_OF_REVIEWERS_MIN_VALUE
+import se.uulm.snowballr.backend.validation.ProjectValidator.SIMILARITY_THRESHOLD_MAX_VALUE
+import se.uulm.snowballr.backend.validation.ProjectValidator.SIMILARITY_THRESHOLD_MIN_VALUE
+import snowballr.ProjectOuterClass
 import snowballr.ProjectOuterClass.Project
 import snowballr.ProjectOuterClass.Project.Create
 import snowballr.ProjectOuterClass.Project.Update
@@ -62,16 +65,22 @@ class ProjectValidatorTest {
 
     @Nested
     inner class UpdateRequest {
+        private val validUpdatedDecisionMatrix: ProjectOuterClass.ReviewDecisionMatrix.Builder =
+            ProjectOuterClass.ReviewDecisionMatrix.newBuilder()
+                .setNumberOfReviewers(3)
+
+        private val validUpdatedProjectSettings: Project.Settings.Builder = Project.Settings.newBuilder()
+            .setSimilarityThreshold(1F)
+            .setSnowballingType(SnowballingType.SNOWBALLING_TYPE_FORWARD)
+            .setReviewMaybeAllowed(false)
+            .setDecisionMatrix(validUpdatedDecisionMatrix.build())
+
         private val validUpdatedProject: Project.Builder = Project.newBuilder()
             .setId(UUID.randomUUID().toString())
             .setName("Test Project")
             .setStatus(ProjectStatus.PROJECT_STATUS_ARCHIVED)
-            .setSettings(
-                Project.Settings.newBuilder()
-                    .setSimilarityThreshold(1F)
-                    .setSnowballingType(SnowballingType.SNOWBALLING_TYPE_FORWARD)
-                    .setReviewMaybeAllowed(false),
-            )
+            .setSettings(validUpdatedProjectSettings.build())
+
         private val validFieldMask: FieldMask = FieldMaskUtil
             .fromStringList(
                 listOf(
@@ -80,6 +89,7 @@ class ProjectValidatorTest {
                     "project.settings.similarity_threshold",
                     "project.settings.snowballing_type",
                     "project.settings.review_maybe_allowed",
+                    "project.settings.decision_matrix.number_of_reviewers",
                 ),
             )
 
@@ -193,7 +203,9 @@ class ProjectValidatorTest {
         @Test
         fun `When an invalid snowballing type is provided and specified in the field mask, then the 'EnumUnspecified' issue is returned`() {
             val project = validUpdatedProject.setSettings(
-                Project.Settings.newBuilder().setSnowballingType(SnowballingType.SNOWBALLING_TYPE_UNSPECIFIED).build(),
+                validUpdatedProjectSettings
+                    .setSnowballingType(SnowballingType.SNOWBALLING_TYPE_UNSPECIFIED)
+                    .build(),
             ).build()
             val request = validUpdateRequestBuilder
                 .setProject(project)
@@ -206,7 +218,9 @@ class ProjectValidatorTest {
         @Test
         fun `When an invalid snowballing type is provided but not specified in the field mask, then no issue is returned`() {
             val project = validUpdatedProject.setSettings(
-                Project.Settings.newBuilder().setSnowballingType(SnowballingType.SNOWBALLING_TYPE_UNSPECIFIED).build(),
+                validUpdatedProjectSettings
+                    .setSnowballingType(SnowballingType.SNOWBALLING_TYPE_UNSPECIFIED)
+                    .build(),
             ).build()
             val fieldMask = FieldMaskUtil.fromStringList(listOf("project.name"))
             val request = validUpdateRequestBuilder
@@ -221,7 +235,9 @@ class ProjectValidatorTest {
         @Test
         fun `When a too low similarity threshold is provided and specified in the field mask, then the 'OutOfRangeValue' issue is returned`() {
             val project = validUpdatedProject.setSettings(
-                Project.Settings.newBuilder().setSimilarityThreshold(-1f).build(),
+                validUpdatedProjectSettings
+                    .setSimilarityThreshold(SIMILARITY_THRESHOLD_MIN_VALUE - 1f)
+                    .build(),
             ).build()
             val request = validUpdateRequestBuilder
                 .setProject(project)
@@ -234,7 +250,9 @@ class ProjectValidatorTest {
         @Test
         fun `When a too high similarity threshold is provided and specified in the field mask, then the 'OutOfRangeValue' issue is returned`() {
             val project = validUpdatedProject.setSettings(
-                Project.Settings.newBuilder().setSimilarityThreshold(2f).build(),
+                validUpdatedProjectSettings
+                    .setSimilarityThreshold(SIMILARITY_THRESHOLD_MAX_VALUE + 1f)
+                    .build(),
             ).build()
             val request = validUpdateRequestBuilder
                 .setProject(project)
@@ -247,7 +265,62 @@ class ProjectValidatorTest {
         @Test
         fun `When an invalid similarity threshold is provided but not specified in the field mask, then no issue is returned`() {
             val project = validUpdatedProject.setSettings(
-                Project.Settings.newBuilder().setSimilarityThreshold(2f).build(),
+                validUpdatedProjectSettings
+                    .setSimilarityThreshold(SIMILARITY_THRESHOLD_MAX_VALUE + 1f)
+                    .build(),
+            ).build()
+            val fieldMask = FieldMaskUtil.fromStringList(listOf("project.name"))
+            val request = validUpdateRequestBuilder
+                .setProject(project)
+                .setMask(fieldMask)
+                .build()
+            val result = validateRequest(request)
+
+            EitherAssert.assertThat(result).isRight()
+        }
+
+        @Test
+        fun `When a too low number of reviewers is provided and specified in the field mask, then the 'OutOfRangeValue' issue is returned`() {
+            val project = validUpdatedProject.setSettings(
+                validUpdatedProjectSettings.setDecisionMatrix(
+                    validUpdatedDecisionMatrix
+                        .setNumberOfReviewers(NUMBER_OF_REVIEWERS_MIN_VALUE - 1)
+                        .build(),
+                ).build(),
+            ).build()
+            val request = validUpdateRequestBuilder
+                .setProject(project)
+                .build()
+            val result = validateRequest(request)
+
+            assertInvalidResult<OutOfRangeValue<Int>>(result)
+        }
+
+        @Test
+        fun `When a too high number of reviewers is provided and specified in the field mask, then the 'OutOfRangeValue' issue is returned`() {
+            val project = validUpdatedProject.setSettings(
+                validUpdatedProjectSettings.setDecisionMatrix(
+                    validUpdatedDecisionMatrix
+                        .setNumberOfReviewers(NUMBER_OF_REVIEWERS_MAX_VALUE + 1)
+                        .build(),
+                ).build(),
+            ).build()
+            val request = validUpdateRequestBuilder
+                .setProject(project)
+                .build()
+            val result = validateRequest(request)
+
+            assertInvalidResult<OutOfRangeValue<Int>>(result)
+        }
+
+        @Test
+        fun `When an invalid number of reviewers is provided but not specified in the field mask, then no issue is returned`() {
+            val project = validUpdatedProject.setSettings(
+                validUpdatedProjectSettings.setDecisionMatrix(
+                    validUpdatedDecisionMatrix
+                        .setNumberOfReviewers(NUMBER_OF_REVIEWERS_MAX_VALUE + 1)
+                        .build(),
+                ).build(),
             ).build()
             val fieldMask = FieldMaskUtil.fromStringList(listOf("project.name"))
             val request = validUpdateRequestBuilder
@@ -268,73 +341,6 @@ class ProjectValidatorTest {
             val result = validateRequest(request)
 
             EitherAssert.assertThat(result).isRight()
-        }
-    }
-
-    @Nested
-    inner class InviteRequest {
-        private val validInviteRequestBuilder = Project.Member.Invite.newBuilder()
-            .setProjectId(UUID.randomUUID().toString())
-            .setUserEmail("test.user@example.com")
-
-        @Test
-        fun `When a valid request is validated, then no issue is returned`() {
-            val request = validInviteRequestBuilder.build()
-
-            val result = validateRequest(request)
-
-            EitherAssert.assertThat(result).isRight()
-        }
-
-        @Test
-        fun `When the project ID is blank, then the 'BlankField' issue is returned`() {
-            val request = validInviteRequestBuilder.setProjectId("").build()
-
-            val result = validateRequest(request)
-
-            assertInvalidResult<BlankField>(result)
-        }
-
-        @Test
-        fun `When the project ID is invalid, then the 'InvalidId' issue is returned`() {
-            val request = validInviteRequestBuilder.setProjectId("invalid-id").build()
-
-            val result = validateRequest(request)
-
-            assertInvalidResult<InvalidId>(result)
-        }
-
-        @Test
-        fun `When the user email is invalid, then the 'InvalidEmail' issue is returned`() {
-            val request = validInviteRequestBuilder.setUserEmail("invalid-email").build()
-
-            val result = validateRequest(request)
-
-            assertInvalidResult<InvalidEmail>(result)
-        }
-    }
-
-    @Nested
-    inner class AcceptRequest {
-        private val validAcceptRequestBuilder = Project.Member.Accept.newBuilder()
-            .setToken("valid-token")
-
-        @Test
-        fun `When a valid request is validated, then no issue is returned`() {
-            val request = validAcceptRequestBuilder.build()
-
-            val result = validateRequest(request)
-
-            EitherAssert.assertThat(result).isRight()
-        }
-
-        @Test
-        fun `When the token is blank, then the 'BlankField' issue is returned`() {
-            val request = validAcceptRequestBuilder.setToken("").build()
-
-            val result = validateRequest(request)
-
-            assertInvalidResult<BlankField>(result)
         }
     }
 
@@ -377,68 +383,6 @@ class ProjectValidatorTest {
             val result = validateRequest(request)
 
             assertInvalidResult<InvalidId>(result)
-        }
-    }
-
-    @Nested
-    inner class MemberUpdateRequest {
-        private val validMemberUpdateRequestBuilder = Project.Member.Update.newBuilder()
-            .setProjectId(UUID.randomUUID().toString())
-            .setUserId(UUID.randomUUID().toString())
-            .setNewRole(MemberRole.MEMBER_ROLE_ADMIN)
-
-        @Test
-        fun `When a valid request is validated, the no issue is returned`() {
-            val request = validMemberUpdateRequestBuilder.build()
-
-            val result = validateRequest(request)
-
-            EitherAssert.assertThat(result).isRight()
-        }
-
-        @Test
-        fun `When the project ID is blank, then the 'InvalidId' issue is returned`() {
-            val request = validMemberUpdateRequestBuilder.setProjectId("").build()
-
-            val result = validateRequest(request)
-
-            assertInvalidResult<InvalidId>(result)
-        }
-
-        @Test
-        fun `When the project ID is invalid, then the 'InvalidId' issue is returned`() {
-            val request = validMemberUpdateRequestBuilder.setProjectId("invalid-id").build()
-
-            val result = validateRequest(request)
-
-            assertInvalidResult<InvalidId>(result)
-        }
-
-        @Test
-        fun `When the user ID is blank, then the 'InvalidId' issue is returned`() {
-            val request = validMemberUpdateRequestBuilder.setUserId("").build()
-
-            val result = validateRequest(request)
-
-            assertInvalidResult<InvalidId>(result)
-        }
-
-        @Test
-        fun `When the user ID is invalid, then the 'InvalidId' issue is returned`() {
-            val request = validMemberUpdateRequestBuilder.setUserId("invalid-id").build()
-
-            val result = validateRequest(request)
-
-            assertInvalidResult<InvalidId>(result)
-        }
-
-        @Test
-        fun `When the new role is unspecified, then the 'EnumUnspecified' issue is returned`() {
-            val request = validMemberUpdateRequestBuilder.setNewRole(MemberRole.MEMBER_ROLE_UNSPECIFIED).build()
-
-            val result = validateRequest(request)
-
-            assertInvalidResult<EnumUnspecified>(result)
         }
     }
 

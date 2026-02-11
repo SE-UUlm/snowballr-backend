@@ -26,6 +26,7 @@ import se.uulm.snowballr.backend.validation.PaperValidator.PUBLICATION_NAME_MAX_
 import se.uulm.snowballr.backend.validation.PaperValidator.PUBLICATION_TYPE_MAX_LENGTH
 import se.uulm.snowballr.backend.validation.PaperValidator.PUBLISHER_MAX_LENGTH
 import se.uulm.snowballr.backend.validation.PaperValidator.TITLE_MAX_LENGTH
+import se.uulm.snowballr.backend.validation.PaperValidator.YEAR_MIN_VALUE
 import snowballr.PaperOuterClass
 import snowballr.PaperOuterClass.Paper
 import snowballr.author
@@ -80,12 +81,12 @@ class PaperValidatorTest {
 
             return blankFieldTestProvider()
                 .map { args -> args.get() }
-                .map { args ->
+                .flatMap { args ->
                     listOf(
                         Arguments.of(args[0], false, testName(args[0], false)),
                         Arguments.of(args[0], true, testName(args[0], true)),
                     )
-                }.flatten()
+                }
         }
 
         @JvmStatic
@@ -112,12 +113,12 @@ class PaperValidatorTest {
 
             return tooLongFieldTestProvider()
                 .map { args -> args.get() }
-                .map { args ->
+                .flatMap { args ->
                     listOf(
                         Arguments.of(args[0], args[1], false, testName(args[0], args[1], false)),
                         Arguments.of(args[0], args[1], true, testName(args[0], args[1], true)),
                     )
-                }.flatten()
+                }
         }
     }
 
@@ -348,7 +349,7 @@ class PaperValidatorTest {
 
         @Test
         fun `When a too low year field is validated, then an 'OutOfRangeValue' issue is returned`() {
-            val paper = validPaperBuilder.setYear(-1).build()
+            val paper = validPaperBuilder.setYear(YEAR_MIN_VALUE - 1).build()
             val request = getExampleRequest(paper, listOf("paper.year"))
             val result = validateRequest(request)
 

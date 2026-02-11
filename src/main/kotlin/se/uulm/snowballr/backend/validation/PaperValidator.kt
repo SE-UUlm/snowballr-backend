@@ -5,15 +5,18 @@ import arrow.core.EitherNel
 import arrow.core.Nel
 import arrow.core.nonEmptyListOf
 import arrow.core.raise.Raise
+import arrow.core.raise.RaiseAccumulate
 import arrow.core.raise.either
 import arrow.core.raise.ensure
 import arrow.core.raise.zipOrAccumulate
+import com.google.protobuf.util.FieldMaskUtil
 import se.uulm.snowballr.backend.model.CompositeIssue
 import se.uulm.snowballr.backend.model.TooLongList
 import se.uulm.snowballr.backend.model.ValidationIssue
 import snowballr.PaperOuterClass.Paper
 import java.time.LocalDate
 
+@Suppress("TooManyFunctions")
 object PaperValidator {
     const val EXTERNAL_ID_MAX_LENGTH = 100
     const val TITLE_MAX_LENGTH = 100
@@ -24,29 +27,34 @@ object PaperValidator {
     const val PUBLICATION_TYPE_MAX_LENGTH = 100
     const val MAX_AUTHOR_COUNT = 500
 
+    private val UNALLOWED_UPDATE_MASK_FIELDS = listOf("paper.has_pdf")
+    private const val FIELD_PAPER_AUTHORS = "paper.authors"
+    private const val FIELD_PAPER_PUBLICATION_TYPE = "paper.publication_type"
+    private const val FIELD_PAPER_PUBLICATION_NAME = "paper.publication_name"
+    private const val FIELD_PAPER_PUBLISHER = "paper.publisher"
+    private const val FIELD_PAPER_YEAR = "paper.year"
+    private const val FIELD_PAPER_ABSTRACT = "paper.abstrakt"
+    private const val FIELD_PAPER_TITLE = "paper.title"
+    private const val FIELD_PAPER_EXTERNAL_ID = "paper.external_id"
+
     fun validateCreateRequest(request: Paper): EitherNel<ValidationIssue, Unit> = either {
         validatePaperProps(request, ignoreId = true)
         validateAuthors(request)
     }
 
     fun validateUpdateRequest(request: Paper.Update): EitherNel<ValidationIssue, Unit> = either {
-        val fieldMaskResult = either {
-            ensureFieldMaskIsValid(request.mask, Paper.Update.getDescriptor(), listOf("paper.has_pdf"))
-        }
-
-        if (fieldMaskResult is Either.Left) {
-            fieldMaskResult.toEitherNel().bind()
-        }
-
-        val selectedFields = request.mask.pathsList.toSet()
+        validateUpdateFieldMask(request).bind()
+        val selectedFields = FieldMaskUtil.normalize(request.mask).pathsList.toSet()
 
         val paper = request.paper
-
         validatePaperProps(paper, selectedFields)
         validateAuthors(paper, selectedFields)
     }
 
-    @Suppress("CognitiveComplexMethod", "kotlin:S3776")
+    private fun validateUpdateFieldMask(request: Paper.Update): EitherNel<ValidationIssue, Unit> = either {
+        ensureFieldMaskIsValid(request.mask, request.descriptorForType, UNALLOWED_UPDATE_MASK_FIELDS)
+    }.toEitherNel()
+
     private fun Raise<Nel<ValidationIssue>>.validatePaperProps(
         paper: Paper,
         selectedFields: Set<String> = emptySet(),
@@ -56,60 +64,78 @@ object PaperValidator {
 
         @Suppress("NamedArguments")
         zipOrAccumulate(
-            {
-                if (!ignoreId) {
-                    ensureIdValidity("id", paper.id)
-                }
-            },
-            {
-                if (has("paper.external_id")) {
-                    ensureFieldEmptyOrNonBlank("external_id", paper.externalId)
-                    ensureFieldLength("external_id", paper.externalId, EXTERNAL_ID_MAX_LENGTH)
-                }
-            },
-            {
-                if (has("paper.title")) {
-                    ensureTextFieldValidity("title", paper.title, TITLE_MAX_LENGTH)
-                }
-            },
-            {
-                if (has("paper.abstrakt")) {
-                    ensureFieldLength("abstrakt", paper.abstrakt, ABSTRACT_MAX_LENGTH)
-                }
-            },
-            {
-                if (has("paper.year")) {
-                    val nextYear = LocalDate.now().year + 1
-                    ensureNumberFieldInRange("year", paper.year, YEAR_MIN_VALUE, nextYear)
-                }
-            },
-            {
-                if (has("paper.publisher")) {
-                    ensureFieldLength("publisher", paper.publisher, PUBLISHER_MAX_LENGTH)
-                }
-            },
-            {
-                if (has("paper.publication_name")) {
-                    ensureFieldLength("publication_name", paper.publicationName, PUBLICATION_NAME_MAX_LENGTH)
-                }
-            },
-            {
-                if (has("paper.publication_type")) {
-                    ensureFieldLength("publication_type", paper.publicationType, PUBLICATION_TYPE_MAX_LENGTH)
-                }
-            },
-            {
-                if (has("paper.authors")) {
-                    ensure(paper.authorsCount <= MAX_AUTHOR_COUNT) {
-                        TooLongList("authors", MAX_AUTHOR_COUNT)
-                    }
-                }
-            },
+            { validatePaperId(ignoreId, paper) },
+            { validateExternalId(has, paper) },
+            { validateTitle(has, paper) },
+            { validateAbstract(has, paper) },
+            { validateYear(has, paper) },
+            { validatePublisher(has, paper) },
+            { validatePublicationName(has, paper) },
+            { validatePublicationType(has, paper) },
+            { validateAuthorList(has, paper) },
         ) { _, _, _, _, _, _, _, _, _ -> }
     }
 
+    private fun RaiseAccumulate<ValidationIssue>.validateAuthorList(has: (String) -> Boolean, paper: Paper) {
+        if (has(FIELD_PAPER_AUTHORS)) {
+            ensure(paper.authorsCount <= MAX_AUTHOR_COUNT) {
+                TooLongList(FIELD_PAPER_AUTHORS, MAX_AUTHOR_COUNT)
+            }
+        }
+    }
+
+    private fun RaiseAccumulate<ValidationIssue>.validatePublicationType(has: (String) -> Boolean, paper: Paper) {
+        if (has(FIELD_PAPER_PUBLICATION_TYPE)) {
+            ensureFieldLength(FIELD_PAPER_PUBLICATION_TYPE, paper.publicationType, PUBLICATION_TYPE_MAX_LENGTH)
+        }
+    }
+
+    private fun RaiseAccumulate<ValidationIssue>.validatePublicationName(has: (String) -> Boolean, paper: Paper) {
+        if (has(FIELD_PAPER_PUBLICATION_NAME)) {
+            ensureFieldLength(FIELD_PAPER_PUBLICATION_NAME, paper.publicationName, PUBLICATION_NAME_MAX_LENGTH)
+        }
+    }
+
+    private fun RaiseAccumulate<ValidationIssue>.validatePublisher(has: (String) -> Boolean, paper: Paper) {
+        if (has(FIELD_PAPER_PUBLISHER)) {
+            ensureFieldLength(FIELD_PAPER_PUBLISHER, paper.publisher, PUBLISHER_MAX_LENGTH)
+        }
+    }
+
+    private fun RaiseAccumulate<ValidationIssue>.validateYear(has: (String) -> Boolean, paper: Paper) {
+        if (has(FIELD_PAPER_YEAR)) {
+            val nextYear = LocalDate.now().year + 1
+            ensureNumberFieldInRange(FIELD_PAPER_YEAR, paper.year, YEAR_MIN_VALUE, nextYear)
+        }
+    }
+
+    private fun RaiseAccumulate<ValidationIssue>.validateAbstract(has: (String) -> Boolean, paper: Paper) {
+        if (has(FIELD_PAPER_ABSTRACT)) {
+            ensureFieldLength(FIELD_PAPER_ABSTRACT, paper.abstrakt, ABSTRACT_MAX_LENGTH)
+        }
+    }
+
+    private fun RaiseAccumulate<ValidationIssue>.validateTitle(has: (String) -> Boolean, paper: Paper) {
+        if (has(FIELD_PAPER_TITLE)) {
+            ensureTextFieldValidity(FIELD_PAPER_TITLE, paper.title, TITLE_MAX_LENGTH)
+        }
+    }
+
+    private fun RaiseAccumulate<ValidationIssue>.validateExternalId(has: (String) -> Boolean, paper: Paper) {
+        if (has(FIELD_PAPER_EXTERNAL_ID)) {
+            ensureFieldEmptyOrNonBlank(FIELD_PAPER_EXTERNAL_ID, paper.externalId)
+            ensureFieldLength(FIELD_PAPER_EXTERNAL_ID, paper.externalId, EXTERNAL_ID_MAX_LENGTH)
+        }
+    }
+
+    private fun RaiseAccumulate<ValidationIssue>.validatePaperId(ignoreId: Boolean, paper: Paper) {
+        if (!ignoreId) {
+            ensureIdValidity("id", paper.id)
+        }
+    }
+
     private fun Raise<Nel<ValidationIssue>>.validateAuthors(paper: Paper, selectedFields: Set<String> = emptySet()) {
-        if (!hasPathOrIsEmpty(selectedFields, "paper.authors")) return
+        if (!hasPathOrIsEmpty(selectedFields, FIELD_PAPER_AUTHORS)) return
 
         val validations = paper.authorsList.mapIndexed { i, author ->
             val result = AuthorValidator.validateAuthor(author)

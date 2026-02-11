@@ -213,10 +213,16 @@ class ProjectTableRepo(
         val projectId = parseUUID(request.project.id, EntityType.PROJECT)
         val fieldMaskPaths = FieldMaskUtil.normalize(request.mask).pathsList.toSet()
 
+        val isUpdatingDecisionMatrix = isUpdatingDecisionMatrix(fieldMaskPaths)
+        val project = if (isUpdatingDecisionMatrix) getProjectByIdOrNull(projectId) else null
+
         ProjectTable.updateByIdAndGet(projectId, ResultRow::toProject) {
             it.applyProjectStatusUpdate(request.project, fieldMaskPaths)
             it.applyProjectNameUpdate(request.project, fieldMaskPaths)
             it.applySlrProjectUpdates(request.project.settings, fieldMaskPaths)
+            if (isUpdatingDecisionMatrix && project != null) {
+                it.applyDecisionMatrixUpdate(project, request.project.settings, fieldMaskPaths)
+            }
             it[modifiedAt] = OffsetDateTime.now()
         }
     }
@@ -337,5 +343,26 @@ class ProjectTableRepo(
             val fetcherMap = settings.fetchersMap.mapValues { (_, value) -> value.optionsMap }
             this[ProjectTable.fetchers] = fetcherMap
         }
+    }
+
+    private fun isUpdatingDecisionMatrix(paths: Set<String>) =
+        paths.any { it.startsWith("project.settings.decision_matrix") }
+
+    private fun UpdateStatement.applyDecisionMatrixUpdate(
+        project: Project,
+        settings: GrpcProject.Settings,
+        paths: Set<String>,
+    ) {
+        val decisionMatrixBuilder = project.reviewDecisionMatrix.toBuilder()
+        if ("project.settings.decision_matrix.number_of_reviewers" in paths) {
+            decisionMatrixBuilder
+                .setNumberOfReviewers(settings.decisionMatrix.numberOfReviewers)
+        }
+        if ("project.settings.decision_matrix.patterns" in paths) {
+            decisionMatrixBuilder
+                .clearPatterns()
+                .addAllPatterns(settings.decisionMatrix.patternsList)
+        }
+        this[ProjectTable.reviewDecisionMatrixBinary] = decisionMatrixBuilder.build().toByteArray()
     }
 }

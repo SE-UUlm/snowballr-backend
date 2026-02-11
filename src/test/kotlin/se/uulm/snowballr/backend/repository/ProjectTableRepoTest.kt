@@ -69,6 +69,7 @@ class ProjectTableRepoTest :
             Arguments.of(listOf("project.settings.snowballing_type")),
             Arguments.of(listOf("project.settings.review_maybe_allowed")),
             Arguments.of(listOf("project.settings.fetchers")),
+            Arguments.of(listOf("project.settings.decision_matrix.number_of_reviewers")),
         )
     }
 
@@ -227,6 +228,11 @@ class ProjectTableRepoTest :
                                 .putOptions("Opt1", "Val1")
                                 .build(),
                         )
+                        .setDecisionMatrix(
+                            ReviewDecisionMatrix.newBuilder()
+                                .setNumberOfReviewers(1)
+                                .build(),
+                        )
                         .build(),
                 )
                 .build()
@@ -275,6 +281,11 @@ class ProjectTableRepoTest :
             } else {
                 assertEquals(0, fetchers.size)
                 assertNull(fetcher)
+            }
+            if ("project.settings.decision_matrix.number_of_reviewers" in fieldMask) {
+                assertEquals(1, updatedProject.reviewDecisionMatrix.numberOfReviewers)
+            } else {
+                assertEquals(0, updatedProject.reviewDecisionMatrix.numberOfReviewers)
             }
         }
     }
