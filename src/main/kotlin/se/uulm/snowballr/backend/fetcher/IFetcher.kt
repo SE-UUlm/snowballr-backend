@@ -1,7 +1,5 @@
 package se.uulm.snowballr.backend.fetcher
 
-import se.uulm.snowballr.backend.model.dto.Paper
-
 /**
  * An [IFetcher] abstracts away the API used to acquire new papers.
  *
@@ -28,7 +26,7 @@ interface IFetcher {
      * @param options The set of options to be used for this invocation.
      * @return A set of papers best matching the provided searchQuery.
      */
-    suspend fun searchPapers(searchQuery: String, options: Map<String, String>): Set<Paper>
+    suspend fun searchPapers(searchQuery: String, options: Map<String, String>): Set<FetcherPaper>
 
     /**
      * Get the papers that are forward references of the specified paper.
@@ -41,7 +39,7 @@ interface IFetcher {
      * @param options The set of options to be used for this invocation.
      * @return A (sub)set of papers that are forward references of the provided paper.
      */
-    suspend fun fetchForwardReferences(paper: Paper, options: Map<String, String>): Set<Paper>
+    suspend fun fetchForwardReferences(paper: FetcherPaper, options: Map<String, String>): Set<FetcherPaper>
 
     /**
      * Get the papers that are backward references of the specified paper.
@@ -54,5 +52,5 @@ interface IFetcher {
      * @param options The set of options to be used for this invocation.
      * @return A (sub)set of papers that are backward references of the provided paper.
      */
-    suspend fun fetchBackwardReferences(paper: Paper, options: Map<String, String>): Set<Paper>
+    suspend fun fetchBackwardReferences(paper: FetcherPaper, options: Map<String, String>): Set<FetcherPaper>
 }
