@@ -17,17 +17,13 @@ import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.service.accessrules.AccessRuleCompoundUUID
+import se.uulm.snowballr.backend.service.accessrules.IAccessChecker
 import se.uulm.snowballr.backend.service.accessrules.andAlso
 import se.uulm.snowballr.backend.service.accessrules.checkFor
 import se.uulm.snowballr.backend.service.accessrules.forProperty
 import se.uulm.snowballr.backend.service.accessrules.forTarget
-import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadProject
-import se.uulm.snowballr.backend.service.accessrules.isNotLastProjectAdmin
-import se.uulm.snowballr.backend.service.accessrules.isProjectAdmin
-import se.uulm.snowballr.backend.service.accessrules.isProjectExistent
 import se.uulm.snowballr.backend.service.accessrules.isSameUserById
 import se.uulm.snowballr.backend.service.accessrules.isServerAdmin
-import se.uulm.snowballr.backend.service.accessrules.isServerOrProjectAdmin
 import se.uulm.snowballr.backend.service.accessrules.orElse
 import se.uulm.snowballr.backend.service.accessrules.orElseThrow
 import snowballr.ProjectOuterClass.MemberRole
@@ -62,16 +58,18 @@ interface IProjectMemberService {
  * @param projectRepo The repository responsible for managing persistence operations for projects.
  * @param userRepo The repository responsible for managing persistence operations for users.
  * @param invitationTokenRepo The repository responsible for managing persistence operations for invitation tokens.
+ * @param accessChecker Interface for checking access permissions based on defined rules.
  */
 class ProjectMemberService(
     private val repo: IProjectMemberTableRepo,
     private val projectRepo: IProjectTableRepo,
     private val userRepo: IUserTableRepo,
     private val invitationTokenRepo: IInvitationTokenTableRepo,
+    private val accessChecker: IAccessChecker,
 ) : IProjectMemberService {
     override suspend fun getProjectMembers(projectId: UUID): GrpcProjectMember.List =
         withUser(userRepo) { currentUser ->
-            isAllowedToReadProject(projectRepo, repo).checkFor(currentUser, projectId)
+            accessChecker.isAllowedToReadProject().checkFor(currentUser, projectId)
 
             val projectMembersWithUsers = repo.getProjectMembersWithUsers(projectId)
             projectMembersWithUsers.toGrpcProjectMembers()
@@ -82,8 +80,8 @@ class ProjectMemberService(
             val projectId = parseUUID(request.projectId, EntityType.PROJECT)
             val userId = parseUUID(request.userId, EntityType.USER)
 
-            isServerOrProjectAdmin(repo, AccessType.UPDATE)
-                .andAlso(isProjectExistent(projectRepo))
+            accessChecker.isServerOrProjectAdmin(AccessType.UPDATE)
+                .andAlso(accessChecker.isProjectExistent())
                 .checkFor(currentUser, projectId)
 
             val user = userRepo.getUserById(userId).getOrThrow()
@@ -97,8 +95,7 @@ class ProjectMemberService(
             }
 
             if (currentMember.isProjectAdmin() && request.newRole != MemberRole.MEMBER_ROLE_ADMIN) {
-                isNotLastProjectAdmin(repo, "Cannot demote the user")
-                    .checkFor(user, projectId)
+                accessChecker.isNotLastProjectAdmin("Cannot demote the user").checkFor(user, projectId)
             }
 
             repo.updateProjectMemberRole(projectId, userId, request.newRole)
@@ -128,7 +125,7 @@ class ProjectMemberService(
         isSameUserById()
             .forProperty(AccessRuleCompoundUUID::firstTarget)
             .orElse(
-                isProjectAdmin(repo)
+                accessChecker.isProjectAdmin()
                     .orElse(isServerAdmin().forTarget())
                     .orElseThrow { user, targetId ->
                         UnauthorizedActionException(EntityType.PROJECT, targetId, AccessType.DELETE, user.id)
@@ -146,7 +143,7 @@ class ProjectMemberService(
         if (isLastMember) {
             projectRepo.softDeleteProject(projectId)
         } else {
-            isNotLastProjectAdmin(repo, "The user cannot be removed from the project")
+            accessChecker.isNotLastProjectAdmin("The user cannot be removed from the project")
                 .checkFor(requestedUser, projectId)
         }
 
@@ -158,7 +155,7 @@ class ProjectMemberService(
         projectId: UUID,
         invitationToken: InvitationToken,
     ) {
-        isProjectAdmin(repo)
+        accessChecker.isProjectAdmin()
             .orElse(isServerAdmin().forTarget())
             .orElseThrow { user, targetId ->
                 UnauthorizedActionException(EntityType.PROJECT, targetId, AccessType.DELETE, user.id)

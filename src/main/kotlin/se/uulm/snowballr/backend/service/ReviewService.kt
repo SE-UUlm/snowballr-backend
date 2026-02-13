@@ -18,10 +18,9 @@ import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.IReviewHasCriterionTableRepo
+import se.uulm.snowballr.backend.service.accessrules.IAccessChecker
 import se.uulm.snowballr.backend.service.accessrules.checkFor
-import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadProject
 import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadReview
-import se.uulm.snowballr.backend.service.accessrules.isProjectActive
 import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
@@ -63,6 +62,7 @@ interface IReviewService {
  * @param projectMemberRepo Interface for persistence and retrieval operations related to project members.
  * @param criteriaRepo Interface for persistence and retrieval operations related to criteria.
  * @param reviewHasCriterionRepo Interface for persistence and retrieval operations related to review-criteria relation.
+ * @param accessChecker Interface for checking access permissions based on defined rules.
  */
 @Suppress("LongParameterList")
 class ReviewService(
@@ -73,6 +73,7 @@ class ReviewService(
     private val projectMemberRepo: IProjectMemberTableRepo,
     private val criteriaRepo: ICriterionTableRepo,
     private val reviewHasCriterionRepo: IReviewHasCriterionTableRepo,
+    private val accessChecker: IAccessChecker,
 ) : IReviewService {
     override suspend fun getReviewById(reviewId: UUID): GrpcReview = withUser(userRepo) { currentUser ->
         val review = repo.getReviewById(reviewId).getOrThrow()
@@ -87,7 +88,7 @@ class ReviewService(
         withUser(userRepo) { currentUser ->
             val projectPaper = projectPaperRepo.getProjectPaperById(projectPaperId).getOrThrow()
 
-            isAllowedToReadProject(projectRepo, projectMemberRepo).checkFor(currentUser, projectPaper.projectId)
+            accessChecker.isAllowedToReadProject().checkFor(currentUser, projectPaper.projectId)
 
             val reviews = repo.getAllReviewsForProjectPaper(projectPaperId)
             val reviewSelectedCriteriaMap = mutableMapOf<Review, List<String>>()
@@ -155,10 +156,10 @@ class ReviewService(
         val projectPaperId = parseUUID(request.projectPaperId, EntityType.PROJECT_PAPER)
         val projectPaper = projectPaperRepo.getProjectPaperById(projectPaperId).getOrThrow()
 
-        isAllowedToReadProject(projectRepo, projectMemberRepo).checkFor(currentUser, projectPaper.projectId)
+        accessChecker.isAllowedToReadProject().checkFor(currentUser, projectPaper.projectId)
 
         val project = projectRepo.getProjectById(projectPaper.projectId).getOrThrow()
-        isProjectActive().checkFor(currentUser, project)
+        accessChecker.isProjectActive().checkFor(currentUser, project)
 
         val reviewsForProjectPaper = repo.getAllReviewsForProjectPaper(projectPaperId)
         val hasUserAlreadyReviewed = reviewsForProjectPaper.any { review -> review.userId == currentUser.id }

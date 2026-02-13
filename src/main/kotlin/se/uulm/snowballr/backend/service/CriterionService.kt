@@ -13,12 +13,10 @@ import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
+import se.uulm.snowballr.backend.service.accessrules.IAccessChecker
 import se.uulm.snowballr.backend.service.accessrules.checkFor
 import se.uulm.snowballr.backend.service.accessrules.forTarget
-import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadProject
 import se.uulm.snowballr.backend.service.accessrules.isCreatorOfCriterion
-import se.uulm.snowballr.backend.service.accessrules.isProjectActive
-import se.uulm.snowballr.backend.service.accessrules.isProjectAdmin
 import se.uulm.snowballr.backend.service.accessrules.isServerAdmin
 import se.uulm.snowballr.backend.service.accessrules.isUserAdminInProjectOfCriterion
 import se.uulm.snowballr.backend.service.accessrules.isUserInProjectOfCriterion
@@ -66,12 +64,14 @@ interface ICriterionService {
  * @param userRepo Interface for operations related to user management.
  * @param projectRepo Interface for operations related to project retrieval.
  * @param projectMemberRepo Interface for operations related to project member management.
+ * @param accessChecker Interface for checking access permissions based on defined rules.
  */
 class CriterionService(
     private val repo: ICriterionTableRepo,
     private val userRepo: IUserTableRepo,
     private val projectRepo: IProjectTableRepo,
     private val projectMemberRepo: IProjectMemberTableRepo,
+    private val accessChecker: IAccessChecker,
 ) : ICriterionService {
     override suspend fun getCriterionById(criterionId: UUID): GrpcCriterion = withUser(userRepo) { currentUser ->
         val criterion = repo.getCriterionById(criterionId).getOrThrow()
@@ -92,7 +92,7 @@ class CriterionService(
             if (request.projectId.isNotEmpty()) {
                 val projectId = parseUUID(request.projectId, EntityType.PROJECT)
 
-                isProjectAdmin(projectMemberRepo)
+                accessChecker.isProjectAdmin()
                     .orElse(isServerAdmin().forTarget())
                     .orElseThrow { user, target ->
                         UnauthorizedCreateException(user.id, target, EntityType.CRITERION)
@@ -101,7 +101,7 @@ class CriterionService(
 
                 val project = projectRepo.getProjectById(projectId).getOrThrow()
 
-                isProjectActive().checkFor(currentUser, project)
+                accessChecker.isProjectActive().checkFor(currentUser, project)
             }
 
             repo.createCriterion(request, currentUser.id).toGrpcCriterion()
@@ -123,7 +123,7 @@ class CriterionService(
             if (criterion is Criterion.ProjectCriterion) {
                 val project = projectRepo.getProjectById(criterion.projectId).getOrThrow()
 
-                isProjectActive().checkFor(currentUser, project)
+                accessChecker.isProjectActive().checkFor(currentUser, project)
             }
 
             repo.updateCriterion(request).toGrpcCriterion()
@@ -131,7 +131,7 @@ class CriterionService(
 
     override suspend fun getAllCriteriaForProject(projectId: UUID): GrpcCriterion.List =
         withUser(userRepo) { currentUser ->
-            isAllowedToReadProject(projectRepo, projectMemberRepo).checkFor(currentUser, projectId)
+            accessChecker.isAllowedToReadProject().checkFor(currentUser, projectId)
 
             repo.getAllProjectCriteria(projectId).toGrpcCriteria()
         }

@@ -12,8 +12,8 @@ import se.uulm.snowballr.backend.repository.IReviewTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
+import se.uulm.snowballr.backend.service.accessrules.IAccessChecker
 import se.uulm.snowballr.backend.service.accessrules.checkFor
-import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadProject
 import snowballr.Export.AvailableExportFormatsResponse
 import snowballr.Export.ExportRequest
 import snowballr.Export.ExportResponse
@@ -44,7 +44,9 @@ interface IExportService {
  * @param reviewRepo Repository interface to manage operations related to reviews of project papers.
  * @param criterionRepo Repository interface to manage operations related to project criteria.
  * @param userRepo Repository interface to manage operations related to user data.
+ * @param accessChecker Interface for checking access permissions based on defined rules.
  */
+@Suppress("LongParameterList")
 class ExportService(
     private val projectRepo: IProjectTableRepo,
     private val projectMemberRepo: IProjectMemberTableRepo,
@@ -52,6 +54,7 @@ class ExportService(
     private val reviewRepo: IReviewTableRepo,
     private val criterionRepo: ICriterionTableRepo,
     private val userRepo: IUserTableRepo,
+    private val accessChecker: IAccessChecker,
 ) : IExportService {
     override suspend fun getAvailableExportFormats(): AvailableExportFormatsResponse =
         AvailableExportFormatsResponse.newBuilder()
@@ -62,7 +65,7 @@ class ExportService(
         val format = ProjectExportManager.getSupportedFormats().first { it.toString() == request.format }
         val projectId = parseUUID(request.id, EntityType.PROJECT)
 
-        isAllowedToReadProject(projectRepo, projectMemberRepo).checkFor(currentUser, projectId)
+        accessChecker.isAllowedToReadProject().checkFor(currentUser, projectId)
 
         val project = projectRepo.getProjectById(projectId).getOrThrow()
         val projectMembers = projectMemberRepo.getProjectMembersWithUsers(projectId)

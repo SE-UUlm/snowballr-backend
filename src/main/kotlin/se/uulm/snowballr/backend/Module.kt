@@ -80,6 +80,10 @@ import se.uulm.snowballr.backend.service.ProjectService
 import se.uulm.snowballr.backend.service.ReadingListService
 import se.uulm.snowballr.backend.service.ReviewService
 import se.uulm.snowballr.backend.service.UserService
+import se.uulm.snowballr.backend.service.accessrules.AccessChecker
+import se.uulm.snowballr.backend.service.accessrules.IAccessChecker
+import se.uulm.snowballr.backend.service.accessrules.IProjectAccessChecker
+import se.uulm.snowballr.backend.service.accessrules.ProjectAccessChecker
 
 /**
  * Defines the Koin dependency injection module for the application.
@@ -202,6 +206,11 @@ private fun Module.customServicesDeps() {
  * Consists of the [MainService] and all its direct service dependencies.
  */
 fun Module.serviceLayerDeps() {
+    // Access Checkers
+    singleOf(::ProjectAccessChecker) { bind<IProjectAccessChecker>() }
+    // The main access checker that is used to combine the specific access checkers
+    singleOf(::AccessChecker) { bind<IAccessChecker>() }
+
     // All services that are directly used by the MainService
     singleOf(::ProjectService) { bind<IProjectService>() }
     singleOf(::CriterionService) { bind<ICriterionService>() }
