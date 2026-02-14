@@ -54,3 +54,4 @@ db-data
 
 ### Plugins ###
 /plugins
+/.venv
