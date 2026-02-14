@@ -22,7 +22,6 @@ import se.uulm.snowballr.backend.service.accessrules.andAlso
 import se.uulm.snowballr.backend.service.accessrules.checkFor
 import se.uulm.snowballr.backend.service.accessrules.forProperty
 import se.uulm.snowballr.backend.service.accessrules.forTarget
-import se.uulm.snowballr.backend.service.accessrules.isSameUserById
 import se.uulm.snowballr.backend.service.accessrules.isServerAdmin
 import se.uulm.snowballr.backend.service.accessrules.orElse
 import se.uulm.snowballr.backend.service.accessrules.orElseThrow
@@ -122,7 +121,7 @@ class ProjectMemberService(
             return
         }
 
-        isSameUserById()
+        accessChecker.isSameUserById()
             .forProperty(AccessRuleCompoundUUID::firstTarget)
             .orElse(
                 accessChecker.isProjectAdmin()

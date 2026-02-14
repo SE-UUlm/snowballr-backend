@@ -86,8 +86,10 @@ import se.uulm.snowballr.backend.service.accessrules.IAccessChecker
 import se.uulm.snowballr.backend.service.accessrules.ICriterionAccessChecker
 import se.uulm.snowballr.backend.service.accessrules.IProjectAccessChecker
 import se.uulm.snowballr.backend.service.accessrules.IReviewAccessChecker
+import se.uulm.snowballr.backend.service.accessrules.IUserAccessChecker
 import se.uulm.snowballr.backend.service.accessrules.ProjectAccessChecker
 import se.uulm.snowballr.backend.service.accessrules.ReviewAccessChecker
+import se.uulm.snowballr.backend.service.accessrules.UserAccessChecker
 
 /**
  * Defines the Koin dependency injection module for the application.
@@ -214,6 +216,7 @@ fun Module.serviceLayerDeps() {
     singleOf(::ProjectAccessChecker) { bind<IProjectAccessChecker>() }
     singleOf(::CriterionAccessChecker) { bind<ICriterionAccessChecker>() }
     singleOf(::ReviewAccessChecker) { bind<IReviewAccessChecker>() }
+    singleOf(::UserAccessChecker) { bind<IUserAccessChecker>() }
     // The main access checker that is used to combine the specific access checkers
     singleOf(::AccessChecker) { bind<IAccessChecker>() }
 

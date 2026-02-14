@@ -27,20 +27,14 @@ import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.IVerificationTokenTableRepo
-import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.service.accessrules.IAccessChecker
 import se.uulm.snowballr.backend.service.accessrules.andAlso
 import se.uulm.snowballr.backend.service.accessrules.checkFor
 import se.uulm.snowballr.backend.service.accessrules.forProperty
 import se.uulm.snowballr.backend.service.accessrules.forTarget
-import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadUser
-import se.uulm.snowballr.backend.service.accessrules.isSameUserById
 import se.uulm.snowballr.backend.service.accessrules.isServerAdmin
-import se.uulm.snowballr.backend.service.accessrules.isServerAdminOrSameUser
-import se.uulm.snowballr.backend.service.accessrules.isTargetUserActive
 import se.uulm.snowballr.backend.service.accessrules.orElse
 import se.uulm.snowballr.backend.service.accessrules.orElseThrow
-import se.uulm.snowballr.backend.service.accessrules.targetUserIsNotAdmin
 import snowballr.Authentication
 import snowballr.ProjectOuterClass.ProjectStatus
 import java.util.UUID
@@ -102,7 +96,6 @@ private const val VERIFICATION_TOKEN_LENGTH = 48
  *
  * @constructor Initializes the [UserService] with a user repository.
  * @param userRepo The repository responsible for managing persistence operations for users.
- * @param projectMemberRepo The repository responsible for managing persistence operations for project members.
  * @param projectRepo The repository responsible for managing persistence operations for projects.
  * @param criterionRepo The repository responsible for managing persistence operations for criteria.
  * @param verificationTokenRepo The repository responsible for managing persistence operations for verification tokens.
@@ -113,7 +106,6 @@ private const val VERIFICATION_TOKEN_LENGTH = 48
 @Suppress("LongParameterList")
 class UserService(
     private val userRepo: IUserTableRepo,
-    private val projectMemberRepo: IProjectMemberTableRepo,
     private val projectRepo: IProjectTableRepo,
     private val criterionRepo: ICriterionTableRepo,
     private val verificationTokenRepo: IVerificationTokenTableRepo,
@@ -122,7 +114,7 @@ class UserService(
     private val accessChecker: IAccessChecker,
 ) : IUserService {
     override suspend fun getUserById(userId: UUID): GrpcUser = withUser(userRepo) { currentUser ->
-        isAllowedToReadUser(projectMemberRepo).checkFor(currentUser, userId)
+        accessChecker.isAllowedToReadUser().checkFor(currentUser, userId)
 
         // Don't re-request the user if it is the current user itself
         val targetUser =
@@ -134,7 +126,7 @@ class UserService(
 
         // Only active or active unconfirmed users can be retrieved if the requester is not a server admin
         isServerAdmin().forTarget<User>()
-            .orElse(isTargetUserActive())
+            .orElse(accessChecker.isTargetUserActive())
             .orElseThrow(UserNotFoundException(userId))
             .checkFor(currentUser, targetUser)
 
@@ -145,12 +137,12 @@ class UserService(
         // We have to request the user first to get the ID for the access checks
         val targetUser = userRepo.getUserByEmail(email).getOrThrow()
 
-        isAllowedToReadUser(projectMemberRepo, IdentifierType.EMAIL)
+        accessChecker.isAllowedToReadUser(IdentifierType.EMAIL)
             .forProperty(User::id)
             // Only active or active unconfirmed users can be retrieved if the requester is not a server admin
             .andAlso(
                 isServerAdmin().forTarget<User>()
-                    .orElse(isTargetUserActive())
+                    .orElse(accessChecker.isTargetUserActive())
                     .orElseThrow(UserNotFoundByEmailException(email)),
             )
             .checkFor(currentUser, targetUser)
@@ -197,12 +189,12 @@ class UserService(
 
         val notAllowedToUpdateException = UnauthorizedUpdateException(currentUser.id, targetUserId, EntityType.USER)
 
-        isSameUserById()
+        accessChecker.isSameUserById()
             .forProperty(User::id)
             .orElse(
                 isServerAdmin().forTarget<User>()
                     .andAlso(
-                        isTargetUserActive()
+                        accessChecker.isTargetUserActive()
                             .orElseThrow(EntityNotActiveException(EntityType.USER, targetUserId)),
                     ),
             )
@@ -227,12 +219,12 @@ class UserService(
     override suspend fun softDeleteUser(userId: UUID) = withUser(userRepo) { currentUser ->
         val targetUser = userRepo.getUserById(userId).getOrThrow()
 
-        isServerAdminOrSameUser()
+        accessChecker.isServerAdminOrSameUser()
             .orElseThrow(UnauthorizedReadException(currentUser.id, targetUser.id, EntityType.USER))
             .forProperty(User::id)
             .andAlso(
-                targetUserIsNotAdmin()
-                    .orElse(isSameUserById().forProperty(User::id))
+                accessChecker.isTargetUserNotAdmin()
+                    .orElse(accessChecker.isSameUserById().forProperty(User::id))
                     .orElseThrow(
                         FailedPreconditionException(
                             "The user with the id ${targetUser.id} can not be deleted because the user is an admin.",

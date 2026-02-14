@@ -24,7 +24,6 @@ import se.uulm.snowballr.backend.service.accessrules.IAccessChecker
 import se.uulm.snowballr.backend.service.accessrules.checkFor
 import se.uulm.snowballr.backend.service.accessrules.forProperty
 import se.uulm.snowballr.backend.service.accessrules.isServerAdmin
-import se.uulm.snowballr.backend.service.accessrules.isServerAdminOrSameUser
 import se.uulm.snowballr.backend.service.accessrules.orElseThrow
 import snowballr.ProjectOuterClass.MemberRole
 import snowballr.ProjectOuterClass.PaperDecision
@@ -254,7 +253,7 @@ class ProjectService(
         withUser(userRepo) { currentUser ->
             val requestedUser = userRepo.getUserById(userId).getOrThrow()
 
-            isServerAdminOrSameUser()
+            accessChecker.isServerAdminOrSameUser()
                 .forProperty(User::id)
                 .orElseThrow { requestingUser, _ ->
                     UnauthorizedReadException(requestingUser.id, userId, EntityType.USER)
