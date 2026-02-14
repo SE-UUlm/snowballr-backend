@@ -81,7 +81,9 @@ import se.uulm.snowballr.backend.service.ReadingListService
 import se.uulm.snowballr.backend.service.ReviewService
 import se.uulm.snowballr.backend.service.UserService
 import se.uulm.snowballr.backend.service.accessrules.AccessChecker
+import se.uulm.snowballr.backend.service.accessrules.CriterionAccessChecker
 import se.uulm.snowballr.backend.service.accessrules.IAccessChecker
+import se.uulm.snowballr.backend.service.accessrules.ICriterionAccessChecker
 import se.uulm.snowballr.backend.service.accessrules.IProjectAccessChecker
 import se.uulm.snowballr.backend.service.accessrules.ProjectAccessChecker
 
@@ -208,6 +210,7 @@ private fun Module.customServicesDeps() {
 fun Module.serviceLayerDeps() {
     // Access Checkers
     singleOf(::ProjectAccessChecker) { bind<IProjectAccessChecker>() }
+    singleOf(::CriterionAccessChecker) { bind<ICriterionAccessChecker>() }
     // The main access checker that is used to combine the specific access checkers
     singleOf(::AccessChecker) { bind<IAccessChecker>() }
 
