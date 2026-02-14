@@ -51,7 +51,8 @@ def fetcher_plugin(
     backwards: ReferenceFn,
 ):
     if len(sys.argv) < 2:
-        print("TOO FEW ARGS")
+        print("The fetcher was called without an action.")
+        print("python fetcher.py <ACTION> <...ARGS>")
         exit(1)
 
     match sys.argv[1]:
@@ -59,8 +60,9 @@ def fetcher_plugin(
             print(json.dumps(options))
 
         case EventType.QUERY:
-            if len(sys.argv) < 4:
-                print("TOO FEW ARGS")
+            if len(sys.argv) != 4:
+                print("The fetcher was called with an incorrect number of arguments.")
+                print("python fetcher.py query <SEARCH_QUERY> <OPTIONS>")
                 exit(1)
 
             options: Options = json.loads(sys.argv[3])
@@ -69,7 +71,8 @@ def fetcher_plugin(
 
         case EventType.FORWARDS:
             if len(sys.argv) < 4:
-                print("TOO FEW ARGS")
+                print("The fetcher was called with an incorrect number of arguments.")
+                print("python fetcher.py forwards <PAPER> <OPTIONS>")
                 exit(1)
 
             paper: Paper = Paper.from_json(sys.argv[2])
@@ -79,7 +82,8 @@ def fetcher_plugin(
 
         case EventType.BACKWARDS:
             if len(sys.argv) < 4:
-                print("TOO FEW ARGS")
+                print("The fetcher was called with an incorrect number of arguments.")
+                print("python fetcher.py backwards <PAPER> <OPTIONS>")
                 exit(1)
 
             paper: Paper = Paper.from_json(sys.argv[2])

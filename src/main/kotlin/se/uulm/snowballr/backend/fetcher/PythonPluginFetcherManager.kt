@@ -124,10 +124,10 @@ class PythonPluginFetcherManager(
         val stderr = process.errorReader().use { it.readText() }
 
         if (returnCode == 0) {
-            if (!stderr.isBlank()) logger.info { "Fetcher \"${fetcher}\": $stderr" }
+            if (!stderr.isBlank()) logger.info { "Fetcher '$fetcher' encountered a problem: $stderr" }
             return process.inputReader().use { it.readLines().first() }
         } else {
-            logger.error { "There was an error whilst executing fetcher '$fetcher':\n" + stderr }
+            logger.error { "Could not correctly execute fetcher '$fetcher':\n$stderr" }
             throw FetcherException(stderr)
         }
     }
