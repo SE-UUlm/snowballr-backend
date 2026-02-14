@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.service
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.Criterion
+import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.toGrpcCriteria
 import se.uulm.snowballr.backend.model.dto.toGrpcCriterion
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedCreateException
@@ -70,13 +71,7 @@ class CriterionService(
     override suspend fun getCriterionById(criterionId: UUID): GrpcCriterion = withUser(userRepo) { currentUser ->
         val criterion = repo.getCriterionById(criterionId).getOrThrow()
 
-        accessChecker.isCreatorOfCriterion()
-            .orElse(accessChecker.isUserInProjectOfCriterion())
-            .orElse(isServerAdmin().forTarget())
-            .orElseThrow { user, target ->
-                UnauthorizedReadException(user.id, target.id, EntityType.CRITERION)
-            }
-            .checkFor(currentUser, criterion)
+        isAllowedToReadCriterion(currentUser, criterion)
 
         criterion.toGrpcCriterion()
     }
@@ -86,12 +81,7 @@ class CriterionService(
             if (request.projectId.isNotEmpty()) {
                 val projectId = parseUUID(request.projectId, EntityType.PROJECT)
 
-                accessChecker.isProjectAdmin()
-                    .orElse(isServerAdmin().forTarget())
-                    .orElseThrow { user, target ->
-                        UnauthorizedCreateException(user.id, target, EntityType.CRITERION)
-                    }
-                    .checkFor(currentUser, projectId)
+                isAllowedToCreateCriterion(currentUser, projectId)
 
                 val project = projectRepo.getProjectById(projectId).getOrThrow()
 
@@ -106,13 +96,7 @@ class CriterionService(
             val criterionId = parseUUID(request.criterion.id, EntityType.CRITERION)
             val criterion = repo.getCriterionById(criterionId).getOrThrow()
 
-            accessChecker.isCreatorOfCriterion()
-                .orElse(accessChecker.isUserAdminInProjectOfCriterion())
-                .orElse(isServerAdmin().forTarget())
-                .orElseThrow { user, target ->
-                    UnauthorizedUpdateException(user.id, target.id, EntityType.CRITERION)
-                }
-                .checkFor(currentUser, criterion)
+            isAllowedToUpdateCriterion(currentUser, criterion)
 
             if (criterion is Criterion.ProjectCriterion) {
                 val project = projectRepo.getProjectById(criterion.projectId).getOrThrow()
@@ -129,4 +113,34 @@ class CriterionService(
 
             repo.getAllProjectCriteria(projectId).toGrpcCriteria()
         }
+
+    private suspend fun isAllowedToReadCriterion(currentUser: User, criterion: Criterion) {
+        accessChecker.isCreatorOfCriterion()
+            .orElse(accessChecker.isUserInProjectOfCriterion())
+            .orElse(isServerAdmin().forTarget())
+            .orElseThrow { user, target ->
+                UnauthorizedReadException(user.id, target.id, EntityType.CRITERION)
+            }
+            .checkFor(currentUser, criterion)
+    }
+
+    @Suppress("RedundantSuspendModifier", "RedundantSuppression")
+    private suspend fun isAllowedToCreateCriterion(currentUser: User, projectId: UUID) {
+        accessChecker.isProjectAdmin()
+            .orElse(isServerAdmin().forTarget())
+            .orElseThrow { user, target ->
+                UnauthorizedCreateException(user.id, target, EntityType.CRITERION)
+            }
+            .checkFor(currentUser, projectId)
+    }
+
+    private suspend fun isAllowedToUpdateCriterion(currentUser: User, criterion: Criterion) {
+        accessChecker.isCreatorOfCriterion()
+            .orElse(accessChecker.isUserAdminInProjectOfCriterion())
+            .orElse(isServerAdmin().forTarget())
+            .orElseThrow { user, target ->
+                UnauthorizedUpdateException(user.id, target.id, EntityType.CRITERION)
+            }
+            .checkFor(currentUser, criterion)
+    }
 }
