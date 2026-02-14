@@ -5,11 +5,14 @@ package se.uulm.snowballr.backend.service.accessrules
  */
 interface IAccessChecker :
     IProjectAccessChecker,
-    ICriterionAccessChecker
+    ICriterionAccessChecker,
+    IReviewAccessChecker
 
 class AccessChecker(
     private val projectAccessChecker: IProjectAccessChecker,
     private val criterionAccessChecker: ICriterionAccessChecker,
+    private val reviewAccessChecker: IReviewAccessChecker,
 ) : IAccessChecker,
     IProjectAccessChecker by projectAccessChecker,
-    ICriterionAccessChecker by criterionAccessChecker
+    ICriterionAccessChecker by criterionAccessChecker,
+    IReviewAccessChecker by reviewAccessChecker
