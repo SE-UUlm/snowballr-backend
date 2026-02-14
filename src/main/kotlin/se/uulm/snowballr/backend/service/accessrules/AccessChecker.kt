@@ -9,6 +9,15 @@ interface IAccessChecker :
     IReviewAccessChecker,
     IUserAccessChecker
 
+/**
+ * The [AccessChecker] class is a concrete implementation of the [IAccessChecker] interface.
+ * It delegates access checking responsibilities to specific access checkers for projects, criteria, reviews, and users.
+ *
+ * @param projectAccessChecker The access checker for project-related access control.
+ * @param criterionAccessChecker The access checker for criterion-related access control.
+ * @param reviewAccessChecker The access checker for review-related access control.
+ * @param userAccessChecker The access checker for user-related access control.
+ */
 class AccessChecker(
     private val projectAccessChecker: IProjectAccessChecker,
     private val criterionAccessChecker: ICriterionAccessChecker,

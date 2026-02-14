@@ -1,5 +1,3 @@
-@file:Suppress("NonBooleanPropertyPrefixedWithIs")
-
 package se.uulm.snowballr.backend.service.accessrules
 
 import se.uulm.snowballr.backend.model.dto.Criterion

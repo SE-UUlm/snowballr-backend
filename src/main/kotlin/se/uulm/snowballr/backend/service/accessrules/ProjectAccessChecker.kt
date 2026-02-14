@@ -1,5 +1,3 @@
-@file:Suppress("NonBooleanPropertyPrefixedWithIs")
-
 package se.uulm.snowballr.backend.service.accessrules
 
 import se.uulm.snowballr.backend.model.AccessType
@@ -37,12 +35,6 @@ interface IProjectAccessChecker {
     fun isProjectActive(): AccessRule<Project>
 
     /**
-     * Check whether the requesting user is a member of a specific project.
-     */
-    @CheckReturnValue
-    fun isProjectMember(): AccessRule<UUID>
-
-    /**
      * Check whether the requesting user is an admin of a specific project.
      */
     @CheckReturnValue
@@ -62,8 +54,7 @@ interface IProjectAccessChecker {
      *
      * The user can read the project if the following conditions are met:
      * 1. The project exists according to [isProjectExistent]; otherwise a [ProjectNotFoundException] is thrown.
-     * 2. The user is a member of the project according to [isProjectMember] or a server admin according to
-     * [isServerAdmin].
+     * 2. The user is a member of the project or a server admin according to [isServerAdmin].
      *
      * If neither condition is met, an [UnauthorizedReadException] is thrown.
      */
@@ -92,11 +83,6 @@ class ProjectAccessChecker(
     override fun isProjectActive() = AccessRule<Project> { _, project ->
         project.isActive()
     }.orElseThrow { _, project -> EntityNotActiveException(EntityType.PROJECT, project.id) }
-
-    override fun isProjectMember() = AccessRule<UUID> { requester, targetId ->
-        val projectMembers = projectMemberRepo.getProjectMembers(targetId)
-        projectMembers.any { it.userId == requester.id }
-    }
 
     override fun isProjectAdmin() = AccessRule<UUID> { requester, targetId ->
         val projectAdmins = projectMemberRepo.getAllProjectAdmins(targetId)
@@ -130,4 +116,13 @@ class ProjectAccessChecker(
                 EntityType.PROJECT,
             )
         }
+
+    /**
+     * Check whether the requesting user is a member of a specific project.
+     */
+    @CheckReturnValue
+    private fun isProjectMember() = AccessRule<UUID> { requester, targetId ->
+        val projectMembers = projectMemberRepo.getProjectMembers(targetId)
+        projectMembers.any { it.userId == requester.id }
+    }
 }
