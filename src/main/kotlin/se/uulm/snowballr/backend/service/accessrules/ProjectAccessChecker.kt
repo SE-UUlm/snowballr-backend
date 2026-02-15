@@ -73,9 +73,11 @@ interface IProjectAccessChecker {
      * has to be a server admin; otherwise, an [UnauthorizedException] is thrown.
      *
      * @param accessType The type of access that is being checked.
+     * @param entityType The type of the entity for which access is being checked, used for error reporting in case of
+     * an unauthorized access attempt. Defaults to [EntityType.PROJECT].
      */
     @CheckReturnValue
-    fun isServerOrProjectAdmin(accessType: AccessType): AccessRule<UUID>
+    fun isProjectOrServerAdmin(accessType: AccessType, entityType: EntityType = EntityType.PROJECT): AccessRule<UUID>
 }
 
 class ProjectAccessChecker(
@@ -118,15 +120,10 @@ class ProjectAccessChecker(
             UnauthorizedReadException(currentUser.id, targetId, EntityType.PROJECT)
         }
 
-    override fun isServerOrProjectAdmin(accessType: AccessType) = isProjectAdmin()
+    override fun isProjectOrServerAdmin(accessType: AccessType, entityType: EntityType) = isProjectAdmin()
         .orElse(isServerAdmin().forTarget())
         .orElseThrow { currentUser, targetId ->
-            UnauthorizedExceptionFactory.createForAccessType(
-                accessType,
-                currentUser.id,
-                targetId,
-                EntityType.PROJECT,
-            )
+            UnauthorizedExceptionFactory.createForAccessType(accessType, currentUser.id, targetId, entityType)
         }
 
     /**

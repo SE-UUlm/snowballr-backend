@@ -244,7 +244,7 @@ class ProjectPaperService(
             val projectId = parseUUID(request.projectId, EntityType.PROJECT)
             val paperId = parseUUID(request.paperId, EntityType.PAPER)
 
-            accessChecker.isServerOrProjectAdmin(AccessType.CREATE).checkFor(currentUser, projectId)
+            accessChecker.isProjectOrServerAdmin(AccessType.CREATE).checkFor(currentUser, projectId)
 
             val project = projectRepo.getProjectById(projectId).getOrThrow()
             accessChecker.isProjectActive().checkFor(currentUser, project)

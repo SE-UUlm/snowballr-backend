@@ -145,7 +145,7 @@ class ProjectMemberService(
 
     @Suppress("RedundantSuspendModifier", "RedundantSuppression")
     private suspend fun isAllowedToUpdateMemberRole(currentUser: User, projectId: UUID) {
-        accessChecker.isServerOrProjectAdmin(AccessType.UPDATE)
+        accessChecker.isProjectOrServerAdmin(AccessType.UPDATE)
             .andAlso(accessChecker.isProjectExistent())
             .checkFor(currentUser, projectId)
     }
@@ -154,13 +154,13 @@ class ProjectMemberService(
         accessChecker.isSameUserById()
             .forProperty(AccessRuleCompoundUUID::firstTarget)
             .orElse(
-                accessChecker.isServerOrProjectAdmin(AccessType.DELETE)
+                accessChecker.isProjectOrServerAdmin(AccessType.DELETE)
                     .forProperty(AccessRuleCompoundUUID::secondTarget),
             )
             .checkFor(currentUser, userProjectCompound)
     }
 
     private suspend fun isAllowedToRemoveInvitation(currentUser: User, projectId: UUID) {
-        accessChecker.isServerOrProjectAdmin(AccessType.DELETE).checkFor(currentUser, projectId)
+        accessChecker.isProjectOrServerAdmin(AccessType.DELETE).checkFor(currentUser, projectId)
     }
 }

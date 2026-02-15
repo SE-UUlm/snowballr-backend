@@ -166,7 +166,7 @@ class ProjectService(
     override suspend fun updateProject(request: GrpcProject.Update): GrpcProject = withUser(userRepo) { currentUser ->
         val projectId = parseUUID(request.project.id, EntityType.PROJECT)
 
-        accessChecker.isServerOrProjectAdmin(AccessType.UPDATE).checkFor(currentUser, projectId)
+        accessChecker.isProjectOrServerAdmin(AccessType.UPDATE).checkFor(currentUser, projectId)
 
         val project = repo.getProjectById(projectId).getOrThrow()
         val currentStatus = project.status
@@ -239,7 +239,7 @@ class ProjectService(
     }
 
     override suspend fun softDeleteProject(projectId: UUID) = withUser(userRepo) { currentUser ->
-        accessChecker.isServerOrProjectAdmin(AccessType.DELETE).checkFor(currentUser, projectId)
+        accessChecker.isProjectOrServerAdmin(AccessType.DELETE).checkFor(currentUser, projectId)
 
         if (!repo.doesProjectExistById(projectId)) {
             throw ProjectNotFoundException(projectId)

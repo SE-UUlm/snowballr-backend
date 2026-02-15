@@ -1,12 +1,12 @@
 package se.uulm.snowballr.backend.service
 
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
+import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.Criterion
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.toGrpcCriteria
 import se.uulm.snowballr.backend.model.dto.toGrpcCriterion
-import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedCreateException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedUpdateException
 import se.uulm.snowballr.backend.model.parseUUID
@@ -117,11 +117,7 @@ class CriterionService(
 
     @Suppress("RedundantSuspendModifier", "RedundantSuppression")
     private suspend fun isAllowedToCreateCriterion(currentUser: User, projectId: UUID) {
-        accessChecker.isProjectAdmin()
-            .orElse(isServerAdmin().forTarget())
-            .orElseThrow { user, target ->
-                UnauthorizedCreateException(user.id, target, EntityType.CRITERION)
-            }
+        accessChecker.isProjectOrServerAdmin(AccessType.CREATE, EntityType.CRITERION)
             .checkFor(currentUser, projectId)
 
         accessChecker.isProjectActiveById().checkFor(currentUser, projectId)
