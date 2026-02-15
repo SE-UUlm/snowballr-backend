@@ -42,12 +42,6 @@ interface IProjectAccessChecker {
     fun isProjectActiveById(): AccessRule<UUID>
 
     /**
-     * Check whether the requesting user is an admin of a specific project.
-     */
-    @CheckReturnValue
-    fun isProjectAdmin(): AccessRule<UUID>
-
-    /**
      * Check whether the user is not the last project admin of a specific project; otherwise, throws a
      * [FailedPreconditionException].
      *
@@ -98,11 +92,6 @@ class ProjectAccessChecker(
         project != null && project.isActive()
     }.orElseThrow { _, projectId -> EntityNotActiveException(EntityType.PROJECT, projectId) }
 
-    override fun isProjectAdmin() = AccessRule<UUID> { requester, targetId ->
-        val projectAdmins = projectMemberRepo.getAllProjectAdmins(targetId)
-        projectAdmins.any { it.userId == requester.id }
-    }
-
     override fun isNotLastProjectAdmin(action: String) = AccessRule<UUID> { user, targetId ->
         val projectAdmins = projectMemberRepo.getAllProjectAdmins(targetId)
         !(projectAdmins.size == 1 && projectAdmins.first().userId == user.id)
@@ -133,5 +122,14 @@ class ProjectAccessChecker(
     private fun isProjectMember() = AccessRule<UUID> { requester, targetId ->
         val projectMembers = projectMemberRepo.getProjectMembers(targetId)
         projectMembers.any { it.userId == requester.id }
+    }
+
+    /**
+     * Check whether the requesting user is an admin of a specific project.
+     */
+    @CheckReturnValue
+    private fun isProjectAdmin() = AccessRule<UUID> { requester, targetId ->
+        val projectAdmins = projectMemberRepo.getAllProjectAdmins(targetId)
+        projectAdmins.any { it.userId == requester.id }
     }
 }
