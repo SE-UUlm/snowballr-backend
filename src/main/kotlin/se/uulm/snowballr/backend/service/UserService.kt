@@ -240,9 +240,9 @@ class UserService(
     /**
      * Only active or active unconfirmed users can be retrieved if the requester is not a server admin.
      */
-    private fun isAllowedToRequestUserById(userId: UUID): AccessRule<User> = isServerAdmin().forTarget<User>()
-        .orElse(accessChecker.isTargetUserActive())
-        .orElseThrow(UserNotFoundException(userId))
+    private fun isAllowedToRequestUserById(userId: UUID): AccessRule<User> =
+        accessChecker.isServerAdminOrTargetUserActive()
+            .orElseThrow(UserNotFoundException(userId))
 
     private suspend fun isAllowedToReadUserByEmail(email: String, currentUser: User, targetUser: User) {
         accessChecker.isAllowedToReadUser(IdentifierType.EMAIL)
@@ -254,9 +254,9 @@ class UserService(
     /**
      * Only active or active unconfirmed users can be retrieved if the requester is not a server admin.
      */
-    private fun isAllowedToRequestUserByEmail(email: String): AccessRule<User> = isServerAdmin().forTarget<User>()
-        .orElse(accessChecker.isTargetUserActive())
-        .orElseThrow(UserNotFoundByEmailException(email))
+    private fun isAllowedToRequestUserByEmail(email: String): AccessRule<User> =
+        accessChecker.isServerAdminOrTargetUserActive()
+            .orElseThrow(UserNotFoundByEmailException(email))
 
     private suspend fun isAllowedToUpdateUser(currentUser: User, targetUser: User) {
         accessChecker.isSameUserById()

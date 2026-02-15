@@ -26,6 +26,14 @@ interface IUserAccessChecker {
     fun isTargetUserActive(): AccessRule<User>
 
     /**
+     * Check whether the requesting user is a server admin or the target user is active.
+     *
+     * This allows server admins to access inactive users, while non-admins can only access active users.
+     */
+    @CheckReturnValue
+    fun isServerAdminOrTargetUserActive(): AccessRule<User>
+
+    /**
      * Check whether the target user is *not* a server admin.
      */
     @CheckReturnValue
@@ -53,6 +61,8 @@ class UserAccessChecker(
     override fun isSameUserById() = AccessRule<UUID> { requester, targetId -> requester.id == targetId }
 
     override fun isTargetUserActive() = AccessRule<User> { _, target -> target.isActive() }
+
+    override fun isServerAdminOrTargetUserActive() = isServerAdmin().forTarget<User>().orElse(isTargetUserActive())
 
     override fun isTargetUserNotAdmin() = AccessRule<User> { _, target -> !target.isServerAdmin() }
 
