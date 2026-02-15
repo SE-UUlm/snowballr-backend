@@ -14,7 +14,6 @@ The fastest way to get started is to use the provided Docker setup.
     ```bash
     git clone git@github.com:SE-UUlm/snowballr-backend.git
     cd snowballr-backend
-    docker compose up
     ```
 
 2. Set up your environment variables by copying the example file:
@@ -28,6 +27,12 @@ The fastest way to get started is to use the provided Docker setup.
     ```bash
     docker compose up
     ```
+
+> [!INFO]
+> If you encounter a permission-denied error regarding the plugin directory not
+> being writable, make sure to execute `chmod o+wr ./plugins` on the created
+> directory once. In some cases, Docker's created volumes aren't writable for
+> the user within the container.
 
 The proxy is used to enable gRPC-Web support for the backend. It listens on the port specified by the `WEB_PORT`
 environment variable (default: `8081`).
@@ -53,7 +58,6 @@ To build the project from source, run the following commands:
     ```bash
     git clone git@github.com:SE-UUlm/snowballr-backend.git
     cd snowballr-backend
-    ./gradlew shadowJar
     ```
 
 2. Build the project using the Gradle wrapper. This will create a JAR file.
@@ -64,13 +68,24 @@ To build the project from source, run the following commands:
 
    The built JAR file can be found in the `build/libs` directory, named `snowballr-backend-<version>.jar`.
 
-3. Run the application:
+3. Setup [Python venv](https://docs.python.org/3/library/venv.html) for the plugin system:
+
+    ```bash
+    python3 -m venv .venv
+    source .venv/bin/activate # choose correct script (.fish, .csh, .ps1)
+    pip install -r requirements.txt
+    ```
+
+4. Run the application:
 
     ```bash
     java -jar build/libs/snowballr-backend-<version>.jar
     ```
 
-   Remember to provide the environment variables either via a `.env` file or by writing them in front of the command.
+    Remember to provide the environment variables either via a `.env` file or by writing them in front of the command.
+
+> [!IMPORTANT]
+> Always ensure that the server is running in a python environment providing the required dependencies specified in the `requirements.txt`.
 
 ### Running in an IDE
 
@@ -80,6 +95,10 @@ can run Gradle commands directly from the project root directory. For example, t
 ```bash
 ./gradlew run
 ```
+
+> [!INFO]
+> At the moment the provided run configuration is not working, as the backend would be started without a Python virtual
+> environment. Either manually change the run configuration or start it manually.
 
 If you're using IntelliJ IDEA, you can use the provided run configuration "Run Backend", which does the same as
 executing `./gradlew run`.

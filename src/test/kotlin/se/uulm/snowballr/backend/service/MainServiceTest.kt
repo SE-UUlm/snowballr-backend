@@ -21,7 +21,7 @@ import se.uulm.snowballr.backend.auth.IJwtManager
 import se.uulm.snowballr.backend.env.Env
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.env.IEnvService
-import se.uulm.snowballr.backend.fetcher.FetcherManager
+import se.uulm.snowballr.backend.fetcher.IFetcherManager
 import se.uulm.snowballr.backend.mail.EmailTemplateManager
 import se.uulm.snowballr.backend.mail.IEmailManager
 import se.uulm.snowballr.backend.model.dto.User
@@ -103,7 +103,7 @@ open class MainServiceTest : KoinTest {
     // Custom services / manager / clients mocks
     val jwtManagerMock = mockk<IJwtManager>()
     val emailManagerMock = mockk<IEmailManager>()
-    val fetcherManagerMock = mockk<FetcherManager>()
+    val fetcherManagerMock = mockk<IFetcherManager>()
     val mailerMock = mockk<Mailer>()
     val emailTemplateManagerMock = mockk<EmailTemplateManager>()
 

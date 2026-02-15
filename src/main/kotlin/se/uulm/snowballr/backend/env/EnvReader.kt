@@ -1,6 +1,7 @@
 package se.uulm.snowballr.backend.env
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import java.nio.file.Path
 
 // Environment variable keys
 private const val PROFILE = "PROFILE"
@@ -36,6 +37,9 @@ private const val SENSITIVE_INFORMATION_RETENTION_DAYS = "SENSITIVE_INFORMATION_
 private const val INVITATION_TOKEN_LIFETIME_IN_DAYS = "INVITATION_TOKEN_LIFETIME_IN_DAYS"
 private const val VERIFICATION_TOKEN_LIFETIME_IN_DAYS = "VERIFICATION_TOKEN_LIFETIME_IN_DAYS"
 
+// Plugins
+private const val PLUGIN_DIRECTORY = "PLUGIN_DIRECTORY"
+
 // Default values
 private val DEFAULT_PROFILE = AppProfile.PRODUCTION
 private const val DEFAULT_PORT = 8080
@@ -44,6 +48,7 @@ private const val DEFAULT_SENSITIVE_INFORMATION_RETENTION_DAYS = 30
 private const val DEFAULT_DATABASE_HOST = "localhost"
 private const val DEFAULT_INVITATION_TOKEN_LIFETIME_IN_DAYS = 7
 private const val DEFAULT_VERIFICATION_TOKEN_LIFETIME_IN_DAYS = 1
+private val DEFAULT_PLUGIN_DIRECTORY = Path.of("./plugins")
 
 private val logger = KotlinLogging.logger {}
 
@@ -79,6 +84,7 @@ class EnvReader(
             encryption = buildEncryption(),
             smtp = buildSmtp(defaults),
             lifetime = buildLifetime(defaults),
+            plugins = buildPlugins(),
         )
     }
 
@@ -188,6 +194,17 @@ class EnvReader(
             sensitiveInformationRetentionDays = sensitiveInformationRetentionDays,
             invitationTokenLifeTimeInDays = invitationTokenLifeTimeInDays,
             verificationTokenLifeTimeInDays = verificationTokenLifeTimeInDays,
+        )
+    }
+
+    /**
+     * Builds the plugins configuration by reading and processing related environment variables.
+     *
+     * @return An [Env.Plugins] object containing the plugins configuration.
+     */
+    private fun buildPlugins(): Env.Plugins {
+        return Env.Plugins(
+            pluginDirectory = envService.getPathOrDefault(PLUGIN_DIRECTORY, DEFAULT_PLUGIN_DIRECTORY),
         )
     }
 

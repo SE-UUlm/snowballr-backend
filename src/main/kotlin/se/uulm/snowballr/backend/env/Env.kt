@@ -1,5 +1,7 @@
 package se.uulm.snowballr.backend.env
 
+import java.nio.file.Path
+
 /**
  * Represents the environment configuration for the application.
  *
@@ -9,6 +11,7 @@ package se.uulm.snowballr.backend.env
  * @property encryption Configuration for encryption keys used in the application, such as JWT keys.
  * @property smtp Configuration for email settings, including SMTP host and credentials.
  * @property lifetime Configuration for various lifetimes of tokens and sensitive information retention.
+ * @property plugins Configuration for plugins.
  */
 data class Env(
     val http: Http,
@@ -17,6 +20,7 @@ data class Env(
     val encryption: Encryption,
     val smtp: SMTP,
     val lifetime: Lifetime,
+    val plugins: Plugins,
 ) {
     data class Http(
         val port: Int,
@@ -54,5 +58,9 @@ data class Env(
         val sensitiveInformationRetentionDays: Int,
         val invitationTokenLifeTimeInDays: Int,
         val verificationTokenLifeTimeInDays: Int,
+    )
+
+    data class Plugins(
+        val pluginDirectory: Path,
     )
 }
