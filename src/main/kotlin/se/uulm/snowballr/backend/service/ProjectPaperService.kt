@@ -5,9 +5,11 @@ import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.PaperNavigationDirection
 import se.uulm.snowballr.backend.model.dto.Paper
+import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.ProjectPaper
 import se.uulm.snowballr.backend.model.dto.ProjectPaperWithPaper
 import se.uulm.snowballr.backend.model.dto.ProjectPaperWithReviewsCount
+import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.hasNoFinalDecision
 import se.uulm.snowballr.backend.model.dto.toGrpcProjectPaper
 import se.uulm.snowballr.backend.model.dto.toGrpcProjectPapers
@@ -28,7 +30,6 @@ import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.IReviewHasCriterionTableRepo
 import se.uulm.snowballr.backend.service.accessrules.IAccessChecker
 import se.uulm.snowballr.backend.service.accessrules.checkFor
-import snowballr.ProjectOuterClass.Project
 import java.util.UUID
 import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 import snowballr.ReviewOuterClass.Review as GrpcReview
@@ -143,10 +144,7 @@ class ProjectPaperService(
             val projectId = parseUUID(request.projectId, EntityType.PROJECT)
             val paperId = parseUUID(request.paperId, EntityType.PAPER)
 
-            accessChecker.isProjectOrServerAdmin(AccessType.CREATE).checkFor(currentUser, projectId)
-
-            val project = projectRepo.getProjectById(projectId).getOrThrow()
-            accessChecker.isProjectActive().checkFor(currentUser, project)
+            val project = isAllowedToAddPaperToProject(currentUser, projectId)
 
             val paper = paperRepo.getPaperById(paperId).getOrThrow()
             if (repo.doesProjectPaperExist(projectId, paperId)) {
@@ -305,4 +303,12 @@ class ProjectPaperService(
                 }
             }
             .filter { it.reviewsCount >= 0 }
+
+    private suspend fun isAllowedToAddPaperToProject(currentUser: User, projectId: UUID): Project {
+        accessChecker.isProjectOrServerAdmin(AccessType.CREATE).checkFor(currentUser, projectId)
+
+        val project = projectRepo.getProjectById(projectId).getOrThrow()
+        accessChecker.isProjectActive().checkFor(currentUser, project)
+        return project
+    }
 }
