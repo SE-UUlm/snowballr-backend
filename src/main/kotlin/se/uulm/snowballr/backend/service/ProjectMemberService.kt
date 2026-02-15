@@ -10,7 +10,6 @@ import se.uulm.snowballr.backend.model.dto.toGrpcProjectMembers
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
-import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedActionException
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
@@ -21,10 +20,7 @@ import se.uulm.snowballr.backend.service.accessrules.IAccessChecker
 import se.uulm.snowballr.backend.service.accessrules.andAlso
 import se.uulm.snowballr.backend.service.accessrules.checkFor
 import se.uulm.snowballr.backend.service.accessrules.forProperty
-import se.uulm.snowballr.backend.service.accessrules.forTarget
-import se.uulm.snowballr.backend.service.accessrules.isServerAdmin
 import se.uulm.snowballr.backend.service.accessrules.orElse
-import se.uulm.snowballr.backend.service.accessrules.orElseThrow
 import snowballr.ProjectOuterClass.MemberRole
 import java.util.UUID
 import snowballr.ProjectOuterClass.Project.Member as GrpcProjectMember
@@ -79,9 +75,7 @@ class ProjectMemberService(
             val projectId = parseUUID(request.projectId, EntityType.PROJECT)
             val userId = parseUUID(request.userId, EntityType.USER)
 
-            accessChecker.isServerOrProjectAdmin(AccessType.UPDATE)
-                .andAlso(accessChecker.isProjectExistent())
-                .checkFor(currentUser, projectId)
+            isAllowedToUpdateMemberRole(currentUser, projectId)
 
             val user = userRepo.getUserById(userId).getOrThrow()
 
@@ -121,17 +115,7 @@ class ProjectMemberService(
             return
         }
 
-        accessChecker.isSameUserById()
-            .forProperty(AccessRuleCompoundUUID::firstTarget)
-            .orElse(
-                accessChecker.isProjectAdmin()
-                    .orElse(isServerAdmin().forTarget())
-                    .orElseThrow { user, targetId ->
-                        UnauthorizedActionException(EntityType.PROJECT, targetId, AccessType.DELETE, user.id)
-                    }
-                    .forProperty(AccessRuleCompoundUUID::secondTarget),
-            )
-            .checkFor(currentUser, userProjectCompound)
+        isAllowedToRemoveMember(currentUser, userProjectCompound)
 
         if (!projectRepo.doesProjectExistById(projectId)) {
             throw ProjectNotFoundException(projectId)
@@ -154,13 +138,29 @@ class ProjectMemberService(
         projectId: UUID,
         invitationToken: InvitationToken,
     ) {
-        accessChecker.isProjectAdmin()
-            .orElse(isServerAdmin().forTarget())
-            .orElseThrow { user, targetId ->
-                UnauthorizedActionException(EntityType.PROJECT, targetId, AccessType.DELETE, user.id)
-            }
-            .checkFor(currentUser, projectId)
+        isAllowedToRemoveInvitation(currentUser, projectId)
 
         invitationTokenRepo.deleteInvitationToken(invitationToken.token)
+    }
+
+    @Suppress("RedundantSuspendModifier", "RedundantSuppression")
+    private suspend fun isAllowedToUpdateMemberRole(currentUser: User, projectId: UUID) {
+        accessChecker.isServerOrProjectAdmin(AccessType.UPDATE)
+            .andAlso(accessChecker.isProjectExistent())
+            .checkFor(currentUser, projectId)
+    }
+
+    private suspend fun isAllowedToRemoveMember(currentUser: User, userProjectCompound: AccessRuleCompoundUUID) {
+        accessChecker.isSameUserById()
+            .forProperty(AccessRuleCompoundUUID::firstTarget)
+            .orElse(
+                accessChecker.isServerOrProjectAdmin(AccessType.DELETE)
+                    .forProperty(AccessRuleCompoundUUID::secondTarget),
+            )
+            .checkFor(currentUser, userProjectCompound)
+    }
+
+    private suspend fun isAllowedToRemoveInvitation(currentUser: User, projectId: UUID) {
+        accessChecker.isServerOrProjectAdmin(AccessType.DELETE).checkFor(currentUser, projectId)
     }
 }

@@ -52,9 +52,6 @@ interface IInvitationService {
     suspend fun getPendingInvitationsForProject(projectId: UUID): GrpcUser.List
 }
 
-private const val INVITATION_TOKEN_LENGTH = 48
-private const val MINIMUM_LENGTH_OF_SEARCH_QUERY = 3
-
 /**
  * The [InvitationService] class handles operations related to normal papers by implementing the [IInvitationService] interface.
  *
@@ -79,6 +76,11 @@ class InvitationService(
     private val envReader: EnvReader,
     private val accessChecker: IAccessChecker,
 ) : IInvitationService {
+    companion object {
+        private const val INVITATION_TOKEN_LENGTH = 48
+        private const val MINIMUM_LENGTH_OF_SEARCH_QUERY = 3
+    }
+
     override suspend fun getInviteCandidates(request: Project.InviteCandidatesRequest): GrpcUser.List =
         withUser(userRepo) { currentUser ->
             val searchQuery = request.query.trim()
