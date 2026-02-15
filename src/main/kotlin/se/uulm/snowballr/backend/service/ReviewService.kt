@@ -2,7 +2,10 @@ package se.uulm.snowballr.backend.service
 
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.dto.Project
+import se.uulm.snowballr.backend.model.dto.ProjectPaper
 import se.uulm.snowballr.backend.model.dto.Review
+import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.doesAcceptPaper
 import se.uulm.snowballr.backend.model.dto.doesDeclinePaper
 import se.uulm.snowballr.backend.model.dto.hasFinalDecision
@@ -152,10 +155,7 @@ class ReviewService(
         val projectPaperId = parseUUID(request.projectPaperId, EntityType.PROJECT_PAPER)
         val projectPaper = projectPaperRepo.getProjectPaperById(projectPaperId).getOrThrow()
 
-        accessChecker.isAllowedToReadProject().checkFor(currentUser, projectPaper.projectId)
-
-        val project = projectRepo.getProjectById(projectPaper.projectId).getOrThrow()
-        accessChecker.isProjectActive().checkFor(currentUser, project)
+        val project = isAllowedToCreateReview(currentUser, projectPaper)
 
         val reviewsForProjectPaper = repo.getAllReviewsForProjectPaper(projectPaperId)
         val hasUserAlreadyReviewed = reviewsForProjectPaper.any { review -> review.userId == currentUser.id }
@@ -185,5 +185,13 @@ class ReviewService(
         }
 
         review.toGrpcReview(selectedCriteriaIds.map(UUID::toString))
+    }
+
+    private suspend fun isAllowedToCreateReview(currentUser: User, projectPaper: ProjectPaper): Project {
+        accessChecker.isAllowedToReadProject().checkFor(currentUser, projectPaper.projectId)
+
+        val project = projectRepo.getProjectById(projectPaper.projectId).getOrThrow()
+        accessChecker.isProjectActive().checkFor(currentUser, project)
+        return project
     }
 }
