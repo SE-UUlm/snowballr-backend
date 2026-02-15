@@ -11,7 +11,6 @@ import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadEx
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedUpdateException
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
-import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.service.accessrules.IAccessChecker
 import se.uulm.snowballr.backend.service.accessrules.checkFor
@@ -59,13 +58,11 @@ interface ICriterionService {
  *
  * @param repo Interface for persistence and retrieval operations related to criteria.
  * @param userRepo Interface for operations related to user management.
- * @param projectRepo Interface for operations related to project retrieval.
  * @param accessChecker Interface for checking access permissions based on defined rules.
  */
 class CriterionService(
     private val repo: ICriterionTableRepo,
     private val userRepo: IUserTableRepo,
-    private val projectRepo: IProjectTableRepo,
     private val accessChecker: IAccessChecker,
 ) : ICriterionService {
     override suspend fun getCriterionById(criterionId: UUID): GrpcCriterion = withUser(userRepo) { currentUser ->
@@ -82,10 +79,6 @@ class CriterionService(
                 val projectId = parseUUID(request.projectId, EntityType.PROJECT)
 
                 isAllowedToCreateCriterion(currentUser, projectId)
-
-                val project = projectRepo.getProjectById(projectId).getOrThrow()
-
-                accessChecker.isProjectActive().checkFor(currentUser, project)
             }
 
             repo.createCriterion(request, currentUser.id).toGrpcCriterion()
@@ -99,9 +92,7 @@ class CriterionService(
             isAllowedToUpdateCriterion(currentUser, criterion)
 
             if (criterion is Criterion.ProjectCriterion) {
-                val project = projectRepo.getProjectById(criterion.projectId).getOrThrow()
-
-                accessChecker.isProjectActive().checkFor(currentUser, project)
+                accessChecker.isProjectActiveById().checkFor(currentUser, criterion.projectId)
             }
 
             repo.updateCriterion(request).toGrpcCriterion()
@@ -132,6 +123,8 @@ class CriterionService(
                 UnauthorizedCreateException(user.id, target, EntityType.CRITERION)
             }
             .checkFor(currentUser, projectId)
+
+        accessChecker.isProjectActiveById().checkFor(currentUser, projectId)
     }
 
     private suspend fun isAllowedToUpdateCriterion(currentUser: User, criterion: Criterion) {

@@ -35,6 +35,13 @@ interface IProjectAccessChecker {
     fun isProjectActive(): AccessRule<Project>
 
     /**
+     * Check whether a project with the given ID is active (or active, but settings are locked); otherwise, throws an
+     * [EntityNotActiveException].
+     */
+    @CheckReturnValue
+    fun isProjectActiveById(): AccessRule<UUID>
+
+    /**
      * Check whether the requesting user is an admin of a specific project.
      */
     @CheckReturnValue
@@ -83,6 +90,11 @@ class ProjectAccessChecker(
     override fun isProjectActive() = AccessRule<Project> { _, project ->
         project.isActive()
     }.orElseThrow { _, project -> EntityNotActiveException(EntityType.PROJECT, project.id) }
+
+    override fun isProjectActiveById() = AccessRule<UUID> { _, projectId ->
+        val project = projectRepo.getProjectById(projectId).getOrNull()
+        project != null && project.isActive()
+    }.orElseThrow { _, projectId -> EntityNotActiveException(EntityType.PROJECT, projectId) }
 
     override fun isProjectAdmin() = AccessRule<UUID> { requester, targetId ->
         val projectAdmins = projectMemberRepo.getAllProjectAdmins(targetId)
