@@ -22,7 +22,6 @@ import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import se.uulm.snowballr.backend.service.accessrules.IAccessChecker
 import se.uulm.snowballr.backend.service.accessrules.checkFor
-import se.uulm.snowballr.backend.service.accessrules.forProperty
 import se.uulm.snowballr.backend.service.accessrules.isServerAdmin
 import se.uulm.snowballr.backend.service.accessrules.orElseThrow
 import snowballr.ProjectOuterClass.MemberRole
@@ -102,7 +101,7 @@ interface IProjectService {
  * @param invitationTokenRepo The repository responsible for managing persistence operations for invitation tokens.
  * @param accessChecker Interface for checking access permissions based on defined rules.
  */
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 class ProjectService(
     private val repo: IProjectTableRepo,
     private val userRepo: IUserTableRepo,
@@ -251,14 +250,9 @@ class ProjectService(
 
     private suspend fun getAllProjectsForUserAndStatus(userId: UUID, statuses: Set<ProjectStatus>): GrpcProject.List =
         withUser(userRepo) { currentUser ->
-            val requestedUser = userRepo.getUserById(userId).getOrThrow()
+            userRepo.getUserById(userId).getOrThrow()
 
-            accessChecker.isServerAdminOrSameUser()
-                .forProperty(User::id)
-                .orElseThrow { requestingUser, _ ->
-                    UnauthorizedReadException(requestingUser.id, userId, EntityType.USER)
-                }
-                .checkFor(currentUser, requestedUser)
+            isAllowedToReadUserProjects(userId, currentUser)
 
             repo.getUserProjects(userId, statuses).toGrpcProjects()
         }
@@ -388,5 +382,14 @@ class ProjectService(
             PaperDecision.PAPER_DECISION_UNREVIEWED,
             PaperDecision.PAPER_DECISION_IN_REVIEW,
         ).map(::createStatistic)
+    }
+
+    @Suppress("RedundantSuspendModifier", "RedundantSuppression")
+    private suspend fun isAllowedToReadUserProjects(userId: UUID, currentUser: User) {
+        accessChecker.isServerAdminOrSameUser()
+            .orElseThrow { requestingUser, targetId ->
+                UnauthorizedReadException(requestingUser.id, targetId, EntityType.USER)
+            }
+            .checkFor(currentUser, userId)
     }
 }
