@@ -16,7 +16,16 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.git.versioning)
     alias(libs.plugins.undercouch.download)
+    alias(libs.plugins.sonarqube)
     application
+}
+
+sonar {
+    properties {
+        property("sonar.projectKey", "snowballr-backend")
+        property("sonar.projectName", "SnowballR Backend")
+        property("sonar.coverage.jacoco.xmlReportPaths", layout.buildDirectory.file("coverageXml/report.xml").get().asFile.path)
+    }
 }
 
 group = "se.uulm.snowballr.backend"
@@ -109,6 +118,10 @@ kotlin {
 
 tasks.shadowJar {
     archiveClassifier.set("") // omit the "all" suffix
+}
+
+tasks.shadowDistTar {
+    dependsOn(tasks.shadowJar)
 }
 
 tasks.test {
