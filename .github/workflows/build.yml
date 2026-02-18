@@ -6,10 +6,6 @@ on:
         tags: ["v*.*.*"]
     pull_request:
 
-env:
-    java_version: ${{ vars.JAVA_VERSION }}
-    java_distribution: ${{ vars.JAVA_DISTRIBUTION }}
-
 jobs:
     build-jar:
         name: Building the application as jar file
@@ -20,9 +16,6 @@ jobs:
 
             - name: Setup
               uses: ./.github/workflows/setup/
-              with:
-                  java_version: ${{ env.java_version }}
-                  java_distribution: ${{ env.java_distribution }}
 
             - name: Build the jar file
               run: ./gradlew shadowJar --stacktrace
@@ -40,7 +33,7 @@ jobs:
         if: github.ref_type == 'tag'
         permissions:
             contents: write
-        uses: SE-UUlm/snowballr-ci/.github/workflows/release.yml@v1.0.0
+        uses: SE-UUlm/snowballr-ci/.github/workflows/release.yml@v1
         with:
             artifact-name: snowballr-backend-jar
             asset-path: snowballr-backend-*.jar

@@ -13,7 +13,7 @@ private val logger = KotlinLogging.logger {}
  * Interface for authentication operations such as validating access tokens, refreshing them,
  * and managing authentication state.
  */
-interface IAuthenticationManager {
+fun interface IAuthenticationManager {
     /**
      * Authenticates a request using the provided tokens.
      *
@@ -27,7 +27,8 @@ interface IAuthenticationManager {
      * @param accessToken The access token to validate.
      * @param refreshToken The refresh token to use for refreshing the access token if it is invalid or expired.
      * @param skipRefresh If true, skips the refresh token logic and only validates the access token.
-     * @return An [se.uulm.snowballr.backend.model.auth.AuthenticationResult] containing the result of the authentication attempt and the updated gRPC context.
+     * @return An [AuthenticationResult] containing the result of the authentication attempt and the updated gRPC
+     * context.
      */
     fun authenticate(accessToken: String?, refreshToken: String?, skipRefresh: Boolean): AuthenticationResult
 }

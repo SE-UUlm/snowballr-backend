@@ -17,6 +17,6 @@ jobs:
                   ref: ${{ github.head_ref }}
 
             - name: Run Check
-              uses: SE-UUlm/snowballr-ci/src/ensure-linear-history@v1.0.0
+              uses: SE-UUlm/snowballr-ci/src/ensure-linear-history@v1
               with:
                   target-branch: develop

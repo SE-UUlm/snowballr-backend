@@ -13,7 +13,7 @@ import java.util.UUID
  * using this interface, the functionality for managing selected criteria of a review can remain decoupled from the specifics of the database
  * layer.
  */
-interface IReviewHasCriterionTableRepo {
+fun interface IReviewHasCriterionTableRepo {
     suspend fun getSelectedCriteriaIdsForReviewById(reviewId: UUID): List<UUID>
 }
 

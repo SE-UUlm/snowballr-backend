@@ -1,20 +1,13 @@
 name: Setup
 description: Setup Backend CI/CD pipeline
-inputs:
-    java_version:
-        description: "Java version"
-        required: true
-    java_distribution:
-        description: "Java distribution"
-        required: true
 runs:
     using: composite
     steps:
         - name: Setup Java
           uses: actions/setup-java@v4
           with:
-              java-version: ${{ inputs.java_version }}
-              distribution: ${{ inputs.java_distribution }}
+              java-version: 21
+              distribution: microsoft
 
         - name: Setup Gradle
           uses: gradle/actions/setup-gradle@v4
