@@ -33,7 +33,7 @@ jobs:
         if: github.ref_type == 'tag'
         permissions:
             contents: write
-        uses: SE-UUlm/snowballr-ci/.github/workflows/release.yml@v1.0.0
+        uses: SE-UUlm/snowballr-ci/.github/workflows/release.yml@v1
         with:
             artifact-name: snowballr-backend-jar
             asset-path: snowballr-backend-*.jar
