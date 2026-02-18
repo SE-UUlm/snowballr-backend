@@ -59,57 +59,48 @@ repositories {
 dependencies {
     implementation(libs.logback)
     implementation(libs.kotlin.logging)
-
     implementation(platform(libs.koin.bom))
     implementation(libs.koin.core)
-    testImplementation(libs.koin.test)
-
     implementation(libs.exposed.core)
     implementation(libs.exposed.jdbc)
     implementation(libs.exposed.datetime)
     implementation(libs.exposed.json)
     implementation(libs.postgresql)
     implementation(libs.hikaricp)
-    testImplementation(libs.testcontainers)
-
     implementation(libs.quartz.scheduler)
-
     implementation(libs.password4j)
     implementation(libs.jjwt.api)
-    runtimeOnly(libs.jjwt.impl)
-    runtimeOnly(libs.jjwt.jackson)
     implementation(libs.nanoid)
-
     implementation(libs.dotenv.kotlin)
-
-    testImplementation(libs.kotlinx.coroutines.test)
-    testImplementation(libs.assertj.core)
-    testImplementation(libs.assertj.arrow.core)
-    testImplementation(libs.mockk)
-
-    testImplementation(platform(libs.junit.bom))
-    testImplementation(libs.junit.jupiter)
-    testRuntimeOnly(libs.junit.platform)
-
-    testImplementation(libs.archunit)
-    testImplementation(libs.archunit.junit5)
-
     implementation(libs.arrow.core)
-
     implementation(libs.grpc.kotlin)
     implementation(libs.grpc.protobuf)
     implementation(libs.grpc.services)
     implementation(libs.protobuf.kotlin)
     implementation(libs.protobuf.java.util)
-
-    runtimeOnly(libs.grpc.netty)
-
-    detektPlugins(libs.detekt.formatting)
-
     implementation(libs.simple.java.mail)
-    testImplementation(libs.greenmail.junit5)
     implementation(libs.handlebars)
     implementation(libs.kotlinx.serialization.json)
+
+    testImplementation(libs.koin.test)
+    testImplementation(libs.testcontainers)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.assertj.core)
+    testImplementation(libs.assertj.arrow.core)
+    testImplementation(libs.mockk)
+    testImplementation(platform(libs.junit.bom))
+    testImplementation(libs.junit.jupiter)
+    testImplementation(libs.archunit)
+    testImplementation(libs.archunit.junit5)
+    testImplementation(libs.greenmail.junit5)
+
+    runtimeOnly(libs.jjwt.impl)
+    runtimeOnly(libs.jjwt.jackson)
+    runtimeOnly(libs.grpc.netty)
+
+    testRuntimeOnly(libs.junit.platform)
+
+    detektPlugins(libs.detekt.formatting)
 }
 
 kotlin {

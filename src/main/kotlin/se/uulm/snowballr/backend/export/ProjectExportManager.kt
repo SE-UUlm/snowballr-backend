@@ -1,6 +1,5 @@
 package se.uulm.snowballr.backend.export
 
-import se.uulm.snowballr.backend.export.ProjectExportManager.getSupportedFormats
 import se.uulm.snowballr.backend.model.dto.Criterion
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.ProjectMemberWithUser

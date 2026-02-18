@@ -4,7 +4,6 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
 import se.uulm.snowballr.backend.repository.IVerificationTokenTableRepo
-import kotlin.getValue
 
 /**
  * Service interface for maintaining tokens in the system.
@@ -12,7 +11,7 @@ import kotlin.getValue
  * Implementations may provide various maintenance operations such as
  * cleaning up expired tokens, auditing, or other token-related tasks.
  */
-interface ITokenMaintenanceService {
+fun interface ITokenMaintenanceService {
     /**
      * Deletes all tokens whose expiry timestamp is less than or equal to the current time.
      */
