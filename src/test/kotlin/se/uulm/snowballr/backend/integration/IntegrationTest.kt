@@ -8,9 +8,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.slot
-import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.TestInstance
@@ -48,9 +46,10 @@ import se.uulm.snowballr.backend.service.IMainService
 import se.uulm.snowballr.backend.serviceLayerDeps
 import snowballr.Authentication
 import snowballr.ProjectOuterClass
+import snowballr.UserOuterClass
 import java.util.UUID
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@TestInstance(TestInstance.Lifecycle.PER_METHOD)
 @Tag("integration")
 open class IntegrationTest : KoinTest {
     // Initialize DB with empty dataSource only to set it in the setUp method
@@ -103,17 +102,14 @@ open class IntegrationTest : KoinTest {
         singleOf(::AuthenticationManager) { bind<IAuthenticationManager>() }
     }
 
-    @BeforeAll
-    fun setUp() {
+    @BeforeEach
+    fun setUpTest() {
         db.setUp()
         RepositoryHelper.db = db
         startKoin {
             modules(integrationTestModule)
         }
-    }
 
-    @BeforeEach
-    fun setUpTest() {
         db.setUpTest(needsTestUser = true) { testUserId = it }
         mockkObject(GrpcContext)
         every { GrpcContext.getUserIdFromContext() } returns testUserId
@@ -124,15 +120,12 @@ open class IntegrationTest : KoinTest {
         db.tearDownTest()
         checkUnnecessaryStub(*allMocks)
         clearAllMocks()
-    }
 
-    @AfterAll
-    fun tearDown() {
         db.tearDown()
         stopKoin()
     }
 
-    protected suspend fun addUser(user: User) {
+    protected suspend fun addUser(user: User): UserOuterClass.User {
         val verificationToken = slot<String>()
         val link = "https://example.com/verify"
         coEvery { emailManagerMock.createVerificationLink(capture(verificationToken)) } returns link
@@ -153,6 +146,9 @@ open class IntegrationTest : KoinTest {
             .setToken(verificationToken.captured)
             .build()
         mainService.verifyEmail(verifyEmailRequest)
+
+        // Retrieve the user to ensure it was added successfully
+        return mainService.getUserByEmail(user.email)
     }
 
     protected suspend fun inviteUserToProject(project: ProjectOuterClass.Project, user: User) {
@@ -168,5 +164,11 @@ open class IntegrationTest : KoinTest {
             .setUserEmail(user.email)
             .build()
         mainService.inviteUserToProject(inviteUserRequest)
+    }
+
+    protected suspend fun actAsUser(userId: UUID, block: suspend () -> Unit) {
+        every { GrpcContext.getUserIdFromContext() } returns userId
+        block()
+        every { GrpcContext.getUserIdFromContext() } returns testUserId
     }
 }
