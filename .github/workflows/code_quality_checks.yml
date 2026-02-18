@@ -8,10 +8,6 @@ on:
     pull_request:
     workflow_dispatch:
 
-env:
-    java_version: ${{ vars.JAVA_VERSION }}
-    java_distribution: ${{ vars.JAVA_DISTRIBUTION }}
-
 jobs:
     linting:
         name: Check for linting errors
@@ -22,9 +18,6 @@ jobs:
 
             - name: Setup
               uses: ./.github/workflows/setup/
-              with:
-                  java_version: ${{ env.java_version }}
-                  java_distribution: ${{ env.java_distribution }}
 
             - name: Check linting
               run: ./gradlew lint
@@ -41,9 +34,6 @@ jobs:
 
             - name: Setup
               uses: ./.github/workflows/setup/
-              with:
-                  java_version: ${{ env.java_version }}
-                  java_distribution: ${{ env.java_distribution }}
 
             - uses: actions/setup-python@v6
               with:
@@ -122,9 +112,6 @@ jobs:
 
             - name: Setup
               uses: ./.github/workflows/setup/
-              with:
-                  java_version: ${{ env.java_version }}
-                  java_distribution: ${{ env.java_distribution }}
 
             - name: Download coverage report
               uses: actions/download-artifact@v7
