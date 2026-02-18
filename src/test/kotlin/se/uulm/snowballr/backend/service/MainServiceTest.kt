@@ -9,6 +9,7 @@ import io.mockk.mockkObject
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.assertNotNull
 import org.koin.core.component.inject
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
@@ -138,6 +139,8 @@ open class MainServiceTest : KoinTest {
 
         // Mock env variables
         every { envReaderMock.env } returns mockEnvWithDefaultValues()
+        // Assert env so that it is not recognized as an unnecessary stub
+        assertNotNull(envReaderMock.env)
 
         // Repository layer
         single { projectRepoMock }
