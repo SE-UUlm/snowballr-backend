@@ -21,10 +21,8 @@ import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
+import se.uulm.snowballr.backend.service.accessrules.IAccessChecker
 import se.uulm.snowballr.backend.service.accessrules.checkFor
-import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadProject
-import se.uulm.snowballr.backend.service.accessrules.isProjectActive
-import se.uulm.snowballr.backend.service.accessrules.isServerOrProjectAdmin
 import snowballr.ProjectOuterClass.Project
 import snowballr.UserOuterClass.User
 import java.time.OffsetDateTime
@@ -54,9 +52,6 @@ interface IInvitationService {
     suspend fun getPendingInvitationsForProject(projectId: UUID): GrpcUser.List
 }
 
-private const val INVITATION_TOKEN_LENGTH = 48
-private const val MINIMUM_LENGTH_OF_SEARCH_QUERY = 3
-
 /**
  * The [InvitationService] class handles operations related to normal papers by implementing the [IInvitationService] interface.
  *
@@ -69,7 +64,9 @@ private const val MINIMUM_LENGTH_OF_SEARCH_QUERY = 3
  * @param invitationTokenRepo The repository responsible for managing persistence operations for invitation tokens.
  * @param emailManager The manager responsible for sending emails.
  * @param envReader The environment reader that provides access to configuration values.
+ * @param accessChecker Interface for checking access permissions based on defined rules.
  */
+@Suppress("LongParameterList")
 class InvitationService(
     private val userRepo: IUserTableRepo,
     private val projectRepo: IProjectTableRepo,
@@ -77,7 +74,13 @@ class InvitationService(
     private val invitationTokenRepo: IInvitationTokenTableRepo,
     private val emailManager: IEmailManager,
     private val envReader: EnvReader,
+    private val accessChecker: IAccessChecker,
 ) : IInvitationService {
+    companion object {
+        private const val INVITATION_TOKEN_LENGTH = 48
+        private const val MINIMUM_LENGTH_OF_SEARCH_QUERY = 3
+    }
+
     override suspend fun getInviteCandidates(request: Project.InviteCandidatesRequest): GrpcUser.List =
         withUser(userRepo) { currentUser ->
             val searchQuery = request.query.trim()
@@ -106,12 +109,12 @@ class InvitationService(
     override suspend fun inviteUserToProject(request: GrpcProject.Member.Invite) = withUser(userRepo) { currentUser ->
         val projectId = parseUUID(request.projectId, EntityType.PROJECT)
 
-        isServerOrProjectAdmin(projectMemberRepo, AccessType.READ)
+        accessChecker.isProjectOrServerAdmin(AccessType.READ)
             .checkFor(currentUser, projectId)
 
         val project = projectRepo.getProjectById(projectId).getOrThrow()
 
-        isProjectActive().checkFor(currentUser, project)
+        accessChecker.isProjectActive().checkFor(currentUser, project)
 
         // Check if the user is already a member
         val projectMembers = projectMemberRepo.getProjectMembersWithUsers(projectId)
@@ -183,7 +186,7 @@ class InvitationService(
 
     override suspend fun getPendingInvitationsForProject(projectId: UUID): GrpcUser.List =
         withUser(userRepo) { currentUser ->
-            isAllowedToReadProject(projectRepo, projectMemberRepo).checkFor(currentUser, projectId)
+            accessChecker.isAllowedToReadProject().checkFor(currentUser, projectId)
 
             val tokens = invitationTokenRepo.getActiveInvitationTokensForProject(projectId)
 

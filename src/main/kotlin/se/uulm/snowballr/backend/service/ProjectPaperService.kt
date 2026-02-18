@@ -5,9 +5,11 @@ import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.PaperNavigationDirection
 import se.uulm.snowballr.backend.model.dto.Paper
+import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.ProjectPaper
 import se.uulm.snowballr.backend.model.dto.ProjectPaperWithPaper
 import se.uulm.snowballr.backend.model.dto.ProjectPaperWithReviewsCount
+import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.hasNoFinalDecision
 import se.uulm.snowballr.backend.model.dto.toGrpcProjectPaper
 import se.uulm.snowballr.backend.model.dto.toGrpcProjectPapers
@@ -24,14 +26,10 @@ import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IReviewTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
-import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.IReviewHasCriterionTableRepo
+import se.uulm.snowballr.backend.service.accessrules.IAccessChecker
 import se.uulm.snowballr.backend.service.accessrules.checkFor
-import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadProject
-import se.uulm.snowballr.backend.service.accessrules.isProjectActive
-import se.uulm.snowballr.backend.service.accessrules.isServerOrProjectAdmin
-import snowballr.ProjectOuterClass.Project
 import java.util.UUID
 import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 import snowballr.ReviewOuterClass.Review as GrpcReview
@@ -90,10 +88,10 @@ interface IProjectPaperService {
  * @param userRepo The repository responsible for managing persistence operations for users.
  * @param projectRepo The repository responsible for managing persistence operations for projects.
  * @param paperRepo The repository responsible for managing persistence operations for papers.
- * @param projectMemberRepo The repository responsible for managing persistence operations for project members.
  * @param citationTableRepo The repository responsible for managing persistence operations for the citation relation.
  * @param reviewTableRepo The repository responsible for managing persistence operations for the reviews
  * @param reviewHasCriterionTableRepo The repository responsible for managing persistence operations for the review has
+ * @param accessChecker Interface for checking access permissions based on defined rules.
  */
 @Suppress("LongParameterList", "TooManyFunctions")
 class ProjectPaperService(
@@ -101,11 +99,96 @@ class ProjectPaperService(
     private val userRepo: IUserTableRepo,
     private val projectRepo: IProjectTableRepo,
     private val paperRepo: IPaperTableRepo,
-    private val projectMemberRepo: IProjectMemberTableRepo,
     private val citationTableRepo: ICitationTableRepo,
     private val reviewTableRepo: IReviewTableRepo,
     private val reviewHasCriterionTableRepo: IReviewHasCriterionTableRepo,
+    private val accessChecker: IAccessChecker,
 ) : IProjectPaperService {
+    override suspend fun getProjectPaperById(projectPaperId: UUID): GrpcProjectPaper =
+        withUser(userRepo) { currentUser ->
+            val projectPaper = repo.getProjectPaperById(projectPaperId).getOrThrow()
+
+            accessChecker.isAllowedToReadProject().checkFor(currentUser, projectPaper.projectId)
+
+            projectPaper.toGrpcProjectPaperWithData()
+        }
+
+    override suspend fun getProjectPaperByRelativeId(request: GrpcProjectPaper.Get): GrpcProjectPaper =
+        withUser(userRepo) { currentUser ->
+            val projectId = parseUUID(request.projectId, EntityType.PROJECT)
+
+            accessChecker.isAllowedToReadProject().checkFor(currentUser, projectId)
+
+            val relativeId = request.relativeProjectPaperId.toLong()
+            val projectPaper = repo.getProjectPaperByRelativeId(projectId, relativeId).getOrThrow()
+
+            projectPaper.toGrpcProjectPaperWithData()
+        }
+
+    override suspend fun getAllProjectPapersForProject(projectId: UUID): GrpcProjectPaper.List =
+        getProjectPapers(projectId)
+
+    override suspend fun getPapersToReviewForProject(projectId: UUID): GrpcProjectPaper.List {
+        val predicate: (ProjectPaperWithPaper, Map<ProjectPaper, List<GrpcReview>>, String) -> Boolean =
+            { projectPaper, projectPaperReviewsMap, currentUserId ->
+                val isAlreadyReviewedByCurrentUser = projectPaperReviewsMap[projectPaper.projectPaper]
+                    ?.any { review -> review.userId == currentUserId } == true
+
+                !isAlreadyReviewedByCurrentUser && projectPaper.hasNoFinalDecision()
+            }
+        return getProjectPapers(projectId, predicate)
+    }
+
+    override suspend fun addPaperToProject(request: GrpcProjectPaper.Add): GrpcProjectPaper =
+        withUser(userRepo) { currentUser ->
+            val projectId = parseUUID(request.projectId, EntityType.PROJECT)
+            val paperId = parseUUID(request.paperId, EntityType.PAPER)
+
+            val project = isAllowedToAddPaperToProject(currentUser, projectId)
+
+            val paper = paperRepo.getPaperById(paperId).getOrThrow()
+            if (repo.doesProjectPaperExist(projectId, paperId)) {
+                throw DuplicateProjectPaperException(projectId, paperId)
+            }
+
+            if (request.stage !in 0..project.maxStage) {
+                throw StageOutOfRangeException(request.stage, project.maxStage)
+            }
+
+            val projectPaper = repo.addPaperToProject(request, currentUser.id)
+
+            projectPaper.toGrpcProjectPaperWithData(paper)
+        }
+
+    override suspend fun getNextPaper(projectPaperId: UUID): GrpcProjectPaper =
+        getAdjacentPaper(projectPaperId, PaperNavigationDirection.NEXT)
+
+    override suspend fun getPreviousPaper(projectPaperId: UUID): GrpcProjectPaper =
+        getAdjacentPaper(projectPaperId, PaperNavigationDirection.PREVIOUS)
+
+    override suspend fun getNextPaperToReview(projectPaperId: UUID): GrpcProjectPaper =
+        withUser(userRepo) { currentUser ->
+            val projectPaper = repo.getProjectPaperById(projectPaperId).getOrThrow()
+            val projectId = projectPaper.projectId
+
+            accessChecker.isAllowedToReadProject().checkFor(currentUser, projectId)
+
+            val projectPapers =
+                repo.getSubsequentProjectPapers(projectId, projectPaper.localPaperId, projectPaper.stage)
+            val projectPapersWithReviewsCount = getProjectPapersWithReviewsCount(projectPapers, currentUser.id)
+
+            if (projectPapersWithReviewsCount.isEmpty()) {
+                throw FailedPreconditionException(
+                    "There is no next project paper available to review in the project with ID $projectId",
+                )
+            }
+
+            val sortedPapers = sortPapersByStageAndReviewsCount(projectPapersWithReviewsCount)
+            val papersWithoutFinalDecision = sortedPapers.filter(ProjectPaper::hasNoFinalDecision)
+
+            (papersWithoutFinalDecision.firstOrNull() ?: sortedPapers.first()).toGrpcProjectPaperWithData()
+        }
+
     /**
      * Populates the given [ProjectPaper] with its authors, backward references, and reviews.
      *
@@ -146,7 +229,7 @@ class ProjectPaperService(
         projectId: UUID,
         predicate: (suspend (ProjectPaperWithPaper, Map<ProjectPaper, List<GrpcReview>>, String) -> Boolean)? = null,
     ): GrpcProjectPaper.List = withUser(userRepo) { currentUser ->
-        isAllowedToReadProject(projectRepo, projectMemberRepo).checkFor(currentUser, projectId)
+        accessChecker.isAllowedToReadProject().checkFor(currentUser, projectId)
 
         var projectPapersWithPapers = repo.getAllProjectPapersWithPapers(projectId)
         val paperBackwardReferencesMap = mutableMapOf<Paper, List<String>>()
@@ -187,7 +270,7 @@ class ProjectPaperService(
         withUser(userRepo) { currentUser ->
             val projectPaper = repo.getProjectPaperById(projectPaperId).getOrThrow()
 
-            isAllowedToReadProject(projectRepo, projectMemberRepo).checkFor(currentUser, projectPaper.projectId)
+            accessChecker.isAllowedToReadProject().checkFor(currentUser, projectPaper.projectId)
 
             val projectId = projectRepo.getProjectById(projectPaper.projectId).getOrThrow().id
             val adjacentPaper = repo.getAdjacentPaper(projectId, projectPaper.localPaperId, direction).getOrThrow()
@@ -207,94 +290,6 @@ class ProjectPaperService(
     private fun sortPapersByStageAndReviewsCount(projectPapersWithReviewsCount: List<ProjectPaperWithReviewsCount>) =
         projectPapersWithReviewsCount.sorted().map { it.projectPaper }
 
-    override suspend fun getProjectPaperById(projectPaperId: UUID): GrpcProjectPaper =
-        withUser(userRepo) { currentUser ->
-            val projectPaper = repo.getProjectPaperById(projectPaperId).getOrThrow()
-
-            isAllowedToReadProject(projectRepo, projectMemberRepo).checkFor(currentUser, projectPaper.projectId)
-
-            projectPaper.toGrpcProjectPaperWithData()
-        }
-
-    override suspend fun getProjectPaperByRelativeId(request: GrpcProjectPaper.Get): GrpcProjectPaper =
-        withUser(userRepo) { currentUser ->
-            val projectId = parseUUID(request.projectId, EntityType.PROJECT)
-
-            isAllowedToReadProject(projectRepo, projectMemberRepo).checkFor(currentUser, projectId)
-
-            val relativeId = request.relativeProjectPaperId.toLong()
-            val projectPaper = repo.getProjectPaperByRelativeId(projectId, relativeId).getOrThrow()
-
-            projectPaper.toGrpcProjectPaperWithData()
-        }
-
-    override suspend fun getAllProjectPapersForProject(projectId: UUID): GrpcProjectPaper.List =
-        getProjectPapers(projectId)
-
-    override suspend fun getPapersToReviewForProject(projectId: UUID): GrpcProjectPaper.List {
-        val predicate: (ProjectPaperWithPaper, Map<ProjectPaper, List<GrpcReview>>, String) -> Boolean =
-            { projectPaper, projectPaperReviewsMap, currentUserId ->
-                val isAlreadyReviewedByCurrentUser = projectPaperReviewsMap[projectPaper.projectPaper]
-                    ?.any { review -> review.userId == currentUserId } == true
-
-                !isAlreadyReviewedByCurrentUser && projectPaper.hasNoFinalDecision()
-            }
-        return getProjectPapers(projectId, predicate)
-    }
-
-    override suspend fun addPaperToProject(request: GrpcProjectPaper.Add): GrpcProjectPaper =
-        withUser(userRepo) { currentUser ->
-            val projectId = parseUUID(request.projectId, EntityType.PROJECT)
-            val paperId = parseUUID(request.paperId, EntityType.PAPER)
-
-            isServerOrProjectAdmin(projectMemberRepo, AccessType.CREATE).checkFor(currentUser, projectId)
-
-            val project = projectRepo.getProjectById(projectId).getOrThrow()
-            isProjectActive().checkFor(currentUser, project)
-
-            val paper = paperRepo.getPaperById(paperId).getOrThrow()
-            if (repo.doesProjectPaperExist(projectId, paperId)) {
-                throw DuplicateProjectPaperException(projectId, paperId)
-            }
-
-            if (request.stage !in 0..project.maxStage) {
-                throw StageOutOfRangeException(request.stage, project.maxStage)
-            }
-
-            val projectPaper = repo.addPaperToProject(request, currentUser.id)
-
-            projectPaper.toGrpcProjectPaperWithData(paper)
-        }
-
-    override suspend fun getNextPaper(projectPaperId: UUID): GrpcProjectPaper =
-        getAdjacentPaper(projectPaperId, PaperNavigationDirection.NEXT)
-
-    override suspend fun getPreviousPaper(projectPaperId: UUID): GrpcProjectPaper =
-        getAdjacentPaper(projectPaperId, PaperNavigationDirection.PREVIOUS)
-
-    override suspend fun getNextPaperToReview(projectPaperId: UUID): GrpcProjectPaper =
-        withUser(userRepo) { currentUser ->
-            val projectPaper = repo.getProjectPaperById(projectPaperId).getOrThrow()
-            val projectId = projectPaper.projectId
-
-            isAllowedToReadProject(projectRepo, projectMemberRepo).checkFor(currentUser, projectId)
-
-            val projectPapers =
-                repo.getSubsequentProjectPapers(projectId, projectPaper.localPaperId, projectPaper.stage)
-            val projectPapersWithReviewsCount = getProjectPapersWithReviewsCount(projectPapers, currentUser.id)
-
-            if (projectPapersWithReviewsCount.isEmpty()) {
-                throw FailedPreconditionException(
-                    "There is no next project paper available to review in the project with ID $projectId",
-                )
-            }
-
-            val sortedPapers = sortPapersByStageAndReviewsCount(projectPapersWithReviewsCount)
-            val papersWithoutFinalDecision = sortedPapers.filter(ProjectPaper::hasNoFinalDecision)
-
-            (papersWithoutFinalDecision.firstOrNull() ?: sortedPapers.first()).toGrpcProjectPaperWithData()
-        }
-
     private suspend fun getProjectPapersWithReviewsCount(projectPapers: List<ProjectPaper>, currentUserId: UUID) =
         projectPapers
             .map { projectPaper ->
@@ -308,4 +303,12 @@ class ProjectPaperService(
                 }
             }
             .filter { it.reviewsCount >= 0 }
+
+    private suspend fun isAllowedToAddPaperToProject(currentUser: User, projectId: UUID): Project {
+        accessChecker.isProjectOrServerAdmin(AccessType.CREATE).checkFor(currentUser, projectId)
+
+        val project = projectRepo.getProjectById(projectId).getOrThrow()
+        accessChecker.isProjectActive().checkFor(currentUser, project)
+        return project
+    }
 }
