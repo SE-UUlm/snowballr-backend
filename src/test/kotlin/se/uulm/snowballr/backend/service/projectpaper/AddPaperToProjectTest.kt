@@ -33,7 +33,6 @@ class AddPaperToProjectTest : MainServiceTest() {
         .build()
 
     fun failingFunctions(): Stream<Arguments?> = Stream.of(
-        Arguments.of(projectRepoMock::getProjectById),
         Arguments.of(paperRepoMock::getPaperById),
     )
 
@@ -61,18 +60,17 @@ class AddPaperToProjectTest : MainServiceTest() {
         val review = DataBuilder.createExampleReview()
 
         mockCurrentUser(currentUser)
+        if (failAt == projectRepoMock::getProjectById) {
+            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.failure(TestSpecificException())
+            return
+        }
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns
             if (isUserAdmin) {
                 emptyList()
             } else {
                 listOf(projectMember)
             }
-
-        if (failAt == projectRepoMock::getProjectById) {
-            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.failure(TestSpecificException())
-            return
-        }
-        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
         if (failAt == paperRepoMock::getPaperById) {
             coEvery { paperRepoMock.getPaperById(projectPaper.paperId) } returns Result.failure(TestSpecificException())
@@ -120,6 +118,7 @@ class AddPaperToProjectTest : MainServiceTest() {
         val project = DataBuilder.createExampleProject(id = projectId)
 
         mockCurrentUser(currentUser)
+        coEvery { projectRepoMock.getProjectById(projectId) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
 
         assertThrows<UnauthorizedException> { mainService.addPaperToProject(getExampleRequest()) }
@@ -157,8 +156,8 @@ class AddPaperToProjectTest : MainServiceTest() {
                 .build()
 
             mockCurrentUser(currentUser)
-            coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
+            coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
             coEvery { paperRepoMock.getPaperById(paper.id) } returns Result.success(paper)
             coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, paper.id) } returns false
 

@@ -86,10 +86,12 @@ import se.uulm.snowballr.backend.service.accessrules.IAccessChecker
 import se.uulm.snowballr.backend.service.accessrules.ICriterionAccessChecker
 import se.uulm.snowballr.backend.service.accessrules.IProjectAccessChecker
 import se.uulm.snowballr.backend.service.accessrules.IProjectMemberAccessChecker
+import se.uulm.snowballr.backend.service.accessrules.IProjectPaperAccessChecker
 import se.uulm.snowballr.backend.service.accessrules.IReviewAccessChecker
 import se.uulm.snowballr.backend.service.accessrules.IUserAccessChecker
 import se.uulm.snowballr.backend.service.accessrules.ProjectAccessChecker
 import se.uulm.snowballr.backend.service.accessrules.ProjectMemberAccessChecker
+import se.uulm.snowballr.backend.service.accessrules.ProjectPaperAccessChecker
 import se.uulm.snowballr.backend.service.accessrules.ReviewAccessChecker
 import se.uulm.snowballr.backend.service.accessrules.UserAccessChecker
 
@@ -220,6 +222,7 @@ fun Module.serviceLayerDeps() {
     singleOf(::CriterionAccessChecker) { bind<ICriterionAccessChecker>() }
     singleOf(::ReviewAccessChecker) { bind<IReviewAccessChecker>() }
     singleOf(::ProjectMemberAccessChecker) { bind<IProjectMemberAccessChecker>() }
+    singleOf(::ProjectPaperAccessChecker) { bind<IProjectPaperAccessChecker>() }
     // The main access checker that is used to combine the specific access checkers
     singleOf(::AccessChecker) { bind<IAccessChecker>() }
 
