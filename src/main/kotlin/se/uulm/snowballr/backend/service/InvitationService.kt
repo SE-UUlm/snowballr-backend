@@ -1,14 +1,12 @@
 package se.uulm.snowballr.backend.service
 
 import io.viascom.nanoid.NanoId
+import se.uulm.snowballr.backend.access.IInvitationAccessChecker
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
-import se.uulm.snowballr.backend.access.rules.checkFor
-import se.uulm.snowballr.backend.access.rules.isProjectActive
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.formatting.daysToHumanReadable
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.mail.IEmailManager
-import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.getFullName
 import se.uulm.snowballr.backend.model.dto.isActiveAndConfirmed
@@ -65,6 +63,7 @@ interface IInvitationService {
  * @param invitationTokenRepo The repository responsible for managing persistence operations for invitation tokens.
  * @param emailManager The manager responsible for sending emails.
  * @param envReader The environment reader that provides access to configuration values.
+ * @param accessChecker Interface for checking access permissions for invitations based on defined rules.
  * @param projectAccessChecker Interface for checking access permissions for projects based on defined rules.
  */
 @Suppress("LongParameterList")
@@ -75,6 +74,7 @@ class InvitationService(
     private val invitationTokenRepo: IInvitationTokenTableRepo,
     private val emailManager: IEmailManager,
     private val envReader: EnvReader,
+    private val accessChecker: IInvitationAccessChecker,
     private val projectAccessChecker: IProjectAccessChecker,
 ) : IInvitationService {
     companion object {
@@ -110,11 +110,9 @@ class InvitationService(
     override suspend fun inviteUserToProject(request: GrpcProject.Member.Invite) = withUser(userRepo) { currentUser ->
         val projectId = parseUUID(request.projectId, EntityType.PROJECT)
 
-        projectAccessChecker.isProjectOrServerAdmin(currentUser, projectId, AccessType.READ)
-
-        val project = projectRepo.getProjectById(projectId).getOrThrow()
-
-        isProjectActive().checkFor(currentUser, project)
+        val projectResult = projectRepo.getProjectById(projectId)
+        accessChecker.isAllowedToInviteUserToProject(currentUser, projectId, projectResult)
+        val project = projectResult.getOrThrow()
 
         // Check if the user is already a member
         val projectMembers = projectMemberRepo.getProjectMembersWithUsers(projectId)

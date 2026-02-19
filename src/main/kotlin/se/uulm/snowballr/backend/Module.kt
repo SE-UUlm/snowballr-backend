@@ -10,11 +10,13 @@ import org.simplejavamail.api.mailer.Mailer
 import org.simplejavamail.mailer.MailerBuilder
 import se.uulm.snowballr.backend.access.CriterionAccessChecker
 import se.uulm.snowballr.backend.access.ICriterionAccessChecker
+import se.uulm.snowballr.backend.access.IInvitationAccessChecker
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.access.IProjectMemberAccessChecker
 import se.uulm.snowballr.backend.access.IProjectPaperAccessChecker
 import se.uulm.snowballr.backend.access.IReviewAccessChecker
 import se.uulm.snowballr.backend.access.IUserAccessChecker
+import se.uulm.snowballr.backend.access.InvitationAccessChecker
 import se.uulm.snowballr.backend.access.ProjectAccessChecker
 import se.uulm.snowballr.backend.access.ProjectMemberAccessChecker
 import se.uulm.snowballr.backend.access.ProjectPaperAccessChecker
@@ -221,6 +223,7 @@ fun Module.serviceLayerDeps() {
     singleOf(::ReviewAccessChecker) { bind<IReviewAccessChecker>() }
     singleOf(::ProjectMemberAccessChecker) { bind<IProjectMemberAccessChecker>() }
     singleOf(::ProjectPaperAccessChecker) { bind<IProjectPaperAccessChecker>() }
+    singleOf(::InvitationAccessChecker) { bind<IInvitationAccessChecker>() }
 
     // All services that are directly used by the MainService
     singleOf(::ProjectService) { bind<IProjectService>() }
