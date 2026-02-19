@@ -5,7 +5,9 @@ import se.uulm.snowballr.backend.access.rules.andAlso
 import se.uulm.snowballr.backend.access.rules.checkFor
 import se.uulm.snowballr.backend.access.rules.forProperty
 import se.uulm.snowballr.backend.access.rules.forTarget
+import se.uulm.snowballr.backend.access.rules.isSameUserById
 import se.uulm.snowballr.backend.access.rules.isServerAdmin
+import se.uulm.snowballr.backend.access.rules.isServerAdminOrSameUser
 import se.uulm.snowballr.backend.access.rules.orElse
 import se.uulm.snowballr.backend.access.rules.orElseThrow
 import se.uulm.snowballr.backend.model.EntityType
@@ -80,19 +82,6 @@ interface IUserAccessChecker {
      * @throws FailedPreconditionException if the target user is a server admin.
      */
     suspend fun isAllowedToDeleteUser(currentUser: User, targetUser: User)
-
-    /**
-     * Check whether the requesting user and the target user are the same by checking whether they have the same user
-     * id.
-     */
-    @CheckReturnValue
-    fun isSameUserById(): AccessRule<UUID>
-
-    /**
-     * Check whether the requesting user is a server admin or the same user as the target user.
-     */
-    @CheckReturnValue
-    fun isServerAdminOrSameUser(): AccessRule<UUID>
 }
 
 class UserAccessChecker(
@@ -146,10 +135,6 @@ class UserAccessChecker(
             )
             .checkFor(currentUser, targetUser)
     }
-
-    override fun isSameUserById() = AccessRule<UUID> { requester, targetId -> requester.id == targetId }
-
-    override fun isServerAdminOrSameUser() = isServerAdmin().forTarget<UUID>().orElse(isSameUserById())
 
     @CheckReturnValue
     private fun isTargetUserActive() = AccessRule<User> { _, target -> target.isActive() }

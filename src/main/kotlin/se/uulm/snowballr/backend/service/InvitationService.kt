@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.service
 import io.viascom.nanoid.NanoId
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.access.rules.checkFor
+import se.uulm.snowballr.backend.access.rules.isProjectActive
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.formatting.daysToHumanReadable
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
@@ -114,7 +115,7 @@ class InvitationService(
 
         val project = projectRepo.getProjectById(projectId).getOrThrow()
 
-        projectAccessChecker.isProjectActive().checkFor(currentUser, project)
+        isProjectActive().checkFor(currentUser, project)
 
         // Check if the user is already a member
         val projectMembers = projectMemberRepo.getProjectMembersWithUsers(projectId)

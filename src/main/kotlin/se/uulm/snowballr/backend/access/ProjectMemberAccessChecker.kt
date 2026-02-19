@@ -4,6 +4,7 @@ import se.uulm.snowballr.backend.access.rules.AccessRuleCompoundUUID
 import se.uulm.snowballr.backend.access.rules.andAlso
 import se.uulm.snowballr.backend.access.rules.checkFor
 import se.uulm.snowballr.backend.access.rules.forProperty
+import se.uulm.snowballr.backend.access.rules.isSameUserById
 import se.uulm.snowballr.backend.access.rules.orElse
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.dto.User
@@ -49,7 +50,6 @@ interface IProjectMemberAccessChecker {
 
 class ProjectMemberAccessChecker(
     private val projectAccessChecker: IProjectAccessChecker,
-    private val userAccessChecker: IUserAccessChecker,
 ) : IProjectMemberAccessChecker {
     override suspend fun isAllowedToUpdateMemberRole(currentUser: User, projectId: UUID) {
         projectAccessChecker.isProjectOrServerAdmin(AccessType.UPDATE)
@@ -60,7 +60,7 @@ class ProjectMemberAccessChecker(
     override suspend fun isAllowedToRemoveMember(currentUser: User, memberUserId: UUID, projectId: UUID) {
         val userProjectCompound = AccessRuleCompoundUUID(memberUserId, projectId)
 
-        userAccessChecker.isSameUserById()
+        isSameUserById()
             .forProperty(AccessRuleCompoundUUID::firstTarget)
             .orElse(
                 projectAccessChecker.isProjectOrServerAdmin(AccessType.DELETE)

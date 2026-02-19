@@ -5,11 +5,11 @@ import se.uulm.snowballr.backend.access.rules.andAlso
 import se.uulm.snowballr.backend.access.rules.checkFor
 import se.uulm.snowballr.backend.access.rules.forTarget
 import se.uulm.snowballr.backend.access.rules.isServerAdmin
+import se.uulm.snowballr.backend.access.rules.isServerAdminOrSameUser
 import se.uulm.snowballr.backend.access.rules.orElse
 import se.uulm.snowballr.backend.access.rules.orElseThrow
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.isActive
 import se.uulm.snowballr.backend.model.dto.isDeleted
@@ -73,13 +73,6 @@ interface IProjectAccessChecker {
     fun isProjectExistent(): AccessRule<UUID>
 
     /**
-     * Check whether the project is active (or active, but settings are locked); otherwise, throws an
-     * [EntityNotActiveException].
-     */
-    @CheckReturnValue
-    fun isProjectActive(): AccessRule<Project>
-
-    /**
      * Check whether a project with the given ID is active (or active, but settings are locked); otherwise, throws an
      * [EntityNotActiveException].
      */
@@ -110,7 +103,6 @@ interface IProjectAccessChecker {
 class ProjectAccessChecker(
     private val projectRepo: IProjectTableRepo,
     private val projectMemberRepo: IProjectMemberTableRepo,
-    private val userAccessChecker: IUserAccessChecker,
 ) : IProjectAccessChecker {
     override suspend fun isAllowedToReadProject(currentUser: User, projectId: UUID) {
         isProjectExistent()
@@ -123,7 +115,7 @@ class ProjectAccessChecker(
     }
 
     override suspend fun isAllowedToReadUserProjects(currentUser: User, userId: UUID) {
-        userAccessChecker.isServerAdminOrSameUser()
+        isServerAdminOrSameUser()
             .orElseThrow { requestingUser, targetId ->
                 UnauthorizedReadException(requestingUser.id, targetId, EntityType.USER)
             }
@@ -140,10 +132,6 @@ class ProjectAccessChecker(
         val project = projectRepo.getProjectById(projectId).getOrNull()
         project != null && (!project.isDeleted() || user.isServerAdmin())
     }.orElseThrow { _, projectId -> ProjectNotFoundException(projectId) }
-
-    override fun isProjectActive() = AccessRule<Project> { _, project ->
-        project.isActive()
-    }.orElseThrow { _, project -> EntityNotActiveException(EntityType.PROJECT, project.id) }
 
     override fun isProjectActiveById() = AccessRule<UUID> { _, projectId ->
         val project = projectRepo.getProjectById(projectId).getOrNull()

@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.access
 import se.uulm.snowballr.backend.access.rules.AccessRule
 import se.uulm.snowballr.backend.access.rules.checkFor
 import se.uulm.snowballr.backend.access.rules.forTarget
+import se.uulm.snowballr.backend.access.rules.isProjectActive
 import se.uulm.snowballr.backend.access.rules.isServerAdmin
 import se.uulm.snowballr.backend.access.rules.orElse
 import se.uulm.snowballr.backend.access.rules.orElseThrow
@@ -50,7 +51,7 @@ class ReviewAccessChecker(
 ) : IReviewAccessChecker {
     override suspend fun isAllowedToCreateReview(currentUser: User, projectId: UUID, projectResult: Result<Project>) {
         projectAccessChecker.isAllowedToReadProject(currentUser, projectId)
-        projectAccessChecker.isProjectActive().checkFor(currentUser, projectResult.getOrThrow())
+        isProjectActive().checkFor(currentUser, projectResult.getOrThrow())
     }
 
     override suspend fun isAllowedToReadReview(currentUser: User, review: Review) {
