@@ -9,7 +9,6 @@ import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.service.accessrules.ICriterionAccessChecker
 import se.uulm.snowballr.backend.service.accessrules.IProjectAccessChecker
-import se.uulm.snowballr.backend.service.accessrules.checkFor
 import java.util.UUID
 import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
 
@@ -88,7 +87,7 @@ class CriterionService(
 
     override suspend fun getAllCriteriaForProject(projectId: UUID): GrpcCriterion.List =
         withUser(userRepo) { currentUser ->
-            projectAccessChecker.isAllowedToReadProject().checkFor(currentUser, projectId)
+            projectAccessChecker.isAllowedToReadProject(currentUser, projectId)
 
             repo.getAllProjectCriteria(projectId).toGrpcCriteria()
         }

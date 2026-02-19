@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.service.accessrules
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.Project
+import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.isActive
 import se.uulm.snowballr.backend.model.dto.isDeleted
 import se.uulm.snowballr.backend.model.dto.isServerAdmin
@@ -11,6 +12,7 @@ import se.uulm.snowballr.backend.model.exception.UnauthorizedException
 import se.uulm.snowballr.backend.model.exception.failedprecondition.EntityNotActiveException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedExceptionFactory
+import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadAllException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadException
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
@@ -18,6 +20,42 @@ import java.util.UUID
 import javax.annotation.CheckReturnValue
 
 interface IProjectAccessChecker {
+    /**
+     * Checks whether the current user is allowed to read a specific project.
+     *
+     * Conditions:
+     * - The project exists
+     * - The user is a member of the project **OR** a server admin.
+     *
+     * @throws ProjectNotFoundException if the project does not exist.
+     * @throws UnauthorizedReadException if the user is not allowed to read the project.
+     */
+    suspend fun isAllowedToReadProject(currentUser: User, projectId: UUID)
+
+    /**
+     * Checks whether the current user is allowed to read user projects pf the specified user.
+     *
+     * A user project is defined as a project of which the user is a member.
+     *
+     * Conditions:
+     * - The user is a server admin **OR** the same user
+     *
+     * @throws UnauthorizedReadException if the user is not allowed to read the user projects.
+     */
+    suspend fun isAllowedToReadUserProjects(currentUser: User, userId: UUID)
+
+    /**
+     * Checks whether the current user is allowed to read all projects.
+     *
+     * The user may still be allowed to read specific projects. This check is about reading all stored projects.
+     *
+     * Conditions:
+     * - The user is a server admin
+     *
+     * @throws UnauthorizedReadAllException if the user is not allowed to read all projects.
+     */
+    suspend fun isAllowedToReadAllProjects(currentUser: User)
+
     /**
      * Check whether a project with the given ID exists; otherwise, throws a [ProjectNotFoundException].
      *
@@ -51,18 +89,6 @@ interface IProjectAccessChecker {
     fun isNotLastProjectAdmin(action: String): AccessRule<UUID>
 
     /**
-     * Check whether the current user is allowed to read the specified project.
-     *
-     * The user can read the project if the following conditions are met:
-     * 1. The project exists according to [isProjectExistent]; otherwise a [ProjectNotFoundException] is thrown.
-     * 2. The user is a member of the project or a server admin according to [isServerAdmin].
-     *
-     * If neither condition is met, an [UnauthorizedReadException] is thrown.
-     */
-    @CheckReturnValue
-    fun isAllowedToReadProject(): AccessRule<UUID>
-
-    /**
      * Check whether the current user is an admin of the specified project. If the user is not a project admin, the user
      * has to be a server admin; otherwise, an [UnauthorizedException] is thrown.
      *
@@ -77,7 +103,32 @@ interface IProjectAccessChecker {
 class ProjectAccessChecker(
     private val projectRepo: IProjectTableRepo,
     private val projectMemberRepo: IProjectMemberTableRepo,
+    private val userAccessChecker: IUserAccessChecker,
 ) : IProjectAccessChecker {
+    override suspend fun isAllowedToReadProject(currentUser: User, projectId: UUID) {
+        isProjectExistent()
+            .andAlso(isProjectMember())
+            .orElse(isServerAdmin().forTarget())
+            .orElseThrow { user, targetId ->
+                UnauthorizedReadException(user.id, targetId, EntityType.PROJECT)
+            }
+            .checkFor(currentUser, projectId)
+    }
+
+    override suspend fun isAllowedToReadUserProjects(currentUser: User, userId: UUID) {
+        userAccessChecker.isServerAdminOrSameUser()
+            .orElseThrow { requestingUser, targetId ->
+                UnauthorizedReadException(requestingUser.id, targetId, EntityType.USER)
+            }
+            .checkFor(currentUser, userId)
+    }
+
+    override suspend fun isAllowedToReadAllProjects(currentUser: User) {
+        isServerAdmin()
+            .orElseThrow(UnauthorizedReadAllException(currentUser.id, EntityType.PROJECT))
+            .checkFor(currentUser)
+    }
+
     override fun isProjectExistent() = AccessRule<UUID> { user, projectId ->
         val project = projectRepo.getProjectById(projectId).getOrNull()
         project != null && (!project.isDeleted() || user.isServerAdmin())
@@ -101,13 +152,6 @@ class ProjectAccessChecker(
                 "'$projectId'.",
         )
     }
-
-    override fun isAllowedToReadProject() = isProjectExistent()
-        .andAlso(isProjectMember())
-        .orElse(isServerAdmin().forTarget())
-        .orElseThrow { currentUser, targetId ->
-            UnauthorizedReadException(currentUser.id, targetId, EntityType.PROJECT)
-        }
 
     override fun isProjectOrServerAdmin(accessType: AccessType, entityType: EntityType) = isProjectAdmin()
         .orElse(isServerAdmin().forTarget())

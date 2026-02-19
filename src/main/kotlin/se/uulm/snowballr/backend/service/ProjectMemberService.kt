@@ -62,7 +62,7 @@ class ProjectMemberService(
 ) : IProjectMemberService {
     override suspend fun getProjectMembers(projectId: UUID): GrpcProjectMember.List =
         withUser(userRepo) { currentUser ->
-            projectAccessChecker.isAllowedToReadProject().checkFor(currentUser, projectId)
+            projectAccessChecker.isAllowedToReadProject(currentUser, projectId)
 
             val projectMembersWithUsers = repo.getProjectMembersWithUsers(projectId)
             projectMembersWithUsers.toGrpcProjectMembers()

@@ -29,6 +29,7 @@ import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.IVerificationTokenTableRepo
 import se.uulm.snowballr.backend.service.accessrules.AccessRule
 import se.uulm.snowballr.backend.service.accessrules.IAccessChecker
+import se.uulm.snowballr.backend.service.accessrules.IProjectAccessChecker
 import se.uulm.snowballr.backend.service.accessrules.andAlso
 import se.uulm.snowballr.backend.service.accessrules.checkFor
 import se.uulm.snowballr.backend.service.accessrules.forProperty
@@ -101,6 +102,7 @@ interface IUserService {
  * @param emailManager The manager responsible for sending emails.
  * @param envReader The environment reader that provides access to configuration values.
  * @param accessChecker Interface for checking access permissions based on defined rules.
+ * @param projectAccessChecker Interface for checking access permissions for projects based on defined rules.
  */
 @Suppress("LongParameterList")
 class UserService(
@@ -111,6 +113,7 @@ class UserService(
     private val emailManager: IEmailManager,
     private val envReader: EnvReader,
     private val accessChecker: IAccessChecker,
+    private val projectAccessChecker: IProjectAccessChecker,
 ) : IUserService {
     companion object {
         private const val VERIFICATION_TOKEN_LENGTH = 48
@@ -208,7 +211,7 @@ class UserService(
             ),
         )
         projectsOfTargetUser.forEach { project ->
-            accessChecker.isNotLastProjectAdmin("The user cannot be (soft-)deleted")
+            projectAccessChecker.isNotLastProjectAdmin("The user cannot be (soft-)deleted")
                 .checkFor(targetUser, project.id)
         }
 
