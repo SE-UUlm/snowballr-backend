@@ -8,13 +8,14 @@ import se.uulm.snowballr.backend.access.rules.forTarget
 import se.uulm.snowballr.backend.access.rules.isSameUserById
 import se.uulm.snowballr.backend.access.rules.isServerAdmin
 import se.uulm.snowballr.backend.access.rules.isServerAdminOrSameUser
+import se.uulm.snowballr.backend.access.rules.isServerAdminOrTargetUserActive
+import se.uulm.snowballr.backend.access.rules.isTargetUserActive
+import se.uulm.snowballr.backend.access.rules.isTargetUserNotAdmin
 import se.uulm.snowballr.backend.access.rules.orElse
 import se.uulm.snowballr.backend.access.rules.orElseThrow
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.UserIdentifierType
 import se.uulm.snowballr.backend.model.dto.User
-import se.uulm.snowballr.backend.model.dto.isActive
-import se.uulm.snowballr.backend.model.dto.isServerAdmin
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.failedprecondition.EntityNotActiveException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundByEmailException
@@ -157,24 +158,12 @@ class UserAccessChecker(
     }
 
     @CheckReturnValue
-    private fun isTargetUserActive() = AccessRule<User> { _, target -> target.isActive() }
-
-    @CheckReturnValue
-    private fun isServerAdminOrTargetUserActive() = isServerAdmin().forTarget<User>().orElse(isTargetUserActive())
-
-    @CheckReturnValue
-    private fun isTargetUserNotAdmin() = AccessRule<User> { _, target -> !target.isServerAdmin() }
-
-    @CheckReturnValue
     private fun isAllowedToReadUser(identifierType: UserIdentifierType) = isServerAdminOrSameUser()
         .orElse(isInSameProject())
         .orElseThrow { currentUser, targetUserId ->
             UnauthorizedReadException(currentUser.id, targetUserId, EntityType.USER, identifierType.toIdentifierType())
         }
 
-    /**
-     * Check whether the requesting user is in the same project as the target user.
-     */
     @CheckReturnValue
     private fun isInSameProject() = AccessRule<UUID> { requester, targetId ->
         projectMemberRepo.getMembersInSameProjectsAsUser(targetId).any { it.userId == requester.id }
