@@ -1,77 +1,162 @@
 package se.uulm.snowballr.backend.service.accessrules
 
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.IdentifierType
+import se.uulm.snowballr.backend.model.UserIdentifierType
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.isActive
 import se.uulm.snowballr.backend.model.dto.isServerAdmin
+import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
+import se.uulm.snowballr.backend.model.exception.failedprecondition.EntityNotActiveException
+import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundByEmailException
+import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadException
+import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedUpdateException
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
-import snowballr.UserOuterClass.UserStatus
 import java.util.UUID
 import javax.annotation.CheckReturnValue
 
 interface IUserAccessChecker {
     /**
-     * Check whether the requesting user and the target user are the same by checking whether they have the same user id.
+     * Checks whether the current user is allowed to read another user.
+     *
+     * Conditions:
+     * - The user is a server admin, **OR** the same user, **OR** in the same project as the other user
+     * - The user is a server admin, **OR** the target user is active
+     *
+     * @param currentUser The user for whom the access check is being performed.
+     * @param targetUser The user that is being read.
+     * @param identifierType The type used to identify the other user.
+     * @throws UnauthorizedReadException if the user is not allowed to read the target user.
+     * @throws UserNotFoundException if the user doesn't exist and [identifierType] is [UserIdentifierType.ID]
+     * @throws UserNotFoundByEmailException if the user doesn't exist and [identifierType] is [UserIdentifierType.EMAIL]
+     */
+    suspend fun isAllowedToReadUser(currentUser: User, targetUser: User, identifierType: UserIdentifierType)
+
+    /**
+     * Checks whether the current user is allowed to update another user.
+     *
+     * **Note:** For performing an access check for a user role update use [isAllowedToUpdateUserRole].
+     *
+     * Conditions:
+     * - The user is the same user **OR** the user is a server admin **AND** the target user is active
+     *
+     * @param currentUser The user for whom the access check is being performed.
+     * @param targetUser The user that is being updated.
+     * @throws EntityNotActiveException if the target user is not active.
+     * @throws UnauthorizedUpdateException if the user is not allowed to update the target user.
+     */
+    suspend fun isAllowedToUpdateUser(currentUser: User, targetUser: User)
+
+    /**
+     * Checks whether the current user is allowed to update the role of another user.
+     *
+     * Conditions:
+     * - The user is a server admin
+     *
+     * @param currentUser The user for whom the access check is being performed.
+     * @param targetUserId The ID of the user that is being updated
+     * @throws UnauthorizedUpdateException if the user is not allowed to update the role of the target user
+     */
+    suspend fun isAllowedToUpdateUserRole(currentUser: User, targetUserId: UUID)
+
+    /**
+     * Checks whether the current user is allowed to delete another user.
+     *
+     * Conditions:
+     * - The user is a server admin **OR** the same user
+     * - The target user is not a server admin **OR** it's the same user
+     *
+     * @param currentUser The user for whom the access check is being performed.
+     * @param targetUser The user that is being deleted.
+     * @throws UnauthorizedReadException if the user is not allowed to delete the target user.
+     * @throws FailedPreconditionException if the target user is a server admin.
+     */
+    suspend fun isAllowedToDeleteUser(currentUser: User, targetUser: User)
+
+    /**
+     * Check whether the requesting user and the target user are the same by checking whether they have the same user
+     * id.
      */
     @CheckReturnValue
     fun isSameUserById(): AccessRule<UUID>
-
-    /**
-     * Check whether the target user is active, i.e., their status is set to [UserStatus.USER_STATUS_ACTIVE] or
-     * [UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED].
-     */
-    @CheckReturnValue
-    fun isTargetUserActive(): AccessRule<User>
-
-    /**
-     * Check whether the requesting user is a server admin or the target user is active.
-     *
-     * This allows server admins to access inactive users, while non-admins can only access active users.
-     */
-    @CheckReturnValue
-    fun isServerAdminOrTargetUserActive(): AccessRule<User>
-
-    /**
-     * Check whether the target user is *not* a server admin.
-     */
-    @CheckReturnValue
-    fun isTargetUserNotAdmin(): AccessRule<User>
 
     /**
      * Check whether the requesting user is a server admin or the same user as the target user.
      */
     @CheckReturnValue
     fun isServerAdminOrSameUser(): AccessRule<UUID>
-
-    /**
-     * Check whether the current user is allowed to read the target user based on specific access control rules.
-     *
-     * @param identifierType The identifier type used to identify the target user (used for constructing the correct
-     * exception message, defaults to [IdentifierType.ID]).
-     */
-    @CheckReturnValue
-    fun isAllowedToReadUser(identifierType: IdentifierType = IdentifierType.ID): AccessRule<UUID>
 }
 
 class UserAccessChecker(
     private val projectMemberRepo: IProjectMemberTableRepo,
 ) : IUserAccessChecker {
+    override suspend fun isAllowedToReadUser(currentUser: User, targetUser: User, identifierType: UserIdentifierType) {
+        isAllowedToReadUser(identifierType)
+            .forProperty(User::id)
+            .andAlso(isServerAdminOrTargetUserActive())
+            .orElseThrow { _, _ ->
+                when (identifierType) {
+                    UserIdentifierType.ID -> UserNotFoundException(targetUser.id)
+                    UserIdentifierType.EMAIL -> UserNotFoundByEmailException(targetUser.email)
+                }
+            }
+            .checkFor(currentUser, targetUser)
+    }
+
+    override suspend fun isAllowedToUpdateUser(currentUser: User, targetUser: User) {
+        isSameUserById()
+            .forProperty(User::id)
+            .orElse(
+                isServerAdmin().forTarget<User>()
+                    .andAlso(
+                        isTargetUserActive()
+                            .orElseThrow(EntityNotActiveException(EntityType.USER, targetUser.id)),
+                    ),
+            )
+            .orElseThrow(UnauthorizedUpdateException(currentUser.id, targetUser.id, EntityType.USER))
+            .checkFor(currentUser, targetUser)
+    }
+
+    override suspend fun isAllowedToUpdateUserRole(currentUser: User, targetUserId: UUID) {
+        isServerAdmin().forTarget<UUID>()
+            .orElseThrow(UnauthorizedUpdateException(currentUser.id, targetUserId, EntityType.USER))
+            .checkFor(currentUser, targetUserId)
+    }
+
+    override suspend fun isAllowedToDeleteUser(currentUser: User, targetUser: User) {
+        isServerAdminOrSameUser()
+            .orElseThrow(UnauthorizedReadException(currentUser.id, targetUser.id, EntityType.USER))
+            .forProperty(User::id)
+            .andAlso(
+                isTargetUserNotAdmin()
+                    .orElse(isSameUserById().forProperty(User::id))
+                    .orElseThrow(
+                        FailedPreconditionException(
+                            "The user with the id ${targetUser.id} can not be deleted because the user is an admin.",
+                        ),
+                    ),
+            )
+            .checkFor(currentUser, targetUser)
+    }
+
     override fun isSameUserById() = AccessRule<UUID> { requester, targetId -> requester.id == targetId }
-
-    override fun isTargetUserActive() = AccessRule<User> { _, target -> target.isActive() }
-
-    override fun isServerAdminOrTargetUserActive() = isServerAdmin().forTarget<User>().orElse(isTargetUserActive())
-
-    override fun isTargetUserNotAdmin() = AccessRule<User> { _, target -> !target.isServerAdmin() }
 
     override fun isServerAdminOrSameUser() = isServerAdmin().forTarget<UUID>().orElse(isSameUserById())
 
-    override fun isAllowedToReadUser(identifierType: IdentifierType) = isServerAdminOrSameUser()
+    @CheckReturnValue
+    private fun isTargetUserActive() = AccessRule<User> { _, target -> target.isActive() }
+
+    @CheckReturnValue
+    private fun isServerAdminOrTargetUserActive() = isServerAdmin().forTarget<User>().orElse(isTargetUserActive())
+
+    @CheckReturnValue
+    private fun isTargetUserNotAdmin() = AccessRule<User> { _, target -> !target.isServerAdmin() }
+
+    @CheckReturnValue
+    private fun isAllowedToReadUser(identifierType: UserIdentifierType) = isServerAdminOrSameUser()
         .orElse(isInSameProject())
         .orElseThrow { currentUser, targetUserId ->
-            UnauthorizedReadException(currentUser.id, targetUserId, EntityType.USER, identifierType)
+            UnauthorizedReadException(currentUser.id, targetUserId, EntityType.USER, identifierType.toIdentifierType())
         }
 
     /**

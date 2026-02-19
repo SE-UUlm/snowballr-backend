@@ -73,24 +73,27 @@ class GetUserByIdTest : MainServiceTest() {
     fun `When current user is not authorized to access requested user, then an UnauthorizedException is thrown`() =
         runTest {
             val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-            val requestedUserId = UUID.randomUUID()
+            val requestedUser = DataBuilder.createExampleUser()
 
             mockCurrentUser(currentUser)
-            coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(requestedUserId) } returns emptyList()
+            coEvery { userRepoMock.getUserById(requestedUser.id) } returns Result.success(requestedUser)
+            coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(requestedUser.id) } returns emptyList()
 
-            assertThrows<UnauthorizedException> { mainService.getUserById(requestedUserId) }
+            assertThrows<UnauthorizedException> { mainService.getUserById(requestedUser.id) }
         }
 
     @ParameterizedTest
     @MethodSource("inactiveStatuses")
     fun `When requested user is inactive, then a NotFoundException is thrown`(status: UserStatus) = runTest {
-        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-        // We set the requested user's ID to be the same as the current user's ID so that the current user can read the
-        // requested user.
-        val requestedUser = DataBuilder.createExampleUser(id = currentUser.id, status = status)
+        val currentUser = DataBuilder.createExampleUser()
+        val requestedUser = DataBuilder.createExampleUser(status = status)
+        val projectMembers = listOf(
+            DataBuilder.createExampleProjectMember(userId = currentUser.id),
+        )
 
         mockCurrentUser(currentUser)
         coEvery { userRepoMock.getUserById(requestedUser.id) } returns Result.success(requestedUser)
+        coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(requestedUser.id) } returns projectMembers
 
         assertThrows<NotFoundException>("Should throw NotFoundException for status $status") {
             mainService.getUserById(requestedUser.id)
