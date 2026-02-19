@@ -7,7 +7,8 @@ interface IAccessChecker :
     IProjectAccessChecker,
     ICriterionAccessChecker,
     IReviewAccessChecker,
-    IUserAccessChecker
+    IUserAccessChecker,
+    IProjectMemberAccessChecker
 
 /**
  * The [AccessChecker] class is a concrete implementation of the [IAccessChecker] interface.
@@ -17,14 +18,17 @@ interface IAccessChecker :
  * @param criterionAccessChecker The access checker for criterion-related access control.
  * @param reviewAccessChecker The access checker for review-related access control.
  * @param userAccessChecker The access checker for user-related access control.
+ * @param projectMemberAccessChecker The access checker for project member-related access control.
  */
 class AccessChecker(
     private val projectAccessChecker: IProjectAccessChecker,
     private val criterionAccessChecker: ICriterionAccessChecker,
     private val reviewAccessChecker: IReviewAccessChecker,
     private val userAccessChecker: IUserAccessChecker,
+    private val projectMemberAccessChecker: IProjectMemberAccessChecker,
 ) : IAccessChecker,
     IProjectAccessChecker by projectAccessChecker,
     ICriterionAccessChecker by criterionAccessChecker,
     IReviewAccessChecker by reviewAccessChecker,
-    IUserAccessChecker by userAccessChecker
+    IUserAccessChecker by userAccessChecker,
+    IProjectMemberAccessChecker by projectMemberAccessChecker

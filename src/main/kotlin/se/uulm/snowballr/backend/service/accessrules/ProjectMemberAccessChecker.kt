@@ -1,0 +1,70 @@
+package se.uulm.snowballr.backend.service.accessrules
+
+import se.uulm.snowballr.backend.model.AccessType
+import se.uulm.snowballr.backend.model.dto.User
+import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
+import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedDeleteException
+import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedUpdateException
+import java.util.UUID
+
+interface IProjectMemberAccessChecker {
+    /**
+     * Checks whether the current user is allowed to update the role of a project member.
+     *
+     * Conditions:
+     * - The user is a project admin of the project, **OR** a server admin.
+     * - The project exists.
+     *
+     * @throws UnauthorizedUpdateException if the user is not allowed to update the member role.
+     * @throws ProjectNotFoundException if the project does not exist.
+     */
+    suspend fun isAllowedToUpdateMemberRole(currentUser: User, projectId: UUID)
+
+    /**
+     * Checks whether the current user is allowed to remove a project member.
+     *
+     * Conditions:
+     * - The user is the same as the member being removed, **OR** the user is a project admin of the project, **OR** a
+     * server admin.
+     *
+     * @throws UnauthorizedDeleteException if the user is not allowed to remove the member.
+     */
+    suspend fun isAllowedToRemoveMember(currentUser: User, memberUserId: UUID, projectId: UUID)
+
+    /**
+     * Checks whether the current user is allowed to remove a project invitation.
+     *
+     * Conditions:
+     * - The user is a project admin of the project, **OR** a server admin.
+     *
+     * @throws UnauthorizedDeleteException if the user is not allowed to remove the invitation.
+     */
+    suspend fun isAllowedToRemoveInvitation(currentUser: User, projectId: UUID)
+}
+
+class ProjectMemberAccessChecker(
+    private val projectAccessChecker: IProjectAccessChecker,
+    private val userAccessChecker: IUserAccessChecker,
+) : IProjectMemberAccessChecker {
+    override suspend fun isAllowedToUpdateMemberRole(currentUser: User, projectId: UUID) {
+        projectAccessChecker.isProjectOrServerAdmin(AccessType.UPDATE)
+            .andAlso(projectAccessChecker.isProjectExistent())
+            .checkFor(currentUser, projectId)
+    }
+
+    override suspend fun isAllowedToRemoveMember(currentUser: User, memberUserId: UUID, projectId: UUID) {
+        val userProjectCompound = AccessRuleCompoundUUID(memberUserId, projectId)
+
+        userAccessChecker.isSameUserById()
+            .forProperty(AccessRuleCompoundUUID::firstTarget)
+            .orElse(
+                projectAccessChecker.isProjectOrServerAdmin(AccessType.DELETE)
+                    .forProperty(AccessRuleCompoundUUID::secondTarget),
+            )
+            .checkFor(currentUser, userProjectCompound)
+    }
+
+    override suspend fun isAllowedToRemoveInvitation(currentUser: User, projectId: UUID) {
+        projectAccessChecker.isProjectOrServerAdmin(AccessType.DELETE).checkFor(currentUser, projectId)
+    }
+}
