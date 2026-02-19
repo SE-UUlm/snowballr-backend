@@ -40,7 +40,7 @@ class GetProjectInformationTest : MainServiceTest() {
 
         mockCurrentUser(user)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
+        coEvery { projectMemberRepoMock.isProjectMember(project.id, user.id) } returns false
 
         assertThrows<UnauthorizedException> { mainService.getProjectInformation(getRequest(project.id)) }
     }
@@ -55,11 +55,10 @@ class GetProjectInformationTest : MainServiceTest() {
                 createdAt = createdAt,
                 currentStageStartedAt = stageStartedAt,
             )
-            val member = DataBuilder.createExampleProjectMember(projectId = project.id, userId = user.id)
 
             mockCurrentUser(user)
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-            coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(member)
+            coEvery { projectMemberRepoMock.isProjectMember(project.id, user.id) } returns true
             coEvery { projectPaperRepoMock.getProjectProgress(project.id) } returns 0.5f
 
             val response = mainService.getProjectInformation(getRequest(project.id))
@@ -78,11 +77,10 @@ class GetProjectInformationTest : MainServiceTest() {
                 createdAt = createdAt,
                 currentStageStartedAt = stageStartedAt,
             )
-            val member = DataBuilder.createExampleProjectMember(projectId = project.id, userId = user.id)
 
             mockCurrentUser(user)
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-            coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(member)
+            coEvery { projectMemberRepoMock.isProjectMember(project.id, user.id) } returns true
             coEvery { projectPaperRepoMock.getProjectProgress(project.id) } returns 0.5f
 
             val response = mainService.getProjectInformation(getRequest(project.id, listOf("project_progress")))

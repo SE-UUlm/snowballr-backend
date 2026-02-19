@@ -159,8 +159,7 @@ class ProjectAccessChecker(
      */
     @CheckReturnValue
     private fun isProjectMember() = AccessRule<UUID> { requester, targetId ->
-        val projectMembers = projectMemberRepo.getProjectMembers(targetId)
-        projectMembers.any { it.userId == requester.id }
+        projectMemberRepo.isProjectMember(targetId, requester.id)
     }
 
     /**

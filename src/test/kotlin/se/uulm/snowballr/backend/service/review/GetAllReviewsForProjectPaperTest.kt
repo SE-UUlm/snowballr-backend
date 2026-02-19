@@ -35,7 +35,6 @@ class GetAllReviewsForProjectPaperTest : MainServiceTest() {
         )
         val project = DataBuilder.createExampleProject()
         val projectPaper = DataBuilder.createExampleProjectPaper(id = projectPaperId, projectId = project.id)
-        val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
         val review = DataBuilder.createExampleReview(userId = currentUser.id)
         val selectedCriteriaIds = listOf<UUID>(UUID.randomUUID())
 
@@ -50,12 +49,7 @@ class GetAllReviewsForProjectPaperTest : MainServiceTest() {
         coEvery { projectPaperRepoMock.getProjectPaperById(projectPaper.id) } returns Result.success(projectPaper)
 
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns
-            if (isUserAdmin) {
-                emptyList()
-            } else {
-                listOf(projectMember)
-            }
+        coEvery { projectMemberRepoMock.isProjectMember(project.id, currentUser.id) } returns !isUserAdmin
         coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper.id) } returns listOf(review)
         coEvery {
             reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(review.id)
@@ -102,7 +96,7 @@ class GetAllReviewsForProjectPaperTest : MainServiceTest() {
             mockCurrentUser(currentUser)
             coEvery { projectPaperRepoMock.getProjectPaperById(projectPaper.id) } returns Result.success(projectPaper)
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-            coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
+            coEvery { projectMemberRepoMock.isProjectMember(project.id, currentUser.id) } returns false
 
             assertThrows<UnauthorizedException> { mainService.getAllReviewsForProjectPaper(projectPaper.id) }
         }

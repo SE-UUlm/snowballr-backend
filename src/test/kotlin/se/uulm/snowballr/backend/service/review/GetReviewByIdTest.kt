@@ -22,7 +22,6 @@ import kotlin.reflect.KFunction
 class GetReviewByIdTest : MainServiceTest() {
     fun failingFunctions(): Stream<Arguments?> = Stream.of(
         Arguments.of(reviewRepoMock::getReviewById),
-        Arguments.of(projectPaperRepoMock::getProjectPaperById),
     )
 
     @Suppress("ReturnCount")
@@ -37,7 +36,6 @@ class GetReviewByIdTest : MainServiceTest() {
         val review = DataBuilder.createExampleReview(id = reviewId, userId = currentUser.id)
         val project = DataBuilder.createExampleProject()
         val projectPaper = DataBuilder.createExampleProjectPaper(id = review.projectPaperId, projectId = project.id)
-        val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
         val selectedCriteriaIds = listOf<UUID>(UUID.randomUUID())
 
         mockCurrentUser(currentUser)
@@ -55,13 +53,7 @@ class GetReviewByIdTest : MainServiceTest() {
             return
         }
         coEvery { projectPaperRepoMock.getProjectPaperById(review.projectPaperId) } returns Result.success(projectPaper)
-
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns
-            if (isUserAdmin) {
-                emptyList()
-            } else {
-                listOf(projectMember)
-            }
+        coEvery { projectMemberRepoMock.isProjectMember(project.id, currentUser.id) } returns !isUserAdmin
         coEvery {
             reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(review.id)
         } returns selectedCriteriaIds
@@ -107,7 +99,7 @@ class GetReviewByIdTest : MainServiceTest() {
         mockCurrentUser(currentUser)
         coEvery { reviewRepoMock.getReviewById(review.id) } returns Result.success(review)
         coEvery { projectPaperRepoMock.getProjectPaperById(review.projectPaperId) } returns Result.success(projectPaper)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
+        coEvery { projectMemberRepoMock.isProjectMember(project.id, currentUser.id) } returns false
 
         assertThrows<UnauthorizedException> { mainService.getReviewById(review.id) }
     }

@@ -68,8 +68,13 @@ class ReviewAccessChecker(
      */
     @CheckReturnValue
     private fun isUserInProjectOfReview() = AccessRule<Review> { requester, target ->
-        val projectPaper = projectPaperRepo.getProjectPaperById(target.projectPaperId).getOrThrow()
-        val projectMembers = projectMemberRepo.getProjectMembers(projectPaper.projectId)
-        projectMembers.any { it.userId == requester.id }
+        val projectPaperResult = projectPaperRepo.getProjectPaperById(target.projectPaperId)
+        val projectPaper = projectPaperResult.getOrNull()
+
+        if (projectPaper != null) {
+            projectMemberRepo.isProjectMember(projectPaper.projectId, requester.id)
+        } else {
+            false
+        }
     }
 }

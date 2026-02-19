@@ -70,8 +70,6 @@ class CreateReviewTest : MainServiceTest() {
                 UserRole.USER_ROLE_DEFAULT
             },
         )
-        val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
-
         val projectPaper = DataBuilder.createExampleProjectPaper(
             id = projectPaperId,
             projectId = project.id,
@@ -101,15 +99,10 @@ class CreateReviewTest : MainServiceTest() {
         }
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
-        if (stopBefore == projectMemberRepoMock::getProjectMembers) {
+        if (stopBefore == projectMemberRepoMock::isProjectMember) {
             return
         }
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns
-            if (useAdminUser) {
-                emptyList()
-            } else {
-                listOf(projectMember)
-            }
+        coEvery { projectMemberRepoMock.isProjectMember(project.id, currentUser.id) } returns !useAdminUser
 
         if (stopBefore == reviewRepoMock::getAllReviewsForProjectPaper) {
             return
@@ -155,8 +148,8 @@ class CreateReviewTest : MainServiceTest() {
 
     @Test
     fun `When a non project member creates a review, then an UnauthorizedException is thrown`() = runTest {
-        mockCreateReview(useAdminUser = false, stopBefore = projectMemberRepoMock::getProjectMembers)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
+        mockCreateReview(useAdminUser = false, stopBefore = projectMemberRepoMock::isProjectMember)
+        coEvery { projectMemberRepoMock.isProjectMember(project.id, any()) } returns false
 
         assertThrows<UnauthorizedException> { mainService.createReview(validCreateReviewRequest.build()) }
         coVerify(exactly = 0) { reviewRepoMock.createReview(any(), any()) }

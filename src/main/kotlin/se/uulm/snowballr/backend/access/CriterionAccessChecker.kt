@@ -104,7 +104,7 @@ class CriterionAccessChecker(
     private fun isUserInProjectOfCriterion() = AccessRule<Criterion> { requester, target ->
         when (target) {
             is UserCriterion -> false
-            is ProjectCriterion -> isProjectMember(target.projectId, requester.id)
+            is ProjectCriterion -> projectMemberRepo.isProjectMember(target.projectId, requester.id)
         }
     }
 
@@ -113,11 +113,6 @@ class CriterionAccessChecker(
             is UserCriterion -> false
             is ProjectCriterion -> isProjectAdmin(target.projectId, requester.id)
         }
-    }
-
-    private suspend fun isProjectMember(projectId: UUID, userId: UUID): Boolean {
-        val projectMembers = projectMemberRepo.getProjectMembers(projectId)
-        return projectMembers.any { it.userId == userId }
     }
 
     private suspend fun isProjectAdmin(projectId: UUID, userId: UUID): Boolean {
