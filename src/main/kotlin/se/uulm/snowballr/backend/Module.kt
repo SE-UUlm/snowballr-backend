@@ -8,9 +8,7 @@ import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 import org.simplejavamail.api.mailer.Mailer
 import org.simplejavamail.mailer.MailerBuilder
-import se.uulm.snowballr.backend.access.AccessChecker
 import se.uulm.snowballr.backend.access.CriterionAccessChecker
-import se.uulm.snowballr.backend.access.IAccessChecker
 import se.uulm.snowballr.backend.access.ICriterionAccessChecker
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.access.IProjectMemberAccessChecker
@@ -223,8 +221,6 @@ fun Module.serviceLayerDeps() {
     singleOf(::ReviewAccessChecker) { bind<IReviewAccessChecker>() }
     singleOf(::ProjectMemberAccessChecker) { bind<IProjectMemberAccessChecker>() }
     singleOf(::ProjectPaperAccessChecker) { bind<IProjectPaperAccessChecker>() }
-    // The main access checker that is used to combine the specific access checkers
-    singleOf(::AccessChecker) { bind<IAccessChecker>() }
 
     // All services that are directly used by the MainService
     singleOf(::ProjectService) { bind<IProjectService>() }
