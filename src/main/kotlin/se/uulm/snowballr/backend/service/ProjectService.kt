@@ -3,7 +3,6 @@ package se.uulm.snowballr.backend.service
 import com.google.protobuf.timestamp
 import com.google.protobuf.util.FieldMaskUtil
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
-import se.uulm.snowballr.backend.access.rules.checkFor
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
@@ -158,7 +157,7 @@ class ProjectService(
     override suspend fun updateProject(request: GrpcProject.Update): GrpcProject = withUser(userRepo) { currentUser ->
         val projectId = parseUUID(request.project.id, EntityType.PROJECT)
 
-        accessChecker.isProjectOrServerAdmin(AccessType.UPDATE).checkFor(currentUser, projectId)
+        accessChecker.isProjectOrServerAdmin(currentUser, projectId, AccessType.UPDATE)
 
         val project = repo.getProjectById(projectId).getOrThrow()
         val currentStatus = project.status
@@ -231,7 +230,7 @@ class ProjectService(
     }
 
     override suspend fun softDeleteProject(projectId: UUID) = withUser(userRepo) { currentUser ->
-        accessChecker.isProjectOrServerAdmin(AccessType.DELETE).checkFor(currentUser, projectId)
+        accessChecker.isProjectOrServerAdmin(currentUser, projectId, AccessType.DELETE)
 
         if (!repo.doesProjectExistById(projectId)) {
             throw ProjectNotFoundException(projectId)

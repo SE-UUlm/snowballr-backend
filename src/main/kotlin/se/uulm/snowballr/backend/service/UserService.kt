@@ -4,9 +4,6 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.viascom.nanoid.NanoId
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.access.IUserAccessChecker
-import se.uulm.snowballr.backend.access.rules.checkFor
-import se.uulm.snowballr.backend.access.rules.isServerAdmin
-import se.uulm.snowballr.backend.access.rules.orElseThrow
 import se.uulm.snowballr.backend.auth.PasswordUtils
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.formatting.daysToHumanReadable
@@ -20,7 +17,6 @@ import se.uulm.snowballr.backend.model.dto.toGrpcUserSettings
 import se.uulm.snowballr.backend.model.dto.toGrpcUsers
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateUserException
-import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadAllException
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
@@ -130,9 +126,7 @@ class UserService(
     }
 
     override suspend fun getAllUsers(): GrpcUser.List = withUser(userRepo) { currentUser ->
-        isServerAdmin()
-            .orElseThrow(UnauthorizedReadAllException(currentUser.id, EntityType.USER))
-            .checkFor(currentUser)
+        accessChecker.isAllowedToReadAllUsers(currentUser)
 
         userRepo.getAllUsers().toGrpcUsers()
     }
@@ -196,8 +190,7 @@ class UserService(
             ),
         )
         projectsOfTargetUser.forEach { project ->
-            projectAccessChecker.isNotLastProjectAdmin("The user cannot be (soft-)deleted")
-                .checkFor(targetUser, project.id)
+            projectAccessChecker.isNotLastProjectAdmin(targetUser, project.id, "The user cannot be (soft-)deleted")
         }
 
         userRepo.softDeleteUser(targetUser.id)

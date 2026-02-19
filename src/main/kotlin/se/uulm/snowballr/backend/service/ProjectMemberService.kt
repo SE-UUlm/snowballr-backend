@@ -2,7 +2,6 @@ package se.uulm.snowballr.backend.service
 
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.access.IProjectMemberAccessChecker
-import se.uulm.snowballr.backend.access.rules.checkFor
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.InvitationToken
@@ -86,7 +85,7 @@ class ProjectMemberService(
             }
 
             if (currentMember.isProjectAdmin() && request.newRole != MemberRole.MEMBER_ROLE_ADMIN) {
-                projectAccessChecker.isNotLastProjectAdmin("Cannot demote the user").checkFor(user, projectId)
+                projectAccessChecker.isNotLastProjectAdmin(user, projectId, "Cannot demote the user")
             }
 
             repo.updateProjectMemberRole(projectId, userId, request.newRole)
@@ -122,8 +121,8 @@ class ProjectMemberService(
         if (isLastMember) {
             projectRepo.softDeleteProject(projectId)
         } else {
-            projectAccessChecker.isNotLastProjectAdmin("The user cannot be removed from the project")
-                .checkFor(requestedUser, projectId)
+            projectAccessChecker
+                .isNotLastProjectAdmin(requestedUser, projectId, "The user cannot be removed from the project")
         }
 
         repo.removeProjectMember(projectId, requestedUser.id)

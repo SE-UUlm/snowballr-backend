@@ -19,6 +19,7 @@ import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.failedprecondition.EntityNotActiveException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundByEmailException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundException
+import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadAllException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedUpdateException
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
@@ -41,6 +42,19 @@ interface IUserAccessChecker {
      * @throws UserNotFoundByEmailException if the user doesn't exist and [identifierType] is [UserIdentifierType.EMAIL]
      */
     suspend fun isAllowedToReadUser(currentUser: User, targetUser: User, identifierType: UserIdentifierType)
+
+    /**
+     * Checks whether the current user is allowed to read all users.
+     *
+     * Even if the check fails, the user may still be allowed to read specific users. This check is about reading all
+     * stored users.
+     *
+     * Conditions:
+     * - The user is a server admin
+     *
+     * @throws UnauthorizedReadAllException if the user is not allowed to read all users.
+     */
+    suspend fun isAllowedToReadAllUsers(currentUser: User)
 
     /**
      * Checks whether the current user is allowed to update another user.
@@ -98,6 +112,12 @@ class UserAccessChecker(
                 }
             }
             .checkFor(currentUser, targetUser)
+    }
+
+    override suspend fun isAllowedToReadAllUsers(currentUser: User) {
+        isServerAdmin()
+            .orElseThrow(UnauthorizedReadAllException(currentUser.id, EntityType.USER))
+            .checkFor(currentUser)
     }
 
     override suspend fun isAllowedToUpdateUser(currentUser: User, targetUser: User) {

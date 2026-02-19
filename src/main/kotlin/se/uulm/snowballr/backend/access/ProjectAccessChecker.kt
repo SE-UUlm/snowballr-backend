@@ -54,7 +54,8 @@ interface IProjectAccessChecker {
     /**
      * Checks whether the current user is allowed to read all projects.
      *
-     * The user may still be allowed to read specific projects. This check is about reading all stored projects.
+     * Even if the check fails, the user may still be allowed to read specific projects. This check is about reading all
+     * stored projects.
      *
      * Conditions:
      * - The user is a server admin
@@ -62,6 +63,34 @@ interface IProjectAccessChecker {
      * @throws UnauthorizedReadAllException if the user is not allowed to read all projects.
      */
     suspend fun isAllowedToReadAllProjects(currentUser: User)
+
+    /**
+     * Checks whether the target user is not the last project admin.
+     *
+     * Conditions:
+     * - The number of project members is not one
+     * - The last project member is not the target user
+     *
+     * @param targetUser The user for whom the access check is being performed.
+     * @param projectId The ID of the project in which the user shouldn't be the last project admin.
+     * @param action The action that is being performed and wherefore the user must not be the last project admin.
+     * @throws FailedPreconditionException if the conditions are not met, i.e, the target user is the last project
+     * admin.
+     */
+    suspend fun isNotLastProjectAdmin(targetUser: User, projectId: UUID, action: String)
+
+    /**
+     * Checks whether the current user is a project or server admin.
+     *
+     * Conditions:
+     * - The user is a project admin **OR** the user is a server admin
+     *
+     * @param currentUser The user for whom the access check is being performed.
+     * @param projectId The ID of the project in which the user might be a project admin.
+     * @param accessType The type of the access check.
+     * @throws UnauthorizedException if the user is neither a project nor a server admin.
+     */
+    suspend fun isProjectOrServerAdmin(currentUser: User, projectId: UUID, accessType: AccessType)
 
     /**
      * Check whether a project with the given ID exists; otherwise, throws a [ProjectNotFoundException].
@@ -78,15 +107,6 @@ interface IProjectAccessChecker {
      */
     @CheckReturnValue
     fun isProjectActiveById(): AccessRule<UUID>
-
-    /**
-     * Check whether the user is not the last project admin of a specific project; otherwise, throws a
-     * [FailedPreconditionException].
-     *
-     * @param action The action that is being performed and wherefore the user must not be the last project admin.
-     */
-    @CheckReturnValue
-    fun isNotLastProjectAdmin(action: String): AccessRule<UUID>
 
     /**
      * Check whether the current user is an admin of the specified project. If the user is not a project admin, the user
@@ -128,6 +148,23 @@ class ProjectAccessChecker(
             .checkFor(currentUser)
     }
 
+    override suspend fun isNotLastProjectAdmin(targetUser: User, projectId: UUID, action: String) {
+        AccessRule<UUID> { user, targetId ->
+            val projectAdmins = projectMemberRepo.getAllProjectAdmins(targetId)
+            !(projectAdmins.size == 1 && projectAdmins.first().userId == user.id)
+        }.orElseThrow { user, id ->
+            val userId = user.id
+            FailedPreconditionException(
+                "$action, because the user with the ID '$userId' is the last admin of the project with the ID '$id'.",
+            )
+        }
+            .checkFor(targetUser, projectId)
+    }
+
+    override suspend fun isProjectOrServerAdmin(currentUser: User, projectId: UUID, accessType: AccessType) {
+        isProjectOrServerAdmin(accessType, EntityType.PROJECT).checkFor(currentUser, projectId)
+    }
+
     override fun isProjectExistent() = AccessRule<UUID> { user, projectId ->
         val project = projectRepo.getProjectById(projectId).getOrNull()
         project != null && (!project.isDeleted() || user.isServerAdmin())
@@ -137,16 +174,6 @@ class ProjectAccessChecker(
         val project = projectRepo.getProjectById(projectId).getOrNull()
         project != null && project.isActive()
     }.orElseThrow { _, projectId -> EntityNotActiveException(EntityType.PROJECT, projectId) }
-
-    override fun isNotLastProjectAdmin(action: String) = AccessRule<UUID> { user, targetId ->
-        val projectAdmins = projectMemberRepo.getAllProjectAdmins(targetId)
-        !(projectAdmins.size == 1 && projectAdmins.first().userId == user.id)
-    }.orElseThrow { user, projectId ->
-        FailedPreconditionException(
-            "$action, because the user with the ID '${user.id}' is the last admin of the project with the ID " +
-                "'$projectId'.",
-        )
-    }
 
     override fun isProjectOrServerAdmin(accessType: AccessType, entityType: EntityType) = isProjectAdmin()
         .orElse(isServerAdmin().forTarget())

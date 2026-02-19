@@ -110,8 +110,7 @@ class InvitationService(
     override suspend fun inviteUserToProject(request: GrpcProject.Member.Invite) = withUser(userRepo) { currentUser ->
         val projectId = parseUUID(request.projectId, EntityType.PROJECT)
 
-        projectAccessChecker.isProjectOrServerAdmin(AccessType.READ)
-            .checkFor(currentUser, projectId)
+        projectAccessChecker.isProjectOrServerAdmin(currentUser, projectId, AccessType.READ)
 
         val project = projectRepo.getProjectById(projectId).getOrThrow()
 
