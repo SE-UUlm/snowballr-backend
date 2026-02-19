@@ -51,6 +51,9 @@ private class StructureRules {
             // Service layer
             .layer("Service")
             .definedBy("$BASE_PACKAGE.service..")
+            // Access Checkers
+            .layer("Access")
+            .definedBy("$BASE_PACKAGE.access..")
             // Repository layer
             .layer("Repository")
             .definedBy("$BASE_PACKAGE.repository..")
@@ -70,8 +73,10 @@ private class StructureRules {
             .mayOnlyBeAccessedByLayers("Main")
             .whereLayer("Service")
             .mayOnlyBeAccessedByLayers("gRPC Server", "Main")
+            .whereLayer("Access")
+            .mayOnlyBeAccessedByLayers("Service", "Main")
             .whereLayer("Repository")
-            .mayOnlyBeAccessedByLayers("Service", "Scheduler", "Main")
+            .mayOnlyBeAccessedByLayers("Service", "Access", "Scheduler", "Main")
             .whereLayer("Table")
             .mayOnlyBeAccessedByLayers("Repository", "DB")
             .whereLayer("DB")
@@ -97,6 +102,9 @@ private class StructureRules {
             // Service layer
             .layer("Service")
             .definedBy("$BASE_PACKAGE.service..")
+            // Access Checkers
+            .layer("Access")
+            .definedBy("$BASE_PACKAGE.access..")
             // Repository layer
             .layer("Repository")
             .definedBy("$BASE_PACKAGE.repository..")
@@ -113,12 +121,14 @@ private class StructureRules {
             .whereLayer("Main")
             .mayNotBeAccessedByAnyLayer()
             .whereLayer("Main")
-            .mayOnlyAccessLayers("gRPC Server", "Service", "Repository", "DB", "Scheduler")
+            .mayOnlyAccessLayers("gRPC Server", "Service", "Access", "Repository", "DB", "Scheduler")
             .whereLayer("Input Validation")
             .mayNotAccessAnyLayer()
             .whereLayer("gRPC Server")
             .mayOnlyAccessLayers("Service", "Input Validation", "Scheduler")
             .whereLayer("Service")
+            .mayOnlyAccessLayers("Repository", "Access")
+            .whereLayer("Access")
             .mayOnlyAccessLayers("Repository")
             .whereLayer("Repository")
             .mayOnlyAccessLayers("Table", "DB")
@@ -168,17 +178,36 @@ private class NamingConventions {
     }
 
     @ArchTest
-    fun `When a class is in the service package, then it should have the 'Service', 'AccessRule' or 'AccessChecker' suffix`(
-        classes: JavaClasses,
-    ) {
+    fun `When a class is in the service package, then it should have the 'Service' suffix`(classes: JavaClasses) {
         classes()
             .that()
             .resideInAPackage("$BASE_PACKAGE.service..")
             .should()
             .haveNameMatching(".*Service.*")
+            .because("All services should have the 'Service' suffix")
+            .check(classes)
+    }
+
+    @ArchTest
+    fun `When a class is in the access package, then it should have the 'AccessRule' or 'AccessChecker' suffix`(
+        classes: JavaClasses,
+    ) {
+        classes()
+            .that()
+            .resideInAPackage("$BASE_PACKAGE.access..")
+            .should()
+            .haveNameMatching(".*AccessChecker.*")
             .orShould(haveNameMatching(".*AccessRule.*"))
-            .orShould(haveNameMatching(".*AccessChecker.*"))
-            .because("All services should have the 'Service', 'AccessRule' or 'AccessChecker' suffix")
+            .because("All access checkers should have the 'AccessChecker' or 'AccessRule' suffix")
+            .check(classes)
+
+        // Only access rules
+        classes()
+            .that()
+            .resideInAPackage("$BASE_PACKAGE.access.rules..")
+            .should()
+            .haveNameMatching(".*AccessRule.*")
+            .because("All access rules should have the 'AccessRule' suffix")
             .check(classes)
     }
 

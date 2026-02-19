@@ -1,5 +1,8 @@
 package se.uulm.snowballr.backend.service
 
+import se.uulm.snowballr.backend.access.IProjectAccessChecker
+import se.uulm.snowballr.backend.access.IProjectMemberAccessChecker
+import se.uulm.snowballr.backend.access.rules.checkFor
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.InvitationToken
@@ -14,9 +17,6 @@ import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
-import se.uulm.snowballr.backend.service.accessrules.IProjectAccessChecker
-import se.uulm.snowballr.backend.service.accessrules.IProjectMemberAccessChecker
-import se.uulm.snowballr.backend.service.accessrules.checkFor
 import snowballr.ProjectOuterClass.MemberRole
 import java.util.UUID
 import snowballr.ProjectOuterClass.Project.Member as GrpcProjectMember

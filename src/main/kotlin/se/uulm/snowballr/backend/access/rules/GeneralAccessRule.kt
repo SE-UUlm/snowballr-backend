@@ -1,4 +1,4 @@
-package se.uulm.snowballr.backend.service.accessrules
+package se.uulm.snowballr.backend.access.rules
 
 import se.uulm.snowballr.backend.model.dto.isServerAdmin
 import javax.annotation.CheckReturnValue

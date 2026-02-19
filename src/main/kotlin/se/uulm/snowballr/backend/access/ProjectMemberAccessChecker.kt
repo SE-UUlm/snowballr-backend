@@ -1,5 +1,10 @@
-package se.uulm.snowballr.backend.service.accessrules
+package se.uulm.snowballr.backend.access
 
+import se.uulm.snowballr.backend.access.rules.AccessRuleCompoundUUID
+import se.uulm.snowballr.backend.access.rules.andAlso
+import se.uulm.snowballr.backend.access.rules.checkFor
+import se.uulm.snowballr.backend.access.rules.forProperty
+import se.uulm.snowballr.backend.access.rules.orElse
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException

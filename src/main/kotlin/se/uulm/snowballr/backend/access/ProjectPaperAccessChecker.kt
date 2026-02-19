@@ -1,5 +1,6 @@
-package se.uulm.snowballr.backend.service.accessrules
+package se.uulm.snowballr.backend.access
 
+import se.uulm.snowballr.backend.access.rules.checkFor
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.User

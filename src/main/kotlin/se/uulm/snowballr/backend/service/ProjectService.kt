@@ -2,6 +2,8 @@ package se.uulm.snowballr.backend.service
 
 import com.google.protobuf.timestamp
 import com.google.protobuf.util.FieldMaskUtil
+import se.uulm.snowballr.backend.access.IProjectAccessChecker
+import se.uulm.snowballr.backend.access.rules.checkFor
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
@@ -17,8 +19,6 @@ import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
-import se.uulm.snowballr.backend.service.accessrules.IProjectAccessChecker
-import se.uulm.snowballr.backend.service.accessrules.checkFor
 import snowballr.ProjectOuterClass.MemberRole
 import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ProjectOuterClass.ProjectStatus

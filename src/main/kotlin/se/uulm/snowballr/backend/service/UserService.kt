@@ -2,6 +2,11 @@ package se.uulm.snowballr.backend.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.viascom.nanoid.NanoId
+import se.uulm.snowballr.backend.access.IProjectAccessChecker
+import se.uulm.snowballr.backend.access.IUserAccessChecker
+import se.uulm.snowballr.backend.access.rules.checkFor
+import se.uulm.snowballr.backend.access.rules.isServerAdmin
+import se.uulm.snowballr.backend.access.rules.orElseThrow
 import se.uulm.snowballr.backend.auth.PasswordUtils
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.formatting.daysToHumanReadable
@@ -21,11 +26,6 @@ import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.IVerificationTokenTableRepo
-import se.uulm.snowballr.backend.service.accessrules.IProjectAccessChecker
-import se.uulm.snowballr.backend.service.accessrules.IUserAccessChecker
-import se.uulm.snowballr.backend.service.accessrules.checkFor
-import se.uulm.snowballr.backend.service.accessrules.isServerAdmin
-import se.uulm.snowballr.backend.service.accessrules.orElseThrow
 import snowballr.Authentication
 import snowballr.ProjectOuterClass.ProjectStatus
 import java.util.UUID

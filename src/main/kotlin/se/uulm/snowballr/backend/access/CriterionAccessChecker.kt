@@ -1,5 +1,11 @@
-package se.uulm.snowballr.backend.service.accessrules
+package se.uulm.snowballr.backend.access
 
+import se.uulm.snowballr.backend.access.rules.AccessRule
+import se.uulm.snowballr.backend.access.rules.checkFor
+import se.uulm.snowballr.backend.access.rules.forTarget
+import se.uulm.snowballr.backend.access.rules.isServerAdmin
+import se.uulm.snowballr.backend.access.rules.orElse
+import se.uulm.snowballr.backend.access.rules.orElseThrow
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.Criterion
