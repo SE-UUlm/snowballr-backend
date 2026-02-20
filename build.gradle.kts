@@ -143,6 +143,9 @@ kover {
                     "se.uulm.snowballr.backend.grpc", // grpc server implementation
                     "se.uulm.snowballr.backend.scheduler", // job scheduler
                 )
+                classes(
+                    "se.uulm.snowballr.backend.MainKt", // main entry point
+                )
             }
         }
 
