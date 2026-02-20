@@ -186,7 +186,7 @@ isEntityActive()
 ```
 
 Custom access rules should be defined in the
-[`service/accessrules/`](https://github.com/SE-UUlm/snowballr-backend/tree/develop/src/main/kotlin/se/uulm/snowballr/backend/access/rules)
+[`access/rules/`](https://github.com/SE-UUlm/snowballr-backend/tree/develop/src/main/kotlin/se/uulm/snowballr/backend/access/rules)
 directory.
 Each access rule should:
 
@@ -212,8 +212,8 @@ instance for an entity `Example` the respective `EntityAccessChecker` class woul
 ```kotlin
 // In EntityAccessChecker.kt
 @CheckReturnValue
-fun isAllowedToDeleteEntity(currentUser: User, entity: Entity) {
-    return isEntityActive()
+suspend fun isAllowedToDeleteEntity(currentUser: User, entity: Entity) {
+    isEntityActive()
         .andAlso(isEntityOwner())
         .orElseThrow(EntityNotDeletableException())
         .checkFor(currentUser, entity)
@@ -223,7 +223,7 @@ fun isAllowedToDeleteEntity(currentUser: User, entity: Entity) {
 override suspend fun deleteEntity(entityId: UUID) = withUser(userRepo) { currentUser ->
     val entity = repo.getEntityById(entityId).getOrThrow()
 
-    accessChecker.isAllowedToDeleteEntity()
+    accessChecker.isAllowedToDeleteEntity(currentUser, entity)
 }
 ```
 
