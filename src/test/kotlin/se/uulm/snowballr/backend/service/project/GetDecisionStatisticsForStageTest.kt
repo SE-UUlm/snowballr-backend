@@ -33,7 +33,7 @@ class GetDecisionStatisticsForStageTest : MainServiceTest() {
             .build()
 
         mockCurrentUser(user)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
+        coEvery { projectMemberRepoMock.isProjectMember(project.id, user.id) } returns false
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectPaperRepoMock.getAllProjectPapersForProject(project.id) } returns emptyList()
 
@@ -44,14 +44,13 @@ class GetDecisionStatisticsForStageTest : MainServiceTest() {
     fun `When a project member retrieves the decision statistics, then no exception is thrown`() = runTest {
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject()
-        val projectMember = DataBuilder.createExampleProjectMember(userId = user.id, projectId = project.id)
 
         val request = validRequestBuilder
             .setProjectId(project.id.toString())
             .build()
 
         mockCurrentUser(user)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
+        coEvery { projectMemberRepoMock.isProjectMember(project.id, user.id) } returns true
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectPaperRepoMock.getAllProjectPapersForProject(project.id) } returns emptyList()
 
@@ -69,7 +68,7 @@ class GetDecisionStatisticsForStageTest : MainServiceTest() {
 
         mockCurrentUser(user)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
+        coEvery { projectMemberRepoMock.isProjectMember(project.id, user.id) } returns false
 
         assertThrows<UnauthorizedException> { mainService.getDecisionStatisticsForStage(request) }
     }
@@ -100,7 +99,7 @@ class GetDecisionStatisticsForStageTest : MainServiceTest() {
             .build()
 
         mockCurrentUser(user)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
+        coEvery { projectMemberRepoMock.isProjectMember(project.id, user.id) } returns false
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
         assertThrows<StageNotFoundException> { mainService.getDecisionStatisticsForStage(request) }
@@ -118,7 +117,7 @@ class GetDecisionStatisticsForStageTest : MainServiceTest() {
 
         mockCurrentUser(user)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
+        coEvery { projectMemberRepoMock.isProjectMember(project.id, user.id) } returns false
         coEvery { projectPaperRepoMock.getAllProjectPapersForProject(project.id) } returns emptyList()
 
         assertDoesNotThrow { mainService.getDecisionStatisticsForStage(request) }
@@ -166,7 +165,7 @@ class GetDecisionStatisticsForStageTest : MainServiceTest() {
             .build()
 
         mockCurrentUser(user)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
+        coEvery { projectMemberRepoMock.isProjectMember(project.id, user.id) } returns false
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectPaperRepoMock.getAllProjectPapersForProject(project.id) } returns
             projectPapers + papersInOtherStage

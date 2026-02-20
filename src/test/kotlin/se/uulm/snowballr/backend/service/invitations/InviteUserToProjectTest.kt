@@ -53,14 +53,11 @@ class InviteUserToProjectTest : MainServiceTest() {
         val projectAdminWithUser = DataBuilder.createExampleProjectMemberWithUser(projectAdmin, currentUser)
 
         mockCurrentUser(currentUser)
+        coEvery { projectRepoMock.getProjectById(projectId) } returns Result.success(project)
         if (stopBefore == projectMemberRepoMock::getAllProjectAdmins) {
             return
         }
         coEvery { projectMemberRepoMock.getAllProjectAdmins(projectId) } returns listOf(projectAdmin)
-        if (stopBefore == projectRepoMock::getProjectById) {
-            return
-        }
-        coEvery { projectRepoMock.getProjectById(projectId) } returns Result.success(project)
         if (stopBefore == projectMemberRepoMock::getProjectMembersWithUsers) {
             return
         }
@@ -98,7 +95,7 @@ class InviteUserToProjectTest : MainServiceTest() {
 
     @Test
     fun `When the project is not found, then a TestSpecificException is thrown`() = runTest {
-        mockInviteUserToProject(stopBefore = projectRepoMock::getProjectById)
+        mockInviteUserToProject(stopBefore = projectMemberRepoMock::getProjectMembersWithUsers)
         coEvery { projectRepoMock.getProjectById(projectId) } returns Result.failure(TestSpecificException())
 
         assertThrows<TestSpecificException> { mainService.inviteUserToProject(validInviteUserRequest.build()) }
@@ -112,7 +109,7 @@ class InviteUserToProjectTest : MainServiceTest() {
             status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ARCHIVED,
         )
 
-        mockInviteUserToProject(stopBefore = projectRepoMock::getProjectById)
+        mockInviteUserToProject(stopBefore = projectMemberRepoMock::getProjectMembersWithUsers)
         coEvery { projectRepoMock.getProjectById(inactiveProject.id) } returns Result.success(inactiveProject)
 
         assertThrows<FailedPreconditionException> { mainService.inviteUserToProject(validInviteUserRequest.build()) }

@@ -22,7 +22,7 @@ class GetProjectByIdTest : MainServiceTest() {
 
         mockCurrentUser(noAccessUser)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
+        coEvery { projectMemberRepoMock.isProjectMember(project.id, noAccessUser.id) } returns false
 
         assertThrows<UnauthorizedException> { mainService.getProjectById(project.id) }
     }
@@ -34,7 +34,7 @@ class GetProjectByIdTest : MainServiceTest() {
 
         mockCurrentUser(adminUser)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
+        coEvery { projectMemberRepoMock.isProjectMember(project.id, adminUser.id) } returns false
 
         assertDoesNotThrow { mainService.getProjectById(project.id) }
     }
@@ -43,11 +43,10 @@ class GetProjectByIdTest : MainServiceTest() {
     fun `When the requesting user is a project member, then the project can be retrieved`() = runTest {
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject()
-        val projectMember = DataBuilder.createExampleProjectMember(userId = user.id, projectId = project.id)
 
         mockCurrentUser(user)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
+        coEvery { projectMemberRepoMock.isProjectMember(project.id, user.id) } returns true
 
         assertDoesNotThrow { mainService.getProjectById(project.id) }
     }
@@ -78,11 +77,10 @@ class GetProjectByIdTest : MainServiceTest() {
     fun `When the project is deleted by a server admin, then no exception is thrown`() = runTest {
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
         val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_DELETED)
-        val projectMember = DataBuilder.createExampleProjectMember(userId = user.id, projectId = project.id)
 
         mockCurrentUser(user)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
+        coEvery { projectMemberRepoMock.isProjectMember(project.id, user.id) } returns true
 
         assertDoesNotThrow { mainService.getProjectById(project.id) }
     }

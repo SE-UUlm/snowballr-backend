@@ -20,7 +20,7 @@ class GetCriterionByIdTest : MainServiceTest() {
         val criterion = DataBuilder.createExampleProjectCriterion(projectId = project.id, createdBy = adminUser.id)
 
         mockCurrentUser(adminUser)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
+        coEvery { projectMemberRepoMock.isProjectMember(project.id, adminUser.id) } returns false
         coEvery { criterionRepoMock.getCriterionById(criterion.id) } returns Result.success(criterion)
 
         assertDoesNotThrow { mainService.getCriterionById(criterion.id) }
@@ -32,10 +32,9 @@ class GetCriterionByIdTest : MainServiceTest() {
             val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
             val project = DataBuilder.createExampleProject()
             val criterion = DataBuilder.createExampleProjectCriterion(projectId = project.id, createdBy = user.id)
-            val projectMember = DataBuilder.createExampleProjectMember(userId = user.id, projectId = project.id)
 
             mockCurrentUser(user)
-            coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
+            coEvery { projectMemberRepoMock.isProjectMember(project.id, user.id) } returns true
             coEvery { criterionRepoMock.getCriterionById(criterion.id) } returns Result.success(criterion)
 
             assertDoesNotThrow { mainService.getCriterionById(criterion.id) }
@@ -52,7 +51,7 @@ class GetCriterionByIdTest : MainServiceTest() {
             )
 
             mockCurrentUser(noAccessUser)
-            coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
+            coEvery { projectMemberRepoMock.isProjectMember(project.id, noAccessUser.id) } returns false
             coEvery { criterionRepoMock.getCriterionById(criterion.id) } returns Result.success(criterion)
 
             assertThrows<UnauthorizedException> { mainService.getCriterionById(criterion.id) }

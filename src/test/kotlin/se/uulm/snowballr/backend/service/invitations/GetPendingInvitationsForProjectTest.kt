@@ -24,7 +24,7 @@ class GetPendingInvitationsForProjectTest : MainServiceTest() {
         val project = DataBuilder.createExampleProject()
 
         mockCurrentUser(currentUser)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
+        coEvery { projectMemberRepoMock.isProjectMember(project.id, currentUser.id) } returns false
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { invitationTokenRepoMock.getActiveInvitationTokensForProject(project.id) } returns emptyList()
 
@@ -36,11 +36,10 @@ class GetPendingInvitationsForProjectTest : MainServiceTest() {
         runTest {
             val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
             val project = DataBuilder.createExampleProject()
-            val projectMember = DataBuilder.createExampleProjectMember(userId = currentUser.id, projectId = project.id)
 
             mockCurrentUser(currentUser)
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-            coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
+            coEvery { projectMemberRepoMock.isProjectMember(project.id, currentUser.id) } returns true
             coEvery { invitationTokenRepoMock.getActiveInvitationTokensForProject(project.id) } returns emptyList()
 
             assertDoesNotThrow { mainService.getPendingInvitationsForProject(project.id) }
@@ -66,7 +65,7 @@ class GetPendingInvitationsForProjectTest : MainServiceTest() {
             )
 
             mockCurrentUser(currentUser)
-            coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
+            coEvery { projectMemberRepoMock.isProjectMember(project.id, currentUser.id) } returns false
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
             coEvery {
                 invitationTokenRepoMock.getActiveInvitationTokensForProject(project.id)
@@ -103,7 +102,7 @@ class GetPendingInvitationsForProjectTest : MainServiceTest() {
 
             mockCurrentUser(currentUser)
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-            coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
+            coEvery { projectMemberRepoMock.isProjectMember(project.id, currentUser.id) } returns false
 
             assertThrows<UnauthorizedException> { mainService.getPendingInvitationsForProject(project.id) }
         }

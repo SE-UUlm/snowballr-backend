@@ -8,6 +8,20 @@ import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 import org.simplejavamail.api.mailer.Mailer
 import org.simplejavamail.mailer.MailerBuilder
+import se.uulm.snowballr.backend.access.CriterionAccessChecker
+import se.uulm.snowballr.backend.access.ICriterionAccessChecker
+import se.uulm.snowballr.backend.access.IInvitationAccessChecker
+import se.uulm.snowballr.backend.access.IProjectAccessChecker
+import se.uulm.snowballr.backend.access.IProjectMemberAccessChecker
+import se.uulm.snowballr.backend.access.IProjectPaperAccessChecker
+import se.uulm.snowballr.backend.access.IReviewAccessChecker
+import se.uulm.snowballr.backend.access.IUserAccessChecker
+import se.uulm.snowballr.backend.access.InvitationAccessChecker
+import se.uulm.snowballr.backend.access.ProjectAccessChecker
+import se.uulm.snowballr.backend.access.ProjectMemberAccessChecker
+import se.uulm.snowballr.backend.access.ProjectPaperAccessChecker
+import se.uulm.snowballr.backend.access.ReviewAccessChecker
+import se.uulm.snowballr.backend.access.UserAccessChecker
 import se.uulm.snowballr.backend.auth.AuthenticationManager
 import se.uulm.snowballr.backend.auth.CookieManager
 import se.uulm.snowballr.backend.auth.IAuthenticationManager
@@ -80,16 +94,6 @@ import se.uulm.snowballr.backend.service.ProjectService
 import se.uulm.snowballr.backend.service.ReadingListService
 import se.uulm.snowballr.backend.service.ReviewService
 import se.uulm.snowballr.backend.service.UserService
-import se.uulm.snowballr.backend.service.accessrules.AccessChecker
-import se.uulm.snowballr.backend.service.accessrules.CriterionAccessChecker
-import se.uulm.snowballr.backend.service.accessrules.IAccessChecker
-import se.uulm.snowballr.backend.service.accessrules.ICriterionAccessChecker
-import se.uulm.snowballr.backend.service.accessrules.IProjectAccessChecker
-import se.uulm.snowballr.backend.service.accessrules.IReviewAccessChecker
-import se.uulm.snowballr.backend.service.accessrules.IUserAccessChecker
-import se.uulm.snowballr.backend.service.accessrules.ProjectAccessChecker
-import se.uulm.snowballr.backend.service.accessrules.ReviewAccessChecker
-import se.uulm.snowballr.backend.service.accessrules.UserAccessChecker
 
 /**
  * Defines the Koin dependency injection module for the application.
@@ -214,11 +218,12 @@ private fun Module.customServicesDeps() {
 fun Module.serviceLayerDeps() {
     // Access Checkers
     singleOf(::ProjectAccessChecker) { bind<IProjectAccessChecker>() }
+    singleOf(::UserAccessChecker) { bind<IUserAccessChecker>() }
     singleOf(::CriterionAccessChecker) { bind<ICriterionAccessChecker>() }
     singleOf(::ReviewAccessChecker) { bind<IReviewAccessChecker>() }
-    singleOf(::UserAccessChecker) { bind<IUserAccessChecker>() }
-    // The main access checker that is used to combine the specific access checkers
-    singleOf(::AccessChecker) { bind<IAccessChecker>() }
+    singleOf(::ProjectMemberAccessChecker) { bind<IProjectMemberAccessChecker>() }
+    singleOf(::ProjectPaperAccessChecker) { bind<IProjectPaperAccessChecker>() }
+    singleOf(::InvitationAccessChecker) { bind<IInvitationAccessChecker>() }
 
     // All services that are directly used by the MainService
     singleOf(::ProjectService) { bind<IProjectService>() }

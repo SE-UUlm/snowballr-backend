@@ -1,7 +1,8 @@
 package se.uulm.snowballr.backend.service
 
+import se.uulm.snowballr.backend.access.IProjectAccessChecker
+import se.uulm.snowballr.backend.access.IProjectMemberAccessChecker
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
-import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.InvitationToken
 import se.uulm.snowballr.backend.model.dto.User
@@ -15,12 +16,6 @@ import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
-import se.uulm.snowballr.backend.service.accessrules.AccessRuleCompoundUUID
-import se.uulm.snowballr.backend.service.accessrules.IAccessChecker
-import se.uulm.snowballr.backend.service.accessrules.andAlso
-import se.uulm.snowballr.backend.service.accessrules.checkFor
-import se.uulm.snowballr.backend.service.accessrules.forProperty
-import se.uulm.snowballr.backend.service.accessrules.orElse
 import snowballr.ProjectOuterClass.MemberRole
 import java.util.UUID
 import snowballr.ProjectOuterClass.Project.Member as GrpcProjectMember
@@ -53,18 +48,20 @@ interface IProjectMemberService {
  * @param projectRepo The repository responsible for managing persistence operations for projects.
  * @param userRepo The repository responsible for managing persistence operations for users.
  * @param invitationTokenRepo The repository responsible for managing persistence operations for invitation tokens.
- * @param accessChecker Interface for checking access permissions based on defined rules.
+ * @param accessChecker Interface for checking access permissions for project members based on defined rules.
+ * @param projectAccessChecker Interface for checking access permissions for projects based on defined rules.
  */
 class ProjectMemberService(
     private val repo: IProjectMemberTableRepo,
     private val projectRepo: IProjectTableRepo,
     private val userRepo: IUserTableRepo,
     private val invitationTokenRepo: IInvitationTokenTableRepo,
-    private val accessChecker: IAccessChecker,
+    private val accessChecker: IProjectMemberAccessChecker,
+    private val projectAccessChecker: IProjectAccessChecker,
 ) : IProjectMemberService {
     override suspend fun getProjectMembers(projectId: UUID): GrpcProjectMember.List =
         withUser(userRepo) { currentUser ->
-            accessChecker.isAllowedToReadProject().checkFor(currentUser, projectId)
+            projectAccessChecker.isAllowedToReadProject(currentUser, projectId)
 
             val projectMembersWithUsers = repo.getProjectMembersWithUsers(projectId)
             projectMembersWithUsers.toGrpcProjectMembers()
@@ -75,7 +72,7 @@ class ProjectMemberService(
             val projectId = parseUUID(request.projectId, EntityType.PROJECT)
             val userId = parseUUID(request.userId, EntityType.USER)
 
-            isAllowedToUpdateMemberRole(currentUser, projectId)
+            accessChecker.isAllowedToUpdateMemberRole(currentUser, projectId)
 
             val user = userRepo.getUserById(userId).getOrThrow()
 
@@ -88,7 +85,7 @@ class ProjectMemberService(
             }
 
             if (currentMember.isProjectAdmin() && request.newRole != MemberRole.MEMBER_ROLE_ADMIN) {
-                accessChecker.isNotLastProjectAdmin("Cannot demote the user").checkFor(user, projectId)
+                projectAccessChecker.isNotLastProjectAdmin(user, projectId, "Cannot demote the user")
             }
 
             repo.updateProjectMemberRole(projectId, userId, request.newRole)
@@ -109,13 +106,11 @@ class ProjectMemberService(
     }
 
     private suspend fun removeProjectMemberUser(currentUser: User, requestedUser: User, projectId: UUID) {
-        val userProjectCompound = AccessRuleCompoundUUID(requestedUser.id, projectId)
-
         if (!repo.isProjectMember(projectId, requestedUser.id)) {
             return
         }
 
-        isAllowedToRemoveMember(currentUser, userProjectCompound)
+        accessChecker.isAllowedToRemoveMember(currentUser, requestedUser.id, projectId)
 
         if (!projectRepo.doesProjectExistById(projectId)) {
             throw ProjectNotFoundException(projectId)
@@ -126,41 +121,16 @@ class ProjectMemberService(
         if (isLastMember) {
             projectRepo.softDeleteProject(projectId)
         } else {
-            accessChecker.isNotLastProjectAdmin("The user cannot be removed from the project")
-                .checkFor(requestedUser, projectId)
+            projectAccessChecker
+                .isNotLastProjectAdmin(requestedUser, projectId, "The user cannot be removed from the project")
         }
 
         repo.removeProjectMember(projectId, requestedUser.id)
     }
 
-    private suspend fun removeProjectMemberInvitation(
-        currentUser: User,
-        projectId: UUID,
-        invitationToken: InvitationToken,
-    ) {
-        isAllowedToRemoveInvitation(currentUser, projectId)
+    private suspend fun removeProjectMemberInvitation(currentUser: User, projectId: UUID, token: InvitationToken) {
+        accessChecker.isAllowedToRemoveInvitation(currentUser, projectId)
 
-        invitationTokenRepo.deleteInvitationToken(invitationToken.token)
-    }
-
-    @Suppress("RedundantSuspendModifier", "RedundantSuppression")
-    private suspend fun isAllowedToUpdateMemberRole(currentUser: User, projectId: UUID) {
-        accessChecker.isProjectOrServerAdmin(AccessType.UPDATE)
-            .andAlso(accessChecker.isProjectExistent())
-            .checkFor(currentUser, projectId)
-    }
-
-    private suspend fun isAllowedToRemoveMember(currentUser: User, userProjectCompound: AccessRuleCompoundUUID) {
-        accessChecker.isSameUserById()
-            .forProperty(AccessRuleCompoundUUID::firstTarget)
-            .orElse(
-                accessChecker.isProjectOrServerAdmin(AccessType.DELETE)
-                    .forProperty(AccessRuleCompoundUUID::secondTarget),
-            )
-            .checkFor(currentUser, userProjectCompound)
-    }
-
-    private suspend fun isAllowedToRemoveInvitation(currentUser: User, projectId: UUID) {
-        accessChecker.isProjectOrServerAdmin(AccessType.DELETE).checkFor(currentUser, projectId)
+        invitationTokenRepo.deleteInvitationToken(token.token)
     }
 }

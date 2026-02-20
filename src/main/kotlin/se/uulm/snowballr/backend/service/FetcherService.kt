@@ -24,7 +24,7 @@ interface IFetcherService {
  * correct fetchers (specified in the project settings) are accessed using the
  * correct options (also specified in the project settings).
  *
- * @param fetcherManager The [FetcherManager] that manages the available fetchers.
+ * @param fetcherManager The [IFetcherManager] that manages the available fetchers.
  */
 class FetcherService(
     private val fetcherManager: IFetcherManager,

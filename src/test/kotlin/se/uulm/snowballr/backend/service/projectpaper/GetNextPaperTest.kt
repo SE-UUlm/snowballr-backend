@@ -26,7 +26,7 @@ class GetNextPaperTest : MainServiceTest() {
         coEvery {
             projectPaperRepoMock.getProjectPaperById(projectPaper.id)
         } returns Result.success(projectPaper)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
+        coEvery { projectMemberRepoMock.isProjectMember(project.id, currentUser.id) } returns false
         coEvery { projectRepoMock.getProjectById(projectPaper.projectId) } returns Result.success(project)
         coEvery {
             projectPaperRepoMock.getAdjacentPaper(project.id, projectPaper.localPaperId, PaperNavigationDirection.NEXT)
@@ -46,13 +46,12 @@ class GetNextPaperTest : MainServiceTest() {
         val paper = DataBuilder.createExamplePaper(authors = listOf(author))
         val projectPaper = DataBuilder.createExampleProjectPaper(projectId = project.id, paperId = paper.id)
         val nextProjectPaper = DataBuilder.createExampleProjectPaper()
-        val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
 
         mockCurrentUser(currentUser)
         coEvery {
             projectPaperRepoMock.getProjectPaperById(projectPaper.id)
         } returns Result.success(projectPaper)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
+        coEvery { projectMemberRepoMock.isProjectMember(project.id, currentUser.id) } returns true
         coEvery { projectRepoMock.getProjectById(projectPaper.projectId) } returns Result.success(project)
         coEvery {
             projectPaperRepoMock.getAdjacentPaper(project.id, projectPaper.localPaperId, PaperNavigationDirection.NEXT)
@@ -74,7 +73,7 @@ class GetNextPaperTest : MainServiceTest() {
             mockCurrentUser(currentUser)
             coEvery { projectPaperRepoMock.getProjectPaperById(projectPaper.id) } returns Result.success(projectPaper)
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-            coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
+            coEvery { projectMemberRepoMock.isProjectMember(project.id, currentUser.id) } returns false
 
             assertThrows<UnauthorizedException> { mainService.getNextPaper(projectPaper.id) }
         }
@@ -85,13 +84,12 @@ class GetNextPaperTest : MainServiceTest() {
         val project = DataBuilder.createExampleProject()
         val paper = DataBuilder.createExamplePaper()
         val projectPaper = DataBuilder.createExampleProjectPaper(projectId = project.id, paperId = paper.id)
-        val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
 
         mockCurrentUser(currentUser)
         coEvery {
             projectPaperRepoMock.getProjectPaperById(projectPaper.id)
         } returns Result.success(projectPaper)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
+        coEvery { projectMemberRepoMock.isProjectMember(project.id, currentUser.id) } returns true
         coEvery { projectRepoMock.getProjectById(projectPaper.projectId) } returns Result.success(project)
         coEvery {
             projectPaperRepoMock.getAdjacentPaper(project.id, projectPaper.localPaperId, PaperNavigationDirection.NEXT)

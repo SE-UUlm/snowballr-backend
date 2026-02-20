@@ -34,7 +34,7 @@ class GetNextPaperToReviewTest : MainServiceTest() {
             projectPaperRepoMock.getProjectPaperById(projectPaper.id)
         } returns Result.success(projectPaper)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
+        coEvery { projectMemberRepoMock.isProjectMember(project.id, currentUser.id) } returns false
         coEvery {
             projectPaperRepoMock.getSubsequentProjectPapers(
                 project.id, projectPaper.localPaperId, projectPaper.stage,
@@ -54,7 +54,6 @@ class GetNextPaperToReviewTest : MainServiceTest() {
     fun `When a project member requests the next project paper, then no exception is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject()
-        val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
         val paper = DataBuilder.createExamplePaper()
         val projectPaper = DataBuilder.createExampleProjectPaper(
             projectId = project.id,
@@ -70,7 +69,7 @@ class GetNextPaperToReviewTest : MainServiceTest() {
             projectPaperRepoMock.getProjectPaperById(projectPaper.id)
         } returns Result.success(projectPaper)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
+        coEvery { projectMemberRepoMock.isProjectMember(project.id, currentUser.id) } returns true
         coEvery {
             projectPaperRepoMock.getSubsequentProjectPapers(
                 project.id, projectPaper.localPaperId, projectPaper.stage,
@@ -98,7 +97,7 @@ class GetNextPaperToReviewTest : MainServiceTest() {
                 projectPaperRepoMock.getProjectPaperById(projectPaper.id)
             } returns Result.success(projectPaper)
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-            coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
+            coEvery { projectMemberRepoMock.isProjectMember(project.id, currentUser.id) } returns false
 
             assertThrows<UnauthorizedException> { mainService.getNextPaperToReview(projectPaper.id) }
         }
@@ -107,7 +106,6 @@ class GetNextPaperToReviewTest : MainServiceTest() {
     fun `When no next paper to review exists, then a FailedPreconditionException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val project = DataBuilder.createExampleProject()
-        val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
         val paper = DataBuilder.createExamplePaper()
         val projectPaper = DataBuilder.createExampleProjectPaper(
             projectId = project.id,
@@ -123,7 +121,7 @@ class GetNextPaperToReviewTest : MainServiceTest() {
             projectPaperRepoMock.getProjectPaperById(projectPaper.id)
         } returns Result.success(projectPaper)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
+        coEvery { projectMemberRepoMock.isProjectMember(project.id, currentUser.id) } returns true
         coEvery {
             projectPaperRepoMock.getSubsequentProjectPapers(
                 project.id, projectPaper.localPaperId, projectPaper.stage,
@@ -141,7 +139,6 @@ class GetNextPaperToReviewTest : MainServiceTest() {
         runTest {
             val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
             val project = DataBuilder.createExampleProject()
-            val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
             val currentPaper = DataBuilder.createExamplePaper()
             val paper1 = DataBuilder.createExamplePaper()
             val paper2 = DataBuilder.createExamplePaper()
@@ -172,7 +169,7 @@ class GetNextPaperToReviewTest : MainServiceTest() {
                 projectPaperRepoMock.getProjectPaperById(currentProjectPaper.id)
             } returns Result.success(currentProjectPaper)
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-            coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
+            coEvery { projectMemberRepoMock.isProjectMember(project.id, currentUser.id) } returns true
             coEvery {
                 projectPaperRepoMock.getSubsequentProjectPapers(
                     project.id, currentProjectPaper.localPaperId, currentProjectPaper.stage,
@@ -194,7 +191,6 @@ class GetNextPaperToReviewTest : MainServiceTest() {
         runTest {
             val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
             val project = DataBuilder.createExampleProject()
-            val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
             val currentPaper = DataBuilder.createExamplePaper()
             val paper1 = DataBuilder.createExamplePaper()
             val paper2 = DataBuilder.createExamplePaper()
@@ -233,7 +229,7 @@ class GetNextPaperToReviewTest : MainServiceTest() {
                 projectPaperRepoMock.getProjectPaperById(currentProjectPaper.id)
             } returns Result.success(currentProjectPaper)
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-            coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
+            coEvery { projectMemberRepoMock.isProjectMember(project.id, currentUser.id) } returns true
             coEvery {
                 projectPaperRepoMock.getSubsequentProjectPapers(
                     project.id, currentProjectPaper.localPaperId, currentProjectPaper.stage,
@@ -257,7 +253,6 @@ class GetNextPaperToReviewTest : MainServiceTest() {
         runTest {
             val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
             val project = DataBuilder.createExampleProject()
-            val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
             val currentPaper = DataBuilder.createExamplePaper()
             val paper1 = DataBuilder.createExamplePaper()
             val paper2 = DataBuilder.createExamplePaper()
@@ -287,7 +282,7 @@ class GetNextPaperToReviewTest : MainServiceTest() {
                 projectPaperRepoMock.getProjectPaperById(currentProjectPaper.id)
             } returns Result.success(currentProjectPaper)
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-            coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
+            coEvery { projectMemberRepoMock.isProjectMember(project.id, currentUser.id) } returns true
             coEvery {
                 projectPaperRepoMock.getSubsequentProjectPapers(
                     project.id, currentProjectPaper.localPaperId, currentProjectPaper.stage,
@@ -309,7 +304,6 @@ class GetNextPaperToReviewTest : MainServiceTest() {
         runTest {
             val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
             val project = DataBuilder.createExampleProject()
-            val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
             val currentPaper = DataBuilder.createExamplePaper()
             val paper1 = DataBuilder.createExamplePaper()
             val paper2 = DataBuilder.createExamplePaper()
@@ -339,7 +333,7 @@ class GetNextPaperToReviewTest : MainServiceTest() {
                 projectPaperRepoMock.getProjectPaperById(currentProjectPaper.id)
             } returns Result.success(currentProjectPaper)
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-            coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
+            coEvery { projectMemberRepoMock.isProjectMember(project.id, currentUser.id) } returns true
             coEvery {
                 projectPaperRepoMock.getSubsequentProjectPapers(
                     project.id, currentProjectPaper.localPaperId, currentProjectPaper.stage,

@@ -1,11 +1,12 @@
 package se.uulm.snowballr.backend.service
 
 import io.viascom.nanoid.NanoId
+import se.uulm.snowballr.backend.access.IInvitationAccessChecker
+import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.formatting.daysToHumanReadable
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.mail.IEmailManager
-import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.getFullName
 import se.uulm.snowballr.backend.model.dto.isActiveAndConfirmed
@@ -21,8 +22,6 @@ import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
-import se.uulm.snowballr.backend.service.accessrules.IAccessChecker
-import se.uulm.snowballr.backend.service.accessrules.checkFor
 import snowballr.ProjectOuterClass.Project
 import snowballr.UserOuterClass.User
 import java.time.OffsetDateTime
@@ -53,18 +52,19 @@ interface IInvitationService {
 }
 
 /**
- * The [InvitationService] class handles operations related to normal papers by implementing the [IInvitationService] interface.
+ * The [InvitationService] class handles operations related to normal papers by implementing the [IInvitationService]
+ * interface.
  *
  * This class serves as a layer that abstracts the responsibility of invitations.
  *
- * @constructor Initializes the [InvitationService] with the necessary repositories.
  * @param userRepo The repository responsible for managing persistence operations for users.
  * @param projectRepo The repository responsible for managing persistence operations for projects.
  * @param projectMemberRepo The repository responsible for managing persistence operations for project members.
  * @param invitationTokenRepo The repository responsible for managing persistence operations for invitation tokens.
  * @param emailManager The manager responsible for sending emails.
  * @param envReader The environment reader that provides access to configuration values.
- * @param accessChecker Interface for checking access permissions based on defined rules.
+ * @param accessChecker Interface for checking access permissions for invitations based on defined rules.
+ * @param projectAccessChecker Interface for checking access permissions for projects based on defined rules.
  */
 @Suppress("LongParameterList")
 class InvitationService(
@@ -74,7 +74,8 @@ class InvitationService(
     private val invitationTokenRepo: IInvitationTokenTableRepo,
     private val emailManager: IEmailManager,
     private val envReader: EnvReader,
-    private val accessChecker: IAccessChecker,
+    private val accessChecker: IInvitationAccessChecker,
+    private val projectAccessChecker: IProjectAccessChecker,
 ) : IInvitationService {
     companion object {
         private const val INVITATION_TOKEN_LENGTH = 48
@@ -109,12 +110,9 @@ class InvitationService(
     override suspend fun inviteUserToProject(request: GrpcProject.Member.Invite) = withUser(userRepo) { currentUser ->
         val projectId = parseUUID(request.projectId, EntityType.PROJECT)
 
-        accessChecker.isProjectOrServerAdmin(AccessType.READ)
-            .checkFor(currentUser, projectId)
-
-        val project = projectRepo.getProjectById(projectId).getOrThrow()
-
-        accessChecker.isProjectActive().checkFor(currentUser, project)
+        val projectResult = projectRepo.getProjectById(projectId)
+        accessChecker.isAllowedToInviteUserToProject(currentUser, projectId, projectResult)
+        val project = projectResult.getOrThrow()
 
         // Check if the user is already a member
         val projectMembers = projectMemberRepo.getProjectMembersWithUsers(projectId)
@@ -186,7 +184,7 @@ class InvitationService(
 
     override suspend fun getPendingInvitationsForProject(projectId: UUID): GrpcUser.List =
         withUser(userRepo) { currentUser ->
-            accessChecker.isAllowedToReadProject().checkFor(currentUser, projectId)
+            projectAccessChecker.isAllowedToReadProject(currentUser, projectId)
 
             val tokens = invitationTokenRepo.getActiveInvitationTokensForProject(projectId)
 

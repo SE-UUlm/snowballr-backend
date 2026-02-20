@@ -31,7 +31,7 @@ class GetAllCriteriaForProjectTest : MainServiceTest() {
         val criterion = DataBuilder.createExampleProjectCriterion(projectId = project.id, createdBy = adminUser.id)
 
         mockCurrentUser(adminUser)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
+        coEvery { projectMemberRepoMock.isProjectMember(project.id, adminUser.id) } returns false
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { criterionRepoMock.getAllProjectCriteria(project.id) } returns listOf(criterion)
 
@@ -44,10 +44,9 @@ class GetAllCriteriaForProjectTest : MainServiceTest() {
             val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
             val project = DataBuilder.createExampleProject()
             val criterion = DataBuilder.createExampleProjectCriterion(projectId = project.id, createdBy = user.id)
-            val projectMember = DataBuilder.createExampleProjectMember(userId = user.id, projectId = project.id)
 
             mockCurrentUser(user)
-            coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
+            coEvery { projectMemberRepoMock.isProjectMember(project.id, user.id) } returns true
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
             coEvery { criterionRepoMock.getAllProjectCriteria(project.id) } returns listOf(criterion)
 
@@ -62,7 +61,7 @@ class GetAllCriteriaForProjectTest : MainServiceTest() {
 
             mockCurrentUser(user)
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-            coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
+            coEvery { projectMemberRepoMock.isProjectMember(project.id, user.id) } returns false
 
             assertThrows<UnauthorizedException> { mainService.getAllCriteriaForProject(project.id) }
         }

@@ -30,12 +30,11 @@ class ExportProjectTest : MainServiceTest() {
         val user = DataBuilder.createExampleUser()
         val projectId = UUID.randomUUID()
         val request = getExampleRequest().copy { id = projectId.toString() }
-        val projectMember = DataBuilder.createExampleProjectMember(projectId = projectId, userId = user.id)
 
         mockCurrentUser(user)
         mockkObject(ProjectExportManager)
         every { ProjectExportManager.getSupportedFormats() } returns setOf(ExportFormat.JSON)
-        coEvery { projectMemberRepoMock.getProjectMembers(projectId) } returns listOf(projectMember)
+        coEvery { projectMemberRepoMock.isProjectMember(projectId, user.id) } returns true
         coEvery { projectRepoMock.getProjectById(projectId) } returns Result.success(DataBuilder.createExampleProject())
         coEvery { projectMemberRepoMock.getProjectMembersWithUsers(projectId) } returns emptyList()
         coEvery {
@@ -60,7 +59,7 @@ class ExportProjectTest : MainServiceTest() {
         mockkObject(ProjectExportManager)
         every { ProjectExportManager.getSupportedFormats() } returns setOf(ExportFormat.JSON)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
+        coEvery { projectMemberRepoMock.isProjectMember(project.id, user.id) } returns false
 
         assertThrows<UnauthorizedReadException> {
             mainService.exportProject(request)
@@ -76,7 +75,7 @@ class ExportProjectTest : MainServiceTest() {
         mockCurrentUser(user)
         mockkObject(ProjectExportManager)
         every { ProjectExportManager.getSupportedFormats() } returns setOf(ExportFormat.JSON)
-        coEvery { projectMemberRepoMock.getProjectMembers(projectId) } returns emptyList()
+        coEvery { projectMemberRepoMock.isProjectMember(projectId, user.id) } returns false
         coEvery {
             projectRepoMock.getProjectById(projectId)
         } returns Result.success(DataBuilder.createExampleProject(id = projectId))

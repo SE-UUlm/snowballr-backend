@@ -28,7 +28,7 @@ class GetProjectMembersTest : MainServiceTest() {
 
         mockCurrentUser(adminUser)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns listOf(projectMember)
+        coEvery { projectMemberRepoMock.isProjectMember(project.id, adminUser.id) } returns true
         coEvery { projectMemberRepoMock.getProjectMembersWithUsers(project.id) } returns listOf(projectMemberWithUser)
 
         assertDoesNotThrow { mainService.getProjectMembers(project.id) }
@@ -42,8 +42,7 @@ class GetProjectMembersTest : MainServiceTest() {
         val projectMemberWithUser = ProjectMemberWithUser(projectMember, user)
 
         mockCurrentUser(user)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns
-            listOf(projectMember)
+        coEvery { projectMemberRepoMock.isProjectMember(project.id, user.id) } returns true
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectMemberRepoMock.getProjectMembersWithUsers(project.id) } returns listOf(projectMemberWithUser)
 
@@ -57,7 +56,7 @@ class GetProjectMembersTest : MainServiceTest() {
 
         mockCurrentUser(user)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
+        coEvery { projectMemberRepoMock.isProjectMember(project.id, user.id) } returns false
 
         assertThrows<UnauthorizedException> { mainService.getProjectMembers(project.id) }
     }

@@ -1,7 +1,8 @@
 package se.uulm.snowballr.backend.service
 
+import se.uulm.snowballr.backend.access.IProjectAccessChecker
+import se.uulm.snowballr.backend.access.IProjectPaperAccessChecker
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
-import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.PaperNavigationDirection
 import se.uulm.snowballr.backend.model.dto.Paper
@@ -9,7 +10,6 @@ import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.ProjectPaper
 import se.uulm.snowballr.backend.model.dto.ProjectPaperWithPaper
 import se.uulm.snowballr.backend.model.dto.ProjectPaperWithReviewsCount
-import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.hasNoFinalDecision
 import se.uulm.snowballr.backend.model.dto.toGrpcProjectPaper
 import se.uulm.snowballr.backend.model.dto.toGrpcProjectPapers
@@ -28,8 +28,6 @@ import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.IReviewHasCriterionTableRepo
-import se.uulm.snowballr.backend.service.accessrules.IAccessChecker
-import se.uulm.snowballr.backend.service.accessrules.checkFor
 import java.util.UUID
 import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 import snowballr.ReviewOuterClass.Review as GrpcReview
@@ -91,7 +89,8 @@ interface IProjectPaperService {
  * @param citationTableRepo The repository responsible for managing persistence operations for the citation relation.
  * @param reviewTableRepo The repository responsible for managing persistence operations for the reviews
  * @param reviewHasCriterionTableRepo The repository responsible for managing persistence operations for the review has
- * @param accessChecker Interface for checking access permissions based on defined rules.
+ * @param accessChecker Interface for checking access permissions for project papers based on defined rules.
+ * @param projectAccessChecker Interface for checking access permissions for projects based on defined rules.
  */
 @Suppress("LongParameterList", "TooManyFunctions")
 class ProjectPaperService(
@@ -102,13 +101,14 @@ class ProjectPaperService(
     private val citationTableRepo: ICitationTableRepo,
     private val reviewTableRepo: IReviewTableRepo,
     private val reviewHasCriterionTableRepo: IReviewHasCriterionTableRepo,
-    private val accessChecker: IAccessChecker,
+    private val accessChecker: IProjectPaperAccessChecker,
+    private val projectAccessChecker: IProjectAccessChecker,
 ) : IProjectPaperService {
     override suspend fun getProjectPaperById(projectPaperId: UUID): GrpcProjectPaper =
         withUser(userRepo) { currentUser ->
             val projectPaper = repo.getProjectPaperById(projectPaperId).getOrThrow()
 
-            accessChecker.isAllowedToReadProject().checkFor(currentUser, projectPaper.projectId)
+            projectAccessChecker.isAllowedToReadProject(currentUser, projectPaper.projectId)
 
             projectPaper.toGrpcProjectPaperWithData()
         }
@@ -117,7 +117,7 @@ class ProjectPaperService(
         withUser(userRepo) { currentUser ->
             val projectId = parseUUID(request.projectId, EntityType.PROJECT)
 
-            accessChecker.isAllowedToReadProject().checkFor(currentUser, projectId)
+            projectAccessChecker.isAllowedToReadProject(currentUser, projectId)
 
             val relativeId = request.relativeProjectPaperId.toLong()
             val projectPaper = repo.getProjectPaperByRelativeId(projectId, relativeId).getOrThrow()
@@ -144,7 +144,9 @@ class ProjectPaperService(
             val projectId = parseUUID(request.projectId, EntityType.PROJECT)
             val paperId = parseUUID(request.paperId, EntityType.PAPER)
 
-            val project = isAllowedToAddPaperToProject(currentUser, projectId)
+            val projectResult = projectRepo.getProjectById(projectId)
+            accessChecker.isAllowedToAddPaperToProject(currentUser, projectId, projectResult)
+            val project = projectResult.getOrThrow()
 
             val paper = paperRepo.getPaperById(paperId).getOrThrow()
             if (repo.doesProjectPaperExist(projectId, paperId)) {
@@ -171,7 +173,7 @@ class ProjectPaperService(
             val projectPaper = repo.getProjectPaperById(projectPaperId).getOrThrow()
             val projectId = projectPaper.projectId
 
-            accessChecker.isAllowedToReadProject().checkFor(currentUser, projectId)
+            projectAccessChecker.isAllowedToReadProject(currentUser, projectId)
 
             val projectPapers =
                 repo.getSubsequentProjectPapers(projectId, projectPaper.localPaperId, projectPaper.stage)
@@ -229,7 +231,7 @@ class ProjectPaperService(
         projectId: UUID,
         predicate: (suspend (ProjectPaperWithPaper, Map<ProjectPaper, List<GrpcReview>>, String) -> Boolean)? = null,
     ): GrpcProjectPaper.List = withUser(userRepo) { currentUser ->
-        accessChecker.isAllowedToReadProject().checkFor(currentUser, projectId)
+        projectAccessChecker.isAllowedToReadProject(currentUser, projectId)
 
         var projectPapersWithPapers = repo.getAllProjectPapersWithPapers(projectId)
         val paperBackwardReferencesMap = mutableMapOf<Paper, List<String>>()
@@ -270,7 +272,7 @@ class ProjectPaperService(
         withUser(userRepo) { currentUser ->
             val projectPaper = repo.getProjectPaperById(projectPaperId).getOrThrow()
 
-            accessChecker.isAllowedToReadProject().checkFor(currentUser, projectPaper.projectId)
+            projectAccessChecker.isAllowedToReadProject(currentUser, projectPaper.projectId)
 
             val projectId = projectRepo.getProjectById(projectPaper.projectId).getOrThrow().id
             val adjacentPaper = repo.getAdjacentPaper(projectId, projectPaper.localPaperId, direction).getOrThrow()
@@ -303,12 +305,4 @@ class ProjectPaperService(
                 }
             }
             .filter { it.reviewsCount >= 0 }
-
-    private suspend fun isAllowedToAddPaperToProject(currentUser: User, projectId: UUID): Project {
-        accessChecker.isProjectOrServerAdmin(AccessType.CREATE).checkFor(currentUser, projectId)
-
-        val project = projectRepo.getProjectById(projectId).getOrThrow()
-        accessChecker.isProjectActive().checkFor(currentUser, project)
-        return project
-    }
 }

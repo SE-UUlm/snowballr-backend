@@ -13,7 +13,7 @@ On this page, we explain how to contribute to the SnowballR backend project. We 
     * [Table](#table)
     * [Repository](#repository)
     * [Service](#service)
-      * [Access Rules and Authorization Checks](#access-rules-and-authorization-checks)
+      * [Access Checkers and Rules](#access-checkers-and-rules)
     * [Input Validation](#input-validation)
   * [Testing](#testing)
   * [Miscellaneous Commands](#miscellaneous-commands)
@@ -163,7 +163,7 @@ See
 [ProjectService.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/service/ProjectService.kt)
 for an example.
 
-#### Access Rules and Authorization Checks
+#### Access Checkers and Rules
 
 To provide a composable and reusable way to enforce authorization logic across the service layer, we use
 **access rules**. These rules ensure consistent permission enforcement and centralize authorization logic within
@@ -176,7 +176,7 @@ short-circuit behavior, to form complex authorization logic. If two access rules
 where one target type is a property of the other — the rule can be adapted using the `forProperty()` helper.
 If an access rule was designed for no specific target type, it can be adapted to a concrete type using the `forTarget()`
 helper. For more details about these operators and helpers, see
-[`AccessRule.kt`](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/service/accessrules/AccessRule.kt).
+[`AccessRule.kt`](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/access/rules/AccessRule.kt).
 
 ```kotlin
 // Chain multiple checks using AND and OR logic
@@ -186,11 +186,12 @@ isEntityActive()
 ```
 
 Custom access rules should be defined in the
-[`service/accessrules/`](https://github.com/SE-UUlm/snowballr-backend/tree/develop/src/main/kotlin/se/uulm/snowballr/backend/service/accessrules)
+[`access/rules/`](https://github.com/SE-UUlm/snowballr-backend/tree/develop/src/main/kotlin/se/uulm/snowballr/backend/access/rules)
 directory.
 Each access rule should:
 
-1. Override the `suspend fun isAllowedToAccess(requester: User, target: T): Boolean` function, possibly as lambda function.
+1. Override the `suspend fun isAllowedToAccess(requester: User, target: T): Boolean` function, possibly as lambda
+   function.
 2. Be annotated with `@CheckReturnValue` to ensure that the rule is executed.
 3. Return an instance of `AccessRule<T>`.
 
@@ -202,40 +203,27 @@ fun isSameUserAndActive() = AccessRule<User> { currentUser, entity ->
 }
 ```
 
-Access rules are applied within service methods using the `checkFor()` function.
-This function evaluates the rule chain for the given user and target entity and throws an exception if access is denied,
-or an `AccessRuleCheckFailedException` if no specific exception is defined and the access not granted.
+To abstract complex access rule combinations, we employ the access checkers defined in
+[`access/`](https://github.com/SE-UUlm/snowballr-backend/tree/develop/src/main/kotlin/se/uulm/snowballr/backend/access).
+They provide an easy-to-use interface to evaluate authorization logic for access operations for specific entities. For
+instance for an entity `Example` the respective `EntityAccessChecker` class would contain methods such as
+`isAllowedToReadExample`, `isAllowedToUpdateExample`, and `isAllowedToAddAnotherExampleToExample`.
 
 ```kotlin
-val user = userRepo.getUserById(userId).getOrThrow()
-
-isSameUserAndActive().checkFor(currentUser, user)
-// ...
-```
-
-Combining multiple access rules now allows for more complex authorization logic, such as controlling whether an entity can
-be deleted.
-
-```kotlin
-// In EntityAccessRule.kt
+// In EntityAccessChecker.kt
 @CheckReturnValue
-fun isAllowedToDeleteEntity(): AccessRule<UUID> {
-    return isEntityActive()
+suspend fun isAllowedToDeleteEntity(currentUser: User, entity: Entity) {
+    isEntityActive()
         .andAlso(isEntityOwner())
         .orElseThrow(EntityNotDeletableException())
+        .checkFor(currentUser, entity)
 }
 
 // In EntityService.kt
 override suspend fun deleteEntity(entityId: UUID) = withUser(userRepo) { currentUser ->
     val entity = repo.getEntityById(entityId).getOrThrow()
 
-    // Check authorization using the composed rule
-    isAllowedToDeleteEntity()
-        .forProperty(Entity::id)
-        .orElse(isServerAdmin().forTarget())
-        .orElseThrow { user, entity -> UnauthorizedException(user, entity.description) }
-        .checkFor(currentUser, entity)
-    // ...
+    accessChecker.isAllowedToDeleteEntity(currentUser, entity)
 }
 ```
 

@@ -2,17 +2,15 @@ package se.uulm.snowballr.backend.service
 
 import com.google.protobuf.timestamp
 import com.google.protobuf.util.FieldMaskUtil
+import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.toGrpcProject
 import se.uulm.snowballr.backend.model.dto.toGrpcProjects
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.notfound.StageNotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
-import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadAllException
-import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadException
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
@@ -20,10 +18,6 @@ import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
-import se.uulm.snowballr.backend.service.accessrules.IAccessChecker
-import se.uulm.snowballr.backend.service.accessrules.checkFor
-import se.uulm.snowballr.backend.service.accessrules.isServerAdmin
-import se.uulm.snowballr.backend.service.accessrules.orElseThrow
 import snowballr.ProjectOuterClass.MemberRole
 import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ProjectOuterClass.ProjectStatus
@@ -99,7 +93,7 @@ interface IProjectService {
  * @param projectPaperRepo The repository responsible for managing persistence operations for project papers.
  * @param criterionRepo The repository responsible for managing persistence operations for criteria.
  * @param invitationTokenRepo The repository responsible for managing persistence operations for invitation tokens.
- * @param accessChecker Interface for checking access permissions based on defined rules.
+ * @param accessChecker Interface for checking access permissions for projects based on defined rules.
  */
 @Suppress("LongParameterList", "TooManyFunctions")
 class ProjectService(
@@ -109,10 +103,10 @@ class ProjectService(
     private val projectPaperRepo: IProjectPaperTableRepo,
     private val criterionRepo: ICriterionTableRepo,
     private val invitationTokenRepo: IInvitationTokenTableRepo,
-    private val accessChecker: IAccessChecker,
+    private val accessChecker: IProjectAccessChecker,
 ) : IProjectService {
     override suspend fun getProjectById(projectId: UUID): GrpcProject = withUser(userRepo) { currentUser ->
-        accessChecker.isAllowedToReadProject().checkFor(currentUser, projectId)
+        accessChecker.isAllowedToReadProject(currentUser, projectId)
 
         repo.getProjectById(projectId).getOrThrow().toGrpcProject()
     }
@@ -144,9 +138,7 @@ class ProjectService(
     }
 
     override suspend fun getAllProjects(): GrpcProject.List = withUser(userRepo) { currentUser ->
-        isServerAdmin()
-            .orElseThrow(UnauthorizedReadAllException(currentUser.id, EntityType.PROJECT))
-            .checkFor(currentUser)
+        accessChecker.isAllowedToReadAllProjects(currentUser)
 
         repo.getAllProjects().toGrpcProjects()
     }
@@ -165,7 +157,7 @@ class ProjectService(
     override suspend fun updateProject(request: GrpcProject.Update): GrpcProject = withUser(userRepo) { currentUser ->
         val projectId = parseUUID(request.project.id, EntityType.PROJECT)
 
-        accessChecker.isProjectOrServerAdmin(AccessType.UPDATE).checkFor(currentUser, projectId)
+        accessChecker.isProjectOrServerAdmin(currentUser, projectId, AccessType.UPDATE)
 
         val project = repo.getProjectById(projectId).getOrThrow()
         val currentStatus = project.status
@@ -189,7 +181,7 @@ class ProjectService(
         withUser(userRepo) { currentUser ->
             val projectId = parseUUID(request.projectId, EntityType.PROJECT)
 
-            accessChecker.isAllowedToReadProject().checkFor(currentUser, projectId)
+            accessChecker.isAllowedToReadProject(currentUser, projectId)
 
             val project = repo.getProjectById(projectId).getOrThrow()
             val progress = projectPaperRepo.getProjectProgress(projectId)
@@ -221,7 +213,7 @@ class ProjectService(
     ): GrpcProjectDecisionStatistics = withUser(userRepo) { currentUser ->
         val projectId = parseUUID(request.projectId, EntityType.PROJECT)
 
-        accessChecker.isAllowedToReadProject().checkFor(currentUser, projectId)
+        accessChecker.isAllowedToReadProject(currentUser, projectId)
 
         val project = repo.getProjectById(projectId).getOrThrow()
         val maxStage = project.maxStage
@@ -238,7 +230,7 @@ class ProjectService(
     }
 
     override suspend fun softDeleteProject(projectId: UUID) = withUser(userRepo) { currentUser ->
-        accessChecker.isProjectOrServerAdmin(AccessType.DELETE).checkFor(currentUser, projectId)
+        accessChecker.isProjectOrServerAdmin(currentUser, projectId, AccessType.DELETE)
 
         if (!repo.doesProjectExistById(projectId)) {
             throw ProjectNotFoundException(projectId)
@@ -252,7 +244,7 @@ class ProjectService(
         withUser(userRepo) { currentUser ->
             userRepo.getUserById(userId).getOrThrow()
 
-            isAllowedToReadUserProjects(userId, currentUser)
+            accessChecker.isAllowedToReadUserProjects(currentUser, userId)
 
             repo.getUserProjects(userId, statuses).toGrpcProjects()
         }
@@ -382,14 +374,5 @@ class ProjectService(
             PaperDecision.PAPER_DECISION_UNREVIEWED,
             PaperDecision.PAPER_DECISION_IN_REVIEW,
         ).map(::createStatistic)
-    }
-
-    @Suppress("RedundantSuspendModifier", "RedundantSuppression")
-    private suspend fun isAllowedToReadUserProjects(userId: UUID, currentUser: User) {
-        accessChecker.isServerAdminOrSameUser()
-            .orElseThrow { requestingUser, targetId ->
-                UnauthorizedReadException(requestingUser.id, targetId, EntityType.USER)
-            }
-            .checkFor(currentUser, userId)
     }
 }

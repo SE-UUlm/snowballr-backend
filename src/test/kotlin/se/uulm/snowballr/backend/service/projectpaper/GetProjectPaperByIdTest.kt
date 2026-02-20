@@ -42,7 +42,6 @@ class GetProjectPaperByIdTest : MainServiceTest() {
             projectId = project.id,
             paperId = paper.id,
         )
-        val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
         val review = DataBuilder.createExampleReview()
 
         mockCurrentUser(currentUser)
@@ -56,12 +55,7 @@ class GetProjectPaperByIdTest : MainServiceTest() {
         coEvery { projectPaperRepoMock.getProjectPaperById(projectPaper.id) } returns Result.success(projectPaper)
 
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns
-            if (isUserAdmin) {
-                emptyList()
-            } else {
-                listOf(projectMember)
-            }
+        coEvery { projectMemberRepoMock.isProjectMember(project.id, currentUser.id) } returns !isUserAdmin
 
         if (failAt == paperRepoMock::getPaperById) {
             coEvery { paperRepoMock.getPaperById(projectPaper.paperId) } returns Result.failure(TestSpecificException())
@@ -118,7 +112,7 @@ class GetProjectPaperByIdTest : MainServiceTest() {
         mockCurrentUser(currentUser)
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectPaperRepoMock.getProjectPaperById(projectPaper.id) } returns Result.success(projectPaper)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
+        coEvery { projectMemberRepoMock.isProjectMember(project.id, currentUser.id) } returns false
 
         assertThrows<UnauthorizedException> { mainService.getProjectPaperById(projectPaper.id) }
     }
