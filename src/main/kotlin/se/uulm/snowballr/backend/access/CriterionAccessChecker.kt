@@ -24,7 +24,7 @@ interface ICriterionAccessChecker {
      * Checks whether the current user is allowed to create a project criterion.
      *
      * Conditions:
-     * - The user is a project member of the project the criterion is being created in, **OR** a server admin.
+     * - The user is a project admin of the project the criterion is being created in, **OR** a server admin.
      * - The project is active (not archived or deleted).
      *
      * @param currentUser The user for whom the access check is being performed.

@@ -14,13 +14,13 @@ fun interface IProjectPaperAccessChecker {
      * Checks whether the current user is allowed to add a paper to the specified project.
      *
      * Conditions:
-     * - The user is a project member of the project, **OR** a server admin.
+     * - The user is a project admin of the project, **OR** a server admin.
      * - The project is active (not archived or deleted).
      *
      * @param currentUser The user for whom the access check is being performed.
      * @param projectId The ID of the project to which a paper is being added.
      * @param projectResult The result of fetching the project, used to check if the project is active.
-     * @throws UnauthorizedCreateException if the user is not allowed to create a project criterion.
+     * @throws UnauthorizedCreateException if the user is not allowed to add a paper to the project.
      * @throws EntityNotActiveException if the project is not active.
      */
     suspend fun isAllowedToAddPaperToProject(currentUser: User, projectId: UUID, projectResult: Result<Project>)

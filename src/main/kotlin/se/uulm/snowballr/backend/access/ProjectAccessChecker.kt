@@ -98,28 +98,31 @@ interface IProjectAccessChecker {
     suspend fun isProjectOrServerAdmin(currentUser: User, projectId: UUID, accessType: AccessType)
 
     /**
-     * Check whether a project with the given ID exists; otherwise, throws a [ProjectNotFoundException].
+     * Check whether a project with the given ID exists.
      *
-     * A project is considered existent if it exists in the database and is not deleted, unless the requesting user is a
-     * server admin.
+     * A project is considered existent if it exists in the database and is not soft-deleted. For a server admin, this
+     * check will pass even if the project is soft-deleted.
+     *
+     * @throws ProjectNotFoundException if the project does not exist.
      */
     @CheckReturnValue
     fun isProjectExistent(): AccessRule<UUID>
 
     /**
-     * Check whether a project with the given ID is active (or active, but settings are locked); otherwise, throws an
-     * [EntityNotActiveException].
+     * Check whether a project with the given ID is active (or active, but settings are locked).
+     *
+     * @throws EntityNotActiveException if the project is not active.
      */
     @CheckReturnValue
     fun isProjectActiveById(): AccessRule<UUID>
 
     /**
-     * Check whether the current user is an admin of the specified project. If the user is not a project admin, the user
-     * has to be a server admin; otherwise, an [UnauthorizedException] is thrown.
+     * Check whether the current user is an admin of the specified project or alternatively a server admin.
      *
      * @param accessType The type of access that is being checked.
      * @param entityType The type of the entity for which access is being checked, used for error reporting in case of
      * an unauthorized access attempt. Defaults to [EntityType.PROJECT].
+     * @throws UnauthorizedException if the current user is neither a project nor a server admin.
      */
     @CheckReturnValue
     fun isProjectOrServerAdmin(accessType: AccessType, entityType: EntityType = EntityType.PROJECT): AccessRule<UUID>
