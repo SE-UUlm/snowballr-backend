@@ -21,6 +21,8 @@ interface IProjectMemberAccessChecker {
      * - The user is a project admin of the project, **OR** a server admin.
      * - The project exists.
      *
+     * @param currentUser The user for whom the access check is being performed.
+     * @param projectId The ID of the project in which the member role is being updated.
      * @throws UnauthorizedUpdateException if the user is not allowed to update the member role.
      * @throws ProjectNotFoundException if the project does not exist.
      */
@@ -33,6 +35,9 @@ interface IProjectMemberAccessChecker {
      * - The user is the same as the member being removed, **OR** the user is a project admin of the project, **OR** a
      * server admin.
      *
+     * @param currentUser The user for whom the access check is being performed.
+     * @param memberUserId The ID of the project member that should be removed.
+     * @param projectId The ID of the project from which the member should be removed.
      * @throws UnauthorizedDeleteException if the user is not allowed to remove the member.
      */
     suspend fun isAllowedToRemoveMember(currentUser: User, memberUserId: UUID, projectId: UUID)
@@ -43,6 +48,8 @@ interface IProjectMemberAccessChecker {
      * Conditions:
      * - The user is a project admin of the project, **OR** a server admin.
      *
+     * @param currentUser The user for whom the access check is being performed.
+     * @param projectId The ID of the project from which the invitation should be removed.
      * @throws UnauthorizedDeleteException if the user is not allowed to remove the invitation.
      */
     suspend fun isAllowedToRemoveInvitation(currentUser: User, projectId: UUID)

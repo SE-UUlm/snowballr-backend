@@ -20,8 +20,8 @@ fun interface IInvitationAccessChecker {
      * @param currentUser The user for whom the access check is being performed.
      * @param projectId The ID of the project to which a user is invited.
      * @param projectResult The result of a project request.
-     * @throws UnauthorizedException if the user is not allowed to invite a user to the project
-     * @throws EntityNotActiveException if the project is not active
+     * @throws UnauthorizedException if the user is not allowed to invite a user to the project.
+     * @throws EntityNotActiveException if the project is not active.
      */
     suspend fun isAllowedToInviteUserToProject(currentUser: User, projectId: UUID, projectResult: Result<Project>)
 }

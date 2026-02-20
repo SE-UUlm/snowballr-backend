@@ -34,19 +34,23 @@ interface IProjectAccessChecker {
      * - The project exists
      * - The user is a member of the project **OR** a server admin.
      *
+     * @param currentUser The user for whom the access check is being performed.
+     * @param projectId The ID of the project that is being read.
      * @throws ProjectNotFoundException if the project does not exist.
      * @throws UnauthorizedReadException if the user is not allowed to read the project.
      */
     suspend fun isAllowedToReadProject(currentUser: User, projectId: UUID)
 
     /**
-     * Checks whether the current user is allowed to read user projects pf the specified user.
+     * Checks whether the current user is allowed to read user projects of the specified user.
      *
      * A user project is defined as a project of which the user is a member.
      *
      * Conditions:
      * - The user is a server admin **OR** the same user
      *
+     * @param currentUser The user for whom the access check is being performed.
+     * @param userId The ID of the user whose projects are being read.
      * @throws UnauthorizedReadException if the user is not allowed to read the user projects.
      */
     suspend fun isAllowedToReadUserProjects(currentUser: User, userId: UUID)
@@ -60,6 +64,7 @@ interface IProjectAccessChecker {
      * Conditions:
      * - The user is a server admin
      *
+     * @param currentUser The user for whom the access check is being performed.
      * @throws UnauthorizedReadAllException if the user is not allowed to read all projects.
      */
     suspend fun isAllowedToReadAllProjects(currentUser: User)
@@ -68,8 +73,8 @@ interface IProjectAccessChecker {
      * Checks whether the target user is not the last project admin.
      *
      * Conditions:
-     * - The number of project members is not one
-     * - The last project member is not the target user
+     * - The number of project admins is not one
+     * - The last project admin is not the target user
      *
      * @param targetUser The user for whom the access check is being performed.
      * @param projectId The ID of the project in which the user shouldn't be the last project admin.

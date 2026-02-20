@@ -39,8 +39,8 @@ interface IUserAccessChecker {
      * @param targetUser The user that is being read.
      * @param identifierType The type used to identify the other user.
      * @throws UnauthorizedReadException if the user is not allowed to read the target user.
-     * @throws UserNotFoundException if the user doesn't exist and [identifierType] is [UserIdentifierType.ID]
-     * @throws UserNotFoundByEmailException if the user doesn't exist and [identifierType] is [UserIdentifierType.EMAIL]
+     * @throws UserNotFoundException if the user doesn't exist and [identifierType] is [UserIdentifierType.ID].
+     * @throws UserNotFoundByEmailException if the user doesn't exist and [identifierType] is [UserIdentifierType.EMAIL].
      */
     suspend fun isAllowedToReadUser(currentUser: User, targetUser: User, identifierType: UserIdentifierType)
 
@@ -53,6 +53,7 @@ interface IUserAccessChecker {
      * Conditions:
      * - The user is a server admin
      *
+     * @param currentUser The user for whom the access check is being performed.
      * @throws UnauthorizedReadAllException if the user is not allowed to read all users.
      */
     suspend fun isAllowedToReadAllUsers(currentUser: User)
@@ -79,8 +80,8 @@ interface IUserAccessChecker {
      * - The user is a server admin
      *
      * @param currentUser The user for whom the access check is being performed.
-     * @param targetUserId The ID of the user that is being updated
-     * @throws UnauthorizedUpdateException if the user is not allowed to update the role of the target user
+     * @param targetUserId The ID of the user that is being updated.
+     * @throws UnauthorizedUpdateException if the user is not allowed to update the role of the target user.
      */
     suspend fun isAllowedToUpdateUserRole(currentUser: User, targetUserId: UUID)
 

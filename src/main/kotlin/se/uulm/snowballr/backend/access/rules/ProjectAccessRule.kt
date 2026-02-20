@@ -9,7 +9,7 @@ import javax.annotation.CheckReturnValue
 /**
  * Check whether the project is active (according to [Project.isActive]).
  *
- * If the access rule fails an [EntityNotActiveException] is thrown.
+ * @throws EntityNotActiveException if the project is not active.
  */
 @CheckReturnValue
 fun isProjectActive() = AccessRule<Project> { _, project ->

@@ -24,9 +24,12 @@ interface IReviewAccessChecker {
      * Checks whether the current user is allowed to create a review in the specified project.
      *
      * Conditions:
-     * - The user is allowed to read to project ([IProjectAccessChecker.isAllowedToReadProject])
+     * - The user is allowed to read the project ([IProjectAccessChecker.isAllowedToReadProject])
      * - The project is active (not archived or deleted)
      *
+     * @param currentUser The user for whom the access check is being performed.
+     * @param projectId The ID of the project in which the review is being created.
+     * @param projectResult The result of fetching the project, used to check if the project is active.
      * @throws ProjectNotFoundException if the project does not exist.
      * @throws UnauthorizedReadException if the user is not allowed to read the project.
      * @throws EntityNotActiveException if the project is not active.
@@ -39,6 +42,8 @@ interface IReviewAccessChecker {
      * Conditions:
      * - The user is a member of the project to which the review belongs to, **OR** the user is a server admin
      *
+     * @param currentUser The user for whom the access check is being performed.
+     * @param review The review that is being accessed.
      * @throws UnauthorizedReadException if the user is not allowed to read the review.
      */
     suspend fun isAllowedToReadReview(currentUser: User, review: Review)
