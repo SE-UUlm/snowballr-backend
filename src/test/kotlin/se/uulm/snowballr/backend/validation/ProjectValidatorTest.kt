@@ -331,6 +331,25 @@ class ProjectValidatorTest {
 
             EitherAssert.assertThat(result).isRight()
         }
+
+        @Test
+        fun `When an invalid number of reviewers is provided but only decision matrix patterns are specified in the field mask, then no issue is returned`() {
+            val project = validUpdatedProject.setSettings(
+                validUpdatedProjectSettings.setDecisionMatrix(
+                    validUpdatedDecisionMatrix
+                        .setNumberOfReviewers(NUMBER_OF_REVIEWERS_MAX_VALUE + 1)
+                        .build(),
+                ).build(),
+            ).build()
+            val fieldMask = FieldMaskUtil.fromStringList(listOf("project.settings.decision_matrix.patterns"))
+            val request = validUpdateRequestBuilder
+                .setProject(project)
+                .setMask(fieldMask)
+                .build()
+            val result = validateRequest(request)
+
+            EitherAssert.assertThat(result).isRight()
+        }
     }
 
     @Nested
