@@ -157,6 +157,15 @@ class PythonPluginFetcherManagerTest {
     }
 
     @Test
+    fun `When a fetcher path traverses outside root, then a FetcherNotFoundException is thrown`() = runTest {
+        val exception = assertThrows<FetcherNotFoundException> {
+            fetcherManager.getAvailableOptions("../outside")
+        }
+
+        assertThat(exception.message).contains("Fetcher \"../outside\" not found.")
+    }
+
+    @Test
     fun `When a fetcher exits with an error code, then a FetcherException is thrown`() = runTest {
         writeFetcher(
             "failing_fetcher",
