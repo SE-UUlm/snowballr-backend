@@ -163,4 +163,26 @@ class AddPaperToProjectTest : MainServiceTest() {
 
             assertThrows<StageOutOfRangeException> { mainService.addPaperToProject(request) }
         }
+
+    @Test
+    fun `When the requested stage is negative, then a StageOutOfRangeException is thrown`() = runTest {
+        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
+        val project = DataBuilder.createExampleProject(id = projectId)
+        val paper = DataBuilder.createExamplePaper(id = paperId)
+        val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
+
+        val request = GrpcProject.Paper.Add.newBuilder()
+            .setProjectId(projectId.toString())
+            .setPaperId(paperId.toString())
+            .setStage(-1)
+            .build()
+
+        mockCurrentUser(currentUser)
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
+        coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
+        coEvery { paperRepoMock.getPaperById(paper.id) } returns Result.success(paper)
+        coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, paper.id) } returns false
+
+        assertThrows<StageOutOfRangeException> { mainService.addPaperToProject(request) }
+    }
 }
