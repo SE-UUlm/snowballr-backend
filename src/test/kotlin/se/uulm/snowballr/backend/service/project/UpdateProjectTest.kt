@@ -230,6 +230,30 @@ class UpdateProjectTest : MainServiceTest() {
         }
 
     @Test
+    fun `When a server admin updates an archived project to an unsupported status, then a FailedPreconditionException is thrown`() =
+        runTest {
+            val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+            val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ARCHIVED)
+            val updatedProject = DataBuilder.createExampleProject(
+                id = project.id,
+                status = ProjectStatus.PROJECT_STATUS_UNSPECIFIED,
+            )
+
+            val updateFieldMask = FieldMaskUtil.fromString("project.status")
+            val request = GrpcProject.Update
+                .newBuilder()
+                .setProject(updatedProject.toGrpcProject())
+                .setMask(updateFieldMask)
+                .build()
+
+            mockCurrentUser(user)
+            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
+            coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
+
+            assertThrows<FailedPreconditionException> { mainService.updateProject(request) }
+        }
+
+    @Test
     fun `When a server admin updates the project settings of an active locked project, then a FailedPreconditionException is thrown`() =
         runTest {
             val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
