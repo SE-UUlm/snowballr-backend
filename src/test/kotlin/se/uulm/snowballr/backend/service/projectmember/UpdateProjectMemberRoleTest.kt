@@ -1,6 +1,7 @@
 package se.uulm.snowballr.backend.service.projectmember
 
 import io.mockk.coEvery
+import io.mockk.coVerify
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -250,5 +251,37 @@ class UpdateProjectMemberRoleTest : MainServiceTest() {
         } returns updatedUser
 
         assertDoesNotThrow { mainService.updateProjectMemberRole(request) }
+    }
+
+    @Test
+    fun `When an admin member is updated to admin again, then last-admin check is skipped`() = runTest {
+        val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+        val userToBeUpdated = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
+        val project = DataBuilder.createExampleProject()
+        val projectAdminMember = DataBuilder.createExampleProjectMember(
+            role = MemberRole.MEMBER_ROLE_ADMIN,
+            userId = userToBeUpdated.id,
+            projectId = project.id,
+        )
+
+        val request = ProjectOuterClass.Project.Member.Update
+            .newBuilder()
+            .setProjectId(project.id.toString())
+            .setUserId(userToBeUpdated.id.toString())
+            .setNewRole(MemberRole.MEMBER_ROLE_ADMIN)
+            .build()
+
+        mockCurrentUser(user)
+        coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectAdminMember)
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
+        coEvery { userRepoMock.getUserById(userToBeUpdated.id) } returns Result.success(userToBeUpdated)
+        coEvery { projectMemberRepoMock.getProjectMemberByComposedId(project.id, userToBeUpdated.id) } returns
+            Result.success(projectAdminMember)
+        coEvery {
+            projectMemberRepoMock.updateProjectMemberRole(project.id, userToBeUpdated.id, MemberRole.MEMBER_ROLE_ADMIN)
+        } returns projectAdminMember
+
+        assertDoesNotThrow { mainService.updateProjectMemberRole(request) }
+        coVerify(exactly = 1) { projectMemberRepoMock.getAllProjectAdmins(project.id) }
     }
 }
