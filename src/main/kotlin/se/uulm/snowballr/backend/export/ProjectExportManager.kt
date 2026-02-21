@@ -70,7 +70,6 @@ object ProjectExportManager {
      * - Replacing characters not allowed in filenames (such as \ / : * ? " < > | and control characters) with
      * underscores.
      * - Trimming leading and trailing whitespace and dots.
-     * - Providing a fallback name ("unnamed") if the resulting filename is empty.
      *
      * @param input The original filename.
      * @return A sanitized filename safe for use in file systems.
@@ -83,9 +82,6 @@ object ProjectExportManager {
 
         // Trim spaces and dots (Windows doesn't like names ending with . or space)
         sanitized = sanitized.trim().trimEnd('.')
-
-        // Fallback for empty filenames
-        if (sanitized.isEmpty()) sanitized = "unnamed"
 
         return sanitized
     }
