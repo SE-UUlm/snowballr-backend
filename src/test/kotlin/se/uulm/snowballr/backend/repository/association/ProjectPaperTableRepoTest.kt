@@ -419,6 +419,38 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
                 assertEquals(0, projectPaper1.localPaperId)
                 assertEquals(0, projectPaper2.localPaperId)
             }
+
+        @Test
+        fun `When existing local paper IDs are non sequential, then the next local paper ID is max plus one`() =
+            runTest {
+                val projectId = insertProjectAndGetId(createdBy = testUserId)
+                val existingPaperId1 = insertPaperAndGetId()
+                val existingPaperId2 = insertPaperAndGetId()
+
+                insertProjectPaperAndGetId(
+                    paperId = existingPaperId1,
+                    projectId = projectId,
+                    localPaperId = 2,
+                    createdBy = testUserId,
+                )
+                insertProjectPaperAndGetId(
+                    paperId = existingPaperId2,
+                    projectId = projectId,
+                    localPaperId = 5,
+                    createdBy = testUserId,
+                )
+
+                val paperIdToAdd = insertPaperAndGetId()
+                val request = Project.Paper.Add.newBuilder()
+                    .setPaperId(paperIdToAdd.toString())
+                    .setProjectId(projectId.toString())
+                    .setStage(0)
+                    .build()
+
+                val projectPaper = assertDoesNotThrow { repo.addPaperToProject(request, testUserId) }
+
+                assertEquals(6, projectPaper.localPaperId)
+            }
     }
 
     @Nested

@@ -88,4 +88,25 @@ class GetProjectInformationTest : MainServiceTest() {
             assertEquals(0, response.creationDate.seconds)
             assertEquals(0, response.lastStageStarted.seconds)
         }
+
+    @Test
+    fun `When field mask excludes project progress, then project progress is not populated`() = runTest {
+        val user = DataBuilder.createExampleUser()
+        val createdAt = OffsetDateTime.now()
+        val stageStartedAt = OffsetDateTime.now()
+        val project = DataBuilder.createExampleProject(
+            createdAt = createdAt,
+            currentStageStartedAt = stageStartedAt,
+        )
+
+        mockCurrentUser(user)
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
+        coEvery { projectMemberRepoMock.isProjectMember(project.id, user.id) } returns true
+        coEvery { projectPaperRepoMock.getProjectProgress(project.id) } returns 0.5f
+
+        val response = mainService.getProjectInformation(getRequest(project.id, listOf("creation_date")))
+        assertEquals(0f, response.projectProgress)
+        assertEquals(createdAt.toEpochSecond(), response.creationDate.seconds)
+        assertEquals(0, response.lastStageStarted.seconds)
+    }
 }

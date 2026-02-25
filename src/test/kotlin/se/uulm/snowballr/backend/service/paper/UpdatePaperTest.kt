@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.service.paper
 
 import io.mockk.Runs
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.just
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
@@ -76,4 +77,44 @@ class UpdatePaperTest : MainServiceTest() {
 
             assertThrows<DuplicatePaperException> { mainService.updatePaper(request) }
         }
+
+    @Test
+    fun `When a paper is updated with an external ID that belongs to itself, then no exception is thrown`() = runTest {
+        val request = getExampleRequest()
+        val exampleAuthor = DataBuilder.createExampleAuthor()
+        val existingPaperWithSameExternalId = DataBuilder.createExamplePaper(
+            id = paperId,
+            externalId = request.paper.externalId,
+            authors = listOf(exampleAuthor),
+        )
+
+        coEvery { paperRepoMock.ensurePaperExists(paperId) } just Runs
+        coEvery { paperRepoMock.getPaperByExternalId(request.paper.externalId) } returns
+            Result.success(existingPaperWithSameExternalId)
+        coEvery { paperRepoMock.updatePaper(request) } returns existingPaperWithSameExternalId
+        coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paperId) } returns emptyList()
+
+        assertDoesNotThrow { mainService.updatePaper(request) }
+    }
+
+    @Test
+    fun `When a paper is updated without external ID, then duplicate lookup by external ID is skipped`() = runTest {
+        val request = GrpcPaper.Update
+            .newBuilder()
+            .setPaper(getExamplePaperBuilder().setExternalId("").build())
+            .build()
+        val exampleAuthor = DataBuilder.createExampleAuthor()
+        val updatedPaper = DataBuilder.createExamplePaper(
+            id = paperId,
+            externalId = "",
+            authors = listOf(exampleAuthor),
+        )
+
+        coEvery { paperRepoMock.ensurePaperExists(paperId) } just Runs
+        coEvery { paperRepoMock.updatePaper(request) } returns updatedPaper
+        coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paperId) } returns emptyList()
+
+        assertDoesNotThrow { mainService.updatePaper(request) }
+        coVerify(exactly = 0) { paperRepoMock.getPaperByExternalId(any()) }
+    }
 }

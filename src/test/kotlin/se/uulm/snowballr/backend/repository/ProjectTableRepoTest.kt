@@ -3,6 +3,9 @@ package se.uulm.snowballr.backend.repository
 import com.google.protobuf.util.FieldMaskUtil
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import org.jetbrains.exposed.v1.core.ReferenceOption
+import org.jetbrains.exposed.v1.core.dao.id.java.UUIDTable
+import org.jetbrains.exposed.v1.jdbc.insert
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
@@ -43,6 +46,10 @@ import java.sql.SQLException
 import java.time.OffsetDateTime
 import java.util.UUID
 
+private object ProjectDeleteBlockerTable : UUIDTable("project_delete_blocker") {
+    val projectId = reference("project_id", ProjectTable, ReferenceOption.RESTRICT, ReferenceOption.RESTRICT)
+}
+
 class ProjectTableRepoTest :
     RepositoryTest(
         arrayOf(
@@ -52,6 +59,7 @@ class ProjectTableRepoTest :
             PaperTable,
             ReviewTable,
             CriterionTable,
+            ProjectDeleteBlockerTable,
         ),
         true,
     ) {
@@ -288,6 +296,84 @@ class ProjectTableRepoTest :
                 assertEquals(0, updatedProject.reviewDecisionMatrix.numberOfReviewers)
             }
         }
+
+        @Test
+        fun `When only decision matrix patterns are updated, then number of reviewers remains unchanged`() = runTest {
+            val initialDecisionMatrix = ReviewDecisionMatrix.newBuilder()
+                .setNumberOfReviewers(3)
+                .addPatterns(
+                    ReviewDecisionMatrix.Pattern.newBuilder()
+                        .setDecision(snowballr.ProjectOuterClass.PaperDecision.PAPER_DECISION_ACCEPTED)
+                        .build(),
+                )
+                .build()
+            val projectId = insertProjectAndGetId(
+                name = "Decision Matrix Project",
+                status = ProjectStatus.PROJECT_STATUS_ACTIVE,
+                reviewDecisionMatrix = initialDecisionMatrix,
+                createdBy = testUserId,
+            )
+            val originalProject = repo.getProjectById(projectId).getOrThrow()
+
+            val updatedDecisionMatrix = ReviewDecisionMatrix.newBuilder()
+                .setNumberOfReviewers(9)
+                .addPatterns(
+                    ReviewDecisionMatrix.Pattern.newBuilder()
+                        .setDecision(snowballr.ProjectOuterClass.PaperDecision.PAPER_DECISION_DECLINED)
+                        .build(),
+                )
+                .build()
+            val request = Project.Update.newBuilder()
+                .setProject(
+                    originalProject.toGrpcProject().toBuilder()
+                        .setSettings(
+                            originalProject.toGrpcProject().settings.toBuilder()
+                                .setDecisionMatrix(updatedDecisionMatrix)
+                                .build(),
+                        )
+                        .build(),
+                )
+                .setMask(FieldMaskUtil.fromStringList(listOf("project.settings.decision_matrix.patterns")))
+                .build()
+
+            val updatedProject = repo.updateProject(request)
+
+            assertEquals(3, updatedProject.reviewDecisionMatrix.numberOfReviewers)
+            assertEquals(1, updatedProject.reviewDecisionMatrix.patternsCount)
+            assertEquals(
+                snowballr.ProjectOuterClass.PaperDecision.PAPER_DECISION_DECLINED,
+                updatedProject.reviewDecisionMatrix.patternsList.first().decision,
+            )
+        }
+
+        @Test
+        fun `When updating decision matrix on a non existing project, then NoSuchElementException is thrown`() =
+            runTest {
+                val request = Project.Update.newBuilder()
+                    .setProject(
+                        Project.newBuilder()
+                            .setId(UUID.randomUUID().toString())
+                            .setName("Missing Project")
+                            .setSettings(
+                                Project.Settings.newBuilder()
+                                    .setDecisionMatrix(
+                                        ReviewDecisionMatrix.newBuilder()
+                                            .setNumberOfReviewers(2)
+                                            .build(),
+                                    )
+                                    .build(),
+                            )
+                            .build(),
+                    )
+                    .setMask(
+                        FieldMaskUtil.fromStringList(
+                            listOf("project.settings.decision_matrix.number_of_reviewers"),
+                        ),
+                    )
+                    .build()
+
+                assertThrows<NoSuchElementException> { repo.updateProject(request) }
+            }
     }
 
     @Nested
@@ -609,6 +695,29 @@ class ProjectTableRepoTest :
                 assertNull(project2.deletedAt)
                 assertThat(project2.name).isNotEmpty()
                 assertResultSuccess(criterionRepo.getCriterionById(criterionId2))
+            }
+
+        @Test
+        fun `When a cleared project is still referenced by a restrict foreign key, then hard delete is skipped`() =
+            runTest {
+                val projectId = insertProjectAndGetId(
+                    name = "Blocked Project",
+                    status = ProjectStatus.PROJECT_STATUS_DELETED,
+                    deletedAt = defaultThresholdDate.minusDays(1),
+                    createdBy = testUserId,
+                )
+                repo.clearSoftDeletedProjects(defaultThresholdDate)
+
+                db.query {
+                    ProjectDeleteBlockerTable.insert {
+                        it[ProjectDeleteBlockerTable.projectId] = projectId
+                    }
+                }
+
+                assertDoesNotThrow { repo.hardDeleteClearedProjects() }
+
+                val project = assertResultSuccess(repo.getProjectById(projectId))
+                assertEquals(ProjectStatus.PROJECT_STATUS_UNSPECIFIED, project.status)
             }
     }
 }

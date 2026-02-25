@@ -195,4 +195,29 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
             mainService.getPapersToReviewForProject(project.id)
         }
     }
+
+    @Test
+    fun `When a project paper has no reviews yet, then it is returned as paper to review`() = runTest {
+        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+        val project = DataBuilder.createExampleProject()
+        val author = DataBuilder.createExampleAuthor()
+        val paper = DataBuilder.createExamplePaper(authors = listOf(author))
+        val projectPaper = DataBuilder.createExampleProjectPaper(
+            projectId = project.id,
+            paperId = paper.id,
+            decision = PaperDecision.PAPER_DECISION_UNREVIEWED,
+        )
+        val projectPaperWithPaper = ProjectPaperWithPaper(projectPaper, paper)
+
+        mockCurrentUser(currentUser)
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
+        coEvery { projectMemberRepoMock.isProjectMember(project.id, currentUser.id) } returns false
+        coEvery { projectPaperRepoMock.getAllProjectPapersWithPapers(project.id) } returns listOf(projectPaperWithPaper)
+        coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id) } returns emptyList()
+        coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper.id) } returns emptyList()
+
+        val result = mainService.getPapersToReviewForProject(project.id)
+        assertThat(result.projectPapersList).hasSize(1)
+        assertThat(result.projectPapersList.first().id).isEqualTo(projectPaper.id.toString())
+    }
 }

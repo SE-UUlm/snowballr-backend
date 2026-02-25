@@ -10,6 +10,7 @@ import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.dto.ProjectMember
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.notfound.InvitationTokenNotFoundException
+import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundByEmailException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.ProjectOuterClass
 import snowballr.UserOuterClass
@@ -42,15 +43,16 @@ class AcceptProjectInvitationTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the user associated with the token is not registered, then a TestSpecificException is thrown`() =
+    fun `When the user associated with the token is not registered, then a FailedPreconditionException is thrown`() =
         runTest {
             val token = DataBuilder.createExampleInvitationToken()
             val request = ProjectOuterClass.Project.Member.Accept.newBuilder().setToken(token.token).build()
 
             coEvery { invitationTokenRepoMock.getInvitationTokenByValue(token.token) } returns Result.success(token)
-            coEvery { userRepoMock.getUserByEmail(token.email) } returns Result.failure(TestSpecificException())
+            coEvery { userRepoMock.getUserByEmail(token.email) } returns
+                Result.failure(UserNotFoundByEmailException(token.email))
 
-            assertThrows<TestSpecificException> { mainService.acceptProjectInvitation(request) }
+            assertThrows<FailedPreconditionException> { mainService.acceptProjectInvitation(request) }
         }
 
     @Test

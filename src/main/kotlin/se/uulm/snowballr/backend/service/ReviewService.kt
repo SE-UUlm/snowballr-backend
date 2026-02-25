@@ -102,7 +102,6 @@ class ReviewService(
      * Determines the final paper decision based on the given list of reviews.
      *
      * This function follows the following decision process:
-     * - If there are no reviews, the paper is marked as [PaperDecision.PAPER_DECISION_UNREVIEWED].
      * - If the number of reviews is below the required threshold (as defined in the decision matrix),
      *   the paper remains with [PaperDecision.PAPER_DECISION_IN_REVIEW].
      * - Once the expected number of reviews is reached, the function attempts to match the current review distribution
@@ -121,9 +120,6 @@ class ReviewService(
      * @return The computed [PaperDecision] based on the given reviews.
      */
     private fun determinePaperDecision(reviews: List<Review>, decisionMatrix: ReviewDecisionMatrix): PaperDecision {
-        if (reviews.isEmpty()) {
-            return PaperDecision.PAPER_DECISION_UNREVIEWED
-        }
         if (reviews.size < decisionMatrix.numberOfReviewers) {
             return PaperDecision.PAPER_DECISION_IN_REVIEW
         }

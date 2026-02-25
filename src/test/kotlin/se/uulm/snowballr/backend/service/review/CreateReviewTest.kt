@@ -299,6 +299,85 @@ class CreateReviewTest : MainServiceTest() {
         }
 
     @Test
+    fun `When required review count is exceeded and the latest review is REVIEW_DECISION_DECLINED, then final paper decision is REVIEW_DECISION_DECLINED`() =
+        runTest {
+            val project = DataBuilder.createExampleProject(
+                reviewDecisionMatrix = createExampleReviewDecisionMatrix(numberOfReviewers = 2),
+            )
+            val firstReview = DataBuilder.createExampleReview(
+                projectPaperId = projectPaperId,
+                decision = ReviewDecision.REVIEW_DECISION_MAYBE,
+                userId = UUID.randomUUID(),
+            )
+            val secondReview = DataBuilder.createExampleReview(
+                projectPaperId = projectPaperId,
+                decision = ReviewDecision.REVIEW_DECISION_ACCEPTED,
+                userId = UUID.randomUUID(),
+            )
+            val declineReview = DataBuilder.createExampleReview(
+                projectPaperId = projectPaperId,
+                decision = ReviewDecision.REVIEW_DECISION_DECLINED,
+                userId = userId,
+            )
+            val createReviewRequest = ReviewOuterClass.Review.Create.newBuilder()
+                .setProjectPaperId(projectPaperId.toString())
+                .setDecision(ReviewDecision.REVIEW_DECISION_DECLINED)
+                .addAllSelectedCriteriaIds(selectedCriteriaIds.map(UUID::toString))
+                .build()
+
+            mockCreateReview(
+                project = project,
+                existingReviews = listOf(firstReview, secondReview),
+                stopBefore = reviewRepoMock::createReview,
+            )
+            coEvery { reviewRepoMock.createReview(createReviewRequest, userId) } returns declineReview
+            coEvery { reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(declineReview.id) } returns
+                selectedCriteriaIds
+            coEvery { criterionRepoMock.getAllProjectCriteria(project.id) } returns emptyList()
+            coEvery {
+                projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_DECLINED)
+            } returns Unit
+
+            assertDoesNotThrow { mainService.createReview(createReviewRequest) }
+            coVerify(exactly = 1) {
+                projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_DECLINED)
+            }
+        }
+
+    @Test
+    fun `When hard exclusion criterion is selected but review is REVIEW_DECISION_ACCEPTED, then normal decision matrix is used`() =
+        runTest {
+            val hardExclusionCriterion = DataBuilder.createExampleProjectCriterion(
+                category = CriterionCategory.CRITERION_CATEGORY_HARD_EXCLUSION,
+            )
+            val acceptedReview = DataBuilder.createExampleReview(
+                projectPaperId = projectPaperId,
+                decision = ReviewDecision.REVIEW_DECISION_ACCEPTED,
+                userId = userId,
+            )
+            val createReviewRequest = ReviewOuterClass.Review.Create.newBuilder()
+                .setProjectPaperId(projectPaperId.toString())
+                .setDecision(ReviewDecision.REVIEW_DECISION_ACCEPTED)
+                .addAllSelectedCriteriaIds(selectedCriteriaIds.map(UUID::toString))
+                .addSelectedCriteriaIds(hardExclusionCriterion.id.toString())
+                .build()
+
+            mockCreateReview(stopBefore = reviewRepoMock::createReview)
+            coEvery { reviewRepoMock.createReview(createReviewRequest, userId) } returns acceptedReview
+            coEvery { reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(acceptedReview.id) } returns
+                listOf(defaultCriterion, hardExclusionCriterion.id)
+            coEvery { criterionRepoMock.getAllProjectCriteria(project.id) } returns listOf(hardExclusionCriterion)
+            coEvery {
+                projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_IN_REVIEW)
+            } returns Unit
+
+            assertDoesNotThrow { mainService.createReview(createReviewRequest) }
+            coVerify(exactly = 1) {
+                projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_IN_REVIEW)
+            }
+        }
+
+    @Test
     fun `When a review is created for a non existent project, then a ProjectNotFoundException is thrown`() = runTest {
         mockCreateReview(stopBefore = projectRepoMock::getProjectById)
 
