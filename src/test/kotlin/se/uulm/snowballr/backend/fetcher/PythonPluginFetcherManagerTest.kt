@@ -11,6 +11,7 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.env.Env
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.model.dto.Author
+import se.uulm.snowballr.backend.model.exception.UnauthorizedFetcherPathException
 import se.uulm.snowballr.backend.model.exception.notfound.FetcherNotFoundException
 import java.nio.file.Files
 import java.nio.file.Path
@@ -23,6 +24,11 @@ class PythonPluginFetcherManagerTest {
     private lateinit var pluginDirectory: Path
     private lateinit var fetcherDirectory: Path
     private lateinit var fetcherManager: PythonPluginFetcherManager
+
+    private fun createSymlink(link: Path, target: Path) {
+        Files.deleteIfExists(link)
+        Files.createSymbolicLink(link, target)
+    }
 
     @BeforeEach
     fun setUp() {
@@ -157,12 +163,84 @@ class PythonPluginFetcherManagerTest {
     }
 
     @Test
-    fun `When a fetcher path traverses outside root, then a FetcherNotFoundException is thrown`() = runTest {
-        val exception = assertThrows<FetcherNotFoundException> {
+    fun `When a fetcher path traverses outside root, then an UnauthorizedFetcherPathException is thrown`() = runTest {
+        val exception = assertThrows<UnauthorizedFetcherPathException> {
             fetcherManager.getAvailableOptions("../outside")
         }
 
-        assertThat(exception.message).contains("Fetcher \"../outside\" not found.")
+        assertThat(exception.message).contains("Fetcher \"../outside\" is outside the configured fetchers directory.")
+    }
+
+    @Test
+    fun `When a fetcher symlink points outside root, then an UnauthorizedFetcherPathException is thrown`() = runTest {
+        val outsideDir = Files.createTempDirectory("python-fetcher-outside")
+        val outsideTarget = outsideDir.resolve("outside_fetcher.py").apply {
+            writeText(
+                """
+                import json
+                import sys
+                if sys.argv[1] == "options":
+                    print(json.dumps({"ok": "nope"}))
+                """.trimIndent(),
+            )
+        }
+
+        // Link inside fetcherDirectory -> target outside
+        createSymlink(
+            link = fetcherDirectory.resolve("symlink_outside.py"),
+            target = outsideTarget,
+        )
+
+        val exception = assertThrows<UnauthorizedFetcherPathException> {
+            fetcherManager.getAvailableOptions("symlink_outside")
+        }
+        assertThat(exception.message)
+            .contains("Fetcher \"symlink_outside\" is outside the configured fetchers directory.")
+
+        outsideDir.toFile().deleteRecursively()
+    }
+
+    @Test
+    fun `When a fetcher is a symlink to a file inside root, then it is allowed`() = runTest {
+        writeFetcher(
+            "target_fetcher",
+            """
+            import json
+            import sys
+            if sys.argv[1] == "options":
+                print(json.dumps({"foo": "bar"}))
+            """.trimIndent(),
+        )
+
+        // Link inside fetcherDirectory -> target inside
+        createSymlink(
+            link = fetcherDirectory.resolve("symlink_inside.py"),
+            target = fetcherDirectory.resolve("target_fetcher.py"),
+        )
+
+        val options = fetcherManager.getAvailableOptions("symlink_inside")
+        assertEquals(mapOf("foo" to "bar"), options)
+    }
+
+    @Test
+    fun `When a fetcher name contains invalid path characters, then a FetcherNotFoundException is thrown`() = runTest {
+        val exception = assertThrows<FetcherNotFoundException> {
+            fetcherManager.getAvailableOptions("invalid\u0000name")
+        }
+
+        assertThat(exception.message).contains("Fetcher \"invalid")
+        assertThat(exception.message).contains("not found.")
+    }
+
+    @Test
+    fun `When the configured fetchers directory is missing, then a FetcherNotFoundException is thrown`() = runTest {
+        fetcherDirectory.toFile().deleteRecursively()
+
+        val exception = assertThrows<FetcherNotFoundException> {
+            fetcherManager.getAvailableOptions("IEEEXplore")
+        }
+
+        assertThat(exception.message).contains("Fetcher \"IEEEXplore\" not found.")
     }
 
     @Test

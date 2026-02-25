@@ -6,11 +6,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import se.uulm.snowballr.backend.env.EnvReader
+import se.uulm.snowballr.backend.model.exception.UnauthorizedFetcherPathException
 import se.uulm.snowballr.backend.model.exception.notfound.FetcherNotFoundException
+import java.io.IOException
+import java.nio.file.InvalidPathException
 import java.nio.file.Path
 import kotlin.io.path.createDirectories
 import kotlin.io.path.extension
-import kotlin.io.path.isRegularFile
 import kotlin.io.path.listDirectoryEntries
 import kotlin.io.path.nameWithoutExtension
 import kotlin.io.path.writeText
@@ -137,13 +139,42 @@ class PythonPluginFetcherManager(
         }
     }
 
+    /**
+     * Resolves the on-disk path and validates that it is safe to execute.
+     *
+     * The script must be a direct child of the configured fetchers directory. Symlinks are allowed,
+     * but the fully resolved target must still reside in that directory.
+     *
+     * @param fetcher Base name of the fetcher script (without `.py` extension)
+     * @return Path to the validated fetcher script
+     * @throws UnauthorizedFetcherPathException if the fetcher path traverses outside the configured directory.
+     * @throws FetcherNotFoundException for missing fetchers and all other path resolution errors.
+     */
+    @Suppress("ThrowsCount")
     private fun resolveFetcherPath(fetcher: String): Path {
-        val root = root.normalize()
-        val fetcherPath = root.resolve("$fetcher.py").normalize()
-        if (fetcherPath.parent != root || !fetcherPath.isRegularFile()) {
-            throw FetcherNotFoundException(fetcher)
-        }
+        return runCatching {
+            val normalizedRoot = root.normalize()
+            val fetcherPath = normalizedRoot.resolve("$fetcher.py").normalize()
 
-        return fetcherPath
+            if (fetcherPath.parent != normalizedRoot) {
+                throw UnauthorizedFetcherPathException(fetcher)
+            }
+
+            val rootReal = normalizedRoot.toRealPath()
+            val fetcherReal = fetcherPath.toRealPath()
+
+            if (fetcherReal.parent != rootReal) {
+                throw UnauthorizedFetcherPathException(fetcher)
+            }
+
+            fetcherPath
+        }.getOrElse { exception ->
+            when (exception) {
+                is UnauthorizedFetcherPathException -> throw exception
+                is InvalidPathException -> throw FetcherNotFoundException(fetcher)
+                is IOException -> throw FetcherNotFoundException(fetcher)
+                else -> throw exception
+            }
+        }
     }
 }

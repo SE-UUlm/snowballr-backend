@@ -72,6 +72,9 @@ file directly contained within the `fetchers` directory will be treated as a
 fetcher. If you would like to create a reusable module/library, put it inside a
 subdirectory like the `lib` folder or create a new one.
 
+Fetcher names are strictly resolved to direct children of this directory.
+Path traversal and symlink targets outside this directory are rejected.
+
 ### Fetcher Contract
 
 Every fetcher is required to follow an implicit contract to be compatible with
