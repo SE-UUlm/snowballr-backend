@@ -50,7 +50,7 @@ jobs:
 
             - name: Upload report
               if: failure() || success()
-              uses: actions/upload-artifact@v6
+              uses: actions/upload-artifact@v7
               with:
                   name: test-report
                   path: |
@@ -68,7 +68,7 @@ jobs:
                   update-comment: true
 
             - name: Upload coverage report
-              uses: actions/upload-artifact@v6
+              uses: actions/upload-artifact@v7
               if: ${{ !cancelled() }}
               with:
                   name: coverage-report
