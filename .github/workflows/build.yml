@@ -21,7 +21,7 @@ jobs:
               run: ./gradlew shadowJar --stacktrace
 
             - name: Upload jar file
-              uses: actions/upload-artifact@v6
+              uses: actions/upload-artifact@v7
               with:
                   name: snowballr-backend-jar
                   path: build/libs/*.jar
