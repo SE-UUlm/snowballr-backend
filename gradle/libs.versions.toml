@@ -31,7 +31,7 @@ testcontainers = "2.0.3"
 kotlinx-serialization-json = "1.9.0"
 nanoid = "1.0.1"
 git-versioning = "6.4.4"
-undercouch-download = "5.6.0"
+undercouch-download = "5.7.0"
 sonarqube = "7.2.2.6593"
 
 [libraries]
