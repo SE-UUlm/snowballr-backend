@@ -106,7 +106,7 @@ dependencies {
 }
 
 kotlin {
-    jvmToolchain(21)
+    jvmToolchain(25)
 }
 
 val fetcherVenvDir = layout.projectDirectory.dir(".venv").asFile
@@ -297,7 +297,7 @@ tasks.withType<Detekt>().configureEach {
     exclude {
         it.file.path.contains("build")
     }
-    jvmTarget = "1.8"
+    jvmTarget = "22"
     classpath = sourceSets["main"].runtimeClasspath
     baseline.set(file("$rootDir/detekt-baseline.xml"))
     parallel = true
@@ -309,7 +309,7 @@ tasks.withType<DetektCreateBaselineTask>().configureEach {
     exclude {
         it.file.path.contains("build")
     }
-    jvmTarget = "1.8"
+    jvmTarget = "22"
     classpath = sourceSets["main"].runtimeClasspath
     parallel = true
 }

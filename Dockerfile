@@ -4,7 +4,7 @@ ARG AMD64_ID=251600596
 ARG ARM64_ID=251600609
 
 # Stage 1: Build the application
-FROM gradle:9.3.1-jdk21-alpine AS build
+FROM gradle:9.3.1-jdk25-alpine AS build
 
 WORKDIR /app
 
@@ -52,7 +52,7 @@ RUN apk add --no-cache curl && \
 FROM ghcr.io/astral-sh/uv:0.11.7 AS uv
 
 # Stage 4: Run the application
-FROM eclipse-temurin:21-jre-alpine-3.21 AS final
+FROM eclipse-temurin:25-jre-alpine-3.23 AS final
 
 WORKDIR /app
 
