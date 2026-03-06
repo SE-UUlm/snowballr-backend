@@ -6,6 +6,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.model.exception.UnauthorizedFetcherPathException
@@ -59,15 +60,14 @@ class PythonPluginFetcherManager(
         .toSet()
 
     override suspend fun getAvailableOptions(fetcher: String): Map<String, String> =
-        Json.decodeFromString<Map<String, String>>(
-            execFetcher(fetcher, "options"),
-        )
+        decodeFetcherJson(fetcher, execFetcher(fetcher, "options"))
 
     override suspend fun searchPapers(
         fetcher: String,
         searchQuery: String,
         options: Map<String, String>,
-    ): Set<FetcherPaper> = Json.decodeFromString<Set<FetcherPaper>>(
+    ): Set<FetcherPaper> = decodeFetcherJson(
+        fetcher,
         execFetcher(
             fetcher,
             "query",
@@ -80,7 +80,8 @@ class PythonPluginFetcherManager(
         fetcher: String,
         paper: FetcherPaper,
         options: Map<String, String>,
-    ): Set<FetcherPaper> = Json.decodeFromString<Set<FetcherPaper>>(
+    ): Set<FetcherPaper> = decodeFetcherJson(
+        fetcher,
         execFetcher(
             fetcher,
             "forwards",
@@ -93,7 +94,8 @@ class PythonPluginFetcherManager(
         fetcher: String,
         paper: FetcherPaper,
         options: Map<String, String>,
-    ): Set<FetcherPaper> = Json.decodeFromString<Set<FetcherPaper>>(
+    ): Set<FetcherPaper> = decodeFetcherJson(
+        fetcher,
         execFetcher(
             fetcher,
             "backwards",
@@ -117,6 +119,7 @@ class PythonPluginFetcherManager(
      * - python fetcher.py backwards <PAPER> <OPTIONS>
      * - python fetcher.py forwards <PAPER> <OPTIONS>
      */
+    @Suppress("ThrowsCount")
     private suspend fun execFetcher(
         fetcher: String,
         vararg args: String,
@@ -152,7 +155,11 @@ class PythonPluginFetcherManager(
 
         if (returnCode == 0) {
             if (!stderr.isBlank()) logger.info { "Fetcher '$fetcher' encountered a problem: $stderr" }
-            return stdout.lineSequence().first()
+            val output = stdout.lineSequence().firstOrNull()?.trim().orEmpty()
+            if (output.isBlank()) {
+                throw FetcherException("Fetcher '$fetcher' returned no JSON output.")
+            }
+            return output
         } else {
             logger.error { "Could not correctly execute fetcher '$fetcher':\n$stderr" }
             throw FetcherException(stderr)
@@ -196,5 +203,21 @@ class PythonPluginFetcherManager(
                 else -> throw exception
             }
         }
+    }
+
+    /**
+     * Decodes the JSON payload returned by a fetcher and normalizes parse failures
+     * into [FetcherException] so callers get a stable fetcher-specific error.
+     *
+     * @param T Type of the JSON payload
+     * @param fetcher Name of the fetcher that returned the JSON
+     * @param input JSON payload returned by the fetcher
+     * @return Decoded JSON payload
+     * @throws FetcherException if the JSON payload could not be decoded
+     */
+    private inline fun <reified T> decodeFetcherJson(fetcher: String, input: String): T = try {
+        Json.decodeFromString<T>(input)
+    } catch (exception: SerializationException) {
+        throw FetcherException("Fetcher '$fetcher' returned invalid JSON.", exception)
     }
 }

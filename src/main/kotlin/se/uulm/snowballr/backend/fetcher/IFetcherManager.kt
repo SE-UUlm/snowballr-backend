@@ -1,6 +1,6 @@
 package se.uulm.snowballr.backend.fetcher
 
-class FetcherException(stderr: String) : Exception(stderr)
+class FetcherException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
 
 /**
  * Delegate requests to multiple fetchers using their names.

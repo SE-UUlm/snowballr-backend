@@ -266,6 +266,41 @@ class PythonPluginFetcherManagerTest {
     }
 
     @Test
+    fun `When a fetcher returns invalid JSON, then a FetcherException is thrown`() = runTest {
+        writeFetcher(
+            "invalid_json_fetcher",
+            """
+            if True:
+                print("{invalid-json")
+            """.trimIndent(),
+        )
+
+        val exception = assertThrows<FetcherException> {
+            fetcherManager.getAvailableOptions("invalid_json_fetcher")
+        }
+
+        assertThat(exception.message).contains("Fetcher 'invalid_json_fetcher' returned invalid JSON.")
+        assertThat(exception.cause).isNotNull()
+    }
+
+    @Test
+    fun `When a fetcher returns no stdout payload, then a FetcherException is thrown`() = runTest {
+        writeFetcher(
+            "empty_output_fetcher",
+            """
+            if True:
+                print("")
+            """.trimIndent(),
+        )
+
+        val exception = assertThrows<FetcherException> {
+            fetcherManager.getAvailableOptions("empty_output_fetcher")
+        }
+
+        assertThat(exception.message).contains("Fetcher 'empty_output_fetcher' returned no JSON output.")
+    }
+
+    @Test
     fun `When a fetcher exceeds the configured timeout, then a timeout FetcherException is thrown`() = runTest {
         val timeoutFetcherManager = PythonPluginFetcherManager(
             createEnvReader(pluginDirectory),
