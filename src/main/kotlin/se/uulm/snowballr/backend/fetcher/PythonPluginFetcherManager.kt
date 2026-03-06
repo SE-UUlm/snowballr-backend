@@ -126,7 +126,7 @@ class PythonPluginFetcherManager(
         val processBuilder = ProcessBuilder(pythonExecutable, fetcherPath.toString(), *args)
             .redirectOutput(ProcessBuilder.Redirect.PIPE)
             .redirectError(ProcessBuilder.Redirect.PIPE)
-            .also { it.environment().put("PYTHONPATH", root.resolve("lib").toAbsolutePath().toString()) }
+            .also { it.environment()["PYTHONPATH"] = root.resolve("lib").toAbsolutePath().toString() }
         val process = withContext(dispatcher) { processBuilder.start() }
 
         val (stdout, stderr, returnCode) = coroutineScope {
