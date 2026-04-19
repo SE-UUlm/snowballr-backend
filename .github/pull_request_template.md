@@ -7,14 +7,14 @@ Closes <!-- issue reference -->
 
 ## Checklist
 
-Either tick or cross out the items that do not apply (using \~\~example text\~\~) and give a reason why the item does
-not apply.
+Either tick or cross out the items that do not apply (using \~\~example text\~\~) and give a reason why the item does not apply.
 
 ### Author
 
 - [ ] I have updated the documentation accordingly and commented my code
+- [ ] I have manually tested my changes
 - [ ] I have added tests that prove my fix is effective or that my feature works
 
 ### Reviewer
 
-- [ ] I have checked the implementation against the requirements
+- [ ] I have checked the changes against the requirements
