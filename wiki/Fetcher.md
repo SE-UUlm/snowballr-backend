@@ -37,23 +37,24 @@ to a running SnowballR backend instance.
 ### Prerequisites
 
 - A working Python installation (Version >= 3.12).
-- A properly set-up and activated [Python virtual environment](https://docs.python.org/3/library/venv.html).
+- [uv](https://docs.astral.sh/uv/) for managing the Python virtual environment
+  and dependencies.
 - Your favourite code editor.
 
 The plugin system requires a base set of python dependencies to work. Install
-them using the following command (again, make sure you're in the same `venv` the
-SnowballR backend will later be executed in):
+them using the following commands:
 
 ```bash
-pip install -r requirements.txt
+uv venv .venv
+uv pip sync --python .venv/bin/python requirements.txt
 ```
 
 The list of required packages can be also found in the [requirements.txt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/requirements.txt).
 
 > [!IMPORTANT]
-> The plugin system makes use of the environments `python` installation. Again,
-> make sure to execute the backend in the correct `venv`, where the required
-> packages were also installed.
+> The plugin system uses the configured python executable (`PYTHON_EXECUTABLE`,
+> default `python3`). Make sure it points to the environment where the required
+> packages are installed.
 
 To get proper autocomplete and type checking for the SnowballR types, add the
 `./plugins/fetchers/lib/` directory to your python path. This can be done by

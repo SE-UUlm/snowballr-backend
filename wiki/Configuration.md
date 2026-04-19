@@ -46,6 +46,7 @@ The `PROFILE` variable determines the default behavior of the application.
 | `INVITATION_TOKEN_LIFETIME_IN_DAYS`    |                 :x:                  |       7       | Lifetime of invitation tokens in days.                                                                     |
 | `VERIFICATION_TOKEN_LIFETIME_IN_DAYS`  |                 :x:                  |       1       | Lifetime of verification tokens in days.                                                                   |
 | `PLUGIN_DIRECTORY`                     |                 :x:                  | `./plugins`   | The directory in which the plugins reside. The directory is relative to the root directory of the project. |
+| `PYTHON_EXECUTABLE`                    |                 :x:                  |   `python3`   | Python executable used to run fetchers (for example `.venv/bin/python3`).                                  |
 
 \* only used when using the docker compose profiles.
 
