@@ -5,6 +5,15 @@ labels: ["enhancement"]
 projects: ["SE-UUlm/2"]
 
 body:
+    - type: checkboxes
+      id: existing-issue
+      attributes:
+          label: Is there an existing issue for this?
+          description: Please check whether this feature request has already been reported.
+          options:
+              - label: I have searched the existing issues
+                required: true
+
     - type: input
       id: use-case
       attributes:
