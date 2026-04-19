@@ -39,6 +39,7 @@ private const val VERIFICATION_TOKEN_LIFETIME_IN_DAYS = "VERIFICATION_TOKEN_LIFE
 
 // Plugins
 private const val PLUGIN_DIRECTORY = "PLUGIN_DIRECTORY"
+private const val PYTHON_EXECUTABLE = "PYTHON_EXECUTABLE"
 
 // Default values
 private val DEFAULT_PROFILE = AppProfile.PRODUCTION
@@ -49,6 +50,7 @@ private const val DEFAULT_DATABASE_HOST = "localhost"
 private const val DEFAULT_INVITATION_TOKEN_LIFETIME_IN_DAYS = 7
 private const val DEFAULT_VERIFICATION_TOKEN_LIFETIME_IN_DAYS = 1
 private val DEFAULT_PLUGIN_DIRECTORY = Path.of("./plugins")
+private const val DEFAULT_PYTHON_EXECUTABLE = "python3"
 
 private val logger = KotlinLogging.logger {}
 
@@ -205,6 +207,7 @@ class EnvReader(
     private fun buildPlugins(): Env.Plugins {
         return Env.Plugins(
             pluginDirectory = envService.getPathOrDefault(PLUGIN_DIRECTORY, DEFAULT_PLUGIN_DIRECTORY),
+            pythonExecutable = envService.getStringOrDefault(PYTHON_EXECUTABLE, DEFAULT_PYTHON_EXECUTABLE),
         )
     }
 

@@ -62,5 +62,6 @@ data class Env(
 
     data class Plugins(
         val pluginDirectory: Path,
+        val pythonExecutable: String,
     )
 }

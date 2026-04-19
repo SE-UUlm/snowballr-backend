@@ -225,6 +225,7 @@ class PythonPluginFetcherManagerTest {
     private fun createEnvReader(pluginDirectory: Path): EnvReader {
         val pluginEnv = mockk<Env.Plugins>()
         every { pluginEnv.pluginDirectory } returns pluginDirectory
+        every { pluginEnv.pythonExecutable } returns "python3"
 
         val env = mockk<Env>()
         every { env.plugins } returns pluginEnv
