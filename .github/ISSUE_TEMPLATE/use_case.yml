@@ -5,6 +5,15 @@ labels: ["use case"]
 projects: ["SE-UUlm/2"]
 
 body:
+    - type: checkboxes
+      id: existing-issue
+      attributes:
+          label: Is there an existing issue for this?
+          description: Please check whether this use case has already been reported.
+          options:
+              - label: I have searched the existing issues
+                required: true
+
     - type: input
       id: actor
       attributes:
