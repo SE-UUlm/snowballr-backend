@@ -1,6 +1,6 @@
 certifi==2025.10.5
 charset-normalizer==3.4.7
-dataclass-wizard==0.35.1
+dataclass-wizard==0.39.1
 idna==3.11
 pycurl==7.45.7
 requests==2.33.1
