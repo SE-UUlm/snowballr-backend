@@ -1,7 +1,7 @@
 [versions]
 kotlin = "2.2.21"
 kotlinx-coroutines = "1.10.2"
-koin = "4.1.1"
+koin = "4.2.1"
 logback = "1.5.27"
 logger = "7.0.13"
 exposed = "1.2.0"
