@@ -145,12 +145,25 @@ tasks.shadowDistTar {
 
 tasks.test {
     dependsOn("syncFetcherPythonDeps")
-    useJUnitPlatform()
+    useJUnitPlatform {
+        excludeTags("integration")
+    }
     reports.html.required.set(true)
     reports.html.outputLocation.set(layout.buildDirectory.dir("testReportHtml"))
     reports.junitXml.required.set(false)
     finalizedBy(tasks.koverHtmlReport)
     finalizedBy(tasks.koverXmlReport)
+}
+
+tasks.register<Test>("integrationTest") {
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    useJUnitPlatform {
+        includeTags("integration")
+    }
+    reports.html.required.set(true)
+    reports.html.outputLocation.set(layout.buildDirectory.dir("integrationTestReportHtml"))
+    reports.junitXml.required.set(false)
 }
 
 tasks.koverHtmlReport {
