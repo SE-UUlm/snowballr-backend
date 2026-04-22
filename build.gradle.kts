@@ -107,6 +107,34 @@ kotlin {
     jvmToolchain(21)
 }
 
+val fetcherVenvDir = layout.projectDirectory.dir(".venv").asFile
+val fetcherVenvPython = if (System.getProperty("os.name").startsWith("Windows", ignoreCase = true)) {
+    fetcherVenvDir.resolve("Scripts/python.exe").absolutePath
+} else {
+    fetcherVenvDir.resolve("bin/python3").absolutePath
+}
+
+tasks.register<Exec>("createFetcherVenv") {
+    group = "application"
+    description = "Creates the local Python virtual environment for fetcher plugins."
+    workingDir = projectDir
+    commandLine("uv", "venv", "--allow-existing", ".venv")
+}
+
+tasks.register<Exec>("syncFetcherPythonDeps") {
+    group = "application"
+    description = "Synchronizes Python fetcher dependencies from requirements.txt using uv."
+    dependsOn("createFetcherVenv")
+    workingDir = projectDir
+    commandLine("uv", "pip", "sync", "--python", fetcherVenvPython, "requirements.txt")
+}
+
+tasks.register("setupFetcherPython") {
+    group = "application"
+    description = "Prepares Python tooling required by fetcher plugins."
+    dependsOn("syncFetcherPythonDeps")
+}
+
 tasks.shadowJar {
     archiveClassifier.set("") // omit the "all" suffix
 }
@@ -116,6 +144,7 @@ tasks.shadowDistTar {
 }
 
 tasks.test {
+    dependsOn("syncFetcherPythonDeps")
     useJUnitPlatform()
     reports.html.required.set(true)
     reports.html.outputLocation.set(layout.buildDirectory.dir("testReportHtml"))
@@ -337,4 +366,8 @@ tasks.named("extractProto") {
 
 tasks.named("processResources") {
     dependsOn("downloadApiFiles")
+}
+
+tasks.named<JavaExec>("run") {
+    dependsOn("syncFetcherPythonDeps")
 }

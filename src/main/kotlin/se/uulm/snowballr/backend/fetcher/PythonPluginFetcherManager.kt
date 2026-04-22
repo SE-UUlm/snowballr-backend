@@ -30,8 +30,13 @@ class PythonPluginFetcherManager(
     envReader: EnvReader,
 ) : IFetcherManager {
     private val root = envReader.env.plugins.pluginDirectory.resolve("fetchers")
+    private val pythonExecutable = envReader.env.plugins.pythonExecutable
 
     init {
+        logger.info {
+            "Python fetcher setup: pythonExecutable='$pythonExecutable', pluginDirectory='${root.toAbsolutePath()}'"
+        }
+
         for (resource in resources) {
             val target = root.resolve(resource.removePrefix("/plugins/fetchers/"))
             val stream = this::class.java.getResourceAsStream(resource)
@@ -111,7 +116,7 @@ class PythonPluginFetcherManager(
         dispatcher: CoroutineDispatcher = Dispatchers.IO,
     ): String {
         val fetcherPath = resolveFetcherPath(fetcher)
-        val process = ProcessBuilder("python3", fetcherPath.toString(), *args)
+        val process = ProcessBuilder(pythonExecutable, fetcherPath.toString(), *args)
             .redirectOutput(ProcessBuilder.Redirect.PIPE)
             .redirectError(ProcessBuilder.Redirect.PIPE)
             .also { it.environment().put("PYTHONPATH", root.resolve("lib").toAbsolutePath().toString()) }

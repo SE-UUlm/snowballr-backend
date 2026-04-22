@@ -3,7 +3,6 @@ package se.uulm.snowballr.backend
 import com.github.jknack.handlebars.Template
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.bind
-import org.koin.core.module.dsl.createdAtStart
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 import org.simplejavamail.api.mailer.Mailer
@@ -110,7 +109,7 @@ import se.uulm.snowballr.backend.service.UserService
  * The ordering ensures proper dependency resolution and initialization.
  */
 val snowballRModule =
-    module {
+    module(createdAtStart = true) {
         envDeps()
         dbDeps()
         repositoryLayerDeps()
@@ -132,7 +131,6 @@ private fun Module.envDeps() {
  */
 private fun Module.dbDeps() {
     singleOf(::Database) {
-        createdAtStart()
         bind<IDatabase>()
     }
     single<ITokenMaintenanceService> { TokenMaintenanceService() }
@@ -197,16 +195,10 @@ fun createMailer(envReader: EnvReader): Mailer {
  * Consists of all dependencies that are used by the core service layer.
  */
 private fun Module.customServicesDeps() {
-    singleOf(::JwtManager) {
-        createdAtStart()
-        bind<IJwtManager>()
-    }
+    singleOf(::JwtManager) { bind<IJwtManager>() }
     singleOf(::PythonPluginFetcherManager) { bind<IFetcherManager>() }
     singleOf(::CookieManager) { bind<ICookieManager>() }
-    singleOf(::EmailManager) {
-        createdAtStart()
-        bind<IEmailManager>()
-    }
+    singleOf(::EmailManager) { bind<IEmailManager>() }
     singleOf(::AuthenticationManager) { bind<IAuthenticationManager>() }
 }
 

@@ -68,12 +68,12 @@ To build the project from source, run the following commands:
 
    The built JAR file can be found in the `build/libs` directory, named `snowballr-backend-<version>.jar`.
 
-3. Setup [Python venv](https://docs.python.org/3/library/venv.html) for the plugin system:
+3. Setup Python dependencies for the plugin system using
+   [uv](https://docs.astral.sh/uv/):
 
     ```bash
-    python3 -m venv .venv
-    source .venv/bin/activate # choose correct script (.fish, .csh, .ps1)
-    pip install -r requirements.txt
+    uv venv .venv
+    uv pip sync --python .venv/bin/python3 requirements.txt
     ```
 
 4. Run the application:
@@ -96,9 +96,8 @@ can run Gradle commands directly from the project root directory. For example, t
 ./gradlew run
 ```
 
-> [!INFO]
-> At the moment the provided run configuration is not working, as the backend would be started without a Python virtual
-> environment. Either manually change the run configuration or start it manually.
+This command automatically prepares `.venv` and synchronizes `requirements.txt`
+with `uv` before startup.
 
 If you're using IntelliJ IDEA, you can use the provided run configuration "Run Backend", which does the same as
 executing `./gradlew run`.
