@@ -33,6 +33,10 @@ class PythonPluginFetcherManager(
     private val pythonExecutable = envReader.env.plugins.pythonExecutable
 
     init {
+        logger.info {
+            "Python fetcher setup: pythonExecutable='$pythonExecutable', pluginDirectory='${root.toAbsolutePath()}'"
+        }
+
         for (resource in resources) {
             val target = root.resolve(resource.removePrefix("/plugins/fetchers/"))
             val stream = this::class.java.getResourceAsStream(resource)
