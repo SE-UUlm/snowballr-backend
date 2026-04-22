@@ -3,6 +3,8 @@ package se.uulm.snowballr.backend.fetcher
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import se.uulm.snowballr.backend.env.EnvReader
@@ -11,6 +13,7 @@ import se.uulm.snowballr.backend.model.exception.notfound.FetcherNotFoundExcepti
 import java.io.IOException
 import java.nio.file.InvalidPathException
 import java.nio.file.Path
+import java.util.concurrent.TimeUnit
 import kotlin.io.path.createDirectories
 import kotlin.io.path.extension
 import kotlin.io.path.listDirectoryEntries
@@ -30,6 +33,8 @@ private val resources = buildResources("/plugins/fetchers") {
 
 class PythonPluginFetcherManager(
     envReader: EnvReader,
+    private val executionTimeoutMillis: Long = 30_000L,
+    private val forceKillGraceMillis: Long = 1_000L,
 ) : IFetcherManager {
     private val root = envReader.env.plugins.pluginDirectory.resolve("fetchers")
     private val pythonExecutable = envReader.env.plugins.pythonExecutable
@@ -118,21 +123,36 @@ class PythonPluginFetcherManager(
         dispatcher: CoroutineDispatcher = Dispatchers.IO,
     ): String {
         val fetcherPath = resolveFetcherPath(fetcher)
-        val process = ProcessBuilder(pythonExecutable, fetcherPath.toString(), *args)
+        val processBuilder = ProcessBuilder(pythonExecutable, fetcherPath.toString(), *args)
             .redirectOutput(ProcessBuilder.Redirect.PIPE)
             .redirectError(ProcessBuilder.Redirect.PIPE)
             .also { it.environment().put("PYTHONPATH", root.resolve("lib").toAbsolutePath().toString()) }
-            .start()
+        val process = withContext(dispatcher) { processBuilder.start() }
 
-        val returnCode = withContext(dispatcher) {
-            process.waitFor()
+        val (stdout, stderr, returnCode) = coroutineScope {
+            val stdoutDeferred = async(dispatcher) { process.inputReader().use { it.readText() } }
+            val stderrDeferred = async(dispatcher) { process.errorReader().use { it.readText() } }
+
+            val finishedInTime = withContext(dispatcher) {
+                process.waitFor(executionTimeoutMillis, TimeUnit.MILLISECONDS)
+            }
+
+            if (!finishedInTime) {
+                process.destroy()
+                withContext(dispatcher) {
+                    if (!process.waitFor(forceKillGraceMillis, TimeUnit.MILLISECONDS)) {
+                        process.destroyForcibly()
+                    }
+                }
+                throw FetcherException("Fetcher '$fetcher' timed out after ${executionTimeoutMillis}ms.")
+            }
+
+            Triple(stdoutDeferred.await(), stderrDeferred.await(), process.exitValue())
         }
-
-        val stderr = process.errorReader().use { it.readText() }
 
         if (returnCode == 0) {
             if (!stderr.isBlank()) logger.info { "Fetcher '$fetcher' encountered a problem: $stderr" }
-            return process.inputReader().use { it.readLines().first() }
+            return stdout.lineSequence().first()
         } else {
             logger.error { "Could not correctly execute fetcher '$fetcher':\n$stderr" }
             throw FetcherException(stderr)

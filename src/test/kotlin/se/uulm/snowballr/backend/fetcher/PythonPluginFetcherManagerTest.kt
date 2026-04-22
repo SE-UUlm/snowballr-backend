@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.fetcher
 
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -17,8 +18,11 @@ import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.createDirectories
 import kotlin.io.path.exists
+import kotlin.io.path.readText
 import kotlin.io.path.writeText
+import kotlin.jvm.optionals.getOrElse
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class PythonPluginFetcherManagerTest {
     private lateinit var pluginDirectory: Path
@@ -262,6 +266,86 @@ class PythonPluginFetcherManagerTest {
     }
 
     @Test
+    fun `When a fetcher exceeds the configured timeout, then a timeout FetcherException is thrown`() = runTest {
+        val timeoutFetcherManager = PythonPluginFetcherManager(
+            createEnvReader(pluginDirectory),
+            executionTimeoutMillis = 100L,
+            forceKillGraceMillis = 50L,
+        )
+
+        writeFetcher(
+            "slow_fetcher",
+            """
+            import sys
+            import time
+
+            if sys.argv[1] == "options":
+                time.sleep(10)
+            """.trimIndent(),
+        )
+
+        val exception = assertThrows<FetcherException> {
+            timeoutFetcherManager.getAvailableOptions("slow_fetcher")
+        }
+
+        assertThat(exception.message).contains("Fetcher 'slow_fetcher' timed out after 100ms.")
+    }
+
+    @Test
+    fun `When a timed out fetcher ignores SIGTERM, then it is force killed after grace period`() = runTest {
+        val timeoutFetcherManager = PythonPluginFetcherManager(
+            createEnvReader(pluginDirectory),
+            executionTimeoutMillis = 100L,
+            forceKillGraceMillis = 100L,
+        )
+        val pidFile = fetcherDirectory.resolve("stuck_fetcher.pid")
+        val escapedPidFilePath = pidFile.toString().replace("\\", "\\\\")
+
+        writeFetcher(
+            "stuck_fetcher",
+            """
+            import os
+            import signal
+            import sys
+            import time
+
+            pid_file = "$escapedPidFilePath"
+            with open(pid_file, "w", encoding="utf-8") as file:
+                file.write(str(os.getpid()))
+
+            def ignore_sigterm(_signal_number, _frame):
+                return
+
+            signal.signal(signal.SIGTERM, ignore_sigterm)
+
+            if sys.argv[1] == "options":
+                while True:
+                    time.sleep(0.05)
+            """.trimIndent(),
+        )
+
+        val exception = assertThrows<FetcherException> {
+            timeoutFetcherManager.getAvailableOptions("stuck_fetcher")
+        }
+        assertThat(exception.message).contains("Fetcher 'stuck_fetcher' timed out after 100ms.")
+
+        assertTrue(
+            waitUntil(
+                timeoutMillis = 1_500L,
+                condition = { pidFile.exists() },
+            ),
+        )
+        val pid = pidFile.readText().trim().toLong()
+        val processHandle = ProcessHandle.of(pid)
+
+        val isProcessTerminated = waitUntil(
+            timeoutMillis = 3_000L,
+            condition = { processHandle.map { !it.isAlive }.getOrElse { true } },
+        )
+        assertTrue(isProcessTerminated)
+    }
+
+    @Test
     fun `When a fetcher writes to stderr but exits successfully, then the result is still returned`() = runTest {
         writeFetcher(
             "warning_fetcher",
@@ -298,6 +382,19 @@ class PythonPluginFetcherManagerTest {
 
     private fun writeFetcher(name: String, source: String) {
         fetcherDirectory.resolve("$name.py").writeText(source.trimIndent())
+    }
+
+    private suspend fun waitUntil(
+        timeoutMillis: Long,
+        pollIntervalMillis: Long = 25L,
+        condition: () -> Boolean,
+    ): Boolean {
+        val deadline = System.currentTimeMillis() + timeoutMillis
+        while (System.currentTimeMillis() < deadline) {
+            if (condition()) return true
+            delay(pollIntervalMillis)
+        }
+        return condition()
     }
 
     private fun createEnvReader(pluginDirectory: Path): EnvReader {
