@@ -32,6 +32,12 @@ private val resources = buildResources("/plugins/fetchers") {
     }
 }
 
+private data class ProcessResult(
+    val stdout: String,
+    val stderr: String,
+    val returnCode: Int,
+)
+
 class PythonPluginFetcherManager(
     envReader: EnvReader,
     private val executionTimeoutMillis: Long = 30_000L,
@@ -126,33 +132,66 @@ class PythonPluginFetcherManager(
         dispatcher: CoroutineDispatcher = Dispatchers.IO,
     ): String {
         val fetcherPath = resolveFetcherPath(fetcher)
+        val process = createProcess(fetcherPath, args, dispatcher)
+        val processResult = awaitProcessResult(fetcher, process, dispatcher)
+        return parseProcessResult(fetcher, processResult)
+    }
+
+    /**
+     * Creates and starts a Python fetcher process with the expected environment.
+     */
+    private suspend fun createProcess(
+        fetcherPath: Path,
+        args: Array<out String>,
+        dispatcher: CoroutineDispatcher,
+    ): Process {
+        @Suppress("SpreadOperator")
         val processBuilder = ProcessBuilder(pythonExecutable, fetcherPath.toString(), *args)
             .redirectOutput(ProcessBuilder.Redirect.PIPE)
             .redirectError(ProcessBuilder.Redirect.PIPE)
             .also { it.environment()["PYTHONPATH"] = root.resolve("lib").toAbsolutePath().toString() }
-        val process = withContext(dispatcher) { processBuilder.start() }
+        return withContext(dispatcher) {
+            processBuilder.start()
+        }
+    }
 
-        val (stdout, stderr, returnCode) = coroutineScope {
-            val stdoutDeferred = async(dispatcher) { process.inputReader().use { it.readText() } }
-            val stderrDeferred = async(dispatcher) { process.errorReader().use { it.readText() } }
+    /**
+     * Waits for the process to finish, enforcing timeout and force-kill grace period.
+     */
+    private suspend fun awaitProcessResult(
+        fetcher: String,
+        process: Process,
+        dispatcher: CoroutineDispatcher,
+    ): ProcessResult = coroutineScope {
+        val stdoutDeferred = async(dispatcher) { process.inputReader().use { it.readText() } }
+        val stderrDeferred = async(dispatcher) { process.errorReader().use { it.readText() } }
 
-            val finishedInTime = withContext(dispatcher) {
-                process.waitFor(executionTimeoutMillis, TimeUnit.MILLISECONDS)
-            }
-
-            if (!finishedInTime) {
-                process.destroy()
-                withContext(dispatcher) {
-                    if (!process.waitFor(forceKillGraceMillis, TimeUnit.MILLISECONDS)) {
-                        process.destroyForcibly()
-                    }
-                }
-                throw FetcherException("Fetcher '$fetcher' timed out after ${executionTimeoutMillis}ms.")
-            }
-
-            Triple(stdoutDeferred.await(), stderrDeferred.await(), process.exitValue())
+        val finishedInTime = withContext(dispatcher) {
+            process.waitFor(executionTimeoutMillis, TimeUnit.MILLISECONDS)
         }
 
+        if (!finishedInTime) {
+            process.destroy()
+            withContext(dispatcher) {
+                if (!process.waitFor(forceKillGraceMillis, TimeUnit.MILLISECONDS)) {
+                    process.destroyForcibly()
+                }
+            }
+            throw FetcherException("Fetcher '$fetcher' timed out after ${executionTimeoutMillis}ms.")
+        }
+
+        ProcessResult(
+            stdout = stdoutDeferred.await(),
+            stderr = stderrDeferred.await(),
+            returnCode = process.exitValue(),
+        )
+    }
+
+    /**
+     * Interprets the finished process result and returns the fetcher payload line.
+     */
+    private fun parseProcessResult(fetcher: String, processResult: ProcessResult): String {
+        val (stdout, stderr, returnCode) = processResult
         if (returnCode == 0) {
             if (!stderr.isBlank()) logger.info { "Fetcher '$fetcher' encountered a problem: $stderr" }
             val output = stdout.lineSequence().firstOrNull()?.trim().orEmpty()
@@ -206,14 +245,7 @@ class PythonPluginFetcherManager(
     }
 
     /**
-     * Decodes the JSON payload returned by a fetcher and normalizes parse failures
-     * into [FetcherException] so callers get a stable fetcher-specific error.
-     *
-     * @param T Type of the JSON payload
-     * @param fetcher Name of the fetcher that returned the JSON
-     * @param input JSON payload returned by the fetcher
-     * @return Decoded JSON payload
-     * @throws FetcherException if the JSON payload could not be decoded
+     * Decodes fetcher JSON output and maps parse failures to a fetcher-specific exception.
      */
     private inline fun <reified T> decodeFetcherJson(fetcher: String, input: String): T = try {
         Json.decodeFromString<T>(input)
