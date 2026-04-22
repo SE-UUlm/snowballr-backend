@@ -4,13 +4,13 @@ runs:
     using: composite
     steps:
         - name: Setup Java
-          uses: actions/setup-java@v4
+          uses: actions/setup-java@v5
           with:
               java-version: 21
               distribution: microsoft
 
         - name: Setup Gradle
-          uses: gradle/actions/setup-gradle@v4
+          uses: gradle/actions/setup-gradle@v6
           with:
               # Only write to cache on main or develop branch
               cache-read-only: ${{ github.ref_name != 'main' && github.ref_name != 'develop' }}
