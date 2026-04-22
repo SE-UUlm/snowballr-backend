@@ -17,6 +17,7 @@ On this page, we cover the following topics:
     * [Repository](#repository)
     * [Service](#service)
     * [Input Validation](#input-validation)
+  * [Integration Tests](#integration-tests)
 <!-- TOC -->
 <!-- @formatter:on -->
 <!-- markdownlint-enable MD007 -->
@@ -189,3 +190,27 @@ for an example.
 > For details on helpers for local development and manual testing, such as user seeding and authentication bypass, see
 > the [Configuration](https://github.com/SE-UUlm/snowballr-backend/wiki/Configuration#authentication-bypass-and-user-seeding)
 > guide._
+
+## Integration Tests
+
+Integration tests are used to test the interaction of services and repositories. They are located in the test directory
+[`integration`](https://github.com/SE-UUlm/snowballr-backend/tree/develop/src/test/kotlin/se/uulm/snowballr/backend/integration).
+They only components that are mocked are the environment variables and the email service, i.e. all external
+dependencies. Same as for the repository tests, an isolated PostgreSQL database is used.
+The SUT for all integration tests is the `mainService` object. With this, all layers can be accessed, as if it were
+called from the server layer.
+
+Do not use integration tests to test the functionality of a single method. Instead, use them to test the interaction of
+multiple methods, e.g., a complete use case. For instance, creating a project, adding members, make the members accept
+the invitation and check whether they are correctly added to the project.
+
+The class
+[`IntegrationTest`](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/test/kotlin/se/uulm/snowballr/backend/integration/IntegrationTest.kt)
+contains some helper methods for often reused workflows, such as registering and verifying the account of a user. To
+make calls as another user, use the `actAsUser` method, which temporarily switches the context in which the calls are
+made.
+
+For regression tests, i.e., testing whether a bug is fixed and does not occur again, we have a separate test class
+[`RegressionTest`](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/test/kotlin/se/uulm/snowballr/backend/integration/regression/RegressionTest.kt).
+In there, we collect all test cases that are related to fixed bugs. This way, we can easily run all regression tests to
+check whether a bug is fixed and does not occur again in the future.

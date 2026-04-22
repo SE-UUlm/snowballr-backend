@@ -89,7 +89,7 @@ open class IntegrationTest : KoinTest {
         serviceLayerDeps()
     }
 
-    /** User for testing. This prevents having to create a user for each test. */
+    // User for testing. This prevents having to create a user for each test.
     protected var testUserId: UUID = UUID.randomUUID()
 
     private fun Module.customServicesDeps() {
