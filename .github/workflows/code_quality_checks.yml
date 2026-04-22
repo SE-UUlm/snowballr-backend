@@ -44,9 +44,7 @@ jobs:
                   enable-cache: true
 
             - name: Run tests and collect coverage
-              run: |
-                  ./gradlew test
-                  ./gradlew koverPrintCoverage
+              run: ./gradlew test
 
             - name: Upload report
               if: failure() || success()
