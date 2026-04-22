@@ -196,7 +196,7 @@ private fun createMailer(envReader: EnvReader): Mailer {
  */
 private fun Module.customServicesDeps() {
     singleOf(::JwtManager) { bind<IJwtManager>() }
-    singleOf(::PythonPluginFetcherManager) { bind<IFetcherManager>() }
+    single<IFetcherManager> { PythonPluginFetcherManager(get()) }
     singleOf(::CookieManager) { bind<ICookieManager>() }
     singleOf(::EmailManager) { bind<IEmailManager>() }
     singleOf(::AuthenticationManager) { bind<IAuthenticationManager>() }

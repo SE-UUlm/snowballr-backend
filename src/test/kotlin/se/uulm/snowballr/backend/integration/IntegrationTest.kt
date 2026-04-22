@@ -97,7 +97,7 @@ open class IntegrationTest : KoinTest {
             createdAtStart()
             bind<IJwtManager>()
         }
-        singleOf(::PythonPluginFetcherManager) { bind<IFetcherManager>() }
+        single<IFetcherManager> { PythonPluginFetcherManager(get()) }
         singleOf(::CookieManager) { bind<ICookieManager>() }
         singleOf(::AuthenticationManager) { bind<IAuthenticationManager>() }
     }
