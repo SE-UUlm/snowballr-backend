@@ -72,6 +72,7 @@ fun mockEnvWithDefaultValues(): Env {
 
     val pluginsMock = mockk<Env.Plugins>()
     every { pluginsMock.pluginDirectory } returns Path.of("plugins")
+    every { pluginsMock.pythonExecutable } returns "python"
 
     val envMock = mockk<Env>()
     every { envMock.miscellaneous } returns miscellaneousMock
