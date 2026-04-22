@@ -265,6 +265,10 @@ class PythonPluginFetcherManager(
                 throw UnauthorizedFetcherPathException(fetcher)
             }
 
+            if (!java.nio.file.Files.isRegularFile(fetcherReal)) {
+                throw FetcherNotFoundException(fetcher)
+            }
+
             fetcherPath
         }.getOrElse { exception ->
             when (exception) {

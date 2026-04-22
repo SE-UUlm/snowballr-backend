@@ -230,6 +230,17 @@ class PythonPluginFetcherManagerTest {
     }
 
     @Test
+    fun `When a fetcher path resolves to a directory, then a FetcherNotFoundException is thrown`() = runTest {
+        fetcherDirectory.resolve("not_a_file.py").createDirectories()
+
+        val exception = assertThrows<FetcherNotFoundException> {
+            fetcherManager.getAvailableOptions("not_a_file")
+        }
+
+        assertThat(exception.message).contains("Fetcher \"not_a_file\" not found.")
+    }
+
+    @Test
     fun `When a fetcher path traverses outside root, then an UnauthorizedFetcherPathException is thrown`() = runTest {
         val exception = assertThrows<UnauthorizedFetcherPathException> {
             fetcherManager.getAvailableOptions("../outside")
