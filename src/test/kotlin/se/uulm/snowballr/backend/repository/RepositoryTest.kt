@@ -1,18 +1,10 @@
 package se.uulm.snowballr.backend.repository
 
-import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
 import org.jetbrains.exposed.v1.core.Table
-import org.jetbrains.exposed.v1.jdbc.JdbcTransaction
-import org.jetbrains.exposed.v1.jdbc.insertAndGetId
-import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
@@ -21,22 +13,12 @@ import org.junit.jupiter.api.TestInstance
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.dsl.module
-import org.testcontainers.postgresql.PostgreSQLContainer
-import se.uulm.snowballr.backend.RandomKeyGenerator
-import se.uulm.snowballr.backend.db.DatabaseHelper.addAllTables
-import se.uulm.snowballr.backend.db.DatabaseHelper.addExtensions
-import se.uulm.snowballr.backend.db.DatabaseHelper.dropAllTables
-import se.uulm.snowballr.backend.db.IDatabase
-import se.uulm.snowballr.backend.env.Env
+import se.uulm.snowballr.backend.TestDatabase
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.env.IEnvService
+import se.uulm.snowballr.backend.mockEnvWithDefaultValues
 import se.uulm.snowballr.backend.table.UserTable
-import snowballr.UserOuterClass.UserRole
-import snowballr.UserOuterClass.UserStatus
-import java.sql.Connection
 import java.util.UUID
-import javax.sql.DataSource
-import org.jetbrains.exposed.v1.jdbc.Database as JdbcDatabase
 
 /**
  * Base class for unit tests that interact with a test PostgreSQL database.
@@ -79,11 +61,10 @@ open class RepositoryTest(
 ) {
     // Initialize DB with empty dataSource only to set it in the setUp method
     protected val db = TestDatabase(HikariDataSource())
-    private val postgres = PostgreSQLContainer("postgres:16.1-alpine3.19")
 
     // Environment dependencies
-    val envServiceMock = mockk<IEnvService>()
-    val envReaderMock = mockk<EnvReader>()
+    private val envServiceMock = mockk<IEnvService>()
+    protected val envReaderMock = mockk<EnvReader>()
 
     private val repositoryTestModule = module {
         // Environment dependencies
@@ -91,126 +72,37 @@ open class RepositoryTest(
         single { envReaderMock }
 
         // Mock env variables
-        mockEnv()
+        every { envReaderMock.env } returns mockEnvWithDefaultValues()
     }
 
     /** User for testing. This prevents having to create a user for each test. */
     protected var testUserId: UUID = UUID.randomUUID()
 
-    /**
-     * Implementation of [IDatabase] providing a suspension-friendly context for database transactions.
-     *
-     * This class uses the [suspendTransaction] function to execute database operations
-     * within a coroutine context, ensuring that all interactions occur within a transactional scope.
-     *
-     * Transactions executed by this class are performed with a [Dispatchers.IO] context
-     * and use the [Connection.TRANSACTION_SERIALIZABLE] isolation level to ensure data consistency.
-     */
-    protected class TestDatabase(var dataSource: DataSource) : IDatabase {
-        override suspend fun <T> query(dispatcher: CoroutineDispatcher, block: suspend JdbcTransaction.() -> T): T =
-            withContext(dispatcher) {
-                suspendTransaction(
-                    JdbcDatabase.connect(dataSource),
-                    transactionIsolation = Connection.TRANSACTION_SERIALIZABLE,
-                ) {
-                    block()
-                }
-            }
-
-        fun <T> queryBlocking(block: suspend JdbcTransaction.() -> T): T = runBlocking {
-            query {
-                block()
-            }
-        }
-    }
-
     private fun getTestTables() = if (needsTestUser) arrayOf(*tables, UserTable) else tables
-
-    private fun mockEnv() {
-        val miscellaneousMock = mockk<Env.Miscellaneous>()
-        every { miscellaneousMock.frontendBaseUrl } returns ""
-        every { miscellaneousMock.logLevel } returns "DEBUG"
-
-        val encryptionMock = mockk<Env.Encryption>()
-        val (privateKeyBase64, publicKeyBase64) = RandomKeyGenerator.generateKeyPair()
-        every { encryptionMock.jwtPrivateKeyBase64 } returns privateKeyBase64
-        every { encryptionMock.jwtPublicKeyBase64 } returns publicKeyBase64
-
-        val smtpMock = mockk<Env.SMTP>()
-        every { smtpMock.smtpHost } returns ""
-        every { smtpMock.smtpPort } returns 0
-        every { smtpMock.smtpUser } returns ""
-        every { smtpMock.smtpPassword } returns ""
-        every { smtpMock.smtpTransportLoggingOnlyEnabled } returns true
-        every { smtpMock.smtpSenderName } returns ""
-        every { smtpMock.smtpSenderEmail } returns ""
-
-        val lifetimeMock = mockk<Env.Lifetime>()
-
-        val envMock = mockk<Env>()
-        every { envMock.miscellaneous } returns miscellaneousMock
-        every { envMock.encryption } returns encryptionMock
-        every { envMock.smtp } returns smtpMock
-        every { envMock.lifetime } returns lifetimeMock
-
-        every { envReaderMock.env } returns envMock
-    }
 
     @BeforeAll
     fun setUp() {
-        postgres.start()
-        val config = HikariConfig().apply {
-            jdbcUrl = postgres.jdbcUrl
-            username = postgres.username
-            password = postgres.password
-        }
-        db.dataSource = HikariDataSource(config)
+        db.setUp()
         RepositoryHelper.db = db
-    }
-
-    @BeforeEach
-    fun setUpTest() {
-        db.queryBlocking {
-            addExtensions()
-            addAllTables(getTestTables())
-
-            if (needsTestUser) {
-                initTestUser()
-            }
-        }
         startKoin {
             modules(repositoryTestModule)
         }
     }
 
-    private fun initTestUser() {
-        // Create the test user
-        val userId =
-            UserTable.insertAndGetId {
-                it[email] = "test.user@example.com"
-                it[firstName] = "Test"
-                it[lastName] = "User"
-                it[passwordHash] = "hashedPassword"
-                it[role] = UserRole.USER_ROLE_ADMIN
-                it[status] = UserStatus.USER_STATUS_ACTIVE
-            }
-        testUserId = userId.value
+    @BeforeEach
+    fun setUpTest() {
+        db.setUpTest(getTestTables(), needsTestUser) { testUserId = it }
     }
 
     @AfterEach
     fun tearDownTest() {
-        db.queryBlocking {
-            dropAllTables(getTestTables())
-            // This call seems to provoke "ERROR: cache lookup failed for type 16386"
-            // PSQLException errors in the test suite. Leaving this commented out for now.
-            // removeExtensions()
-        }
+        db.tearDownTest(getTestTables())
         clearAllMocks()
-        stopKoin()
     }
 
     @AfterAll
     fun tearDown() {
-        postgres.stop()
+        db.tearDown()
+        stopKoin()
     }
 }

@@ -32,7 +32,7 @@ group = "se.uulm.snowballr.backend"
 version = "0.0.0"
 
 // Snowballr API version to use for the proto files
-val apiVersion = "0.13.1" // can be a tag (e.g., "1.2.3"), commit hash, or branch name like "main"
+val apiVersion = "0.13.3" // can be a tag (e.g., "1.2.3"), commit hash, or branch name like "main"
 val protoDir: Provider<Directory> = layout.buildDirectory.dir("snowballr-api/${apiVersion}")
 
 gitVersioning.apply {
@@ -145,12 +145,25 @@ tasks.shadowDistTar {
 
 tasks.test {
     dependsOn("syncFetcherPythonDeps")
-    useJUnitPlatform()
+    useJUnitPlatform {
+        excludeTags("integration")
+    }
     reports.html.required.set(true)
     reports.html.outputLocation.set(layout.buildDirectory.dir("testReportHtml"))
     reports.junitXml.required.set(false)
     finalizedBy(tasks.koverHtmlReport)
     finalizedBy(tasks.koverXmlReport)
+}
+
+tasks.register<Test>("integrationTest") {
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    useJUnitPlatform {
+        includeTags("integration")
+    }
+    reports.html.required.set(true)
+    reports.html.outputLocation.set(layout.buildDirectory.dir("integrationTestReportHtml"))
+    reports.junitXml.required.set(false)
 }
 
 tasks.koverHtmlReport {

@@ -11,7 +11,7 @@ const serverPath = "src/main/kotlin/se/uulm/snowballr/backend/grpc/SnowballRServ
 const wikiPath = "wiki/Contributing.md";
 const replacePattern = "<!-- @add-progress -->";
 const allCallsPattern = /override suspend fun (\w+)\(/g;
-const implementedCallsPattern = /override suspend fun (\w+)\(\s*.*?\s*\)\s*:\s+[\w.]+\s+=(?!\s*super\.)/g;
+const implementedCallsPattern = /override suspend fun (\w+)\(\s*.*?\s*\)\s*(:\s+[\w.]+\s+)*=(?!\s*super\.)/g;
 // Mode can be "update-wiki" or "write-files" or "all" or "none"
 // "all" will perform both actions
 const mode = process.argv[2] || "all"; // Default to "all" if not specified

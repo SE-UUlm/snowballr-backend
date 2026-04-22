@@ -22,8 +22,8 @@ jobs:
             - name: Check linting
               run: ./gradlew lint
 
-    testing:
-        name: Run tests
+    unit-testing:
+        name: Run unit tests
         runs-on: ubuntu-latest
         permissions:
             pull-requests: write
@@ -52,7 +52,7 @@ jobs:
               if: failure() || success()
               uses: actions/upload-artifact@v7
               with:
-                  name: test-report
+                  name: unit-test-report
                   path: |
                       build/testReportHtml
                       build/coverageHtml
@@ -76,10 +76,31 @@ jobs:
                   retention-days: 1
                   if-no-files-found: error
 
+    integration-testing:
+        name: Run integration tests
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v6
+
+            - name: Setup
+              uses: ./.github/workflows/setup/
+
+            - name: Run integration tests
+              run: ./gradlew integrationTest
+
+            - name: Upload report
+              if: failure() || success()
+              uses: actions/upload-artifact@v7
+              with:
+                  name: integration-test-report
+                  path: build/integrationTestReportHtml
+                  if-no-files-found: error
+
     teamscale-upload:
         name: Teamscale Upload
         runs-on: ubuntu-latest
-        needs: testing
+        needs: unit-testing
         steps:
             - name: Checkout repository
               uses: actions/checkout@v6
@@ -104,7 +125,7 @@ jobs:
         name: SonarQube Analysis
         if: github.ref_name == 'develop' && github.ref_type == 'branch'
         runs-on: ubuntu-latest
-        needs: testing
+        needs: unit-testing
         steps:
             - name: Checkout repository
               uses: actions/checkout@v6
