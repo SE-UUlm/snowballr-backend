@@ -14,6 +14,7 @@ import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.model.exception.UnauthorizedFetcherPathException
 import se.uulm.snowballr.backend.model.exception.notfound.FetcherNotFoundException
 import java.io.IOException
+import java.io.InputStream
 import java.nio.file.InvalidPathException
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
@@ -55,6 +56,9 @@ private data class ReferencePayload(
 
 class PythonPluginFetcherManager(
     envReader: EnvReader,
+    resourceLoader: (String) -> InputStream? = { resource ->
+        PythonPluginFetcherManager::class.java.getResourceAsStream(resource)
+    },
     private val executionTimeoutMillis: Long = 30_000L,
     private val forceKillGraceMillis: Long = 1_000L,
 ) : IFetcherManager {
@@ -66,12 +70,18 @@ class PythonPluginFetcherManager(
             "Python fetcher setup: pythonExecutable='$pythonExecutable', pluginDirectory='${root.toAbsolutePath()}'"
         }
 
-        for (resource in resources) {
-            val target = root.resolve(resource.removePrefix("/plugins/fetchers/"))
-            val stream = this::class.java.getResourceAsStream(resource)
+        root.createDirectories()
 
+        for (resource in resources) {
+            val stream = resourceLoader(resource)
+            if (stream == null) {
+                logger.error { "Bundled fetcher resource '$resource' is missing from classpath." }
+                error("Bundled fetcher resource '$resource' is missing from classpath.")
+            }
+
+            val target = root.resolve(resource.removePrefix("/plugins/fetchers/"))
             target.parent.createDirectories()
-            target.writeText(stream.bufferedReader().readText())
+            stream.bufferedReader().use { target.writeText(it.readText()) }
         }
     }
 
