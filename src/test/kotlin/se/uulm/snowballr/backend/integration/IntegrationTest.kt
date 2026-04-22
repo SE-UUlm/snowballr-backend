@@ -125,6 +125,12 @@ open class IntegrationTest : KoinTest {
         stopKoin()
     }
 
+    /**
+     * Registers a user with the passed data and verifies their account. This enables using other users for tests.
+     *
+     * @param user The user data to register with. The email must be unique, otherwise the registration will fail.
+     * @return The registered user.
+     */
     protected suspend fun addUser(user: User): UserOuterClass.User {
         val verificationToken = slot<String>()
         val link = "https://example.com/verify"
@@ -151,6 +157,12 @@ open class IntegrationTest : KoinTest {
         return mainService.getUserByEmail(user.email)
     }
 
+    /**
+     * Invites a user to a project. This enables creating invitations.
+     *
+     * @param project The project to which the user should be invited to.
+     * @param user The user that should be invited to the passed project.
+     */
     protected suspend fun inviteUserToProject(project: ProjectOuterClass.Project, user: User) {
         val invitationToken = slot<String>()
         val link = "https://example.com/accept-invitation"
@@ -166,6 +178,12 @@ open class IntegrationTest : KoinTest {
         mainService.inviteUserToProject(inviteUserRequest)
     }
 
+    /**
+     * Runs code as another user. This enables making requests as another user to test external events.
+     *
+     * @param userId The ID of the user that should execute the requests in [block].
+     * @param block The code that is executed on behalf of the user with the passed [userId].
+     */
     protected suspend fun actAsUser(userId: UUID, block: suspend () -> Unit) {
         every { GrpcContext.getUserIdFromContext() } returns userId
         block()
