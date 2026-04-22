@@ -145,7 +145,6 @@ tasks.shadowDistTar {
 
 tasks.test {
     dependsOn("syncFetcherPythonDeps")
-    environment("PYTHON_EXECUTABLE", fetcherVenvPython)
     useJUnitPlatform()
     reports.html.required.set(true)
     reports.html.outputLocation.set(layout.buildDirectory.dir("testReportHtml"))
@@ -371,5 +370,4 @@ tasks.named("processResources") {
 
 tasks.named<JavaExec>("run") {
     dependsOn("syncFetcherPythonDeps")
-    environment("PYTHON_EXECUTABLE", fetcherVenvPython)
 }

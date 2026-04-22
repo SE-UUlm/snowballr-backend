@@ -79,7 +79,7 @@ To build the project from source, run the following commands:
 4. Run the application:
 
     ```bash
-    PYTHON_EXECUTABLE=.venv/bin/python3 java -jar build/libs/snowballr-backend-<version>.jar
+    java -jar build/libs/snowballr-backend-<version>.jar
     ```
 
     Remember to provide the environment variables either via a `.env` file or by writing them in front of the command.
