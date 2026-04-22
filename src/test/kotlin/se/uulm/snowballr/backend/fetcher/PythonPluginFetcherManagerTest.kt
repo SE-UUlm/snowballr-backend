@@ -159,6 +159,69 @@ class PythonPluginFetcherManagerTest {
     }
 
     @Test
+    fun `When querying papers, then payload is sent via stdin and not as CLI args`() = runTest {
+        writeFetcher(
+            "stdin_payload_fetcher",
+            """
+            import json
+            import sys
+
+            paper = [{
+                "title": "stdin title",
+                "external_id": "stdin-1",
+                "abstract": "stdin abstract",
+                "year": 2024,
+                "publisher": "stdin publisher",
+                "publication_type": "journal",
+                "publication_name": "stdin publication",
+                "authors": [{"first_name": "Grace", "last_name": "Hopper"}],
+                "metadata": {"id": "stdin-meta"}
+            }]
+
+            if sys.argv[1] == "query":
+                if len(sys.argv) != 2:
+                    print("query payload leaked to CLI", file=sys.stderr)
+                    sys.exit(1)
+
+                payload = json.loads(sys.stdin.read())
+                if payload.get("search_query") != "find-me":
+                    print("missing query payload", file=sys.stderr)
+                    sys.exit(1)
+                if payload.get("options", {}).get("api_key") != "super-secret":
+                    print("missing options payload", file=sys.stderr)
+                    sys.exit(1)
+
+                print(json.dumps(paper))
+            elif sys.argv[1] == "options":
+                print(json.dumps({"api_key": "required"}))
+            else:
+                print("unsupported", file=sys.stderr)
+                sys.exit(1)
+            """.trimIndent(),
+        )
+
+        val expectedPaper = FetcherPaper(
+            title = "stdin title",
+            externalId = "stdin-1",
+            abstract = "stdin abstract",
+            year = 2024,
+            publisher = "stdin publisher",
+            publicationType = "journal",
+            publicationName = "stdin publication",
+            authors = listOf(Author("Grace", "Hopper")),
+            metadata = mapOf("id" to "stdin-meta"),
+        )
+
+        val queryResult = fetcherManager.searchPapers(
+            "stdin_payload_fetcher",
+            "find-me",
+            mapOf("api_key" to "super-secret"),
+        )
+
+        assertEquals(setOf(expectedPaper), queryResult)
+    }
+
+    @Test
     fun `When a fetcher script is missing, then a FetcherNotFoundException is thrown`() = runTest {
         val exception = assertThrows<FetcherNotFoundException> {
             fetcherManager.getAvailableOptions("does_not_exist")

@@ -6,6 +6,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import se.uulm.snowballr.backend.env.EnvReader
@@ -38,6 +40,19 @@ private data class ProcessResult(
     val returnCode: Int,
 )
 
+@Serializable
+private data class QueryPayload(
+    @SerialName("search_query")
+    val searchQuery: String,
+    val options: Map<String, String>,
+)
+
+@Serializable
+private data class ReferencePayload(
+    val paper: FetcherPaper,
+    val options: Map<String, String>,
+)
+
 class PythonPluginFetcherManager(
     envReader: EnvReader,
     private val executionTimeoutMillis: Long = 30_000L,
@@ -66,7 +81,7 @@ class PythonPluginFetcherManager(
         .toSet()
 
     override suspend fun getAvailableOptions(fetcher: String): Map<String, String> =
-        decodeFetcherJson(fetcher, execFetcher(fetcher, "options"))
+        decodeFetcherJson(fetcher, execFetcher(fetcher, action = "options"))
 
     override suspend fun searchPapers(
         fetcher: String,
@@ -76,9 +91,8 @@ class PythonPluginFetcherManager(
         fetcher,
         execFetcher(
             fetcher,
-            "query",
-            searchQuery,
-            Json.encodeToString(options),
+            action = "query",
+            payload = Json.encodeToString(QueryPayload(searchQuery = searchQuery, options = options)),
         ),
     )
 
@@ -90,9 +104,8 @@ class PythonPluginFetcherManager(
         fetcher,
         execFetcher(
             fetcher,
-            "forwards",
-            Json.encodeToString(paper),
-            Json.encodeToString(options),
+            action = "forwards",
+            payload = Json.encodeToString(ReferencePayload(paper = paper, options = options)),
         ),
     )
 
@@ -104,9 +117,8 @@ class PythonPluginFetcherManager(
         fetcher,
         execFetcher(
             fetcher,
-            "backwards",
-            Json.encodeToString(paper),
-            Json.encodeToString(options),
+            action = "backwards",
+            payload = Json.encodeToString(ReferencePayload(paper = paper, options = options)),
         ),
     )
 
@@ -116,23 +128,24 @@ class PythonPluginFetcherManager(
      * to a single line) is then returned.
      *
      * The current contract expects the fetcher to return a single line of JSON.
-     * Furthermore, the first command line argument represents the action to be
-     * performed (query, forwards, backwards) and the rest of the cli arguments
-     * are the JSON serialized representations of the action arguments:
+     * The first command line argument represents the action to be performed.
+     * Action payloads are serialized JSON and sent over stdin.
      *
      * - python fetcher.py options
-     * - python fetcher.py query <SEARCH_QUERY> <OPTIONS>
-     * - python fetcher.py backwards <PAPER> <OPTIONS>
-     * - python fetcher.py forwards <PAPER> <OPTIONS>
+     * - python fetcher.py query
+     * - python fetcher.py backwards
+     * - python fetcher.py forwards
      */
     @Suppress("ThrowsCount")
     private suspend fun execFetcher(
         fetcher: String,
-        vararg args: String,
+        action: String,
+        payload: String = "",
         dispatcher: CoroutineDispatcher = Dispatchers.IO,
     ): String {
         val fetcherPath = resolveFetcherPath(fetcher)
-        val process = createProcess(fetcherPath, args, dispatcher)
+        val process = createProcess(fetcherPath, action, dispatcher)
+        writePayload(process, payload, dispatcher)
         val processResult = awaitProcessResult(fetcher, process, dispatcher)
         return parseProcessResult(fetcher, processResult)
     }
@@ -140,18 +153,27 @@ class PythonPluginFetcherManager(
     /**
      * Creates and starts a Python fetcher process with the expected environment.
      */
-    private suspend fun createProcess(
-        fetcherPath: Path,
-        args: Array<out String>,
-        dispatcher: CoroutineDispatcher,
-    ): Process {
-        @Suppress("SpreadOperator")
-        val processBuilder = ProcessBuilder(pythonExecutable, fetcherPath.toString(), *args)
+    private suspend fun createProcess(fetcherPath: Path, action: String, dispatcher: CoroutineDispatcher): Process {
+        val processBuilder = ProcessBuilder(pythonExecutable, fetcherPath.toString(), action)
             .redirectOutput(ProcessBuilder.Redirect.PIPE)
             .redirectError(ProcessBuilder.Redirect.PIPE)
+            .redirectInput(ProcessBuilder.Redirect.PIPE)
             .also { it.environment()["PYTHONPATH"] = root.resolve("lib").toAbsolutePath().toString() }
         return withContext(dispatcher) {
             processBuilder.start()
+        }
+    }
+
+    /**
+     * Writes a JSON payload to the process stdin and then closes the input stream.
+     */
+    private suspend fun writePayload(process: Process, payload: String, dispatcher: CoroutineDispatcher) {
+        withContext(dispatcher) {
+            process.outputWriter().use { writer ->
+                if (payload.isNotEmpty()) {
+                    writer.write(payload)
+                }
+            }
         }
     }
 
