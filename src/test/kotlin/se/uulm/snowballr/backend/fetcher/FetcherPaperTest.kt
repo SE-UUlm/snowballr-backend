@@ -2,6 +2,8 @@ package se.uulm.snowballr.backend.fetcher
 
 import org.junit.jupiter.api.Test
 import se.uulm.snowballr.backend.model.dto.Author
+import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
+import se.uulm.snowballr.backend.model.fetcher.toPaper
 import java.time.OffsetDateTime
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

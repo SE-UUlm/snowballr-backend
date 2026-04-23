@@ -1,4 +1,4 @@
-package se.uulm.snowballr.backend.fetcher
+package se.uulm.snowballr.backend.model.fetcher
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

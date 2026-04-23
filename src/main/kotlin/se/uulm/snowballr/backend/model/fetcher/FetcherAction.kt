@@ -1,7 +1,6 @@
 package se.uulm.snowballr.backend.model.fetcher
 
 import kotlinx.serialization.json.Json
-import se.uulm.snowballr.backend.fetcher.FetcherPaper
 
 /**
  * Lists all supported fetcher actions and their command/payload mapping.

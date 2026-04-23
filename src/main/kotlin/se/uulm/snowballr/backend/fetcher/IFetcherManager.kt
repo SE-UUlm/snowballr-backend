@@ -1,5 +1,7 @@
 package se.uulm.snowballr.backend.fetcher
 
+import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
+
 class FetcherException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
 
 /**

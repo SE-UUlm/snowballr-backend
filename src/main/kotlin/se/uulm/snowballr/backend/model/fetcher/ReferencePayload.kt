@@ -1,7 +1,6 @@
 package se.uulm.snowballr.backend.model.fetcher
 
 import kotlinx.serialization.Serializable
-import se.uulm.snowballr.backend.fetcher.FetcherPaper
 
 /**
  * Request payload for fetcher reference actions.

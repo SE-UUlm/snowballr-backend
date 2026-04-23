@@ -14,6 +14,7 @@ import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.model.dto.Author
 import se.uulm.snowballr.backend.model.exception.UnauthorizedFetcherPathException
 import se.uulm.snowballr.backend.model.exception.notfound.FetcherNotFoundException
+import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.createDirectories
