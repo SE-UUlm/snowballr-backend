@@ -25,9 +25,11 @@ import kotlin.io.path.nameWithoutExtension
 import kotlin.io.path.writeText
 
 private val logger = KotlinLogging.logger {}
+private const val FETCHER_RESOURCES_ROOT = "/plugins/fetchers"
+private const val FETCHER_RESOURCES_PREFIX = "$FETCHER_RESOURCES_ROOT/"
 
 // Bundled python scripts and libraries to bootstrap python fetcher infrastructure.
-private val resources = buildResources("/plugins/fetchers") {
+private val resources = buildResources(FETCHER_RESOURCES_ROOT) {
     file("IEEEXplore.py")
     dir("lib") {
         file("xploreapi.py")
@@ -79,7 +81,7 @@ class PythonPluginFetcherManager(
                 error("Bundled fetcher resource '$resource' is missing from classpath.")
             }
 
-            val target = root.resolve(resource.removePrefix("/plugins/fetchers/"))
+            val target = root.resolve(resource.removePrefix(FETCHER_RESOURCES_PREFIX))
             target.parent.createDirectories()
             stream.bufferedReader().use { target.writeText(it.readText()) }
         }
