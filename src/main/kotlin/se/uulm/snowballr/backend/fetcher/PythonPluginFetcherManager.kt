@@ -6,13 +6,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.model.exception.UnauthorizedFetcherPathException
 import se.uulm.snowballr.backend.model.exception.notfound.FetcherNotFoundException
+import se.uulm.snowballr.backend.model.fetcher.FetcherAction
+import se.uulm.snowballr.backend.model.fetcher.ProcessResult
 import java.io.IOException
 import java.io.InputStream
 import java.nio.file.InvalidPathException
@@ -36,25 +36,6 @@ private val resources = buildResources(FETCHER_RESOURCES_ROOT) {
         file("snowballr.py")
     }
 }
-
-private data class ProcessResult(
-    val stdout: String,
-    val stderr: String,
-    val returnCode: Int,
-)
-
-@Serializable
-private data class QueryPayload(
-    @SerialName("search_query")
-    val searchQuery: String,
-    val options: Map<String, String>,
-)
-
-@Serializable
-private data class ReferencePayload(
-    val paper: FetcherPaper,
-    val options: Map<String, String>,
-)
 
 class PythonPluginFetcherManager(
     envReader: EnvReader,
@@ -92,47 +73,58 @@ class PythonPluginFetcherManager(
         .map { it.nameWithoutExtension }
         .toSet()
 
-    override suspend fun getAvailableOptions(fetcher: String): Map<String, String> =
-        decodeFetcherJson(fetcher, execFetcher(fetcher, action = "options"))
+    override suspend fun getAvailableOptions(fetcher: String): Map<String, String> {
+        val action = FetcherAction.OPTIONS
+        return decodeFetcherJson(fetcher, execFetcher(fetcher, action = action, payload = action.payload()))
+    }
 
     override suspend fun searchPapers(
         fetcher: String,
         searchQuery: String,
         options: Map<String, String>,
-    ): Set<FetcherPaper> = decodeFetcherJson(
-        fetcher,
-        execFetcher(
+    ): Set<FetcherPaper> {
+        val action = FetcherAction.QUERY
+        return decodeFetcherJson(
             fetcher,
-            action = "query",
-            payload = Json.encodeToString(QueryPayload(searchQuery = searchQuery, options = options)),
-        ),
-    )
+            execFetcher(
+                fetcher,
+                action = action,
+                payload = action.payload(searchQuery = searchQuery, options = options),
+            ),
+        )
+    }
 
     override suspend fun fetchForwardReferences(
         fetcher: String,
         paper: FetcherPaper,
         options: Map<String, String>,
-    ): Set<FetcherPaper> = decodeFetcherJson(
-        fetcher,
-        execFetcher(
+    ): Set<FetcherPaper> {
+        val action = FetcherAction.FORWARDS
+        return decodeFetcherJson(
             fetcher,
-            action = "forwards",
-            payload = Json.encodeToString(ReferencePayload(paper = paper, options = options)),
-        ),
-    )
+            execFetcher(
+                fetcher,
+                action = action,
+                payload = action.payload(paper = paper, options = options),
+            ),
+        )
+    }
 
     override suspend fun fetchBackwardReferences(
         fetcher: String,
         paper: FetcherPaper,
         options: Map<String, String>,
-    ): Set<FetcherPaper> = decodeFetcherJson(
-        fetcher,
-        execFetcher(
+    ): Set<FetcherPaper> {
+        val action = FetcherAction.BACKWARDS
+        return decodeFetcherJson(
             fetcher,
-            action = "backwards",
-            payload = Json.encodeToString(ReferencePayload(paper = paper, options = options)),
-        ),
-    )
+            execFetcher(
+                fetcher,
+                action = action,
+                payload = action.payload(paper = paper, options = options),
+            ),
+        )
+    }
 
     /**
      * Executes the python script of a given fetcher with the given command
@@ -151,7 +143,7 @@ class PythonPluginFetcherManager(
     @Suppress("ThrowsCount")
     private suspend fun execFetcher(
         fetcher: String,
-        action: String,
+        action: FetcherAction,
         payload: String = "",
         dispatcher: CoroutineDispatcher = Dispatchers.IO,
     ): String {
@@ -165,8 +157,12 @@ class PythonPluginFetcherManager(
     /**
      * Creates and starts a Python fetcher process with the expected environment.
      */
-    private suspend fun createProcess(fetcherPath: Path, action: String, dispatcher: CoroutineDispatcher): Process {
-        val processBuilder = ProcessBuilder(pythonExecutable, fetcherPath.toString(), action)
+    private suspend fun createProcess(
+        fetcherPath: Path,
+        action: FetcherAction,
+        dispatcher: CoroutineDispatcher,
+    ): Process {
+        val processBuilder = ProcessBuilder(pythonExecutable, fetcherPath.toString(), action.command)
             .redirectOutput(ProcessBuilder.Redirect.PIPE)
             .redirectError(ProcessBuilder.Redirect.PIPE)
             .redirectInput(ProcessBuilder.Redirect.PIPE)
