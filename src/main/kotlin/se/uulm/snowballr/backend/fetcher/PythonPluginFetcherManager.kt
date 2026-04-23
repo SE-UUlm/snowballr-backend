@@ -75,7 +75,7 @@ class PythonPluginFetcherManager(
 
     override suspend fun getAvailableOptions(fetcher: String): Map<String, String> {
         val action = FetcherAction.OPTIONS
-        return decodeFetcherJson(fetcher, execFetcher(fetcher, action = action, payload = action.payload()))
+        return executeFetcher(fetcher, action, action.payload())
     }
 
     override suspend fun searchPapers(
@@ -84,13 +84,10 @@ class PythonPluginFetcherManager(
         options: Map<String, String>,
     ): Set<FetcherPaper> {
         val action = FetcherAction.QUERY
-        return decodeFetcherJson(
+        return executeFetcher(
             fetcher,
-            execFetcher(
-                fetcher,
-                action = action,
-                payload = action.payload(searchQuery = searchQuery, options = options),
-            ),
+            action,
+            action.payload(searchQuery = searchQuery, options = options),
         )
     }
 
@@ -100,13 +97,10 @@ class PythonPluginFetcherManager(
         options: Map<String, String>,
     ): Set<FetcherPaper> {
         val action = FetcherAction.FORWARDS
-        return decodeFetcherJson(
+        return executeFetcher(
             fetcher,
-            execFetcher(
-                fetcher,
-                action = action,
-                payload = action.payload(paper = paper, options = options),
-            ),
+            action,
+            action.payload(paper = paper, options = options),
         )
     }
 
@@ -116,13 +110,10 @@ class PythonPluginFetcherManager(
         options: Map<String, String>,
     ): Set<FetcherPaper> {
         val action = FetcherAction.BACKWARDS
-        return decodeFetcherJson(
+        return executeFetcher(
             fetcher,
-            execFetcher(
-                fetcher,
-                action = action,
-                payload = action.payload(paper = paper, options = options),
-            ),
+            action,
+            action.payload(paper = paper, options = options),
         )
     }
 
@@ -175,7 +166,7 @@ class PythonPluginFetcherManager(
     /**
      * Writes a JSON payload to the process stdin and then closes the input stream.
      */
-    private suspend fun writePayload(process: Process, payload: String, dispatcher: CoroutineDispatcher) {
+    private suspend fun writePayload(process: Process, payload: String, dispatcher: CoroutineDispatcher) =
         withContext(dispatcher) {
             process.outputWriter().use { writer ->
                 if (payload.isNotEmpty()) {
@@ -183,7 +174,6 @@ class PythonPluginFetcherManager(
                 }
             }
         }
-    }
 
     /**
      * Waits for the process to finish, enforcing timeout and force-kill grace period.
@@ -279,9 +269,14 @@ class PythonPluginFetcherManager(
     }
 
     /**
-     * Decodes fetcher JSON output and maps parse failures to a fetcher-specific exception.
+     * Executes a fetcher action, decodes the JSON output, and maps parse failures to a fetcher-specific exception.
      */
-    private inline fun <reified T> decodeFetcherJson(fetcher: String, input: String): T = try {
+    private suspend inline fun <reified T> executeFetcher(
+        fetcher: String,
+        action: FetcherAction,
+        payload: String = "",
+    ): T = try {
+        val input = execFetcher(fetcher = fetcher, action = action, payload = payload)
         Json.decodeFromString<T>(input)
     } catch (exception: SerializationException) {
         throw FetcherException("Fetcher '$fetcher' returned invalid JSON.", exception)
