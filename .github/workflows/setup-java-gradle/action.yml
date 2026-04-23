@@ -1,5 +1,5 @@
-name: Setup
-description: Setup Backend CI/CD pipeline
+name: Setup Java and Gradle
+description: Setup Java and Gradle for Backend CI/CD pipeline
 runs:
     using: composite
     steps:

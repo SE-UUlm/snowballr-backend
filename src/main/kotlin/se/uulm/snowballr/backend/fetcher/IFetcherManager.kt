@@ -1,6 +1,6 @@
 package se.uulm.snowballr.backend.fetcher
 
-class FetcherException(stderr: String) : Exception(stderr)
+import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
 
 /**
  * Delegate requests to multiple fetchers using their names.

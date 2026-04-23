@@ -153,28 +153,28 @@ tasks.test {
     reports.junitXml.required.set(false)
     finalizedBy(tasks.koverHtmlReport)
     finalizedBy(tasks.koverXmlReport)
+    finalizedBy(tasks.koverPrintCoverage)
 }
 
 tasks.register<Test>("integrationTest") {
-    testClassesDirs = sourceSets["test"].output.classesDirs
-    classpath = sourceSets["test"].runtimeClasspath
+    dependsOn("syncFetcherPythonDeps")
     useJUnitPlatform {
         includeTags("integration")
     }
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
     reports.html.required.set(true)
     reports.html.outputLocation.set(layout.buildDirectory.dir("integrationTestReportHtml"))
     reports.junitXml.required.set(false)
 }
 
-tasks.koverHtmlReport {
-    dependsOn(tasks.test)
-}
-
-tasks.koverXmlReport {
-    dependsOn(tasks.test)
-}
-
 kover {
+    currentProject {
+        instrumentation {
+            disabledForTestTasks.add("integrationTest")
+        }
+    }
+
     reports {
         filters {
             excludes {
@@ -223,7 +223,7 @@ kover {
             log {
                 onCheck.set(true)
                 header.set(null as String?)
-                format.set("<entity> line coverage: <value>%")
+                format.set("<entity> instruction coverage: <value>%")
                 groupBy.set(GroupingEntityType.APPLICATION)
                 coverageUnits.set(CoverageUnit.INSTRUCTION)
                 aggregationForGroup.set(AggregationType.COVERED_PERCENTAGE)

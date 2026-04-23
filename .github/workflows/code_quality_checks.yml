@@ -16,8 +16,8 @@ jobs:
             - name: Checkout repository
               uses: actions/checkout@v6
 
-            - name: Setup
-              uses: ./.github/workflows/setup/
+            - name: Setup Java and Gradle
+              uses: ./.github/workflows/setup-java-gradle/
 
             - name: Check linting
               run: ./gradlew lint
@@ -32,21 +32,14 @@ jobs:
             - name: Checkout repository
               uses: actions/checkout@v6
 
-            - name: Setup
-              uses: ./.github/workflows/setup/
+            - name: Setup Java and Gradle
+              uses: ./.github/workflows/setup-java-gradle/
 
-            - uses: actions/setup-python@v6
-              with:
-                  python-version: "3.13"
-
-            - uses: astral-sh/setup-uv@v8.1.0
-              with:
-                  enable-cache: true
+            - name: Setup Python and uv
+              uses: ./.github/workflows/setup-python-uv/
 
             - name: Run tests and collect coverage
-              run: |
-                  ./gradlew test
-                  ./gradlew koverPrintCoverage
+              run: ./gradlew test
 
             - name: Upload report
               if: failure() || success()
@@ -83,8 +76,11 @@ jobs:
             - name: Checkout repository
               uses: actions/checkout@v6
 
-            - name: Setup
-              uses: ./.github/workflows/setup/
+            - name: Setup Java and Gradle
+              uses: ./.github/workflows/setup-java-gradle/
+
+            - name: Setup Python and uv
+              uses: ./.github/workflows/setup-python-uv/
 
             - name: Run integration tests
               run: ./gradlew integrationTest
@@ -132,8 +128,8 @@ jobs:
               with:
                   fetch-depth: 0
 
-            - name: Setup
-              uses: ./.github/workflows/setup/
+            - name: Setup Java and Gradle
+              uses: ./.github/workflows/setup-java-gradle/
 
             - name: Download coverage report
               uses: actions/download-artifact@v8

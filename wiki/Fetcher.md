@@ -72,6 +72,9 @@ file directly contained within the `fetchers` directory will be treated as a
 fetcher. If you would like to create a reusable module/library, put it inside a
 subdirectory like the `lib` folder or create a new one.
 
+Fetcher names are strictly resolved to direct children of this directory.
+Path traversal and symlink targets outside this directory are rejected.
+
 ### Fetcher Contract
 
 Every fetcher is required to follow an implicit contract to be compatible with
@@ -97,6 +100,26 @@ fetcher_plugin(
 
 Everything regarding the protocol will be taken care of by calling `fetcher_plugin`.
 Just provide implementations for the functions and you're off to go.
+
+#### Invocation Protocol
+
+Fetchers are invoked with the action as the only command-line argument:
+
+```bash
+python fetcher.py options
+python fetcher.py query
+python fetcher.py forwards
+python fetcher.py backwards
+```
+
+For `query`, `forwards`, and `backwards`, SnowballR sends the request payload as
+JSON via `stdin`:
+
+- `query`: `{"search_query":"...","options":{...}}`
+- `forwards` / `backwards`: `{"paper":{...},"options":{...}}`
+
+This avoids exposing secrets (for example API keys in `options`) through process
+lists, where command-line arguments can otherwise be visible.
 
 To accommodate for API secrets and other variables, each fetcher is configurable
 using a string-to-string dictionary. The `options` set serves as a hint

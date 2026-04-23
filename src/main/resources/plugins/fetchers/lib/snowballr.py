@@ -44,6 +44,22 @@ type Options = dict[str, str]
 type QueryFn = Callable[[str, Options], list[Paper]]
 type ReferenceFn = Callable[[Paper, Options], list[Paper]]
 
+def _read_stdin_payload() -> dict:
+    if sys.stdin is None or sys.stdin.closed:
+        return {}
+    if sys.stdin.isatty():
+        return {}
+
+    try:
+        payload = sys.stdin.read()
+    except OSError:
+        return {}
+
+    if payload == "":
+        return {}
+
+    return json.loads(payload)
+
 def fetcher_plugin(
     options: dict[str, str],
     query: QueryFn,
@@ -51,45 +67,61 @@ def fetcher_plugin(
     backwards: ReferenceFn,
 ):
     if len(sys.argv) < 2:
-        print("The fetcher was called without an action.")
-        print("python fetcher.py <ACTION> <...ARGS>")
+        print("The fetcher was called without an action.", file=sys.stderr)
+        print("python fetcher.py <ACTION> <...ARGS>", file=sys.stderr)
         exit(1)
+
+    payload = _read_stdin_payload()
 
     match sys.argv[1]:
         case EventType.OPTIONS:
             print(json.dumps(options))
 
         case EventType.QUERY:
-            if len(sys.argv) != 4:
-                print("The fetcher was called with an incorrect number of arguments.")
-                print("python fetcher.py query <SEARCH_QUERY> <OPTIONS>")
+            if payload:
+                query_arg: str = payload["search_query"]
+                options_arg: Options = payload.get("options", {})
+            elif len(sys.argv) == 4:
+                query_arg = sys.argv[2]
+                options_arg = json.loads(sys.argv[3])
+            else:
+                print("The fetcher was called with an incorrect number of arguments.", file=sys.stderr)
+                print("python fetcher.py query <SEARCH_QUERY> <OPTIONS>", file=sys.stderr)
                 exit(1)
 
-            options: Options = json.loads(sys.argv[3])
-            result = query(sys.argv[2], options)
+            result = query(query_arg, options_arg)
             print(Paper.list_to_json(result))
 
         case EventType.FORWARDS:
-            if len(sys.argv) < 4:
-                print("The fetcher was called with an incorrect number of arguments.")
-                print("python fetcher.py forwards <PAPER> <OPTIONS>")
+            if payload:
+                paper_arg: Paper = fromdict(Paper, payload["paper"])
+                options_arg: Options = payload.get("options", {})
+            elif len(sys.argv) == 4:
+                paper_arg = Paper.from_json(sys.argv[2])
+                options_arg = json.loads(sys.argv[3])
+            else:
+                print("The fetcher was called with an incorrect number of arguments.", file=sys.stderr)
+                print("python fetcher.py forwards <PAPER> <OPTIONS>", file=sys.stderr)
                 exit(1)
 
-            paper: Paper = Paper.from_json(sys.argv[2])
-            options: Options = json.loads(sys.argv[3])
-            result = forwards(paper, options)
+            result = forwards(paper_arg, options_arg)
             print(Paper.list_to_json(result))
 
         case EventType.BACKWARDS:
-            if len(sys.argv) < 4:
-                print("The fetcher was called with an incorrect number of arguments.")
-                print("python fetcher.py backwards <PAPER> <OPTIONS>")
+            if payload:
+                paper_arg: Paper = fromdict(Paper, payload["paper"])
+                options_arg: Options = payload.get("options", {})
+            elif len(sys.argv) == 4:
+                paper_arg = Paper.from_json(sys.argv[2])
+                options_arg = json.loads(sys.argv[3])
+            else:
+                print("The fetcher was called with an incorrect number of arguments.", file=sys.stderr)
+                print("python fetcher.py backwards <PAPER> <OPTIONS>", file=sys.stderr)
                 exit(1)
 
-            paper: Paper = Paper.from_json(sys.argv[2])
-            options: Options = json.loads(sys.argv[3])
-            result = backwards(paper, options)
+            result = backwards(paper_arg, options_arg)
             print(Paper.list_to_json(result))
 
         case _:
-            print("ERROR")
+            print("Unknown fetcher action.", file=sys.stderr)
+            exit(1)
