@@ -12,6 +12,7 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.env.Env
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.model.dto.Author
+import se.uulm.snowballr.backend.model.exception.FetcherException
 import se.uulm.snowballr.backend.model.exception.UnauthorizedFetcherPathException
 import se.uulm.snowballr.backend.model.exception.notfound.FetcherNotFoundException
 import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
