@@ -14,7 +14,7 @@ assertj = "3.27.7"
 mockk = "1.14.7"
 arrow = "2.1.2"
 assertj-arrow-core = "2.0.0"
-detekt = "1.23.8"
+detekt = "2.0.0-alpha.3"
 kotlinx-kover = "0.9.8"
 protobuf = "0.10.0"
 grpc-kotlin = "1.5.0"
@@ -88,7 +88,7 @@ protobuf-java-util = { module = "com.google.protobuf:protobuf-java-util", versio
 archunit = { module = "com.tngtech.archunit:archunit", version.ref = "archunit" }
 archunit-junit5 = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit" }
 
-detekt-formatting = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", version.ref = "detekt" }
+detekt-formatting = { module = "dev.detekt:detekt-rules-ktlint-wrapper", version.ref = "detekt" }
 
 simple-java-mail = { module = "org.simplejavamail:simple-java-mail", version.ref = "simple-java-mail" }
 greenmail-junit5 = { module = "com.icegreen:greenmail-junit5", version.ref = "greenmail" }
@@ -97,7 +97,7 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
-detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+detekt = { id = "dev.detekt", version.ref = "detekt" }
 kotlinx-kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kotlinx-kover" }
 protobuf = { id = "com.google.protobuf", version.ref = "protobuf" }
 shadow-jar = { id = "com.gradleup.shadow", version.ref = "shadow-jar" }
