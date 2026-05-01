@@ -2,6 +2,6 @@ certifi==2026.2.25
 charset-normalizer==3.4.7
 dataclass-wizard==0.39.1
 idna==3.13
-pycurl==7.45.7
+pycurl==7.46.0
 requests==2.33.1
 urllib3==2.6.3
