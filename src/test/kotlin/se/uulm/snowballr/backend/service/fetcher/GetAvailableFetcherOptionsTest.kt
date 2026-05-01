@@ -10,13 +10,14 @@ import kotlin.test.assertEquals
 class GetAvailableFetcherOptionsTest : MainServiceTest() {
     @Test
     fun `When the fetcherManager returns fetcher options, then the FetcherService returns them properly`() = runTest {
-        val fetcherOptions = mapOf("foo" to "bar")
-        coEvery { fetcherManagerMock.getAvailableOptions("foobar") } returns fetcherOptions
-        assertEquals(
-            fetcherOptions,
-            mainService.getAvailableFetcherOptions(
-                GetAvailableFetcherOptionsRequest.newBuilder().setFetcherName("foobar").build(),
-            ).optionsMap,
-        )
+        val expectedOptions = mapOf("foo" to "bar")
+
+        coEvery { fetcherManagerMock.getAvailableOptions("foobar") } returns expectedOptions
+
+        val actualOptions = mainService.getAvailableFetcherOptions(
+            GetAvailableFetcherOptionsRequest.newBuilder().setFetcherName("foobar").build(),
+        ).optionsMap
+
+        assertEquals(expectedOptions, actualOptions)
     }
 }
