@@ -1,5 +1,7 @@
 package se.uulm.snowballr.backend.fetcher
 
+import java.util.ArrayList
+
 /**
  * A utility class for building a list of resource file paths.
  *
@@ -17,7 +19,7 @@ class ResourceBuilder(
      */
     fun file(filename: String) {
         val newFile = "$prefix/$filename"
-        if (files.any { it == newFile }) {
+        if (files.contains(newFile)) {
             return
         }
         files.add(newFile)
@@ -57,7 +59,7 @@ fun buildResources(prefix: String = "", block: ResourceBuilder.() -> Unit): List
     return builder.getFiles()
 }
 
-@Suppress("UnusedPrivateMember")
+@Suppress("UnusedPrivateFunction")
 private fun buildResourcesSample() {
     val filePaths = buildResources("/common/prefix") {
         file("foo.txt")

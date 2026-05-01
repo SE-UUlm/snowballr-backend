@@ -189,11 +189,11 @@ class PythonPluginFetcherManager(
         val stdoutDeferred = async(dispatcher) { process.inputReader().use { it.readText() } }
         val stderrDeferred = async(dispatcher) { process.errorReader().use { it.readText() } }
 
-        val finishedInTime = withContext(dispatcher) {
+        val hasFinishedInTime = withContext(dispatcher) {
             process.waitFor(executionTimeoutMillis, TimeUnit.MILLISECONDS)
         }
 
-        if (!finishedInTime) {
+        if (!hasFinishedInTime) {
             process.destroy()
             withContext(dispatcher) {
                 if (!process.waitFor(forceKillGraceMillis, TimeUnit.MILLISECONDS)) {
