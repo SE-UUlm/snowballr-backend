@@ -7,6 +7,7 @@ import arrow.core.nonEmptyListOf
 import arrow.core.raise.either
 import arrow.core.raise.zipOrAccumulate
 import io.grpc.health.v1.HealthCheckRequest
+import io.grpc.reflection.v1.ServerReflectionRequest
 import se.uulm.snowballr.backend.model.UnknownRequest
 import se.uulm.snowballr.backend.model.ValidationIssue
 import snowballr.Authentication
@@ -36,7 +37,7 @@ fun <T> validateRequest(request: T): EitherNel<ValidationIssue, Unit> = when (re
     // Healthcheck
     is HealthCheckRequest -> Either.Right(Unit)
     // Reflection
-    is io.grpc.reflection.v1.ServerReflectionRequest -> Either.Right(Unit)
+    is ServerReflectionRequest -> Either.Right(Unit)
     // Authentication
     is Authentication.RegisterRequest -> AuthenticationValidator.validateRegisterRequest(request)
     is Authentication.VerifyEmailRequest -> AuthenticationValidator.validateVerifyEmailRequest(request)

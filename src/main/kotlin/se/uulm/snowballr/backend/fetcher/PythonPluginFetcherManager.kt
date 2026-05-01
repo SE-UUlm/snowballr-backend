@@ -17,6 +17,7 @@ import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
 import se.uulm.snowballr.backend.model.fetcher.ProcessResult
 import java.io.IOException
 import java.io.InputStream
+import java.nio.file.Files
 import java.nio.file.InvalidPathException
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
@@ -255,7 +256,7 @@ class PythonPluginFetcherManager(
                 throw UnauthorizedFetcherPathException(fetcher)
             }
 
-            if (!java.nio.file.Files.isRegularFile(fetcherReal)) {
+            if (!Files.isRegularFile(fetcherReal)) {
                 throw FetcherNotFoundException(fetcher)
             }
 

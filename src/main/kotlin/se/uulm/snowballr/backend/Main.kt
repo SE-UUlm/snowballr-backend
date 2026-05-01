@@ -5,6 +5,7 @@ import ch.qos.logback.classic.LoggerContext
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.koin.core.context.startKoin
 import org.koin.java.KoinJavaComponent.getKoin
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.env.DEFAULT_LOG_LEVEL
@@ -47,7 +48,7 @@ fun main() {
  */
 private fun configureRootLogger(logLevel: String) {
     val context = (LoggerFactory.getILoggerFactory() ?: error("unable to get logger context")) as LoggerContext
-    val rootLogger = context.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME)
+    val rootLogger = context.getLogger(Logger.ROOT_LOGGER_NAME)
 
     rootLogger.level = Level.toLevel(logLevel, Level.toLevel(DEFAULT_LOG_LEVEL))
     logger.info { "Set log level to $logLevel" }

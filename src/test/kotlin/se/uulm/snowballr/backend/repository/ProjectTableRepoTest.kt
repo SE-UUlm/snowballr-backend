@@ -38,6 +38,7 @@ import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.utils.assertResultFailure
 import se.uulm.snowballr.backend.utils.assertResultSuccess
 import snowballr.Fetcher.FetcherOptions
+import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ProjectOuterClass.Project
 import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
@@ -303,7 +304,7 @@ class ProjectTableRepoTest :
                 .setNumberOfReviewers(3)
                 .addPatterns(
                     ReviewDecisionMatrix.Pattern.newBuilder()
-                        .setDecision(snowballr.ProjectOuterClass.PaperDecision.PAPER_DECISION_ACCEPTED)
+                        .setDecision(PaperDecision.PAPER_DECISION_ACCEPTED)
                         .build(),
                 )
                 .build()
@@ -319,7 +320,7 @@ class ProjectTableRepoTest :
                 .setNumberOfReviewers(9)
                 .addPatterns(
                     ReviewDecisionMatrix.Pattern.newBuilder()
-                        .setDecision(snowballr.ProjectOuterClass.PaperDecision.PAPER_DECISION_DECLINED)
+                        .setDecision(PaperDecision.PAPER_DECISION_DECLINED)
                         .build(),
                 )
                 .build()
@@ -341,7 +342,7 @@ class ProjectTableRepoTest :
             assertEquals(3, updatedProject.reviewDecisionMatrix.numberOfReviewers)
             assertEquals(1, updatedProject.reviewDecisionMatrix.patternsCount)
             assertEquals(
-                snowballr.ProjectOuterClass.PaperDecision.PAPER_DECISION_DECLINED,
+                PaperDecision.PAPER_DECISION_DECLINED,
                 updatedProject.reviewDecisionMatrix.patternsList.first().decision,
             )
         }
