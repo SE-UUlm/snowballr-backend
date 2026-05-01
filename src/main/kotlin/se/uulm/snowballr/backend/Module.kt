@@ -115,6 +115,7 @@ val snowballRModule =
         repositoryLayerDeps()
         mailServiceDeps()
         customServicesDeps()
+        accessCheckerDeps()
         serviceLayerDeps()
     }
 
@@ -203,12 +204,9 @@ private fun Module.customServicesDeps() {
 }
 
 /**
- * Module declaration of the core service layer.
- *
- * Consists of the [MainService] and all its direct service dependencies.
+ * Module declaration of all access checkers.
  */
-fun Module.serviceLayerDeps() {
-    // Access Checkers
+fun Module.accessCheckerDeps() {
     singleOf(::ProjectAccessChecker) { bind<IProjectAccessChecker>() }
     singleOf(::UserAccessChecker) { bind<IUserAccessChecker>() }
     singleOf(::CriterionAccessChecker) { bind<ICriterionAccessChecker>() }
@@ -216,7 +214,14 @@ fun Module.serviceLayerDeps() {
     singleOf(::ProjectMemberAccessChecker) { bind<IProjectMemberAccessChecker>() }
     singleOf(::ProjectPaperAccessChecker) { bind<IProjectPaperAccessChecker>() }
     singleOf(::InvitationAccessChecker) { bind<IInvitationAccessChecker>() }
+}
 
+/**
+ * Module declaration of the core service layer.
+ *
+ * Consists of the [MainService] and all its direct service dependencies.
+ */
+fun Module.serviceLayerDeps() {
     // All services that are directly used by the MainService
     singleOf(::ProjectService) { bind<IProjectService>() }
     singleOf(::CriterionService) { bind<ICriterionService>() }
@@ -230,6 +235,7 @@ fun Module.serviceLayerDeps() {
     singleOf(::InvitationService) { bind<IInvitationService>() }
     singleOf(::ProjectMemberService) { bind<IProjectMemberService>() }
     singleOf(::ExportService) { bind<IExportService>() }
+
     // The main service comes last
     singleOf(::MainService) { bind<IMainService>() }
 }
