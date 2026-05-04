@@ -2,322 +2,226 @@ package se.uulm.snowballr.backend.service.project
 
 import com.google.protobuf.util.FieldMaskUtil
 import io.mockk.coEvery
+import io.mockk.coJustRun
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.CsvSource
+import org.junit.jupiter.params.provider.ValueSource
 import se.uulm.snowballr.backend.DataBuilder
+import se.uulm.snowballr.backend.TestSpecificException
+import se.uulm.snowballr.backend.model.AccessType
+import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.toGrpcProject
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
-import se.uulm.snowballr.backend.model.exception.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.ProjectOuterClass.ProjectStatus
-import snowballr.UserOuterClass.UserRole
+import kotlin.test.assertEquals
 import snowballr.ProjectOuterClass.Project as GrpcProject
 
 class UpdateProjectTest : MainServiceTest() {
-    @ParameterizedTest
-    @CsvSource(
-        value = [
-            "PROJECT_STATUS_ACTIVE",
-            "PROJECT_STATUS_ACTIVE_LOCKED",
-            "PROJECT_STATUS_ARCHIVED",
-        ],
-    )
-    fun `When a server admin updates an existent project, then no exception is thrown`(statusName: String) = runTest {
-        val status = ProjectStatus.valueOf(statusName)
-        val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-        val project = DataBuilder.createExampleProject(status = status)
-        val updatedProject = DataBuilder.createExampleProject(id = project.id)
-
-        val updateFieldMask = FieldMaskUtil.fromString("project.status")
-        val request = GrpcProject.Update
-            .newBuilder()
-            .setProject(updatedProject.toGrpcProject())
-            .setMask(updateFieldMask)
-            .build()
-
-        mockCurrentUser(user)
-        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-        coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
-        coEvery { projectRepoMock.isProjectLocked(project.id) } returns false
-        coEvery { projectRepoMock.updateProject(request) } returns updatedProject
-
-        assertDoesNotThrow { mainService.updateProject(request) }
-    }
-
-    @ParameterizedTest
-    @CsvSource(
-        value = [
-            "PROJECT_STATUS_ACTIVE",
-            "PROJECT_STATUS_ACTIVE_LOCKED",
-            "PROJECT_STATUS_ARCHIVED",
-        ],
-    )
-    fun `When a project admin updates an existent project, then no exception is thrown`(statusName: String) = runTest {
-        val status = ProjectStatus.valueOf(statusName)
-        val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-        val project = DataBuilder.createExampleProject(status = status)
-        val projectMember = DataBuilder.createExampleProjectMember(userId = user.id, projectId = project.id)
-
-        val updatedProject = DataBuilder.createExampleProject(id = project.id)
-
-        val updateFieldMask = FieldMaskUtil.fromString("project.status")
-        val request = GrpcProject.Update
-            .newBuilder()
-            .setProject(updatedProject.toGrpcProject())
-            .setMask(updateFieldMask)
-            .build()
-
-        mockCurrentUser(user)
-        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-        coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns listOf(projectMember)
-        coEvery { projectRepoMock.isProjectLocked(project.id) } returns false
-        coEvery { projectRepoMock.updateProject(request) } returns updatedProject
-
-        assertDoesNotThrow { mainService.updateProject(request) }
-    }
-
-    @ParameterizedTest
-    @CsvSource(
-        value = [
-            "PROJECT_STATUS_ACTIVE",
-            "PROJECT_STATUS_ACTIVE_LOCKED",
-            "PROJECT_STATUS_ARCHIVED",
-        ],
-    )
-    fun `When a project member updates a project, then an UnauthorizedException is thrown`(statusName: String) =
-        runTest {
-            val status = ProjectStatus.valueOf(statusName)
-            val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-            val project = DataBuilder.createExampleProject(status = status)
-            val updatedProject = DataBuilder.createExampleProject(id = project.id)
-
-            val updateFieldMask = FieldMaskUtil.fromString("project.status")
-            val request = GrpcProject.Update
-                .newBuilder()
-                .setProject(updatedProject.toGrpcProject())
-                .setMask(updateFieldMask)
-                .build()
-
-            mockCurrentUser(user)
-            coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
-
-            assertThrows<UnauthorizedException> { mainService.updateProject(request) }
-        }
+    private fun getRequest(project: Project, paths: List<String>? = null) = GrpcProject.Update
+        .newBuilder()
+        .setProject(project.toGrpcProject())
+        .also { if (paths != null) it.setMask(FieldMaskUtil.fromStringList(paths)) }
+        .build()
 
     @Test
-    fun `When a server admin updates project to the project status DELETED, then a IllegalArgumentException is thrown`() =
-        runTest {
-            val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-            val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ACTIVE)
-            val updatedProject = DataBuilder.createExampleProject(
-                id = project.id,
-                status = ProjectStatus.PROJECT_STATUS_DELETED,
-            )
+    fun `When the user updates a project, but has no access, then a TestSpecificException is thrown`() = runTest {
+        val user = DataBuilder.createExampleUser()
+        val project = DataBuilder.createExampleProject()
 
-            val updateFieldMask = FieldMaskUtil.fromString("project.status")
-            val request = GrpcProject.Update
-                .newBuilder()
-                .setProject(updatedProject.toGrpcProject())
-                .setMask(updateFieldMask)
-                .build()
+        val request = getRequest(project)
+
+        mockCurrentUser(user)
+        coEvery {
+            projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE)
+        } throws TestSpecificException()
+
+        assertThrows<TestSpecificException> { mainService.updateProject(request) }
+    }
+
+    @Test
+    fun `When retrieving the project fails, then a TestSpecificException is thrown`() = runTest {
+        val user = DataBuilder.createExampleUser()
+        val project = DataBuilder.createExampleProject()
+
+        val request = getRequest(project)
+
+        mockCurrentUser(user)
+        coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.failure(TestSpecificException())
+
+        assertThrows<TestSpecificException> { mainService.updateProject(request) }
+    }
+
+    @Test
+    fun `When the user updates a project and has access, then no exception is thrown`() = runTest {
+        val user = DataBuilder.createExampleUser()
+        val project = DataBuilder.createExampleProject()
+
+        val request = getRequest(project)
+
+        mockCurrentUser(user)
+        coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
+        coEvery { projectRepoMock.isProjectLocked(project.id) } returns false
+        coEvery { projectRepoMock.updateProject(request) } returns project
+
+        assertDoesNotThrow { mainService.updateProject(request) }
+    }
+
+    @Test
+    fun `When the user updates a project to the project status DELETED, then a IllegalArgumentException is thrown`() =
+        runTest {
+            val user = DataBuilder.createExampleUser()
+            val project = DataBuilder.createExampleProject()
+
+            val updatedProject = project.copy(status = ProjectStatus.PROJECT_STATUS_DELETED)
+            val request = getRequest(updatedProject, listOf("project.status"))
 
             mockCurrentUser(user)
+            coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-            coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
 
             assertThrows<IllegalArgumentException> { mainService.updateProject(request) }
         }
 
     @Test
-    fun `When a server admin updates a deleted project, then a FailedPreconditionException is thrown`() = runTest {
-        val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+    fun `When the user updates a deleted project, then a FailedPreconditionException is thrown`() = runTest {
+        val user = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_DELETED)
-        val updatedProject = DataBuilder.createExampleProject(id = project.id, name = "Updated Project")
 
-        val updateFieldMask = FieldMaskUtil.fromString("project.name")
-        val request = GrpcProject.Update
-            .newBuilder()
-            .setProject(updatedProject.toGrpcProject())
-            .setMask(updateFieldMask)
-            .build()
+        val updatedProject = project.copy(name = "Updated Name")
+        val request = getRequest(updatedProject, listOf("project.name"))
 
         mockCurrentUser(user)
+        coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-        coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
 
         assertThrows<FailedPreconditionException> { mainService.updateProject(request) }
     }
 
     @Test
-    fun `When a server admin updates an archived project except the status, then a FailedPreconditionException is thrown`() =
+    fun `When the user updates an archived project (not only status), then a FailedPreconditionException is thrown`() =
         runTest {
-            val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+            val user = DataBuilder.createExampleUser()
             val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ARCHIVED)
-            val updatedProject =
-                DataBuilder.createExampleProject(id = project.id, name = "Updated Project", reviewMaybeAllowed = false)
 
-            val updateFieldMask =
-                FieldMaskUtil.fromStringList(listOf("project.name", "project.settings.reviewMaybeAllowed"))
-            val request = GrpcProject.Update
-                .newBuilder()
-                .setProject(updatedProject.toGrpcProject())
-                .setMask(updateFieldMask)
-                .build()
+            val updatedProject = project.copy(name = "Updated Name", status = ProjectStatus.PROJECT_STATUS_ACTIVE)
+            val request = getRequest(updatedProject, listOf("project.name", "project.status"))
 
             mockCurrentUser(user)
+            coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-            coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
 
             assertThrows<FailedPreconditionException> { mainService.updateProject(request) }
         }
 
     @ParameterizedTest
-    @CsvSource(
-        value = ["PROJECT_STATUS_ACTIVE", "PROJECT_STATUS_ACTIVE_LOCKED"],
-    )
-    fun `When a server admin updates an archived project to an active status, then no exception is thrown`(
+    @ValueSource(strings = ["PROJECT_STATUS_ACTIVE", "PROJECT_STATUS_ACTIVE_LOCKED"])
+    fun `When the user updates an archived project (only active status), then no exception is thrown`(
         statusName: String,
     ) = runTest {
         val status = ProjectStatus.valueOf(statusName)
-        val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+        val user = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ARCHIVED)
-        val updatedProject = DataBuilder.createExampleProject(id = project.id, status = status)
 
-        val updateFieldMask = FieldMaskUtil.fromString("project.status")
-        val request = GrpcProject.Update
-            .newBuilder()
-            .setProject(updatedProject.toGrpcProject())
-            .setMask(updateFieldMask)
-            .build()
+        val updatedProject = project.copy(status = status)
+        val request = getRequest(updatedProject, listOf("project.status"))
 
         mockCurrentUser(user)
+        coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-        coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
         coEvery { projectRepoMock.isProjectLocked(project.id) } returns
             (updatedProject.status == ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
         coEvery { projectRepoMock.updateProject(request) } returns updatedProject
 
-        assertDoesNotThrow { mainService.updateProject(request) }
+        val resultProject = mainService.updateProject(request)
+
+        assertEquals(status, resultProject.status)
     }
 
     @Test
-    fun `When a server admin updates an archived project to the archived status, then no exception is thrown`() =
-        runTest {
-            val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-            val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ARCHIVED)
-            val updatedProject = DataBuilder.createExampleProject(
-                id = project.id,
-                status = ProjectStatus.PROJECT_STATUS_ARCHIVED,
-            )
+    fun `When the user updates an archived project (only archived status), then no exception is thrown`() = runTest {
+        val user = DataBuilder.createExampleUser()
+        val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ARCHIVED)
 
-            val updateFieldMask = FieldMaskUtil.fromString("project.status")
-            val request = GrpcProject.Update
-                .newBuilder()
-                .setProject(updatedProject.toGrpcProject())
-                .setMask(updateFieldMask)
-                .build()
-
-            mockCurrentUser(user)
-            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-            coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
-            coEvery { projectRepoMock.updateProject(request) } returns updatedProject
-
-            assertDoesNotThrow { mainService.updateProject(request) }
-        }
-
-    @Test
-    fun `When a server admin updates an archived project to an unsupported status, then a FailedPreconditionException is thrown`() =
-        runTest {
-            val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-            val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ARCHIVED)
-            val updatedProject = DataBuilder.createExampleProject(
-                id = project.id,
-                status = ProjectStatus.PROJECT_STATUS_UNSPECIFIED,
-            )
-
-            val updateFieldMask = FieldMaskUtil.fromString("project.status")
-            val request = GrpcProject.Update
-                .newBuilder()
-                .setProject(updatedProject.toGrpcProject())
-                .setMask(updateFieldMask)
-                .build()
-
-            mockCurrentUser(user)
-            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-            coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
-
-            assertThrows<FailedPreconditionException> { mainService.updateProject(request) }
-        }
-
-    @Test
-    fun `When a server admin updates the project settings of an active locked project, then a FailedPreconditionException is thrown`() =
-        runTest {
-            val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-            val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
-            val updatedProject = DataBuilder.createExampleProject(id = project.id, reviewMaybeAllowed = false)
-
-            val updateFieldMask = FieldMaskUtil.fromString("project.settings.reviewMaybeAllowed")
-            val request = GrpcProject.Update
-                .newBuilder()
-                .setProject(updatedProject.toGrpcProject())
-                .setMask(updateFieldMask)
-                .build()
-
-            mockCurrentUser(user)
-            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-            coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
-
-            assertThrows<FailedPreconditionException> { mainService.updateProject(request) }
-        }
-
-    @Test
-    fun `When a server admin updates an active locked project except the project settings, then no exception is thrown`() =
-        runTest {
-            val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-            val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
-            val updatedProject = DataBuilder.createExampleProject(id = project.id, name = "Updated Project")
-
-            val updateFieldMask = FieldMaskUtil.fromString("project.name")
-            val request = GrpcProject.Update
-                .newBuilder()
-                .setProject(updatedProject.toGrpcProject())
-                .setMask(updateFieldMask)
-                .build()
-
-            mockCurrentUser(user)
-            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-            coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
-            coEvery { projectRepoMock.isProjectLocked(project.id) } returns false
-            coEvery { projectRepoMock.updateProject(request) } returns updatedProject
-
-            assertDoesNotThrow { mainService.updateProject(request) }
-        }
-
-    @Test
-    fun `When a server admin updates active project, then no exception is thrown`() = runTest {
-        val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-        val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ACTIVE)
-        val updatedProject = DataBuilder.createExampleProject(
-            id = project.id,
-            name = "Updated Project",
-            reviewMaybeAllowed = false,
-        )
-
-        val updateFieldMask =
-            FieldMaskUtil.fromStringList(listOf("project.name", "project.settings.reviewMaybeAllowed"))
-        val request = GrpcProject.Update
-            .newBuilder()
-            .setProject(updatedProject.toGrpcProject())
-            .setMask(updateFieldMask)
-            .build()
+        val updatedProject = project.copy(status = ProjectStatus.PROJECT_STATUS_ARCHIVED)
+        val request = getRequest(updatedProject, listOf("project.status"))
 
         mockCurrentUser(user)
+        coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-        coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
+        coEvery { projectRepoMock.updateProject(request) } returns updatedProject
+
+        val resultProject = mainService.updateProject(request)
+
+        assertEquals(ProjectStatus.PROJECT_STATUS_ARCHIVED, resultProject.status)
+    }
+
+    @Test
+    fun `When the user updates an archived project (only unsupported status), then a FailedPreconditionException is thrown`() =
+        runTest {
+            val user = DataBuilder.createExampleUser()
+            val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ARCHIVED)
+
+            val updatedProject = project.copy(status = ProjectStatus.PROJECT_STATUS_UNSPECIFIED)
+            val request = getRequest(updatedProject, listOf("project.status"))
+
+            mockCurrentUser(user)
+            coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
+            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
+
+            assertThrows<FailedPreconditionException> { mainService.updateProject(request) }
+        }
+
+    @Test
+    fun `When the user updates an active locked project (project settings), then a FailedPreconditionException is thrown`() =
+        runTest {
+            val user = DataBuilder.createExampleUser()
+            val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
+
+            val updatedProject = project.copy(reviewMaybeAllowed = false)
+            val request = getRequest(updatedProject, listOf("project.settings.review_maybe_allowed"))
+
+            mockCurrentUser(user)
+            coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
+            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
+
+            assertThrows<FailedPreconditionException> { mainService.updateProject(request) }
+        }
+
+    @Test
+    fun `When the user updates an active locked project (not project settings), then no exception is thrown`() =
+        runTest {
+            val user = DataBuilder.createExampleUser()
+            val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
+
+            val updatedProject = project.copy(name = "Updated Name")
+            val request = getRequest(updatedProject, listOf("project.name"))
+
+            mockCurrentUser(user)
+            coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
+            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
+            coEvery { projectRepoMock.isProjectLocked(project.id) } returns true
+            coEvery { projectRepoMock.updateProject(request) } returns updatedProject
+
+            assertDoesNotThrow { mainService.updateProject(request) }
+        }
+
+    @Test
+    fun `When the user updates an active project, then no exception is thrown`() = runTest {
+        val user = DataBuilder.createExampleUser()
+        val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ACTIVE)
+
+        val updatedProject = project.copy(name = "Updated Name")
+        val request = getRequest(updatedProject, listOf("project.name"))
+
+        mockCurrentUser(user)
+        coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectRepoMock.isProjectLocked(project.id) } returns false
         coEvery { projectRepoMock.updateProject(request) } returns updatedProject
 
@@ -325,30 +229,21 @@ class UpdateProjectTest : MainServiceTest() {
     }
 
     @ParameterizedTest
-    @CsvSource(
-        value = [
-            "PROJECT_STATUS_UNSPECIFIED",
-            "UNRECOGNIZED",
-        ],
-    )
-    fun `When a project has an unspecified status, then an IllegalStateException is thrown`(statusName: String) =
-        runTest {
-            val status = ProjectStatus.valueOf(statusName)
-            val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-            val project = DataBuilder.createExampleProject(status = status)
-            val updatedProject = DataBuilder.createExampleProject(id = project.id, name = "Updated Project")
+    @ValueSource(strings = ["PROJECT_STATUS_UNSPECIFIED", "UNRECOGNIZED"])
+    fun `When the user updates a project with unsupported status, then an IllegalStateException is thrown`(
+        statusName: String,
+    ) = runTest {
+        val status = ProjectStatus.valueOf(statusName)
+        val user = DataBuilder.createExampleUser()
+        val project = DataBuilder.createExampleProject(status = status)
 
-            val updateFieldMask = FieldMaskUtil.fromString("project.name")
-            val request = GrpcProject.Update
-                .newBuilder()
-                .setProject(updatedProject.toGrpcProject())
-                .setMask(updateFieldMask)
-                .build()
+        val updatedProject = project.copy(name = "Updated Name", status = ProjectStatus.PROJECT_STATUS_ACTIVE)
+        val request = getRequest(updatedProject, listOf("project.name"))
 
-            mockCurrentUser(user)
-            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-            coEvery { projectMemberRepoMock.getAllProjectAdmins(project.id) } returns emptyList()
+        mockCurrentUser(user)
+        coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
-            assertThrows<IllegalStateException> { mainService.updateProject(request) }
-        }
+        assertThrows<IllegalStateException> { mainService.updateProject(request) }
+    }
 }

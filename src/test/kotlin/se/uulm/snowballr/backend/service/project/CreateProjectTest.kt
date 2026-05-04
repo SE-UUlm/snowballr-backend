@@ -26,11 +26,7 @@ class CreateProjectTest : MainServiceTest() {
 
         coEvery { projectMemberRepoMock.addUserToProject(user.id, project.id) } returns projectMember
         coEvery {
-            projectMemberRepoMock.updateProjectMemberRole(
-                project.id,
-                user.id,
-                MemberRole.MEMBER_ROLE_ADMIN,
-            )
+            projectMemberRepoMock.updateProjectMemberRole(project.id, user.id, MemberRole.MEMBER_ROLE_ADMIN)
         } returns projectAdmin
     }
 
@@ -51,11 +47,7 @@ class CreateProjectTest : MainServiceTest() {
         coVerify(exactly = 0) { criterionRepoMock.createCriterion(any(), user.id) }
         coVerify(exactly = 1) { projectMemberRepoMock.addUserToProject(user.id, project.id) }
         coVerify(exactly = 1) {
-            projectMemberRepoMock.updateProjectMemberRole(
-                project.id,
-                user.id,
-                MemberRole.MEMBER_ROLE_ADMIN,
-            )
+            projectMemberRepoMock.updateProjectMemberRole(project.id, user.id, MemberRole.MEMBER_ROLE_ADMIN)
         }
     }
 

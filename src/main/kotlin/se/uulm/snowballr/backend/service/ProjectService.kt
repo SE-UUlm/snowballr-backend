@@ -267,7 +267,8 @@ class ProjectService(
         requestedStatus: ProjectStatus,
         fieldMask: List<String>,
     ) {
-        require(!(fieldMask.contains("project.status") && requestedStatus == ProjectStatus.PROJECT_STATUS_DELETED)) {
+        val isStatusUpdate = fieldMask.contains("project.status")
+        require(!(isStatusUpdate && requestedStatus == ProjectStatus.PROJECT_STATUS_DELETED)) {
             "The project status cannot be set to DELETED via the update method. Use SoftDeleteProject instead."
         }
 
@@ -279,12 +280,13 @@ class ProjectService(
             }
 
             ProjectStatus.PROJECT_STATUS_ARCHIVED -> {
-                val isOnlyStatusUpdate = fieldMask.size == 1 && fieldMask.contains("project.status")
+                val isOnlyStatusUpdate = fieldMask.size == 1 && isStatusUpdate
                 if (!isOnlyStatusUpdate) {
                     throw FailedPreconditionException(
                         "The project is archived and therefore only the 'status' field can be updated.",
                     )
                 }
+
                 if (
                     requestedStatus != ProjectStatus.PROJECT_STATUS_ACTIVE &&
                     requestedStatus != ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED &&
