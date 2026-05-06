@@ -1,6 +1,5 @@
 package se.uulm.snowballr.backend.service
 
-import io.github.oshai.kotlinlogging.KotlinLogging
 import io.viascom.nanoid.NanoId
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.access.IUserAccessChecker
@@ -28,8 +27,6 @@ import java.util.UUID
 import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
 import snowballr.UserOuterClass.User as GrpcUser
 import snowballr.UserSettingsOuterClass.UserSettings as GrpcUserSettings
-
-val Logger = KotlinLogging.logger { }
 
 interface IUserService {
     /**
