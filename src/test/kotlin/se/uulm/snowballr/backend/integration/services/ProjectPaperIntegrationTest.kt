@@ -1,4 +1,4 @@
-package se.uulm.snowballr.backend.integration
+package se.uulm.snowballr.backend.integration.services
 
 import com.google.protobuf.util.FieldMaskUtil
 import kotlinx.coroutines.test.runTest
@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
+import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateProjectPaperException

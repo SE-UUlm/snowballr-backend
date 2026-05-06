@@ -1,9 +1,10 @@
-package se.uulm.snowballr.backend.integration
+package se.uulm.snowballr.backend.integration.services
 
 import com.google.protobuf.FieldMask
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.parseUUID
 import snowballr.ProjectOuterClass.PaperDecision

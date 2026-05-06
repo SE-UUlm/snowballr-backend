@@ -1,8 +1,9 @@
-package se.uulm.snowballr.backend.integration
+package se.uulm.snowballr.backend.integration.services
 
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import se.uulm.snowballr.backend.integration.IntegrationTest
 import snowballr.Export.ExportRequest
 import snowballr.ProjectOuterClass.Project
 import kotlin.test.assertFalse

@@ -1,4 +1,4 @@
-package se.uulm.snowballr.backend.integration
+package se.uulm.snowballr.backend.integration.services
 
 import com.google.protobuf.FieldMask
 import io.mockk.coEvery
@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
+import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadAllException
 import se.uulm.snowballr.backend.model.parseUUID

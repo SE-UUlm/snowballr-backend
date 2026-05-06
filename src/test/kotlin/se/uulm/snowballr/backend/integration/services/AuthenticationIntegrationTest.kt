@@ -1,4 +1,4 @@
-package se.uulm.snowballr.backend.integration
+package se.uulm.snowballr.backend.integration.services
 
 import io.mockk.coEvery
 import io.mockk.slot
@@ -10,6 +10,7 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.GrpcTestContextExtension
+import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.exception.UnauthenticatedException
 import snowballr.Authentication
 
