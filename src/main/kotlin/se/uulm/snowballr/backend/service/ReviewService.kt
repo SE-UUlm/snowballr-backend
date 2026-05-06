@@ -98,6 +98,44 @@ class ReviewService(
             reviews.toGrpcReviews(reviewSelectedCriteriaMap)
         }
 
+    override suspend fun createReview(request: GrpcReview.Create): GrpcReview = withUser(userRepo) { currentUser ->
+        val projectPaperId = parseUUID(request.projectPaperId, EntityType.PROJECT_PAPER)
+        val projectPaper = projectPaperRepo.getProjectPaperById(projectPaperId).getOrThrow()
+
+        val projectResult = projectRepo.getProjectById(projectPaper.projectId)
+        accessChecker.isAllowedToCreateReview(currentUser, projectPaper.projectId, projectResult)
+        val project = projectResult.getOrThrow()
+
+        val reviewsForProjectPaper = repo.getAllReviewsForProjectPaper(projectPaperId)
+        val hasUserAlreadyReviewed = reviewsForProjectPaper.any { review -> review.userId == currentUser.id }
+        if (hasUserAlreadyReviewed) {
+            throw DuplicateReviewException(projectPaperId, currentUser.id)
+        }
+
+        if (projectPaper.hasFinalDecision()) {
+            throw FailedPreconditionException(
+                "The project paper must be either unreviewed or still in review. " +
+                    "Finally decided project papers cannot be reviewed anymore.",
+            )
+        }
+
+        val review = repo.createReview(request, currentUser.id)
+        val selectedCriteriaIds = reviewHasCriterionRepo.getSelectedCriteriaIdsForReviewById(review.id)
+
+        val hardExclusionCriteria = criteriaRepo.getAllProjectCriteria(project.id)
+            .filter { criterion -> criterion.category == CriterionCategory.CRITERION_CATEGORY_HARD_EXCLUSION }
+            .map { criterion -> criterion.id }
+        val isAnySelectedCriteriaHardExclusion = selectedCriteriaIds.any { id -> hardExclusionCriteria.contains(id) }
+        if (isAnySelectedCriteriaHardExclusion && review.doesDeclinePaper()) {
+            projectPaperRepo.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_DECLINED)
+        } else {
+            val updatedDecision = determinePaperDecision(reviewsForProjectPaper + review, project.reviewDecisionMatrix)
+            projectPaperRepo.updateProjectPaperDecision(projectPaperId, updatedDecision)
+        }
+
+        review.toGrpcReview(selectedCriteriaIds.map(UUID::toString))
+    }
+
     /**
      * Determines the final paper decision based on the given list of reviews.
      *
@@ -144,43 +182,5 @@ class ReviewService(
         } else {
             PaperDecision.PAPER_DECISION_DECLINED
         }
-    }
-
-    override suspend fun createReview(request: GrpcReview.Create): GrpcReview = withUser(userRepo) { currentUser ->
-        val projectPaperId = parseUUID(request.projectPaperId, EntityType.PROJECT_PAPER)
-        val projectPaper = projectPaperRepo.getProjectPaperById(projectPaperId).getOrThrow()
-
-        val projectResult = projectRepo.getProjectById(projectPaper.projectId)
-        accessChecker.isAllowedToCreateReview(currentUser, projectPaper.projectId, projectResult)
-        val project = projectResult.getOrThrow()
-
-        val reviewsForProjectPaper = repo.getAllReviewsForProjectPaper(projectPaperId)
-        val hasUserAlreadyReviewed = reviewsForProjectPaper.any { review -> review.userId == currentUser.id }
-        if (hasUserAlreadyReviewed) {
-            throw DuplicateReviewException(projectPaperId, currentUser.id)
-        }
-
-        if (projectPaper.hasFinalDecision()) {
-            throw FailedPreconditionException(
-                "The project paper must be either unreviewed or still in review. " +
-                    "Finally decided project papers cannot be reviewed anymore.",
-            )
-        }
-
-        val review = repo.createReview(request, currentUser.id)
-        val selectedCriteriaIds = reviewHasCriterionRepo.getSelectedCriteriaIdsForReviewById(review.id)
-
-        val hardExclusionCriteria = criteriaRepo.getAllProjectCriteria(project.id)
-            .filter { criterion -> criterion.category == CriterionCategory.CRITERION_CATEGORY_HARD_EXCLUSION }
-            .map { criterion -> criterion.id }
-        val isAnySelectedCriteriaHardExclusion = selectedCriteriaIds.any { id -> hardExclusionCriteria.contains(id) }
-        if (isAnySelectedCriteriaHardExclusion && review.doesDeclinePaper()) {
-            projectPaperRepo.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_DECLINED)
-        } else {
-            val updatedDecision = determinePaperDecision(reviewsForProjectPaper + review, project.reviewDecisionMatrix)
-            projectPaperRepo.updateProjectPaperDecision(projectPaperId, updatedDecision)
-        }
-
-        review.toGrpcReview(selectedCriteriaIds.map(UUID::toString))
     }
 }

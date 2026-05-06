@@ -1,106 +1,62 @@
 package se.uulm.snowballr.backend.service.review
 
 import io.mockk.coEvery
+import io.mockk.coJustRun
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.Arguments
-import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.model.exception.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
-import snowballr.UserOuterClass.UserRole
 import java.util.UUID
-import java.util.stream.Stream
-import kotlin.reflect.KFunction
+import kotlin.test.assertEquals
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class GetReviewByIdTest : MainServiceTest() {
-    fun failingFunctions(): Stream<Arguments?> = Stream.of(
-        Arguments.of(reviewRepoMock::getReviewById),
-    )
+    @Test
+    fun `When the user requests a review and has access, then no exception is thrown`() = runTest {
+        val user = DataBuilder.createExampleUser()
+        val review = DataBuilder.createExampleReview()
+        val selectedCriteriaIds = listOf(UUID.randomUUID())
 
-    @Suppress("ReturnCount")
-    private fun mockHappyPathUntil(failAt: KFunction<*>?, isUserAdmin: Boolean, reviewId: UUID) {
-        val currentUser = DataBuilder.createExampleUser(
-            role = if (isUserAdmin) {
-                UserRole.USER_ROLE_ADMIN
-            } else {
-                UserRole.USER_ROLE_DEFAULT
-            },
-        )
-        val review = DataBuilder.createExampleReview(id = reviewId, userId = currentUser.id)
-        val project = DataBuilder.createExampleProject()
-        val projectPaper = DataBuilder.createExampleProjectPaper(id = review.projectPaperId, projectId = project.id)
-        val selectedCriteriaIds = listOf<UUID>(UUID.randomUUID())
-
-        mockCurrentUser(currentUser)
-
-        if (failAt == reviewRepoMock::getReviewById) {
-            coEvery { reviewRepoMock.getReviewById(review.id) } returns Result.failure(TestSpecificException())
-            return
-        }
+        mockCurrentUser(user)
         coEvery { reviewRepoMock.getReviewById(review.id) } returns Result.success(review)
-
-        if (failAt == projectPaperRepoMock::getProjectPaperById) {
-            coEvery {
-                projectPaperRepoMock.getProjectPaperById(review.projectPaperId)
-            } returns Result.failure(TestSpecificException())
-            return
-        }
-        coEvery { projectPaperRepoMock.getProjectPaperById(review.projectPaperId) } returns Result.success(projectPaper)
-        coEvery { projectMemberRepoMock.isProjectMember(project.id, currentUser.id) } returns !isUserAdmin
+        coJustRun { reviewAccessCheckerMock.isAllowedToReadReview(user, review) }
         coEvery {
             reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(review.id)
         } returns selectedCriteriaIds
-    }
 
-    @ParameterizedTest
-    @MethodSource("failingFunctions")
-    fun `When a step fails, then a TestSpecificException is thrown`(failAt: KFunction<*>) = runTest {
-        val reviewId = UUID.randomUUID()
+        val reviewResult = mainService.getReviewById(review.id)
 
-        mockHappyPathUntil(failAt, true, reviewId)
-
-        assertThrows<TestSpecificException> {
-            mainService.getReviewById(reviewId)
-        }
+        assertEquals(review.id.toString(), reviewResult.id)
+        assertEquals(1, reviewResult.selectedCriteriaIdsCount)
+        val selectedCriterionId = reviewResult.selectedCriteriaIdsList[0]
+        assertEquals(selectedCriteriaIds[0].toString(), selectedCriterionId)
     }
 
     @Test
-    fun `When a server admin retrieves the review, then no exception is thrown`() = runTest {
-        val reviewId = UUID.randomUUID()
+    fun `When retrieving the review fails, then a TestSpecificException is thrown`() = runTest {
+        val user = DataBuilder.createExampleUser()
+        val review = DataBuilder.createExampleReview()
 
-        mockHappyPathUntil(null, true, reviewId)
+        mockCurrentUser(user)
+        coEvery { reviewRepoMock.getReviewById(review.id) } returns Result.failure(TestSpecificException())
 
-        assertDoesNotThrow { mainService.getReviewById(reviewId) }
+        assertThrows<TestSpecificException> { mainService.getReviewById(review.id) }
     }
 
     @Test
-    fun `When a project member retrieves the review, then no exception is thrown`() = runTest {
-        val reviewId = UUID.randomUUID()
+    fun `When the user requests a review, but has no access, then a TestSpecificException is thrown`() = runTest {
+        val user = DataBuilder.createExampleUser()
+        val review = DataBuilder.createExampleReview()
 
-        mockHappyPathUntil(null, false, reviewId)
-
-        assertDoesNotThrow { mainService.getReviewById(reviewId) }
-    }
-
-    @Test
-    fun `When a non project member retrieves the review, then an UnauthorizedException is thrown`() = runTest {
-        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-        val review = DataBuilder.createExampleReview(userId = currentUser.id)
-        val project = DataBuilder.createExampleProject()
-        val projectPaper = DataBuilder.createExampleProjectPaper(id = review.projectPaperId, projectId = project.id)
-
-        mockCurrentUser(currentUser)
+        mockCurrentUser(user)
         coEvery { reviewRepoMock.getReviewById(review.id) } returns Result.success(review)
-        coEvery { projectPaperRepoMock.getProjectPaperById(review.projectPaperId) } returns Result.success(projectPaper)
-        coEvery { projectMemberRepoMock.isProjectMember(project.id, currentUser.id) } returns false
+        coEvery {
+            reviewAccessCheckerMock.isAllowedToReadReview(user, review)
+        } throws TestSpecificException()
 
-        assertThrows<UnauthorizedException> { mainService.getReviewById(review.id) }
+        assertThrows<TestSpecificException> { mainService.getReviewById(review.id) }
     }
 }

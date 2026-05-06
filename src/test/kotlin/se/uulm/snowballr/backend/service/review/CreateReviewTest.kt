@@ -1,6 +1,7 @@
 package se.uulm.snowballr.backend.service.review
 
 import io.mockk.coEvery
+import io.mockk.coJustRun
 import io.mockk.coVerify
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
@@ -9,7 +10,6 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
-import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.DataBuilder.createExampleReviewDecisionMatrix
@@ -17,18 +17,14 @@ import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.Review
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
-import se.uulm.snowballr.backend.model.exception.UnauthorizedException
 import se.uulm.snowballr.backend.model.exception.alreadyexists.DuplicateReviewException
-import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass.PaperDecision
-import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix.Pattern
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix.Pattern.Entry
 import snowballr.ReviewOuterClass
 import snowballr.ReviewOuterClass.ReviewDecision
-import snowballr.UserOuterClass.UserRole
 import java.util.UUID
 import java.util.stream.Stream
 import kotlin.reflect.KFunction
@@ -50,11 +46,12 @@ class CreateReviewTest : MainServiceTest() {
 
     fun failingFunctions(): Stream<Arguments?> = Stream.of(
         Arguments.of(projectPaperRepoMock::getProjectPaperById),
+        Arguments.of(reviewAccessCheckerMock::isAllowedToCreateReview),
+        Arguments.of(projectRepoMock::getProjectById),
     )
 
     @Suppress("LongParameterList", "ReturnCount", "LongMethod")
     private fun mockCreateReview(
-        useAdminUser: Boolean = true,
         project: Project = this.project,
         initialPaperDecision: PaperDecision = PaperDecision.PAPER_DECISION_UNREVIEWED,
         updatedPaperDecision: PaperDecision = PaperDecision.PAPER_DECISION_IN_REVIEW,
@@ -62,14 +59,7 @@ class CreateReviewTest : MainServiceTest() {
         stopBefore: KFunction<*>? = null,
         failAt: KFunction<*>? = null,
     ) {
-        val currentUser = DataBuilder.createExampleUser(
-            id = userId,
-            role = if (useAdminUser) {
-                UserRole.USER_ROLE_ADMIN
-            } else {
-                UserRole.USER_ROLE_DEFAULT
-            },
-        )
+        val currentUser = DataBuilder.createExampleUser(id = userId)
         val projectPaper = DataBuilder.createExampleProjectPaper(
             id = projectPaperId,
             projectId = project.id,
@@ -80,6 +70,7 @@ class CreateReviewTest : MainServiceTest() {
             decision = decision,
             userId = currentUser.id,
         )
+        val projectResult = Result.success(project)
 
         mockCurrentUser(currentUser)
 
@@ -94,15 +85,22 @@ class CreateReviewTest : MainServiceTest() {
         if (stopBefore == projectRepoMock::getProjectById) {
             return
         } else if (failAt == projectRepoMock::getProjectById) {
-            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.failure(TestSpecificException())
+            val result = Result.failure<Project>(TestSpecificException())
+            coEvery { projectRepoMock.getProjectById(project.id) } returns result
+            coJustRun { reviewAccessCheckerMock.isAllowedToCreateReview(currentUser, project.id, result) }
             return
         }
-        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
+        coEvery { projectRepoMock.getProjectById(project.id) } returns projectResult
 
-        if (stopBefore == projectMemberRepoMock::isProjectMember) {
+        if (stopBefore == reviewAccessCheckerMock::isAllowedToCreateReview) {
+            return
+        } else if (failAt == reviewAccessCheckerMock::isAllowedToCreateReview) {
+            coEvery {
+                reviewAccessCheckerMock.isAllowedToCreateReview(currentUser, project.id, projectResult)
+            } throws TestSpecificException()
             return
         }
-        coEvery { projectMemberRepoMock.isProjectMember(project.id, currentUser.id) } returns !useAdminUser
+        coJustRun { reviewAccessCheckerMock.isAllowedToCreateReview(currentUser, project.id, projectResult) }
 
         if (stopBefore == reviewRepoMock::getAllReviewsForProjectPaper) {
             return
@@ -133,45 +131,10 @@ class CreateReviewTest : MainServiceTest() {
     }
 
     @Test
-    fun `When a server admin creates a review, then no exception is thrown`() = runTest {
-        mockCreateReview(useAdminUser = true)
+    fun `When the user creates a review and has access, then no exception is thrown`() = runTest {
+        mockCreateReview()
 
         assertDoesNotThrow { mainService.createReview(validCreateReviewRequest.build()) }
-    }
-
-    @Test
-    fun `When a project member creates a review, then no exception is thrown`() = runTest {
-        mockCreateReview(useAdminUser = false)
-
-        assertDoesNotThrow { mainService.createReview(validCreateReviewRequest.build()) }
-    }
-
-    @Test
-    fun `When a non project member creates a review, then an UnauthorizedException is thrown`() = runTest {
-        mockCreateReview(useAdminUser = false, stopBefore = projectMemberRepoMock::isProjectMember)
-        coEvery { projectMemberRepoMock.isProjectMember(project.id, any()) } returns false
-
-        assertThrows<UnauthorizedException> { mainService.createReview(validCreateReviewRequest.build()) }
-        coVerify(exactly = 0) { reviewRepoMock.createReview(any(), any()) }
-    }
-
-    @ParameterizedTest
-    @CsvSource(
-        value = [
-            "PROJECT_STATUS_ARCHIVED",
-            "PROJECT_STATUS_DELETED",
-        ],
-    )
-    fun `When the project paper to review is in an inactive project, then a FailedPreconditionException is thrown`(
-        statusName: String,
-    ) = runTest {
-        val project = DataBuilder.createExampleProject(status = ProjectStatus.valueOf(statusName))
-
-        mockCreateReview(project = project, stopBefore = reviewRepoMock::getAllReviewsForProjectPaper)
-        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-
-        assertThrows<FailedPreconditionException> { mainService.createReview(validCreateReviewRequest.build()) }
-        coVerify(exactly = 0) { reviewRepoMock.createReview(any(), any()) }
     }
 
     @Test
@@ -331,8 +294,9 @@ class CreateReviewTest : MainServiceTest() {
                 stopBefore = reviewRepoMock::createReview,
             )
             coEvery { reviewRepoMock.createReview(createReviewRequest, userId) } returns declineReview
-            coEvery { reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(declineReview.id) } returns
-                selectedCriteriaIds
+            coEvery {
+                reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(declineReview.id)
+            } returns selectedCriteriaIds
             coEvery { criterionRepoMock.getAllProjectCriteria(project.id) } returns emptyList()
             coEvery {
                 projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_DECLINED)
@@ -364,8 +328,9 @@ class CreateReviewTest : MainServiceTest() {
 
             mockCreateReview(stopBefore = reviewRepoMock::createReview)
             coEvery { reviewRepoMock.createReview(createReviewRequest, userId) } returns acceptedReview
-            coEvery { reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(acceptedReview.id) } returns
-                listOf(defaultCriterion, hardExclusionCriterion.id)
+            coEvery {
+                reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(acceptedReview.id)
+            } returns listOf(defaultCriterion, hardExclusionCriterion.id)
             coEvery { criterionRepoMock.getAllProjectCriteria(project.id) } returns listOf(hardExclusionCriterion)
             coEvery {
                 projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_IN_REVIEW)
@@ -376,13 +341,4 @@ class CreateReviewTest : MainServiceTest() {
                 projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_IN_REVIEW)
             }
         }
-
-    @Test
-    fun `When a review is created for a non existent project, then a ProjectNotFoundException is thrown`() = runTest {
-        mockCreateReview(stopBefore = projectRepoMock::getProjectById)
-
-        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.failure(TestSpecificException())
-
-        assertThrows<ProjectNotFoundException> { mainService.createReview(validCreateReviewRequest.build()) }
-    }
 }
