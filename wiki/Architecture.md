@@ -15,6 +15,7 @@ sequenceDiagram
         participant Input Validation
         participant gRPC Server
         participant Service
+        participant AccessChecker
         participant Repository
     end
     participant Database
@@ -40,8 +41,11 @@ sequenceDiagram
     gRPC Server ->> Service: Call service
     activate gRPC Server
     activate Service
-    Service ->> Repository: Request data for preconditions
+    Service ->> AccessChecker: Call access checker
     activate Service
+    activate AccessChecker
+    AccessChecker ->> Repository: Request data for preconditions
+    activate AccessChecker
     activate Repository
     Repository ->> Database: Call database
     activate Database
@@ -55,15 +59,18 @@ sequenceDiagram
         Repository -->> Frontend: NOT_FOUND
     end
 
-    Repository ->> Service: Send response data
-    deactivate Service
+    Repository ->> AccessChecker: Send response data
+    deactivate AccessChecker
     deactivate Repository
-    Service ->> Service: Check access
 
     alt User is not allowed to operate
-        Service -->> Frontend: PERMISSION_DENIED
+        AccessChecker -->> Frontend: PERMISSION_DENIED
         activate Input Validation
     end
+
+    AccessChecker ->> Service: Report access check result
+    deactivate AccessChecker
+    deactivate Service
 
     loop Other DB requests
         Service ->> Repository: Call repository
@@ -93,14 +100,14 @@ When an unexpected error occurs at any time in this diagram, an `INTERNAL` statu
 
 ## Layers
 
-### Authentication (2 - 3)
+### Authentication
 
 - Is an interceptor
 - Read the request tokens and expect an `accessToken` and a `refreshToken`
 - Verify token
 - Fetch and pass on the associated user
 
-### Input Validation (4 - 5)
+### Input Validation
 
 - Is an interceptor
 - Validate the request fields if necessary, e.g.
@@ -108,23 +115,27 @@ When an unexpected error occurs at any time in this diagram, an `INTERNAL` statu
     - Is the numeric field in a specific range?
 - **Note that no semantic validation takes place**
     - e.g., it isn't checked whether an entity ID refers to an existing item
-    - Semantic validation takes place in the [Service layer](#service-7-13---15-20---21)
+    - Semantic validation takes place in the [Service layer](#service)
 
-### gRPC Server (6, 22)
+### gRPC Server
 
-- Mainly serves as a multiplexer for the [Service layer](#service-7-13---15-20---21)
+- Mainly serves as a multiplexer for the [Service layer](#service)
 - Call the according service method
 - If the call was successful, the response payload is sent back to the frontend
 
-### Service (7, 13 - 15, 20 - 21)
+### Service
 
 - Fetch required data
     - used to conduct the access check and other preconditions
     - used for later computations
-- Check whether a user has access to an operation e.g., delete a project
-- Call one or more [Repository](#repository-8---12-16---19) methods to execute CRUD operations
+- Call one or more [Repository](#repository) methods to execute CRUD operations
 
-### Repository (8 - 12, 16 - 19)
+### Access Checker
+
+- Check whether a user has access to an operation e.g., delete a project
+- Call one or more [Repository](#repository) methods to execute CRUD operations
+
+### Repository
 
 - Implementation of the [Repository Pattern](https://medium.com/@pererikbergman/repository-design-pattern-e28c0f3e4a30)
 - Works as a direct abstraction layer above the database

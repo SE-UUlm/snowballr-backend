@@ -12,8 +12,8 @@ On this page, we explain how to contribute to the SnowballR backend project. We 
   * [Layer Implementation](#layer-implementation)
     * [Table](#table)
     * [Repository](#repository)
+    * [Access Checkers and Rules](#access-checkers-and-rules)
     * [Service](#service)
-      * [Access Checkers and Rules](#access-checkers-and-rules)
     * [Input Validation](#input-validation)
   * [Testing](#testing)
   * [Miscellaneous Commands](#miscellaneous-commands)
@@ -35,13 +35,16 @@ To set up the development environment, follow the steps in
 ├── src/
 │   ├── main/
 │   │   ├── kotlin/
+│   │   │   ├── access/      (access checkers and rules)
 │   │   │   ├── auth/        (auth related classes)
 │   │   │   ├── db/          (database interface)
 │   │   │   ├── env/         (environment variables)
+│   │   │   ├── export/      (export related classes)
 │   │   │   ├── fetcher/     (fetcher related classes)
 │   │   │   ├── grpc/        (gRPC server and its interceptors)
 │   │   │   ├── model/       (model classes)
 │   │   │   ├── repository/  (repository layer)
+│   │   │   ├── scheduler/   (CRON jobs and their management)
 │   │   │   ├── service/     (service layer)
 │   │   │   ├── table/       (DB table definitions / table layer)
 │   │   │   └── validation/  (input validation layer)
@@ -79,6 +82,8 @@ Follow these few conventions when creating or modifying a table:
 * if there's a foreign key, provide reference options, such as `RESTRICT` or `CASCADE` for `onDelete` and `onUpdate`and
   provide a comment which describes why the reference option was chosen (read more in
   [this post](https://stackoverflow.com/questions/6720050/foreign-key-constraints-when-to-use-on-update-and-on-delete/6720458#6720458))
+* ensure that sensitive data, such as passwords, or non-human-readable data, such as binary data, is not logged by using
+  custom column types that override the `valueToString()` method.
 
 As each entity is represented by a class in this project, always provide a mapping method:
 
@@ -128,42 +133,7 @@ See
 [ProjectTableRepo.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/repository/ProjectTableRepo.kt)
 for an example.
 
-### Service
-
-The service layer is the layer where the actual business logic happens. This includes access checks and checking whether
-associated entities exist. We group the service layer according to the entities in our system, such as the
-[ProjectService](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend//service/ProjectService.kt).
-A service always has an interface, which defines its methods and an implementation, which uses said interface. As there
-exists a 1-to-1 mapping of incoming requests to service methods, the service handles all requests of its associated
-entity.
-
-The [MainService](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/service/MainService.kt)
-combines all services in one class, which can then be used in the gRPC server to invoke the according method for each
-request. If there isn't already a service for the entity associated with your use case, add another one with the pattern
-`[Entity Name]Service`. Furthermore, let `IMainService` inherit its interface and inject the implementation:
-
-```kotlin
-interface IMainService :
-    IExampleService
-
-class MainService(
-    private val exampleService: IExampleService
-) : IMainService,
-    IExampleService by exampleService
-```
-
-For the dependency injection to work, add all repositories and services to the `snowballRModule` in
-[Module.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/Module.kt).
-Build the service method implementation in a way that preconditions are checked first. We want to fail as fast as
-possible, and if the user doesn't have access to the operation or the associated entity does not exist, we don't
-want to have already persisted data. Only if every precondition is met, make changes to the persisted data and finish
-the method with returning required data, such as the updated entity for an update request.
-
-See
-[ProjectService.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/service/ProjectService.kt)
-for an example.
-
-#### Access Checkers and Rules
+### Access Checkers and Rules
 
 To provide a composable and reusable way to enforce authorization logic across the service layer, we use
 **access rules**. These rules ensure consistent permission enforcement and centralize authorization logic within
@@ -226,6 +196,42 @@ override suspend fun deleteEntity(entityId: UUID) = withUser(userRepo) { current
     accessChecker.isAllowedToDeleteEntity(currentUser, entity)
 }
 ```
+
+### Service
+
+The service layer is the layer where the actual business logic happens. This includes checking whether associated
+entities exist and delegating authorization to the access checkers. We group the service layer according to the entities
+in our system, such as the
+[ProjectService](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend//service/ProjectService.kt).
+A service always has an interface, which defines its methods and an implementation, which uses said interface. As there
+exists a 1-to-1 mapping of incoming requests to service methods, the service handles all requests of its associated
+entity.
+
+The [MainService](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/service/MainService.kt)
+combines all services in one class, which can then be used in the gRPC server to invoke the according method for each
+request. If there isn't already a service for the entity associated with your use case, add another one with the pattern
+`[Entity Name]Service`. Furthermore, let `IMainService` inherit its interface and inject the implementation:
+
+```kotlin
+interface IMainService :
+    IExampleService
+
+class MainService(
+    private val exampleService: IExampleService
+) : IMainService,
+    IExampleService by exampleService
+```
+
+For the dependency injection to work, add all repositories, access checkers, and services to the `snowballRModule` in
+[Module.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/Module.kt).
+Build the service method implementation in a way that preconditions are checked first. We want to fail as fast as
+possible, and if the user doesn't have access to the operation or the associated entity does not exist, we don't
+want to have already persisted data. Only if every precondition is met, make changes to the persisted data and finish
+the method with returning required data, such as the updated entity for an update request.
+
+See
+[ProjectService.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/service/ProjectService.kt)
+for an example.
 
 ### Input Validation
 

@@ -1,7 +1,11 @@
-To test the functionality of our app, we employ various tests. To run all tests at once, you can use:
+To test the functionality of our app, we employ various tests. To run tests, you can use:
 
 ```bash
+# Unit tests
 ./gradlew test
+
+# Integration tests
+./gradlew integrationTest
 ```
 
 The coverage report is located at `./build/coverageHtml/index.html` and the test report at
@@ -95,7 +99,8 @@ For parameterized tests using gRPC enums, we provide the custom `GrpcEnumSourceT
 `UNRECOGNIZED` value because using this value to create an object will lead to an exception being thrown.
 
 If you need a test user, set the `needsTestUser` argument of the `RepositoryTest` superclass constructor to true.
-This automatically inserts a dummy user into the database. You can access this user’s ID through the `testUserId` variable.
+This automatically inserts a dummy user into the database. You can access this user’s ID through the `testUserId`
+variable.
 
 See
 [CriterionTableRepoTest.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/test/kotlin/se/uulm/snowballr/backend/repository/CriterionTableRepoTest.kt)
@@ -193,24 +198,35 @@ for an example.
 
 ## Integration Tests
 
-Integration tests are used to test the interaction of services and repositories. They are located in the test directory
-[`integration`](https://github.com/SE-UUlm/snowballr-backend/tree/develop/src/test/kotlin/se/uulm/snowballr/backend/integration).
+Integration tests are used to test the behavior of services and repositories working together against a real database.
 The only components that are mocked are the environment variables and the email service, i.e., all external
 dependencies. As with the repository tests, an isolated PostgreSQL database is used.
 The SUT for all integration tests is the `mainService` object. Through it, all layers can be accessed, as if they were
 called from the server layer.
 
-Do not use integration tests to test the functionality of a single method. Instead, use them to test the interaction of
-multiple methods, e.g., a complete use case. For instance, creating a project, adding members, having members accept
-the invitation, and checking whether they are correctly added to the project.
+Integration tests are organized in subdirectories under
+[`integration`](https://github.com/SE-UUlm/snowballr-backend/tree/develop/src/test/kotlin/se/uulm/snowballr/backend/integration):
+
+* [`services`](https://github.com/SE-UUlm/snowballr-backend/tree/develop/src/test/kotlin/se/uulm/snowballr/backend/integration/services):
+  One test class per service, covering the main operations of each service end-to-end through the full stack. Tests here
+  verify that operations produce the correct observable outcome (e.g., creating a paper and retrieving it by ID, or that
+  a review decision updates the paper's state).
+* [`access`](https://github.com/SE-UUlm/snowballr-backend/tree/develop/src/test/kotlin/se/uulm/snowballr/backend/integration/access):
+  Tests that verify authorization rules are enforced end-to-end. Because service tests mock the access checkers, these
+  tests are the only ones that confirm access control actually works with the real authorization logic and the real
+  database.
+* [`regression`](https://github.com/SE-UUlm/snowballr-backend/tree/develop/src/test/kotlin/se/uulm/snowballr/backend/integration/regression):
+  Tests for previously fixed bugs. Add a test here whenever a bug is fixed, so that it cannot silently reappear.
 
 The class
 [`IntegrationTest`](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/test/kotlin/se/uulm/snowballr/backend/integration/IntegrationTest.kt)
-contains some helper methods for commonly reused workflows, such as registering and verifying a user's account. To
-make calls as another user, use the `actAsUser` method, which temporarily switches the context in which the calls are
-made.
+is the base class for all integration tests. It provides helper methods for commonly reused workflows to avoid
+duplicating setup code across test classes:
 
-For regression tests, i.e., testing whether a bug has been fixed and does not occur again, we have a separate test class
-[`RegressionTest`](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/test/kotlin/se/uulm/snowballr/backend/integration/regression/RegressionTest.kt).
-There, we collect all test cases that are related to fixed bugs. This way, we can easily run all regression tests to
-verify that a bug remains fixed in the future.
+| Helper                                                 | Description                                                                |
+|--------------------------------------------------------|----------------------------------------------------------------------------|
+| `createPaper(title, externalId?)`                      | Creates a paper with default metadata                                      |
+| `addUser(user)`                                        | Registers and verifies a user account                                      |
+| `inviteUserToProject(project, user, acceptInvitation)` | Invites a registered user to a project, optionally accepting               |
+| `inviteEmailToProject(project, email)`                 | Invites an unregistered email address to a project                         |
+| `actAsUser(userId, block)`                             | Executes `block` as the specified user, then restores the original context |
