@@ -1,6 +1,7 @@
 package se.uulm.snowballr.backend.access
 
 import io.mockk.coEvery
+import io.mockk.coJustRun
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Nested
@@ -25,7 +26,7 @@ class InvitationAccessCheckerTest {
             val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ACTIVE)
             val projectResult = Result.success(project)
 
-            coEvery { projectAccessChecker.isProjectOrServerAdmin(user, project.id, AccessType.READ) } returns Unit
+            coJustRun { projectAccessChecker.isProjectOrServerAdmin(user, project.id, AccessType.READ) }
 
             assertDoesNotThrow { accessChecker.isAllowedToInviteUserToProject(user, project.id, projectResult) }
         }
@@ -52,7 +53,7 @@ class InvitationAccessCheckerTest {
                 val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ARCHIVED)
                 val projectResult = Result.success(project)
 
-                coEvery { projectAccessChecker.isProjectOrServerAdmin(user, project.id, AccessType.READ) } returns Unit
+                coJustRun { projectAccessChecker.isProjectOrServerAdmin(user, project.id, AccessType.READ) }
 
                 assertThrows<EntityNotActiveException> {
                     accessChecker.isAllowedToInviteUserToProject(user, project.id, projectResult)

@@ -164,7 +164,7 @@ open class IntegrationTest : KoinTest {
         val link = "https://example.com/verify"
         coEvery { emailManagerMock.createVerificationLink(capture(verificationToken)) } returns link
         val verificationData = EmailData.EmailVerification(user.firstName, link, "tomorrow")
-        coEvery { emailManagerMock.sendVerificationEmail(any(), verificationData) } returns Unit
+        coJustRun { emailManagerMock.sendVerificationEmail(any(), verificationData) }
 
         // Register user
         val registerUserRequest = Authentication.RegisterRequest.newBuilder()

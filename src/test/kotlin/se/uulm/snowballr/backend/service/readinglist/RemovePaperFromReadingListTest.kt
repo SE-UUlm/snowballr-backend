@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.service.readinglist
 
 import io.mockk.Runs
 import io.mockk.coEvery
+import io.mockk.coJustRun
 import io.mockk.coVerify
 import io.mockk.just
 import kotlinx.coroutines.test.runTest
@@ -21,7 +22,7 @@ class RemovePaperFromReadingListTest : MainServiceTest() {
 
         mockCurrentUser(user)
         coEvery { paperRepoMock.ensurePaperExists(paperId) } just Runs
-        coEvery { readingListRepoMock.removeReadingListEntry(user.id, paperId) } returns Unit
+        coJustRun { readingListRepoMock.removeReadingListEntry(user.id, paperId) }
 
         assertDoesNotThrow { mainService.removePaperFromReadingList(paperId) }
         coVerify(exactly = 1) { readingListRepoMock.removeReadingListEntry(user.id, paperId) }

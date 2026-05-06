@@ -116,9 +116,7 @@ class CreateReviewTest : MainServiceTest() {
             reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(review.id)
         } returns selectedCriteriaIds
         coEvery { criterionRepoMock.getAllProjectCriteria(project.id) } returns emptyList()
-        coEvery {
-            projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, updatedPaperDecision)
-        } returns Unit
+        coJustRun { projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, updatedPaperDecision) }
     }
 
     @ParameterizedTest
@@ -254,9 +252,9 @@ class CreateReviewTest : MainServiceTest() {
             coEvery {
                 criterionRepoMock.getAllProjectCriteria(project.id)
             } returns listOf(exclusionCriterion, hardExclusionCriterion)
-            coEvery {
+            coJustRun {
                 projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_DECLINED)
-            } returns Unit
+            }
 
             assertDoesNotThrow { mainService.createReview(createReviewRequest) }
         }
@@ -298,9 +296,9 @@ class CreateReviewTest : MainServiceTest() {
                 reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(declineReview.id)
             } returns selectedCriteriaIds
             coEvery { criterionRepoMock.getAllProjectCriteria(project.id) } returns emptyList()
-            coEvery {
+            coJustRun {
                 projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_DECLINED)
-            } returns Unit
+            }
 
             assertDoesNotThrow { mainService.createReview(createReviewRequest) }
             coVerify(exactly = 1) {
@@ -332,9 +330,9 @@ class CreateReviewTest : MainServiceTest() {
                 reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(acceptedReview.id)
             } returns listOf(defaultCriterion, hardExclusionCriterion.id)
             coEvery { criterionRepoMock.getAllProjectCriteria(project.id) } returns listOf(hardExclusionCriterion)
-            coEvery {
+            coJustRun {
                 projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_IN_REVIEW)
-            } returns Unit
+            }
 
             assertDoesNotThrow { mainService.createReview(createReviewRequest) }
             coVerify(exactly = 1) {

@@ -65,7 +65,7 @@ class InviteUserToProjectTest : MainServiceTest() {
         if (stopBefore == invitationTokenRepoMock::saveInvitationToken) {
             return
         }
-        coEvery { invitationTokenRepoMock.saveInvitationToken(invitedUserEmail, projectId, any()) } returns Unit
+        coJustRun { invitationTokenRepoMock.saveInvitationToken(invitedUserEmail, projectId, any()) }
         if (stopBefore == userRepoMock::getUserByEmail) {
             return
         }
@@ -74,7 +74,7 @@ class InviteUserToProjectTest : MainServiceTest() {
         if (stopBefore == emailManagerMock::sendAcceptProjectInvitationEmail) {
             return
         }
-        coEvery { emailManagerMock.sendAcceptProjectInvitationEmail(invitedUserEmail, any()) } returns Unit
+        coJustRun { emailManagerMock.sendAcceptProjectInvitationEmail(invitedUserEmail, any()) }
     }
 
     @Test
@@ -149,16 +149,12 @@ class InviteUserToProjectTest : MainServiceTest() {
         val emailDataSlot = slot<EmailData.AcceptProjectInvitation>()
 
         mockInviteUserToProject(stopBefore = invitationTokenRepoMock::saveInvitationToken)
-        coEvery {
-            invitationTokenRepoMock.saveInvitationToken(invitedUserEmail, projectId, capture(tokenSlot))
-        } returns Unit
+        coJustRun { invitationTokenRepoMock.saveInvitationToken(invitedUserEmail, projectId, capture(tokenSlot)) }
         coEvery { userRepoMock.getUserByEmail(invitedUserEmail) } returns Result.success(invitedUser)
         every { emailManagerMock.createAcceptProjectInvitationLink(any()) } answers {
             "https://link/${firstArg<String>()}"
         }
-        coEvery {
-            emailManagerMock.sendAcceptProjectInvitationEmail(invitedUserEmail, capture(emailDataSlot))
-        } returns Unit
+        coJustRun { emailManagerMock.sendAcceptProjectInvitationEmail(invitedUserEmail, capture(emailDataSlot)) }
 
         assertDoesNotThrow { mainService.inviteUserToProject(validInviteUserRequest.build()) }
 
@@ -180,7 +176,7 @@ class InviteUserToProjectTest : MainServiceTest() {
         val emailNotFoundException = UserNotFoundByEmailException(emailOfNonExistentUser)
         coEvery { userRepoMock.getUserByEmail(emailOfNonExistentUser) } returns Result.failure(emailNotFoundException)
         every { emailManagerMock.createAcceptProjectInvitationLink(any()) } returns "http://invitation-link"
-        coEvery { emailManagerMock.sendAcceptProjectInvitationEmail(any(), capture(emailDataSlot)) } returns Unit
+        coJustRun { emailManagerMock.sendAcceptProjectInvitationEmail(any(), capture(emailDataSlot)) }
 
         val inviteNonExistentUserRequest = validInviteUserRequest.setUserEmail(emailOfNonExistentUser)
 

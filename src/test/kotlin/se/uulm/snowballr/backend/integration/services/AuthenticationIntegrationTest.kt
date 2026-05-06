@@ -1,6 +1,7 @@
 package se.uulm.snowballr.backend.integration.services
 
 import io.mockk.coEvery
+import io.mockk.coJustRun
 import io.mockk.slot
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Nested
@@ -62,7 +63,7 @@ class AuthenticationIntegrationTest : IntegrationTest() {
         fun `When a registered but unverified user attempts to login, then login fails`() = runTest {
             val tokenSlot = slot<String>()
             coEvery { emailManagerMock.createVerificationLink(capture(tokenSlot)) } returns "https://example.com/verify"
-            coEvery { emailManagerMock.sendVerificationEmail(any(), any()) } returns Unit
+            coJustRun { emailManagerMock.sendVerificationEmail(any(), any()) }
 
             val newUser = DataBuilder.createExampleUser(email = "unverified.user@example.com")
             mainService.register(

@@ -1,6 +1,7 @@
 package se.uulm.snowballr.backend.service.invitations
 
 import io.mockk.coEvery
+import io.mockk.coJustRun
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -38,7 +39,7 @@ class AcceptProjectInvitationTest : MainServiceTest() {
         coEvery { invitationTokenRepoMock.getInvitationTokenByValue(expiredToken.token) } returns Result.success(
             expiredToken,
         )
-        coEvery { invitationTokenRepoMock.deleteInvitationToken(expiredToken.token) } returns Unit
+        coJustRun { invitationTokenRepoMock.deleteInvitationToken(expiredToken.token) }
 
         assertThrows<InvitationTokenNotFoundException> { mainService.acceptProjectInvitation(request) }
     }
@@ -118,7 +119,7 @@ class AcceptProjectInvitationTest : MainServiceTest() {
         coEvery { invitationTokenRepoMock.getInvitationTokenByValue(token.token) } returns Result.success(token)
         coEvery { userRepoMock.getUserByEmail(token.email) } returns Result.success(user)
         coEvery { projectMemberRepoMock.addUserToProject(user.id, token.projectId) } returns userMember
-        coEvery { invitationTokenRepoMock.deleteInvitationToken(token.token) } returns Unit
+        coJustRun { invitationTokenRepoMock.deleteInvitationToken(token.token) }
 
         assertDoesNotThrow { mainService.acceptProjectInvitation(request) }
     }

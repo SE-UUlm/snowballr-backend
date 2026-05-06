@@ -1,6 +1,7 @@
 package se.uulm.snowballr.backend.service.authentication
 
 import io.mockk.coEvery
+import io.mockk.coJustRun
 import io.mockk.slot
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
@@ -38,7 +39,7 @@ class VerifyEmailTest : MainServiceTest() {
         coEvery { verificationTokenRepoMock.getVerificationTokenByValue(expiredToken.token) } returns Result.success(
             expiredToken,
         )
-        coEvery { verificationTokenRepoMock.deleteVerificationToken(expiredToken.token) } returns Unit
+        coJustRun { verificationTokenRepoMock.deleteVerificationToken(expiredToken.token) }
 
         assertThrows<VerificationTokenNotFoundException> { mainService.verifyEmail(request) }
     }
@@ -64,7 +65,7 @@ class VerifyEmailTest : MainServiceTest() {
         coEvery { verificationTokenRepoMock.getVerificationTokenByValue(token.token) } returns Result.success(token)
         coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
         coEvery { userRepoMock.updateUser(capture(userUpdateSlot)) } returns user
-        coEvery { verificationTokenRepoMock.deleteVerificationToken(token.token) } returns Unit
+        coJustRun { verificationTokenRepoMock.deleteVerificationToken(token.token) }
 
         assertDoesNotThrow { mainService.verifyEmail(request) }
     }

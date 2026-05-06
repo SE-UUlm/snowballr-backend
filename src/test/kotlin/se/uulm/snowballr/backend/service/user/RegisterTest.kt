@@ -1,6 +1,7 @@
 package se.uulm.snowballr.backend.service.user
 
 import io.mockk.coEvery
+import io.mockk.coJustRun
 import io.mockk.every
 import io.mockk.slot
 import kotlinx.coroutines.test.runTest
@@ -45,7 +46,7 @@ class RegisterTest : MainServiceTest() {
 
         coEvery { userRepoMock.doesUserExistByEmail(user.email) } returns false
         coEvery { userRepoMock.createUser(getExampleRequest(user), any()) } returns user
-        coEvery { verificationTokenRepoMock.saveVerificationToken(user.id, any()) } returns Unit
+        coJustRun { verificationTokenRepoMock.saveVerificationToken(user.id, any()) }
         every { emailManagerMock.createVerificationLink(any()) } returns verificationLink
         coEvery { emailManagerMock.sendVerificationEmail(user.email, userData) } throws TestSpecificException()
 
@@ -63,14 +64,14 @@ class RegisterTest : MainServiceTest() {
 
             coEvery { userRepoMock.doesUserExistByEmail(user.email) } returns false
             coEvery { userRepoMock.createUser(getExampleRequest(user), any()) } returns user
-            coEvery { verificationTokenRepoMock.saveVerificationToken(user.id, capture(tokenSlot)) } returns Unit
+            coJustRun { verificationTokenRepoMock.saveVerificationToken(user.id, capture(tokenSlot)) }
 
             every { emailManagerMock.createVerificationLink(any()) } answers {
                 val token = firstArg<String>()
                 "$testFrontendURL/verifyemail?token=$token"
             }
 
-            coEvery { emailManagerMock.sendVerificationEmail(user.email, capture(emailDataSlot)) } returns Unit
+            coJustRun { emailManagerMock.sendVerificationEmail(user.email, capture(emailDataSlot)) }
 
             assertDoesNotThrow { mainService.register(getExampleRequest(user)) }
 
