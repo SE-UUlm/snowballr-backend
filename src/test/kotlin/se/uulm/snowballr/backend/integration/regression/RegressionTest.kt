@@ -21,8 +21,7 @@ class RegressionTest : IntegrationTest() {
             val project = mainService.createProject(createProjectRequest)
 
             // Register another user to invite
-            val otherUser = DataBuilder.createExampleUser()
-            addUser(otherUser)
+            val otherUser = addUser(DataBuilder.createExampleUser())
 
             // Invite the other user to the project
             inviteUserToProject(project, otherUser)
