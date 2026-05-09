@@ -1,6 +1,7 @@
 package se.uulm.snowballr.backend.service.invitations
 
 import io.mockk.coEvery
+import io.mockk.coJustRun
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -15,11 +16,12 @@ import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.ProjectOuterClass
 import snowballr.UserOuterClass
 import java.time.OffsetDateTime
+import snowballr.ProjectOuterClass.Project.Member as GrpcProjectMember
 
 class AcceptProjectInvitationTest : MainServiceTest() {
     @Test
     fun `When the invitation token is not found, then a InvitationTokenNotFoundException is thrown`() = runTest {
-        val request = ProjectOuterClass.Project.Member.Accept.newBuilder().setToken("non-existent-token").build()
+        val request = GrpcProjectMember.Accept.newBuilder().setToken("non-existent-token").build()
         coEvery { invitationTokenRepoMock.getInvitationTokenByValue(any()) } returns Result.failure(
             InvitationTokenNotFoundException(),
         )
@@ -32,12 +34,12 @@ class AcceptProjectInvitationTest : MainServiceTest() {
         val expiredToken = DataBuilder.createExampleInvitationToken(
             expiresAt = OffsetDateTime.now().minusDays(1),
         )
-        val request = ProjectOuterClass.Project.Member.Accept.newBuilder().setToken(expiredToken.token).build()
+        val request = GrpcProjectMember.Accept.newBuilder().setToken(expiredToken.token).build()
 
         coEvery { invitationTokenRepoMock.getInvitationTokenByValue(expiredToken.token) } returns Result.success(
             expiredToken,
         )
-        coEvery { invitationTokenRepoMock.deleteInvitationToken(expiredToken.token) } returns Unit
+        coJustRun { invitationTokenRepoMock.deleteInvitationToken(expiredToken.token) }
 
         assertThrows<InvitationTokenNotFoundException> { mainService.acceptProjectInvitation(request) }
     }
@@ -46,7 +48,7 @@ class AcceptProjectInvitationTest : MainServiceTest() {
     fun `When the user associated with the token is not registered, then a FailedPreconditionException is thrown`() =
         runTest {
             val token = DataBuilder.createExampleInvitationToken()
-            val request = ProjectOuterClass.Project.Member.Accept.newBuilder().setToken(token.token).build()
+            val request = GrpcProjectMember.Accept.newBuilder().setToken(token.token).build()
 
             coEvery { invitationTokenRepoMock.getInvitationTokenByValue(token.token) } returns Result.success(token)
             coEvery { userRepoMock.getUserByEmail(token.email) } returns
@@ -59,7 +61,7 @@ class AcceptProjectInvitationTest : MainServiceTest() {
     fun `When the user has not verified their email, then a FailedPreconditionException is thrown`() = runTest {
         val user = DataBuilder.createExampleUser(status = UserOuterClass.UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED)
         val token = DataBuilder.createExampleInvitationToken(email = user.email)
-        val request = ProjectOuterClass.Project.Member.Accept.newBuilder().setToken(token.token).build()
+        val request = GrpcProjectMember.Accept.newBuilder().setToken(token.token).build()
 
         coEvery { invitationTokenRepoMock.getInvitationTokenByValue(token.token) } returns Result.success(token)
         coEvery { userRepoMock.getUserByEmail(token.email) } returns Result.success(user)
@@ -71,7 +73,7 @@ class AcceptProjectInvitationTest : MainServiceTest() {
     fun `When adding the user to the project fails, then a TestSpecificException is thrown`() = runTest {
         val user = DataBuilder.createExampleUser(status = UserOuterClass.UserStatus.USER_STATUS_ACTIVE)
         val token = DataBuilder.createExampleInvitationToken(email = user.email)
-        val request = ProjectOuterClass.Project.Member.Accept.newBuilder().setToken(token.token).build()
+        val request = GrpcProjectMember.Accept.newBuilder().setToken(token.token).build()
 
         coEvery { invitationTokenRepoMock.getInvitationTokenByValue(token.token) } returns Result.success(token)
         coEvery { userRepoMock.getUserByEmail(token.email) } returns Result.success(user)
@@ -91,7 +93,7 @@ class AcceptProjectInvitationTest : MainServiceTest() {
             createdAt = OffsetDateTime.now(),
             modifiedAt = null,
         )
-        val request = ProjectOuterClass.Project.Member.Accept.newBuilder().setToken(token.token).build()
+        val request = GrpcProjectMember.Accept.newBuilder().setToken(token.token).build()
 
         coEvery { invitationTokenRepoMock.getInvitationTokenByValue(token.token) } returns Result.success(token)
         coEvery { userRepoMock.getUserByEmail(token.email) } returns Result.success(user)
@@ -112,12 +114,12 @@ class AcceptProjectInvitationTest : MainServiceTest() {
             createdAt = OffsetDateTime.now(),
             modifiedAt = null,
         )
-        val request = ProjectOuterClass.Project.Member.Accept.newBuilder().setToken(token.token).build()
+        val request = GrpcProjectMember.Accept.newBuilder().setToken(token.token).build()
 
         coEvery { invitationTokenRepoMock.getInvitationTokenByValue(token.token) } returns Result.success(token)
         coEvery { userRepoMock.getUserByEmail(token.email) } returns Result.success(user)
         coEvery { projectMemberRepoMock.addUserToProject(user.id, token.projectId) } returns userMember
-        coEvery { invitationTokenRepoMock.deleteInvitationToken(token.token) } returns Unit
+        coJustRun { invitationTokenRepoMock.deleteInvitationToken(token.token) }
 
         assertDoesNotThrow { mainService.acceptProjectInvitation(request) }
     }

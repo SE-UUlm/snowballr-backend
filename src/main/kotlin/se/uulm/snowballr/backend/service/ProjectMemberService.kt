@@ -76,7 +76,7 @@ class ProjectMemberService(
 
             val user = userRepo.getUserById(userId).getOrThrow()
 
-            val currentMember = try {
+            val member = try {
                 repo.getProjectMemberByComposedId(projectId, userId).getOrThrow()
             } catch (_: NotFoundException) {
                 throw FailedPreconditionException(
@@ -84,7 +84,7 @@ class ProjectMemberService(
                 )
             }
 
-            if (currentMember.isProjectAdmin() && request.newRole != MemberRole.MEMBER_ROLE_ADMIN) {
+            if (member.isProjectAdmin() && request.newRole != MemberRole.MEMBER_ROLE_ADMIN) {
                 projectAccessChecker.isNotLastProjectAdmin(user, projectId, "Cannot demote the user")
             }
 

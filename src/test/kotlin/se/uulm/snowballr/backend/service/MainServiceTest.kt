@@ -16,6 +16,13 @@ import org.koin.core.context.stopKoin
 import org.koin.dsl.module
 import org.koin.test.KoinTest
 import org.simplejavamail.api.mailer.Mailer
+import se.uulm.snowballr.backend.access.ICriterionAccessChecker
+import se.uulm.snowballr.backend.access.IInvitationAccessChecker
+import se.uulm.snowballr.backend.access.IProjectAccessChecker
+import se.uulm.snowballr.backend.access.IProjectMemberAccessChecker
+import se.uulm.snowballr.backend.access.IProjectPaperAccessChecker
+import se.uulm.snowballr.backend.access.IReviewAccessChecker
+import se.uulm.snowballr.backend.access.IUserAccessChecker
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.auth.IJwtManager
 import se.uulm.snowballr.backend.env.EnvReader
@@ -100,6 +107,15 @@ open class MainServiceTest : KoinTest {
     val verificationTokenRepoMock = mockk<IVerificationTokenTableRepo>()
     val invitationTokenRepoMock = mockk<IInvitationTokenTableRepo>()
 
+    // Access checker layer mocks
+    val criterionAccessCheckerMock = mockk<ICriterionAccessChecker>()
+    val invitationAccessCheckerMock = mockk<IInvitationAccessChecker>()
+    val projectAccessCheckerMock = mockk<IProjectAccessChecker>()
+    val projectMemberAccessCheckerMock = mockk<IProjectMemberAccessChecker>()
+    val projectPaperAccessCheckerMock = mockk<IProjectPaperAccessChecker>()
+    val reviewAccessCheckerMock = mockk<IReviewAccessChecker>()
+    val userAccessCheckerMock = mockk<IUserAccessChecker>()
+
     // Custom services / manager / clients mocks
     val jwtManagerMock = mockk<IJwtManager>()
     val emailManagerMock = mockk<IEmailManager>()
@@ -127,6 +143,13 @@ open class MainServiceTest : KoinTest {
         fetcherManagerMock,
         mailerMock,
         emailTemplateManagerMock,
+        criterionAccessCheckerMock,
+        invitationAccessCheckerMock,
+        projectAccessCheckerMock,
+        projectMemberAccessCheckerMock,
+        projectPaperAccessCheckerMock,
+        reviewAccessCheckerMock,
+        userAccessCheckerMock,
     )
 
     val mainService: IMainService by inject()
@@ -162,6 +185,15 @@ open class MainServiceTest : KoinTest {
         single { fetcherManagerMock }
         single { mailerMock }
         single { emailTemplateManagerMock }
+
+        // Access checker layer
+        single { criterionAccessCheckerMock }
+        single { invitationAccessCheckerMock }
+        single { projectAccessCheckerMock }
+        single { projectMemberAccessCheckerMock }
+        single { projectPaperAccessCheckerMock }
+        single { reviewAccessCheckerMock }
+        single { userAccessCheckerMock }
 
         // The base service layer is the same as in production
         serviceLayerDeps()

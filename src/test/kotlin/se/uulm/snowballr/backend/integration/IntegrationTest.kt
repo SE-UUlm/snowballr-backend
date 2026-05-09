@@ -25,6 +25,7 @@ import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 import org.koin.test.KoinTest
 import se.uulm.snowballr.backend.TestDatabase
+import se.uulm.snowballr.backend.accessCheckerDeps
 import se.uulm.snowballr.backend.auth.AuthenticationManager
 import se.uulm.snowballr.backend.auth.CookieManager
 import se.uulm.snowballr.backend.auth.GrpcContext
@@ -94,6 +95,7 @@ open class IntegrationTest : KoinTest {
         repositoryLayerDeps()
         mailServiceDeps()
         customServicesDeps()
+        accessCheckerDeps()
         serviceLayerDeps()
     }
 
@@ -162,7 +164,7 @@ open class IntegrationTest : KoinTest {
         val link = "https://example.com/verify"
         coEvery { emailManagerMock.createVerificationLink(capture(verificationToken)) } returns link
         val verificationData = EmailData.EmailVerification(user.firstName, link, "tomorrow")
-        coEvery { emailManagerMock.sendVerificationEmail(any(), verificationData) } returns Unit
+        coJustRun { emailManagerMock.sendVerificationEmail(any(), verificationData) }
 
         // Register user
         val registerUserRequest = Authentication.RegisterRequest.newBuilder()

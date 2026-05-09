@@ -1,24 +1,22 @@
 package se.uulm.snowballr.backend.service.projectpaper
 
 import io.mockk.coEvery
+import io.mockk.coJustRun
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.PaperNavigationDirection
-import se.uulm.snowballr.backend.model.exception.UnauthorizedException
 import se.uulm.snowballr.backend.service.MainServiceTest
-import snowballr.UserOuterClass.UserRole
+import kotlin.test.assertEquals
 
 class GetPreviousPaperTest : MainServiceTest() {
     @Test
-    fun `When a server admin requests the previous project paper, then no exception is thrown`() = runTest {
-        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+    fun `When a user requests the previous project paper and has access, then no exception is thrown`() = runTest {
+        val currentUser = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject()
-        val author = DataBuilder.createExampleAuthor()
-        val paper = DataBuilder.createExamplePaper(authors = listOf(author))
+        val paper = DataBuilder.createExamplePaper()
         val projectPaper = DataBuilder.createExampleProjectPaper(projectId = project.id, paperId = paper.id)
         val previousProjectPaper = DataBuilder.createExampleProjectPaper()
 
@@ -26,11 +24,12 @@ class GetPreviousPaperTest : MainServiceTest() {
         coEvery {
             projectPaperRepoMock.getProjectPaperById(projectPaper.id)
         } returns Result.success(projectPaper)
-        coEvery { projectMemberRepoMock.isProjectMember(project.id, currentUser.id) } returns false
+        coJustRun { projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id) }
         coEvery { projectRepoMock.getProjectById(projectPaper.projectId) } returns Result.success(project)
         coEvery {
             projectPaperRepoMock.getAdjacentPaper(
-                project.id, projectPaper.localPaperId,
+                project.id,
+                projectPaper.localPaperId,
                 PaperNavigationDirection.PREVIOUS,
             )
         } returns Result.success(previousProjectPaper)
@@ -38,55 +37,48 @@ class GetPreviousPaperTest : MainServiceTest() {
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id) } returns emptyList()
         coEvery { reviewRepoMock.getAllReviewsForProjectPaper(previousProjectPaper.id) } returns emptyList()
 
-        assertDoesNotThrow { mainService.getPreviousPaper(projectPaper.id) }
+        val previousPaper = mainService.getPreviousPaper(projectPaper.id)
+
+        assertEquals(previousProjectPaper.id.toString(), previousPaper.id)
     }
 
     @Test
-    fun `When a project member requests the previous project paper, then no exception is thrown`() = runTest {
-        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
+    fun `When retrieving the project paper fails, then a TestSpecificException is thrown`() = runTest {
+        val currentUser = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject()
-        val author = DataBuilder.createExampleAuthor()
-        val paper = DataBuilder.createExamplePaper(authors = listOf(author))
+        val paper = DataBuilder.createExamplePaper()
         val projectPaper = DataBuilder.createExampleProjectPaper(projectId = project.id, paperId = paper.id)
-        val previousProjectPaper = DataBuilder.createExampleProjectPaper()
 
         mockCurrentUser(currentUser)
         coEvery {
             projectPaperRepoMock.getProjectPaperById(projectPaper.id)
-        } returns Result.success(projectPaper)
-        coEvery { projectMemberRepoMock.isProjectMember(project.id, currentUser.id) } returns true
-        coEvery { projectRepoMock.getProjectById(projectPaper.projectId) } returns Result.success(project)
-        coEvery {
-            projectPaperRepoMock.getAdjacentPaper(
-                project.id, projectPaper.localPaperId,
-                PaperNavigationDirection.PREVIOUS,
-            )
-        } returns Result.success(previousProjectPaper)
-        coEvery { paperRepoMock.getPaperById(previousProjectPaper.paperId) } returns Result.success(paper)
-        coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id) } returns emptyList()
-        coEvery { reviewRepoMock.getAllReviewsForProjectPaper(previousProjectPaper.id) } returns emptyList()
+        } returns Result.failure(TestSpecificException())
 
-        assertDoesNotThrow { mainService.getPreviousPaper(projectPaper.id) }
+        assertThrows<TestSpecificException> { mainService.getPreviousPaper(projectPaper.id) }
     }
 
     @Test
-    fun `When a non project member requests the previous project paper, then an UnauthorizedException is thrown`() =
+    fun `When a user requests the previous project paper, but has no access, then a TestSpecificException is thrown`() =
         runTest {
-            val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
+            val currentUser = DataBuilder.createExampleUser()
             val project = DataBuilder.createExampleProject()
-            val projectPaper = DataBuilder.createExampleProjectPaper(projectId = project.id)
+            val paper = DataBuilder.createExamplePaper()
+            val projectPaper = DataBuilder.createExampleProjectPaper(projectId = project.id, paperId = paper.id)
 
             mockCurrentUser(currentUser)
-            coEvery { projectPaperRepoMock.getProjectPaperById(projectPaper.id) } returns Result.success(projectPaper)
-            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-            coEvery { projectMemberRepoMock.isProjectMember(project.id, currentUser.id) } returns false
+            coEvery {
+                projectPaperRepoMock.getProjectPaperById(projectPaper.id)
+            } returns Result.success(projectPaper)
+            coEvery {
+                projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id)
+            } throws TestSpecificException()
 
-            assertThrows<UnauthorizedException> { mainService.getPreviousPaper(projectPaper.id) }
+            assertThrows<TestSpecificException> { mainService.getPreviousPaper(projectPaper.id) }
         }
 
     @Test
-    fun `When no previous paper exists, then a TestSpecificException is thrown`() = runTest {
-        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
+    fun `When retrieving the project fails, then a TestSpecificException is thrown`() = runTest {
+        val currentUser = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject()
         val paper = DataBuilder.createExamplePaper()
         val projectPaper = DataBuilder.createExampleProjectPaper(projectId = project.id, paperId = paper.id)
@@ -95,14 +87,61 @@ class GetPreviousPaperTest : MainServiceTest() {
         coEvery {
             projectPaperRepoMock.getProjectPaperById(projectPaper.id)
         } returns Result.success(projectPaper)
-        coEvery { projectMemberRepoMock.isProjectMember(project.id, currentUser.id) } returns true
-        coEvery { projectRepoMock.getProjectById(projectPaper.projectId) } returns Result.success(project)
+        coJustRun { projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id) }
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.failure(TestSpecificException())
+
+        assertThrows<TestSpecificException> { mainService.getPreviousPaper(projectPaper.id) }
+    }
+
+    @Test
+    fun `When retrieving the previous project paper fails, then a TestSpecificException is thrown`() = runTest {
+        val currentUser = DataBuilder.createExampleUser()
+        val project = DataBuilder.createExampleProject()
+        val paper = DataBuilder.createExamplePaper()
+        val projectPaper = DataBuilder.createExampleProjectPaper(projectId = project.id, paperId = paper.id)
+
+        mockCurrentUser(currentUser)
+        coEvery {
+            projectPaperRepoMock.getProjectPaperById(projectPaper.id)
+        } returns Result.success(projectPaper)
+        coJustRun { projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id) }
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery {
             projectPaperRepoMock.getAdjacentPaper(
-                project.id, projectPaper.localPaperId,
+                project.id,
+                projectPaper.localPaperId,
                 PaperNavigationDirection.PREVIOUS,
             )
         } returns Result.failure(TestSpecificException())
+
+        assertThrows<TestSpecificException> { mainService.getPreviousPaper(projectPaper.id) }
+    }
+
+    @Test
+    fun `When retrieving the previous paper fails, then a TestSpecificException is thrown`() = runTest {
+        val currentUser = DataBuilder.createExampleUser()
+        val project = DataBuilder.createExampleProject()
+        val paper = DataBuilder.createExamplePaper()
+        val projectPaper = DataBuilder.createExampleProjectPaper(projectId = project.id, paperId = paper.id)
+        val previousProjectPaper = DataBuilder.createExampleProjectPaper()
+
+        mockCurrentUser(currentUser)
+        coEvery {
+            projectPaperRepoMock.getProjectPaperById(projectPaper.id)
+        } returns Result.success(projectPaper)
+        coJustRun { projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id) }
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
+        coEvery {
+            projectPaperRepoMock.getAdjacentPaper(
+                project.id,
+                projectPaper.localPaperId,
+                PaperNavigationDirection.PREVIOUS,
+            )
+        } returns Result.success(previousProjectPaper)
+        coEvery { paperRepoMock.getPaperById(previousProjectPaper.paperId) } returns Result.failure(
+            TestSpecificException(),
+        )
+
         assertThrows<TestSpecificException> { mainService.getPreviousPaper(projectPaper.id) }
     }
 }

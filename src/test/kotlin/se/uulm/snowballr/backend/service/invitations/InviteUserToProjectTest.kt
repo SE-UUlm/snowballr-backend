@@ -1,6 +1,7 @@
 package se.uulm.snowballr.backend.service.invitations
 
 import io.mockk.coEvery
+import io.mockk.coJustRun
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.slot
@@ -12,13 +13,12 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
+import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.email.EmailData
-import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
-import se.uulm.snowballr.backend.model.exception.UnauthorizedException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundByEmailException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.ProjectOuterClass
-import snowballr.UserOuterClass.UserRole
+import snowballr.ProjectOuterClass.MemberRole
 import java.util.UUID
 import kotlin.reflect.KFunction
 
@@ -31,33 +31,27 @@ class InviteUserToProjectTest : MainServiceTest() {
 
     @Suppress("ReturnCount")
     private fun mockInviteUserToProject(
-        useAdminUser: Boolean = true,
         invitedUserEmail: String = this.invitedUserEmail,
         projectId: UUID = this.projectId,
         stopBefore: KFunction<*>? = null,
     ) {
-        val currentUser = DataBuilder.createExampleUser(
-            role = if (useAdminUser) {
-                UserRole.USER_ROLE_ADMIN
-            } else {
-                UserRole.USER_ROLE_DEFAULT
-            },
-        )
+        val currentUser = DataBuilder.createExampleUser()
         val invitedUser = DataBuilder.createExampleUser(email = invitedUserEmail)
         val project = DataBuilder.createExampleProject(id = projectId)
         val projectAdmin = DataBuilder.createExampleProjectMember(
             projectId = project.id,
             userId = currentUser.id,
-            role = ProjectOuterClass.MemberRole.MEMBER_ROLE_ADMIN,
+            role = MemberRole.MEMBER_ROLE_ADMIN,
         )
         val projectAdminWithUser = DataBuilder.createExampleProjectMemberWithUser(projectAdmin, currentUser)
 
         mockCurrentUser(currentUser)
-        coEvery { projectRepoMock.getProjectById(projectId) } returns Result.success(project)
+        val projectResult = Result.success(project)
+        coEvery { projectRepoMock.getProjectById(projectId) } returns projectResult
         if (stopBefore == projectMemberRepoMock::getAllProjectAdmins) {
             return
         }
-        coEvery { projectMemberRepoMock.getAllProjectAdmins(projectId) } returns listOf(projectAdmin)
+        coJustRun { invitationAccessCheckerMock.isAllowedToInviteUserToProject(currentUser, projectId, projectResult) }
         if (stopBefore == projectMemberRepoMock::getProjectMembersWithUsers) {
             return
         }
@@ -71,7 +65,7 @@ class InviteUserToProjectTest : MainServiceTest() {
         if (stopBefore == invitationTokenRepoMock::saveInvitationToken) {
             return
         }
-        coEvery { invitationTokenRepoMock.saveInvitationToken(invitedUserEmail, projectId, any()) } returns Unit
+        coJustRun { invitationTokenRepoMock.saveInvitationToken(invitedUserEmail, projectId, any()) }
         if (stopBefore == userRepoMock::getUserByEmail) {
             return
         }
@@ -80,39 +74,38 @@ class InviteUserToProjectTest : MainServiceTest() {
         if (stopBefore == emailManagerMock::sendAcceptProjectInvitationEmail) {
             return
         }
-        coEvery { emailManagerMock.sendAcceptProjectInvitationEmail(invitedUserEmail, any()) } returns Unit
+        coJustRun { emailManagerMock.sendAcceptProjectInvitationEmail(invitedUserEmail, any()) }
     }
 
     @Test
-    fun `When neither a server admin nor a project admin invites another user, then an UnauthorizedException is thrown`() =
-        runTest {
-            mockInviteUserToProject(useAdminUser = false, stopBefore = projectMemberRepoMock::getAllProjectAdmins)
-            coEvery { projectMemberRepoMock.getAllProjectAdmins(projectId) } returns emptyList()
+    fun `When a user invites another user, but has no access, then a TestSpecificException is thrown`() = runTest {
+        val currentUser = DataBuilder.createExampleUser()
+        val project = DataBuilder.createExampleProject(id = projectId)
+        val projectResult = Result.success(project)
 
-            assertThrows<UnauthorizedException> { mainService.inviteUserToProject(validInviteUserRequest.build()) }
-            coVerify(exactly = 0) { invitationTokenRepoMock.saveInvitationToken(any(), any(), any()) }
-        }
-
-    @Test
-    fun `When the project is not found, then a TestSpecificException is thrown`() = runTest {
-        mockInviteUserToProject(stopBefore = projectMemberRepoMock::getProjectMembersWithUsers)
-        coEvery { projectRepoMock.getProjectById(projectId) } returns Result.failure(TestSpecificException())
+        mockCurrentUser(currentUser)
+        coEvery { projectRepoMock.getProjectById(project.id) } returns projectResult
+        coEvery {
+            invitationAccessCheckerMock.isAllowedToInviteUserToProject(currentUser, project.id, projectResult)
+        } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { mainService.inviteUserToProject(validInviteUserRequest.build()) }
         coVerify(exactly = 0) { invitationTokenRepoMock.saveInvitationToken(any(), any(), any()) }
     }
 
     @Test
-    fun `When the project is not active, then a FailedPreconditionException is thrown`() = runTest {
-        val inactiveProject = DataBuilder.createExampleProject(
-            id = projectId,
-            status = ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ARCHIVED,
-        )
+    fun `When retrieving the project fails, then a TestSpecificException is thrown`() = runTest {
+        val currentUser = DataBuilder.createExampleUser()
+        val project = DataBuilder.createExampleProject(id = projectId)
+        val projectResult = Result.failure<Project>(TestSpecificException())
 
-        mockInviteUserToProject(stopBefore = projectMemberRepoMock::getProjectMembersWithUsers)
-        coEvery { projectRepoMock.getProjectById(inactiveProject.id) } returns Result.success(inactiveProject)
+        mockCurrentUser(currentUser)
+        coEvery { projectRepoMock.getProjectById(project.id) } returns projectResult
+        coJustRun {
+            invitationAccessCheckerMock.isAllowedToInviteUserToProject(currentUser, project.id, projectResult)
+        }
 
-        assertThrows<FailedPreconditionException> { mainService.inviteUserToProject(validInviteUserRequest.build()) }
+        assertThrows<TestSpecificException> { mainService.inviteUserToProject(validInviteUserRequest.build()) }
         coVerify(exactly = 0) { invitationTokenRepoMock.saveInvitationToken(any(), any(), any()) }
     }
 
@@ -156,20 +149,12 @@ class InviteUserToProjectTest : MainServiceTest() {
         val emailDataSlot = slot<EmailData.AcceptProjectInvitation>()
 
         mockInviteUserToProject(stopBefore = invitationTokenRepoMock::saveInvitationToken)
-        coEvery {
-            invitationTokenRepoMock.saveInvitationToken(
-                invitedUserEmail,
-                projectId,
-                capture(tokenSlot),
-            )
-        } returns Unit
+        coJustRun { invitationTokenRepoMock.saveInvitationToken(invitedUserEmail, projectId, capture(tokenSlot)) }
         coEvery { userRepoMock.getUserByEmail(invitedUserEmail) } returns Result.success(invitedUser)
         every { emailManagerMock.createAcceptProjectInvitationLink(any()) } answers {
             "https://link/${firstArg<String>()}"
         }
-        coEvery {
-            emailManagerMock.sendAcceptProjectInvitationEmail(invitedUserEmail, capture(emailDataSlot))
-        } returns Unit
+        coJustRun { emailManagerMock.sendAcceptProjectInvitationEmail(invitedUserEmail, capture(emailDataSlot)) }
 
         assertDoesNotThrow { mainService.inviteUserToProject(validInviteUserRequest.build()) }
 
@@ -191,7 +176,7 @@ class InviteUserToProjectTest : MainServiceTest() {
         val emailNotFoundException = UserNotFoundByEmailException(emailOfNonExistentUser)
         coEvery { userRepoMock.getUserByEmail(emailOfNonExistentUser) } returns Result.failure(emailNotFoundException)
         every { emailManagerMock.createAcceptProjectInvitationLink(any()) } returns "http://invitation-link"
-        coEvery { emailManagerMock.sendAcceptProjectInvitationEmail(any(), capture(emailDataSlot)) } returns Unit
+        coJustRun { emailManagerMock.sendAcceptProjectInvitationEmail(any(), capture(emailDataSlot)) }
 
         val inviteNonExistentUserRequest = validInviteUserRequest.setUserEmail(emailOfNonExistentUser)
 

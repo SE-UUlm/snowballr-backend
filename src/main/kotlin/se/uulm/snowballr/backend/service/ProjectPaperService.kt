@@ -74,6 +74,9 @@ interface IProjectPaperService {
     suspend fun getNextPaperToReview(projectPaperId: UUID): GrpcProjectPaper
 }
 
+private typealias ProjectPaperFilter =
+    (suspend (ProjectPaperWithPaper, Map<ProjectPaper, List<GrpcReview>>, String) -> Boolean)
+
 /**
  * The [ProjectPaperService] class handles operations related to project papers by implementing the
  * [IProjectPaperService] interface.
@@ -229,7 +232,7 @@ class ProjectPaperService(
      */
     private suspend fun getProjectPapers(
         projectId: UUID,
-        predicate: (suspend (ProjectPaperWithPaper, Map<ProjectPaper, List<GrpcReview>>, String) -> Boolean)? = null,
+        predicate: ProjectPaperFilter? = null,
     ): GrpcProjectPaper.List = withUser(userRepo) { currentUser ->
         projectAccessChecker.isAllowedToReadProject(currentUser, projectId)
 

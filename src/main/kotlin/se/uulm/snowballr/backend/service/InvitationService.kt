@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.service
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.viascom.nanoid.NanoId
 import se.uulm.snowballr.backend.access.IInvitationAccessChecker
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
@@ -28,6 +29,8 @@ import java.time.OffsetDateTime
 import java.util.UUID
 import snowballr.ProjectOuterClass.Project as GrpcProject
 import snowballr.UserOuterClass.User as GrpcUser
+
+val Logger = KotlinLogging.logger { }
 
 interface IInvitationService {
     /**

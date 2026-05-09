@@ -1,6 +1,7 @@
 package se.uulm.snowballr.backend.service.invitations
 
 import io.mockk.coEvery
+import io.mockk.coJustRun
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -9,37 +10,20 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.model.exception.UnauthorizedException
-import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundByEmailException
 import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
-import java.util.UUID
 
 class GetPendingInvitationsForProjectTest : MainServiceTest() {
     @Test
-    fun `When a server admin requests the pending invitations for a project, then no exception is thrown`() = runTest {
-        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-        val project = DataBuilder.createExampleProject()
-
-        mockCurrentUser(currentUser)
-        coEvery { projectMemberRepoMock.isProjectMember(project.id, currentUser.id) } returns false
-        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-        coEvery { invitationTokenRepoMock.getActiveInvitationTokensForProject(project.id) } returns emptyList()
-
-        assertDoesNotThrow { mainService.getPendingInvitationsForProject(project.id) }
-    }
-
-    @Test
-    fun `When a project member requests the pending invitations for a project, then no exception is thrown`() =
+    fun `When a user requests the pending invitations for a project and has access, then no exception is thrown`() =
         runTest {
-            val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
+            val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
             val project = DataBuilder.createExampleProject()
 
             mockCurrentUser(currentUser)
-            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-            coEvery { projectMemberRepoMock.isProjectMember(project.id, currentUser.id) } returns true
+            coJustRun { projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id) }
             coEvery { invitationTokenRepoMock.getActiveInvitationTokensForProject(project.id) } returns emptyList()
 
             assertDoesNotThrow { mainService.getPendingInvitationsForProject(project.id) }
@@ -48,7 +32,7 @@ class GetPendingInvitationsForProjectTest : MainServiceTest() {
     @Test
     fun `When a non registered user is invited, then they appear as well in the list of pending invitations but without complete user details`() =
         runTest {
-            val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+            val currentUser = DataBuilder.createExampleUser()
             val project = DataBuilder.createExampleProject()
             val registeredUser = DataBuilder.createExampleUser(
                 email = "registered@example.com",
@@ -65,8 +49,7 @@ class GetPendingInvitationsForProjectTest : MainServiceTest() {
             )
 
             mockCurrentUser(currentUser)
-            coEvery { projectMemberRepoMock.isProjectMember(project.id, currentUser.id) } returns false
-            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
+            coJustRun { projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id) }
             coEvery {
                 invitationTokenRepoMock.getActiveInvitationTokensForProject(project.id)
             } returns listOf(invitationTokenForRegisteredUser, invitationTokenForNotRegisteredUser)
@@ -75,7 +58,7 @@ class GetPendingInvitationsForProjectTest : MainServiceTest() {
                 userRepoMock.getUserByEmail(notRegisteredEmail)
             } returns Result.failure(UserNotFoundByEmailException(notRegisteredEmail))
 
-            val pendingInvitations = assertDoesNotThrow { mainService.getPendingInvitationsForProject(project.id) }
+            val pendingInvitations = mainService.getPendingInvitationsForProject(project.id)
 
             val invitationForRegisteredUser = pendingInvitations.usersList.find { it.email == registeredUser.email }
             val invitationForNotRegisteredUser = pendingInvitations.usersList.find { it.email == notRegisteredEmail }
@@ -95,31 +78,16 @@ class GetPendingInvitationsForProjectTest : MainServiceTest() {
         }
 
     @Test
-    fun `When a non project member requests the pending invitations for a project, then an UnauthorizedException is thrown`() =
+    fun `When a user requests the pending invitations for a project, but has no access, then a TestSpecificException is thrown`() =
         runTest {
-            val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
+            val currentUser = DataBuilder.createExampleUser()
             val project = DataBuilder.createExampleProject()
 
             mockCurrentUser(currentUser)
-            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-            coEvery { projectMemberRepoMock.isProjectMember(project.id, currentUser.id) } returns false
-
-            assertThrows<UnauthorizedException> { mainService.getPendingInvitationsForProject(project.id) }
-        }
-
-    @Test
-    fun `When the pending invitations for a nonexistent project are requested, then a ProjectNotFoundException is thrown`() =
-        runTest {
-            val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-            val nonExistentProjectId = UUID.randomUUID()
-
-            mockCurrentUser(currentUser)
             coEvery {
-                projectRepoMock.getProjectById(nonExistentProjectId)
-            } returns Result.failure(TestSpecificException())
+                projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id)
+            } throws TestSpecificException()
 
-            assertThrows<ProjectNotFoundException> {
-                mainService.getPendingInvitationsForProject(nonExistentProjectId)
-            }
+            assertThrows<TestSpecificException> { mainService.getPendingInvitationsForProject(project.id) }
         }
 }

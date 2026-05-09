@@ -1,30 +1,32 @@
 package se.uulm.snowballr.backend.service.project
 
 import io.mockk.coEvery
+import io.mockk.coJustRun
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
-import se.uulm.snowballr.backend.model.exception.UnauthorizedException
+import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.service.MainServiceTest
-import snowballr.UserOuterClass.UserRole
 
 class GetAllProjectsTest : MainServiceTest() {
     @Test
-    fun `When all projects are retrieved by a non-admin, then an UnauthorizedException is thrown`() = runTest {
-        val nonAdminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
+    fun `When a user retrieves all projects, but has no access, then a TestSpecificException is thrown`() = runTest {
+        val currentUser = DataBuilder.createExampleUser()
 
-        mockCurrentUser(nonAdminUser)
+        mockCurrentUser(currentUser)
+        coEvery { projectAccessCheckerMock.isAllowedToReadAllProjects(currentUser) } throws TestSpecificException()
 
-        assertThrows<UnauthorizedException> { mainService.getAllProjects() }
+        assertThrows<TestSpecificException> { mainService.getAllProjects() }
     }
 
     @Test
-    fun `When all projects are retrieved by an admin, then no exception is thrown`() = runTest {
-        val adminUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+    fun `When a user retrieves all projects and has access, then no exception is thrown`() = runTest {
+        val currentUser = DataBuilder.createExampleUser()
 
-        mockCurrentUser(adminUser)
+        mockCurrentUser(currentUser)
+        coJustRun { projectAccessCheckerMock.isAllowedToReadAllProjects(currentUser) }
         coEvery { projectRepoMock.getAllProjects() } returns emptyList()
 
         assertDoesNotThrow { mainService.getAllProjects() }

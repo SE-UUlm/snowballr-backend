@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.service.readinglist
 
 import io.mockk.Runs
 import io.mockk.coEvery
+import io.mockk.coJustRun
 import io.mockk.coVerify
 import io.mockk.just
 import kotlinx.coroutines.test.runTest
@@ -15,20 +16,20 @@ import java.util.UUID
 
 class AddPaperToReadingListTest : MainServiceTest() {
     @Test
-    fun `When the user adds a paper to their reading list, then the request is forwarded correctly`() = runTest {
+    fun `When a user adds a paper to their reading list, then the request is forwarded correctly`() = runTest {
         val user = DataBuilder.createExampleUser()
         val paperId = UUID.randomUUID()
 
         mockCurrentUser(user)
         coEvery { paperRepoMock.ensurePaperExists(paperId) } just Runs
-        coEvery { readingListRepoMock.createReadingListEntry(user.id, paperId) } returns Unit
+        coJustRun { readingListRepoMock.createReadingListEntry(user.id, paperId) }
 
         assertDoesNotThrow { mainService.addPaperToReadingList(paperId) }
         coVerify(exactly = 1) { readingListRepoMock.createReadingListEntry(user.id, paperId) }
     }
 
     @Test
-    fun `When the user adds a non-existent paper to their reading list, then a PaperNotFoundException is thrown`() =
+    fun `When a user adds a non-existent paper to their reading list, then a PaperNotFoundException is thrown`() =
         runTest {
             val user = DataBuilder.createExampleUser()
             val paperId = UUID.randomUUID()
