@@ -1,4 +1,4 @@
-package se.uulm.snowballr.backend.service.invitations
+package se.uulm.snowballr.backend.service.invitation
 
 import io.mockk.coEvery
 import io.mockk.coJustRun
@@ -12,13 +12,12 @@ import se.uulm.snowballr.backend.model.dto.ProjectMember
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.notfound.InvitationTokenNotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundByEmailException
-import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.ProjectOuterClass
 import snowballr.UserOuterClass
 import java.time.OffsetDateTime
 import snowballr.ProjectOuterClass.Project.Member as GrpcProjectMember
 
-class AcceptProjectInvitationTest : MainServiceTest() {
+class AcceptProjectInvitationTest : InvitationServiceTest() {
     @Test
     fun `When the invitation token is not found, then a InvitationTokenNotFoundException is thrown`() = runTest {
         val request = GrpcProjectMember.Accept.newBuilder().setToken("non-existent-token").build()
@@ -26,7 +25,7 @@ class AcceptProjectInvitationTest : MainServiceTest() {
             InvitationTokenNotFoundException(),
         )
 
-        assertThrows<InvitationTokenNotFoundException> { mainService.acceptProjectInvitation(request) }
+        assertThrows<InvitationTokenNotFoundException> { service.acceptProjectInvitation(request) }
     }
 
     @Test
@@ -41,7 +40,7 @@ class AcceptProjectInvitationTest : MainServiceTest() {
         )
         coJustRun { invitationTokenRepoMock.deleteInvitationToken(expiredToken.token) }
 
-        assertThrows<InvitationTokenNotFoundException> { mainService.acceptProjectInvitation(request) }
+        assertThrows<InvitationTokenNotFoundException> { service.acceptProjectInvitation(request) }
     }
 
     @Test
@@ -54,7 +53,7 @@ class AcceptProjectInvitationTest : MainServiceTest() {
             coEvery { userRepoMock.getUserByEmail(token.email) } returns
                 Result.failure(UserNotFoundByEmailException(token.email))
 
-            assertThrows<FailedPreconditionException> { mainService.acceptProjectInvitation(request) }
+            assertThrows<FailedPreconditionException> { service.acceptProjectInvitation(request) }
         }
 
     @Test
@@ -66,7 +65,7 @@ class AcceptProjectInvitationTest : MainServiceTest() {
         coEvery { invitationTokenRepoMock.getInvitationTokenByValue(token.token) } returns Result.success(token)
         coEvery { userRepoMock.getUserByEmail(token.email) } returns Result.success(user)
 
-        assertThrows<FailedPreconditionException> { mainService.acceptProjectInvitation(request) }
+        assertThrows<FailedPreconditionException> { service.acceptProjectInvitation(request) }
     }
 
     @Test
@@ -79,7 +78,7 @@ class AcceptProjectInvitationTest : MainServiceTest() {
         coEvery { userRepoMock.getUserByEmail(token.email) } returns Result.success(user)
         coEvery { projectMemberRepoMock.addUserToProject(user.id, token.projectId) } throws TestSpecificException()
 
-        assertThrows<TestSpecificException> { mainService.acceptProjectInvitation(request) }
+        assertThrows<TestSpecificException> { service.acceptProjectInvitation(request) }
     }
 
     @Test
@@ -100,7 +99,7 @@ class AcceptProjectInvitationTest : MainServiceTest() {
         coEvery { projectMemberRepoMock.addUserToProject(user.id, token.projectId) } returns userMember
         coEvery { invitationTokenRepoMock.deleteInvitationToken(token.token) } throws TestSpecificException()
 
-        assertThrows<TestSpecificException> { mainService.acceptProjectInvitation(request) }
+        assertThrows<TestSpecificException> { service.acceptProjectInvitation(request) }
     }
 
     @Test
@@ -121,6 +120,6 @@ class AcceptProjectInvitationTest : MainServiceTest() {
         coEvery { projectMemberRepoMock.addUserToProject(user.id, token.projectId) } returns userMember
         coJustRun { invitationTokenRepoMock.deleteInvitationToken(token.token) }
 
-        assertDoesNotThrow { mainService.acceptProjectInvitation(request) }
+        assertDoesNotThrow { service.acceptProjectInvitation(request) }
     }
 }

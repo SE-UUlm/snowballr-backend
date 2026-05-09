@@ -1,4 +1,4 @@
-package se.uulm.snowballr.backend.service.invitations
+package se.uulm.snowballr.backend.service.invitation
 
 import io.mockk.coEvery
 import io.mockk.coJustRun
@@ -16,13 +16,12 @@ import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundByEmailException
-import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.ProjectOuterClass
 import snowballr.ProjectOuterClass.MemberRole
 import java.util.UUID
 import kotlin.reflect.KFunction
 
-class InviteUserToProjectTest : MainServiceTest() {
+class InviteUserToProjectTest : InvitationServiceTest() {
     private val invitedUserEmail = "invited.user@example.com"
     private val projectId = UUID.randomUUID()
     private val validInviteUserRequest = ProjectOuterClass.Project.Member.Invite.newBuilder()
@@ -89,7 +88,7 @@ class InviteUserToProjectTest : MainServiceTest() {
             invitationAccessCheckerMock.isAllowedToInviteUserToProject(currentUser, project.id, projectResult)
         } throws TestSpecificException()
 
-        assertThrows<TestSpecificException> { mainService.inviteUserToProject(validInviteUserRequest.build()) }
+        assertThrows<TestSpecificException> { service.inviteUserToProject(validInviteUserRequest.build()) }
         coVerify(exactly = 0) { invitationTokenRepoMock.saveInvitationToken(any(), any(), any()) }
     }
 
@@ -105,7 +104,7 @@ class InviteUserToProjectTest : MainServiceTest() {
             invitationAccessCheckerMock.isAllowedToInviteUserToProject(currentUser, project.id, projectResult)
         }
 
-        assertThrows<TestSpecificException> { mainService.inviteUserToProject(validInviteUserRequest.build()) }
+        assertThrows<TestSpecificException> { service.inviteUserToProject(validInviteUserRequest.build()) }
         coVerify(exactly = 0) { invitationTokenRepoMock.saveInvitationToken(any(), any(), any()) }
     }
 
@@ -117,7 +116,7 @@ class InviteUserToProjectTest : MainServiceTest() {
             invitationTokenRepoMock.getInvitationTokenByEmailAndProjectId(invitedUserEmail, projectId)
         } returns Result.success(invitationToken)
 
-        assertDoesNotThrow { mainService.inviteUserToProject(validInviteUserRequest.build()) }
+        assertDoesNotThrow { service.inviteUserToProject(validInviteUserRequest.build()) }
         coVerify(exactly = 0) { invitationTokenRepoMock.saveInvitationToken(any(), any(), any()) }
     }
 
@@ -128,7 +127,7 @@ class InviteUserToProjectTest : MainServiceTest() {
             invitationTokenRepoMock.saveInvitationToken(invitedUserEmail, projectId, any())
         } throws TestSpecificException()
 
-        assertThrows<TestSpecificException> { mainService.inviteUserToProject(validInviteUserRequest.build()) }
+        assertThrows<TestSpecificException> { service.inviteUserToProject(validInviteUserRequest.build()) }
         coVerify(exactly = 0) { emailManagerMock.sendAcceptProjectInvitationEmail(any(), any()) }
     }
 
@@ -139,7 +138,7 @@ class InviteUserToProjectTest : MainServiceTest() {
             emailManagerMock.sendAcceptProjectInvitationEmail(invitedUserEmail, any())
         } throws TestSpecificException()
 
-        assertThrows<TestSpecificException> { mainService.inviteUserToProject(validInviteUserRequest.build()) }
+        assertThrows<TestSpecificException> { service.inviteUserToProject(validInviteUserRequest.build()) }
     }
 
     @Test
@@ -156,7 +155,7 @@ class InviteUserToProjectTest : MainServiceTest() {
         }
         coJustRun { emailManagerMock.sendAcceptProjectInvitationEmail(invitedUserEmail, capture(emailDataSlot)) }
 
-        assertDoesNotThrow { mainService.inviteUserToProject(validInviteUserRequest.build()) }
+        assertDoesNotThrow { service.inviteUserToProject(validInviteUserRequest.build()) }
 
         val capturedToken = tokenSlot.captured
         assertThat(capturedToken).isNotBlank()
@@ -180,7 +179,7 @@ class InviteUserToProjectTest : MainServiceTest() {
 
         val inviteNonExistentUserRequest = validInviteUserRequest.setUserEmail(emailOfNonExistentUser)
 
-        assertDoesNotThrow { mainService.inviteUserToProject(inviteNonExistentUserRequest.build()) }
+        assertDoesNotThrow { service.inviteUserToProject(inviteNonExistentUserRequest.build()) }
 
         assertEquals("User", emailDataSlot.captured.inviteeFirstName)
     }
@@ -198,7 +197,7 @@ class InviteUserToProjectTest : MainServiceTest() {
                 projectMemberRepoMock.getProjectMembersWithUsers(projectId)
             } returns listOf(projectMemberWithUser)
 
-            assertDoesNotThrow { mainService.inviteUserToProject(validInviteUserRequest.build()) }
+            assertDoesNotThrow { service.inviteUserToProject(validInviteUserRequest.build()) }
 
             coVerify(exactly = 0) { invitationTokenRepoMock.saveInvitationToken(invitedUserEmail, projectId, any()) }
         }

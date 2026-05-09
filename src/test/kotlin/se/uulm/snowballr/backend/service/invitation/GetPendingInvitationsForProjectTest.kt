@@ -1,4 +1,4 @@
-package se.uulm.snowballr.backend.service.invitations
+package se.uulm.snowballr.backend.service.invitation
 
 import io.mockk.coEvery
 import io.mockk.coJustRun
@@ -11,11 +11,10 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundByEmailException
-import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
 
-class GetPendingInvitationsForProjectTest : MainServiceTest() {
+class GetPendingInvitationsForProjectTest : InvitationServiceTest() {
     @Test
     fun `When a user requests the pending invitations for a project and has access, then no exception is thrown`() =
         runTest {
@@ -26,7 +25,7 @@ class GetPendingInvitationsForProjectTest : MainServiceTest() {
             coJustRun { projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id) }
             coEvery { invitationTokenRepoMock.getActiveInvitationTokensForProject(project.id) } returns emptyList()
 
-            assertDoesNotThrow { mainService.getPendingInvitationsForProject(project.id) }
+            assertDoesNotThrow { service.getPendingInvitationsForProject(project.id) }
         }
 
     @Test
@@ -58,7 +57,7 @@ class GetPendingInvitationsForProjectTest : MainServiceTest() {
                 userRepoMock.getUserByEmail(notRegisteredEmail)
             } returns Result.failure(UserNotFoundByEmailException(notRegisteredEmail))
 
-            val pendingInvitations = mainService.getPendingInvitationsForProject(project.id)
+            val pendingInvitations = service.getPendingInvitationsForProject(project.id)
 
             val invitationForRegisteredUser = pendingInvitations.usersList.find { it.email == registeredUser.email }
             val invitationForNotRegisteredUser = pendingInvitations.usersList.find { it.email == notRegisteredEmail }
@@ -88,6 +87,6 @@ class GetPendingInvitationsForProjectTest : MainServiceTest() {
                 projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id)
             } throws TestSpecificException()
 
-            assertThrows<TestSpecificException> { mainService.getPendingInvitationsForProject(project.id) }
+            assertThrows<TestSpecificException> { service.getPendingInvitationsForProject(project.id) }
         }
 }

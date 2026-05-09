@@ -1,4 +1,4 @@
-package se.uulm.snowballr.backend.service.invitations
+package se.uulm.snowballr.backend.service.invitation
 
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -10,12 +10,11 @@ import org.junit.jupiter.api.assertNull
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.model.dto.ProjectMemberWithUser
 import se.uulm.snowballr.backend.model.dto.User
-import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.ProjectOuterClass.Project.InviteCandidatesRequest
 import java.util.UUID
 import kotlin.reflect.KFunction
 
-class GetInviteCandidatesTest : MainServiceTest() {
+class GetInviteCandidatesTest : InvitationServiceTest() {
     private val requestingUserEmail = "test.user@example.com"
     private val searchQuery = "john"
     private val projectId = UUID.randomUUID()
@@ -57,7 +56,7 @@ class GetInviteCandidatesTest : MainServiceTest() {
 
         val shortGetInviteCandidatesRequest = validGetInviteCandidatesRequestBuilder.setQuery("jo")
 
-        val candidates = assertDoesNotThrow { mainService.getInviteCandidates(shortGetInviteCandidatesRequest.build()) }
+        val candidates = assertDoesNotThrow { service.getInviteCandidates(shortGetInviteCandidatesRequest.build()) }
         assertThat(candidates.usersList).isEmpty()
     }
 
@@ -70,7 +69,7 @@ class GetInviteCandidatesTest : MainServiceTest() {
 
         val requestWithInvalidProjectId = validGetInviteCandidatesRequestBuilder.setProjectId("invalid-uuid")
 
-        assertDoesNotThrow { mainService.getInviteCandidates(requestWithInvalidProjectId.build()) }
+        assertDoesNotThrow { service.getInviteCandidates(requestWithInvalidProjectId.build()) }
         coVerify(exactly = 0) { projectMemberRepoMock.getProjectMembersWithUsers(any()) }
         coVerify(exactly = 0) { invitationTokenRepoMock.getActiveInvitationTokensForProject(any()) }
     }
@@ -79,7 +78,7 @@ class GetInviteCandidatesTest : MainServiceTest() {
     fun `When no project members exist, then no users except for the current user are excluded`() = runTest {
         mockGetInviteCandidates()
 
-        assertDoesNotThrow { mainService.getInviteCandidates(validGetInviteCandidatesRequestBuilder.build()) }
+        assertDoesNotThrow { service.getInviteCandidates(validGetInviteCandidatesRequestBuilder.build()) }
         coVerify(exactly = 1) { userRepoMock.getUsersMatchingSearchQuery(searchQuery, setOf(requestingUserEmail)) }
     }
 
@@ -88,7 +87,7 @@ class GetInviteCandidatesTest : MainServiceTest() {
         runTest {
             mockGetInviteCandidates()
 
-            val inviteCandidates = mainService.getInviteCandidates(validGetInviteCandidatesRequestBuilder.build())
+            val inviteCandidates = service.getInviteCandidates(validGetInviteCandidatesRequestBuilder.build())
             assertThat(inviteCandidates.usersList).hasSize(1)
             assertNull(inviteCandidates.usersList.find { it.email == requestingUserEmail })
         }
@@ -99,7 +98,7 @@ class GetInviteCandidatesTest : MainServiceTest() {
             val projectMember = DataBuilder.createExampleUser(email = "project.member@example.com")
             mockGetInviteCandidates(projectMembers = listOf(projectMember))
 
-            val inviteCandidates = mainService.getInviteCandidates(validGetInviteCandidatesRequestBuilder.build())
+            val inviteCandidates = service.getInviteCandidates(validGetInviteCandidatesRequestBuilder.build())
             assertNull(inviteCandidates.usersList.find { it.email == projectMember.email })
         }
 
@@ -109,7 +108,7 @@ class GetInviteCandidatesTest : MainServiceTest() {
             val invitee = DataBuilder.createExampleUser(email = "invited.user@example.com")
             mockGetInviteCandidates(invitees = listOf(invitee))
 
-            val inviteCandidates = mainService.getInviteCandidates(validGetInviteCandidatesRequestBuilder.build())
+            val inviteCandidates = service.getInviteCandidates(validGetInviteCandidatesRequestBuilder.build())
             assertNull(inviteCandidates.usersList.find { it.email == invitee.email })
         }
 }
