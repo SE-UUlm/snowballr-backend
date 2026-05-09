@@ -48,7 +48,6 @@ import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.RepositoryHelper
 import se.uulm.snowballr.backend.repositoryLayerDeps
-import se.uulm.snowballr.backend.service.IMainService
 import se.uulm.snowballr.backend.serviceLayerDeps
 import snowballr.Authentication
 import java.util.UUID
@@ -97,6 +96,8 @@ open class IntegrationTest : KoinTest {
         customServicesDeps()
         accessCheckerDeps()
         serviceLayerDeps()
+
+        singleOf(::MainService) { bind<IMainService>() }
     }
 
     // User for testing. This prevents having to create a user for each test.

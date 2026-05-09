@@ -1,4 +1,18 @@
-package se.uulm.snowballr.backend.service
+package se.uulm.snowballr.backend.integration
+
+import se.uulm.snowballr.backend.service.IAuthenticationService
+import se.uulm.snowballr.backend.service.ICriterionService
+import se.uulm.snowballr.backend.service.IExportService
+import se.uulm.snowballr.backend.service.IFetcherService
+import se.uulm.snowballr.backend.service.IInvitationService
+import se.uulm.snowballr.backend.service.IPaperService
+import se.uulm.snowballr.backend.service.IProjectMemberService
+import se.uulm.snowballr.backend.service.IProjectPaperService
+import se.uulm.snowballr.backend.service.IProjectService
+import se.uulm.snowballr.backend.service.IReadingListService
+import se.uulm.snowballr.backend.service.IReviewService
+import se.uulm.snowballr.backend.service.IUserService
+import se.uulm.snowballr.backend.service.ProjectService
 
 /**
  * The [IMainService] interface provides a unified contract that combines the responsibilities of all sub-services. It
