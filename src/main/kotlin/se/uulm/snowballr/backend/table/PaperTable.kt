@@ -20,7 +20,9 @@ import java.time.OffsetDateTime
  * - [publisher]: Represents the publisher of the paper as a nullable [String].
  * - [publicationType]: Represents the type of publication as a nullable [String].
  * - [publicationName]: Represents the name of the publication where the paper is published, as a nullable [String].
+ * - [authors]: Represents the authors of the paper as list of [Author].
  * - [pdfId]: Represents a reference to the [PdfTable] where the PDF data for the paper is stored.
+ * - [fetcherMetadata]: Represents metadata used by fetchers as a [Map].
  * - [createdAt]: Represents the timestamp of when the paper was created as an [OffsetDateTime].
  * - [modifiedAt]: Represents the timestamp of when the paper was last modified as an [OffsetDateTime].
  * - [modifiedBy]: A foreign key referencing the user table, representing the user who last modified the paper.

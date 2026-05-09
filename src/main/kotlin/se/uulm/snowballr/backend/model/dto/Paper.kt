@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.model.dto
 
+import se.uulm.snowballr.backend.model.fetcher.FetcherMetadata
 import se.uulm.snowballr.backend.table.PaperTable
 import snowballr.paper
 import java.time.OffsetDateTime
@@ -20,7 +21,7 @@ data class Paper(
     val publicationName: String,
     val pdfId: UUID?,
     val authors: List<Author>,
-    val fetcherMetadata: Map<String, String>,
+    val fetcherMetadata: FetcherMetadata,
     val createdAt: OffsetDateTime,
     val modifiedAt: OffsetDateTime?,
     val modifiedBy: UUID?,

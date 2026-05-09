@@ -1,6 +1,5 @@
 package se.uulm.snowballr.backend.table
 
-import arrow.core.mapValuesNotNull
 import org.jetbrains.exposed.v1.core.BasicBinaryColumnType
 import org.jetbrains.exposed.v1.core.Column
 import org.jetbrains.exposed.v1.core.ReferenceOption
@@ -60,17 +59,23 @@ fun Table.redactedBinary(name: String) = registerColumn(name, RedactedBinaryColu
 
 /**
  * Stores a Map<String, String> inside an [HStoreColumnType]. Unallowed characters are automatically escaped.
+ *
+ * The order of the key-value pairs is not guaranteed.
  */
-fun Table.stringMap(name: String): Column<Map<String, String>> = registerColumn(
-    name,
-    HStoreColumnType(),
-).transform(
-    wrap = {
-        HStoreConverter
-            .fromString(it.trim('{', '}'))
-            .mapValuesNotNull { entry -> entry.value }
-    },
-    unwrap = {
-        HStoreConverter.toString(it)
-    },
-)
+fun Table.stringMap(name: String): Column<Map<String, String>> = registerColumn(name, HStoreColumnType())
+    .transform(
+        wrap = {
+            // HStore -> Map
+            it.trim('{', '}')
+                .split(", ")
+                .filter(String::isNotEmpty)
+                .associate { pair ->
+                    val (left, right) = pair.split('=')
+                    left to right
+                }
+        },
+        unwrap = {
+            // Map -> HStore
+            HStoreConverter.toString(it)
+        },
+    )

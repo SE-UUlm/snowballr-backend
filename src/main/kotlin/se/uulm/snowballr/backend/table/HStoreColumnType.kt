@@ -19,4 +19,6 @@ class HStoreColumnType : TextColumnType() {
         }
         super.setParameter(stmt, index, parameterValue)
     }
+
+    override fun valueToString(value: String?) = "'${super.valueToString(value)}'"
 }
