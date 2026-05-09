@@ -11,12 +11,11 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.ProjectOuterClass
 import java.time.OffsetDateTime
 import java.util.UUID
 
-class GetProjectInformationTest : MainServiceTest() {
+class GetProjectInformationTest : ProjectServiceTest() {
     private fun getRequest(projectId: UUID, paths: List<String>? = null) = ProjectOuterClass.Project.Information.Get
         .newBuilder()
         .setProjectId(projectId.toString())
@@ -32,7 +31,7 @@ class GetProjectInformationTest : MainServiceTest() {
             mockCurrentUser(user)
             coEvery { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) } throws TestSpecificException()
 
-            assertThrows<TestSpecificException> { mainService.getProjectInformation(getRequest(project.id)) }
+            assertThrows<TestSpecificException> { service.getProjectInformation(getRequest(project.id)) }
         }
 
     @Test
@@ -44,7 +43,7 @@ class GetProjectInformationTest : MainServiceTest() {
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { mainService.getProjectInformation(getRequest(project.id)) }
+        assertThrows<TestSpecificException> { service.getProjectInformation(getRequest(project.id)) }
     }
 
     @Test
@@ -62,7 +61,7 @@ class GetProjectInformationTest : MainServiceTest() {
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
         coEvery { projectPaperRepoMock.getProjectProgress(project.id) } returns 0.5f
 
-        val response = mainService.getProjectInformation(getRequest(project.id))
+        val response = service.getProjectInformation(getRequest(project.id))
 
         assertEquals(0.5f, response.projectProgress)
         assertEquals(createdAt.toEpochSecond(), response.creationDate.seconds)
@@ -86,7 +85,7 @@ class GetProjectInformationTest : MainServiceTest() {
             coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
             coEvery { projectPaperRepoMock.getProjectProgress(project.id) } returns 0.5f
 
-            val response = mainService.getProjectInformation(getRequest(project.id, listOf(path)))
+            val response = service.getProjectInformation(getRequest(project.id, listOf(path)))
 
             if (path == "project_progress") {
                 assertEquals(0.5f, response.projectProgress)
@@ -122,7 +121,7 @@ class GetProjectInformationTest : MainServiceTest() {
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectPaperRepoMock.getProjectProgress(project.id) } returns 0.5f
 
-        val response = mainService.getProjectInformation(getRequest(project.id, emptyList()))
+        val response = service.getProjectInformation(getRequest(project.id, emptyList()))
 
         assertEquals(0.5f, response.projectProgress)
         assertEquals(createdAt.toEpochSecond(), response.creationDate.seconds)

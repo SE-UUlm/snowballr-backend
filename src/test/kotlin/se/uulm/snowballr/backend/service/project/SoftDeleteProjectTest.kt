@@ -10,10 +10,9 @@ import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
-import se.uulm.snowballr.backend.service.MainServiceTest
 import java.util.UUID
 
-class SoftDeleteProjectTest : MainServiceTest() {
+class SoftDeleteProjectTest : ProjectServiceTest() {
     @Test
     fun `When a user deletes a project, but has no access, then a TestSpecificException is thrown`() = runTest {
         val user = DataBuilder.createExampleUser()
@@ -24,7 +23,7 @@ class SoftDeleteProjectTest : MainServiceTest() {
             projectAccessCheckerMock.isProjectOrServerAdmin(user, projectId, AccessType.DELETE)
         } throws TestSpecificException()
 
-        assertThrows<TestSpecificException> { mainService.softDeleteProject(projectId) }
+        assertThrows<TestSpecificException> { service.softDeleteProject(projectId) }
 
         coVerify(exactly = 0) { projectRepoMock.softDeleteProject(projectId) }
         coVerify(exactly = 0) { invitationTokenRepoMock.deleteInvitationTokensForProject(projectId) }
@@ -39,7 +38,7 @@ class SoftDeleteProjectTest : MainServiceTest() {
         coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, projectId, AccessType.DELETE) }
         coEvery { projectRepoMock.doesProjectExistById(projectId) } returns false
 
-        assertThrows<ProjectNotFoundException> { mainService.softDeleteProject(projectId) }
+        assertThrows<ProjectNotFoundException> { service.softDeleteProject(projectId) }
 
         coVerify(exactly = 0) { projectRepoMock.softDeleteProject(projectId) }
         coVerify(exactly = 0) { invitationTokenRepoMock.deleteInvitationTokensForProject(projectId) }
@@ -56,7 +55,7 @@ class SoftDeleteProjectTest : MainServiceTest() {
         coJustRun { projectRepoMock.softDeleteProject(projectId) }
         coJustRun { invitationTokenRepoMock.deleteInvitationTokensForProject(projectId) }
 
-        mainService.softDeleteProject(projectId)
+        service.softDeleteProject(projectId)
 
         coVerify(exactly = 1) { projectRepoMock.softDeleteProject(projectId) }
         coVerify(exactly = 1) { invitationTokenRepoMock.deleteInvitationTokensForProject(projectId) }

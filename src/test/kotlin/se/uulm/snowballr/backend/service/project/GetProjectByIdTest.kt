@@ -8,9 +8,8 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.service.MainServiceTest
 
-class GetProjectByIdTest : MainServiceTest() {
+class GetProjectByIdTest : ProjectServiceTest() {
     @Test
     fun `When a user requests a project, but has no access, then a TestSpecificException is thrown`() = runTest {
         val user = DataBuilder.createExampleUser()
@@ -19,7 +18,7 @@ class GetProjectByIdTest : MainServiceTest() {
         mockCurrentUser(user)
         coEvery { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) } throws TestSpecificException()
 
-        assertThrows<TestSpecificException> { mainService.getProjectById(project.id) }
+        assertThrows<TestSpecificException> { service.getProjectById(project.id) }
     }
 
     @Test
@@ -31,7 +30,7 @@ class GetProjectByIdTest : MainServiceTest() {
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { mainService.getProjectById(project.id) }
+        assertThrows<TestSpecificException> { service.getProjectById(project.id) }
     }
 
     @Test
@@ -43,6 +42,6 @@ class GetProjectByIdTest : MainServiceTest() {
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
-        assertDoesNotThrow { mainService.getProjectById(project.id) }
+        assertDoesNotThrow { service.getProjectById(project.id) }
     }
 }

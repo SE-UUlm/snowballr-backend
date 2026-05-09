@@ -8,10 +8,9 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.ProjectOuterClass.ProjectStatus
 
-class GetAllDeletedProjectsForUserTest : MainServiceTest() {
+class GetAllDeletedProjectsForUserTest : ProjectServiceTest() {
     private val statusFilters = setOf(ProjectStatus.PROJECT_STATUS_DELETED)
 
     @Test
@@ -22,7 +21,7 @@ class GetAllDeletedProjectsForUserTest : MainServiceTest() {
         mockCurrentUser(currentUser)
         coEvery { userRepoMock.getUserById(requestedUser.id) } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { mainService.getAllDeletedProjectsForUser(requestedUser.id) }
+        assertThrows<TestSpecificException> { service.getAllDeletedProjectsForUser(requestedUser.id) }
     }
 
     @Test
@@ -37,7 +36,7 @@ class GetAllDeletedProjectsForUserTest : MainServiceTest() {
                 projectAccessCheckerMock.isAllowedToReadUserProjects(currentUser, requestedUser.id)
             } throws TestSpecificException()
 
-            assertThrows<TestSpecificException> { mainService.getAllDeletedProjectsForUser(requestedUser.id) }
+            assertThrows<TestSpecificException> { service.getAllDeletedProjectsForUser(requestedUser.id) }
         }
 
     @Test
@@ -51,6 +50,6 @@ class GetAllDeletedProjectsForUserTest : MainServiceTest() {
             coJustRun { projectAccessCheckerMock.isAllowedToReadUserProjects(currentUser, requestedUser.id) }
             coEvery { projectRepoMock.getUserProjects(requestedUser.id, statusFilters) } returns emptyList()
 
-            assertDoesNotThrow { mainService.getAllDeletedProjectsForUser(requestedUser.id) }
+            assertDoesNotThrow { service.getAllDeletedProjectsForUser(requestedUser.id) }
         }
 }

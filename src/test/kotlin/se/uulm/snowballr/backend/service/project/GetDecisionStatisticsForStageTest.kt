@@ -9,13 +9,12 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.exception.notfound.StageNotFoundException
-import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.ProjectOuterClass.PaperDecision
 import java.util.UUID
 import kotlin.test.assertEquals
 import snowballr.ProjectOuterClass.Project.Information as GrpcProjectInformation
 
-class GetDecisionStatisticsForStageTest : MainServiceTest() {
+class GetDecisionStatisticsForStageTest : ProjectServiceTest() {
     private val validRequestBuilder = GrpcProjectInformation.DecisionStatistics.Get
         .newBuilder()
         .setProjectId(UUID.randomUUID().toString())
@@ -35,7 +34,7 @@ class GetDecisionStatisticsForStageTest : MainServiceTest() {
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectPaperRepoMock.getAllProjectPapersForProject(project.id) } returns emptyList()
 
-        assertDoesNotThrow { mainService.getDecisionStatisticsForStage(request) }
+        assertDoesNotThrow { service.getDecisionStatisticsForStage(request) }
     }
 
     @Test
@@ -51,7 +50,7 @@ class GetDecisionStatisticsForStageTest : MainServiceTest() {
             mockCurrentUser(user)
             coEvery { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) } throws TestSpecificException()
 
-            assertThrows<TestSpecificException> { mainService.getDecisionStatisticsForStage(request) }
+            assertThrows<TestSpecificException> { service.getDecisionStatisticsForStage(request) }
         }
 
     @Test
@@ -67,7 +66,7 @@ class GetDecisionStatisticsForStageTest : MainServiceTest() {
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { mainService.getDecisionStatisticsForStage(request) }
+        assertThrows<TestSpecificException> { service.getDecisionStatisticsForStage(request) }
     }
 
     @Test
@@ -84,7 +83,7 @@ class GetDecisionStatisticsForStageTest : MainServiceTest() {
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
-        assertThrows<StageNotFoundException> { mainService.getDecisionStatisticsForStage(request) }
+        assertThrows<StageNotFoundException> { service.getDecisionStatisticsForStage(request) }
     }
 
     @Test
@@ -102,7 +101,7 @@ class GetDecisionStatisticsForStageTest : MainServiceTest() {
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectPaperRepoMock.getAllProjectPapersForProject(project.id) } returns emptyList()
 
-        assertDoesNotThrow { mainService.getDecisionStatisticsForStage(request) }
+        assertDoesNotThrow { service.getDecisionStatisticsForStage(request) }
     }
 
     @Test
@@ -152,7 +151,7 @@ class GetDecisionStatisticsForStageTest : MainServiceTest() {
         coEvery { projectPaperRepoMock.getAllProjectPapersForProject(project.id) } returns
             projectPapers + papersInOtherStage
 
-        val statistics = assertDoesNotThrow { mainService.getDecisionStatisticsForStage(request) }
+        val statistics = assertDoesNotThrow { service.getDecisionStatisticsForStage(request) }
 
         val statsByDecision = statistics.statisticsList.associateBy { it.decision }
         paperCountsByDecision.forEach { (decision, expectedCount) ->
