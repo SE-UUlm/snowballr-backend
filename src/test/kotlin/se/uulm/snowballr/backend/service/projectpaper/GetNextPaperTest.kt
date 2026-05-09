@@ -8,10 +8,9 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.PaperNavigationDirection
-import se.uulm.snowballr.backend.service.MainServiceTest
 import kotlin.test.assertEquals
 
-class GetNextPaperTest : MainServiceTest() {
+class GetNextPaperTest : ProjectPaperServiceTest() {
     @Test
     fun `When a user requests the next project paper and has access, then no exception is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
@@ -33,7 +32,7 @@ class GetNextPaperTest : MainServiceTest() {
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id) } returns emptyList()
         coEvery { reviewRepoMock.getAllReviewsForProjectPaper(nextProjectPaper.id) } returns emptyList()
 
-        val nextPaper = mainService.getNextPaper(projectPaper.id)
+        val nextPaper = service.getNextPaper(projectPaper.id)
 
         assertEquals(nextProjectPaper.id.toString(), nextPaper.id)
     }
@@ -50,7 +49,7 @@ class GetNextPaperTest : MainServiceTest() {
             projectPaperRepoMock.getProjectPaperById(projectPaper.id)
         } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { mainService.getNextPaper(projectPaper.id) }
+        assertThrows<TestSpecificException> { service.getNextPaper(projectPaper.id) }
     }
 
     @Test
@@ -69,7 +68,7 @@ class GetNextPaperTest : MainServiceTest() {
                 projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id)
             } throws TestSpecificException()
 
-            assertThrows<TestSpecificException> { mainService.getNextPaper(projectPaper.id) }
+            assertThrows<TestSpecificException> { service.getNextPaper(projectPaper.id) }
         }
 
     @Test
@@ -86,7 +85,7 @@ class GetNextPaperTest : MainServiceTest() {
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id) }
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { mainService.getNextPaper(projectPaper.id) }
+        assertThrows<TestSpecificException> { service.getNextPaper(projectPaper.id) }
     }
 
     @Test
@@ -106,7 +105,7 @@ class GetNextPaperTest : MainServiceTest() {
             projectPaperRepoMock.getAdjacentPaper(project.id, projectPaper.localPaperId, PaperNavigationDirection.NEXT)
         } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { mainService.getNextPaper(projectPaper.id) }
+        assertThrows<TestSpecificException> { service.getNextPaper(projectPaper.id) }
     }
 
     @Test
@@ -128,6 +127,6 @@ class GetNextPaperTest : MainServiceTest() {
         } returns Result.success(nextProjectPaper)
         coEvery { paperRepoMock.getPaperById(nextProjectPaper.paperId) } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { mainService.getNextPaper(projectPaper.id) }
+        assertThrows<TestSpecificException> { service.getNextPaper(projectPaper.id) }
     }
 }

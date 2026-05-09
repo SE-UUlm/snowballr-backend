@@ -8,13 +8,12 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.service.MainServiceTest
 import java.util.UUID
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class GetAllProjectPapersForProjectTest : MainServiceTest() {
+class GetAllProjectPapersForProjectTest : ProjectPaperServiceTest() {
     @Test
     @Suppress("LongMethod")
     fun `When a user requests all project papers for a project and has access, then no exception is thrown`() =
@@ -62,7 +61,7 @@ class GetAllProjectPapersForProjectTest : MainServiceTest() {
                 reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(projectPaper1Review1.id)
             } returns listOf(criterion0.id, criterion2.id)
 
-            val projectPapers = mainService.getAllProjectPapersForProject(project.id).projectPapersList
+            val projectPapers = service.getAllProjectPapersForProject(project.id).projectPapersList
 
             assertEquals(2, projectPapers.size)
             assertEquals(projectPaper0.projectPaper.id.toString(), projectPapers[0].id)
@@ -108,6 +107,6 @@ class GetAllProjectPapersForProjectTest : MainServiceTest() {
                 projectAccessCheckerMock.isAllowedToReadProject(user, project.id)
             } throws TestSpecificException()
 
-            assertThrows<TestSpecificException> { mainService.getAllProjectPapersForProject(project.id) }
+            assertThrows<TestSpecificException> { service.getAllProjectPapersForProject(project.id) }
         }
 }
