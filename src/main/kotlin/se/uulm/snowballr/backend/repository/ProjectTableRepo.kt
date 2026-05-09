@@ -7,6 +7,7 @@ import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.isNotNull
+import org.jetbrains.exposed.v1.core.less
 import org.jetbrains.exposed.v1.core.lessEq
 import org.jetbrains.exposed.v1.core.or
 import org.jetbrains.exposed.v1.core.statements.UpdateStatement
@@ -143,6 +144,14 @@ interface IProjectTableRepo {
      * entity.
      */
     suspend fun hardDeleteClearedProjects()
+
+    /**
+     * Ensures that the max stage of the project is greater than or equal to the passed [stage].
+     *
+     * If the max stage of the project is lower than [stage] then the project value is updated; otherwise nothing
+     * happens.
+     */
+    suspend fun updateMaxStageIfExceeded(projectId: UUID, stage: Long)
 }
 
 /**
@@ -282,6 +291,14 @@ class ProjectTableRepo(
 
         logger.info {
             "Hard-deleted ${successfulDeletedIds.size} projects, failed to delete ${failedToDeleteIds.size} projects."
+        }
+    }
+
+    override suspend fun updateMaxStageIfExceeded(projectId: UUID, stage: Long) {
+        db.query {
+            ProjectTable.update({ (ProjectTable.id eq projectId) and (ProjectTable.maxStage less stage) }) {
+                it[ProjectTable.maxStage] = stage
+            }
         }
     }
 
