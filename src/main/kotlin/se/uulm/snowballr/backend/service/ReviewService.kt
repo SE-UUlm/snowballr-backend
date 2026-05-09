@@ -57,7 +57,7 @@ interface IReviewService {
  * @param userRepo Interface for persistence and retrieval operations related to users.
  * @param projectPaperRepo Interface for persistence and retrieval operations related to project papers.
  * @param projectRepo Interface for persistence and retrieval operations related to projects.
- * @param criteriaRepo Interface for persistence and retrieval operations related to criteria.
+ * @param criterionRepo Interface for persistence and retrieval operations related to criteria.
  * @param reviewHasCriterionRepo Interface for persistence and retrieval operations related to review-criteria relation.
  * @param accessChecker Interface for checking access permissions for reviews based on defined rules.
  * @param projectAccessChecker Interface for checking access permissions for projects based on defined rules.
@@ -68,7 +68,7 @@ class ReviewService(
     private val userRepo: IUserTableRepo,
     private val projectPaperRepo: IProjectPaperTableRepo,
     private val projectRepo: IProjectTableRepo,
-    private val criteriaRepo: ICriterionTableRepo,
+    private val criterionRepo: ICriterionTableRepo,
     private val reviewHasCriterionRepo: IReviewHasCriterionTableRepo,
     private val accessChecker: IReviewAccessChecker,
     private val projectAccessChecker: IProjectAccessChecker,
@@ -122,7 +122,7 @@ class ReviewService(
         val review = repo.createReview(request, currentUser.id)
         val selectedCriteriaIds = reviewHasCriterionRepo.getSelectedCriteriaIdsForReviewById(review.id)
 
-        val hardExclusionCriteria = criteriaRepo.getAllProjectCriteria(project.id)
+        val hardExclusionCriteria = criterionRepo.getAllProjectCriteria(project.id)
             .filter { criterion -> criterion.category == CriterionCategory.CRITERION_CATEGORY_HARD_EXCLUSION }
             .map { criterion -> criterion.id }
         val isAnySelectedCriteriaHardExclusion = selectedCriteriaIds.any { id -> hardExclusionCriteria.contains(id) }

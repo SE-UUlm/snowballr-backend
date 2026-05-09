@@ -8,12 +8,11 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.service.MainServiceTest
 import java.util.UUID
 import kotlin.test.assertEquals
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class GetAllReviewsForProjectPaperTest : MainServiceTest() {
+class GetAllReviewsForProjectPaperTest : ReviewServiceTest() {
     @Test
     fun `When a user requests all reviews and has access, then no exception is thrown`() = runTest {
         val user = DataBuilder.createExampleUser()
@@ -29,7 +28,7 @@ class GetAllReviewsForProjectPaperTest : MainServiceTest() {
             reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(review.id)
         } returns selectedCriteriaIds
 
-        val reviews = mainService.getAllReviewsForProjectPaper(projectPaper.id).reviewsList
+        val reviews = service.getAllReviewsForProjectPaper(projectPaper.id).reviewsList
 
         assertEquals(1, reviews.size)
         assertEquals(review.id.toString(), reviews[0].id)
@@ -48,7 +47,7 @@ class GetAllReviewsForProjectPaperTest : MainServiceTest() {
             projectPaperRepoMock.getProjectPaperById(projectPaper.id)
         } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { mainService.getAllReviewsForProjectPaper(projectPaper.id) }
+        assertThrows<TestSpecificException> { service.getAllReviewsForProjectPaper(projectPaper.id) }
     }
 
     @Test
@@ -62,6 +61,6 @@ class GetAllReviewsForProjectPaperTest : MainServiceTest() {
             projectAccessCheckerMock.isAllowedToReadProject(user, projectPaper.projectId)
         } throws TestSpecificException()
 
-        assertThrows<TestSpecificException> { mainService.getAllReviewsForProjectPaper(projectPaper.id) }
+        assertThrows<TestSpecificException> { service.getAllReviewsForProjectPaper(projectPaper.id) }
     }
 }
