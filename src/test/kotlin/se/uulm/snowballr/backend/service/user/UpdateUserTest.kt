@@ -11,13 +11,12 @@ import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.toGrpcUser
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateUserException
-import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
 import kotlin.test.assertEquals
 import snowballr.UserOuterClass.User as GrpcUser
 
-class UpdateUserTest : MainServiceTest() {
+class UpdateUserTest : UserServiceTest() {
     private fun getRequest(user: User, paths: List<String> = emptyList()) = GrpcUser.Update.newBuilder()
         .setUser(user.toGrpcUser())
         .setMask(FieldMaskUtil.fromStringList(paths))
@@ -33,7 +32,7 @@ class UpdateUserTest : MainServiceTest() {
         mockCurrentUser(currentUser)
         coEvery { userRepoMock.getUserById(otherUser.id) } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { mainService.updateUser(request) }
+        assertThrows<TestSpecificException> { service.updateUser(request) }
     }
 
     @Test
@@ -49,7 +48,7 @@ class UpdateUserTest : MainServiceTest() {
             userAccessCheckerMock.isAllowedToUpdateUser(currentUser, otherUser)
         } throws TestSpecificException()
 
-        assertThrows<TestSpecificException> { mainService.updateUser(request) }
+        assertThrows<TestSpecificException> { service.updateUser(request) }
     }
 
     @Test
@@ -67,7 +66,7 @@ class UpdateUserTest : MainServiceTest() {
                 userAccessCheckerMock.isAllowedToUpdateUserRole(currentUser, otherUser.id)
             } throws TestSpecificException()
 
-            assertThrows<TestSpecificException> { mainService.updateUser(request) }
+            assertThrows<TestSpecificException> { service.updateUser(request) }
         }
 
     @Test
@@ -83,7 +82,7 @@ class UpdateUserTest : MainServiceTest() {
             coJustRun { userAccessCheckerMock.isAllowedToUpdateUser(currentUser, otherUser) }
             coEvery { userRepoMock.doesUserExistByEmail(otherUser.email) } returns true
 
-            assertThrows<DuplicateUserException> { mainService.updateUser(request) }
+            assertThrows<DuplicateUserException> { service.updateUser(request) }
         }
 
     @Test
@@ -99,7 +98,7 @@ class UpdateUserTest : MainServiceTest() {
         coEvery { userRepoMock.doesUserExistByEmail(otherUser.email) } returns false
         coEvery { userRepoMock.updateUser(request) } returns otherUser
 
-        val updatedUser = mainService.updateUser(request)
+        val updatedUser = service.updateUser(request)
 
         assertEquals(otherUser.id.toString(), updatedUser.id)
         assertEquals(otherUser.email, updatedUser.email)
@@ -118,7 +117,7 @@ class UpdateUserTest : MainServiceTest() {
         coJustRun { userAccessCheckerMock.isAllowedToUpdateUserRole(currentUser, otherUser.id) }
         coEvery { userRepoMock.updateUser(request) } returns otherUser
 
-        val updatedUser = mainService.updateUser(request)
+        val updatedUser = service.updateUser(request)
 
         assertEquals(otherUser.id.toString(), updatedUser.id)
         assertEquals(otherUser.firstName, updatedUser.firstName)

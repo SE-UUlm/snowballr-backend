@@ -7,9 +7,8 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.service.MainServiceTest
 
-class GetUserSettingsTest : MainServiceTest() {
+class GetUserSettingsTest : UserServiceTest() {
     @Test
     fun `When retrieving current user settings fails, then a TestSpecificException is thrown`() = runTest {
         val user = DataBuilder.createExampleUser()
@@ -17,7 +16,7 @@ class GetUserSettingsTest : MainServiceTest() {
         mockCurrentUser(user)
         coEvery { userRepoMock.getUserSettings(user.id) } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { mainService.getUserSettings() }
+        assertThrows<TestSpecificException> { service.getUserSettings() }
     }
 
     @Test
@@ -30,7 +29,7 @@ class GetUserSettingsTest : MainServiceTest() {
             coEvery { criterionRepoMock.getCriteriaByIds(emptyList()) } returns emptyList()
             coEvery { userRepoMock.getUserSettings(user.id) } returns Result.success(userSettings)
 
-            assertDoesNotThrow { mainService.getUserSettings() }
+            assertDoesNotThrow { service.getUserSettings() }
         }
 
     @Test
@@ -44,6 +43,6 @@ class GetUserSettingsTest : MainServiceTest() {
             coEvery { criterionRepoMock.getCriteriaByIds(listOf(criterion.id)) } returns listOf(criterion)
             coEvery { userRepoMock.getUserSettings(user.id) } returns Result.success(userSettings)
 
-            assertDoesNotThrow { mainService.getUserSettings() }
+            assertDoesNotThrow { service.getUserSettings() }
         }
 }
