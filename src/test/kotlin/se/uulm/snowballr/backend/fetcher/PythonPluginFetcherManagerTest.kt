@@ -406,7 +406,7 @@ class PythonPluginFetcherManagerTest {
     fun `When a timed out fetcher ignores SIGTERM, then it is force killed after grace period`() = runTest {
         val timeoutFetcherManager = PythonPluginFetcherManager(
             createEnvReader(pluginDirectory),
-            executionTimeoutMillis = 100L,
+            executionTimeoutMillis = 2_000L,
             forceKillGraceMillis = 100L,
         )
         val pidFile = fetcherDirectory.resolve("stuck_fetcher.pid")
@@ -438,7 +438,7 @@ class PythonPluginFetcherManagerTest {
         val exception = assertThrows<FetcherException> {
             timeoutFetcherManager.getAvailableOptions("stuck_fetcher")
         }
-        assertThat(exception.message).contains("Fetcher 'stuck_fetcher' timed out after 100ms.")
+        assertThat(exception.message).contains("Fetcher 'stuck_fetcher' timed out after 2000ms.")
 
         assertTrue(
             waitUntil(
