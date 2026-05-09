@@ -11,10 +11,9 @@ import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.dto.Criterion
 import se.uulm.snowballr.backend.model.dto.toGrpcCriterion
-import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
 
-class UpdateCriterionTest : MainServiceTest() {
+class UpdateCriterionTest : CriterionServiceTest() {
     private fun getExampleRequest(criterion: Criterion): GrpcCriterion.Update {
         val updateFieldMask = FieldMaskUtil.fromStringList(
             listOf("tag", "name", "description", "category"),
@@ -36,7 +35,7 @@ class UpdateCriterionTest : MainServiceTest() {
         mockCurrentUser(user)
         coEvery { criterionRepoMock.getCriterionById(criterion.id) } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { mainService.updateCriterion(request) }
+        assertThrows<TestSpecificException> { service.updateCriterion(request) }
     }
 
     @Test
@@ -52,7 +51,7 @@ class UpdateCriterionTest : MainServiceTest() {
             criterionAccessCheckerMock.isAllowedToUpdateCriterion(user, criterion)
         } throws TestSpecificException()
 
-        assertThrows<TestSpecificException> { mainService.updateCriterion(request) }
+        assertThrows<TestSpecificException> { service.updateCriterion(request) }
     }
 
     @Test
@@ -67,6 +66,6 @@ class UpdateCriterionTest : MainServiceTest() {
         coJustRun { criterionAccessCheckerMock.isAllowedToUpdateCriterion(user, criterion) }
         coEvery { criterionRepoMock.updateCriterion(request) } returns criterion
 
-        assertDoesNotThrow { mainService.updateCriterion(request) }
+        assertDoesNotThrow { service.updateCriterion(request) }
     }
 }

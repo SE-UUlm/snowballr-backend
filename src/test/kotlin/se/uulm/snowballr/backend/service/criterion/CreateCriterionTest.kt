@@ -8,11 +8,10 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
 
-class CreateCriterionTest : MainServiceTest() {
+class CreateCriterionTest : CriterionServiceTest() {
     private fun getProjectCriterionRequest(projectId: String): GrpcCriterion.Create {
         return GrpcCriterion.Create.newBuilder()
             .setTag("Tag")
@@ -44,7 +43,7 @@ class CreateCriterionTest : MainServiceTest() {
         coJustRun { criterionAccessCheckerMock.isAllowedToCreateProjectCriterion(user, project.id) }
         coEvery { criterionRepoMock.createCriterion(request, user.id) } returns criterion
 
-        assertDoesNotThrow { mainService.createCriterion(request) }
+        assertDoesNotThrow { service.createCriterion(request) }
     }
 
     @Test
@@ -60,7 +59,7 @@ class CreateCriterionTest : MainServiceTest() {
                 criterionAccessCheckerMock.isAllowedToCreateProjectCriterion(user, project.id)
             } throws TestSpecificException()
 
-            assertThrows<TestSpecificException> { mainService.createCriterion(request) }
+            assertThrows<TestSpecificException> { service.createCriterion(request) }
         }
 
     @Test
@@ -73,6 +72,6 @@ class CreateCriterionTest : MainServiceTest() {
         mockCurrentUser(user)
         coEvery { criterionRepoMock.createCriterion(request, user.id) } returns criterion
 
-        assertDoesNotThrow { mainService.createCriterion(request) }
+        assertDoesNotThrow { service.createCriterion(request) }
     }
 }

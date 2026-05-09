@@ -8,9 +8,8 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.service.MainServiceTest
 
-class GetAllCriteriaForProjectTest : MainServiceTest() {
+class GetAllCriteriaForProjectTest : CriterionServiceTest() {
     @Test
     fun `When a user retrieves all criteria for a project, but has no access, then a TestSpecificException is thrown`() =
         runTest {
@@ -20,7 +19,7 @@ class GetAllCriteriaForProjectTest : MainServiceTest() {
             mockCurrentUser(user)
             coEvery { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) } throws TestSpecificException()
 
-            assertThrows<TestSpecificException> { mainService.getAllCriteriaForProject(project.id) }
+            assertThrows<TestSpecificException> { service.getAllCriteriaForProject(project.id) }
         }
 
     @Test
@@ -33,6 +32,6 @@ class GetAllCriteriaForProjectTest : MainServiceTest() {
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
         coEvery { criterionRepoMock.getAllProjectCriteria(project.id) } returns listOf(criterion)
 
-        assertDoesNotThrow { mainService.getAllCriteriaForProject(project.id) }
+        assertDoesNotThrow { service.getAllCriteriaForProject(project.id) }
     }
 }
