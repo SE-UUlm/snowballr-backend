@@ -17,7 +17,7 @@ sealed class PaperServiceTest : BaseServiceTest() {
     val paperRepoMock = mockk<IPaperTableRepo>()
     val citationRepoMock = mockk<ICitationTableRepo>()
 
-    val allMocks = arrayOf(paperRepoMock, citationRepoMock)
+    private val allMocks = arrayOf(paperRepoMock, citationRepoMock)
 
     val service: IPaperService by inject()
 

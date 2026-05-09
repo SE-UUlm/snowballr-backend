@@ -26,7 +26,7 @@ sealed class CriterionServiceTest : BaseServiceTest() {
     val criterionAccessCheckerMock = mockk<ICriterionAccessChecker>()
     val projectAccessCheckerMock = mockk<IProjectAccessChecker>()
 
-    val allMocks = arrayOf(criterionRepoMock, userRepoMock, criterionAccessCheckerMock, projectAccessCheckerMock)
+    private val allMocks = arrayOf(criterionRepoMock, userRepoMock, criterionAccessCheckerMock, projectAccessCheckerMock)
 
     val service: ICriterionService by inject()
 

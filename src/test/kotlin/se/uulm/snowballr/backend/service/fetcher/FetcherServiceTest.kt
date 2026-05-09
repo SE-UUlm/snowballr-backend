@@ -15,7 +15,7 @@ import se.uulm.snowballr.backend.service.IFetcherService
 sealed class FetcherServiceTest : BaseServiceTest() {
     val fetcherManagerMock = mockk<IFetcherManager>()
 
-    val allMocks: Array<Any> = arrayOf(fetcherManagerMock)
+    private val allMocks: Array<Any> = arrayOf(fetcherManagerMock)
 
     val service: IFetcherService by inject()
 

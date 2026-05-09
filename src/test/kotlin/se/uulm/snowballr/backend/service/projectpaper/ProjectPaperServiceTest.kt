@@ -36,7 +36,7 @@ sealed class ProjectPaperServiceTest : BaseServiceTest() {
     val projectPaperAccessCheckerMock = mockk<IProjectPaperAccessChecker>()
     val projectAccessCheckerMock = mockk<IProjectAccessChecker>()
 
-    val allMocks = arrayOf(
+    private val allMocks = arrayOf(
         projectPaperRepoMock,
         userRepoMock,
         projectRepoMock,

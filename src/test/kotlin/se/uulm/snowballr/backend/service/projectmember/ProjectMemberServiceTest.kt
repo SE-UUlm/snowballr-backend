@@ -30,7 +30,7 @@ sealed class ProjectMemberServiceTest : BaseServiceTest() {
     val projectMemberAccessCheckerMock = mockk<IProjectMemberAccessChecker>()
     val projectAccessCheckerMock = mockk<IProjectAccessChecker>()
 
-    val allMocks = arrayOf(
+    private val allMocks = arrayOf(
         projectMemberRepoMock,
         projectRepoMock,
         userRepoMock,

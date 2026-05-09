@@ -24,7 +24,7 @@ sealed class AuthenticationServiceTest : BaseServiceTest() {
     val verificationTokenRepoMock = mockk<IVerificationTokenTableRepo>()
     val jwtManagerMock = mockk<IJwtManager>()
 
-    val allMocks = arrayOf(userRepoMock, verificationTokenRepoMock, jwtManagerMock)
+    private val allMocks = arrayOf(userRepoMock, verificationTokenRepoMock, jwtManagerMock)
 
     val service: IAuthenticationService by inject()
 

@@ -40,7 +40,7 @@ sealed class InvitationServiceTest : BaseServiceTest() {
     val envServiceMock = mockk<IEnvService>()
     val envReaderMock = mockk<EnvReader>()
 
-    val allMocks = arrayOf(
+    private val allMocks = arrayOf(
         userRepoMock,
         projectRepoMock,
         projectMemberRepoMock,

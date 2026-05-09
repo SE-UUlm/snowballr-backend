@@ -32,7 +32,7 @@ sealed class ExportServiceTest : BaseServiceTest() {
     val userRepoMock = mockk<IUserTableRepo>()
     val projectAccessCheckerMock = mockk<IProjectAccessChecker>()
 
-    val allMocks = arrayOf(
+    private val allMocks = arrayOf(
         projectRepoMock,
         projectMemberRepoMock,
         projectPaperRepoMock,
