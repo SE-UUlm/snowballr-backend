@@ -218,7 +218,6 @@ fun Module.accessCheckerDeps() {
  * Module declaration of the core service layer.
  */
 fun Module.serviceLayerDeps() {
-    // All services that are directly used by the MainService
     singleOf(::ProjectService) { bind<IProjectService>() }
     singleOf(::CriterionService) { bind<ICriterionService>() }
     singleOf(::UserService) { bind<IUserService>() }
