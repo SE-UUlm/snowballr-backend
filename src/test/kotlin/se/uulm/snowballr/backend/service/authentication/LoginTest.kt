@@ -15,12 +15,11 @@ import se.uulm.snowballr.backend.auth.PasswordUtils
 import se.uulm.snowballr.backend.model.exception.UnauthenticatedException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundByEmailException
 import se.uulm.snowballr.backend.model.jwt.JwtAuthTokens
-import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.Authentication.LoginRequest
 import snowballr.UserOuterClass.UserStatus
 
 @ExtendWith(GrpcTestContextExtension::class)
-class LoginTest : MainServiceTest() {
+class LoginTest : AuthenticationServiceTest() {
     @Test
     fun `When a user provides an invalid email, then an UnauthenticatedException is thrown`() = runTest {
         val email = "wrongEmail"
@@ -29,7 +28,7 @@ class LoginTest : MainServiceTest() {
         val exception = UserNotFoundByEmailException("wrongEmail")
         coEvery { userRepoMock.getUserByEmail(email) } returns Result.failure(exception)
 
-        assertThrows<UnauthenticatedException> { mainService.login(request) }
+        assertThrows<UnauthenticatedException> { service.login(request) }
     }
 
     @Test
@@ -43,7 +42,7 @@ class LoginTest : MainServiceTest() {
 
             coEvery { userRepoMock.getUserByEmail(testUser.email) } returns Result.success(testUser)
 
-            assertThrows<UnauthenticatedException> { mainService.login(request) }
+            assertThrows<UnauthenticatedException> { service.login(request) }
         }
 
     @Test
@@ -56,7 +55,7 @@ class LoginTest : MainServiceTest() {
 
         coEvery { userRepoMock.getUserByEmail(testUser.email) } returns Result.success(testUser)
 
-        assertThrows<UnauthenticatedException> { mainService.login(request) }
+        assertThrows<UnauthenticatedException> { service.login(request) }
     }
 
     @Test
@@ -70,7 +69,7 @@ class LoginTest : MainServiceTest() {
 
             coEvery { userRepoMock.getUserByEmail(testUser.email) } returns Result.success(testUser)
 
-            assertThrows<UnauthenticatedException> { mainService.login(request) }
+            assertThrows<UnauthenticatedException> { service.login(request) }
         }
 
     @Test
@@ -86,7 +85,7 @@ class LoginTest : MainServiceTest() {
         val exception = UserNotFoundByEmailException(testUser.email)
         coEvery { userRepoMock.getPasswordHashByEmail(testUser.email) } returns Result.failure(exception)
 
-        assertThrows<UnauthenticatedException> { mainService.login(request) }
+        assertThrows<UnauthenticatedException> { service.login(request) }
     }
 
     @Test
@@ -103,7 +102,7 @@ class LoginTest : MainServiceTest() {
         coEvery { userRepoMock.getUserByEmail(testUser.email) } returns Result.success(testUser)
         coEvery { userRepoMock.getPasswordHashByEmail(testUser.email) } returns Result.success(passwordHash)
 
-        assertThrows<UnauthenticatedException> { mainService.login(request) }
+        assertThrows<UnauthenticatedException> { service.login(request) }
     }
 
     @Test
@@ -124,7 +123,7 @@ class LoginTest : MainServiceTest() {
         coEvery { userRepoMock.getPasswordHashByEmail(testUser.email) } returns Result.success(passwordHash)
         every { jwtManagerMock.generateAuthTokens(testUser.id) } returns tokens
 
-        assertDoesNotThrow { mainService.login(request) }
+        assertDoesNotThrow { service.login(request) }
 
         assertEquals(tokens.accessToken, cookiesMap[GrpcContext.ACCESS_TOKEN_COOKIE_NAME])
         assertEquals(tokens.refreshToken, cookiesMap[GrpcContext.REFRESH_TOKEN_COOKIE_NAME])
