@@ -37,7 +37,7 @@ class GetUserByEmailTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the user requests a user, but has no access, then a TestSpecificException is thrown`() = runTest {
+    fun `When a user requests a user, but has no access, then a TestSpecificException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
         val requestedUser = DataBuilder.createExampleUser(email = "otherUser@example.com")
 
@@ -51,7 +51,7 @@ class GetUserByEmailTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the user requests a user and has access, then the user is returned`() = runTest {
+    fun `When a user requests a user and has access, then the user is returned`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
         val requestedUser = DataBuilder.createExampleUser(email = "otherUser@example.com")
 

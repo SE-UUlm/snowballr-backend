@@ -37,7 +37,7 @@ class UpdateUserTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the user updates another user, but has no access, then a TestSpecificException is thrown`() = runTest {
+    fun `When a user updates another user, but has no access, then a TestSpecificException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
         val otherUser = DataBuilder.createExampleUser()
 
@@ -53,7 +53,7 @@ class UpdateUserTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the user tries to change another user's role, but has no access, then a TestSpecificException is thrown`() =
+    fun `When a user tries to change another user's role, but has no access, then a TestSpecificException is thrown`() =
         runTest {
             val currentUser = DataBuilder.createExampleUser()
             val otherUser = DataBuilder.createExampleUser()
@@ -71,7 +71,7 @@ class UpdateUserTest : MainServiceTest() {
         }
 
     @Test
-    fun `When the user tries to change another user's email to an existent email, then a DuplicateUserException is thrown`() =
+    fun `When a user tries to change another user's email to an existent email, then a DuplicateUserException is thrown`() =
         runTest {
             val currentUser = DataBuilder.createExampleUser()
             val otherUser = DataBuilder.createExampleUser(email = "other@user.com")

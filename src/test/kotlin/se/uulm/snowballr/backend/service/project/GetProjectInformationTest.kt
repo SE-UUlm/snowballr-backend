@@ -24,7 +24,7 @@ class GetProjectInformationTest : MainServiceTest() {
         .build()
 
     @Test
-    fun `When the user requests project information, but has no access, then a TestSpecificException is thrown`() =
+    fun `When a user requests project information, but has no access, then a TestSpecificException is thrown`() =
         runTest {
             val user = DataBuilder.createExampleUser()
             val project = DataBuilder.createExampleProject()

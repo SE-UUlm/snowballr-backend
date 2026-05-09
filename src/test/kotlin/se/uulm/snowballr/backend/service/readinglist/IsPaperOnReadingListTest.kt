@@ -16,27 +16,26 @@ import java.util.UUID
 
 class IsPaperOnReadingListTest : MainServiceTest() {
     @Test
-    fun `When the user checks if a paper is on their reading list, then the request is forwarded correctly`() =
-        runTest {
-            val user = DataBuilder.createExampleUser()
-            val paper1 = DataBuilder.createExamplePaper()
-            val paper2 = DataBuilder.createExamplePaper(externalId = "ExternalId2")
+    fun `When a user checks if a paper is on their reading list, then the request is forwarded correctly`() = runTest {
+        val user = DataBuilder.createExampleUser()
+        val paper1 = DataBuilder.createExamplePaper()
+        val paper2 = DataBuilder.createExamplePaper(externalId = "ExternalId2")
 
-            mockCurrentUser(user)
-            coEvery { readingListRepoMock.isPaperOnReadingList(user.id, paper1.id) } returns true
-            coEvery { readingListRepoMock.isPaperOnReadingList(user.id, paper2.id) } returns false
-            coEvery { paperRepoMock.ensurePaperExists(paper1.id) } just Runs
-            coEvery { paperRepoMock.ensurePaperExists(paper2.id) } just Runs
+        mockCurrentUser(user)
+        coEvery { readingListRepoMock.isPaperOnReadingList(user.id, paper1.id) } returns true
+        coEvery { readingListRepoMock.isPaperOnReadingList(user.id, paper2.id) } returns false
+        coEvery { paperRepoMock.ensurePaperExists(paper1.id) } just Runs
+        coEvery { paperRepoMock.ensurePaperExists(paper2.id) } just Runs
 
-            assertTrue(mainService.isPaperOnReadingList(paper1.id))
-            coVerify(exactly = 1) { readingListRepoMock.isPaperOnReadingList(user.id, paper1.id) }
+        assertTrue(mainService.isPaperOnReadingList(paper1.id))
+        coVerify(exactly = 1) { readingListRepoMock.isPaperOnReadingList(user.id, paper1.id) }
 
-            assertFalse(mainService.isPaperOnReadingList(paper2.id))
-            coVerify(exactly = 1) { readingListRepoMock.isPaperOnReadingList(user.id, paper2.id) }
-        }
+        assertFalse(mainService.isPaperOnReadingList(paper2.id))
+        coVerify(exactly = 1) { readingListRepoMock.isPaperOnReadingList(user.id, paper2.id) }
+    }
 
     @Test
-    fun `When the user checks if a non-existent paper is on their reading list, then a PaperNotFoundException is thrown`() =
+    fun `When a user checks if a non-existent paper is on their reading list, then a PaperNotFoundException is thrown`() =
         runTest {
             val user = DataBuilder.createExampleUser()
             val paperId = UUID.randomUUID()

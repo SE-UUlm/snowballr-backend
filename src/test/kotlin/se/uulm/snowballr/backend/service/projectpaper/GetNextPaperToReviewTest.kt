@@ -16,7 +16,7 @@ import java.util.UUID
 
 class GetNextPaperToReviewTest : MainServiceTest() {
     @Test
-    fun `When the user requests the next project paper and has access, then no exception is thrown`() = runTest {
+    fun `When a user requests the next project paper and has access, then no exception is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject()
         val paper = DataBuilder.createExamplePaper()
@@ -64,7 +64,7 @@ class GetNextPaperToReviewTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the user requests the next project paper, but has no access, then a TestSpecificException is thrown`() =
+    fun `When a user requests the next project paper, but has no access, then a TestSpecificException is thrown`() =
         runTest {
             val currentUser = DataBuilder.createExampleUser()
             val project = DataBuilder.createExampleProject()
@@ -113,7 +113,7 @@ class GetNextPaperToReviewTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the user requests the next project paper, then the project papers without own review are filtered out correctly`() =
+    fun `When a user requests the next project paper, then the project papers without own review are filtered out correctly`() =
         runTest {
             val currentUser = DataBuilder.createExampleUser()
             val project = DataBuilder.createExampleProject()
@@ -164,7 +164,7 @@ class GetNextPaperToReviewTest : MainServiceTest() {
         }
 
     @Test
-    fun `When the user requests the next project paper, then the project papers are sorted correctly`() = runTest {
+    fun `When a user requests the next project paper, then the project papers are sorted correctly`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject()
         val currentPaper = DataBuilder.createExamplePaper()
@@ -224,7 +224,7 @@ class GetNextPaperToReviewTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the user requests the next project paper, then the already decided paper are correctly filtered`() =
+    fun `When a user requests the next project paper, then the already decided paper are correctly filtered`() =
         runTest {
             val currentUser = DataBuilder.createExampleUser()
             val project = DataBuilder.createExampleProject()
@@ -274,7 +274,7 @@ class GetNextPaperToReviewTest : MainServiceTest() {
         }
 
     @Test
-    fun `When the user requests the next project paper and only already decided papers are left, then an already decided paper is returned`() =
+    fun `When a user requests the next project paper and only already decided papers are left, then an already decided paper is returned`() =
         runTest {
             val currentUser = DataBuilder.createExampleUser()
             val project = DataBuilder.createExampleProject()

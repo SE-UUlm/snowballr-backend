@@ -15,7 +15,7 @@ import kotlin.test.assertEquals
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class GetAllReviewsForProjectPaperTest : MainServiceTest() {
     @Test
-    fun `When the user requests all reviews and has access, then no exception is thrown`() = runTest {
+    fun `When a user requests all reviews and has access, then no exception is thrown`() = runTest {
         val user = DataBuilder.createExampleUser()
         val projectPaper = DataBuilder.createExampleProjectPaper()
         val review = DataBuilder.createExampleReview()
@@ -52,7 +52,7 @@ class GetAllReviewsForProjectPaperTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the user requests all reviews, but has no access, then a TestSpecificException is thrown`() = runTest {
+    fun `When a user requests all reviews, but has no access, then a TestSpecificException is thrown`() = runTest {
         val user = DataBuilder.createExampleUser()
         val projectPaper = DataBuilder.createExampleProjectPaper()
 

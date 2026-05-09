@@ -12,7 +12,7 @@ import se.uulm.snowballr.backend.service.MainServiceTest
 
 class GetProjectByIdTest : MainServiceTest() {
     @Test
-    fun `When the user requests a project, but has no access, then a TestSpecificException is thrown`() = runTest {
+    fun `When a user requests a project, but has no access, then a TestSpecificException is thrown`() = runTest {
         val user = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject()
 
@@ -35,7 +35,7 @@ class GetProjectByIdTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the user requests a project and has access, then no exception is thrown`() = runTest {
+    fun `When a user requests a project and has access, then no exception is thrown`() = runTest {
         val user = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject()
 

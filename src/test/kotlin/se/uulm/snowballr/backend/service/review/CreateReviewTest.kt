@@ -129,14 +129,14 @@ class CreateReviewTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the user creates a review and has access, then no exception is thrown`() = runTest {
+    fun `When a user creates a review and has access, then no exception is thrown`() = runTest {
         mockCreateReview()
 
         assertDoesNotThrow { mainService.createReview(validCreateReviewRequest.build()) }
     }
 
     @Test
-    fun `When the user already reviewed the project paper, then a DuplicateReviewException is thrown`() = runTest {
+    fun `When a user already reviewed the project paper, then a DuplicateReviewException is thrown`() = runTest {
         val firstReview = DataBuilder.createExampleReview(
             projectPaperId = projectPaperId,
             decision = decision,

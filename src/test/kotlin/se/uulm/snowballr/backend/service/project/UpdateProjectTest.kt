@@ -28,7 +28,7 @@ class UpdateProjectTest : MainServiceTest() {
         .build()
 
     @Test
-    fun `When the user updates a project, but has no access, then a TestSpecificException is thrown`() = runTest {
+    fun `When a user updates a project, but has no access, then a TestSpecificException is thrown`() = runTest {
         val user = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject()
 
@@ -57,7 +57,7 @@ class UpdateProjectTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the user updates a project and has access, then no exception is thrown`() = runTest {
+    fun `When a user updates a project and has access, then no exception is thrown`() = runTest {
         val user = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject()
 
@@ -73,7 +73,7 @@ class UpdateProjectTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the user updates a project to the project status DELETED, then a IllegalArgumentException is thrown`() =
+    fun `When a user updates a project to the project status DELETED, then a IllegalArgumentException is thrown`() =
         runTest {
             val user = DataBuilder.createExampleUser()
             val project = DataBuilder.createExampleProject()
@@ -89,7 +89,7 @@ class UpdateProjectTest : MainServiceTest() {
         }
 
     @Test
-    fun `When the user updates a deleted project, then a FailedPreconditionException is thrown`() = runTest {
+    fun `When a user updates a deleted project, then a FailedPreconditionException is thrown`() = runTest {
         val user = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_DELETED)
 
@@ -104,7 +104,7 @@ class UpdateProjectTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the user updates an archived project (not only status), then a FailedPreconditionException is thrown`() =
+    fun `When a user updates an archived project (not only status), then a FailedPreconditionException is thrown`() =
         runTest {
             val user = DataBuilder.createExampleUser()
             val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ARCHIVED)
@@ -121,7 +121,7 @@ class UpdateProjectTest : MainServiceTest() {
 
     @ParameterizedTest
     @ValueSource(strings = ["PROJECT_STATUS_ACTIVE", "PROJECT_STATUS_ACTIVE_LOCKED"])
-    fun `When the user updates an archived project (only active status), then no exception is thrown`(
+    fun `When a user updates an archived project (only active status), then no exception is thrown`(
         statusName: String,
     ) = runTest {
         val status = ProjectStatus.valueOf(statusName)
@@ -144,7 +144,7 @@ class UpdateProjectTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the user updates an archived project (only archived status), then no exception is thrown`() = runTest {
+    fun `When a user updates an archived project (only archived status), then no exception is thrown`() = runTest {
         val user = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ARCHIVED)
 
@@ -162,7 +162,7 @@ class UpdateProjectTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the user updates an archived project (only unsupported status), then a FailedPreconditionException is thrown`() =
+    fun `When a user updates an archived project (only unsupported status), then a FailedPreconditionException is thrown`() =
         runTest {
             val user = DataBuilder.createExampleUser()
             val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ARCHIVED)
@@ -178,7 +178,7 @@ class UpdateProjectTest : MainServiceTest() {
         }
 
     @Test
-    fun `When the user updates an active locked project (project settings), then a FailedPreconditionException is thrown`() =
+    fun `When a user updates an active locked project (project settings), then a FailedPreconditionException is thrown`() =
         runTest {
             val user = DataBuilder.createExampleUser()
             val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
@@ -194,25 +194,24 @@ class UpdateProjectTest : MainServiceTest() {
         }
 
     @Test
-    fun `When the user updates an active locked project (not project settings), then no exception is thrown`() =
-        runTest {
-            val user = DataBuilder.createExampleUser()
-            val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
+    fun `When a user updates an active locked project (not project settings), then no exception is thrown`() = runTest {
+        val user = DataBuilder.createExampleUser()
+        val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
 
-            val updatedProject = project.copy(name = "Updated Name")
-            val request = getRequest(updatedProject, listOf("project.name"))
+        val updatedProject = project.copy(name = "Updated Name")
+        val request = getRequest(updatedProject, listOf("project.name"))
 
-            mockCurrentUser(user)
-            coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
-            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-            coEvery { projectRepoMock.isProjectLocked(project.id) } returns true
-            coEvery { projectRepoMock.updateProject(request) } returns updatedProject
+        mockCurrentUser(user)
+        coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
+        coEvery { projectRepoMock.isProjectLocked(project.id) } returns true
+        coEvery { projectRepoMock.updateProject(request) } returns updatedProject
 
-            assertDoesNotThrow { mainService.updateProject(request) }
-        }
+        assertDoesNotThrow { mainService.updateProject(request) }
+    }
 
     @Test
-    fun `When the user updates an active project, then no exception is thrown`() = runTest {
+    fun `When a user updates an active project, then no exception is thrown`() = runTest {
         val user = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ACTIVE)
 
@@ -230,7 +229,7 @@ class UpdateProjectTest : MainServiceTest() {
 
     @ParameterizedTest
     @ValueSource(strings = ["PROJECT_STATUS_UNSPECIFIED", "UNRECOGNIZED"])
-    fun `When the user updates a project with unsupported status, then an IllegalStateException is thrown`(
+    fun `When a user updates a project with unsupported status, then an IllegalStateException is thrown`(
         statusName: String,
     ) = runTest {
         val status = ProjectStatus.valueOf(statusName)

@@ -13,7 +13,7 @@ import kotlin.test.assertEquals
 
 class GetPreviousPaperTest : MainServiceTest() {
     @Test
-    fun `When the user requests the previous project paper and has access, then no exception is thrown`() = runTest {
+    fun `When a user requests the previous project paper and has access, then no exception is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject()
         val paper = DataBuilder.createExamplePaper()
@@ -58,7 +58,7 @@ class GetPreviousPaperTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the user requests the previous project paper, but has no access, then a TestSpecificException is thrown`() =
+    fun `When a user requests the previous project paper, but has no access, then a TestSpecificException is thrown`() =
         runTest {
             val currentUser = DataBuilder.createExampleUser()
             val project = DataBuilder.createExampleProject()

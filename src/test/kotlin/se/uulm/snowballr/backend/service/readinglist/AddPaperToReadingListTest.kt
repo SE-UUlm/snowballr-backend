@@ -16,7 +16,7 @@ import java.util.UUID
 
 class AddPaperToReadingListTest : MainServiceTest() {
     @Test
-    fun `When the user adds a paper to their reading list, then the request is forwarded correctly`() = runTest {
+    fun `When a user adds a paper to their reading list, then the request is forwarded correctly`() = runTest {
         val user = DataBuilder.createExampleUser()
         val paperId = UUID.randomUUID()
 
@@ -29,7 +29,7 @@ class AddPaperToReadingListTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the user adds a non-existent paper to their reading list, then a PaperNotFoundException is thrown`() =
+    fun `When a user adds a non-existent paper to their reading list, then a PaperNotFoundException is thrown`() =
         runTest {
             val user = DataBuilder.createExampleUser()
             val paperId = UUID.randomUUID()

@@ -26,7 +26,7 @@ class UpdateProjectMemberRoleTest : MainServiceTest() {
             .build()
 
     @Test
-    fun `When the user updates a member role, but has no access, then a TestSpecificException is thrown`() = runTest {
+    fun `When a user updates a member role, but has no access, then a TestSpecificException is thrown`() = runTest {
         val currentUser = createExampleUser()
         val user = createExampleUser()
         val project = DataBuilder.createExampleProject()
@@ -42,20 +42,19 @@ class UpdateProjectMemberRoleTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the user updates a member role of a non-existent user, then a TestSpecificException is thrown`() =
-        runTest {
-            val currentUser = createExampleUser()
-            val user = createExampleUser()
-            val project = DataBuilder.createExampleProject()
+    fun `When a user updates a member role of a non-existent user, then a TestSpecificException is thrown`() = runTest {
+        val currentUser = createExampleUser()
+        val user = createExampleUser()
+        val project = DataBuilder.createExampleProject()
 
-            val request = getRequest(user.id, project.id)
+        val request = getRequest(user.id, project.id)
 
-            mockCurrentUser(currentUser)
-            coJustRun { projectMemberAccessCheckerMock.isAllowedToUpdateMemberRole(currentUser, project.id) }
-            coEvery { userRepoMock.getUserById(user.id) } returns Result.failure(TestSpecificException())
+        mockCurrentUser(currentUser)
+        coJustRun { projectMemberAccessCheckerMock.isAllowedToUpdateMemberRole(currentUser, project.id) }
+        coEvery { userRepoMock.getUserById(user.id) } returns Result.failure(TestSpecificException())
 
-            assertThrows<TestSpecificException> { mainService.updateProjectMemberRole(request) }
-        }
+        assertThrows<TestSpecificException> { mainService.updateProjectMemberRole(request) }
+    }
 
     @Test
     fun `When retrieving the project member fails, then a FailedPreconditionException is thrown`() = runTest {
@@ -76,7 +75,7 @@ class UpdateProjectMemberRoleTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the user demotes the last project admin, then a TestSpecificException is thrown`() = runTest {
+    fun `When a user demotes the last project admin, then a TestSpecificException is thrown`() = runTest {
         val currentUser = createExampleUser()
         val user = createExampleUser()
         val project = DataBuilder.createExampleProject()
@@ -98,7 +97,7 @@ class UpdateProjectMemberRoleTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the user re-promotes an admin, then last-admin check is skipped`() = runTest {
+    fun `When a user re-promotes an admin, then last-admin check is skipped`() = runTest {
         val currentUser = createExampleUser()
         val user = createExampleUser()
         val project = DataBuilder.createExampleProject()

@@ -12,7 +12,7 @@ import se.uulm.snowballr.backend.service.MainServiceTest
 
 class GetAllUsersTest : MainServiceTest() {
     @Test
-    fun `When the user requests all users and has access, then all users are returned`() = runTest {
+    fun `When a user requests all users and has access, then all users are returned`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
         val otherUser = DataBuilder.createExampleUser()
         val users = listOf(currentUser, otherUser)
@@ -29,7 +29,7 @@ class GetAllUsersTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the user requests all users, but has no access, then a TestSpecificException is thrown`() = runTest {
+    fun `When a user requests all users, but has no access, then a TestSpecificException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
 
         mockCurrentUser(currentUser)

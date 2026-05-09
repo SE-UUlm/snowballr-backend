@@ -22,7 +22,7 @@ class GetProjectPaperByRelativeIdTest : MainServiceTest() {
         .build()
 
     @Test
-    fun `When the user request the project paper and has access, then no exception is thrown`() = runTest {
+    fun `When a user request the project paper and has access, then no exception is thrown`() = runTest {
         val user = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject()
         val relativeId = 1L
@@ -44,7 +44,7 @@ class GetProjectPaperByRelativeIdTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the user request the project paper, but has no access, then a TestSpecificException is thrown`() =
+    fun `When a user requests the project paper, but has no access, then a TestSpecificException is thrown`() =
         runTest {
             val user = DataBuilder.createExampleUser()
             val project = DataBuilder.createExampleProject()

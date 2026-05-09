@@ -140,7 +140,7 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the user requests project papers to review, but has no access, then a TestSpecificException is thrown`() =
+    fun `When a user requests project papers to review, but has no access, then a TestSpecificException is thrown`() =
         runTest {
             val currentUser = DataBuilder.createExampleUser()
             val project = DataBuilder.createExampleProject()

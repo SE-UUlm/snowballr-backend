@@ -44,7 +44,7 @@ class ServiceHelperTest {
         }
 
         @Test
-        fun `When the user is retrieved successfully, then the block is executed with the current user`() = runTest {
+        fun `When a user is retrieved successfully, then the block is executed with the current user`() = runTest {
             val currentUser = DataBuilder.createExampleUser()
             every { GrpcContext.getUserIdFromContext() } returns currentUser.id
             coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)

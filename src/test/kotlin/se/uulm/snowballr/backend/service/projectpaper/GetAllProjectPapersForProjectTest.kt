@@ -17,7 +17,7 @@ import kotlin.test.assertEquals
 class GetAllProjectPapersForProjectTest : MainServiceTest() {
     @Test
     @Suppress("LongMethod")
-    fun `When the user requests all project papers for a project and has access, then no exception is thrown`() =
+    fun `When a user requests all project papers for a project and has access, then no exception is thrown`() =
         runTest {
             val user = DataBuilder.createExampleUser()
             val project = DataBuilder.createExampleProject()
@@ -98,7 +98,7 @@ class GetAllProjectPapersForProjectTest : MainServiceTest() {
         }
 
     @Test
-    fun `When the user requests all project papers for a project, but has no access, then a TestSpecificException is thrown`() =
+    fun `When a user requests all project papers for a project, but has no access, then a TestSpecificException is thrown`() =
         runTest {
             val user = DataBuilder.createExampleUser()
             val project = DataBuilder.createExampleProject()

@@ -64,7 +64,7 @@ class CreateCriterionTest : MainServiceTest() {
         }
 
     @Test
-    fun `When an user creates a user criterion and has access, then no exception is thrown`() = runTest {
+    fun `When a user creates a user criterion and has access, then no exception is thrown`() = runTest {
         val user = DataBuilder.createExampleUser()
 
         val criterion = DataBuilder.createExampleUserCriterion()

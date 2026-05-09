@@ -23,7 +23,7 @@ class RemoveProjectMemberTest : MainServiceTest() {
         .build()
 
     @Test
-    fun `When the user removes a project member, then no exception is thrown`() = runTest {
+    fun `When a user removes a project member, then no exception is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
         val userToRemove = DataBuilder.createExampleUser(email = userEmail, status = UserStatus.USER_STATUS_ACTIVE)
         val project = DataBuilder.createExampleProject()
@@ -62,7 +62,7 @@ class RemoveProjectMemberTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the user removes a non-project member, then nothing happens`() = runTest {
+    fun `When a user removes a non-project member, then nothing happens`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
         val userToRemove = DataBuilder.createExampleUser(email = userEmail, status = UserStatus.USER_STATUS_ACTIVE)
         val project = DataBuilder.createExampleProject()
@@ -80,32 +80,31 @@ class RemoveProjectMemberTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the user removes a user of a non-existent project, then a ProjectNotFoundException is thrown`() =
-        runTest {
-            val currentUser = DataBuilder.createExampleUser()
-            val userToRemove = DataBuilder.createExampleUser(email = userEmail, status = UserStatus.USER_STATUS_ACTIVE)
-            val project = DataBuilder.createExampleProject()
+    fun `When a user removes a user of a non-existent project, then a ProjectNotFoundException is thrown`() = runTest {
+        val currentUser = DataBuilder.createExampleUser()
+        val userToRemove = DataBuilder.createExampleUser(email = userEmail, status = UserStatus.USER_STATUS_ACTIVE)
+        val project = DataBuilder.createExampleProject()
 
-            mockCurrentUser(currentUser)
-            coEvery {
-                invitationTokenRepoMock.getInvitationTokenByEmailAndProjectId(userEmail, project.id)
-            } returns Result.failure(TestSpecificException())
-            coEvery { userRepoMock.getUserByEmail(userEmail) } returns Result.success(userToRemove)
-            coEvery { projectMemberRepoMock.isProjectMember(project.id, userToRemove.id) } returns true
-            coJustRun {
-                projectMemberAccessCheckerMock.isAllowedToRemoveMember(
-                    currentUser,
-                    userToRemove.id,
-                    project.id,
-                )
-            }
-            coEvery { projectRepoMock.doesProjectExistById(project.id) } returns false
-
-            assertThrows<ProjectNotFoundException> { mainService.removeProjectMember(getExampleRequest(project.id)) }
+        mockCurrentUser(currentUser)
+        coEvery {
+            invitationTokenRepoMock.getInvitationTokenByEmailAndProjectId(userEmail, project.id)
+        } returns Result.failure(TestSpecificException())
+        coEvery { userRepoMock.getUserByEmail(userEmail) } returns Result.success(userToRemove)
+        coEvery { projectMemberRepoMock.isProjectMember(project.id, userToRemove.id) } returns true
+        coJustRun {
+            projectMemberAccessCheckerMock.isAllowedToRemoveMember(
+                currentUser,
+                userToRemove.id,
+                project.id,
+            )
         }
+        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns false
+
+        assertThrows<ProjectNotFoundException> { mainService.removeProjectMember(getExampleRequest(project.id)) }
+    }
 
     @Test
-    fun `When the user removes the last project member, then the project is soft-deleted`() = runTest {
+    fun `When a user removes the last project member, then the project is soft-deleted`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
         val userToRemove = DataBuilder.createExampleUser(email = userEmail, status = UserStatus.USER_STATUS_ACTIVE)
         val project = DataBuilder.createExampleProject()
@@ -130,7 +129,7 @@ class RemoveProjectMemberTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the user removes an invitation and has access, then no exception is thrown`() = runTest {
+    fun `When a user removes an invitation and has access, then no exception is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject()
         val invitationToken = DataBuilder.createExampleInvitationToken()
@@ -148,7 +147,7 @@ class RemoveProjectMemberTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the user removes an invitation, but has no access, then a TestSpecificException is thrown`() = runTest {
+    fun `When a user removes an invitation, but has no access, then a TestSpecificException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject()
         val invitationToken = DataBuilder.createExampleInvitationToken()

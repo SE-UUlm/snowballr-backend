@@ -25,7 +25,7 @@ class AddPaperToProjectTest : MainServiceTest() {
         .build()
 
     @Test
-    fun `When the user adds a paper to a project and has access, then no exception is thrown`() = runTest {
+    fun `When a user adds a paper to a project and has access, then no exception is thrown`() = runTest {
         val user = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject()
         val projectResult = Result.success(project)
@@ -69,23 +69,22 @@ class AddPaperToProjectTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the user adds a paper to a project, but has no access, then a TestSpecificException is thrown`() =
-        runTest {
-            val user = DataBuilder.createExampleUser()
-            val project = DataBuilder.createExampleProject()
-            val projectResult = Result.success(project)
-            val paper = DataBuilder.createExamplePaper()
+    fun `When a user adds a paper to a project, but has no access, then a TestSpecificException is thrown`() = runTest {
+        val user = DataBuilder.createExampleUser()
+        val project = DataBuilder.createExampleProject()
+        val projectResult = Result.success(project)
+        val paper = DataBuilder.createExamplePaper()
 
-            val request = getRequest(project.id, paper.id)
+        val request = getRequest(project.id, paper.id)
 
-            mockCurrentUser(user)
-            coEvery {
-                projectPaperAccessCheckerMock.isAllowedToAddPaperToProject(user, project.id, projectResult)
-            } throws TestSpecificException()
-            coEvery { projectRepoMock.getProjectById(project.id) } returns projectResult
+        mockCurrentUser(user)
+        coEvery {
+            projectPaperAccessCheckerMock.isAllowedToAddPaperToProject(user, project.id, projectResult)
+        } throws TestSpecificException()
+        coEvery { projectRepoMock.getProjectById(project.id) } returns projectResult
 
-            assertThrows<TestSpecificException> { mainService.addPaperToProject(request) }
-        }
+        assertThrows<TestSpecificException> { mainService.addPaperToProject(request) }
+    }
 
     @Test
     fun `When retrieving the project fails, then a TestSpecificException is thrown`() = runTest {

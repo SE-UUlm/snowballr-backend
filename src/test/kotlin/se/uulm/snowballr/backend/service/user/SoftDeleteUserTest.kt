@@ -24,22 +24,21 @@ class SoftDeleteUserTest : MainServiceTest() {
     }
 
     @Test
-    fun `When the user soft-deletes another user, but has no access, then a TestSpecificException is thrown`() =
-        runTest {
-            val currentUser = DataBuilder.createExampleUser()
-            val userToDelete = DataBuilder.createExampleUser()
+    fun `When a user soft-deletes another user, but has no access, then a TestSpecificException is thrown`() = runTest {
+        val currentUser = DataBuilder.createExampleUser()
+        val userToDelete = DataBuilder.createExampleUser()
 
-            mockCurrentUser(currentUser)
-            coEvery { userRepoMock.getUserById(userToDelete.id) } returns Result.success(userToDelete)
-            coEvery {
-                userAccessCheckerMock.isAllowedToDeleteUser(currentUser, userToDelete)
-            } throws TestSpecificException()
+        mockCurrentUser(currentUser)
+        coEvery { userRepoMock.getUserById(userToDelete.id) } returns Result.success(userToDelete)
+        coEvery {
+            userAccessCheckerMock.isAllowedToDeleteUser(currentUser, userToDelete)
+        } throws TestSpecificException()
 
-            assertThrows<TestSpecificException> { mainService.softDeleteUser(userToDelete.id) }
-        }
+        assertThrows<TestSpecificException> { mainService.softDeleteUser(userToDelete.id) }
+    }
 
     @Test
-    fun `When the user soft-deletes another user, but they are a last project admin, then TestSpecificException is thrown`() =
+    fun `When a user soft-deletes another user, but they are a last project admin, then TestSpecificException is thrown`() =
         runTest {
             val currentUser = DataBuilder.createExampleUser()
             val userToDelete = DataBuilder.createExampleUser()
@@ -57,7 +56,7 @@ class SoftDeleteUserTest : MainServiceTest() {
         }
 
     @Test
-    fun `When the user soft-deletes another user and has access, then no exception is thrown`() = runTest {
+    fun `When a user soft-deletes another user and has access, then no exception is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
         val userToDelete = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject()
