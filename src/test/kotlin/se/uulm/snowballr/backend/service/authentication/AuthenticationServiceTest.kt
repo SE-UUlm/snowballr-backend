@@ -4,6 +4,8 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import org.koin.core.module.Module
+import org.koin.core.module.dsl.bind
+import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 import org.koin.test.inject
 import se.uulm.snowballr.backend.auth.GrpcContext
@@ -32,6 +34,8 @@ sealed class AuthenticationServiceTest : BaseServiceTest() {
         single { userRepoMock }
         single { verificationTokenRepoMock }
         single { jwtManagerMock }
+
+        singleOf(::AuthenticationService) { bind<IAuthenticationService>() }
     }
 
     override fun getModule(): Module = module

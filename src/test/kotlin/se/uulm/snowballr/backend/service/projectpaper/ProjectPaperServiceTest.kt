@@ -4,6 +4,8 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import org.koin.core.module.Module
+import org.koin.core.module.dsl.bind
+import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 import org.koin.test.inject
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
@@ -60,6 +62,8 @@ sealed class ProjectPaperServiceTest : BaseServiceTest() {
         single { reviewHasCriterionRepoMock }
         single { projectPaperAccessCheckerMock }
         single { projectAccessCheckerMock }
+
+        singleOf(::ProjectPaperService) { bind<IProjectPaperService>() }
     }
 
     override fun getModule(): Module = module

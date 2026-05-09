@@ -5,6 +5,8 @@ import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.assertNotNull
 import org.koin.core.module.Module
+import org.koin.core.module.dsl.bind
+import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 import org.koin.test.inject
 import se.uulm.snowballr.backend.access.IInvitationAccessChecker
@@ -71,6 +73,8 @@ sealed class InvitationServiceTest : BaseServiceTest() {
         single { emailManagerMock }
         single { invitationAccessCheckerMock }
         single { projectAccessCheckerMock }
+
+        singleOf(::InvitationService) { bind<IInvitationService>() }
     }
 
     override fun getModule(): Module = module

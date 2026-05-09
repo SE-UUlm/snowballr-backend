@@ -4,6 +4,8 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import org.koin.core.module.Module
+import org.koin.core.module.dsl.bind
+import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 import org.koin.test.inject
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
@@ -52,6 +54,8 @@ sealed class ExportServiceTest : BaseServiceTest() {
         single { criterionRepoMock }
         single { userRepoMock }
         single { projectAccessCheckerMock }
+
+        singleOf(::ExportService) { bind<IExportService>() }
     }
 
     override fun getModule(): Module = module

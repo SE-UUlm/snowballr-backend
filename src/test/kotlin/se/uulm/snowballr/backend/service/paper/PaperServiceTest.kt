@@ -2,6 +2,8 @@ package se.uulm.snowballr.backend.service.paper
 
 import io.mockk.mockk
 import org.koin.core.module.Module
+import org.koin.core.module.dsl.bind
+import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 import org.koin.test.inject
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
@@ -24,6 +26,8 @@ sealed class PaperServiceTest : BaseServiceTest() {
     private val module = module {
         single { paperRepoMock }
         single { citationRepoMock }
+
+        singleOf(::PaperService) { bind<IPaperService>() }
     }
 
     override fun getModule(): Module = module

@@ -4,6 +4,8 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import org.koin.core.module.Module
+import org.koin.core.module.dsl.bind
+import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 import org.koin.test.inject
 import se.uulm.snowballr.backend.access.ICriterionAccessChecker
@@ -26,7 +28,12 @@ sealed class CriterionServiceTest : BaseServiceTest() {
     val criterionAccessCheckerMock = mockk<ICriterionAccessChecker>()
     val projectAccessCheckerMock = mockk<IProjectAccessChecker>()
 
-    private val allMocks = arrayOf(criterionRepoMock, userRepoMock, criterionAccessCheckerMock, projectAccessCheckerMock)
+    private val allMocks = arrayOf(
+        criterionRepoMock,
+        userRepoMock,
+        criterionAccessCheckerMock,
+        projectAccessCheckerMock,
+    )
 
     val service: ICriterionService by inject()
 
@@ -35,6 +42,8 @@ sealed class CriterionServiceTest : BaseServiceTest() {
         single { userRepoMock }
         single { criterionAccessCheckerMock }
         single { projectAccessCheckerMock }
+
+        singleOf(::CriterionService) { bind<ICriterionService>() }
     }
 
     override fun getModule(): Module = module
