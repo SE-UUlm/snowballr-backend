@@ -1,6 +1,7 @@
 package se.uulm.snowballr.backend.model.dto
 
 import se.uulm.snowballr.backend.model.fetcher.FetcherMetadata
+import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
 import se.uulm.snowballr.backend.table.PaperTable
 import snowballr.paper
 import java.time.OffsetDateTime
@@ -54,3 +55,18 @@ fun List<GrpcPaper>.toGrpcPapers(): GrpcPaper.List = GrpcPaper.List
     .newBuilder()
     .addAllPapers(this)
     .build()
+
+/**
+ * Creates a [FetcherPaper] from this [paper]
+ */
+fun Paper.toFetcherPaper(): FetcherPaper = FetcherPaper(
+    title = title,
+    externalId = externalId,
+    abstract = abstract,
+    year = year,
+    publisher = publisher,
+    publicationType = publicationType,
+    publicationName = publicationName,
+    authors = authors,
+    metadata = fetcherMetadata,
+)

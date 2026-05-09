@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.service
 
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.access.IReviewAccessChecker
+import se.uulm.snowballr.backend.fetcher.IFetcherOrchestrator
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.Review
@@ -12,6 +13,7 @@ import se.uulm.snowballr.backend.model.dto.toGrpcReview
 import se.uulm.snowballr.backend.model.dto.toGrpcReviews
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.alreadyexists.DuplicateReviewException
+import se.uulm.snowballr.backend.model.fetcher.FetcherEnqueueJob
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
@@ -61,6 +63,7 @@ interface IReviewService {
  * @param reviewHasCriterionRepo Interface for persistence and retrieval operations related to review-criteria relation.
  * @param accessChecker Interface for checking access permissions for reviews based on defined rules.
  * @param projectAccessChecker Interface for checking access permissions for projects based on defined rules.
+ * @param fetcherOrchestrator Interface for enqueuing fetcher jobs for fetching referenced papers.
  */
 @Suppress("LongParameterList")
 class ReviewService(
@@ -72,6 +75,7 @@ class ReviewService(
     private val reviewHasCriterionRepo: IReviewHasCriterionTableRepo,
     private val accessChecker: IReviewAccessChecker,
     private val projectAccessChecker: IProjectAccessChecker,
+    private val fetcherOrchestrator: IFetcherOrchestrator,
 ) : IReviewService {
     override suspend fun getReviewById(reviewId: UUID): GrpcReview = withUser(userRepo) { currentUser ->
         val review = repo.getReviewById(reviewId).getOrThrow()
@@ -131,6 +135,10 @@ class ReviewService(
         } else {
             val updatedDecision = determinePaperDecision(reviewsForProjectPaper + review, project.reviewDecisionMatrix)
             projectPaperRepo.updateProjectPaperDecision(projectPaperId, updatedDecision)
+
+            if (updatedDecision === PaperDecision.PAPER_DECISION_ACCEPTED) {
+                fetcherOrchestrator.enqueue(FetcherEnqueueJob(projectPaper, currentUser.id))
+            }
         }
 
         review.toGrpcReview(selectedCriteriaIds.map(UUID::toString))

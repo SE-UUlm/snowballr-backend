@@ -1,6 +1,6 @@
 package se.uulm.snowballr.backend.auth
 
-import se.uulm.snowballr.backend.fetcher.FetcherMap
+import se.uulm.snowballr.backend.model.fetcher.FetcherMap
 import snowballr.ProjectOuterClass
 import snowballr.UserOuterClass
 import java.util.UUID

@@ -32,7 +32,9 @@ import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.env.EnvService
 import se.uulm.snowballr.backend.env.IEnvService
+import se.uulm.snowballr.backend.fetcher.FetcherOrchestrator
 import se.uulm.snowballr.backend.fetcher.IFetcherManager
+import se.uulm.snowballr.backend.fetcher.IFetcherOrchestrator
 import se.uulm.snowballr.backend.fetcher.PythonPluginFetcherManager
 import se.uulm.snowballr.backend.mail.EmailManager
 import se.uulm.snowballr.backend.mail.EmailTemplateManager
@@ -199,6 +201,7 @@ private fun Module.customServicesDeps() {
     singleOf(::CookieManager) { bind<ICookieManager>() }
     singleOf(::EmailManager) { bind<IEmailManager>() }
     singleOf(::AuthenticationManager) { bind<IAuthenticationManager>() }
+    single<IFetcherOrchestrator> { FetcherOrchestrator(get(), get(), get(), get(), get()) }
 }
 
 /**

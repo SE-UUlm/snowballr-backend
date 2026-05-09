@@ -4,8 +4,11 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import se.uulm.snowballr.backend.model.dto.Author
 import se.uulm.snowballr.backend.model.dto.Paper
+import se.uulm.snowballr.backend.model.dto.toGrpcAuthors
+import snowballr.paper
 import java.time.OffsetDateTime
 import java.util.UUID
+import snowballr.PaperOuterClass.Paper as GrpcPaper
 
 /**
  * Represents a paper fetched from an external source.
@@ -58,3 +61,20 @@ fun FetcherPaper.toPaper(): Paper = Paper(
     modifiedAt = null,
     modifiedBy = null,
 )
+
+/**
+ * Creates a [GrpcPaper] request from this [FetcherPaper].
+ */
+fun FetcherPaper.toGrpcPaperRequest(): GrpcPaper {
+    val paper = this
+    return paper {
+        title = paper.title
+        if (paper.externalId != null) externalId = paper.externalId
+        abstrakt = paper.abstract
+        year = paper.year
+        publisher = paper.publisher
+        publicationType = paper.publicationType
+        publicationName = paper.publicationName
+        authors.addAll(paper.authors.toGrpcAuthors())
+    }
+}
