@@ -8,11 +8,10 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.dto.ProjectMemberWithUser
-import se.uulm.snowballr.backend.service.MainServiceTest
 import java.util.UUID
 import kotlin.test.assertEquals
 
-class GetProjectMembersTest : MainServiceTest() {
+class GetProjectMembersTest : ProjectMemberServiceTest() {
     @Test
     fun `When a user requests the project members and has access, then no exception is thrown`() = runTest {
         val user = DataBuilder.createExampleUser()
@@ -24,7 +23,7 @@ class GetProjectMembersTest : MainServiceTest() {
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
         coEvery { projectMemberRepoMock.getProjectMembersWithUsers(project.id) } returns listOf(projectMemberWithUser)
 
-        val projectMembers = mainService.getProjectMembers(project.id)
+        val projectMembers = service.getProjectMembers(project.id)
 
         assertEquals(1, projectMembers.membersCount)
         val actualProjectMember = projectMembers.membersList.first()
@@ -40,6 +39,6 @@ class GetProjectMembersTest : MainServiceTest() {
             mockCurrentUser(user)
             coEvery { projectAccessCheckerMock.isAllowedToReadProject(user, projectId) } throws TestSpecificException()
 
-            assertThrows<TestSpecificException> { mainService.getProjectMembers(projectId) }
+            assertThrows<TestSpecificException> { service.getProjectMembers(projectId) }
         }
 }
