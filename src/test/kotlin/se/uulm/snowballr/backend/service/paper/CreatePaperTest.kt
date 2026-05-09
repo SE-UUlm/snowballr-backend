@@ -8,11 +8,10 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicatePaperException
-import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.PaperOuterClass
 import java.util.UUID
 
-class CreatePaperTest : MainServiceTest() {
+class CreatePaperTest : PaperServiceTest() {
     @Test
     fun `When a paper is created, then no exception is thrown`() = runTest {
         val request = PaperOuterClass.Paper.newBuilder()
@@ -24,7 +23,7 @@ class CreatePaperTest : MainServiceTest() {
         coEvery { paperRepoMock.createPaper(request) } returns DataBuilder.createExamplePaper(id = paperId)
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paperId) } returns emptyList()
 
-        assertDoesNotThrow { mainService.createPaper(request) }
+        assertDoesNotThrow { service.createPaper(request) }
     }
 
     @Test
@@ -35,7 +34,7 @@ class CreatePaperTest : MainServiceTest() {
 
         coEvery { paperRepoMock.doesPaperExistByExternalId(request.externalId) } returns true
 
-        assertThrows<DuplicatePaperException> { mainService.createPaper(request) }
+        assertThrows<DuplicatePaperException> { service.createPaper(request) }
     }
 
     @Test
@@ -49,7 +48,7 @@ class CreatePaperTest : MainServiceTest() {
             coEvery { paperRepoMock.createPaper(request) } returns DataBuilder.createExamplePaper(id = paperId)
             coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paperId) } returns emptyList()
 
-            assertDoesNotThrow { mainService.createPaper(request) }
+            assertDoesNotThrow { service.createPaper(request) }
             coVerify(exactly = 0) { paperRepoMock.doesPaperExistByExternalId(request.externalId) }
         }
 }

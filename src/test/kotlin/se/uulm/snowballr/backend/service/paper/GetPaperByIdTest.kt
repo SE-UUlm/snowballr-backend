@@ -7,17 +7,16 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.service.MainServiceTest
 import java.util.UUID
 
-class GetPaperByIdTest : MainServiceTest() {
+class GetPaperByIdTest : PaperServiceTest() {
     @Test
     fun `When fetching the paper fails, then a TestSpecificException is thrown`() = runTest {
         val paperId = UUID.randomUUID()
 
         coEvery { paperRepoMock.getPaperById(paperId) } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { mainService.getPaperById(paperId) }
+        assertThrows<TestSpecificException> { service.getPaperById(paperId) }
     }
 
     @Test
@@ -30,6 +29,6 @@ class GetPaperByIdTest : MainServiceTest() {
             citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
         } returns listOf(UUID.randomUUID())
 
-        assertDoesNotThrow { mainService.getPaperById(paper.id) }
+        assertDoesNotThrow { service.getPaperById(paper.id) }
     }
 }

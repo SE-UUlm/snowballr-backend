@@ -10,10 +10,9 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.PaperNotFoundException
-import se.uulm.snowballr.backend.service.MainServiceTest
 import java.util.UUID
 
-class GetForwardReferencedPapersTest : MainServiceTest() {
+class GetForwardReferencedPapersTest : PaperServiceTest() {
     @Test
     fun `When the paper doesn't exist, then a PaperNotFoundException is thrown`() = runTest {
         val paperId = UUID.randomUUID()
@@ -21,7 +20,7 @@ class GetForwardReferencedPapersTest : MainServiceTest() {
         coEvery { paperRepoMock.ensurePaperExists(paperId) } throws PaperNotFoundException(paperId)
 
         assertThrows<PaperNotFoundException> {
-            mainService.getForwardReferencedPapers(paperId)
+            service.getForwardReferencedPapers(paperId)
         }
     }
 
@@ -37,7 +36,7 @@ class GetForwardReferencedPapersTest : MainServiceTest() {
         coEvery { paperRepoMock.getPaperById(forwardReferenceId) } throws PaperNotFoundException(paper.id)
 
         assertThrows<NotFoundException> {
-            mainService.getForwardReferencedPapers(paper.id)
+            service.getForwardReferencedPapers(paper.id)
         }
     }
 
@@ -58,6 +57,6 @@ class GetForwardReferencedPapersTest : MainServiceTest() {
                 citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(forwardReferenceId)
             } returns listOf(UUID.randomUUID())
 
-            assertDoesNotThrow { mainService.getForwardReferencedPapers(paper.id) }
+            assertDoesNotThrow { service.getForwardReferencedPapers(paper.id) }
         }
 }
