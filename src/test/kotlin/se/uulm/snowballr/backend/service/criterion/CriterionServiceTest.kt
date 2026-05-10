@@ -16,7 +16,7 @@ import se.uulm.snowballr.backend.service.withUser
 /**
  * Base test class for the [CriterionService].
  */
-sealed class CriterionServiceTest : BaseServiceTest() {
+sealed class CriterionServiceTest : BaseServiceTest {
     val criterionRepoMock = mockk<ICriterionTableRepo>()
     val userRepoMock = mockk<IUserTableRepo>()
     val criterionAccessCheckerMock = mockk<ICriterionAccessChecker>()

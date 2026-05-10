@@ -14,17 +14,17 @@ import se.uulm.snowballr.backend.auth.GrpcContext
  * This provides the setup and teardown logic for the service-specific dependencies.
  */
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
-abstract class BaseServiceTest {
+interface BaseServiceTest {
     @BeforeEach
-    open fun setUpTest() {
+    fun setUpTest() {
         mockkObject(GrpcContext)
     }
 
     @AfterEach
-    open fun tearDownTest() {
+    fun tearDownTest() {
         checkUnnecessaryStub(*getAllMocks())
         clearAllMocks()
     }
 
-    abstract fun getAllMocks(): Array<Any>
+    fun getAllMocks(): Array<Any>
 }

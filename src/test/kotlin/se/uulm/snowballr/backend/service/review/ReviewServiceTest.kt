@@ -21,7 +21,7 @@ import se.uulm.snowballr.backend.service.withUser
 /**
  * Base test class for the [ReviewService].
  */
-sealed class ReviewServiceTest : BaseServiceTest() {
+sealed class ReviewServiceTest : BaseServiceTest {
     val reviewRepoMock = mockk<IReviewTableRepo>()
     val userRepoMock = mockk<IUserTableRepo>()
     val projectPaperRepoMock = mockk<IProjectPaperTableRepo>()

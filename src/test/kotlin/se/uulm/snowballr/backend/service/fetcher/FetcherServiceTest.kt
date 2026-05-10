@@ -18,7 +18,7 @@ import se.uulm.snowballr.backend.service.withUser
 /**
  * Base test class for the [FetcherService].
  */
-sealed class FetcherServiceTest : BaseServiceTest() {
+sealed class FetcherServiceTest : BaseServiceTest {
     val fetcherManagerMock = mockk<IFetcherManager>()
     val projectRepoMock = mockk<IProjectTableRepo>()
     val userRepoMock = mockk<IUserTableRepo>()
