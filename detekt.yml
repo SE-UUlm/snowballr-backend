@@ -166,9 +166,9 @@ complexity:
 coroutines:
     active: true
     CoroutineLaunchedInTestWithoutRunTest:
-        active: false
+        active: true
     GlobalCoroutineUsage:
-        active: false
+        active: true
     InjectDispatcher:
         active: true
         dispatcherNames:
@@ -180,11 +180,11 @@ coroutines:
     SleepInsteadOfDelay:
         active: true
     SuspendFunInFinallySection:
-        active: false
+        active: true
     SuspendFunSwallowedCancellation:
         active: false
     SuspendFunWithCoroutineScopeReceiver:
-        active: false
+        active: true
         aliases: [ 'SuspendFunctionOnCoroutineScope' ]
     SuspendFunWithFlowReturnType:
         active: true
