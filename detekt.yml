@@ -485,7 +485,7 @@ ktlint:
         indentSize: 4
         maxLineLength: 120
     PropertyName:
-        active: false
+        active: true
     PropertyWrapping:
         active: true
         autoCorrect: true
