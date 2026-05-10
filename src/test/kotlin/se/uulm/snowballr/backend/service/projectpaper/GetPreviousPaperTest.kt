@@ -8,10 +8,9 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.PaperNavigationDirection
-import se.uulm.snowballr.backend.service.MainServiceTest
 import kotlin.test.assertEquals
 
-class GetPreviousPaperTest : MainServiceTest() {
+class GetPreviousPaperTest : ProjectPaperServiceTest() {
     @Test
     fun `When a user requests the previous project paper and has access, then no exception is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
@@ -37,7 +36,7 @@ class GetPreviousPaperTest : MainServiceTest() {
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id) } returns emptyList()
         coEvery { reviewRepoMock.getAllReviewsForProjectPaper(previousProjectPaper.id) } returns emptyList()
 
-        val previousPaper = mainService.getPreviousPaper(projectPaper.id)
+        val previousPaper = service.getPreviousPaper(projectPaper.id)
 
         assertEquals(previousProjectPaper.id.toString(), previousPaper.id)
     }
@@ -54,7 +53,7 @@ class GetPreviousPaperTest : MainServiceTest() {
             projectPaperRepoMock.getProjectPaperById(projectPaper.id)
         } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { mainService.getPreviousPaper(projectPaper.id) }
+        assertThrows<TestSpecificException> { service.getPreviousPaper(projectPaper.id) }
     }
 
     @Test
@@ -73,7 +72,7 @@ class GetPreviousPaperTest : MainServiceTest() {
                 projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id)
             } throws TestSpecificException()
 
-            assertThrows<TestSpecificException> { mainService.getPreviousPaper(projectPaper.id) }
+            assertThrows<TestSpecificException> { service.getPreviousPaper(projectPaper.id) }
         }
 
     @Test
@@ -90,7 +89,7 @@ class GetPreviousPaperTest : MainServiceTest() {
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id) }
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { mainService.getPreviousPaper(projectPaper.id) }
+        assertThrows<TestSpecificException> { service.getPreviousPaper(projectPaper.id) }
     }
 
     @Test
@@ -114,7 +113,7 @@ class GetPreviousPaperTest : MainServiceTest() {
             )
         } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { mainService.getPreviousPaper(projectPaper.id) }
+        assertThrows<TestSpecificException> { service.getPreviousPaper(projectPaper.id) }
     }
 
     @Test
@@ -142,6 +141,6 @@ class GetPreviousPaperTest : MainServiceTest() {
             TestSpecificException(),
         )
 
-        assertThrows<TestSpecificException> { mainService.getPreviousPaper(projectPaper.id) }
+        assertThrows<TestSpecificException> { service.getPreviousPaper(projectPaper.id) }
     }
 }

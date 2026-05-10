@@ -4,7 +4,6 @@
 
 package se.uulm.snowballr.backend.arch
 
-import com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage
 import com.tngtech.archunit.core.domain.JavaClasses
 import com.tngtech.archunit.core.importer.ImportOption
 import com.tngtech.archunit.junit.AnalyzeClasses
@@ -138,18 +137,6 @@ private class StructureRules {
             .mayOnlyAccessLayers("Table")
             .whereLayer("Scheduler")
             .mayOnlyAccessLayers("Repository")
-            .check(classes)
-    }
-
-    @ArchTest
-    fun `When the MainService doesn't implement the other service interfaces, then this test should fail`(
-        classes: JavaClasses,
-    ) {
-        classes()
-            .that()
-            .haveSimpleName("MainService")
-            .should()
-            .implement(resideInAPackage("$BASE_PACKAGE.service.."))
             .check(classes)
     }
 

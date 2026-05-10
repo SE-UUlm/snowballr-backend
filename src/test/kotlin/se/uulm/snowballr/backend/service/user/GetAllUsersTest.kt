@@ -8,9 +8,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.service.MainServiceTest
 
-class GetAllUsersTest : MainServiceTest() {
+class GetAllUsersTest : UserServiceTest() {
     @Test
     fun `When a user requests all users and has access, then all users are returned`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
@@ -21,7 +20,7 @@ class GetAllUsersTest : MainServiceTest() {
         coJustRun { userAccessCheckerMock.isAllowedToReadAllUsers(currentUser) }
         coEvery { userRepoMock.getAllUsers() } returns users
 
-        val allUsers = mainService.getAllUsers()
+        val allUsers = service.getAllUsers()
 
         assertEquals(2, allUsers.usersCount)
         assertEquals(currentUser.id.toString(), allUsers.usersList[0].id)
@@ -35,6 +34,6 @@ class GetAllUsersTest : MainServiceTest() {
         mockCurrentUser(currentUser)
         coEvery { userAccessCheckerMock.isAllowedToReadAllUsers(currentUser) } throws TestSpecificException()
 
-        assertThrows<TestSpecificException> { mainService.getAllUsers() }
+        assertThrows<TestSpecificException> { service.getAllUsers() }
     }
 }

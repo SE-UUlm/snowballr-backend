@@ -108,17 +108,20 @@ for an example.
 
 ### Service
 
-Similar to the repository tests, the service tests use the base class
-[MainServiceTest](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/test/kotlin/se/uulm/snowballr/backend/service/MainServiceTest.kt).
-In there, the mocks for all repositories are declared. If the mock of the repo you are working on is not already added,
-add it below the existing mocks with the pattern `[Repository Name]Mock = mockk<I[Repository Name]>()`.
-Furthermore, pass it to the `MainService` constructor because we use the `mainService` object to call the methods we
-want to test. We create a test class for each service method separately as they are expected to contain a lot of test
-cases. All test classes of a service are grouped in a package named after the associated entity. A service test class
-has the following test structure:
+Service tests use a two-level base class hierarchy. The abstract class
+[BaseServiceTest](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/test/kotlin/se/uulm/snowballr/backend/service/BaseServiceTest.kt)
+handles the Koin lifecycle (start/stop) and mock verification. It requires subclasses to implement `getModule()` and
+`getAllMocks()`. On top of it, each service has its own `sealed class` base, e.g.
+[UserServiceTest](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/test/kotlin/se/uulm/snowballr/backend/service/user/UserServiceTest.kt),
+which declares only the mocks relevant to that service, wires them into a Koin module, and exposes the service under
+test as `service` via Koin injection.
+
+We create a test class for each service method separately as they are expected to contain a lot of test cases. All test
+classes of a service are grouped in a package named after the associated entity and extend the entity-specific base
+class. A service test class has the following structure:
 
 ```kotlin
-class CreateExampleTest : MainServiceTest() {
+class CreateExampleTest : ExampleServiceTest() {
     @Test
     fun `When an example is correctly created, then no exception is thrown`() =
         runTest {
@@ -126,10 +129,10 @@ class CreateExampleTest : MainServiceTest() {
             val example = ExampleOuterClass.Example.getDefaultInstance()
 
             // Mock the behavior of the repositories
-            coEvery { exampleRepoMock.createExample(any()) } returns example
+            coEvery { exampleRepoMock.createExample(any()) } returns Result.success(example)
 
             // Assert service behavior
-            assertDoesNotThrow { mainService.createExample(request) }
+            assertDoesNotThrow { service.createExample(request) }
         }
 
     @Test
@@ -138,18 +141,25 @@ class CreateExampleTest : MainServiceTest() {
             val request = ExampleOuterClass.Example.Create.getDefaultInstance()
 
             // Mock the behavior of the repositories
-            coEvery { exampleRepoMock.createExample(any()) } throws TestSpecificException()
+            coEvery { exampleRepoMock.createExample(any()) } returns Result.failure(TestSpecificException())
 
             // Assert service behavior
-            assertThrows<TestSpecificException> { mainService.createExample(request) }
+            assertThrows<TestSpecificException> { service.createExample(request) }
         }
 }
 ```
 
+If there is no entity-specific base class yet for the service you are working on, create one as a `sealed class`
+extending `BaseServiceTest`. Declare only the mocks needed by that service, implement `getModule()` to register them in
+a Koin module together with the service implementation, and implement `getAllMocks()` to return all declared mock
+instances. See
+[UserServiceTest](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/test/kotlin/se/uulm/snowballr/backend/service/user/UserServiceTest.kt)
+for an example.
+
 It is important that we mock each external dependency, such as the call to the repository. In the example above, we mock
-that the repository returns a specific object or throws an exception. We then test the behavior of the service method
-according to the behavior of our dependencies. For more complex mocks such as how often a method is called, refer to the
-rich documentation of the used mocking library [MockK](https://mockk.io/).
+that the repository returns a specific object or wraps an exception in a failure result. We then test the behavior of
+the service method according to the behavior of our dependencies. For more complex mocks such as how often a method is
+called, refer to the rich documentation of the used mocking library [MockK](https://mockk.io/).
 
 ### Input Validation
 
@@ -201,8 +211,8 @@ for an example.
 Integration tests are used to test the behavior of services and repositories working together against a real database.
 The only components that are mocked are the environment variables and the email service, i.e., all external
 dependencies. As with the repository tests, an isolated PostgreSQL database is used.
-The SUT for all integration tests is the `mainService` object. Through it, all layers can be accessed, as if they were
-called from the server layer.
+Each integration test class calls the entity-specific service directly (e.g. `projectService`, `userService`), all of
+which are injected from the same real Koin module that is used in production.
 
 Integration tests are organized in subdirectories under
 [`integration`](https://github.com/SE-UUlm/snowballr-backend/tree/develop/src/test/kotlin/se/uulm/snowballr/backend/integration):

@@ -207,23 +207,17 @@ A service always has an interface, which defines its methods and an implementati
 exists a 1-to-1 mapping of incoming requests to service methods, the service handles all requests of its associated
 entity.
 
-The [MainService](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/service/MainService.kt)
-combines all services in one class, which can then be used in the gRPC server to invoke the according method for each
-request. If there isn't already a service for the entity associated with your use case, add another one with the pattern
-`[Entity Name]Service`. Furthermore, let `IMainService` inherit its interface and inject the implementation:
+If there isn't already a service for the entity associated with your use case, add another one with the pattern
+`[Entity Name]Service`. To wire it up, make two additions:
 
-```kotlin
-interface IMainService :
-    IExampleService
+1. Register the implementation in `serviceLayerDeps()` in
+   [Module.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/Module.kt)
+   and inject the service interface directly into `SnowballRService` in
+   [SnowballRServer.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/grpc/SnowballRServer.kt).
 
-class MainService(
-    private val exampleService: IExampleService
-) : IMainService,
-    IExampleService by exampleService
-```
+2. Create an entity-specific `ExampleServiceTest` base class in the service test package, as described on the
+   [Testing](https://github.com/SE-UUlm/snowballr-backend/wiki/Testing#service) page.
 
-For the dependency injection to work, add all repositories, access checkers, and services to the `snowballRModule` in
-[Module.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/Module.kt).
 Build the service method implementation in a way that preconditions are checked first. We want to fail as fast as
 possible, and if the user doesn't have access to the operation or the associated entity does not exist, we don't
 want to have already persisted data. Only if every precondition is met, make changes to the persisted data and finish

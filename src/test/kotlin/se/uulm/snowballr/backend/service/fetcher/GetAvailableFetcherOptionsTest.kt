@@ -3,18 +3,17 @@ package se.uulm.snowballr.backend.service.fetcher
 import io.mockk.coEvery
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
-import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.Fetcher.GetAvailableFetcherOptionsRequest
 import kotlin.test.assertEquals
 
-class GetAvailableFetcherOptionsTest : MainServiceTest() {
+class GetAvailableFetcherOptionsTest : FetcherServiceTest() {
     @Test
     fun `When the fetcherManager returns fetcher options, then the FetcherService returns them properly`() = runTest {
         val expectedOptions = mapOf("foo" to "bar")
 
         coEvery { fetcherManagerMock.getAvailableOptions("foobar") } returns expectedOptions
 
-        val actualOptions = mainService.getAvailableFetcherOptions(
+        val actualOptions = service.getAvailableFetcherOptions(
             GetAvailableFetcherOptionsRequest.newBuilder().setFetcherName("foobar").build(),
         ).optionsMap
 

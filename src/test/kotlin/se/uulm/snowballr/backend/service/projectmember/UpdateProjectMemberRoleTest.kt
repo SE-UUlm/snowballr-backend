@@ -11,12 +11,11 @@ import se.uulm.snowballr.backend.DataBuilder.createExampleUser
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectMemberNotFoundException
-import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.ProjectOuterClass.MemberRole
 import java.util.UUID
 import snowballr.ProjectOuterClass.Project.Member as GrpcProjectMember
 
-class UpdateProjectMemberRoleTest : MainServiceTest() {
+class UpdateProjectMemberRoleTest : ProjectMemberServiceTest() {
     private fun getRequest(userId: UUID, projectId: UUID, newRole: MemberRole = MemberRole.MEMBER_ROLE_ADMIN) =
         GrpcProjectMember.Update
             .newBuilder()
@@ -38,7 +37,7 @@ class UpdateProjectMemberRoleTest : MainServiceTest() {
             projectMemberAccessCheckerMock.isAllowedToUpdateMemberRole(currentUser, project.id)
         } throws TestSpecificException()
 
-        assertThrows<TestSpecificException> { mainService.updateProjectMemberRole(request) }
+        assertThrows<TestSpecificException> { service.updateProjectMemberRole(request) }
     }
 
     @Test
@@ -53,7 +52,7 @@ class UpdateProjectMemberRoleTest : MainServiceTest() {
         coJustRun { projectMemberAccessCheckerMock.isAllowedToUpdateMemberRole(currentUser, project.id) }
         coEvery { userRepoMock.getUserById(user.id) } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { mainService.updateProjectMemberRole(request) }
+        assertThrows<TestSpecificException> { service.updateProjectMemberRole(request) }
     }
 
     @Test
@@ -71,7 +70,7 @@ class UpdateProjectMemberRoleTest : MainServiceTest() {
             projectMemberRepoMock.getProjectMemberByComposedId(project.id, user.id)
         } returns Result.failure(ProjectMemberNotFoundException(user.id, project.id))
 
-        assertThrows<FailedPreconditionException> { mainService.updateProjectMemberRole(request) }
+        assertThrows<FailedPreconditionException> { service.updateProjectMemberRole(request) }
     }
 
     @Test
@@ -93,7 +92,7 @@ class UpdateProjectMemberRoleTest : MainServiceTest() {
             projectAccessCheckerMock.isNotLastProjectAdmin(user, project.id, any())
         } throws TestSpecificException()
 
-        assertThrows<TestSpecificException> { mainService.updateProjectMemberRole(request) }
+        assertThrows<TestSpecificException> { service.updateProjectMemberRole(request) }
     }
 
     @Test
@@ -115,7 +114,7 @@ class UpdateProjectMemberRoleTest : MainServiceTest() {
             projectMemberRepoMock.updateProjectMemberRole(project.id, user.id, MemberRole.MEMBER_ROLE_ADMIN)
         } returns projectMember
 
-        mainService.updateProjectMemberRole(request)
+        service.updateProjectMemberRole(request)
 
         coVerify(exactly = 0) { projectAccessCheckerMock.isNotLastProjectAdmin(user, project.id, any()) }
     }
@@ -139,7 +138,7 @@ class UpdateProjectMemberRoleTest : MainServiceTest() {
             projectMemberRepoMock.updateProjectMemberRole(project.id, user.id, MemberRole.MEMBER_ROLE_ADMIN)
         } returns projectMember
 
-        mainService.updateProjectMemberRole(request)
+        service.updateProjectMemberRole(request)
 
         coVerify(exactly = 0) { projectAccessCheckerMock.isNotLastProjectAdmin(user, project.id, any()) }
     }

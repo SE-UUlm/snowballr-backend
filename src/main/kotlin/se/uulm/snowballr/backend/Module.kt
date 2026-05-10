@@ -76,7 +76,6 @@ import se.uulm.snowballr.backend.service.ICriterionService
 import se.uulm.snowballr.backend.service.IExportService
 import se.uulm.snowballr.backend.service.IFetcherService
 import se.uulm.snowballr.backend.service.IInvitationService
-import se.uulm.snowballr.backend.service.IMainService
 import se.uulm.snowballr.backend.service.IPaperService
 import se.uulm.snowballr.backend.service.IProjectMemberService
 import se.uulm.snowballr.backend.service.IProjectPaperService
@@ -85,7 +84,6 @@ import se.uulm.snowballr.backend.service.IReadingListService
 import se.uulm.snowballr.backend.service.IReviewService
 import se.uulm.snowballr.backend.service.IUserService
 import se.uulm.snowballr.backend.service.InvitationService
-import se.uulm.snowballr.backend.service.MainService
 import se.uulm.snowballr.backend.service.PaperService
 import se.uulm.snowballr.backend.service.ProjectMemberService
 import se.uulm.snowballr.backend.service.ProjectPaperService
@@ -103,7 +101,7 @@ import se.uulm.snowballr.backend.service.UserService
  * - The database ([IDatabase]), which only requires some env variables provided by the [EnvReader].
  * - The repository layer (e.g. [IProjectTableRepo]), which uses the [IDatabase] implementation for database operations.
  * - Custom services / manager / clients that are used by the core service layer.
- * - The core service layer, which consists of entity-related services (e.g. [IProjectService]) and the [IMainService],
+ * - The core service layer, which consists of entity-related services (e.g. [IProjectService]).
  * which combines all services into one access point.
  *
  * The ordering ensures proper dependency resolution and initialization.
@@ -218,11 +216,8 @@ fun Module.accessCheckerDeps() {
 
 /**
  * Module declaration of the core service layer.
- *
- * Consists of the [MainService] and all its direct service dependencies.
  */
 fun Module.serviceLayerDeps() {
-    // All services that are directly used by the MainService
     singleOf(::ProjectService) { bind<IProjectService>() }
     singleOf(::CriterionService) { bind<ICriterionService>() }
     singleOf(::UserService) { bind<IUserService>() }
@@ -235,7 +230,4 @@ fun Module.serviceLayerDeps() {
     singleOf(::InvitationService) { bind<IInvitationService>() }
     singleOf(::ProjectMemberService) { bind<IProjectMemberService>() }
     singleOf(::ExportService) { bind<IExportService>() }
-
-    // The main service comes last
-    singleOf(::MainService) { bind<IMainService>() }
 }

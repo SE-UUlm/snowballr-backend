@@ -8,10 +8,9 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.service.MainServiceTest
 import java.util.UUID
 
-class SoftDeleteUserTest : MainServiceTest() {
+class SoftDeleteUserTest : UserServiceTest() {
     @Test
     fun `When retrieving user to delete fails, then a TestSpecificException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
@@ -20,7 +19,7 @@ class SoftDeleteUserTest : MainServiceTest() {
         mockCurrentUser(currentUser)
         coEvery { userRepoMock.getUserById(requestedUserId) } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { mainService.softDeleteUser(requestedUserId) }
+        assertThrows<TestSpecificException> { service.softDeleteUser(requestedUserId) }
     }
 
     @Test
@@ -34,7 +33,7 @@ class SoftDeleteUserTest : MainServiceTest() {
             userAccessCheckerMock.isAllowedToDeleteUser(currentUser, userToDelete)
         } throws TestSpecificException()
 
-        assertThrows<TestSpecificException> { mainService.softDeleteUser(userToDelete.id) }
+        assertThrows<TestSpecificException> { service.softDeleteUser(userToDelete.id) }
     }
 
     @Test
@@ -52,7 +51,7 @@ class SoftDeleteUserTest : MainServiceTest() {
                 projectAccessCheckerMock.isNotLastProjectAdmin(userToDelete, project.id, any())
             } throws TestSpecificException()
 
-            assertThrows<TestSpecificException> { mainService.softDeleteUser(userToDelete.id) }
+            assertThrows<TestSpecificException> { service.softDeleteUser(userToDelete.id) }
         }
 
     @Test
@@ -68,6 +67,6 @@ class SoftDeleteUserTest : MainServiceTest() {
         coJustRun { userRepoMock.softDeleteUser(userToDelete.id) }
         coJustRun { projectAccessCheckerMock.isNotLastProjectAdmin(userToDelete, project.id, any()) }
 
-        assertDoesNotThrow { mainService.softDeleteUser(userToDelete.id) }
+        assertDoesNotThrow { service.softDeleteUser(userToDelete.id) }
     }
 }

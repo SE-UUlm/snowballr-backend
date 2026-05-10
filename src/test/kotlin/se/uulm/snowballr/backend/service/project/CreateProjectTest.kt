@@ -10,14 +10,13 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.User
-import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.ProjectOuterClass.MemberRole
 import snowballr.UserOuterClass.UserRole
 import java.util.UUID
 import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
 import snowballr.ProjectOuterClass.Project as GrpcProject
 
-class CreateProjectTest : MainServiceTest() {
+class CreateProjectTest : ProjectServiceTest() {
     private fun getExampleRequest() = GrpcProject.Create.getDefaultInstance()
 
     private fun mockProjectAdminCreation(project: Project, user: User) {
@@ -42,7 +41,7 @@ class CreateProjectTest : MainServiceTest() {
         coEvery { projectRepoMock.createProject(getExampleRequest(), user.id, userSettings) } returns project
         mockProjectAdminCreation(project, user)
 
-        assertDoesNotThrow { mainService.createProject(getExampleRequest()) }
+        assertDoesNotThrow { service.createProject(getExampleRequest()) }
 
         coVerify(exactly = 0) { criterionRepoMock.createCriterion(any(), user.id) }
         coVerify(exactly = 1) { projectMemberRepoMock.addUserToProject(user.id, project.id) }
@@ -75,7 +74,7 @@ class CreateProjectTest : MainServiceTest() {
             coEvery { criterionRepoMock.createCriterion(criterionCreateRequest, user.id) } returns criterion
             mockProjectAdminCreation(project, user)
 
-            assertDoesNotThrow { mainService.createProject(getExampleRequest()) }
+            assertDoesNotThrow { service.createProject(getExampleRequest()) }
             assertEquals(listOf(criterion.id), criteriaIdsSlot.captured)
         }
 }

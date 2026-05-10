@@ -15,12 +15,11 @@ import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.toGrpcProject
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
-import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.ProjectOuterClass.ProjectStatus
 import kotlin.test.assertEquals
 import snowballr.ProjectOuterClass.Project as GrpcProject
 
-class UpdateProjectTest : MainServiceTest() {
+class UpdateProjectTest : ProjectServiceTest() {
     private fun getRequest(project: Project, paths: List<String>? = null) = GrpcProject.Update
         .newBuilder()
         .setProject(project.toGrpcProject())
@@ -39,7 +38,7 @@ class UpdateProjectTest : MainServiceTest() {
             projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE)
         } throws TestSpecificException()
 
-        assertThrows<TestSpecificException> { mainService.updateProject(request) }
+        assertThrows<TestSpecificException> { service.updateProject(request) }
     }
 
     @Test
@@ -53,7 +52,7 @@ class UpdateProjectTest : MainServiceTest() {
         coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { mainService.updateProject(request) }
+        assertThrows<TestSpecificException> { service.updateProject(request) }
     }
 
     @Test
@@ -69,7 +68,7 @@ class UpdateProjectTest : MainServiceTest() {
         coEvery { projectRepoMock.isProjectLocked(project.id) } returns false
         coEvery { projectRepoMock.updateProject(request) } returns project
 
-        assertDoesNotThrow { mainService.updateProject(request) }
+        assertDoesNotThrow { service.updateProject(request) }
     }
 
     @Test
@@ -85,7 +84,7 @@ class UpdateProjectTest : MainServiceTest() {
             coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
-            assertThrows<IllegalArgumentException> { mainService.updateProject(request) }
+            assertThrows<IllegalArgumentException> { service.updateProject(request) }
         }
 
     @Test
@@ -100,7 +99,7 @@ class UpdateProjectTest : MainServiceTest() {
         coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
-        assertThrows<FailedPreconditionException> { mainService.updateProject(request) }
+        assertThrows<FailedPreconditionException> { service.updateProject(request) }
     }
 
     @Test
@@ -116,7 +115,7 @@ class UpdateProjectTest : MainServiceTest() {
             coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
-            assertThrows<FailedPreconditionException> { mainService.updateProject(request) }
+            assertThrows<FailedPreconditionException> { service.updateProject(request) }
         }
 
     @ParameterizedTest
@@ -138,7 +137,7 @@ class UpdateProjectTest : MainServiceTest() {
             (updatedProject.status == ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
         coEvery { projectRepoMock.updateProject(request) } returns updatedProject
 
-        val resultProject = mainService.updateProject(request)
+        val resultProject = service.updateProject(request)
 
         assertEquals(status, resultProject.status)
     }
@@ -156,7 +155,7 @@ class UpdateProjectTest : MainServiceTest() {
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectRepoMock.updateProject(request) } returns updatedProject
 
-        val resultProject = mainService.updateProject(request)
+        val resultProject = service.updateProject(request)
 
         assertEquals(ProjectStatus.PROJECT_STATUS_ARCHIVED, resultProject.status)
     }
@@ -174,7 +173,7 @@ class UpdateProjectTest : MainServiceTest() {
             coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
-            assertThrows<FailedPreconditionException> { mainService.updateProject(request) }
+            assertThrows<FailedPreconditionException> { service.updateProject(request) }
         }
 
     @Test
@@ -190,7 +189,7 @@ class UpdateProjectTest : MainServiceTest() {
             coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
-            assertThrows<FailedPreconditionException> { mainService.updateProject(request) }
+            assertThrows<FailedPreconditionException> { service.updateProject(request) }
         }
 
     @Test
@@ -207,7 +206,7 @@ class UpdateProjectTest : MainServiceTest() {
         coEvery { projectRepoMock.isProjectLocked(project.id) } returns true
         coEvery { projectRepoMock.updateProject(request) } returns updatedProject
 
-        assertDoesNotThrow { mainService.updateProject(request) }
+        assertDoesNotThrow { service.updateProject(request) }
     }
 
     @Test
@@ -224,7 +223,7 @@ class UpdateProjectTest : MainServiceTest() {
         coEvery { projectRepoMock.isProjectLocked(project.id) } returns false
         coEvery { projectRepoMock.updateProject(request) } returns updatedProject
 
-        assertDoesNotThrow { mainService.updateProject(request) }
+        assertDoesNotThrow { service.updateProject(request) }
     }
 
     @ParameterizedTest
@@ -243,6 +242,6 @@ class UpdateProjectTest : MainServiceTest() {
         coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
-        assertThrows<IllegalStateException> { mainService.updateProject(request) }
+        assertThrows<IllegalStateException> { service.updateProject(request) }
     }
 }

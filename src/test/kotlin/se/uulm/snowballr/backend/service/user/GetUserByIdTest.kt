@@ -10,17 +10,16 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.UserIdentifierType
-import se.uulm.snowballr.backend.service.MainServiceTest
 import java.util.UUID
 
-class GetUserByIdTest : MainServiceTest() {
+class GetUserByIdTest : UserServiceTest() {
     @Test
     fun `When the current user requests themselves, then user is not requested again`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
 
         mockCurrentUser(currentUser)
 
-        val requestedUser = mainService.getUserById(currentUser.id)
+        val requestedUser = service.getUserById(currentUser.id)
 
         assertEquals(currentUser.id.toString(), requestedUser.id)
 
@@ -37,7 +36,7 @@ class GetUserByIdTest : MainServiceTest() {
         mockCurrentUser(currentUser)
         coEvery { userRepoMock.getUserById(requestedUserId) } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { mainService.getUserById(requestedUserId) }
+        assertThrows<TestSpecificException> { service.getUserById(requestedUserId) }
     }
 
     @Test
@@ -51,7 +50,7 @@ class GetUserByIdTest : MainServiceTest() {
             userAccessCheckerMock.isAllowedToReadUser(currentUser, requestedUser, UserIdentifierType.ID)
         } throws TestSpecificException()
 
-        assertThrows<TestSpecificException> { mainService.getUserById(requestedUser.id) }
+        assertThrows<TestSpecificException> { service.getUserById(requestedUser.id) }
     }
 
     @Test
@@ -63,7 +62,7 @@ class GetUserByIdTest : MainServiceTest() {
         coEvery { userRepoMock.getUserById(requestedUser.id) } returns Result.success(requestedUser)
         coJustRun { userAccessCheckerMock.isAllowedToReadUser(currentUser, requestedUser, UserIdentifierType.ID) }
 
-        val result = mainService.getUserById(requestedUser.id)
+        val result = service.getUserById(requestedUser.id)
 
         kotlin.test.assertEquals(requestedUser.id.toString(), result.id)
     }

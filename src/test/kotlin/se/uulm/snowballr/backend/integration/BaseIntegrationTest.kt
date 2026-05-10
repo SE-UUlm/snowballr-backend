@@ -10,7 +10,7 @@ import kotlin.test.assertEquals
 class BaseIntegrationTest : IntegrationTest() {
     @Test
     fun `When actAsUser is called, then the context is set to the specified user`() = runTest {
-        val currentUser = mainService.getCurrentUser()
+        val currentUser = userService.getCurrentUser()
 
         val otherUserData = DataBuilder.createExampleUser(
             firstName = "John",
@@ -21,11 +21,11 @@ class BaseIntegrationTest : IntegrationTest() {
         val otherUserId = parseUUID(otherUser.id, EntityType.USER)
 
         actAsUser(otherUserId) {
-            val otherCurrentUser = mainService.getCurrentUser()
+            val otherCurrentUser = userService.getCurrentUser()
             assertEquals(otherUser.id, otherCurrentUser.id)
         }
 
-        val currentUserId = mainService.getCurrentUser().id
+        val currentUserId = userService.getCurrentUser().id
         assertEquals(currentUser.id, currentUserId)
     }
 }

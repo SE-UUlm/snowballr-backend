@@ -11,13 +11,12 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.dto.ProjectPaperWithPaper
-import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.ProjectOuterClass.PaperDecision
 import java.util.UUID
 import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class GetPapersToReviewForProjectTest : MainServiceTest() {
+class GetPapersToReviewForProjectTest : ProjectPaperServiceTest() {
     @Test
     fun `When the project papers to review are requested, then only the undecided papers are returned`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
@@ -57,7 +56,7 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
         } returns listOf(UUID.randomUUID())
 
         var projectPapers: GrpcProjectPaper.List
-        assertDoesNotThrow { projectPapers = mainService.getPapersToReviewForProject(project.id) }
+        assertDoesNotThrow { projectPapers = service.getPapersToReviewForProject(project.id) }
         assertThat(projectPapers.projectPapersList).hasSize(1)
         assertThat(projectPapers.projectPapersList).anyMatch { it.id == projectPaperNotAlreadyDecided.id.toString() }
         assertThat(projectPapers.projectPapersList).noneMatch { it.id == projectPaperAlreadyDecided.id.toString() }
@@ -107,7 +106,7 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
             } returns listOf(UUID.randomUUID())
 
             var projectPapers: GrpcProjectPaper.List
-            assertDoesNotThrow { projectPapers = mainService.getPapersToReviewForProject(project.id) }
+            assertDoesNotThrow { projectPapers = service.getPapersToReviewForProject(project.id) }
             assertThat(projectPapers.projectPapersList).hasSize(1)
             assertThat(projectPapers.projectPapersList)
                 .anyMatch { it.id == projectPaperWithoutCurrentUserReview.id.toString() }
@@ -134,7 +133,7 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id) } returns emptyList()
         coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper.id) } returns emptyList()
 
-        val result = mainService.getPapersToReviewForProject(project.id)
+        val result = service.getPapersToReviewForProject(project.id)
         assertThat(result.projectPapersList).hasSize(1)
         assertThat(result.projectPapersList.first().id).isEqualTo(projectPaper.id.toString())
     }
@@ -150,6 +149,6 @@ class GetPapersToReviewForProjectTest : MainServiceTest() {
                 projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id)
             } throws TestSpecificException()
 
-            assertThrows<TestSpecificException> { mainService.getPapersToReviewForProject(project.id) }
+            assertThrows<TestSpecificException> { service.getPapersToReviewForProject(project.id) }
         }
 }

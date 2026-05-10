@@ -8,9 +8,8 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.service.MainServiceTest
 
-class GetCriterionByIdTest : MainServiceTest() {
+class GetCriterionByIdTest : CriterionServiceTest() {
     @Test
     fun `When retrieving the criterion fails, then a TestSpecificException is thrown`() = runTest {
         val user = DataBuilder.createExampleUser()
@@ -19,7 +18,7 @@ class GetCriterionByIdTest : MainServiceTest() {
         mockCurrentUser(user)
         coEvery { criterionRepoMock.getCriterionById(criterion.id) } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { mainService.getCriterionById(criterion.id) }
+        assertThrows<TestSpecificException> { service.getCriterionById(criterion.id) }
     }
 
     @Test
@@ -31,7 +30,7 @@ class GetCriterionByIdTest : MainServiceTest() {
         coEvery { criterionRepoMock.getCriterionById(criterion.id) } returns Result.success(criterion)
         coEvery { criterionAccessCheckerMock.isAllowedToReadCriterion(user, criterion) } throws TestSpecificException()
 
-        assertThrows<TestSpecificException> { mainService.getCriterionById(criterion.id) }
+        assertThrows<TestSpecificException> { service.getCriterionById(criterion.id) }
     }
 
     @Test
@@ -43,6 +42,6 @@ class GetCriterionByIdTest : MainServiceTest() {
         coEvery { criterionRepoMock.getCriterionById(criterion.id) } returns Result.success(criterion)
         coJustRun { criterionAccessCheckerMock.isAllowedToReadCriterion(user, criterion) }
 
-        assertDoesNotThrow { mainService.getCriterionById(criterion.id) }
+        assertDoesNotThrow { service.getCriterionById(criterion.id) }
     }
 }

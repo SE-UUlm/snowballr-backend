@@ -15,8 +15,8 @@ import kotlin.test.assertTrue
 
 class CriterionIntegrationTest : IntegrationTest() {
     private suspend fun createProjectAndCriterion(criterionName: String = "Test Criterion"): Pair<Project, Criterion> {
-        val project = mainService.createProject(Project.Create.newBuilder().setName("Test Project").build())
-        val criterion = mainService.createCriterion(
+        val project = projectService.createProject(Project.Create.newBuilder().setName("Test Project").build())
+        val criterion = criterionService.createCriterion(
             Criterion.Create.newBuilder()
                 .setName(criterionName)
                 .setTag("TC")
@@ -35,7 +35,7 @@ class CriterionIntegrationTest : IntegrationTest() {
             val (project, criterion) = createProjectAndCriterion("New Criterion")
             val projectId = parseUUID(project.id, EntityType.PROJECT)
 
-            val criteria = mainService.getAllCriteriaForProject(projectId)
+            val criteria = criterionService.getAllCriteriaForProject(projectId)
 
             assertTrue(criteria.criteriaList.any { it.id == criterion.id })
         }
@@ -45,7 +45,7 @@ class CriterionIntegrationTest : IntegrationTest() {
             val (_, criterion) = createProjectAndCriterion("Fetched Criterion")
             val criterionId = parseUUID(criterion.id, EntityType.CRITERION)
 
-            val fetched = mainService.getCriterionById(criterionId)
+            val fetched = criterionService.getCriterionById(criterionId)
 
             assertEquals(criterion.id, fetched.id)
             assertEquals("Fetched Criterion", fetched.name)
@@ -54,10 +54,10 @@ class CriterionIntegrationTest : IntegrationTest() {
         @Test
         fun `When multiple criteria are created for a project, then all appear in the criteria list`() = runTest {
             val project =
-                mainService.createProject(Project.Create.newBuilder().setName("Multi Criteria Project").build())
+                projectService.createProject(Project.Create.newBuilder().setName("Multi Criteria Project").build())
             val projectId = parseUUID(project.id, EntityType.PROJECT)
 
-            mainService.createCriterion(
+            criterionService.createCriterion(
                 Criterion.Create.newBuilder()
                     .setName("Criterion One")
                     .setTag("C1")
@@ -66,7 +66,7 @@ class CriterionIntegrationTest : IntegrationTest() {
                     .setProjectId(project.id)
                     .build(),
             )
-            mainService.createCriterion(
+            criterionService.createCriterion(
                 Criterion.Create.newBuilder()
                     .setName("Criterion Two")
                     .setTag("C2")
@@ -76,7 +76,7 @@ class CriterionIntegrationTest : IntegrationTest() {
                     .build(),
             )
 
-            val criteria = mainService.getAllCriteriaForProject(projectId)
+            val criteria = criterionService.getAllCriteriaForProject(projectId)
             val names = criteria.criteriaList.map { it.name }
 
             assertTrue(names.contains("Criterion One"))
@@ -97,11 +97,11 @@ class CriterionIntegrationTest : IntegrationTest() {
                 .setMask(FieldMaskUtil.fromStringList(listOf("criterion.name")))
                 .build()
 
-            val result = mainService.updateCriterion(request)
+            val result = criterionService.updateCriterion(request)
 
             assertEquals("New Name", result.name)
 
-            val fetched = mainService.getCriterionById(criterionId)
+            val fetched = criterionService.getCriterionById(criterionId)
             assertEquals("New Name", fetched.name)
         }
 
@@ -118,9 +118,9 @@ class CriterionIntegrationTest : IntegrationTest() {
                 .setMask(FieldMaskUtil.fromStringList(listOf("criterion.category")))
                 .build()
 
-            mainService.updateCriterion(request)
+            criterionService.updateCriterion(request)
 
-            val fetched = mainService.getCriterionById(criterionId)
+            val fetched = criterionService.getCriterionById(criterionId)
             assertEquals(CriterionCategory.CRITERION_CATEGORY_HARD_EXCLUSION, fetched.category)
         }
     }

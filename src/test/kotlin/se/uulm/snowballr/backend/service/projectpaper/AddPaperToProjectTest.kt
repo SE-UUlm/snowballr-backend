@@ -11,13 +11,12 @@ import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateProjectPaperException
 import se.uulm.snowballr.backend.model.exception.invalidargument.StageOutOfRangeException
-import se.uulm.snowballr.backend.service.MainServiceTest
 import java.util.UUID
 import kotlin.test.assertEquals
 import snowballr.ProjectOuterClass.Project as GrpcProject
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class AddPaperToProjectTest : MainServiceTest() {
+class AddPaperToProjectTest : ProjectPaperServiceTest() {
     private fun getRequest(projectId: UUID, paperId: UUID, stage: Long = 0) = GrpcProject.Paper.Add.newBuilder()
         .setProjectId(projectId.toString())
         .setPaperId(paperId.toString())
@@ -50,7 +49,7 @@ class AddPaperToProjectTest : MainServiceTest() {
         coEvery { reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(reviews[0].id) } returns criteriaIds0
         coEvery { reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(reviews[1].id) } returns criteriaIds1
 
-        val addedProjectPaper = mainService.addPaperToProject(request)
+        val addedProjectPaper = service.addPaperToProject(request)
 
         assertEquals(2, addedProjectPaper.reviewsCount)
         val review0 = addedProjectPaper.getReviews(0)
@@ -83,7 +82,7 @@ class AddPaperToProjectTest : MainServiceTest() {
         } throws TestSpecificException()
         coEvery { projectRepoMock.getProjectById(project.id) } returns projectResult
 
-        assertThrows<TestSpecificException> { mainService.addPaperToProject(request) }
+        assertThrows<TestSpecificException> { service.addPaperToProject(request) }
     }
 
     @Test
@@ -99,7 +98,7 @@ class AddPaperToProjectTest : MainServiceTest() {
         coJustRun { projectPaperAccessCheckerMock.isAllowedToAddPaperToProject(user, project.id, projectResult) }
         coEvery { projectRepoMock.getProjectById(project.id) } returns projectResult
 
-        assertThrows<TestSpecificException> { mainService.addPaperToProject(request) }
+        assertThrows<TestSpecificException> { service.addPaperToProject(request) }
     }
 
     @Test
@@ -116,7 +115,7 @@ class AddPaperToProjectTest : MainServiceTest() {
         coEvery { projectRepoMock.getProjectById(project.id) } returns projectResult
         coEvery { paperRepoMock.getPaperById(paper.id) } throws TestSpecificException()
 
-        assertThrows<TestSpecificException> { mainService.addPaperToProject(request) }
+        assertThrows<TestSpecificException> { service.addPaperToProject(request) }
     }
 
     @Test
@@ -134,7 +133,7 @@ class AddPaperToProjectTest : MainServiceTest() {
         coEvery { paperRepoMock.getPaperById(paper.id) } returns Result.success(paper)
         coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, paper.id) } returns true
 
-        assertThrows<DuplicateProjectPaperException> { mainService.addPaperToProject(request) }
+        assertThrows<DuplicateProjectPaperException> { service.addPaperToProject(request) }
     }
 
     @Test
@@ -153,7 +152,7 @@ class AddPaperToProjectTest : MainServiceTest() {
             coEvery { paperRepoMock.getPaperById(paper.id) } returns Result.success(paper)
             coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, paper.id) } returns false
 
-            assertThrows<StageOutOfRangeException> { mainService.addPaperToProject(request) }
+            assertThrows<StageOutOfRangeException> { service.addPaperToProject(request) }
         }
 
     @Test
@@ -171,6 +170,6 @@ class AddPaperToProjectTest : MainServiceTest() {
         coEvery { paperRepoMock.getPaperById(paper.id) } returns Result.success(paper)
         coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, paper.id) } returns false
 
-        assertThrows<StageOutOfRangeException> { mainService.addPaperToProject(request) }
+        assertThrows<StageOutOfRangeException> { service.addPaperToProject(request) }
     }
 }

@@ -20,7 +20,7 @@ import snowballr.UserOuterClass.User as GrpcUser
 
 class AccessControlIntegrationTest : IntegrationTest() {
     private suspend fun setupProjectWithMember(): Pair<Project, GrpcUser> {
-        val project = mainService.createProject(Project.Create.newBuilder().setName("Test Project").build())
+        val project = projectService.createProject(Project.Create.newBuilder().setName("Test Project").build())
         val member = addUser(DataBuilder.createExampleUser(email = "member@example.com"))
         inviteUserToProject(project, member, acceptInvitation = true)
         return project to member
@@ -30,12 +30,12 @@ class AccessControlIntegrationTest : IntegrationTest() {
     inner class ProjectAccess {
         @Test
         fun `When a non-member tries to read a project, then access is denied`() = runTest {
-            val project = mainService.createProject(Project.Create.newBuilder().setName("Private Project").build())
+            val project = projectService.createProject(Project.Create.newBuilder().setName("Private Project").build())
             val projectId = parseUUID(project.id, EntityType.PROJECT)
             val outsider = addUser(DataBuilder.createExampleUser(email = "outsider@example.com"))
 
             actAsUser(outsider.id) {
-                assertThrows<UnauthorizedException> { mainService.getProjectById(projectId) }
+                assertThrows<UnauthorizedException> { projectService.getProjectById(projectId) }
             }
         }
 
@@ -49,7 +49,7 @@ class AccessControlIntegrationTest : IntegrationTest() {
                 .build()
 
             actAsUser(member.id) {
-                assertThrows<UnauthorizedException> { mainService.updateProject(request) }
+                assertThrows<UnauthorizedException> { projectService.updateProject(request) }
             }
         }
 
@@ -59,7 +59,7 @@ class AccessControlIntegrationTest : IntegrationTest() {
             val projectId = parseUUID(project.id, EntityType.PROJECT)
 
             actAsUser(member.id) {
-                assertThrows<UnauthorizedException> { mainService.softDeleteProject(projectId) }
+                assertThrows<UnauthorizedException> { projectService.softDeleteProject(projectId) }
             }
         }
     }
@@ -79,7 +79,7 @@ class AccessControlIntegrationTest : IntegrationTest() {
                 .build()
 
             actAsUser(member.id) {
-                assertThrows<UnauthorizedException> { mainService.createCriterion(request) }
+                assertThrows<UnauthorizedException> { criterionService.createCriterion(request) }
             }
         }
 
@@ -87,7 +87,7 @@ class AccessControlIntegrationTest : IntegrationTest() {
         fun `When a non-admin member tries to update a criterion, then access is denied`() = runTest {
             val (project, member) = setupProjectWithMember()
 
-            val criterion = mainService.createCriterion(
+            val criterion = criterionService.createCriterion(
                 Criterion.Create.newBuilder()
                     .setProjectId(project.id)
                     .setName("Admin Criterion")
@@ -103,7 +103,7 @@ class AccessControlIntegrationTest : IntegrationTest() {
                 .build()
 
             actAsUser(member.id) {
-                assertThrows<UnauthorizedException> { mainService.updateCriterion(request) }
+                assertThrows<UnauthorizedException> { criterionService.updateCriterion(request) }
             }
         }
     }
@@ -122,7 +122,7 @@ class AccessControlIntegrationTest : IntegrationTest() {
                 .build()
 
             actAsUser(member.id) {
-                assertThrows<UnauthorizedException> { mainService.addPaperToProject(request) }
+                assertThrows<UnauthorizedException> { projectPaperService.addPaperToProject(request) }
             }
         }
     }
@@ -139,7 +139,7 @@ class AccessControlIntegrationTest : IntegrationTest() {
                 .build()
 
             actAsUser(member.id) {
-                assertThrows<UnauthorizedException> { mainService.inviteUserToProject(request) }
+                assertThrows<UnauthorizedException> { invitationService.inviteUserToProject(request) }
             }
         }
     }
@@ -159,7 +159,7 @@ class AccessControlIntegrationTest : IntegrationTest() {
                 .build()
 
             actAsUser(member.id) {
-                assertThrows<UnauthorizedException> { mainService.updateProjectMemberRole(request) }
+                assertThrows<UnauthorizedException> { projectMemberService.updateProjectMemberRole(request) }
             }
         }
 
@@ -175,7 +175,7 @@ class AccessControlIntegrationTest : IntegrationTest() {
                 .build()
 
             actAsUser(member.id) {
-                assertThrows<UnauthorizedException> { mainService.removeProjectMember(request) }
+                assertThrows<UnauthorizedException> { projectMemberService.removeProjectMember(request) }
             }
         }
     }

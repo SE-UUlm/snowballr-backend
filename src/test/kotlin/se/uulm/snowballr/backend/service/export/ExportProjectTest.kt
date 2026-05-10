@@ -12,13 +12,12 @@ import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.export.ProjectExportManager
 import se.uulm.snowballr.backend.model.export.ExportFormat
 import se.uulm.snowballr.backend.model.export.FileExport
-import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.UserOuterClass.UserRole
 import snowballr.copy
 import snowballr.exportRequest
 import java.util.UUID
 
-class ExportProjectTest : MainServiceTest() {
+class ExportProjectTest : ExportServiceTest() {
     fun getExampleRequest() = exportRequest {
         id = UUID.randomUUID().toString()
         format = ExportFormat.JSON.toString()
@@ -45,7 +44,7 @@ class ExportProjectTest : MainServiceTest() {
             ProjectExportManager.exportProject(any(), any(), any(), any(), any())
         } returns FileExport(ByteArray(0), "test.json")
 
-        mainService.exportProject(request)
+        service.exportProject(request)
     }
 
     @Test
@@ -59,7 +58,7 @@ class ExportProjectTest : MainServiceTest() {
         every { ProjectExportManager.getSupportedFormats() } returns setOf(ExportFormat.JSON)
         coEvery { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) } throws TestSpecificException()
 
-        assertThrows<TestSpecificException> { mainService.exportProject(request) }
+        assertThrows<TestSpecificException> { service.exportProject(request) }
     }
 
     @Test
@@ -74,6 +73,6 @@ class ExportProjectTest : MainServiceTest() {
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { mainService.exportProject(request) }
+        assertThrows<TestSpecificException> { service.exportProject(request) }
     }
 }

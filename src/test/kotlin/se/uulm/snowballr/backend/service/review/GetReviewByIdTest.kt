@@ -8,12 +8,11 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.service.MainServiceTest
 import java.util.UUID
 import kotlin.test.assertEquals
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class GetReviewByIdTest : MainServiceTest() {
+class GetReviewByIdTest : ReviewServiceTest() {
     @Test
     fun `When a user requests a review and has access, then no exception is thrown`() = runTest {
         val user = DataBuilder.createExampleUser()
@@ -27,7 +26,7 @@ class GetReviewByIdTest : MainServiceTest() {
             reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(review.id)
         } returns selectedCriteriaIds
 
-        val reviewResult = mainService.getReviewById(review.id)
+        val reviewResult = service.getReviewById(review.id)
 
         assertEquals(review.id.toString(), reviewResult.id)
         assertEquals(1, reviewResult.selectedCriteriaIdsCount)
@@ -43,7 +42,7 @@ class GetReviewByIdTest : MainServiceTest() {
         mockCurrentUser(user)
         coEvery { reviewRepoMock.getReviewById(review.id) } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { mainService.getReviewById(review.id) }
+        assertThrows<TestSpecificException> { service.getReviewById(review.id) }
     }
 
     @Test
@@ -57,6 +56,6 @@ class GetReviewByIdTest : MainServiceTest() {
             reviewAccessCheckerMock.isAllowedToReadReview(user, review)
         } throws TestSpecificException()
 
-        assertThrows<TestSpecificException> { mainService.getReviewById(review.id) }
+        assertThrows<TestSpecificException> { service.getReviewById(review.id) }
     }
 }

@@ -9,17 +9,16 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.UserIdentifierType
-import se.uulm.snowballr.backend.service.MainServiceTest
 import kotlin.test.assertEquals
 
-class GetUserByEmailTest : MainServiceTest() {
+class GetUserByEmailTest : UserServiceTest() {
     @Test
     fun `When the current user requests themselves, then user is not requested again`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
 
         mockCurrentUser(currentUser)
 
-        val requestedUser = mainService.getUserByEmail(currentUser.email)
+        val requestedUser = service.getUserByEmail(currentUser.email)
 
         assertEquals(currentUser.id.toString(), requestedUser.id)
         coVerify(exactly = 0) { userRepoMock.getUserByEmail(currentUser.email) }
@@ -33,7 +32,7 @@ class GetUserByEmailTest : MainServiceTest() {
         mockCurrentUser(currentUser)
         coEvery { userRepoMock.getUserByEmail(requestedUserEmail) } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { mainService.getUserByEmail(requestedUserEmail) }
+        assertThrows<TestSpecificException> { service.getUserByEmail(requestedUserEmail) }
     }
 
     @Test
@@ -47,7 +46,7 @@ class GetUserByEmailTest : MainServiceTest() {
             userAccessCheckerMock.isAllowedToReadUser(currentUser, requestedUser, UserIdentifierType.EMAIL)
         } throws TestSpecificException()
 
-        assertThrows<TestSpecificException> { mainService.getUserByEmail(requestedUser.email) }
+        assertThrows<TestSpecificException> { service.getUserByEmail(requestedUser.email) }
     }
 
     @Test
@@ -59,7 +58,7 @@ class GetUserByEmailTest : MainServiceTest() {
         coEvery { userRepoMock.getUserByEmail(requestedUser.email) } returns Result.success(requestedUser)
         coJustRun { userAccessCheckerMock.isAllowedToReadUser(currentUser, requestedUser, UserIdentifierType.EMAIL) }
 
-        val result = mainService.getUserByEmail(requestedUser.email)
+        val result = service.getUserByEmail(requestedUser.email)
 
         assertEquals(requestedUser.email, result.email)
     }

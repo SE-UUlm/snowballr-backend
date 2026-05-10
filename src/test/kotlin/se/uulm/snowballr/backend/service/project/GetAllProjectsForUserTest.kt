@@ -8,10 +8,9 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.ProjectOuterClass.ProjectStatus
 
-class GetAllProjectsForUserTest : MainServiceTest() {
+class GetAllProjectsForUserTest : ProjectServiceTest() {
     private val statusFilters = setOf(ProjectStatus.PROJECT_STATUS_ACTIVE, ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
 
     @Test
@@ -22,7 +21,7 @@ class GetAllProjectsForUserTest : MainServiceTest() {
         mockCurrentUser(currentUser)
         coEvery { userRepoMock.getUserById(requestedUser.id) } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { mainService.getAllProjectsForUser(requestedUser.id) }
+        assertThrows<TestSpecificException> { service.getAllProjectsForUser(requestedUser.id) }
     }
 
     @Test
@@ -37,7 +36,7 @@ class GetAllProjectsForUserTest : MainServiceTest() {
                 projectAccessCheckerMock.isAllowedToReadUserProjects(currentUser, requestedUser.id)
             } throws TestSpecificException()
 
-            assertThrows<TestSpecificException> { mainService.getAllProjectsForUser(requestedUser.id) }
+            assertThrows<TestSpecificException> { service.getAllProjectsForUser(requestedUser.id) }
         }
 
     @Test
@@ -50,6 +49,6 @@ class GetAllProjectsForUserTest : MainServiceTest() {
         coJustRun { projectAccessCheckerMock.isAllowedToReadUserProjects(currentUser, requestedUser.id) }
         coEvery { projectRepoMock.getUserProjects(requestedUser.id, statusFilters) } returns emptyList()
 
-        assertDoesNotThrow { mainService.getAllProjectsForUser(requestedUser.id) }
+        assertDoesNotThrow { service.getAllProjectsForUser(requestedUser.id) }
     }
 }

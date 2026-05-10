@@ -11,10 +11,9 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.model.exception.notfound.entity.PaperNotFoundException
-import se.uulm.snowballr.backend.service.MainServiceTest
 import java.util.UUID
 
-class IsPaperOnReadingListTest : MainServiceTest() {
+class IsPaperOnReadingListTest : ReadingListServiceTest() {
     @Test
     fun `When a user checks if a paper is on their reading list, then the request is forwarded correctly`() = runTest {
         val user = DataBuilder.createExampleUser()
@@ -27,10 +26,10 @@ class IsPaperOnReadingListTest : MainServiceTest() {
         coEvery { paperRepoMock.ensurePaperExists(paper1.id) } just Runs
         coEvery { paperRepoMock.ensurePaperExists(paper2.id) } just Runs
 
-        assertTrue(mainService.isPaperOnReadingList(paper1.id))
+        assertTrue(service.isPaperOnReadingList(paper1.id))
         coVerify(exactly = 1) { readingListRepoMock.isPaperOnReadingList(user.id, paper1.id) }
 
-        assertFalse(mainService.isPaperOnReadingList(paper2.id))
+        assertFalse(service.isPaperOnReadingList(paper2.id))
         coVerify(exactly = 1) { readingListRepoMock.isPaperOnReadingList(user.id, paper2.id) }
     }
 
@@ -44,7 +43,7 @@ class IsPaperOnReadingListTest : MainServiceTest() {
             coEvery { paperRepoMock.ensurePaperExists(paperId) } throws PaperNotFoundException(paperId)
 
             assertThrows<PaperNotFoundException> {
-                mainService.isPaperOnReadingList(paperId)
+                service.isPaperOnReadingList(paperId)
             }
         }
 }

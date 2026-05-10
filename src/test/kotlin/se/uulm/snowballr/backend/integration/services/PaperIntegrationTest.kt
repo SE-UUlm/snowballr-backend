@@ -21,7 +21,7 @@ class PaperIntegrationTest : IntegrationTest() {
             val paper = createPaper("My Paper")
             val paperId = parseUUID(paper.id, EntityType.PAPER)
 
-            val fetched = mainService.getPaperById(paperId)
+            val fetched = paperService.getPaperById(paperId)
 
             assertEquals(paper.id, fetched.id)
             assertEquals("My Paper", fetched.title)
@@ -57,11 +57,11 @@ class PaperIntegrationTest : IntegrationTest() {
                 .setMask(FieldMaskUtil.fromStringList(listOf("paper.title")))
                 .build()
 
-            val result = mainService.updatePaper(request)
+            val result = paperService.updatePaper(request)
 
             assertEquals("Updated Title", result.title)
 
-            val fetched = mainService.getPaperById(paperId)
+            val fetched = paperService.getPaperById(paperId)
             assertEquals("Updated Title", fetched.title)
         }
 
@@ -75,9 +75,9 @@ class PaperIntegrationTest : IntegrationTest() {
                 .setMask(FieldMaskUtil.fromStringList(listOf("paper.year")))
                 .build()
 
-            mainService.updatePaper(request)
+            paperService.updatePaper(request)
 
-            val fetched = mainService.getPaperById(paperId)
+            val fetched = paperService.getPaperById(paperId)
             assertEquals(2000, fetched.year)
         }
 
@@ -91,7 +91,7 @@ class PaperIntegrationTest : IntegrationTest() {
                 .setMask(FieldMaskUtil.fromStringList(listOf("paper.external_id")))
                 .build()
 
-            assertThrows<DuplicatePaperException> { mainService.updatePaper(request) }
+            assertThrows<DuplicatePaperException> { paperService.updatePaper(request) }
         }
     }
 }

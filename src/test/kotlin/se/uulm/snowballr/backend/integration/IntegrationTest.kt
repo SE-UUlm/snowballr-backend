@@ -14,7 +14,6 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.TestInstance
-import org.junit.jupiter.api.assertNotNull
 import org.koin.core.component.inject
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
@@ -24,6 +23,7 @@ import org.koin.core.module.dsl.createdAtStart
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 import org.koin.test.KoinTest
+import se.uulm.snowballr.backend.RandomKeyGenerator
 import se.uulm.snowballr.backend.TestDatabase
 import se.uulm.snowballr.backend.accessCheckerDeps
 import se.uulm.snowballr.backend.auth.AuthenticationManager
@@ -34,21 +34,31 @@ import se.uulm.snowballr.backend.auth.ICookieManager
 import se.uulm.snowballr.backend.auth.IJwtManager
 import se.uulm.snowballr.backend.auth.JwtManager
 import se.uulm.snowballr.backend.db.IDatabase
+import se.uulm.snowballr.backend.env.Env
 import se.uulm.snowballr.backend.env.EnvReader
-import se.uulm.snowballr.backend.env.IEnvService
 import se.uulm.snowballr.backend.fetcher.IFetcherManager
 import se.uulm.snowballr.backend.fetcher.PythonPluginFetcherManager
 import se.uulm.snowballr.backend.mail.EmailManager
 import se.uulm.snowballr.backend.mail.IEmailManager
 import se.uulm.snowballr.backend.mailServiceDeps
-import se.uulm.snowballr.backend.mockEnvWithDefaultValues
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.RepositoryHelper
 import se.uulm.snowballr.backend.repositoryLayerDeps
-import se.uulm.snowballr.backend.service.IMainService
+import se.uulm.snowballr.backend.service.IAuthenticationService
+import se.uulm.snowballr.backend.service.ICriterionService
+import se.uulm.snowballr.backend.service.IExportService
+import se.uulm.snowballr.backend.service.IFetcherService
+import se.uulm.snowballr.backend.service.IInvitationService
+import se.uulm.snowballr.backend.service.IPaperService
+import se.uulm.snowballr.backend.service.IProjectMemberService
+import se.uulm.snowballr.backend.service.IProjectPaperService
+import se.uulm.snowballr.backend.service.IProjectService
+import se.uulm.snowballr.backend.service.IReadingListService
+import se.uulm.snowballr.backend.service.IReviewService
+import se.uulm.snowballr.backend.service.IUserService
 import se.uulm.snowballr.backend.serviceLayerDeps
 import snowballr.Authentication
 import java.util.UUID
@@ -62,28 +72,35 @@ open class IntegrationTest : KoinTest {
     // Initialize DB with empty dataSource only to set it in the setUp method
     protected val db = TestDatabase(HikariDataSource())
 
-    // Environment dependencies
-    private val envServiceMock = mockk<IEnvService>()
     protected val envReaderMock = mockk<EnvReader>()
     protected val emailManagerMock = mockk<EmailManager>()
 
     private val allMocks = arrayOf(
-        envServiceMock,
         envReaderMock,
         emailManagerMock,
     )
 
-    protected val mainService: IMainService by inject()
+    protected val authenticationService: IAuthenticationService by inject()
+    protected val criterionService: ICriterionService by inject()
+    protected val exportService: IExportService by inject()
+    protected val fetcherService: IFetcherService by inject()
+    protected val invitationService: IInvitationService by inject()
+    protected val paperService: IPaperService by inject()
+    protected val projectMemberService: IProjectMemberService by inject()
+    protected val projectPaperService: IProjectPaperService by inject()
+    protected val projectService: IProjectService by inject()
+    protected val readingListService: IReadingListService by inject()
+    protected val reviewService: IReviewService by inject()
+    protected val userService: IUserService by inject()
 
     private val integrationTestModule = module {
-        // Environment dependencies
-        single { envServiceMock }
         single { envReaderMock }
 
-        // Mock env variables
-        every { envReaderMock.env } returns mockEnvWithDefaultValues()
-        // Assert env so that it is not recognized as an unnecessary stub
-        assertNotNull(envReaderMock.env)
+        // Mock Env.Encryption since it's always called when initializing the JwtManager
+        val (privateKeyBase64, publicKeyBase64) = RandomKeyGenerator.generateKeyPair()
+        every { envReaderMock.env.encryption } returns Env.Encryption(privateKeyBase64, publicKeyBase64)
+        // Mock Env.Lifetime since it's used by the InvitationService
+        every { envReaderMock.env.lifetime } returns Env.Lifetime(30, 7, 1)
 
         // Test database
         single<IDatabase> { db }
@@ -150,7 +167,7 @@ open class IntegrationTest : KoinTest {
             .setPublicationType("Journal")
             .setPublicationName("Journal Name")
         if (externalId != null) builder.setExternalId(externalId)
-        return mainService.createPaper(builder.build())
+        return paperService.createPaper(builder.build())
     }
 
     /**
@@ -163,6 +180,7 @@ open class IntegrationTest : KoinTest {
         val verificationToken = slot<String>()
         val link = "https://example.com/verify"
         coEvery { emailManagerMock.createVerificationLink(capture(verificationToken)) } returns link
+        every { envReaderMock.env.lifetime.verificationTokenLifeTimeInDays } returns 1
         val verificationData = EmailData.EmailVerification(user.firstName, link, "tomorrow")
         coJustRun { emailManagerMock.sendVerificationEmail(any(), verificationData) }
 
@@ -173,16 +191,16 @@ open class IntegrationTest : KoinTest {
             .setEmail(user.email)
             .setPassword("SecureP@ssw0rd!")
             .build()
-        mainService.register(registerUserRequest)
+        userService.register(registerUserRequest)
 
         // Verify the user's email
         val verifyEmailRequest = Authentication.VerifyEmailRequest.newBuilder()
             .setToken(verificationToken.captured)
             .build()
-        mainService.verifyEmail(verifyEmailRequest)
+        authenticationService.verifyEmail(verifyEmailRequest)
 
         // Retrieve the user to ensure it was added successfully
-        return mainService.getUserByEmail(user.email)
+        return userService.getUserByEmail(user.email)
     }
 
     /**
@@ -200,7 +218,7 @@ open class IntegrationTest : KoinTest {
             val acceptRequest = GrpcProject.Member.Accept.newBuilder()
                 .setToken(invitationToken.captured)
                 .build()
-            mainService.acceptProjectInvitation(acceptRequest)
+            invitationService.acceptProjectInvitation(acceptRequest)
         }
     }
 
@@ -245,6 +263,7 @@ open class IntegrationTest : KoinTest {
         val invitationToken = slot<String>()
         val link = "https://example.com/accept-invitation"
         coEvery { emailManagerMock.createAcceptProjectInvitationLink(capture(invitationToken)) } returns link
+        every { envReaderMock.env.lifetime.invitationTokenLifeTimeInDays } returns 7
         val invitationData =
             EmailData.AcceptProjectInvitation(inviteeFirstName, "Test User", project.name, link, "in 7 days")
         coJustRun { emailManagerMock.sendAcceptProjectInvitationEmail(any(), invitationData) }
@@ -253,7 +272,7 @@ open class IntegrationTest : KoinTest {
             .setProjectId(project.id)
             .setUserEmail(inviteeEmail)
             .build()
-        mainService.inviteUserToProject(inviteUserRequest)
+        invitationService.inviteUserToProject(inviteUserRequest)
 
         return invitationToken
     }

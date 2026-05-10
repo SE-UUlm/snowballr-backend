@@ -14,14 +14,14 @@ class ExportIntegrationTest : IntegrationTest() {
     inner class GetAvailableExportFormats {
         @Test
         fun `When available export formats are requested, then JSON is included`() = runTest {
-            val response = mainService.getAvailableExportFormats()
+            val response = exportService.getAvailableExportFormats()
 
             assertTrue(response.formatsList.contains("JSON"))
         }
 
         @Test
         fun `When available export formats are requested, then the list is not empty`() = runTest {
-            val response = mainService.getAvailableExportFormats()
+            val response = exportService.getAvailableExportFormats()
 
             assertFalse(response.formatsList.isEmpty())
         }
@@ -31,9 +31,9 @@ class ExportIntegrationTest : IntegrationTest() {
     inner class ExportProject {
         @Test
         fun `When a project is exported as JSON, then the response contains non-empty data`() = runTest {
-            val project = mainService.createProject(Project.Create.newBuilder().setName("Export Project").build())
+            val project = projectService.createProject(Project.Create.newBuilder().setName("Export Project").build())
 
-            val response = mainService.exportProject(
+            val response = exportService.exportProject(
                 ExportRequest.newBuilder()
                     .setId(project.id)
                     .setFormat("JSON")
@@ -46,9 +46,9 @@ class ExportIntegrationTest : IntegrationTest() {
 
         @Test
         fun `When a project is exported, then the file name reflects the project name`() = runTest {
-            val project = mainService.createProject(Project.Create.newBuilder().setName("Named Export").build())
+            val project = projectService.createProject(Project.Create.newBuilder().setName("Named Export").build())
 
-            val response = mainService.exportProject(
+            val response = exportService.exportProject(
                 ExportRequest.newBuilder()
                     .setId(project.id)
                     .setFormat("JSON")

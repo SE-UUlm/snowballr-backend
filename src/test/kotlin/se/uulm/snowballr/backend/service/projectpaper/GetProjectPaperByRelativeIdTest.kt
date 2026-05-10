@@ -9,12 +9,11 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.service.MainServiceTest
 import java.util.UUID
 import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class GetProjectPaperByRelativeIdTest : MainServiceTest() {
+class GetProjectPaperByRelativeIdTest : ProjectPaperServiceTest() {
     private fun getRequest(projectId: UUID, relativeId: Long = -1) = GrpcProjectPaper.Get
         .newBuilder()
         .setProjectId(projectId.toString())
@@ -40,7 +39,7 @@ class GetProjectPaperByRelativeIdTest : MainServiceTest() {
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id) } returns emptyList()
         coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper.id) } returns emptyList()
 
-        assertDoesNotThrow { mainService.getProjectPaperByRelativeId(request) }
+        assertDoesNotThrow { service.getProjectPaperByRelativeId(request) }
     }
 
     @Test
@@ -56,7 +55,7 @@ class GetProjectPaperByRelativeIdTest : MainServiceTest() {
                 projectAccessCheckerMock.isAllowedToReadProject(user, project.id)
             } throws TestSpecificException()
 
-            assertThrows<TestSpecificException> { mainService.getProjectPaperByRelativeId(request) }
+            assertThrows<TestSpecificException> { service.getProjectPaperByRelativeId(request) }
         }
 
     @Test
@@ -73,6 +72,6 @@ class GetProjectPaperByRelativeIdTest : MainServiceTest() {
             projectPaperRepoMock.getProjectPaperByRelativeId(project.id, relativeId)
         } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { mainService.getProjectPaperByRelativeId(request) }
+        assertThrows<TestSpecificException> { service.getProjectPaperByRelativeId(request) }
     }
 }

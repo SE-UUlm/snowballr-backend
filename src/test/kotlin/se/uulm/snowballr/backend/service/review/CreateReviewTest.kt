@@ -18,7 +18,6 @@ import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.Review
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.alreadyexists.DuplicateReviewException
-import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix.Pattern
@@ -30,7 +29,7 @@ import java.util.stream.Stream
 import kotlin.reflect.KFunction
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class CreateReviewTest : MainServiceTest() {
+class CreateReviewTest : ReviewServiceTest() {
     private val userId = UUID.randomUUID()
     private val project = DataBuilder.createExampleProject(reviewDecisionMatrix = createExampleReviewDecisionMatrix())
     private val projectPaperId = UUID.randomUUID()
@@ -124,7 +123,7 @@ class CreateReviewTest : MainServiceTest() {
     fun `When a repo call fails, then a TestSpecificException is thrown`(failAt: KFunction<*>) = runTest {
         mockCreateReview(failAt = failAt)
 
-        assertThrows<TestSpecificException> { mainService.createReview(validCreateReviewRequest.build()) }
+        assertThrows<TestSpecificException> { service.createReview(validCreateReviewRequest.build()) }
         coVerify(exactly = 0) { reviewRepoMock.createReview(any(), any()) }
     }
 
@@ -132,7 +131,7 @@ class CreateReviewTest : MainServiceTest() {
     fun `When a user creates a review and has access, then no exception is thrown`() = runTest {
         mockCreateReview()
 
-        assertDoesNotThrow { mainService.createReview(validCreateReviewRequest.build()) }
+        assertDoesNotThrow { service.createReview(validCreateReviewRequest.build()) }
     }
 
     @Test
@@ -145,7 +144,7 @@ class CreateReviewTest : MainServiceTest() {
         mockCreateReview(stopBefore = reviewRepoMock::getAllReviewsForProjectPaper)
         coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaperId) } returns listOf(firstReview)
 
-        assertThrows<DuplicateReviewException> { mainService.createReview(validCreateReviewRequest.build()) }
+        assertThrows<DuplicateReviewException> { service.createReview(validCreateReviewRequest.build()) }
         coVerify(exactly = 0) { reviewRepoMock.createReview(any(), any()) }
     }
 
@@ -156,7 +155,7 @@ class CreateReviewTest : MainServiceTest() {
             stopBefore = reviewRepoMock::createReview,
         )
 
-        assertThrows<FailedPreconditionException> { mainService.createReview(validCreateReviewRequest.build()) }
+        assertThrows<FailedPreconditionException> { service.createReview(validCreateReviewRequest.build()) }
         coVerify(exactly = 0) { reviewRepoMock.createReview(any(), any()) }
     }
 
@@ -174,7 +173,7 @@ class CreateReviewTest : MainServiceTest() {
                 updatedPaperDecision = PaperDecision.PAPER_DECISION_ACCEPTED,
             )
 
-            assertDoesNotThrow { mainService.createReview(validCreateReviewRequest.build()) }
+            assertDoesNotThrow { service.createReview(validCreateReviewRequest.build()) }
         }
 
     @Test
@@ -196,7 +195,7 @@ class CreateReviewTest : MainServiceTest() {
                 updatedPaperDecision = PaperDecision.PAPER_DECISION_ACCEPTED,
             )
 
-            assertDoesNotThrow { mainService.createReview(validCreateReviewRequest.build()) }
+            assertDoesNotThrow { service.createReview(validCreateReviewRequest.build()) }
         }
 
     @Test
@@ -214,7 +213,7 @@ class CreateReviewTest : MainServiceTest() {
             )
             mockCreateReview(project = project)
 
-            assertDoesNotThrow { mainService.createReview(validCreateReviewRequest.build()) }
+            assertDoesNotThrow { service.createReview(validCreateReviewRequest.build()) }
             coVerify(exactly = 1) {
                 projectPaperRepoMock.updateProjectPaperDecision(
                     projectPaperId,
@@ -256,7 +255,7 @@ class CreateReviewTest : MainServiceTest() {
                 projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_DECLINED)
             }
 
-            assertDoesNotThrow { mainService.createReview(createReviewRequest) }
+            assertDoesNotThrow { service.createReview(createReviewRequest) }
         }
 
     @Test
@@ -300,7 +299,7 @@ class CreateReviewTest : MainServiceTest() {
                 projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_DECLINED)
             }
 
-            assertDoesNotThrow { mainService.createReview(createReviewRequest) }
+            assertDoesNotThrow { service.createReview(createReviewRequest) }
             coVerify(exactly = 1) {
                 projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_DECLINED)
             }
@@ -334,7 +333,7 @@ class CreateReviewTest : MainServiceTest() {
                 projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_IN_REVIEW)
             }
 
-            assertDoesNotThrow { mainService.createReview(createReviewRequest) }
+            assertDoesNotThrow { service.createReview(createReviewRequest) }
             coVerify(exactly = 1) {
                 projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_IN_REVIEW)
             }

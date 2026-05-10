@@ -11,10 +11,9 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.model.exception.notfound.entity.PaperNotFoundException
-import se.uulm.snowballr.backend.service.MainServiceTest
 import java.util.UUID
 
-class RemovePaperFromReadingListTest : MainServiceTest() {
+class RemovePaperFromReadingListTest : ReadingListServiceTest() {
     @Test
     fun `When a user removes a paper from their reading list, then the request is forwarded correctly`() = runTest {
         val user = DataBuilder.createExampleUser()
@@ -24,7 +23,7 @@ class RemovePaperFromReadingListTest : MainServiceTest() {
         coEvery { paperRepoMock.ensurePaperExists(paperId) } just Runs
         coJustRun { readingListRepoMock.removeReadingListEntry(user.id, paperId) }
 
-        assertDoesNotThrow { mainService.removePaperFromReadingList(paperId) }
+        assertDoesNotThrow { service.removePaperFromReadingList(paperId) }
         coVerify(exactly = 1) { readingListRepoMock.removeReadingListEntry(user.id, paperId) }
     }
 
@@ -38,7 +37,7 @@ class RemovePaperFromReadingListTest : MainServiceTest() {
             coEvery { paperRepoMock.ensurePaperExists(paperId) } throws PaperNotFoundException(paperId)
 
             assertThrows<PaperNotFoundException> {
-                mainService.removePaperFromReadingList(paperId)
+                service.removePaperFromReadingList(paperId)
             }
         }
 }

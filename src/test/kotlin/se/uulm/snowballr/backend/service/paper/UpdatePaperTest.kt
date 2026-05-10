@@ -11,11 +11,10 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicatePaperException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.PaperNotFoundException
-import se.uulm.snowballr.backend.service.MainServiceTest
 import java.util.UUID
 import snowballr.PaperOuterClass.Paper as GrpcPaper
 
-class UpdatePaperTest : MainServiceTest() {
+class UpdatePaperTest : PaperServiceTest() {
     private val paperId = UUID.randomUUID()
 
     private fun getExamplePaperBuilder() = GrpcPaper
@@ -42,7 +41,7 @@ class UpdatePaperTest : MainServiceTest() {
         coEvery { paperRepoMock.updatePaper(request) } returns examplePaper
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paperId) } returns emptyList()
 
-        assertDoesNotThrow { mainService.updatePaper(request) }
+        assertDoesNotThrow { service.updatePaper(request) }
     }
 
     @Test
@@ -52,7 +51,7 @@ class UpdatePaperTest : MainServiceTest() {
         coEvery { paperRepoMock.ensurePaperExists(paperId) } throws PaperNotFoundException(paperId)
 
         assertThrows<PaperNotFoundException> {
-            mainService.updatePaper(request)
+            service.updatePaper(request)
         }
     }
 
@@ -75,7 +74,7 @@ class UpdatePaperTest : MainServiceTest() {
                 existingPaperWithSameExternalId,
             )
 
-            assertThrows<DuplicatePaperException> { mainService.updatePaper(request) }
+            assertThrows<DuplicatePaperException> { service.updatePaper(request) }
         }
 
     @Test
@@ -94,7 +93,7 @@ class UpdatePaperTest : MainServiceTest() {
         coEvery { paperRepoMock.updatePaper(request) } returns existingPaperWithSameExternalId
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paperId) } returns emptyList()
 
-        assertDoesNotThrow { mainService.updatePaper(request) }
+        assertDoesNotThrow { service.updatePaper(request) }
     }
 
     @Test
@@ -114,7 +113,7 @@ class UpdatePaperTest : MainServiceTest() {
         coEvery { paperRepoMock.updatePaper(request) } returns updatedPaper
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paperId) } returns emptyList()
 
-        assertDoesNotThrow { mainService.updatePaper(request) }
+        assertDoesNotThrow { service.updatePaper(request) }
         coVerify(exactly = 0) { paperRepoMock.getPaperByExternalId(any()) }
     }
 }

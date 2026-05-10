@@ -9,10 +9,9 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.service.MainServiceTest
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class GetProjectPaperByIdTest : MainServiceTest() {
+class GetProjectPaperByIdTest : ProjectPaperServiceTest() {
     @Test
     fun `When a user requests a project paper and has access, then no exception is thrown`() = runTest {
         val user = DataBuilder.createExampleUser()
@@ -26,7 +25,7 @@ class GetProjectPaperByIdTest : MainServiceTest() {
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id) } returns emptyList()
         coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper.id) } returns emptyList()
 
-        assertDoesNotThrow { mainService.getProjectPaperById(projectPaper.id) }
+        assertDoesNotThrow { service.getProjectPaperById(projectPaper.id) }
     }
 
     @Test
@@ -39,7 +38,7 @@ class GetProjectPaperByIdTest : MainServiceTest() {
             projectPaperRepoMock.getProjectPaperById(projectPaper.id)
         } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { mainService.getProjectPaperById(projectPaper.id) }
+        assertThrows<TestSpecificException> { service.getProjectPaperById(projectPaper.id) }
     }
 
     @Test
@@ -53,6 +52,6 @@ class GetProjectPaperByIdTest : MainServiceTest() {
             projectAccessCheckerMock.isAllowedToReadProject(user, projectPaper.projectId)
         } throws TestSpecificException()
 
-        assertThrows<TestSpecificException> { mainService.getProjectPaperById(projectPaper.id) }
+        assertThrows<TestSpecificException> { service.getProjectPaperById(projectPaper.id) }
     }
 }

@@ -17,11 +17,11 @@ import snowballr.ReviewOuterClass.Review as GrpcReview
 
 class ReviewIntegrationTest : IntegrationTest() {
     private suspend fun setupProjectAndPaper(): Pair<Project, GrpcProjectPaper> {
-        var project = mainService.createProject(Project.Create.newBuilder().setName("Review Test Project").build())
+        var project = projectService.createProject(Project.Create.newBuilder().setName("Review Test Project").build())
 
         val paper = createPaper()
 
-        val projectPaper = mainService.addPaperToProject(
+        val projectPaper = projectPaperService.addPaperToProject(
             GrpcProjectPaper.Add.newBuilder()
                 .setProjectId(project.id)
                 .setPaperId(paper.id)
@@ -40,7 +40,7 @@ class ReviewIntegrationTest : IntegrationTest() {
             .setProject(modifiedProject)
             .setMask(FieldMask.newBuilder().addPaths("project.settings.decision_matrix.number_of_reviewers"))
             .build()
-        project = mainService.updateProject(projectUpdate)
+        project = projectService.updateProject(projectUpdate)
 
         return project to projectPaper
     }
@@ -52,14 +52,14 @@ class ReviewIntegrationTest : IntegrationTest() {
             val (_, projectPaper) = setupProjectAndPaper()
             val projectPaperId = parseUUID(projectPaper.id, EntityType.PROJECT_PAPER)
 
-            mainService.createReview(
+            reviewService.createReview(
                 GrpcReview.Create.newBuilder()
                     .setProjectPaperId(projectPaper.id)
                     .setDecision(ReviewDecision.REVIEW_DECISION_ACCEPTED)
                     .build(),
             )
 
-            val reviews = mainService.getAllReviewsForProjectPaper(projectPaperId)
+            val reviews = reviewService.getAllReviewsForProjectPaper(projectPaperId)
             assertTrue(reviews.reviewsList.isNotEmpty())
         }
 
@@ -67,7 +67,7 @@ class ReviewIntegrationTest : IntegrationTest() {
         fun `When a review is created, then it can be retrieved by ID`() = runTest {
             val (_, projectPaper) = setupProjectAndPaper()
 
-            val review = mainService.createReview(
+            val review = reviewService.createReview(
                 GrpcReview.Create.newBuilder()
                     .setProjectPaperId(projectPaper.id)
                     .setDecision(ReviewDecision.REVIEW_DECISION_DECLINED)
@@ -75,7 +75,7 @@ class ReviewIntegrationTest : IntegrationTest() {
             )
             val reviewId = parseUUID(review.id, EntityType.REVIEW)
 
-            val fetched = mainService.getReviewById(reviewId)
+            val fetched = reviewService.getReviewById(reviewId)
 
             assertEquals(review.id, fetched.id)
             assertEquals(ReviewDecision.REVIEW_DECISION_DECLINED, fetched.decision)
@@ -86,14 +86,14 @@ class ReviewIntegrationTest : IntegrationTest() {
             val (_, projectPaper) = setupProjectAndPaper()
             val projectPaperId = parseUUID(projectPaper.id, EntityType.PROJECT_PAPER)
 
-            mainService.createReview(
+            reviewService.createReview(
                 GrpcReview.Create.newBuilder()
                     .setProjectPaperId(projectPaper.id)
                     .setDecision(ReviewDecision.REVIEW_DECISION_ACCEPTED)
                     .build(),
             )
 
-            val updatedProjectPaper = mainService.getProjectPaperById(projectPaperId)
+            val updatedProjectPaper = projectPaperService.getProjectPaperById(projectPaperId)
             assertEquals(PaperDecision.PAPER_DECISION_ACCEPTED, updatedProjectPaper.decision)
         }
 
@@ -102,14 +102,14 @@ class ReviewIntegrationTest : IntegrationTest() {
             val (_, projectPaper) = setupProjectAndPaper()
             val projectPaperId = parseUUID(projectPaper.id, EntityType.PROJECT_PAPER)
 
-            mainService.createReview(
+            reviewService.createReview(
                 GrpcReview.Create.newBuilder()
                     .setProjectPaperId(projectPaper.id)
                     .setDecision(ReviewDecision.REVIEW_DECISION_DECLINED)
                     .build(),
             )
 
-            val updatedProjectPaper = mainService.getProjectPaperById(projectPaperId)
+            val updatedProjectPaper = projectPaperService.getProjectPaperById(projectPaperId)
             assertEquals(PaperDecision.PAPER_DECISION_DECLINED, updatedProjectPaper.decision)
         }
 
@@ -118,7 +118,7 @@ class ReviewIntegrationTest : IntegrationTest() {
             val (_, projectPaper) = setupProjectAndPaper()
             val projectPaperId = parseUUID(projectPaper.id, EntityType.PROJECT_PAPER)
 
-            val fetchedProjectPaper = mainService.getProjectPaperById(projectPaperId)
+            val fetchedProjectPaper = projectPaperService.getProjectPaperById(projectPaperId)
             assertEquals(PaperDecision.PAPER_DECISION_UNREVIEWED, fetchedProjectPaper.decision)
         }
     }
@@ -130,7 +130,7 @@ class ReviewIntegrationTest : IntegrationTest() {
             val (project, projectPaper) = setupProjectAndPaper()
             val projectId = parseUUID(project.id, EntityType.PROJECT)
 
-            val papers = mainService.getAllProjectPapersForProject(projectId)
+            val papers = projectPaperService.getAllProjectPapersForProject(projectId)
             assertTrue(papers.projectPapersList.any { it.id == projectPaper.id })
         }
 
@@ -139,7 +139,7 @@ class ReviewIntegrationTest : IntegrationTest() {
             val (_, projectPaper) = setupProjectAndPaper()
             val projectPaperId = parseUUID(projectPaper.id, EntityType.PROJECT_PAPER)
 
-            val fetched = mainService.getProjectPaperById(projectPaperId)
+            val fetched = projectPaperService.getProjectPaperById(projectPaperId)
             assertEquals(projectPaper.id, fetched.id)
         }
     }

@@ -31,7 +31,7 @@ class UserIntegrationTest : IntegrationTest() {
             coEvery { emailManagerMock.createVerificationLink(capture(tokenSlot)) } returns "https://example.com/verify"
             coJustRun { emailManagerMock.sendVerificationEmail(any(), any()) }
 
-            mainService.register(
+            userService.register(
                 Authentication.RegisterRequest.newBuilder()
                     .setFirstName(newUser.firstName)
                     .setLastName(newUser.lastName)
@@ -40,16 +40,16 @@ class UserIntegrationTest : IntegrationTest() {
                     .build(),
             )
 
-            val unverifiedUser = mainService.getUserByEmail(newUser.email)
+            val unverifiedUser = userService.getUserByEmail(newUser.email)
             assertEquals(UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED, unverifiedUser.status)
 
-            mainService.verifyEmail(
+            authenticationService.verifyEmail(
                 Authentication.VerifyEmailRequest.newBuilder()
                     .setToken(tokenSlot.captured)
                     .build(),
             )
 
-            val verifiedUser = mainService.getUserByEmail(newUser.email)
+            val verifiedUser = userService.getUserByEmail(newUser.email)
             assertEquals(UserStatus.USER_STATUS_ACTIVE, verifiedUser.status)
         }
     }
@@ -58,7 +58,7 @@ class UserIntegrationTest : IntegrationTest() {
     inner class GetUser {
         @Test
         fun `When the current user requests their own data, then their data is returned`() = runTest {
-            val currentUser = mainService.getCurrentUser()
+            val currentUser = userService.getCurrentUser()
 
             assertEquals(testUserId.toString(), currentUser.id)
         }
@@ -68,7 +68,7 @@ class UserIntegrationTest : IntegrationTest() {
             val otherUser = addUser(DataBuilder.createExampleUser(email = "other.user@example.com"))
             val otherUserId = parseUUID(otherUser.id, EntityType.USER)
 
-            val fetchedUser = mainService.getUserById(otherUserId)
+            val fetchedUser = userService.getUserById(otherUserId)
 
             assertEquals(otherUser.id, fetchedUser.id)
             assertEquals(otherUser.email, fetchedUser.email)
@@ -78,7 +78,7 @@ class UserIntegrationTest : IntegrationTest() {
         fun `When an admin requests all users, then all users are included in the response`() = runTest {
             val otherUser = addUser(DataBuilder.createExampleUser(email = "other.user@example.com"))
 
-            val allUsers = mainService.getAllUsers()
+            val allUsers = userService.getAllUsers()
             val userIds = allUsers.usersList.map { it.id }
 
             assertEquals(2, allUsers.usersList.size)
@@ -92,7 +92,7 @@ class UserIntegrationTest : IntegrationTest() {
             val otherUserId = parseUUID(otherUser.id, EntityType.USER)
 
             actAsUser(otherUserId) {
-                assertThrows<UnauthorizedReadAllException> { mainService.getAllUsers() }
+                assertThrows<UnauthorizedReadAllException> { userService.getAllUsers() }
             }
         }
     }
@@ -101,7 +101,7 @@ class UserIntegrationTest : IntegrationTest() {
     inner class UpdateUser {
         @Test
         fun `When a user updates their own first name, then the updated name is persisted`() = runTest {
-            val currentUser = mainService.getCurrentUser()
+            val currentUser = userService.getCurrentUser()
             val newFirstName = "UpdatedFirstName"
 
             val request = GrpcUser.Update.newBuilder()
@@ -109,7 +109,7 @@ class UserIntegrationTest : IntegrationTest() {
                 .setMask(FieldMask.newBuilder().addPaths("user.first_name"))
                 .build()
 
-            val updatedUser = mainService.updateUser(request)
+            val updatedUser = userService.updateUser(request)
 
             assertEquals(newFirstName, updatedUser.firstName)
         }
@@ -124,7 +124,7 @@ class UserIntegrationTest : IntegrationTest() {
                 .setMask(FieldMask.newBuilder().addPaths("user.first_name"))
                 .build()
 
-            val updatedUser = mainService.updateUser(request)
+            val updatedUser = userService.updateUser(request)
 
             assertEquals(newFirstName, updatedUser.firstName)
         }
@@ -137,7 +137,7 @@ class UserIntegrationTest : IntegrationTest() {
             val otherUser = addUser(DataBuilder.createExampleUser(email = "other.user@example.com"))
             val otherUserId = parseUUID(otherUser.id, EntityType.USER)
 
-            assertDoesNotThrow { mainService.softDeleteUser(otherUserId) }
+            assertDoesNotThrow { userService.softDeleteUser(otherUserId) }
         }
 
         @Test
@@ -146,7 +146,7 @@ class UserIntegrationTest : IntegrationTest() {
             val otherUserId = parseUUID(otherUser.id, EntityType.USER)
 
             actAsUser(otherUserId) {
-                assertDoesNotThrow { mainService.softDeleteUser(otherUserId) }
+                assertDoesNotThrow { userService.softDeleteUser(otherUserId) }
             }
         }
     }

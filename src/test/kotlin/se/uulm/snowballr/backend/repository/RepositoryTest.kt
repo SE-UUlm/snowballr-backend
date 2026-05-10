@@ -2,7 +2,6 @@ package se.uulm.snowballr.backend.repository
 
 import com.zaxxer.hikari.HikariDataSource
 import io.mockk.clearAllMocks
-import io.mockk.every
 import io.mockk.mockk
 import org.jetbrains.exposed.v1.core.Table
 import org.junit.jupiter.api.AfterAll
@@ -10,13 +9,8 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.TestInstance
-import org.koin.core.context.startKoin
-import org.koin.core.context.stopKoin
-import org.koin.dsl.module
 import se.uulm.snowballr.backend.TestDatabase
 import se.uulm.snowballr.backend.env.EnvReader
-import se.uulm.snowballr.backend.env.IEnvService
-import se.uulm.snowballr.backend.mockEnvWithDefaultValues
 import se.uulm.snowballr.backend.table.UserTable
 import java.util.UUID
 
@@ -62,18 +56,7 @@ open class RepositoryTest(
     // Initialize DB with empty dataSource only to set it in the setUp method
     protected val db = TestDatabase(HikariDataSource())
 
-    // Environment dependencies
-    private val envServiceMock = mockk<IEnvService>()
     protected val envReaderMock = mockk<EnvReader>()
-
-    private val repositoryTestModule = module {
-        // Environment dependencies
-        single { envServiceMock }
-        single { envReaderMock }
-
-        // Mock env variables
-        every { envReaderMock.env } returns mockEnvWithDefaultValues()
-    }
 
     /** User for testing. This prevents having to create a user for each test. */
     protected var testUserId: UUID = UUID.randomUUID()
@@ -84,9 +67,6 @@ open class RepositoryTest(
     fun setUp() {
         db.setUp()
         RepositoryHelper.db = db
-        startKoin {
-            modules(repositoryTestModule)
-        }
     }
 
     @BeforeEach
@@ -103,6 +83,5 @@ open class RepositoryTest(
     @AfterAll
     fun tearDown() {
         db.tearDown()
-        stopKoin()
     }
 }

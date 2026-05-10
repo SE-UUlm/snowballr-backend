@@ -10,13 +10,12 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.exception.notfound.VerificationTokenNotFoundException
-import se.uulm.snowballr.backend.service.MainServiceTest
 import snowballr.Authentication
 import snowballr.UserOuterClass.UserStatus
 import java.time.OffsetDateTime
 import snowballr.UserOuterClass.User as GrpcUser
 
-class VerifyEmailTest : MainServiceTest() {
+class VerifyEmailTest : AuthenticationServiceTest() {
     @Test
     fun `When the verification token is not found, then a VerificationTokenNotFoundException is thrown`() = runTest {
         val token = "non-existent-token"
@@ -26,7 +25,7 @@ class VerifyEmailTest : MainServiceTest() {
             VerificationTokenNotFoundException(),
         )
 
-        assertThrows<VerificationTokenNotFoundException> { mainService.verifyEmail(request) }
+        assertThrows<VerificationTokenNotFoundException> { service.verifyEmail(request) }
     }
 
     @Test
@@ -41,7 +40,7 @@ class VerifyEmailTest : MainServiceTest() {
         )
         coJustRun { verificationTokenRepoMock.deleteVerificationToken(expiredToken.token) }
 
-        assertThrows<VerificationTokenNotFoundException> { mainService.verifyEmail(request) }
+        assertThrows<VerificationTokenNotFoundException> { service.verifyEmail(request) }
     }
 
     @Test
@@ -52,7 +51,7 @@ class VerifyEmailTest : MainServiceTest() {
         coEvery { verificationTokenRepoMock.getVerificationTokenByValue(token.token) } returns Result.success(token)
         coEvery { userRepoMock.getUserById(token.userId) } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { mainService.verifyEmail(request) }
+        assertThrows<TestSpecificException> { service.verifyEmail(request) }
     }
 
     @Test
@@ -67,6 +66,6 @@ class VerifyEmailTest : MainServiceTest() {
         coEvery { userRepoMock.updateUser(capture(userUpdateSlot)) } returns user
         coJustRun { verificationTokenRepoMock.deleteVerificationToken(token.token) }
 
-        assertDoesNotThrow { mainService.verifyEmail(request) }
+        assertDoesNotThrow { service.verifyEmail(request) }
     }
 }

@@ -18,9 +18,9 @@ class ReadingListIntegrationTest : IntegrationTest() {
             val paper = createPaper()
             val paperId = parseUUID(paper.id, EntityType.PAPER)
 
-            mainService.addPaperToReadingList(paperId)
+            readingListService.addPaperToReadingList(paperId)
 
-            val readingList = mainService.getReadingList()
+            val readingList = readingListService.getReadingList()
             assertTrue(readingList.papersList.any { it.id == paper.id })
         }
 
@@ -31,10 +31,10 @@ class ReadingListIntegrationTest : IntegrationTest() {
             val paperOneId = parseUUID(paperOne.id, EntityType.PAPER)
             val paperTwoId = parseUUID(paperTwo.id, EntityType.PAPER)
 
-            mainService.addPaperToReadingList(paperOneId)
-            mainService.addPaperToReadingList(paperTwoId)
+            readingListService.addPaperToReadingList(paperOneId)
+            readingListService.addPaperToReadingList(paperTwoId)
 
-            val readingList = mainService.getReadingList()
+            val readingList = readingListService.getReadingList()
             val ids = readingList.papersList.map { it.id }
             assertTrue(ids.contains(paperOne.id))
             assertTrue(ids.contains(paperTwo.id))
@@ -45,9 +45,9 @@ class ReadingListIntegrationTest : IntegrationTest() {
             val paper = createPaper()
             val paperId = parseUUID(paper.id, EntityType.PAPER)
 
-            mainService.addPaperToReadingList(paperId)
+            readingListService.addPaperToReadingList(paperId)
 
-            assertTrue(mainService.isPaperOnReadingList(paperId))
+            assertTrue(readingListService.isPaperOnReadingList(paperId))
         }
     }
 
@@ -58,10 +58,10 @@ class ReadingListIntegrationTest : IntegrationTest() {
             val paper = createPaper()
             val paperId = parseUUID(paper.id, EntityType.PAPER)
 
-            mainService.addPaperToReadingList(paperId)
-            mainService.removePaperFromReadingList(paperId)
+            readingListService.addPaperToReadingList(paperId)
+            readingListService.removePaperFromReadingList(paperId)
 
-            val readingList = mainService.getReadingList()
+            val readingList = readingListService.getReadingList()
             assertFalse(readingList.papersList.any { it.id == paper.id })
         }
 
@@ -70,10 +70,10 @@ class ReadingListIntegrationTest : IntegrationTest() {
             val paper = createPaper()
             val paperId = parseUUID(paper.id, EntityType.PAPER)
 
-            mainService.addPaperToReadingList(paperId)
-            mainService.removePaperFromReadingList(paperId)
+            readingListService.addPaperToReadingList(paperId)
+            readingListService.removePaperFromReadingList(paperId)
 
-            assertFalse(mainService.isPaperOnReadingList(paperId))
+            assertFalse(readingListService.isPaperOnReadingList(paperId))
         }
 
         @Test
@@ -83,11 +83,11 @@ class ReadingListIntegrationTest : IntegrationTest() {
             val paperOneId = parseUUID(paperOne.id, EntityType.PAPER)
             val paperTwoId = parseUUID(paperTwo.id, EntityType.PAPER)
 
-            mainService.addPaperToReadingList(paperOneId)
-            mainService.addPaperToReadingList(paperTwoId)
-            mainService.removePaperFromReadingList(paperOneId)
+            readingListService.addPaperToReadingList(paperOneId)
+            readingListService.addPaperToReadingList(paperTwoId)
+            readingListService.removePaperFromReadingList(paperOneId)
 
-            val readingList = mainService.getReadingList()
+            val readingList = readingListService.getReadingList()
             assertFalse(readingList.papersList.any { it.id == paperOne.id })
             assertTrue(readingList.papersList.any { it.id == paperTwo.id })
         }
@@ -97,7 +97,7 @@ class ReadingListIntegrationTest : IntegrationTest() {
     inner class GetReadingList {
         @Test
         fun `When no papers have been added, then the reading list is empty`() = runTest {
-            val readingList = mainService.getReadingList()
+            val readingList = readingListService.getReadingList()
 
             assertTrue(readingList.papersList.isEmpty())
         }
@@ -110,10 +110,10 @@ class ReadingListIntegrationTest : IntegrationTest() {
                 val paper = createPaper()
                 val paperId = parseUUID(paper.id, EntityType.PAPER)
 
-                mainService.addPaperToReadingList(paperId)
+                readingListService.addPaperToReadingList(paperId)
 
                 actAsUser(otherUserId) {
-                    val otherReadingList = mainService.getReadingList()
+                    val otherReadingList = readingListService.getReadingList()
                     assertFalse(otherReadingList.papersList.any { it.id == paper.id })
                 }
             }
@@ -126,7 +126,7 @@ class ReadingListIntegrationTest : IntegrationTest() {
             val paper = createPaper()
             val paperId = parseUUID(paper.id, EntityType.PAPER)
 
-            assertFalse(mainService.isPaperOnReadingList(paperId))
+            assertFalse(readingListService.isPaperOnReadingList(paperId))
         }
     }
 }

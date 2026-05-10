@@ -11,10 +11,9 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.model.exception.notfound.entity.PaperNotFoundException
-import se.uulm.snowballr.backend.service.MainServiceTest
 import java.util.UUID
 
-class AddPaperToReadingListTest : MainServiceTest() {
+class AddPaperToReadingListTest : ReadingListServiceTest() {
     @Test
     fun `When a user adds a paper to their reading list, then the request is forwarded correctly`() = runTest {
         val user = DataBuilder.createExampleUser()
@@ -24,7 +23,7 @@ class AddPaperToReadingListTest : MainServiceTest() {
         coEvery { paperRepoMock.ensurePaperExists(paperId) } just Runs
         coJustRun { readingListRepoMock.createReadingListEntry(user.id, paperId) }
 
-        assertDoesNotThrow { mainService.addPaperToReadingList(paperId) }
+        assertDoesNotThrow { service.addPaperToReadingList(paperId) }
         coVerify(exactly = 1) { readingListRepoMock.createReadingListEntry(user.id, paperId) }
     }
 
@@ -37,6 +36,6 @@ class AddPaperToReadingListTest : MainServiceTest() {
             mockCurrentUser(user)
             coEvery { paperRepoMock.ensurePaperExists(paperId) } throws PaperNotFoundException(paperId)
 
-            assertThrows<PaperNotFoundException> { mainService.addPaperToReadingList(paperId) }
+            assertThrows<PaperNotFoundException> { service.addPaperToReadingList(paperId) }
         }
 }
