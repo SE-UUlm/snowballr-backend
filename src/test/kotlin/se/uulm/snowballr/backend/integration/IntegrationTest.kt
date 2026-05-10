@@ -48,6 +48,18 @@ import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.RepositoryHelper
 import se.uulm.snowballr.backend.repositoryLayerDeps
+import se.uulm.snowballr.backend.service.IAuthenticationService
+import se.uulm.snowballr.backend.service.ICriterionService
+import se.uulm.snowballr.backend.service.IExportService
+import se.uulm.snowballr.backend.service.IFetcherService
+import se.uulm.snowballr.backend.service.IInvitationService
+import se.uulm.snowballr.backend.service.IPaperService
+import se.uulm.snowballr.backend.service.IProjectMemberService
+import se.uulm.snowballr.backend.service.IProjectPaperService
+import se.uulm.snowballr.backend.service.IProjectService
+import se.uulm.snowballr.backend.service.IReadingListService
+import se.uulm.snowballr.backend.service.IReviewService
+import se.uulm.snowballr.backend.service.IUserService
 import se.uulm.snowballr.backend.serviceLayerDeps
 import snowballr.Authentication
 import java.util.UUID
@@ -72,7 +84,18 @@ open class IntegrationTest : KoinTest {
         emailManagerMock,
     )
 
-    protected val mainService: IMainService by inject()
+    protected val authenticationService: IAuthenticationService by inject()
+    protected val criterionService: ICriterionService by inject()
+    protected val exportService: IExportService by inject()
+    protected val fetcherService: IFetcherService by inject()
+    protected val invitationService: IInvitationService by inject()
+    protected val paperService: IPaperService by inject()
+    protected val projectMemberService: IProjectMemberService by inject()
+    protected val projectPaperService: IProjectPaperService by inject()
+    protected val projectService: IProjectService by inject()
+    protected val readingListService: IReadingListService by inject()
+    protected val reviewService: IReviewService by inject()
+    protected val userService: IUserService by inject()
 
     private val integrationTestModule = module {
         // Environment dependencies
@@ -96,8 +119,6 @@ open class IntegrationTest : KoinTest {
         customServicesDeps()
         accessCheckerDeps()
         serviceLayerDeps()
-
-        singleOf(::MainService) { bind<IMainService>() }
     }
 
     // User for testing. This prevents having to create a user for each test.
@@ -151,7 +172,7 @@ open class IntegrationTest : KoinTest {
             .setPublicationType("Journal")
             .setPublicationName("Journal Name")
         if (externalId != null) builder.setExternalId(externalId)
-        return mainService.createPaper(builder.build())
+        return paperService.createPaper(builder.build())
     }
 
     /**
@@ -174,16 +195,16 @@ open class IntegrationTest : KoinTest {
             .setEmail(user.email)
             .setPassword("SecureP@ssw0rd!")
             .build()
-        mainService.register(registerUserRequest)
+        userService.register(registerUserRequest)
 
         // Verify the user's email
         val verifyEmailRequest = Authentication.VerifyEmailRequest.newBuilder()
             .setToken(verificationToken.captured)
             .build()
-        mainService.verifyEmail(verifyEmailRequest)
+        authenticationService.verifyEmail(verifyEmailRequest)
 
         // Retrieve the user to ensure it was added successfully
-        return mainService.getUserByEmail(user.email)
+        return userService.getUserByEmail(user.email)
     }
 
     /**
@@ -201,7 +222,7 @@ open class IntegrationTest : KoinTest {
             val acceptRequest = GrpcProject.Member.Accept.newBuilder()
                 .setToken(invitationToken.captured)
                 .build()
-            mainService.acceptProjectInvitation(acceptRequest)
+            invitationService.acceptProjectInvitation(acceptRequest)
         }
     }
 
@@ -254,7 +275,7 @@ open class IntegrationTest : KoinTest {
             .setProjectId(project.id)
             .setUserEmail(inviteeEmail)
             .build()
-        mainService.inviteUserToProject(inviteUserRequest)
+        invitationService.inviteUserToProject(inviteUserRequest)
 
         return invitationToken
     }

@@ -24,7 +24,7 @@ class AuthenticationIntegrationTest : IntegrationTest() {
             val user = addUser(DataBuilder.createExampleUser(email = "login.user@example.com"))
 
             assertDoesNotThrow {
-                mainService.login(
+                authenticationService.login(
                     Authentication.LoginRequest.newBuilder()
                         .setEmail(user.email)
                         .setPassword("SecureP@ssw0rd!")
@@ -38,7 +38,7 @@ class AuthenticationIntegrationTest : IntegrationTest() {
             val user = addUser(DataBuilder.createExampleUser(email = "wrong.pass@example.com"))
 
             assertThrows<UnauthenticatedException> {
-                mainService.login(
+                authenticationService.login(
                     Authentication.LoginRequest.newBuilder()
                         .setEmail(user.email)
                         .setPassword("WrongP@ssw0rd!")
@@ -50,7 +50,7 @@ class AuthenticationIntegrationTest : IntegrationTest() {
         @Test
         fun `When a login is attempted with a non-existent email, then login fails`() = runTest {
             assertThrows<UnauthenticatedException> {
-                mainService.login(
+                authenticationService.login(
                     Authentication.LoginRequest.newBuilder()
                         .setEmail("ghost@example.com")
                         .setPassword("AnyP@ssw0rd!")
@@ -66,7 +66,7 @@ class AuthenticationIntegrationTest : IntegrationTest() {
             coJustRun { emailManagerMock.sendVerificationEmail(any(), any()) }
 
             val newUser = DataBuilder.createExampleUser(email = "unverified.user@example.com")
-            mainService.register(
+            userService.register(
                 Authentication.RegisterRequest.newBuilder()
                     .setFirstName(newUser.firstName)
                     .setLastName(newUser.lastName)
@@ -76,7 +76,7 @@ class AuthenticationIntegrationTest : IntegrationTest() {
             )
 
             assertThrows<UnauthenticatedException> {
-                mainService.login(
+                authenticationService.login(
                     Authentication.LoginRequest.newBuilder()
                         .setEmail(newUser.email)
                         .setPassword("SecureP@ssw0rd!")
@@ -91,14 +91,14 @@ class AuthenticationIntegrationTest : IntegrationTest() {
         @Test
         fun `When a logged-in user logs out, then logout succeeds`() = runTest {
             val user = addUser(DataBuilder.createExampleUser(email = "logout.user@example.com"))
-            mainService.login(
+            authenticationService.login(
                 Authentication.LoginRequest.newBuilder()
                     .setEmail(user.email)
                     .setPassword("SecureP@ssw0rd!")
                     .build(),
             )
 
-            assertDoesNotThrow { mainService.logout() }
+            assertDoesNotThrow { authenticationService.logout() }
         }
     }
 }

@@ -18,7 +18,7 @@ class RegressionTest : IntegrationTest() {
             val createProjectRequest = Project.Create.newBuilder()
                 .setName("Test Project")
                 .build()
-            val project = mainService.createProject(createProjectRequest)
+            val project = projectService.createProject(createProjectRequest)
 
             // Register another user to invite
             val otherUser = addUser(DataBuilder.createExampleUser())
@@ -27,7 +27,7 @@ class RegressionTest : IntegrationTest() {
             inviteUserToProject(project, otherUser)
 
             val id = parseUUID(project.id, EntityType.PROJECT)
-            var pendingInvitations = mainService.getPendingInvitationsForProject(id).usersList
+            var pendingInvitations = invitationService.getPendingInvitationsForProject(id).usersList
             assertEquals(1, pendingInvitations.size)
             assertEquals(otherUser.email, pendingInvitations[0].email)
             assertEquals(otherUser.firstName, pendingInvitations[0].firstName)
@@ -39,9 +39,9 @@ class RegressionTest : IntegrationTest() {
                 .setProjectId(project.id)
                 .setUserEmail(otherUser.email)
                 .build()
-            mainService.removeProjectMember(removeInvitationRequest)
+            projectMemberService.removeProjectMember(removeInvitationRequest)
 
-            pendingInvitations = mainService.getPendingInvitationsForProject(id).usersList
+            pendingInvitations = invitationService.getPendingInvitationsForProject(id).usersList
             assertEquals(0, pendingInvitations.size)
         }
 }

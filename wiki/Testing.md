@@ -211,8 +211,8 @@ for an example.
 Integration tests are used to test the behavior of services and repositories working together against a real database.
 The only components that are mocked are the environment variables and the email service, i.e., all external
 dependencies. As with the repository tests, an isolated PostgreSQL database is used.
-The SUT for all integration tests is the `mainService` object. Through it, all layers can be accessed, as if they were
-called from the server layer.
+Each integration test class calls the entity-specific service directly (e.g. `projectService`, `userService`), all of
+which are injected from the same real Koin module that is used in production.
 
 Integration tests are organized in subdirectories under
 [`integration`](https://github.com/SE-UUlm/snowballr-backend/tree/develop/src/test/kotlin/se/uulm/snowballr/backend/integration):

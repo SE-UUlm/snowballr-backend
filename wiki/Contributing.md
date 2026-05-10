@@ -208,28 +208,14 @@ exists a 1-to-1 mapping of incoming requests to service methods, the service han
 entity.
 
 If there isn't already a service for the entity associated with your use case, add another one with the pattern
-`[Entity Name]Service`. To wire it up, make three additions:
+`[Entity Name]Service`. To wire it up, make two additions:
 
 1. Register the implementation in `serviceLayerDeps()` in
    [Module.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/Module.kt)
    and inject the service interface directly into `SnowballRService` in
    [SnowballRServer.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/grpc/SnowballRServer.kt).
 
-2. Add the interface to `IMainService` and delegate the implementation in `MainService` in the integration test
-   package, so that integration tests can access the new methods through the shared `mainService` object:
-
-   ```kotlin
-   // In src/test/.../integration/MainService.kt
-   interface IMainService :
-       IExampleService
-
-   class MainService(
-       private val exampleService: IExampleService
-   ) : IMainService,
-       IExampleService by exampleService
-   ```
-
-3. Create an entity-specific `ExampleServiceTest` base class in the service test package, as described on the
+2. Create an entity-specific `ExampleServiceTest` base class in the service test package, as described on the
    [Testing](https://github.com/SE-UUlm/snowballr-backend/wiki/Testing#service) page.
 
 Build the service method implementation in a way that preconditions are checked first. We want to fail as fast as
