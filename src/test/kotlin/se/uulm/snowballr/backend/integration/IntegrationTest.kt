@@ -14,7 +14,6 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.TestInstance
-import org.junit.jupiter.api.assertNotNull
 import org.koin.core.component.inject
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
@@ -24,6 +23,7 @@ import org.koin.core.module.dsl.createdAtStart
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 import org.koin.test.KoinTest
+import se.uulm.snowballr.backend.RandomKeyGenerator
 import se.uulm.snowballr.backend.TestDatabase
 import se.uulm.snowballr.backend.accessCheckerDeps
 import se.uulm.snowballr.backend.auth.AuthenticationManager
@@ -34,14 +34,13 @@ import se.uulm.snowballr.backend.auth.ICookieManager
 import se.uulm.snowballr.backend.auth.IJwtManager
 import se.uulm.snowballr.backend.auth.JwtManager
 import se.uulm.snowballr.backend.db.IDatabase
+import se.uulm.snowballr.backend.env.Env
 import se.uulm.snowballr.backend.env.EnvReader
-import se.uulm.snowballr.backend.env.IEnvService
 import se.uulm.snowballr.backend.fetcher.IFetcherManager
 import se.uulm.snowballr.backend.fetcher.PythonPluginFetcherManager
 import se.uulm.snowballr.backend.mail.EmailManager
 import se.uulm.snowballr.backend.mail.IEmailManager
 import se.uulm.snowballr.backend.mailServiceDeps
-import se.uulm.snowballr.backend.mockEnvWithDefaultValues
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.email.EmailData
@@ -73,13 +72,10 @@ open class IntegrationTest : KoinTest {
     // Initialize DB with empty dataSource only to set it in the setUp method
     protected val db = TestDatabase(HikariDataSource())
 
-    // Environment dependencies
-    private val envServiceMock = mockk<IEnvService>()
     protected val envReaderMock = mockk<EnvReader>()
     protected val emailManagerMock = mockk<EmailManager>()
 
     private val allMocks = arrayOf(
-        envServiceMock,
         envReaderMock,
         emailManagerMock,
     )
@@ -98,14 +94,13 @@ open class IntegrationTest : KoinTest {
     protected val userService: IUserService by inject()
 
     private val integrationTestModule = module {
-        // Environment dependencies
-        single { envServiceMock }
         single { envReaderMock }
 
-        // Mock env variables
-        every { envReaderMock.env } returns mockEnvWithDefaultValues()
-        // Assert env so that it is not recognized as an unnecessary stub
-        assertNotNull(envReaderMock.env)
+        // Mock Env.Encryption since it's always called when initializing the JwtManager
+        val (privateKeyBase64, publicKeyBase64) = RandomKeyGenerator.generateKeyPair()
+        every { envReaderMock.env.encryption } returns Env.Encryption(privateKeyBase64, publicKeyBase64)
+        // Mock Env.Lifetime since it's used by the InvitationService
+        every { envReaderMock.env.lifetime } returns Env.Lifetime(30, 7, 1)
 
         // Test database
         single<IDatabase> { db }
@@ -185,6 +180,7 @@ open class IntegrationTest : KoinTest {
         val verificationToken = slot<String>()
         val link = "https://example.com/verify"
         coEvery { emailManagerMock.createVerificationLink(capture(verificationToken)) } returns link
+        every { envReaderMock.env.lifetime.verificationTokenLifeTimeInDays } returns 1
         val verificationData = EmailData.EmailVerification(user.firstName, link, "tomorrow")
         coJustRun { emailManagerMock.sendVerificationEmail(any(), verificationData) }
 
@@ -267,6 +263,7 @@ open class IntegrationTest : KoinTest {
         val invitationToken = slot<String>()
         val link = "https://example.com/accept-invitation"
         coEvery { emailManagerMock.createAcceptProjectInvitationLink(capture(invitationToken)) } returns link
+        every { envReaderMock.env.lifetime.invitationTokenLifeTimeInDays } returns 7
         val invitationData =
             EmailData.AcceptProjectInvitation(inviteeFirstName, "Test User", project.name, link, "in 7 days")
         coJustRun { emailManagerMock.sendAcceptProjectInvitationEmail(any(), invitationData) }

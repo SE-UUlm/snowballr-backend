@@ -91,15 +91,15 @@ class JwtManager(
     init {
         logger.debug { "Initializing JWT private and public keys" }
 
-        val env = envReader.env
+        val envEncryption = envReader.env.encryption
 
         // Private Key
-        val privateKeyBytes = Decoders.BASE64.decode(env.encryption.jwtPrivateKeyBase64)
+        val privateKeyBytes = Decoders.BASE64.decode(envEncryption.jwtPrivateKeyBase64)
         val privateKeySpec = PKCS8EncodedKeySpec(privateKeyBytes)
         privateKey = KeyFactory.getInstance(KEY_ALGORITHM).generatePrivate(privateKeySpec)
 
         // Public Key
-        val publicKeyBytes = Decoders.BASE64.decode(env.encryption.jwtPublicKeyBase64)
+        val publicKeyBytes = Decoders.BASE64.decode(envEncryption.jwtPublicKeyBase64)
         val publicKeySpec = X509EncodedKeySpec(publicKeyBytes)
         publicKey = KeyFactory.getInstance(KEY_ALGORITHM).generatePublic(publicKeySpec)
 
