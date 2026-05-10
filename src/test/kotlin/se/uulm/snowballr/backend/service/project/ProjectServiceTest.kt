@@ -3,11 +3,6 @@ package se.uulm.snowballr.backend.service.project
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
-import org.koin.core.module.Module
-import org.koin.core.module.dsl.bind
-import org.koin.core.module.dsl.singleOf
-import org.koin.dsl.module
-import org.koin.test.inject
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.model.dto.User
@@ -18,7 +13,6 @@ import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import se.uulm.snowballr.backend.service.BaseServiceTest
-import se.uulm.snowballr.backend.service.IProjectService
 import se.uulm.snowballr.backend.service.ProjectService
 import se.uulm.snowballr.backend.service.withUser
 
@@ -44,21 +38,15 @@ sealed class ProjectServiceTest : BaseServiceTest() {
         projectAccessCheckerMock,
     )
 
-    val service: IProjectService by inject()
-
-    private val module = module {
-        single { projectRepoMock }
-        single { userRepoMock }
-        single { projectMemberRepoMock }
-        single { projectPaperRepoMock }
-        single { criterionRepoMock }
-        single { invitationTokenRepoMock }
-        single { projectAccessCheckerMock }
-
-        singleOf(::ProjectService) { bind<IProjectService>() }
-    }
-
-    override fun getModule(): Module = module
+    val service = ProjectService(
+        repo = projectRepoMock,
+        userRepo = userRepoMock,
+        projectMemberRepo = projectMemberRepoMock,
+        projectPaperRepo = projectPaperRepoMock,
+        criterionRepo = criterionRepoMock,
+        invitationTokenRepo = invitationTokenRepoMock,
+        accessChecker = projectAccessCheckerMock,
+    )
 
     override fun getAllMocks(): Array<Any> = allMocks
 

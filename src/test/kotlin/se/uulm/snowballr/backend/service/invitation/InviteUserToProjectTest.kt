@@ -70,6 +70,7 @@ class InviteUserToProjectTest : InvitationServiceTest() {
         }
         coEvery { userRepoMock.getUserByEmail(invitedUserEmail) } returns Result.success(invitedUser)
         coEvery { emailManagerMock.createAcceptProjectInvitationLink(any()) } returns "http://invitation-link"
+        every { envReaderMock.env.lifetime.invitationTokenLifeTimeInDays } returns 30
         if (stopBefore == emailManagerMock::sendAcceptProjectInvitationEmail) {
             return
         }
@@ -153,6 +154,7 @@ class InviteUserToProjectTest : InvitationServiceTest() {
         every { emailManagerMock.createAcceptProjectInvitationLink(any()) } answers {
             "https://link/${firstArg<String>()}"
         }
+        every { envReaderMock.env.lifetime.invitationTokenLifeTimeInDays } returns 30
         coJustRun { emailManagerMock.sendAcceptProjectInvitationEmail(invitedUserEmail, capture(emailDataSlot)) }
 
         assertDoesNotThrow { service.inviteUserToProject(validInviteUserRequest.build()) }
@@ -175,6 +177,7 @@ class InviteUserToProjectTest : InvitationServiceTest() {
         val emailNotFoundException = UserNotFoundByEmailException(emailOfNonExistentUser)
         coEvery { userRepoMock.getUserByEmail(emailOfNonExistentUser) } returns Result.failure(emailNotFoundException)
         every { emailManagerMock.createAcceptProjectInvitationLink(any()) } returns "http://invitation-link"
+        every { envReaderMock.env.lifetime.invitationTokenLifeTimeInDays } returns 30
         coJustRun { emailManagerMock.sendAcceptProjectInvitationEmail(any(), capture(emailDataSlot)) }
 
         val inviteNonExistentUserRequest = validInviteUserRequest.setUserEmail(emailOfNonExistentUser)

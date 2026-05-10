@@ -3,11 +3,6 @@ package se.uulm.snowballr.backend.service.projectpaper
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
-import org.koin.core.module.Module
-import org.koin.core.module.dsl.bind
-import org.koin.core.module.dsl.singleOf
-import org.koin.dsl.module
-import org.koin.test.inject
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.access.IProjectPaperAccessChecker
 import se.uulm.snowballr.backend.auth.GrpcContext
@@ -20,7 +15,6 @@ import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.IReviewHasCriterionTableRepo
 import se.uulm.snowballr.backend.service.BaseServiceTest
-import se.uulm.snowballr.backend.service.IProjectPaperService
 import se.uulm.snowballr.backend.service.ProjectPaperService
 import se.uulm.snowballr.backend.service.withUser
 
@@ -50,23 +44,17 @@ sealed class ProjectPaperServiceTest : BaseServiceTest() {
         projectAccessCheckerMock,
     )
 
-    val service: IProjectPaperService by inject()
-
-    private val module = module {
-        single { projectPaperRepoMock }
-        single { userRepoMock }
-        single { projectRepoMock }
-        single { paperRepoMock }
-        single { citationRepoMock }
-        single { reviewRepoMock }
-        single { reviewHasCriterionRepoMock }
-        single { projectPaperAccessCheckerMock }
-        single { projectAccessCheckerMock }
-
-        singleOf(::ProjectPaperService) { bind<IProjectPaperService>() }
-    }
-
-    override fun getModule(): Module = module
+    val service = ProjectPaperService(
+        repo = projectPaperRepoMock,
+        userRepo = userRepoMock,
+        paperRepo = paperRepoMock,
+        projectRepo = projectRepoMock,
+        citationTableRepo = citationRepoMock,
+        reviewTableRepo = reviewRepoMock,
+        reviewHasCriterionTableRepo = reviewHasCriterionRepoMock,
+        accessChecker = projectPaperAccessCheckerMock,
+        projectAccessChecker = projectAccessCheckerMock,
+    )
 
     override fun getAllMocks(): Array<Any> = allMocks
 

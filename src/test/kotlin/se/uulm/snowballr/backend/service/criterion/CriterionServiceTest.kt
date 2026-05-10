@@ -3,11 +3,6 @@ package se.uulm.snowballr.backend.service.criterion
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
-import org.koin.core.module.Module
-import org.koin.core.module.dsl.bind
-import org.koin.core.module.dsl.singleOf
-import org.koin.dsl.module
-import org.koin.test.inject
 import se.uulm.snowballr.backend.access.ICriterionAccessChecker
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.auth.GrpcContext
@@ -16,7 +11,6 @@ import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.service.BaseServiceTest
 import se.uulm.snowballr.backend.service.CriterionService
-import se.uulm.snowballr.backend.service.ICriterionService
 import se.uulm.snowballr.backend.service.withUser
 
 /**
@@ -35,18 +29,12 @@ sealed class CriterionServiceTest : BaseServiceTest() {
         projectAccessCheckerMock,
     )
 
-    val service: ICriterionService by inject()
-
-    private val module = module {
-        single { criterionRepoMock }
-        single { userRepoMock }
-        single { criterionAccessCheckerMock }
-        single { projectAccessCheckerMock }
-
-        singleOf(::CriterionService) { bind<ICriterionService>() }
-    }
-
-    override fun getModule(): Module = module
+    val service = CriterionService(
+        repo = criterionRepoMock,
+        userRepo = userRepoMock,
+        accessChecker = criterionAccessCheckerMock,
+        projectAccessChecker = projectAccessCheckerMock,
+    )
 
     override fun getAllMocks(): Array<Any> = allMocks
 

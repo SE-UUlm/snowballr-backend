@@ -3,11 +3,6 @@ package se.uulm.snowballr.backend.service.review
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
-import org.koin.core.module.Module
-import org.koin.core.module.dsl.bind
-import org.koin.core.module.dsl.singleOf
-import org.koin.dsl.module
-import org.koin.test.inject
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.access.IReviewAccessChecker
 import se.uulm.snowballr.backend.auth.GrpcContext
@@ -19,7 +14,6 @@ import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.IReviewHasCriterionTableRepo
 import se.uulm.snowballr.backend.service.BaseServiceTest
-import se.uulm.snowballr.backend.service.IReviewService
 import se.uulm.snowballr.backend.service.ReviewService
 import se.uulm.snowballr.backend.service.withUser
 
@@ -47,22 +41,16 @@ sealed class ReviewServiceTest : BaseServiceTest() {
         projectAccessCheckerMock,
     )
 
-    val service: IReviewService by inject()
-
-    private val module = module {
-        single { reviewRepoMock }
-        single { userRepoMock }
-        single { projectPaperRepoMock }
-        single { projectRepoMock }
-        single { criterionRepoMock }
-        single { reviewHasCriterionRepoMock }
-        single { reviewAccessCheckerMock }
-        single { projectAccessCheckerMock }
-
-        singleOf(::ReviewService) { bind<IReviewService>() }
-    }
-
-    override fun getModule(): Module = module
+    val service = ReviewService(
+        repo = reviewRepoMock,
+        userRepo = userRepoMock,
+        projectPaperRepo = projectPaperRepoMock,
+        projectRepo = projectRepoMock,
+        criterionRepo = criterionRepoMock,
+        reviewHasCriterionRepo = reviewHasCriterionRepoMock,
+        accessChecker = reviewAccessCheckerMock,
+        projectAccessChecker = projectAccessCheckerMock,
+    )
 
     override fun getAllMocks(): Array<Any> = allMocks
 

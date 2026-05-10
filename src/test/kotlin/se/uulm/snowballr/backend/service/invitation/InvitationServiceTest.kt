@@ -3,26 +3,17 @@ package se.uulm.snowballr.backend.service.invitation
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
-import org.junit.jupiter.api.assertNotNull
-import org.koin.core.module.Module
-import org.koin.core.module.dsl.bind
-import org.koin.core.module.dsl.singleOf
-import org.koin.dsl.module
-import org.koin.test.inject
 import se.uulm.snowballr.backend.access.IInvitationAccessChecker
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.env.EnvReader
-import se.uulm.snowballr.backend.env.IEnvService
 import se.uulm.snowballr.backend.mail.IEmailManager
-import se.uulm.snowballr.backend.mockEnvWithDefaultValues
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.service.BaseServiceTest
-import se.uulm.snowballr.backend.service.IInvitationService
 import se.uulm.snowballr.backend.service.InvitationService
 import se.uulm.snowballr.backend.service.withUser
 
@@ -35,12 +26,9 @@ sealed class InvitationServiceTest : BaseServiceTest() {
     val projectMemberRepoMock = mockk<IProjectMemberTableRepo>()
     val invitationTokenRepoMock = mockk<IInvitationTokenTableRepo>()
     val emailManagerMock = mockk<IEmailManager>()
+    val envReaderMock = mockk<EnvReader>()
     val invitationAccessCheckerMock = mockk<IInvitationAccessChecker>()
     val projectAccessCheckerMock = mockk<IProjectAccessChecker>()
-
-    // Environment dependencies
-    val envServiceMock = mockk<IEnvService>()
-    val envReaderMock = mockk<EnvReader>()
 
     private val allMocks = arrayOf(
         userRepoMock,
@@ -48,36 +36,21 @@ sealed class InvitationServiceTest : BaseServiceTest() {
         projectMemberRepoMock,
         invitationTokenRepoMock,
         emailManagerMock,
+        envReaderMock,
         invitationAccessCheckerMock,
         projectAccessCheckerMock,
-        envServiceMock,
-        envReaderMock,
     )
 
-    val service: IInvitationService by inject()
-
-    private val module = module {
-        // Environment dependencies
-        single { envServiceMock }
-        single { envReaderMock }
-
-        // Mock env variables
-        every { envReaderMock.env } returns mockEnvWithDefaultValues()
-        // Assert env so that it is not recognized as an unnecessary stub
-        assertNotNull(envReaderMock.env)
-
-        single { userRepoMock }
-        single { projectRepoMock }
-        single { projectMemberRepoMock }
-        single { invitationTokenRepoMock }
-        single { emailManagerMock }
-        single { invitationAccessCheckerMock }
-        single { projectAccessCheckerMock }
-
-        singleOf(::InvitationService) { bind<IInvitationService>() }
-    }
-
-    override fun getModule(): Module = module
+    val service = InvitationService(
+        userRepo = userRepoMock,
+        projectRepo = projectRepoMock,
+        projectMemberRepo = projectMemberRepoMock,
+        invitationTokenRepo = invitationTokenRepoMock,
+        emailManager = emailManagerMock,
+        envReader = envReaderMock,
+        accessChecker = invitationAccessCheckerMock,
+        projectAccessChecker = projectAccessCheckerMock,
+    )
 
     override fun getAllMocks(): Array<Any> = allMocks
 

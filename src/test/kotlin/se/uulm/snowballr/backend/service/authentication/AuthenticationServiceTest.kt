@@ -3,11 +3,6 @@ package se.uulm.snowballr.backend.service.authentication
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
-import org.koin.core.module.Module
-import org.koin.core.module.dsl.bind
-import org.koin.core.module.dsl.singleOf
-import org.koin.dsl.module
-import org.koin.test.inject
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.auth.IJwtManager
 import se.uulm.snowballr.backend.model.dto.User
@@ -15,7 +10,6 @@ import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.IVerificationTokenTableRepo
 import se.uulm.snowballr.backend.service.AuthenticationService
 import se.uulm.snowballr.backend.service.BaseServiceTest
-import se.uulm.snowballr.backend.service.IAuthenticationService
 import se.uulm.snowballr.backend.service.withUser
 
 /**
@@ -28,17 +22,11 @@ sealed class AuthenticationServiceTest : BaseServiceTest() {
 
     private val allMocks = arrayOf(userRepoMock, verificationTokenRepoMock, jwtManagerMock)
 
-    val service: IAuthenticationService by inject()
-
-    private val module = module {
-        single { userRepoMock }
-        single { verificationTokenRepoMock }
-        single { jwtManagerMock }
-
-        singleOf(::AuthenticationService) { bind<IAuthenticationService>() }
-    }
-
-    override fun getModule(): Module = module
+    val service = AuthenticationService(
+        repo = userRepoMock,
+        verificationTokenRepo = verificationTokenRepoMock,
+        jwtManager = jwtManagerMock,
+    )
 
     override fun getAllMocks(): Array<Any> = allMocks
 

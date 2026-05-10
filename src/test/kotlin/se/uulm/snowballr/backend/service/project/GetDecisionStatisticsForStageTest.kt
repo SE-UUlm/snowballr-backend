@@ -15,7 +15,7 @@ import kotlin.test.assertEquals
 import snowballr.ProjectOuterClass.Project.Information as GrpcProjectInformation
 
 class GetDecisionStatisticsForStageTest : ProjectServiceTest() {
-    private val validRequestBuilder = GrpcProjectInformation.DecisionStatistics.Get
+    private fun getRequest() = GrpcProjectInformation.DecisionStatistics.Get
         .newBuilder()
         .setProjectId(UUID.randomUUID().toString())
         .setStage(0)
@@ -25,7 +25,7 @@ class GetDecisionStatisticsForStageTest : ProjectServiceTest() {
         val user = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject()
 
-        val request = validRequestBuilder
+        val request = getRequest()
             .setProjectId(project.id.toString())
             .build()
 
@@ -43,7 +43,7 @@ class GetDecisionStatisticsForStageTest : ProjectServiceTest() {
             val user = DataBuilder.createExampleUser()
             val project = DataBuilder.createExampleProject()
 
-            val request = validRequestBuilder
+            val request = getRequest()
                 .setProjectId(project.id.toString())
                 .build()
 
@@ -58,7 +58,7 @@ class GetDecisionStatisticsForStageTest : ProjectServiceTest() {
         val user = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject()
 
-        val request = validRequestBuilder
+        val request = getRequest()
             .setProjectId(project.id.toString())
             .build()
 
@@ -74,7 +74,7 @@ class GetDecisionStatisticsForStageTest : ProjectServiceTest() {
         val user = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject(maxStage = 1)
 
-        val request = validRequestBuilder
+        val request = getRequest()
             .setProjectId(project.id.toString())
             .setStage(project.maxStage + 1) // Request the first invalid stage
             .build()
@@ -91,7 +91,7 @@ class GetDecisionStatisticsForStageTest : ProjectServiceTest() {
         val user = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject(maxStage = 1)
 
-        val request = validRequestBuilder
+        val request = getRequest()
             .setProjectId(project.id.toString())
             .setStage(project.maxStage) // Request the last valid stage
             .build()
@@ -140,7 +140,7 @@ class GetDecisionStatisticsForStageTest : ProjectServiceTest() {
             ),
         )
 
-        val request = validRequestBuilder
+        val request = getRequest()
             .setProjectId(project.id.toString())
             .setStage(stage)
             .build()

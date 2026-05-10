@@ -6,10 +6,6 @@ import io.mockk.mockkObject
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.TestInstance
-import org.koin.core.context.startKoin
-import org.koin.core.context.stopKoin
-import org.koin.core.module.Module
-import org.koin.test.KoinTest
 import se.uulm.snowballr.backend.auth.GrpcContext
 
 /**
@@ -18,12 +14,9 @@ import se.uulm.snowballr.backend.auth.GrpcContext
  * This provides the setup and teardown logic for the service-specific dependencies.
  */
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
-abstract class BaseServiceTest : KoinTest {
+abstract class BaseServiceTest {
     @BeforeEach
-    fun setUpTest() {
-        startKoin {
-            modules(getModule())
-        }
+    open fun setUpTest() {
         mockkObject(GrpcContext)
     }
 
@@ -31,10 +24,7 @@ abstract class BaseServiceTest : KoinTest {
     open fun tearDownTest() {
         checkUnnecessaryStub(*getAllMocks())
         clearAllMocks()
-        stopKoin()
     }
-
-    abstract fun getModule(): Module
 
     abstract fun getAllMocks(): Array<Any>
 }

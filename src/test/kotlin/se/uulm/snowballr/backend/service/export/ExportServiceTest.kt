@@ -3,11 +3,6 @@ package se.uulm.snowballr.backend.service.export
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
-import org.koin.core.module.Module
-import org.koin.core.module.dsl.bind
-import org.koin.core.module.dsl.singleOf
-import org.koin.dsl.module
-import org.koin.test.inject
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.model.dto.User
@@ -19,7 +14,6 @@ import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import se.uulm.snowballr.backend.service.BaseServiceTest
 import se.uulm.snowballr.backend.service.ExportService
-import se.uulm.snowballr.backend.service.IExportService
 import se.uulm.snowballr.backend.service.withUser
 
 /**
@@ -44,21 +38,15 @@ sealed class ExportServiceTest : BaseServiceTest() {
         projectAccessCheckerMock,
     )
 
-    val service: IExportService by inject()
-
-    private val module = module {
-        single { projectRepoMock }
-        single { projectMemberRepoMock }
-        single { projectPaperRepoMock }
-        single { reviewRepoMock }
-        single { criterionRepoMock }
-        single { userRepoMock }
-        single { projectAccessCheckerMock }
-
-        singleOf(::ExportService) { bind<IExportService>() }
-    }
-
-    override fun getModule(): Module = module
+    val service = ExportService(
+        projectRepo = projectRepoMock,
+        projectMemberRepo = projectMemberRepoMock,
+        projectPaperRepo = projectPaperRepoMock,
+        reviewRepo = reviewRepoMock,
+        projectAccessChecker = projectAccessCheckerMock,
+        userRepo = userRepoMock,
+        criterionRepo = criterionRepoMock,
+    )
 
     override fun getAllMocks(): Array<Any> = allMocks
 

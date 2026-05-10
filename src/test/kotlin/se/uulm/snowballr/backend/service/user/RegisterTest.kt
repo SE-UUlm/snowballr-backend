@@ -47,6 +47,7 @@ class RegisterTest : UserServiceTest() {
         coEvery { userRepoMock.createUser(getExampleRequest(user), any()) } returns user
         coJustRun { verificationTokenRepoMock.saveVerificationToken(user.id, any()) }
         every { emailManagerMock.createVerificationLink(any()) } returns verificationLink
+        every { envReaderMock.env.lifetime.verificationTokenLifeTimeInDays } returns 1
         coEvery { emailManagerMock.sendVerificationEmail(user.email, userData) } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { service.register(getExampleRequest(user)) }
@@ -64,12 +65,11 @@ class RegisterTest : UserServiceTest() {
             coEvery { userRepoMock.doesUserExistByEmail(user.email) } returns false
             coEvery { userRepoMock.createUser(getExampleRequest(user), any()) } returns user
             coJustRun { verificationTokenRepoMock.saveVerificationToken(user.id, capture(tokenSlot)) }
-
             every { emailManagerMock.createVerificationLink(any()) } answers {
                 val token = firstArg<String>()
                 "$testFrontendURL/verifyemail?token=$token"
             }
-
+            every { envReaderMock.env.lifetime.verificationTokenLifeTimeInDays } returns 7
             coJustRun { emailManagerMock.sendVerificationEmail(user.email, capture(emailDataSlot)) }
 
             assertDoesNotThrow { service.register(getExampleRequest(user)) }
