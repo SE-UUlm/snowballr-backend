@@ -59,7 +59,7 @@ class GenericEnumProvider : ArgumentsProvider {
 
         // Assert that all exclude values are valid enum values
         annotation.excludes.forEach { excludeValue ->
-            assertNotNull(enumClass.enumConstants.find { it.toString() == excludeValue })
+            assertNotNull(enumClass.enumConstants.find { "$it" == excludeValue })
         }
 
         val excludes = annotation.excludes.toSet() + "UNRECOGNIZED"

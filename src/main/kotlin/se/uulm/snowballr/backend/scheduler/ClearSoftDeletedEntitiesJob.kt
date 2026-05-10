@@ -30,14 +30,14 @@ class ClearSoftDeletedEntitiesJob : Job, KoinComponent {
             try {
                 userMaintenanceService.clearSoftDeletedUsers()
             } catch (e: CancellationException) {
-                logger.warn { "Soft-deleted user cleanup was cancelled: ${e.message}" }
+                logger.warn { "Soft-deleted user cleanup was cancelled: ${e.message ?: "<empty>"}" }
                 throw e
             }
 
             try {
                 projectMaintenanceService.clearSoftDeletedProjects()
             } catch (e: CancellationException) {
-                logger.warn { "Soft-deleted project cleanup was cancelled: ${e.message}" }
+                logger.warn { "Soft-deleted project cleanup was cancelled: ${e.message ?: "<empty>"}" }
                 throw e
             }
         }
