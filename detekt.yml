@@ -703,7 +703,7 @@ potential-bugs:
         active: true
     Deprecation:
         active: true
-        aliases: [ 'DEPRECATION' ]
+        aliases: [ 'DEPRECATION', 'Deprecated' ]
         excludeImportStatements: false
     DontDowncastCollectionTypes:
         active: true

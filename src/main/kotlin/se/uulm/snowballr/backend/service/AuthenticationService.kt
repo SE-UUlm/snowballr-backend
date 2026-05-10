@@ -87,6 +87,7 @@ class AuthenticationService(
         GrpcContext.setAuthCookiesInContext("", "")
     }
 
+    @Suppress("ThrowsCount")
     override suspend fun login(request: Authentication.LoginRequest) {
         // Check whether a user with the given email exists
         val user =
