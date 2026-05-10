@@ -34,7 +34,7 @@ val Logger = KotlinLogging.logger { }
 
 interface IInvitationService {
     /**
-     * Service implementation of [SnowballRService.getInviteCandidates]
+     * Service implementation of [SnowballRService.getInviteCandidates].
      */
     suspend fun getInviteCandidates(request: Project.InviteCandidatesRequest): GrpcUser.List
 

@@ -5,7 +5,7 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 /**
- * DTO of [VerificationTokenTable]
+ * DTO of [VerificationTokenTable].
  */
 data class VerificationToken(
     val id: UUID,
