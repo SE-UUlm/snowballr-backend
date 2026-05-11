@@ -7,6 +7,9 @@ import org.jetbrains.exposed.v1.core.Table
 import org.jetbrains.exposed.v1.core.TextColumnType
 import org.jetbrains.exposed.v1.datetime.timestampWithTimeZone
 import org.postgresql.util.HStoreConverter
+import se.uulm.snowballr.backend.table.columntypes.HStoreColumnType
+import se.uulm.snowballr.backend.table.columntypes.ObfuscatedTextColumnType
+import se.uulm.snowballr.backend.table.columntypes.RedactedBinaryColumnType
 import java.time.OffsetDateTime
 
 /** Common column definition for a user reference */
@@ -30,7 +33,7 @@ fun Table.modifiedAt() = timestampWithTimeZone("modified_at").nullable()
 /**
  * Nullable reference to the user who modified the entity.
  *
- * - `onDelete=RESTRICT` so that no user can be deleted who is referenced by a entity
+ * - `onDelete=RESTRICT` so that no user can be deleted who is referenced by an entity
  * - `onUpdate=CASCADE` so that when the user ID is updated, the foreign key ID is updated too
  */
 fun Table.modifiedBy() = userReference("modified_by", ReferenceOption.RESTRICT, ReferenceOption.CASCADE).nullable()

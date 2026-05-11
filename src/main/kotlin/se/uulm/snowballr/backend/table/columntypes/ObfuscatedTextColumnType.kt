@@ -1,4 +1,4 @@
-package se.uulm.snowballr.backend.table
+package se.uulm.snowballr.backend.table.columntypes
 
 import org.jetbrains.exposed.v1.core.TextColumnType
 
