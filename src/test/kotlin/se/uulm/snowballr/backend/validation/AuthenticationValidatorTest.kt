@@ -233,4 +233,41 @@ class AuthenticationValidatorTest {
             assertInvalidResult<BlankField>(result)
         }
     }
+
+    @Nested
+    inner class PasswordChangeRequest {
+        @Test
+        fun `When a valid password change request is validated, then no issue is returned`() {
+            val request = Authentication.PasswordChangeRequest.newBuilder()
+                .setOldPassword("AAbb__00")
+                .setNewPassword("CCdd__11")
+                .build()
+            val result = validateRequest(request)
+
+            EitherAssert.assertThat(result).isRight()
+        }
+
+        @Test
+        fun `When the old password is blank, then the 'BlankField' issue is returned`() {
+            val request = Authentication.PasswordChangeRequest.newBuilder()
+                .setOldPassword("")
+                .setNewPassword("CCdd__11")
+                .build()
+            val result = validateRequest(request)
+
+            assertInvalidResult<BlankField>(result)
+        }
+
+        @Test
+        fun `When the new password is invalid, then the 'InvalidPassword' issue is returned`() {
+            val request = Authentication.PasswordChangeRequest.newBuilder()
+                .setOldPassword("AAbb__00")
+                .setNewPassword("short")
+                .build()
+            val result = validateRequest(request)
+
+            val issue = assertInvalidResult<InvalidPassword>(result)
+            assertEquals(InvalidPassword.Reason.TOO_SHORT, issue.reason)
+        }
+    }
 }
