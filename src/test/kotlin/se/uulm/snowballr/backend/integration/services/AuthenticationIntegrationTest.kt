@@ -14,7 +14,7 @@ import se.uulm.snowballr.backend.GrpcTestContextExtension
 import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.UnauthenticatedException
-import se.uulm.snowballr.backend.model.exception.invalidargument.InvalidOldPasswordException
+import se.uulm.snowballr.backend.model.exception.invalidargument.IncorrectOldPasswordException
 import snowballr.Authentication
 import java.util.UUID
 
@@ -164,7 +164,7 @@ class AuthenticationIntegrationTest : IntegrationTest() {
             val user = addUser(DataBuilder.createExampleUser(email = "change.password.wrong.old@example.com"))
 
             actAsUser(user.id) {
-                assertThrows<InvalidOldPasswordException> {
+                assertThrows<IncorrectOldPasswordException> {
                     authenticationService.changePassword(
                         Authentication.PasswordChangeRequest.newBuilder()
                             .setOldPassword("wrong-password")

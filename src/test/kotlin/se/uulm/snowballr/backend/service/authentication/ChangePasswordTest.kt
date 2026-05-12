@@ -10,7 +10,7 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.auth.PasswordUtils
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
-import se.uulm.snowballr.backend.model.exception.invalidargument.InvalidOldPasswordException
+import se.uulm.snowballr.backend.model.exception.invalidargument.IncorrectOldPasswordException
 import snowballr.Authentication
 import snowballr.UserOuterClass.UserStatus
 
@@ -40,7 +40,7 @@ class ChangePasswordTest : AuthenticationServiceTest() {
         mockCurrentUser(currentUser)
         coEvery { userRepoMock.getPasswordHashByEmail(currentUser.email) } returns Result.success(storedPasswordHash)
 
-        assertThrows<InvalidOldPasswordException> { service.changePassword(request) }
+        assertThrows<IncorrectOldPasswordException> { service.changePassword(request) }
     }
 
     @Test

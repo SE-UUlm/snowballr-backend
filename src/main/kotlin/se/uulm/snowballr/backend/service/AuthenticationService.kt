@@ -11,7 +11,7 @@ import se.uulm.snowballr.backend.model.dto.toGrpcUser
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.UnauthenticatedException
 import se.uulm.snowballr.backend.model.exception.failedprecondition.EntityNotActiveException
-import se.uulm.snowballr.backend.model.exception.invalidargument.InvalidOldPasswordException
+import se.uulm.snowballr.backend.model.exception.invalidargument.IncorrectOldPasswordException
 import se.uulm.snowballr.backend.model.exception.notfound.VerificationTokenNotFoundException
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.IVerificationTokenTableRepo
@@ -123,7 +123,7 @@ class AuthenticationService(
 
         val storedPasswordHash = repo.getPasswordHashByEmail(currentUser.email).getOrThrow()
         if (!PasswordUtils.verifyPassword(request.oldPassword, storedPasswordHash)) {
-            throw InvalidOldPasswordException()
+            throw IncorrectOldPasswordException()
         }
 
         val newPasswordHash = PasswordUtils.hashPassword(request.newPassword)
