@@ -2,8 +2,10 @@ package se.uulm.snowballr.backend.service.authentication
 
 import io.mockk.coEvery
 import io.mockk.coJustRun
-import io.mockk.coVerify
+import io.mockk.slot
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
@@ -54,14 +56,15 @@ class ChangePasswordTest : AuthenticationServiceTest() {
             .build()
         val storedPasswordHash = PasswordUtils.hashPassword(oldPassword)
 
+        val passwordHashSlot = slot<String>()
+
         mockCurrentUser(currentUser)
         coEvery { userRepoMock.getPasswordHashByEmail(currentUser.email) } returns Result.success(storedPasswordHash)
-        coJustRun { userRepoMock.updatePasswordHash(currentUser.id, any()) }
+        coJustRun { userRepoMock.updatePasswordHash(currentUser.id, capture(passwordHashSlot)) }
 
         assertDoesNotThrow { service.changePassword(request) }
 
-        coVerify(exactly = 1) {
-            userRepoMock.updatePasswordHash(currentUser.id, match { PasswordUtils.verifyPassword(newPassword, it) })
-        }
+        assertNotNull(passwordHashSlot.captured)
+        assertTrue(PasswordUtils.verifyPassword(newPassword, passwordHashSlot.captured))
     }
 }
