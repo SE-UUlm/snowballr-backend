@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
+import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.auth.PasswordUtils
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.invalidargument.IncorrectOldPasswordException
@@ -28,6 +29,21 @@ class ChangePasswordTest : AuthenticationServiceTest() {
         mockCurrentUser(currentUser)
 
         assertThrows<FailedPreconditionException> { service.changePassword(request) }
+    }
+
+    @Test
+    fun `When getPasswordHashByEmail returns a failure, then an exception is thrown`() = runTest {
+        val currentUser = DataBuilder.createExampleUser(status = UserStatus.USER_STATUS_ACTIVE)
+        val request = Authentication.PasswordChangeRequest.newBuilder()
+            .setOldPassword("AAbb__00")
+            .setNewPassword("CCdd__11")
+            .build()
+
+        mockCurrentUser(currentUser)
+        coEvery { userRepoMock.getPasswordHashByEmail(currentUser.email) } returns
+            Result.failure(TestSpecificException())
+
+        assertThrows<TestSpecificException> { service.changePassword(request) }
     }
 
     @Test
