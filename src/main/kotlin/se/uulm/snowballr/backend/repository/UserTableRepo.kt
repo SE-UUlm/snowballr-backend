@@ -155,6 +155,11 @@ interface IUserTableRepo {
     suspend fun getPasswordHashByEmail(email: String): Result<String>
 
     /**
+     * Updates the password hash of the user with the given [userId].
+     */
+    suspend fun updatePasswordHash(userId: UUID, passwordHash: String)
+
+    /**
      * Returns a [Result] containing the settings of the user with the passed [id] or a [NotFoundException] if the user
      * with the passed [id] doesn't exist.
      *
@@ -397,6 +402,15 @@ class UserTableRepo(
 
     override suspend fun getPasswordHashByEmail(email: String): Result<String> = db.query {
         getEntityByKeyAsResult(::getPasswordHashByUserMailOrNull, EntityType.USER, email, IdentifierType.EMAIL)
+    }
+
+    override suspend fun updatePasswordHash(userId: UUID, passwordHash: String) {
+        db.query {
+            UserTable.update({ UserTable.id eq userId }) {
+                it[UserTable.passwordHash] = passwordHash
+                it[modifiedAt] = OffsetDateTime.now()
+            }
+        }
     }
 
     override suspend fun getUserSettings(id: UUID): Result<UserSettings> = db.query {

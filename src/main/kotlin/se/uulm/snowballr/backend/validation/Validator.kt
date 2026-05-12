@@ -41,6 +41,7 @@ fun <T> validateRequest(request: T): EitherNel<ValidationIssue, Unit> = when (re
     is Authentication.RegisterRequest -> AuthenticationValidator.validateRegisterRequest(request)
     is Authentication.VerifyEmailRequest -> AuthenticationValidator.validateVerifyEmailRequest(request)
     is Authentication.LoginRequest -> AuthenticationValidator.validateLoginRequest(request)
+    is Authentication.PasswordChangeRequest -> AuthenticationValidator.validateChangePasswordRequest(request)
     // User
     is UserOuterClass.User.Update -> UserValidator.validateUpdateRequest(request)
     // Project

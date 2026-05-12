@@ -495,6 +495,27 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
     }
 
     @Nested
+    inner class UpdatePasswordHash {
+        @Test
+        fun `When a user exists, then the password hash is updated`() = runTest {
+            val userId = insertUserAndGetId(email = "test.user@example.com", passwordHash = "oldHash")
+            val newHash = "newHash"
+
+            assertDoesNotThrow { repo.updatePasswordHash(userId, newHash) }
+
+            val updatedHash = assertResultSuccess(repo.getPasswordHashByEmail("test.user@example.com"))
+            assertEquals(newHash, updatedHash)
+        }
+
+        @Test
+        fun `When a user does not exist, then no exception is thrown`() = runTest {
+            assertDoesNotThrow {
+                repo.updatePasswordHash(UUID.randomUUID(), "newHash")
+            }
+        }
+    }
+
+    @Nested
     inner class GetUserSettings {
         @Test
         fun `When a user is found, then a successful result with the user settings is returned`() = runTest {

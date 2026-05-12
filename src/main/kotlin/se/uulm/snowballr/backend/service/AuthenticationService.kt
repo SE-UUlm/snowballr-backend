@@ -5,10 +5,13 @@ import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.auth.IJwtManager
 import se.uulm.snowballr.backend.auth.PasswordUtils
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
+import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.isActiveAndConfirmed
 import se.uulm.snowballr.backend.model.dto.toGrpcUser
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.UnauthenticatedException
+import se.uulm.snowballr.backend.model.exception.failedprecondition.EntityNotActiveException
+import se.uulm.snowballr.backend.model.exception.invalidargument.IncorrectOldPasswordException
 import se.uulm.snowballr.backend.model.exception.notfound.VerificationTokenNotFoundException
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.IVerificationTokenTableRepo
@@ -32,6 +35,11 @@ interface IAuthenticationService {
      * Service implementation of [SnowballRService.login].
      */
     suspend fun login(request: Authentication.LoginRequest)
+
+    /**
+     * Service implementation of [SnowballRService.changePassword].
+     */
+    suspend fun changePassword(request: Authentication.PasswordChangeRequest)
 }
 
 /**
@@ -106,5 +114,19 @@ class AuthenticationService(
         // Generate JWT tokens
         val (accessToken, refreshToken) = jwtManager.generateAuthTokens(user.id)
         GrpcContext.setAuthCookiesInContext(accessToken, refreshToken)
+    }
+
+    override suspend fun changePassword(request: Authentication.PasswordChangeRequest) = withUser(repo) { currentUser ->
+        if (!currentUser.isActiveAndConfirmed()) {
+            throw EntityNotActiveException(EntityType.USER, currentUser.id)
+        }
+
+        val storedPasswordHash = repo.getPasswordHashByEmail(currentUser.email).getOrThrow()
+        if (!PasswordUtils.verifyPassword(request.oldPassword, storedPasswordHash)) {
+            throw IncorrectOldPasswordException()
+        }
+
+        val newPasswordHash = PasswordUtils.hashPassword(request.newPassword)
+        repo.updatePasswordHash(currentUser.id, newPasswordHash)
     }
 }

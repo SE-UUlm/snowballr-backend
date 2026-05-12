@@ -237,8 +237,9 @@ class SnowballRServer(
         override suspend fun resetPassword(request: Authentication.PasswordResetRequest): Base.Nothing =
             super.resetPassword(request)
 
-        override suspend fun changePassword(request: Authentication.PasswordChangeRequest): Base.Nothing =
-            super.changePassword(request)
+        override suspend fun changePassword(request: Authentication.PasswordChangeRequest) = returnNothing {
+            authenticationService.changePassword(request)
+        }
 
         override suspend fun getAllUsers(request: Base.Nothing): UserOuterClass.User.List = userService.getAllUsers()
 
