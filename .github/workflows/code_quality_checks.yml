@@ -62,7 +62,6 @@ jobs:
 
             - name: Upload coverage report
               uses: actions/upload-artifact@v7
-              if: ${{ !cancelled() }}
               with:
                   name: coverage-report
                   path: ${{ github.workspace }}/build/coverageXml/report.xml
