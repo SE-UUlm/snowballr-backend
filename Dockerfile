@@ -8,22 +8,20 @@ ARG ARM64_ID=251600609
 
 WORKDIR /app
 
-# Copy the Gradle wrapper files
-COPY gradlew .
+RUN apk add libc6-compat curl
+
+# Copy build files only — dependency resolution re-runs only when these change
+COPY build.gradle.kts settings.gradle.kts ./
 COPY gradle gradle
-COPY build.gradle.kts .
-COPY settings.gradle.kts .
 
-# Copy the project's source code and proto files
+# Resolve and cache all dependencies before copying source
+RUN --mount=type=cache,target=/root/.gradle \
+    gradle dependencies --no-daemon
+
+# Copy the project's source code and proto files and build
 COPY src/main src/main
-
-# Grant execution rights to the Gradle wrapper script and build the jar file
-RUN apk add libc6-compat \
-    && chmod +x gradlew \
-    && ./gradlew shadowJar --no-daemon --stacktrace
-
-# Install curl utility
-RUN apk add curl
+RUN --mount=type=cache,target=/root/.gradle \
+    gradle shadowJar --no-daemon --stacktrace
 
 # Download binaries of grpc-health-probe based on the architecture and make them executable
 RUN ARCH=$(uname -m) && \
