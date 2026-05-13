@@ -48,10 +48,12 @@ FROM eclipse-temurin:21-jre-alpine-3.21 AS final
 
 WORKDIR /app
 
+RUN adduser -D backend-user
+
 # Copy built jar file
-COPY --from=build /app/build/libs/snowballr-backend-*.jar app.jar
+COPY --chown=backend-user:backend-user --from=build /app/build/libs/snowballr-backend-*.jar app.jar
 # Copy grpc_health_probe
-COPY --from=build /app/grpc_health_probe grpc_health_probe
+COPY --chown=backend-user:backend-user --from=build /app/grpc_health_probe grpc_health_probe
 COPY --from=uv /uv /bin/uv
 
 ENV PORT=8080
@@ -64,7 +66,7 @@ VOLUME /app/plugins/
 HEALTHCHECK CMD ./grpc_health_probe -addr=localhost:${PORT} -service "snowballr.SnowballR"
 
 # Install python and fetcher dependencies using uv
-COPY requirements.txt .
+COPY --chown=backend-user:backend-user requirements.txt .
 RUN apk add --no-cache python3 libcurl
 RUN uv venv /app/.venv
 # Needed for pycurl
@@ -72,10 +74,8 @@ ENV PYCURL_SSL_LIBRARY=openssl
 RUN apk add --no-cache --virtual .py-build-deps python3-dev build-base curl-dev
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv pip sync --python /app/.venv/bin/python requirements.txt
-RUN apk del .py-build-deps
+RUN apk del .py-build-deps && chown -R backend-user /app/.venv
 
-# Run the application as a non-root user.
-RUN adduser -D backend-user && chown -R backend-user /app
 USER backend-user
 
 # Start execute the jar file when starting the container
