@@ -1,14 +1,14 @@
-# Stage 1: Build the application
-FROM gradle:9.3.1-jdk21-alpine AS build
-
 # Asset IDs of v0.4.38 release of grpc-health-probe
 # https://github.com/grpc-ecosystem/grpc-health-probe/releases/tag/v0.4.38
 ARG AMD64_ID=251600596
 ARG ARM64_ID=251600609
 
+# Stage 1: Build the application
+FROM gradle:9.3.1-jdk21-alpine AS build
+
 WORKDIR /app
 
-RUN apk add libc6-compat curl
+RUN apk add libc6-compat
 
 # Copy build files only — dependency resolution re-runs only when these change
 COPY build.gradle.kts settings.gradle.kts gradle.properties ./
@@ -23,8 +23,14 @@ COPY src/main src/main
 RUN --mount=type=cache,target=/root/.gradle \
     gradle shadowJar --no-daemon --stacktrace
 
-# Download binaries of grpc-health-probe based on the architecture and make them executable
-RUN ARCH=$(uname -m) && \
+# Stage 2: Download grpc-health-probe (runs in parallel with build)
+FROM alpine:3.21 AS grpc-health-probe
+
+ARG AMD64_ID
+ARG ARM64_ID
+
+RUN apk add --no-cache curl && \
+    ARCH=$(uname -m) && \
     if [ "$ARCH" = "x86_64" ]; then \
       export ASSET_ID=${AMD64_ID}; \
     elif [ "$ARCH" = "aarch64" ]; then \
@@ -37,13 +43,13 @@ RUN ARCH=$(uname -m) && \
       -H "Accept:application/octet-stream" \
       -H "X-GitHub-Api-Version: 2022-11-28" \
       https://api.github.com/repos/grpc-ecosystem/grpc-health-probe/releases/assets/${ASSET_ID} \
-      -o grpc_health_probe \
-    && chmod +x grpc_health_probe
+      -o /grpc_health_probe \
+    && chmod +x /grpc_health_probe
 
-# Stage 2: Provide uv binary
+# Stage 3: Provide uv binary
 FROM ghcr.io/astral-sh/uv:0.11.7 AS uv
 
-# Stage 3: Run the application
+# Stage 4: Run the application
 FROM eclipse-temurin:21-jre-alpine-3.21 AS final
 
 WORKDIR /app
@@ -53,7 +59,7 @@ RUN adduser -D backend-user
 # Copy built jar file
 COPY --chown=backend-user:backend-user --from=build /app/build/libs/snowballr-backend-*.jar app.jar
 # Copy grpc_health_probe
-COPY --chown=backend-user:backend-user --from=build /app/grpc_health_probe grpc_health_probe
+COPY --chown=backend-user:backend-user --from=grpc-health-probe /grpc_health_probe grpc_health_probe
 COPY --from=uv /uv /bin/uv
 
 ENV PORT=8080
