@@ -56,7 +56,7 @@ COPY --from=uv /uv /bin/uv
 
 ENV PORT=8080
 ENV PLUGIN_DIRECTORY=/app/plugins/
-ENV PYTHON_EXECUTABLE=/app/venv/bin/python3
+ENV PYTHON_EXECUTABLE=/app/.venv/bin/python3
 
 VOLUME /app/plugins/
 
@@ -66,11 +66,12 @@ HEALTHCHECK CMD ./grpc_health_probe -addr=localhost:${PORT} -service "snowballr.
 # Install python and fetcher dependencies using uv
 COPY requirements.txt .
 RUN apk add --no-cache python3 libcurl
-RUN uv venv /app/venv
+RUN uv venv /app/.venv
 # Needed for pycurl
 ENV PYCURL_SSL_LIBRARY=openssl
 RUN apk add --no-cache --virtual .py-build-deps python3-dev build-base curl-dev
-RUN uv pip sync --python /app/venv/bin/python3 requirements.txt
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv pip sync --python /app/.venv/bin/python requirements.txt
 RUN apk del .py-build-deps
 
 # Run the application as a non-root user.
