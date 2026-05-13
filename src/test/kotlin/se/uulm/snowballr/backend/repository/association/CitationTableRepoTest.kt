@@ -8,10 +8,12 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertPaperAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryTest
+import se.uulm.snowballr.backend.repository.isUniqueConstraintViolation
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.association.CitationTable
 import java.sql.SQLException
 import java.util.UUID
+import kotlin.test.assertTrue
 
 class CitationTableRepoTest : RepositoryTest(arrayOf(PaperTable, CitationTable), false) {
     private val repo = CitationTableRepo(db)
@@ -119,7 +121,8 @@ class CitationTableRepoTest : RepositoryTest(arrayOf(PaperTable, CitationTable),
 
             repo.addBackwardReferencedPaper(paperId, referencedPaperId)
 
-            assertThrows<SQLException> { repo.addBackwardReferencedPaper(paperId, referencedPaperId) }
+            val ex = assertThrows<SQLException> { repo.addBackwardReferencedPaper(paperId, referencedPaperId) }
+            assertTrue(ex.isUniqueConstraintViolation())
         }
     }
 
@@ -143,7 +146,8 @@ class CitationTableRepoTest : RepositoryTest(arrayOf(PaperTable, CitationTable),
 
             repo.addForwardReferencedPaper(paperId, citingPaperId)
 
-            assertThrows<SQLException> { repo.addForwardReferencedPaper(paperId, citingPaperId) }
+            val ex = assertThrows<SQLException> { repo.addForwardReferencedPaper(paperId, citingPaperId) }
+            assertTrue(ex.isUniqueConstraintViolation())
         }
     }
 }
