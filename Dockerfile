@@ -11,7 +11,7 @@ WORKDIR /app
 RUN apk add libc6-compat curl
 
 # Copy build files only — dependency resolution re-runs only when these change
-COPY build.gradle.kts settings.gradle.kts ./
+COPY build.gradle.kts settings.gradle.kts gradle.properties ./
 COPY gradle gradle
 
 # Resolve and cache all dependencies before copying source
