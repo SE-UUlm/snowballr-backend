@@ -720,4 +720,37 @@ class ProjectTableRepoTest :
                 assertEquals(ProjectStatus.PROJECT_STATUS_UNSPECIFIED, project.status)
             }
     }
+
+    @Nested
+    inner class UpdateMaxStageIfExceeded {
+        @Test
+        fun `When the max stage is updated to a lower value, then the max stage stays the same`() = runTest {
+            val projectId = insertProjectAndGetId(createdBy = testUserId, maxStage = 12)
+
+            repo.updateMaxStageIfExceeded(projectId, 9)
+            val project = repo.getProjectById(projectId).getOrThrow()
+
+            assertEquals(12, project.maxStage)
+        }
+
+        @Test
+        fun `When the max stage is updated to a greater value, then the value is updated`() = runTest {
+            val projectId = insertProjectAndGetId(createdBy = testUserId, maxStage = 42)
+
+            repo.updateMaxStageIfExceeded(projectId, 43)
+            val project = repo.getProjectById(projectId).getOrThrow()
+
+            assertEquals(43, project.maxStage)
+        }
+
+        @Test
+        fun `When the max stage is updated to the equal value, then the max stage stays the same`() = runTest {
+            val projectId = insertProjectAndGetId(createdBy = testUserId, maxStage = 3)
+
+            repo.updateMaxStageIfExceeded(projectId, 3)
+            val project = repo.getProjectById(projectId).getOrThrow()
+
+            assertEquals(3, project.maxStage)
+        }
+    }
 }

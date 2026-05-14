@@ -9,6 +9,7 @@ import se.uulm.snowballr.backend.model.dto.Paper
 import se.uulm.snowballr.backend.model.dto.toAuthor
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.PaperNotFoundException
+import se.uulm.snowballr.backend.model.fetcher.FetcherMetadata
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.toPaper
@@ -50,8 +51,10 @@ interface IPaperTableRepo {
 
     /**
      * Creates a new paper in the database with the provided values.
+     *
+     * Optionally, a map of [FetcherMetadata] can be passed.
      */
-    suspend fun createPaper(request: GrpcPaper): Paper
+    suspend fun createPaper(request: GrpcPaper, metadata: FetcherMetadata = emptyMap()): Paper
 
     /**
      * Updates an existing paper in the database with the provided new values.
@@ -103,7 +106,7 @@ class PaperTableRepo(
         PaperTable.doesEntityExist { PaperTable.externalId eq externalId }
     }
 
-    override suspend fun createPaper(request: GrpcPaper): Paper = db.query {
+    override suspend fun createPaper(request: GrpcPaper, metadata: FetcherMetadata): Paper = db.query {
         PaperTable.insertAndGet(ResultRow::toPaper) {
             it[title] = request.title
             it[externalId] = request.externalId.ifBlank { null }
@@ -113,6 +116,7 @@ class PaperTableRepo(
             it[publicationName] = request.publicationName
             it[publicationType] = request.publicationType
             it[authors] = request.authorsList.map(GrpcAuthor::toAuthor)
+            it[fetcherMetadata] = metadata
             it[createdAt] = OffsetDateTime.now()
         }
     }

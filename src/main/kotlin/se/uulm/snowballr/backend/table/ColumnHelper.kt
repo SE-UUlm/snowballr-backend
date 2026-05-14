@@ -1,13 +1,14 @@
 package se.uulm.snowballr.backend.table
 
-import arrow.core.mapValuesNotNull
 import org.jetbrains.exposed.v1.core.BasicBinaryColumnType
 import org.jetbrains.exposed.v1.core.Column
 import org.jetbrains.exposed.v1.core.ReferenceOption
 import org.jetbrains.exposed.v1.core.Table
 import org.jetbrains.exposed.v1.core.TextColumnType
 import org.jetbrains.exposed.v1.datetime.timestampWithTimeZone
-import org.postgresql.util.HStoreConverter
+import se.uulm.snowballr.backend.table.columntypes.HStoreColumnType
+import se.uulm.snowballr.backend.table.columntypes.ObfuscatedTextColumnType
+import se.uulm.snowballr.backend.table.columntypes.RedactedBinaryColumnType
 import java.time.OffsetDateTime
 
 /** Common column definition for a user reference */
@@ -31,7 +32,7 @@ fun Table.modifiedAt() = timestampWithTimeZone("modified_at").nullable()
 /**
  * Nullable reference to the user who modified the entity.
  *
- * - `onDelete=RESTRICT` so that no user can be deleted who is referenced by a entity
+ * - `onDelete=RESTRICT` so that no user can be deleted who is referenced by an entity
  * - `onUpdate=CASCADE` so that when the user ID is updated, the foreign key ID is updated too
  */
 fun Table.modifiedBy() = userReference("modified_by", ReferenceOption.RESTRICT, ReferenceOption.CASCADE).nullable()
@@ -60,17 +61,7 @@ fun Table.redactedBinary(name: String) = registerColumn(name, RedactedBinaryColu
 
 /**
  * Stores a Map<String, String> inside an [HStoreColumnType]. Unallowed characters are automatically escaped.
+ *
+ * The order of the key-value pairs is not guaranteed.
  */
-fun Table.stringMap(name: String): Column<Map<String, String>> = registerColumn(
-    name,
-    HStoreColumnType(),
-).transform(
-    wrap = {
-        HStoreConverter
-            .fromString(it.trim('{', '}'))
-            .mapValuesNotNull { entry -> entry.value }
-    },
-    unwrap = {
-        HStoreConverter.toString(it)
-    },
-)
+fun Table.stringMap(name: String): Column<Map<String, String>> = registerColumn(name, HStoreColumnType())
