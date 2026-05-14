@@ -1,0 +1,48 @@
+# Build output
+build/
+.gradle/
+
+# Git internals
+.git/
+
+# DB data volume
+db-data/
+
+# Test sources (Dockerfile only copies src/main)
+src/test/
+
+# Gradle wrapper (not used in Docker build)
+gradlew
+gradlew.bat
+
+# Docker files
+docker-compose.yml
+Dockerfile
+Dockerfile.proxy
+
+# CI/CD
+.github/
+
+# Documentation
+README.md
+CHANGELOG.md
+LICENSE
+wiki/
+images/
+
+# Dev tooling config
+detekt-baseline.xml
+detekt.yml
+markdownlint.json
+
+# Scripts and tooling
+scripts/
+
+# Plugin volume mount
+plugins/
+
+# IDE
+.idea/
+
+# AI
+.claude/
