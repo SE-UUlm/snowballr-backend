@@ -8,6 +8,7 @@ FROM gradle:9.3.1-jdk21-alpine AS build
 
 WORKDIR /app
 
+# libc6-compat: provide glibc compatibility for prebuilt binaries
 RUN apk add libc6-compat
 
 # Copy build files only — dependency resolution re-runs only when these change
@@ -29,6 +30,7 @@ FROM alpine:3.21 AS grpc-health-probe
 ARG AMD64_ID
 ARG ARM64_ID
 
+# Download binaries of grpc-health-probe based on the architecture and make them executable
 RUN apk add --no-cache curl && \
     ARCH=$(uname -m) && \
     if [ "$ARCH" = "x86_64" ]; then \
