@@ -65,7 +65,7 @@ exist yet, start the backend as it should be created automatically.
 
 Fetcher plugins are loaded during runtime from the `fetchers` subdirectory
 of the plugin directory. This directory can be configured using the
-`PLUGIN_DIRECTORY` environment variable and defaults to `./plugins/`. This
+`PLUGIN_DIRECTORY` environment variable and defaults to `plugins/`. This
 directory is relative to the working directory of the backend and should
 already be present if you have previously started the backend. Every `.py`
 file directly contained within the `fetchers` directory will be treated as a
