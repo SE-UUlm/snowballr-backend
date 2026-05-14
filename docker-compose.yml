@@ -40,6 +40,7 @@ services:
             SMTP_SENDER_EMAIL: ${SMTP_SENDER_EMAIL:-}
             SENSITIVE_INFORMATION_RETENTION_DAYS: ${SENSITIVE_INFORMATION_RETENTION_DAYS:-}
             PLUGIN_DIRECTORY: /app/plugins/
+            PYTHON_EXECUTABLE: ${PYTHON_EXECUTABLE:-.venv/bin/python3}
         volumes:
             - ./plugins:/app/plugins
         ports:
@@ -92,6 +93,7 @@ services:
             SMTP_SENDER_EMAIL: ${SMTP_SENDER_EMAIL:-}
             SENSITIVE_INFORMATION_RETENTION_DAYS: ${SENSITIVE_INFORMATION_RETENTION_DAYS:-}
             PLUGIN_DIRECTORY: /app/plugins/
+            PYTHON_EXECUTABLE: ${PYTHON_EXECUTABLE:-.venv/bin/python3}
         volumes:
             - ./plugins:/app/plugins
         ports:
@@ -144,6 +146,8 @@ services:
             SMTP_SENDER_NAME: ${SMTP_SENDER_NAME:-}
             SMTP_SENDER_EMAIL: ${SMTP_SENDER_EMAIL:-}
             SENSITIVE_INFORMATION_RETENTION_DAYS: ${SENSITIVE_INFORMATION_RETENTION_DAYS:-}
+            PLUGIN_DIRECTORY: /app/plugins/
+            PYTHON_EXECUTABLE: ${PYTHON_EXECUTABLE:-.venv/bin/python3}
         ports:
             - ${PORT:-8080}:${PORT:-8080}
         healthcheck:
