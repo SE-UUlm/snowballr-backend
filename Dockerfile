@@ -58,20 +58,11 @@ WORKDIR /app
 
 RUN adduser -D backend-user
 
-# Copy built jar file
-COPY --chown=backend-user:backend-user --from=build /app/build/libs/snowballr-backend-*.jar app.jar
-# Copy grpc_health_probe
-COPY --chown=backend-user:backend-user --from=grpc-health-probe /grpc_health_probe grpc_health_probe
 COPY --from=uv /uv /bin/uv
 
 ENV PORT=8080
 ENV PLUGIN_DIRECTORY=/app/plugins/
 ENV PYTHON_EXECUTABLE=/app/.venv/bin/python3
-
-VOLUME /app/plugins/
-
-# Healthcheck uses grpc-health-probe
-HEALTHCHECK CMD ./grpc_health_probe -addr=localhost:${PORT} -service "snowballr.SnowballR"
 
 # Install python and fetcher dependencies using uv
 COPY --chown=backend-user:backend-user requirements.txt .
@@ -83,6 +74,15 @@ RUN apk add --no-cache --virtual .py-build-deps python3-dev build-base curl-dev
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv pip sync --python /app/.venv/bin/python requirements.txt
 RUN apk del .py-build-deps && chown -R backend-user /app/.venv
+
+VOLUME /app/plugins/
+
+# Healthcheck uses grpc-health-probe
+HEALTHCHECK CMD ./grpc_health_probe -addr=localhost:${PORT} -service "snowballr.SnowballR"
+
+# Copy build artifacts last — source changes only invalidate layers below this point
+COPY --chown=backend-user:backend-user --from=build /app/build/libs/snowballr-backend-*.jar app.jar
+COPY --chown=backend-user:backend-user --from=grpc-health-probe /grpc_health_probe grpc_health_probe
 
 USER backend-user
 
