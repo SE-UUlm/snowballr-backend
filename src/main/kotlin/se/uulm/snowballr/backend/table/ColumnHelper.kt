@@ -6,7 +6,6 @@ import org.jetbrains.exposed.v1.core.ReferenceOption
 import org.jetbrains.exposed.v1.core.Table
 import org.jetbrains.exposed.v1.core.TextColumnType
 import org.jetbrains.exposed.v1.datetime.timestampWithTimeZone
-import org.postgresql.util.HStoreConverter
 import se.uulm.snowballr.backend.table.columntypes.HStoreColumnType
 import se.uulm.snowballr.backend.table.columntypes.ObfuscatedTextColumnType
 import se.uulm.snowballr.backend.table.columntypes.RedactedBinaryColumnType
@@ -66,19 +65,3 @@ fun Table.redactedBinary(name: String) = registerColumn(name, RedactedBinaryColu
  * The order of the key-value pairs is not guaranteed.
  */
 fun Table.stringMap(name: String): Column<Map<String, String>> = registerColumn(name, HStoreColumnType())
-    .transform(
-        wrap = {
-            // HStore -> Map
-            it.trim('{', '}')
-                .split(", ")
-                .filter(String::isNotEmpty)
-                .associate { pair ->
-                    val (left, right) = pair.split('=')
-                    left to right
-                }
-        },
-        unwrap = {
-            // Map -> HStore
-            HStoreConverter.toString(it)
-        },
-    )
