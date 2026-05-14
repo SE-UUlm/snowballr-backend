@@ -144,6 +144,12 @@ class FetcherOrchestrator(
         logger.info { "Finished fetcher processing job for paper ${job.paperId}" }
     }
 
+    /**
+     * Runs the fetching part of the job processing.
+     *
+     * Based on the snowballing type papers that are referenced either forward, backward, or from both directions are
+     * fetched by calling the [fetcherManager].
+     */
     private suspend fun runFetching(job: FetcherProcessingJob, paper: Paper): FetchingResults {
         val backwardReferences = if (shouldFetchBackward(job.snowballingType)) {
             fetch(job.fetchers, paper, FetchingDirection.BACKWARD)
@@ -168,6 +174,11 @@ class FetcherOrchestrator(
         snowballingType == SnowballingType.SNOWBALLING_TYPE_BOTH ||
             snowballingType == SnowballingType.SNOWBALLING_TYPE_FORWARD
 
+    /**
+     * Calls the [fetcherManager] to fetch papers according to the passed [direction] for each fetcher in [fetchers].
+     *
+     * If a [FetcherException] is thrown by one of the fetchers, the exception is caught and logged.
+     */
     private suspend fun fetch(fetchers: FetcherMap, paper: Paper, direction: FetchingDirection): Set<FetcherPaper> {
         val fetchCall = when (direction) {
             FetchingDirection.BACKWARD -> fetcherManager::fetchBackwardReferences
@@ -194,6 +205,11 @@ class FetcherOrchestrator(
         return set
     }
 
+    /**
+     * Runs the paper creation part of the job processing.
+     *
+     * For both sets in [results] the paper data is stored in the DB if not already existent.
+     */
     private suspend fun runPaperCreation(results: FetchingResults): PaperCreationResults {
         val createdBackwardRefs = createRefs(results.backwardRefs)
         logger.info { "Created ${createdBackwardRefs.size} backward referenced papers" }
@@ -203,6 +219,12 @@ class FetcherOrchestrator(
         return PaperCreationResults(createdBackwardRefs, createdForwardRefs)
     }
 
+    /**
+     * Creates a DB paper for each of the [FetcherPaper]s in [refs].
+     *
+     * If a paper already exists in the DB, no paper is added and the existent paper is retrieved and added to the
+     * result set.
+     */
     private suspend fun createRefs(refs: Set<FetcherPaper>): Set<Paper> {
         val createdPaperRefs = mutableSetOf<Paper>()
 
@@ -227,11 +249,24 @@ class FetcherOrchestrator(
         return createdPaperRefs
     }
 
+    /**
+     * Runs the citation part of the job processing.
+     *
+     * For both sets in [creationResults] citation entries are added for the origin paper with the passed [paperId] and
+     * the reference in one of the sets.
+     */
     private suspend fun runPaperCitation(paperId: UUID, creationResults: PaperCreationResults) {
         createCitation(paperId, creationResults.backwardRefs, FetchingDirection.BACKWARD)
         createCitation(paperId, creationResults.forwardRefs, FetchingDirection.FORWARD)
     }
 
+    /**
+     * Creates a citation entry for the paper with the passed [paperId] and each reference in [refs] according to the
+     * [direction].
+     *
+     * If a citation entry already exists for a combination, nothing happens as this means the connection between both
+     * papers already exists (no-op).
+     */
     private suspend fun createCitation(paperId: UUID, refs: Set<Paper>, direction: FetchingDirection) {
         val citeCall = when (direction) {
             FetchingDirection.BACKWARD -> citationRepo::addBackwardReferencedPaper
@@ -257,6 +292,13 @@ class FetcherOrchestrator(
         logger.info { "Added $addedCitations ${refName}s for paper $paperId" }
     }
 
+    /**
+     * Runs the part of the job processing in which the created papers are added to the project.
+     *
+     * All papers in [creationResults] are added to the target stage in the project, if not already added. If the
+     * maximum stage of the project is below the target stage, it will be increased. A paper that has already been added
+     * to the project is a reference of a paper in an earlier stage.
+     */
     private suspend fun runAddingPapersToProject(job: FetcherProcessingJob, creationResults: PaperCreationResults) {
         val baseRequest = GrpcProjectPaper.Add.newBuilder()
             .setProjectId(job.projectId.toString())
