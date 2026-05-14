@@ -65,6 +65,9 @@ private class StructureRules {
             // Scheduler / Cron Jobs
             .layer("Scheduler")
             .definedBy("$BASE_PACKAGE.scheduler..")
+            // Fetcher
+            .layer("Fetcher")
+            .definedBy("$BASE_PACKAGE.fetcher..")
             // Checks
             .whereLayer("Input Validation")
             .mayOnlyBeAccessedByLayers("gRPC Server")
@@ -75,13 +78,15 @@ private class StructureRules {
             .whereLayer("Access")
             .mayOnlyBeAccessedByLayers("Service", "Main")
             .whereLayer("Repository")
-            .mayOnlyBeAccessedByLayers("Service", "Access", "Scheduler", "Main")
+            .mayOnlyBeAccessedByLayers("Service", "Access", "Scheduler", "Main", "Fetcher")
             .whereLayer("Table")
             .mayOnlyBeAccessedByLayers("Repository", "DB")
             .whereLayer("DB")
             .mayOnlyBeAccessedByLayers("Main", "Repository")
             .whereLayer("Scheduler")
             .mayOnlyBeAccessedByLayers("gRPC Server", "Main")
+            .whereLayer("Fetcher")
+            .mayOnlyBeAccessedByLayers("Main", "Service")
             .check(classes)
     }
 
@@ -116,17 +121,20 @@ private class StructureRules {
             // Scheduler / Cron Jobs
             .layer("Scheduler")
             .definedBy("$BASE_PACKAGE.scheduler..")
+            // Fetcher
+            .layer("Fetcher")
+            .definedBy("$BASE_PACKAGE.fetcher..")
             // Checks
             .whereLayer("Main")
             .mayNotBeAccessedByAnyLayer()
             .whereLayer("Main")
-            .mayOnlyAccessLayers("gRPC Server", "Service", "Access", "Repository", "DB", "Scheduler")
+            .mayOnlyAccessLayers("gRPC Server", "Service", "Access", "Repository", "DB", "Scheduler", "Fetcher")
             .whereLayer("Input Validation")
             .mayNotAccessAnyLayer()
             .whereLayer("gRPC Server")
             .mayOnlyAccessLayers("Service", "Input Validation", "Scheduler")
             .whereLayer("Service")
-            .mayOnlyAccessLayers("Repository", "Access")
+            .mayOnlyAccessLayers("Repository", "Access", "Fetcher")
             .whereLayer("Access")
             .mayOnlyAccessLayers("Repository")
             .whereLayer("Repository")
@@ -136,6 +144,8 @@ private class StructureRules {
             .whereLayer("DB")
             .mayOnlyAccessLayers("Table")
             .whereLayer("Scheduler")
+            .mayOnlyAccessLayers("Repository")
+            .whereLayer("Fetcher")
             .mayOnlyAccessLayers("Repository")
             .check(classes)
     }
