@@ -53,7 +53,7 @@ The list of required packages can be also found in the [requirements.txt](https:
 
 > [!IMPORTANT]
 > The plugin system uses the configured python executable (`PYTHON_EXECUTABLE`,
-> default `python3`). Make sure it points to the environment where the required
+> default `.venv/bin/python3`). Make sure it points to the environment where the required
 > packages are installed.
 
 To get proper autocomplete and type checking for the SnowballR types, add the

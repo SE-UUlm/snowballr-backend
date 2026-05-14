@@ -50,7 +50,7 @@ private const val DEFAULT_DATABASE_HOST = "localhost"
 private const val DEFAULT_INVITATION_TOKEN_LIFETIME_IN_DAYS = 7
 private const val DEFAULT_VERIFICATION_TOKEN_LIFETIME_IN_DAYS = 1
 private val DEFAULT_PLUGIN_DIRECTORY = Path.of("./plugins")
-private const val DEFAULT_PYTHON_EXECUTABLE = "python3"
+private const val DEFAULT_PYTHON_EXECUTABLE = ".venv/bin/python3"
 
 private val logger = KotlinLogging.logger {}
 

@@ -20,33 +20,33 @@ The `PROFILE` variable determines the default behavior of the application.
 
 ### Environment Variables Table
 
-| Variable                               |               Required               |    Default    | Description                                                                                                |
-|----------------------------------------|:------------------------------------:|:-------------:|------------------------------------------------------------------------------------------------------------|
-| `PROFILE`                              |                 :x:                  | `PRODUCTION`  | Sets the configuration profile (`PRODUCTION`, `DEVELOPMENT`, `TESTING`).                                   |
-| `PORT`                                 | :white_check_mark: (in `PRODUCTION`) |     8080      | The port where the backend is served.                                                                      |
-| `DATABASE_HOST`                        | :white_check_mark: (in `PRODUCTION`) |  `localhost`  | Hostname of the database connection.                                                                       |
-| `LOG_LEVEL`                            |                 :x:                  | Profile-based | The log level to use. One of `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`, or `OFF`.                          |
-| `AUTH_BYPASS_ENABLED`                  |                 :x:                  | Profile-based | Bypasses authentication and uses the dummy user for all whitelisted requests.                              |
-| `FRONTEND_BASE_URL`                    | :white_check_mark: (in `PRODUCTION`) | Profile-based | Base URL of the frontend application, used for generating URLs in emails.                                  |
-| `DATABASE_SEED_USER_ENABLED`           |                 :x:                  | Profile-based | Inserts a dummy user into the database on startup.                                                         |
-| `DATABASE_PASSWORD`                    |          :white_check_mark:          |       -       | Password for the database e.g. `postgres_password`.                                                        |
-| `JWT_PRIVATE_KEY_BASE64`               |          :white_check_mark:          |       -       | Base64 encoded private key for JWT authentication.                                                         |
-| `JWT_PUBLIC_KEY_BASE64`                |          :white_check_mark:          |       -       | Base64 encoded public key for JWT authentication.                                                          |
-| `SMTP_HOST`                            |          :white_check_mark:          |       -       | SMTP host for sending emails.                                                                              |
-| `SMTP_PORT`                            |          :white_check_mark:          |       -       | SMTP port for sending emails.                                                                              |
-| `SMTP_USER`                            |                 :x:                  |       -       | SMTP user for sending emails.                                                                              |
-| `SMTP_PASSWORD`                        |                 :x:                  |       -       | SMTP password for sending emails.                                                                          |
-| `SMTP_TRANSPORT_LOGGING_ONLY_ENABLED`  |                 :x:                  | Profile-based | SMTP transport logging to only log emails instead of actually sending them.                                |
-| `SMTP_SENDER_NAME`                     |          :white_check_mark:          |       -       | Name of the sender for emails.                                                                             |
-| `SMTP_SENDER_EMAIL`                    |          :white_check_mark:          |       -       | Email address of the sender for emails.                                                                    |
-| `SENSITIVE_INFORMATION_RETENTION_DAYS` |                 :x:                  |      30       | Number of days sensitive information will be kept after an entity got deleted.                             |
-| `WEB_PORT`                             |                 :x:*                 |     8081      | The port where the proxy is served (used for gRPC-Web).                                                    |
-| `BACKEND_TAG`                          |                 :x:*                 | `latest-dev`  | Tag of registry backend image to use for `registry` docker compose profile.                                |
-| `SENSITIVE_INFORMATION_RETENTION_DAYS` |                 :x:                  | Profile-based | Number of days sensitive information will be kept after an entity got deleted.                             |
-| `INVITATION_TOKEN_LIFETIME_IN_DAYS`    |                 :x:                  |       7       | Lifetime of invitation tokens in days.                                                                     |
-| `VERIFICATION_TOKEN_LIFETIME_IN_DAYS`  |                 :x:                  |       1       | Lifetime of verification tokens in days.                                                                   |
-| `PLUGIN_DIRECTORY`                     |                 :x:                  |  `./plugins`  | The directory in which the plugins reside. The directory is relative to the root directory of the project. |
-| `PYTHON_EXECUTABLE`                    |                 :x:                  |   `python3`   | Python executable used to run fetchers (for example `.venv/bin/python3`).                                  |
+| Variable                               |               Required               |       Default       | Description                                                                                                |
+|----------------------------------------|:------------------------------------:|:-------------------:|------------------------------------------------------------------------------------------------------------|
+| `PROFILE`                              |                 :x:                  |    `PRODUCTION`     | Sets the configuration profile (`PRODUCTION`, `DEVELOPMENT`, `TESTING`).                                   |
+| `PORT`                                 | :white_check_mark: (in `PRODUCTION`) |        8080         | The port where the backend is served.                                                                      |
+| `DATABASE_HOST`                        | :white_check_mark: (in `PRODUCTION`) |     `localhost`     | Hostname of the database connection.                                                                       |
+| `LOG_LEVEL`                            |                 :x:                  |    Profile-based    | The log level to use. One of `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`, or `OFF`.                          |
+| `AUTH_BYPASS_ENABLED`                  |                 :x:                  |    Profile-based    | Bypasses authentication and uses the dummy user for all whitelisted requests.                              |
+| `FRONTEND_BASE_URL`                    | :white_check_mark: (in `PRODUCTION`) |    Profile-based    | Base URL of the frontend application, used for generating URLs in emails.                                  |
+| `DATABASE_SEED_USER_ENABLED`           |                 :x:                  |    Profile-based    | Inserts a dummy user into the database on startup.                                                         |
+| `DATABASE_PASSWORD`                    |          :white_check_mark:          |          -          | Password for the database e.g. `postgres_password`.                                                        |
+| `JWT_PRIVATE_KEY_BASE64`               |          :white_check_mark:          |          -          | Base64 encoded private key for JWT authentication.                                                         |
+| `JWT_PUBLIC_KEY_BASE64`                |          :white_check_mark:          |          -          | Base64 encoded public key for JWT authentication.                                                          |
+| `SMTP_HOST`                            |          :white_check_mark:          |          -          | SMTP host for sending emails.                                                                              |
+| `SMTP_PORT`                            |          :white_check_mark:          |          -          | SMTP port for sending emails.                                                                              |
+| `SMTP_USER`                            |                 :x:                  |          -          | SMTP user for sending emails.                                                                              |
+| `SMTP_PASSWORD`                        |                 :x:                  |          -          | SMTP password for sending emails.                                                                          |
+| `SMTP_TRANSPORT_LOGGING_ONLY_ENABLED`  |                 :x:                  |    Profile-based    | SMTP transport logging to only log emails instead of actually sending them.                                |
+| `SMTP_SENDER_NAME`                     |          :white_check_mark:          |          -          | Name of the sender for emails.                                                                             |
+| `SMTP_SENDER_EMAIL`                    |          :white_check_mark:          |          -          | Email address of the sender for emails.                                                                    |
+| `SENSITIVE_INFORMATION_RETENTION_DAYS` |                 :x:                  |         30          | Number of days sensitive information will be kept after an entity got deleted.                             |
+| `WEB_PORT`                             |                 :x:*                 |        8081         | The port where the proxy is served (used for gRPC-Web).                                                    |
+| `BACKEND_TAG`                          |                 :x:*                 |    `latest-dev`     | Tag of registry backend image to use for `registry` docker compose profile.                                |
+| `SENSITIVE_INFORMATION_RETENTION_DAYS` |                 :x:                  |    Profile-based    | Number of days sensitive information will be kept after an entity got deleted.                             |
+| `INVITATION_TOKEN_LIFETIME_IN_DAYS`    |                 :x:                  |          7          | Lifetime of invitation tokens in days.                                                                     |
+| `VERIFICATION_TOKEN_LIFETIME_IN_DAYS`  |                 :x:                  |          1          | Lifetime of verification tokens in days.                                                                   |
+| `PLUGIN_DIRECTORY`                     |                 :x:                  |     `./plugins`     | The directory in which the plugins reside. The directory is relative to the root directory of the project. |
+| `PYTHON_EXECUTABLE`                    |                 :x:                  | `.venv/bin/python3` | Python executable used to run fetchers.                                                                    |
 
 \* only used when using the docker compose profiles.
 
