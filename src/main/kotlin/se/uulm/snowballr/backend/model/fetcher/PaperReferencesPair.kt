@@ -10,7 +10,6 @@ data class PaperReferencesPair<T>(
     val forwardRefs: Set<T>,
 ) {
     val allRefs get() = backwardRefs + forwardRefs
-    val totalSize get() = allRefs.size
 }
 
 /**

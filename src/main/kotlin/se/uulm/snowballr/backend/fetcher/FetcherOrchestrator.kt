@@ -19,6 +19,8 @@ import se.uulm.snowballr.backend.model.fetcher.FetchingDirection
 import se.uulm.snowballr.backend.model.fetcher.FetchingResults
 import se.uulm.snowballr.backend.model.fetcher.PaperCreationResults
 import se.uulm.snowballr.backend.model.fetcher.toGrpcPaperRequest
+import se.uulm.snowballr.backend.model.isBackwardOrBoth
+import se.uulm.snowballr.backend.model.isForwardOrBoth
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
@@ -151,13 +153,13 @@ class FetcherOrchestrator(
      * fetched by calling the [fetcherManager].
      */
     private suspend fun runFetching(job: FetcherProcessingJob, paper: Paper): FetchingResults {
-        val backwardReferences = if (shouldFetchBackward(job.snowballingType)) {
+        val backwardReferences = if (job.snowballingType.isBackwardOrBoth()) {
             fetch(job.fetchers, paper, FetchingDirection.BACKWARD)
         } else {
             emptySet()
         }
 
-        val forwardReferences = if (shouldFetchForward(job.snowballingType)) {
+        val forwardReferences = if (job.snowballingType.isForwardOrBoth()) {
             fetch(job.fetchers, paper, FetchingDirection.FORWARD)
         } else {
             emptySet()
@@ -165,14 +167,6 @@ class FetcherOrchestrator(
 
         return FetchingResults(backwardReferences, forwardReferences)
     }
-
-    private fun shouldFetchBackward(snowballingType: SnowballingType) =
-        snowballingType == SnowballingType.SNOWBALLING_TYPE_BOTH ||
-            snowballingType == SnowballingType.SNOWBALLING_TYPE_BACKWARD
-
-    private fun shouldFetchForward(snowballingType: SnowballingType) =
-        snowballingType == SnowballingType.SNOWBALLING_TYPE_BOTH ||
-            snowballingType == SnowballingType.SNOWBALLING_TYPE_FORWARD
 
     /**
      * Calls the [fetcherManager] to fetch papers according to the passed [direction] for each fetcher in [fetchers].
