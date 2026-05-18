@@ -47,11 +47,11 @@ sealed class FetcherOrchestratorTest {
     }
 
     /**
-     * Creates a [se.uulm.snowballr.backend.fetcher.FetcherOrchestrator] with the mocked dependencies and an [UnconfinedTestDispatcher] with the passed
+     * Creates a [FetcherOrchestrator] with the mocked dependencies and an [UnconfinedTestDispatcher] with the passed
      * [scheduler].
      *
-     * We use an [UnconfinedTestDispatcher] so that after [se.uulm.snowballr.backend.fetcher.FetcherOrchestrator.enqueue] returns,
-     * [se.uulm.snowballr.backend.fetcher.FetcherOrchestrator.processJob] has already processed the job, and we can verify the internal mocks.
+     * We use an [UnconfinedTestDispatcher] so that after [FetcherOrchestrator.enqueue] returns,
+     * [FetcherOrchestrator.processJob] has already processed the job, and we can verify the internal mocks.
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     fun orchestrator(scheduler: TestCoroutineScheduler) = FetcherOrchestrator(
