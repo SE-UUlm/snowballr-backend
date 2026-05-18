@@ -41,7 +41,7 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
      */
     private suspend fun FetcherOrchestrator.enqueueTestJob(job: FetcherEnqueueJob, project: Project) {
         coEvery { projectRepoMock.getProjectById(job.projectPaper.projectId) } returns Result.success(project)
-        coJustRun { paperRepoMock.ensurePaperExists(job.projectPaper.projectId) }
+        coJustRun { paperRepoMock.ensurePaperExists(job.projectPaper.paperId) }
 
         this.enqueue(job)
     }

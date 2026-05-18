@@ -104,7 +104,7 @@ class FetcherOrchestrator(
             return
         }
 
-        paperRepo.ensurePaperExists(job.projectPaper.projectId)
+        paperRepo.ensurePaperExists(job.projectPaper.paperId)
 
         val processingJob = FetcherProcessingJob(
             projectId = project.id,

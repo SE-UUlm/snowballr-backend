@@ -70,7 +70,7 @@ class FetcherOrchestratorEnqueueTest : FetcherOrchestratorTest() {
             val project = DataBuilder.createExampleProject(fetchers = mapOf(Pair("foo", emptyMap())))
 
             coEvery { projectRepoMock.getProjectById(job.projectPaper.projectId) } returns Result.success(project)
-            coEvery { paperRepoMock.ensurePaperExists(job.projectPaper.projectId) } throws TestSpecificException()
+            coEvery { paperRepoMock.ensurePaperExists(job.projectPaper.paperId) } throws TestSpecificException()
 
             assertThrows<TestSpecificException> { orchestrator.enqueue(job) }
         }
@@ -81,7 +81,7 @@ class FetcherOrchestratorEnqueueTest : FetcherOrchestratorTest() {
         val project = DataBuilder.createExampleProject(fetchers = mapOf(Pair("foo", emptyMap())))
 
         coEvery { projectRepoMock.getProjectById(job.projectPaper.projectId) } returns Result.success(project)
-        coJustRun { paperRepoMock.ensurePaperExists(job.projectPaper.projectId) }
+        coJustRun { paperRepoMock.ensurePaperExists(job.projectPaper.paperId) }
         // We let this fail in the processJob method to verify that enqueuing was successful
         coEvery { paperRepoMock.getPaperById(job.projectPaper.paperId) } returns Result.failure(TestSpecificException())
 
