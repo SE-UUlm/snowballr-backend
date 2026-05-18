@@ -30,4 +30,17 @@ class FetcherOrchestratorStartStopTest : FetcherOrchestratorTest() {
 
         assertDoesNotThrow { orchestrator.stop() }
     }
+
+    @Test
+    fun `When the orchestrator is restarted after being stopped, then no exception is thrown`() = runTest {
+        val orchestrator = orchestrator(testScheduler)
+
+        orchestrator.start()
+        orchestrator.stop()
+
+        assertDoesNotThrow {
+            orchestrator.start()
+            orchestrator.stop()
+        }
+    }
 }

@@ -87,6 +87,7 @@ class FetcherOrchestrator(
 
     override fun stop() {
         scope.cancel()
+        isStarted = false
     }
 
     override suspend fun enqueue(job: FetcherEnqueueJob) {
