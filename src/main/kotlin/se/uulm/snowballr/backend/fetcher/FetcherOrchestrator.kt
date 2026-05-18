@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.fetcher
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -37,7 +38,9 @@ interface IFetcherOrchestrator {
     /**
      * Start the fetcher orchestrator.
      *
-     * @throws IllegalStateException if the fetcher orchestrator already is running.
+     * An instance of [IFetcherOrchestrator] can only be started once and cannot be restarted again.
+     *
+     * @throws IllegalStateException if the fetcher orchestrator already is running or has been stopped before.
      */
     fun start()
 
@@ -69,8 +72,10 @@ class FetcherOrchestrator(
 
     private var isStarted = false
 
+    @OptIn(DelicateCoroutinesApi::class)
     override fun start() {
         check(!isStarted) { "Orchestrator is already running" }
+        check(!queue.isClosedForSend) { "Orchestrator has been closed" }
 
         isStarted = true
         scope.launch {
@@ -79,15 +84,20 @@ class FetcherOrchestrator(
                 try {
                     processJob(job)
                 } catch (e: Exception) {
-                    logger.error(e) { "Failed to process job" }
+                    logger.error(e) { "Failed to process job: ${e.message}" }
                 }
             }
         }
+
+        logger.info { "Fetcher Orchestrator started" }
     }
 
     override fun stop() {
         scope.cancel()
+        queue.close()
         isStarted = false
+
+        logger.info { "Fetcher Orchestrator stopped" }
     }
 
     override suspend fun enqueue(job: FetcherEnqueueJob) {

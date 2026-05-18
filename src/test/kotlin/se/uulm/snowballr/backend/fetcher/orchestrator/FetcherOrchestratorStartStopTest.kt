@@ -32,15 +32,13 @@ class FetcherOrchestratorStartStopTest : FetcherOrchestratorTest() {
     }
 
     @Test
-    fun `When the orchestrator is restarted after being stopped, then no exception is thrown`() = runTest {
+    fun `When the orchestrator is started after being stopped, then an IllegalStateException is thrown`() = runTest {
         val orchestrator = orchestrator(testScheduler)
 
-        orchestrator.start()
         orchestrator.stop()
 
-        assertDoesNotThrow {
+        assertThrows<IllegalStateException> {
             orchestrator.start()
-            orchestrator.stop()
         }
     }
 }
