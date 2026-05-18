@@ -134,7 +134,7 @@ class FetcherOrchestrator(
 
         val fetchingResults = runFetching(job, paper)
 
-        // do paper filtering/merging
+        // TODO: paper filtering/merging
         // fetching from multiple fetchers will probably return the same papers from different fetchers
         // first merge fetched papers then merge with existing paper in DB (if existent)
 
@@ -225,10 +225,10 @@ class FetcherOrchestrator(
 
         for (ref in refs) {
             if (ref.externalId != null) {
-                // replace with check for whole paper data by similarity not only external ID
+                // TODO: replace with check for whole paper data by similarity not only external ID
                 val result = paperRepo.getPaperByExternalId(ref.externalId)
                 if (result.isSuccess) {
-                    // merge data
+                    // TODO: merge data
                     createdPaperRefs += result.getOrThrow()
                     continue
                 }
