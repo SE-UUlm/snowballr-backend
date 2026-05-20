@@ -48,6 +48,7 @@ the backend with the desired profile.
   BACKEND_TAG
   env variable).
 - **`proxy-only`**: Only starts the proxy (for local development)
+- **`backend-only`**: Only starts the backend service (for local development)
 
 ## Building from Source
 
