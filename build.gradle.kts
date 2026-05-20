@@ -126,7 +126,7 @@ tasks.register<Exec>("syncFetcherPythonDeps") {
     description = "Synchronizes Python fetcher dependencies from requirements.txt using uv."
     dependsOn("createFetcherVenv")
     workingDir = projectDir
-    commandLine("uv", "pip", "sync", "--python", fetcherVenvPython, "requirements.txt")
+    commandLine("uv", "pip", "install", "--python", fetcherVenvPython, "-r", "requirements.txt")
 }
 
 tasks.register("setupFetcherPython") {

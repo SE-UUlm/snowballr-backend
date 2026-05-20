@@ -135,7 +135,7 @@ existing docs over restating them here. If you must summarize, keep it short and
 ### Fetcher dependencies
 
 - `uv venv .venv`
-- `uv pip sync --python .venv/bin/python3 requirements.txt`
+- `uv pip install --python .venv/bin/python3 -r requirements.txt`
   (wiki/Getting-Started.md, wiki/Fetcher.md)
 
 ## Style, checks, and tests
