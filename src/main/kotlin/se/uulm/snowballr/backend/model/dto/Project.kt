@@ -1,6 +1,6 @@
 package se.uulm.snowballr.backend.model.dto
 
-import se.uulm.snowballr.backend.fetcher.FetcherMap
+import se.uulm.snowballr.backend.model.fetcher.FetcherMap
 import se.uulm.snowballr.backend.table.ProjectTable
 import snowballr.Fetcher.FetcherOptions
 import snowballr.ProjectOuterClass

@@ -18,6 +18,7 @@ import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.Review
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.alreadyexists.DuplicateReviewException
+import se.uulm.snowballr.backend.model.fetcher.FetcherEnqueueJob
 import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix.Pattern
@@ -116,6 +117,9 @@ class CreateReviewTest : ReviewServiceTest() {
         } returns selectedCriteriaIds
         coEvery { criterionRepoMock.getAllProjectCriteria(project.id) } returns emptyList()
         coJustRun { projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, updatedPaperDecision) }
+        if (updatedPaperDecision == PaperDecision.PAPER_DECISION_ACCEPTED) {
+            coJustRun { fetcherOrchestratorMock.enqueue(FetcherEnqueueJob(projectPaper, currentUser.id)) }
+        }
     }
 
     @ParameterizedTest

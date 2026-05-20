@@ -6,6 +6,7 @@ import io.mockk.mockk
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.access.IReviewAccessChecker
 import se.uulm.snowballr.backend.auth.GrpcContext
+import se.uulm.snowballr.backend.fetcher.IFetcherOrchestrator
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
@@ -29,6 +30,7 @@ sealed class ReviewServiceTest : BaseServiceTest() {
     val reviewHasCriterionRepoMock = mockk<IReviewHasCriterionTableRepo>()
     val reviewAccessCheckerMock = mockk<IReviewAccessChecker>()
     val projectAccessCheckerMock = mockk<IProjectAccessChecker>()
+    val fetcherOrchestratorMock = mockk<IFetcherOrchestrator>()
 
     private val allMocks = arrayOf(
         reviewRepoMock,
@@ -39,6 +41,7 @@ sealed class ReviewServiceTest : BaseServiceTest() {
         reviewHasCriterionRepoMock,
         reviewAccessCheckerMock,
         projectAccessCheckerMock,
+        fetcherOrchestratorMock,
     )
 
     val service = ReviewService(
@@ -50,6 +53,7 @@ sealed class ReviewServiceTest : BaseServiceTest() {
         reviewHasCriterionRepo = reviewHasCriterionRepoMock,
         accessChecker = reviewAccessCheckerMock,
         projectAccessChecker = projectAccessCheckerMock,
+        fetcherOrchestrator = fetcherOrchestratorMock,
     )
 
     override fun getAllMocks(): Array<Any> = allMocks

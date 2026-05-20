@@ -21,6 +21,7 @@ On this page, we explain how to contribute to the SnowballR backend project. We 
     * [Linting](#linting)
   * [Release procedure](#release-procedure)
   * [Use another API Version](#use-another-api-version)
+  * [Fetcher Orchestration Progress](#fetcher-orchestration-progress)
 <!-- TOC -->
 <!-- @formatter:on -->
 <!-- markdownlint-enable MD007 -->
@@ -327,3 +328,17 @@ To use another API version than the currently used one, go to the `build.gradle.
 `apiVersion` variable to the desired version. Make sure that the version exists in the
 [API repository](https://github.com/SE-UUlm/snowballr-api). After changing the version, recompile the code using
 `./gradlew compileKotlin`.
+
+## Fetcher Orchestration Progress
+
+* [x] Jobs for fetching references can be enqueued
+* [x] Jobs are processed sequentially
+* [x] References are fetched for each fetcher configured in the project
+* [ ] Fetching results are merged and filtered (no duplicated data)
+* [ ] If fetched paper matches DB paper, paper in DB is updated and no new one is created (only checks externalId yet)
+* [x] Non-existent papers are added to the DB
+* [x] Citation references are stored in DB
+* [x] Papers that are not already in another stage are added to the target stage
+* [x] `maxStage` of the project is bumped if necessary
+* [ ] Logging in job processing contains unique job ID (MDC)
+* [x] Failed jobs are caught and discarded so the consumer loop continues

@@ -5,9 +5,9 @@ import org.jetbrains.exposed.v1.core.Column
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.dao.id.java.UUIDTable
 import org.jetbrains.exposed.v1.json.json
-import se.uulm.snowballr.backend.fetcher.FetcherMap
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.UserSettings
+import se.uulm.snowballr.backend.model.fetcher.FetcherMap
 import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix.Pattern

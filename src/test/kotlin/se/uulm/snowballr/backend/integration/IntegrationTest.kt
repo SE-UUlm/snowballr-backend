@@ -36,8 +36,7 @@ import se.uulm.snowballr.backend.auth.JwtManager
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.env.Env
 import se.uulm.snowballr.backend.env.EnvReader
-import se.uulm.snowballr.backend.fetcher.IFetcherManager
-import se.uulm.snowballr.backend.fetcher.PythonPluginFetcherManager
+import se.uulm.snowballr.backend.fetcher.IFetcherOrchestrator
 import se.uulm.snowballr.backend.mail.EmailManager
 import se.uulm.snowballr.backend.mail.IEmailManager
 import se.uulm.snowballr.backend.mailServiceDeps
@@ -50,7 +49,6 @@ import se.uulm.snowballr.backend.repositoryLayerDeps
 import se.uulm.snowballr.backend.service.IAuthenticationService
 import se.uulm.snowballr.backend.service.ICriterionService
 import se.uulm.snowballr.backend.service.IExportService
-import se.uulm.snowballr.backend.service.IFetcherService
 import se.uulm.snowballr.backend.service.IInvitationService
 import se.uulm.snowballr.backend.service.IPaperService
 import se.uulm.snowballr.backend.service.IProjectMemberService
@@ -74,6 +72,7 @@ open class IntegrationTest : KoinTest {
 
     protected val envReaderMock = mockk<EnvReader>()
     protected val emailManagerMock = mockk<EmailManager>()
+    protected val fetcherOrchestratorMock = mockk<IFetcherOrchestrator>()
 
     private val allMocks = arrayOf(
         envReaderMock,
@@ -83,7 +82,6 @@ open class IntegrationTest : KoinTest {
     protected val authenticationService: IAuthenticationService by inject()
     protected val criterionService: ICriterionService by inject()
     protected val exportService: IExportService by inject()
-    protected val fetcherService: IFetcherService by inject()
     protected val invitationService: IInvitationService by inject()
     protected val paperService: IPaperService by inject()
     protected val projectMemberService: IProjectMemberService by inject()
@@ -107,6 +105,9 @@ open class IntegrationTest : KoinTest {
 
         // Other mocks
         single<IEmailManager> { emailManagerMock }
+        single<IFetcherOrchestrator> { fetcherOrchestratorMock }
+        // FetcherOrchestrator is not yet part of the integration tests
+        coJustRun { fetcherOrchestratorMock.enqueue(any()) }
 
         // The other layers are the same as in production
         repositoryLayerDeps()
@@ -124,7 +125,6 @@ open class IntegrationTest : KoinTest {
             createdAtStart()
             bind<IJwtManager>()
         }
-        single<IFetcherManager> { PythonPluginFetcherManager(get()) }
         singleOf(::CookieManager) { bind<ICookieManager>() }
         singleOf(::AuthenticationManager) { bind<IAuthenticationManager>() }
     }

@@ -1,6 +1,5 @@
 package se.uulm.snowballr.backend
 
-import se.uulm.snowballr.backend.fetcher.FetcherMap
 import se.uulm.snowballr.backend.model.dto.Author
 import se.uulm.snowballr.backend.model.dto.Criterion
 import se.uulm.snowballr.backend.model.dto.InvitationToken
@@ -16,6 +15,9 @@ import se.uulm.snowballr.backend.model.dto.ReviewWithSelectedCriteriaIds
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.UserSettings
 import se.uulm.snowballr.backend.model.dto.VerificationToken
+import se.uulm.snowballr.backend.model.fetcher.FetcherEnqueueJob
+import se.uulm.snowballr.backend.model.fetcher.FetcherMap
+import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
 import se.uulm.snowballr.backend.table.patternOf
 import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass.MemberRole
@@ -186,20 +188,20 @@ object DataBuilder {
         modifiedAt: OffsetDateTime? = null,
         modifiedBy: UUID? = null,
     ) = Paper(
-        id,
-        title,
-        externalId,
-        abstract,
-        year,
-        publisher,
-        publicationType,
-        publicationName,
-        pdfId,
-        authors,
-        fetcherMetadata,
-        createdAt,
-        modifiedAt,
-        modifiedBy,
+        id = id,
+        title = title,
+        externalId = externalId,
+        abstract = abstract,
+        year = year,
+        publisher = publisher,
+        publicationType = publicationType,
+        publicationName = publicationName,
+        pdfId = pdfId,
+        authors = authors,
+        fetcherMetadata = fetcherMetadata,
+        createdAt = createdAt,
+        modifiedAt = modifiedAt,
+        modifiedBy = modifiedBy,
     )
 
     fun createExampleProjectPaper(
@@ -214,21 +216,21 @@ object DataBuilder {
         modifiedAt: OffsetDateTime? = null,
         modifiedBy: UUID? = null,
     ) = ProjectPaper(
-        id,
-        paperId,
-        projectId,
-        localPaperId,
-        stage,
-        decision,
-        createdAt,
-        createdBy,
-        modifiedAt,
-        modifiedBy,
+        id = id,
+        paperId = paperId,
+        projectId = projectId,
+        localPaperId = localPaperId,
+        stage = stage,
+        decision = decision,
+        createdAt = createdAt,
+        createdBy = createdBy,
+        modifiedAt = modifiedAt,
+        modifiedBy = modifiedBy,
     )
 
     fun createExampleAuthor(firstName: String = "FirstName", lastName: String = "LastName") = Author(
-        firstName,
-        lastName,
+        firstName = firstName,
+        lastName = lastName,
     )
 
     fun createExampleReview(
@@ -239,12 +241,12 @@ object DataBuilder {
         createdAt: OffsetDateTime = OffsetDateTime.now(),
         modifiedAt: OffsetDateTime? = null,
     ) = Review(
-        id,
-        projectPaperId,
-        userId,
-        decision,
-        createdAt,
-        modifiedAt,
+        id = id,
+        projectPaperId = projectPaperId,
+        userId = userId,
+        decision = decision,
+        createdAt = createdAt,
+        modifiedAt = modifiedAt,
     )
 
     fun createExampleVerificationToken(
@@ -336,5 +338,35 @@ object DataBuilder {
     ) = ReviewWithSelectedCriteriaIds(
         review = review,
         selectedCriteriaIds = selectedCriteriaIds,
+    )
+
+    fun createExampleFetcherEnqueueJob(
+        projectPaper: ProjectPaper = createExampleProjectPaper(),
+        triggeringUserId: UUID = UUID.randomUUID(),
+    ) = FetcherEnqueueJob(
+        projectPaper = projectPaper,
+        triggeringUserId = triggeringUserId,
+    )
+
+    fun createExampleFetcherPaper(
+        title: String = "Title",
+        externalId: String? = "ExternalId",
+        abstract: String = "Abstract",
+        year: Int = 2025,
+        publisher: String = "Publisher",
+        publicationType: String = "PublicationType",
+        publicationName: String = "PublicationName",
+        fetcherMetadata: Map<String, String> = emptyMap(),
+        authors: List<Author> = emptyList(),
+    ) = FetcherPaper(
+        title = title,
+        externalId = externalId,
+        abstract = abstract,
+        year = year,
+        publisher = publisher,
+        publicationType = publicationType,
+        publicationName = publicationName,
+        authors = authors,
+        metadata = fetcherMetadata,
     )
 }
