@@ -76,7 +76,8 @@ existing docs over restating them here. If you must summarize, keep it short and
 
 ## Fetcher plugins
 
-- Fetcher plugins run on the same system as the backend; treat them as trusted code only (wiki/Fetcher.md).
+- Fetcher plugins run on the same system as the backend; treat third-party fetchers as untrusted by default and only run
+  fetchers you trust (wiki/Fetcher.md).
 - Fetchers live under plugins/fetchers by default. Use PLUGIN_DIRECTORY to relocate (wiki/Configuration.md).
 - The invocation contract and stdin JSON payloads are specified in wiki/Fetcher.md.
 - Base Python deps are in requirements.txt; use uv to sync (commands below).
