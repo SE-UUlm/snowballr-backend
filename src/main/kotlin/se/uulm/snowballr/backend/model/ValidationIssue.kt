@@ -45,12 +45,15 @@ data class BlankField(
  *
  * @property name The name of the field that exceeded the maximum length.
  * @property maxLength The maximum allowed length for the field.
+ * @property actualLength The actual length of the field value.
  */
 data class TooLongField(
     val name: String,
     val maxLength: Int,
+    val actualLength: Int,
 ) : ValidationIssue {
-    override fun toString(): String = "The '$name' must not be longer than $maxLength characters."
+    override fun toString(): String =
+        "The '$name' must not be longer than $maxLength characters (actual: $actualLength)."
 }
 
 /**
