@@ -430,7 +430,7 @@ class SnowballRServer(
 
         override suspend fun searchFetcherPapers(
             request: ProjectOuterClass.Project.Paper.SearchQuery,
-        ): PaperOuterClass.Paper.List = super.searchFetcherPapers(request)
+        ): PaperOuterClass.Paper.List = fetcherService.searchFetcherPapers(request)
 
         override suspend fun createPaper(request: PaperOuterClass.Paper): PaperOuterClass.Paper =
             paperService.createPaper(request)

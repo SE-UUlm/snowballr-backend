@@ -1,10 +1,28 @@
 package se.uulm.snowballr.backend.service
 
+import io.github.oshai.kotlinlogging.KotlinLogging
+import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.fetcher.IFetcherManager
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
+import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.dto.Paper
+import se.uulm.snowballr.backend.model.dto.toGrpcPaper
+import se.uulm.snowballr.backend.model.exception.FetcherException
+import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
+import se.uulm.snowballr.backend.model.fetcher.toGrpcPaperRequest
+import se.uulm.snowballr.backend.model.parseUUID
+import se.uulm.snowballr.backend.repository.IPaperTableRepo
+import se.uulm.snowballr.backend.repository.IProjectTableRepo
+import se.uulm.snowballr.backend.repository.IUserTableRepo
+import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import snowballr.Fetcher.AvailableFetchers
 import snowballr.Fetcher.FetcherOptions
 import snowballr.Fetcher.GetAvailableFetcherOptionsRequest
+import java.util.UUID
+import snowballr.PaperOuterClass.Paper as GrpcPaper
+import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
+
+private val logger = KotlinLogging.logger { }
 
 interface IFetcherService {
     /**
@@ -16,18 +34,30 @@ interface IFetcherService {
      * Service implementation of [SnowballRService.getAvailableFetcherOptions].
      */
     suspend fun getAvailableFetcherOptions(request: GetAvailableFetcherOptionsRequest): FetcherOptions
+
+    /**
+     * Service implementation of [SnowballRService.searchFetcherPapers].
+     */
+    suspend fun searchFetcherPapers(request: GrpcProjectPaper.SearchQuery): GrpcPaper.List
 }
 
 /**
- * Orchestrates the paper fetching process. This service is responsible for
- * retrieving papers for a specific request. It has to make sure that the
- * correct fetchers (specified in the project settings) are accessed using the
- * correct options (also specified in the project settings).
+ * Handles operations related to fetchers, fetcher options, and fetcher papers.
  *
  * @param fetcherManager The [IFetcherManager] that manages the available fetchers.
+ * @param projectRepo The repository responsible for managing persistence operations for projects.
+ * @param userRepo The repository responsible for managing persistence operations for users.
+ * @param projectAccessChecker Interface for checking access permissions for projects based on defined rules.
+ * @param paperRepo The repository responsible for managing persistence operations for papers.
+ * @param projectPaperRepo Repository interface to manage operations related to project papers.
  */
 class FetcherService(
     private val fetcherManager: IFetcherManager,
+    private val projectRepo: IProjectTableRepo,
+    private val userRepo: IUserTableRepo,
+    private val projectAccessChecker: IProjectAccessChecker,
+    private val paperRepo: IPaperTableRepo,
+    private val projectPaperRepo: IProjectPaperTableRepo,
 ) : IFetcherService {
     override suspend fun getAvailableFetchers(): AvailableFetchers = AvailableFetchers
         .newBuilder()
@@ -38,4 +68,60 @@ class FetcherService(
         FetcherOptions.newBuilder()
             .putAllOptions(fetcherManager.getAvailableOptions(request.fetcherName))
             .build()
+
+    override suspend fun searchFetcherPapers(request: GrpcProjectPaper.SearchQuery): GrpcPaper.List =
+        withUser(userRepo) { currentUser ->
+            val projectId = parseUUID(request.projectId, EntityType.PROJECT)
+
+            val projectResult = projectRepo.getProjectById(projectId)
+            projectAccessChecker.isAllowedToReadProject(currentUser, projectId)
+            val project = projectResult.getOrThrow()
+
+            val papers = mutableSetOf<FetcherPaper>()
+            for ((fetcher, options) in project.fetchers) {
+                try {
+                    papers += fetcherManager.searchPapers(fetcher, request.query, options)
+                } catch (e: FetcherException) {
+                    logger.error(e) { "Failed to search fetcher papers for fetcher '$fetcher': ${e.message}" }
+                }
+            }
+
+            val filteredPapers = filterExistingPapers(projectId, papers)
+
+            GrpcPaper.List.newBuilder()
+                .addAllPapers(filteredPapers)
+                .build()
+        }
+
+    /**
+     * Filters out papers that are already added to the project.
+     *
+     * Papers that already in the database get their ID assigned, so that they can be associated by the client.
+     */
+    private suspend fun filterExistingPapers(projectId: UUID, fetcherPapers: Set<FetcherPaper>): Set<GrpcPaper> {
+        val filteredPapers = mutableSetOf<GrpcPaper>()
+
+        for (fetcherPaper in fetcherPapers) {
+            val paper = getPaperIfExists(fetcherPaper)
+
+            if (paper != null) {
+                val isAlreadyInProject = projectPaperRepo.doesProjectPaperExist(projectId, paper.id)
+                if (!isAlreadyInProject) {
+                    filteredPapers += paper.toGrpcPaper(emptyList())
+                }
+            } else {
+                filteredPapers += fetcherPaper.toGrpcPaperRequest()
+            }
+        }
+
+        return filteredPapers
+    }
+
+    private suspend fun getPaperIfExists(paper: FetcherPaper): Paper? {
+        if (paper.externalId == null) {
+            return null
+        }
+
+        return paperRepo.getPaperByExternalId(paper.externalId).getOrNull()
+    }
 }
