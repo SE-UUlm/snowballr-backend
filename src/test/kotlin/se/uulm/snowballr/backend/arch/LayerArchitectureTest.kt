@@ -4,6 +4,8 @@
 
 package se.uulm.snowballr.backend.arch
 
+import com.tngtech.archunit.base.DescribedPredicate.not
+import com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage
 import com.tngtech.archunit.core.domain.JavaClasses
 import com.tngtech.archunit.core.importer.ImportOption
 import com.tngtech.archunit.junit.AnalyzeClasses
@@ -189,13 +191,14 @@ private class NamingConventions {
     fun `When a class is in the access package, then it should have the 'AccessRule' or 'AccessChecker' suffix`(
         classes: JavaClasses,
     ) {
+        // Only access checkers
         classes()
             .that()
             .resideInAPackage("$BASE_PACKAGE.access..")
+            .and(not(resideInAPackage("$BASE_PACKAGE.access.rules..")))
             .should()
             .haveNameMatching(".*AccessChecker.*")
-            .orShould(haveNameMatching(".*AccessRule.*"))
-            .because("All access checkers should have the 'AccessChecker' or 'AccessRule' suffix")
+            .because("All access checkers should have the 'AccessChecker' suffix")
             .check(classes)
 
         // Only access rules
@@ -224,19 +227,28 @@ private class NamingConventions {
 
     @ArchTest
     fun `When a class is in the table package, then it should have the 'Table' suffix`(classes: JavaClasses) {
+        // Only tables and helpers, not column types
         classes()
             .that()
             .resideInAPackage("$BASE_PACKAGE.table..")
+            .and(not(resideInAPackage("$BASE_PACKAGE.table.columntypes")))
             .should()
             .haveSimpleNameEndingWith("Table")
             .orShould(haveSimpleNameEndingWith("TableKt")) // kotlin class
             .orShould(haveSimpleNameEndingWith("ColumnHelperKt")) // exception
             .orShould(haveSimpleName("TableHelperKt")) // exception
-            .orShould(haveSimpleNameEndingWith("ObfuscatedTextColumnType")) // exception
-            .orShould(haveSimpleNameEndingWith("RedactedBinaryColumnType")) // exception
-            .orShould(haveSimpleName("HStoreColumnType")) // exception
-            .orShould(haveNameMatching(".*inlined\\\$json\\\$.*")) // exception
+            .orShould(haveNameMatching(".*inlined\\\$json\\\$.*")) // inlined function exception
+            .orShould(haveNameMatching(".*inlined\\\$obfuscatedJson\\\$.*")) // inlined function exception
             .because("All tables should have the 'Table' suffix")
+            .check(classes)
+
+        // Only column types
+        classes()
+            .that()
+            .resideInAPackage("$BASE_PACKAGE.table.columntypes..")
+            .should()
+            .haveNameMatching(".*ColumnType.*")
+            .because("All column types should have the 'ColumnType' suffix")
             .check(classes)
     }
 }
