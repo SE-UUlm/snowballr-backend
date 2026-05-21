@@ -54,6 +54,7 @@ fun <T> validateRequest(request: T): EitherNel<ValidationIssue, Unit> = when (re
     // Project Paper
     is ProjectOuterClass.Project.Paper.Get -> ProjectPaperValidator.validateGetRequest(request)
     is ProjectOuterClass.Project.Paper.Add -> ProjectPaperValidator.validateAddRequest(request)
+    is ProjectOuterClass.Project.Paper.SearchQuery -> ProjectPaperValidator.validateSearchQueryRequest(request)
     // Project Member
     is ProjectOuterClass.Project.Member.Invite -> ProjectMemberValidator.validateInviteRequest(request)
     is ProjectOuterClass.Project.Member.Accept -> ProjectMemberValidator.validateAcceptRequest(request)
