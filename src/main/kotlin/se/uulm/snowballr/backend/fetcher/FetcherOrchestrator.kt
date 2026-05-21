@@ -245,7 +245,7 @@ class FetcherOrchestrator(
             }
 
             try {
-                createdPaperRefs += paperRepo.createPaper(ref.toGrpcPaperRequest(), ref.metadata)
+                createdPaperRefs += paperRepo.createPaper(ref.toGrpcPaperRequest())
             } catch (ex: SQLException) {
                 logger.error(ex) { "Failed to create paper for fetched paper: ${ex.message}" }
             }

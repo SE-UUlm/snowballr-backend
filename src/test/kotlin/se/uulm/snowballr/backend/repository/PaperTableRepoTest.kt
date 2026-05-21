@@ -212,13 +212,16 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
 
         @Test
         fun `When a paper is created with fetcher metadata, then the metadata is persisted`() = runTest {
-            val request = getExamplePaperRequest()
             val metadata = mapOf(
                 "id" to UUID.randomUUID().toString(),
                 "foo" to "bar",
             )
+            val request = getExamplePaperRequest()
+                .toBuilder()
+                .putAllFetcherMetadata(metadata)
+                .build()
 
-            val createdPaper = repo.createPaper(request, metadata)
+            val createdPaper = repo.createPaper(request)
 
             assertEquals(metadata.size, createdPaper.fetcherMetadata.size)
             for ((key, value) in metadata) {

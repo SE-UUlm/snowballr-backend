@@ -45,6 +45,7 @@ fun Paper.toGrpcPaper(backwardReferencedIdsList: List<String>): GrpcPaper {
         hasPdf = paper.pdfId != null
         authors.addAll(paper.authors.toGrpcAuthors())
         backwardReferencedIds.addAll(backwardReferencedIdsList)
+        fetcherMetadata.putAll(fetcherMetadata)
     }
 }
 

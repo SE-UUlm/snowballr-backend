@@ -205,7 +205,7 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
 
                 orchestrator.enqueueTestJob(job, project)
 
-                coVerify(exactly = 0) { paperRepoMock.createPaper(any(), any()) }
+                coVerify(exactly = 0) { paperRepoMock.createPaper(any()) }
                 assertAddingPapersToProjectFailure()
             }
 
@@ -230,10 +230,10 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
                     } returns Result.failure(TestSpecificException())
                 }
                 coEvery {
-                    paperRepoMock.createPaper(backwardFetcherRef.toGrpcPaperRequest(), backwardFetcherRef.metadata)
+                    paperRepoMock.createPaper(backwardFetcherRef.toGrpcPaperRequest())
                 } returns backwardRef
                 coEvery {
-                    paperRepoMock.createPaper(forwardFetcherRef.toGrpcPaperRequest(), forwardFetcherRef.metadata)
+                    paperRepoMock.createPaper(forwardFetcherRef.toGrpcPaperRequest())
                 } returns forwardRef
 
                 // Stop at adding papers to project
@@ -251,10 +251,10 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
 
                 assertAddingPapersToProjectFailure()
                 coVerify(exactly = 1) {
-                    paperRepoMock.createPaper(backwardFetcherRef.toGrpcPaperRequest(), backwardFetcherRef.metadata)
+                    paperRepoMock.createPaper(backwardFetcherRef.toGrpcPaperRequest())
                 }
                 coVerify(exactly = 1) {
-                    paperRepoMock.createPaper(forwardFetcherRef.toGrpcPaperRequest(), forwardFetcherRef.metadata)
+                    paperRepoMock.createPaper(forwardFetcherRef.toGrpcPaperRequest())
                 }
             }
 
@@ -269,10 +269,10 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
 
             mockRunFetching(job, setOf(backwardFetcherRef), setOf(forwardFetcherRef))
             coEvery {
-                paperRepoMock.createPaper(backwardFetcherRef.toGrpcPaperRequest(), backwardFetcherRef.metadata)
+                paperRepoMock.createPaper(backwardFetcherRef.toGrpcPaperRequest())
             } throws SQLException("Creating backward paper failed")
             coEvery {
-                paperRepoMock.createPaper(forwardFetcherRef.toGrpcPaperRequest(), forwardFetcherRef.metadata)
+                paperRepoMock.createPaper(forwardFetcherRef.toGrpcPaperRequest())
             } throws SQLException("Creating forward paper failed")
 
             orchestrator.enqueueTestJob(job, project)

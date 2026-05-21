@@ -50,5 +50,6 @@ fun FetcherPaper.toGrpcPaperRequest(): GrpcPaper {
         publicationType = paper.publicationType
         publicationName = paper.publicationName
         authors.addAll(paper.authors.toGrpcAuthors())
+        fetcherMetadata.putAll(metadata)
     }
 }
