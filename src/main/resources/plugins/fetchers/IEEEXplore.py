@@ -16,7 +16,8 @@ def search_papers(search_query: str, options: dict[str, str]) -> list[Paper]:
     query.dataType("json")
     query.dataFormat("object")
     results = query.callAPI()
-    return list(map(paper_from_response, results["articles"]))
+    articles = results.get("articles", [])
+    return list(map(paper_from_response, articles))
 
 def backward_references(paper: Paper, options: dict[str, str]) -> list[Paper]:
     return []
