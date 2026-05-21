@@ -8,6 +8,7 @@ import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.greater
 import org.jetbrains.exposed.v1.core.less
 import org.jetbrains.exposed.v1.core.or
+import org.jetbrains.exposed.v1.core.vendors.ForUpdateOption
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.update
 import se.uulm.snowballr.backend.db.IDatabase
@@ -27,10 +28,12 @@ import se.uulm.snowballr.backend.repository.getEntityOrNull
 import se.uulm.snowballr.backend.repository.insertAndGet
 import se.uulm.snowballr.backend.repository.wrapAsResult
 import se.uulm.snowballr.backend.table.PaperTable
+import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.table.association.toProjectPaper
 import se.uulm.snowballr.backend.table.association.toProjectPaperWithPaper
 import snowballr.ProjectOuterClass.PaperDecision
+import java.sql.Connection
 import java.util.UUID
 import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 
@@ -181,14 +184,12 @@ class ProjectPaperTableRepo(
      * @param projectId The unique identifier of the project for which the next local paper ID is to be generated.
      * @return The next available local paper ID as a [Long].
      */
-    private suspend fun getNextLocalIdForProject(projectId: UUID): Long = db.query {
-        ProjectPaperTable
-            .selectAll()
-            .where { ProjectPaperTable.projectId eq projectId }
-            .maxOfOrNull { it[ProjectPaperTable.localPaperId] }
-            ?.plus(1)
-            ?: 0L
-    }
+    private fun getNextLocalIdForProject(projectId: UUID): Long = ProjectPaperTable
+        .selectAll()
+        .where { ProjectPaperTable.projectId eq projectId }
+        .maxOfOrNull { it[ProjectPaperTable.localPaperId] }
+        ?.plus(1)
+        ?: 0L
 
     override suspend fun getAdjacentPaper(
         projectId: UUID,
@@ -251,21 +252,35 @@ class ProjectPaperTableRepo(
             .map { it.toProjectPaperWithPaper() }
     }
 
-    override suspend fun addPaperToProject(request: GrpcProjectPaper.Add, userId: UUID): ProjectPaper = db.query {
-        val paperId = parseUUID(request.paperId, EntityType.PAPER)
-        val projectId = parseUUID(request.projectId, EntityType.PROJECT)
-        val localPaperId = getNextLocalIdForProject(projectId)
+    /**
+     * Uses [Connection.TRANSACTION_READ_COMMITTED] so that transactions don't get aborted after next paper is added
+     * with a higher local paper ID. The second transaction unblocks after lock is removed and then sees fresh snapshot
+     * from first transaction.
+     */
+    override suspend fun addPaperToProject(request: GrpcProjectPaper.Add, userId: UUID): ProjectPaper =
+        db.query(transactionIsolation = Connection.TRANSACTION_READ_COMMITTED) {
+            val paperId = parseUUID(request.paperId, EntityType.PAPER)
+            val projectId = parseUUID(request.projectId, EntityType.PROJECT)
 
-        ProjectPaperTable
-            .insertAndGet(ResultRow::toProjectPaper) {
-                it[ProjectPaperTable.paperId] = paperId
-                it[ProjectPaperTable.projectId] = projectId
-                it[ProjectPaperTable.localPaperId] = localPaperId
-                it[stage] = request.stage
-                it[decision] = PaperDecision.PAPER_DECISION_UNREVIEWED
-                it[createdBy] = userId
-            }
-    }
+            // Lock the project row so that concurrent calls for the same project block here and then re-read MAX with a
+            // fresh snapshot after the previous transaction commits.
+            ProjectTable.selectAll()
+                .where { ProjectTable.id eq projectId }
+                .forUpdate(ForUpdateOption.ForUpdate)
+                .single()
+
+            val localPaperId = getNextLocalIdForProject(projectId)
+
+            ProjectPaperTable
+                .insertAndGet(ResultRow::toProjectPaper) {
+                    it[ProjectPaperTable.paperId] = paperId
+                    it[ProjectPaperTable.projectId] = projectId
+                    it[ProjectPaperTable.localPaperId] = localPaperId
+                    it[stage] = request.stage
+                    it[decision] = PaperDecision.PAPER_DECISION_UNREVIEWED
+                    it[createdBy] = userId
+                }
+        }
 
     override suspend fun getProjectProgress(projectId: UUID): Float = db.query {
         val allPapersCount =
