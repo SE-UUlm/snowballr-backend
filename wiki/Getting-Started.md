@@ -48,6 +48,7 @@ the backend with the desired profile.
   BACKEND_TAG
   env variable).
 - **`proxy-only`**: Only starts the proxy (for local development)
+- **`backend-only`**: Only starts the backend service (for local development)
 
 ## Building from Source
 
@@ -73,7 +74,7 @@ To build the project from source, run the following commands:
 
     ```bash
     uv venv .venv
-    uv pip sync --python .venv/bin/python3 requirements.txt
+    uv pip install --python .venv/bin/python3 -r requirements.txt
     ```
 
 4. Run the application:

@@ -46,7 +46,7 @@ them using the following commands:
 
 ```bash
 uv venv .venv
-uv pip sync --python .venv/bin/python requirements.txt
+uv pip install --python .venv/bin/python3 -r requirements.txt
 ```
 
 The list of required packages can be also found in the [requirements.txt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/requirements.txt).
