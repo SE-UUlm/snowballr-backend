@@ -65,11 +65,13 @@ class Database(
     private val envReader: EnvReader,
 ) : IDatabase {
     private val dataSource: HikariDataSource
+    private val exposedDatabase: JdbcDatabase
 
     init {
         logger.info { "Connecting to database" }
         dataSource = initDataSource(envReader.env.database)
-        transaction(JdbcDatabase.connect(dataSource)) {
+        exposedDatabase = JdbcDatabase.connect(dataSource)
+        transaction(exposedDatabase) {
             setUpDatabase()
             seedDummyUserIfEnabled()
         }
@@ -108,10 +110,7 @@ class Database(
         transactionIsolation: Int,
         block: suspend JdbcTransaction.() -> T,
     ): T = withContext(dispatcher) {
-        suspendTransaction(
-            JdbcDatabase.connect(dataSource),
-            transactionIsolation,
-        ) {
+        suspendTransaction(exposedDatabase, transactionIsolation) {
             block()
         }
     }

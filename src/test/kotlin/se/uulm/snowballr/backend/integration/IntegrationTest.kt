@@ -1,6 +1,5 @@
 package se.uulm.snowballr.backend.integration
 
-import com.zaxxer.hikari.HikariDataSource
 import io.mockk.CapturingSlot
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
@@ -67,8 +66,7 @@ import snowballr.UserOuterClass.User as GrpcUser
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
 @Tag("integration")
 open class IntegrationTest : KoinTest {
-    // Initialize DB with empty dataSource only to set it in the setUp method
-    protected val db = TestDatabase(HikariDataSource())
+    protected val db = TestDatabase()
 
     protected val envReaderMock = mockk<EnvReader>()
     protected val emailManagerMock = mockk<EmailManager>()

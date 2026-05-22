@@ -17,7 +17,6 @@ import se.uulm.snowballr.backend.table.UserTable
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
 import java.util.UUID
-import javax.sql.DataSource
 import org.jetbrains.exposed.v1.jdbc.Database as JdbcDatabase
 
 /**
@@ -30,18 +29,16 @@ import org.jetbrains.exposed.v1.jdbc.Database as JdbcDatabase
  * within a specified coroutine dispatcher, while the [queryBlocking] method provides
  * a blocking interface for executing transactions.
  */
-class TestDatabase(var dataSource: DataSource) : IDatabase {
+class TestDatabase : IDatabase {
     private val postgres = PostgreSQLContainer("postgres:16.1-alpine3.19")
+    private lateinit var exposedDatabase: JdbcDatabase
 
     override suspend fun <T> query(
         dispatcher: CoroutineDispatcher,
         transactionIsolation: Int,
         block: suspend JdbcTransaction.() -> T,
     ): T = withContext(dispatcher) {
-        suspendTransaction(
-            JdbcDatabase.connect(dataSource),
-            transactionIsolation = transactionIsolation,
-        ) {
+        suspendTransaction(exposedDatabase, transactionIsolation = transactionIsolation) {
             block()
         }
     }
@@ -58,7 +55,8 @@ class TestDatabase(var dataSource: DataSource) : IDatabase {
             username = postgres.username
             password = postgres.password
         }
-        dataSource = HikariDataSource(config)
+        val dataSource = HikariDataSource(config)
+        exposedDatabase = JdbcDatabase.connect(dataSource)
     }
 
     /**

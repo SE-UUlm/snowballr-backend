@@ -1,6 +1,5 @@
 package se.uulm.snowballr.backend.repository
 
-import com.zaxxer.hikari.HikariDataSource
 import io.mockk.clearAllMocks
 import io.mockk.mockk
 import org.jetbrains.exposed.v1.core.Table
@@ -53,8 +52,7 @@ open class RepositoryTest(
     val tables: Array<Table> = emptyArray(),
     val needsTestUser: Boolean = false,
 ) {
-    // Initialize DB with empty dataSource only to set it in the setUp method
-    protected val db = TestDatabase(HikariDataSource())
+    protected val db = TestDatabase()
 
     protected val envReaderMock = mockk<EnvReader>()
 
