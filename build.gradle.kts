@@ -33,7 +33,8 @@ version = "0.0.0"
 
 // Snowballr API version to use for the proto files
 val apiVersion = "0.14.0" // can be a tag (e.g., "1.2.3"), commit hash, or branch name like "main"
-val protoDir: Provider<Directory> = layout.buildDirectory.dir("snowballr-api/${apiVersion}")
+val escapedApiVersion = apiVersion.replace('/', '-')
+val protoDir: Provider<Directory> = layout.buildDirectory.dir("snowballr-api/${escapedApiVersion}")
 
 gitVersioning.apply {
     refs {
@@ -326,7 +327,7 @@ tasks.register<Download>("downloadApiFiles") {
         else if (isCommit) "https://github.com/SE-UUlm/snowballr-api/archive/${apiVersion}.zip"
         else "https://github.com/SE-UUlm/snowballr-api/archive/refs/heads/${apiVersion}.zip"
 
-    val zipFile = layout.buildDirectory.file("snowballr-api-${apiVersion}.zip").get().asFile
+    val zipFile = layout.buildDirectory.file("snowballr-api-${escapedApiVersion}.zip").get().asFile
     val protoDirAsFile = protoDir.get().asFile
 
     // Declare inputs & outputs for caching
@@ -349,8 +350,8 @@ tasks.register<Download>("downloadApiFiles") {
 
         fun unzipFile(zip: ZipFile, entry: ZipEntry) {
             // We only want the proto files
-            if (!entry.name.startsWith("snowballr-api-${apiVersion}/proto/")) return
-            val entryName = entry.name.removePrefix("snowballr-api-${apiVersion}/proto/")
+            if (!entry.name.startsWith("snowballr-api-${escapedApiVersion}/proto/")) return
+            val entryName = entry.name.removePrefix("snowballr-api-${escapedApiVersion}/proto/")
 
             val outputFile = protoDirAsFile.resolve(entryName)
             if (entry.isDirectory) {
