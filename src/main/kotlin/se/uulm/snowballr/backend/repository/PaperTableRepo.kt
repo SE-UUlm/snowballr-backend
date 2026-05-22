@@ -2,7 +2,10 @@ package se.uulm.snowballr.backend.repository
 
 import com.google.protobuf.util.FieldMaskUtil
 import org.jetbrains.exposed.v1.core.ResultRow
+import org.jetbrains.exposed.v1.core.TextColumnType
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.statements.StatementType
+import org.jetbrains.exposed.v1.jdbc.statements.jdbc.JdbcResult
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.Paper
@@ -66,6 +69,17 @@ interface IPaperTableRepo {
      * - [GrpcPaper.authors_]
      */
     suspend fun updatePaper(request: GrpcPaper.Update): Paper
+
+    /**
+     * Retrieves a list of papers whose title partially or fully match the [query].
+     *
+     * The number of returned papers is limited to a maximum of 20. Furthermore, the matching papers are sorted by their
+     * similarity to the search query.
+     *
+     * @param query The query used to match the paper titles.
+     * @return A list of up to 20 matching papers.
+     */
+    suspend fun getPapersBySearchQuery(query: String): List<Paper>
 }
 
 /**
@@ -80,6 +94,11 @@ interface IPaperTableRepo {
 class PaperTableRepo(
     private val db: IDatabase,
 ) : IPaperTableRepo {
+    companion object {
+        private const val MAXIMUM_NUMBER_OF_PAPER_CANDIDATES = 20
+        private const val MINIMUM_SIMILARITY_SCORE = 0.2
+    }
+
     private fun getPaperByIdOrNull(id: UUID): Paper? = PaperTable.getEntityByIdOrNull(id, ResultRow::toPaper)
 
     private fun getPaperByExternalIdOrNull(externalId: String): Paper? =
@@ -143,4 +162,40 @@ class PaperTableRepo(
             it[modifiedAt] = OffsetDateTime.now()
         }
     }
+
+    override suspend fun getPapersBySearchQuery(query: String): List<Paper> = db.query {
+        val paperTable = "\"${PaperTable.tableName}\""
+        val titleCol = "$paperTable.${PaperTable.title.name}"
+
+        val rawSqlQuery =
+            """
+            WITH papers_with_similarity_scores AS (
+                SELECT *, similarity($titleCol, ?) AS sim_title
+                FROM $paperTable
+            )
+            SELECT *
+            FROM papers_with_similarity_scores
+            WHERE sim_title > $MINIMUM_SIMILARITY_SCORE
+            ORDER BY sim_title DESC
+            LIMIT $MAXIMUM_NUMBER_OF_PAPER_CANDIDATES
+            """.trimIndent()
+
+        val matchingPapers = exec(
+            stmt = rawSqlQuery,
+            args = listOf(TextColumnType() to query),
+            explicitStatementType = StatementType.SELECT,
+            transform = { extractPaperRows(JdbcResult(it)) },
+        )
+
+        matchingPapers.orEmpty()
+    }
+
+    /**
+     * Extracts and converts rows from a [JdbcResult] to a list of [Paper] objects.
+     *
+     * @param result The [JdbcResult] containing paper data.
+     * @return A list of [Paper] objects extracted from the result set.
+     */
+    private fun extractPaperRows(result: JdbcResult): List<Paper> =
+        extractTableRows(result, PaperTable, ResultRow::toPaper)
 }

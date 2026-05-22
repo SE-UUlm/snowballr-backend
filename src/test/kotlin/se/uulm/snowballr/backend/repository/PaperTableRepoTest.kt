@@ -332,4 +332,40 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
             assertThat(updatedPaper.modifiedAt).isNull()
         }
     }
+
+    @Nested
+    inner class GetPapersBySearchQuery {
+        @Test
+        fun `When a paper is matching the search query, then the paper is returned`() = runTest {
+            val paper1 = insertPaperAndGetId(title = "Something about IT")
+            val paper2 = insertPaperAndGetId(title = "Something about AI")
+            val paper3 = insertPaperAndGetId(title = "Something about Cats")
+
+            val matchingPapers = repo.getPapersBySearchQuery("Something about")
+
+            assertEquals(3, matchingPapers.size)
+            assertThat(matchingPapers.map { it.id }).containsExactlyInAnyOrder(paper1, paper2, paper3)
+        }
+
+        @Test
+        fun `When no paper is matching the search query, then an empty list is returned`() = runTest {
+            insertPaperAndGetId(title = "Cats are beautiful")
+
+            val matchingPapers = repo.getPapersBySearchQuery("Dogs not that great")
+
+            assertEquals(0, matchingPapers.size)
+        }
+
+        @Test
+        fun `When more than 20 papers match the search query, then only the first 20 matching papers are returned`() =
+            runTest {
+                for (i in 1..25) {
+                    insertPaperAndGetId(title = "Frontend Framework Number $i")
+                }
+
+                val matchingPapers = repo.getPapersBySearchQuery("Frontend Framework")
+
+                assertEquals(20, matchingPapers.size)
+            }
+    }
 }

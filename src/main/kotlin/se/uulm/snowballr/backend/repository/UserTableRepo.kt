@@ -183,26 +183,8 @@ class UserTableRepo(
     private val db: IDatabase,
 ) : IUserTableRepo {
     companion object {
-        const val MAXIMUM_NUMBER_OF_INVITE_CANDIDATES = 10
-    }
-
-    /**
-     * Extracts and converts rows from a [JdbcResult] to a list of [User] objects.
-     *
-     * @param result The [JdbcResult] containing user data.
-     * @return A list of [User] objects extracted from the result set.
-     */
-    private fun extractUserRows(result: JdbcResult): List<User> {
-        return generateSequence {
-            if (result.next()) {
-                ResultRow.create(
-                    result,
-                    UserTable.fields.withIndex().associate { it.value to it.index },
-                )
-            } else {
-                null
-            }
-        }.map { it.toUser() }.toList()
+        private const val MAXIMUM_NUMBER_OF_INVITE_CANDIDATES = 10
+        private const val MINIMUM_SIMILARITY_SCORE = 0.2
     }
 
     private fun getUserByIdOrNull(id: UUID): User? = UserTable.getEntityByIdOrNull(id, ResultRow::toUser)
@@ -296,7 +278,7 @@ class UserTableRepo(
                 )
                 SELECT *
                 FROM users_with_similarity_scores
-                WHERE GREATEST(sim_first_name, sim_last_name, sim_email) > 0.2
+                WHERE GREATEST(sim_first_name, sim_last_name, sim_email) > $MINIMUM_SIMILARITY_SCORE
                 ORDER BY GREATEST(sim_first_name, sim_last_name, sim_email) DESC
                 LIMIT $MAXIMUM_NUMBER_OF_INVITE_CANDIDATES
                 """.trimIndent()
@@ -416,4 +398,12 @@ class UserTableRepo(
     override suspend fun getUserSettings(id: UUID): Result<UserSettings> = db.query {
         getEntityByKeyAsResult(::getUserSettingsByUserIdOrNull, EntityType.USER, id)
     }
+
+    /**
+     * Extracts and converts rows from a [JdbcResult] to a list of [User] objects.
+     *
+     * @param result The [JdbcResult] containing user data.
+     * @return A list of [User] objects extracted from the result set.
+     */
+    private fun extractUserRows(result: JdbcResult): List<User> = extractTableRows(result, UserTable, ResultRow::toUser)
 }

@@ -1,5 +1,8 @@
 package se.uulm.snowballr.backend.repository
 
+import org.jetbrains.exposed.v1.core.ResultRow
+import org.jetbrains.exposed.v1.core.Table
+import org.jetbrains.exposed.v1.jdbc.statements.jdbc.JdbcResult
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.IdentifierType
 import se.uulm.snowballr.backend.model.exception.NotFoundException
@@ -57,3 +60,23 @@ fun <T> wrapAsResult(entity: T?, exception: SnowballRException): Result<T> = if 
 } else {
     Result.failure(exception)
 }
+
+/**
+ * Extracts and converts rows from a [JdbcResult] to a list of object of type [T].
+ *
+ * @param T The table entity type.
+ * @param result The [JdbcResult] containing the entity data.
+ * @param table The table from which the result originates.
+ * @param mapper The function that transforms a [ResultRow] to an object of type [T].
+ * @return A list of entity objects of type [T] extracted from the result set.
+ */
+fun <T> extractTableRows(result: JdbcResult, table: Table, mapper: (ResultRow) -> T): List<T> = generateSequence {
+    if (result.next()) {
+        ResultRow.create(
+            result,
+            table.fields.withIndex().associate { it.value to it.index },
+        )
+    } else {
+        null
+    }
+}.map(mapper).toList()
