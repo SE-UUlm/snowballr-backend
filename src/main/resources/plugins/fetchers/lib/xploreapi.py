@@ -32,13 +32,13 @@ class XPLORE:
 
     def __init__(self, apiKey):
 
-    	# API key
+        # API key
         self.apiKey = apiKey
 
         # auth token
         self.authToken = ''
 
-    	# flag that some search criteria has been provided
+        # flag that some search criteria has been provided
         self.queryProvided = False
 
         # flag that chargeable Full Text request is occurring
@@ -531,7 +531,7 @@ class XPLORE:
                 if self.requestingFullText is True:
                     apiQry = self.buildFullTextRequestQuery(True)
                 elif self.requestingUsage is True:
-                   apiQry = self.buildUsageRequestQuery(True)
+                    apiQry = self.buildUsageRequestQuery(True)
                 data = self.queryAPI(apiQry)
 
             formattedData = self.formatData(data)
@@ -640,7 +640,7 @@ class XPLORE:
         # boolean query
         elif (self.usingBoolean):
 
-             url += '&querytext=(' + urllib.parse.quote_plus(self.parameters['boolean_text']) + ')'
+            url += '&querytext=(' + urllib.parse.quote_plus(self.parameters['boolean_text']) + ')'
 
         else:
 
