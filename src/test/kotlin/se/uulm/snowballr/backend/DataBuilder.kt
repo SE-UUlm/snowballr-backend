@@ -367,6 +367,6 @@ object DataBuilder {
         publicationType = publicationType,
         publicationName = publicationName,
         authors = authors,
-        metadata = fetcherMetadata,
+        fetcherMetadata = fetcherMetadata,
     )
 }

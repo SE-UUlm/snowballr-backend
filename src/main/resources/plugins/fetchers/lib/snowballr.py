@@ -32,7 +32,7 @@ class Paper(JSONWizard):
     publication_type: str = ""
     publication_name: str = ""
     authors: list[Author] = field(default_factory=list)
-    metadata: dict[str, str] = field(default_factory=dict)
+    fetcher_metadata: dict[str, str] = field(default_factory=dict)
 
 class EventType(StrEnum):
     OPTIONS = "options"

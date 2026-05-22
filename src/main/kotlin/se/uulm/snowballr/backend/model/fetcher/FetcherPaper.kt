@@ -3,12 +3,10 @@ package se.uulm.snowballr.backend.model.fetcher
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import se.uulm.snowballr.backend.model.dto.Author
-import se.uulm.snowballr.backend.model.dto.toGrpcAuthors
-import snowballr.paper
-import snowballr.PaperOuterClass.Paper as GrpcPaper
+import se.uulm.snowballr.backend.model.dto.PaperData
 
 /**
- * Represents a paper fetched from an external source.
+ * Represents a paper fetched from an external source. Also, a serializable implementation of [PaperData].
  *
  * @property title The title of the paper.
  * @property externalId A unique external identifier for the paper, such as a DOI or other unique ID.
@@ -18,38 +16,26 @@ import snowballr.PaperOuterClass.Paper as GrpcPaper
  * @property publicationType The type of publication, such as "journal", "conference", etc. (unconstrained)
  * @property publicationName The name of the publication where the paper appeared.
  * @property authors A list of authors associated with the paper, represented as [Author] objects.
- * @property metadata A map of metadata used by fetchers. For example, API-related unique IDs for later use.
+ * @property fetcherMetadata A map of metadata used by fetchers. For example, API-related unique IDs for later use.
  */
 @Serializable
 data class FetcherPaper(
-    val title: String,
+    @SerialName("title")
+    override val title: String,
     @SerialName("external_id")
-    val externalId: String? = null,
-    val abstract: String,
-    val year: Int,
-    val publisher: String,
+    override val externalId: String?,
+    @SerialName("abstract")
+    override val abstract: String,
+    @SerialName("year")
+    override val year: Int,
+    @SerialName("publisher")
+    override val publisher: String,
     @SerialName("publication_type")
-    val publicationType: String,
+    override val publicationType: String,
     @SerialName("publication_name")
-    val publicationName: String,
-    val authors: List<Author> = emptyList(),
-    val metadata: Map<String, String> = emptyMap(),
-)
-
-/**
- * Creates a [GrpcPaper] request from this [FetcherPaper].
- */
-fun FetcherPaper.toGrpcPaperRequest(): GrpcPaper {
-    val paper = this
-    return paper {
-        title = paper.title
-        if (paper.externalId != null) externalId = paper.externalId
-        abstrakt = paper.abstract
-        year = paper.year
-        publisher = paper.publisher
-        publicationType = paper.publicationType
-        publicationName = paper.publicationName
-        authors.addAll(paper.authors.toGrpcAuthors())
-        fetcherMetadata.putAll(metadata)
-    }
-}
+    override val publicationName: String,
+    @SerialName("authors")
+    override val authors: List<Author>,
+    @SerialName("fetcher_metadata")
+    override val fetcherMetadata: Map<String, String>,
+) : PaperData

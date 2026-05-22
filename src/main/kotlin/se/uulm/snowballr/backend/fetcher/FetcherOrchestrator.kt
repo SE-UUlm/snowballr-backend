@@ -11,6 +11,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import se.uulm.snowballr.backend.model.dto.Paper
 import se.uulm.snowballr.backend.model.dto.toFetcherPaper
+import se.uulm.snowballr.backend.model.dto.toGrpcPaperRequest
 import se.uulm.snowballr.backend.model.exception.FetcherException
 import se.uulm.snowballr.backend.model.fetcher.FetcherEnqueueJob
 import se.uulm.snowballr.backend.model.fetcher.FetcherMap
@@ -19,7 +20,6 @@ import se.uulm.snowballr.backend.model.fetcher.FetcherProcessingJob
 import se.uulm.snowballr.backend.model.fetcher.FetchingDirection
 import se.uulm.snowballr.backend.model.fetcher.FetchingResults
 import se.uulm.snowballr.backend.model.fetcher.PaperCreationResults
-import se.uulm.snowballr.backend.model.fetcher.toGrpcPaperRequest
 import se.uulm.snowballr.backend.model.isBackwardOrBoth
 import se.uulm.snowballr.backend.model.isForwardOrBoth
 import se.uulm.snowballr.backend.repository.IPaperTableRepo

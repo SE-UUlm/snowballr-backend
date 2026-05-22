@@ -117,7 +117,7 @@ class PythonPluginFetcherManagerTest {
                 "publication_type": "journal",
                 "publication_name": "Example publication",
                 "authors": [{"first_name": "Ada", "last_name": "Lovelace"}],
-                "metadata": {"id": "meta-1"}
+                "fetcher_metadata": {"id": "meta-1"}
             }]
 
             if sys.argv[1] == "options":
@@ -139,9 +139,9 @@ class PythonPluginFetcherManagerTest {
             publicationType = "journal",
             publicationName = "Example publication",
             authors = listOf(Author("Ada", "Lovelace")),
-            metadata = mapOf("id" to "meta-1"),
+            fetcherMetadata = mapOf("id" to "meta-1"),
         )
-        val requestedPaper = expectedPaper.copy(metadata = mapOf("id" to "meta-request"))
+        val requestedPaper = expectedPaper.copy(fetcherMetadata = mapOf("id" to "meta-request"))
 
         val queryResult = fetcherManager.searchPapers("paper_fetcher", "query", mapOf("api_key" to "123"))
         val forwardResult = fetcherManager.fetchForwardReferences(
@@ -177,7 +177,7 @@ class PythonPluginFetcherManagerTest {
                 "publication_type": "journal",
                 "publication_name": "stdin publication",
                 "authors": [{"first_name": "Grace", "last_name": "Hopper"}],
-                "metadata": {"id": "stdin-meta"}
+                "fetcher_metadata": {"id": "stdin-meta"}
             }]
 
             if sys.argv[1] == "query":
@@ -211,7 +211,7 @@ class PythonPluginFetcherManagerTest {
             publicationType = "journal",
             publicationName = "stdin publication",
             authors = listOf(Author("Grace", "Hopper")),
-            metadata = mapOf("id" to "stdin-meta"),
+            fetcherMetadata = mapOf("id" to "stdin-meta"),
         )
 
         val queryResult = fetcherManager.searchPapers(
