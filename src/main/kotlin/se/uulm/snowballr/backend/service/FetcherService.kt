@@ -36,9 +36,9 @@ interface IFetcherService {
     suspend fun getAvailableFetcherOptions(request: GetAvailableFetcherOptionsRequest): FetcherOptions
 
     /**
-     * Service implementation of [SnowballRService.searchFetcherPapers].
+     * Service implementation of [SnowballRService.searchFetcherProjectPaperCandidates].
      */
-    suspend fun searchFetcherPapers(request: GrpcProjectPaper.SearchQuery): GrpcPaper.List
+    suspend fun searchFetcherProjectPaperCandidates(request: GrpcProjectPaper.SearchQuery): GrpcPaper.List
 }
 
 /**
@@ -69,7 +69,7 @@ class FetcherService(
             .putAllOptions(fetcherManager.getAvailableOptions(request.fetcherName))
             .build()
 
-    override suspend fun searchFetcherPapers(request: GrpcProjectPaper.SearchQuery): GrpcPaper.List =
+    override suspend fun searchFetcherProjectPaperCandidates(request: GrpcProjectPaper.SearchQuery): GrpcPaper.List =
         withUser(userRepo) { currentUser ->
             val projectId = parseUUID(request.projectId, EntityType.PROJECT)
 

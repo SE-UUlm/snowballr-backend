@@ -15,7 +15,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 
-class SearchFetcherPapersTest : FetcherServiceTest() {
+class SearchFetcherProjectPaperCandidatesTest : FetcherServiceTest() {
     fun getExampleRequest(project: Project): GrpcProjectPaper.SearchQuery = GrpcProjectPaper.SearchQuery.newBuilder()
         .setProjectId(project.id.toString())
         .build()
@@ -47,7 +47,7 @@ class SearchFetcherPapersTest : FetcherServiceTest() {
         coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, fooPaper.id) } returns false
         coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, barPaper.id) } returns false
 
-        val papers = service.searchFetcherPapers(request).papersList
+        val papers = service.searchFetcherProjectPaperCandidates(request).papersList
 
         assertEquals(2, papers.size)
         assertTrue(papers.any { p -> p.id == fooPaper.id.toString() })
@@ -68,7 +68,7 @@ class SearchFetcherPapersTest : FetcherServiceTest() {
             projectAccessCheckerMock.isAllowedToReadProject(user, project.id)
         } throws TestSpecificException()
 
-        assertThrows<TestSpecificException> { service.searchFetcherPapers(request) }
+        assertThrows<TestSpecificException> { service.searchFetcherProjectPaperCandidates(request) }
     }
 
     @Test
@@ -83,7 +83,7 @@ class SearchFetcherPapersTest : FetcherServiceTest() {
         coEvery { projectRepoMock.getProjectById(project.id) } returns projectResult
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
 
-        assertThrows<TestSpecificException> { service.searchFetcherPapers(request) }
+        assertThrows<TestSpecificException> { service.searchFetcherProjectPaperCandidates(request) }
     }
 
     @Test
@@ -111,7 +111,7 @@ class SearchFetcherPapersTest : FetcherServiceTest() {
         coEvery { paperRepoMock.getPaperByExternalId("fooId") } returns Result.success(fooPaper)
         coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, fooPaper.id) } returns false
 
-        val papers = service.searchFetcherPapers(request).papersList
+        val papers = service.searchFetcherProjectPaperCandidates(request).papersList
 
         assertEquals(1, papers.size)
         assertEquals(papers[0].id, fooPaper.id.toString())
@@ -134,7 +134,7 @@ class SearchFetcherPapersTest : FetcherServiceTest() {
         coEvery { paperRepoMock.getPaperByExternalId("fooId") } returns Result.success(fooPaper)
         coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, fooPaper.id) } returns true
 
-        val papers = service.searchFetcherPapers(request).papersList
+        val papers = service.searchFetcherProjectPaperCandidates(request).papersList
 
         assertEquals(0, papers.size)
     }
@@ -156,7 +156,7 @@ class SearchFetcherPapersTest : FetcherServiceTest() {
             coEvery { fetcherManagerMock.searchPapers("foo", request.query, any()) } returns setOf(fooFetcherPaper)
             coEvery { paperRepoMock.getPaperByExternalId("fooId") } returns Result.failure(TestSpecificException())
 
-            val papers = service.searchFetcherPapers(request).papersList
+            val papers = service.searchFetcherProjectPaperCandidates(request).papersList
 
             assertEquals(1, papers.size)
             assertEquals(papers[0].title, fooPaper.title)
@@ -180,7 +180,7 @@ class SearchFetcherPapersTest : FetcherServiceTest() {
             coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
             coEvery { fetcherManagerMock.searchPapers("foo", request.query, any()) } returns setOf(fooFetcherPaper)
 
-            val papers = service.searchFetcherPapers(request).papersList
+            val papers = service.searchFetcherProjectPaperCandidates(request).papersList
 
             assertEquals(1, papers.size)
             assertEquals(papers[0].title, fooPaper.title)
