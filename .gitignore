@@ -55,3 +55,9 @@ db-data
 ### Plugins ###
 /plugins
 /.venv
+
+### Fetcher CLI ###
+/tools/fetcher-cli/config.json
+/tools/fetcher-cli/output/*
+!/tools/fetcher-cli/output/.gitkeep
+/src/main/resources/plugins/fetchers/lib/__pycache__/

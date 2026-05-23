@@ -37,6 +37,7 @@ markdownlint.json
 
 # Scripts and tooling
 scripts/
+tools/
 
 # Plugin volume mount
 plugins/
