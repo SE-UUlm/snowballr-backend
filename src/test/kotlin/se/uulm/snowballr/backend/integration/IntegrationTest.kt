@@ -35,6 +35,7 @@ import se.uulm.snowballr.backend.auth.JwtManager
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.env.Env
 import se.uulm.snowballr.backend.env.EnvReader
+import se.uulm.snowballr.backend.fetcher.IFetcherManager
 import se.uulm.snowballr.backend.fetcher.IFetcherOrchestrator
 import se.uulm.snowballr.backend.mail.EmailManager
 import se.uulm.snowballr.backend.mail.IEmailManager
@@ -48,6 +49,7 @@ import se.uulm.snowballr.backend.repositoryLayerDeps
 import se.uulm.snowballr.backend.service.IAuthenticationService
 import se.uulm.snowballr.backend.service.ICriterionService
 import se.uulm.snowballr.backend.service.IExportService
+import se.uulm.snowballr.backend.service.IFetcherService
 import se.uulm.snowballr.backend.service.IInvitationService
 import se.uulm.snowballr.backend.service.IPaperService
 import se.uulm.snowballr.backend.service.IProjectMemberService
@@ -61,6 +63,7 @@ import snowballr.Authentication
 import java.util.UUID
 import snowballr.PaperOuterClass.Paper as GrpcPaper
 import snowballr.ProjectOuterClass.Project as GrpcProject
+import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 import snowballr.UserOuterClass.User as GrpcUser
 
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
@@ -71,10 +74,12 @@ open class IntegrationTest : KoinTest {
     protected val envReaderMock = mockk<EnvReader>()
     protected val emailManagerMock = mockk<EmailManager>()
     protected val fetcherOrchestratorMock = mockk<IFetcherOrchestrator>()
+    protected val fetcherManagerMock = mockk<IFetcherManager>()
 
     private val allMocks = arrayOf(
         envReaderMock,
         emailManagerMock,
+        fetcherManagerMock,
     )
 
     protected val authenticationService: IAuthenticationService by inject()
@@ -88,6 +93,7 @@ open class IntegrationTest : KoinTest {
     protected val readingListService: IReadingListService by inject()
     protected val reviewService: IReviewService by inject()
     protected val userService: IUserService by inject()
+    protected val fetcherService: IFetcherService by inject()
 
     private val integrationTestModule = module {
         single { envReaderMock }
@@ -103,6 +109,7 @@ open class IntegrationTest : KoinTest {
 
         // Other mocks
         single<IEmailManager> { emailManagerMock }
+        single<IFetcherManager> { fetcherManagerMock }
         single<IFetcherOrchestrator> { fetcherOrchestratorMock }
         // FetcherOrchestrator is not yet part of the integration tests
         coJustRun { fetcherOrchestratorMock.enqueue(any()) }
@@ -274,4 +281,15 @@ open class IntegrationTest : KoinTest {
 
         return invitationToken
     }
+
+    /**
+     * Adds the [paper] to the [project] in stage 0.
+     */
+    protected suspend fun addToProject(project: GrpcProject, paper: GrpcPaper) = projectPaperService.addPaperToProject(
+        GrpcProjectPaper.Add.newBuilder()
+            .setProjectId(project.id)
+            .setPaperId(paper.id)
+            .setStage(0)
+            .build(),
+    )
 }

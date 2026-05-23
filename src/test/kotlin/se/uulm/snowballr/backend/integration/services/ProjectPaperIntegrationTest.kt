@@ -13,7 +13,6 @@ import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateP
 import se.uulm.snowballr.backend.model.exception.invalidargument.StageOutOfRangeException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedCreateException
 import se.uulm.snowballr.backend.model.parseUUID
-import snowballr.PaperOuterClass
 import snowballr.ProjectOuterClass.Project
 import snowballr.ReviewOuterClass.ReviewDecision
 import kotlin.test.assertEquals
@@ -23,15 +22,6 @@ import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 import snowballr.ReviewOuterClass.Review as GrpcReview
 
 class ProjectPaperIntegrationTest : IntegrationTest() {
-    private suspend fun addToProject(project: Project, paper: PaperOuterClass.Paper): GrpcProjectPaper =
-        projectPaperService.addPaperToProject(
-            GrpcProjectPaper.Add.newBuilder()
-                .setProjectId(project.id)
-                .setPaperId(paper.id)
-                .setStage(0)
-                .build(),
-        )
-
     private suspend fun reviewPaper(projectPaper: GrpcProjectPaper, decision: ReviewDecision) =
         reviewService.createReview(
             GrpcReview.Create.newBuilder()
