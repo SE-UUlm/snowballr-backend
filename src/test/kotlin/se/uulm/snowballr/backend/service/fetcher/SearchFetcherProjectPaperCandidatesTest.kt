@@ -38,8 +38,8 @@ class SearchFetcherProjectPaperCandidatesTest : FetcherServiceTest() {
         val request = getExampleRequest(project)
 
         mockCurrentUser(user)
-        coEvery { projectRepoMock.getProjectById(project.id) } returns projectResult
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
+        coEvery { projectRepoMock.getProjectById(project.id) } returns projectResult
         coEvery { fetcherManagerMock.searchPapers("foo", request.query, any()) } returns setOf(fooFetcherPaper)
         coEvery { fetcherManagerMock.searchPapers("bar", request.query, any()) } returns setOf(barFetcherPaper)
         coEvery { paperRepoMock.getPaperByExternalId("fooId") } returns Result.success(fooPaper)
@@ -58,12 +58,10 @@ class SearchFetcherProjectPaperCandidatesTest : FetcherServiceTest() {
     fun `When a user searches paper, but has no access, then a TestSpecificException is thrown`() = runTest {
         val user = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject()
-        val projectResult = Result.success(project)
 
         val request = getExampleRequest(project)
 
         mockCurrentUser(user)
-        coEvery { projectRepoMock.getProjectById(project.id) } returns projectResult
         coEvery {
             projectAccessCheckerMock.isAllowedToReadProject(user, project.id)
         } throws TestSpecificException()
@@ -80,8 +78,8 @@ class SearchFetcherProjectPaperCandidatesTest : FetcherServiceTest() {
         val request = getExampleRequest(project)
 
         mockCurrentUser(user)
-        coEvery { projectRepoMock.getProjectById(project.id) } returns projectResult
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
+        coEvery { projectRepoMock.getProjectById(project.id) } returns projectResult
 
         assertThrows<TestSpecificException> { service.searchFetcherProjectPaperCandidates(request) }
     }
@@ -102,8 +100,8 @@ class SearchFetcherProjectPaperCandidatesTest : FetcherServiceTest() {
         val request = getExampleRequest(project)
 
         mockCurrentUser(user)
-        coEvery { projectRepoMock.getProjectById(project.id) } returns projectResult
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
+        coEvery { projectRepoMock.getProjectById(project.id) } returns projectResult
         coEvery { fetcherManagerMock.searchPapers("foo", request.query, any()) } returns setOf(fooFetcherPaper)
         coEvery {
             fetcherManagerMock.searchPapers("bar", request.query, any())
@@ -128,8 +126,8 @@ class SearchFetcherProjectPaperCandidatesTest : FetcherServiceTest() {
         val request = getExampleRequest(project)
 
         mockCurrentUser(user)
-        coEvery { projectRepoMock.getProjectById(project.id) } returns projectResult
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
+        coEvery { projectRepoMock.getProjectById(project.id) } returns projectResult
         coEvery { fetcherManagerMock.searchPapers("foo", request.query, any()) } returns setOf(fooFetcherPaper)
         coEvery { paperRepoMock.getPaperByExternalId("fooId") } returns Result.success(fooPaper)
         coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, fooPaper.id) } returns true
@@ -151,8 +149,8 @@ class SearchFetcherProjectPaperCandidatesTest : FetcherServiceTest() {
             val request = getExampleRequest(project)
 
             mockCurrentUser(user)
-            coEvery { projectRepoMock.getProjectById(project.id) } returns projectResult
             coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
+            coEvery { projectRepoMock.getProjectById(project.id) } returns projectResult
             coEvery { fetcherManagerMock.searchPapers("foo", request.query, any()) } returns setOf(fooFetcherPaper)
             coEvery { paperRepoMock.getPaperByExternalId("fooId") } returns Result.failure(TestSpecificException())
 
@@ -176,8 +174,8 @@ class SearchFetcherProjectPaperCandidatesTest : FetcherServiceTest() {
             val request = getExampleRequest(project)
 
             mockCurrentUser(user)
-            coEvery { projectRepoMock.getProjectById(project.id) } returns projectResult
             coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
+            coEvery { projectRepoMock.getProjectById(project.id) } returns projectResult
             coEvery { fetcherManagerMock.searchPapers("foo", request.query, any()) } returns setOf(fooFetcherPaper)
 
             val papers = service.searchFetcherProjectPaperCandidates(request).papersList

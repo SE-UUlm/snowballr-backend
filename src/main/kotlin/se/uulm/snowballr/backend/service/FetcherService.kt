@@ -73,9 +73,8 @@ class FetcherService(
         withUser(userRepo) { currentUser ->
             val projectId = parseUUID(request.projectId, EntityType.PROJECT)
 
-            val projectResult = projectRepo.getProjectById(projectId)
             projectAccessChecker.isAllowedToReadProject(currentUser, projectId)
-            val project = projectResult.getOrThrow()
+            val project = projectRepo.getProjectById(projectId).getOrThrow()
 
             val papers = mutableSetOf<FetcherPaper>()
             for ((fetcher, options) in project.fetchers) {
@@ -96,7 +95,7 @@ class FetcherService(
     /**
      * Filters out papers that are already added to the project.
      *
-     * Papers that already in the database get their ID assigned, so that they can be associated by the client.
+     * Papers that already exist in the database get their ID assigned, so that they can be associated by the client.
      */
     private suspend fun filterExistingPapers(projectId: UUID, fetcherPapers: Set<FetcherPaper>): Set<GrpcPaper> {
         val filteredPapers = mutableSetOf<GrpcPaper>()
@@ -117,6 +116,11 @@ class FetcherService(
         return filteredPapers
     }
 
+    /**
+     * Return the database paper if it matches the data from the specified fetched [paper].
+     *
+     * Currently, this check is only done by using the external ID.
+     */
     private suspend fun getPaperIfExists(paper: FetcherPaper): Paper? {
         if (paper.externalId == null) {
             return null
