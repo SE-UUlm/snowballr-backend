@@ -3,6 +3,7 @@
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 from datetime import datetime
@@ -77,12 +78,28 @@ def save_output(action: str, fetcher: str, data: object) -> Path:
     return path
 
 
+def parse_hstore(value: str) -> dict[str, str]:
+    """Parse a PostgreSQL HSTORE string into a Python dict."""
+    return {
+        m.group(1).replace('\\"', '"'): m.group(2).replace('\\"', '"')
+        for m in re.finditer(r'"((?:[^"\\]|\\.)*)"\s*=>\s*"((?:[^"\\]|\\.)*)"', value)
+    }
+
+
+def normalize_paper(paper: dict) -> dict:
+    """Convert HSTORE-serialized fetcher_metadata to a dict if needed."""
+    metadata = paper.get("fetcher_metadata")
+    if isinstance(metadata, str):
+        paper = {**paper, "fetcher_metadata": parse_hstore(metadata)}
+    return paper
+
+
 def load_paper(paper_arg: str) -> dict:
     path = Path(paper_arg)
     if path.exists():
         with open(path) as f:
-            return json.load(f)
-    return json.loads(paper_arg)
+            return normalize_paper(json.load(f))
+    return normalize_paper(json.loads(paper_arg))
 
 
 def truncate(text: str, width: int) -> str:
