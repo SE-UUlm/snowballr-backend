@@ -3,6 +3,8 @@ package se.uulm.snowballr.backend.validation
 import `in`.rcard.assertj.arrowcore.EitherAssert
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import se.uulm.snowballr.backend.model.BlankField
 import se.uulm.snowballr.backend.model.InvalidId
 import se.uulm.snowballr.backend.model.OutOfRangeValue
@@ -138,9 +140,10 @@ class ProjectPaperValidatorTest {
             assertInvalidResult<InvalidId>(result)
         }
 
-        @Test
-        fun `When a blank query validated, then the 'BlankField' issue is returned`() {
-            val request = validSearchQueryRequestBuilder.setQuery("").build()
+        @ParameterizedTest
+        @ValueSource(strings = ["", " "])
+        fun `When a blank query validated, then the 'BlankField' issue is returned`(query: String) {
+            val request = validSearchQueryRequestBuilder.setQuery(query).build()
 
             val result = validateRequest(request)
 
