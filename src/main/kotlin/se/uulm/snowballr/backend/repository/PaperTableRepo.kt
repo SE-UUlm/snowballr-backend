@@ -4,7 +4,9 @@ import com.google.protobuf.util.FieldMaskUtil
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.TextColumnType
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.core.statements.StatementType
+import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.statements.jdbc.JdbcResult
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
@@ -80,6 +82,16 @@ interface IPaperTableRepo {
      * @return A list of up to 20 matching papers.
      */
     suspend fun getPapersBySearchQuery(query: String): List<Paper>
+
+    /**
+     * Retrieves all papers that have an external ID that matches at least one external ID in [externalIds].
+     *
+     * This returns the same as for calling [getPaperByExternalId] for each external ID and then filtering out each
+     * [Result.failure].
+     *
+     * Prefer this method when calling [getPaperByExternalId] inside a loop.
+     */
+    suspend fun getPapersByExternalIds(externalIds: List<String>): List<Paper>
 }
 
 /**
@@ -188,6 +200,14 @@ class PaperTableRepo(
         )
 
         matchingPapers.orEmpty()
+    }
+
+    override suspend fun getPapersByExternalIds(externalIds: List<String>): List<Paper> = db.query {
+        if (externalIds.isEmpty()) return@query emptyList()
+
+        PaperTable.selectAll()
+            .where { PaperTable.externalId inList externalIds }
+            .map(ResultRow::toPaper)
     }
 
     /**

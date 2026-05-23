@@ -368,4 +368,53 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
                 assertEquals(20, matchingPapers.size)
             }
     }
+
+    @Nested
+    inner class GetPapersByExternalIds {
+        @Test
+        fun `When papers are found by their external IDs, then the papers are returned`() = runTest {
+            val paper1 = insertPaperAndGetId(externalId = "doi123")
+            val paper2 = insertPaperAndGetId(externalId = "doi456")
+            val paper3 = insertPaperAndGetId(externalId = "doi789")
+
+            val papers = repo.getPapersByExternalIds(listOf("doi123", "doi456", "doi789"))
+
+            assertEquals(3, papers.size)
+            assertThat(papers.map { it.id }).containsExactlyInAnyOrder(paper1, paper2, paper3)
+        }
+
+        @Test
+        fun `When no papers match the external IDs, then no papers are returned`() = runTest {
+            insertPaperAndGetId(externalId = "doi123")
+            insertPaperAndGetId(externalId = "doi456")
+            insertPaperAndGetId(externalId = "doi789")
+
+            val papers = repo.getPapersByExternalIds(listOf("foo", "bar", "cat"))
+
+            assertEquals(0, papers.size)
+        }
+
+        @Test
+        fun `When an empty list is passed, then an empty list is returned`() = runTest {
+            val papers = repo.getPapersByExternalIds(emptyList())
+
+            assertEquals(0, papers.size)
+        }
+
+        @Test
+        fun `When compared to getPaperByExternalId, then the same result is returned`() = runTest {
+            insertPaperAndGetId(externalId = "doi123")
+            insertPaperAndGetId(externalId = "doi456")
+            insertPaperAndGetId(externalId = "doi789")
+
+            val papers1 = repo.getPapersByExternalIds(listOf("doi123", "foo", "doi789"))
+            val papers2 = listOf(
+                repo.getPaperByExternalId("doi123"),
+                repo.getPaperByExternalId("foo"),
+                repo.getPaperByExternalId("doi789"),
+            ).mapNotNull { it.getOrNull() }
+
+            assertEquals(papers1, papers2)
+        }
+    }
 }
