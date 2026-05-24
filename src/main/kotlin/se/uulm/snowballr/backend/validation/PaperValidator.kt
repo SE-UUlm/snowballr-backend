@@ -19,12 +19,12 @@ import java.time.LocalDate
 @Suppress("TooManyFunctions")
 object PaperValidator {
     const val EXTERNAL_ID_MAX_LENGTH = 100
-    const val TITLE_MAX_LENGTH = 100
+    const val TITLE_MAX_LENGTH = 200
     const val ABSTRACT_MAX_LENGTH = 3000
     const val YEAR_MIN_VALUE = 0
-    const val PUBLISHER_MAX_LENGTH = 100
-    const val PUBLICATION_NAME_MAX_LENGTH = 100
-    const val PUBLICATION_TYPE_MAX_LENGTH = 100
+    const val PUBLISHER_MAX_LENGTH = 200
+    const val PUBLICATION_NAME_MAX_LENGTH = 200
+    const val PUBLICATION_TYPE_MAX_LENGTH = 200
     const val MAX_AUTHOR_COUNT = 500
 
     private val UNALLOWED_UPDATE_MASK_FIELDS = listOf("paper.has_pdf")

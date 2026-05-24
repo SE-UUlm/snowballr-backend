@@ -13,9 +13,12 @@ import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
  * A validator for [GrpcProjectPaper] related requests.
  */
 object ProjectPaperValidator {
+    private const val PROJECT_ID_KEY = "project_id"
+    const val QUERY_MAX_LENGTH = 50
+
     fun validateGetRequest(request: GrpcProjectPaper.Get): EitherNel<ValidationIssue, Unit> = either {
         zipOrAccumulate(
-            { ensureIdValidity("project_id", request.projectId) },
+            { ensureIdValidity(PROJECT_ID_KEY, request.projectId) },
             {
                 ensureRelativeProjectPaperIdValidity(request.relativeProjectPaperId)
             },
@@ -24,10 +27,17 @@ object ProjectPaperValidator {
 
     fun validateAddRequest(request: GrpcProjectPaper.Add): EitherNel<ValidationIssue, Unit> = either {
         zipOrAccumulate(
-            { ensureIdValidity("project_id", request.projectId) },
+            { ensureIdValidity(PROJECT_ID_KEY, request.projectId) },
             { ensureIdValidity("paper_id", request.paperId) },
             { ensureStageValidity(request.stage) },
         ) { _, _, _ -> }
+    }
+
+    fun validateSearchQueryRequest(request: GrpcProjectPaper.SearchQuery): EitherNel<ValidationIssue, Unit> = either {
+        zipOrAccumulate(
+            { ensureIdValidity(PROJECT_ID_KEY, request.projectId) },
+            { ensureTextFieldValidity("query", request.query, QUERY_MAX_LENGTH) },
+        ) { _, _ -> }
     }
 
     /**
@@ -39,7 +49,7 @@ object ProjectPaperValidator {
      *
      * @param relativeId The relative project paper ID to validate.
      */
-    fun Raise<ValidationIssue>.ensureRelativeProjectPaperIdValidity(relativeId: String) {
+    private fun Raise<ValidationIssue>.ensureRelativeProjectPaperIdValidity(relativeId: String) {
         ensureLongIdValidity("relative_project_paper_id", relativeId)
     }
 
@@ -52,7 +62,7 @@ object ProjectPaperValidator {
      * @param name The name of the ID field that has an invalid format.
      * @param value The string value to check for `Long` convertibility.
      */
-    fun Raise<ValidationIssue>.ensureLongIdValidity(name: String, value: String) {
+    private fun Raise<ValidationIssue>.ensureLongIdValidity(name: String, value: String) {
         ensure(value.toLongOrNull() != null && value.toLong() >= 0L) {
             InvalidId(name, value)
         }

@@ -1,7 +1,10 @@
 package se.uulm.snowballr.backend.integration.regression
 
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.EntityType
@@ -9,6 +12,8 @@ import se.uulm.snowballr.backend.model.parseUUID
 import snowballr.ProjectOuterClass.Project
 import snowballr.UserOuterClass.UserStatus
 import kotlin.test.assertEquals
+import snowballr.PaperOuterClass.Paper as GrpcPaper
+import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 
 class RegressionTest : IntegrationTest() {
     @Test
@@ -43,5 +48,44 @@ class RegressionTest : IntegrationTest() {
 
             pendingInvitations = invitationService.getPendingInvitationsForProject(id).usersList
             assertEquals(0, pendingInvitations.size)
+        }
+
+    @Test
+    fun `When multiple papers are added to the project concurrently, then they all have a different local ID`() =
+        runTest {
+            val numberOfPapers = 10
+            val project = projectService.createProject(Project.Create.newBuilder().setName("Test Project").build())
+            val papers = mutableSetOf<GrpcPaper>()
+            for (i in 1..numberOfPapers) {
+                val builder = GrpcPaper.newBuilder()
+                    .setTitle("Paper $i")
+                papers += paperService.createPaper(builder.build())
+            }
+
+            val projectPapers = papers.map {
+                async {
+                    projectPaperService.addPaperToProject(
+                        GrpcProjectPaper.Add.newBuilder()
+                            .setProjectId(project.id)
+                            .setPaperId(it.id)
+                            .setStage(0)
+                            .build(),
+                    )
+                }
+            }.awaitAll()
+
+            val localIds = projectPapers.map { it.localId }.distinct()
+            assertEquals(numberOfPapers, localIds.size)
+
+            val projectPaper = projectPapers.first()
+            assertDoesNotThrow {
+                // If several papers have the same local ID this would throw
+                projectPaperService.getProjectPaperByRelativeId(
+                    GrpcProjectPaper.Get.newBuilder()
+                        .setProjectId(project.id)
+                        .setRelativeProjectPaperId(projectPaper.localId)
+                        .build(),
+                )
+            }
         }
 }

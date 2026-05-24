@@ -84,7 +84,7 @@ sealed class FetcherOrchestratorTest {
     }
 
     protected fun assertPaperCreationFailure() {
-        coVerify(exactly = 0) { paperRepoMock.createPaper(any(), any()) }
+        coVerify(exactly = 0) { paperRepoMock.createPaper(any()) }
 
         assertPaperCitationFailure()
     }
@@ -125,13 +125,13 @@ sealed class FetcherOrchestratorTest {
         for (backwardRef in backwardRefs) {
             val backwardFetcherRef = backwardRef.toFetcherPaper()
             coEvery {
-                paperRepoMock.createPaper(backwardFetcherRef.toGrpcPaperRequest(), backwardFetcherRef.metadata)
+                paperRepoMock.createPaper(backwardFetcherRef.toGrpcPaperRequest())
             } returns backwardRef
         }
         for (forwardRef in forwardRefs) {
             val forwardFetcherRef = forwardRef.toFetcherPaper()
             coEvery {
-                paperRepoMock.createPaper(forwardFetcherRef.toGrpcPaperRequest(), forwardFetcherRef.metadata)
+                paperRepoMock.createPaper(forwardFetcherRef.toGrpcPaperRequest())
             } returns forwardRef
         }
     }

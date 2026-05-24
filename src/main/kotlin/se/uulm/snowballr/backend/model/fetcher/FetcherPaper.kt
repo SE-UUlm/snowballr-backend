@@ -3,11 +3,8 @@ package se.uulm.snowballr.backend.model.fetcher
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import se.uulm.snowballr.backend.model.dto.Author
-import se.uulm.snowballr.backend.model.dto.Paper
 import se.uulm.snowballr.backend.model.dto.toGrpcAuthors
 import snowballr.paper
-import java.time.OffsetDateTime
-import java.util.UUID
 import snowballr.PaperOuterClass.Paper as GrpcPaper
 
 /**
@@ -40,29 +37,6 @@ data class FetcherPaper(
 )
 
 /**
- * Converts a [FetcherPaper] into a [Paper] object to be inserted into the database.
- *
- * @receiver The FetcherPaper instance to be converted.
- * @return The resulting [Paper] dto.
- */
-fun FetcherPaper.toPaper(): Paper = Paper(
-    id = UUID.randomUUID(),
-    title = this.title,
-    externalId = this.externalId,
-    abstract = this.abstract,
-    year = this.year,
-    publisher = this.publisher,
-    publicationType = this.publicationType,
-    publicationName = this.publicationName,
-    pdfId = null,
-    fetcherMetadata = this.metadata,
-    authors = this.authors,
-    createdAt = OffsetDateTime.now(),
-    modifiedAt = null,
-    modifiedBy = null,
-)
-
-/**
  * Creates a [GrpcPaper] request from this [FetcherPaper].
  */
 fun FetcherPaper.toGrpcPaperRequest(): GrpcPaper {
@@ -76,5 +50,6 @@ fun FetcherPaper.toGrpcPaperRequest(): GrpcPaper {
         publicationType = paper.publicationType
         publicationName = paper.publicationName
         authors.addAll(paper.authors.toGrpcAuthors())
+        fetcherMetadata.putAll(metadata)
     }
 }

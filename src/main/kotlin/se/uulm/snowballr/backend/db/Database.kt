@@ -48,7 +48,11 @@ private const val DB_USER = "postgres"
  * managing transaction lifecycles, allowing for simpler and more testable database interactions.
  */
 interface IDatabase {
-    suspend fun <T> query(dispatcher: CoroutineDispatcher = Dispatchers.IO, block: suspend JdbcTransaction.() -> T): T
+    suspend fun <T> query(
+        dispatcher: CoroutineDispatcher = Dispatchers.IO,
+        transactionIsolation: Int = Connection.TRANSACTION_SERIALIZABLE,
+        block: suspend JdbcTransaction.() -> T,
+    ): T
 }
 
 /**
@@ -99,15 +103,18 @@ class Database(
         return HikariDataSource(config)
     }
 
-    override suspend fun <T> query(dispatcher: CoroutineDispatcher, block: suspend JdbcTransaction.() -> T): T =
-        withContext(dispatcher) {
-            suspendTransaction(
-                JdbcDatabase.connect(dataSource),
-                Connection.TRANSACTION_SERIALIZABLE,
-            ) {
-                block()
-            }
+    override suspend fun <T> query(
+        dispatcher: CoroutineDispatcher,
+        transactionIsolation: Int,
+        block: suspend JdbcTransaction.() -> T,
+    ): T = withContext(dispatcher) {
+        suspendTransaction(
+            JdbcDatabase.connect(dataSource),
+            transactionIsolation,
+        ) {
+            block()
         }
+    }
 
     /**
      * Seeds the database with a dummy user if the environment configuration requires it.

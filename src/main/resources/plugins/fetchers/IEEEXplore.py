@@ -16,7 +16,8 @@ def search_papers(search_query: str, options: dict[str, str]) -> list[Paper]:
     query.dataType("json")
     query.dataFormat("object")
     results = query.callAPI()
-    return list(map(paper_from_response, results["articles"]))
+    articles = results.get("articles", [])
+    return list(map(paper_from_response, articles))
 
 def backward_references(paper: Paper, options: dict[str, str]) -> list[Paper]:
     return []
@@ -50,12 +51,13 @@ def forward_references(paper: Paper, options: dict[str, str]) -> list[Paper]:
 
 def paper_from_response(res) -> Paper:
     authors = [author_from_response(author) for author in res.get("authors", {}).get("authors", []) if "full_name" in author]
-    date = res.get("insert_date", "19700101")
+    # Prefer publication year over insert year
+    date = res.get("publication_year", int(res.get("insert_date", "1970")[:4]))
     return Paper(
         res.get("title", ""),
-        None,
+        res.get("doi", None),
         res.get("abstract", ""),
-        int(date[:4]),
+        date,
         res.get("publisher", ""),
         res.get("content_type", ""),
         res.get("publication_title", ""),

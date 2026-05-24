@@ -72,7 +72,7 @@ RUN uv venv /app/.venv
 ENV PYCURL_SSL_LIBRARY=openssl
 RUN apk add --no-cache --virtual .py-build-deps python3-dev build-base curl-dev
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv pip sync --python /app/.venv/bin/python requirements.txt
+    uv pip install --python /app/.venv/bin/python -r requirements.txt
 RUN apk del .py-build-deps && chown -R backend-user /app/.venv
 
 VOLUME /app/plugins/

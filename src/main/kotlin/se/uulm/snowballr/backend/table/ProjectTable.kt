@@ -5,9 +5,9 @@ import org.jetbrains.exposed.v1.core.ReferenceOption
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.dao.id.java.UUIDTable
 import org.jetbrains.exposed.v1.datetime.timestampWithTimeZone
-import org.jetbrains.exposed.v1.json.json
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.fetcher.FetcherMap
+import se.uulm.snowballr.backend.table.columntypes.obfuscatedJson
 import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
@@ -52,7 +52,7 @@ object ProjectTable : UUIDTable("project") {
     val snowballingType = enumeration<SnowballingType>("snowballing_type")
     val reviewMaybeAllowed = bool("review_maybe_allowed")
     val reviewDecisionMatrixBinary = redactedBinary("review_decision_matrix")
-    val fetchers = json<FetcherMap>("fetchers", Json)
+    val fetchers = obfuscatedJson<FetcherMap>("fetchers", Json)
     val currentStageStartedAt = timestampWithTimeZone("current_stage_started_at").clientDefault { OffsetDateTime.now() }
 
     // Metadata

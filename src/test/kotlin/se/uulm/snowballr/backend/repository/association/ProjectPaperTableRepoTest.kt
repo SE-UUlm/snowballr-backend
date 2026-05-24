@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
-import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
@@ -28,7 +27,6 @@ import se.uulm.snowballr.backend.utils.assertResultFailure
 import se.uulm.snowballr.backend.utils.assertResultSuccess
 import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ProjectOuterClass.Project
-import java.sql.SQLException
 import java.util.UUID
 import kotlin.random.Random
 
@@ -339,19 +337,6 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
 
     @Nested
     inner class AddPaperToProject {
-        @Test
-        fun `When a project paper is added to a project, but the assigned user doesn't exist, then a SQLException is thrown`() =
-            runTest {
-                val request = Project.Paper.Add
-                    .newBuilder()
-                    .setPaperId(UUID.randomUUID().toString())
-                    .setProjectId(UUID.randomUUID().toString())
-                    .build()
-                assertThrows<SQLException> {
-                    repo.addPaperToProject(request, UUID.randomUUID())
-                }
-            }
-
         @Test
         fun `When a project paper is added to a project with the correct values, then the project paper is returned`() =
             runTest {

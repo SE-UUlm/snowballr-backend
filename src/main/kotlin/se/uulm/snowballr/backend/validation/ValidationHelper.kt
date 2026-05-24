@@ -56,7 +56,7 @@ fun Raise<ValidationIssue>.ensureFieldEmptyOrNonBlank(name: String, value: Strin
  * @param maxLength The maximum allowed length for the field value.
  */
 fun Raise<ValidationIssue>.ensureFieldLength(name: String, value: String, maxLength: Int) =
-    ensure(value.length <= maxLength) { TooLongField(name, maxLength) }
+    ensure(value.length <= maxLength) { TooLongField(name, maxLength, value.length) }
 
 /**
  * Ensures that the given text field value is valid.

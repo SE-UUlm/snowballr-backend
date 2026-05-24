@@ -425,12 +425,13 @@ class SnowballRServer(
         override suspend fun getPaperById(request: Base.Id): PaperOuterClass.Paper =
             paperService.getPaperById(parsePaperId(request))
 
-        override suspend fun searchLocalPapers(request: PaperOuterClass.Paper.SearchQuery): PaperOuterClass.Paper.List =
-            super.searchLocalPapers(request)
-
-        override suspend fun searchFetcherPapers(
+        override suspend fun searchLocalProjectPaperCandidates(
             request: ProjectOuterClass.Project.Paper.SearchQuery,
-        ): PaperOuterClass.Paper.List = super.searchFetcherPapers(request)
+        ): PaperOuterClass.Paper.List = super.searchLocalProjectPaperCandidates(request)
+
+        override suspend fun searchFetcherProjectPaperCandidates(
+            request: ProjectOuterClass.Project.Paper.SearchQuery,
+        ): PaperOuterClass.Paper.List = fetcherService.searchFetcherProjectPaperCandidates(request)
 
         override suspend fun createPaper(request: PaperOuterClass.Paper): PaperOuterClass.Paper =
             paperService.createPaper(request)

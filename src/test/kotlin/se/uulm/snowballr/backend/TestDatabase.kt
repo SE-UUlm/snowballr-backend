@@ -16,7 +16,6 @@ import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.table.UserTable
 import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
-import java.sql.Connection
 import java.util.UUID
 import javax.sql.DataSource
 import org.jetbrains.exposed.v1.jdbc.Database as JdbcDatabase
@@ -34,15 +33,18 @@ import org.jetbrains.exposed.v1.jdbc.Database as JdbcDatabase
 class TestDatabase(var dataSource: DataSource) : IDatabase {
     private val postgres = PostgreSQLContainer("postgres:16.1-alpine3.19")
 
-    override suspend fun <T> query(dispatcher: CoroutineDispatcher, block: suspend JdbcTransaction.() -> T): T =
-        withContext(dispatcher) {
-            suspendTransaction(
-                JdbcDatabase.connect(dataSource),
-                transactionIsolation = Connection.TRANSACTION_SERIALIZABLE,
-            ) {
-                block()
-            }
+    override suspend fun <T> query(
+        dispatcher: CoroutineDispatcher,
+        transactionIsolation: Int,
+        block: suspend JdbcTransaction.() -> T,
+    ): T = withContext(dispatcher) {
+        suspendTransaction(
+            JdbcDatabase.connect(dataSource),
+            transactionIsolation = transactionIsolation,
+        ) {
+            block()
         }
+    }
 
     /**
      * Starts the PostgreSQL container and sets up the data source for database connections.
