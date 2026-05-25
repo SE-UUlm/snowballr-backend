@@ -27,7 +27,7 @@ being powerful and developer-friendly. Furthermore, it provides a broad set of
 builtin functionality and is very widespread, even in non-computer-science
 degrees. This makes it a very natural and favourable choice.
 
-> [!INFO]
+> [!NOTE]
 > Installing fetchers requires direct access to a running instance of the
 > SnowballR backend. Contact your instance administrator if required.
 
@@ -147,7 +147,7 @@ paper = Paper(
     publication_type,  # str
     publication_name,  # str
     authors,           # list[Author]
-    metadata,          # dict[str, str]
+    fetcher_metadata,  # dict[str, str]
 )
 ```
 
@@ -174,7 +174,7 @@ options = {}
 def search_papers(searchQuery: str, options: dict[str, str]) -> list[Paper]:
     return [ Paper(
         "title",
-        None,
+        "external_id",
         "abstract",
         2026,
         "publisher",
@@ -227,7 +227,7 @@ def search_papers(searchQuery: str, options: dict[str, str]) -> list[Paper]:
 
     return [ Paper(
         "title",
-        None,
+        "external_id",
         content,
         2026,
         "publisher",
@@ -264,7 +264,7 @@ a plugin.
 
 If the fetcher encounters an error (exit-code != 0), the `stderr` output is
 printed as an error log entry. If the fetcher exits successfully (exit-code ==
-0) and the `stderr` log is not blank, then it is printed as an info log entry.
+0\) and the `stderr` log is not blank, then it is printed as an info log entry.
 
 This can be useful for determining the source of unexpected errors or during
 implementation and debugging.
