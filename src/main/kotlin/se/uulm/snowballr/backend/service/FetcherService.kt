@@ -81,8 +81,13 @@ class FetcherService(
             projectAccessChecker.isAllowedToReadProject(currentUser, projectId)
 
             val matchingPapers = paperRepo.getPapersBySearchQuery(request.query)
+            logger.debug { "Found ${matchingPapers.size} papers for query '${request.query}'" }
 
             val filteredPapers = filterPapersNotInProject(projectId, matchingPapers)
+            logger.debug {
+                val removedPapers = matchingPapers.size - filteredPapers.size
+                "Filtered out $removedPapers/${matchingPapers.size} papers that already existed in the project."
+            }
 
             GrpcPaper.List.newBuilder()
                 .addAllPapers(filteredPapers.map { it.toGrpcPaper(emptyList()) })
@@ -104,6 +109,7 @@ class FetcherService(
                     logger.error(e) { "Failed to search fetcher papers for fetcher '$fetcher': ${e.message}" }
                 }
             }
+            logger.debug { "Found ${papers.size} papers for query '${request.query}'" }
 
             val filteredPapers = filterExistingFetcherPapers(projectId, papers)
             logger.debug {
