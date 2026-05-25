@@ -17,6 +17,7 @@ plugins {
     alias(libs.plugins.git.versioning)
     alias(libs.plugins.undercouch.download)
     alias(libs.plugins.sonarqube)
+    alias(libs.plugins.ben.manes.versions)
     application
 }
 

@@ -33,6 +33,7 @@ nanoid = "1.0.1"
 git-versioning = "6.4.4"
 undercouch-download = "5.7.0"
 sonarqube = "7.2.2.6593"
+ben-manes-versions = "0.54.0"
 
 [libraries]
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
@@ -104,3 +105,4 @@ kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", versi
 git-versioning = { id = "me.qoomon.git-versioning", version.ref = "git-versioning" }
 undercouch-download = { id = "de.undercouch.download", version.ref = "undercouch-download" }
 sonarqube = { id = "org.sonarqube", version.ref = "sonarqube" }
+ben-manes-versions = { id = "com.github.ben-manes.versions", version.ref = "ben-manes-versions" }
