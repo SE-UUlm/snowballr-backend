@@ -128,9 +128,9 @@ class FetcherService(
      * Papers that already exist in the database get their ID assigned, so that they can be associated by the client.
      */
     private suspend fun filterExistingFetcherPapers(projectId: UUID, fetcherPapers: Set<FetcherPaper>): Set<GrpcPaper> {
-        val externalIds = fetcherPapers.mapNotNull { it.externalId }
+        val externalIds = fetcherPapers.mapNotNull { it.externalId }.distinct()
         val existingPapers = paperRepo.getPapersByExternalIds(externalIds).associateBy { it.externalId }
-        val notInProjectIds = filterPapersNotInProject(projectId, existingPapers.values).map { it.id }
+        val notInProjectIds = filterPapersNotInProject(projectId, existingPapers.values).map { it.id }.toSet()
 
         return fetcherPapers.mapNotNull { fetcherPaper ->
             val existing = existingPapers[fetcherPaper.externalId]
