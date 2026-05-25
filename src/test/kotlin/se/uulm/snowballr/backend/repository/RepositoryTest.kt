@@ -81,5 +81,6 @@ open class RepositoryTest(
     @AfterAll
     fun tearDown() {
         db.tearDown()
+        db.close()
     }
 }

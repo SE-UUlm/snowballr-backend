@@ -31,6 +31,7 @@ import org.jetbrains.exposed.v1.jdbc.Database as JdbcDatabase
  */
 class TestDatabase : IDatabase {
     private val postgres = PostgreSQLContainer("postgres:16.1-alpine3.19")
+    private lateinit var dataSource: HikariDataSource
     private lateinit var exposedDatabase: JdbcDatabase
 
     override suspend fun <T> query(
@@ -55,7 +56,7 @@ class TestDatabase : IDatabase {
             username = postgres.username
             password = postgres.password
         }
-        val dataSource = HikariDataSource(config)
+        dataSource = HikariDataSource(config)
         exposedDatabase = JdbcDatabase.connect(dataSource)
     }
 
@@ -135,5 +136,9 @@ class TestDatabase : IDatabase {
         query {
             block()
         }
+    }
+
+    override fun close() {
+        dataSource.close()
     }
 }

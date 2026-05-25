@@ -154,6 +154,7 @@ open class IntegrationTest : KoinTest {
         clearAllMocks()
 
         db.tearDown()
+        db.close()
         stopKoin()
     }
 
