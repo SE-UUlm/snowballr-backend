@@ -3,7 +3,6 @@ package se.uulm.snowballr.backend.model.dto
 import se.uulm.snowballr.backend.model.fetcher.FetcherMetadata
 import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
 import se.uulm.snowballr.backend.table.PaperTable
-import snowballr.paper
 import java.time.OffsetDateTime
 import java.util.UUID
 import snowballr.PaperOuterClass.Paper as GrpcPaper
@@ -47,7 +46,7 @@ fun List<GrpcPaper>.toGrpcPapers(): GrpcPaper.List = GrpcPaper.List
     .build()
 
 /**
- * Creates a [FetcherPaper] from this [paper]
+ * Creates a [FetcherPaper] from this [Paper].
  */
 fun Paper.toFetcherPaper(): FetcherPaper = FetcherPaper(
     title = title,
