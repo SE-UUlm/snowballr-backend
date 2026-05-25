@@ -23,7 +23,7 @@ def backward_references(paper: Paper, options: dict[str, str]) -> list[Paper]:
     return []
 
 def forward_references(paper: Paper, options: dict[str, str]) -> list[Paper]:
-    article_number = paper.metadata.get(metadata_key)
+    article_number = paper.fetcher_metadata.get(metadata_key)
     if article_number is None:
         return []
 

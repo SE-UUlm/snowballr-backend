@@ -13,9 +13,9 @@ import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.fetcher.FetcherOrchestrator
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.toFetcherPaper
+import se.uulm.snowballr.backend.model.dto.toGrpcPaperRequest
 import se.uulm.snowballr.backend.model.exception.FetcherException
 import se.uulm.snowballr.backend.model.fetcher.FetcherEnqueueJob
-import se.uulm.snowballr.backend.model.fetcher.toGrpcPaperRequest
 import se.uulm.snowballr.backend.model.isBackwardOrBoth
 import se.uulm.snowballr.backend.model.isForwardOrBoth
 import se.uulm.snowballr.backend.repository.UNIQUE_CONSTRAINT_VIOLATION_SQL_STATE

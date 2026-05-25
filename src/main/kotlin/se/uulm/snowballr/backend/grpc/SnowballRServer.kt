@@ -427,7 +427,7 @@ class SnowballRServer(
 
         override suspend fun searchLocalProjectPaperCandidates(
             request: ProjectOuterClass.Project.Paper.SearchQuery,
-        ): PaperOuterClass.Paper.List = super.searchLocalProjectPaperCandidates(request)
+        ): PaperOuterClass.Paper.List = fetcherService.searchLocalProjectPaperCandidates(request)
 
         override suspend fun searchFetcherProjectPaperCandidates(
             request: ProjectOuterClass.Project.Paper.SearchQuery,

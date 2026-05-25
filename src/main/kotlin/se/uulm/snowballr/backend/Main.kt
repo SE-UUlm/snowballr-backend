@@ -6,6 +6,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import org.koin.core.context.startKoin
 import org.koin.java.KoinJavaComponent.getKoin
 import org.slf4j.LoggerFactory
+import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.env.DEFAULT_LOG_LEVEL
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.env.EnvService
@@ -28,6 +29,7 @@ fun main() {
     }
 
     initializeFetcherOrchestrator()
+    addDbShutdownHook()
 
     // Create and run the server
     val server = SnowballRServer(env.http.port)
@@ -62,4 +64,10 @@ private fun initializeFetcherOrchestrator() {
             orchestrator.stop()
         },
     )
+}
+
+private fun addDbShutdownHook() {
+    val db = getKoin().get<IDatabase>()
+    db.close()
+    logger.info { "Closed database connection" }
 }

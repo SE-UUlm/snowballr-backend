@@ -20,6 +20,7 @@ import se.uulm.snowballr.backend.db.DatabaseHelper.addExtensions
 import se.uulm.snowballr.backend.env.Env
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.table.UserTable
+import java.io.Closeable
 import java.sql.Connection
 import org.jetbrains.exposed.v1.jdbc.Database as JdbcDatabase
 
@@ -47,7 +48,7 @@ private const val DB_USER = "postgres"
  * transactional block. It abstracts the lower-level details of connecting to the database and
  * managing transaction lifecycles, allowing for simpler and more testable database interactions.
  */
-interface IDatabase {
+interface IDatabase : Closeable {
     suspend fun <T> query(
         dispatcher: CoroutineDispatcher = Dispatchers.IO,
         transactionIsolation: Int = Connection.TRANSACTION_SERIALIZABLE,
@@ -65,11 +66,13 @@ class Database(
     private val envReader: EnvReader,
 ) : IDatabase {
     private val dataSource: HikariDataSource
+    private val exposedDatabase: JdbcDatabase
 
     init {
         logger.info { "Connecting to database" }
         dataSource = initDataSource(envReader.env.database)
-        transaction(JdbcDatabase.connect(dataSource)) {
+        exposedDatabase = JdbcDatabase.connect(dataSource)
+        transaction(exposedDatabase) {
             setUpDatabase()
             seedDummyUserIfEnabled()
         }
@@ -108,12 +111,13 @@ class Database(
         transactionIsolation: Int,
         block: suspend JdbcTransaction.() -> T,
     ): T = withContext(dispatcher) {
-        suspendTransaction(
-            JdbcDatabase.connect(dataSource),
-            transactionIsolation,
-        ) {
+        suspendTransaction(exposedDatabase, transactionIsolation) {
             block()
         }
+    }
+
+    override fun close() {
+        dataSource.close()
     }
 
     /**

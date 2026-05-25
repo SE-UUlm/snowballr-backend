@@ -7,9 +7,9 @@ import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.Paper
 import se.uulm.snowballr.backend.model.dto.toGrpcPaper
+import se.uulm.snowballr.backend.model.dto.toGrpcPaperRequest
 import se.uulm.snowballr.backend.model.exception.FetcherException
 import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
-import se.uulm.snowballr.backend.model.fetcher.toGrpcPaperRequest
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
@@ -34,6 +34,11 @@ interface IFetcherService {
      * Service implementation of [SnowballRService.getAvailableFetcherOptions].
      */
     suspend fun getAvailableFetcherOptions(request: GetAvailableFetcherOptionsRequest): FetcherOptions
+
+    /**
+     * Service implementation of [SnowballRService.searchLocalProjectPaperCandidates].
+     */
+    suspend fun searchLocalProjectPaperCandidates(request: GrpcProjectPaper.SearchQuery): GrpcPaper.List
 
     /**
      * Service implementation of [SnowballRService.searchFetcherProjectPaperCandidates].
@@ -69,6 +74,26 @@ class FetcherService(
             .putAllOptions(fetcherManager.getAvailableOptions(request.fetcherName))
             .build()
 
+    override suspend fun searchLocalProjectPaperCandidates(request: GrpcProjectPaper.SearchQuery): GrpcPaper.List =
+        withUser(userRepo) { currentUser ->
+            val projectId = parseUUID(request.projectId, EntityType.PROJECT)
+
+            projectAccessChecker.isAllowedToReadProject(currentUser, projectId)
+
+            val matchingPapers = paperRepo.getPapersBySearchQuery(request.query)
+            logger.debug { "Found ${matchingPapers.size} papers for query '${request.query}'" }
+
+            val filteredPapers = filterPapersNotInProject(projectId, matchingPapers)
+            logger.debug {
+                val removedPapers = matchingPapers.size - filteredPapers.size
+                "Filtered out $removedPapers/${matchingPapers.size} papers that already existed in the project."
+            }
+
+            GrpcPaper.List.newBuilder()
+                .addAllPapers(filteredPapers.map { it.toGrpcPaper(emptyList()) })
+                .build()
+        }
+
     override suspend fun searchFetcherProjectPaperCandidates(request: GrpcProjectPaper.SearchQuery): GrpcPaper.List =
         withUser(userRepo) { currentUser ->
             val projectId = parseUUID(request.projectId, EntityType.PROJECT)
@@ -84,8 +109,13 @@ class FetcherService(
                     logger.error(e) { "Failed to search fetcher papers for fetcher '$fetcher': ${e.message}" }
                 }
             }
+            logger.debug { "Found ${papers.size} papers for query '${request.query}'" }
 
-            val filteredPapers = filterExistingPapers(projectId, papers)
+            val filteredPapers = filterExistingFetcherPapers(projectId, papers)
+            logger.debug {
+                val removedPapers = papers.size - filteredPapers.size
+                "Filtered out $removedPapers/${papers.size} papers that already existed in the project."
+            }
 
             GrpcPaper.List.newBuilder()
                 .addAllPapers(filteredPapers)
@@ -97,35 +127,31 @@ class FetcherService(
      *
      * Papers that already exist in the database get their ID assigned, so that they can be associated by the client.
      */
-    private suspend fun filterExistingPapers(projectId: UUID, fetcherPapers: Set<FetcherPaper>): Set<GrpcPaper> {
-        val filteredPapers = mutableSetOf<GrpcPaper>()
+    private suspend fun filterExistingFetcherPapers(projectId: UUID, fetcherPapers: Set<FetcherPaper>): Set<GrpcPaper> {
+        val externalIds = fetcherPapers.mapNotNull { it.externalId }.distinct()
+        val existingPapers = paperRepo.getPapersByExternalIds(externalIds).associateBy { it.externalId }
+        val notInProjectIds = filterPapersNotInProject(projectId, existingPapers.values).map { it.id }.toSet()
 
-        for (fetcherPaper in fetcherPapers) {
-            val paper = getPaperIfExists(fetcherPaper)
+        return fetcherPapers.mapNotNull { fetcherPaper ->
+            val existing = existingPapers[fetcherPaper.externalId]
+            when {
+                existing == null -> fetcherPaper.toGrpcPaperRequest()
+                existing.id in notInProjectIds -> existing.toGrpcPaper(emptyList())
+                else -> null
+            }
+        }.toSet()
+    }
 
-            if (paper != null) {
-                val isAlreadyInProject = projectPaperRepo.doesProjectPaperExist(projectId, paper.id)
-                if (!isAlreadyInProject) {
-                    filteredPapers += paper.toGrpcPaper(emptyList())
-                }
-            } else {
-                filteredPapers += fetcherPaper.toGrpcPaperRequest()
+    private suspend fun filterPapersNotInProject(projectId: UUID, papers: Collection<Paper>): List<Paper> {
+        val filteredPapers = mutableSetOf<Paper>()
+
+        for (paper in papers) {
+            val isAlreadyInProject = projectPaperRepo.doesProjectPaperExist(projectId, paper.id)
+            if (!isAlreadyInProject) {
+                filteredPapers += paper
             }
         }
 
-        return filteredPapers
-    }
-
-    /**
-     * Return the database paper if it matches the data from the specified fetched [paper].
-     *
-     * Currently, this check is only done by using the external ID.
-     */
-    private suspend fun getPaperIfExists(paper: FetcherPaper): Paper? {
-        if (paper.externalId == null) {
-            return null
-        }
-
-        return paperRepo.getPaperByExternalId(paper.externalId).getOrNull()
+        return filteredPapers.toList()
     }
 }
