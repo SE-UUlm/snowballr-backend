@@ -57,9 +57,10 @@ The list of required packages can be also found in the [requirements.txt](https:
 > packages are installed.
 
 To get proper autocomplete and type checking for the SnowballR types, add the
-`plugins/fetchers/lib/` directory to your python path. This can be done by
-adding it to the `PYTHONPATH` environment variable. If the directory does not
-exist yet, start the backend as it should be created automatically.
+[`src/main/resources/plugins/fetchers/lib`](https://github.com/SE-UUlm/snowballr-backend/tree/develop/src/main/resources/plugins/fetchers/lib).
+directory to your python path. This can be done by adding it to the `PYTHONPATH`
+environment variable. If the directory does not exist yet, start the backend as
+it should be created automatically.
 
 ### Plugin Directory
 
@@ -131,11 +132,12 @@ their own set of options.
 
 ### Writing a Fetcher
 
-Equipped with this knowledge, let's get started and write our very
-own fetcher. SnowballR provides a predefined[^1] `Paper`
-dataclass, which is expected as a result. The source is located in
-`plugins/fetchers/lib/snowballr.py` and can be imported with
-`from snowballr import Paper`. It is mutable and can be constructed like this:
+Equipped with this knowledge, let's get started and write our very own fetcher.
+SnowballR provides a predefined[^1] `Paper` dataclass, which is expected as a
+result. The source is located in
+[`src/main/resources/plugins/fetchers/lib/snowballr.py`](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/resources/plugins/fetchers/lib/snowballr.py).
+and can be imported with `from snowballr import Paper`. It is mutable and can be
+constructed like this:
 
 ```py
 paper = Paper(
@@ -272,8 +274,9 @@ implementation and debugging.
 ### Developers
 
 If you want to contribute a fetcher to SnowballR, add it to the resources in
-`src/main/resources/plugins/fetchers/` and adjust the resource builder in
-`src/main/kotlin/se/uulm/snowballr/backend/fetcher/PythonPluginFetcherManager.kt`.
+[`src/main/resources/plugins/fetchers/`](https://github.com/SE-UUlm/snowballr-backend/tree/develop/src/main/resources/plugins/fetchers).
+and adjust the resource builder in
+[PythonPluginFetcherManager.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/fetcher/PythonPluginFetcherManager.kt).
 
 [^1]: There are more definitions provided by SnowballR. Check them out in their
     [definition file](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/resources/plugins/fetchers/lib/snowballr.py).
