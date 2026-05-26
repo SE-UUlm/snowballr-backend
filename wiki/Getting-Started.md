@@ -30,7 +30,7 @@ The fastest way to get started is to use the provided Docker setup.
 
 > [!INFO]
 > If you encounter a permission-denied error regarding the plugin directory not
-> being writable, make sure to execute `chmod o+wr ./plugins` on the created
+> being writable, make sure to execute `chmod o+wr plugins` on the created
 > directory once. In some cases, Docker's created volumes aren't writable for
 > the user within the container.
 

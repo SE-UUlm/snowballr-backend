@@ -26,7 +26,7 @@ manually. This is where the Fetcher CLI should help out. It offers direct access
 by providing the same implementation as the
 [PythonPluginFetcherManager](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/fetcher/PythonPluginFetcherManager.kt).
 The CLI is located at
-[`./tools/fetcher-cli`](https://github.com/SE-UUlm/snowballr-backend/tree/develop/tools/fetcher-cli).
+[`tools/fetcher-cli`](https://github.com/SE-UUlm/snowballr-backend/tree/develop/tools/fetcher-cli).
 It enables faster development of new fetcher plugins and maintenance of existing
 ones.
 
@@ -34,14 +34,14 @@ Make sure to call it from an active python environment (see
 [Getting Started](https://github.com/SE-UUlm/snowballr-backend/wiki/Getting-Started)).
 
 ```bash
-uv run ./tools/fetcher-cli/cli.py <subcommand> <args>
+uv run tools/fetcher-cli/cli.py <subcommand> <args>
 ```
 
 ### Configuration
 
 Some fetcher plugins may require configuration to work correctly, e.g. an API
 token. To provide this information, create a `config.json` at
-[`./tools/fetcher-cli`](https://github.com/SE-UUlm/snowballr-backend/tree/develop/tools/fetcher-cli).
+[`tools/fetcher-cli`](https://github.com/SE-UUlm/snowballr-backend/tree/develop/tools/fetcher-cli).
 It should contain a configuration object for each fetcher. This may look like
 this:
 
@@ -57,7 +57,7 @@ If not already existing, a `config.json` can be created using the following
 command:
 
 ```bash
-uv run ./tools/fetcher-cli/cli.py init-config
+uv run tools/fetcher-cli/cli.py init-config
 ```
 
 This will create a configuration object for each existing fetcher.
@@ -65,7 +65,7 @@ This will create a configuration object for each existing fetcher.
 ### Subcommands
 
 If call to a fetcher returns data, it will be stored in
-[`./tools/fetcher-cli/output`](https://github.com/SE-UUlm/snowballr-backend/tree/develop/tools/fetcher-cli/output).
+[`tools/fetcher-cli/output`](https://github.com/SE-UUlm/snowballr-backend/tree/develop/tools/fetcher-cli/output).
 The subcommands will also print a short summary of the received data.
 
 #### list
@@ -77,7 +77,7 @@ This will list all existing fetchers. There are no additional arguments.
 Example:
 
 ```bash
-uv run ./tools/fetcher-cli/cli.py list
+uv run tools/fetcher-cli/cli.py list
 ```
 
 #### options
@@ -89,7 +89,7 @@ This will return all available options for a specific fetcher.
 Example:
 
 ```bash
-uv run ./tools/fetcher-cli/cli.py options ExampleFetcher
+uv run tools/fetcher-cli/cli.py options ExampleFetcher
 ```
 
 #### search
@@ -101,7 +101,7 @@ This will use the specified fetcher to search papers using the specified query.
 Example:
 
 ```bash
-uv run ./tools/fetcher-cli/cli.py search ExampleFetcher Snowballing
+uv run tools/fetcher-cli/cli.py search ExampleFetcher Snowballing
 ```
 
 #### forwards
@@ -116,7 +116,7 @@ The paper can be either provided as JSON string or as path to JSON file.
 Example:
 
 ```bash
-uv run ./tools/fetcher-cli/cli.py forwards ExampleFetcher ./tools/fetcher-cli/paper.json
+uv run tools/fetcher-cli/cli.py forwards ExampleFetcher tools/fetcher-cli/paper.json
 ```
 
 #### backwards
@@ -131,7 +131,7 @@ The paper can be either provided as JSON string or as path to JSON file.
 Example:
 
 ```bash
-uv run ./tools/fetcher-cli/cli.py backwards ExampleFetcher ./tools/fetcher-cli/paper.json
+uv run tools/fetcher-cli/cli.py backwards ExampleFetcher tools/fetcher-cli/paper.json
 ```
 
 #### init-config

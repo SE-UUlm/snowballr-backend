@@ -57,7 +57,7 @@ The list of required packages can be also found in the [requirements.txt](https:
 > packages are installed.
 
 To get proper autocomplete and type checking for the SnowballR types, add the
-`./plugins/fetchers/lib/` directory to your python path. This can be done by
+`plugins/fetchers/lib/` directory to your python path. This can be done by
 adding it to the `PYTHONPATH` environment variable. If the directory does not
 exist yet, start the backend as it should be created automatically.
 
@@ -134,7 +134,7 @@ their own set of options.
 Equipped with this knowledge, let's get started and write our very
 own fetcher. SnowballR provides a predefined[^1] `Paper`
 dataclass, which is expected as a result. The source is located in
-`./plugins/fetchers/lib/snowballr.py` and can be imported with
+`plugins/fetchers/lib/snowballr.py` and can be imported with
 `from snowballr import Paper`. It is mutable and can be constructed like this:
 
 ```py
