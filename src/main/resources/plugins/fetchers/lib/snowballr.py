@@ -1,28 +1,30 @@
 # THIS FILE IS AUTO-GENERATED. DO NOT MODIFY.
 
-import sys
-from enum import StrEnum
-from dataclasses import dataclass, field
 import json
-from dataclass_wizard import asdict, fromdict, JSONWizard
+import sys
+from dataclasses import dataclass, field
+from enum import StrEnum
 from typing import Callable, Optional
-from datetime import datetime
+
+from dataclass_wizard import JSONWizard, fromdict
+
 
 @dataclass(unsafe_hash=True)
 class Author(JSONWizard):
     class _(JSONWizard.Meta):
-        key_transform_with_load = 'SNAKE'
-        key_transform_with_dump = 'SNAKE'
+        key_transform_with_load = "SNAKE"
+        key_transform_with_dump = "SNAKE"
 
     first_name: str = ""
     last_name: str = ""
 
+
 @dataclass(unsafe_hash=True)
 class Paper(JSONWizard):
     class _(JSONWizard.Meta):
-        marshal_date_time_as = 'Timestamp'
-        key_transform_with_load = 'SNAKE'
-        key_transform_with_dump = 'SNAKE'
+        marshal_date_time_as = "Timestamp"
+        key_transform_with_load = "SNAKE"
+        key_transform_with_dump = "SNAKE"
 
     title: str = ""
     external_id: Optional[str] = None
@@ -34,15 +36,18 @@ class Paper(JSONWizard):
     authors: list[Author] = field(default_factory=list)
     fetcher_metadata: dict[str, str] = field(default_factory=dict)
 
+
 class EventType(StrEnum):
     OPTIONS = "options"
     QUERY = "query"
     FORWARDS = "forwards"
     BACKWARDS = "backwards"
 
+
 type Options = dict[str, str]
 type QueryFn = Callable[[str, Options], list[Paper]]
 type ReferenceFn = Callable[[Paper, Options], list[Paper]]
+
 
 def _read_stdin_payload() -> dict:
     if sys.stdin is None or sys.stdin.closed:
@@ -59,6 +64,7 @@ def _read_stdin_payload() -> dict:
         return {}
 
     return json.loads(payload)
+
 
 def fetcher_plugin(
     options: dict[str, str],
@@ -85,7 +91,8 @@ def fetcher_plugin(
                 query_arg = sys.argv[2]
                 options_arg = json.loads(sys.argv[3])
             else:
-                print("The fetcher was called with an incorrect number of arguments.", file=sys.stderr)
+                msg = "The fetcher was called with an incorrect number of arguments."
+                print(msg, file=sys.stderr)
                 print("python fetcher.py query <SEARCH_QUERY> <OPTIONS>", file=sys.stderr)
                 exit(1)
 
@@ -100,7 +107,8 @@ def fetcher_plugin(
                 paper_arg = Paper.from_json(sys.argv[2])
                 options_arg = json.loads(sys.argv[3])
             else:
-                print("The fetcher was called with an incorrect number of arguments.", file=sys.stderr)
+                msg = "The fetcher was called with an incorrect number of arguments."
+                print(msg, file=sys.stderr)
                 print("python fetcher.py forwards <PAPER> <OPTIONS>", file=sys.stderr)
                 exit(1)
 
@@ -115,7 +123,8 @@ def fetcher_plugin(
                 paper_arg = Paper.from_json(sys.argv[2])
                 options_arg = json.loads(sys.argv[3])
             else:
-                print("The fetcher was called with an incorrect number of arguments.", file=sys.stderr)
+                msg = "The fetcher was called with an incorrect number of arguments."
+                print(msg, file=sys.stderr)
                 print("python fetcher.py backwards <PAPER> <OPTIONS>", file=sys.stderr)
                 exit(1)
 
