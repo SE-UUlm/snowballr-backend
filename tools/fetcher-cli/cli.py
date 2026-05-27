@@ -159,7 +159,7 @@ def cmd_options(args):
     fetcher_config = get_options_for(fetcher)
 
     if not CONFIG_FILE.exists():
-        print(f"Hint: no config.json found. Run 'init-config' to create one.\n")
+        print("Hint: no config.json found. Run 'init-config' to create one.\n")
 
     print(f"Options for '{fetcher}':")
     print(f"  {'Key':<28} {'Description':<42} Configured")
