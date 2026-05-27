@@ -675,8 +675,13 @@ class XPLORE:
         qry_obj.setopt(qry_obj.WRITEDATA, buffer_obj)
         qry_obj.setopt(qry_obj.CAINFO, certifi.where())
         qry_obj.perform()
+        code = qry_obj.getinfo(pycurl.RESPONSE_CODE)
         qry_obj.close()
         response = buffer_obj.getvalue()
+
+        if code == 500:
+            return "{}"
+
         return response.decode('utf-8')
 
 

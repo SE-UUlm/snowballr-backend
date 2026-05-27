@@ -8,8 +8,8 @@ To test the functionality of our app, we employ various tests. To run tests, you
 ./gradlew integrationTest
 ```
 
-The coverage report is located at `./build/coverageHtml/index.html` and the test report at
-`./build/testReportHtml/index.html`.
+The coverage report is located at `build/coverageHtml/index.html` and the test report at
+`build/testReportHtml/index.html`.
 
 On this page, we cover the following topics:
 
@@ -58,8 +58,8 @@ possible to keep it consistent with the already existing tests and to make the a
 If the _JUnit_ assertions are not easily usable, then use the
 [AssertJ](https://github.com/assertj/assertj?tab=readme-ov-file) test assertions.
 
-All test classes must have the same relative path under `./src/test` as the implementation class under
-`./src/main` and the same name with an additional `Test` at the end. This ensures a clear structure and an easy way to
+All test classes must have the same relative path under `src/test` as the implementation class under
+`src/main` and the same name with an additional `Test` at the end. This ensures a clear structure and an easy way to
 find the according test class. The service test classes break this convention as described below.
 
 ### Repository

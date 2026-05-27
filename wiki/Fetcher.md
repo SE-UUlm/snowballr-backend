@@ -27,7 +27,7 @@ being powerful and developer-friendly. Furthermore, it provides a broad set of
 builtin functionality and is very widespread, even in non-computer-science
 degrees. This makes it a very natural and favourable choice.
 
-> [!INFO]
+> [!NOTE]
 > Installing fetchers requires direct access to a running instance of the
 > SnowballR backend. Contact your instance administrator if required.
 
@@ -57,9 +57,10 @@ The list of required packages can be also found in the [requirements.txt](https:
 > packages are installed.
 
 To get proper autocomplete and type checking for the SnowballR types, add the
-`./plugins/fetchers/lib/` directory to your python path. This can be done by
-adding it to the `PYTHONPATH` environment variable. If the directory does not
-exist yet, start the backend as it should be created automatically.
+[`src/main/resources/plugins/fetchers/lib`](https://github.com/SE-UUlm/snowballr-backend/tree/develop/src/main/resources/plugins/fetchers/lib).
+directory to your python path. This can be done by adding it to the `PYTHONPATH`
+environment variable. If the directory does not exist yet, start the backend as
+it should be created automatically.
 
 ### Plugin Directory
 
@@ -131,11 +132,12 @@ their own set of options.
 
 ### Writing a Fetcher
 
-Equipped with this knowledge, let's get started and write our very
-own fetcher. SnowballR provides a predefined[^1] `Paper`
-dataclass, which is expected as a result. The source is located in
-`./plugins/fetchers/lib/snowballr.py` and can be imported with
-`from snowballr import Paper`. It is mutable and can be constructed like this:
+Equipped with this knowledge, let's get started and write our very own fetcher.
+SnowballR provides a predefined[^1] `Paper` dataclass, which is expected as a
+result. The source is located in
+[`src/main/resources/plugins/fetchers/lib/snowballr.py`](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/resources/plugins/fetchers/lib/snowballr.py).
+and can be imported with `from snowballr import Paper`. It is mutable and can be
+constructed like this:
 
 ```py
 paper = Paper(
@@ -147,7 +149,7 @@ paper = Paper(
     publication_type,  # str
     publication_name,  # str
     authors,           # list[Author]
-    metadata,          # dict[str, str]
+    fetcher_metadata,  # dict[str, str]
 )
 ```
 
@@ -174,7 +176,7 @@ options = {}
 def search_papers(searchQuery: str, options: dict[str, str]) -> list[Paper]:
     return [ Paper(
         "title",
-        None,
+        "external_id",
         "abstract",
         2026,
         "publisher",
@@ -227,7 +229,7 @@ def search_papers(searchQuery: str, options: dict[str, str]) -> list[Paper]:
 
     return [ Paper(
         "title",
-        None,
+        "external_id",
         content,
         2026,
         "publisher",
@@ -264,7 +266,7 @@ a plugin.
 
 If the fetcher encounters an error (exit-code != 0), the `stderr` output is
 printed as an error log entry. If the fetcher exits successfully (exit-code ==
-0) and the `stderr` log is not blank, then it is printed as an info log entry.
+0\) and the `stderr` log is not blank, then it is printed as an info log entry.
 
 This can be useful for determining the source of unexpected errors or during
 implementation and debugging.
@@ -272,8 +274,9 @@ implementation and debugging.
 ### Developers
 
 If you want to contribute a fetcher to SnowballR, add it to the resources in
-`src/main/resources/plugins/fetchers/` and adjust the resource builder in
-`src/main/kotlin/se/uulm/snowballr/backend/fetcher/PythonPluginFetcherManager.kt`.
+[`src/main/resources/plugins/fetchers/`](https://github.com/SE-UUlm/snowballr-backend/tree/develop/src/main/resources/plugins/fetchers).
+and adjust the resource builder in
+[PythonPluginFetcherManager.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/fetcher/PythonPluginFetcherManager.kt).
 
 [^1]: There are more definitions provided by SnowballR. Check them out in their
     [definition file](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/resources/plugins/fetchers/lib/snowballr.py).
