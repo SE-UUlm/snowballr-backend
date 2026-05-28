@@ -69,6 +69,10 @@ private fun initializeFetcherOrchestrator() {
 
 private fun addDbShutdownHook() {
     val db = getKoin().get<IDatabase>()
-    db.close()
-    logger.info { "Closed database connection" }
+    Runtime.getRuntime().addShutdownHook(
+        Thread {
+            db.close()
+            logger.info { "Closed database connection" }
+        },
+    )
 }
