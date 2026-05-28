@@ -74,7 +74,9 @@ def get_references(
 def request_with_retry(url: str, options: dict[str, str]) -> dict[str, Any]:
     """
     Requests without API Key might be blocked because of the public rate limiting.
-    A request is retried if a "Too Many Requests" status code is returned.
+    A request is retried if a "Too Many Requests" status code is returned or if the
+    connection is dropped mid-transfer (IncompleteRead / ChunkedEncodingError), which
+    can happen for large citation responses when the server closes the socket early.
 
     This method expects that the caller terminates the call if a time limit is reached.
     """
@@ -84,14 +86,14 @@ def request_with_retry(url: str, options: dict[str, str]) -> dict[str, Any]:
         headers["x-api-key"] = options["API_KEY"]
 
     while True:
-        response = requests.get(
-            url,
-            headers=headers,
-        )
-        if response.status_code == 429:
+        try:
+            response = requests.get(url, headers=headers, timeout=10)
+            if response.status_code == 429:
+                continue
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.ChunkedEncodingError:
             continue
-        response.raise_for_status()
-        return response.json()
 
 
 def paper_from_response(res) -> Paper:
