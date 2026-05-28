@@ -2,7 +2,7 @@ import json
 import sys
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Callable, Optional
+from typing import Any, Callable, Optional
 
 from dataclass_wizard import JSONWizard, fromdict
 
@@ -132,3 +132,16 @@ def fetcher_plugin(
         case _:
             print("Unknown fetcher action.", file=sys.stderr)
             exit(1)
+
+
+def safe_get(res: dict, key: str, default: Any):
+    """
+    Retrieves a value from the passed dictionary using the specified key.
+    If the key doesn't exist or the value of the entry is None, the provided default value is
+    returned.
+    """
+    val = res.get(key)
+    if val is None:
+        return default
+    else:
+        return val
