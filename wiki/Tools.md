@@ -30,7 +30,7 @@ The CLI is located at
 It enables faster development of new fetcher plugins and maintenance of existing
 ones.
 
-Make sure to call it from an active python environment (see
+Make sure to call it from an active Python environment (>= 3.13, see
 [Getting Started](https://github.com/SE-UUlm/snowballr-backend/wiki/Getting-Started)).
 
 ```bash

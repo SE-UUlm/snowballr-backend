@@ -1,14 +1,13 @@
 # THIS FILE IS AUTO-GENERATED. DO NOT MODIFY.
 
-from snowballr import fetcher_plugin, Paper, Author
+
+from snowballr import Author, Paper, fetcher_plugin
 from xploreapi import XPLORE
-from datetime import datetime
 
 metadata_key: str = "IEEEXploreId"
 
-options: dict[str, str] = {
-    "API_KEY": "IEEEXplore API key"
-}
+options: dict[str, str] = {"API_KEY": "IEEEXplore API key"}
+
 
 def search_papers(search_query: str, options: dict[str, str]) -> list[Paper]:
     query = XPLORE(options["API_KEY"])
@@ -19,8 +18,10 @@ def search_papers(search_query: str, options: dict[str, str]) -> list[Paper]:
     articles = results.get("articles", [])
     return list(map(paper_from_response, articles))
 
+
 def backward_references(paper: Paper, options: dict[str, str]) -> list[Paper]:
     return []
+
 
 def forward_references(paper: Paper, options: dict[str, str]) -> list[Paper]:
     article_number = paper.fetcher_metadata.get(metadata_key)
@@ -49,8 +50,13 @@ def forward_references(paper: Paper, options: dict[str, str]) -> list[Paper]:
 
     return references
 
+
 def paper_from_response(res) -> Paper:
-    authors = [author_from_response(author) for author in res.get("authors", {}).get("authors", []) if "full_name" in author]
+    authors = [
+        author_from_response(author)
+        for author in res.get("authors", {}).get("authors", [])
+        if "full_name" in author
+    ]
     # Prefer publication year over insert year
     date = res.get("publication_year", int(res.get("insert_date", "1970")[:4]))
     return Paper(
@@ -62,15 +68,17 @@ def paper_from_response(res) -> Paper:
         res.get("content_type", ""),
         res.get("publication_title", ""),
         authors,
-        { metadata_key: res["article_number"] },
+        {metadata_key: res["article_number"]},
     )
 
+
 def author_from_response(res) -> Author:
-    first_name, sep, last_name = res.get("full_name", "").rpartition(' ')
+    first_name, sep, last_name = res.get("full_name", "").rpartition(" ")
     return Author(
         first_name,
         last_name,
     )
+
 
 fetcher_plugin(
     options,

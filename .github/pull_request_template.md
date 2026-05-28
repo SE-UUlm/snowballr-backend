@@ -12,6 +12,7 @@ Either tick or cross out the items that do not apply (using \~\~example text\~\~
 ### Author
 
 - [ ] I have updated the documentation accordingly and commented my code
+  - [ ] I have updated `AGENTS.md` if the changes affect project structure, commands, tooling, or conventions
 - [ ] I have manually tested my changes
 - [ ] I have added tests that prove my fix is effective or that my feature works
 

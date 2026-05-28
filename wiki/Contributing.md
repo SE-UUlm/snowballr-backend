@@ -19,6 +19,7 @@ On this page, we explain how to contribute to the SnowballR backend project. We 
   * [Miscellaneous Commands](#miscellaneous-commands)
     * [Formatting](#formatting)
     * [Linting](#linting)
+    * [Type Checking](#type-checking)
   * [Release procedure](#release-procedure)
   * [Use another API Version](#use-another-api-version)
   * [Fetcher Orchestration Progress](#fetcher-orchestration-progress)
@@ -310,10 +311,37 @@ For information about our testing setup, see [Testing](https://github.com/SE-UUl
 ./gradlew format
 ```
 
+For Python files:
+
+```bash
+uvx ruff format .
+```
+
 ### Linting
 
 ```bash
 ./gradlew lint
+```
+
+For Python files:
+
+```bash
+uvx ruff check .
+```
+
+### Type Checking
+
+Requires the virtual environment to resolve installed packages. Set it up first
+if not already done (see
+[Getting Started](https://github.com/SE-UUlm/snowballr-backend/wiki/Getting-Started)):
+
+```bash
+uv venv .venv
+uv pip install --python .venv/bin/python3 -r requirements.txt
+```
+
+```bash
+uvx ty check
 ```
 
 ## Release procedure

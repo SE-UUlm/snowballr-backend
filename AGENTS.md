@@ -25,6 +25,7 @@ existing docs over restating them here. If you must summarize, keep it short and
 - wiki/Contributing.md — project layout and implementation patterns by layer
 - wiki/Testing.md — unit/integration testing conventions and reports
 - wiki/Fetcher.md — fetcher plugin system, security warning, contract
+- wiki/Tools.md — dev tools, including fetcher CLI reference
 
 ## Structure
 
@@ -36,6 +37,8 @@ existing docs over restating them here. If you must summarize, keep it short and
 │   │   └── resources/           # runtime resources (including fetcher plugin libs)
 │   └── test/
 │       └── kotlin/              # tests mirroring production layout
+├── tools/
+│   └── fetcher-cli/             # CLI tool for directly invoking fetcher plugins
 ├── plugins/
 │   └── fetchers/                # local fetcher plugins and shared libs
 ├── .github/workflows/           # CI, release, and wiki automation
@@ -47,23 +50,25 @@ existing docs over restating them here. If you must summarize, keep it short and
 
 ## Where to look
 
-| Task                            | Location                                                                 | Notes                                     |
-|---------------------------------|--------------------------------------------------------------------------|-------------------------------------------|
-| Project overview                | README.md                                                                | High-level pointers.                      |
-| Local setup / Docker            | wiki/Getting-Started.md                                                  | Includes compose profiles.                |
-| Configuration                   | wiki/Configuration.md, .env.example                                      | Profiles and env vars.                    |
-| Architecture                    | wiki/Architecture.md                                                     | Request flow and layer responsibilities.  |
-| Project layout / layer patterns | wiki/Contributing.md                                                     | Source of truth.                          |
-| Fetcher orchestration progress  | wiki/Contributing.md#fetcher-orchestration-progress                      | Implementation checklist.                 |
-| Testing conventions             | wiki/Testing.md                                                          | Unit/integration tests, reports.          |
-| Fetcher contract                | wiki/Fetcher.md                                                          | Security warning and invocation protocol. |
-| Fetcher orchestrator            | src/main/kotlin/se/uulm/snowballr/backend/fetcher/FetcherOrchestrator.kt | Job queue logic.                          |
-| Fetcher orchestrator tests      | src/test/kotlin/se/uulm/snowballr/backend/fetcher/orchestrator           | Unit tests.                               |
-| Orchestrator wiring/startup     | src/main/kotlin/se/uulm/snowballr/backend/Module.kt, Main.kt             | Koin wiring, start/stop.                  |
-| Architecture tests              | src/test/kotlin/se/uulm/snowballr/backend/arch/LayerArchitectureTest.kt  | Layer constraints incl. fetcher.          |
-| Build config                    | build.gradle.kts                                                         | apiVersion, Gradle tasks, fetcher deps.   |
-| Docker images                   | Dockerfile, Dockerfile.proxy                                             | Backend and proxy containers.             |
-| CI workflows                    | .github/workflows                                                        | Lint, tests, docker, wiki publish.        |
+| Task                            | Location                                                                 | Notes                                            |
+|---------------------------------|--------------------------------------------------------------------------|--------------------------------------------------|
+| Project overview                | README.md                                                                | High-level pointers.                             |
+| Local setup / Docker            | wiki/Getting-Started.md                                                  | Includes compose profiles.                       |
+| Configuration                   | wiki/Configuration.md, .env.example                                      | Profiles and env vars.                           |
+| Architecture                    | wiki/Architecture.md                                                     | Request flow and layer responsibilities.         |
+| Project layout / layer patterns | wiki/Contributing.md                                                     | Source of truth.                                 |
+| Fetcher orchestration progress  | wiki/Contributing.md#fetcher-orchestration-progress                      | Implementation checklist.                        |
+| Testing conventions             | wiki/Testing.md                                                          | Unit/integration tests, reports.                 |
+| Fetcher contract                | wiki/Fetcher.md                                                          | Security warning and invocation protocol.        |
+| Fetcher CLI                     | tools/fetcher-cli/cli.py, wiki/Tools.md                                  | Direct plugin invocation for dev/testing.        |
+| Fetcher orchestrator            | src/main/kotlin/se/uulm/snowballr/backend/fetcher/FetcherOrchestrator.kt | Job queue logic.                                 |
+| Fetcher orchestrator tests      | src/test/kotlin/se/uulm/snowballr/backend/fetcher/orchestrator           | Unit tests.                                      |
+| Orchestrator wiring/startup     | src/main/kotlin/se/uulm/snowballr/backend/Module.kt, Main.kt             | Koin wiring, start/stop.                         |
+| Architecture tests              | src/test/kotlin/se/uulm/snowballr/backend/arch/LayerArchitectureTest.kt  | Layer constraints incl. fetcher.                 |
+| Build config                    | build.gradle.kts                                                         | apiVersion, Gradle tasks, fetcher deps.          |
+| Python tool config              | pyproject.toml                                                           | ruff (lint/format) and ty (type-check) settings. |
+| Docker images                   | Dockerfile, Dockerfile.proxy                                             | Backend and proxy containers.                    |
+| CI workflows                    | .github/workflows                                                        | Lint, tests, docker, wiki publish.               |
 
 ## Architecture and patterns
 
@@ -113,8 +118,11 @@ existing docs over restating them here. If you must summarize, keep it short and
 
 ### Lint and format
 
-- Lint: `./gradlew lint` (wiki/Contributing.md)
-- Format: `./gradlew format` (wiki/Contributing.md)
+- Lint (Kotlin): `./gradlew lint` (wiki/Contributing.md)
+- Format (Kotlin): `./gradlew format` (wiki/Contributing.md)
+- Format (Python): `uvx ruff format .` (wiki/Contributing.md)
+- Lint (Python): `uvx ruff check .` (wiki/Contributing.md)
+- Type-check (Python): `uvx ty check` — requires `.venv` with deps synced (wiki/Contributing.md)
 
 ### Tests
 
@@ -138,10 +146,18 @@ existing docs over restating them here. If you must summarize, keep it short and
 - `uv pip install --python .venv/bin/python3 -r requirements.txt`
   (wiki/Getting-Started.md, wiki/Fetcher.md)
 
+### Fetcher CLI
+
+- Run subcommand: `uv run ./tools/fetcher-cli/cli.py <subcommand> <args>` (wiki/Tools.md)
+- Init config: `uv run ./tools/fetcher-cli/cli.py init-config` — creates `tools/fetcher-cli/config.json` with per-fetcher config stubs
+- Subcommands: `list`, `options`, `search`, `forwards`, `backwards`
+- Output saved to `tools/fetcher-cli/output/`
+
 ## Style, checks, and tests
 
-- **Style:** Follow .editorconfig (4-space indent, max line length 120 for Kotlin).
-- **Checks:** Detekt is the linter; keep code consistent with detekt.yml.
+- **Style:** Follow .editorconfig (4-space indent, max line length 120 for Kotlin). Python line length is 100 (pyproject.toml).
+- **Checks (Kotlin):** Detekt is the linter; keep code consistent with detekt.yml.
+- **Checks (Python):** ruff for formatting and linting; ty for type-checking. Config in pyproject.toml. Covers `tools/fetcher-cli/cli.py`, `src/main/resources/plugins/fetchers/IEEEXplore.py`, and `src/main/resources/plugins/fetchers/lib/snowballr.py`.
 - **Tests:** Follow wiki/Testing.md conventions (when-then naming, nested classes).
 
 Example test naming:
@@ -165,6 +181,7 @@ fun `When input is invalid, then validation fails`() {
 
 - PRs to develop must keep a linear history (see .github/workflows/git_conventions.yml).
 - CI workflows run lint, unit tests, integration tests, and Docker builds (.github/workflows).
+- Python code quality (ruff format/check + ty type-check) runs in CI on changes to Python files or pyproject.toml (.github/workflows/code_quality_checks.yml).
 - Wiki linting and publish are handled in .github/workflows/wiki.yml.
 
 ## Conventional commits

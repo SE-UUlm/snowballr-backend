@@ -130,7 +130,10 @@ def print_papers_table(papers: list[dict]) -> None:
     col_authors = 32
     col_id = 22
 
-    header = f"  {'#':<4} {'Title':<{col_title}} {'Year':<{col_year}} {'Authors':<{col_authors}} {'ExternalId':<{col_id}}"
+    header = (
+        f"  {'#':<4} {'Title':<{col_title}} {'Year':<{col_year}}"
+        f" {'Authors':<{col_authors}} {'ExternalId':<{col_id}}"
+    )
     print(header)
     print("  " + "-" * (len(header) - 2))
     for i, paper in enumerate(papers):
@@ -138,10 +141,14 @@ def print_papers_table(papers: list[dict]) -> None:
         year = str(paper.get("year", ""))
         authors = truncate(format_authors(paper.get("authors", [])), col_authors)
         external_id = truncate(paper.get("external_id") or "—", col_id)
-        print(f"  {i:<4} {title:<{col_title}} {year:<{col_year}} {authors:<{col_authors}} {external_id:<{col_id}}")
+        print(
+            f"  {i:<4} {title:<{col_title}} {year:<{col_year}}"
+            f" {authors:<{col_authors}} {external_id:<{col_id}}"
+        )
 
 
 # --- Subcommands ---
+
 
 def cmd_list(_args):
     fetchers = available_fetchers()
@@ -163,7 +170,7 @@ def cmd_options(args):
 
     print(f"Options for '{fetcher}':")
     print(f"  {'Key':<28} {'Description':<42} Configured")
-    print(f"  {'-'*28} {'-'*42} {'-'*10}")
+    print(f"  {'-' * 28} {'-' * 42} {'-' * 10}")
     for key, description in schema.items():
         configured = "yes" if key in fetcher_config else "no"
         print(f"  {key:<28} {description:<42} {configured}")
@@ -171,7 +178,10 @@ def cmd_options(args):
 
 def cmd_init_config(args):
     if CONFIG_FILE.exists() and not args.overwrite:
-        print(f"Error: {CONFIG_FILE} already exists. Use --overwrite to replace it.", file=sys.stderr)
+        print(
+            f"Error: {CONFIG_FILE} already exists. Use --overwrite to replace it.",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     fetchers = available_fetchers()
@@ -214,6 +224,7 @@ def cmd_references(args, action: str):
 
 # --- Entry point ---
 
+
 def main():
     parser = argparse.ArgumentParser(
         prog="fetcher-cli",
@@ -238,7 +249,10 @@ def main():
     p_bwd.add_argument("fetcher", help="Fetcher name.")
     p_bwd.add_argument("paper", help="Paper as a JSON string or path to a JSON file.")
 
-    p_init = sub.add_parser("init-config", help="Create config.json pre-populated with all fetcher option keys.")
+    p_init = sub.add_parser(
+        "init-config",
+        help="Create config.json pre-populated with all fetcher option keys.",
+    )
     p_init.add_argument("--overwrite", action="store_true", help="Overwrite existing config.json.")
 
     args = parser.parse_args()
