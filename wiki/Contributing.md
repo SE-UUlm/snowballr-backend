@@ -331,7 +331,9 @@ uvx ruff check .
 
 ### Type Checking
 
-Requires the virtual environment to resolve installed packages. Set it up first if not already done (see [Getting Started](https://github.com/SE-UUlm/snowballr-backend/wiki/Getting-Started)):
+Requires the virtual environment to resolve installed packages. Set it up first
+if not already done (see
+[Getting Started](https://github.com/SE-UUlm/snowballr-backend/wiki/Getting-Started)):
 
 ```bash
 uv venv .venv
