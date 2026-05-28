@@ -55,17 +55,17 @@ def paper_from_response(res) -> Paper:
         if "full_name" in author
     ]
     # Prefer publication year over insert year
-    date = res.get("publication_year", int(res.get("insert_date", "1970")[:4]))
+    date = res.get("publication_year", int(res.get("insert_date", "0000")[:4]))
     return Paper(
-        res.get("title", ""),
-        res.get("doi", None),
-        res.get("abstract", ""),
-        date,
-        res.get("publisher", ""),
-        res.get("content_type", ""),
-        res.get("publication_title", ""),
-        authors,
-        {metadata_key: res["article_number"]},
+        title=res.get("title", ""),
+        external_id=res.get("doi", None),
+        abstract=res.get("abstract", ""),
+        year=date,
+        publisher=res.get("publisher", ""),
+        publication_type=res.get("content_type", ""),
+        publication_name=res.get("publication_title", ""),
+        authors=authors,
+        fetcher_metadata={metadata_key: res["article_number"]},
     )
 
 
