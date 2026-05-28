@@ -25,6 +25,7 @@ existing docs over restating them here. If you must summarize, keep it short and
 - wiki/Contributing.md — project layout and implementation patterns by layer
 - wiki/Testing.md — unit/integration testing conventions and reports
 - wiki/Fetcher.md — fetcher plugin system, security warning, contract
+- wiki/Tools.md — dev tools, including fetcher CLI reference
 
 ## Structure
 
@@ -36,6 +37,8 @@ existing docs over restating them here. If you must summarize, keep it short and
 │   │   └── resources/           # runtime resources (including fetcher plugin libs)
 │   └── test/
 │       └── kotlin/              # tests mirroring production layout
+├── tools/
+│   └── fetcher-cli/             # CLI tool for directly invoking fetcher plugins
 ├── plugins/
 │   └── fetchers/                # local fetcher plugins and shared libs
 ├── .github/workflows/           # CI, release, and wiki automation
@@ -57,6 +60,7 @@ existing docs over restating them here. If you must summarize, keep it short and
 | Fetcher orchestration progress  | wiki/Contributing.md#fetcher-orchestration-progress                      | Implementation checklist.                        |
 | Testing conventions             | wiki/Testing.md                                                          | Unit/integration tests, reports.                 |
 | Fetcher contract                | wiki/Fetcher.md                                                          | Security warning and invocation protocol.        |
+| Fetcher CLI                     | tools/fetcher-cli/cli.py, wiki/Tools.md                                  | Direct plugin invocation for dev/testing.        |
 | Fetcher orchestrator            | src/main/kotlin/se/uulm/snowballr/backend/fetcher/FetcherOrchestrator.kt | Job queue logic.                                 |
 | Fetcher orchestrator tests      | src/test/kotlin/se/uulm/snowballr/backend/fetcher/orchestrator           | Unit tests.                                      |
 | Orchestrator wiring/startup     | src/main/kotlin/se/uulm/snowballr/backend/Module.kt, Main.kt             | Koin wiring, start/stop.                         |
@@ -141,6 +145,13 @@ existing docs over restating them here. If you must summarize, keep it short and
 - `uv venv .venv`
 - `uv pip install --python .venv/bin/python3 -r requirements.txt`
   (wiki/Getting-Started.md, wiki/Fetcher.md)
+
+### Fetcher CLI
+
+- Run subcommand: `uv run ./tools/fetcher-cli/cli.py <subcommand> <args>` (wiki/Tools.md)
+- Init config: `uv run ./tools/fetcher-cli/cli.py init-config` — creates `tools/fetcher-cli/config.json` with per-fetcher config stubs
+- Subcommands: `list`, `options`, `search`, `forwards`, `backwards`
+- Output saved to `tools/fetcher-cli/output/`
 
 ## Style, checks, and tests
 
