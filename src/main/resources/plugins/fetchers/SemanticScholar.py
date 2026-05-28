@@ -42,7 +42,8 @@ def backward_references(paper: Paper, options: dict[str, str]) -> list[Paper]:
     return get_references(paper, options, "references", "citedPaper")
 
 def get_references(paper: Paper, options: dict[str, str], url_suffix: str, obj_key: str) -> list[Paper]:
-    paper_id = paper.fetcher_metadata.get(id_metadata_key)
+    metadata = paper.fetcher_metadata
+    paper_id = safe_get(metadata, id_metadata_key, metadata.get(corpus_id_metadata_key, None))
     # TODO: try other IDs (external IDs)
     if paper_id is None:
         return []
@@ -92,6 +93,15 @@ def paper_from_response(res) -> Paper:
     external_id = external_id_from_response(safe_get(res, "externalIds", {}))
     year = int(safe_get(res, "publicationDate", str(safe_get(res, "year", "0000")))[:4])
     publication_type=next(iter(safe_get(res, "publicationTypes", [])), "")
+
+    metadata = {}
+    paper_id = res.get("paperId", None)
+    if paper_id is not None:
+        metadata[id_metadata_key] = paper_id
+    corpus_id = res.get("corpusId", None)
+    if corpus_id is not None:
+        metadata[corpus_id_metadata_key] = str(corpus_id)
+
     return Paper(
         title=safe_get(res, "title", ""),
         external_id=external_id,
@@ -101,10 +111,7 @@ def paper_from_response(res) -> Paper:
         publication_type=publication_type,
         publication_name=safe_get(res, "venue", ""),
         authors=authors,
-        fetcher_metadata={
-            id_metadata_key: res["paperId"],
-            corpus_id_metadata_key: str(res["corpusId"]),
-        },
+        fetcher_metadata=metadata,
     )
 
 def author_from_response(res) -> Author:
