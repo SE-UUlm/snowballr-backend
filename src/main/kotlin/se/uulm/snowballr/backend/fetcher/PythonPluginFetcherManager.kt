@@ -33,11 +33,12 @@ private const val FETCHER_RESOURCES_PREFIX = "$FETCHER_RESOURCES_ROOT/"
 
 // Bundled python scripts and libraries to bootstrap python fetcher infrastructure.
 private val resources = buildResources(FETCHER_RESOURCES_ROOT) {
-    file("IEEEXplore.py")
     dir("lib") {
         file("xploreapi.py")
         file("snowballr.py")
     }
+    file("IEEEXplore.py")
+    file("SemanticScholar.py")
 }
 
 class PythonPluginFetcherManager(
