@@ -1,18 +1,17 @@
-from snowballr import fetcher_plugin, Paper, Author, safe_get
-import requests
 import urllib.parse
-import sys
-from typing import Optional, Any
+from typing import Any, Optional
+
+import requests
+from snowballr import Author, Paper, fetcher_plugin, safe_get
 
 id_metadata_key: str = "SemanticScholarId"
 corpus_id_metadata_key: str = "SemanticScholarCorpusId"
 
-options = {
-    "API_KEY": "SemanticScholar API key"
-}
+options = {"API_KEY": "SemanticScholar API key"}
 
 base_url = "https://api.semanticscholar.org/graph/v1/"
 fields = "corpusId,title,externalIds,abstract,publicationDate,year,venue,publicationTypes,authors"
+
 
 def search_papers(searchQuery: str, options: dict[str, str]) -> list[Paper]:
     """
@@ -27,12 +26,14 @@ def search_papers(searchQuery: str, options: dict[str, str]) -> list[Paper]:
 
     return list(map(paper_from_response, papers))
 
+
 def forward_references(paper: Paper, options: dict[str, str]) -> list[Paper]:
     """
     API reference:
     https://api.semanticscholar.org/api-docs/graph#tag/Paper-Data/operation/get_graph_get_paper_citations
     """
     return get_references(paper, options, "citations", "citingPaper")
+
 
 def backward_references(paper: Paper, options: dict[str, str]) -> list[Paper]:
     """
@@ -41,7 +42,10 @@ def backward_references(paper: Paper, options: dict[str, str]) -> list[Paper]:
     """
     return get_references(paper, options, "references", "citedPaper")
 
-def get_references(paper: Paper, options: dict[str, str], url_suffix: str, obj_key: str) -> list[Paper]:
+
+def get_references(
+    paper: Paper, options: dict[str, str], url_suffix: str, obj_key: str
+) -> list[Paper]:
     metadata = paper.fetcher_metadata
     paper_id = safe_get(metadata, id_metadata_key, metadata.get(corpus_id_metadata_key, None))
     # TODO: try other IDs (external IDs)
@@ -66,6 +70,7 @@ def get_references(paper: Paper, options: dict[str, str], url_suffix: str, obj_k
 
     return list(map(lambda obj: paper_from_response(safe_get(obj, obj_key, {})), paper_objects))
 
+
 def request_with_retry(url: str, options: dict[str, str]) -> dict[str, Any]:
     """
     Requests without API Key might be blocked because of the public rate limiting.
@@ -88,11 +93,14 @@ def request_with_retry(url: str, options: dict[str, str]) -> dict[str, Any]:
         response.raise_for_status()
         return response.json()
 
+
 def paper_from_response(res) -> Paper:
-    authors = [author_from_response(author) for author in safe_get(res, "authors", []) if "name" in author]
+    authors = [
+        author_from_response(author) for author in safe_get(res, "authors", []) if "name" in author
+    ]
     external_id = external_id_from_response(safe_get(res, "externalIds", {}))
     year = int(safe_get(res, "publicationDate", str(safe_get(res, "year", "0000")))[:4])
-    publication_type=next(iter(safe_get(res, "publicationTypes", [])), "")
+    publication_type = next(iter(safe_get(res, "publicationTypes", [])), "")
 
     metadata = {}
     paper_id = res.get("paperId", None)
@@ -114,12 +122,14 @@ def paper_from_response(res) -> Paper:
         fetcher_metadata=metadata,
     )
 
+
 def author_from_response(res) -> Author:
-    first_name, sep, last_name = safe_get(res, "name", "").rpartition(' ')
+    first_name, sep, last_name = safe_get(res, "name", "").rpartition(" ")
     return Author(
         first_name,
         last_name,
     )
+
 
 def external_id_from_response(res) -> Optional[str]:
     # Order of external IDs to retrieve (first match is returned)
@@ -128,6 +138,7 @@ def external_id_from_response(res) -> Optional[str]:
         if key in res:
             return res.get(key, None)
     return None
+
 
 fetcher_plugin(
     options,
