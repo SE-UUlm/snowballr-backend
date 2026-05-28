@@ -1,6 +1,3 @@
-# THIS FILE IS AUTO-GENERATED. DO NOT MODIFY.
-
-
 from snowballr import Author, Paper, fetcher_plugin
 from xploreapi import XPLORE
 

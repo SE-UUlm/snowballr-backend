@@ -1,5 +1,3 @@
-# THIS FILE IS AUTO-GENERATED. DO NOT MODIFY.
-
 import json
 import sys
 from dataclasses import dataclass, field
