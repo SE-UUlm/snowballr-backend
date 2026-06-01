@@ -84,7 +84,7 @@ class FetcherOrchestrator(
                 try {
                     processJob(job)
                 } catch (e: Exception) {
-                    logger.error(e) { "Failed to process job: ${e.message}" }
+                    logger.error(e) { "Failed to process job: ${e.message ?: "<empty>"}" }
                 }
             }
         }
@@ -198,7 +198,7 @@ class FetcherOrchestrator(
                 set += fetchedPapers
             } catch (ex: FetcherException) {
                 logger.error(ex) {
-                    "Failed to fetch ${direction.displayName} with fetcher '$fetcher': ${ex.message}"
+                    "Failed to fetch ${direction.displayName} with fetcher '$fetcher': ${ex.message ?: "<empty>"}"
                 }
             }
         }
@@ -247,7 +247,7 @@ class FetcherOrchestrator(
             try {
                 createdPaperRefs += paperRepo.createPaper(ref.toGrpcPaperRequest())
             } catch (ex: SQLException) {
-                logger.error(ex) { "Failed to create paper for fetched paper: ${ex.message}" }
+                logger.error(ex) { "Failed to create paper for fetched paper: ${ex.message ?: "<empty>"}" }
             }
         }
 
@@ -288,7 +288,8 @@ class FetcherOrchestrator(
                 // A unique constraint violation is okay (no-op)
                 if (!ex.isUniqueConstraintViolation()) {
                     logger.error(ex) {
-                        "Failed to create $refName between paper $paperId and reference ${ref.id}: ${ex.message}"
+                        "Failed to create $refName between paper $paperId and reference ${ref.id}: " +
+                            (ex.message ?: "<empty>")
                     }
                 }
             }
@@ -336,8 +337,8 @@ class FetcherOrchestrator(
                 projectPaperRepo.addPaperToProject(request, job.triggeringUserId)
             } catch (ex: SQLException) {
                 logger.error(ex) {
-                    "Failed to add paper ${ref.id} to project ${job.projectId} in stage ${job.targetStage}:" +
-                        " ${ex.message}"
+                    "Failed to add paper ${ref.id} to project ${job.projectId} in stage ${job.targetStage}: " +
+                        (ex.message ?: "<empty>")
                 }
             }
         }

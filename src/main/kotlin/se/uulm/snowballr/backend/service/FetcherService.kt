@@ -106,7 +106,9 @@ class FetcherService(
                 try {
                     papers += fetcherManager.searchPapers(fetcher, request.query, options)
                 } catch (e: FetcherException) {
-                    logger.error(e) { "Failed to search fetcher papers for fetcher '$fetcher': ${e.message}" }
+                    logger.error(e) {
+                        "Failed to search fetcher papers for fetcher '$fetcher': ${e.message ?: "<empty>"}"
+                    }
                 }
             }
             logger.debug { "Found ${papers.size} papers for query '${request.query}'" }
