@@ -9,7 +9,6 @@ import org.junit.jupiter.params.provider.ArgumentsSource
 import org.junit.jupiter.params.support.ParameterDeclarations
 import java.util.Objects.requireNonNull
 import java.util.stream.Stream
-import kotlin.jvm.optionals.getOrNull
 import kotlin.reflect.KClass
 
 /**
@@ -48,9 +47,9 @@ annotation class GrpcEnumSourceTest(
 class GenericEnumProvider : ArgumentsProvider {
     override fun provideArguments(
         parameters: ParameterDeclarations,
-        context: ExtensionContext?,
+        context: ExtensionContext,
     ): Stream<out Arguments> {
-        val method = checkNotNull(context?.run { testMethod.getOrNull() }) { "No test method found." }
+        val method = context.requiredTestMethod
 
         val annotation = method.getAnnotation(GrpcEnumSourceTest::class.java)
         requireNonNull(annotation, "Missing @GrpcEnumSourceTest annotation.")
