@@ -69,7 +69,9 @@ class PaperValidatorTest {
 
         @JvmStatic
         fun blankFieldTestProviderWithFieldMask(): List<Arguments> {
-            val testName: (Any, Boolean) -> String = { fieldName, isFieldInMask ->
+            val testName: (Any?, Boolean) -> String = { fieldName, isFieldInMask ->
+                requireNotNull(fieldName) { "fieldName must not be null" }
+
                 if (isFieldInMask) {
                     "When a blank '$fieldName' field is validated and specified in the field mask, then the " +
                         "'BlankField' issue is returned"
@@ -101,7 +103,10 @@ class PaperValidatorTest {
 
         @JvmStatic
         fun tooLongFieldTestProviderWithFieldMask(): List<Arguments> {
-            val testName: (Any, Any, Boolean) -> String = { fieldName, maxLength, isFieldInMask ->
+            val testName: (Any?, Any?, Boolean) -> String = { fieldName, maxLength, isFieldInMask ->
+                requireNotNull(fieldName) { "fieldName must not be null" }
+                requireNotNull(maxLength) { "maxLength must not be null" }
+
                 if (isFieldInMask) {
                     "When a too long field '$fieldName' ($maxLength chars) is validated and specified in the " +
                         "field mask, then the 'TooLongField' issue is returned"

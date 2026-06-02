@@ -47,7 +47,10 @@ class GrpcTestContextExtension : BeforeEachCallback, AfterEachCallback, Paramete
     /**
      * Resolves the injectable parameter by returning the cookie map from the store.
      */
-    override fun resolveParameter(parameterContext: ParameterContext, extensionContext: ExtensionContext): Any {
+    override fun resolveParameter(
+        parameterContext: ParameterContext,
+        extensionContext: ExtensionContext,
+    ): MutableMap<*, *>? {
         val store =
             extensionContext.getStore(ExtensionContext.Namespace.create(javaClass, extensionContext.requiredTestMethod))
         return store.get(COOKIES_MAP_KEY, MutableMap::class.java)
