@@ -20,7 +20,7 @@ import se.uulm.snowballr.backend.service.withUser
 /**
  * Base test class for the [InvitationService].
  */
-sealed class InvitationServiceTest : BaseServiceTest() {
+sealed class InvitationServiceTest : BaseServiceTest {
     val userRepoMock = mockk<IUserTableRepo>()
     val projectRepoMock = mockk<IProjectTableRepo>()
     val projectMemberRepoMock = mockk<IProjectMemberTableRepo>()

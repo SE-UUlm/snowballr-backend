@@ -15,7 +15,7 @@ import se.uulm.snowballr.backend.service.withUser
 /**
  * Base test class for the [AuthenticationService].
  */
-sealed class AuthenticationServiceTest : BaseServiceTest() {
+sealed class AuthenticationServiceTest : BaseServiceTest {
     val userRepoMock = mockk<IUserTableRepo>()
     val verificationTokenRepoMock = mockk<IVerificationTokenTableRepo>()
     val jwtManagerMock = mockk<IJwtManager>()

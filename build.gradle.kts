@@ -1,6 +1,7 @@
+import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 import de.undercouch.gradle.tasks.download.Download
-import io.gitlab.arturbosch.detekt.Detekt
-import io.gitlab.arturbosch.detekt.DetektCreateBaselineTask
+import dev.detekt.gradle.Detekt
+import dev.detekt.gradle.DetektCreateBaselineTask
 import kotlinx.kover.gradle.plugin.dsl.AggregationType
 import kotlinx.kover.gradle.plugin.dsl.CoverageUnit
 import kotlinx.kover.gradle.plugin.dsl.GroupingEntityType
@@ -106,7 +107,7 @@ dependencies {
 }
 
 kotlin {
-    jvmToolchain(21)
+    jvmToolchain(25)
 }
 
 val fetcherVenvDir = layout.projectDirectory.dir(".venv").asFile
@@ -297,7 +298,7 @@ tasks.withType<Detekt>().configureEach {
     exclude {
         it.file.path.contains("build")
     }
-    jvmTarget = "1.8"
+    jvmTarget = "22"
     classpath = sourceSets["main"].runtimeClasspath
     baseline.set(file("$rootDir/detekt-baseline.xml"))
     parallel = true
@@ -309,7 +310,7 @@ tasks.withType<DetektCreateBaselineTask>().configureEach {
     exclude {
         it.file.path.contains("build")
     }
-    jvmTarget = "1.8"
+    jvmTarget = "22"
     classpath = sourceSets["main"].runtimeClasspath
     parallel = true
 }
@@ -385,4 +386,17 @@ tasks.named("processResources") {
 
 tasks.named<JavaExec>("run") {
     dependsOn("syncFetcherPythonDeps")
+}
+
+tasks.withType<DependencyUpdatesTask> {
+    fun isNonStable(version: String): Boolean {
+        // Major, Minor, Patch, and optional build version
+        val isSemVer = "^\\d+\\.\\d+\\.\\d+(\\.\\d+){0,1}".toRegex().matches(version)
+
+        return isSemVer.not()
+    }
+
+    rejectVersionIf {
+        isNonStable(candidate.version)
+    }
 }

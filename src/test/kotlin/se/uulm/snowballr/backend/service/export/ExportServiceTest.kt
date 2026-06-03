@@ -19,7 +19,7 @@ import se.uulm.snowballr.backend.service.withUser
 /**
  * Base test class for the [ExportService].
  */
-sealed class ExportServiceTest : BaseServiceTest() {
+sealed class ExportServiceTest : BaseServiceTest {
     val projectRepoMock = mockk<IProjectTableRepo>()
     val projectMemberRepoMock = mockk<IProjectMemberTableRepo>()
     val projectPaperRepoMock = mockk<IProjectPaperTableRepo>()

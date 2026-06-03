@@ -4,7 +4,7 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 /**
- * DTO of [InvitationToken]
+ * DTO of [InvitationToken].
  */
 data class InvitationToken(
     val id: UUID,

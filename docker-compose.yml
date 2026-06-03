@@ -2,7 +2,7 @@ services:
     # PostgreSQL Database (profile: default, db-only, registry)
     db:
         profiles: [ "", "db-only", "registry" ]
-        image: postgres:16.1-alpine3.19
+        image: postgres:16.13-alpine3.23
         restart: always
         environment:
             POSTGRES_PASSWORD: ${DATABASE_PASSWORD}

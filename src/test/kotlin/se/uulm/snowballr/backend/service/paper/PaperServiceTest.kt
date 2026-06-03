@@ -9,7 +9,7 @@ import se.uulm.snowballr.backend.service.PaperService
 /**
  * Base test class for the [PaperService].
  */
-sealed class PaperServiceTest : BaseServiceTest() {
+sealed class PaperServiceTest : BaseServiceTest {
     val paperRepoMock = mockk<IPaperTableRepo>()
     val citationRepoMock = mockk<ICitationTableRepo>()
 

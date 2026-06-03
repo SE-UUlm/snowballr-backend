@@ -110,7 +110,7 @@ interface IEnvService {
 }
 
 /**
- * Service responsible for reading environment variables from the .env file
+ * Service responsible for reading environment variables from the .env file.
  */
 class EnvService : IEnvService {
     private val dotenv = getEnv()

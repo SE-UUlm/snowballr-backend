@@ -17,6 +17,7 @@ import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
 import se.uulm.snowballr.backend.model.fetcher.ProcessResult
 import java.io.IOException
 import java.io.InputStream
+import java.nio.file.Files
 import java.nio.file.InvalidPathException
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
@@ -188,11 +189,11 @@ class PythonPluginFetcherManager(
         val stdoutDeferred = async(dispatcher) { process.inputReader().use { it.readText() } }
         val stderrDeferred = async(dispatcher) { process.errorReader().use { it.readText() } }
 
-        val finishedInTime = withContext(dispatcher) {
+        val hasFinishedInTime = withContext(dispatcher) {
             process.waitFor(executionTimeoutMillis, TimeUnit.MILLISECONDS)
         }
 
-        if (!finishedInTime) {
+        if (!hasFinishedInTime) {
             process.destroy()
             withContext(dispatcher) {
                 if (!process.waitFor(forceKillGraceMillis, TimeUnit.MILLISECONDS)) {
@@ -255,7 +256,7 @@ class PythonPluginFetcherManager(
                 throw UnauthorizedFetcherPathException(fetcher)
             }
 
-            if (!java.nio.file.Files.isRegularFile(fetcherReal)) {
+            if (!Files.isRegularFile(fetcherReal)) {
                 throw FetcherNotFoundException(fetcher)
             }
 

@@ -75,7 +75,7 @@ interface IProjectService {
     suspend fun getDecisionStatisticsForStage(request: GrpcProjectDecisionStatistics.Get): GrpcProjectDecisionStatistics
 
     /**
-     * Service implementation of [SnowballRService.softDeleteProject]
+     * Service implementation of [SnowballRService.softDeleteProject].
      */
     suspend fun softDeleteProject(projectId: UUID)
 }

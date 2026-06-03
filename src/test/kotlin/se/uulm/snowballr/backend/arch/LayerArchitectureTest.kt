@@ -172,6 +172,7 @@ private class NamingConventions {
             .haveSimpleNameEndingWith("Validator")
             .orShould(haveSimpleNameEndingWith("ValidatorKt")) // kotlin class
             .orShould(haveSimpleName("ValidationHelperKt")) // exception
+            .orShould(haveNameMatching($$".*inlined\\$zipOrAccumulate\\$.*")) // inlined function exception
             .because("All validators should have the 'Validator' suffix")
             .check(classes)
     }
@@ -237,8 +238,8 @@ private class NamingConventions {
             .orShould(haveSimpleNameEndingWith("TableKt")) // kotlin class
             .orShould(haveSimpleNameEndingWith("ColumnHelperKt")) // exception
             .orShould(haveSimpleName("TableHelperKt")) // exception
-            .orShould(haveNameMatching(".*inlined\\\$json\\\$.*")) // inlined function exception
-            .orShould(haveNameMatching(".*inlined\\\$obfuscatedJson\\\$.*")) // inlined function exception
+            .orShould(haveNameMatching($$".*inlined\\$json\\$.*")) // inlined function exception
+            .orShould(haveNameMatching($$".*inlined\\$obfuscatedJson\\$.*")) // inlined function exception
             .because("All tables should have the 'Table' suffix")
             .check(classes)
 

@@ -34,9 +34,7 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
         } returns Result.success(projectPaper)
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id) }
         coEvery {
-            projectPaperRepoMock.getSubsequentProjectPapers(
-                project.id, projectPaper.localPaperId, projectPaper.stage,
-            )
+            projectPaperRepoMock.getSubsequentProjectPapers(project.id, projectPaper.localPaperId, projectPaper.stage)
         } returns listOf(nextProjectPaper)
         coEvery {
             reviewRepoMock.getAllReviewsForProjectPaper(nextProjectPaper.id)
@@ -100,9 +98,7 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
         } returns Result.success(projectPaper)
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id) }
         coEvery {
-            projectPaperRepoMock.getSubsequentProjectPapers(
-                project.id, projectPaper.localPaperId, projectPaper.stage,
-            )
+            projectPaperRepoMock.getSubsequentProjectPapers(project.id, projectPaper.localPaperId, projectPaper.stage)
         } returns listOf(nextProjectPaper)
         coEvery {
             reviewRepoMock.getAllReviewsForProjectPaper(nextProjectPaper.id)
@@ -148,7 +144,9 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
             coJustRun { projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id) }
             coEvery {
                 projectPaperRepoMock.getSubsequentProjectPapers(
-                    project.id, currentProjectPaper.localPaperId, currentProjectPaper.stage,
+                    project.id,
+                    currentProjectPaper.localPaperId,
+                    currentProjectPaper.stage,
                 )
             } returns listOf(projectPaper1, projectPaper2)
             coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper1.id) } returns listOf(review)
@@ -206,7 +204,9 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id) }
         coEvery {
             projectPaperRepoMock.getSubsequentProjectPapers(
-                project.id, currentProjectPaper.localPaperId, currentProjectPaper.stage,
+                project.id,
+                currentProjectPaper.localPaperId,
+                currentProjectPaper.stage,
             )
         } returns listOf(projectPaper1, projectPaper2, projectPaper3)
         coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper1.id) } returns listOf(review)
@@ -258,7 +258,9 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
             coJustRun { projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id) }
             coEvery {
                 projectPaperRepoMock.getSubsequentProjectPapers(
-                    project.id, currentProjectPaper.localPaperId, currentProjectPaper.stage,
+                    project.id,
+                    currentProjectPaper.localPaperId,
+                    currentProjectPaper.stage,
                 )
             } returns listOf(projectPaper1, projectPaper2)
             coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper1.id) } returns emptyList()
@@ -308,7 +310,9 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
             coJustRun { projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id) }
             coEvery {
                 projectPaperRepoMock.getSubsequentProjectPapers(
-                    project.id, currentProjectPaper.localPaperId, currentProjectPaper.stage,
+                    project.id,
+                    currentProjectPaper.localPaperId,
+                    currentProjectPaper.stage,
                 )
             } returns listOf(projectPaper1, projectPaper2)
             coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper1.id) } returns emptyList()

@@ -62,7 +62,9 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
     }
 
     /**
-     * Checks that the given [expected] and [actual] project members are equal, i.e., that they have the same
+     * Checks that the given [expected] and [actual] project members are equal.
+     *
+     * Equal means that they have the same
      *   - project ID
      *   - user ID
      *   - role

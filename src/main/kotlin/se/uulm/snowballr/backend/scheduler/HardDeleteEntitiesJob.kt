@@ -30,14 +30,14 @@ class HardDeleteEntitiesJob : Job, KoinComponent {
             try {
                 userMaintenanceService.hardDeleteClearedUsers()
             } catch (e: CancellationException) {
-                logger.warn { "Hard-deleting, already soft-deleted users, was cancelled: ${e.message}" }
+                logger.warn { "Hard-deleting, already soft-deleted users, was cancelled: ${e.message ?: "<empty>"}" }
                 throw e
             }
 
             try {
                 projectMaintenanceService.hardDeleteClearedProjects()
             } catch (e: CancellationException) {
-                logger.warn { "Hard-deleting, already soft-deleted projects, was cancelled: ${e.message}" }
+                logger.warn { "Hard-deleting, already soft-deleted projects, was cancelled: ${e.message ?: "<empty>"}" }
                 throw e
             }
         }

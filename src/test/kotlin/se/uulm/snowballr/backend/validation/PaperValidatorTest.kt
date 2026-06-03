@@ -418,7 +418,7 @@ class PaperValidatorTest {
             assertThat(issues).hasSize(1)
             val compositeIssue = issues[0]
             assertIs<CompositeIssue>(compositeIssue)
-            assertThat(compositeIssue.toString()).startsWith("Issues of author at index 0")
+            assertThat("$compositeIssue").startsWith("Issues of author at index 0")
         }
 
         @Test

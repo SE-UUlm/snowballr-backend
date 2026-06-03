@@ -29,7 +29,7 @@ class CleanExpiredTokensJob : Job, KoinComponent {
             try {
                 tokenMaintenanceService.deleteExpiredTokens()
             } catch (e: CancellationException) {
-                logger.warn { "Expired token cleanup was cancelled: ${e.message}" }
+                logger.warn { "Expired token cleanup was cancelled: ${e.message ?: "<empty>"}" }
                 throw e
             }
         }

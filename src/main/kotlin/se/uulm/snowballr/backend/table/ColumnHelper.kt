@@ -11,7 +11,7 @@ import se.uulm.snowballr.backend.table.columntypes.ObfuscatedTextColumnType
 import se.uulm.snowballr.backend.table.columntypes.RedactedBinaryColumnType
 import java.time.OffsetDateTime
 
-/** Common column definition for a user reference */
+/** Common column definition for a user reference. */
 fun Table.userReference(name: String, onDelete: ReferenceOption, onUpdate: ReferenceOption) =
     reference(name, UserTable, onDelete, onUpdate)
 
