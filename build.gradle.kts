@@ -1,3 +1,4 @@
+import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 import de.undercouch.gradle.tasks.download.Download
 import dev.detekt.gradle.Detekt
 import dev.detekt.gradle.DetektCreateBaselineTask
@@ -385,4 +386,17 @@ tasks.named("processResources") {
 
 tasks.named<JavaExec>("run") {
     dependsOn("syncFetcherPythonDeps")
+}
+
+tasks.withType<DependencyUpdatesTask> {
+    fun isNonStable(version: String): Boolean {
+        // Major, Minor, Patch, and optional build version
+        val isSemVer = "^\\d+\\.\\d+\\.\\d+(\\.\\d+){0,1}".toRegex().matches(version)
+
+        return isSemVer.not()
+    }
+
+    rejectVersionIf {
+        isNonStable(candidate.version)
+    }
 }
