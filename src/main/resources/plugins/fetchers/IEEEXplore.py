@@ -70,7 +70,7 @@ def paper_from_response(res) -> Paper:
 
 
 def author_from_response(res) -> Author:
-    first_name, sep, last_name = res.get("full_name", "").rpartition(" ")
+    first_name, _, last_name = res.get("full_name", "").rpartition(" ")
     return Author(
         first_name,
         last_name,

@@ -1,8 +1,14 @@
 import urllib.parse
 from typing import Any, Optional
 
-import requests
-from snowballr import Author, Paper, fetcher_plugin, safe_get
+from snowballr import (
+    Author,
+    Paper,
+    fetcher_plugin,
+    paginate_with_retry,
+    request_with_retry,
+    safe_get,
+)
 
 id_metadata_key: str = "SemanticScholarId"
 corpus_id_metadata_key: str = "SemanticScholarCorpusId"
@@ -17,11 +23,14 @@ def search_papers(searchQuery: str, options: dict[str, str]) -> list[Paper]:
     """
     API reference:
     https://api.semanticscholar.org/api-docs/graph#tag/Paper-Data/operation/get_graph_paper_relevance_search
+
+    This returns at most 25 papers.
     """
     query = urllib.parse.quote_plus(searchQuery)
     url = f"{base_url}paper/search?query={query}&fields={fields}&limit=25"
 
-    data = request_with_retry(url, options)
+    headers, timeout_seconds = _s2_params(options)
+    data = request_with_retry(url, headers, timeout_seconds)
     papers = safe_get(data, "data", [])
 
     return list(map(paper_from_response, papers))
@@ -47,53 +56,34 @@ def get_references(
     paper: Paper, options: dict[str, str], url_suffix: str, obj_key: str
 ) -> list[Paper]:
     metadata = paper.fetcher_metadata
-    paper_id = safe_get(metadata, id_metadata_key, metadata.get(corpus_id_metadata_key, None))
+    paper_id = safe_get(metadata, id_metadata_key, metadata[corpus_id_metadata_key])
     # TODO: try other IDs (external IDs)
     if paper_id is None:
         return []
 
     url = f"{base_url}paper/{paper_id}/{url_suffix}?fields={fields}&limit=1000"
+    headers, timeout_seconds = _s2_params(options)
+
+    def next_url(data: dict[str, Any]) -> Optional[str]:
+        next_offset = data.get("next")
+        return f"{url}&offset={next_offset}" if next_offset is not None else None
+
     paper_objects = []
-    offset = 0
-
-    # Use pagination to request all references
-    while True:
-        offset_url = f"{url}&offset={offset}"
-        data = request_with_retry(offset_url, options)
-        paper_objects += safe_get(data, "data", [])
-
-        # 'next' is None if last page is reached
-        if data.get("next") is None:
-            break
-
-        offset += 1000
+    for page in paginate_with_retry(url, headers, next_url, timeout_seconds):
+        paper_objects += safe_get(page, "data", [])
 
     return list(map(lambda obj: paper_from_response(safe_get(obj, obj_key, {})), paper_objects))
 
 
-def request_with_retry(url: str, options: dict[str, str]) -> dict[str, Any]:
-    """
-    Requests without API Key might be blocked because of the public rate limiting.
-    A request is retried if a "Too Many Requests" status code is returned or if the
-    connection is dropped mid-transfer (IncompleteRead / ChunkedEncodingError), which
-    can happen for large citation responses when the server closes the socket early.
-
-    This method expects that the caller terminates the call if a time limit is reached.
-    """
+def _s2_params(options: dict[str, str]) -> tuple[dict[str, str], float]:
     headers = {}
+    timeout_seconds = 0.0
 
     if "API_KEY" in options:
         headers["x-api-key"] = options["API_KEY"]
+        timeout_seconds = 1.0  # 1 RPS for calls with API key
 
-    while True:
-        try:
-            response = requests.get(url, headers=headers, timeout=10)
-            if response.status_code == 429:
-                continue
-            response.raise_for_status()
-            return response.json()
-        except requests.exceptions.ChunkedEncodingError:
-            continue
+    return headers, timeout_seconds
 
 
 def paper_from_response(res) -> Paper:
@@ -101,14 +91,17 @@ def paper_from_response(res) -> Paper:
         author_from_response(author) for author in safe_get(res, "authors", []) if "name" in author
     ]
     external_id = external_id_from_response(safe_get(res, "externalIds", {}))
-    year = int(safe_get(res, "publicationDate", str(safe_get(res, "year", "0000")))[:4])
+
+    date_str = safe_get(res, "publicationDate", "") or str(safe_get(res, "year", "0"))
+    year = int(str(date_str)[:4] or "0")
+
     publication_type = next(iter(safe_get(res, "publicationTypes", [])), "")
 
     metadata = {}
-    paper_id = res.get("paperId", None)
+    paper_id = res["paperId"]
     if paper_id is not None:
         metadata[id_metadata_key] = paper_id
-    corpus_id = res.get("corpusId", None)
+    corpus_id = res["corpusId"]
     if corpus_id is not None:
         metadata[corpus_id_metadata_key] = str(corpus_id)
 
@@ -126,7 +119,7 @@ def paper_from_response(res) -> Paper:
 
 
 def author_from_response(res) -> Author:
-    first_name, sep, last_name = safe_get(res, "name", "").rpartition(" ")
+    first_name, _, last_name = safe_get(res, "name", "").rpartition(" ")
     return Author(
         first_name,
         last_name,
@@ -138,7 +131,7 @@ def external_id_from_response(res) -> Optional[str]:
     order = ["DOI", "DBLP", "PubMed", "PubMedCentral", "Medline", "MAG", "ArXiv"]
     for key in order:
         if key in res:
-            return res.get(key, None)
+            return res[key]
     return None
 
 
