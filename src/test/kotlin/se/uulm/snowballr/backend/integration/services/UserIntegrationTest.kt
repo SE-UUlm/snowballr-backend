@@ -12,9 +12,12 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateUserException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadAllException
+import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedUpdateException
 import se.uulm.snowballr.backend.model.parseUUID
 import snowballr.Authentication
+import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -128,6 +131,36 @@ class UserIntegrationTest : IntegrationTest() {
 
             assertEquals(newFirstName, updatedUser.firstName)
         }
+
+        @Test
+        fun `When a non-admin user tries to escalate their own role, then an UnauthorizedUpdateException is thrown`() =
+            runTest {
+                val nonAdminUser = addUser(DataBuilder.createExampleUser(email = "non.admin@example.com"))
+                val nonAdminUserId = parseUUID(nonAdminUser.id, EntityType.USER)
+
+                val request = GrpcUser.Update.newBuilder()
+                    .setUser(GrpcUser.newBuilder().setId(nonAdminUser.id).setRole(UserRole.USER_ROLE_ADMIN))
+                    .setMask(FieldMask.newBuilder().addPaths("user.role"))
+                    .build()
+
+                actAsUser(nonAdminUserId) {
+                    assertThrows<UnauthorizedUpdateException> { userService.updateUser(request) }
+                }
+            }
+
+        @Test
+        fun `When a user tries to change their email to one already in use, then a DuplicateUserException is thrown`() =
+            runTest {
+                val existingUser = addUser(DataBuilder.createExampleUser(email = "existing@example.com"))
+                val currentUser = userService.getCurrentUser()
+
+                val request = GrpcUser.Update.newBuilder()
+                    .setUser(GrpcUser.newBuilder().setId(currentUser.id).setEmail(existingUser.email))
+                    .setMask(FieldMask.newBuilder().addPaths("user.email"))
+                    .build()
+
+                assertThrows<DuplicateUserException> { userService.updateUser(request) }
+            }
     }
 
     @Nested
