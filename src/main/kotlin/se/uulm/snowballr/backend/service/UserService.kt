@@ -160,12 +160,12 @@ class UserService(
         accessChecker.isAllowedToUpdateUser(currentUser, targetUser)
 
         // If the role is changed, the requesting user must be a server admin.
-        if (request.mask.pathsList.contains("role")) {
+        if (request.mask.pathsList.contains("user.role")) {
             accessChecker.isAllowedToUpdateUserRole(currentUser, targetUserId)
         }
 
         // If the email is changed, there must not yet exist an account with that email address.
-        if (request.mask.pathsList.contains("email") && userRepo.doesUserExistByEmail(request.user.email)) {
+        if (request.mask.pathsList.contains("user.email") && userRepo.doesUserExistByEmail(request.user.email)) {
             throw DuplicateUserException(request.user.email)
         }
 
