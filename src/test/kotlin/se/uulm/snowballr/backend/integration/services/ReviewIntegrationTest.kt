@@ -4,8 +4,10 @@ import com.google.protobuf.FieldMask
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.parseUUID
 import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ProjectOuterClass.Project
@@ -120,6 +122,36 @@ class ReviewIntegrationTest : IntegrationTest() {
 
             val fetchedProjectPaper = projectPaperService.getProjectPaperById(projectPaperId)
             assertEquals(PaperDecision.PAPER_DECISION_UNREVIEWED, fetchedProjectPaper.decision)
+        }
+
+        @Test
+        fun `When a review is submitted, then the SLR settings cannot be changed anymore`() = runTest {
+            val (project, projectPaper) = setupProjectAndPaper()
+
+            reviewService.createReview(
+                GrpcReview.Create.newBuilder()
+                    .setProjectPaperId(projectPaper.id)
+                    .setDecision(ReviewDecision.REVIEW_DECISION_ACCEPTED)
+                    .build(),
+            )
+
+            val updateRequest = Project.Update.newBuilder()
+                .setProject(
+                    Project.newBuilder()
+                        .setId(project.id)
+                        .setSettings(
+                            Project.Settings.newBuilder()
+                                .setReviewMaybeAllowed(true)
+                                .build(),
+                        )
+                        .build(),
+                )
+                .setMask(FieldMask.newBuilder().addPaths("project.settings.review_maybe_allowed"))
+                .build()
+
+            assertThrows<FailedPreconditionException> {
+                projectService.updateProject(updateRequest)
+            }
         }
     }
 
