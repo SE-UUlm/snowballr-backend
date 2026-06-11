@@ -22,7 +22,7 @@ jobs:
                   markdownlint-config-path: markdownlint.json
                   source-branch: develop
                   ignore-links: "https://stackoverflow.com/questions/6720050/foreign-key-constraints-when-to-use-on-update-and-on-delete/6720458#6720458,https://medium.com/@pererikbergman/repository-design-pattern-e28c0f3e4a30"
-                  ignore-paths: "src/"
+                  ignore-paths: "src/,AGENTS.md,CLAUDE.md"
 
             - name: Calculate implementation progress (dry run)
               run: node scripts/calc-impl-progress.js update-wiki
