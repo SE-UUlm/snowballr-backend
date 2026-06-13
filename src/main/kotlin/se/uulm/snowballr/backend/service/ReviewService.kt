@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.service
 
+import com.google.protobuf.util.FieldMaskUtil
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.access.IReviewAccessChecker
 import se.uulm.snowballr.backend.fetcher.IFetcherOrchestrator
@@ -22,7 +23,9 @@ import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.IReviewHasCriterionTableRepo
 import snowballr.CriterionOuterClass.CriterionCategory
+import snowballr.ProjectOuterClass
 import snowballr.ProjectOuterClass.PaperDecision
+import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
 import snowballr.ReviewOuterClass.ReviewDecision
 import java.util.UUID
@@ -126,22 +129,31 @@ class ReviewService(
         val review = repo.createReview(request, currentUser.id)
         val selectedCriteriaIds = reviewHasCriterionRepo.getSelectedCriteriaIdsForReviewById(review.id)
 
-        val hardExclusionCriteria = criterionRepo.getAllProjectCriteria(project.id)
-            .filter { criterion -> criterion.category == CriterionCategory.CRITERION_CATEGORY_HARD_EXCLUSION }
-            .map { criterion -> criterion.id }
-        val isAnySelectedCriteriaHardExclusion = selectedCriteriaIds.any { id -> hardExclusionCriteria.contains(id) }
-        if (isAnySelectedCriteriaHardExclusion && review.doesDeclinePaper()) {
-            projectPaperRepo.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_DECLINED)
-        } else {
-            val updatedDecision = determinePaperDecision(reviewsForProjectPaper + review, project.reviewDecisionMatrix)
-            projectPaperRepo.updateProjectPaperDecision(projectPaperId, updatedDecision)
+        val hasSelectedExclusionCriterion = hasSelectedHardExclusionCriterion(project.id, selectedCriteriaIds)
 
-            if (updatedDecision === PaperDecision.PAPER_DECISION_ACCEPTED) {
-                fetcherOrchestrator.enqueue(FetcherEnqueueJob(projectPaper, currentUser.id))
-            }
+        val decision = if (hasSelectedExclusionCriterion && review.doesDeclinePaper()) {
+            PaperDecision.PAPER_DECISION_DECLINED
+        } else {
+            determinePaperDecision(reviewsForProjectPaper + review, project.reviewDecisionMatrix)
+        }
+        projectPaperRepo.updateProjectPaperDecision(projectPaperId, decision)
+
+        if (project.status != ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED) {
+            setProjectStatusActiveLocked(project.id)
+        }
+        if (decision === PaperDecision.PAPER_DECISION_ACCEPTED) {
+            fetcherOrchestrator.enqueue(FetcherEnqueueJob(projectPaper, currentUser.id))
         }
 
         review.toGrpcReview(selectedCriteriaIds.map(UUID::toString))
+    }
+
+    private suspend fun hasSelectedHardExclusionCriterion(projectId: UUID, selectedCriteriaIds: List<UUID>): Boolean {
+        val hardExclusionCriteria = criterionRepo.getAllProjectCriteria(projectId)
+            .filter { criterion -> criterion.category == CriterionCategory.CRITERION_CATEGORY_HARD_EXCLUSION }
+            .map { criterion -> criterion.id }
+
+        return selectedCriteriaIds.any { id -> hardExclusionCriteria.contains(id) }
     }
 
     /**
@@ -190,5 +202,18 @@ class ReviewService(
         } else {
             PaperDecision.PAPER_DECISION_DECLINED
         }
+    }
+
+    private suspend fun setProjectStatusActiveLocked(projectId: UUID) {
+        val request = ProjectOuterClass.Project.Update.newBuilder()
+            .setProject(
+                ProjectOuterClass.Project.newBuilder()
+                    .setId(projectId.toString())
+                    .setStatus(ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
+                    .build(),
+            )
+            .setMask(FieldMaskUtil.fromString("project.status"))
+            .build()
+        projectRepo.updateProject(request)
     }
 }

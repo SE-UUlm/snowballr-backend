@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.service.review
 
+import com.google.protobuf.util.FieldMaskUtil
 import io.mockk.coEvery
 import io.mockk.coJustRun
 import io.mockk.coVerify
@@ -21,6 +22,7 @@ import se.uulm.snowballr.backend.model.exception.alreadyexists.DuplicateReviewEx
 import se.uulm.snowballr.backend.model.fetcher.FetcherEnqueueJob
 import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass.PaperDecision
+import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix.Pattern
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix.Pattern.Entry
 import snowballr.ReviewOuterClass
@@ -28,6 +30,7 @@ import snowballr.ReviewOuterClass.ReviewDecision
 import java.util.UUID
 import java.util.stream.Stream
 import kotlin.reflect.KFunction
+import snowballr.ProjectOuterClass.Project as GrpcProject
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CreateReviewTest : ReviewServiceTest() {
@@ -49,6 +52,16 @@ class CreateReviewTest : ReviewServiceTest() {
         Arguments.of(reviewAccessCheckerMock::isAllowedToCreateReview),
         Arguments.of(projectRepoMock::getProjectById),
     )
+
+    fun getUpdateProjectStatusRequest(projectId: UUID): GrpcProject.Update = GrpcProject.Update.newBuilder()
+        .setProject(
+            GrpcProject.newBuilder()
+                .setId(projectId.toString())
+                .setStatus(ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
+                .build(),
+        )
+        .setMask(FieldMaskUtil.fromString("project.status"))
+        .build()
 
     @Suppress("LongParameterList", "ReturnCount", "LongMethod")
     private fun mockCreateReview(
@@ -117,6 +130,9 @@ class CreateReviewTest : ReviewServiceTest() {
         } returns selectedCriteriaIds
         coEvery { criterionRepoMock.getAllProjectCriteria(project.id) } returns emptyList()
         coJustRun { projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, updatedPaperDecision) }
+        if (project.status != ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED) {
+            coJustRun { projectRepoMock.updateProject(getUpdateProjectStatusRequest(project.id)) }
+        }
         if (updatedPaperDecision == PaperDecision.PAPER_DECISION_ACCEPTED) {
             coJustRun { fetcherOrchestratorMock.enqueue(FetcherEnqueueJob(projectPaper, currentUser.id)) }
         }
@@ -136,6 +152,10 @@ class CreateReviewTest : ReviewServiceTest() {
         mockCreateReview()
 
         assertDoesNotThrow { service.createReview(validCreateReviewRequest.build()) }
+
+        coVerify(exactly = 1) {
+            projectRepoMock.updateProject(getUpdateProjectStatusRequest(project.id))
+        }
     }
 
     @Test
@@ -258,6 +278,7 @@ class CreateReviewTest : ReviewServiceTest() {
             coJustRun {
                 projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_DECLINED)
             }
+            coJustRun { projectRepoMock.updateProject(getUpdateProjectStatusRequest(project.id)) }
 
             assertDoesNotThrow { service.createReview(createReviewRequest) }
         }
@@ -302,6 +323,7 @@ class CreateReviewTest : ReviewServiceTest() {
             coJustRun {
                 projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_DECLINED)
             }
+            coJustRun { projectRepoMock.updateProject(getUpdateProjectStatusRequest(project.id)) }
 
             assertDoesNotThrow { service.createReview(createReviewRequest) }
             coVerify(exactly = 1) {
@@ -336,10 +358,29 @@ class CreateReviewTest : ReviewServiceTest() {
             coJustRun {
                 projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_IN_REVIEW)
             }
+            coJustRun { projectRepoMock.updateProject(getUpdateProjectStatusRequest(project.id)) }
 
             assertDoesNotThrow { service.createReview(createReviewRequest) }
             coVerify(exactly = 1) {
                 projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_IN_REVIEW)
             }
         }
+
+    @Test
+    fun `When the project has already status ACTIVE_LOCKED, then the status is not updated again`() = runTest {
+        val project = project.copy(status = ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
+        val createReviewRequest = ReviewOuterClass.Review.Create.newBuilder()
+            .setProjectPaperId(projectPaperId.toString())
+            .setDecision(ReviewDecision.REVIEW_DECISION_ACCEPTED)
+            .addAllSelectedCriteriaIds(selectedCriteriaIds.map(UUID::toString))
+            .build()
+
+        mockCreateReview(project)
+
+        service.createReview(createReviewRequest)
+
+        coVerify(exactly = 0) {
+            projectRepoMock.updateProject(any())
+        }
+    }
 }
