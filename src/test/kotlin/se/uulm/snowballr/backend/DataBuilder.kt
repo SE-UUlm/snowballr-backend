@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend
 
+import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.criterion.Criterion
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 import se.uulm.snowballr.backend.model.dto.paper.Author
@@ -180,6 +181,7 @@ object DataBuilder {
         id: UUID = UUID.randomUUID(),
         title: String = "Title",
         externalId: String? = "ExternalId",
+        externalIds: List<ExternalId> = emptyList(),
         abstract: String = "Abstract",
         year: Int = 2025,
         publisher: String = "Publisher",
@@ -195,6 +197,7 @@ object DataBuilder {
         id = id,
         title = title,
         externalId = externalId,
+        externalIds = externalIds,
         abstract = abstract,
         year = year,
         publisher = publisher,
@@ -355,6 +358,7 @@ object DataBuilder {
     fun createExampleFetcherPaper(
         title: String = "Title",
         externalId: String? = "ExternalId",
+        externalIds: List<ExternalId> = emptyList(),
         abstract: String = "Abstract",
         year: Int = 2025,
         publisher: String = "Publisher",
@@ -365,6 +369,7 @@ object DataBuilder {
     ) = FetcherPaper(
         title = title,
         externalId = externalId,
+        externalIds = externalIds,
         abstract = abstract,
         year = year,
         publisher = publisher,

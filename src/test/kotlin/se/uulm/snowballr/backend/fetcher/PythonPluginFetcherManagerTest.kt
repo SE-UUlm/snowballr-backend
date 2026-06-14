@@ -161,6 +161,7 @@ class PythonPluginFetcherManagerTest {
         val expectedPaper = FetcherPaper(
             title = "Example title",
             externalId = "external-42",
+            externalIds = emptyList(),
             abstract = "Example abstract",
             year = 2024,
             publisher = "Example publisher",
@@ -233,6 +234,7 @@ class PythonPluginFetcherManagerTest {
         val expectedPaper = FetcherPaper(
             title = "stdin title",
             externalId = "stdin-1",
+            externalIds = emptyList(),
             abstract = "stdin abstract",
             year = 2024,
             publisher = "stdin publisher",
