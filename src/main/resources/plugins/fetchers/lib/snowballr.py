@@ -151,7 +151,10 @@ def safe_get(res: dict, key: str, default: Any):
 
 
 def request_with_retry(
-    url: str, headers: dict[str, Any], timeout_seconds: float = 0.0
+    url: str,
+    headers: dict[str, Any] = {},
+    params: dict[str, Any] = {},
+    timeout_seconds: float = 0.0,
 ) -> dict[str, Any]:
     """
     Requests the specified url with automated retries.
@@ -176,7 +179,7 @@ def request_with_retry(
 
     for n in range(max_attempts):
         try:
-            response = requests.get(url, headers=headers, timeout=10)
+            response = requests.get(url, headers=headers, params=params, timeout=10)
 
             if response.status_code == 429:
                 if n == max_attempts - 1:
@@ -209,8 +212,9 @@ def _exp_backoff(timeout_seconds: float, max_timeout: float, attempt: int) -> fl
 
 def paginate_with_retry(
     first_url: str,
-    headers: dict[str, Any],
     next_url: Callable[[dict[str, Any]], Optional[str]],
+    headers: dict[str, Any] = {},
+    params: dict[str, Any] = {},
     timeout_seconds: float = 0.0,
 ) -> Iterator[dict[str, Any]]:
     """
@@ -231,6 +235,6 @@ def paginate_with_retry(
             time.sleep(timeout_seconds - elapsed)
 
         last_call = time.monotonic()
-        response = request_with_retry(url, headers, timeout_seconds)
+        response = request_with_retry(url, headers, params, timeout_seconds)
         yield response
         url = next_url(response)

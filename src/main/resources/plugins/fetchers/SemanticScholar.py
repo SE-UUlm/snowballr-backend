@@ -15,7 +15,7 @@ corpus_id_metadata_key: str = "SemanticScholarCorpusId"
 
 options = {"API_KEY": "SemanticScholar API key"}
 
-base_url = "https://api.semanticscholar.org/graph/v1/"
+base_url = "https://api.semanticscholar.org/graph/v1"
 fields = "corpusId,title,externalIds,abstract,publicationDate,year,venue,publicationTypes,authors"
 
 
@@ -26,11 +26,15 @@ def search_papers(searchQuery: str, options: dict[str, str]) -> list[Paper]:
 
     This returns at most 25 papers.
     """
-    query = urllib.parse.quote_plus(searchQuery)
-    url = f"{base_url}paper/search?query={query}&fields={fields}&limit=25"
-
+    url = f"{base_url}/paper/search"
+    params = {
+        "query": urllib.parse.quote_plus(searchQuery),
+        "fields": fields,
+        "limit": 25,
+    }
     headers, timeout_seconds = _s2_params(options)
-    data = request_with_retry(url, headers, timeout_seconds)
+
+    data = request_with_retry(url, headers, params, timeout_seconds)
     papers = safe_get(data, "data", [])
 
     return list(map(paper_from_response, papers))
@@ -61,15 +65,19 @@ def get_references(
     if paper_id is None:
         return []
 
-    url = f"{base_url}paper/{paper_id}/{url_suffix}?fields={fields}&limit=1000"
+    url = f"{base_url}/paper/{paper_id}/{url_suffix}"
+    params = {
+        "fields": fields,
+        "limit": 1000,
+    }
     headers, timeout_seconds = _s2_params(options)
 
     def next_url(data: dict[str, Any]) -> Optional[str]:
         next_offset = data.get("next")
-        return f"{url}&offset={next_offset}" if next_offset is not None else None
+        return f"{url}?offset={next_offset}" if next_offset is not None else None
 
     paper_objects = []
-    for page in paginate_with_retry(url, headers, next_url, timeout_seconds):
+    for page in paginate_with_retry(url, next_url, headers, params, timeout_seconds):
         paper_objects += safe_get(page, "data", [])
 
     return list(map(lambda obj: paper_from_response(safe_get(obj, obj_key, {})), paper_objects))
