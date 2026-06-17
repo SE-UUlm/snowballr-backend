@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.service
 import com.google.protobuf.timestamp
 import com.google.protobuf.util.FieldMaskUtil
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
+import se.uulm.snowballr.backend.fetcher.IFetcherManager
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
@@ -24,6 +25,7 @@ import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.copy
 import java.util.UUID
 import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
+import snowballr.Fetcher.FetcherOptions as GrpcFetcherOptions
 import snowballr.ProjectOuterClass.Project as GrpcProject
 import snowballr.ProjectOuterClass.Project.Information.DecisionStatistics as GrpcProjectDecisionStatistics
 
@@ -94,6 +96,7 @@ interface IProjectService {
  * @param criterionRepo The repository responsible for managing persistence operations for criteria.
  * @param invitationTokenRepo The repository responsible for managing persistence operations for invitation tokens.
  * @param accessChecker Interface for checking access permissions for projects based on defined rules.
+ * @param fetcherManager The [IFetcherManager] that manages the available fetchers.
  */
 @Suppress("LongParameterList", "TooManyFunctions")
 class ProjectService(
@@ -104,7 +107,10 @@ class ProjectService(
     private val criterionRepo: ICriterionTableRepo,
     private val invitationTokenRepo: IInvitationTokenTableRepo,
     private val accessChecker: IProjectAccessChecker,
+    private val fetcherManager: IFetcherManager,
 ) : IProjectService {
+    typealias GrpcFetcherMap = Map<String, GrpcFetcherOptions>
+
     override suspend fun getProjectById(projectId: UUID): GrpcProject = withUser(userRepo) { currentUser ->
         accessChecker.isAllowedToReadProject(currentUser, projectId)
 
@@ -168,9 +174,22 @@ class ProjectService(
         validateProjectUpdate(currentStatus, requestedStatus, fieldMask)
 
         val finalStatus = determineEffectiveProjectStatus(projectId, requestedStatus)
-        val finalRequest = request.copy {
+        var finalRequest = request.copy {
             this.project = request.project.copy {
                 this.status = finalStatus
+            }
+        }
+
+        if (fieldMask.contains("project.settings.fetchers")) {
+            val sanitizedFetchersMap = sanitizeFetchersMap(finalRequest.project.settings.fetchersMap)
+
+            finalRequest = finalRequest.copy {
+                this.project = this.project.copy {
+                    this.settings = this.settings.toBuilder()
+                        .clearFetchers()
+                        .putAllFetchers(sanitizedFetchersMap)
+                        .build()
+                }
             }
         }
 
@@ -376,5 +395,44 @@ class ProjectService(
             PaperDecision.PAPER_DECISION_UNREVIEWED,
             PaperDecision.PAPER_DECISION_IN_REVIEW,
         ).map(::createStatistic)
+    }
+
+    /**
+     * Sanitizes the passed [fetchers].
+     *
+     * This includes:
+     * - excluding fetchers that are not registered in the application
+     * - excluding fetcher options that are not registered for the specific fetcher
+     *
+     * This enables that no non-existent fetcher or non-existent fetcher option is stored in the database.
+     */
+    private suspend fun sanitizeFetchersMap(fetchers: GrpcFetcherMap): GrpcFetcherMap {
+        val sanitizedFetchersMap = mutableMapOf<String, GrpcFetcherOptions>()
+        val availableFetchers = fetcherManager.getAvailableFetchers()
+
+        for ((fetcher, options) in fetchers) {
+            val info = availableFetchers.firstOrNull { it.id == fetcher }
+
+            // Skip non-existent fetchers
+            if (info == null) continue
+
+            // Filter out non-existent options
+            val availableOptions = info.optionsSchemaMap
+            val sanitizedOptions = options.optionsMap.filter { availableOptions.containsKey(it.key) }
+
+            val requiredOptions = availableOptions.filter { it.value.required }
+            val missingRequiredOptions = requiredOptions.keys.filter { !sanitizedOptions.containsKey(it) }
+            if (missingRequiredOptions.isNotEmpty()) {
+                throw FailedPreconditionException(
+                    "The following required options were not provided: $missingRequiredOptions",
+                )
+            }
+
+            sanitizedFetchersMap[fetcher] = GrpcFetcherOptions.newBuilder()
+                .putAllOptions(sanitizedOptions)
+                .build()
+        }
+
+        return sanitizedFetchersMap
     }
 }
