@@ -8,7 +8,6 @@ import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
@@ -72,7 +71,7 @@ class RegisterTest : UserServiceTest() {
             every { envReaderMock.env.lifetime.verificationTokenLifeTimeInDays } returns 7
             coJustRun { emailManagerMock.sendVerificationEmail(user.email, capture(emailDataSlot)) }
 
-            assertDoesNotThrow { service.register(getExampleRequest(user)) }
+            service.register(getExampleRequest(user))
 
             val capturedToken = tokenSlot.captured
             assertThat(capturedToken).isNotBlank()

@@ -151,7 +151,7 @@ class GetDecisionStatisticsForStageTest : ProjectServiceTest() {
         coEvery { projectPaperRepoMock.getAllProjectPapersForProject(project.id) } returns
             projectPapers + papersInOtherStage
 
-        val statistics = assertDoesNotThrow { service.getDecisionStatisticsForStage(request) }
+        val statistics = service.getDecisionStatisticsForStage(request)
 
         val statsByDecision = statistics.statisticsList.associateBy { it.decision }
         paperCountsByDecision.forEach { (decision, expectedCount) ->

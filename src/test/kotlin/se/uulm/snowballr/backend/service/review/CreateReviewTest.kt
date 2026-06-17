@@ -237,7 +237,7 @@ class CreateReviewTest : ReviewServiceTest() {
             )
             mockCreateReview(project = project)
 
-            assertDoesNotThrow { service.createReview(validCreateReviewRequest.build()) }
+            service.createReview(validCreateReviewRequest.build())
             coVerify(exactly = 1) {
                 projectPaperRepoMock.updateProjectPaperDecision(
                     projectPaperId,
@@ -325,7 +325,7 @@ class CreateReviewTest : ReviewServiceTest() {
             }
             coJustRun { projectRepoMock.updateProject(getUpdateProjectStatusRequest(project.id)) }
 
-            assertDoesNotThrow { service.createReview(createReviewRequest) }
+            service.createReview(createReviewRequest)
             coVerify(exactly = 1) {
                 projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_DECLINED)
             }
@@ -360,7 +360,7 @@ class CreateReviewTest : ReviewServiceTest() {
             }
             coJustRun { projectRepoMock.updateProject(getUpdateProjectStatusRequest(project.id)) }
 
-            assertDoesNotThrow { service.createReview(createReviewRequest) }
+            service.createReview(createReviewRequest)
             coVerify(exactly = 1) {
                 projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_IN_REVIEW)
             }

@@ -7,7 +7,6 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
@@ -78,7 +77,7 @@ class ChangePasswordTest : AuthenticationServiceTest() {
         coEvery { userRepoMock.getPasswordHashByEmail(currentUser.email) } returns Result.success(storedPasswordHash)
         coJustRun { userRepoMock.updatePasswordHash(currentUser.id, capture(passwordHashSlot)) }
 
-        assertDoesNotThrow { service.changePassword(request) }
+        service.changePassword(request)
 
         assertNotNull(passwordHashSlot.captured)
         assertTrue(PasswordUtils.verifyPassword(newPassword, passwordHashSlot.captured))

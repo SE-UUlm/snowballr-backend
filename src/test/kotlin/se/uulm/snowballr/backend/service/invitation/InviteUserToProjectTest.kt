@@ -157,7 +157,7 @@ class InviteUserToProjectTest : InvitationServiceTest() {
         every { envReaderMock.env.lifetime.invitationTokenLifeTimeInDays } returns 30
         coJustRun { emailManagerMock.sendAcceptProjectInvitationEmail(invitedUserEmail, capture(emailDataSlot)) }
 
-        assertDoesNotThrow { service.inviteUserToProject(validInviteUserRequest.build()) }
+        service.inviteUserToProject(validInviteUserRequest.build())
 
         val capturedToken = tokenSlot.captured
         assertThat(capturedToken).isNotBlank()
@@ -182,7 +182,7 @@ class InviteUserToProjectTest : InvitationServiceTest() {
 
         val inviteNonExistentUserRequest = validInviteUserRequest.setUserEmail(emailOfNonExistentUser)
 
-        assertDoesNotThrow { service.inviteUserToProject(inviteNonExistentUserRequest.build()) }
+        service.inviteUserToProject(inviteNonExistentUserRequest.build())
 
         assertEquals("User", emailDataSlot.captured.inviteeFirstName)
     }
@@ -200,7 +200,7 @@ class InviteUserToProjectTest : InvitationServiceTest() {
                 projectMemberRepoMock.getProjectMembersWithUsers(projectId)
             } returns listOf(projectMemberWithUser)
 
-            assertDoesNotThrow { service.inviteUserToProject(validInviteUserRequest.build()) }
+            service.inviteUserToProject(validInviteUserRequest.build())
 
             coVerify(exactly = 0) { invitationTokenRepoMock.saveInvitationToken(invitedUserEmail, projectId, any()) }
         }

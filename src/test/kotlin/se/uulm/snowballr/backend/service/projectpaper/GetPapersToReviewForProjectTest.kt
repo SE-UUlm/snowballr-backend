@@ -6,14 +6,12 @@ import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.dto.ProjectPaperWithPaper
 import snowballr.ProjectOuterClass.PaperDecision
 import java.util.UUID
-import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class GetPapersToReviewForProjectTest : ProjectPaperServiceTest() {
@@ -55,8 +53,7 @@ class GetPapersToReviewForProjectTest : ProjectPaperServiceTest() {
             reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(review.id)
         } returns listOf(UUID.randomUUID())
 
-        var projectPapers: GrpcProjectPaper.List
-        assertDoesNotThrow { projectPapers = service.getPapersToReviewForProject(project.id) }
+        val projectPapers = service.getPapersToReviewForProject(project.id)
         assertThat(projectPapers.projectPapersList).hasSize(1)
         assertThat(projectPapers.projectPapersList).anyMatch { it.id == projectPaperNotAlreadyDecided.id.toString() }
         assertThat(projectPapers.projectPapersList).noneMatch { it.id == projectPaperAlreadyDecided.id.toString() }
@@ -105,8 +102,7 @@ class GetPapersToReviewForProjectTest : ProjectPaperServiceTest() {
                 reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(reviewByOtherUser.id)
             } returns listOf(UUID.randomUUID())
 
-            var projectPapers: GrpcProjectPaper.List
-            assertDoesNotThrow { projectPapers = service.getPapersToReviewForProject(project.id) }
+            val projectPapers = service.getPapersToReviewForProject(project.id)
             assertThat(projectPapers.projectPapersList).hasSize(1)
             assertThat(projectPapers.projectPapersList)
                 .anyMatch { it.id == projectPaperWithoutCurrentUserReview.id.toString() }

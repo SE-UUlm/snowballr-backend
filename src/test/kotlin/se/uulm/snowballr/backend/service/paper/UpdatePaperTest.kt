@@ -113,7 +113,7 @@ class UpdatePaperTest : PaperServiceTest() {
         coEvery { paperRepoMock.updatePaper(request) } returns updatedPaper
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paperId) } returns emptyList()
 
-        assertDoesNotThrow { service.updatePaper(request) }
+        service.updatePaper(request)
         coVerify(exactly = 0) { paperRepoMock.getPaperByExternalId(any()) }
     }
 }
