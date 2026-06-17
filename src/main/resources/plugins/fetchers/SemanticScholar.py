@@ -13,13 +13,13 @@ from snowballr import (
 id_metadata_key: str = "SemanticScholarId"
 corpus_id_metadata_key: str = "SemanticScholarCorpusId"
 
-options = {"API_KEY": "SemanticScholar API key"}
+fetcher_options = {"API_KEY": "SemanticScholar API key"}
 
 base_url = "https://api.semanticscholar.org/graph/v1"
 fields = "corpusId,title,externalIds,abstract,publicationDate,year,venue,publicationTypes,authors"
 
 
-def search_papers(searchQuery: str, options: dict[str, str]) -> list[Paper]:
+def search_papers(search_query: str, options: dict[str, str]) -> list[Paper]:
     """
     API reference:
     https://api.semanticscholar.org/api-docs/graph#tag/Paper-Data/operation/get_graph_paper_relevance_search
@@ -28,7 +28,7 @@ def search_papers(searchQuery: str, options: dict[str, str]) -> list[Paper]:
     """
     url = f"{base_url}/paper/search"
     params = {
-        "query": urllib.parse.quote_plus(searchQuery),
+        "query": urllib.parse.quote_plus(search_query),
         "fields": fields,
         "limit": 25,
     }
@@ -144,7 +144,7 @@ def external_id_from_response(res) -> Optional[str]:
 
 
 fetcher_plugin(
-    options,
+    fetcher_options,
     search_papers,
     forward_references,
     backward_references,

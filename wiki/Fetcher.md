@@ -86,13 +86,13 @@ SnowballR library:
 
 from snowballr import fetcher_plugin, Paper
 
-options: dict[str, str] = ...
+fetcher_options: dict[str, str] = ...
 def search_papers(search_query: str, options: dict[str, str]) -> list[Paper]: ...
 def forward_references(paper: Paper, options: dict[str, str]) -> list[Paper]: ...
 def backward_references(paper: Paper, options: dict[str, str]) -> list[Paper]: ...
 
 fetcher_plugin(
-    options,
+    fetcher_options,
     search_papers,
     forward_references,
     backward_references,
@@ -171,9 +171,9 @@ Let's put all the pieces together:
 
 from snowballr import fetcher_plugin, Paper, Author
 
-options = {}
+fetcher_options = {}
 
-def search_papers(searchQuery: str, options: dict[str, str]) -> list[Paper]:
+def search_papers(search_query: str, options: dict[str, str]) -> list[Paper]:
     return [ Paper(
         "title",
         "external_id",
@@ -193,7 +193,7 @@ def backward_references(paper: Paper, options: dict[str, str]) -> list[Paper]:
     return []
 
 fetcher_plugin(
-    options,
+    fetcher_options,
     search_papers,
     forward_references,
     backward_references,
@@ -212,45 +212,11 @@ We'll make use of the installed `requests` package (which is already a
 dependency) to acquire external resources.
 
 ```py
-# ./plugins/fetchers/http.py
-
-from snowballr import fetcher_plugin, Paper, Author
-import requests
-
-options = {
-    "API_KEY": "The API key"
-}
-
-def search_papers(searchQuery: str, options: dict[str, str]) -> list[Paper]:
-    content = requests.get(
-        "https://example.com",
-        auth=("user", options["API_KEY"])
-    ).text
-
-    return [ Paper(
-        "title",
-        "external_id",
-        content,
-        2026,
-        "publisher",
-        "publication_type",
-        "publication_name",
-        [Author("first_name", "last_name")],
-        {}
-    ) ]
-
-def forward_references(paper: Paper, options: dict[str, str]) -> list[Paper]:
-    return []
-
-def backward_references(paper: Paper, options: dict[str, str]) -> list[Paper]:
-    return []
-
-fetcher_plugin(
-    options,
-    search_papers,
-    forward_references,
-    backward_references,
-)
+content = requests.get(
+    "https://example.com",
+    headers={"API_KEY": options["API_KEY"]},
+    auth=("user", options["API_KEY"])
+).text
 ```
 
 This fetcher accepts an `API_KEY` option, displaying the hint `The API key`
