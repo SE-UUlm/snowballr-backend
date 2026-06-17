@@ -500,6 +500,71 @@ class PythonPluginFetcherManagerTest {
         assertEquals(emptySet(), options)
     }
 
+    @Test
+    fun `When a fetcher option with a default value is not provided, then the default is injected`() = runTest {
+        writeFetcher(
+            "defaults_fetcher",
+            """
+            from snowballr import FetcherInformation, FetcherOptionsSchema, Paper, fetcher_plugin
+
+            info = FetcherInformation(
+                name="defaults_fetcher",
+                description="test",
+                links=[],
+                options_schema={
+                    "MY_OPTION": FetcherOptionsSchema(description="test", default_value="injected_default"),
+                },
+            )
+
+            def search(query, options):
+                return [Paper(title=options.get("MY_OPTION", "NOT_INJECTED"))]
+
+            def refs(paper, options):
+                return []
+
+            fetcher_plugin(information=info, query=search, forwards=refs, backwards=refs)
+            """.trimIndent(),
+        )
+
+        val result = fetcherManager.searchPapers("defaults_fetcher", "", emptyMap())
+
+        assertEquals(1, result.size)
+        assertEquals("injected_default", result.first().title)
+    }
+
+    @Test
+    fun `When a fetcher option with a default value is explicitly provided, then the provided value is used`() =
+        runTest {
+            writeFetcher(
+                "override_fetcher",
+                """
+                from snowballr import FetcherInformation, FetcherOptionsSchema, Paper, fetcher_plugin
+
+                info = FetcherInformation(
+                    name="override_fetcher",
+                    description="test",
+                    links=[],
+                    options_schema={
+                        "MY_OPTION": FetcherOptionsSchema(description="test", default_value="default_value"),
+                    },
+                )
+
+                def search(query, options):
+                    return [Paper(title=options.get("MY_OPTION", "NOT_INJECTED"))]
+
+                def refs(paper, options):
+                    return []
+
+                fetcher_plugin(information=info, query=search, forwards=refs, backwards=refs)
+                """.trimIndent(),
+            )
+
+            val result = fetcherManager.searchPapers("override_fetcher", "", mapOf("MY_OPTION" to "caller_value"))
+
+            assertEquals(1, result.size)
+            assertEquals("caller_value", result.first().title)
+        }
+
     private fun writeFetcher(name: String, source: String) {
         fetcherDirectory.resolve("$name.py").writeText(source.trimIndent())
     }

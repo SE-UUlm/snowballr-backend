@@ -101,6 +101,14 @@ def _read_stdin_payload() -> dict:
     return json.loads(payload)
 
 
+def _apply_defaults(options: Options, schema: dict[str, FetcherOptionsSchema]) -> Options:
+    result = dict(options)
+    for key, option_schema in schema.items():
+        if key not in result and option_schema.default_value is not None:
+            result[key] = option_schema.default_value
+    return result
+
+
 def fetcher_plugin(
     information: FetcherInformation,
     query: QueryFn,
@@ -131,6 +139,7 @@ def fetcher_plugin(
                 print("python fetcher.py query <SEARCH_QUERY> <OPTIONS>", file=sys.stderr)
                 exit(1)
 
+            options_arg = _apply_defaults(options_arg, information.options_schema)
             result = query(query_arg, options_arg)
             print(Paper.list_to_json(result))
 
@@ -147,6 +156,7 @@ def fetcher_plugin(
                 print("python fetcher.py forwards <PAPER> <OPTIONS>", file=sys.stderr)
                 exit(1)
 
+            options_arg = _apply_defaults(options_arg, information.options_schema)
             result = forwards(paper_arg, options_arg)
             print(Paper.list_to_json(result))
 
@@ -163,6 +173,7 @@ def fetcher_plugin(
                 print("python fetcher.py backwards <PAPER> <OPTIONS>", file=sys.stderr)
                 exit(1)
 
+            options_arg = _apply_defaults(options_arg, information.options_schema)
             result = backwards(paper_arg, options_arg)
             print(Paper.list_to_json(result))
 
