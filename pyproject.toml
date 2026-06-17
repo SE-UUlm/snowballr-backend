@@ -4,6 +4,7 @@ line-length = 100
 include = [
     "tools/fetcher-cli/cli.py",
     "src/main/resources/plugins/fetchers/IEEEXplore.py",
+    "src/main/resources/plugins/fetchers/SemanticScholar.py",
     "src/main/resources/plugins/fetchers/lib/snowballr.py",
 ]
 
@@ -18,5 +19,6 @@ extra-paths = ["src/main/resources/plugins/fetchers/lib"]
 include = [
     "tools/fetcher-cli/cli.py",
     "src/main/resources/plugins/fetchers/IEEEXplore.py",
+    "src/main/resources/plugins/fetchers/SemanticScholar.py",
     "src/main/resources/plugins/fetchers/lib/snowballr.py",
 ]

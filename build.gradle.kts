@@ -111,7 +111,7 @@ kotlin {
 }
 
 val fetcherVenvDir = layout.projectDirectory.dir(".venv").asFile
-val fetcherVenvPython = if (System.getProperty("os.name").startsWith("Windows", ignoreCase = true)) {
+val fetcherVenvPython: String = if (System.getProperty("os.name").startsWith("Windows", ignoreCase = true)) {
     fetcherVenvDir.resolve("Scripts/python.exe").absolutePath
 } else {
     fetcherVenvDir.resolve("bin/python3").absolutePath
@@ -164,6 +164,8 @@ tasks.register<Test>("integrationTest") {
     useJUnitPlatform {
         includeTags("integration")
     }
+    description = "Runs all integration tests"
+    group = "verification"
     testClassesDirs = sourceSets["test"].output.classesDirs
     classpath = sourceSets["test"].runtimeClasspath
     reports.html.required.set(true)

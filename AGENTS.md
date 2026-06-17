@@ -157,7 +157,7 @@ existing docs over restating them here. If you must summarize, keep it short and
 
 - **Style:** Follow .editorconfig (4-space indent, max line length 120 for Kotlin). Python line length is 100 (pyproject.toml).
 - **Checks (Kotlin):** Detekt is the linter; keep code consistent with detekt.yml.
-- **Checks (Python):** ruff for formatting and linting; ty for type-checking. Config in pyproject.toml. Covers `tools/fetcher-cli/cli.py`, `src/main/resources/plugins/fetchers/IEEEXplore.py`, and `src/main/resources/plugins/fetchers/lib/snowballr.py`.
+- **Checks (Python):** ruff for formatting and linting; ty for type-checking. Config in pyproject.toml.
 - **Tests:** Follow wiki/Testing.md conventions (when-then naming, nested classes).
 
 Example test naming:

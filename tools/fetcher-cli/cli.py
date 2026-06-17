@@ -6,6 +6,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -204,22 +205,26 @@ def cmd_init_config(args):
 def cmd_search(args):
     fetcher = args.fetcher
     payload = json.dumps({"search_query": args.query, "options": get_options_for(fetcher)})
+    start = time.monotonic()
     papers: list[dict] = json.loads(run_fetcher(fetcher, "query", payload))
+    elapsed = time.monotonic() - start
 
     print_papers_table(papers)
     saved = save_output("search", fetcher, papers)
-    print(f"\n{len(papers)} paper(s) found. Full results saved to: {saved}")
+    print(f"\n{len(papers)} paper(s) found in {elapsed:.2f}s. Full results saved to: {saved}")
 
 
 def cmd_references(args, action: str):
     fetcher = args.fetcher
     paper = load_paper(args.paper)
     payload = json.dumps({"paper": paper, "options": get_options_for(fetcher)})
+    start = time.monotonic()
     papers: list[dict] = json.loads(run_fetcher(fetcher, action, payload))
+    elapsed = time.monotonic() - start
 
     print_papers_table(papers)
     saved = save_output(action, fetcher, papers)
-    print(f"\n{len(papers)} paper(s) found. Full results saved to: {saved}")
+    print(f"\n{len(papers)} paper(s) found in {elapsed:.2f}s. Full results saved to: {saved}")
 
 
 # --- Entry point ---

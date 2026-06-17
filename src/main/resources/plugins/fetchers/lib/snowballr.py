@@ -1,11 +1,12 @@
-# THIS FILE IS AUTO-GENERATED. DO NOT MODIFY.
-
 import json
+import random
 import sys
+import time
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Callable, Optional
+from typing import Any, Callable, Iterator, Optional
 
+import requests
 from dataclass_wizard import JSONWizard, fromdict
 
 
@@ -29,7 +30,7 @@ class Paper(JSONWizard):
     title: str = ""
     external_id: Optional[str] = None
     abstract: str = ""
-    year: int = 1970
+    year: int = 0
     publisher: str = ""
     publication_type: str = ""
     publication_name: str = ""
@@ -134,3 +135,106 @@ def fetcher_plugin(
         case _:
             print("Unknown fetcher action.", file=sys.stderr)
             exit(1)
+
+
+def safe_get(res: dict, key: str, default: Any):
+    """
+    Retrieves a value from the passed dictionary using the specified key.
+    If the key doesn't exist or the value of the entry is None, the provided default value is
+    returned.
+    """
+    val = res.get(key)
+    if val is None:
+        return default
+    else:
+        return val
+
+
+def request_with_retry(
+    url: str,
+    headers: dict[str, Any] = {},
+    params: dict[str, Any] = {},
+    timeout_seconds: float = 0.0,
+) -> dict[str, Any]:
+    """
+    Requests the specified url with automated retries.
+
+    If a "Too Many Requests" status code is returned, the request is retried after a certain
+    timeout. The timeout is defined in the following order:
+    - by the "Retry-After" header
+    - by the "timeout_seconds" parameter with exponential backoff and jitter
+
+    If timeout_seconds is set to 0, no backoff is applied and the requests are fired constantly.
+    Use this with caution.
+
+    A request is also retried if the connection is dropped mid-transfer (ChunkedEncodingError),
+    which can happen for large responses when the server closes the socket early.
+
+    The request has a timeout of 10 seconds.
+
+    The maximum number of attempts is 5 and the maximum timeout between requests is 60 seconds.
+    """
+    max_attempts = 5
+    max_timeout = 60
+
+    for n in range(max_attempts):
+        try:
+            response = requests.get(url, headers=headers, params=params, timeout=10)
+
+            if response.status_code == 429:
+                if n == max_attempts - 1:
+                    response.raise_for_status()
+
+                retry_after = response.headers.get("Retry-After")
+                wait = int(retry_after) if retry_after is not None else None
+
+                if wait is None:
+                    wait = _exp_backoff(timeout_seconds, max_timeout, n)
+
+                if wait > 0:
+                    time.sleep(wait)
+                continue
+
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.ChunkedEncodingError:
+            time.sleep(_exp_backoff(timeout_seconds, max_timeout, n))
+            continue
+
+    raise RuntimeError(
+        f"Failed to fetch the requested resource '{url}' after {max_attempts} attempts"
+    )
+
+
+def _exp_backoff(timeout_seconds: float, max_timeout: float, attempt: int) -> float:
+    return random.uniform(0, min(max_timeout, timeout_seconds * 2**attempt))
+
+
+def paginate_with_retry(
+    first_url: str,
+    next_url: Callable[[dict[str, Any]], Optional[str]],
+    headers: dict[str, Any] = {},
+    params: dict[str, Any] = {},
+    timeout_seconds: float = 0.0,
+) -> Iterator[dict[str, Any]]:
+    """
+    Paginates through a resource by repeatedly calling request_with_retry.
+
+    Before each request, sleeps the remaining time since the last call to respect the
+    timeout_seconds interval, avoiding 429s proactively. request_with_retry still handles any 429s
+    reactively as a safety net.
+
+    Pagination stops when next_url returns None.
+    """
+    url: Optional[str] = first_url
+    last_call = 0.0
+
+    while url is not None:
+        elapsed = time.monotonic() - last_call
+        if elapsed < timeout_seconds:
+            time.sleep(timeout_seconds - elapsed)
+
+        last_call = time.monotonic()
+        response = request_with_retry(url, headers, params, timeout_seconds)
+        yield response
+        url = next_url(response)
