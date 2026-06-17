@@ -3,6 +3,9 @@ from typing import Any, Optional
 
 from snowballr import (
     Author,
+    FetcherInformation,
+    FetcherOptionsSchema,
+    Link,
     Paper,
     fetcher_plugin,
     paginate_with_retry,
@@ -10,10 +13,24 @@ from snowballr import (
     safe_get,
 )
 
+fetcher_information = FetcherInformation(
+    name="Semantic Scholar",
+    description="Fetcher for retrieving papers from Semantic Scholar",
+    links=[
+        Link("Homepage", "https://www.semanticscholar.org/"),
+        Link("Request API Key", "https://www.semanticscholar.org/product/api#api-key-form"),
+    ],
+    options_schema={
+        "API_KEY": FetcherOptionsSchema(
+            description="Semantic Scholar API key",
+            required=True,
+            is_secret=True,
+        )
+    },
+)
+
 id_metadata_key: str = "SemanticScholarId"
 corpus_id_metadata_key: str = "SemanticScholarCorpusId"
-
-fetcher_options = {"API_KEY": "SemanticScholar API key"}
 
 base_url = "https://api.semanticscholar.org/graph/v1"
 fields = "corpusId,title,externalIds,abstract,publicationDate,year,venue,publicationTypes,authors"
@@ -144,8 +161,8 @@ def external_id_from_response(res) -> Optional[str]:
 
 
 fetcher_plugin(
-    fetcher_options,
-    search_papers,
-    forward_references,
-    backward_references,
+    information=fetcher_information,
+    query=search_papers,
+    forwards=forward_references,
+    backwards=backward_references,
 )

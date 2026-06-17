@@ -1,9 +1,23 @@
-from snowballr import Author, Paper, fetcher_plugin
+from snowballr import Author, FetcherInformation, FetcherOptionsSchema, Link, Paper, fetcher_plugin
 from xploreapi import XPLORE
 
-metadata_key: str = "IEEEXploreId"
+fetcher_information = FetcherInformation(
+    name="IEEE Xplore",
+    description="Fetcher for retrieving papers from IEEEXplore",
+    links=[
+        Link("Homepage", "https://ieeexplore.ieee.org/"),
+        Link("Register for an account", "https://developer.ieee.org/member/register"),
+    ],
+    options_schema={
+        "API_KEY": FetcherOptionsSchema(
+            description="IEEEXplore API key",
+            required=True,
+            is_secret=True,
+        ),
+    },
+)
 
-options: dict[str, str] = {"API_KEY": "IEEEXplore API key"}
+metadata_key: str = "IEEEXploreId"
 
 
 def search_papers(search_query: str, options: dict[str, str]) -> list[Paper]:
@@ -78,8 +92,8 @@ def author_from_response(res) -> Author:
 
 
 fetcher_plugin(
-    options,
-    search_papers,
-    forward_references,
-    backward_references,
+    information=fetcher_information,
+    query=search_papers,
+    forwards=forward_references,
+    backwards=backward_references,
 )

@@ -25,6 +25,7 @@ import kotlin.io.path.writeText
 import kotlin.jvm.optionals.getOrElse
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
 
 class PythonPluginFetcherManagerTest {
     private lateinit var pluginDirectory: Path
@@ -35,6 +36,9 @@ class PythonPluginFetcherManagerTest {
         Files.deleteIfExists(link)
         Files.createSymbolicLink(link, target)
     }
+
+    private suspend fun PythonPluginFetcherManager.makeTestCall(fetcherName: String) =
+        this.searchPapers(fetcherName, "", emptyMap())
 
     @BeforeEach
     fun setUp() {
@@ -57,49 +61,51 @@ class PythonPluginFetcherManagerTest {
     }
 
     @Test
-    fun `When available fetchers are queried, then only top-level python files are returned without extension`() {
-        writeFetcher(
-            "custom_fetcher",
-            """
-            import json
-            print(json.dumps({}))
-            """.trimIndent(),
-        )
-        fetcherDirectory.resolve("README.md").writeText("ignore")
-        val nestedDir = fetcherDirectory.resolve("nested").createDirectories()
-        nestedDir.resolve("nested_fetcher.py").writeText("print('[]')")
+    fun `When available fetchers are queried, then only top-level python files are returned without extension`() =
+        runTest {
+            writeFetcher(
+                "custom_fetcher",
+                """
+                import json
+                import sys
+                if sys.argv[1] == "info":
+                    print(json.dumps({"name": "custom_fetcher", "description": "test", "links": [], "options_schema": {}}))
+                else:
+                    print(json.dumps([]))
+                """.trimIndent(),
+            )
+            fetcherDirectory.resolve("README.md").writeText("ignore")
+            val nestedDir = fetcherDirectory.resolve("nested").createDirectories()
+            nestedDir.resolve("nested_fetcher.py").writeText("print('[]')")
 
-        val availableFetchers = fetcherManager.getAvailableFetchers()
+            val availableFetchers = fetcherManager.getAvailableFetchers().map { it.id }
 
-        assertThat(availableFetchers).contains("IEEEXplore", "custom_fetcher")
-        assertThat(availableFetchers).contains("SemanticScholar", "custom_fetcher")
-        assertThat(availableFetchers).doesNotContain("README", "nested_fetcher")
-    }
+            assertThat(availableFetchers).contains("IEEEXplore", "SemanticScholar", "custom_fetcher")
+            assertThat(availableFetchers).doesNotContain("README", "nested_fetcher")
+        }
 
     @Test
-    fun `When a fetcher exits successfully with options output, then options are returned`() = runTest {
+    fun `When a fetcher exits successfully with information output, then information is returned`() = runTest {
         writeFetcher(
-            "options_fetcher",
+            "information_fetcher",
             """
             import json
             import sys
 
-            if sys.argv[1] == "options":
-                print(json.dumps({"limit": "25", "sort": "desc"}))
+            if sys.argv[1] == "info":
+                print(json.dumps({"name": "test", "description": "desc", "links": [], "options_schema": {}}))
             else:
                 print(json.dumps([]))
             """.trimIndent(),
         )
 
-        val result = fetcherManager.getAvailableOptions("options_fetcher")
+        val result = fetcherManager.getAvailableFetchers().first { it.name == "test" }
 
-        assertEquals(
-            mapOf(
-                "limit" to "25",
-                "sort" to "desc",
-            ),
-            result,
-        )
+        assertEquals("information_fetcher", result.id)
+        assertEquals("test", result.name)
+        assertEquals("desc", result.description)
+        assertEquals(emptyList(), result.linksList)
+        assertEquals(emptyMap(), result.optionsSchemaMap)
     }
 
     @Test
@@ -228,7 +234,7 @@ class PythonPluginFetcherManagerTest {
     @Test
     fun `When a fetcher script is missing, then a FetcherNotFoundException is thrown`() = runTest {
         val exception = assertThrows<FetcherNotFoundException> {
-            fetcherManager.getAvailableOptions("does_not_exist")
+            fetcherManager.makeTestCall("does_not_exist")
         }
         assertThat(exception.message).contains("Fetcher \"does_not_exist\" not found.")
     }
@@ -238,7 +244,7 @@ class PythonPluginFetcherManagerTest {
         fetcherDirectory.resolve("not_a_file.py").createDirectories()
 
         val exception = assertThrows<FetcherNotFoundException> {
-            fetcherManager.getAvailableOptions("not_a_file")
+            fetcherManager.makeTestCall("not_a_file")
         }
 
         assertThat(exception.message).contains("Fetcher \"not_a_file\" not found.")
@@ -247,7 +253,7 @@ class PythonPluginFetcherManagerTest {
     @Test
     fun `When a fetcher path traverses outside root, then an UnauthorizedFetcherPathException is thrown`() = runTest {
         val exception = assertThrows<UnauthorizedFetcherPathException> {
-            fetcherManager.getAvailableOptions("../outside")
+            fetcherManager.makeTestCall("../outside")
         }
 
         assertThat(exception.message).contains("Fetcher \"../outside\" is outside the configured fetchers directory.")
@@ -274,7 +280,7 @@ class PythonPluginFetcherManagerTest {
         )
 
         val exception = assertThrows<UnauthorizedFetcherPathException> {
-            fetcherManager.getAvailableOptions("symlink_outside")
+            fetcherManager.makeTestCall("symlink_outside")
         }
         assertThat(exception.message)
             .contains("Fetcher \"symlink_outside\" is outside the configured fetchers directory.")
@@ -289,8 +295,8 @@ class PythonPluginFetcherManagerTest {
             """
             import json
             import sys
-            if sys.argv[1] == "options":
-                print(json.dumps({"foo": "bar"}))
+            if sys.argv[1] == "query":
+                print(json.dumps([]))
             """.trimIndent(),
         )
 
@@ -300,14 +306,15 @@ class PythonPluginFetcherManagerTest {
             target = fetcherDirectory.resolve("target_fetcher.py"),
         )
 
-        val options = fetcherManager.getAvailableOptions("symlink_inside")
-        assertEquals(mapOf("foo" to "bar"), options)
+        val options = fetcherManager.searchPapers("symlink_inside", "", emptyMap())
+
+        assertEquals(emptySet(), options)
     }
 
     @Test
     fun `When a fetcher name contains invalid path characters, then a FetcherNotFoundException is thrown`() = runTest {
         val exception = assertThrows<FetcherNotFoundException> {
-            fetcherManager.getAvailableOptions("invalid\u0000name")
+            fetcherManager.makeTestCall("invalid\u0000name")
         }
 
         assertThat(exception.message).contains("Fetcher \"invalid")
@@ -319,7 +326,7 @@ class PythonPluginFetcherManagerTest {
         fetcherDirectory.toFile().deleteRecursively()
 
         val exception = assertThrows<FetcherNotFoundException> {
-            fetcherManager.getAvailableOptions("IEEEXplore")
+            fetcherManager.makeTestCall("IEEEXplore")
         }
 
         assertThat(exception.message).contains("Fetcher \"IEEEXplore\" not found.")
@@ -337,7 +344,7 @@ class PythonPluginFetcherManagerTest {
         )
 
         val exception = assertThrows<FetcherException> {
-            fetcherManager.getAvailableOptions("failing_fetcher")
+            fetcherManager.makeTestCall("failing_fetcher")
         }
 
         assertThat(exception.message).contains("something went wrong")
@@ -354,7 +361,7 @@ class PythonPluginFetcherManagerTest {
         )
 
         val exception = assertThrows<FetcherException> {
-            fetcherManager.getAvailableOptions("invalid_json_fetcher")
+            fetcherManager.makeTestCall("invalid_json_fetcher")
         }
 
         assertThat(exception.message).contains("Fetcher 'invalid_json_fetcher' returned invalid JSON.")
@@ -372,7 +379,7 @@ class PythonPluginFetcherManagerTest {
         )
 
         val exception = assertThrows<FetcherException> {
-            fetcherManager.getAvailableOptions("empty_output_fetcher")
+            fetcherManager.makeTestCall("empty_output_fetcher")
         }
 
         assertThat(exception.message).contains("Fetcher 'empty_output_fetcher' returned no JSON output.")
@@ -392,13 +399,13 @@ class PythonPluginFetcherManagerTest {
             import sys
             import time
 
-            if sys.argv[1] == "options":
+            if sys.argv[1] == "query":
                 time.sleep(10)
             """.trimIndent(),
         )
 
         val exception = assertThrows<FetcherException> {
-            timeoutFetcherManager.getAvailableOptions("slow_fetcher")
+            timeoutFetcherManager.searchPapers("slow_fetcher", "", emptyMap())
         }
 
         assertThat(exception.message).contains("Fetcher 'slow_fetcher' timed out after 100ms.")
@@ -431,14 +438,14 @@ class PythonPluginFetcherManagerTest {
 
             signal.signal(signal.SIGTERM, ignore_sigterm)
 
-            if sys.argv[1] == "options":
+            if sys.argv[1] == "query":
                 while True:
                     time.sleep(0.05)
             """.trimIndent(),
         )
 
         val exception = assertThrows<FetcherException> {
-            timeoutFetcherManager.getAvailableOptions("stuck_fetcher")
+            timeoutFetcherManager.searchPapers("stuck_fetcher", "", emptyMap())
         }
         assertThat(exception.message).contains("Fetcher 'stuck_fetcher' timed out after 2000ms.")
 
@@ -467,13 +474,13 @@ class PythonPluginFetcherManagerTest {
             import sys
 
             print("warning", file=sys.stderr)
-            print(json.dumps({"foo": "bar"}))
+            print(json.dumps([]))
             """.trimIndent(),
         )
 
-        val options = fetcherManager.getAvailableOptions("warning_fetcher")
+        val options = fetcherManager.searchPapers("warning_fetcher", "", emptyMap())
 
-        assertEquals(mapOf("foo" to "bar"), options)
+        assertEquals(emptySet(), options)
     }
 
     @Test
@@ -483,14 +490,14 @@ class PythonPluginFetcherManagerTest {
             """
             import json
 
-            print(json.dumps({"foo": "bar"}))
+            print(json.dumps([]))
             print("ignored-second-line")
             """.trimIndent(),
         )
 
-        val options = fetcherManager.getAvailableOptions("multiline_fetcher")
+        val options = fetcherManager.searchPapers("multiline_fetcher", "", emptyMap())
 
-        assertEquals(mapOf("foo" to "bar"), options)
+        assertEquals(emptySet(), options)
     }
 
     private fun writeFetcher(name: String, source: String) {
@@ -505,15 +512,18 @@ class PythonPluginFetcherManagerTest {
         val deadline = System.currentTimeMillis() + timeoutMillis
         while (System.currentTimeMillis() < deadline) {
             if (condition()) return true
-            delay(pollIntervalMillis)
+            delay(pollIntervalMillis.milliseconds)
         }
         return condition()
     }
 
     private fun createEnvReader(pluginDirectory: Path): EnvReader {
+        val venvPython = Path.of(".venv/bin/python3").toAbsolutePath()
+        val pythonExecutable = if (venvPython.exists()) venvPython.toString() else "python3"
+
         val pluginEnv = mockk<Env.Plugins>()
         every { pluginEnv.pluginDirectory } returns pluginDirectory
-        every { pluginEnv.pythonExecutable } returns "python3"
+        every { pluginEnv.pythonExecutable } returns pythonExecutable
 
         val env = mockk<Env>()
         every { env.plugins } returns pluginEnv

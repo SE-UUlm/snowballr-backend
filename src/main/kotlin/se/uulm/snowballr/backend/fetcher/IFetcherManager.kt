@@ -1,25 +1,16 @@
 package se.uulm.snowballr.backend.fetcher
 
 import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
+import snowballr.Fetcher
 
 /**
  * Delegate requests to multiple fetchers using their names.
  */
 interface IFetcherManager {
     /**
-     * Get the names of all registered fetchers.
+     * Get the information of all registered fetchers.
      */
-    fun getAvailableFetchers(): Set<String>
-
-    /**
-     * Get the names of all option keys and their according default values the
-     * specified fetcher can be configured with. The values remain shapeless
-     * and ought to be validated in the fetcher implementation.
-     *
-     * @param fetcher The name of the fetcher whose options should be retrieved.
-     * @return A set of names for options the fetcher has specified it would accept.
-     */
-    suspend fun getAvailableOptions(fetcher: String): Map<String, String>
+    suspend fun getAvailableFetchers(): Set<Fetcher.FetcherInformation>
 
     /**
      * Search for papers using a search query.

@@ -204,10 +204,6 @@ class SnowballRServer(
         override suspend fun getAvailableFetchers(request: Base.Nothing): Fetcher.AvailableFetchers =
             fetcherService.getAvailableFetchers()
 
-        override suspend fun getAvailableFetcherOptions(
-            request: Fetcher.GetAvailableFetcherOptionsRequest,
-        ): Fetcher.FetcherOptions = fetcherService.getAvailableFetcherOptions(request)
-
         override suspend fun register(request: Authentication.RegisterRequest) = returnNothing {
             userService.register(request)
         }

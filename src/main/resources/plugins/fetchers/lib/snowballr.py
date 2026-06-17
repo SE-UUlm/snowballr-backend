@@ -38,8 +38,42 @@ class Paper(JSONWizard):
     fetcher_metadata: dict[str, str] = field(default_factory=dict)
 
 
+@dataclass(unsafe_hash=True)
+class Link(JSONWizard):
+    class _(JSONWizard.Meta):
+        key_transform_with_load = "SNAKE"
+        key_transform_with_dump = "SNAKE"
+
+    label: str = ""
+    url: str = ""
+
+
+@dataclass(unsafe_hash=True)
+class FetcherOptionsSchema(JSONWizard):
+    class _(JSONWizard.Meta):
+        key_transform_with_load = "SNAKE"
+        key_transform_with_dump = "SNAKE"
+
+    description: str = ""
+    required: bool = False
+    is_secret: bool = False
+    default_value: Optional[str] = None
+
+
+@dataclass(unsafe_hash=True)
+class FetcherInformation(JSONWizard):
+    class _(JSONWizard.Meta):
+        key_transform_with_load = "SNAKE"
+        key_transform_with_dump = "SNAKE"
+
+    name: str
+    description: str
+    links: list[Link]
+    options_schema: dict[str, FetcherOptionsSchema] = field(default_factory=dict)
+
+
 class EventType(StrEnum):
-    OPTIONS = "options"
+    INFO = "info"
     QUERY = "query"
     FORWARDS = "forwards"
     BACKWARDS = "backwards"
@@ -68,7 +102,7 @@ def _read_stdin_payload() -> dict:
 
 
 def fetcher_plugin(
-    options: dict[str, str],
+    information: FetcherInformation,
     query: QueryFn,
     forwards: ReferenceFn,
     backwards: ReferenceFn,
@@ -81,8 +115,8 @@ def fetcher_plugin(
     payload = _read_stdin_payload()
 
     match sys.argv[1]:
-        case EventType.OPTIONS:
-            print(json.dumps(options))
+        case EventType.INFO:
+            print(information.to_json())
 
         case EventType.QUERY:
             if payload:

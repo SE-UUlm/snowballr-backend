@@ -16,8 +16,6 @@ import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import snowballr.Fetcher.AvailableFetchers
-import snowballr.Fetcher.FetcherOptions
-import snowballr.Fetcher.GetAvailableFetcherOptionsRequest
 import java.util.UUID
 import snowballr.PaperOuterClass.Paper as GrpcPaper
 import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
@@ -29,11 +27,6 @@ interface IFetcherService {
      * Service implementation of [SnowballRService.getAvailableFetchers].
      */
     suspend fun getAvailableFetchers(): AvailableFetchers
-
-    /**
-     * Service implementation of [SnowballRService.getAvailableFetcherOptions].
-     */
-    suspend fun getAvailableFetcherOptions(request: GetAvailableFetcherOptionsRequest): FetcherOptions
 
     /**
      * Service implementation of [SnowballRService.searchLocalProjectPaperCandidates].
@@ -66,13 +59,8 @@ class FetcherService(
 ) : IFetcherService {
     override suspend fun getAvailableFetchers(): AvailableFetchers = AvailableFetchers
         .newBuilder()
-        .addAllFetcherNames(fetcherManager.getAvailableFetchers())
+        .addAllFetchers(fetcherManager.getAvailableFetchers())
         .build()
-
-    override suspend fun getAvailableFetcherOptions(request: GetAvailableFetcherOptionsRequest): FetcherOptions =
-        FetcherOptions.newBuilder()
-            .putAllOptions(fetcherManager.getAvailableOptions(request.fetcherName))
-            .build()
 
     override suspend fun searchLocalProjectPaperCandidates(request: GrpcProjectPaper.SearchQuery): GrpcPaper.List =
         withUser(userRepo) { currentUser ->
