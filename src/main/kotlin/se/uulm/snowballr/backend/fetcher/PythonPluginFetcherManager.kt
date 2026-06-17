@@ -43,6 +43,7 @@ private val resources = buildResources(FETCHER_RESOURCES_ROOT) {
     }
     file("IEEEXplore.py")
     file("SemanticScholar.py")
+    file("OpenAlex.py")
 }
 
 class PythonPluginFetcherManager(
