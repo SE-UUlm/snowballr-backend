@@ -1,4 +1,3 @@
-import urllib.parse
 from typing import Any, Optional
 
 from snowballr import (
@@ -56,7 +55,7 @@ def search_papers(search_query: str, options: dict[str, str]) -> list[Paper]:
     """
     url = f"{base_url}/paper/search"
     params = {
-        "query": urllib.parse.quote_plus(search_query),
+        "query": search_query,
         "fields": fields,
         "limit": 25,
     }
@@ -204,7 +203,7 @@ def _external_ids_from_response(res) -> list[ExternalId]:
         "ACL": ("ACL", ""),
         "PubMed": ("PUB_MED", ""),
         "Medline": ("MEDLINE", ""),
-        "PubMedCentral": ("PUB_MED_CENTRAL", "PMC"),  # PubMedCentral required 'PMC' prefix
+        "PubMedCentral": ("PUB_MED_CENTRAL", "PMC"),  # PubMedCentral requires 'PMC' prefix
         "DBLP": ("DBLP", ""),
     }
 

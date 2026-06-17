@@ -247,7 +247,7 @@ def request_with_retry(
         try:
             response = requests.get(url, headers=headers, params=params, timeout=10)
 
-            if response.status_code == 429:
+            if _should_retry_request(response):
                 if n == max_attempts - 1:
                     response.raise_for_status()
 
@@ -270,6 +270,14 @@ def request_with_retry(
     raise RuntimeError(
         f"Failed to fetch the requested resource '{url}' after {max_attempts} attempts"
     )
+
+
+def _should_retry_request(response: requests.Response) -> bool:
+    """
+    Determines whether a request should be retried based on the HTTPError received.
+    Retries are performed for 429 (Too Many Requests) and 504 (Gateway Timeout) status codes.
+    """
+    return response is not None and response.status_code in [429, 504]
 
 
 def _exp_backoff(timeout_seconds: float, max_timeout: float, attempt: int) -> float:
