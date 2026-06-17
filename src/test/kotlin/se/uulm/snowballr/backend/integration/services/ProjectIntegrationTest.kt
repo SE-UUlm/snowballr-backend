@@ -1,17 +1,23 @@
 package se.uulm.snowballr.backend.integration.services
 
 import com.google.protobuf.util.FieldMaskUtil
+import io.mockk.coEvery
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.parseUUID
+import snowballr.Fetcher
 import snowballr.ProjectOuterClass.Project
 import snowballr.ProjectOuterClass.ProjectStatus
+import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class ProjectIntegrationTest : IntegrationTest() {
@@ -108,6 +114,75 @@ class ProjectIntegrationTest : IntegrationTest() {
             val archivedProjects = projectService.getAllArchivedProjectsForUser(testUserId)
             assertTrue(archivedProjects.projectsList.any { it.id == project.id })
         }
+
+        @Test
+        fun `When a user updates the fetchers of a project, then non-existent fetchers and options are removed`() =
+            runTest {
+                val project = projectService.createProject(
+                    Project.Create.newBuilder().setName("Fetcher Project").build(),
+                )
+
+                val availableFetchers = setOf(
+                    Fetcher.FetcherInformation.newBuilder()
+                        .setId("existent-fetcher")
+                        .putOptionsSchema("existent-option", Fetcher.FetcherOptionSchema.getDefaultInstance())
+                        .build(),
+                )
+                coEvery { fetcherManagerMock.getAvailableFetchers() } returns availableFetchers
+
+                val fetcherOptions = Fetcher.FetcherOptions.newBuilder()
+                    .putOptions("existent-option", "value1")
+                    .putOptions("non-existent-option", "value2")
+                    .build()
+                val settings = Project.Settings.newBuilder()
+                    .putFetchers("existent-fetcher", fetcherOptions)
+                    .putFetchers("non-existent-fetcher", Fetcher.FetcherOptions.getDefaultInstance())
+                    .build()
+                val request = Project.Update.newBuilder()
+                    .setProject(Project.newBuilder().setId(project.id).setSettings(settings).build())
+                    .setMask(FieldMaskUtil.fromStringList(listOf("project.settings.fetchers")))
+                    .build()
+
+                val result = projectService.updateProject(request)
+
+                val fetchersMap = result.settings.fetchersMap
+                assertContains(fetchersMap.keys, "existent-fetcher")
+                assertFalse(fetchersMap.containsKey("non-existent-fetcher"))
+                val sanitizedOptions = assertNotNull(fetchersMap["existent-fetcher"])
+                assertContains(sanitizedOptions.optionsMap.keys, "existent-option")
+                assertFalse(sanitizedOptions.optionsMap.containsKey("non-existent-option"))
+            }
+
+        @Test
+        fun `When a user updates the fetchers of a project and a required option is missing, then a FailedPreconditionException is thrown`() =
+            runTest {
+                val project = projectService.createProject(
+                    Project.Create.newBuilder().setName("Required Option Project").build(),
+                )
+
+                val requiredOption = Fetcher.FetcherOptionSchema.newBuilder().setRequired(true).build()
+                val availableFetchers = setOf(
+                    Fetcher.FetcherInformation.newBuilder()
+                        .setId("fetcher")
+                        .putOptionsSchema("option1", requiredOption)
+                        .putOptionsSchema("option2", requiredOption)
+                        .build(),
+                )
+                coEvery { fetcherManagerMock.getAvailableFetchers() } returns availableFetchers
+
+                val fetcherOptions = Fetcher.FetcherOptions.newBuilder()
+                    .putOptions("option1", "value")
+                    .build()
+                val settings = Project.Settings.newBuilder()
+                    .putFetchers("fetcher", fetcherOptions)
+                    .build()
+                val request = Project.Update.newBuilder()
+                    .setProject(Project.newBuilder().setId(project.id).setSettings(settings).build())
+                    .setMask(FieldMaskUtil.fromStringList(listOf("project.settings.fetchers")))
+                    .build()
+
+                assertThrows<FailedPreconditionException> { projectService.updateProject(request) }
+            }
     }
 
     @Nested
