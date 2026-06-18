@@ -75,6 +75,9 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv pip install --python /app/.venv/bin/python -r requirements.txt
 RUN apk del .py-build-deps && chown -R backend-user /app/.venv
 
+RUN mkdir -p /app/plugins && chown backend-user:backend-user /app/plugins
+USER backend-user
+
 VOLUME /app/plugins/
 
 # Healthcheck uses grpc-health-probe
@@ -83,8 +86,6 @@ HEALTHCHECK CMD ./grpc_health_probe -addr=localhost:${PORT} -service "snowballr.
 # Copy build artifacts last — source changes only invalidate layers below this point
 COPY --chown=backend-user:backend-user --from=build /app/build/libs/snowballr-backend-*.jar app.jar
 COPY --chown=backend-user:backend-user --from=grpc-health-probe /grpc_health_probe grpc_health_probe
-
-USER backend-user
 
 # Start execute the jar file when starting the container
 ENTRYPOINT ["java", "-jar", "app.jar"]
