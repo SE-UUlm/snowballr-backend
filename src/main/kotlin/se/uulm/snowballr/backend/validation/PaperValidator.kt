@@ -19,8 +19,8 @@ import java.time.LocalDate
 @Suppress("TooManyFunctions")
 object PaperValidator {
     const val EXTERNAL_ID_MAX_LENGTH = 100
-    const val TITLE_MAX_LENGTH = 200
-    const val ABSTRACT_MAX_LENGTH = 3000
+    const val TITLE_MAX_LENGTH = 250
+    const val ABSTRACT_MAX_LENGTH = 3500
     const val YEAR_MIN_VALUE = 0
     const val PUBLISHER_MAX_LENGTH = 200
     const val PUBLICATION_NAME_MAX_LENGTH = 200
