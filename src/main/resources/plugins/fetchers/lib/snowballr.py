@@ -54,6 +54,7 @@ class FetcherOptionsSchema(JSONWizard):
         key_transform_with_load = "SNAKE"
         key_transform_with_dump = "SNAKE"
 
+    name: str = ""
     description: str = ""
     required: bool = False
     is_secret: bool = False
@@ -217,9 +218,9 @@ def request_with_retry(
 
     The request has a timeout of 10 seconds.
 
-    The maximum number of attempts is 5 and the maximum timeout between requests is 60 seconds.
+    The maximum number of attempts is 10 and the maximum timeout between requests is 60 seconds.
     """
-    max_attempts = 5
+    max_attempts = 10
     max_timeout = 60
 
     for n in range(max_attempts):

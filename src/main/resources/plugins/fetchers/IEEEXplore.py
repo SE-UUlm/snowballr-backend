@@ -16,6 +16,7 @@ fetcher_information = FetcherInformation(
     ],
     options_schema={
         "API_KEY": FetcherOptionsSchema(
+            name="API Key",
             description="IEEEXplore API key",
             required=True,
             is_secret=True,

@@ -512,7 +512,11 @@ class PythonPluginFetcherManagerTest {
                 description="test",
                 links=[],
                 options_schema={
-                    "MY_OPTION": FetcherOptionsSchema(description="test", default_value="injected_default"),
+                    "MY_OPTION": FetcherOptionsSchema(
+                        name="test",
+                        description="test description",
+                        default_value="injected_default",
+                    ),
                 },
             )
 
@@ -545,7 +549,11 @@ class PythonPluginFetcherManagerTest {
                     description="test",
                     links=[],
                     options_schema={
-                        "MY_OPTION": FetcherOptionsSchema(description="test", default_value="default_value"),
+                        "MY_OPTION": FetcherOptionsSchema(
+                            name="test",
+                            description="test description",
+                            default_value="injected_default",
+                        ),
                     },
                 )
 

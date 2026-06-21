@@ -31,6 +31,7 @@ fetcher_information = FetcherInformation(
     ],
     options_schema={
         "API_KEY": FetcherOptionsSchema(
+            name="API Key",
             description="Semantic Scholar API key",
             required=False,
             is_secret=True,

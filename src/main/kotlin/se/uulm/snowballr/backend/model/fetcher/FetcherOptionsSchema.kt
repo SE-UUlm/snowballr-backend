@@ -6,6 +6,8 @@ import snowballr.Fetcher
 
 @Serializable
 data class FetcherOptionsSchema(
+    @SerialName("name")
+    val name: String,
     @SerialName("description")
     val description: String,
     @SerialName("required")
@@ -17,6 +19,7 @@ data class FetcherOptionsSchema(
 )
 
 fun FetcherOptionsSchema.toGrpc(): Fetcher.FetcherOptionSchema = Fetcher.FetcherOptionSchema.newBuilder()
+    .setName(name)
     .setDescription(description)
     .setRequired(isRequired)
     .setIsSecret(isSecret)
