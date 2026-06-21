@@ -15,7 +15,16 @@ from snowballr import (
 
 fetcher_information = FetcherInformation(
     name="Semantic Scholar",
-    description="Fetcher for retrieving papers from Semantic Scholar",
+    description=(
+        "Semantic Scholar is a free, AI-powered academic search engine by the Allen Institute for "
+        "AI, indexing over 214 million papers and 2.49 billion citations across all research "
+        "fields. Supports paper search, forward references (papers that cite a paper), "
+        "and backward references (papers cited by a paper).\n\n"
+        "Without an API key, requests share a public pool (1,000 req/s total). "
+        "With an API key, each user gets 1 dedicated request per second.\n\n"
+        "Note: Some information that is displayed on the Semantic Scholar Website, such as the "
+        "abstract or the references may be elided in the information provided by the fetcher."
+    ),
     links=[
         Link("Homepage", "https://www.semanticscholar.org/"),
         Link("Request API Key", "https://www.semanticscholar.org/product/api#api-key-form"),
@@ -23,7 +32,7 @@ fetcher_information = FetcherInformation(
     options_schema={
         "API_KEY": FetcherOptionsSchema(
             description="Semantic Scholar API key",
-            required=True,
+            required=False,
             is_secret=True,
         )
     },

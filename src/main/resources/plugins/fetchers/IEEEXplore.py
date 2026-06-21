@@ -3,7 +3,13 @@ from xploreapi import XPLORE
 
 fetcher_information = FetcherInformation(
     name="IEEE Xplore",
-    description="Fetcher for retrieving papers from IEEEXplore",
+    description=(
+        "IEEE Xplore is IEEE's digital library, covering over 6 million documents including "
+        "journals, conference proceedings, standards, and books across electrical engineering, "
+        "computer science, and related fields. An API key is required.\n\n"
+        "Supports paper search and forward references (papers that cite a paper). "
+        "Backward references are not available through the IEEE Xplore API."
+    ),
     links=[
         Link("Homepage", "https://ieeexplore.ieee.org/"),
         Link("Register for an account", "https://developer.ieee.org/member/register"),
