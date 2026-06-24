@@ -10,6 +10,7 @@ import com.google.protobuf.util.FieldMaskUtil
 import se.uulm.snowballr.backend.model.BlankField
 import se.uulm.snowballr.backend.model.EnumUnspecified
 import se.uulm.snowballr.backend.model.InvalidEmail
+import se.uulm.snowballr.backend.model.InvalidEnumValue
 import se.uulm.snowballr.backend.model.InvalidFieldMask
 import se.uulm.snowballr.backend.model.InvalidId
 import se.uulm.snowballr.backend.model.OutOfRangeValue
@@ -39,13 +40,6 @@ private const val LAST_NAME_MAX_LENGTH = 100
  */
 fun Raise<ValidationIssue>.ensureFieldNonBlank(name: String, value: String) =
     ensure(value.isNotBlank()) { BlankField(name) }
-
-/**
- * Ensures that the given field value is either empty or non-blank (i.e., it contains at least one non-whitespace
- * character). If the value is non-empty and blank, a [BlankField] validation issue is raised.
- */
-fun Raise<ValidationIssue>.ensureFieldEmptyOrNonBlank(name: String, value: String) =
-    ensure(value.isEmpty() || value.isNotBlank()) { BlankField(name) }
 
 /**
  * Ensures that the given field value does not exceed the specified maximum length.
@@ -181,4 +175,8 @@ fun <T : Comparable<T>> Raise<ValidationIssue>.ensureNumberFieldInRange(name: St
     ensure(value in min..max) {
         OutOfRangeValue(name, value, min, max)
     }
+}
+
+inline fun <reified T : Enum<T>> Raise<ValidationIssue>.ensureValidEnumValue(value: String, name: String) {
+    ensure(runCatching { enumValueOf<T>(value) }.isSuccess) { InvalidEnumValue(value, name) }
 }

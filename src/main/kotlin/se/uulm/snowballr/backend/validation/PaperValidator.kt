@@ -11,6 +11,7 @@ import arrow.core.raise.ensure
 import arrow.core.raise.zipOrAccumulate
 import com.google.protobuf.util.FieldMaskUtil
 import se.uulm.snowballr.backend.model.CompositeIssue
+import se.uulm.snowballr.backend.model.MultipleOccurrences
 import se.uulm.snowballr.backend.model.TooLongList
 import se.uulm.snowballr.backend.model.ValidationIssue
 import snowballr.PaperOuterClass.Paper
@@ -18,7 +19,6 @@ import java.time.LocalDate
 
 @Suppress("TooManyFunctions")
 object PaperValidator {
-    const val EXTERNAL_ID_MAX_LENGTH = 100
     const val TITLE_MAX_LENGTH = 250
     const val ABSTRACT_MAX_LENGTH = 3500
     const val YEAR_MIN_VALUE = 0
@@ -35,11 +35,12 @@ object PaperValidator {
     private const val FIELD_PAPER_YEAR = "paper.year"
     private const val FIELD_PAPER_ABSTRACT = "paper.abstrakt"
     private const val FIELD_PAPER_TITLE = "paper.title"
-    private const val FIELD_PAPER_EXTERNAL_ID = "paper.external_id"
+    private const val FIELD_PAPER_EXTERNAL_IDS = "paper.external_ids"
 
     fun validateCreateRequest(request: Paper): EitherNel<ValidationIssue, Unit> = either {
         validatePaperProps(request, ignoreId = true)
         validateAuthors(request)
+        validateExternalIds(request)
     }
 
     fun validateUpdateRequest(request: Paper.Update): EitherNel<ValidationIssue, Unit> = either {
@@ -49,6 +50,7 @@ object PaperValidator {
         val paper = request.paper
         validatePaperProps(paper, selectedFields)
         validateAuthors(paper, selectedFields)
+        validateExternalIds(paper, selectedFields)
     }
 
     private fun validateUpdateFieldMask(request: Paper.Update): EitherNel<ValidationIssue, Unit> = either {
@@ -65,7 +67,7 @@ object PaperValidator {
         @Suppress("NamedArguments")
         zipOrAccumulate(
             { validatePaperId(ignoreId, paper) },
-            { validateExternalId(has, paper) },
+            { validateExternalIdsList(has, paper) },
             { validateTitle(has, paper) },
             { validateAbstract(has, paper) },
             { validateYear(has, paper) },
@@ -80,6 +82,18 @@ object PaperValidator {
         if (has(FIELD_PAPER_AUTHORS)) {
             ensure(paper.authorsCount <= MAX_AUTHOR_COUNT) {
                 TooLongList(FIELD_PAPER_AUTHORS, MAX_AUTHOR_COUNT)
+            }
+        }
+    }
+
+    private fun RaiseAccumulate<ValidationIssue>.validateExternalIdsList(has: (String) -> Boolean, paper: Paper) {
+        if (has(FIELD_PAPER_EXTERNAL_IDS)) {
+            val multipleOccurrences = paper.externalIdsList.groupBy { it.type }
+                .map { it.key to it.value.size }
+                .filter { it.second > 1 }
+
+            ensure(multipleOccurrences.isEmpty()) {
+                MultipleOccurrences("external IDs", multipleOccurrences)
             }
         }
     }
@@ -121,13 +135,6 @@ object PaperValidator {
         }
     }
 
-    private fun RaiseAccumulate<ValidationIssue>.validateExternalId(has: (String) -> Boolean, paper: Paper) {
-        if (has(FIELD_PAPER_EXTERNAL_ID)) {
-            ensureFieldEmptyOrNonBlank(FIELD_PAPER_EXTERNAL_ID, paper.externalId)
-            ensureFieldLength(FIELD_PAPER_EXTERNAL_ID, paper.externalId, EXTERNAL_ID_MAX_LENGTH)
-        }
-    }
-
     private fun RaiseAccumulate<ValidationIssue>.validatePaperId(ignoreId: Boolean, paper: Paper) {
         if (!ignoreId) {
             ensureIdValidity("id", paper.id)
@@ -142,6 +149,26 @@ object PaperValidator {
             if (result is Either.Left) {
                 val issues = result.value.toList()
                 val compositeIssue = CompositeIssue("Issues of author at index $i", issues)
+                Either.Left(nonEmptyListOf(compositeIssue))
+            } else {
+                result
+            }
+        }
+        val issues = validations.filterIsInstance<Either.Left<Nel<ValidationIssue>>>().map { it.value }
+        issues.reduceOrNull { acc, nel -> acc + nel }?.let { raise(it) }
+    }
+
+    private fun Raise<Nel<ValidationIssue>>.validateExternalIds(
+        paper: Paper,
+        selectedFields: Set<String> = emptySet(),
+    ) {
+        if (!hasPathOrIsEmpty(selectedFields, FIELD_PAPER_EXTERNAL_IDS)) return
+
+        val validations = paper.externalIdsList.mapIndexed { i, externalId ->
+            val result = ExternalIdValidator.validateExternalId(externalId)
+            if (result is Either.Left) {
+                val issues = result.value.toList()
+                val compositeIssue = CompositeIssue("Issues of external ID at index $i", issues)
                 Either.Left(nonEmptyListOf(compositeIssue))
             } else {
                 result

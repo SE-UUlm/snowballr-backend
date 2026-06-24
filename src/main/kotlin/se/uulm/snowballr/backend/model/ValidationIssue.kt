@@ -187,3 +187,23 @@ data class CompositeIssue(val baseMessage: String, val issues: List<ValidationIs
 data class UnsupportedExportFormat(val format: String) : ValidationIssue {
     override fun toString(): String = "The export format '$format' is not supported."
 }
+
+/**
+ * Represents a validation issue where a value for an enum doesn't exist in the enum definition.
+ *
+ * @property value The invalid enum value.
+ * @property enumName The name of the enum type.
+ */
+data class InvalidEnumValue(val value: String, val enumName: String) : ValidationIssue {
+    override fun toString(): String = "'$value' is not a valid $enumName."
+}
+
+/**
+ * Represents a validation issue where values have invalid multiple occurrences.
+ *
+ * @property name The name of the values.
+ * @property occurrences The values that have multiple occurrences as list of (name, occurrences) pairs
+ */
+data class MultipleOccurrences(val name: String, val occurrences: List<Pair<String, Int>>) : ValidationIssue {
+    override fun toString(): String = "The following $name have multiple occurrences: ${occurrences.joinToString("; ")}"
+}
