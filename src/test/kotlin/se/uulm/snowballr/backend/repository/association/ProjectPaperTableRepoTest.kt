@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
@@ -348,7 +347,8 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
                     .setStage(0)
                     .build()
 
-                val projectPaper = assertDoesNotThrow { repo.addPaperToProject(request, testUserId) }
+                val projectPaper = repo.addPaperToProject(request, testUserId)
+
                 assertEquals(paperId, projectPaper.paperId)
                 assertEquals(projectId, projectPaper.projectId)
                 assertEquals(0, projectPaper.localPaperId)
@@ -375,8 +375,9 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
                     .setStage(0)
                     .build()
 
-                assertDoesNotThrow { repo.addPaperToProject(request1, testUserId) }
-                val projectPaper2 = assertDoesNotThrow { repo.addPaperToProject(request2, testUserId) }
+                repo.addPaperToProject(request1, testUserId)
+                val projectPaper2 = repo.addPaperToProject(request2, testUserId)
+
                 assertEquals(1, projectPaper2.localPaperId)
             }
 
@@ -399,8 +400,9 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
                     .setStage(0)
                     .build()
 
-                val projectPaper1 = assertDoesNotThrow { repo.addPaperToProject(request1, testUserId) }
-                val projectPaper2 = assertDoesNotThrow { repo.addPaperToProject(request2, testUserId) }
+                val projectPaper1 = repo.addPaperToProject(request1, testUserId)
+                val projectPaper2 = repo.addPaperToProject(request2, testUserId)
+
                 assertEquals(0, projectPaper1.localPaperId)
                 assertEquals(0, projectPaper2.localPaperId)
             }
@@ -432,7 +434,7 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
                     .setStage(0)
                     .build()
 
-                val projectPaper = assertDoesNotThrow { repo.addPaperToProject(request, testUserId) }
+                val projectPaper = repo.addPaperToProject(request, testUserId)
 
                 assertEquals(6, projectPaper.localPaperId)
             }

@@ -5,7 +5,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.repository.RepositoryHelper.assignCriterionToReview
@@ -227,7 +226,7 @@ class ReviewTableRepoTest : RepositoryTest(
                 insertProjectPaperAndGetId(paperId = paperId, projectId = projectId, createdBy = testUserId)
             val userId = insertUserAndGetId(email = "existing.reviewer@example.com")
 
-            val review = assertDoesNotThrow { repo.createReview(createReviewRequest(projectPaperId).build(), userId) }
+            val review = repo.createReview(createReviewRequest(projectPaperId).build(), userId)
 
             assertEquals(projectPaperId, review.projectPaperId)
             assertEquals(ReviewDecision.REVIEW_DECISION_ACCEPTED, review.decision)
@@ -274,7 +273,7 @@ class ReviewTableRepoTest : RepositoryTest(
                     .addSelectedCriteriaIds(selectedCriterion.toString())
                     .build()
 
-                val review = assertDoesNotThrow { repo.createReview(createReviewWithCriteriaRequest, userId) }
+                val review = repo.createReview(createReviewWithCriteriaRequest, userId)
 
                 val selectedCriteria = reviewHasCriterionRepo.getSelectedCriteriaIdsForReviewById(review.id)
                 assertThat(selectedCriteria).hasSize(1)

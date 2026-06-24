@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
@@ -389,8 +388,9 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
         fun `When a project member is not found, nothing happens`() = runTest {
             val (projectId, members) = setupProject()
 
-            assertDoesNotThrow { repo.removeProjectMember(projectId, UUID.randomUUID()) }
-            assertDoesNotThrow { repo.removeProjectMember(UUID.randomUUID(), members[0].userId) }
+            repo.removeProjectMember(projectId, UUID.randomUUID())
+            repo.removeProjectMember(UUID.randomUUID(), members[0].userId)
+
             assertTrue(repo.getProjectMemberByComposedId(projectId, members[0].userId).isSuccess)
         }
     }
