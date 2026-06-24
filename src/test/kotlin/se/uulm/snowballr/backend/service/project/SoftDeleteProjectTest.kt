@@ -45,7 +45,7 @@ class SoftDeleteProjectTest : ProjectServiceTest() {
     }
 
     @Test
-    fun `When a user deletes a project and has access, the the project and any invitation tokens for it are deleted successfully`() =
+    fun `When a user deletes a project and has access, then the project and any invitation tokens for it are deleted successfully`() =
         runTest {
             val user = DataBuilder.createExampleUser()
             val projectId = UUID.randomUUID()
