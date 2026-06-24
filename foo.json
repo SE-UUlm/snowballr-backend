@@ -1,0 +1,3018 @@
+{
+    "meta": {
+        "count": 9189262,
+        "db_response_time_ms": 220,
+        "page": 1,
+        "per_page": 25,
+        "groups_count": null,
+        "x_query": {
+            "oql": "works where full text contains Engineering",
+            "oqo": {
+                "get_rows": "works",
+                "filter_rows": [
+                    {
+                        "column_id": "default.search",
+                        "value": "Engineering",
+                        "operator": "contains"
+                    }
+                ]
+            },
+            "url": "/works?filter=default.search:Engineering"
+        },
+        "cost_usd": 0.001
+    },
+    "results": [
+        {
+            "id": "https://openalex.org/W4211147424",
+            "doi": "https://doi.org/10.1126/science.8493529",
+            "title": "Tissue Engineering",
+            "display_name": "Tissue Engineering",
+            "relevance_score": 5561.164,
+            "publication_year": 1993,
+            "publication_date": "1993-05-14",
+            "ids": {
+                "openalex": "https://openalex.org/W4211147424",
+                "doi": "https://doi.org/10.1126/science.8493529",
+                "pmid": "https://pubmed.ncbi.nlm.nih.gov/8493529"
+            },
+            "language": "en",
+            "primary_location": {
+                "id": "doi:10.1126/science.8493529",
+                "is_oa": false,
+                "landing_page_url": "https://doi.org/10.1126/science.8493529",
+                "pdf_url": null,
+                "source": {
+                    "id": "https://openalex.org/S3880285",
+                    "display_name": "Science",
+                    "issn_l": "0036-8075",
+                    "issn": [
+                        "0036-8075",
+                        "1095-9203"
+                    ],
+                    "is_oa": false,
+                    "is_in_doaj": false,
+                    "is_core": true,
+                    "host_organization": "https://openalex.org/P4310315823",
+                    "host_organization_name": "American Association for the Advancement of Science",
+                    "host_organization_lineage": [
+                        "https://openalex.org/P4310315823"
+                    ],
+                    "host_organization_lineage_names": [
+                        "American Association for the Advancement of Science"
+                    ],
+                    "type": "journal"
+                },
+                "license": null,
+                "license_id": null,
+                "version": "publishedVersion",
+                "is_accepted": true,
+                "is_published": true,
+                "raw_source_name": "Science",
+                "raw_type": "journal-article"
+            },
+            "type": "review",
+            "indexed_in": [
+                "crossref",
+                "pubmed"
+            ],
+            "open_access": {
+                "is_oa": false,
+                "oa_status": "closed",
+                "oa_url": null,
+                "any_repository_has_fulltext": false
+            },
+            "authorships": [
+                {
+                    "author_position": "first",
+                    "author": {
+                        "id": "https://openalex.org/A5042597057",
+                        "display_name": "Róbert Langer",
+                        "orcid": "https://orcid.org/0000-0003-4255-0492"
+                    },
+                    "institutions": [
+                        {
+                            "id": "https://openalex.org/I1288882113",
+                            "display_name": "Boston Children's Hospital",
+                            "ror": "https://ror.org/00dvg7y05",
+                            "country_code": "US",
+                            "type": "healthcare",
+                            "lineage": [
+                                "https://openalex.org/I1288882113"
+                            ]
+                        },
+                        {
+                            "id": "https://openalex.org/I4210092658",
+                            "display_name": "Harvard–MIT Division of Health Sciences and Technology",
+                            "ror": "https://ror.org/00jjeh629",
+                            "country_code": "US",
+                            "type": "education",
+                            "lineage": [
+                                "https://openalex.org/I4210092658"
+                            ]
+                        },
+                        {
+                            "id": "https://openalex.org/I63966007",
+                            "display_name": "Massachusetts Institute of Technology",
+                            "ror": "https://ror.org/042nb2s44",
+                            "country_code": "US",
+                            "type": "education",
+                            "lineage": [
+                                "https://openalex.org/I63966007"
+                            ]
+                        }
+                    ],
+                    "countries": [
+                        "US"
+                    ],
+                    "is_corresponding": false,
+                    "raw_author_name": "Robert Langer",
+                    "raw_affiliation_strings": [
+                        "Department of Chemical Engineering and the Harvard-M.I.T. Division of Health, Sciences and Technology, Massachusetts Institute of Technology, E25-342, Cambridge, MA 02319",
+                        "Department of Surgery, Harvard Medical School and Children's Hospital, Boston, MA 02115"
+                    ],
+                    "raw_orcid": null,
+                    "affiliations": [
+                        {
+                            "raw_affiliation_string": "Department of Chemical Engineering and the Harvard-M.I.T. Division of Health, Sciences and Technology, Massachusetts Institute of Technology, E25-342, Cambridge, MA 02319",
+                            "institution_ids": [
+                                "https://openalex.org/I63966007",
+                                "https://openalex.org/I4210092658"
+                            ]
+                        },
+                        {
+                            "raw_affiliation_string": "Department of Surgery, Harvard Medical School and Children's Hospital, Boston, MA 02115",
+                            "institution_ids": [
+                                "https://openalex.org/I1288882113"
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "author_position": "last",
+                    "author": {
+                        "id": "https://openalex.org/A5109572012",
+                        "display_name": "Joseph P. Vacanti",
+                        "orcid": null
+                    },
+                    "institutions": [
+                        {
+                            "id": "https://openalex.org/I4210092658",
+                            "display_name": "Harvard–MIT Division of Health Sciences and Technology",
+                            "ror": "https://ror.org/00jjeh629",
+                            "country_code": "US",
+                            "type": "education",
+                            "lineage": [
+                                "https://openalex.org/I4210092658"
+                            ]
+                        },
+                        {
+                            "id": "https://openalex.org/I63966007",
+                            "display_name": "Massachusetts Institute of Technology",
+                            "ror": "https://ror.org/042nb2s44",
+                            "country_code": "US",
+                            "type": "education",
+                            "lineage": [
+                                "https://openalex.org/I63966007"
+                            ]
+                        }
+                    ],
+                    "countries": [
+                        "US"
+                    ],
+                    "is_corresponding": false,
+                    "raw_author_name": "Joseph P. Vacanti",
+                    "raw_affiliation_strings": [
+                        "Department of Chemical Engineering and the Harvard-M.I.T. Division of Health, Sciences and Technology, Massachusetts Institute of Technology, E25-342, Cambridge, MA 02319"
+                    ],
+                    "raw_orcid": null,
+                    "affiliations": [
+                        {
+                            "raw_affiliation_string": "Department of Chemical Engineering and the Harvard-M.I.T. Division of Health, Sciences and Technology, Massachusetts Institute of Technology, E25-342, Cambridge, MA 02319",
+                            "institution_ids": [
+                                "https://openalex.org/I63966007",
+                                "https://openalex.org/I4210092658"
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "institutions": [],
+            "countries_distinct_count": 1,
+            "institutions_distinct_count": 2,
+            "corresponding_author_ids": [],
+            "corresponding_institution_ids": [],
+            "apc_list": null,
+            "apc_paid": null,
+            "fwci": 51.6609,
+            "has_fulltext": false,
+            "cited_by_count": 9531,
+            "citation_normalized_percentile": {
+                "value": 0.99953483,
+                "is_in_top_1_percent": true,
+                "is_in_top_10_percent": true
+            },
+            "cited_by_percentile_year": {
+                "min": 99,
+                "max": 100
+            },
+            "biblio": {
+                "volume": "260",
+                "issue": "5110",
+                "first_page": "920",
+                "last_page": "926"
+            },
+            "is_retracted": false,
+            "is_paratext": false,
+            "is_xpac": false,
+            "primary_topic": {
+                "id": "https://openalex.org/T12264",
+                "display_name": "Tissue Engineering and Regenerative Medicine",
+                "score": 0.9969000220298767,
+                "subfield": {
+                    "id": "https://openalex.org/subfields/2746",
+                    "display_name": "Surgery"
+                },
+                "field": {
+                    "id": "https://openalex.org/fields/27",
+                    "display_name": "Medicine"
+                },
+                "domain": {
+                    "id": "https://openalex.org/domains/4",
+                    "display_name": "Health Sciences"
+                }
+            },
+            "topics": [
+                {
+                    "id": "https://openalex.org/T12264",
+                    "display_name": "Tissue Engineering and Regenerative Medicine",
+                    "score": 0.9969000220298767,
+                    "subfield": {
+                        "id": "https://openalex.org/subfields/2746",
+                        "display_name": "Surgery"
+                    },
+                    "field": {
+                        "id": "https://openalex.org/fields/27",
+                        "display_name": "Medicine"
+                    },
+                    "domain": {
+                        "id": "https://openalex.org/domains/4",
+                        "display_name": "Health Sciences"
+                    }
+                },
+                {
+                    "id": "https://openalex.org/T10729",
+                    "display_name": "Electrospun Nanofibers in Biomedical Applications",
+                    "score": 0.9965000152587891,
+                    "subfield": {
+                        "id": "https://openalex.org/subfields/2502",
+                        "display_name": "Biomaterials"
+                    },
+                    "field": {
+                        "id": "https://openalex.org/fields/25",
+                        "display_name": "Materials Science"
+                    },
+                    "domain": {
+                        "id": "https://openalex.org/domains/3",
+                        "display_name": "Physical Sciences"
+                    }
+                },
+                {
+                    "id": "https://openalex.org/T11190",
+                    "display_name": "3D Printing in Biomedical Research",
+                    "score": 0.9950000047683716,
+                    "subfield": {
+                        "id": "https://openalex.org/subfields/2204",
+                        "display_name": "Biomedical Engineering"
+                    },
+                    "field": {
+                        "id": "https://openalex.org/fields/22",
+                        "display_name": "Engineering"
+                    },
+                    "domain": {
+                        "id": "https://openalex.org/domains/3",
+                        "display_name": "Physical Sciences"
+                    }
+                }
+            ],
+            "keywords": [
+                {
+                    "id": "https://openalex.org/keywords/tissue-engineering",
+                    "display_name": "Tissue engineering",
+                    "score": 0.7548089027404785
+                },
+                {
+                    "id": "https://openalex.org/keywords/engineering-ethics",
+                    "display_name": "Engineering ethics",
+                    "score": 0.5339829921722412
+                },
+                {
+                    "id": "https://openalex.org/keywords/tissue-repair",
+                    "display_name": "Tissue repair",
+                    "score": 0.41684070229530334
+                },
+                {
+                    "id": "https://openalex.org/keywords/hard-tissue",
+                    "display_name": "Hard tissue",
+                    "score": 0.41157156229019165
+                },
+                {
+                    "id": "https://openalex.org/keywords/medicine",
+                    "display_name": "Medicine",
+                    "score": 0.32206565141677856
+                },
+                {
+                    "id": "https://openalex.org/keywords/engineering",
+                    "display_name": "Engineering",
+                    "score": 0.3063375651836395
+                },
+                {
+                    "id": "https://openalex.org/keywords/biomedical-engineering",
+                    "display_name": "Biomedical engineering",
+                    "score": 0.25142917037010193
+                },
+                {
+                    "id": "https://openalex.org/keywords/surgery",
+                    "display_name": "Surgery",
+                    "score": 0.1493476927280426
+                }
+            ],
+            "concepts": [
+                {
+                    "id": "https://openalex.org/C49892992",
+                    "wikidata": "https://www.wikidata.org/wiki/Q1540285",
+                    "display_name": "Tissue engineering",
+                    "level": 2,
+                    "score": 0.7548089027404785
+                },
+                {
+                    "id": "https://openalex.org/C55587333",
+                    "wikidata": "https://www.wikidata.org/wiki/Q1133029",
+                    "display_name": "Engineering ethics",
+                    "level": 1,
+                    "score": 0.5339829921722412
+                },
+                {
+                    "id": "https://openalex.org/C3020610862",
+                    "wikidata": "https://www.wikidata.org/wiki/Q1540285",
+                    "display_name": "Tissue repair",
+                    "level": 2,
+                    "score": 0.41684070229530334
+                },
+                {
+                    "id": "https://openalex.org/C2780954041",
+                    "wikidata": "https://www.wikidata.org/wiki/Q25326600",
+                    "display_name": "Hard tissue",
+                    "level": 2,
+                    "score": 0.41157156229019165
+                },
+                {
+                    "id": "https://openalex.org/C71924100",
+                    "wikidata": "https://www.wikidata.org/wiki/Q11190",
+                    "display_name": "Medicine",
+                    "level": 0,
+                    "score": 0.32206565141677856
+                },
+                {
+                    "id": "https://openalex.org/C127413603",
+                    "wikidata": "https://www.wikidata.org/wiki/Q11023",
+                    "display_name": "Engineering",
+                    "level": 0,
+                    "score": 0.3063375651836395
+                },
+                {
+                    "id": "https://openalex.org/C136229726",
+                    "wikidata": "https://www.wikidata.org/wiki/Q327092",
+                    "display_name": "Biomedical engineering",
+                    "level": 1,
+                    "score": 0.25142917037010193
+                },
+                {
+                    "id": "https://openalex.org/C141071460",
+                    "wikidata": "https://www.wikidata.org/wiki/Q40821",
+                    "display_name": "Surgery",
+                    "level": 1,
+                    "score": 0.1493476927280426
+                }
+            ],
+            "mesh": [
+                {
+                    "descriptor_ui": "D000818",
+                    "descriptor_name": "Animals",
+                    "qualifier_ui": null,
+                    "qualifier_name": null,
+                    "is_major_topic": false
+                },
+                {
+                    "descriptor_ui": "D000818",
+                    "descriptor_name": "Animals",
+                    "qualifier_ui": null,
+                    "qualifier_name": null,
+                    "is_major_topic": false
+                },
+                {
+                    "descriptor_ui": "D000818",
+                    "descriptor_name": "Animals",
+                    "qualifier_ui": null,
+                    "qualifier_name": null,
+                    "is_major_topic": false
+                },
+                {
+                    "descriptor_ui": "D001698",
+                    "descriptor_name": "Biomedical Engineering",
+                    "qualifier_ui": null,
+                    "qualifier_name": null,
+                    "is_major_topic": true
+                },
+                {
+                    "descriptor_ui": "D001698",
+                    "descriptor_name": "Biomedical Engineering",
+                    "qualifier_ui": null,
+                    "qualifier_name": null,
+                    "is_major_topic": true
+                },
+                {
+                    "descriptor_ui": "D001698",
+                    "descriptor_name": "Biomedical Engineering",
+                    "qualifier_ui": null,
+                    "qualifier_name": null,
+                    "is_major_topic": true
+                },
+                {
+                    "descriptor_ui": "D001705",
+                    "descriptor_name": "Bioprosthesis",
+                    "qualifier_ui": null,
+                    "qualifier_name": null,
+                    "is_major_topic": true
+                },
+                {
+                    "descriptor_ui": "D001705",
+                    "descriptor_name": "Bioprosthesis",
+                    "qualifier_ui": null,
+                    "qualifier_name": null,
+                    "is_major_topic": true
+                },
+                {
+                    "descriptor_ui": "D001705",
+                    "descriptor_name": "Bioprosthesis",
+                    "qualifier_ui": null,
+                    "qualifier_name": null,
+                    "is_major_topic": true
+                },
+                {
+                    "descriptor_ui": "D002478",
+                    "descriptor_name": "Cells, Cultured",
+                    "qualifier_ui": null,
+                    "qualifier_name": null,
+                    "is_major_topic": false
+                },
+                {
+                    "descriptor_ui": "D002478",
+                    "descriptor_name": "Cells, Cultured",
+                    "qualifier_ui": null,
+                    "qualifier_name": null,
+                    "is_major_topic": false
+                },
+                {
+                    "descriptor_ui": "D002478",
+                    "descriptor_name": "Cells, Cultured",
+                    "qualifier_ui": null,
+                    "qualifier_name": null,
+                    "is_major_topic": false
+                },
+                {
+                    "descriptor_ui": "D004475",
+                    "descriptor_name": "Ectoderm",
+                    "qualifier_ui": null,
+                    "qualifier_name": null,
+                    "is_major_topic": false
+                },
+                {
+                    "descriptor_ui": "D004475",
+                    "descriptor_name": "Ectoderm",
+                    "qualifier_ui": null,
+                    "qualifier_name": null,
+                    "is_major_topic": false
+                },
+                {
+                    "descriptor_ui": "D004475",
+                    "descriptor_name": "Ectoderm",
+                    "qualifier_ui": null,
+                    "qualifier_name": null,
+                    "is_major_topic": false
+                },
+                {
+                    "descriptor_ui": "D004707",
+                    "descriptor_name": "Endoderm",
+                    "qualifier_ui": null,
+                    "qualifier_name": null,
+                    "is_major_topic": false
+                },
+                {
+                    "descriptor_ui": "D004707",
+                    "descriptor_name": "Endoderm",
+                    "qualifier_ui": null,
+                    "qualifier_name": null,
+                    "is_major_topic": false
+                },
+                {
+                    "descriptor_ui": "D004707",
+                    "descriptor_name": "Endoderm",
+                    "qualifier_ui": null,
+                    "qualifier_name": null,
+                    "is_major_topic": false
+                },
+                {
+                    "descriptor_ui": "D006801",
+                    "descriptor_name": "Humans",
+                    "qualifier_ui": null,
+                    "qualifier_name": null,
+                    "is_major_topic": false
+                },
+                {
+                    "descriptor_ui": "D006801",
+                    "descriptor_name": "Humans",
+                    "qualifier_ui": null,
+                    "qualifier_name": null,
+                    "is_major_topic": false
+                },
+                {
+                    "descriptor_ui": "D006801",
+                    "descriptor_name": "Humans",
+                    "qualifier_ui": null,
+                    "qualifier_name": null,
+                    "is_major_topic": false
+                },
+                {
+                    "descriptor_ui": "D008648",
+                    "descriptor_name": "Mesoderm",
+                    "qualifier_ui": null,
+                    "qualifier_name": null,
+                    "is_major_topic": false
+                },
+                {
+                    "descriptor_ui": "D008648",
+                    "descriptor_name": "Mesoderm",
+                    "qualifier_ui": null,
+                    "qualifier_name": null,
+                    "is_major_topic": false
+                },
+                {
+                    "descriptor_ui": "D008648",
+                    "descriptor_name": "Mesoderm",
+                    "qualifier_ui": null,
+                    "qualifier_name": null,
+                    "is_major_topic": false
+                },
+                {
+                    "descriptor_ui": "D016378",
+                    "descriptor_name": "Tissue Transplantation",
+                    "qualifier_ui": null,
+                    "qualifier_name": null,
+                    "is_major_topic": true
+                },
+                {
+                    "descriptor_ui": "D016378",
+                    "descriptor_name": "Tissue Transplantation",
+                    "qualifier_ui": null,
+                    "qualifier_name": null,
+                    "is_major_topic": true
+                },
+                {
+                    "descriptor_ui": "D016378",
+                    "descriptor_name": "Tissue Transplantation",
+                    "qualifier_ui": null,
+                    "qualifier_name": null,
+                    "is_major_topic": true
+                },
+                {
+                    "descriptor_ui": "D046508",
+                    "descriptor_name": "Culture Techniques",
+                    "qualifier_ui": null,
+                    "qualifier_name": null,
+                    "is_major_topic": false
+                },
+                {
+                    "descriptor_ui": "D046508",
+                    "descriptor_name": "Culture Techniques",
+                    "qualifier_ui": null,
+                    "qualifier_name": null,
+                    "is_major_topic": false
+                },
+                {
+                    "descriptor_ui": "D046508",
+                    "descriptor_name": "Culture Techniques",
+                    "qualifier_ui": null,
+                    "qualifier_name": null,
+                    "is_major_topic": false
+                }
+            ],
+            "locations_count": 2,
+            "locations": [
+                {
+                    "id": "doi:10.1126/science.8493529",
+                    "is_oa": false,
+                    "landing_page_url": "https://doi.org/10.1126/science.8493529",
+                    "pdf_url": null,
+                    "source": {
+                        "id": "https://openalex.org/S3880285",
+                        "display_name": "Science",
+                        "issn_l": "0036-8075",
+                        "issn": [
+                            "0036-8075",
+                            "1095-9203"
+                        ],
+                        "is_oa": false,
+                        "is_in_doaj": false,
+                        "is_core": true,
+                        "host_organization": "https://openalex.org/P4310315823",
+                        "host_organization_name": "American Association for the Advancement of Science",
+                        "host_organization_lineage": [
+                            "https://openalex.org/P4310315823"
+                        ],
+                        "host_organization_lineage_names": [
+                            "American Association for the Advancement of Science"
+                        ],
+                        "type": "journal"
+                    },
+                    "license": null,
+                    "license_id": null,
+                    "version": "publishedVersion",
+                    "is_accepted": true,
+                    "is_published": true,
+                    "raw_source_name": "Science",
+                    "raw_type": "journal-article"
+                },
+                {
+                    "id": "pmid:8493529",
+                    "is_oa": false,
+                    "landing_page_url": "https://pubmed.ncbi.nlm.nih.gov/8493529",
+                    "pdf_url": null,
+                    "source": {
+                        "id": "https://openalex.org/S4306525036",
+                        "display_name": "PubMed",
+                        "issn_l": null,
+                        "issn": null,
+                        "is_oa": false,
+                        "is_in_doaj": false,
+                        "is_core": false,
+                        "host_organization": "https://openalex.org/I1299303238",
+                        "host_organization_name": "National Institutes of Health",
+                        "host_organization_lineage": [
+                            "https://openalex.org/I1299303238"
+                        ],
+                        "host_organization_lineage_names": [],
+                        "type": "repository"
+                    },
+                    "license": null,
+                    "license_id": null,
+                    "version": "publishedVersion",
+                    "is_accepted": true,
+                    "is_published": true,
+                    "raw_source_name": "Science (New York, N.Y.)",
+                    "raw_type": null
+                }
+            ],
+            "best_oa_location": null,
+            "sustainable_development_goals": [],
+            "awards": [],
+            "funders": [],
+            "has_content": {
+                "pdf": false,
+                "grobid_xml": false
+            },
+            "content_urls": null,
+            "referenced_works_count": 99,
+            "referenced_works": [
+                "https://openalex.org/W5387557",
+                "https://openalex.org/W189185435",
+                "https://openalex.org/W1001099587",
+                "https://openalex.org/W1433480272",
+                "https://openalex.org/W1516601134",
+                "https://openalex.org/W1964367275",
+                "https://openalex.org/W1964511838",
+                "https://openalex.org/W1967347732",
+                "https://openalex.org/W1967357293",
+                "https://openalex.org/W1970561503",
+                "https://openalex.org/W1971818592",
+                "https://openalex.org/W1972310094",
+                "https://openalex.org/W1972349711",
+                "https://openalex.org/W1972525015",
+                "https://openalex.org/W1974421142",
+                "https://openalex.org/W1975884987",
+                "https://openalex.org/W1980745641",
+                "https://openalex.org/W1982105288",
+                "https://openalex.org/W1982224993",
+                "https://openalex.org/W1983049414",
+                "https://openalex.org/W1983874502",
+                "https://openalex.org/W1984804761",
+                "https://openalex.org/W1985139725",
+                "https://openalex.org/W1985909233",
+                "https://openalex.org/W1992658390",
+                "https://openalex.org/W1993266029",
+                "https://openalex.org/W1994180851",
+                "https://openalex.org/W2001612209",
+                "https://openalex.org/W2012086021",
+                "https://openalex.org/W2013381560",
+                "https://openalex.org/W2014363259",
+                "https://openalex.org/W2014747826",
+                "https://openalex.org/W2018099448",
+                "https://openalex.org/W2018823858",
+                "https://openalex.org/W2019625791",
+                "https://openalex.org/W2022282748",
+                "https://openalex.org/W2023105145",
+                "https://openalex.org/W2023869843",
+                "https://openalex.org/W2026360725",
+                "https://openalex.org/W2027186071",
+                "https://openalex.org/W2031894783",
+                "https://openalex.org/W2036082176",
+                "https://openalex.org/W2039583786",
+                "https://openalex.org/W2043300139",
+                "https://openalex.org/W2043317882",
+                "https://openalex.org/W2043956883",
+                "https://openalex.org/W2049204288",
+                "https://openalex.org/W2050654447",
+                "https://openalex.org/W2051663156",
+                "https://openalex.org/W2051733665",
+                "https://openalex.org/W2054491663",
+                "https://openalex.org/W2059059445",
+                "https://openalex.org/W2060655209",
+                "https://openalex.org/W2062652813",
+                "https://openalex.org/W2062899501",
+                "https://openalex.org/W2065365994",
+                "https://openalex.org/W2066840757",
+                "https://openalex.org/W2066862080",
+                "https://openalex.org/W2068125806",
+                "https://openalex.org/W2068135722",
+                "https://openalex.org/W2070321339",
+                "https://openalex.org/W2074981897",
+                "https://openalex.org/W2075339112",
+                "https://openalex.org/W2076966229",
+                "https://openalex.org/W2077008849",
+                "https://openalex.org/W2077111294",
+                "https://openalex.org/W2079956613",
+                "https://openalex.org/W2082083395",
+                "https://openalex.org/W2088196028",
+                "https://openalex.org/W2088211007",
+                "https://openalex.org/W2089233352",
+                "https://openalex.org/W2090146642",
+                "https://openalex.org/W2093718417",
+                "https://openalex.org/W2095369322",
+                "https://openalex.org/W2101148973",
+                "https://openalex.org/W2111415695",
+                "https://openalex.org/W2112587095",
+                "https://openalex.org/W2115390255",
+                "https://openalex.org/W2123149315",
+                "https://openalex.org/W2136419489",
+                "https://openalex.org/W2141594261",
+                "https://openalex.org/W2144029991",
+                "https://openalex.org/W2156229286",
+                "https://openalex.org/W2157505268",
+                "https://openalex.org/W2159542600",
+                "https://openalex.org/W2162294498",
+                "https://openalex.org/W2165006895",
+                "https://openalex.org/W2168146165",
+                "https://openalex.org/W2187355871",
+                "https://openalex.org/W2248442723",
+                "https://openalex.org/W2340065664",
+                "https://openalex.org/W2404040074",
+                "https://openalex.org/W2405673170",
+                "https://openalex.org/W2412435055",
+                "https://openalex.org/W2470453949",
+                "https://openalex.org/W2979368463",
+                "https://openalex.org/W3187945838",
+                "https://openalex.org/W4237438618",
+                "https://openalex.org/W4301203698"
+            ],
+            "related_works": [
+                "https://openalex.org/W2899084033",
+                "https://openalex.org/W64499945",
+                "https://openalex.org/W2970721075",
+                "https://openalex.org/W130900195",
+                "https://openalex.org/W2759791213",
+                "https://openalex.org/W2305094949",
+                "https://openalex.org/W2363154802",
+                "https://openalex.org/W2992110113",
+                "https://openalex.org/W4312807895",
+                "https://openalex.org/W4211147424"
+            ],
+            "abstract_inverted_index": {
+                "The": [
+                    0
+                ],
+                "loss": [
+                    1
+                ],
+                "or": [
+                    2,
+                    7
+                ],
+                "failure": [
+                    3
+                ],
+                "of": [
+                    4,
+                    11,
+                    31,
+                    38,
+                    51
+                ],
+                "an": [
+                    5
+                ],
+                "organ": [
+                    6
+                ],
+                "tissue": [
+                    8,
+                    26,
+                    62
+                ],
+                "is": [
+                    9
+                ],
+                "one": [
+                    10
+                ],
+                "the": [
+                    12,
+                    29,
+                    36,
+                    47
+                ],
+                "most": [
+                    13
+                ],
+                "frequent,": [
+                    14
+                ],
+                "devastating,": [
+                    15
+                ],
+                "and": [
+                    16,
+                    33,
+                    49,
+                    55,
+                    64
+                ],
+                "costly": [
+                    17
+                ],
+                "problems": [
+                    18
+                ],
+                "in": [
+                    19
+                ],
+                "human": [
+                    20
+                ],
+                "health": [
+                    21
+                ],
+                "care.": [
+                    22
+                ],
+                "A": [
+                    23
+                ],
+                "new": [
+                    24
+                ],
+                "field,": [
+                    25
+                ],
+                "engineering,": [
+                    27
+                ],
+                "applies": [
+                    28
+                ],
+                "principles": [
+                    30
+                ],
+                "biology": [
+                    32
+                ],
+                "engineering": [
+                    34
+                ],
+                "to": [
+                    35,
+                    58,
+                    61
+                ],
+                "development": [
+                    37
+                ],
+                "functional": [
+                    39
+                ],
+                "substitutes": [
+                    40
+                ],
+                "for": [
+                    41
+                ],
+                "damaged": [
+                    42
+                ],
+                "tissue.": [
+                    43
+                ],
+                "This": [
+                    44
+                ],
+                "article": [
+                    45
+                ],
+                "discusses": [
+                    46
+                ],
+                "foundations": [
+                    48
+                ],
+                "challenges": [
+                    50
+                ],
+                "this": [
+                    52
+                ],
+                "interdisciplinary": [
+                    53
+                ],
+                "field": [
+                    54
+                ],
+                "its": [
+                    56
+                ],
+                "attempts": [
+                    57
+                ],
+                "provide": [
+                    59
+                ],
+                "solutions": [
+                    60
+                ],
+                "creation": [
+                    63
+                ],
+                "repair.": [
+                    65
+                ]
+            },
+            "counts_by_year": [
+                {
+                    "year": 2026,
+                    "cited_by_count": 82
+                },
+                {
+                    "year": 2025,
+                    "cited_by_count": 225
+                },
+                {
+                    "year": 2024,
+                    "cited_by_count": 269
+                },
+                {
+                    "year": 2023,
+                    "cited_by_count": 305
+                },
+                {
+                    "year": 2022,
+                    "cited_by_count": 362
+                },
+                {
+                    "year": 2021,
+                    "cited_by_count": 424
+                },
+                {
+                    "year": 2020,
+                    "cited_by_count": 409
+                },
+                {
+                    "year": 2019,
+                    "cited_by_count": 409
+                },
+                {
+                    "year": 2018,
+                    "cited_by_count": 387
+                },
+                {
+                    "year": 2017,
+                    "cited_by_count": 410
+                },
+                {
+                    "year": 2016,
+                    "cited_by_count": 477
+                },
+                {
+                    "year": 2015,
+                    "cited_by_count": 491
+                },
+                {
+                    "year": 2014,
+                    "cited_by_count": 453
+                },
+                {
+                    "year": 2013,
+                    "cited_by_count": 507
+                },
+                {
+                    "year": 2012,
+                    "cited_by_count": 527
+                }
+            ],
+            "updated_date": "2026-06-11T09:08:48.828518",
+            "created_date": "2025-10-10T00:00:00"
+        },
+        {
+            "id": "https://openalex.org/W2342091124",
+            "doi": null,
+            "title": "Usability Engineering",
+            "display_name": "Usability Engineering",
+            "relevance_score": 5316.609,
+            "publication_year": 1993,
+            "publication_date": "1993-01-01",
+            "ids": {
+                "openalex": "https://openalex.org/W2342091124",
+                "mag": "2342091124"
+            },
+            "language": "en",
+            "primary_location": {
+                "id": "pmh:oai:aleph.bib-bvb.de:BVB01-005473581",
+                "is_oa": false,
+                "landing_page_url": null,
+                "pdf_url": null,
+                "source": null,
+                "license": null,
+                "license_id": null,
+                "version": "submittedVersion",
+                "is_accepted": false,
+                "is_published": false,
+                "raw_source_name": null,
+                "raw_type": "text"
+            },
+            "type": "book",
+            "indexed_in": [],
+            "open_access": {
+                "is_oa": false,
+                "oa_status": "closed",
+                "oa_url": null,
+                "any_repository_has_fulltext": false
+            },
+            "authorships": [
+                {
+                    "author_position": "first",
+                    "author": {
+                        "id": "https://openalex.org/A5024629178",
+                        "display_name": "Jakob Nielsen",
+                        "orcid": "https://orcid.org/0000-0002-1554-3062"
+                    },
+                    "institutions": [],
+                    "countries": [],
+                    "is_corresponding": true,
+                    "raw_author_name": "Jakob Nielsen",
+                    "raw_affiliation_strings": [],
+                    "raw_orcid": "https://orcid.org/0000-0002-1554-3062",
+                    "affiliations": []
+                }
+            ],
+            "institutions": [],
+            "countries_distinct_count": 0,
+            "institutions_distinct_count": 1,
+            "corresponding_author_ids": [
+                "https://openalex.org/A5024629178"
+            ],
+            "corresponding_institution_ids": [],
+            "apc_list": null,
+            "apc_paid": null,
+            "fwci": 16.1014,
+            "has_fulltext": false,
+            "cited_by_count": 9355,
+            "citation_normalized_percentile": {
+                "value": 1.0,
+                "is_in_top_1_percent": true,
+                "is_in_top_10_percent": true
+            },
+            "cited_by_percentile_year": {
+                "min": 97,
+                "max": 100
+            },
+            "biblio": {
+                "volume": null,
+                "issue": null,
+                "first_page": null,
+                "last_page": null
+            },
+            "is_retracted": false,
+            "is_paratext": false,
+            "is_xpac": false,
+            "primary_topic": {
+                "id": "https://openalex.org/T10470",
+                "display_name": "Usability and User Interface Design",
+                "score": 0.9991000294685364,
+                "subfield": {
+                    "id": "https://openalex.org/subfields/1709",
+                    "display_name": "Human-Computer Interaction"
+                },
+                "field": {
+                    "id": "https://openalex.org/fields/17",
+                    "display_name": "Computer Science"
+                },
+                "domain": {
+                    "id": "https://openalex.org/domains/3",
+                    "display_name": "Physical Sciences"
+                }
+            },
+            "topics": [
+                {
+                    "id": "https://openalex.org/T10470",
+                    "display_name": "Usability and User Interface Design",
+                    "score": 0.9991000294685364,
+                    "subfield": {
+                        "id": "https://openalex.org/subfields/1709",
+                        "display_name": "Human-Computer Interaction"
+                    },
+                    "field": {
+                        "id": "https://openalex.org/fields/17",
+                        "display_name": "Computer Science"
+                    },
+                    "domain": {
+                        "id": "https://openalex.org/domains/3",
+                        "display_name": "Physical Sciences"
+                    }
+                },
+                {
+                    "id": "https://openalex.org/T10430",
+                    "display_name": "Software Engineering Techniques and Practices",
+                    "score": 0.9803000092506409,
+                    "subfield": {
+                        "id": "https://openalex.org/subfields/1710",
+                        "display_name": "Information Systems"
+                    },
+                    "field": {
+                        "id": "https://openalex.org/fields/17",
+                        "display_name": "Computer Science"
+                    },
+                    "domain": {
+                        "id": "https://openalex.org/domains/3",
+                        "display_name": "Physical Sciences"
+                    }
+                },
+                {
+                    "id": "https://openalex.org/T12607",
+                    "display_name": "Personal Information Management and User Behavior",
+                    "score": 0.9799000024795532,
+                    "subfield": {
+                        "id": "https://openalex.org/subfields/1802",
+                        "display_name": "Information Systems and Management"
+                    },
+                    "field": {
+                        "id": "https://openalex.org/fields/18",
+                        "display_name": "Decision Sciences"
+                    },
+                    "domain": {
+                        "id": "https://openalex.org/domains/2",
+                        "display_name": "Social Sciences"
+                    }
+                }
+            ],
+            "keywords": [
+                {
+                    "id": "https://openalex.org/keywords/usability",
+                    "display_name": "Usability",
+                    "score": 0.9294264316558838
+                },
+                {
+                    "id": "https://openalex.org/keywords/computer-science",
+                    "display_name": "Computer science",
+                    "score": 0.7170360684394836
+                },
+                {
+                    "id": "https://openalex.org/keywords/hypermedia",
+                    "display_name": "Hypermedia",
+                    "score": 0.6556463241577148
+                },
+                {
+                    "id": "https://openalex.org/keywords/hypertext",
+                    "display_name": "Hypertext",
+                    "score": 0.6490066051483154
+                },
+                {
+                    "id": "https://openalex.org/keywords/usability-engineering",
+                    "display_name": "Usability engineering",
+                    "score": 0.6293575763702393
+                },
+                {
+                    "id": "https://openalex.org/keywords/usability-inspection",
+                    "display_name": "Usability inspection",
+                    "score": 0.5248101949691772
+                },
+                {
+                    "id": "https://openalex.org/keywords/world-wide-web",
+                    "display_name": "World Wide Web",
+                    "score": 0.4502968192100525
+                },
+                {
+                    "id": "https://openalex.org/keywords/software-engineering",
+                    "display_name": "Software engineering",
+                    "score": 0.4384155869483948
+                },
+                {
+                    "id": "https://openalex.org/keywords/web-usability",
+                    "display_name": "Web usability",
+                    "score": 0.42261937260627747
+                },
+                {
+                    "id": "https://openalex.org/keywords/human–computer-interaction",
+                    "display_name": "Human–computer interaction",
+                    "score": 0.3632775545120239
+                }
+            ],
+            "concepts": [
+                {
+                    "id": "https://openalex.org/C170130773",
+                    "wikidata": "https://www.wikidata.org/wiki/Q216378",
+                    "display_name": "Usability",
+                    "level": 2,
+                    "score": 0.9294264316558838
+                },
+                {
+                    "id": "https://openalex.org/C41008148",
+                    "wikidata": "https://www.wikidata.org/wiki/Q21198",
+                    "display_name": "Computer science",
+                    "level": 0,
+                    "score": 0.7170360684394836
+                },
+                {
+                    "id": "https://openalex.org/C2780126544",
+                    "wikidata": "https://www.wikidata.org/wiki/Q837900",
+                    "display_name": "Hypermedia",
+                    "level": 2,
+                    "score": 0.6556463241577148
+                },
+                {
+                    "id": "https://openalex.org/C162215914",
+                    "wikidata": "https://www.wikidata.org/wiki/Q93241",
+                    "display_name": "Hypertext",
+                    "level": 2,
+                    "score": 0.6490066051483154
+                },
+                {
+                    "id": "https://openalex.org/C100302975",
+                    "wikidata": "https://www.wikidata.org/wiki/Q1642623",
+                    "display_name": "Usability engineering",
+                    "level": 3,
+                    "score": 0.6293575763702393
+                },
+                {
+                    "id": "https://openalex.org/C23456302",
+                    "wikidata": "https://www.wikidata.org/wiki/Q7901668",
+                    "display_name": "Usability inspection",
+                    "level": 4,
+                    "score": 0.5248101949691772
+                },
+                {
+                    "id": "https://openalex.org/C136764020",
+                    "wikidata": "https://www.wikidata.org/wiki/Q466",
+                    "display_name": "World Wide Web",
+                    "level": 1,
+                    "score": 0.4502968192100525
+                },
+                {
+                    "id": "https://openalex.org/C115903868",
+                    "wikidata": "https://www.wikidata.org/wiki/Q80993",
+                    "display_name": "Software engineering",
+                    "level": 1,
+                    "score": 0.4384155869483948
+                },
+                {
+                    "id": "https://openalex.org/C4237393",
+                    "wikidata": "https://www.wikidata.org/wiki/Q1636686",
+                    "display_name": "Web usability",
+                    "level": 3,
+                    "score": 0.42261937260627747
+                },
+                {
+                    "id": "https://openalex.org/C107457646",
+                    "wikidata": "https://www.wikidata.org/wiki/Q207434",
+                    "display_name": "Human–computer interaction",
+                    "level": 1,
+                    "score": 0.3632775545120239
+                }
+            ],
+            "mesh": [],
+            "locations_count": 8,
+            "locations": [
+                {
+                    "id": "pmh:oai:aleph.bib-bvb.de:BVB01-005473581",
+                    "is_oa": false,
+                    "landing_page_url": null,
+                    "pdf_url": null,
+                    "source": null,
+                    "license": null,
+                    "license_id": null,
+                    "version": "submittedVersion",
+                    "is_accepted": false,
+                    "is_published": false,
+                    "raw_source_name": null,
+                    "raw_type": "text"
+                },
+                {
+                    "id": "pmh:oai:aleph.bib-bvb.de:BVB01-010636549",
+                    "is_oa": false,
+                    "landing_page_url": "http://bvbr.bib-bvb.de:8991/F?func=service&amp;doc_library=BVB01&amp;local_base=BVB01&amp;doc_number=010636549&amp;sequence=000001&amp;line_number=0001&amp;func_code=DB_RECORDS&amp;service_type=MEDIA",
+                    "pdf_url": null,
+                    "source": null,
+                    "license": null,
+                    "license_id": null,
+                    "version": "submittedVersion",
+                    "is_accepted": false,
+                    "is_published": false,
+                    "raw_source_name": "",
+                    "raw_type": "text"
+                },
+                {
+                    "id": "pmh:oai:aleph.bib-bvb.de:BVB01-014625188",
+                    "is_oa": false,
+                    "landing_page_url": "http://bvbr.bib-bvb.de:8991/F?func=service&amp;doc_library=BVB01&amp;local_base=BVB01&amp;doc_number=014625188&amp;sequence=000001&amp;line_number=0001&amp;func_code=DB_RECORDS&amp;service_type=MEDIA",
+                    "pdf_url": null,
+                    "source": null,
+                    "license": null,
+                    "license_id": null,
+                    "version": "submittedVersion",
+                    "is_accepted": false,
+                    "is_published": false,
+                    "raw_source_name": "",
+                    "raw_type": "text"
+                },
+                {
+                    "id": "pmh:oai:aleph.bib-bvb.de:BVB01-016332964",
+                    "is_oa": false,
+                    "landing_page_url": "http://bvbr.bib-bvb.de:8991/F?func=service&amp;doc_library=BVB01&amp;local_base=BVB01&amp;doc_number=016332964&amp;sequence=000001&amp;line_number=0001&amp;func_code=DB_RECORDS&amp;service_type=MEDIA",
+                    "pdf_url": null,
+                    "source": null,
+                    "license": null,
+                    "license_id": null,
+                    "version": "submittedVersion",
+                    "is_accepted": false,
+                    "is_published": false,
+                    "raw_source_name": "",
+                    "raw_type": "text"
+                },
+                {
+                    "id": "pmh:oai:aleph.bib-bvb.de:BVB01-018377408",
+                    "is_oa": false,
+                    "landing_page_url": "http://bvbr.bib-bvb.de:8991/F?func=service&amp;doc_library=BVB01&amp;local_base=BVB01&amp;doc_number=018377408&amp;sequence=000002&amp;line_number=0001&amp;func_code=DB_RECORDS&amp;service_type=MEDIA",
+                    "pdf_url": null,
+                    "source": null,
+                    "license": null,
+                    "license_id": null,
+                    "version": "submittedVersion",
+                    "is_accepted": false,
+                    "is_published": false,
+                    "raw_source_name": "",
+                    "raw_type": "text"
+                },
+                {
+                    "id": "pmh:oai:aleph.bib-bvb.de:BVB01-027745870",
+                    "is_oa": false,
+                    "landing_page_url": "http://www.sciencedirect.com/science/book/9780125184069",
+                    "pdf_url": null,
+                    "source": null,
+                    "license": null,
+                    "license_id": null,
+                    "version": "submittedVersion",
+                    "is_accepted": false,
+                    "is_published": false,
+                    "raw_source_name": "",
+                    "raw_type": "software, multimedia"
+                },
+                {
+                    "id": "pmh:oai:cds.cern.ch:1636653",
+                    "is_oa": false,
+                    "landing_page_url": "http://cds.cern.ch/record/1636653",
+                    "pdf_url": null,
+                    "source": {
+                        "id": "https://openalex.org/S4306402195",
+                        "display_name": "CERN Document Server (European Organization for Nuclear Research)",
+                        "issn_l": null,
+                        "issn": null,
+                        "is_oa": false,
+                        "is_in_doaj": false,
+                        "is_core": false,
+                        "host_organization": "https://openalex.org/I67311998",
+                        "host_organization_name": "European Organization for Nuclear Research",
+                        "host_organization_lineage": [
+                            "https://openalex.org/I67311998"
+                        ],
+                        "host_organization_lineage_names": [],
+                        "type": "repository"
+                    },
+                    "license": null,
+                    "license_id": null,
+                    "version": "submittedVersion",
+                    "is_accepted": false,
+                    "is_published": false,
+                    "raw_source_name": "",
+                    "raw_type": ""
+                },
+                {
+                    "id": "mag:2342091124",
+                    "is_oa": false,
+                    "landing_page_url": "https://dl.acm.org/citation.cfm?id=2821575",
+                    "pdf_url": null,
+                    "source": null,
+                    "license": null,
+                    "license_id": null,
+                    "version": null,
+                    "is_accepted": false,
+                    "is_published": null,
+                    "raw_source_name": null,
+                    "raw_type": null
+                }
+            ],
+            "best_oa_location": null,
+            "sustainable_development_goals": [
+                {
+                    "display_name": "Responsible consumption and production",
+                    "id": "https://metadata.un.org/sdg/12",
+                    "score": 0.5400000214576721
+                }
+            ],
+            "awards": [],
+            "funders": [],
+            "has_content": {
+                "pdf": false,
+                "grobid_xml": false
+            },
+            "content_urls": null,
+            "referenced_works_count": 390,
+            "referenced_works": [
+                "https://openalex.org/W4404643",
+                "https://openalex.org/W57187671",
+                "https://openalex.org/W57480564",
+                "https://openalex.org/W70887472",
+                "https://openalex.org/W74067339",
+                "https://openalex.org/W75461007",
+                "https://openalex.org/W83056830",
+                "https://openalex.org/W91975816",
+                "https://openalex.org/W108588352",
+                "https://openalex.org/W110062975",
+                "https://openalex.org/W112311128",
+                "https://openalex.org/W114094522",
+                "https://openalex.org/W155522842",
+                "https://openalex.org/W157068536",
+                "https://openalex.org/W174680153",
+                "https://openalex.org/W200100081",
+                "https://openalex.org/W205150668",
+                "https://openalex.org/W207619926",
+                "https://openalex.org/W317358814",
+                "https://openalex.org/W562462345",
+                "https://openalex.org/W1486372599",
+                "https://openalex.org/W1491233988",
+                "https://openalex.org/W1491525961",
+                "https://openalex.org/W1492782197",
+                "https://openalex.org/W1493315108",
+                "https://openalex.org/W1509148936",
+                "https://openalex.org/W1517523711",
+                "https://openalex.org/W1520940213",
+                "https://openalex.org/W1521172480",
+                "https://openalex.org/W1523269381",
+                "https://openalex.org/W1524602334",
+                "https://openalex.org/W1525732197",
+                "https://openalex.org/W1532472965",
+                "https://openalex.org/W1539167007",
+                "https://openalex.org/W1550332727",
+                "https://openalex.org/W1551361661",
+                "https://openalex.org/W1554364002",
+                "https://openalex.org/W1555610360",
+                "https://openalex.org/W1559226354",
+                "https://openalex.org/W1568681737",
+                "https://openalex.org/W1571830603",
+                "https://openalex.org/W1572054464",
+                "https://openalex.org/W1572058254",
+                "https://openalex.org/W1572414307",
+                "https://openalex.org/W1579401818",
+                "https://openalex.org/W1579564951",
+                "https://openalex.org/W1584712082",
+                "https://openalex.org/W1589029596",
+                "https://openalex.org/W1592716665",
+                "https://openalex.org/W1593696056",
+                "https://openalex.org/W1597695392",
+                "https://openalex.org/W1602982465",
+                "https://openalex.org/W1608493115",
+                "https://openalex.org/W1631672041",
+                "https://openalex.org/W1640812437",
+                "https://openalex.org/W1759080273",
+                "https://openalex.org/W1802604240",
+                "https://openalex.org/W1815889469",
+                "https://openalex.org/W1816607755",
+                "https://openalex.org/W1889992172",
+                "https://openalex.org/W1897795992",
+                "https://openalex.org/W1924105626",
+                "https://openalex.org/W1963699554",
+                "https://openalex.org/W1963781915",
+                "https://openalex.org/W1964215427",
+                "https://openalex.org/W1965422262",
+                "https://openalex.org/W1966629784",
+                "https://openalex.org/W1966945194",
+                "https://openalex.org/W1967852862",
+                "https://openalex.org/W1969920297",
+                "https://openalex.org/W1970434077",
+                "https://openalex.org/W1970668914",
+                "https://openalex.org/W1972211464",
+                "https://openalex.org/W1972940641",
+                "https://openalex.org/W1973560209",
+                "https://openalex.org/W1973824538",
+                "https://openalex.org/W1974047325",
+                "https://openalex.org/W1975517312",
+                "https://openalex.org/W1976615861",
+                "https://openalex.org/W1976822287",
+                "https://openalex.org/W1976967245",
+                "https://openalex.org/W1977953443",
+                "https://openalex.org/W1978429277",
+                "https://openalex.org/W1979064760",
+                "https://openalex.org/W1979153016",
+                "https://openalex.org/W1979349344",
+                "https://openalex.org/W1979377607",
+                "https://openalex.org/W1980423805",
+                "https://openalex.org/W1980963551",
+                "https://openalex.org/W1981094975",
+                "https://openalex.org/W1982451263",
+                "https://openalex.org/W1982849079",
+                "https://openalex.org/W1983893897",
+                "https://openalex.org/W1984077343",
+                "https://openalex.org/W1984565341",
+                "https://openalex.org/W1984576862",
+                "https://openalex.org/W1984897508",
+                "https://openalex.org/W1985559169",
+                "https://openalex.org/W1985938832",
+                "https://openalex.org/W1985982021",
+                "https://openalex.org/W1986538486",
+                "https://openalex.org/W1986566426",
+                "https://openalex.org/W1986601107",
+                "https://openalex.org/W1986665072",
+                "https://openalex.org/W1988019576",
+                "https://openalex.org/W1988410705",
+                "https://openalex.org/W1989863198",
+                "https://openalex.org/W1990158330",
+                "https://openalex.org/W1990316712",
+                "https://openalex.org/W1991968978",
+                "https://openalex.org/W1992338204",
+                "https://openalex.org/W1992950539",
+                "https://openalex.org/W1993987782",
+                "https://openalex.org/W1994250983",
+                "https://openalex.org/W1994384613",
+                "https://openalex.org/W1994836842",
+                "https://openalex.org/W1995620802",
+                "https://openalex.org/W1995761893",
+                "https://openalex.org/W1996063403",
+                "https://openalex.org/W1996318579",
+                "https://openalex.org/W1997483547",
+                "https://openalex.org/W1997497057",
+                "https://openalex.org/W1998215802",
+                "https://openalex.org/W1998284588",
+                "https://openalex.org/W1998333142",
+                "https://openalex.org/W1998575585",
+                "https://openalex.org/W1998852253",
+                "https://openalex.org/W1999047205",
+                "https://openalex.org/W2000714499",
+                "https://openalex.org/W2000756542",
+                "https://openalex.org/W2001025563",
+                "https://openalex.org/W2001200683",
+                "https://openalex.org/W2001499956",
+                "https://openalex.org/W2002870722",
+                "https://openalex.org/W2003585048",
+                "https://openalex.org/W2003623337",
+                "https://openalex.org/W2004053609",
+                "https://openalex.org/W2004488381",
+                "https://openalex.org/W2004691199",
+                "https://openalex.org/W2004912613",
+                "https://openalex.org/W2005073501",
+                "https://openalex.org/W2005682453",
+                "https://openalex.org/W2006240660",
+                "https://openalex.org/W2008908447",
+                "https://openalex.org/W2009046180",
+                "https://openalex.org/W2009538305",
+                "https://openalex.org/W2010067993",
+                "https://openalex.org/W2010258327",
+                "https://openalex.org/W2011317649",
+                "https://openalex.org/W2011708352",
+                "https://openalex.org/W2012829424",
+                "https://openalex.org/W2013073142",
+                "https://openalex.org/W2013129514",
+                "https://openalex.org/W2013795294",
+                "https://openalex.org/W2014119826",
+                "https://openalex.org/W2014320121",
+                "https://openalex.org/W2014375476",
+                "https://openalex.org/W2014948388",
+                "https://openalex.org/W2015064005",
+                "https://openalex.org/W2015879830",
+                "https://openalex.org/W2015952537",
+                "https://openalex.org/W2016490651",
+                "https://openalex.org/W2016891111",
+                "https://openalex.org/W2017018261",
+                "https://openalex.org/W2017127494",
+                "https://openalex.org/W2017737164",
+                "https://openalex.org/W2018151318",
+                "https://openalex.org/W2018415007",
+                "https://openalex.org/W2018966090",
+                "https://openalex.org/W2019080473",
+                "https://openalex.org/W2019368935",
+                "https://openalex.org/W2019433324",
+                "https://openalex.org/W2019921086",
+                "https://openalex.org/W2020147955",
+                "https://openalex.org/W2020584411",
+                "https://openalex.org/W2021281738",
+                "https://openalex.org/W2021747246",
+                "https://openalex.org/W2022335546",
+                "https://openalex.org/W2022797053",
+                "https://openalex.org/W2023417042",
+                "https://openalex.org/W2023607146",
+                "https://openalex.org/W2024879857",
+                "https://openalex.org/W2025044306",
+                "https://openalex.org/W2026399467",
+                "https://openalex.org/W2026974362",
+                "https://openalex.org/W2026975390",
+                "https://openalex.org/W2027283645",
+                "https://openalex.org/W2027355816",
+                "https://openalex.org/W2027909523",
+                "https://openalex.org/W2029250011",
+                "https://openalex.org/W2030166155",
+                "https://openalex.org/W2030681182",
+                "https://openalex.org/W2030893860",
+                "https://openalex.org/W2031920526",
+                "https://openalex.org/W2032912312",
+                "https://openalex.org/W2033072269",
+                "https://openalex.org/W2033184464",
+                "https://openalex.org/W2033338546",
+                "https://openalex.org/W2034967522",
+                "https://openalex.org/W2035373796",
+                "https://openalex.org/W2035690864",
+                "https://openalex.org/W2036579133",
+                "https://openalex.org/W2036931888",
+                "https://openalex.org/W2037057633",
+                "https://openalex.org/W2038631322",
+                "https://openalex.org/W2039109527",
+                "https://openalex.org/W2039359911",
+                "https://openalex.org/W2039440413",
+                "https://openalex.org/W2039996956",
+                "https://openalex.org/W2040463454",
+                "https://openalex.org/W2040484671",
+                "https://openalex.org/W2041105916",
+                "https://openalex.org/W2041833951",
+                "https://openalex.org/W2042007108",
+                "https://openalex.org/W2043074224",
+                "https://openalex.org/W2043206972",
+                "https://openalex.org/W2044248343",
+                "https://openalex.org/W2044673684",
+                "https://openalex.org/W2045328215",
+                "https://openalex.org/W2045396061",
+                "https://openalex.org/W2045510784",
+                "https://openalex.org/W2045642635",
+                "https://openalex.org/W2045800756",
+                "https://openalex.org/W2046055978",
+                "https://openalex.org/W2046934635",
+                "https://openalex.org/W2047268046",
+                "https://openalex.org/W2047937815",
+                "https://openalex.org/W2048963798",
+                "https://openalex.org/W2048990642",
+                "https://openalex.org/W2049864245",
+                "https://openalex.org/W2049968466",
+                "https://openalex.org/W2050566676",
+                "https://openalex.org/W2050777028",
+                "https://openalex.org/W2050821035",
+                "https://openalex.org/W2051376556",
+                "https://openalex.org/W2052801301",
+                "https://openalex.org/W2053665053",
+                "https://openalex.org/W2055174305",
+                "https://openalex.org/W2056187378",
+                "https://openalex.org/W2056276720",
+                "https://openalex.org/W2056418354",
+                "https://openalex.org/W2056507156",
+                "https://openalex.org/W2056939196",
+                "https://openalex.org/W2057393879",
+                "https://openalex.org/W2058254256",
+                "https://openalex.org/W2059859106",
+                "https://openalex.org/W2060561605",
+                "https://openalex.org/W2060805543",
+                "https://openalex.org/W2060903226",
+                "https://openalex.org/W2061116869",
+                "https://openalex.org/W2061644634",
+                "https://openalex.org/W2062838565",
+                "https://openalex.org/W2062991153",
+                "https://openalex.org/W2066176579",
+                "https://openalex.org/W2066177894",
+                "https://openalex.org/W2066299309",
+                "https://openalex.org/W2066746339",
+                "https://openalex.org/W2067098462",
+                "https://openalex.org/W2067099887",
+                "https://openalex.org/W2067149267",
+                "https://openalex.org/W2067502478",
+                "https://openalex.org/W2069399799",
+                "https://openalex.org/W2069426699",
+                "https://openalex.org/W2069529301",
+                "https://openalex.org/W2070458494",
+                "https://openalex.org/W2071599890",
+                "https://openalex.org/W2071934097",
+                "https://openalex.org/W2071982290",
+                "https://openalex.org/W2072060889",
+                "https://openalex.org/W2072497397",
+                "https://openalex.org/W2075343860",
+                "https://openalex.org/W2075595477",
+                "https://openalex.org/W2075757647",
+                "https://openalex.org/W2075808815",
+                "https://openalex.org/W2076359736",
+                "https://openalex.org/W2077987999",
+                "https://openalex.org/W2079239826",
+                "https://openalex.org/W2079338956",
+                "https://openalex.org/W2080039484",
+                "https://openalex.org/W2080546811",
+                "https://openalex.org/W2081178787",
+                "https://openalex.org/W2081227202",
+                "https://openalex.org/W2081261055",
+                "https://openalex.org/W2082588706",
+                "https://openalex.org/W2082823144",
+                "https://openalex.org/W2082905584",
+                "https://openalex.org/W2083132397",
+                "https://openalex.org/W2083649271",
+                "https://openalex.org/W2083833314",
+                "https://openalex.org/W2084141723",
+                "https://openalex.org/W2084385548",
+                "https://openalex.org/W2084729943",
+                "https://openalex.org/W2084892538",
+                "https://openalex.org/W2085137567",
+                "https://openalex.org/W2085571744",
+                "https://openalex.org/W2085959703",
+                "https://openalex.org/W2088331980",
+                "https://openalex.org/W2088613107",
+                "https://openalex.org/W2089666999",
+                "https://openalex.org/W2089669290",
+                "https://openalex.org/W2089692332",
+                "https://openalex.org/W2090179842",
+                "https://openalex.org/W2090202444",
+                "https://openalex.org/W2090254306",
+                "https://openalex.org/W2091843794",
+                "https://openalex.org/W2092829937",
+                "https://openalex.org/W2093297723",
+                "https://openalex.org/W2093403042",
+                "https://openalex.org/W2094204865",
+                "https://openalex.org/W2094246092",
+                "https://openalex.org/W2094536769",
+                "https://openalex.org/W2095425294",
+                "https://openalex.org/W2095550761",
+                "https://openalex.org/W2095749458",
+                "https://openalex.org/W2099305423",
+                "https://openalex.org/W2099444170",
+                "https://openalex.org/W2099473180",
+                "https://openalex.org/W2104115112",
+                "https://openalex.org/W2106753116",
+                "https://openalex.org/W2108165383",
+                "https://openalex.org/W2108220580",
+                "https://openalex.org/W2109428365",
+                "https://openalex.org/W2110228188",
+                "https://openalex.org/W2111192396",
+                "https://openalex.org/W2111971407",
+                "https://openalex.org/W2113667714",
+                "https://openalex.org/W2113717694",
+                "https://openalex.org/W2114413866",
+                "https://openalex.org/W2115310639",
+                "https://openalex.org/W2118243939",
+                "https://openalex.org/W2118580108",
+                "https://openalex.org/W2120084853",
+                "https://openalex.org/W2127841983",
+                "https://openalex.org/W2128198397",
+                "https://openalex.org/W2128519044",
+                "https://openalex.org/W2128762691",
+                "https://openalex.org/W2129963397",
+                "https://openalex.org/W2131520208",
+                "https://openalex.org/W2131657873",
+                "https://openalex.org/W2132233302",
+                "https://openalex.org/W2141373701",
+                "https://openalex.org/W2142094977",
+                "https://openalex.org/W2143219499",
+                "https://openalex.org/W2143722357",
+                "https://openalex.org/W2144208355",
+                "https://openalex.org/W2147152072",
+                "https://openalex.org/W2148364259",
+                "https://openalex.org/W2148506541",
+                "https://openalex.org/W2149478314",
+                "https://openalex.org/W2150129670",
+                "https://openalex.org/W2150531367",
+                "https://openalex.org/W2151102622",
+                "https://openalex.org/W2151587853",
+                "https://openalex.org/W2152309982",
+                "https://openalex.org/W2152620365",
+                "https://openalex.org/W2155205560",
+                "https://openalex.org/W2155490532",
+                "https://openalex.org/W2157987115",
+                "https://openalex.org/W2158035776",
+                "https://openalex.org/W2160469280",
+                "https://openalex.org/W2161963406",
+                "https://openalex.org/W2161974899",
+                "https://openalex.org/W2166320445",
+                "https://openalex.org/W2167658816",
+                "https://openalex.org/W2168191910",
+                "https://openalex.org/W2168924105",
+                "https://openalex.org/W2169294099",
+                "https://openalex.org/W2174896420",
+                "https://openalex.org/W2180716014",
+                "https://openalex.org/W2283462815",
+                "https://openalex.org/W2288397135",
+                "https://openalex.org/W2293754236",
+                "https://openalex.org/W2313305593",
+                "https://openalex.org/W2320105691",
+                "https://openalex.org/W2320482446",
+                "https://openalex.org/W2320811409",
+                "https://openalex.org/W2322592965",
+                "https://openalex.org/W2323422234",
+                "https://openalex.org/W2324815967",
+                "https://openalex.org/W2330485514",
+                "https://openalex.org/W2330838306",
+                "https://openalex.org/W2332017458",
+                "https://openalex.org/W2334518907",
+                "https://openalex.org/W2335375324",
+                "https://openalex.org/W2340271587",
+                "https://openalex.org/W2462813658",
+                "https://openalex.org/W2544888304",
+                "https://openalex.org/W2582293868",
+                "https://openalex.org/W2611272129",
+                "https://openalex.org/W2734704244"
+            ],
+            "related_works": [
+                "https://openalex.org/W3023580939",
+                "https://openalex.org/W2913758505",
+                "https://openalex.org/W2752491485",
+                "https://openalex.org/W2611369375",
+                "https://openalex.org/W2281893971",
+                "https://openalex.org/W2162598207",
+                "https://openalex.org/W2158685692",
+                "https://openalex.org/W2152309982",
+                "https://openalex.org/W2131664240",
+                "https://openalex.org/W2004603793",
+                "https://openalex.org/W1991691398",
+                "https://openalex.org/W1981610984",
+                "https://openalex.org/W19399978",
+                "https://openalex.org/W1791587663",
+                "https://openalex.org/W1651701101",
+                "https://openalex.org/W1558663422",
+                "https://openalex.org/W1544407491",
+                "https://openalex.org/W1539082227",
+                "https://openalex.org/W1528027857",
+                "https://openalex.org/W1500842519"
+            ],
+            "abstract_inverted_index": {
+                "From": [
+                    0
+                ],
+                "the": [
+                    1,
+                    4,
+                    7,
+                    19,
+                    43,
+                    66,
+                    74,
+                    93,
+                    99
+                ],
+                "Publisher:\r\nWritten": [
+                    2
+                ],
+                "by": [
+                    3
+                ],
+                "author": [
+                    5
+                ],
+                "of": [
+                    6,
+                    21,
+                    89,
+                    98
+                ],
+                "best-selling": [
+                    8
+                ],
+                "HyperText": [
+                    9
+                ],
+                "&": [
+                    10
+                ],
+                "HyperMedia,": [
+                    11
+                ],
+                "this": [
+                    12
+                ],
+                "book": [
+                    13
+                ],
+                "provides": [
+                    14,
+                    54
+                ],
+                "an": [
+                    15
+                ],
+                "excellent": [
+                    16
+                ],
+                "guide": [
+                    17
+                ],
+                "to": [
+                    18,
+                    41,
+                    60,
+                    78,
+                    85,
+                    91
+                ],
+                "methods": [
+                    20,
+                    28,
+                    59,
+                    94
+                ],
+                "usability": [
+                    22,
+                    90
+                ],
+                "engineering.": [
+                    23
+                ],
+                "Special": [
+                    24
+                ],
+                "features:": [
+                    25
+                ],
+                "emphasizes": [
+                    26
+                ],
+                "cost-effective": [
+                    27
+                ],
+                "that": [
+                    29
+                ],
+                "will": [
+                    30
+                ],
+                "help": [
+                    31
+                ],
+                "developers": [
+                    32
+                ],
+                "improve": [
+                    33
+                ],
+                "their": [
+                    34
+                ],
+                "user": [
+                    35
+                ],
+                "interfaces": [
+                    36
+                ],
+                "immediately,": [
+                    37
+                ],
+                "shows": [
+                    38
+                ],
+                "you": [
+                    39
+                ],
+                "how": [
+                    40
+                ],
+                "avoid": [
+                    42
+                ],
+                "four": [
+                    44
+                ],
+                "most": [
+                    45
+                ],
+                "frequently": [
+                    46
+                ],
+                "listed": [
+                    47
+                ],
+                "reasons": [
+                    48
+                ],
+                "for": [
+                    49
+                ],
+                "delay": [
+                    50
+                ],
+                "in": [
+                    51
+                ],
+                "software": [
+                    52
+                ],
+                "projects,": [
+                    53
+                ],
+                "step-by-step": [
+                    55
+                ],
+                "information": [
+                    56,
+                    72
+                ],
+                "about": [
+                    57
+                ],
+                "which": [
+                    58
+                ],
+                "use": [
+                    61
+                ],
+                "at": [
+                    62
+                ],
+                "various": [
+                    63
+                ],
+                "stages": [
+                    64
+                ],
+                "during": [
+                    65
+                ],
+                "development": [
+                    67
+                ],
+                "life": [
+                    68
+                ],
+                "cycle,": [
+                    69
+                ],
+                "and": [
+                    70
+                ],
+                "offers": [
+                    71
+                ],
+                "on": [
+                    73
+                ],
+                "unique": [
+                    75
+                ],
+                "issues": [
+                    76
+                ],
+                "relating": [
+                    77
+                ],
+                "informational": [
+                    79
+                ],
+                "usability.": [
+                    80
+                ],
+                "You": [
+                    81
+                ],
+                "do": [
+                    82
+                ],
+                "not": [
+                    83
+                ],
+                "need": [
+                    84
+                ],
+                "have": [
+                    86
+                ],
+                "previous": [
+                    87
+                ],
+                "knowledge": [
+                    88
+                ],
+                "implement": [
+                    92
+                ],
+                "provided,": [
+                    95
+                ],
+                "yet": [
+                    96
+                ],
+                "all": [
+                    97
+                ],
+                "latest": [
+                    100
+                ],
+                "research": [
+                    101
+                ],
+                "is": [
+                    102
+                ],
+                "covered.": [
+                    103
+                ]
+            },
+            "counts_by_year": [
+                {
+                    "year": 2026,
+                    "cited_by_count": 3
+                },
+                {
+                    "year": 2024,
+                    "cited_by_count": 4
+                },
+                {
+                    "year": 2023,
+                    "cited_by_count": 5
+                },
+                {
+                    "year": 2022,
+                    "cited_by_count": 6
+                },
+                {
+                    "year": 2021,
+                    "cited_by_count": 205
+                },
+                {
+                    "year": 2020,
+                    "cited_by_count": 246
+                },
+                {
+                    "year": 2019,
+                    "cited_by_count": 346
+                },
+                {
+                    "year": 2018,
+                    "cited_by_count": 320
+                },
+                {
+                    "year": 2017,
+                    "cited_by_count": 352
+                },
+                {
+                    "year": 2016,
+                    "cited_by_count": 422
+                },
+                {
+                    "year": 2015,
+                    "cited_by_count": 558
+                },
+                {
+                    "year": 2014,
+                    "cited_by_count": 553
+                },
+                {
+                    "year": 2013,
+                    "cited_by_count": 608
+                },
+                {
+                    "year": 2012,
+                    "cited_by_count": 539
+                }
+            ],
+            "updated_date": "2026-05-24T08:33:08.758527",
+            "created_date": "2025-10-10T00:00:00"
+        },
+        {
+            "id": "https://openalex.org/W1974097079",
+            "doi": "https://doi.org/10.2514/3.12149",
+            "title": "Two-equation eddy-viscosity turbulence models for engineering applications",
+            "display_name": "Two-equation eddy-viscosity turbulence models for engineering applications",
+            "relevance_score": 5190.2603,
+            "publication_year": 1994,
+            "publication_date": "1994-08-01",
+            "ids": {
+                "openalex": "https://openalex.org/W1974097079",
+                "doi": "https://doi.org/10.2514/3.12149",
+                "mag": "1974097079"
+            },
+            "language": "en",
+            "primary_location": {
+                "id": "doi:10.2514/3.12149",
+                "is_oa": false,
+                "landing_page_url": "https://doi.org/10.2514/3.12149",
+                "pdf_url": null,
+                "source": {
+                    "id": "https://openalex.org/S53336109",
+                    "display_name": "AIAA Journal",
+                    "issn_l": "0001-1452",
+                    "issn": [
+                        "0001-1452",
+                        "1081-0102",
+                        "1533-385X"
+                    ],
+                    "is_oa": false,
+                    "is_in_doaj": false,
+                    "is_core": true,
+                    "host_organization": "https://openalex.org/P4310315709",
+                    "host_organization_name": "American Institute of Aeronautics and Astronautics",
+                    "host_organization_lineage": [
+                        "https://openalex.org/P4310315709"
+                    ],
+                    "host_organization_lineage_names": [
+                        "American Institute of Aeronautics and Astronautics"
+                    ],
+                    "type": "journal"
+                },
+                "license": null,
+                "license_id": null,
+                "version": "publishedVersion",
+                "is_accepted": true,
+                "is_published": true,
+                "raw_source_name": "AIAA Journal",
+                "raw_type": "journal-article"
+            },
+            "type": "article",
+            "indexed_in": [
+                "crossref"
+            ],
+            "open_access": {
+                "is_oa": false,
+                "oa_status": "closed",
+                "oa_url": null,
+                "any_repository_has_fulltext": false
+            },
+            "authorships": [
+                {
+                    "author_position": "first",
+                    "author": {
+                        "id": "https://openalex.org/A5029882914",
+                        "display_name": "Florian Menter",
+                        "orcid": null
+                    },
+                    "institutions": [
+                        {
+                            "id": "https://openalex.org/I1280536761",
+                            "display_name": "Ames Research Center",
+                            "ror": "https://ror.org/02acart68",
+                            "country_code": "US",
+                            "type": "facility",
+                            "lineage": [
+                                "https://openalex.org/I1280536761",
+                                "https://openalex.org/I4210124779"
+                            ]
+                        }
+                    ],
+                    "countries": [
+                        "US"
+                    ],
+                    "is_corresponding": true,
+                    "raw_author_name": "F. R. Menter",
+                    "raw_affiliation_strings": [
+                        "NASA Ames Research Center, Moffett Field, California 94035"
+                    ],
+                    "raw_orcid": null,
+                    "affiliations": [
+                        {
+                            "raw_affiliation_string": "NASA Ames Research Center, Moffett Field, California 94035",
+                            "institution_ids": [
+                                "https://openalex.org/I1280536761"
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "institutions": [],
+            "countries_distinct_count": 1,
+            "institutions_distinct_count": 1,
+            "corresponding_author_ids": [
+                "https://openalex.org/A5029882914"
+            ],
+            "corresponding_institution_ids": [
+                "https://openalex.org/I1280536761"
+            ],
+            "apc_list": null,
+            "apc_paid": null,
+            "fwci": 19.2243,
+            "has_fulltext": false,
+            "cited_by_count": 20634,
+            "citation_normalized_percentile": {
+                "value": 0.99705196,
+                "is_in_top_1_percent": true,
+                "is_in_top_10_percent": true
+            },
+            "cited_by_percentile_year": {
+                "min": 99,
+                "max": 100
+            },
+            "biblio": {
+                "volume": "32",
+                "issue": "8",
+                "first_page": "1598",
+                "last_page": "1605"
+            },
+            "is_retracted": false,
+            "is_paratext": false,
+            "is_xpac": false,
+            "primary_topic": {
+                "id": "https://openalex.org/T10360",
+                "display_name": "Fluid Dynamics and Turbulent Flows",
+                "score": 0.9998000264167786,
+                "subfield": {
+                    "id": "https://openalex.org/subfields/2206",
+                    "display_name": "Computational Mechanics"
+                },
+                "field": {
+                    "id": "https://openalex.org/fields/22",
+                    "display_name": "Engineering"
+                },
+                "domain": {
+                    "id": "https://openalex.org/domains/3",
+                    "display_name": "Physical Sciences"
+                }
+            },
+            "topics": [
+                {
+                    "id": "https://openalex.org/T10360",
+                    "display_name": "Fluid Dynamics and Turbulent Flows",
+                    "score": 0.9998000264167786,
+                    "subfield": {
+                        "id": "https://openalex.org/subfields/2206",
+                        "display_name": "Computational Mechanics"
+                    },
+                    "field": {
+                        "id": "https://openalex.org/fields/22",
+                        "display_name": "Engineering"
+                    },
+                    "domain": {
+                        "id": "https://openalex.org/domains/3",
+                        "display_name": "Physical Sciences"
+                    }
+                },
+                {
+                    "id": "https://openalex.org/T11371",
+                    "display_name": "Wind and Air Flow Studies",
+                    "score": 0.9972000122070312,
+                    "subfield": {
+                        "id": "https://openalex.org/subfields/2305",
+                        "display_name": "Environmental Engineering"
+                    },
+                    "field": {
+                        "id": "https://openalex.org/fields/23",
+                        "display_name": "Environmental Science"
+                    },
+                    "domain": {
+                        "id": "https://openalex.org/domains/3",
+                        "display_name": "Physical Sciences"
+                    }
+                },
+                {
+                    "id": "https://openalex.org/T10173",
+                    "display_name": "Computational Fluid Dynamics and Aerodynamics",
+                    "score": 0.996399998664856,
+                    "subfield": {
+                        "id": "https://openalex.org/subfields/2206",
+                        "display_name": "Computational Mechanics"
+                    },
+                    "field": {
+                        "id": "https://openalex.org/fields/22",
+                        "display_name": "Engineering"
+                    },
+                    "domain": {
+                        "id": "https://openalex.org/domains/3",
+                        "display_name": "Physical Sciences"
+                    }
+                }
+            ],
+            "keywords": [
+                {
+                    "id": "https://openalex.org/keywords/turbulence-modeling",
+                    "display_name": "Turbulence modeling",
+                    "score": 0.8301929235458374
+                },
+                {
+                    "id": "https://openalex.org/keywords/turbulence",
+                    "display_name": "Turbulence",
+                    "score": 0.7386213541030884
+                },
+                {
+                    "id": "https://openalex.org/keywords/k-epsilon-turbulence-model",
+                    "display_name": "K-epsilon turbulence model",
+                    "score": 0.526726484298706
+                },
+                {
+                    "id": "https://openalex.org/keywords/mechanics",
+                    "display_name": "Mechanics",
+                    "score": 0.5125184059143066
+                },
+                {
+                    "id": "https://openalex.org/keywords/k-omega-turbulence-model",
+                    "display_name": "K-omega turbulence model",
+                    "score": 0.47236496210098267
+                },
+                {
+                    "id": "https://openalex.org/keywords/viscosity",
+                    "display_name": "Viscosity",
+                    "score": 0.45003741979599
+                },
+                {
+                    "id": "https://openalex.org/keywords/physics",
+                    "display_name": "Physics",
+                    "score": 0.4346398711204529
+                },
+                {
+                    "id": "https://openalex.org/keywords/large-eddy-simulation",
+                    "display_name": "Large eddy simulation",
+                    "score": 0.41742756962776184
+                },
+                {
+                    "id": "https://openalex.org/keywords/aerospace-engineering",
+                    "display_name": "Aerospace engineering",
+                    "score": 0.3592539429664612
+                },
+                {
+                    "id": "https://openalex.org/keywords/statistical-physics",
+                    "display_name": "Statistical physics",
+                    "score": 0.3479582667350769
+                },
+                {
+                    "id": "https://openalex.org/keywords/classical-mechanics",
+                    "display_name": "Classical mechanics",
+                    "score": 0.3320123553276062
+                },
+                {
+                    "id": "https://openalex.org/keywords/meteorology",
+                    "display_name": "Meteorology",
+                    "score": 0.3225395679473877
+                },
+                {
+                    "id": "https://openalex.org/keywords/engineering",
+                    "display_name": "Engineering",
+                    "score": 0.2517321705818176
+                },
+                {
+                    "id": "https://openalex.org/keywords/thermodynamics",
+                    "display_name": "Thermodynamics",
+                    "score": 0.19352024793624878
+                }
+            ],
+            "concepts": [
+                {
+                    "id": "https://openalex.org/C204573209",
+                    "wikidata": "https://www.wikidata.org/wiki/Q1417609",
+                    "display_name": "Turbulence modeling",
+                    "level": 3,
+                    "score": 0.8301929235458374
+                },
+                {
+                    "id": "https://openalex.org/C196558001",
+                    "wikidata": "https://www.wikidata.org/wiki/Q190132",
+                    "display_name": "Turbulence",
+                    "level": 2,
+                    "score": 0.7386213541030884
+                },
+                {
+                    "id": "https://openalex.org/C150711758",
+                    "wikidata": "https://www.wikidata.org/wiki/Q17148242",
+                    "display_name": "K-epsilon turbulence model",
+                    "level": 3,
+                    "score": 0.526726484298706
+                },
+                {
+                    "id": "https://openalex.org/C57879066",
+                    "wikidata": "https://www.wikidata.org/wiki/Q41217",
+                    "display_name": "Mechanics",
+                    "level": 1,
+                    "score": 0.5125184059143066
+                },
+                {
+                    "id": "https://openalex.org/C189223162",
+                    "wikidata": "https://www.wikidata.org/wiki/Q18386383",
+                    "display_name": "K-omega turbulence model",
+                    "level": 4,
+                    "score": 0.47236496210098267
+                },
+                {
+                    "id": "https://openalex.org/C127172972",
+                    "wikidata": "https://www.wikidata.org/wiki/Q128709",
+                    "display_name": "Viscosity",
+                    "level": 2,
+                    "score": 0.45003741979599
+                },
+                {
+                    "id": "https://openalex.org/C121332964",
+                    "wikidata": "https://www.wikidata.org/wiki/Q413",
+                    "display_name": "Physics",
+                    "level": 0,
+                    "score": 0.4346398711204529
+                },
+                {
+                    "id": "https://openalex.org/C121448008",
+                    "wikidata": "https://www.wikidata.org/wiki/Q1755722",
+                    "display_name": "Large eddy simulation",
+                    "level": 3,
+                    "score": 0.41742756962776184
+                },
+                {
+                    "id": "https://openalex.org/C146978453",
+                    "wikidata": "https://www.wikidata.org/wiki/Q3798668",
+                    "display_name": "Aerospace engineering",
+                    "level": 1,
+                    "score": 0.3592539429664612
+                },
+                {
+                    "id": "https://openalex.org/C121864883",
+                    "wikidata": "https://www.wikidata.org/wiki/Q677916",
+                    "display_name": "Statistical physics",
+                    "level": 1,
+                    "score": 0.3479582667350769
+                },
+                {
+                    "id": "https://openalex.org/C74650414",
+                    "wikidata": "https://www.wikidata.org/wiki/Q11397",
+                    "display_name": "Classical mechanics",
+                    "level": 1,
+                    "score": 0.3320123553276062
+                },
+                {
+                    "id": "https://openalex.org/C153294291",
+                    "wikidata": "https://www.wikidata.org/wiki/Q25261",
+                    "display_name": "Meteorology",
+                    "level": 1,
+                    "score": 0.3225395679473877
+                },
+                {
+                    "id": "https://openalex.org/C127413603",
+                    "wikidata": "https://www.wikidata.org/wiki/Q11023",
+                    "display_name": "Engineering",
+                    "level": 0,
+                    "score": 0.2517321705818176
+                },
+                {
+                    "id": "https://openalex.org/C97355855",
+                    "wikidata": "https://www.wikidata.org/wiki/Q11473",
+                    "display_name": "Thermodynamics",
+                    "level": 1,
+                    "score": 0.19352024793624878
+                }
+            ],
+            "mesh": [],
+            "locations_count": 1,
+            "locations": [
+                {
+                    "id": "doi:10.2514/3.12149",
+                    "is_oa": false,
+                    "landing_page_url": "https://doi.org/10.2514/3.12149",
+                    "pdf_url": null,
+                    "source": {
+                        "id": "https://openalex.org/S53336109",
+                        "display_name": "AIAA Journal",
+                        "issn_l": "0001-1452",
+                        "issn": [
+                            "0001-1452",
+                            "1081-0102",
+                            "1533-385X"
+                        ],
+                        "is_oa": false,
+                        "is_in_doaj": false,
+                        "is_core": true,
+                        "host_organization": "https://openalex.org/P4310315709",
+                        "host_organization_name": "American Institute of Aeronautics and Astronautics",
+                        "host_organization_lineage": [
+                            "https://openalex.org/P4310315709"
+                        ],
+                        "host_organization_lineage_names": [
+                            "American Institute of Aeronautics and Astronautics"
+                        ],
+                        "type": "journal"
+                    },
+                    "license": null,
+                    "license_id": null,
+                    "version": "publishedVersion",
+                    "is_accepted": true,
+                    "is_published": true,
+                    "raw_source_name": "AIAA Journal",
+                    "raw_type": "journal-article"
+                }
+            ],
+            "best_oa_location": null,
+            "sustainable_development_goals": [],
+            "awards": [],
+            "funders": [],
+            "has_content": {
+                "pdf": false,
+                "grobid_xml": false
+            },
+            "content_urls": null,
+            "referenced_works_count": 23,
+            "referenced_works": [
+                "https://openalex.org/W1541613185",
+                "https://openalex.org/W1591104065",
+                "https://openalex.org/W1600195601",
+                "https://openalex.org/W1969778328",
+                "https://openalex.org/W1982850614",
+                "https://openalex.org/W1991939296",
+                "https://openalex.org/W1995403428",
+                "https://openalex.org/W1996586256",
+                "https://openalex.org/W1998686765",
+                "https://openalex.org/W2012342745",
+                "https://openalex.org/W2012425952",
+                "https://openalex.org/W2017833761",
+                "https://openalex.org/W2020773255",
+                "https://openalex.org/W2054757562",
+                "https://openalex.org/W2072693551",
+                "https://openalex.org/W2072921737",
+                "https://openalex.org/W2085374865",
+                "https://openalex.org/W2111003228",
+                "https://openalex.org/W2131765722",
+                "https://openalex.org/W2171595452",
+                "https://openalex.org/W2313366664",
+                "https://openalex.org/W2323731481",
+                "https://openalex.org/W3175186060"
+            ],
+            "related_works": [
+                "https://openalex.org/W630244277",
+                "https://openalex.org/W1904208161",
+                "https://openalex.org/W2016300288",
+                "https://openalex.org/W2380338678",
+                "https://openalex.org/W2035176602",
+                "https://openalex.org/W2052712718",
+                "https://openalex.org/W3147204120",
+                "https://openalex.org/W2171024495",
+                "https://openalex.org/W1644317688",
+                "https://openalex.org/W2367212135"
+            ],
+            "abstract_inverted_index": {
+                "Two": [
+                    0
+                ],
+                "new": [
+                    1,
+                    107
+                ],
+                "two-equation": [
+                    2
+                ],
+                "eddy-viscosity": [
+                    3,
+                    88
+                ],
+                "turbulence": [
+                    4
+                ],
+                "models": [
+                    5,
+                    14
+                ],
+                "will": [
+                    6
+                ],
+                "be": [
+                    7
+                ],
+                "presented.They": [
+                    8
+                ],
+                "combine": [
+                    9
+                ],
+                "different": [
+                    10
+                ],
+                "elements": [
+                    11
+                ],
+                "of": [
+                    12,
+                    36,
+                    42,
+                    86,
+                    98,
+                    101,
+                    122
+                ],
+                "existing": [
+                    13
+                ],
+                "that": [
+                    15,
+                    72
+                ],
+                "are": [
+                    16
+                ],
+                "considered": [
+                    17
+                ],
+                "superior": [
+                    18
+                ],
+                "to": [
+                    19,
+                    25,
+                    48,
+                    66,
+                    83,
+                    116
+                ],
+                "their": [
+                    20
+                ],
+                "alternatives.The": [
+                    21
+                ],
+                "first": [
+                    22
+                ],
+                "model,": [
+                    23,
+                    30,
+                    69,
+                    92
+                ],
+                "referred": [
+                    24
+                ],
+                "as": [
+                    26
+                ],
+                "the": [
+                    27,
+                    32,
+                    39,
+                    43,
+                    49,
+                    54,
+                    67,
+                    84,
+                    87,
+                    90,
+                    96,
+                    99,
+                    102,
+                    111,
+                    120
+                ],
+                "baseline": [
+                    28
+                ],
+                "(BSL)": [
+                    29
+                ],
+                "utilizes": [
+                    31
+                ],
+                "original": [
+                    33
+                ],
+                "k-u": [
+                    34
+                ],
+                "model": [
+                    35,
+                    52,
+                    78,
+                    108
+                ],
+                "Wilcox": [
+                    37,
+                    68
+                ],
+                "in": [
+                    38,
+                    53,
+                    58,
+                    89,
+                    119
+                ],
+                "inner": [
+                    40
+                ],
+                "region": [
+                    41,
+                    56
+                ],
+                "boundary": [
+                    44
+                ],
+                "layer": [
+                    45
+                ],
+                "and": [
+                    46,
+                    57,
+                    114
+                ],
+                "switches": [
+                    47
+                ],
+                "standard": [
+                    50
+                ],
+                "A>e": [
+                    51
+                ],
+                "outer": [
+                    55
+                ],
+                "free": [
+                    59
+                ],
+                "shear": [
+                    60,
+                    105
+                ],
+                "flows.It": [
+                    61
+                ],
+                "has": [
+                    62
+                ],
+                "a": [
+                    63,
+                    81
+                ],
+                "performance": [
+                    64
+                ],
+                "similar": [
+                    65
+                ],
+                "but": [
+                    70
+                ],
+                "avoids": [
+                    71
+                ],
+                "model's": [
+                    73
+                ],
+                "strong": [
+                    74
+                ],
+                "freestream": [
+                    75
+                ],
+                "sensitivity.The": [
+                    76
+                ],
+                "second": [
+                    77
+                ],
+                "results": [
+                    79
+                ],
+                "from": [
+                    80
+                ],
+                "modification": [
+                    82
+                ],
+                "definition": [
+                    85
+                ],
+                "BSL": [
+                    91
+                ],
+                "which": [
+                    93
+                ],
+                "accounts": [
+                    94
+                ],
+                "for": [
+                    95
+                ],
+                "effect": [
+                    97
+                ],
+                "transport": [
+                    100
+                ],
+                "principal": [
+                    103
+                ],
+                "turbulent": [
+                    104
+                ],
+                "stress.The": [
+                    106
+                ],
+                "is": [
+                    109
+                ],
+                "called": [
+                    110
+                ],
+                "shear-stress": [
+                    112
+                ],
+                "transport-model": [
+                    113
+                ],
+                "leads": [
+                    115
+                ],
+                "major": [
+                    117
+                ],
+                "improvements": [
+                    118
+                ],
+                "prediction": [
+                    121
+                ],
+                "adverse": [
+                    123
+                ],
+                "pressure": [
+                    124
+                ],
+                "gradient": [
+                    125
+                ],
+                "flows.": [
+                    126
+                ]
+            },
+            "counts_by_year": [
+                {
+                    "year": 2026,
+                    "cited_by_count": 1048
+                },
+                {
+                    "year": 2025,
+                    "cited_by_count": 1919
+                },
+                {
+                    "year": 2024,
+                    "cited_by_count": 1894
+                },
+                {
+                    "year": 2023,
+                    "cited_by_count": 1863
+                },
+                {
+                    "year": 2022,
+                    "cited_by_count": 1672
+                },
+                {
+                    "year": 2021,
+                    "cited_by_count": 1504
+                },
+                {
+                    "year": 2020,
+                    "cited_by_count": 1340
+                },
+                {
+                    "year": 2019,
+                    "cited_by_count": 1273
+                },
+                {
+                    "year": 2018,
+                    "cited_by_count": 1129
+                },
+                {
+                    "year": 2017,
+                    "cited_by_count": 1006
+                },
+                {
+                    "year": 2016,
+                    "cited_by_count": 908
+                },
+                {
+                    "year": 2015,
+                    "cited_by_count": 804
+                },
+                {
+                    "year": 2014,
+                    "cited_by_count": 734
+                },
+                {
+                    "year": 2013,
+                    "cited_by_count": 560
+                },
+                {
+                    "year": 2012,
+                    "cited_by_count": 592
+                }
+            ],
+            "updated_date": "2026-06-14T07:44:22.658603",
+            "created_date": "2025-10-10T00:00:00"
+        }
+    ],
+    "group_by": []
+}

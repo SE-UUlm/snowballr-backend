@@ -1,0 +1,39 @@
+{
+    "title": "Salp Swarm Algorithm: A bio-inspired optimizer for engineering design problems",
+    "external_id": "10.1016/j.advengsoft.2017.07.002",
+    "abstract": "",
+    "year": 2017,
+    "publisher": "",
+    "publication_type": "JournalArticle",
+    "publication_name": "Advances in Engineering Software",
+    "authors": [
+        {
+            "first_name": "S.",
+            "last_name": "Mirjalili"
+        },
+        {
+            "first_name": "A.",
+            "last_name": "Gandomi"
+        },
+        {
+            "first_name": "Seyedeh Zahra",
+            "last_name": "Mirjalili"
+        },
+        {
+            "first_name": "Shahrzad",
+            "last_name": "Saremi"
+        },
+        {
+            "first_name": "Hossam",
+            "last_name": "Faris"
+        },
+        {
+            "first_name": "S.",
+            "last_name": "Mirjalili"
+        }
+    ],
+    "fetcher_metadata": {
+        "SemanticScholarId": "2096fc288ef32942b52602fc671a8fc1bca5c001",
+        "SemanticScholarCorpusId": "38293847"
+    }
+}
