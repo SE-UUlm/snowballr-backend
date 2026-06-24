@@ -161,7 +161,7 @@ class SearchFetcherProjectPaperCandidatesTest : FetcherServiceTest() {
             assertEquals(1, papers.size)
             assertEquals(fooPaper.title, papers[0].title)
             assertEquals(null, papers[0].id)
-            coVerify(exactly = 0) { paperRepoMock.getPaperByExternalId(any()) }
+            coVerify(exactly = 0) { paperRepoMock.getPaperByExternalIds(any()) }
             coVerify(exactly = 0) { projectPaperRepoMock.doesProjectPaperExist(any(), any()) }
         }
 }

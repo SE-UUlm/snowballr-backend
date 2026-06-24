@@ -17,7 +17,7 @@ class CreatePaperTest : PaperServiceTest() {
         val paper = DataBuilder.createExamplePaper(title = "Test Paper Title", externalId = externalId)
         val request = CreatePaperRequest.fromPaper(paper)
 
-        coEvery { paperRepoMock.doesPaperExistByExternalId(externalId) } returns false
+        coEvery { paperRepoMock.doesPaperExistByExternalIds(request.externalId) } returns false
         coEvery { paperRepoMock.createPaper(request) } returns paper
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id) } returns emptyList()
 
@@ -31,7 +31,7 @@ class CreatePaperTest : PaperServiceTest() {
         val externalId = "existent-external-id"
         val request = CreatePaperRequest.fromPaper(DataBuilder.createExamplePaper(externalId = externalId))
 
-        coEvery { paperRepoMock.doesPaperExistByExternalId(externalId) } returns true
+        coEvery { paperRepoMock.doesPaperExistByExternalIds(request.externalId) } returns true
 
         assertThrows<DuplicatePaperException> { service.createPaper(request) }
     }
@@ -46,6 +46,6 @@ class CreatePaperTest : PaperServiceTest() {
             coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paperId) } returns emptyList()
 
             service.createPaper(request)
-            coVerify(exactly = 0) { paperRepoMock.doesPaperExistByExternalId(any()) }
+            coVerify(exactly = 0) { paperRepoMock.doesPaperExistByExternalIds(request.externalId) }
         }
 }

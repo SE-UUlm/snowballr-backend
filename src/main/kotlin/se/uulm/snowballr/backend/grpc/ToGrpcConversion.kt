@@ -8,6 +8,7 @@ import se.uulm.snowballr.backend.model.auth.AuthenticationStatus
 import se.uulm.snowballr.backend.model.dto.criterion.Criterion
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 import se.uulm.snowballr.backend.model.dto.paper.Author
+import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPattern
 import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPatternEntry
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
@@ -174,7 +175,7 @@ fun List<InvitationResponse>.toGrpc(): UserOuterClass.User.List = UserOuterClass
 
 fun FetcherPaperResponse.toGrpc(): PaperOuterClass.Paper = PaperOuterClass.Paper.newBuilder()
     .setId(id?.toString().orEmpty())
-    .setExternalId(externalId.orEmpty())
+    .addAllExternalIds(externalIds.map { it.toGrpc() })
     .setTitle(title)
     .setAbstrakt(abstract)
     .setYear(year)
@@ -199,7 +200,7 @@ fun ProjectDecisionCount.toGrpc(): ProjectOuterClass.Project.Information.Decisio
 
 fun PaperResponse.toGrpc(): PaperOuterClass.Paper = PaperOuterClass.Paper.newBuilder()
     .setId(id.toString())
-    .setExternalId(externalId.orEmpty())
+    .addAllExternalIds(externalIds.map { it.toGrpc() })
     .setTitle(title)
     .setAbstrakt(abstract)
     .setYear(year)
@@ -364,3 +365,9 @@ fun AuthenticationStatus.toGrpc() = when (this) {
 
     AuthenticationStatus.AUTHENTICATED -> Authentication.AuthenticationStatus.AUTHENTICATION_STATUS_AUTHENTICATED
 }
+
+fun ExternalId.toGrpc(): PaperOuterClass.Paper.ExternalId = PaperOuterClass.Paper.ExternalId
+    .newBuilder()
+    .setType(type.name)
+    .setValue(value)
+    .build()

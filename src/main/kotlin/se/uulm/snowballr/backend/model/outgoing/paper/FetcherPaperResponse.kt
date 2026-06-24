@@ -1,6 +1,7 @@
 package se.uulm.snowballr.backend.model.outgoing.paper
 
 import se.uulm.snowballr.backend.model.dto.paper.Author
+import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.paper.Paper
 import se.uulm.snowballr.backend.model.dto.paper.PaperData
 import se.uulm.snowballr.backend.model.fetcher.FetcherMetadata
@@ -12,7 +13,7 @@ data class FetcherPaperResponse(
      * If the paper already exists in the database, this is the ID of the paper. Otherwise, this is null.
      */
     val id: UUID?,
-    val externalId: String?,
+    val externalIds: List<ExternalId>,
     val title: String,
     val abstract: String,
     val year: Int,
@@ -30,7 +31,7 @@ data class FetcherPaperResponse(
 
         private fun fromPaperData(paper: PaperData, id: UUID?) = FetcherPaperResponse(
             id = id,
-            externalId = paper.externalId,
+            externalIds = paper.externalIds,
             title = paper.title,
             abstract = paper.abstract,
             year = paper.year,

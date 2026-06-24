@@ -156,7 +156,7 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
 
                 // Stop at paper creation
                 coEvery {
-                    paperRepoMock.getPaperByExternalId(fetchedPaper.externalId.orEmpty())
+                    paperRepoMock.getPaperByExternalIds(fetchedPaper.externalId.orEmpty())
                 } throws TestSpecificException()
 
                 orchestrator.enqueueTestJob(job, project)
@@ -183,10 +183,10 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
 
                 mockRunFetching(job, setOf(backwardRef.toFetcherPaper()), setOf(forwardRef.toFetcherPaper()))
                 coEvery {
-                    paperRepoMock.getPaperByExternalId(backwardRef.externalId.orEmpty())
+                    paperRepoMock.getPaperByExternalIds(backwardRef.externalId.orEmpty())
                 } returns Result.success(backwardRef)
                 coEvery {
-                    paperRepoMock.getPaperByExternalId(forwardRef.externalId.orEmpty())
+                    paperRepoMock.getPaperByExternalIds(forwardRef.externalId.orEmpty())
                 } returns Result.success(forwardRef)
 
                 // Stop at paper citation
@@ -220,10 +220,10 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
                 mockRunFetching(job, setOf(backwardFetcherRef), setOf(forwardFetcherRef))
                 if (externalId != null) {
                     coEvery {
-                        paperRepoMock.getPaperByExternalId(backwardRef.externalId.orEmpty())
+                        paperRepoMock.getPaperByExternalIds(backwardRef.externalId.orEmpty())
                     } returns Result.failure(TestSpecificException())
                     coEvery {
-                        paperRepoMock.getPaperByExternalId(forwardRef.externalId.orEmpty())
+                        paperRepoMock.getPaperByExternalIds(forwardRef.externalId.orEmpty())
                     } returns Result.failure(TestSpecificException())
                 }
                 coEvery {

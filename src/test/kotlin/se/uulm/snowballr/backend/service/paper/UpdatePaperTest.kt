@@ -33,8 +33,8 @@ class UpdatePaperTest : PaperServiceTest() {
         val examplePaper = DataBuilder.createExamplePaper(id = paperId, authors = listOf(exampleAuthor))
 
         coEvery { paperRepoMock.ensurePaperExists(paperId) } just Runs
-        coEvery { paperRepoMock.getPaperByExternalId(request.externalId.orEmpty()) } returns Result.failure(Exception())
-        coEvery { paperRepoMock.updatePaper(request, emptyList()) } returns examplePaper
+        coEvery { paperRepoMock.getPaperByExternalIds(request.paper.externalId) } returns Result.failure(Exception())
+        coEvery { paperRepoMock.updatePaper(request) } returns examplePaper
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paperId) } returns emptyList()
 
         val result = service.updatePaper(request, emptyList())
@@ -64,9 +64,9 @@ class UpdatePaperTest : PaperServiceTest() {
             )
 
             coEvery { paperRepoMock.ensurePaperExists(paperId) } just Runs
-            coEvery {
-                paperRepoMock.getPaperByExternalId(externalId)
-            } returns Result.success(existingPaperWithSameExternalId)
+            coEvery { paperRepoMock.getPaperByExternalIds("10.1000/existingdoi") } returns Result.success(
+                existingPaperWithSameExternalId,
+            )
 
             assertThrows<DuplicatePaperException> { service.updatePaper(request, emptyList()) }
         }
@@ -83,7 +83,7 @@ class UpdatePaperTest : PaperServiceTest() {
             )
 
             coEvery { paperRepoMock.ensurePaperExists(paperId) } just Runs
-            coEvery { paperRepoMock.getPaperByExternalId(request.externalId.orEmpty()) } returns
+            coEvery { paperRepoMock.getPaperByExternalIds(request.paper.externalId) } returns
                 Result.success(existingPaperWithSameExternalId)
             coEvery { paperRepoMock.updatePaper(request, emptyList()) } returns existingPaperWithSameExternalId
             coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paperId) } returns emptyList()
@@ -107,7 +107,7 @@ class UpdatePaperTest : PaperServiceTest() {
         coEvery { paperRepoMock.updatePaper(request, emptyList()) } returns updatedPaper
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paperId) } returns emptyList()
 
-        service.updatePaper(request, emptyList())
-        coVerify(exactly = 0) { paperRepoMock.getPaperByExternalId(any()) }
+        service.updatePaper(request)
+        coVerify(exactly = 0) { paperRepoMock.getPaperByExternalIds(any()) }
     }
 }

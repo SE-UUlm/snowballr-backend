@@ -3,6 +3,8 @@ package se.uulm.snowballr.backend.model.exception
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import se.uulm.snowballr.backend.model.dto.paper.ExternalId
+import se.uulm.snowballr.backend.model.dto.paper.ExternalIdType
 import se.uulm.snowballr.backend.model.exception.alreadyexists.DuplicateReviewException
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicatePaperException
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateProjectPaperException
@@ -14,7 +16,7 @@ class AlreadyExistsExceptionTest {
     inner class DuplicateEntityExceptions {
         @Test
         fun `When creating a DuplicatePaperException, then the message is correctly formatted`() {
-            val exception = DuplicatePaperException("external-id")
+            val exception = DuplicatePaperException(listOf(ExternalId(ExternalIdType.DOI, "foo/bar")))
 
             assertEquals("Paper with external ID 'external-id' already exists.", exception.message)
         }

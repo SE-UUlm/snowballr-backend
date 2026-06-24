@@ -227,7 +227,7 @@ class FetcherOrchestrator(
         for (ref in refs) {
             if (ref.externalId != null) {
                 // TODO: replace with check for whole paper data by similarity not only external ID
-                val result = paperRepo.getPaperByExternalId(ref.externalId)
+                val result = paperRepo.getPaperByExternalIds(ref.externalId)
                 if (result.isSuccess) {
                     // TODO: merge data
                     createdPaperRefs += result.getOrThrow()

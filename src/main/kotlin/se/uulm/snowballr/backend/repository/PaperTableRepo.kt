@@ -9,6 +9,7 @@ import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.statements.jdbc.JdbcResult
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.paper.Paper
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.PaperNotFoundException
@@ -33,10 +34,10 @@ interface IPaperTableRepo {
     suspend fun getPaperById(id: UUID): Result<Paper>
 
     /**
-     * Returns a [Result] containing the paper by its external ID or a [NotFoundException] if the paper with the
-     * passed [externalId] doesn't exist.
+     * Returns a [Result] containing the paper by its external IDs or a [NotFoundException] if the paper with the
+     * passed [externalIds] doesn't exist.
      */
-    suspend fun getPaperByExternalId(externalId: String): Result<Paper>
+    suspend fun getPaperByExternalIds(externalIds: List<ExternalId>): Result<Paper>
 
     /**
      * Ensures that the paper exists with the passed [id].
@@ -46,9 +47,9 @@ interface IPaperTableRepo {
     suspend fun ensurePaperExists(id: UUID)
 
     /**
-     * Checks whether a paper with the passed [externalId] exists.
+     * Checks whether a paper with the passed [externalIds] exists.
      */
-    suspend fun doesPaperExistByExternalId(externalId: String): Boolean
+    suspend fun doesPaperExistByExternalIds(externalIds: List<ExternalId>): Boolean
 
     /**
      * Creates a new paper in the database with the provided values.
@@ -74,10 +75,10 @@ interface IPaperTableRepo {
     /**
      * Retrieves all papers that have an external ID that matches at least one external ID in [externalIds].
      *
-     * This returns the same as for calling [getPaperByExternalId] for each external ID and then filtering out each
+     * This returns the same as for calling [getPaperByExternalIds] for each external ID and then filtering out each
      * [Result.failure].
      *
-     * Prefer this method when calling [getPaperByExternalId] inside a loop.
+     * Prefer this method when calling [getPaperByExternalIds] inside a loop.
      */
     suspend fun getPapersByExternalIds(externalIds: List<String>): List<Paper>
 }
@@ -108,8 +109,8 @@ class PaperTableRepo(
         getEntityByKeyAsResult(::getPaperByIdOrNull, EntityType.PAPER, id)
     }
 
-    override suspend fun getPaperByExternalId(externalId: String): Result<Paper> = db.query {
-        getEntityByKeyAsResult(::getPaperByExternalIdOrNull, EntityType.PAPER, externalId)
+    override suspend fun getPaperByExternalIds(externalIds: List<ExternalId>): Result<Paper> = db.query {
+        getEntityByKeyAsResult(::getPaperByExternalIdOrNull, EntityType.PAPER, externalIds)
     }
 
     override suspend fun ensurePaperExists(id: UUID) = db.query {
@@ -118,14 +119,14 @@ class PaperTableRepo(
         }
     }
 
-    override suspend fun doesPaperExistByExternalId(externalId: String): Boolean = db.query {
-        PaperTable.doesEntityExist { PaperTable.externalId eq externalId }
+    override suspend fun doesPaperExistByExternalIds(externalIds: List<ExternalId>): Boolean = db.query {
+        PaperTable.doesEntityExist { PaperTable.externalIds eq externalIds }
     }
 
     override suspend fun createPaper(request: CreatePaperRequest): Paper = db.query {
         PaperTable.insertAndGet(ResultRow::toPaper) {
             it[title] = request.title
-            it[externalId] = request.externalId
+            it[externalIds] = request.externalIds
             it[abstract] = request.abstract
             it[year] = request.year
             it[publisher] = request.publisher

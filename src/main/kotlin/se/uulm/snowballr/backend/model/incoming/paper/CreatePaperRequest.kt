@@ -1,6 +1,7 @@
 package se.uulm.snowballr.backend.model.incoming.paper
 
 import se.uulm.snowballr.backend.model.dto.paper.Author
+import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.paper.Paper
 import se.uulm.snowballr.backend.model.dto.paper.PaperData
 import se.uulm.snowballr.backend.model.fetcher.FetcherMetadata
@@ -8,7 +9,7 @@ import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
 
 data class CreatePaperRequest(
     val title: String,
-    val externalId: String?,
+    val externalIds: List<ExternalId>,
     val abstract: String,
     val year: Int,
     val publisher: String,
@@ -24,7 +25,7 @@ data class CreatePaperRequest(
 
         private fun fromPaperData(paper: PaperData) = CreatePaperRequest(
             title = paper.title,
-            externalId = paper.externalId,
+            externalIds = paper.externalIds,
             abstract = paper.abstract,
             year = paper.year,
             publisher = paper.publisher,

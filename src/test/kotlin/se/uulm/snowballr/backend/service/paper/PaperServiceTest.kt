@@ -28,7 +28,7 @@ sealed class PaperServiceTest : BaseServiceTest {
 
     protected fun assertPaperEquality(expected: Paper, actual: PaperResponse) {
         assertEquals(expected.title, actual.title)
-        assertEquals(expected.externalId, actual.externalId)
+        assertEquals(expected.externalId, actual.externalIds)
         assertEquals(expected.abstract, actual.abstract)
         assertEquals(expected.year, actual.year)
         assertEquals(expected.publisher, actual.publisher)

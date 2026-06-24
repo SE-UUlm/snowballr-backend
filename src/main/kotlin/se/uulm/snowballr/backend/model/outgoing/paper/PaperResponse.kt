@@ -1,13 +1,14 @@
 package se.uulm.snowballr.backend.model.outgoing.paper
 
 import se.uulm.snowballr.backend.model.dto.paper.Author
+import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.paper.Paper
 import se.uulm.snowballr.backend.model.fetcher.FetcherMetadata
 import java.util.UUID
 
 data class PaperResponse(
     val id: UUID,
-    val externalId: String?,
+    val externalIds: List<ExternalId>,
     val title: String,
     val abstract: String,
     val year: Int,
@@ -21,7 +22,7 @@ data class PaperResponse(
     companion object {
         fun fromPaper(paper: Paper, backwardReferencedIds: List<UUID>) = PaperResponse(
             id = paper.id,
-            externalId = paper.externalId,
+            externalIds = paper.externalIds,
             title = paper.title,
             abstract = paper.abstract,
             year = paper.year,

@@ -79,7 +79,7 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
             val externalId = "ExternalId"
             insertPaperAndGetId(externalId = externalId)
 
-            val paper = assertResultSuccess(repo.getPaperByExternalId(externalId))
+            val paper = assertResultSuccess(repo.getPaperByExternalIds(externalId))
 
             with(paper) {
                 assertEquals("Title", title)
@@ -95,7 +95,7 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
 
         @Test
         fun `When a paper is not found, then a failed result with a NotFoundException is returned`() = runTest {
-            val result = repo.getPaperByExternalId("NonExistentExternalId")
+            val result = repo.getPaperByExternalIds("NonExistentExternalId")
 
             assertResultFailure<NotFoundException>(result)
         }
@@ -125,7 +125,7 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
             val externalId = "ExternalId"
             insertPaperAndGetId(externalId = externalId)
 
-            val isPaperExistent = repo.doesPaperExistByExternalId(externalId)
+            val isPaperExistent = repo.doesPaperExistByExternalIds(externalId)
 
             assertTrue(isPaperExistent)
         }
@@ -134,7 +134,7 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
         fun `When a paper with the given external ID does not exist, then false returned`() = runTest {
             val externalId = "NonExistentExternalId"
 
-            val isPaperExistent = repo.doesPaperExistByExternalId(externalId)
+            val isPaperExistent = repo.doesPaperExistByExternalIds(externalId)
 
             assertFalse(isPaperExistent)
         }
@@ -393,9 +393,9 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
 
             val papers1 = repo.getPapersByExternalIds(listOf("doi123", "foo", "doi789"))
             val papers2 = listOf(
-                repo.getPaperByExternalId("doi123"),
-                repo.getPaperByExternalId("foo"),
-                repo.getPaperByExternalId("doi789"),
+                repo.getPaperByExternalIds("doi123"),
+                repo.getPaperByExternalIds("foo"),
+                repo.getPaperByExternalIds("doi789"),
             ).mapNotNull { it.getOrNull() }
 
             assertEquals(papers1, papers2)
