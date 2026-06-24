@@ -8,16 +8,16 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.PaperNavigationDirection
-import kotlin.test.assertEquals
 
 class GetNextPaperTest : ProjectPaperServiceTest() {
     @Test
-    fun `When a user requests the next project paper and has access, then no exception is thrown`() = runTest {
+    fun `When a user requests the next project paper and has access, then the correct values are returned`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject()
         val paper = DataBuilder.createExamplePaper()
         val projectPaper = DataBuilder.createExampleProjectPaper(projectId = project.id, paperId = paper.id)
-        val nextProjectPaper = DataBuilder.createExampleProjectPaper()
+        val otherPaper = DataBuilder.createExamplePaper()
+        val nextProjectPaper = DataBuilder.createExampleProjectPaper(paperId = otherPaper.id)
 
         mockCurrentUser(currentUser)
         coEvery {
@@ -28,13 +28,13 @@ class GetNextPaperTest : ProjectPaperServiceTest() {
         coEvery {
             projectPaperRepoMock.getAdjacentPaper(project.id, projectPaper.localPaperId, PaperNavigationDirection.NEXT)
         } returns Result.success(nextProjectPaper)
-        coEvery { paperRepoMock.getPaperById(nextProjectPaper.paperId) } returns Result.success(paper)
-        coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id) } returns emptyList()
+        coEvery { paperRepoMock.getPaperById(nextProjectPaper.paperId) } returns Result.success(otherPaper)
+        coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(otherPaper.id) } returns emptyList()
         coEvery { reviewRepoMock.getAllReviewsForProjectPaper(nextProjectPaper.id) } returns emptyList()
 
         val nextPaper = service.getNextPaper(projectPaper.id)
 
-        assertEquals(nextProjectPaper.id.toString(), nextPaper.id)
+        assertProjectPaperEquality(nextProjectPaper, nextPaper)
     }
 
     @Test

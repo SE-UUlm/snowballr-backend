@@ -3,9 +3,11 @@ package se.uulm.snowballr.backend.service.projectpaper
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import org.junit.jupiter.api.Assertions.assertEquals
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.access.IProjectPaperAccessChecker
 import se.uulm.snowballr.backend.auth.GrpcContext
+import se.uulm.snowballr.backend.model.dto.ProjectPaper
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
@@ -17,6 +19,7 @@ import se.uulm.snowballr.backend.repository.association.IReviewHasCriterionTable
 import se.uulm.snowballr.backend.service.BaseServiceTest
 import se.uulm.snowballr.backend.service.ProjectPaperService
 import se.uulm.snowballr.backend.service.withUser
+import snowballr.ProjectOuterClass
 
 /**
  * Base test class for [ProjectPaperService].
@@ -64,5 +67,12 @@ sealed class ProjectPaperServiceTest : BaseServiceTest {
     protected fun mockCurrentUser(currentUser: User) {
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
         coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
+    }
+
+    protected fun assertProjectPaperEquality(expected: ProjectPaper, actual: ProjectOuterClass.Project.Paper) {
+        assertEquals(expected.paperId.toString(), actual.paper.id)
+        assertEquals(expected.localPaperId.toString(), actual.localId)
+        assertEquals(expected.stage, actual.stage)
+        assertEquals(expected.decision, actual.decision)
     }
 }

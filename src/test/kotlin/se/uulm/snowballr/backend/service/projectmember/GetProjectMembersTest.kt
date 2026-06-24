@@ -13,7 +13,7 @@ import kotlin.test.assertEquals
 
 class GetProjectMembersTest : ProjectMemberServiceTest() {
     @Test
-    fun `When a user requests the project members and has access, then no exception is thrown`() = runTest {
+    fun `When a user requests the project members and has access, then the correct values are returned`() = runTest {
         val user = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject()
         val projectMember = DataBuilder.createExampleProjectMember(userId = user.id, projectId = project.id)

@@ -5,7 +5,6 @@ import io.mockk.coEvery
 import io.mockk.coJustRun
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
@@ -55,7 +54,7 @@ class UpdateCriterionTest : CriterionServiceTest() {
     }
 
     @Test
-    fun `When a user updates a criterion and has access, then no exception is thrown`() = runTest {
+    fun `When a user updates a criterion and has access, then the updated criterion is returned`() = runTest {
         val user = DataBuilder.createExampleUser()
         val criterion = DataBuilder.createExampleProjectCriterion()
 
@@ -66,6 +65,8 @@ class UpdateCriterionTest : CriterionServiceTest() {
         coJustRun { criterionAccessCheckerMock.isAllowedToUpdateCriterion(user, criterion) }
         coEvery { criterionRepoMock.updateCriterion(request) } returns criterion
 
-        assertDoesNotThrow { service.updateCriterion(request) }
+        val result = service.updateCriterion(request)
+
+        assertCriterionEquality(criterion, result)
     }
 }

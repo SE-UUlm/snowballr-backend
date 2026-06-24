@@ -16,6 +16,7 @@ import snowballr.UserOuterClass.UserRole
 import snowballr.copy
 import snowballr.exportRequest
 import java.util.UUID
+import kotlin.test.assertEquals
 
 class ExportProjectTest : ExportServiceTest() {
     fun getExampleRequest() = exportRequest {
@@ -24,7 +25,7 @@ class ExportProjectTest : ExportServiceTest() {
     }
 
     @Test
-    fun `When a user exports a project and has access, then no exception is thrown`() = runTest {
+    fun `When a user exports a project and has access, then the result has the correct values`() = runTest {
         val user = DataBuilder.createExampleUser()
         val projectId = UUID.randomUUID()
         val request = getExampleRequest().copy { id = projectId.toString() }
@@ -44,7 +45,10 @@ class ExportProjectTest : ExportServiceTest() {
             ProjectExportManager.exportProject(any(), any(), any(), any(), any())
         } returns FileExport(ByteArray(0), "test.json")
 
-        service.exportProject(request)
+        val result = service.exportProject(request)
+
+        assertEquals("test.json", result.fileName)
+        assertEquals(ByteArray(0).toList(), result.data.toByteArray().toList())
     }
 
     @Test

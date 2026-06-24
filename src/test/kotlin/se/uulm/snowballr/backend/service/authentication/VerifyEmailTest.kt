@@ -2,10 +2,10 @@ package se.uulm.snowballr.backend.service.authentication
 
 import io.mockk.coEvery
 import io.mockk.coJustRun
+import io.mockk.coVerify
 import io.mockk.slot
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
@@ -55,17 +55,22 @@ class VerifyEmailTest : AuthenticationServiceTest() {
     }
 
     @Test
-    fun `When a valid token is provided and all operations succeed, then no exception is thrown`() = runTest {
-        val user = DataBuilder.createExampleUser(status = UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED)
-        val token = DataBuilder.createExampleVerificationToken(userId = user.id)
-        val request = Authentication.VerifyEmailRequest.newBuilder().setToken(token.token).build()
-        val userUpdateSlot = slot<GrpcUser.Update>()
+    fun `When a valid token is provided and all operations succeed, then the token is successfully deleted afterwards`() =
+        runTest {
+            val user = DataBuilder.createExampleUser(status = UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED)
+            val token = DataBuilder.createExampleVerificationToken(userId = user.id)
+            val request = Authentication.VerifyEmailRequest.newBuilder().setToken(token.token).build()
+            val userUpdateSlot = slot<GrpcUser.Update>()
 
-        coEvery { verificationTokenRepoMock.getVerificationTokenByValue(token.token) } returns Result.success(token)
-        coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
-        coEvery { userRepoMock.updateUser(capture(userUpdateSlot)) } returns user
-        coJustRun { verificationTokenRepoMock.deleteVerificationToken(token.token) }
+            coEvery { verificationTokenRepoMock.getVerificationTokenByValue(token.token) } returns Result.success(token)
+            coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
+            coEvery { userRepoMock.updateUser(capture(userUpdateSlot)) } returns user
+            coJustRun { verificationTokenRepoMock.deleteVerificationToken(token.token) }
 
-        assertDoesNotThrow { service.verifyEmail(request) }
-    }
+            service.verifyEmail(request)
+
+            coVerify(exactly = 1) {
+                verificationTokenRepoMock.deleteVerificationToken(token.token)
+            }
+        }
 }

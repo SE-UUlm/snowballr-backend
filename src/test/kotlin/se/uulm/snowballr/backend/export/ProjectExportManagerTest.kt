@@ -36,9 +36,9 @@ class ProjectExportManagerTest {
 
     @Nested
     inner class ExportProject {
-        @ParameterizedTest(name = "When exporting a project in the {0} format, then no exception is thrown")
+        @ParameterizedTest(name = "When exporting a project in the {0} format, then returned data is not empty")
         @MethodSource("se.uulm.snowballr.backend.export.ProjectExportManagerTest#supportedFormats")
-        fun `When exporting a project in a format, then no exception is thrown`(format: ExportFormat) {
+        fun `When exporting a project in a format, then returned data is not empty`(format: ExportFormat) {
             val project = DataBuilder.createExampleProject(name = "Exported Project")
             val projectMembers = listOf(DataBuilder.createExampleProjectMemberWithUser())
             val projectPapers = listOf(DataBuilder.createExampleProjectPaperFull())

@@ -7,6 +7,7 @@ import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.access.IReviewAccessChecker
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.fetcher.IFetcherOrchestrator
+import se.uulm.snowballr.backend.model.dto.Review
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
@@ -17,6 +18,8 @@ import se.uulm.snowballr.backend.repository.association.IReviewHasCriterionTable
 import se.uulm.snowballr.backend.service.BaseServiceTest
 import se.uulm.snowballr.backend.service.ReviewService
 import se.uulm.snowballr.backend.service.withUser
+import snowballr.ReviewOuterClass
+import kotlin.test.assertEquals
 
 /**
  * Base test class for the [ReviewService].
@@ -64,5 +67,10 @@ sealed class ReviewServiceTest : BaseServiceTest {
     protected fun mockCurrentUser(currentUser: User) {
         every { GrpcContext.getUserIdFromContext() } returns currentUser.id
         coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
+    }
+
+    protected fun assertReviewEquality(expected: Review, actual: ReviewOuterClass.Review) {
+        assertEquals(expected.userId.toString(), actual.userId)
+        assertEquals(expected.decision, actual.decision)
     }
 }

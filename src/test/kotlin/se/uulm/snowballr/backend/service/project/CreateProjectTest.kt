@@ -6,7 +6,6 @@ import io.mockk.slot
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.User
@@ -30,7 +29,7 @@ class CreateProjectTest : ProjectServiceTest() {
     }
 
     @Test
-    fun `When a project is correctly created, then no exception is thrown`() = runTest {
+    fun `When a project is correctly created, then the created project has the correct values`() = runTest {
         val project = DataBuilder.createExampleProject()
         val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
         val userSettings = DataBuilder.createExampleUserSettings()
@@ -41,7 +40,9 @@ class CreateProjectTest : ProjectServiceTest() {
         coEvery { projectRepoMock.createProject(getExampleRequest(), user.id, userSettings) } returns project
         mockProjectAdminCreation(project, user)
 
-        assertDoesNotThrow { service.createProject(getExampleRequest()) }
+        val result = service.createProject(getExampleRequest())
+
+        assertProjectEquality(project, result)
 
         coVerify(exactly = 0) { criterionRepoMock.createCriterion(any(), user.id) }
         coVerify(exactly = 1) { projectMemberRepoMock.addUserToProject(user.id, project.id) }
@@ -51,7 +52,7 @@ class CreateProjectTest : ProjectServiceTest() {
     }
 
     @Test
-    fun `When a project is correctly created and the user has default criteria, then no exception is thrown`() =
+    fun `When a project is correctly created and the user has default criteria, then the created project has the correct values`() =
         runTest {
             val project = DataBuilder.createExampleProject()
             val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
@@ -74,7 +75,9 @@ class CreateProjectTest : ProjectServiceTest() {
             coEvery { criterionRepoMock.createCriterion(criterionCreateRequest, user.id) } returns criterion
             mockProjectAdminCreation(project, user)
 
-            assertDoesNotThrow { service.createProject(getExampleRequest()) }
+            val result = service.createProject(getExampleRequest())
+
+            assertProjectEquality(project, result)
             assertEquals(listOf(criterion.id), criteriaIdsSlot.captured)
         }
 }

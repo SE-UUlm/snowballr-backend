@@ -4,11 +4,11 @@ import io.mockk.coEvery
 import io.mockk.coJustRun
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import snowballr.ProjectOuterClass.ProjectStatus
+import kotlin.test.assertEquals
 
 class GetAllProjectsForUserTest : ProjectServiceTest() {
     private val statusFilters = setOf(ProjectStatus.PROJECT_STATUS_ACTIVE, ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
@@ -40,15 +40,21 @@ class GetAllProjectsForUserTest : ProjectServiceTest() {
         }
 
     @Test
-    fun `When a user retrieves another user's projects and has access, then no exception is thrown`() = runTest {
-        val currentUser = DataBuilder.createExampleUser()
-        val requestedUser = DataBuilder.createExampleUser()
+    fun `When a user retrieves another user's projects and has access, then the correct values are returned`() =
+        runTest {
+            val currentUser = DataBuilder.createExampleUser()
+            val requestedUser = DataBuilder.createExampleUser()
+            val project = DataBuilder.createExampleProject()
 
-        mockCurrentUser(currentUser)
-        coEvery { userRepoMock.getUserById(requestedUser.id) } returns Result.success(requestedUser)
-        coJustRun { projectAccessCheckerMock.isAllowedToReadUserProjects(currentUser, requestedUser.id) }
-        coEvery { projectRepoMock.getUserProjects(requestedUser.id, statusFilters) } returns emptyList()
+            mockCurrentUser(currentUser)
+            coEvery { userRepoMock.getUserById(requestedUser.id) } returns Result.success(requestedUser)
+            coJustRun { projectAccessCheckerMock.isAllowedToReadUserProjects(currentUser, requestedUser.id) }
+            coEvery { projectRepoMock.getUserProjects(requestedUser.id, statusFilters) } returns listOf(project)
 
-        assertDoesNotThrow { service.getAllProjectsForUser(requestedUser.id) }
-    }
+            val result = service.getAllProjectsForUser(requestedUser.id)
+
+            assertEquals(1, result.projectsCount)
+            val resultElement = result.projectsList.first()
+            assertProjectEquality(project, resultElement)
+        }
 }

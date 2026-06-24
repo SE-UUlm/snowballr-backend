@@ -9,7 +9,6 @@ import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
@@ -110,14 +109,15 @@ class InviteUserToProjectTest : InvitationServiceTest() {
     }
 
     @Test
-    fun `When a user is already invited, then no exception is thrown, but also no invitation sent`() = runTest {
+    fun `When a user is already invited, then no invitation is sent`() = runTest {
         val invitationToken = DataBuilder.createExampleInvitationToken(email = invitedUserEmail)
         mockInviteUserToProject(stopBefore = invitationTokenRepoMock::getInvitationTokenByEmailAndProjectId)
         coEvery {
             invitationTokenRepoMock.getInvitationTokenByEmailAndProjectId(invitedUserEmail, projectId)
         } returns Result.success(invitationToken)
 
-        assertDoesNotThrow { service.inviteUserToProject(validInviteUserRequest.build()) }
+        service.inviteUserToProject(validInviteUserRequest.build())
+
         coVerify(exactly = 0) { invitationTokenRepoMock.saveInvitationToken(any(), any(), any()) }
     }
 

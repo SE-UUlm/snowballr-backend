@@ -3,7 +3,6 @@ package se.uulm.snowballr.backend.service.user
 import io.mockk.coEvery
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
@@ -20,29 +19,33 @@ class GetUserSettingsTest : UserServiceTest() {
     }
 
     @Test
-    fun `When retrieving current user settings is correct, but not default criteria exist, then no exception is thrown`() =
+    fun `When retrieving current user settings is correct, but no default criteria exists, then the correct values are returned`() =
         runTest {
             val user = DataBuilder.createExampleUser()
             val userSettings = DataBuilder.createExampleUserSettings()
 
             mockCurrentUser(user)
-            coEvery { criterionRepoMock.getCriteriaByIds(emptyList()) } returns emptyList()
             coEvery { userRepoMock.getUserSettings(user.id) } returns Result.success(userSettings)
+            coEvery { criterionRepoMock.getCriteriaByIds(emptyList()) } returns emptyList()
 
-            assertDoesNotThrow { service.getUserSettings() }
+            val result = service.getUserSettings()
+
+            assertUserSettingsEquality(userSettings, result)
         }
 
     @Test
-    fun `When retrieving current user settings is correct and default criteria exist, then no exception is thrown`() =
+    fun `When retrieving current user settings is correct and default criteria exists, then the correct values are returned`() =
         runTest {
             val user = DataBuilder.createExampleUser()
-            val criterion = DataBuilder.createExampleProjectCriterion()
+            val criterion = DataBuilder.createExampleUserCriterion()
             val userSettings = DataBuilder.createExampleUserSettings(criteriaIds = listOf(criterion.id))
 
             mockCurrentUser(user)
-            coEvery { criterionRepoMock.getCriteriaByIds(listOf(criterion.id)) } returns listOf(criterion)
             coEvery { userRepoMock.getUserSettings(user.id) } returns Result.success(userSettings)
+            coEvery { criterionRepoMock.getCriteriaByIds(listOf(criterion.id)) } returns listOf(criterion)
 
-            assertDoesNotThrow { service.getUserSettings() }
+            val result = service.getUserSettings()
+
+            assertUserSettingsEquality(userSettings, result)
         }
 }

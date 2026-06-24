@@ -5,7 +5,6 @@ import io.mockk.coJustRun
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
@@ -13,7 +12,7 @@ import se.uulm.snowballr.backend.TestSpecificException
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class GetProjectPaperByIdTest : ProjectPaperServiceTest() {
     @Test
-    fun `When a user requests a project paper and has access, then no exception is thrown`() = runTest {
+    fun `When a user requests a project paper and has access, then the correct values are returned`() = runTest {
         val user = DataBuilder.createExampleUser()
         val paper = DataBuilder.createExamplePaper()
         val projectPaper = DataBuilder.createExampleProjectPaper(paperId = paper.id)
@@ -25,7 +24,9 @@ class GetProjectPaperByIdTest : ProjectPaperServiceTest() {
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id) } returns emptyList()
         coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper.id) } returns emptyList()
 
-        assertDoesNotThrow { service.getProjectPaperById(projectPaper.id) }
+        val result = service.getProjectPaperById(projectPaper.id)
+
+        assertProjectPaperEquality(projectPaper, result)
     }
 
     @Test

@@ -30,6 +30,7 @@ import snowballr.ReviewOuterClass.ReviewDecision
 import java.util.UUID
 import java.util.stream.Stream
 import kotlin.reflect.KFunction
+import kotlin.test.assertEquals
 import snowballr.ProjectOuterClass.Project as GrpcProject
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -148,10 +149,14 @@ class CreateReviewTest : ReviewServiceTest() {
     }
 
     @Test
-    fun `When a user creates a review and has access, then no exception is thrown`() = runTest {
+    fun `When a user creates a review and has access, then the created review has the correct values`() = runTest {
         mockCreateReview()
 
-        assertDoesNotThrow { service.createReview(validCreateReviewRequest.build()) }
+        val review = service.createReview(validCreateReviewRequest.build())
+
+        assertEquals(userId.toString(), review.userId)
+        assertEquals(decision, review.decision)
+        assertEquals(selectedCriteriaIds.map { it.toString() }, review.selectedCriteriaIdsList)
 
         coVerify(exactly = 1) {
             projectRepoMock.updateProject(getUpdateProjectStatusRequest(project.id))
@@ -184,7 +189,7 @@ class CreateReviewTest : ReviewServiceTest() {
     }
 
     @Test
-    fun `When another user reviewed the project paper but not finally decided it, then no exception is thrown and the paper decision is updated accordingly to the review decision matrix`() =
+    fun `When another user reviewed the project paper but not finally decided it, then the paper decision is updated accordingly to the review decision matrix`() =
         runTest {
             val reviewByAnotherUser = DataBuilder.createExampleReview(
                 projectPaperId = projectPaperId,
@@ -197,7 +202,11 @@ class CreateReviewTest : ReviewServiceTest() {
                 updatedPaperDecision = PaperDecision.PAPER_DECISION_ACCEPTED,
             )
 
-            assertDoesNotThrow { service.createReview(validCreateReviewRequest.build()) }
+            service.createReview(validCreateReviewRequest.build())
+
+            coVerify(exactly = 1) {
+                projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_ACCEPTED)
+            }
         }
 
     @Test
@@ -219,7 +228,11 @@ class CreateReviewTest : ReviewServiceTest() {
                 updatedPaperDecision = PaperDecision.PAPER_DECISION_ACCEPTED,
             )
 
-            assertDoesNotThrow { service.createReview(validCreateReviewRequest.build()) }
+            service.createReview(validCreateReviewRequest.build())
+
+            coVerify(exactly = 1) {
+                projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_ACCEPTED)
+            }
         }
 
     @Test
@@ -280,7 +293,11 @@ class CreateReviewTest : ReviewServiceTest() {
             }
             coJustRun { projectRepoMock.updateProject(getUpdateProjectStatusRequest(project.id)) }
 
-            assertDoesNotThrow { service.createReview(createReviewRequest) }
+            service.createReview(createReviewRequest)
+
+            coVerify(exactly = 1) {
+                projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_DECLINED)
+            }
         }
 
     @Test

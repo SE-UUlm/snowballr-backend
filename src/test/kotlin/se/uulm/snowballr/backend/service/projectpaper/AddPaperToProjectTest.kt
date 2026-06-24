@@ -24,48 +24,53 @@ class AddPaperToProjectTest : ProjectPaperServiceTest() {
         .build()
 
     @Test
-    fun `When a user adds a paper to a project and has access, then no exception is thrown`() = runTest {
-        val user = DataBuilder.createExampleUser()
-        val project = DataBuilder.createExampleProject()
-        val projectResult = Result.success(project)
-        val paper = DataBuilder.createExamplePaper()
-        val projectPaper = DataBuilder.createExampleProjectPaper(projectId = project.id, paperId = paper.id)
+    fun `When a user adds a paper to a project and has access, then the created project paper has the correct values`() =
+        runTest {
+            val user = DataBuilder.createExampleUser()
+            val project = DataBuilder.createExampleProject()
+            val projectResult = Result.success(project)
+            val paper = DataBuilder.createExamplePaper()
+            val projectPaper = DataBuilder.createExampleProjectPaper(projectId = project.id, paperId = paper.id)
 
-        val backwardReferences = listOf(UUID.randomUUID(), UUID.randomUUID())
-        val reviews = listOf(DataBuilder.createExampleReview(), DataBuilder.createExampleReview())
-        val criteriaIds0 = listOf(UUID.randomUUID(), UUID.randomUUID())
-        val criteriaIds1 = listOf(UUID.randomUUID(), UUID.randomUUID())
+            val backwardReferences = listOf(UUID.randomUUID(), UUID.randomUUID())
+            val reviews = listOf(DataBuilder.createExampleReview(), DataBuilder.createExampleReview())
+            val criteriaIds0 = listOf(UUID.randomUUID(), UUID.randomUUID())
+            val criteriaIds1 = listOf(UUID.randomUUID(), UUID.randomUUID())
 
-        val request = getRequest(project.id, paper.id)
+            val request = getRequest(project.id, paper.id)
 
-        mockCurrentUser(user)
-        coJustRun { projectPaperAccessCheckerMock.isAllowedToAddPaperToProject(user, project.id, projectResult) }
-        coEvery { projectRepoMock.getProjectById(project.id) } returns projectResult
-        coEvery { paperRepoMock.getPaperById(paper.id) } returns Result.success(paper)
-        coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, paper.id) } returns false
-        coEvery { projectPaperRepoMock.addPaperToProject(request, user.id) } returns projectPaper
-        coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id) } returns backwardReferences
-        coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper.id) } returns reviews
-        coEvery { reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(reviews[0].id) } returns criteriaIds0
-        coEvery { reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(reviews[1].id) } returns criteriaIds1
+            mockCurrentUser(user)
+            coJustRun { projectPaperAccessCheckerMock.isAllowedToAddPaperToProject(user, project.id, projectResult) }
+            coEvery { projectRepoMock.getProjectById(project.id) } returns projectResult
+            coEvery { paperRepoMock.getPaperById(paper.id) } returns Result.success(paper)
+            coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, paper.id) } returns false
+            coEvery { projectPaperRepoMock.addPaperToProject(request, user.id) } returns projectPaper
+            coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id) } returns backwardReferences
+            coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper.id) } returns reviews
+            coEvery {
+                reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(reviews[0].id)
+            } returns criteriaIds0
+            coEvery {
+                reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(reviews[1].id)
+            } returns criteriaIds1
 
-        val addedProjectPaper = service.addPaperToProject(request)
+            val addedProjectPaper = service.addPaperToProject(request)
 
-        assertEquals(2, addedProjectPaper.reviewsCount)
-        val review0 = addedProjectPaper.getReviews(0)
-        val review1 = addedProjectPaper.getReviews(1)
-        assertEquals(review0.id, reviews[0].id.toString())
-        assertEquals(review1.id, reviews[1].id.toString())
+            assertEquals(2, addedProjectPaper.reviewsCount)
+            val review0 = addedProjectPaper.getReviews(0)
+            val review1 = addedProjectPaper.getReviews(1)
+            assertEquals(review0.id, reviews[0].id.toString())
+            assertEquals(review1.id, reviews[1].id.toString())
 
-        val criteriaIdsReview0 = review0.selectedCriteriaIdsList
-        val criteriaIdsReview1 = review1.selectedCriteriaIdsList
-        assertEquals(2, criteriaIdsReview0.size)
-        assertEquals(2, criteriaIdsReview1.size)
-        assertEquals(criteriaIds0[0].toString(), criteriaIdsReview0[0].toString())
-        assertEquals(criteriaIds0[1].toString(), criteriaIdsReview0[1].toString())
-        assertEquals(criteriaIds1[0].toString(), criteriaIdsReview1[0].toString())
-        assertEquals(criteriaIds1[1].toString(), criteriaIdsReview1[1].toString())
-    }
+            val criteriaIdsReview0 = review0.selectedCriteriaIdsList
+            val criteriaIdsReview1 = review1.selectedCriteriaIdsList
+            assertEquals(2, criteriaIdsReview0.size)
+            assertEquals(2, criteriaIdsReview1.size)
+            assertEquals(criteriaIds0[0].toString(), criteriaIdsReview0[0].toString())
+            assertEquals(criteriaIds0[1].toString(), criteriaIdsReview0[1].toString())
+            assertEquals(criteriaIds1[0].toString(), criteriaIdsReview1[0].toString())
+            assertEquals(criteriaIds1[1].toString(), criteriaIdsReview1[1].toString())
+        }
 
     @Test
     fun `When a user adds a paper to a project, but has no access, then a TestSpecificException is thrown`() = runTest {

@@ -22,16 +22,12 @@ data class UserSettings(
  * Creates a [UserSettingsOuterClass.UserSettings] from this [UserSettings].
  */
 fun UserSettings.toGrpcUserSettings(
-    criteria: List<CriterionOuterClass.Criterion>,
+    criteria: CriterionOuterClass.Criterion.List,
 ): UserSettingsOuterClass.UserSettings = UserSettingsOuterClass.UserSettings
     .newBuilder()
     .setShowHotkeys(this.areHotkeysShown)
     .setReviewMode(this.isReviewModeEnabled)
-    .setDefaultCriteria(
-        CriterionOuterClass.Criterion.List.newBuilder()
-            .addAllCriteria(criteria)
-            .build(),
-    )
+    .setDefaultCriteria(criteria)
     .setDefaultProjectSettings(
         ProjectOuterClass.Project.Settings.newBuilder()
             .setSimilarityThreshold(this.similarityThreshold)

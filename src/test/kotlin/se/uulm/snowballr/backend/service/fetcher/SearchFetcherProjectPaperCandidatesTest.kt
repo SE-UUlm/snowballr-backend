@@ -21,7 +21,7 @@ class SearchFetcherProjectPaperCandidatesTest : FetcherServiceTest() {
         .build()
 
     @Test
-    fun `When a user searches papers and has access, then no exception is thrown`() = runTest {
+    fun `When a user searches papers and has access, then the correct values are returned`() = runTest {
         val user = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject(
             fetchers = mapOf(
