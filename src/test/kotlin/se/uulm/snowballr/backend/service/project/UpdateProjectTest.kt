@@ -5,7 +5,6 @@ import io.mockk.coEvery
 import io.mockk.coJustRun
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
@@ -16,7 +15,6 @@ import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.toGrpcProject
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import snowballr.ProjectOuterClass.ProjectStatus
-import kotlin.test.assertEquals
 import snowballr.ProjectOuterClass.Project as GrpcProject
 
 class UpdateProjectTest : ProjectServiceTest() {
@@ -56,7 +54,7 @@ class UpdateProjectTest : ProjectServiceTest() {
     }
 
     @Test
-    fun `When a user updates a project and has access, then no exception is thrown`() = runTest {
+    fun `When a user updates a project and has access, then the correct values are returned`() = runTest {
         val user = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject()
 
@@ -68,7 +66,9 @@ class UpdateProjectTest : ProjectServiceTest() {
         coEvery { projectRepoMock.isProjectLocked(project.id) } returns false
         coEvery { projectRepoMock.updateProject(request) } returns project
 
-        assertDoesNotThrow { service.updateProject(request) }
+        val result = service.updateProject(request)
+
+        assertProjectEquality(project, result)
     }
 
     @Test
@@ -120,7 +120,7 @@ class UpdateProjectTest : ProjectServiceTest() {
 
     @ParameterizedTest
     @ValueSource(strings = ["PROJECT_STATUS_ACTIVE", "PROJECT_STATUS_ACTIVE_LOCKED"])
-    fun `When a user updates an archived project (only active status), then no exception is thrown`(
+    fun `When a user updates an archived project (only active status), then the correct values are returned`(
         statusName: String,
     ) = runTest {
         val status = ProjectStatus.valueOf(statusName)
@@ -137,28 +137,29 @@ class UpdateProjectTest : ProjectServiceTest() {
             (updatedProject.status == ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
         coEvery { projectRepoMock.updateProject(request) } returns updatedProject
 
-        val resultProject = service.updateProject(request)
+        val result = service.updateProject(request)
 
-        assertEquals(status, resultProject.status)
+        assertProjectEquality(updatedProject, result)
     }
 
     @Test
-    fun `When a user updates an archived project (only archived status), then no exception is thrown`() = runTest {
-        val user = DataBuilder.createExampleUser()
-        val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ARCHIVED)
+    fun `When a user updates an archived project (only archived status), then the correct values are returned`() =
+        runTest {
+            val user = DataBuilder.createExampleUser()
+            val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ARCHIVED)
 
-        val updatedProject = project.copy(status = ProjectStatus.PROJECT_STATUS_ARCHIVED)
-        val request = getRequest(updatedProject, listOf("project.status"))
+            val updatedProject = project.copy(status = ProjectStatus.PROJECT_STATUS_ARCHIVED)
+            val request = getRequest(updatedProject, listOf("project.status"))
 
-        mockCurrentUser(user)
-        coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
-        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-        coEvery { projectRepoMock.updateProject(request) } returns updatedProject
+            mockCurrentUser(user)
+            coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
+            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
+            coEvery { projectRepoMock.updateProject(request) } returns updatedProject
 
-        val resultProject = service.updateProject(request)
+            val result = service.updateProject(request)
 
-        assertEquals(ProjectStatus.PROJECT_STATUS_ARCHIVED, resultProject.status)
-    }
+            assertProjectEquality(updatedProject, result)
+        }
 
     @Test
     fun `When a user updates an archived project (only unsupported status), then a FailedPreconditionException is thrown`() =
@@ -193,24 +194,27 @@ class UpdateProjectTest : ProjectServiceTest() {
         }
 
     @Test
-    fun `When a user updates an active locked project (not project settings), then no exception is thrown`() = runTest {
-        val user = DataBuilder.createExampleUser()
-        val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
+    fun `When a user updates an active locked project (not project settings), then the correct values are returned`() =
+        runTest {
+            val user = DataBuilder.createExampleUser()
+            val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
 
-        val updatedProject = project.copy(name = "Updated Name")
-        val request = getRequest(updatedProject, listOf("project.name"))
+            val updatedProject = project.copy(name = "Updated Name")
+            val request = getRequest(updatedProject, listOf("project.name"))
 
-        mockCurrentUser(user)
-        coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
-        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-        coEvery { projectRepoMock.isProjectLocked(project.id) } returns true
-        coEvery { projectRepoMock.updateProject(request) } returns updatedProject
+            mockCurrentUser(user)
+            coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
+            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
+            coEvery { projectRepoMock.isProjectLocked(project.id) } returns true
+            coEvery { projectRepoMock.updateProject(request) } returns updatedProject
 
-        assertDoesNotThrow { service.updateProject(request) }
-    }
+            val result = service.updateProject(request)
+
+            assertProjectEquality(updatedProject, result)
+        }
 
     @Test
-    fun `When a user updates an active project, then no exception is thrown`() = runTest {
+    fun `When a user updates an active project, then the correct values are returned`() = runTest {
         val user = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ACTIVE)
 
@@ -223,7 +227,9 @@ class UpdateProjectTest : ProjectServiceTest() {
         coEvery { projectRepoMock.isProjectLocked(project.id) } returns false
         coEvery { projectRepoMock.updateProject(request) } returns updatedProject
 
-        assertDoesNotThrow { service.updateProject(request) }
+        val result = service.updateProject(request)
+
+        assertProjectEquality(updatedProject, result)
     }
 
     @ParameterizedTest

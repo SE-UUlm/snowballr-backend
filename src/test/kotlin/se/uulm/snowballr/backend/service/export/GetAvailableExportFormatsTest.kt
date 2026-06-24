@@ -4,16 +4,18 @@ import io.mockk.every
 import io.mockk.mockkObject
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import se.uulm.snowballr.backend.export.ProjectExportManager
 import se.uulm.snowballr.backend.model.export.ExportFormat
+import kotlin.test.assertEquals
 
 class GetAvailableExportFormatsTest : ExportServiceTest() {
     @Test
-    fun `When available export formats are requested, then no exception is thrown`() = runTest {
+    fun `When available export formats are requested, then the correct values are returned`() = runTest {
         mockkObject(ProjectExportManager)
         every { ProjectExportManager.getSupportedFormats() } returns ExportFormat.entries.toSet()
 
-        assertDoesNotThrow { service.getAvailableExportFormats() }
+        val formats = service.getAvailableExportFormats()
+
+        assertEquals(ExportFormat.entries.map { it.toString() }.toSet(), formats.formatsList.toSet())
     }
 }

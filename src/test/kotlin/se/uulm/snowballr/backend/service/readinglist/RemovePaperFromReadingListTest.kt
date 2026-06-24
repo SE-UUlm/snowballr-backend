@@ -7,7 +7,6 @@ import io.mockk.coVerify
 import io.mockk.just
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.model.exception.notfound.entity.PaperNotFoundException
@@ -23,7 +22,7 @@ class RemovePaperFromReadingListTest : ReadingListServiceTest() {
         coEvery { paperRepoMock.ensurePaperExists(paperId) } just Runs
         coJustRun { readingListRepoMock.removeReadingListEntry(user.id, paperId) }
 
-        assertDoesNotThrow { service.removePaperFromReadingList(paperId) }
+        service.removePaperFromReadingList(paperId)
         coVerify(exactly = 1) { readingListRepoMock.removeReadingListEntry(user.id, paperId) }
     }
 

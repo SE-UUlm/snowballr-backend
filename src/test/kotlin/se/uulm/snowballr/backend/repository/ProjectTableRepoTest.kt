@@ -576,7 +576,7 @@ class ProjectTableRepoTest :
         }
 
         @Test
-        fun `When the project to be soft-deleted is not found, then nothing happens`() = runTest {
+        fun `When the project to be soft-deleted is not found, then no exception is thrown`() = runTest {
             val projectId = UUID.randomUUID()
 
             assertDoesNotThrow { repo.softDeleteProject(projectId) }
@@ -589,7 +589,7 @@ class ProjectTableRepoTest :
         fun `When no soft-deleted projects exist, then no project are cleared`() = runTest {
             val projectId = insertProjectAndGetId(status = ProjectStatus.PROJECT_STATUS_ACTIVE, createdBy = testUserId)
 
-            assertDoesNotThrow { repo.clearSoftDeletedProjects(defaultThresholdDate) }
+            repo.clearSoftDeletedProjects(defaultThresholdDate)
 
             val project = assertResultSuccess(repo.getProjectById(projectId))
             assertEquals(ProjectStatus.PROJECT_STATUS_ACTIVE, project.status)
@@ -603,7 +603,7 @@ class ProjectTableRepoTest :
                     insertProjectAndGetId(status = ProjectStatus.PROJECT_STATUS_ACTIVE, createdBy = testUserId)
                 repo.softDeleteProject(projectId)
 
-                assertDoesNotThrow { repo.clearSoftDeletedProjects(defaultThresholdDate) }
+                repo.clearSoftDeletedProjects(defaultThresholdDate)
 
                 val project = assertResultSuccess(repo.getProjectById(projectId))
                 assertEquals(ProjectStatus.PROJECT_STATUS_DELETED, project.status)
@@ -628,7 +628,7 @@ class ProjectTableRepoTest :
                     createdBy = testUserId,
                 )
 
-                assertDoesNotThrow { repo.clearSoftDeletedProjects(defaultThresholdDate) }
+                repo.clearSoftDeletedProjects(defaultThresholdDate)
 
                 val project1 = assertResultSuccess(repo.getProjectById(projectId1))
                 assertEquals(ProjectStatus.PROJECT_STATUS_UNSPECIFIED, project1.status)
@@ -652,7 +652,7 @@ class ProjectTableRepoTest :
                 val projectId2 = insertProjectAndGetId(name = "Project2", createdBy = testUserId)
                 repo.softDeleteProject(projectId1)
 
-                assertDoesNotThrow { repo.hardDeleteClearedProjects() }
+                repo.hardDeleteClearedProjects()
 
                 val project1 = assertResultSuccess(repo.getProjectById(projectId1))
                 assertEquals(ProjectStatus.PROJECT_STATUS_DELETED, project1.status)
@@ -686,7 +686,7 @@ class ProjectTableRepoTest :
                 )
                 repo.clearSoftDeletedProjects(defaultThresholdDate)
 
-                assertDoesNotThrow { repo.hardDeleteClearedProjects() }
+                repo.hardDeleteClearedProjects()
 
                 assertResultFailure<NotFoundException>(repo.getProjectById(projectId1))
                 assertResultFailure<NotFoundException>(criterionRepo.getCriterionById(criterionId1))
@@ -715,7 +715,7 @@ class ProjectTableRepoTest :
                     }
                 }
 
-                assertDoesNotThrow { repo.hardDeleteClearedProjects() }
+                repo.hardDeleteClearedProjects()
 
                 val project = assertResultSuccess(repo.getProjectById(projectId))
                 assertEquals(ProjectStatus.PROJECT_STATUS_UNSPECIFIED, project.status)

@@ -148,9 +148,8 @@ class InvitationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, ProjectTa
             insertActiveTestToken(projectId2, "token-in-another-project")
             insertInactiveTestToken(projectId)
 
-            val activeInvitationTokenInProject = assertDoesNotThrow {
-                repo.getActiveInvitationTokensForProject(projectId)
-            }
+            val activeInvitationTokenInProject = repo.getActiveInvitationTokensForProject(projectId)
+
             assertThat(activeInvitationTokenInProject).hasSize(1)
             assertEquals("an-active-token", activeInvitationTokenInProject.first().token)
         }
@@ -160,9 +159,8 @@ class InvitationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, ProjectTa
             val projectId = insertProjectAndGetId(createdBy = testUserId)
             insertInactiveTestToken(projectId)
 
-            val activeInvitationTokenInProject = assertDoesNotThrow {
-                repo.getActiveInvitationTokensForProject(projectId)
-            }
+            val activeInvitationTokenInProject = repo.getActiveInvitationTokensForProject(projectId)
+
             assertThat(activeInvitationTokenInProject).isEmpty()
         }
 
@@ -171,9 +169,8 @@ class InvitationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, ProjectTa
             val projectId = insertProjectAndGetId(createdBy = testUserId)
             insertActiveTestToken(projectId, "token-in-another-project")
 
-            val activeInvitationTokenInProject = assertDoesNotThrow {
-                repo.getActiveInvitationTokensForProject(UUID.randomUUID())
-            }
+            val activeInvitationTokenInProject = repo.getActiveInvitationTokensForProject(UUID.randomUUID())
+
             assertThat(activeInvitationTokenInProject).isEmpty()
         }
     }
@@ -189,7 +186,7 @@ class InvitationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, ProjectTa
 
             assertResultSuccess(repo.getInvitationTokenByValue(tokenValue))
 
-            assertDoesNotThrow { repo.deleteInvitationToken(tokenValue) }
+            repo.deleteInvitationToken(tokenValue)
 
             assertResultFailure<InvitationTokenNotFoundException>(repo.getInvitationTokenByValue(tokenValue))
         }
@@ -210,7 +207,7 @@ class InvitationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, ProjectTa
 
             insertTestInvitationToken(testEmail, projectId, "token-in-project")
 
-            assertDoesNotThrow { repo.deleteExpiredInvitationTokens() }
+            repo.deleteExpiredInvitationTokens()
 
             assertResultSuccess(repo.getInvitationTokenByEmailAndProjectId(testEmail, projectId))
         }
@@ -226,13 +223,10 @@ class InvitationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, ProjectTa
                 OffsetDateTime.now().minusDays(1),
             )
 
-            assertDoesNotThrow { repo.deleteExpiredInvitationTokens() }
+            repo.deleteExpiredInvitationTokens()
 
             assertResultFailure<InvitationTokenNotFoundException>(
-                repo.getInvitationTokenByEmailAndProjectId(
-                    testEmail,
-                    projectId,
-                ),
+                repo.getInvitationTokenByEmailAndProjectId(testEmail, projectId),
             )
         }
     }
@@ -245,7 +239,7 @@ class InvitationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, ProjectTa
 
             insertTestInvitationToken(testEmail, projectId, "token-to-be-deleted")
 
-            assertDoesNotThrow { repo.deleteInvitationTokensForProject(projectId) }
+            repo.deleteInvitationTokensForProject(projectId)
 
             assertResultFailure<InvitationTokenNotFoundException>(
                 repo.getInvitationTokenByEmailAndProjectId(testEmail, projectId),
@@ -267,7 +261,7 @@ class InvitationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, ProjectTa
             insertTestInvitationToken(testEmail, projectId1, "token-in-project-1")
             insertTestInvitationToken(testEmail, projectId2, "token-in-project-2")
 
-            assertDoesNotThrow { repo.deleteInvitationTokensForProject(projectId1) }
+            repo.deleteInvitationTokensForProject(projectId1)
 
             assertResultFailure<InvitationTokenNotFoundException>(
                 repo.getInvitationTokenByEmailAndProjectId(testEmail, projectId1),

@@ -14,7 +14,7 @@ import kotlin.test.assertEquals
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class GetReviewByIdTest : ReviewServiceTest() {
     @Test
-    fun `When a user requests a review and has access, then no exception is thrown`() = runTest {
+    fun `When a user requests a review and has access, then the correct values are returned`() = runTest {
         val user = DataBuilder.createExampleUser()
         val review = DataBuilder.createExampleReview()
         val selectedCriteriaIds = listOf(UUID.randomUUID())
@@ -32,6 +32,7 @@ class GetReviewByIdTest : ReviewServiceTest() {
         assertEquals(1, reviewResult.selectedCriteriaIdsCount)
         val selectedCriterionId = reviewResult.selectedCriteriaIdsList[0]
         assertEquals(selectedCriteriaIds[0].toString(), selectedCriterionId)
+        assertReviewEquality(review, reviewResult)
     }
 
     @Test

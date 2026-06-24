@@ -5,7 +5,6 @@ import io.mockk.coVerify
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertNull
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.model.dto.ProjectMemberWithUser
@@ -56,7 +55,7 @@ class GetInviteCandidatesTest : InvitationServiceTest() {
 
         val shortGetInviteCandidatesRequest = validGetInviteCandidatesRequestBuilder.setQuery("jo")
 
-        val candidates = assertDoesNotThrow { service.getInviteCandidates(shortGetInviteCandidatesRequest.build()) }
+        val candidates = service.getInviteCandidates(shortGetInviteCandidatesRequest.build())
         assertThat(candidates.usersList).isEmpty()
     }
 
@@ -69,7 +68,7 @@ class GetInviteCandidatesTest : InvitationServiceTest() {
 
         val requestWithInvalidProjectId = validGetInviteCandidatesRequestBuilder.setProjectId("invalid-uuid")
 
-        assertDoesNotThrow { service.getInviteCandidates(requestWithInvalidProjectId.build()) }
+        service.getInviteCandidates(requestWithInvalidProjectId.build())
         coVerify(exactly = 0) { projectMemberRepoMock.getProjectMembersWithUsers(any()) }
         coVerify(exactly = 0) { invitationTokenRepoMock.getActiveInvitationTokensForProject(any()) }
     }
@@ -78,7 +77,7 @@ class GetInviteCandidatesTest : InvitationServiceTest() {
     fun `When no project members exist, then no users except for the current user are excluded`() = runTest {
         mockGetInviteCandidates()
 
-        assertDoesNotThrow { service.getInviteCandidates(validGetInviteCandidatesRequestBuilder.build()) }
+        service.getInviteCandidates(validGetInviteCandidatesRequestBuilder.build())
         coVerify(exactly = 1) { userRepoMock.getUsersMatchingSearchQuery(searchQuery, setOf(requestingUserEmail)) }
     }
 

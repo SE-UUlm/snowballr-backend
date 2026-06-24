@@ -45,19 +45,20 @@ class SoftDeleteProjectTest : ProjectServiceTest() {
     }
 
     @Test
-    fun `When a user deletes a project and has access, then no exception is thrown`() = runTest {
-        val user = DataBuilder.createExampleUser()
-        val projectId = UUID.randomUUID()
+    fun `When a user deletes a project and has access, then the project and any invitation tokens for it are deleted successfully`() =
+        runTest {
+            val user = DataBuilder.createExampleUser()
+            val projectId = UUID.randomUUID()
 
-        mockCurrentUser(user)
-        coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, projectId, AccessType.DELETE) }
-        coEvery { projectRepoMock.doesProjectExistById(projectId) } returns true
-        coJustRun { projectRepoMock.softDeleteProject(projectId) }
-        coJustRun { invitationTokenRepoMock.deleteInvitationTokensForProject(projectId) }
+            mockCurrentUser(user)
+            coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, projectId, AccessType.DELETE) }
+            coEvery { projectRepoMock.doesProjectExistById(projectId) } returns true
+            coJustRun { projectRepoMock.softDeleteProject(projectId) }
+            coJustRun { invitationTokenRepoMock.deleteInvitationTokensForProject(projectId) }
 
-        service.softDeleteProject(projectId)
+            service.softDeleteProject(projectId)
 
-        coVerify(exactly = 1) { projectRepoMock.softDeleteProject(projectId) }
-        coVerify(exactly = 1) { invitationTokenRepoMock.deleteInvitationTokensForProject(projectId) }
-    }
+            coVerify(exactly = 1) { projectRepoMock.softDeleteProject(projectId) }
+            coVerify(exactly = 1) { invitationTokenRepoMock.deleteInvitationTokensForProject(projectId) }
+        }
 }

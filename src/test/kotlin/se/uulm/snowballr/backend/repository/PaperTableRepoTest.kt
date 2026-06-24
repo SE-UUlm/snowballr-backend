@@ -106,14 +106,14 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
     @Nested
     inner class EnsurePaperExists {
         @Test
-        fun `When a paper with the given id exists, then no exception is thrown`() = runTest {
+        fun `When a paper with the given ID exists, then no exception is thrown`() = runTest {
             val paperId = insertPaperAndGetId("Test Paper")
 
             assertDoesNotThrow { repo.ensurePaperExists(paperId) }
         }
 
         @Test
-        fun `When a paper with the given id does not exist, then a PaperNotFoundException is thrown`() = runTest {
+        fun `When a paper with the given ID does not exist, then a PaperNotFoundException is thrown`() = runTest {
             val paperId = UUID.randomUUID()
 
             assertThrows<PaperNotFoundException> { repo.ensurePaperExists(paperId) }
@@ -123,7 +123,7 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
     @Nested
     inner class DoesPaperExistByExternalId {
         @Test
-        fun `When a paper with the given external id exists, then true is returned`() = runTest {
+        fun `When a paper with the given external ID exists, then true is returned`() = runTest {
             val externalId = "ExternalId"
             insertPaperAndGetId(externalId = externalId)
 
@@ -133,7 +133,7 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
         }
 
         @Test
-        fun `When a paper with the given external id does not exist, then false returned`() = runTest {
+        fun `When a paper with the given external ID does not exist, then false returned`() = runTest {
             val externalId = "NonExistentExternalId"
 
             val isPaperExistent = repo.doesPaperExistByExternalId(externalId)

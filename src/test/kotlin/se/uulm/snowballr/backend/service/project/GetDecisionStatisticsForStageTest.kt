@@ -4,7 +4,6 @@ import io.mockk.coEvery
 import io.mockk.coJustRun
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
@@ -21,21 +20,27 @@ class GetDecisionStatisticsForStageTest : ProjectServiceTest() {
         .setStage(0)
 
     @Test
-    fun `When a user retrieves the decision statistics and has access, then no exception is thrown`() = runTest {
-        val user = DataBuilder.createExampleUser()
-        val project = DataBuilder.createExampleProject()
+    fun `When a user retrieves the decision statistics and has access, then the correct values are returned`() =
+        runTest {
+            val user = DataBuilder.createExampleUser()
+            val project = DataBuilder.createExampleProject()
 
-        val request = getRequest()
-            .setProjectId(project.id.toString())
-            .build()
+            val request = getRequest()
+                .setProjectId(project.id.toString())
+                .build()
 
-        mockCurrentUser(user)
-        coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
-        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-        coEvery { projectPaperRepoMock.getAllProjectPapersForProject(project.id) } returns emptyList()
+            mockCurrentUser(user)
+            coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
+            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
+            coEvery { projectPaperRepoMock.getAllProjectPapersForProject(project.id) } returns emptyList()
 
-        assertDoesNotThrow { service.getDecisionStatisticsForStage(request) }
-    }
+            val result = service.getDecisionStatisticsForStage(request).statisticsList
+
+            assertEquals(4, result.size)
+            for (statistic in result) {
+                assertEquals(0, statistic.count)
+            }
+        }
 
     @Test
     fun `When a user retrieves the decision statistics, but has no access, then an TestSpecificException is thrown`() =
@@ -87,7 +92,7 @@ class GetDecisionStatisticsForStageTest : ProjectServiceTest() {
     }
 
     @Test
-    fun `When the highest valid stage is requested, then no exception is thrown`() = runTest {
+    fun `When the highest valid stage is requested, then the correct values are returned`() = runTest {
         val user = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject(maxStage = 1)
 
@@ -101,7 +106,12 @@ class GetDecisionStatisticsForStageTest : ProjectServiceTest() {
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectPaperRepoMock.getAllProjectPapersForProject(project.id) } returns emptyList()
 
-        assertDoesNotThrow { service.getDecisionStatisticsForStage(request) }
+        val result = service.getDecisionStatisticsForStage(request).statisticsList
+
+        assertEquals(4, result.size)
+        for (statistic in result) {
+            assertEquals(0, statistic.count)
+        }
     }
 
     @Test
@@ -151,7 +161,7 @@ class GetDecisionStatisticsForStageTest : ProjectServiceTest() {
         coEvery { projectPaperRepoMock.getAllProjectPapersForProject(project.id) } returns
             projectPapers + papersInOtherStage
 
-        val statistics = assertDoesNotThrow { service.getDecisionStatisticsForStage(request) }
+        val statistics = service.getDecisionStatisticsForStage(request)
 
         val statsByDecision = statistics.statisticsList.associateBy { it.decision }
         paperCountsByDecision.forEach { (decision, expectedCount) ->

@@ -5,7 +5,6 @@ import io.mockk.every
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import se.uulm.snowballr.backend.DataBuilder
@@ -123,7 +122,7 @@ class LoginTest : AuthenticationServiceTest() {
         coEvery { userRepoMock.getPasswordHashByEmail(testUser.email) } returns Result.success(passwordHash)
         every { jwtManagerMock.generateAuthTokens(testUser.id) } returns tokens
 
-        assertDoesNotThrow { service.login(request) }
+        service.login(request)
 
         assertEquals(tokens.accessToken, cookiesMap[GrpcContext.ACCESS_TOKEN_COOKIE_NAME])
         assertEquals(tokens.refreshToken, cookiesMap[GrpcContext.REFRESH_TOKEN_COOKIE_NAME])

@@ -2,9 +2,9 @@ package se.uulm.snowballr.backend.service.invitation
 
 import io.mockk.coEvery
 import io.mockk.coJustRun
+import io.mockk.coVerify
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
@@ -103,23 +103,26 @@ class AcceptProjectInvitationTest : InvitationServiceTest() {
     }
 
     @Test
-    fun `When a valid token is provided and all operations succeed, then no exception is thrown`() = runTest {
-        val user = DataBuilder.createExampleUser(status = UserOuterClass.UserStatus.USER_STATUS_ACTIVE)
-        val token = DataBuilder.createExampleInvitationToken(email = user.email)
-        val userMember = ProjectMember(
-            projectId = token.projectId,
-            userId = user.id,
-            role = ProjectOuterClass.MemberRole.MEMBER_ROLE_DEFAULT,
-            createdAt = OffsetDateTime.now(),
-            modifiedAt = null,
-        )
-        val request = GrpcProjectMember.Accept.newBuilder().setToken(token.token).build()
+    fun `When a valid token is provided and all operations succeed, then the token is successfully deleted afterwards`() =
+        runTest {
+            val user = DataBuilder.createExampleUser(status = UserOuterClass.UserStatus.USER_STATUS_ACTIVE)
+            val token = DataBuilder.createExampleInvitationToken(email = user.email)
+            val userMember = ProjectMember(
+                projectId = token.projectId,
+                userId = user.id,
+                role = ProjectOuterClass.MemberRole.MEMBER_ROLE_DEFAULT,
+                createdAt = OffsetDateTime.now(),
+                modifiedAt = null,
+            )
+            val request = GrpcProjectMember.Accept.newBuilder().setToken(token.token).build()
 
-        coEvery { invitationTokenRepoMock.getInvitationTokenByValue(token.token) } returns Result.success(token)
-        coEvery { userRepoMock.getUserByEmail(token.email) } returns Result.success(user)
-        coEvery { projectMemberRepoMock.addUserToProject(user.id, token.projectId) } returns userMember
-        coJustRun { invitationTokenRepoMock.deleteInvitationToken(token.token) }
+            coEvery { invitationTokenRepoMock.getInvitationTokenByValue(token.token) } returns Result.success(token)
+            coEvery { userRepoMock.getUserByEmail(token.email) } returns Result.success(user)
+            coEvery { projectMemberRepoMock.addUserToProject(user.id, token.projectId) } returns userMember
+            coJustRun { invitationTokenRepoMock.deleteInvitationToken(token.token) }
 
-        assertDoesNotThrow { service.acceptProjectInvitation(request) }
-    }
+            service.acceptProjectInvitation(request)
+
+            coVerify(exactly = 1) { invitationTokenRepoMock.deleteInvitationToken(token.token) }
+        }
 }

@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
@@ -51,7 +50,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
             val projectId = insertProjectAndGetId(createdBy = testUserId)
             val criterionId = insertCriterionAndGetId(projectId = projectId, createdBy = testUserId)
 
-            val result = assertDoesNotThrow { repo.getCriterionById(criterionId) }
+            val result = repo.getCriterionById(criterionId)
 
             val criterion = assertResultSuccess(result)
             assertIs<ProjectCriterion>(criterion)
@@ -65,7 +64,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
 
         @Test
         fun `When a criterion is not found, then a failed result with a NotFoundException is returned`() = runTest {
-            val result = assertDoesNotThrow { repo.getCriterionById(UUID.randomUUID()) }
+            val result = repo.getCriterionById(UUID.randomUUID())
 
             assertResultFailure<NotFoundException>(result)
         }
@@ -87,7 +86,8 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                         .setCategory(category)
                         .setProjectId(projectId.toString())
                         .build()
-                val criterion = assertDoesNotThrow { repo.createCriterion(request, testUserId) }
+
+                val criterion = repo.createCriterion(request, testUserId)
 
                 assertIs<ProjectCriterion>(criterion)
                 assertEquals("Test Tag", criterion.tag)
@@ -109,7 +109,8 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                         .setDescription("Test Description")
                         .setCategory(category)
                         .build()
-                val criterion = assertDoesNotThrow { repo.createCriterion(request, testUserId) }
+
+                val criterion = repo.createCriterion(request, testUserId)
 
                 assertIs<UserCriterion>(criterion)
                 assertEquals("Test Tag", criterion.tag)
@@ -148,8 +149,9 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                     .setCategory(CriterionCategory.CRITERION_CATEGORY_EXCLUSION)
                     .setProjectId(projectId.toString())
                     .build()
-            val criterion1 = assertDoesNotThrow { repo.createCriterion(request, testUserId) }
-            val criterion2 = assertDoesNotThrow { repo.createCriterion(request, testUserId) }
+
+            val criterion1 = repo.createCriterion(request, testUserId)
+            val criterion2 = repo.createCriterion(request, testUserId)
 
             assertNotEquals(criterion2.id, criterion1.id)
         }
@@ -196,7 +198,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                 val userCriterion2 = repo.createCriterion(userCriterionRequest, userId)
                 val projectCriterion = repo.createCriterion(projectCriterionRequest, testUserId)
 
-                val userCriteria = assertDoesNotThrow { repo.getAllUserCriteria(testUserId) as List<Criterion> }
+                val userCriteria = repo.getAllUserCriteria(testUserId) as List<Criterion>
 
                 assertThat(userCriteria).hasSize(1)
                 assertThat(userCriteria).containsExactly(userCriterion1)
@@ -226,9 +228,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                 val userCriterion = repo.createCriterion(userCriterionRequest, testUserId)
                 val projectCriterion = repo.createCriterion(projectCriterionRequest, testUserId)
 
-                val userCriteria = assertDoesNotThrow {
-                    repo.getCriteriaByIds(listOf(userCriterion.id, projectCriterion.id))
-                }
+                val userCriteria = repo.getCriteriaByIds(listOf(userCriterion.id, projectCriterion.id))
 
                 assertThat(userCriteria).hasSize(2)
                 assertThat(userCriteria).containsExactlyInAnyOrder(userCriterion, projectCriterion)
@@ -247,9 +247,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
 
                 val userCriterion = repo.createCriterion(userCriterionRequest, testUserId)
 
-                val userCriteria = assertDoesNotThrow {
-                    repo.getCriteriaByIds(listOf(userCriterion.id, UUID.randomUUID()))
-                }
+                val userCriteria = repo.getCriteriaByIds(listOf(userCriterion.id, UUID.randomUUID()))
 
                 assertThat(userCriteria).hasSize(1)
                 assertThat(userCriteria).containsExactlyInAnyOrder(userCriterion)
@@ -257,13 +255,13 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
 
         @Test
         fun `When all the input list is empty, then an empty list is returned`() = runTest {
-            val userCriteria = assertDoesNotThrow { repo.getCriteriaByIds(emptyList()) }
+            val userCriteria = repo.getCriteriaByIds(emptyList())
             assertThat(userCriteria).isEmpty()
         }
 
         @Test
         fun `When no criteria of the input list exist, then an empty list is returned`() = runTest {
-            val userCriteria = assertDoesNotThrow { repo.getCriteriaByIds(listOf(UUID.randomUUID())) }
+            val userCriteria = repo.getCriteriaByIds(listOf(UUID.randomUUID()))
             assertThat(userCriteria).isEmpty()
         }
 
@@ -279,9 +277,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
 
             val userCriterion = repo.createCriterion(userCriterionRequest, testUserId)
 
-            val userCriteria = assertDoesNotThrow {
-                repo.getCriteriaByIds(listOf(userCriterion.id, userCriterion.id))
-            }
+            val userCriteria = repo.getCriteriaByIds(listOf(userCriterion.id, userCriterion.id))
 
             assertThat(userCriteria).hasSize(1)
             assertThat(userCriteria).containsExactlyInAnyOrder(userCriterion)
@@ -311,7 +307,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                 .setMask(FieldMaskUtil.fromStringList(fieldMask))
                 .build()
 
-            val updatedCriterion = assertDoesNotThrow { repo.updateCriterion(request) }
+            val updatedCriterion = repo.updateCriterion(request)
 
             if ("criterion.tag" in fieldMask) {
                 assertEquals("Updated Tag", updatedCriterion.tag)
@@ -346,7 +342,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
 
             val idsToDelete = listOf(criterionId1, criterionId3)
 
-            assertDoesNotThrow { repo.deleteCriteriaByIds(idsToDelete) }
+            repo.deleteCriteriaByIds(idsToDelete)
 
             assertResultFailure<NotFoundException>(repo.getCriterionById(criterionId1))
             assertResultFailure<NotFoundException>(repo.getCriterionById(criterionId3))
@@ -359,7 +355,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
 
             val idsToDelete = emptyList<UUID>()
 
-            assertDoesNotThrow { repo.deleteCriteriaByIds(idsToDelete) }
+            repo.deleteCriteriaByIds(idsToDelete)
 
             assertResultSuccess(repo.getCriterionById(criterionId1))
         }
@@ -371,7 +367,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
         fun `When a user ID is given, then all user criteria associated with this user should be deleted`() = runTest {
             val criterionId = insertCriterionAndGetId(createdBy = testUserId)
 
-            assertDoesNotThrow { repo.deleteUserCriteriaByUserId(testUserId) }
+            repo.deleteUserCriteriaByUserId(testUserId)
 
             assertResultFailure<NotFoundException>(repo.getCriterionById(criterionId))
         }
@@ -403,7 +399,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                 val projectCriterion1 = repo.createCriterion(projectCriterionRequest1, testUserId)
                 val projectCriterion2 = repo.createCriterion(projectCriterionRequest2, testUserId)
 
-                val userCriteria = assertDoesNotThrow { repo.getAllProjectCriteria(projectId1) }
+                val userCriteria = repo.getAllProjectCriteria(projectId1)
 
                 assertThat(userCriteria).hasSize(1)
                 assertThat(userCriteria).containsExactly(projectCriterion1)

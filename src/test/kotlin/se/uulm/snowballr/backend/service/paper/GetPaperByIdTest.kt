@@ -3,7 +3,6 @@ package se.uulm.snowballr.backend.service.paper
 import io.mockk.coEvery
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
@@ -20,7 +19,7 @@ class GetPaperByIdTest : PaperServiceTest() {
     }
 
     @Test
-    fun `When a paper is retrieved successfully, then no exception is thrown`() = runTest {
+    fun `When a paper is retrieved successfully, then the correct values are returned`() = runTest {
         val author = DataBuilder.createExampleAuthor()
         val paper = DataBuilder.createExamplePaper(authors = listOf(author))
 
@@ -29,6 +28,8 @@ class GetPaperByIdTest : PaperServiceTest() {
             citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
         } returns listOf(UUID.randomUUID())
 
-        assertDoesNotThrow { service.getPaperById(paper.id) }
+        val result = service.getPaperById(paper.id)
+
+        assertPaperEquality(paper, result)
     }
 }

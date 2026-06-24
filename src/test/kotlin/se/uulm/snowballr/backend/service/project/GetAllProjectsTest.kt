@@ -4,10 +4,10 @@ import io.mockk.coEvery
 import io.mockk.coJustRun
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
+import kotlin.test.assertEquals
 
 class GetAllProjectsTest : ProjectServiceTest() {
     @Test
@@ -21,13 +21,18 @@ class GetAllProjectsTest : ProjectServiceTest() {
     }
 
     @Test
-    fun `When a user retrieves all projects and has access, then no exception is thrown`() = runTest {
+    fun `When a user retrieves all projects and has access, then the correct values are returned`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
+        val project = DataBuilder.createExampleProject()
 
         mockCurrentUser(currentUser)
         coJustRun { projectAccessCheckerMock.isAllowedToReadAllProjects(currentUser) }
-        coEvery { projectRepoMock.getAllProjects() } returns emptyList()
+        coEvery { projectRepoMock.getAllProjects() } returns listOf(project)
 
-        assertDoesNotThrow { service.getAllProjects() }
+        val result = service.getAllProjects()
+
+        assertEquals(1, result.projectsCount)
+        val resultElement = result.projectsList.first()
+        assertProjectEquality(project, resultElement)
     }
 }

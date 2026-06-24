@@ -4,7 +4,6 @@ import io.mockk.coEvery
 import io.mockk.coJustRun
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
@@ -32,19 +31,22 @@ class CreateCriterionTest : CriterionServiceTest() {
     }
 
     @Test
-    fun `When a user creates a project criterion and has access, then no exception is thrown`() = runTest {
-        val user = DataBuilder.createExampleUser()
-        val project = DataBuilder.createExampleProject()
+    fun `When a user creates a project criterion and has access, then the created criterion has the correct values`() =
+        runTest {
+            val user = DataBuilder.createExampleUser()
+            val project = DataBuilder.createExampleProject()
 
-        val criterion = DataBuilder.createExampleProjectCriterion(projectId = project.id)
-        val request = getProjectCriterionRequest(project.id.toString())
+            val criterion = DataBuilder.createExampleProjectCriterion(projectId = project.id)
+            val request = getProjectCriterionRequest(project.id.toString())
 
-        mockCurrentUser(user)
-        coJustRun { criterionAccessCheckerMock.isAllowedToCreateProjectCriterion(user, project.id) }
-        coEvery { criterionRepoMock.createCriterion(request, user.id) } returns criterion
+            mockCurrentUser(user)
+            coJustRun { criterionAccessCheckerMock.isAllowedToCreateProjectCriterion(user, project.id) }
+            coEvery { criterionRepoMock.createCriterion(request, user.id) } returns criterion
 
-        assertDoesNotThrow { service.createCriterion(request) }
-    }
+            val result = service.createCriterion(request)
+
+            assertCriterionEquality(criterion, result)
+        }
 
     @Test
     fun `When a user creates a project criterion, but has no access, then a TestSpecificException is thrown`() =
@@ -63,15 +65,18 @@ class CreateCriterionTest : CriterionServiceTest() {
         }
 
     @Test
-    fun `When a user creates a user criterion and has access, then no exception is thrown`() = runTest {
-        val user = DataBuilder.createExampleUser()
+    fun `When a user creates a user criterion and has access, then the created criterion has the correct values`() =
+        runTest {
+            val user = DataBuilder.createExampleUser()
 
-        val criterion = DataBuilder.createExampleUserCriterion()
-        val request = getUserCriterionRequest()
+            val criterion = DataBuilder.createExampleUserCriterion()
+            val request = getUserCriterionRequest()
 
-        mockCurrentUser(user)
-        coEvery { criterionRepoMock.createCriterion(request, user.id) } returns criterion
+            mockCurrentUser(user)
+            coEvery { criterionRepoMock.createCriterion(request, user.id) } returns criterion
 
-        assertDoesNotThrow { service.createCriterion(request) }
-    }
+            val result = service.createCriterion(request)
+
+            assertCriterionEquality(criterion, result)
+        }
 }

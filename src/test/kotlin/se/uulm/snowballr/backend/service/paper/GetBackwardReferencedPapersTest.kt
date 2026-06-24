@@ -5,12 +5,12 @@ import io.mockk.coEvery
 import io.mockk.just
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.PaperNotFoundException
 import java.util.UUID
+import kotlin.test.assertEquals
 
 class GetBackwardReferencedPapersTest : PaperServiceTest() {
     @Test
@@ -40,7 +40,7 @@ class GetBackwardReferencedPapersTest : PaperServiceTest() {
     }
 
     @Test
-    fun `When the backward references of an existent paper are retrieved successfully, then no exception is thrown`() =
+    fun `When the backward references of an existent paper are retrieved successfully, then the correct values are returned`() =
         runTest {
             val author = DataBuilder.createExampleAuthor()
             val paper = DataBuilder.createExamplePaper(authors = listOf(author))
@@ -56,6 +56,10 @@ class GetBackwardReferencedPapersTest : PaperServiceTest() {
             } returns listOf(UUID.randomUUID())
             coEvery { paperRepoMock.getPaperById(backwardReferenceId) } returns Result.success(referencedPaper)
 
-            assertDoesNotThrow { service.getBackwardReferencedPapers(paper.id) }
+            val result = service.getBackwardReferencedPapers(paper.id)
+
+            assertEquals(1, result.papersCount)
+            val resultElement = result.papersList.first()
+            assertPaperEquality(referencedPaper, resultElement)
         }
 }

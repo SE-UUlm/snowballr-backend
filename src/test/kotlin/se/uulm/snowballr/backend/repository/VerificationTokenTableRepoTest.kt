@@ -67,7 +67,7 @@ class VerificationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, Verific
 
             assertResultSuccess(repo.getVerificationTokenByValue(tokenValue))
 
-            assertDoesNotThrow { repo.deleteVerificationToken(tokenValue) }
+            repo.deleteVerificationToken(tokenValue)
 
             assertResultFailure<VerificationTokenNotFoundException>(repo.getVerificationTokenByValue(tokenValue))
         }
@@ -86,7 +86,7 @@ class VerificationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, Verific
         fun `When no expired tokens exist, then no tokens are deleted`() = runTest {
             insertTestVerificationToken(testUserId, "valid-token")
 
-            assertDoesNotThrow { repo.deleteExpiredVerificationTokens() }
+            repo.deleteExpiredVerificationTokens()
 
             assertResultSuccess(repo.getVerificationTokenByValue("valid-token"))
         }
@@ -99,7 +99,7 @@ class VerificationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, Verific
                 expiresAt = OffsetDateTime.now().minusDays(1),
             )
 
-            assertDoesNotThrow { repo.deleteExpiredVerificationTokens() }
+            repo.deleteExpiredVerificationTokens()
 
             assertResultFailure<VerificationTokenNotFoundException>(
                 repo.getVerificationTokenByValue("expired-token"),

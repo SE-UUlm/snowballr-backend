@@ -1,7 +1,6 @@
-# Asset IDs of v0.4.38 release of grpc-health-probe
+# Version of grpc-health-probe to download
 # https://github.com/grpc-ecosystem/grpc-health-probe/releases/tag/v0.4.38
-ARG AMD64_ID=251600596
-ARG ARM64_ID=251600609
+ARG GRPC_HEALTH_PROBE_VERSION=v0.4.38
 
 # Stage 1: Build the application
 FROM gradle:9.5.1-jdk25-alpine AS build
@@ -27,24 +26,20 @@ RUN --mount=type=cache,target=/root/.gradle \
 # Stage 2: Download grpc-health-probe (runs in parallel with build)
 FROM alpine:3.21 AS grpc-health-probe
 
-ARG AMD64_ID
-ARG ARM64_ID
+ARG GRPC_HEALTH_PROBE_VERSION
 
 # Download binaries of grpc-health-probe based on the architecture and make them executable
 RUN apk add --no-cache curl && \
     ARCH=$(uname -m) && \
     if [ "$ARCH" = "x86_64" ]; then \
-      export ASSET_ID=${AMD64_ID}; \
+      export ARCH_SUFFIX=amd64; \
     elif [ "$ARCH" = "aarch64" ]; then \
-      export ASSET_ID=${ARM64_ID}; \
+      export ARCH_SUFFIX=arm64; \
     else \
-      # unsupported architecture
       exit 1; \
     fi && \
-    curl -L \
-      -H "Accept:application/octet-stream" \
-      -H "X-GitHub-Api-Version: 2022-11-28" \
-      https://api.github.com/repos/grpc-ecosystem/grpc-health-probe/releases/assets/${ASSET_ID} \
+    curl -fsSL \
+      https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-${ARCH_SUFFIX} \
       -o /grpc_health_probe \
     && chmod +x /grpc_health_probe
 
@@ -75,6 +70,9 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv pip install --python /app/.venv/bin/python -r requirements.txt
 RUN apk del .py-build-deps && chown -R backend-user /app/.venv
 
+RUN mkdir -p /app/plugins && chown backend-user:backend-user /app/plugins
+USER backend-user
+
 VOLUME /app/plugins/
 
 # Healthcheck uses grpc-health-probe
@@ -83,8 +81,6 @@ HEALTHCHECK CMD ./grpc_health_probe -addr=localhost:${PORT} -service "snowballr.
 # Copy build artifacts last — source changes only invalidate layers below this point
 COPY --chown=backend-user:backend-user --from=build /app/build/libs/snowballr-backend-*.jar app.jar
 COPY --chown=backend-user:backend-user --from=grpc-health-probe /grpc_health_probe grpc_health_probe
-
-USER backend-user
 
 # Start execute the jar file when starting the container
 ENTRYPOINT ["java", "-jar", "app.jar"]

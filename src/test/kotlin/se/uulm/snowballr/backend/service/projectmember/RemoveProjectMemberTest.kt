@@ -22,7 +22,7 @@ class RemoveProjectMemberTest : ProjectMemberServiceTest() {
         .build()
 
     @Test
-    fun `When a user removes a project member, then no exception is thrown`() = runTest {
+    fun `When a user removes a project member, then the member is successfully deleted`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
         val userToRemove = DataBuilder.createExampleUser(email = userEmail, status = UserStatus.USER_STATUS_ACTIVE)
         val project = DataBuilder.createExampleProject()
@@ -128,7 +128,7 @@ class RemoveProjectMemberTest : ProjectMemberServiceTest() {
     }
 
     @Test
-    fun `When a user removes an invitation and has access, then no exception is thrown`() = runTest {
+    fun `When a user removes an invitation and has access, then the invitation is successfully deleted`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject()
         val invitationToken = DataBuilder.createExampleInvitationToken()

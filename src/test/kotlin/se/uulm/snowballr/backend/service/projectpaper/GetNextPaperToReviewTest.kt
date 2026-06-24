@@ -5,7 +5,6 @@ import io.mockk.coJustRun
 import io.mockk.coVerify
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
@@ -15,7 +14,7 @@ import java.util.UUID
 
 class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
     @Test
-    fun `When a user requests the next project paper and has access, then no exception is thrown`() = runTest {
+    fun `When a user requests the next project paper and has access, then the correct values are returned`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject()
         val paper = DataBuilder.createExamplePaper()
@@ -25,7 +24,12 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
             stage = 0,
             localPaperId = 0,
         )
-        val nextProjectPaper = DataBuilder.createExampleProjectPaper(stage = 0, localPaperId = 1)
+        val otherPaper = DataBuilder.createExamplePaper()
+        val nextProjectPaper = DataBuilder.createExampleProjectPaper(
+            stage = 0,
+            localPaperId = 1,
+            paperId = otherPaper.id,
+        )
         val review = DataBuilder.createExampleReview(projectPaperId = projectPaper.id)
 
         mockCurrentUser(currentUser)
@@ -39,11 +43,13 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
         coEvery {
             reviewRepoMock.getAllReviewsForProjectPaper(nextProjectPaper.id)
         } returns listOf(review)
-        coEvery { paperRepoMock.getPaperById(nextProjectPaper.paperId) } returns Result.success(paper)
-        coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id) } returns emptyList()
+        coEvery { paperRepoMock.getPaperById(nextProjectPaper.paperId) } returns Result.success(otherPaper)
+        coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(otherPaper.id) } returns emptyList()
         coEvery { reviewRepoMock.getAllReviewsForProjectPaper(nextProjectPaper.id) } returns emptyList()
 
-        assertDoesNotThrow { service.getNextPaperToReview(projectPaper.id) }
+        val result = service.getNextPaperToReview(projectPaper.id)
+
+        assertProjectPaperEquality(nextProjectPaper, result)
     }
 
     @Test
@@ -155,7 +161,7 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
             coEvery { paperRepoMock.getPaperById(paper2.id) } returns Result.success(paper2)
             coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper2.id) } returns emptyList()
 
-            assertDoesNotThrow { service.getNextPaperToReview(currentProjectPaper.id) }
+            service.getNextPaperToReview(currentProjectPaper.id)
             coVerify(exactly = 1) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper1.id) }
             coVerify(exactly = 2) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper2.id) }
         }
@@ -216,7 +222,7 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
         coEvery { paperRepoMock.getPaperById(paper3.id) } returns Result.success(paper3)
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper3.id) } returns emptyList()
 
-        assertDoesNotThrow { service.getNextPaperToReview(currentProjectPaper.id) }
+        service.getNextPaperToReview(currentProjectPaper.id)
         coVerify(exactly = 1) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper1.id) }
         coVerify(exactly = 1) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper2.id) }
         coVerify(exactly = 2) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper3.id) }
@@ -269,7 +275,7 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
             coEvery { paperRepoMock.getPaperById(paper2.id) } returns Result.success(paper2)
             coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper2.id) } returns emptyList()
 
-            assertDoesNotThrow { service.getNextPaperToReview(currentProjectPaper.id) }
+            service.getNextPaperToReview(currentProjectPaper.id)
             coVerify(exactly = 1) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper1.id) }
             coVerify(exactly = 2) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper2.id) }
         }
@@ -322,7 +328,7 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
 
             coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper1.id) } returns emptyList()
 
-            assertDoesNotThrow { service.getNextPaperToReview(currentProjectPaper.id) }
+            service.getNextPaperToReview(currentProjectPaper.id)
             coVerify(exactly = 2) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper1.id) }
             coVerify(exactly = 1) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper2.id) }
         }

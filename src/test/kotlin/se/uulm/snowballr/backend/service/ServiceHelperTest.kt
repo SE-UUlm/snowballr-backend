@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
@@ -49,10 +48,8 @@ class ServiceHelperTest {
             every { GrpcContext.getUserIdFromContext() } returns currentUser.id
             coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
 
-            assertDoesNotThrow {
-                withUser(userRepoMock) {
-                    assertEquals(currentUser, it)
-                }
+            withUser(userRepoMock) {
+                assertEquals(currentUser, it)
             }
         }
     }

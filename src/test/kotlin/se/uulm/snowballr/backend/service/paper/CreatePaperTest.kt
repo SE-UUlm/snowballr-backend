@@ -4,26 +4,26 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
+import se.uulm.snowballr.backend.model.dto.toGrpcPaper
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicatePaperException
 import snowballr.PaperOuterClass
 import java.util.UUID
 
 class CreatePaperTest : PaperServiceTest() {
     @Test
-    fun `When a paper is created, then no exception is thrown`() = runTest {
-        val request = PaperOuterClass.Paper.newBuilder()
-            .setExternalId("new-external-id")
-            .build()
-        val paperId = UUID.randomUUID()
+    fun `When a paper is created, then the created paper has the correct values`() = runTest {
+        val paper = DataBuilder.createExamplePaper(title = "Test Paper Title", externalId = "new-external-id")
+        val request = paper.toGrpcPaper(emptyList())
 
         coEvery { paperRepoMock.doesPaperExistByExternalId(request.externalId) } returns false
-        coEvery { paperRepoMock.createPaper(request) } returns DataBuilder.createExamplePaper(id = paperId)
-        coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paperId) } returns emptyList()
+        coEvery { paperRepoMock.createPaper(request) } returns paper
+        coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id) } returns emptyList()
 
-        assertDoesNotThrow { service.createPaper(request) }
+        val result = service.createPaper(request)
+
+        assertPaperEquality(paper, result)
     }
 
     @Test
@@ -48,7 +48,7 @@ class CreatePaperTest : PaperServiceTest() {
             coEvery { paperRepoMock.createPaper(request) } returns DataBuilder.createExamplePaper(id = paperId)
             coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paperId) } returns emptyList()
 
-            assertDoesNotThrow { service.createPaper(request) }
+            service.createPaper(request)
             coVerify(exactly = 0) { paperRepoMock.doesPaperExistByExternalId(request.externalId) }
         }
 }

@@ -11,6 +11,7 @@ import se.uulm.snowballr.backend.mail.IEmailManager
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.UserIdentifierType
 import se.uulm.snowballr.backend.model.dto.User
+import se.uulm.snowballr.backend.model.dto.toGrpcCriteria
 import se.uulm.snowballr.backend.model.dto.toGrpcUser
 import se.uulm.snowballr.backend.model.dto.toGrpcUserSettings
 import se.uulm.snowballr.backend.model.dto.toGrpcUsers
@@ -24,7 +25,6 @@ import se.uulm.snowballr.backend.repository.IVerificationTokenTableRepo
 import snowballr.Authentication
 import snowballr.ProjectOuterClass.ProjectStatus
 import java.util.UUID
-import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
 import snowballr.UserOuterClass.User as GrpcUser
 import snowballr.UserSettingsOuterClass.UserSettings as GrpcUserSettings
 
@@ -199,19 +199,6 @@ class UserService(
         val userSettings = userRepo.getUserSettings(currentUser.id).getOrThrow()
         val defaultUserCriteria = criterionRepo.getCriteriaByIds(userSettings.criteriaIds)
 
-        val criteria = mutableListOf<GrpcCriterion>()
-        for (criterion in defaultUserCriteria) {
-            criteria.add(
-                GrpcCriterion
-                    .newBuilder()
-                    .setTag(criterion.tag)
-                    .setName(criterion.name)
-                    .setDescription(criterion.description)
-                    .setCategory(criterion.category)
-                    .build(),
-            )
-        }
-
-        userSettings.toGrpcUserSettings(criteria)
+        userSettings.toGrpcUserSettings(defaultUserCriteria.toGrpcCriteria())
     }
 }

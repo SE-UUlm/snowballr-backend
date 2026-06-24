@@ -123,7 +123,7 @@ class. A service test class has the following structure:
 ```kotlin
 class CreateExampleTest : ExampleServiceTest() {
     @Test
-    fun `When an example is correctly created, then no exception is thrown`() =
+    fun `When an example is correctly created, then the created example has the correct values`() =
         runTest {
             val request = ExampleOuterClass.Example.Create.getDefaultInstance()
             val example = ExampleOuterClass.Example.getDefaultInstance()
@@ -132,7 +132,9 @@ class CreateExampleTest : ExampleServiceTest() {
             coEvery { exampleRepoMock.createExample(any()) } returns Result.success(example)
 
             // Assert service behavior
-            assertDoesNotThrow { service.createExample(request) }
+            val result = service.createExample(request)
+
+            assertEquals(example.property, result.property)
         }
 
     @Test

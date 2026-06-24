@@ -6,7 +6,6 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
@@ -16,16 +15,31 @@ import snowballr.UserOuterClass.UserStatus
 
 class GetPendingInvitationsForProjectTest : InvitationServiceTest() {
     @Test
-    fun `When a user requests the pending invitations for a project and has access, then no exception is thrown`() =
+    fun `When a user requests the pending invitations for a project and has access, then the correct values are returned`() =
         runTest {
             val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
             val project = DataBuilder.createExampleProject()
+            val registeredUser = DataBuilder.createExampleUser(
+                email = "registered@example.com",
+                status = UserStatus.USER_STATUS_ACTIVE,
+            )
+            val invitationTokenForRegisteredUser = DataBuilder.createExampleInvitationToken(
+                projectId = project.id,
+                email = registeredUser.email,
+            )
 
             mockCurrentUser(currentUser)
             coJustRun { projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id) }
-            coEvery { invitationTokenRepoMock.getActiveInvitationTokensForProject(project.id) } returns emptyList()
+            coEvery {
+                invitationTokenRepoMock.getActiveInvitationTokensForProject(project.id)
+            } returns listOf(invitationTokenForRegisteredUser)
+            coEvery { userRepoMock.getUserByEmail(registeredUser.email) } returns Result.success(registeredUser)
 
-            assertDoesNotThrow { service.getPendingInvitationsForProject(project.id) }
+            val result = service.getPendingInvitationsForProject(project.id)
+
+            assertEquals(1, result.usersCount)
+            val resultElement = result.usersList.first()
+            assertEquals(registeredUser.email, resultElement.email)
         }
 
     @Test
