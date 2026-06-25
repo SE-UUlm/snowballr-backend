@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.repository
 
 import org.jetbrains.exposed.v1.core.Op
 import org.jetbrains.exposed.v1.core.ResultRow
+import org.jetbrains.exposed.v1.core.Table
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.core.dao.id.IdTable
 import org.jetbrains.exposed.v1.core.eq
@@ -16,18 +17,15 @@ import java.util.UUID
 /**
  * Returns a list of entities according to the [where] expression.
  *
- * @param Key The type of the [IdTable], i.e., the ID type, such as [UUID].
- * @param T The table type as a subtype of [IdTable].
+ * @param T The table type as a subtype of [Table].
  * @param EntT The result entity type.
  * @param mapper Mapping function to map each [ResultRow] to an entity of type [EntT].
  * @param where The SQL expression that is used to find the entities.
  */
-fun <Key : Any, T : IdTable<Key>, EntT : Any> T.getEntities(
-    mapper: (ResultRow) -> EntT,
-    where: () -> Op<Boolean>,
-): List<EntT> = this.selectAll()
-    .where(where)
-    .map(mapper)
+fun <T : Table, EntT : Any> T.getEntities(mapper: (ResultRow) -> EntT, where: () -> Op<Boolean>): List<EntT> =
+    this.selectAll()
+        .where(where)
+        .map(mapper)
 
 /**
  * Returns a list of entities by their IDs.
@@ -48,16 +46,12 @@ fun <Key : Any, T : IdTable<Key>, EntT : Any> T.getEntitiesByIds(
 /**
  * Returns an entity according to the [where] expression or returns null if the entity couldn't be found.
  *
- * @param Key The type of the [IdTable], i.e., the ID type, such as [UUID].
- * @param T The table type as a subtype of [IdTable].
+ * @param T The table type as a subtype of [Table].
  * @param EntT The result entity type.
  * @param mapper Mapping function of the [ResultRow] to the entity type [EntT].
  * @param where The SQL expression that is used to find the entity.
  */
-fun <Key : Any, T : IdTable<Key>, EntT : Any> T.getEntityOrNull(
-    mapper: (ResultRow) -> EntT,
-    where: () -> Op<Boolean>,
-): EntT? = this
+fun <T : Table, EntT : Any> T.getEntityOrNull(mapper: (ResultRow) -> EntT, where: () -> Op<Boolean>): EntT? = this
     .getEntities(mapper, where)
     .singleOrNull()
 
@@ -76,13 +70,11 @@ fun <Key : Any, T : IdTable<Key>, EntT : Any> T.getEntityByIdOrNull(id: Key, map
 /**
  * Checks if an entity exists in the table that matches the specified [where] condition.
  *
- * @param Key The type of the [IdTable], i.e., the ID type, such as [UUID].
- * @param T The table type as a subtype of [IdTable].
+ * @param T The table type as a subtype of [Table].
  * @param where The condition used to filter the entities in the table. It is expressed as an [Op].
  * @return `true` if an entity matching the condition exists, otherwise `false`.
  */
-fun <Key : Any, T : IdTable<Key>> T.doesEntityExist(where: () -> Op<Boolean>): Boolean =
-    this.selectAll().where(where).count() > 0
+fun <T : Table> T.doesEntityExist(where: () -> Op<Boolean>): Boolean = this.selectAll().where(where).count() > 0
 
 /**
  * Checks if an entity exists in the table with the given ID.
@@ -115,14 +107,13 @@ fun <Key : Any, T : IdTable<Key>, EntT : Any> T.insertAndGet(
 /**
  * Combination of using [update] and fetching the updated entity both according to the [where] expression.
  *
- * @param Key The type of the [IdTable], i.e., the ID type, such as [UUID].
- * @param T The table type as a subtype of [IdTable].
+ * @param T The table type as a subtype of [Table].
  * @param EntT The result entity type.
  * @param mapper Mapping function of the [ResultRow] to the entity type [EntT].
  * @param where The SQL expression that is used to find the entity.
  * @param body The body that is passed to [update].
  */
-fun <Key : Any, T : IdTable<Key>, EntT : Any> T.updateAndGet(
+fun <T : Table, EntT : Any> T.updateAndGet(
     mapper: (ResultRow) -> EntT,
     where: () -> Op<Boolean>,
     body: T.(UpdateStatement) -> Unit,

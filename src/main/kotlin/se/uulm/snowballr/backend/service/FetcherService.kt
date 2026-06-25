@@ -108,12 +108,15 @@ class FetcherService(
         projectId: UUID,
         fetcherPapers: Set<FetcherPaper>,
     ): List<FetcherPaperResponse> {
-        val externalIds = fetcherPapers.mapNotNull { it.externalId }.distinct()
-        val existingPapers = paperRepo.getPapersByExternalIds(externalIds).associateBy { it.externalId }
-        val notInProjectIds = filterPapersNotInProject(projectId, existingPapers.values).map { it.id }.toSet()
+        val externalIds = fetcherPapers.flatMap { it.externalIds }.distinct()
+        val existingPapers = paperRepo.getPapersByExternalIds(externalIds)
+        val notInProjectIds = filterPapersNotInProject(projectId, existingPapers).map { it.id }.toSet()
+
+        fun getExisting(fetcherPaper: FetcherPaper): Paper? =
+            existingPapers.firstOrNull { it.externalIds.any { id -> fetcherPaper.externalIds.contains(id) } }
 
         return fetcherPapers.mapNotNull { fetcherPaper ->
-            val existing = existingPapers[fetcherPaper.externalId]
+            val existing = getExisting(fetcherPaper)
             when {
                 existing == null -> FetcherPaperResponse.fromFetcherPaper(fetcherPaper)
                 existing.id in notInProjectIds -> FetcherPaperResponse.fromPaper(existing)

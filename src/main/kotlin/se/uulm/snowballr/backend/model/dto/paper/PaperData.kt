@@ -4,7 +4,6 @@ import se.uulm.snowballr.backend.model.fetcher.FetcherMetadata
 
 interface PaperData {
     val title: String
-    val externalId: String?
     val externalIds: List<ExternalId>
     val abstract: String
     val year: Int

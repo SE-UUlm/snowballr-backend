@@ -48,7 +48,7 @@ class ProjectExportBuilder(
     private fun Paper.toPaperExport(reviews: List<PaperReviewExport>, finalDecision: PaperDecision): PaperExport =
         PaperExport(
             title = title,
-            externalId = externalId.orEmpty(),
+            externalIds = externalIds,
             abstract = abstract,
             year = year,
             publisher = publisher,

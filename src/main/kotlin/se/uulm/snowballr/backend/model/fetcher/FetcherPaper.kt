@@ -2,15 +2,14 @@ package se.uulm.snowballr.backend.model.fetcher
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.paper.Author
+import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.paper.PaperData
 
 /**
  * Represents a paper fetched from an external source. Also, a serializable implementation of [PaperData].
  *
  * @property title The title of the paper.
- * @property externalId A unique external identifier for the paper, such as a DOI or other unique ID.
  * @property externalIds A list of external identifiers that are associated with the paper.
  * @property abstract The abstract or summary of the paper.
  * @property year The year the paper was published in.
@@ -24,8 +23,6 @@ import se.uulm.snowballr.backend.model.dto.paper.PaperData
 data class FetcherPaper(
     @SerialName("title")
     override val title: String,
-    @SerialName("external_id")
-    override val externalId: String?,
     @SerialName("external_ids")
     override val externalIds: List<ExternalId>,
     @SerialName("abstract")

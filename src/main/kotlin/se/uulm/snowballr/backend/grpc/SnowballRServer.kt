@@ -25,6 +25,8 @@ import se.uulm.snowballr.backend.grpc.interceptor.requestContextCoroutineInterce
 import se.uulm.snowballr.backend.grpc.interceptor.validationInterceptor
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.paper.Author
+import se.uulm.snowballr.backend.model.dto.paper.ExternalId
+import se.uulm.snowballr.backend.model.dto.paper.ExternalIdType
 import se.uulm.snowballr.backend.model.export.ExportFormat
 import se.uulm.snowballr.backend.model.incoming.authentication.ChangePasswordRequest
 import se.uulm.snowballr.backend.model.incoming.authentication.LoginRequest
@@ -564,7 +566,9 @@ class SnowballRServer(
             paperService.createPaper(
                 CreatePaperRequest(
                     title = request.title,
-                    externalId = request.externalId,
+                    externalIds = request.externalIdsList.map {
+                        ExternalId(ExternalIdType.valueOf(it.type), it.value)
+                    },
                     abstract = request.abstrakt,
                     year = request.year,
                     publisher = request.publisher,
@@ -580,7 +584,9 @@ class SnowballRServer(
                 UpdatePaperRequest(
                     paperId = parseUUID(request.paper.id, EntityType.PAPER),
                     title = request.paper.title,
-                    externalId = request.paper.externalId,
+                    externalIds = request.paper.externalIdsList.map {
+                        ExternalId(ExternalIdType.valueOf(it.type), it.value)
+                    },
                     abstract = request.paper.abstrakt,
                     year = request.paper.year,
                     publisher = request.paper.publisher,
