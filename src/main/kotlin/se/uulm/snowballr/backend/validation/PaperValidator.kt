@@ -141,34 +141,40 @@ object PaperValidator {
         }
     }
 
-    private fun Raise<Nel<ValidationIssue>>.validateAuthors(paper: Paper, selectedFields: Set<String> = emptySet()) {
-        if (!hasPathOrIsEmpty(selectedFields, FIELD_PAPER_AUTHORS)) return
-
-        val validations = paper.authorsList.mapIndexed { i, author ->
-            val result = AuthorValidator.validateAuthor(author)
-            if (result is Either.Left) {
-                val issues = result.value.toList()
-                val compositeIssue = CompositeIssue("Issues of author at index $i", issues)
-                Either.Left(nonEmptyListOf(compositeIssue))
-            } else {
-                result
-            }
-        }
-        val issues = validations.filterIsInstance<Either.Left<Nel<ValidationIssue>>>().map { it.value }
-        issues.reduceOrNull { acc, nel -> acc + nel }?.let { raise(it) }
-    }
+    private fun Raise<Nel<ValidationIssue>>.validateAuthors(paper: Paper, selectedFields: Set<String> = emptySet()) =
+        validateElementList(
+            FIELD_PAPER_AUTHORS,
+            paper.authorsList,
+            AuthorValidator::validateAuthor,
+            "author",
+            selectedFields,
+        )
 
     private fun Raise<Nel<ValidationIssue>>.validateExternalIds(
         paper: Paper,
         selectedFields: Set<String> = emptySet(),
-    ) {
-        if (!hasPathOrIsEmpty(selectedFields, FIELD_PAPER_EXTERNAL_IDS)) return
+    ) = validateElementList(
+        FIELD_PAPER_EXTERNAL_IDS,
+        paper.externalIdsList,
+        ExternalIdValidator::validateExternalId,
+        "external ID",
+        selectedFields,
+    )
 
-        val validations = paper.externalIdsList.mapIndexed { i, externalId ->
-            val result = ExternalIdValidator.validateExternalId(externalId)
+    private fun <T> Raise<Nel<ValidationIssue>>.validateElementList(
+        fieldPath: String,
+        elements: List<T>,
+        validateFn: (T) -> EitherNel<ValidationIssue, Unit>,
+        elementName: String,
+        selectedFields: Set<String>,
+    ) {
+        if (!hasPathOrIsEmpty(selectedFields, fieldPath)) return
+
+        val validations = elements.mapIndexed { i, element ->
+            val result = validateFn(element)
             if (result is Either.Left) {
                 val issues = result.value.toList()
-                val compositeIssue = CompositeIssue("Issues of external ID at index $i", issues)
+                val compositeIssue = CompositeIssue("Issues of $elementName at index $i", issues)
                 Either.Left(nonEmptyListOf(compositeIssue))
             } else {
                 result
