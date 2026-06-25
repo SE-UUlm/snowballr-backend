@@ -21,6 +21,16 @@ class Author(JSONWizard):
 
 
 @dataclass(unsafe_hash=True)
+class ExternalId(JSONWizard):
+    class _(JSONWizard.Meta):
+        key_transform_with_load = "SNAKE"
+        key_transform_with_dump = "SNAKE"
+
+    type: str = ""
+    value: str = ""
+
+
+@dataclass(unsafe_hash=True)
 class Paper(JSONWizard):
     class _(JSONWizard.Meta):
         marshal_date_time_as = "Timestamp"
@@ -28,7 +38,7 @@ class Paper(JSONWizard):
         key_transform_with_dump = "SNAKE"
 
     title: str = ""
-    external_id: Optional[str] = None
+    external_ids: list[ExternalId] = field(default_factory=list)
     abstract: str = ""
     year: int = 0
     publisher: str = ""

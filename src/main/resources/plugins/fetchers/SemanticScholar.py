@@ -3,6 +3,7 @@ from typing import Any, Optional
 
 from snowballr import (
     Author,
+    ExternalId,
     FetcherInformation,
     FetcherOptionsSchema,
     Link,
@@ -126,6 +127,9 @@ def paper_from_response(res) -> Paper:
         author_from_response(author) for author in safe_get(res, "authors", []) if "name" in author
     ]
     external_id = external_id_from_response(safe_get(res, "externalIds", {}))
+    external_ids = []
+    if external_id is not None:
+        external_ids = [ExternalId("URL", external_id)]
 
     date_str = safe_get(res, "publicationDate", "") or str(safe_get(res, "year", "0"))
     year = int(str(date_str)[:4] or "0")
@@ -142,7 +146,7 @@ def paper_from_response(res) -> Paper:
 
     return Paper(
         title=safe_get(res, "title", ""),
-        external_id=external_id,
+        external_ids=external_ids,
         abstract=safe_get(res, "abstract", ""),
         year=year,
         publisher="",
