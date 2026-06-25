@@ -18,7 +18,10 @@ class AlreadyExistsExceptionTest {
         fun `When creating a DuplicatePaperException, then the message is correctly formatted`() {
             val exception = DuplicatePaperException(listOf(ExternalId(ExternalIdType.DOI, "foo/bar")))
 
-            assertEquals("Paper with external ID 'external-id' already exists.", exception.message)
+            assertEquals(
+                "Paper with external ID '[ExternalId(type=DOI, value=foo/bar)]' already exists.",
+                exception.message,
+            )
         }
 
         @Test

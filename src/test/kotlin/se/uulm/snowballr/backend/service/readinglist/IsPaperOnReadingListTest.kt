@@ -18,7 +18,7 @@ class IsPaperOnReadingListTest : ReadingListServiceTest() {
     fun `When a user checks if a paper is on their reading list, then the request is forwarded correctly`() = runTest {
         val user = DataBuilder.createExampleUser()
         val paper1 = DataBuilder.createExamplePaper()
-        val paper2 = DataBuilder.createExamplePaper(externalId = "ExternalId2")
+        val paper2 = DataBuilder.createExamplePaper()
 
         mockCurrentUser(user)
         coEvery { readingListRepoMock.isPaperOnReadingList(user.id, paper1.id) } returns true

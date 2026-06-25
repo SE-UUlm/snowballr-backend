@@ -39,7 +39,7 @@ class CitationTableRepoTest : RepositoryTest(arrayOf(PaperTable, CitationTable),
         @Test
         fun `When a paper has one backward reference, then it is returned`() = runTest {
             val paperId = insertPaperAndGetId()
-            val paperId2 = insertPaperAndGetId(externalId = "ExternalId2")
+            val paperId2 = insertPaperAndGetId()
             addCitation(paperId, paperId2)
 
             val actualReferences = repo.getBackwardsReferencedPaperIdsOfPaperById(paperId)
@@ -51,8 +51,8 @@ class CitationTableRepoTest : RepositoryTest(arrayOf(PaperTable, CitationTable),
         @Test
         fun `When a paper has two backward references, then they are returned`() = runTest {
             val paperId = insertPaperAndGetId()
-            val paperId2 = insertPaperAndGetId(externalId = "ExternalId2")
-            val paperId3 = insertPaperAndGetId(externalId = "ExternalId3")
+            val paperId2 = insertPaperAndGetId()
+            val paperId3 = insertPaperAndGetId()
             addCitation(paperId, paperId2)
             addCitation(paperId, paperId3)
 
@@ -77,7 +77,7 @@ class CitationTableRepoTest : RepositoryTest(arrayOf(PaperTable, CitationTable),
         @Test
         fun `When a paper has one forward reference, then it is returned`() = runTest {
             val paperId = insertPaperAndGetId()
-            val citedPaperId = insertPaperAndGetId(externalId = "ExternalId2")
+            val citedPaperId = insertPaperAndGetId()
             addCitation(paperId, citedPaperId)
 
             val actualReferences = repo.getForwardReferencedPaperIdsOfPaperById(citedPaperId)
@@ -89,8 +89,8 @@ class CitationTableRepoTest : RepositoryTest(arrayOf(PaperTable, CitationTable),
         @Test
         fun `When a paper has two forward references, then they are returned`() = runTest {
             val paperId = insertPaperAndGetId()
-            val paperId2 = insertPaperAndGetId(externalId = "ExternalId2")
-            val citedPaperId = insertPaperAndGetId(externalId = "ExternalId3")
+            val paperId2 = insertPaperAndGetId()
+            val citedPaperId = insertPaperAndGetId()
             addCitation(paperId, citedPaperId)
             addCitation(paperId2, citedPaperId)
 
@@ -106,7 +106,7 @@ class CitationTableRepoTest : RepositoryTest(arrayOf(PaperTable, CitationTable),
         @Test
         fun `When adding a backward reference, then it appears in the backward references`() = runTest {
             val paperId = insertPaperAndGetId()
-            val referencedPaperId = insertPaperAndGetId(externalId = "ExternalId2")
+            val referencedPaperId = insertPaperAndGetId()
 
             repo.addBackwardReferencedPaper(paperId, referencedPaperId)
 
@@ -117,7 +117,7 @@ class CitationTableRepoTest : RepositoryTest(arrayOf(PaperTable, CitationTable),
         @Test
         fun `When adding the same backward reference twice, then an SQLException is thrown`() = runTest {
             val paperId = insertPaperAndGetId()
-            val referencedPaperId = insertPaperAndGetId(externalId = "ExternalId2")
+            val referencedPaperId = insertPaperAndGetId()
 
             repo.addBackwardReferencedPaper(paperId, referencedPaperId)
 
@@ -131,7 +131,7 @@ class CitationTableRepoTest : RepositoryTest(arrayOf(PaperTable, CitationTable),
         @Test
         fun `When adding a forward reference, then it appears in the forward references`() = runTest {
             val paperId = insertPaperAndGetId()
-            val citingPaperId = insertPaperAndGetId(externalId = "ExternalId2")
+            val citingPaperId = insertPaperAndGetId()
 
             repo.addForwardReferencedPaper(paperId, citingPaperId)
 
@@ -142,7 +142,7 @@ class CitationTableRepoTest : RepositoryTest(arrayOf(PaperTable, CitationTable),
         @Test
         fun `When adding the same forward reference twice, then an SQLException is thrown`() = runTest {
             val paperId = insertPaperAndGetId()
-            val citingPaperId = insertPaperAndGetId(externalId = "ExternalId2")
+            val citingPaperId = insertPaperAndGetId()
 
             repo.addForwardReferencedPaper(paperId, citingPaperId)
 

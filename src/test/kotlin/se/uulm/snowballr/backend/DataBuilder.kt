@@ -1,9 +1,10 @@
 package se.uulm.snowballr.backend
 
-import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.criterion.Criterion
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 import se.uulm.snowballr.backend.model.dto.paper.Author
+import se.uulm.snowballr.backend.model.dto.paper.ExternalId
+import se.uulm.snowballr.backend.model.dto.paper.ExternalIdType
 import se.uulm.snowballr.backend.model.dto.paper.Paper
 import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPattern
 import se.uulm.snowballr.backend.model.dto.project.Project
@@ -180,7 +181,6 @@ object DataBuilder {
     fun createExamplePaper(
         id: UUID = UUID.randomUUID(),
         title: String = "Title",
-        externalId: String? = "ExternalId",
         externalIds: List<ExternalId> = emptyList(),
         abstract: String = "Abstract",
         year: Int = 2025,
@@ -196,7 +196,6 @@ object DataBuilder {
     ) = Paper(
         id = id,
         title = title,
-        externalId = externalId,
         externalIds = externalIds,
         abstract = abstract,
         year = year,
@@ -357,7 +356,6 @@ object DataBuilder {
 
     fun createExampleFetcherPaper(
         title: String = "Title",
-        externalId: String? = "ExternalId",
         externalIds: List<ExternalId> = emptyList(),
         abstract: String = "Abstract",
         year: Int = 2025,
@@ -368,7 +366,6 @@ object DataBuilder {
         authors: List<Author> = emptyList(),
     ) = FetcherPaper(
         title = title,
-        externalId = externalId,
         externalIds = externalIds,
         abstract = abstract,
         year = year,
@@ -377,6 +374,11 @@ object DataBuilder {
         publicationName = publicationName,
         authors = authors,
         fetcherMetadata = fetcherMetadata,
+    )
+
+    fun createExampleExternalId(type: ExternalIdType = ExternalIdType.DOI, value: String = "10.1234/5678") = ExternalId(
+        type = type,
+        value = value,
     )
 
     fun createExampleFetcherInformation(

@@ -22,13 +22,15 @@ import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectPaperA
 import se.uulm.snowballr.backend.repository.RepositoryTest
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.ProjectTable
+import se.uulm.snowballr.backend.table.association.PaperHasExternalIdTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.utils.assertResultFailure
 import se.uulm.snowballr.backend.utils.assertResultSuccess
 import java.util.UUID
 import kotlin.random.Random
 
-class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, ProjectTable, PaperTable), true) {
+class ProjectPaperTableRepoTest :
+    RepositoryTest(arrayOf(ProjectPaperTable, ProjectTable, PaperTable, PaperHasExternalIdTable), true) {
     private val repo = ProjectPaperTableRepo(db)
     private val paperRepo = PaperTableRepo(db)
 

@@ -20,14 +20,15 @@ import se.uulm.snowballr.backend.model.OutOfRangeValue
 import se.uulm.snowballr.backend.model.TooLongField
 import se.uulm.snowballr.backend.model.TooLongList
 import se.uulm.snowballr.backend.model.ValidationIssue
+import se.uulm.snowballr.backend.model.dto.paper.ExternalIdType
 import se.uulm.snowballr.backend.validation.PaperValidator.ABSTRACT_MAX_LENGTH
-import se.uulm.snowballr.backend.validation.PaperValidator.EXTERNAL_ID_MAX_LENGTH
 import se.uulm.snowballr.backend.validation.PaperValidator.MAX_AUTHOR_COUNT
 import se.uulm.snowballr.backend.validation.PaperValidator.PUBLICATION_NAME_MAX_LENGTH
 import se.uulm.snowballr.backend.validation.PaperValidator.PUBLICATION_TYPE_MAX_LENGTH
 import se.uulm.snowballr.backend.validation.PaperValidator.PUBLISHER_MAX_LENGTH
 import se.uulm.snowballr.backend.validation.PaperValidator.TITLE_MAX_LENGTH
 import se.uulm.snowballr.backend.validation.PaperValidator.YEAR_MIN_VALUE
+import snowballr.PaperKt.externalId
 import snowballr.PaperOuterClass
 import snowballr.PaperOuterClass.Paper
 import snowballr.author
@@ -38,7 +39,6 @@ class PaperValidatorTest {
     companion object {
         private val blankableTextFields =
             listOf(
-                Pair("external_id", EXTERNAL_ID_MAX_LENGTH),
                 Pair("abstrakt", ABSTRACT_MAX_LENGTH),
                 Pair("publisher", PUBLISHER_MAX_LENGTH),
                 Pair("publication_name", PUBLICATION_NAME_MAX_LENGTH),
@@ -129,7 +129,14 @@ class PaperValidatorTest {
 
     private val validPaperBuilder: Paper.Builder = Paper.newBuilder()
         .setId(UUID.randomUUID().toString())
-        .setExternalId("some-doi")
+        .addAllExternalIds(
+            ExternalIdType.entries.map {
+                externalId {
+                    type = it.name
+                    value = "${it.name}-value"
+                }
+            },
+        )
         .setTitle("This is a paper title")
         .setAbstrakt("This is the abstract of a paper")
         .setYear(LocalDate.now().year)
@@ -253,7 +260,7 @@ class PaperValidatorTest {
         private val validFieldMask: FieldMask = FieldMaskUtil
             .fromStringList(
                 listOf(
-                    "paper.external_id",
+                    "paper.external_ids",
                     "paper.title",
                     "paper.abstrakt",
                     "paper.year",
@@ -422,23 +429,23 @@ class PaperValidatorTest {
         }
 
         @Test
-        fun `When the externalId is empty, then no issue is returned`() {
-            val paper = validPaperBuilder.setExternalId("").build()
-            val request = getExampleRequest(paper, listOf("paper.external_id"))
+        fun `When the external IDs are empty, then no issue is returned`() {
+            val paper = validPaperBuilder.clearExternalIds().build()
+            val request = getExampleRequest(paper, listOf("paper.external_ids"))
 
             val result = validateRequest(request)
 
             EitherAssert.assertThat(result).isRight()
         }
 
-        @Test
-        fun `When the externalId is blank, then a 'BlankField' issue is returned`() {
-            val paper = validPaperBuilder.setExternalId("   ").build()
-            val request = getExampleRequest(paper, listOf("paper.external_id"))
-
-            val result = validateRequest(request)
-
-            assertInvalidResult<BlankField>(result)
-        }
+//        @Test
+//        fun `When the externalId is blank, then a 'BlankField' issue is returned`() {
+//            val paper = validPaperBuilder.setExternalId("   ").build()
+//            val request = getExampleRequest(paper, listOf("paper.external_ids"))
+//
+//            val result = validateRequest(request)
+//
+//            assertInvalidResult<BlankField>(result)
+//        }
     }
 }

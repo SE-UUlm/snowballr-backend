@@ -29,7 +29,12 @@
             "papers": [
                 {
                     "title": "Paper Title 1",
-                    "external_id": "doi/1234",
+                    "external_ids": [
+                        {
+                            "type": "DOI",
+                            "value": "doi/1234"
+                        }
+                    ],
                     "abstract": "Example Abstract",
                     "year": 2001,
                     "publisher": "Publisher 1",
@@ -68,7 +73,12 @@
                 },
                 {
                     "title": "Paper Title 2",
-                    "external_id": "doi/5678",
+                    "external_ids": [
+                        {
+                            "type": "DOI",
+                            "value": "doi/5678"
+                        }
+                    ],
                     "abstract": "Example Abstract 2",
                     "year": 2002,
                     "publisher": "Publisher 2",
@@ -112,7 +122,12 @@
             "papers": [
                 {
                     "title": "Paper Title 3",
-                    "external_id": "doi/9876",
+                    "external_ids": [
+                        {
+                            "type": "DOI",
+                            "value": "doi/9876"
+                        }
+                    ],
                     "abstract": "Example Abstract 3",
                     "year": 2003,
                     "publisher": "Publisher 3",
@@ -151,7 +166,12 @@
                 },
                 {
                     "title": "Paper Title 4",
-                    "external_id": "doi/0123",
+                    "external_ids": [
+                        {
+                            "type": "DOI",
+                            "value": "doi/0123"
+                        }
+                    ],
                     "abstract": "Example Abstract 4",
                     "year": 2004,
                     "publisher": "Publisher 4",
@@ -195,7 +215,12 @@
             "papers": [
                 {
                     "title": "Paper Title 5",
-                    "external_id": "doi/4321",
+                    "external_ids": [
+                        {
+                            "type": "DOI",
+                            "value": "doi/4321"
+                        }
+                    ],
                     "abstract": "Example Abstract 5",
                     "year": 2005,
                     "publisher": "Publisher 5",
@@ -220,7 +245,12 @@
                 },
                 {
                     "title": "Paper Title 6",
-                    "external_id": "doi/6543",
+                    "external_ids": [
+                        {
+                            "type": "DOI",
+                            "value": "doi/6543"
+                        }
+                    ],
                     "abstract": "Example Abstract 6",
                     "year": 2006,
                     "publisher": "Publisher 6",

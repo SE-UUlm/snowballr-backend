@@ -1,6 +1,8 @@
 package se.uulm.snowballr.backend.export.testdata
 
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
+import se.uulm.snowballr.backend.model.dto.paper.ExternalId
+import se.uulm.snowballr.backend.model.dto.paper.ExternalIdType
 import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
 import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
@@ -33,7 +35,7 @@ val fullProjectExport = ProjectExport(
             papers = listOf(
                 PaperExport(
                     "Paper Title 1",
-                    "doi/1234",
+                    listOf(ExternalId(ExternalIdType.DOI, "doi/1234")),
                     "Example Abstract",
                     2001,
                     "Publisher 1",
@@ -51,7 +53,7 @@ val fullProjectExport = ProjectExport(
                 ),
                 PaperExport(
                     "Paper Title 2",
-                    "doi/5678",
+                    listOf(ExternalId(ExternalIdType.DOI, "doi/5678")),
                     "Example Abstract 2",
                     2002,
                     "Publisher 2",
@@ -74,7 +76,7 @@ val fullProjectExport = ProjectExport(
             papers = listOf(
                 PaperExport(
                     "Paper Title 3",
-                    "doi/9876",
+                    listOf(ExternalId(ExternalIdType.DOI, "doi/9876")),
                     "Example Abstract 3",
                     2003,
                     "Publisher 3",
@@ -92,7 +94,7 @@ val fullProjectExport = ProjectExport(
                 ),
                 PaperExport(
                     "Paper Title 4",
-                    "doi/0123",
+                    listOf(ExternalId(ExternalIdType.DOI, "doi/0123")),
                     "Example Abstract 4",
                     2004,
                     "Publisher 4",
@@ -115,7 +117,7 @@ val fullProjectExport = ProjectExport(
             papers = listOf(
                 PaperExport(
                     "Paper Title 5",
-                    "doi/4321",
+                    listOf(ExternalId(ExternalIdType.DOI, "doi/4321")),
                     "Example Abstract 5",
                     2005,
                     "Publisher 5",
@@ -131,7 +133,7 @@ val fullProjectExport = ProjectExport(
                 ),
                 PaperExport(
                     "Paper Title 6",
-                    "doi/6543",
+                    listOf(ExternalId(ExternalIdType.DOI, "doi/6543")),
                     "Example Abstract 6",
                     2006,
                     "Publisher 6",

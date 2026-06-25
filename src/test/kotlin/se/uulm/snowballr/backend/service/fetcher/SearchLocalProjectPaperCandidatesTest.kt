@@ -15,8 +15,8 @@ class SearchLocalProjectPaperCandidatesTest : FetcherServiceTest() {
     fun `When a user searches papers and has access, then the correct values are returned`() = runTest {
         val user = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject()
-        val fooPaper = DataBuilder.createExamplePaper(externalId = "fooId")
-        val barPaper = DataBuilder.createExamplePaper(externalId = "barId")
+        val fooPaper = DataBuilder.createExamplePaper()
+        val barPaper = DataBuilder.createExamplePaper()
 
         mockCurrentUser(user)
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
@@ -46,7 +46,7 @@ class SearchLocalProjectPaperCandidatesTest : FetcherServiceTest() {
     fun `When a matching paper already exists in the project, then it is not returned`() = runTest {
         val user = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject()
-        val fooPaper = DataBuilder.createExamplePaper(externalId = "fooId")
+        val fooPaper = DataBuilder.createExamplePaper()
 
         mockCurrentUser(user)
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }

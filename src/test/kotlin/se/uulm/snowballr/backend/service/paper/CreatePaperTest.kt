@@ -6,6 +6,8 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
+import se.uulm.snowballr.backend.model.dto.paper.ExternalId
+import se.uulm.snowballr.backend.model.dto.paper.ExternalIdType
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicatePaperException
 import se.uulm.snowballr.backend.model.incoming.paper.CreatePaperRequest
 import java.util.UUID
@@ -13,11 +15,11 @@ import java.util.UUID
 class CreatePaperTest : PaperServiceTest() {
     @Test
     fun `When a paper is created, then the created paper has the correct values`() = runTest {
-        val externalId = "new-external-id"
-        val paper = DataBuilder.createExamplePaper(title = "Test Paper Title", externalId = externalId)
+        val externalIds = listOf(DataBuilder.createExampleExternalId())
+        val paper = DataBuilder.createExamplePaper(title = "Test Paper Title", externalIds = externalIds)
         val request = CreatePaperRequest.fromPaper(paper)
 
-        coEvery { paperRepoMock.doesPaperExistByExternalIds(request.externalId) } returns false
+        coEvery { paperRepoMock.doesPaperExistByExternalIds(request.externalIds) } returns false
         coEvery { paperRepoMock.createPaper(request) } returns paper
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id) } returns emptyList()
 
@@ -28,24 +30,24 @@ class CreatePaperTest : PaperServiceTest() {
 
     @Test
     fun `When a paper is created with an existent external ID, then a DuplicatePaperException is thrown`() = runTest {
-        val externalId = "existent-external-id"
-        val request = CreatePaperRequest.fromPaper(DataBuilder.createExamplePaper(externalId = externalId))
+        val externalId = ExternalId(ExternalIdType.DOI, "existing-external-id")
+        val request = CreatePaperRequest.fromPaper(DataBuilder.createExamplePaper(externalIds = listOf(externalId)))
 
-        coEvery { paperRepoMock.doesPaperExistByExternalIds(request.externalId) } returns true
+        coEvery { paperRepoMock.doesPaperExistByExternalIds(request.externalIds) } returns true
 
         assertThrows<DuplicatePaperException> { service.createPaper(request) }
     }
 
     @Test
-    fun `When a paper is created without an external ID, then it is not checked whether a paper with an external ID already exists`() =
+    fun `When a paper is created without external IDs, then it is not checked whether a paper without external IDs already exists`() =
         runTest {
             val paperId = UUID.randomUUID()
-            val request = CreatePaperRequest.fromPaper(DataBuilder.createExamplePaper(externalId = null))
+            val request = CreatePaperRequest.fromPaper(DataBuilder.createExamplePaper(externalIds = emptyList()))
 
             coEvery { paperRepoMock.createPaper(request) } returns DataBuilder.createExamplePaper(id = paperId)
             coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paperId) } returns emptyList()
 
             service.createPaper(request)
-            coVerify(exactly = 0) { paperRepoMock.doesPaperExistByExternalIds(request.externalId) }
+            coVerify(exactly = 0) { paperRepoMock.doesPaperExistByExternalIds(request.externalIds) }
         }
 }

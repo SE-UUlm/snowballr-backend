@@ -14,8 +14,7 @@ class GetReadingListTest : ReadingListServiceTest() {
         runTest {
             val user = DataBuilder.createExampleUser()
             val paper1 = DataBuilder.createExamplePaper()
-            val author = DataBuilder.createExampleAuthor()
-            val paper2 = DataBuilder.createExamplePaper(externalId = "ExternalId2", authors = listOf(author))
+            val paper2 = DataBuilder.createExamplePaper()
 
             mockCurrentUser(user)
             coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper2.id) } returns listOf(paper1.id)

@@ -13,10 +13,12 @@ import se.uulm.snowballr.backend.repository.RepositoryHelper.insertUserAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryTest
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.UserTable
+import se.uulm.snowballr.backend.table.association.PaperHasExternalIdTable
 import se.uulm.snowballr.backend.table.association.ReadingListTable
 import java.util.UUID
 
-class ReadingListTableRepoTest : RepositoryTest(arrayOf(UserTable, PaperTable, ReadingListTable), false) {
+class ReadingListTableRepoTest :
+    RepositoryTest(arrayOf(UserTable, PaperTable, ReadingListTable, PaperHasExternalIdTable), false) {
     private val repo = ReadingListTableRepo(db)
     private val paperRepo = PaperTableRepo(db)
 
@@ -152,8 +154,8 @@ class ReadingListTableRepoTest : RepositoryTest(arrayOf(UserTable, PaperTable, R
         @Test
         fun `When there are two papers on a user's reading list, then getAllReadingListEntries returns a list with those two papers`() =
             runTest {
-                val paperId1 = insertPaperAndGetId(externalId = "1")
-                val paperId2 = insertPaperAndGetId(externalId = "2")
+                val paperId1 = insertPaperAndGetId()
+                val paperId2 = insertPaperAndGetId()
                 val userId = insertUserAndGetId("test.user@example.com")
 
                 repo.createReadingListEntry(userId, paperId1)

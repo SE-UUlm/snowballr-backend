@@ -7,11 +7,13 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.EnumSource
+import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.fetcher.FetcherOrchestrator
+import se.uulm.snowballr.backend.model.dto.paper.ExternalId
+import se.uulm.snowballr.backend.model.dto.paper.ExternalIdType
 import se.uulm.snowballr.backend.model.dto.paper.toFetcherPaper
 import se.uulm.snowballr.backend.model.dto.project.Project
 import se.uulm.snowballr.backend.model.dto.project.SnowballingType
@@ -32,6 +34,14 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
             "barOp1" to "xyz",
         ),
     )
+
+    companion object {
+        @JvmStatic
+        fun exampleExternalIds() = listOf(
+            emptyList(),
+            listOf(DataBuilder.createExampleExternalId()),
+        )
+    }
 
     /**
      * Calls [FetcherOrchestrator.enqueue] with mocked values.
@@ -134,7 +144,8 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
                 )
                 val paper = DataBuilder.createExamplePaper()
                 val fetcherPaper = paper.toFetcherPaper()
-                val fetchedPaper = DataBuilder.createExampleFetcherPaper()
+                val externalId = DataBuilder.createExampleExternalId()
+                val fetchedPaper = DataBuilder.createExampleFetcherPaper(externalIds = listOf(externalId))
 
                 coEvery { paperRepoMock.getPaperById(job.projectPaper.paperId) } returns Result.success(paper)
                 if (type.isBackwardOrBoth) {
@@ -156,7 +167,7 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
 
                 // Stop at paper creation
                 coEvery {
-                    paperRepoMock.getPaperByExternalIds(fetchedPaper.externalId.orEmpty())
+                    paperRepoMock.getPaperByExternalIds(fetchedPaper.externalIds)
                 } throws TestSpecificException()
 
                 orchestrator.enqueueTestJob(job, project)
@@ -178,15 +189,19 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
             runOrchestratorTest { orchestrator ->
                 val job = DataBuilder.createExampleFetcherEnqueueJob()
                 val project = DataBuilder.createExampleProject(fetchers = exampleFetchers)
-                val backwardRef = DataBuilder.createExamplePaper(externalId = "BackwardId")
-                val forwardRef = DataBuilder.createExamplePaper(externalId = "ForwardId")
+                val backwardRef = DataBuilder.createExamplePaper(
+                    externalIds = listOf(ExternalId(ExternalIdType.DOI, "BackwardId")),
+                )
+                val forwardRef = DataBuilder.createExamplePaper(
+                    externalIds = listOf(ExternalId(ExternalIdType.DOI, "ForwardId")),
+                )
 
                 mockRunFetching(job, setOf(backwardRef.toFetcherPaper()), setOf(forwardRef.toFetcherPaper()))
                 coEvery {
-                    paperRepoMock.getPaperByExternalIds(backwardRef.externalId.orEmpty())
+                    paperRepoMock.getPaperByExternalIds(backwardRef.externalIds)
                 } returns Result.success(backwardRef)
                 coEvery {
-                    paperRepoMock.getPaperByExternalIds(forwardRef.externalId.orEmpty())
+                    paperRepoMock.getPaperByExternalIds(forwardRef.externalIds)
                 } returns Result.success(forwardRef)
 
                 // Stop at paper citation
@@ -207,23 +222,25 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
             }
 
         @ParameterizedTest
-        @CsvSource("externalId", "NULL", nullValues = ["NULL"])
-        fun `When fetched papers don't already exist, then they are created`(externalId: String?) =
+        @MethodSource(
+            "se.uulm.snowballr.backend.fetcher.orchestrator.FetcherOrchestratorProcessJobTest#exampleExternalIds",
+        )
+        fun `When fetched papers don't already exist, then they are created`(externalIds: List<ExternalId>) =
             runOrchestratorTest { orchestrator ->
                 val job = DataBuilder.createExampleFetcherEnqueueJob()
                 val project = DataBuilder.createExampleProject(fetchers = exampleFetchers)
-                val backwardRef = DataBuilder.createExamplePaper(title = "Back", externalId = externalId)
+                val backwardRef = DataBuilder.createExamplePaper(title = "Back", externalIds = externalIds)
                 val backwardFetcherRef = backwardRef.toFetcherPaper()
-                val forwardRef = DataBuilder.createExamplePaper(title = "For", externalId = externalId)
+                val forwardRef = DataBuilder.createExamplePaper(title = "For", externalIds = externalIds)
                 val forwardFetcherRef = forwardRef.toFetcherPaper()
 
                 mockRunFetching(job, setOf(backwardFetcherRef), setOf(forwardFetcherRef))
-                if (externalId != null) {
+                if (externalIds.isNotEmpty()) {
                     coEvery {
-                        paperRepoMock.getPaperByExternalIds(backwardRef.externalId.orEmpty())
+                        paperRepoMock.getPaperByExternalIds(backwardRef.externalIds)
                     } returns Result.failure(TestSpecificException())
                     coEvery {
-                        paperRepoMock.getPaperByExternalIds(forwardRef.externalId.orEmpty())
+                        paperRepoMock.getPaperByExternalIds(forwardRef.externalIds)
                     } returns Result.failure(TestSpecificException())
                 }
                 coEvery {
@@ -259,9 +276,9 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
         fun `When creating the DB papers fails, then no citations are created`() = runOrchestratorTest { orchestrator ->
             val job = DataBuilder.createExampleFetcherEnqueueJob()
             val project = DataBuilder.createExampleProject(fetchers = exampleFetchers)
-            val backwardRef = DataBuilder.createExamplePaper(title = "Back", externalId = null)
+            val backwardRef = DataBuilder.createExamplePaper(title = "Back")
             val backwardFetcherRef = backwardRef.toFetcherPaper()
-            val forwardRef = DataBuilder.createExamplePaper(title = "For", externalId = null)
+            val forwardRef = DataBuilder.createExamplePaper(title = "For")
             val forwardFetcherRef = forwardRef.toFetcherPaper()
 
             mockRunFetching(job, setOf(backwardFetcherRef), setOf(forwardFetcherRef))
@@ -285,8 +302,8 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
             runOrchestratorTest { orchestrator ->
                 val job = DataBuilder.createExampleFetcherEnqueueJob()
                 val project = DataBuilder.createExampleProject(fetchers = exampleFetchers)
-                val backwardRef = DataBuilder.createExamplePaper(title = "Back", externalId = null)
-                val forwardRef = DataBuilder.createExamplePaper(title = "For", externalId = null)
+                val backwardRef = DataBuilder.createExamplePaper(title = "Back")
+                val forwardRef = DataBuilder.createExamplePaper(title = "For")
 
                 mockRunPaperCreation(job, setOf(backwardRef), setOf(forwardRef))
                 coEvery {
@@ -317,8 +334,8 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
             runOrchestratorTest { orchestrator ->
                 val job = DataBuilder.createExampleFetcherEnqueueJob()
                 val project = DataBuilder.createExampleProject(fetchers = exampleFetchers)
-                val backwardRef = DataBuilder.createExamplePaper(title = "Back", externalId = null)
-                val forwardRef = DataBuilder.createExamplePaper(title = "For", externalId = null)
+                val backwardRef = DataBuilder.createExamplePaper(title = "Back")
+                val forwardRef = DataBuilder.createExamplePaper(title = "For")
 
                 mockRunPaperCreation(job, setOf(backwardRef), setOf(forwardRef))
                 coEvery {
@@ -349,8 +366,8 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
             runOrchestratorTest { orchestrator ->
                 val job = DataBuilder.createExampleFetcherEnqueueJob()
                 val project = DataBuilder.createExampleProject(fetchers = exampleFetchers)
-                val backwardRef = DataBuilder.createExamplePaper(title = "Back", externalId = null)
-                val forwardRef = DataBuilder.createExamplePaper(title = "For", externalId = null)
+                val backwardRef = DataBuilder.createExamplePaper(title = "Back")
+                val forwardRef = DataBuilder.createExamplePaper(title = "For")
 
                 mockRunPaperCreation(job, setOf(backwardRef), setOf(forwardRef))
                 coJustRun { citationRepoMock.addBackwardReferencedPaper(job.projectPaper.paperId, backwardRef.id) }
@@ -374,8 +391,8 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
             runOrchestratorTest { orchestrator ->
                 val job = DataBuilder.createExampleFetcherEnqueueJob()
                 val project = DataBuilder.createExampleProject(fetchers = exampleFetchers)
-                val backwardRef = DataBuilder.createExamplePaper(title = "Back", externalId = null)
-                val forwardRef = DataBuilder.createExamplePaper(title = "For", externalId = null)
+                val backwardRef = DataBuilder.createExamplePaper(title = "Back")
+                val forwardRef = DataBuilder.createExamplePaper(title = "For")
 
                 mockRunPaperCitation(job, setOf(backwardRef), setOf(forwardRef))
                 coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, backwardRef.id) } returns true
@@ -392,8 +409,8 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
             runOrchestratorTest { orchestrator ->
                 val job = DataBuilder.createExampleFetcherEnqueueJob()
                 val project = DataBuilder.createExampleProject(fetchers = exampleFetchers)
-                val backwardRef = DataBuilder.createExamplePaper(title = "Back", externalId = null)
-                val forwardRef = DataBuilder.createExamplePaper(title = "For", externalId = null)
+                val backwardRef = DataBuilder.createExamplePaper(title = "Back")
+                val forwardRef = DataBuilder.createExamplePaper(title = "For")
 
                 mockRunPaperCitation(job, setOf(backwardRef), setOf(forwardRef))
                 coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, backwardRef.id) } returns false
@@ -412,8 +429,8 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
             runOrchestratorTest { orchestrator ->
                 val job = DataBuilder.createExampleFetcherEnqueueJob()
                 val project = DataBuilder.createExampleProject(fetchers = exampleFetchers)
-                val backwardRef = DataBuilder.createExamplePaper(title = "Back", externalId = null)
-                val forwardRef = DataBuilder.createExamplePaper(title = "For", externalId = null)
+                val backwardRef = DataBuilder.createExamplePaper(title = "Back")
+                val forwardRef = DataBuilder.createExamplePaper(title = "For")
                 val targetStage = job.projectPaper.stage + 1
 
                 mockRunPaperCitation(job, setOf(backwardRef), setOf(forwardRef))
@@ -443,8 +460,8 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
             runOrchestratorTest { orchestrator ->
                 val job = DataBuilder.createExampleFetcherEnqueueJob()
                 val project = DataBuilder.createExampleProject(fetchers = exampleFetchers)
-                val backwardRef = DataBuilder.createExamplePaper(title = "Back", externalId = null)
-                val forwardRef = DataBuilder.createExamplePaper(title = "For", externalId = null)
+                val backwardRef = DataBuilder.createExamplePaper(title = "Back")
+                val forwardRef = DataBuilder.createExamplePaper(title = "For")
                 val targetStage = job.projectPaper.stage + 1
 
                 mockRunPaperCitation(job, setOf(backwardRef), setOf(forwardRef))
