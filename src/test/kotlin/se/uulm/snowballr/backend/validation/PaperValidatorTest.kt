@@ -16,6 +16,7 @@ import se.uulm.snowballr.backend.model.BlankField
 import se.uulm.snowballr.backend.model.CompositeIssue
 import se.uulm.snowballr.backend.model.InvalidFieldMask
 import se.uulm.snowballr.backend.model.InvalidId
+import se.uulm.snowballr.backend.model.MultipleOccurrences
 import se.uulm.snowballr.backend.model.OutOfRangeValue
 import se.uulm.snowballr.backend.model.TooLongField
 import se.uulm.snowballr.backend.model.TooLongList
@@ -240,7 +241,7 @@ class PaperValidatorTest {
         }
 
         @Test
-        fun `When authors are invalid, then the issues are returned`() {
+        fun `When the authors are invalid, then the issues are returned`() {
             val authors = listOf(
                 author {
                     firstName = ""
@@ -251,7 +252,60 @@ class PaperValidatorTest {
 
             val result = validateRequest(request)
 
-            EitherAssert.assertThat(result).isLeft()
+            assertIs<Either.Left<NonEmptyList<ValidationIssue>>>(result)
+            val issues = result.value.toList()
+            assertThat(issues).hasSize(1)
+            val compositeIssue = issues[0]
+            assertIs<CompositeIssue>(compositeIssue)
+            assertThat("$compositeIssue").startsWith("Issues of author at index 0")
+        }
+
+        @Test
+        fun `When the externalIds list has multiple occurrences of the same external ID type, then a 'MultipleOccurrences' issue is returned`() {
+            val externalIds = listOf(
+                externalId {
+                    type = "DOI"
+                    value = "1234"
+                },
+                externalId {
+                    type = "DOI"
+                    value = "5678"
+                },
+            )
+            val request = validPaperBuilder.clearExternalIds().addAllExternalIds(externalIds).build()
+
+            val result = validateRequest(request)
+
+            assertInvalidResult<MultipleOccurrences>(result)
+        }
+
+        @Test
+        fun `When the externalIds list is empty, then no issue is returned`() {
+            val request = validPaperBuilder.clearExternalIds().build()
+
+            val result = validateRequest(request)
+
+            EitherAssert.assertThat(result).isRight()
+        }
+
+        @Test
+        fun `When the externalIds are invalid, then the issues are returned`() {
+            val externalIds = listOf(
+                externalId {
+                    type = "UNKNOWN"
+                    value = "1234"
+                },
+            )
+            val request = validPaperBuilder.clearExternalIds().addAllExternalIds(externalIds).build()
+
+            val result = validateRequest(request)
+
+            assertIs<Either.Left<NonEmptyList<ValidationIssue>>>(result)
+            val issues = result.value.toList()
+            assertThat(issues).hasSize(1)
+            val compositeIssue = issues[0]
+            assertIs<CompositeIssue>(compositeIssue)
+            assertThat("$compositeIssue").startsWith("Issues of external ID at index 0")
         }
     }
 
@@ -408,7 +462,7 @@ class PaperValidatorTest {
         }
 
         @Test
-        fun `When authors are invalid, then the issues are returned`() {
+        fun `When the authors are invalid, then the issues are returned`() {
             val authors = listOf(
                 author {
                     firstName = ""
@@ -429,7 +483,27 @@ class PaperValidatorTest {
         }
 
         @Test
-        fun `When the external IDs are empty, then no issue is returned`() {
+        fun `When the externalIds list has multiple occurrences of the same external ID type, then a 'MultipleOccurrences' issue is returned`() {
+            val externalIds = listOf(
+                externalId {
+                    type = "DOI"
+                    value = "1234"
+                },
+                externalId {
+                    type = "DOI"
+                    value = "5678"
+                },
+            )
+            val paper = validPaperBuilder.clearExternalIds().addAllExternalIds(externalIds).build()
+            val request = getExampleRequest(paper, listOf("paper.external_ids"))
+
+            val result = validateRequest(request)
+
+            assertInvalidResult<MultipleOccurrences>(result)
+        }
+
+        @Test
+        fun `When the externalIds list is empty, then no issue is returned`() {
             val paper = validPaperBuilder.clearExternalIds().build()
             val request = getExampleRequest(paper, listOf("paper.external_ids"))
 
@@ -438,14 +512,25 @@ class PaperValidatorTest {
             EitherAssert.assertThat(result).isRight()
         }
 
-//        @Test
-//        fun `When the externalId is blank, then a 'BlankField' issue is returned`() {
-//            val paper = validPaperBuilder.setExternalId("   ").build()
-//            val request = getExampleRequest(paper, listOf("paper.external_ids"))
-//
-//            val result = validateRequest(request)
-//
-//            assertInvalidResult<BlankField>(result)
-//        }
+        @Test
+        fun `When the externalIds are invalid, then the issues are returned`() {
+            val externalIds = listOf(
+                externalId {
+                    type = "UNKNOWN"
+                    value = "1234"
+                },
+            )
+            val paper = validPaperBuilder.clearExternalIds().addAllExternalIds(externalIds).build()
+            val request = getExampleRequest(paper, listOf("paper.external_ids"))
+
+            val result = validateRequest(request)
+
+            assertIs<Either.Left<NonEmptyList<ValidationIssue>>>(result)
+            val issues = result.value.toList()
+            assertThat(issues).hasSize(1)
+            val compositeIssue = issues[0]
+            assertIs<CompositeIssue>(compositeIssue)
+            assertThat("$compositeIssue").startsWith("Issues of external ID at index 0")
+        }
     }
 }

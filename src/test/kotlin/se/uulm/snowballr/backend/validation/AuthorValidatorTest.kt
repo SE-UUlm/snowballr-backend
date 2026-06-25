@@ -45,7 +45,7 @@ class AuthorValidatorTest {
     }
 
     @Test
-    fun `When an author has a completely blank name, then 'BlankField' issues are returned`() {
+    fun `When an author has a completely blank name, then a 'BlankField' issue is returned`() {
         val author = author {
             firstName = ""
             lastName = ""
