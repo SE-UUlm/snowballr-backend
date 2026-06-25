@@ -65,7 +65,7 @@ def search_papers(search_query: str, options: dict[str, str]) -> list[Paper]:
     data = request_with_retry(url, headers, params, timeout_seconds)
     papers = safe_get(data, "data", [])
 
-    return list(map(paper_from_response, papers))
+    return list(map(_paper_from_response, papers))
 
 
 def forward_references(paper: Paper, options: dict[str, str]) -> list[Paper]:
@@ -73,7 +73,7 @@ def forward_references(paper: Paper, options: dict[str, str]) -> list[Paper]:
     API reference:
     https://api.semanticscholar.org/api-docs/graph#tag/Paper-Data/operation/get_graph_get_paper_citations
     """
-    return get_references(paper, options, "citations", "citingPaper")
+    return _get_references(paper, options, "citations", "citingPaper")
 
 
 def backward_references(paper: Paper, options: dict[str, str]) -> list[Paper]:
@@ -81,15 +81,13 @@ def backward_references(paper: Paper, options: dict[str, str]) -> list[Paper]:
     API reference:
     https://api.semanticscholar.org/api-docs/graph#tag/Paper-Data/operation/get_graph_get_paper_references
     """
-    return get_references(paper, options, "references", "citedPaper")
+    return _get_references(paper, options, "references", "citedPaper")
 
 
-def get_references(
+def _get_references(
     paper: Paper, options: dict[str, str], url_suffix: str, obj_key: str
 ) -> list[Paper]:
-    metadata = paper.fetcher_metadata
-    paper_id = safe_get(metadata, id_metadata_key, metadata[corpus_id_metadata_key])
-    # TODO: try other IDs (external IDs)
+    paper_id = _construct_paper_id(paper)
     if paper_id is None:
         return []
 
@@ -108,7 +106,36 @@ def get_references(
     for page in paginate_with_retry(url, next_url, headers, params, timeout_seconds):
         paper_objects += safe_get(page, "data", [])
 
-    return list(map(lambda obj: paper_from_response(safe_get(obj, obj_key, {})), paper_objects))
+    return list(map(lambda obj: _paper_from_response(safe_get(obj, obj_key, {})), paper_objects))
+
+
+def _construct_paper_id(paper: Paper) -> Optional[str]:
+    metadata = paper.fetcher_metadata
+
+    if (s2_id := metadata[id_metadata_key]) is not None:
+        return s2_id
+
+    if (s2_corpus_id := metadata[corpus_id_metadata_key]) is not None:
+        return f"CorpusId:{s2_corpus_id}"
+
+    ext_id_map = {ext.type: ext.value for ext in paper.external_ids}
+    key_mapping = {
+        "SEMANTIC_SCHOLAR": "",
+        "DOI": "DOI:",
+        "ARXIV": "ARXIV:",
+        "MAG": "MAG:",
+        "ACL": "ACL:",
+        "PUB_MED": "PMID:",
+        "MEDLINE": "PMID:",
+        "PUB_MED_CENTRAL": "PMCID:",
+        "URL": "URL:",
+    }
+
+    for ex_type, prefix in key_mapping.items():
+        if ex_type in ext_id_map:
+            return f"{prefix}{ext_id_map[ex_type]}"
+
+    return None
 
 
 def _s2_params(options: dict[str, str]) -> tuple[dict[str, str], float]:
@@ -122,14 +149,11 @@ def _s2_params(options: dict[str, str]) -> tuple[dict[str, str], float]:
     return headers, timeout_seconds
 
 
-def paper_from_response(res) -> Paper:
+def _paper_from_response(res) -> Paper:
     authors = [
-        author_from_response(author) for author in safe_get(res, "authors", []) if "name" in author
+        _author_from_response(author) for author in safe_get(res, "authors", []) if "name" in author
     ]
-    external_id = external_id_from_response(safe_get(res, "externalIds", {}))
-    external_ids = []
-    if external_id is not None:
-        external_ids = [ExternalId("URL", external_id)]
+    external_ids = _external_ids_from_response(safe_get(res, "externalIds", {}))
 
     date_str = safe_get(res, "publicationDate", "") or str(safe_get(res, "year", "0"))
     year = int(str(date_str)[:4] or "0")
@@ -140,6 +164,7 @@ def paper_from_response(res) -> Paper:
     paper_id = res["paperId"]
     if paper_id is not None:
         metadata[id_metadata_key] = paper_id
+        external_ids.append(ExternalId("SEMANTIC_SCHOLAR", paper_id))
     corpus_id = res["corpusId"]
     if corpus_id is not None:
         metadata[corpus_id_metadata_key] = str(corpus_id)
@@ -157,7 +182,7 @@ def paper_from_response(res) -> Paper:
     )
 
 
-def author_from_response(res) -> Author:
+def _author_from_response(res) -> Author:
     first_name, _, last_name = safe_get(res, "name", "").rpartition(" ")
     return Author(
         first_name,
@@ -165,13 +190,20 @@ def author_from_response(res) -> Author:
     )
 
 
-def external_id_from_response(res) -> Optional[str]:
-    # Order of external IDs to retrieve (first match is returned)
-    order = ["DOI", "DBLP", "PubMed", "PubMedCentral", "Medline", "MAG", "ArXiv"]
-    for key in order:
-        if key in res:
-            return res[key]
-    return None
+def _external_ids_from_response(res) -> list[ExternalId]:
+    # Map the response key to the target ExternalId type string
+    key_mapping = {
+        "DOI": "DOI",
+        "ArXiv": "ARXIV",
+        "MAG": "MAG",
+        "ACL": "ACL",
+        "PubMed": "PUB_MED",
+        "Medline": "MEDLINE",
+        "PubMedCentral": "PUB_MED_CENTRAL",
+        "DBLP": "DBLP",
+    }
+
+    return [ExternalId(id_type, res[key]) for key, id_type in key_mapping.items() if key in res]
 
 
 fetcher_plugin(
