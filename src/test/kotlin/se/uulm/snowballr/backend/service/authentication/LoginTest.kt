@@ -7,15 +7,17 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.GrpcTestContextExtension
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.auth.PasswordUtils
+import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.exception.UnauthenticatedException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundByEmailException
 import se.uulm.snowballr.backend.model.jwt.JwtAuthTokens
 import snowballr.Authentication.LoginRequest
-import snowballr.UserOuterClass.UserStatus
 
 @ExtendWith(GrpcTestContextExtension::class)
 class LoginTest : AuthenticationServiceTest() {
@@ -57,19 +59,21 @@ class LoginTest : AuthenticationServiceTest() {
         assertThrows<UnauthenticatedException> { service.login(request) }
     }
 
-    @Test
-    fun `When a user with an unspecified status tries to log in, then an UnauthenticatedException is thrown`() =
-        runTest {
-            val testUser = DataBuilder.createExampleUser(status = UserStatus.USER_STATUS_UNSPECIFIED)
-            val request = LoginRequest.newBuilder()
-                .setEmail(testUser.email)
-                .setPassword("anyPassword")
-                .build()
+    @ParameterizedTest
+    @EnumSource(UserStatus::class, names = ["USER_STATUS_ACTIVE"], mode = EnumSource.Mode.EXCLUDE)
+    fun `When a user with status other than USER_STATUS_ACTIVE tries to log in, then an UnauthenticatedException is thrown`(
+        status: UserStatus,
+    ) = runTest {
+        val testUser = DataBuilder.createExampleUser(status = status)
+        val request = LoginRequest.newBuilder()
+            .setEmail(testUser.email)
+            .setPassword("anyPassword")
+            .build()
 
-            coEvery { userRepoMock.getUserByEmail(testUser.email) } returns Result.success(testUser)
+        coEvery { userRepoMock.getUserByEmail(testUser.email) } returns Result.success(testUser)
 
-            assertThrows<UnauthenticatedException> { service.login(request) }
-        }
+        assertThrows<UnauthenticatedException> { service.login(request) }
+    }
 
     @Test
     fun `When the password hash cannot be retrieved, then an UnauthenticatedException is thrown`() = runTest {

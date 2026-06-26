@@ -5,13 +5,26 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.DataBuilder
+import se.uulm.snowballr.backend.model.dto.user.UserRole
+import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.exception.internal.AccessRuleCheckFailedException
-import snowballr.UserOuterClass.UserRole
-import snowballr.UserOuterClass.UserStatus
 import java.util.UUID
 
 class UserAccessRuleTest {
+    companion object {
+        @JvmStatic
+        fun activeStatuses(): List<UserStatus> = listOf(
+            UserStatus.USER_STATUS_ACTIVE,
+            UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED,
+        )
+
+        @JvmStatic
+        fun inactiveStatuses() = UserStatus.entries.filter { !activeStatuses().contains(it) }
+    }
+
     @Nested
     inner class IsServerAdmin {
         @Test
@@ -77,59 +90,60 @@ class UserAccessRuleTest {
 
     @Nested
     inner class IsTargetUserActive {
-        @Test
-        fun `When the target user status is ACTIVE, then no exception is thrown`() = runTest {
+        @ParameterizedTest
+        @MethodSource("se.uulm.snowballr.backend.access.rules.UserAccessRuleTest#activeStatuses")
+        fun `When the target user is active, then no exception is thrown`(status: UserStatus) = runTest {
             val requester = DataBuilder.createExampleUser()
-            val target = DataBuilder.createExampleUser(status = UserStatus.USER_STATUS_ACTIVE)
+            val target = DataBuilder.createExampleUser(status = status)
 
             assertDoesNotThrow { isTargetUserActive().checkFor(requester, target) }
         }
 
-        @Test
-        fun `When the target user status is ACTIVE_UNCONFIRMED, then no exception is thrown`() = runTest {
-            val requester = DataBuilder.createExampleUser()
-            val target = DataBuilder.createExampleUser(status = UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED)
+        @ParameterizedTest
+        @MethodSource("se.uulm.snowballr.backend.access.rules.UserAccessRuleTest#inactiveStatuses")
+        fun `When the target user is inactive, then an AccessRuleCheckFailedException is thrown`(status: UserStatus) =
+            runTest {
+                val requester = DataBuilder.createExampleUser()
+                val target = DataBuilder.createExampleUser(status = status)
 
-            assertDoesNotThrow { isTargetUserActive().checkFor(requester, target) }
-        }
-
-        @Test
-        fun `When the target user is inactive, then an AccessRuleCheckFailedException is thrown`() = runTest {
-            val requester = DataBuilder.createExampleUser()
-            val target = DataBuilder.createExampleUser(status = UserStatus.USER_STATUS_UNSPECIFIED)
-
-            assertThrows<AccessRuleCheckFailedException> { isTargetUserActive().checkFor(requester, target) }
-        }
+                assertThrows<AccessRuleCheckFailedException> { isTargetUserActive().checkFor(requester, target) }
+            }
     }
 
     @Nested
     inner class IsServerAdminOrTargetUserActive {
-        @Test
-        fun `When the requester is a server admin and the target is inactive, then no exception is thrown`() = runTest {
+        @ParameterizedTest
+        @MethodSource("se.uulm.snowballr.backend.access.rules.UserAccessRuleTest#inactiveStatuses")
+        fun `When the requester is a server admin and the target is inactive, then no exception is thrown`(
+            status: UserStatus,
+        ) = runTest {
             val requester = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-            val target = DataBuilder.createExampleUser(status = UserStatus.USER_STATUS_UNSPECIFIED)
+            val target = DataBuilder.createExampleUser(status = status)
 
             assertDoesNotThrow { isServerAdminOrTargetUserActive().checkFor(requester, target) }
         }
 
-        @Test
-        fun `When the target user is active, then no exception is thrown`() = runTest {
+        @ParameterizedTest
+        @MethodSource("se.uulm.snowballr.backend.access.rules.UserAccessRuleTest#activeStatuses")
+        fun `When the target user is active, then no exception is thrown`(status: UserStatus) = runTest {
             val requester = DataBuilder.createExampleUser()
-            val target = DataBuilder.createExampleUser(status = UserStatus.USER_STATUS_ACTIVE)
+            val target = DataBuilder.createExampleUser(status = status)
 
             assertDoesNotThrow { isServerAdminOrTargetUserActive().checkFor(requester, target) }
         }
 
-        @Test
-        fun `When the requester is not a server admin and the target is inactive, then an AccessRuleCheckFailedException is thrown`() =
-            runTest {
-                val requester = DataBuilder.createExampleUser()
-                val target = DataBuilder.createExampleUser(status = UserStatus.USER_STATUS_UNSPECIFIED)
+        @ParameterizedTest
+        @MethodSource("se.uulm.snowballr.backend.access.rules.UserAccessRuleTest#inactiveStatuses")
+        fun `When the requester is not a server admin and the target is inactive, then an AccessRuleCheckFailedException is thrown`(
+            status: UserStatus,
+        ) = runTest {
+            val requester = DataBuilder.createExampleUser()
+            val target = DataBuilder.createExampleUser(status = status)
 
-                assertThrows<AccessRuleCheckFailedException> {
-                    isServerAdminOrTargetUserActive().checkFor(requester, target)
-                }
+            assertThrows<AccessRuleCheckFailedException> {
+                isServerAdminOrTargetUserActive().checkFor(requester, target)
             }
+        }
     }
 
     @Nested

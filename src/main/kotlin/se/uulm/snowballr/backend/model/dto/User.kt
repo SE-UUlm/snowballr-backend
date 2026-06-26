@@ -1,9 +1,9 @@
 package se.uulm.snowballr.backend.model.dto
 
+import se.uulm.snowballr.backend.model.dto.user.UserRole
+import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.table.UserTable
 import snowballr.UserOuterClass
-import snowballr.UserOuterClass.UserRole
-import snowballr.UserOuterClass.UserStatus
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -31,8 +31,8 @@ fun User.toGrpcUser(): UserOuterClass.User = UserOuterClass.User
     .setEmail(this.email)
     .setFirstName(this.firstName)
     .setLastName(this.lastName)
-    .setRole(this.role)
-    .setStatus(this.status)
+    .setRole(this.role.toGrpc())
+    .setStatus(this.status.toGrpc())
     .build()
 
 /**

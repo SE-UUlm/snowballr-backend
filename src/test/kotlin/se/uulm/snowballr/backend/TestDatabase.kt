@@ -13,9 +13,9 @@ import org.testcontainers.postgresql.PostgreSQLContainer
 import se.uulm.snowballr.backend.db.DatabaseHelper
 import se.uulm.snowballr.backend.db.DatabaseHelper.addExtensions
 import se.uulm.snowballr.backend.db.IDatabase
+import se.uulm.snowballr.backend.model.dto.user.UserRole
+import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.table.UserTable
-import snowballr.UserOuterClass.UserRole
-import snowballr.UserOuterClass.UserStatus
 import java.util.UUID
 import org.jetbrains.exposed.v1.jdbc.Database as JdbcDatabase
 

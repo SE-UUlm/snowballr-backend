@@ -10,9 +10,9 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.export.ProjectExportManager
+import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.export.ExportFormat
 import se.uulm.snowballr.backend.model.export.FileExport
-import snowballr.UserOuterClass.UserRole
 import snowballr.copy
 import snowballr.exportRequest
 import java.util.UUID

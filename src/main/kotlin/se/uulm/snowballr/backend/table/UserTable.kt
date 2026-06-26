@@ -7,14 +7,14 @@ import org.jetbrains.exposed.v1.core.dao.id.java.UUIDTable
 import org.jetbrains.exposed.v1.json.json
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.UserSettings
+import se.uulm.snowballr.backend.model.dto.user.UserRole
+import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.fetcher.FetcherMap
 import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix.Pattern
 import snowballr.ProjectOuterClass.SnowballingType
 import snowballr.ReviewOuterClass.ReviewDecision
-import snowballr.UserOuterClass.UserRole
-import snowballr.UserOuterClass.UserStatus
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -95,7 +95,7 @@ private const val REVIEW_MAYBE_ALLOWED_DEFAULT = true
  * - [criteriaIds]: Represents a list of criteria IDs associated with the user as a [List] of [UUID].
  * - [similarityThreshold]: Represents the user's similarity threshold as a [Float].
  * - [decisionMatrix]: Represents the review decision matrix of the user as a binary value.
- * - [fetchers]: Represents the fetchers used by the project as a json object mapping the fetcher names to their
+ * - [fetchers]: Represents the fetchers used by the project as a JSON object mapping the fetcher names to their
  * options.
  * - [snowballingType]: Represents the snowballing type associated with the user, stored as an enumeration value of
  * [SnowballingType].

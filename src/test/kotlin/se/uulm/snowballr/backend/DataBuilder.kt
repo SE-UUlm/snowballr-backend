@@ -15,6 +15,8 @@ import se.uulm.snowballr.backend.model.dto.ReviewWithSelectedCriteriaIds
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.UserSettings
 import se.uulm.snowballr.backend.model.dto.VerificationToken
+import se.uulm.snowballr.backend.model.dto.user.UserRole
+import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.fetcher.FetcherEnqueueJob
 import se.uulm.snowballr.backend.model.fetcher.FetcherMap
 import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
@@ -26,8 +28,6 @@ import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
 import snowballr.ProjectOuterClass.SnowballingType
 import snowballr.ReviewOuterClass.ReviewDecision
-import snowballr.UserOuterClass.UserRole
-import snowballr.UserOuterClass.UserStatus
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -121,8 +121,8 @@ object DataBuilder {
         email: String = "test.email@example.com",
         firstName: String = "Test",
         lastName: String = "User",
-        role: UserRole = UserRole.USER_ROLE_UNSPECIFIED,
-        status: UserStatus = UserStatus.USER_STATUS_UNSPECIFIED,
+        role: UserRole = UserRole.USER_ROLE_DEFAULT,
+        status: UserStatus = UserStatus.USER_STATUS_ACTIVE,
         createdAt: OffsetDateTime = OffsetDateTime.now(),
         modifiedAt: OffsetDateTime? = null,
         deletedAt: OffsetDateTime? = null,

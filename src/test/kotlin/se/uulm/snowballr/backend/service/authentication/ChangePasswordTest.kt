@@ -11,10 +11,10 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.auth.PasswordUtils
+import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.invalidargument.IncorrectOldPasswordException
 import snowballr.Authentication
-import snowballr.UserOuterClass.UserStatus
 
 class ChangePasswordTest : AuthenticationServiceTest() {
     @Test

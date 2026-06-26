@@ -9,9 +9,9 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
+import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.exception.notfound.VerificationTokenNotFoundException
 import snowballr.Authentication
-import snowballr.UserOuterClass.UserStatus
 import java.time.OffsetDateTime
 import snowballr.UserOuterClass.User as GrpcUser
 
