@@ -6,13 +6,13 @@ import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.ProjectMemberWithUser
 import se.uulm.snowballr.backend.model.dto.ProjectPaperFull
 import se.uulm.snowballr.backend.model.dto.ReviewWithSelectedCriteriaIds
+import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.export.CriterionExport
 import se.uulm.snowballr.backend.model.export.PaperExport
 import se.uulm.snowballr.backend.model.export.PaperReviewExport
 import se.uulm.snowballr.backend.model.export.ProjectExport
 import se.uulm.snowballr.backend.model.export.ProjectMemberExport
 import se.uulm.snowballr.backend.model.export.ProjectStageExport
-import snowballr.ProjectOuterClass.PaperDecision
 
 /**
  * Builder class responsible for constructing a [ProjectExport] from project data.

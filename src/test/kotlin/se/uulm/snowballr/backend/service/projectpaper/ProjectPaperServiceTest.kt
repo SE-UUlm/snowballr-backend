@@ -73,6 +73,6 @@ sealed class ProjectPaperServiceTest : BaseServiceTest {
         assertEquals(expected.paperId.toString(), actual.paper.id)
         assertEquals(expected.localPaperId.toString(), actual.localId)
         assertEquals(expected.stage, actual.stage)
-        assertEquals(expected.decision, actual.decision)
+        assertEquals(expected.decision.toGrpc(), actual.decision)
     }
 }

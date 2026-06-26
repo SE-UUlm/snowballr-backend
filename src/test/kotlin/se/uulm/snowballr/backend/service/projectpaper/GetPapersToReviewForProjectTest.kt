@@ -10,7 +10,7 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.dto.ProjectPaperWithPaper
-import snowballr.ProjectOuterClass.PaperDecision
+import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import java.util.UUID
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)

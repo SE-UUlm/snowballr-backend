@@ -12,6 +12,7 @@ import se.uulm.snowballr.backend.model.dto.doesAcceptPaper
 import se.uulm.snowballr.backend.model.dto.doesDeclinePaper
 import se.uulm.snowballr.backend.model.dto.hasFinalDecision
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
+import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.dto.toGrpcReview
 import se.uulm.snowballr.backend.model.dto.toGrpcReviews
@@ -26,7 +27,6 @@ import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.IReviewHasCriterionTableRepo
 import snowballr.ProjectOuterClass
-import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
 import java.util.UUID
 import snowballr.ReviewOuterClass.Review as GrpcReview
@@ -189,7 +189,7 @@ class ReviewService(
                     (counts[ReviewDecision.fromGrpc(entry.reviewDecision)] ?: 0) >= entry.count.toInt()
                 }
                 if (doesFoundMatch) {
-                    return pattern.decision
+                    return PaperDecision.fromGrpc(pattern.decision)
                 }
             }
 

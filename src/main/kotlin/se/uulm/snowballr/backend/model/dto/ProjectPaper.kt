@@ -1,7 +1,7 @@
 package se.uulm.snowballr.backend.model.dto
 
+import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
-import snowballr.ProjectOuterClass.PaperDecision
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -34,7 +34,6 @@ fun ProjectPaper.hasFinalDecision() = this.decision == PaperDecision.PAPER_DECIS
  * Checks whether this [ProjectPaper] has no final decision yet.
  *
  * A [ProjectPaper] is considered to have no final decision if its decision is set to
- * [PaperDecision.PAPER_DECISION_UNSPECIFIED] or [PaperDecision.PAPER_DECISION_UNREVIEWED] or
- * [PaperDecision.PAPER_DECISION_IN_REVIEW].
+ * [PaperDecision.PAPER_DECISION_UNREVIEWED] or [PaperDecision.PAPER_DECISION_IN_REVIEW].
  */
 fun ProjectPaper.hasNoFinalDecision() = !this.hasFinalDecision()

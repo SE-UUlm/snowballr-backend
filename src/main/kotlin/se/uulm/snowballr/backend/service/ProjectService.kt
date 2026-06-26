@@ -8,6 +8,7 @@ import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
+import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.dto.toGrpcProject
 import se.uulm.snowballr.backend.model.dto.toGrpcProjects
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
@@ -22,7 +23,6 @@ import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import snowballr.ProjectOuterClass
 import snowballr.ProjectOuterClass.MemberRole
-import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.copy
 import java.util.UUID
 import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
@@ -385,7 +385,7 @@ class ProjectService(
 
         fun createStatistic(decision: PaperDecision): GrpcProjectDecisionStatistics.Statistic =
             GrpcProjectDecisionStatistics.Statistic.newBuilder()
-                .setDecision(decision)
+                .setDecision(decision.toGrpc())
                 .setCount(counts[decision] ?: 0)
                 .build()
 

@@ -18,11 +18,11 @@ import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.Review
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
+import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.alreadyexists.DuplicateReviewException
 import se.uulm.snowballr.backend.model.fetcher.FetcherEnqueueJob
-import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix.Pattern
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix.Pattern.Entry
 import snowballr.ReviewOuterClass
@@ -243,7 +243,7 @@ class CreateReviewTest : ReviewServiceTest() {
                         .setReviewDecision(ReviewDecision.REVIEW_DECISION_DECLINED.toGrpc())
                         .setCount(1),
                 )
-                .setDecision(PaperDecision.PAPER_DECISION_DECLINED)
+                .setDecision(PaperDecision.PAPER_DECISION_DECLINED.toGrpc())
                 .build()
             val project = DataBuilder.createExampleProject(
                 reviewDecisionMatrix = createExampleReviewDecisionMatrix(

@@ -18,6 +18,7 @@ import se.uulm.snowballr.backend.model.dto.VerificationToken
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.project.SnowballingType
+import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
@@ -25,8 +26,8 @@ import se.uulm.snowballr.backend.model.fetcher.FetcherEnqueueJob
 import se.uulm.snowballr.backend.model.fetcher.FetcherMap
 import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
 import se.uulm.snowballr.backend.table.patternOf
+import snowballr.ProjectOuterClass
 import snowballr.ProjectOuterClass.MemberRole
-import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
 import snowballr.ReviewOuterClass
 import java.time.OffsetDateTime
@@ -279,19 +280,19 @@ object DataBuilder {
     private val ACCEPT_DECLINE_PATTERN = patternOf(
         ReviewOuterClass.ReviewDecision.REVIEW_DECISION_ACCEPTED to 1L,
         ReviewOuterClass.ReviewDecision.REVIEW_DECISION_DECLINED to 1L,
-        result = PaperDecision.PAPER_DECISION_IN_REVIEW,
+        result = ProjectOuterClass.PaperDecision.PAPER_DECISION_IN_REVIEW,
     )
     private val ACCEPT_ANY_PATTERN = patternOf(
         ReviewOuterClass.ReviewDecision.REVIEW_DECISION_ACCEPTED to 1L,
-        result = PaperDecision.PAPER_DECISION_ACCEPTED,
+        result = ProjectOuterClass.PaperDecision.PAPER_DECISION_ACCEPTED,
     )
     private val DECLINE_ANY_PATTERN = patternOf(
         ReviewOuterClass.ReviewDecision.REVIEW_DECISION_DECLINED to 1L,
-        result = PaperDecision.PAPER_DECISION_DECLINED,
+        result = ProjectOuterClass.PaperDecision.PAPER_DECISION_DECLINED,
     )
     private val MAYBE_MAYBE_PATTERN = patternOf(
         ReviewOuterClass.ReviewDecision.REVIEW_DECISION_MAYBE to 2L,
-        result = PaperDecision.PAPER_DECISION_IN_REVIEW,
+        result = ProjectOuterClass.PaperDecision.PAPER_DECISION_IN_REVIEW,
     )
 
     fun createExampleReviewDecisionMatrix(

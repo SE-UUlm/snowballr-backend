@@ -5,6 +5,7 @@ import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.dao.id.java.UUIDTable
 import se.uulm.snowballr.backend.model.dto.ProjectPaper
 import se.uulm.snowballr.backend.model.dto.ProjectPaperWithPaper
+import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.createdAt
@@ -12,7 +13,6 @@ import se.uulm.snowballr.backend.table.createdBy
 import se.uulm.snowballr.backend.table.modifiedAt
 import se.uulm.snowballr.backend.table.modifiedBy
 import se.uulm.snowballr.backend.table.toPaper
-import snowballr.ProjectOuterClass.PaperDecision
 import java.time.OffsetDateTime
 
 /**

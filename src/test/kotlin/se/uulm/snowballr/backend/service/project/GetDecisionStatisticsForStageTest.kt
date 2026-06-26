@@ -7,8 +7,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
+import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.exception.notfound.StageNotFoundException
-import snowballr.ProjectOuterClass.PaperDecision
 import java.util.UUID
 import kotlin.test.assertEquals
 import snowballr.ProjectOuterClass.Project.Information as GrpcProjectInformation
@@ -165,7 +165,7 @@ class GetDecisionStatisticsForStageTest : ProjectServiceTest() {
 
         val statsByDecision = statistics.statisticsList.associateBy { it.decision }
         paperCountsByDecision.forEach { (decision, expectedCount) ->
-            val actual = statsByDecision[decision]?.count ?: -1
+            val actual = statsByDecision[decision.toGrpc()]?.count ?: -1
             assertEquals(expectedCount, actual.toInt())
         }
     }

@@ -34,7 +34,7 @@ fun ProjectPaperWithPaper.toGrpcProjectPaper(
     .setId(projectPaper.id.toString())
     .setPaper(paper.toGrpcPaper(backwardReferencedIds))
     .setStage(projectPaper.stage)
-    .setDecision(projectPaper.decision)
+    .setDecision(projectPaper.decision.toGrpc())
     .addAllReviews(reviews)
     .setLocalId(projectPaper.localPaperId.toString())
     .build()
