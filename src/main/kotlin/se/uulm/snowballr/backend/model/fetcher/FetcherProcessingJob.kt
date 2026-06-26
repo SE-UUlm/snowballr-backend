@@ -1,6 +1,6 @@
 package se.uulm.snowballr.backend.model.fetcher
 
-import snowballr.ProjectOuterClass.SnowballingType
+import se.uulm.snowballr.backend.model.dto.project.SnowballingType
 import java.util.UUID
 
 /**

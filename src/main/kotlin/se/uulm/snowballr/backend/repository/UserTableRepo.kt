@@ -30,7 +30,6 @@ import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.toUser
 import se.uulm.snowballr.backend.table.toUserSettings
 import snowballr.Authentication
-import snowballr.ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_UNSPECIFIED
 import java.time.OffsetDateTime
 import java.util.UUID
 import snowballr.UserOuterClass.User as GrpcUser
@@ -344,12 +343,8 @@ class UserTableRepo(
             it[passwordHash] = ""
             it[role] = UserRole.USER_ROLE_DEFAULT
             it[status] = UserStatus.USER_STATUS_CLEARED
-
             it[criteriaIds] = emptyList()
-
             it[fetchers] = emptyMap()
-            it[snowballingType] = SNOWBALLING_TYPE_UNSPECIFIED
-
             it[modifiedAt] = OffsetDateTime.now()
         }
 

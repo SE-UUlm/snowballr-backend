@@ -75,7 +75,7 @@ sealed class UserServiceTest : BaseServiceTest {
             expected.fetchers,
             actual.defaultProjectSettings.fetchersMap.mapValues { options -> options.value.optionsMap },
         )
-        assertEquals(expected.snowballingType, actual.defaultProjectSettings.snowballingType)
+        assertEquals(expected.snowballingType.toGrpc(), actual.defaultProjectSettings.snowballingType)
         assertEquals(expected.reviewMaybeAllowed, actual.defaultProjectSettings.reviewMaybeAllowed)
     }
 }

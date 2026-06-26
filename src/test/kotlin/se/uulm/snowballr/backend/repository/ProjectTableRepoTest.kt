@@ -22,6 +22,7 @@ import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.isBetweenWithDelta
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
+import se.uulm.snowballr.backend.model.dto.project.SnowballingType
 import se.uulm.snowballr.backend.model.dto.toGrpcProject
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.repository.RepositoryHelper.assignUserToProject
@@ -42,7 +43,6 @@ import snowballr.Fetcher.FetcherOptions
 import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ProjectOuterClass.Project
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
-import snowballr.ProjectOuterClass.SnowballingType
 import java.sql.SQLException
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -229,7 +229,7 @@ class ProjectTableRepoTest :
                 .setSettings(
                     Project.Settings.newBuilder()
                         .setSimilarityThreshold(1F)
-                        .setSnowballingType(SnowballingType.SNOWBALLING_TYPE_FORWARD)
+                        .setSnowballingType(SnowballingType.SNOWBALLING_TYPE_FORWARD.toGrpc())
                         .setReviewMaybeAllowed(false)
                         .putFetchers(
                             "test fetcher",

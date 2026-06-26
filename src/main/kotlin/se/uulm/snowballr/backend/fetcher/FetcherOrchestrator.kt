@@ -20,14 +20,11 @@ import se.uulm.snowballr.backend.model.fetcher.FetcherProcessingJob
 import se.uulm.snowballr.backend.model.fetcher.FetchingDirection
 import se.uulm.snowballr.backend.model.fetcher.FetchingResults
 import se.uulm.snowballr.backend.model.fetcher.PaperCreationResults
-import se.uulm.snowballr.backend.model.isBackwardOrBoth
-import se.uulm.snowballr.backend.model.isForwardOrBoth
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import se.uulm.snowballr.backend.repository.isUniqueConstraintViolation
-import snowballr.ProjectOuterClass.SnowballingType
 import java.sql.SQLException
 import java.util.UUID
 import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
@@ -104,11 +101,6 @@ class FetcherOrchestrator(
         check(isStarted) { "Orchestrator has not been started yet" }
 
         val project = projectRepo.getProjectById(job.projectPaper.projectId).getOrThrow()
-
-        if (project.snowballingType == SnowballingType.SNOWBALLING_TYPE_UNSPECIFIED) {
-            logger.warn { "Snowballing type is unspecified for project '${job.projectPaper.projectId}'." }
-            return
-        }
 
         if (project.fetchers.isEmpty()) {
             logger.warn { "No fetchers configured for project '${job.projectPaper.projectId}'." }

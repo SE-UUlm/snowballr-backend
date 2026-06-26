@@ -24,6 +24,7 @@ import se.uulm.snowballr.backend.model.dto.ProjectPaper
 import se.uulm.snowballr.backend.model.dto.Review
 import se.uulm.snowballr.backend.model.dto.UserSettings
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
+import se.uulm.snowballr.backend.model.dto.project.SnowballingType
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.table.ProjectTable
@@ -31,7 +32,6 @@ import se.uulm.snowballr.backend.table.ReviewTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.table.toProject
-import snowballr.ProjectOuterClass.SnowballingType
 import java.time.OffsetDateTime
 import java.util.UUID
 import snowballr.ProjectOuterClass.Project as GrpcProject
@@ -262,7 +262,6 @@ class ProjectTableRepo(
             it[name] = ""
             it[status] = ProjectStatus.PROJECT_STATUS_CLEARED
             it[fetchers] = emptyMap()
-            it[snowballingType] = SnowballingType.SNOWBALLING_TYPE_UNSPECIFIED
             it[similarityThreshold] = 0f
             it[fetchers] = emptyMap()
 
@@ -349,7 +348,7 @@ class ProjectTableRepo(
             this[ProjectTable.similarityThreshold] = settings.similarityThreshold
         }
         if ("project.settings.snowballing_type" in paths) {
-            this[ProjectTable.snowballingType] = settings.snowballingType
+            this[ProjectTable.snowballingType] = SnowballingType.fromGrpc(settings.snowballingType)
         }
         if ("project.settings.review_maybe_allowed" in paths) {
             this[ProjectTable.reviewMaybeAllowed] = settings.reviewMaybeAllowed

@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import snowballr.ProjectOuterClass.SnowballingType
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class FetcherOrchestratorEnqueueTest : FetcherOrchestratorTest() {
@@ -32,21 +31,6 @@ class FetcherOrchestratorEnqueueTest : FetcherOrchestratorTest() {
             } returns Result.failure(TestSpecificException())
 
             assertThrows<TestSpecificException> { orchestrator.enqueue(job) }
-        }
-
-    @Test
-    fun `When the project's snowballing type is UNSPECIFIED, then the job is not enqueued`() =
-        runOrchestratorTest { orchestrator ->
-            val job = DataBuilder.createExampleFetcherEnqueueJob()
-            val project =
-                DataBuilder.createExampleProject(snowballingType = SnowballingType.SNOWBALLING_TYPE_UNSPECIFIED)
-
-            coEvery { projectRepoMock.getProjectById(job.projectPaper.projectId) } returns Result.success(project)
-
-            orchestrator.enqueue(job)
-
-            // Method returns before paper existence can be checked
-            coVerify(exactly = 0) { paperRepoMock.ensurePaperExists(any()) }
         }
 
     @Test

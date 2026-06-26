@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.model.dto
 
+import se.uulm.snowballr.backend.model.dto.project.SnowballingType
 import se.uulm.snowballr.backend.model.fetcher.FetcherMap
 import snowballr.CriterionOuterClass
 import snowballr.Fetcher.FetcherOptions
@@ -14,7 +15,7 @@ data class UserSettings(
     val similarityThreshold: Float,
     val decisionMatrix: ProjectOuterClass.ReviewDecisionMatrix,
     val fetchers: FetcherMap,
-    val snowballingType: ProjectOuterClass.SnowballingType,
+    val snowballingType: SnowballingType,
     val reviewMaybeAllowed: Boolean,
 )
 
@@ -40,7 +41,7 @@ fun UserSettings.toGrpcUserSettings(
                         .build()
                 },
             )
-            .setSnowballingType(this.snowballingType)
+            .setSnowballingType(this.snowballingType.toGrpc())
             .setReviewMaybeAllowed(this.reviewMaybeAllowed)
             .build(),
     )

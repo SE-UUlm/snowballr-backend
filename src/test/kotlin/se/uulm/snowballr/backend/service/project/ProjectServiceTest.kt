@@ -71,7 +71,7 @@ sealed class ProjectServiceTest : BaseServiceTest {
         assertEquals(expected.currentStage, actual.currentStage)
         assertEquals(expected.maxStage, actual.maxStage)
         assertEquals(expected.similarityThreshold, actual.settings.similarityThreshold)
-        assertEquals(expected.snowballingType, actual.settings.snowballingType)
+        assertEquals(expected.snowballingType.toGrpc(), actual.settings.snowballingType)
         assertEquals(expected.reviewMaybeAllowed, actual.settings.reviewMaybeAllowed)
         assertEquals(expected.reviewDecisionMatrix, actual.settings.decisionMatrix)
         assertEquals(

@@ -1,6 +1,7 @@
 package se.uulm.snowballr.backend.model.dto
 
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
+import se.uulm.snowballr.backend.model.dto.project.SnowballingType
 import se.uulm.snowballr.backend.model.fetcher.FetcherMap
 import se.uulm.snowballr.backend.table.ProjectTable
 import snowballr.Fetcher.FetcherOptions
@@ -18,7 +19,7 @@ data class Project(
     val currentStage: Long,
     val maxStage: Long,
     val similarityThreshold: Float,
-    val snowballingType: ProjectOuterClass.SnowballingType,
+    val snowballingType: SnowballingType,
     val reviewMaybeAllowed: Boolean,
     val reviewDecisionMatrix: ProjectOuterClass.ReviewDecisionMatrix,
     val fetchers: FetcherMap,
@@ -42,7 +43,7 @@ fun Project.toGrpcProject(): ProjectOuterClass.Project {
             .newBuilder()
             .setSimilarityThreshold(this.similarityThreshold)
             .setDecisionMatrix(this.reviewDecisionMatrix)
-            .setSnowballingType(this.snowballingType)
+            .setSnowballingType(this.snowballingType.toGrpc())
             .setReviewMaybeAllowed(this.reviewMaybeAllowed)
             .putAllFetchers(
                 this.fetchers.mapValues {
