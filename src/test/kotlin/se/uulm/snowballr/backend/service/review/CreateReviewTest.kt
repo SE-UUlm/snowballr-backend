@@ -17,6 +17,7 @@ import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.Review
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
+import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.alreadyexists.DuplicateReviewException
 import se.uulm.snowballr.backend.model.fetcher.FetcherEnqueueJob
@@ -25,7 +26,6 @@ import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix.Pattern
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix.Pattern.Entry
 import snowballr.ReviewOuterClass
-import snowballr.ReviewOuterClass.ReviewDecision
 import java.util.UUID
 import java.util.stream.Stream
 import kotlin.reflect.KFunction
@@ -44,7 +44,7 @@ class CreateReviewTest : ReviewServiceTest() {
     private val validCreateReviewRequest: ReviewOuterClass.Review.Create.Builder =
         ReviewOuterClass.Review.Create.newBuilder()
             .setProjectPaperId(projectPaperId.toString())
-            .setDecision(decision)
+            .setDecision(decision.toGrpc())
             .addAllSelectedCriteriaIds(selectedCriteriaIds.map(UUID::toString))
 
     fun failingFunctions(): Stream<Arguments?> = Stream.of(
@@ -154,7 +154,7 @@ class CreateReviewTest : ReviewServiceTest() {
         val review = service.createReview(validCreateReviewRequest.build())
 
         assertEquals(userId.toString(), review.userId)
-        assertEquals(decision, review.decision)
+        assertEquals(decision.toGrpc(), review.decision)
         assertEquals(selectedCriteriaIds.map { it.toString() }, review.selectedCriteriaIdsList)
 
         coVerify(exactly = 1) {
@@ -238,7 +238,11 @@ class CreateReviewTest : ReviewServiceTest() {
     fun `When no matching pattern could be found in the decision matrix, then the default paper decision is PAPER_DECISION_IN_REVIEW`() =
         runTest {
             val declinePattern = Pattern.newBuilder()
-                .addEntries(Entry.newBuilder().setReviewDecision(ReviewDecision.REVIEW_DECISION_DECLINED).setCount(1))
+                .addEntries(
+                    Entry.newBuilder()
+                        .setReviewDecision(ReviewDecision.REVIEW_DECISION_DECLINED.toGrpc())
+                        .setCount(1),
+                )
                 .setDecision(PaperDecision.PAPER_DECISION_DECLINED)
                 .build()
             val project = DataBuilder.createExampleProject(
@@ -273,7 +277,7 @@ class CreateReviewTest : ReviewServiceTest() {
                 userId = userId,
             )
             val createReviewRequest = validCreateReviewRequest
-                .setDecision(ReviewDecision.REVIEW_DECISION_DECLINED)
+                .setDecision(ReviewDecision.REVIEW_DECISION_DECLINED.toGrpc())
                 .addAllSelectedCriteriaIds(
                     listOf(exclusionCriterion.id.toString(), hardExclusionCriterion.id.toString()),
                 )
@@ -322,7 +326,7 @@ class CreateReviewTest : ReviewServiceTest() {
             )
             val createReviewRequest = ReviewOuterClass.Review.Create.newBuilder()
                 .setProjectPaperId(projectPaperId.toString())
-                .setDecision(ReviewDecision.REVIEW_DECISION_DECLINED)
+                .setDecision(ReviewDecision.REVIEW_DECISION_DECLINED.toGrpc())
                 .addAllSelectedCriteriaIds(selectedCriteriaIds.map(UUID::toString))
                 .build()
 
@@ -360,7 +364,7 @@ class CreateReviewTest : ReviewServiceTest() {
             )
             val createReviewRequest = ReviewOuterClass.Review.Create.newBuilder()
                 .setProjectPaperId(projectPaperId.toString())
-                .setDecision(ReviewDecision.REVIEW_DECISION_ACCEPTED)
+                .setDecision(ReviewDecision.REVIEW_DECISION_ACCEPTED.toGrpc())
                 .addAllSelectedCriteriaIds(selectedCriteriaIds.map(UUID::toString))
                 .addSelectedCriteriaIds(hardExclusionCriterion.id.toString())
                 .build()
@@ -387,7 +391,7 @@ class CreateReviewTest : ReviewServiceTest() {
         val project = project.copy(status = ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
         val createReviewRequest = ReviewOuterClass.Review.Create.newBuilder()
             .setProjectPaperId(projectPaperId.toString())
-            .setDecision(ReviewDecision.REVIEW_DECISION_ACCEPTED)
+            .setDecision(ReviewDecision.REVIEW_DECISION_ACCEPTED.toGrpc())
             .addAllSelectedCriteriaIds(selectedCriteriaIds.map(UUID::toString))
             .build()
 

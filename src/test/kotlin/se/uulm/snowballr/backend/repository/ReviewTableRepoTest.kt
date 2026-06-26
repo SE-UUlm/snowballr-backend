@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.repository.RepositoryHelper.assignCriterionToReview
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertCriterionAndGetId
@@ -24,7 +25,6 @@ import se.uulm.snowballr.backend.table.association.ReviewHasCriterionTable
 import se.uulm.snowballr.backend.utils.assertResultFailure
 import se.uulm.snowballr.backend.utils.assertResultSuccess
 import snowballr.ReviewOuterClass.Review
-import snowballr.ReviewOuterClass.ReviewDecision
 import java.sql.SQLException
 import java.util.UUID
 import kotlin.test.assertContains
@@ -216,7 +216,7 @@ class ReviewTableRepoTest : RepositoryTest(
     inner class CreateReview {
         private fun createReviewRequest(projectPaperId: UUID) = Review.Create.newBuilder()
             .setProjectPaperId(projectPaperId.toString())
-            .setDecision(ReviewDecision.REVIEW_DECISION_ACCEPTED)
+            .setDecision(ReviewDecision.REVIEW_DECISION_ACCEPTED.toGrpc())
 
         @Test
         fun `When a review is created, then the correct review is returned`() = runTest {

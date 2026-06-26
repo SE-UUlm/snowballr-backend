@@ -1,11 +1,10 @@
 package se.uulm.snowballr.backend.model.dto
 
+import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.table.ReviewTable
 import snowballr.ReviewOuterClass
-import snowballr.ReviewOuterClass.ReviewDecision
 import java.time.OffsetDateTime
 import java.util.UUID
-import kotlin.collections.orEmpty
 
 /**
  * DTO of [ReviewTable].
@@ -23,7 +22,7 @@ fun Review.toGrpcReview(selectedCriteriaIds: List<String>): ReviewOuterClass.Rev
     .newBuilder()
     .setId(id.toString())
     .setUserId(userId.toString())
-    .setDecision(decision)
+    .setDecision(decision.toGrpc())
     .addAllSelectedCriteriaIds(selectedCriteriaIds)
     .build()
 

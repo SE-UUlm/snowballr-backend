@@ -71,6 +71,6 @@ sealed class ReviewServiceTest : BaseServiceTest {
 
     protected fun assertReviewEquality(expected: Review, actual: ReviewOuterClass.Review) {
         assertEquals(expected.userId.toString(), actual.userId)
-        assertEquals(expected.decision, actual.decision)
+        assertEquals(expected.decision.toGrpc(), actual.decision)
     }
 }

@@ -16,6 +16,7 @@ import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.UserSettings
 import se.uulm.snowballr.backend.model.dto.VerificationToken
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
+import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.fetcher.FetcherEnqueueJob
@@ -27,7 +28,7 @@ import snowballr.ProjectOuterClass.MemberRole
 import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
 import snowballr.ProjectOuterClass.SnowballingType
-import snowballr.ReviewOuterClass.ReviewDecision
+import snowballr.ReviewOuterClass
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -276,20 +277,20 @@ object DataBuilder {
     )
 
     private val ACCEPT_DECLINE_PATTERN = patternOf(
-        ReviewDecision.REVIEW_DECISION_ACCEPTED to 1L,
-        ReviewDecision.REVIEW_DECISION_DECLINED to 1L,
+        ReviewOuterClass.ReviewDecision.REVIEW_DECISION_ACCEPTED to 1L,
+        ReviewOuterClass.ReviewDecision.REVIEW_DECISION_DECLINED to 1L,
         result = PaperDecision.PAPER_DECISION_IN_REVIEW,
     )
     private val ACCEPT_ANY_PATTERN = patternOf(
-        ReviewDecision.REVIEW_DECISION_ACCEPTED to 1L,
+        ReviewOuterClass.ReviewDecision.REVIEW_DECISION_ACCEPTED to 1L,
         result = PaperDecision.PAPER_DECISION_ACCEPTED,
     )
     private val DECLINE_ANY_PATTERN = patternOf(
-        ReviewDecision.REVIEW_DECISION_DECLINED to 1L,
+        ReviewOuterClass.ReviewDecision.REVIEW_DECISION_DECLINED to 1L,
         result = PaperDecision.PAPER_DECISION_DECLINED,
     )
     private val MAYBE_MAYBE_PATTERN = patternOf(
-        ReviewDecision.REVIEW_DECISION_MAYBE to 2L,
+        ReviewOuterClass.ReviewDecision.REVIEW_DECISION_MAYBE to 2L,
         result = PaperDecision.PAPER_DECISION_IN_REVIEW,
     )
 

@@ -11,6 +11,7 @@ import se.uulm.snowballr.backend.model.dto.doesAcceptPaper
 import se.uulm.snowballr.backend.model.dto.doesDeclinePaper
 import se.uulm.snowballr.backend.model.dto.hasFinalDecision
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
+import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.dto.toGrpcReview
 import se.uulm.snowballr.backend.model.dto.toGrpcReviews
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
@@ -27,7 +28,6 @@ import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass
 import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
-import snowballr.ReviewOuterClass.ReviewDecision
 import java.util.UUID
 import snowballr.ReviewOuterClass.Review as GrpcReview
 
@@ -186,7 +186,7 @@ class ReviewService(
 
             for (pattern in decisionMatrix.patternsList) {
                 val doesFoundMatch = pattern.entriesList.all { entry ->
-                    (counts[entry.reviewDecision] ?: 0) >= entry.count.toInt()
+                    (counts[ReviewDecision.fromGrpc(entry.reviewDecision)] ?: 0) >= entry.count.toInt()
                 }
                 if (doesFoundMatch) {
                     return pattern.decision

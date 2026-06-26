@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.export.testdata
 
+import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.export.CriterionExport
 import se.uulm.snowballr.backend.model.export.PaperExport
 import se.uulm.snowballr.backend.model.export.PaperReviewExport
@@ -9,7 +10,6 @@ import se.uulm.snowballr.backend.model.export.ProjectStageExport
 import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass.MemberRole
 import snowballr.ProjectOuterClass.PaperDecision
-import snowballr.ReviewOuterClass.ReviewDecision
 
 val emptyProjectExport = ProjectExport(
     name = "Empty Project",
