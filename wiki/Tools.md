@@ -7,7 +7,7 @@ This page lists tools that assist the development process of this repository.
     * [Configuration](#configuration)
     * [Subcommands](#subcommands)
       * [list](#list)
-      * [options](#options)
+      * [info](#info)
       * [search](#search)
       * [forwards](#forwards)
       * [backwards](#backwards)
@@ -35,6 +35,9 @@ Make sure to call it from an active Python environment (>= 3.13, see
 
 ```bash
 uv run tools/fetcher-cli/cli.py <subcommand> <args>
+
+# when using just, prefer
+just fetcher-cli <subcommand> <args>
 ```
 
 ### Configuration
@@ -57,7 +60,7 @@ If not already existing, a `config.json` can be created using the following
 command:
 
 ```bash
-uv run tools/fetcher-cli/cli.py init-config
+just fetcher-cli init-config
 ```
 
 This will create a configuration object for each existing fetcher.
@@ -77,19 +80,19 @@ This will list all existing fetchers. There are no additional arguments.
 Example:
 
 ```bash
-uv run tools/fetcher-cli/cli.py list
+just fetcher-cli list
 ```
 
-#### options
+#### info
 
-Represents `getAvailableOptions`.
-
-This will return all available options for a specific fetcher.
+Shows a fetcher's information: its name, description and links, followed by its
+options schema. For each option the table lists whether it is required or secret,
+whether it is configured in `config.json` and its (effective) value.
 
 Example:
 
 ```bash
-uv run tools/fetcher-cli/cli.py options ExampleFetcher
+just fetcher-cli info ExampleFetcher
 ```
 
 #### search
@@ -101,7 +104,7 @@ This will use the specified fetcher to search papers using the specified query.
 Example:
 
 ```bash
-uv run tools/fetcher-cli/cli.py search ExampleFetcher Snowballing
+just fetcher-cli search ExampleFetcher Snowballing
 ```
 
 #### forwards
@@ -116,7 +119,7 @@ The paper can be either provided as JSON string or as path to JSON file.
 Example:
 
 ```bash
-uv run tools/fetcher-cli/cli.py forwards ExampleFetcher tools/fetcher-cli/paper.json
+just fetcher-cli forwards ExampleFetcher tools/fetcher-cli/paper.json
 ```
 
 #### backwards
@@ -131,7 +134,7 @@ The paper can be either provided as JSON string or as path to JSON file.
 Example:
 
 ```bash
-uv run tools/fetcher-cli/cli.py backwards ExampleFetcher tools/fetcher-cli/paper.json
+just fetcher-cli backwards ExampleFetcher tools/fetcher-cli/paper.json
 ```
 
 #### init-config

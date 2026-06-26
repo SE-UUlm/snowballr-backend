@@ -39,7 +39,6 @@ to a running SnowballR backend instance.
 - A working Python installation (Version >= 3.12).
 - [uv](https://docs.astral.sh/uv/) for managing the Python virtual environment
   and dependencies.
-- Your favourite code editor.
 
 The plugin system requires a base set of python dependencies to work. Install
 them using the following commands:
@@ -83,19 +82,18 @@ the backend. This contract is automatically adhered to if you use the bundled
 SnowballR library:
 
 ```py
+from snowballr import fetcher_plugin, FetcherInformation, Paper
 
-from snowballr import fetcher_plugin, Paper
-
-fetcher_options: dict[str, str] = ...
+fetcher_information: FetcherInformation = ...
 def search_papers(search_query: str, options: dict[str, str]) -> list[Paper]: ...
 def forward_references(paper: Paper, options: dict[str, str]) -> list[Paper]: ...
 def backward_references(paper: Paper, options: dict[str, str]) -> list[Paper]: ...
 
 fetcher_plugin(
-    fetcher_options,
-    search_papers,
-    forward_references,
-    backward_references,
+    information=fetcher_information,
+    query=search_papers,
+    forwards=forward_references,
+    backwards=backward_references,
 )
 ```
 
@@ -107,7 +105,7 @@ Just provide implementations for the functions and you're off to go.
 Fetchers are invoked with the action as the only command-line argument:
 
 ```bash
-python fetcher.py options
+python fetcher.py info
 python fetcher.py query
 python fetcher.py forwards
 python fetcher.py backwards
@@ -122,13 +120,21 @@ JSON via `stdin`:
 This avoids exposing secrets (for example API keys in `options`) through process
 lists, where command-line arguments can otherwise be visible.
 
-To accommodate for API secrets and other variables, each fetcher is configurable
-using a string-to-string dictionary. The `options` set serves as a hint
-to the frontend, which options this fetcher accepts. There could, however, at
-any time be missing or additional entries. Project admins can select a fetcher
-and provide key-value pairs as options in the project settings. Remember during
-the implementation: A fetcher can be used across multiple projects, each with
-their own set of options.
+The `info` action returns the fetcher's `FetcherInformation` as JSON. Besides a
+`name`, `description` and a list of `links`, it carries an `options_schema`: a
+mapping from option key to a `FetcherOptionsSchema` describing that option. Each
+schema entry declares a human-readable `name` and `description`, whether the
+option is `required`, whether it `is_secret` (so it can be masked in the
+frontend) and an optional `default_value`.
+
+To accommodate for API secrets and other variables, each fetcher is configured
+using a string-to-string dictionary of options. The `options_schema` serves as a
+hint to the frontend, which options this fetcher accepts. There could, however,
+at any time be missing or additional entries. Project admins can select a fetcher
+and provide key-value pairs as options in the project settings. Options for which
+a `default_value` is declared are filled in automatically when not provided.
+Remember during the implementation: A fetcher can be used across multiple
+projects, each with their own set of options.
 
 ### Writing a Fetcher
 
@@ -169,9 +175,14 @@ Let's put all the pieces together:
 ```py
 # ./plugins/fetchers/basic.py
 
-from snowballr import fetcher_plugin, Paper, Author
+from snowballr import fetcher_plugin, FetcherInformation, Paper, Author
 
-fetcher_options = {}
+fetcher_information = FetcherInformation(
+    name="Basic",
+    description="A minimal example fetcher.",
+    links=[],
+    options_schema={},
+)
 
 def search_papers(search_query: str, options: dict[str, str]) -> list[Paper]:
     return [ Paper(
@@ -193,10 +204,10 @@ def backward_references(paper: Paper, options: dict[str, str]) -> list[Paper]:
     return []
 
 fetcher_plugin(
-    fetcher_options,
-    search_papers,
-    forward_references,
-    backward_references,
+    information=fetcher_information,
+    query=search_papers,
+    forwards=forward_references,
+    backwards=backward_references,
 )
 ```
 
@@ -219,10 +230,28 @@ content = requests.get(
 ).text
 ```
 
-This fetcher accepts an `API_KEY` option, displaying the hint `The API key`
-in the frontend during configuration. When a paper is searched, it sends a GET
-request and includes the resulting body as the abstract of a paper with the
-title "title". It, again, has no reference fetching capabilities.
+To make this option discoverable in the frontend, declare it in the
+`options_schema` of the fetcher's `FetcherInformation`:
+
+```py
+fetcher_information = FetcherInformation(
+    name="Example",
+    description="Fetches an abstract over HTTP.",
+    links=[Link("Homepage", "https://example.com")],
+    options_schema={
+        "API_KEY": FetcherOptionsSchema(
+            name="API Key",
+            description="The API key",
+            required=True,
+            is_secret=True,
+        )
+    },
+)
+```
+
+When a paper is searched, it sends a GET request and includes the resulting body
+as the abstract of a paper with the title "title". It, again, has no reference
+fetching capabilities.
 
 The possibilities are endless: Access filesystem or SQL databases, make use
 of the extensive Python ecosystem or even incorporate machine learning into
