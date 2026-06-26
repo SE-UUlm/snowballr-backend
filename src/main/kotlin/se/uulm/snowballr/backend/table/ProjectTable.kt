@@ -8,11 +8,11 @@ import org.jetbrains.exposed.v1.datetime.timestampWithTimeZone
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.project.SnowballingType
+import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
+import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.fetcher.FetcherMap
 import se.uulm.snowballr.backend.table.columntypes.obfuscatedJson
-import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
-import snowballr.ReviewOuterClass.ReviewDecision
 import java.time.OffsetDateTime
 
 /**
