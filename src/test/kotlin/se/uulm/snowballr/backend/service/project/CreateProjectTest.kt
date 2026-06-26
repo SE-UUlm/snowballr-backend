@@ -65,7 +65,7 @@ class CreateProjectTest : ProjectServiceTest() {
                 .setTag(criterion.tag)
                 .setName(criterion.name)
                 .setDescription(criterion.description)
-                .setCategory(criterion.category)
+                .setCategory(criterion.category.toGrpc())
                 .build()
 
             mockCurrentUser(user)

@@ -11,6 +11,7 @@ import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.Criterion
+import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.table.CriterionTable
@@ -129,7 +130,7 @@ class CriterionTableRepo(
             it[tag] = request.tag
             it[name] = request.name
             it[description] = request.description
-            it[category] = request.category
+            it[category] = CriterionCategory.fromGrpc(request.category)
             it[this.projectId] = projectId
             it[createdBy] = userId
         }
@@ -145,7 +146,7 @@ class CriterionTableRepo(
                     "criterion.tag" -> it[tag] = request.criterion.tag
                     "criterion.name" -> it[name] = request.criterion.name
                     "criterion.description" -> it[description] = request.criterion.description
-                    "criterion.category" -> it[category] = request.criterion.category
+                    "criterion.category" -> it[category] = CriterionCategory.fromGrpc(request.criterion.category)
                 }
             }
         }

@@ -53,6 +53,6 @@ sealed class CriterionServiceTest : BaseServiceTest {
         assertEquals(expected.tag, actual.tag)
         assertEquals(expected.name, actual.name)
         assertEquals(expected.description, actual.description)
-        assertEquals(expected.category, actual.category)
+        assertEquals(expected.category.toGrpc(), actual.category)
     }
 }

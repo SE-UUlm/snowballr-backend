@@ -131,7 +131,7 @@ class ProjectService(
                 .setTag(criterion.tag)
                 .setName(criterion.name)
                 .setDescription(criterion.description)
-                .setCategory(criterion.category)
+                .setCategory(criterion.category.toGrpc())
                 .setProjectId(project.id.toString())
                 .build()
 

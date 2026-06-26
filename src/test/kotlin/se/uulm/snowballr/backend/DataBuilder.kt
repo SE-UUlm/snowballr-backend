@@ -15,6 +15,7 @@ import se.uulm.snowballr.backend.model.dto.ReviewWithSelectedCriteriaIds
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.UserSettings
 import se.uulm.snowballr.backend.model.dto.VerificationToken
+import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.dto.user.UserRole
@@ -23,7 +24,6 @@ import se.uulm.snowballr.backend.model.fetcher.FetcherEnqueueJob
 import se.uulm.snowballr.backend.model.fetcher.FetcherMap
 import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
 import se.uulm.snowballr.backend.table.patternOf
-import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass.MemberRole
 import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
@@ -84,7 +84,7 @@ object DataBuilder {
         tag: String = "Test Tag",
         name: String = "Test Criterion",
         description: String = "Test Description",
-        category: CriterionCategory = CriterionCategory.CRITERION_CATEGORY_UNSPECIFIED,
+        category: CriterionCategory = CriterionCategory.CRITERION_CATEGORY_INCLUSION,
         projectId: UUID = UUID.randomUUID(),
         createdAt: OffsetDateTime = OffsetDateTime.now(),
         createdBy: UUID = UUID.randomUUID(),
@@ -104,7 +104,7 @@ object DataBuilder {
         tag: String = "Test Tag",
         name: String = "Test Criterion",
         description: String = "Test Description",
-        category: CriterionCategory = CriterionCategory.CRITERION_CATEGORY_UNSPECIFIED,
+        category: CriterionCategory = CriterionCategory.CRITERION_CATEGORY_INCLUSION,
         createdAt: OffsetDateTime = OffsetDateTime.now(),
         createdBy: UUID = UUID.randomUUID(),
     ) = Criterion.UserCriterion(

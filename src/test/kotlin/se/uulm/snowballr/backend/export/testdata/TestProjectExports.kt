@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.export.testdata
 
+import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.export.CriterionExport
 import se.uulm.snowballr.backend.model.export.PaperExport
@@ -7,7 +8,6 @@ import se.uulm.snowballr.backend.model.export.PaperReviewExport
 import se.uulm.snowballr.backend.model.export.ProjectExport
 import se.uulm.snowballr.backend.model.export.ProjectMemberExport
 import se.uulm.snowballr.backend.model.export.ProjectStageExport
-import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass.MemberRole
 import snowballr.ProjectOuterClass.PaperDecision
 
