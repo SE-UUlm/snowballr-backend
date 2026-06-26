@@ -23,6 +23,7 @@ import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.ProjectPaper
 import se.uulm.snowballr.backend.model.dto.Review
 import se.uulm.snowballr.backend.model.dto.UserSettings
+import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.table.ProjectTable
@@ -30,7 +31,6 @@ import se.uulm.snowballr.backend.table.ReviewTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.table.toProject
-import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.ProjectOuterClass.SnowballingType
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -201,9 +201,7 @@ class ProjectTableRepo(
     }
 
     override suspend fun getUserProjects(userId: UUID, statusFilters: Set<ProjectStatus>): List<Project> = db.query {
-        val excludedStatuses = listOf(ProjectStatus.PROJECT_STATUS_UNSPECIFIED)
         val projectFilter = statusFilters
-            .filterNot { it in excludedStatuses }
             .map { ProjectTable.status eq it }
             .reduceOrNull { acc, filter -> acc or filter }
 
@@ -262,7 +260,7 @@ class ProjectTableRepo(
             },
         ) {
             it[name] = ""
-            it[status] = ProjectStatus.PROJECT_STATUS_UNSPECIFIED
+            it[status] = ProjectStatus.PROJECT_STATUS_CLEARED
             it[fetchers] = emptyMap()
             it[snowballingType] = SnowballingType.SNOWBALLING_TYPE_UNSPECIFIED
             it[similarityThreshold] = 0f
@@ -311,7 +309,7 @@ class ProjectTableRepo(
         ProjectTable
             .selectAll()
             .where {
-                (ProjectTable.status eq ProjectStatus.PROJECT_STATUS_UNSPECIFIED).and(
+                (ProjectTable.status eq ProjectStatus.PROJECT_STATUS_CLEARED).and(
                     ProjectTable.deletedAt.isNotNull(),
                 )
             }
@@ -342,7 +340,7 @@ class ProjectTableRepo(
 
     private fun UpdateStatement.applyProjectStatusUpdate(project: GrpcProject, paths: Set<String>) {
         if ("project.status" in paths) {
-            this[ProjectTable.status] = project.status
+            this[ProjectTable.status] = ProjectStatus.fromGrpc(project.status)
         }
     }
 

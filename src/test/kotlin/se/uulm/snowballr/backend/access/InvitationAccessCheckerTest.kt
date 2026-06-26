@@ -10,8 +10,8 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.model.AccessType
+import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.exception.failedprecondition.EntityNotActiveException
-import snowballr.ProjectOuterClass.ProjectStatus
 
 class InvitationAccessCheckerTest {
     private val projectAccessChecker = mockk<IProjectAccessChecker>()

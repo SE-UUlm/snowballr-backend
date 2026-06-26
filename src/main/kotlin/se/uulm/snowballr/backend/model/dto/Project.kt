@@ -1,10 +1,10 @@
 package se.uulm.snowballr.backend.model.dto
 
+import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.fetcher.FetcherMap
 import se.uulm.snowballr.backend.table.ProjectTable
 import snowballr.Fetcher.FetcherOptions
 import snowballr.ProjectOuterClass
-import snowballr.ProjectOuterClass.ProjectStatus
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -58,7 +58,7 @@ fun Project.toGrpcProject(): ProjectOuterClass.Project {
         .newBuilder()
         .setId(this.id.toString())
         .setName(this.name)
-        .setStatus(this.status)
+        .setStatus(this.status.toGrpc())
         .setCurrentStage(this.currentStage)
         .setMaxStage(this.maxStage)
         .setSettings(settings)

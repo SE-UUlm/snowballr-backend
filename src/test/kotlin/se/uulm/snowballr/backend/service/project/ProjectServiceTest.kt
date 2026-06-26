@@ -67,7 +67,7 @@ sealed class ProjectServiceTest : BaseServiceTest {
 
     protected fun assertProjectEquality(expected: Project, actual: ProjectOuterClass.Project) {
         assertEquals(expected.name, actual.name)
-        assertEquals(expected.status, actual.status)
+        assertEquals(expected.status.toGrpc(), actual.status)
         assertEquals(expected.currentStage, actual.currentStage)
         assertEquals(expected.maxStage, actual.maxStage)
         assertEquals(expected.similarityThreshold, actual.settings.similarityThreshold)

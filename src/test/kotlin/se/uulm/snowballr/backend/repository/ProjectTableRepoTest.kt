@@ -21,6 +21,7 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.isBetweenWithDelta
+import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.toGrpcProject
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.repository.RepositoryHelper.assignUserToProject
@@ -40,7 +41,6 @@ import se.uulm.snowballr.backend.utils.assertResultSuccess
 import snowballr.Fetcher.FetcherOptions
 import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ProjectOuterClass.Project
-import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
 import snowballr.ProjectOuterClass.SnowballingType
 import java.sql.SQLException
@@ -225,7 +225,7 @@ class ProjectTableRepoTest :
 
             val updatedProjectDetails = originalProject.toGrpcProject().toBuilder()
                 .setName("Updated Project")
-                .setStatus(ProjectStatus.PROJECT_STATUS_ARCHIVED)
+                .setStatus(ProjectStatus.PROJECT_STATUS_ARCHIVED.toGrpc())
                 .setSettings(
                     Project.Settings.newBuilder()
                         .setSimilarityThreshold(1F)
@@ -512,15 +512,12 @@ class ProjectTableRepoTest :
         }
 
         @Test
-        fun `When an invalid project status is used to filter user projects, then an IllegalArgumentException is thrown`() =
+        fun `When an no project status is used to filter user projects, then an IllegalArgumentException is thrown`() =
             runTest {
                 val userId = insertUserAndGetId("userWithActiveProjects@example.com")
 
                 assertThrows<IllegalArgumentException> {
-                    repo.getUserProjects(
-                        userId,
-                        setOf(ProjectStatus.PROJECT_STATUS_UNSPECIFIED),
-                    )
+                    repo.getUserProjects(userId, emptySet())
                 }
             }
     }
@@ -631,7 +628,7 @@ class ProjectTableRepoTest :
                 repo.clearSoftDeletedProjects(defaultThresholdDate)
 
                 val project1 = assertResultSuccess(repo.getProjectById(projectId1))
-                assertEquals(ProjectStatus.PROJECT_STATUS_UNSPECIFIED, project1.status)
+                assertEquals(ProjectStatus.PROJECT_STATUS_CLEARED, project1.status)
                 assertNotNull(project1.deletedAt)
                 assertThat(project1.deletedAt).isBefore(defaultThresholdDate)
                 assertThat(project1.name).isEmpty()
@@ -718,7 +715,7 @@ class ProjectTableRepoTest :
                 repo.hardDeleteClearedProjects()
 
                 val project = assertResultSuccess(repo.getProjectById(projectId))
-                assertEquals(ProjectStatus.PROJECT_STATUS_UNSPECIFIED, project.status)
+                assertEquals(ProjectStatus.PROJECT_STATUS_CLEARED, project.status)
             }
     }
 

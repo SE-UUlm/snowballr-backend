@@ -7,6 +7,7 @@ import se.uulm.snowballr.backend.fetcher.IFetcherManager
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.toGrpcProject
 import se.uulm.snowballr.backend.model.dto.toGrpcProjects
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
@@ -19,9 +20,9 @@ import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
+import snowballr.ProjectOuterClass
 import snowballr.ProjectOuterClass.MemberRole
 import snowballr.ProjectOuterClass.PaperDecision
-import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.copy
 import java.util.UUID
 import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
@@ -283,11 +284,11 @@ class ProjectService(
     @Suppress("ThrowsCount")
     private fun validateProjectUpdate(
         currentStatus: ProjectStatus,
-        requestedStatus: ProjectStatus,
+        requestedStatus: ProjectOuterClass.ProjectStatus,
         fieldMask: List<String>,
     ) {
         val isStatusUpdate = fieldMask.contains("project.status")
-        require(!(isStatusUpdate && requestedStatus == ProjectStatus.PROJECT_STATUS_DELETED)) {
+        require(!(isStatusUpdate && requestedStatus == ProjectOuterClass.ProjectStatus.PROJECT_STATUS_DELETED)) {
             "The project status cannot be set to DELETED via the update method. Use SoftDeleteProject instead."
         }
 
@@ -307,9 +308,9 @@ class ProjectService(
                 }
 
                 if (
-                    requestedStatus != ProjectStatus.PROJECT_STATUS_ACTIVE &&
-                    requestedStatus != ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED &&
-                    requestedStatus != ProjectStatus.PROJECT_STATUS_ARCHIVED
+                    requestedStatus != ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE &&
+                    requestedStatus != ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED &&
+                    requestedStatus != ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ARCHIVED
                 ) {
                     throw FailedPreconditionException(
                         "An archived project can only be unarchived by setting its status to ACTIVE or ACTIVE_LOCKED.",
@@ -331,8 +332,7 @@ class ProjectService(
                 // no restrictions
             }
 
-            ProjectStatus.PROJECT_STATUS_UNSPECIFIED,
-            ProjectStatus.UNRECOGNIZED,
+            ProjectStatus.PROJECT_STATUS_CLEARED,
             -> {
                 error("Project is an unspecified status: $currentStatus")
             }
@@ -352,18 +352,18 @@ class ProjectService(
      */
     private suspend fun determineEffectiveProjectStatus(
         projectId: UUID,
-        requestedStatus: ProjectStatus,
-    ): ProjectStatus {
-        if (requestedStatus != ProjectStatus.PROJECT_STATUS_ACTIVE &&
-            requestedStatus != ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED
+        requestedStatus: ProjectOuterClass.ProjectStatus,
+    ): ProjectOuterClass.ProjectStatus {
+        if (requestedStatus != ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE &&
+            requestedStatus != ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED
         ) {
             return requestedStatus
         }
 
         return if (repo.isProjectLocked(projectId)) {
-            ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED
+            ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED
         } else {
-            ProjectStatus.PROJECT_STATUS_ACTIVE
+            ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE
         }
     }
 

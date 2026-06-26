@@ -14,10 +14,10 @@ import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.dto.Project
+import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.toGrpcProject
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import snowballr.Fetcher
-import snowballr.ProjectOuterClass.ProjectStatus
 import kotlin.test.assertContains
 import kotlin.test.assertIs
 import snowballr.ProjectOuterClass.Project as GrpcProject
@@ -172,7 +172,7 @@ class UpdateProjectTest : ProjectServiceTest() {
             val user = DataBuilder.createExampleUser()
             val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ARCHIVED)
 
-            val updatedProject = project.copy(status = ProjectStatus.PROJECT_STATUS_UNSPECIFIED)
+            val updatedProject = project.copy(status = ProjectStatus.PROJECT_STATUS_CLEARED)
             val request = getRequest(updatedProject, listOf("project.status"))
 
             mockCurrentUser(user)
@@ -238,7 +238,7 @@ class UpdateProjectTest : ProjectServiceTest() {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = ["PROJECT_STATUS_UNSPECIFIED", "UNRECOGNIZED"])
+    @ValueSource(strings = ["PROJECT_STATUS_CLEARED"])
     fun `When a user updates a project with unsupported status, then an IllegalStateException is thrown`(
         statusName: String,
     ) = runTest {

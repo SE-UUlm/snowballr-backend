@@ -10,6 +10,7 @@ import se.uulm.snowballr.backend.model.dto.Review
 import se.uulm.snowballr.backend.model.dto.doesAcceptPaper
 import se.uulm.snowballr.backend.model.dto.doesDeclinePaper
 import se.uulm.snowballr.backend.model.dto.hasFinalDecision
+import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.toGrpcReview
 import se.uulm.snowballr.backend.model.dto.toGrpcReviews
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
@@ -25,7 +26,6 @@ import se.uulm.snowballr.backend.repository.association.IReviewHasCriterionTable
 import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass
 import snowballr.ProjectOuterClass.PaperDecision
-import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
 import snowballr.ReviewOuterClass.ReviewDecision
 import java.util.UUID
@@ -209,7 +209,7 @@ class ReviewService(
             .setProject(
                 ProjectOuterClass.Project.newBuilder()
                     .setId(projectId.toString())
-                    .setStatus(ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
+                    .setStatus(ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED.toGrpc())
                     .build(),
             )
             .setMask(FieldMaskUtil.fromString("project.status"))

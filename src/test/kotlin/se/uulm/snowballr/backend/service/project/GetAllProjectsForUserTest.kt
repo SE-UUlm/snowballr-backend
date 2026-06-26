@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import snowballr.ProjectOuterClass.ProjectStatus
+import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import kotlin.test.assertEquals
 
 class GetAllProjectsForUserTest : ProjectServiceTest() {
