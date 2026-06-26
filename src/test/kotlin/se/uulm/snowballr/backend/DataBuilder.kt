@@ -18,6 +18,7 @@ import se.uulm.snowballr.backend.model.dto.VerificationToken
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.project.SnowballingType
+import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
 import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.dto.user.UserRole
@@ -27,7 +28,6 @@ import se.uulm.snowballr.backend.model.fetcher.FetcherMap
 import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
 import se.uulm.snowballr.backend.table.patternOf
 import snowballr.ProjectOuterClass
-import snowballr.ProjectOuterClass.MemberRole
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
 import snowballr.ReviewOuterClass
 import java.time.OffsetDateTime
@@ -143,7 +143,7 @@ object DataBuilder {
     fun createExampleProjectMember(
         projectId: UUID = UUID.randomUUID(),
         userId: UUID = UUID.randomUUID(),
-        role: MemberRole = MemberRole.MEMBER_ROLE_UNSPECIFIED,
+        role: MemberRole = MemberRole.MEMBER_ROLE_DEFAULT,
         createdAt: OffsetDateTime = OffsetDateTime.now(),
         modifiedAt: OffsetDateTime? = null,
     ) = ProjectMember(

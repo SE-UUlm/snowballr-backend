@@ -9,9 +9,9 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.DataBuilder.createExampleUser
 import se.uulm.snowballr.backend.TestSpecificException
+import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectMemberNotFoundException
-import snowballr.ProjectOuterClass.MemberRole
 import java.util.UUID
 import snowballr.ProjectOuterClass.Project.Member as GrpcProjectMember
 
@@ -21,7 +21,7 @@ class UpdateProjectMemberRoleTest : ProjectMemberServiceTest() {
             .newBuilder()
             .setProjectId(projectId.toString())
             .setUserId(userId.toString())
-            .setNewRole(newRole)
+            .setNewRole(newRole.toGrpc())
             .build()
 
     @Test

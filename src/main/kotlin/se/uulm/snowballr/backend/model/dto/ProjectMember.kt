@@ -1,7 +1,7 @@
 package se.uulm.snowballr.backend.model.dto
 
+import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
-import snowballr.ProjectOuterClass.MemberRole
 import java.time.OffsetDateTime
 import java.util.UUID
 

@@ -12,11 +12,11 @@ import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.access.rules.AccessRule
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
 import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedUpdateException
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
-import snowballr.ProjectOuterClass.MemberRole
 import java.util.UUID
 
 class CriterionAccessCheckerTest {

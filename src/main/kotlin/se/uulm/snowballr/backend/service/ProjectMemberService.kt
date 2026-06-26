@@ -7,6 +7,7 @@ import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.InvitationToken
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.isProjectAdmin
+import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
 import se.uulm.snowballr.backend.model.dto.toGrpcProjectMembers
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.NotFoundException
@@ -16,7 +17,6 @@ import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
-import snowballr.ProjectOuterClass.MemberRole
 import java.util.UUID
 import snowballr.ProjectOuterClass.Project.Member as GrpcProjectMember
 
@@ -84,11 +84,12 @@ class ProjectMemberService(
                 )
             }
 
-            if (member.isProjectAdmin() && request.newRole != MemberRole.MEMBER_ROLE_ADMIN) {
+            val newRole = MemberRole.fromGrpc(request.newRole)
+            if (member.isProjectAdmin() && newRole != MemberRole.MEMBER_ROLE_ADMIN) {
                 projectAccessChecker.isNotLastProjectAdmin(user, projectId, "Cannot demote the user")
             }
 
-            repo.updateProjectMemberRole(projectId, userId, request.newRole)
+            repo.updateProjectMemberRole(projectId, userId, newRole)
         }
     }
 

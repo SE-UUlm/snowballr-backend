@@ -5,13 +5,13 @@ import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.dao.id.CompositeIdTable
 import se.uulm.snowballr.backend.model.dto.ProjectMember
 import se.uulm.snowballr.backend.model.dto.ProjectMemberWithUser
+import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.createdAt
 import se.uulm.snowballr.backend.table.modifiedAt
 import se.uulm.snowballr.backend.table.toUser
 import se.uulm.snowballr.backend.table.userReference
-import snowballr.ProjectOuterClass.MemberRole
 import java.time.OffsetDateTime
 
 /**

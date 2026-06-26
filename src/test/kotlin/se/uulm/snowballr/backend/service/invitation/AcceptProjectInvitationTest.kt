@@ -9,11 +9,11 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.dto.ProjectMember
+import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.notfound.InvitationTokenNotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundByEmailException
-import snowballr.ProjectOuterClass
 import java.time.OffsetDateTime
 import snowballr.ProjectOuterClass.Project.Member as GrpcProjectMember
 
@@ -88,7 +88,7 @@ class AcceptProjectInvitationTest : InvitationServiceTest() {
         val userMember = ProjectMember(
             projectId = token.projectId,
             userId = user.id,
-            role = ProjectOuterClass.MemberRole.MEMBER_ROLE_DEFAULT,
+            role = MemberRole.MEMBER_ROLE_DEFAULT,
             createdAt = OffsetDateTime.now(),
             modifiedAt = null,
         )
@@ -110,7 +110,7 @@ class AcceptProjectInvitationTest : InvitationServiceTest() {
             val userMember = ProjectMember(
                 projectId = token.projectId,
                 userId = user.id,
-                role = ProjectOuterClass.MemberRole.MEMBER_ROLE_DEFAULT,
+                role = MemberRole.MEMBER_ROLE_DEFAULT,
                 createdAt = OffsetDateTime.now(),
                 modifiedAt = null,
             )

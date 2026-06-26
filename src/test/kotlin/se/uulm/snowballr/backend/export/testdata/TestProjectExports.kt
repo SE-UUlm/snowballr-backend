@@ -1,6 +1,7 @@
 package se.uulm.snowballr.backend.export.testdata
 
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
+import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
 import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.export.CriterionExport
@@ -9,7 +10,6 @@ import se.uulm.snowballr.backend.model.export.PaperReviewExport
 import se.uulm.snowballr.backend.model.export.ProjectExport
 import se.uulm.snowballr.backend.model.export.ProjectMemberExport
 import se.uulm.snowballr.backend.model.export.ProjectStageExport
-import snowballr.ProjectOuterClass.MemberRole
 
 val emptyProjectExport = ProjectExport(
     name = "Empty Project",
@@ -25,7 +25,7 @@ val fullProjectExport = ProjectExport(
     members = listOf(
         ProjectMemberExport("1", "Alice", "Smith", "alice.smith@example.com", MemberRole.MEMBER_ROLE_DEFAULT),
         ProjectMemberExport("2", "John", "Doe", "john.doe@example.com", MemberRole.MEMBER_ROLE_DEFAULT),
-        ProjectMemberExport("3", "Jane", "Doe", "jane.doe@example.com", MemberRole.MEMBER_ROLE_UNSPECIFIED),
+        ProjectMemberExport("3", "Jane", "Doe", "jane.doe@example.com", MemberRole.MEMBER_ROLE_ADMIN),
     ),
     stages = listOf(
         ProjectStageExport(
