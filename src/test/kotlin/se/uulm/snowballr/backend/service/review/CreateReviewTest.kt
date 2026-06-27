@@ -17,14 +17,14 @@ import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.Review
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
+import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPattern
+import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPatternEntry
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.alreadyexists.DuplicateReviewException
 import se.uulm.snowballr.backend.model.fetcher.FetcherEnqueueJob
-import snowballr.ProjectOuterClass.ReviewDecisionMatrix.Pattern
-import snowballr.ProjectOuterClass.ReviewDecisionMatrix.Pattern.Entry
 import snowballr.ReviewOuterClass
 import java.util.UUID
 import java.util.stream.Stream
@@ -237,18 +237,19 @@ class CreateReviewTest : ReviewServiceTest() {
     @Test
     fun `When no matching pattern could be found in the decision matrix, then the default paper decision is PAPER_DECISION_IN_REVIEW`() =
         runTest {
-            val declinePattern = Pattern.newBuilder()
-                .addEntries(
-                    Entry.newBuilder()
-                        .setReviewDecision(ReviewDecision.REVIEW_DECISION_DECLINED.toGrpc())
-                        .setCount(1),
-                )
-                .setDecision(PaperDecision.PAPER_DECISION_DECLINED.toGrpc())
-                .build()
+            val declinePattern = DecisionMatrixPattern(
+                decision = PaperDecision.PAPER_DECISION_DECLINED,
+                entries = listOf(
+                    DecisionMatrixPatternEntry(
+                        decision = ReviewDecision.REVIEW_DECISION_DECLINED,
+                        count = 1,
+                    ),
+                ),
+            )
             val project = DataBuilder.createExampleProject(
                 reviewDecisionMatrix = createExampleReviewDecisionMatrix(
                     numberOfReviewers = 1,
-                    pattern = listOf(declinePattern),
+                    patterns = listOf(declinePattern),
                 ),
             )
             mockCreateReview(project = project)

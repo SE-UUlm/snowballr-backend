@@ -21,8 +21,11 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.isBetweenWithDelta
+import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPattern
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
+import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
 import se.uulm.snowballr.backend.model.dto.project.SnowballingType
+import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.dto.toGrpcProject
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.repository.RepositoryHelper.assignUserToProject
@@ -40,9 +43,7 @@ import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.utils.assertResultFailure
 import se.uulm.snowballr.backend.utils.assertResultSuccess
 import snowballr.Fetcher.FetcherOptions
-import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ProjectOuterClass.Project
-import snowballr.ProjectOuterClass.ReviewDecisionMatrix
 import java.sql.SQLException
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -99,7 +100,7 @@ class ProjectTableRepoTest :
             assertEquals(0F, project.similarityThreshold)
             assertEquals(SnowballingType.SNOWBALLING_TYPE_BOTH, project.snowballingType)
             assertTrue(project.reviewMaybeAllowed)
-            assertEquals(ReviewDecisionMatrix.getDefaultInstance(), project.reviewDecisionMatrix)
+            assertEquals(ReviewDecisionMatrix(1, emptyList()), project.reviewDecisionMatrix)
             assertEquals(testUserId, project.createdBy)
         }
 
@@ -147,7 +148,7 @@ class ProjectTableRepoTest :
             assertEquals(0.5F, project.similarityThreshold)
             assertEquals(SnowballingType.SNOWBALLING_TYPE_BOTH, project.snowballingType)
             assertFalse(project.reviewMaybeAllowed)
-            assertEquals(ReviewDecisionMatrix.getDefaultInstance(), project.reviewDecisionMatrix)
+            assertEquals(ReviewDecisionMatrix(1, emptyList()), project.reviewDecisionMatrix)
             assertThat(project.fetchers).isEmpty()
         }
 
@@ -238,9 +239,10 @@ class ProjectTableRepoTest :
                                 .build(),
                         )
                         .setDecisionMatrix(
-                            ReviewDecisionMatrix.newBuilder()
-                                .setNumberOfReviewers(1)
-                                .build(),
+                            ReviewDecisionMatrix(
+                                numberOfReviewers = 2,
+                                patterns = emptyList(),
+                            ).toGrpc(),
                         )
                         .build(),
                 )
@@ -292,22 +294,18 @@ class ProjectTableRepoTest :
                 assertNull(fetcher)
             }
             if ("project.settings.decision_matrix.number_of_reviewers" in fieldMask) {
-                assertEquals(1, updatedProject.reviewDecisionMatrix.numberOfReviewers)
+                assertEquals(2, updatedProject.reviewDecisionMatrix.numberOfReviewers)
             } else {
-                assertEquals(0, updatedProject.reviewDecisionMatrix.numberOfReviewers)
+                assertEquals(1, updatedProject.reviewDecisionMatrix.numberOfReviewers)
             }
         }
 
         @Test
         fun `When only decision matrix patterns are updated, then number of reviewers remains unchanged`() = runTest {
-            val initialDecisionMatrix = ReviewDecisionMatrix.newBuilder()
-                .setNumberOfReviewers(3)
-                .addPatterns(
-                    ReviewDecisionMatrix.Pattern.newBuilder()
-                        .setDecision(PaperDecision.PAPER_DECISION_ACCEPTED)
-                        .build(),
-                )
-                .build()
+            val initialDecisionMatrix = ReviewDecisionMatrix(
+                numberOfReviewers = 3,
+                patterns = listOf(DecisionMatrixPattern(PaperDecision.PAPER_DECISION_ACCEPTED, emptyList())),
+            )
             val projectId = insertProjectAndGetId(
                 name = "Decision Matrix Project",
                 status = ProjectStatus.PROJECT_STATUS_ACTIVE,
@@ -316,20 +314,16 @@ class ProjectTableRepoTest :
             )
             val originalProject = repo.getProjectById(projectId).getOrThrow()
 
-            val updatedDecisionMatrix = ReviewDecisionMatrix.newBuilder()
-                .setNumberOfReviewers(9)
-                .addPatterns(
-                    ReviewDecisionMatrix.Pattern.newBuilder()
-                        .setDecision(PaperDecision.PAPER_DECISION_DECLINED)
-                        .build(),
-                )
-                .build()
+            val updatedDecisionMatrix = ReviewDecisionMatrix(
+                numberOfReviewers = 9,
+                patterns = listOf(DecisionMatrixPattern(PaperDecision.PAPER_DECISION_DECLINED, emptyList())),
+            )
             val request = Project.Update.newBuilder()
                 .setProject(
                     originalProject.toGrpcProject().toBuilder()
                         .setSettings(
                             originalProject.toGrpcProject().settings.toBuilder()
-                                .setDecisionMatrix(updatedDecisionMatrix)
+                                .setDecisionMatrix(updatedDecisionMatrix.toGrpc())
                                 .build(),
                         )
                         .build(),
@@ -340,10 +334,10 @@ class ProjectTableRepoTest :
             val updatedProject = repo.updateProject(request)
 
             assertEquals(3, updatedProject.reviewDecisionMatrix.numberOfReviewers)
-            assertEquals(1, updatedProject.reviewDecisionMatrix.patternsCount)
+            assertEquals(1, updatedProject.reviewDecisionMatrix.patterns.size)
             assertEquals(
                 PaperDecision.PAPER_DECISION_DECLINED,
-                updatedProject.reviewDecisionMatrix.patternsList.first().decision,
+                updatedProject.reviewDecisionMatrix.patterns.first().decision,
             )
         }
 
@@ -358,9 +352,10 @@ class ProjectTableRepoTest :
                             .setSettings(
                                 Project.Settings.newBuilder()
                                     .setDecisionMatrix(
-                                        ReviewDecisionMatrix.newBuilder()
-                                            .setNumberOfReviewers(2)
-                                            .build(),
+                                        ReviewDecisionMatrix(
+                                            numberOfReviewers = 2,
+                                            patterns = emptyList(),
+                                        ).toGrpc(),
                                     )
                                     .build(),
                             )

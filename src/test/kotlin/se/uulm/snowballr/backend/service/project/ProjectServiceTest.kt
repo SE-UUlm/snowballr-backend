@@ -73,7 +73,7 @@ sealed class ProjectServiceTest : BaseServiceTest {
         assertEquals(expected.similarityThreshold, actual.settings.similarityThreshold)
         assertEquals(expected.snowballingType.toGrpc(), actual.settings.snowballingType)
         assertEquals(expected.reviewMaybeAllowed, actual.settings.reviewMaybeAllowed)
-        assertEquals(expected.reviewDecisionMatrix, actual.settings.decisionMatrix)
+        assertEquals(expected.reviewDecisionMatrix.toGrpc(), actual.settings.decisionMatrix)
         assertEquals(
             expected.fetchers,
             actual.settings.fetchersMap.mapValues { options -> options.value.optionsMap.mapValues { it.toString() } },

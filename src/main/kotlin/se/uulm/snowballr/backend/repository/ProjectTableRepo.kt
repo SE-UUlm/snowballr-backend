@@ -23,6 +23,7 @@ import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.ProjectPaper
 import se.uulm.snowballr.backend.model.dto.Review
 import se.uulm.snowballr.backend.model.dto.UserSettings
+import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPattern
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.project.SnowballingType
 import se.uulm.snowballr.backend.model.exception.NotFoundException
@@ -367,16 +368,15 @@ class ProjectTableRepo(
         settings: GrpcProject.Settings,
         paths: Set<String>,
     ) {
-        val decisionMatrixBuilder = project.reviewDecisionMatrix.toBuilder()
+        var decisionMatrix = project.reviewDecisionMatrix
         if ("project.settings.decision_matrix.number_of_reviewers" in paths) {
-            decisionMatrixBuilder
-                .setNumberOfReviewers(settings.decisionMatrix.numberOfReviewers)
+            decisionMatrix = decisionMatrix
+                .copy(numberOfReviewers = settings.decisionMatrix.numberOfReviewers)
         }
         if ("project.settings.decision_matrix.patterns" in paths) {
-            decisionMatrixBuilder
-                .clearPatterns()
-                .addAllPatterns(settings.decisionMatrix.patternsList)
+            decisionMatrix = decisionMatrix
+                .copy(patterns = settings.decisionMatrix.patternsList.map { DecisionMatrixPattern.fromGrpc(it) })
         }
-        this[ProjectTable.reviewDecisionMatrixBinary] = decisionMatrixBuilder.build().toByteArray()
+        this[ProjectTable.reviewDecisionMatrixBinary] = decisionMatrix.toByteArray()
     }
 }

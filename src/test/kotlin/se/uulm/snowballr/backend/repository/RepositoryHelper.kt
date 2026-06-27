@@ -9,6 +9,7 @@ import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.dto.Author
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
+import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
 import se.uulm.snowballr.backend.model.dto.project.SnowballingType
 import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
 import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
@@ -27,7 +28,6 @@ import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.table.association.ReviewHasCriterionTable
 import se.uulm.snowballr.backend.table.association.toProjectMember
-import snowballr.ProjectOuterClass.ReviewDecisionMatrix
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -131,7 +131,7 @@ object RepositoryHelper {
         similarityThreshold: Float = 0F,
         snowballingType: SnowballingType = SnowballingType.SNOWBALLING_TYPE_BOTH,
         reviewMaybeAllowed: Boolean = true,
-        reviewDecisionMatrix: ReviewDecisionMatrix = ReviewDecisionMatrix.getDefaultInstance(),
+        reviewDecisionMatrix: ReviewDecisionMatrix = ReviewDecisionMatrix(1, emptyList()),
         fetcherApis: FetcherMap = emptyMap(),
         createdBy: UUID,
         deletedAt: OffsetDateTime? = null,

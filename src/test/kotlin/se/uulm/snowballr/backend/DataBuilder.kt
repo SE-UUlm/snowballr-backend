@@ -16,7 +16,9 @@ import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.UserSettings
 import se.uulm.snowballr.backend.model.dto.VerificationToken
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
+import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPattern
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
+import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
 import se.uulm.snowballr.backend.model.dto.project.SnowballingType
 import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
 import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
@@ -27,9 +29,6 @@ import se.uulm.snowballr.backend.model.fetcher.FetcherEnqueueJob
 import se.uulm.snowballr.backend.model.fetcher.FetcherMap
 import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
 import se.uulm.snowballr.backend.table.patternOf
-import snowballr.ProjectOuterClass
-import snowballr.ProjectOuterClass.ReviewDecisionMatrix
-import snowballr.ReviewOuterClass
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -47,7 +46,7 @@ object DataBuilder {
         similarityThreshold: Float = 0.5F,
         snowballingType: SnowballingType = SnowballingType.SNOWBALLING_TYPE_BOTH,
         reviewMaybeAllowed: Boolean = true,
-        reviewDecisionMatrix: ReviewDecisionMatrix = ReviewDecisionMatrix.getDefaultInstance(),
+        reviewDecisionMatrix: ReviewDecisionMatrix = ReviewDecisionMatrix(1, emptyList()),
         fetchers: FetcherMap = emptyMap(),
         currentStageStartedAt: OffsetDateTime = OffsetDateTime.now(),
         createdAt: OffsetDateTime = OffsetDateTime.now(),
@@ -159,7 +158,7 @@ object DataBuilder {
         reviewMode: Boolean = false,
         criteriaIds: List<UUID> = emptyList(),
         similarityThreshold: Float = 0.5f,
-        decisionMatrix: ReviewDecisionMatrix = ReviewDecisionMatrix.getDefaultInstance(),
+        decisionMatrix: ReviewDecisionMatrix = ReviewDecisionMatrix(1, emptyList()),
         fetchers: FetcherMap = emptyMap(),
         snowballingType: SnowballingType = SnowballingType.SNOWBALLING_TYPE_BOTH,
         reviewMaybeAllowed: Boolean = false,
@@ -278,35 +277,35 @@ object DataBuilder {
     )
 
     private val ACCEPT_DECLINE_PATTERN = patternOf(
-        ReviewOuterClass.ReviewDecision.REVIEW_DECISION_ACCEPTED to 1L,
-        ReviewOuterClass.ReviewDecision.REVIEW_DECISION_DECLINED to 1L,
-        result = ProjectOuterClass.PaperDecision.PAPER_DECISION_IN_REVIEW,
+        ReviewDecision.REVIEW_DECISION_ACCEPTED to 1,
+        ReviewDecision.REVIEW_DECISION_DECLINED to 1,
+        result = PaperDecision.PAPER_DECISION_IN_REVIEW,
     )
     private val ACCEPT_ANY_PATTERN = patternOf(
-        ReviewOuterClass.ReviewDecision.REVIEW_DECISION_ACCEPTED to 1L,
-        result = ProjectOuterClass.PaperDecision.PAPER_DECISION_ACCEPTED,
+        ReviewDecision.REVIEW_DECISION_ACCEPTED to 1,
+        result = PaperDecision.PAPER_DECISION_ACCEPTED,
     )
     private val DECLINE_ANY_PATTERN = patternOf(
-        ReviewOuterClass.ReviewDecision.REVIEW_DECISION_DECLINED to 1L,
-        result = ProjectOuterClass.PaperDecision.PAPER_DECISION_DECLINED,
+        ReviewDecision.REVIEW_DECISION_DECLINED to 1,
+        result = PaperDecision.PAPER_DECISION_DECLINED,
     )
     private val MAYBE_MAYBE_PATTERN = patternOf(
-        ReviewOuterClass.ReviewDecision.REVIEW_DECISION_MAYBE to 2L,
-        result = ProjectOuterClass.PaperDecision.PAPER_DECISION_IN_REVIEW,
+        ReviewDecision.REVIEW_DECISION_MAYBE to 2,
+        result = PaperDecision.PAPER_DECISION_IN_REVIEW,
     )
 
     fun createExampleReviewDecisionMatrix(
         numberOfReviewers: Int = 2,
-        pattern: List<ReviewDecisionMatrix.Pattern> = listOf(
+        patterns: List<DecisionMatrixPattern> = listOf(
             ACCEPT_DECLINE_PATTERN,
             ACCEPT_ANY_PATTERN,
             DECLINE_ANY_PATTERN,
             MAYBE_MAYBE_PATTERN,
         ),
-    ): ReviewDecisionMatrix = ReviewDecisionMatrix.newBuilder()
-        .setNumberOfReviewers(numberOfReviewers)
-        .addAllPatterns(pattern)
-        .build()
+    ) = ReviewDecisionMatrix(
+        numberOfReviewers = numberOfReviewers,
+        patterns = patterns,
+    )
 
     fun createExampleProjectMemberWithUser(
         projectMember: ProjectMember = createExampleProjectMember(),

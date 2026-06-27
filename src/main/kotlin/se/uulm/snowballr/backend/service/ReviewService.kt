@@ -12,6 +12,7 @@ import se.uulm.snowballr.backend.model.dto.doesAcceptPaper
 import se.uulm.snowballr.backend.model.dto.doesDeclinePaper
 import se.uulm.snowballr.backend.model.dto.hasFinalDecision
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
+import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
 import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.dto.toGrpcReview
@@ -27,7 +28,6 @@ import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.IReviewHasCriterionTableRepo
 import snowballr.ProjectOuterClass
-import snowballr.ProjectOuterClass.ReviewDecisionMatrix
 import java.util.UUID
 import snowballr.ReviewOuterClass.Review as GrpcReview
 
@@ -184,12 +184,12 @@ class ReviewService(
         if (reviews.size == decisionMatrix.numberOfReviewers) {
             val counts = reviews.groupingBy { it.decision }.eachCount()
 
-            for (pattern in decisionMatrix.patternsList) {
-                val doesFoundMatch = pattern.entriesList.all { entry ->
-                    (counts[ReviewDecision.fromGrpc(entry.reviewDecision)] ?: 0) >= entry.count.toInt()
+            for (pattern in decisionMatrix.patterns) {
+                val doesFoundMatch = pattern.entries.all { entry ->
+                    (counts[entry.decision] ?: 0) >= entry.count
                 }
                 if (doesFoundMatch) {
-                    return PaperDecision.fromGrpc(pattern.decision)
+                    return pattern.decision
                 }
             }
 

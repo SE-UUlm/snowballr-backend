@@ -7,48 +7,39 @@ import org.jetbrains.exposed.v1.core.dao.id.java.UUIDTable
 import org.jetbrains.exposed.v1.json.json
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.model.dto.UserSettings
+import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPattern
+import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPatternEntry
+import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
 import se.uulm.snowballr.backend.model.dto.project.SnowballingType
+import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
+import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.fetcher.FetcherMap
-import snowballr.ProjectOuterClass.PaperDecision
-import snowballr.ProjectOuterClass.ReviewDecisionMatrix
-import snowballr.ProjectOuterClass.ReviewDecisionMatrix.Pattern
-import snowballr.ReviewOuterClass.ReviewDecision
 import java.time.OffsetDateTime
 import java.util.UUID
 
-fun patternOf(vararg decisions: Pair<ReviewDecision, Long>, result: PaperDecision): Pattern {
-    val builder = Pattern.newBuilder()
-    decisions.forEach { (decision, count) ->
-        builder.addEntries(
-            Pattern.Entry.newBuilder()
-                .setReviewDecision(decision)
-                .setCount(count)
-                .build(),
-        )
-    }
-    builder.setDecision(result)
-
-    return builder.build()
-}
+fun patternOf(vararg decisions: Pair<ReviewDecision, Int>, result: PaperDecision) = DecisionMatrixPattern(
+    decision = result,
+    entries = decisions.map { (decision, count) -> DecisionMatrixPatternEntry(decision, count) },
+)
 
 private const val REQUIRED_REVIEWERS = 2
 private val ACCEPT_DECLINE_PATTERN = patternOf(
-    ReviewDecision.REVIEW_DECISION_ACCEPTED to 1L,
-    ReviewDecision.REVIEW_DECISION_DECLINED to 1L,
+    ReviewDecision.REVIEW_DECISION_ACCEPTED to 1,
+    ReviewDecision.REVIEW_DECISION_DECLINED to 1,
     result = PaperDecision.PAPER_DECISION_IN_REVIEW,
 )
 private val ACCEPT_ANY_PATTERN = patternOf(
-    ReviewDecision.REVIEW_DECISION_ACCEPTED to 1L,
+    ReviewDecision.REVIEW_DECISION_ACCEPTED to 1,
     result = PaperDecision.PAPER_DECISION_ACCEPTED,
 )
 private val DECLINE_ANY_PATTERN = patternOf(
-    ReviewDecision.REVIEW_DECISION_DECLINED to 1L,
+    ReviewDecision.REVIEW_DECISION_DECLINED to 1,
     result = PaperDecision.PAPER_DECISION_DECLINED,
 )
 private val MAYBE_MAYBE_PATTERN = patternOf(
-    ReviewDecision.REVIEW_DECISION_MAYBE to REQUIRED_REVIEWERS.toLong(),
+    ReviewDecision.REVIEW_DECISION_MAYBE to REQUIRED_REVIEWERS,
     result = PaperDecision.PAPER_DECISION_IN_REVIEW,
 )
 
@@ -68,14 +59,15 @@ private const val SIMILARITY_THRESHOLD_DEFAULT = 0F
  *  - Decline + Anything not already matched → Declined
  *  - Maybe + Maybe → still in review (need final decision)
  */
-private val DECISION_MATRIX_DEFAULT: ByteArray = ReviewDecisionMatrix.newBuilder()
-    .setNumberOfReviewers(REQUIRED_REVIEWERS)
-    .addPatterns(ACCEPT_DECLINE_PATTERN)
-    .addPatterns(ACCEPT_ANY_PATTERN)
-    .addPatterns(DECLINE_ANY_PATTERN)
-    .addPatterns(MAYBE_MAYBE_PATTERN)
-    .build()
-    .toByteArray()
+private val DECISION_MATRIX_DEFAULT: ByteArray = ReviewDecisionMatrix(
+    numberOfReviewers = REQUIRED_REVIEWERS,
+    patterns = listOf(
+        ACCEPT_DECLINE_PATTERN,
+        ACCEPT_ANY_PATTERN,
+        DECLINE_ANY_PATTERN,
+        MAYBE_MAYBE_PATTERN,
+    ),
+).toByteArray()
 private val FETCHERS_DEFAULT: FetcherMap = emptyMap()
 private val SNOWBALLING_TYPE_DEFAULT = SnowballingType.SNOWBALLING_TYPE_BOTH
 private const val REVIEW_MAYBE_ALLOWED_DEFAULT = true
