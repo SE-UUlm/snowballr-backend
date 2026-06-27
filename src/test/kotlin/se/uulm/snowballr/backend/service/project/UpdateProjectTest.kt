@@ -315,7 +315,38 @@ class UpdateProjectTest : ProjectServiceTest() {
                     .putAllOptionsSchema(
                         mapOf(
                             "option1" to requiredOption,
-                            "option2" to requiredOption,
+                        ),
+                    )
+                    .build(),
+            )
+
+            val fetchers = mapOf(
+                "fetcher" to emptyMap<String, String>(),
+            )
+            val updatedProject = project.copy(fetchers = fetchers)
+            val request = getRequest(updatedProject, listOf("project.settings.fetchers"))
+
+            mockCurrentUser(user)
+            coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
+            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
+            coEvery { projectRepoMock.isProjectLocked(project.id) } returns false
+            coEvery { fetcherManagerMock.getAvailableFetchers() } returns availableFetchers
+
+            assertThrows<FailedPreconditionException> { service.updateProject(request) }
+        }
+
+    @Test
+    fun `When a user updates the fetchers of a project and keeps a required option empty, then a FailedPreconditionException is thrown`() =
+        runTest {
+            val user = DataBuilder.createExampleUser()
+            val project = DataBuilder.createExampleProject(fetchers = emptyMap())
+            val requiredOption = Fetcher.FetcherOptionSchema.newBuilder().setRequired(true).build()
+            val availableFetchers = setOf(
+                Fetcher.FetcherInformation.newBuilder()
+                    .setId("fetcher")
+                    .putAllOptionsSchema(
+                        mapOf(
+                            "option1" to requiredOption,
                         ),
                     )
                     .build(),
@@ -323,7 +354,7 @@ class UpdateProjectTest : ProjectServiceTest() {
 
             val fetchers = mapOf(
                 "fetcher" to mapOf(
-                    "option1" to "foo",
+                    "option1" to "",
                 ),
             )
             val updatedProject = project.copy(fetchers = fetchers)

@@ -199,7 +199,7 @@ def cmd_info(args):
             configured = "no"
         else:
             configured = "<empty>" if is_required else "no"
-        if is_secret:
+        if is_secret and value:
             display_value = "***"
         elif value:
             display_value = value

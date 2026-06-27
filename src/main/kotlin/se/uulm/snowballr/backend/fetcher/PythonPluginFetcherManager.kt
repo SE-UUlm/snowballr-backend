@@ -81,6 +81,7 @@ class PythonPluginFetcherManager(
             .filter { it.extension == "py" }
             .map { async { retrieveFetcherInformation(it.nameWithoutExtension) } }
             .awaitAll()
+            .filterNotNull()
             .toSet()
     }
 
@@ -288,11 +289,15 @@ class PythonPluginFetcherManager(
         throw FetcherException("Fetcher '$fetcher' returned invalid JSON.", exception)
     }
 
-    private suspend fun retrieveFetcherInformation(fetcherFileName: String): Fetcher.FetcherInformation {
+    private suspend fun retrieveFetcherInformation(fetcherFileName: String): Fetcher.FetcherInformation? {
         val action = FetcherAction.INFO
 
-        val info = executeFetcher<FetcherInformation>(fetcherFileName, action, action.payload())
-
-        return info.toGrpc(fetcherFileName)
+        return try {
+            val info = executeFetcher<FetcherInformation>(fetcherFileName, action, action.payload())
+            info.toGrpc(fetcherFileName)
+        } catch (e: FetcherException) {
+            logger.warn(e) { "Skipping plugin: $fetcherFileName" }
+            null
+        }
     }
 }

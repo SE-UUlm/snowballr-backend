@@ -105,7 +105,7 @@ def _read_stdin_payload() -> dict:
 def _apply_defaults(options: Options, schema: dict[str, FetcherOptionsSchema]) -> Options:
     result = dict(options)
     for key, option_schema in schema.items():
-        if key not in result and option_schema.default_value is not None:
+        if (key not in result or result[key] == "") and option_schema.default_value is not None:
             result[key] = option_schema.default_value
     return result
 

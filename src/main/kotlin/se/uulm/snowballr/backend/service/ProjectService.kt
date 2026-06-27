@@ -168,7 +168,7 @@ class ProjectService(
         val project = repo.getProjectById(projectId).getOrThrow()
         val currentStatus = project.status
 
-        val fieldMask = request.mask.pathsList
+        val fieldMask = FieldMaskUtil.normalize(request.mask).pathsList
         val requestedStatus = request.project.status
 
         validateProjectUpdate(currentStatus, requestedStatus, fieldMask)
@@ -410,18 +410,17 @@ class ProjectService(
         val sanitizedFetchersMap = mutableMapOf<String, GrpcFetcherOptions>()
         val availableFetchers = fetcherManager.getAvailableFetchers()
 
+        val fetcherIndex = availableFetchers.associateBy { it.id }
         for ((fetcher, options) in fetchers) {
-            val info = availableFetchers.firstOrNull { it.id == fetcher }
-
-            // Skip non-existent fetchers
-            if (info == null) continue
+            val info = fetcherIndex[fetcher] ?: continue
 
             // Filter out non-existent options
             val availableOptions = info.optionsSchemaMap
             val sanitizedOptions = options.optionsMap.filter { availableOptions.containsKey(it.key) }
 
             val requiredOptions = availableOptions.filter { it.value.required }
-            val missingRequiredOptions = requiredOptions.keys.filter { !sanitizedOptions.containsKey(it) }
+            val missingRequiredOptions = requiredOptions.keys
+                .filter { !sanitizedOptions.containsKey(it) || sanitizedOptions[it].isNullOrEmpty() }
             if (missingRequiredOptions.isNotEmpty()) {
                 throw FailedPreconditionException(
                     "The following required options were not provided: $missingRequiredOptions",
