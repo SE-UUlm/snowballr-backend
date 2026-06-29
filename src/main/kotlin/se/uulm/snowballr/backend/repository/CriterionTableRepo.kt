@@ -97,7 +97,7 @@ interface ICriterionTableRepo {
      * @param projectId The unique identifier of the project for which the criteria are being retrieved.
      * @return A list of [Criterion] objects associated with the given project.
      */
-    suspend fun getAllProjectCriteria(projectId: UUID): List<Criterion>
+    suspend fun getAllProjectCriteria(projectId: UUID): List<Criterion.ProjectCriterion>
 }
 
 /**
@@ -175,7 +175,7 @@ class CriterionTableRepo(
         }
     }
 
-    override suspend fun getAllProjectCriteria(projectId: UUID): List<Criterion> = db.query {
+    override suspend fun getAllProjectCriteria(projectId: UUID): List<Criterion.ProjectCriterion> = db.query {
         CriterionTable.getEntities(ResultRow::toProjectCriterion) {
             CriterionTable.projectId eq projectId
         }

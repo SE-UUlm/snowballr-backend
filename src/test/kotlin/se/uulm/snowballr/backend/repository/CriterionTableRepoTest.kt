@@ -378,12 +378,13 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                 val projectCriterion1 = repo.createCriterion(projectCriterionRequest1, testUserId)
                 val projectCriterion2 = repo.createCriterion(projectCriterionRequest2, testUserId)
 
-                val userCriteria = repo.getAllProjectCriteria(projectId1)
+                val projectCriteria = repo.getAllProjectCriteria(projectId1)
 
-                assertThat(userCriteria).hasSize(1)
-                assertThat(userCriteria).containsExactly(projectCriterion1)
-                assertThat(userCriteria).doesNotContain(projectCriterion2)
-                assertThat(userCriteria).doesNotContain(userCriterion)
+                assertThat(projectCriteria).hasSize(1)
+                val projectCriterion = projectCriteria.first()
+                assertEquals(projectCriterion1, projectCriterion)
+                assertNotEquals(projectCriterion2, projectCriterion)
+                assertNotEquals(userCriterion, projectCriterion)
             }
     }
 }
