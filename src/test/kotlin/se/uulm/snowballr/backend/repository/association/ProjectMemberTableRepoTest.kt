@@ -9,7 +9,8 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.CsvSource
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.model.dto.ProjectMember
 import se.uulm.snowballr.backend.model.dto.ProjectMemberWithUser
 import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
@@ -31,6 +32,16 @@ import java.util.UUID
 class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectMemberTable), true) {
     private val repo = ProjectMemberTableRepo(db)
     private val userRepo = UserTableRepo(db)
+
+    companion object {
+        @JvmStatic
+        fun roleUpdateValues() = listOf(
+            Arguments.of(MemberRole.DEFAULT, MemberRole.DEFAULT, MemberRole.DEFAULT),
+            Arguments.of(MemberRole.DEFAULT, MemberRole.ADMIN, MemberRole.ADMIN),
+            Arguments.of(MemberRole.ADMIN, MemberRole.DEFAULT, MemberRole.DEFAULT),
+            Arguments.of(MemberRole.ADMIN, MemberRole.ADMIN, MemberRole.ADMIN),
+        )
+    }
 
     private suspend fun setupProject(
         numberOfAdditionalMembers: Int = 0,
@@ -303,12 +314,7 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
     @Nested
     inner class UpdateProjectMemberRole {
         @ParameterizedTest(name = "When role changes from {0} to {1}, then the final role should be {2}")
-        @CsvSource(
-            "MEMBER_ROLE_DEFAULT, MEMBER_ROLE_DEFAULT, MEMBER_ROLE_DEFAULT",
-            "MEMBER_ROLE_DEFAULT, MEMBER_ROLE_ADMIN, MEMBER_ROLE_ADMIN",
-            "MEMBER_ROLE_ADMIN, MEMBER_ROLE_DEFAULT, MEMBER_ROLE_DEFAULT",
-            "MEMBER_ROLE_ADMIN, MEMBER_ROLE_ADMIN, MEMBER_ROLE_ADMIN",
-        )
+        @MethodSource("se.uulm.snowballr.backend.repository.association.ProjectMemberTableRepoTest#roleUpdateValues")
         fun `When a project member is updated, then the role of the project member is correctly updated`(
             initialRole: MemberRole,
             updatedRole: MemberRole,

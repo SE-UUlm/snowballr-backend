@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.ValueSource
+import org.junit.jupiter.params.provider.EnumSource
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.AccessType
@@ -124,11 +124,10 @@ class UpdateProjectTest : ProjectServiceTest() {
         }
 
     @ParameterizedTest
-    @ValueSource(strings = ["PROJECT_STATUS_ACTIVE", "PROJECT_STATUS_ACTIVE_LOCKED"])
+    @EnumSource(ProjectStatus::class, names = ["ACTIVE", "ACTIVE_LOCKED"])
     fun `When a user updates an archived project (only active status), then the correct values are returned`(
-        statusName: String,
+        status: ProjectStatus,
     ) = runTest {
-        val status = ProjectStatus.valueOf(statusName)
         val user = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject(status = ProjectStatus.ARCHIVED)
 
@@ -238,11 +237,10 @@ class UpdateProjectTest : ProjectServiceTest() {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = ["PROJECT_STATUS_CLEARED"])
+    @EnumSource(ProjectStatus::class, names = ["CLEARED"])
     fun `When a user updates a project with unsupported status, then an IllegalStateException is thrown`(
-        statusName: String,
+        status: ProjectStatus,
     ) = runTest {
-        val status = ProjectStatus.valueOf(statusName)
         val user = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject(status = status)
 
