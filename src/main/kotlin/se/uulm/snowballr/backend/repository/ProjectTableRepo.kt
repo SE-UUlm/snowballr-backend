@@ -19,10 +19,13 @@ import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.update
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.dto.Project
-import se.uulm.snowballr.backend.model.dto.ProjectPaper
-import se.uulm.snowballr.backend.model.dto.Review
-import se.uulm.snowballr.backend.model.dto.UserSettings
+import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPattern
+import se.uulm.snowballr.backend.model.dto.project.Project
+import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
+import se.uulm.snowballr.backend.model.dto.project.SnowballingType
+import se.uulm.snowballr.backend.model.dto.projectpaper.ProjectPaper
+import se.uulm.snowballr.backend.model.dto.review.Review
+import se.uulm.snowballr.backend.model.dto.user.UserSettings
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.table.ProjectTable
@@ -30,8 +33,6 @@ import se.uulm.snowballr.backend.table.ReviewTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.table.toProject
-import snowballr.ProjectOuterClass.ProjectStatus
-import snowballr.ProjectOuterClass.SnowballingType
 import java.time.OffsetDateTime
 import java.util.UUID
 import snowballr.ProjectOuterClass.Project as GrpcProject
@@ -82,18 +83,18 @@ interface IProjectTableRepo {
      *
      * @param userId The unique identifier of the user whose associated projects are to be fetched.
      * @param statusFilters (optional) Set of filters to specify which project status the fetched projects should have.
-     * By default, [ProjectStatus.PROJECT_STATUS_ACTIVE] and [ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED] are used,
-     * which includes both active and active-locked projects, i.e., projects where settings cannot be changed anymore.
-     * If set to another value (e.g., [ProjectStatus.PROJECT_STATUS_DELETED]), only projects
-     * matching one of the statuses (e.g., deleted) will be returned.
+     * By default, [ProjectStatus.ACTIVE] and [ProjectStatus.ACTIVE_LOCKED] are used, which includes both active and
+     * active-locked projects, i.e., projects where settings cannot be changed anymore.
+     * If set to another value (e.g., [ProjectStatus.DELETED]), only projects matching one of the statuses
+     * (e.g., deleted) will be returned.
      *
      * @return A list of [Project] objects matching the specified filters where the given user is member of.
      */
     suspend fun getUserProjects(
         userId: UUID,
         statusFilters: Set<ProjectStatus> = setOf(
-            ProjectStatus.PROJECT_STATUS_ACTIVE,
-            ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED,
+            ProjectStatus.ACTIVE,
+            ProjectStatus.ACTIVE_LOCKED,
         ),
     ): List<Project>
 
@@ -118,8 +119,8 @@ interface IProjectTableRepo {
      * is associated with this project.
      *
      * **Note:** This functions returns `true` or `false` regardless of the project's current state.
-     * However, the result is only meaningful if the project is in an active state
-     * (i.e., [ProjectStatus.PROJECT_STATUS_ACTIVE] or [ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED]).
+     * However, the result is only meaningful if the project is in an active state (i.e., [ProjectStatus.ACTIVE] or
+     * [ProjectStatus.ACTIVE_LOCKED]).
      *
      * @param projectId The ID of the project to check for locked status.
      * @return `true` if the project is locked, `false` otherwise.
@@ -128,7 +129,7 @@ interface IProjectTableRepo {
 
     /**
      * Performs a soft-delete of the project with the given [projectId], i.e., does not remove the
-     * project from the database but marks it as deleted by setting the status to [ProjectStatus.PROJECT_STATUS_DELETED].
+     * project from the database but marks it as deleted by setting the status to [ProjectStatus.DELETED].
      */
     suspend fun softDeleteProject(projectId: UUID)
 
@@ -181,7 +182,7 @@ class ProjectTableRepo(
         db.query {
             ProjectTable.insertAndGet(ResultRow::toProject) {
                 it[name] = request.name
-                it[status] = ProjectStatus.PROJECT_STATUS_ACTIVE
+                it[status] = ProjectStatus.ACTIVE
                 it[currentStage] = 0
                 it[maxStage] = 0
                 it[similarityThreshold] = userSettings.similarityThreshold
@@ -195,15 +196,12 @@ class ProjectTableRepo(
 
     override suspend fun getAllProjects(): List<Project> = db.query {
         ProjectTable.getEntities(ResultRow::toProject) {
-            (ProjectTable.status eq ProjectStatus.PROJECT_STATUS_ACTIVE) or
-                (ProjectTable.status eq ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
+            (ProjectTable.status eq ProjectStatus.ACTIVE) or (ProjectTable.status eq ProjectStatus.ACTIVE_LOCKED)
         }
     }
 
     override suspend fun getUserProjects(userId: UUID, statusFilters: Set<ProjectStatus>): List<Project> = db.query {
-        val excludedStatuses = listOf(ProjectStatus.PROJECT_STATUS_UNSPECIFIED)
         val projectFilter = statusFilters
-            .filterNot { it in excludedStatuses }
             .map { ProjectTable.status eq it }
             .reduceOrNull { acc, filter -> acc or filter }
 
@@ -248,7 +246,7 @@ class ProjectTableRepo(
     override suspend fun softDeleteProject(projectId: UUID) {
         db.query {
             ProjectTable.update({ ProjectTable.id eq projectId }) {
-                it[status] = ProjectStatus.PROJECT_STATUS_DELETED
+                it[status] = ProjectStatus.DELETED
                 it[deletedAt] = OffsetDateTime.now()
             }
         }
@@ -257,14 +255,12 @@ class ProjectTableRepo(
     override suspend fun clearSoftDeletedProjects(thresholdDate: OffsetDateTime) = db.query {
         val clearedProjects = ProjectTable.update(
             {
-                (ProjectTable.status eq ProjectStatus.PROJECT_STATUS_DELETED)
-                    .and(ProjectTable.deletedAt lessEq thresholdDate)
+                (ProjectTable.status eq ProjectStatus.DELETED).and(ProjectTable.deletedAt lessEq thresholdDate)
             },
         ) {
             it[name] = ""
-            it[status] = ProjectStatus.PROJECT_STATUS_UNSPECIFIED
+            it[status] = ProjectStatus.CLEARED
             it[fetchers] = emptyMap()
-            it[snowballingType] = SnowballingType.SNOWBALLING_TYPE_UNSPECIFIED
             it[similarityThreshold] = 0f
             it[fetchers] = emptyMap()
 
@@ -311,9 +307,7 @@ class ProjectTableRepo(
         ProjectTable
             .selectAll()
             .where {
-                (ProjectTable.status eq ProjectStatus.PROJECT_STATUS_UNSPECIFIED).and(
-                    ProjectTable.deletedAt.isNotNull(),
-                )
+                (ProjectTable.status eq ProjectStatus.CLEARED).and(ProjectTable.deletedAt.isNotNull())
             }
             .map { it[ProjectTable.id].value }
     }
@@ -342,7 +336,7 @@ class ProjectTableRepo(
 
     private fun UpdateStatement.applyProjectStatusUpdate(project: GrpcProject, paths: Set<String>) {
         if ("project.status" in paths) {
-            this[ProjectTable.status] = project.status
+            this[ProjectTable.status] = ProjectStatus.fromGrpc(project.status)
         }
     }
 
@@ -351,7 +345,7 @@ class ProjectTableRepo(
             this[ProjectTable.similarityThreshold] = settings.similarityThreshold
         }
         if ("project.settings.snowballing_type" in paths) {
-            this[ProjectTable.snowballingType] = settings.snowballingType
+            this[ProjectTable.snowballingType] = SnowballingType.fromGrpc(settings.snowballingType)
         }
         if ("project.settings.review_maybe_allowed" in paths) {
             this[ProjectTable.reviewMaybeAllowed] = settings.reviewMaybeAllowed
@@ -370,16 +364,15 @@ class ProjectTableRepo(
         settings: GrpcProject.Settings,
         paths: Set<String>,
     ) {
-        val decisionMatrixBuilder = project.reviewDecisionMatrix.toBuilder()
+        var decisionMatrix = project.reviewDecisionMatrix
         if ("project.settings.decision_matrix.number_of_reviewers" in paths) {
-            decisionMatrixBuilder
-                .setNumberOfReviewers(settings.decisionMatrix.numberOfReviewers)
+            decisionMatrix = decisionMatrix
+                .copy(numberOfReviewers = settings.decisionMatrix.numberOfReviewers)
         }
         if ("project.settings.decision_matrix.patterns" in paths) {
-            decisionMatrixBuilder
-                .clearPatterns()
-                .addAllPatterns(settings.decisionMatrix.patternsList)
+            decisionMatrix = decisionMatrix
+                .copy(patterns = settings.decisionMatrix.patternsList.map { DecisionMatrixPattern.fromGrpc(it) })
         }
-        this[ProjectTable.reviewDecisionMatrixBinary] = decisionMatrixBuilder.build().toByteArray()
+        this[ProjectTable.reviewDecisionMatrixBinary] = decisionMatrix.toByteArray()
     }
 }

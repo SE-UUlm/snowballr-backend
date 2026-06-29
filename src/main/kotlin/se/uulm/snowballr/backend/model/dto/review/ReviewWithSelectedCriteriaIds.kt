@@ -1,4 +1,4 @@
-package se.uulm.snowballr.backend.model.dto
+package se.uulm.snowballr.backend.model.dto.review
 
 import java.util.UUID
 

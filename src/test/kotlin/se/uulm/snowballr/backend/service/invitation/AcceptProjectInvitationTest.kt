@@ -8,12 +8,12 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.model.dto.ProjectMember
+import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
+import se.uulm.snowballr.backend.model.dto.projectmember.ProjectMember
+import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.notfound.InvitationTokenNotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundByEmailException
-import snowballr.ProjectOuterClass
-import snowballr.UserOuterClass
 import java.time.OffsetDateTime
 import snowballr.ProjectOuterClass.Project.Member as GrpcProjectMember
 
@@ -58,7 +58,7 @@ class AcceptProjectInvitationTest : InvitationServiceTest() {
 
     @Test
     fun `When the user has not verified their email, then a FailedPreconditionException is thrown`() = runTest {
-        val user = DataBuilder.createExampleUser(status = UserOuterClass.UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED)
+        val user = DataBuilder.createExampleUser(status = UserStatus.ACTIVE_UNCONFIRMED)
         val token = DataBuilder.createExampleInvitationToken(email = user.email)
         val request = GrpcProjectMember.Accept.newBuilder().setToken(token.token).build()
 
@@ -70,7 +70,7 @@ class AcceptProjectInvitationTest : InvitationServiceTest() {
 
     @Test
     fun `When adding the user to the project fails, then a TestSpecificException is thrown`() = runTest {
-        val user = DataBuilder.createExampleUser(status = UserOuterClass.UserStatus.USER_STATUS_ACTIVE)
+        val user = DataBuilder.createExampleUser(status = UserStatus.ACTIVE)
         val token = DataBuilder.createExampleInvitationToken(email = user.email)
         val request = GrpcProjectMember.Accept.newBuilder().setToken(token.token).build()
 
@@ -83,12 +83,12 @@ class AcceptProjectInvitationTest : InvitationServiceTest() {
 
     @Test
     fun `When deleting the invitation token fails, then a TestSpecificException is thrown`() = runTest {
-        val user = DataBuilder.createExampleUser(status = UserOuterClass.UserStatus.USER_STATUS_ACTIVE)
+        val user = DataBuilder.createExampleUser(status = UserStatus.ACTIVE)
         val token = DataBuilder.createExampleInvitationToken(email = user.email)
         val userMember = ProjectMember(
             projectId = token.projectId,
             userId = user.id,
-            role = ProjectOuterClass.MemberRole.MEMBER_ROLE_DEFAULT,
+            role = MemberRole.DEFAULT,
             createdAt = OffsetDateTime.now(),
             modifiedAt = null,
         )
@@ -105,12 +105,12 @@ class AcceptProjectInvitationTest : InvitationServiceTest() {
     @Test
     fun `When a valid token is provided and all operations succeed, then the token is successfully deleted afterwards`() =
         runTest {
-            val user = DataBuilder.createExampleUser(status = UserOuterClass.UserStatus.USER_STATUS_ACTIVE)
+            val user = DataBuilder.createExampleUser(status = UserStatus.ACTIVE)
             val token = DataBuilder.createExampleInvitationToken(email = user.email)
             val userMember = ProjectMember(
                 projectId = token.projectId,
                 userId = user.id,
-                role = ProjectOuterClass.MemberRole.MEMBER_ROLE_DEFAULT,
+                role = MemberRole.DEFAULT,
                 createdAt = OffsetDateTime.now(),
                 modifiedAt = null,
             )

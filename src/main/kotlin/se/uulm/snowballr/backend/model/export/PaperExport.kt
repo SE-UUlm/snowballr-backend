@@ -2,7 +2,7 @@ package se.uulm.snowballr.backend.model.export
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import snowballr.ProjectOuterClass
+import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 
 @Serializable
 data class PaperExport(
@@ -25,7 +25,7 @@ data class PaperExport(
     @SerialName("reviews")
     val reviews: List<PaperReviewExport>,
     @SerialName("final_decision")
-    val finalDecision: ProjectOuterClass.PaperDecision,
+    val finalDecision: PaperDecision,
     @SerialName("created_at")
     val createdAt: String,
     @SerialName("modified_at")

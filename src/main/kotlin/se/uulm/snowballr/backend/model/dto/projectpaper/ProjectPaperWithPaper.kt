@@ -1,5 +1,9 @@
-package se.uulm.snowballr.backend.model.dto
+package se.uulm.snowballr.backend.model.dto.projectpaper
 
+import se.uulm.snowballr.backend.model.dto.paper.Paper
+import se.uulm.snowballr.backend.model.dto.paper.toGrpcPaper
+import se.uulm.snowballr.backend.model.dto.review.Review
+import se.uulm.snowballr.backend.model.dto.review.ReviewWithSelectedCriteriaIds
 import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 import snowballr.ReviewOuterClass.Review as GrpcReview
 
@@ -34,7 +38,7 @@ fun ProjectPaperWithPaper.toGrpcProjectPaper(
     .setId(projectPaper.id.toString())
     .setPaper(paper.toGrpcPaper(backwardReferencedIds))
     .setStage(projectPaper.stage)
-    .setDecision(projectPaper.decision)
+    .setDecision(projectPaper.decision.toGrpc())
     .addAllReviews(reviews)
     .setLocalId(projectPaper.localPaperId.toString())
     .build()

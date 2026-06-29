@@ -1,6 +1,6 @@
 package se.uulm.snowballr.backend.model.fetcher
 
-import se.uulm.snowballr.backend.model.dto.Paper
+import se.uulm.snowballr.backend.model.dto.paper.Paper
 
 /**
  * Represents a pair of backward and forward references of type [T].

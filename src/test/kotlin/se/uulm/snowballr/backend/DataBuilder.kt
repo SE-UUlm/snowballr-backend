@@ -1,33 +1,34 @@
 package se.uulm.snowballr.backend
 
-import se.uulm.snowballr.backend.model.dto.Author
-import se.uulm.snowballr.backend.model.dto.Criterion
-import se.uulm.snowballr.backend.model.dto.InvitationToken
-import se.uulm.snowballr.backend.model.dto.Paper
-import se.uulm.snowballr.backend.model.dto.Project
-import se.uulm.snowballr.backend.model.dto.ProjectMember
-import se.uulm.snowballr.backend.model.dto.ProjectMemberWithUser
-import se.uulm.snowballr.backend.model.dto.ProjectPaper
-import se.uulm.snowballr.backend.model.dto.ProjectPaperFull
-import se.uulm.snowballr.backend.model.dto.ProjectPaperWithPaper
-import se.uulm.snowballr.backend.model.dto.Review
-import se.uulm.snowballr.backend.model.dto.ReviewWithSelectedCriteriaIds
-import se.uulm.snowballr.backend.model.dto.User
-import se.uulm.snowballr.backend.model.dto.UserSettings
-import se.uulm.snowballr.backend.model.dto.VerificationToken
+import se.uulm.snowballr.backend.model.dto.criterion.Criterion
+import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
+import se.uulm.snowballr.backend.model.dto.paper.Author
+import se.uulm.snowballr.backend.model.dto.paper.Paper
+import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPattern
+import se.uulm.snowballr.backend.model.dto.project.Project
+import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
+import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
+import se.uulm.snowballr.backend.model.dto.project.SnowballingType
+import se.uulm.snowballr.backend.model.dto.projectmember.InvitationToken
+import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
+import se.uulm.snowballr.backend.model.dto.projectmember.ProjectMember
+import se.uulm.snowballr.backend.model.dto.projectmember.ProjectMemberWithUser
+import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
+import se.uulm.snowballr.backend.model.dto.projectpaper.ProjectPaper
+import se.uulm.snowballr.backend.model.dto.projectpaper.ProjectPaperFull
+import se.uulm.snowballr.backend.model.dto.projectpaper.ProjectPaperWithPaper
+import se.uulm.snowballr.backend.model.dto.review.Review
+import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
+import se.uulm.snowballr.backend.model.dto.review.ReviewWithSelectedCriteriaIds
+import se.uulm.snowballr.backend.model.dto.user.User
+import se.uulm.snowballr.backend.model.dto.user.UserRole
+import se.uulm.snowballr.backend.model.dto.user.UserSettings
+import se.uulm.snowballr.backend.model.dto.user.UserStatus
+import se.uulm.snowballr.backend.model.dto.user.VerificationToken
 import se.uulm.snowballr.backend.model.fetcher.FetcherEnqueueJob
 import se.uulm.snowballr.backend.model.fetcher.FetcherMap
 import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
 import se.uulm.snowballr.backend.table.patternOf
-import snowballr.CriterionOuterClass.CriterionCategory
-import snowballr.ProjectOuterClass.MemberRole
-import snowballr.ProjectOuterClass.PaperDecision
-import snowballr.ProjectOuterClass.ProjectStatus
-import snowballr.ProjectOuterClass.ReviewDecisionMatrix
-import snowballr.ProjectOuterClass.SnowballingType
-import snowballr.ReviewOuterClass.ReviewDecision
-import snowballr.UserOuterClass.UserRole
-import snowballr.UserOuterClass.UserStatus
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -39,13 +40,13 @@ object DataBuilder {
     fun createExampleProject(
         id: UUID = UUID.randomUUID(),
         name: String = "Test Project",
-        status: ProjectStatus = ProjectStatus.PROJECT_STATUS_ACTIVE,
+        status: ProjectStatus = ProjectStatus.ACTIVE,
         currentStage: Long = 0,
         maxStage: Long = 0,
         similarityThreshold: Float = 0.5F,
-        snowballingType: SnowballingType = SnowballingType.SNOWBALLING_TYPE_BOTH,
+        snowballingType: SnowballingType = SnowballingType.BOTH,
         reviewMaybeAllowed: Boolean = true,
-        reviewDecisionMatrix: ReviewDecisionMatrix = ReviewDecisionMatrix.getDefaultInstance(),
+        reviewDecisionMatrix: ReviewDecisionMatrix = ReviewDecisionMatrix(1, emptyList()),
         fetchers: FetcherMap = emptyMap(),
         currentStageStartedAt: OffsetDateTime = OffsetDateTime.now(),
         createdAt: OffsetDateTime = OffsetDateTime.now(),
@@ -83,7 +84,7 @@ object DataBuilder {
         tag: String = "Test Tag",
         name: String = "Test Criterion",
         description: String = "Test Description",
-        category: CriterionCategory = CriterionCategory.CRITERION_CATEGORY_UNSPECIFIED,
+        category: CriterionCategory = CriterionCategory.INCLUSION,
         projectId: UUID = UUID.randomUUID(),
         createdAt: OffsetDateTime = OffsetDateTime.now(),
         createdBy: UUID = UUID.randomUUID(),
@@ -103,7 +104,7 @@ object DataBuilder {
         tag: String = "Test Tag",
         name: String = "Test Criterion",
         description: String = "Test Description",
-        category: CriterionCategory = CriterionCategory.CRITERION_CATEGORY_UNSPECIFIED,
+        category: CriterionCategory = CriterionCategory.INCLUSION,
         createdAt: OffsetDateTime = OffsetDateTime.now(),
         createdBy: UUID = UUID.randomUUID(),
     ) = Criterion.UserCriterion(
@@ -121,8 +122,8 @@ object DataBuilder {
         email: String = "test.email@example.com",
         firstName: String = "Test",
         lastName: String = "User",
-        role: UserRole = UserRole.USER_ROLE_UNSPECIFIED,
-        status: UserStatus = UserStatus.USER_STATUS_UNSPECIFIED,
+        role: UserRole = UserRole.DEFAULT,
+        status: UserStatus = UserStatus.ACTIVE,
         createdAt: OffsetDateTime = OffsetDateTime.now(),
         modifiedAt: OffsetDateTime? = null,
         deletedAt: OffsetDateTime? = null,
@@ -141,7 +142,7 @@ object DataBuilder {
     fun createExampleProjectMember(
         projectId: UUID = UUID.randomUUID(),
         userId: UUID = UUID.randomUUID(),
-        role: MemberRole = MemberRole.MEMBER_ROLE_UNSPECIFIED,
+        role: MemberRole = MemberRole.DEFAULT,
         createdAt: OffsetDateTime = OffsetDateTime.now(),
         modifiedAt: OffsetDateTime? = null,
     ) = ProjectMember(
@@ -157,9 +158,9 @@ object DataBuilder {
         reviewMode: Boolean = false,
         criteriaIds: List<UUID> = emptyList(),
         similarityThreshold: Float = 0.5f,
-        decisionMatrix: ReviewDecisionMatrix = ReviewDecisionMatrix.getDefaultInstance(),
+        decisionMatrix: ReviewDecisionMatrix = ReviewDecisionMatrix(1, emptyList()),
         fetchers: FetcherMap = emptyMap(),
-        snowballingType: SnowballingType = SnowballingType.SNOWBALLING_TYPE_BOTH,
+        snowballingType: SnowballingType = SnowballingType.BOTH,
         reviewMaybeAllowed: Boolean = false,
     ) = UserSettings(
         areHotkeysShown = showHotkeys,
@@ -210,7 +211,7 @@ object DataBuilder {
         projectId: UUID = UUID.randomUUID(),
         localPaperId: Long = 0,
         stage: Long = 0,
-        decision: PaperDecision = PaperDecision.PAPER_DECISION_ACCEPTED,
+        decision: PaperDecision = PaperDecision.ACCEPTED,
         createdAt: OffsetDateTime = OffsetDateTime.now(),
         createdBy: UUID = UUID.randomUUID(),
         modifiedAt: OffsetDateTime? = null,
@@ -237,7 +238,7 @@ object DataBuilder {
         id: UUID = UUID.randomUUID(),
         projectPaperId: UUID = UUID.randomUUID(),
         userId: UUID = UUID.randomUUID(),
-        decision: ReviewDecision = ReviewDecision.REVIEW_DECISION_ACCEPTED,
+        decision: ReviewDecision = ReviewDecision.ACCEPTED,
         createdAt: OffsetDateTime = OffsetDateTime.now(),
         modifiedAt: OffsetDateTime? = null,
     ) = Review(
@@ -276,35 +277,35 @@ object DataBuilder {
     )
 
     private val ACCEPT_DECLINE_PATTERN = patternOf(
-        ReviewDecision.REVIEW_DECISION_ACCEPTED to 1L,
-        ReviewDecision.REVIEW_DECISION_DECLINED to 1L,
-        result = PaperDecision.PAPER_DECISION_IN_REVIEW,
+        ReviewDecision.ACCEPTED to 1,
+        ReviewDecision.DECLINED to 1,
+        result = PaperDecision.IN_REVIEW,
     )
     private val ACCEPT_ANY_PATTERN = patternOf(
-        ReviewDecision.REVIEW_DECISION_ACCEPTED to 1L,
-        result = PaperDecision.PAPER_DECISION_ACCEPTED,
+        ReviewDecision.ACCEPTED to 1,
+        result = PaperDecision.ACCEPTED,
     )
     private val DECLINE_ANY_PATTERN = patternOf(
-        ReviewDecision.REVIEW_DECISION_DECLINED to 1L,
-        result = PaperDecision.PAPER_DECISION_DECLINED,
+        ReviewDecision.DECLINED to 1,
+        result = PaperDecision.DECLINED,
     )
     private val MAYBE_MAYBE_PATTERN = patternOf(
-        ReviewDecision.REVIEW_DECISION_MAYBE to 2L,
-        result = PaperDecision.PAPER_DECISION_IN_REVIEW,
+        ReviewDecision.MAYBE to 2,
+        result = PaperDecision.IN_REVIEW,
     )
 
     fun createExampleReviewDecisionMatrix(
         numberOfReviewers: Int = 2,
-        pattern: List<ReviewDecisionMatrix.Pattern> = listOf(
+        patterns: List<DecisionMatrixPattern> = listOf(
             ACCEPT_DECLINE_PATTERN,
             ACCEPT_ANY_PATTERN,
             DECLINE_ANY_PATTERN,
             MAYBE_MAYBE_PATTERN,
         ),
-    ): ReviewDecisionMatrix = ReviewDecisionMatrix.newBuilder()
-        .setNumberOfReviewers(numberOfReviewers)
-        .addAllPatterns(pattern)
-        .build()
+    ) = ReviewDecisionMatrix(
+        numberOfReviewers = numberOfReviewers,
+        patterns = patterns,
+    )
 
     fun createExampleProjectMemberWithUser(
         projectMember: ProjectMember = createExampleProjectMember(),

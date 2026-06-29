@@ -7,8 +7,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertNull
 import se.uulm.snowballr.backend.DataBuilder
-import se.uulm.snowballr.backend.model.dto.ProjectMemberWithUser
-import se.uulm.snowballr.backend.model.dto.User
+import se.uulm.snowballr.backend.model.dto.projectmember.ProjectMemberWithUser
+import se.uulm.snowballr.backend.model.dto.user.User
 import snowballr.ProjectOuterClass.Project.InviteCandidatesRequest
 import java.util.UUID
 import kotlin.reflect.KFunction

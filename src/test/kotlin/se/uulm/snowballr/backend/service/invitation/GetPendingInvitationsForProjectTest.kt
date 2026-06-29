@@ -9,19 +9,20 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
+import se.uulm.snowballr.backend.model.dto.user.UserRole
+import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundByEmailException
-import snowballr.UserOuterClass.UserRole
-import snowballr.UserOuterClass.UserStatus
+import snowballr.UserOuterClass
 
 class GetPendingInvitationsForProjectTest : InvitationServiceTest() {
     @Test
     fun `When a user requests the pending invitations for a project and has access, then the correct values are returned`() =
         runTest {
-            val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+            val currentUser = DataBuilder.createExampleUser(role = UserRole.ADMIN)
             val project = DataBuilder.createExampleProject()
             val registeredUser = DataBuilder.createExampleUser(
                 email = "registered@example.com",
-                status = UserStatus.USER_STATUS_ACTIVE,
+                status = UserStatus.ACTIVE,
             )
             val invitationTokenForRegisteredUser = DataBuilder.createExampleInvitationToken(
                 projectId = project.id,
@@ -49,7 +50,7 @@ class GetPendingInvitationsForProjectTest : InvitationServiceTest() {
             val project = DataBuilder.createExampleProject()
             val registeredUser = DataBuilder.createExampleUser(
                 email = "registered@example.com",
-                status = UserStatus.USER_STATUS_ACTIVE,
+                status = UserStatus.ACTIVE,
             )
             val invitationTokenForRegisteredUser = DataBuilder.createExampleInvitationToken(
                 projectId = project.id,
@@ -81,12 +82,12 @@ class GetPendingInvitationsForProjectTest : InvitationServiceTest() {
 
             // Registered user should have user details
             assertEquals(registeredUser.id.toString(), invitationForRegisteredUser?.id)
-            assertEquals(UserStatus.USER_STATUS_ACTIVE, invitationForRegisteredUser?.status)
+            assertEquals(UserOuterClass.UserStatus.USER_STATUS_ACTIVE, invitationForRegisteredUser?.status)
             assertEquals(registeredUser.firstName, invitationForRegisteredUser?.firstName)
 
             // Not registered user should not have user details
             assertEquals("", invitationForNotRegisteredUser?.id)
-            assertEquals(UserStatus.USER_STATUS_UNSPECIFIED, invitationForNotRegisteredUser?.status)
+            assertEquals(UserOuterClass.UserStatus.USER_STATUS_UNSPECIFIED, invitationForNotRegisteredUser?.status)
             assertEquals("", invitationForNotRegisteredUser?.firstName)
         }
 

@@ -15,9 +15,9 @@ import org.junit.jupiter.api.AfterEach
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.fetcher.FetcherOrchestrator
 import se.uulm.snowballr.backend.fetcher.IFetcherManager
-import se.uulm.snowballr.backend.model.dto.Paper
-import se.uulm.snowballr.backend.model.dto.toFetcherPaper
-import se.uulm.snowballr.backend.model.dto.toGrpcPaperRequest
+import se.uulm.snowballr.backend.model.dto.paper.Paper
+import se.uulm.snowballr.backend.model.dto.paper.toFetcherPaper
+import se.uulm.snowballr.backend.model.dto.paper.toGrpcPaperRequest
 import se.uulm.snowballr.backend.model.fetcher.FetcherEnqueueJob
 import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
 import se.uulm.snowballr.backend.repository.IPaperTableRepo

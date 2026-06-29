@@ -10,8 +10,8 @@ import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.statements.jdbc.JdbcResult
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.dto.Paper
-import se.uulm.snowballr.backend.model.dto.toAuthor
+import se.uulm.snowballr.backend.model.dto.paper.Paper
+import se.uulm.snowballr.backend.model.dto.paper.toAuthor
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.PaperNotFoundException
 import se.uulm.snowballr.backend.model.parseUUID

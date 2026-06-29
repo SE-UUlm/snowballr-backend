@@ -7,8 +7,8 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.access.IProjectPaperAccessChecker
 import se.uulm.snowballr.backend.auth.GrpcContext
-import se.uulm.snowballr.backend.model.dto.ProjectPaper
-import se.uulm.snowballr.backend.model.dto.User
+import se.uulm.snowballr.backend.model.dto.projectpaper.ProjectPaper
+import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IReviewTableRepo
@@ -73,6 +73,6 @@ sealed class ProjectPaperServiceTest : BaseServiceTest {
         assertEquals(expected.paperId.toString(), actual.paper.id)
         assertEquals(expected.localPaperId.toString(), actual.localId)
         assertEquals(expected.stage, actual.stage)
-        assertEquals(expected.decision, actual.decision)
+        assertEquals(expected.decision.toGrpc(), actual.decision)
     }
 }

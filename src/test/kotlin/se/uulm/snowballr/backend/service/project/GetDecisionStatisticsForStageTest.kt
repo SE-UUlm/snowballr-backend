@@ -7,8 +7,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
+import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.exception.notfound.StageNotFoundException
-import snowballr.ProjectOuterClass.PaperDecision
 import java.util.UUID
 import kotlin.test.assertEquals
 import snowballr.ProjectOuterClass.Project.Information as GrpcProjectInformation
@@ -121,10 +121,10 @@ class GetDecisionStatisticsForStageTest : ProjectServiceTest() {
         val stage = 0L
 
         val paperCountsByDecision = mapOf(
-            PaperDecision.PAPER_DECISION_ACCEPTED to 1,
-            PaperDecision.PAPER_DECISION_DECLINED to 2,
-            PaperDecision.PAPER_DECISION_IN_REVIEW to 3,
-            PaperDecision.PAPER_DECISION_UNREVIEWED to 4,
+            PaperDecision.ACCEPTED to 1,
+            PaperDecision.DECLINED to 2,
+            PaperDecision.IN_REVIEW to 3,
+            PaperDecision.UNREVIEWED to 4,
         )
 
         val projectPapers = paperCountsByDecision.flatMap { (decision, count) ->
@@ -141,12 +141,12 @@ class GetDecisionStatisticsForStageTest : ProjectServiceTest() {
             DataBuilder.createExampleProjectPaper(
                 projectId = project.id,
                 stage = stage + 1,
-                decision = PaperDecision.PAPER_DECISION_ACCEPTED,
+                decision = PaperDecision.ACCEPTED,
             ),
             DataBuilder.createExampleProjectPaper(
                 projectId = project.id,
                 stage = stage + 1,
-                decision = PaperDecision.PAPER_DECISION_DECLINED,
+                decision = PaperDecision.DECLINED,
             ),
         )
 
@@ -165,7 +165,7 @@ class GetDecisionStatisticsForStageTest : ProjectServiceTest() {
 
         val statsByDecision = statistics.statisticsList.associateBy { it.decision }
         paperCountsByDecision.forEach { (decision, expectedCount) ->
-            val actual = statsByDecision[decision]?.count ?: -1
+            val actual = statsByDecision[decision.toGrpc()]?.count ?: -1
             assertEquals(expectedCount, actual.toInt())
         }
     }

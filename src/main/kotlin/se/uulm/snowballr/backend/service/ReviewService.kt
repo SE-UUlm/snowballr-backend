@@ -6,12 +6,17 @@ import se.uulm.snowballr.backend.access.IReviewAccessChecker
 import se.uulm.snowballr.backend.fetcher.IFetcherOrchestrator
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.dto.Review
-import se.uulm.snowballr.backend.model.dto.doesAcceptPaper
-import se.uulm.snowballr.backend.model.dto.doesDeclinePaper
-import se.uulm.snowballr.backend.model.dto.hasFinalDecision
-import se.uulm.snowballr.backend.model.dto.toGrpcReview
-import se.uulm.snowballr.backend.model.dto.toGrpcReviews
+import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
+import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
+import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
+import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
+import se.uulm.snowballr.backend.model.dto.projectpaper.hasFinalDecision
+import se.uulm.snowballr.backend.model.dto.review.Review
+import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
+import se.uulm.snowballr.backend.model.dto.review.doesAcceptPaper
+import se.uulm.snowballr.backend.model.dto.review.doesDeclinePaper
+import se.uulm.snowballr.backend.model.dto.review.toGrpcReview
+import se.uulm.snowballr.backend.model.dto.review.toGrpcReviews
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.alreadyexists.DuplicateReviewException
 import se.uulm.snowballr.backend.model.fetcher.FetcherEnqueueJob
@@ -22,12 +27,7 @@ import se.uulm.snowballr.backend.repository.IReviewTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.IReviewHasCriterionTableRepo
-import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass
-import snowballr.ProjectOuterClass.PaperDecision
-import snowballr.ProjectOuterClass.ProjectStatus
-import snowballr.ProjectOuterClass.ReviewDecisionMatrix
-import snowballr.ReviewOuterClass.ReviewDecision
 import java.util.UUID
 import snowballr.ReviewOuterClass.Review as GrpcReview
 
@@ -132,16 +132,16 @@ class ReviewService(
         val hasSelectedExclusionCriterion = hasSelectedHardExclusionCriterion(project.id, selectedCriteriaIds)
 
         val decision = if (hasSelectedExclusionCriterion && review.doesDeclinePaper()) {
-            PaperDecision.PAPER_DECISION_DECLINED
+            PaperDecision.DECLINED
         } else {
             determinePaperDecision(reviewsForProjectPaper + review, project.reviewDecisionMatrix)
         }
         projectPaperRepo.updateProjectPaperDecision(projectPaperId, decision)
 
-        if (project.status != ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED) {
+        if (project.status != ProjectStatus.ACTIVE_LOCKED) {
             setProjectStatusActiveLocked(project.id)
         }
-        if (decision === PaperDecision.PAPER_DECISION_ACCEPTED) {
+        if (decision === PaperDecision.ACCEPTED) {
             fetcherOrchestrator.enqueue(FetcherEnqueueJob(projectPaper, currentUser.id))
         }
 
@@ -150,7 +150,7 @@ class ReviewService(
 
     private suspend fun hasSelectedHardExclusionCriterion(projectId: UUID, selectedCriteriaIds: List<UUID>): Boolean {
         val hardExclusionCriteria = criterionRepo.getAllProjectCriteria(projectId)
-            .filter { criterion -> criterion.category == CriterionCategory.CRITERION_CATEGORY_HARD_EXCLUSION }
+            .filter { criterion -> criterion.category == CriterionCategory.HARD_EXCLUSION }
             .map { criterion -> criterion.id }
 
         return selectedCriteriaIds.any { id -> hardExclusionCriteria.contains(id) }
@@ -161,16 +161,15 @@ class ReviewService(
      *
      * This function follows the following decision process:
      * - If the number of reviews is below the required threshold (as defined in the decision matrix),
-     *   the paper remains with [PaperDecision.PAPER_DECISION_IN_REVIEW].
+     *   the paper remains with [PaperDecision.IN_REVIEW].
      * - Once the expected number of reviews is reached, the function attempts to match the current review distribution
      *   against the configured decision matrix patterns. If a matching pattern is found (order-sensitive),
      *   its associated final decision is returned.
-     * - If no matrix pattern matches, the default decision is [PaperDecision.PAPER_DECISION_IN_REVIEW]
-     * - If the required number of reviews were not enough to determine a final decision
-     *   [PaperDecision.PAPER_DECISION_ACCEPTED] or [PaperDecision.PAPER_DECISION_DECLINED]), the latest review
-     *   (assumed to be the deciding one) determines final decision. The paper is then only set to
-     *   [PaperDecision.PAPER_DECISION_ACCEPTED] in case the latest review was [ReviewDecision.REVIEW_DECISION_ACCEPTED];
-     *   otherwise, it is set to [PaperDecision.PAPER_DECISION_DECLINED].
+     * - If no matrix pattern matches, the default decision is [PaperDecision.IN_REVIEW]
+     * - If the required number of reviews were not enough to determine a final decision [PaperDecision.ACCEPTED] or
+     *   [PaperDecision.DECLINED]), the latest review (assumed to be the deciding one) determines final decision. The
+     *   paper is then only set to [PaperDecision.ACCEPTED] in case the latest review was [ReviewDecision.ACCEPTED];
+     *   otherwise, it is set to [PaperDecision.DECLINED].
      *
      * @param reviews List of reviews to be considered for the final paper decision. The latest review is assumed to be the last one in the list.
      * @param decisionMatrix Decision matrix of the project, where the project paper is in, that can be used to define
@@ -179,28 +178,28 @@ class ReviewService(
      */
     private fun determinePaperDecision(reviews: List<Review>, decisionMatrix: ReviewDecisionMatrix): PaperDecision {
         if (reviews.size < decisionMatrix.numberOfReviewers) {
-            return PaperDecision.PAPER_DECISION_IN_REVIEW
+            return PaperDecision.IN_REVIEW
         }
         if (reviews.size == decisionMatrix.numberOfReviewers) {
             val counts = reviews.groupingBy { it.decision }.eachCount()
 
-            for (pattern in decisionMatrix.patternsList) {
-                val doesFoundMatch = pattern.entriesList.all { entry ->
-                    (counts[entry.reviewDecision] ?: 0) >= entry.count.toInt()
+            for (pattern in decisionMatrix.patterns) {
+                val doesFoundMatch = pattern.entries.all { entry ->
+                    (counts[entry.decision] ?: 0) >= entry.count
                 }
                 if (doesFoundMatch) {
                     return pattern.decision
                 }
             }
 
-            return PaperDecision.PAPER_DECISION_IN_REVIEW
+            return PaperDecision.IN_REVIEW
         }
 
         val decidingReview = reviews.last()
         return if (decidingReview.doesAcceptPaper()) {
-            PaperDecision.PAPER_DECISION_ACCEPTED
+            PaperDecision.ACCEPTED
         } else {
-            PaperDecision.PAPER_DECISION_DECLINED
+            PaperDecision.DECLINED
         }
     }
 
@@ -209,7 +208,7 @@ class ReviewService(
             .setProject(
                 ProjectOuterClass.Project.newBuilder()
                     .setId(projectId.toString())
-                    .setStatus(ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
+                    .setStatus(ProjectStatus.ACTIVE_LOCKED.toGrpc())
                     .build(),
             )
             .setMask(FieldMaskUtil.fromString("project.status"))

@@ -12,8 +12,10 @@ import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.dto.ProjectMember
-import se.uulm.snowballr.backend.model.dto.ProjectMemberWithUser
+import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
+import se.uulm.snowballr.backend.model.dto.projectmember.ProjectMember
+import se.uulm.snowballr.backend.model.dto.projectmember.ProjectMemberWithUser
+import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.repository.doesEntityExist
 import se.uulm.snowballr.backend.repository.getEntities
@@ -26,8 +28,6 @@ import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.table.association.toProjectMember
 import se.uulm.snowballr.backend.table.association.toProjectMemberWithUser
 import se.uulm.snowballr.backend.table.toUser
-import snowballr.ProjectOuterClass.MemberRole
-import snowballr.UserOuterClass.UserStatus
 import java.util.UUID
 
 /**
@@ -127,7 +127,7 @@ class ProjectMemberTableRepo(
      * @return A list of UUIDs representing users that are soft-deleted.
      */
     private fun getSoftDeletedUserIds(): List<UUID> = UserTable
-        .getEntities(ResultRow::toUser) { UserTable.status eq UserStatus.USER_STATUS_DELETED }
+        .getEntities(ResultRow::toUser) { UserTable.status eq UserStatus.DELETED }
         .map { it.id }
 
     /**
@@ -159,7 +159,7 @@ class ProjectMemberTableRepo(
         ProjectMemberTable.insertAndGet(ResultRow::toProjectMember) {
             it[this.userId] = userId
             it[this.projectId] = projectId
-            it[role] = MemberRole.MEMBER_ROLE_DEFAULT
+            it[role] = MemberRole.DEFAULT
         }
     }
 
@@ -192,7 +192,7 @@ class ProjectMemberTableRepo(
     override suspend fun getAllProjectAdmins(projectId: UUID): List<ProjectMember> = db.query {
         ProjectMemberTable.getEntities(ResultRow::toProjectMember) {
             (ProjectMemberTable.projectId eq projectId) and
-                (ProjectMemberTable.role eq MemberRole.MEMBER_ROLE_ADMIN) and
+                (ProjectMemberTable.role eq MemberRole.ADMIN) and
                 (ProjectMemberTable.userId notInList getSoftDeletedUserIds())
         }
     }
@@ -213,7 +213,7 @@ class ProjectMemberTableRepo(
         (ProjectMemberTable innerJoin UserTable)
             .selectAll()
             .where { ProjectMemberTable.projectId eq projectId }
-            .andWhere { UserTable.status neq UserStatus.USER_STATUS_DELETED }
+            .andWhere { UserTable.status neq UserStatus.DELETED }
             .map { it.toProjectMemberWithUser() }
     }
 

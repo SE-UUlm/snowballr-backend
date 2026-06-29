@@ -8,8 +8,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
+import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
-import snowballr.ProjectOuterClass.PaperDecision
 import java.util.UUID
 
 class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
@@ -132,14 +132,14 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
                 paperId = paper1.id,
                 stage = 0,
                 localPaperId = 1,
-                decision = PaperDecision.PAPER_DECISION_UNSPECIFIED,
+                decision = PaperDecision.UNREVIEWED,
             )
             val projectPaper2 = DataBuilder.createExampleProjectPaper(
                 projectId = project.id,
                 paperId = paper2.id,
                 stage = 0,
                 localPaperId = 2,
-                decision = PaperDecision.PAPER_DECISION_UNREVIEWED,
+                decision = PaperDecision.UNREVIEWED,
             )
             val review = DataBuilder.createExampleReview(projectPaperId = projectPaper1.id, userId = currentUser.id)
 
@@ -185,21 +185,21 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
             paperId = paper1.id,
             stage = 0,
             localPaperId = 1,
-            decision = PaperDecision.PAPER_DECISION_UNREVIEWED,
+            decision = PaperDecision.UNREVIEWED,
         )
         val projectPaper2 = DataBuilder.createExampleProjectPaper(
             projectId = project.id,
             paperId = paper2.id,
             stage = 1,
             localPaperId = 2,
-            decision = PaperDecision.PAPER_DECISION_UNSPECIFIED,
+            decision = PaperDecision.UNREVIEWED,
         )
         val projectPaper3 = DataBuilder.createExampleProjectPaper(
             projectId = project.id,
             paperId = paper3.id,
             stage = 0,
             localPaperId = 3,
-            decision = PaperDecision.PAPER_DECISION_UNSPECIFIED,
+            decision = PaperDecision.UNREVIEWED,
         )
         val review = DataBuilder.createExampleReview(projectPaperId = projectPaper1.id, userId = UUID.randomUUID())
 
@@ -247,14 +247,14 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
                 paperId = paper1.id,
                 stage = 0,
                 localPaperId = 1,
-                decision = PaperDecision.PAPER_DECISION_ACCEPTED,
+                decision = PaperDecision.ACCEPTED,
             )
             val projectPaper2 = DataBuilder.createExampleProjectPaper(
                 projectId = project.id,
                 paperId = paper2.id,
                 stage = 1,
                 localPaperId = 2,
-                decision = PaperDecision.PAPER_DECISION_UNSPECIFIED,
+                decision = PaperDecision.UNREVIEWED,
             )
 
             mockCurrentUser(currentUser)
@@ -299,14 +299,14 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
                 paperId = paper1.id,
                 stage = 0,
                 localPaperId = 1,
-                decision = PaperDecision.PAPER_DECISION_ACCEPTED,
+                decision = PaperDecision.ACCEPTED,
             )
             val projectPaper2 = DataBuilder.createExampleProjectPaper(
                 projectId = project.id,
                 paperId = paper2.id,
                 stage = 1,
                 localPaperId = 2,
-                decision = PaperDecision.PAPER_DECISION_ACCEPTED,
+                decision = PaperDecision.ACCEPTED,
             )
 
             mockCurrentUser(currentUser)

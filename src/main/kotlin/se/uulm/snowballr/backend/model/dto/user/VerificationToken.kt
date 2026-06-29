@@ -1,4 +1,4 @@
-package se.uulm.snowballr.backend.model.dto
+package se.uulm.snowballr.backend.model.dto.user
 
 import se.uulm.snowballr.backend.table.VerificationTokenTable
 import java.time.OffsetDateTime

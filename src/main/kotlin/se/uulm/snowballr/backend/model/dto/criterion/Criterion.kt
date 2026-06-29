@@ -1,4 +1,4 @@
-package se.uulm.snowballr.backend.model.dto
+package se.uulm.snowballr.backend.model.dto.criterion
 
 import se.uulm.snowballr.backend.table.CriterionTable
 import snowballr.CriterionOuterClass
@@ -13,7 +13,7 @@ sealed interface Criterion {
     val tag: String
     val name: String
     val description: String
-    val category: CriterionOuterClass.CriterionCategory
+    val category: CriterionCategory
     val createdAt: OffsetDateTime
     val createdBy: UUID
 
@@ -25,7 +25,7 @@ sealed interface Criterion {
         override val tag: String,
         override val name: String,
         override val description: String,
-        override val category: CriterionOuterClass.CriterionCategory,
+        override val category: CriterionCategory,
         override val createdAt: OffsetDateTime,
         override val createdBy: UUID,
         val projectId: UUID,
@@ -39,7 +39,7 @@ sealed interface Criterion {
         override val tag: String,
         override val name: String,
         override val description: String,
-        override val category: CriterionOuterClass.CriterionCategory,
+        override val category: CriterionCategory,
         override val createdAt: OffsetDateTime,
         override val createdBy: UUID,
     ) : Criterion
@@ -54,7 +54,7 @@ fun Criterion.toGrpcCriterion(): CriterionOuterClass.Criterion = CriterionOuterC
     .setTag(this.tag)
     .setName(this.name)
     .setDescription(this.description)
-    .setCategory(this.category)
+    .setCategory(this.category.toGrpc())
     .build()
 
 /**

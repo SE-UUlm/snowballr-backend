@@ -1,4 +1,6 @@
-package se.uulm.snowballr.backend.model.dto
+package se.uulm.snowballr.backend.model.dto.projectpaper
+
+import se.uulm.snowballr.backend.model.dto.review.Review
 
 /**
  * Composite class that contains a [ProjectPaper] and the number of [Review]s that have been given to it.

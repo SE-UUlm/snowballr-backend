@@ -1,5 +1,7 @@
-package se.uulm.snowballr.backend.model.dto
+package se.uulm.snowballr.backend.model.dto.projectmember
 
+import se.uulm.snowballr.backend.model.dto.user.User
+import se.uulm.snowballr.backend.model.dto.user.toGrpcUser
 import snowballr.ProjectOuterClass
 
 /**
@@ -27,7 +29,7 @@ data class ProjectMemberWithUser(
  */
 fun ProjectMemberWithUser.toGrpcProjectMember(): ProjectOuterClass.Project.Member = ProjectOuterClass.Project.Member
     .newBuilder()
-    .setRole(this.projectMember.role)
+    .setRole(this.projectMember.role.toGrpc())
     .setUser(this.user.toGrpcUser())
     .build()
 

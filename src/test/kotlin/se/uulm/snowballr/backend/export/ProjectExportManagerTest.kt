@@ -8,11 +8,11 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.DataBuilder
+import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
+import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
+import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.export.ExportFormat
 import se.uulm.snowballr.backend.model.export.ProjectExport
-import snowballr.CriterionOuterClass.CriterionCategory
-import snowballr.ProjectOuterClass.MemberRole
-import snowballr.ReviewOuterClass.ReviewDecision
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 import java.util.UUID
@@ -65,24 +65,24 @@ class ProjectExportManagerTest {
             )
             val projectMembers = listOf(
                 DataBuilder.createExampleProjectMemberWithUser(
-                    projectMember = DataBuilder.createExampleProjectMember(role = MemberRole.MEMBER_ROLE_DEFAULT),
+                    projectMember = DataBuilder.createExampleProjectMember(role = MemberRole.DEFAULT),
                 ),
                 DataBuilder.createExampleProjectMemberWithUser(
-                    projectMember = DataBuilder.createExampleProjectMember(role = MemberRole.MEMBER_ROLE_ADMIN),
+                    projectMember = DataBuilder.createExampleProjectMember(role = MemberRole.ADMIN),
                 ),
                 DataBuilder.createExampleProjectMemberWithUser(
-                    projectMember = DataBuilder.createExampleProjectMember(role = MemberRole.MEMBER_ROLE_DEFAULT),
+                    projectMember = DataBuilder.createExampleProjectMember(role = MemberRole.DEFAULT),
                 ),
             )
             val projectCriteria = listOf(
                 DataBuilder.createExampleProjectCriterion(
-                    category = CriterionCategory.CRITERION_CATEGORY_HARD_EXCLUSION,
+                    category = CriterionCategory.HARD_EXCLUSION,
                 ),
                 DataBuilder.createExampleProjectCriterion(
-                    category = CriterionCategory.CRITERION_CATEGORY_EXCLUSION,
+                    category = CriterionCategory.EXCLUSION,
                 ),
                 DataBuilder.createExampleProjectCriterion(
-                    category = CriterionCategory.CRITERION_CATEGORY_INCLUSION,
+                    category = CriterionCategory.INCLUSION,
                 ),
             )
             val projectPapers = listOf(
@@ -96,7 +96,7 @@ class ProjectExportManagerTest {
                     reviewsWithSelectedCriteria = listOf(
                         DataBuilder.createExampleReviewWithSelectedCriteriaIds(
                             review = DataBuilder.createExampleReview(
-                                decision = ReviewDecision.REVIEW_DECISION_ACCEPTED,
+                                decision = ReviewDecision.ACCEPTED,
                                 userId = projectMembers[0].user.id,
                             ),
                             selectedCriteriaIds = listOf(projectCriteria[0].id),
@@ -109,7 +109,7 @@ class ProjectExportManagerTest {
                     reviewsWithSelectedCriteria = listOf(
                         DataBuilder.createExampleReviewWithSelectedCriteriaIds(
                             review = DataBuilder.createExampleReview(
-                                decision = ReviewDecision.REVIEW_DECISION_MAYBE,
+                                decision = ReviewDecision.MAYBE,
                                 userId = projectMembers[1].user.id,
                             ),
                             selectedCriteriaIds = listOf(projectCriteria[1].id),
@@ -122,7 +122,7 @@ class ProjectExportManagerTest {
                     reviewsWithSelectedCriteria = listOf(
                         DataBuilder.createExampleReviewWithSelectedCriteriaIds(
                             review = DataBuilder.createExampleReview(
-                                decision = ReviewDecision.REVIEW_DECISION_DECLINED,
+                                decision = ReviewDecision.DECLINED,
                                 userId = UUID.randomUUID(),
                             ),
                             selectedCriteriaIds = listOf(projectCriteria[2].id),

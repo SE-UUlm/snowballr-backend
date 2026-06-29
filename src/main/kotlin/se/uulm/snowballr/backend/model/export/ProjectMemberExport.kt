@@ -2,7 +2,7 @@ package se.uulm.snowballr.backend.model.export
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import snowballr.ProjectOuterClass
+import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
 
 @Serializable
 data class ProjectMemberExport(
@@ -15,5 +15,5 @@ data class ProjectMemberExport(
     @SerialName("email")
     val email: String,
     @SerialName("role")
-    val role: ProjectOuterClass.MemberRole,
+    val role: MemberRole,
 )

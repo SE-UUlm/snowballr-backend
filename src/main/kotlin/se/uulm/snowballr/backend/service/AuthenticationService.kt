@@ -6,8 +6,9 @@ import se.uulm.snowballr.backend.auth.IJwtManager
 import se.uulm.snowballr.backend.auth.PasswordUtils
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.dto.isActiveAndConfirmed
-import se.uulm.snowballr.backend.model.dto.toGrpcUser
+import se.uulm.snowballr.backend.model.dto.user.UserStatus
+import se.uulm.snowballr.backend.model.dto.user.isActiveAndConfirmed
+import se.uulm.snowballr.backend.model.dto.user.toGrpcUser
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.UnauthenticatedException
 import se.uulm.snowballr.backend.model.exception.failedprecondition.EntityNotActiveException
@@ -16,7 +17,6 @@ import se.uulm.snowballr.backend.model.exception.notfound.VerificationTokenNotFo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.IVerificationTokenTableRepo
 import snowballr.Authentication
-import snowballr.UserOuterClass.UserStatus
 import java.time.OffsetDateTime
 import snowballr.UserOuterClass.User as GrpcUser
 
@@ -72,7 +72,7 @@ class AuthenticationService(
         val user = repo.getUserById(verificationToken.userId).getOrThrow()
 
         // Update the user's status to active
-        val updatedUser = user.copy(status = UserStatus.USER_STATUS_ACTIVE)
+        val updatedUser = user.copy(status = UserStatus.ACTIVE)
         val userUpdate = GrpcUser.Update.newBuilder()
             .setUser(updatedUser.toGrpcUser())
             .setMask(FieldMask.newBuilder().addPaths("user.status").build())

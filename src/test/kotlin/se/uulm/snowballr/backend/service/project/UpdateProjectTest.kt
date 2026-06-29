@@ -9,15 +9,15 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.ValueSource
+import org.junit.jupiter.params.provider.EnumSource
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.AccessType
-import se.uulm.snowballr.backend.model.dto.Project
-import se.uulm.snowballr.backend.model.dto.toGrpcProject
+import se.uulm.snowballr.backend.model.dto.project.Project
+import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
+import se.uulm.snowballr.backend.model.dto.project.toGrpcProject
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import snowballr.Fetcher
-import snowballr.ProjectOuterClass.ProjectStatus
 import kotlin.test.assertContains
 import kotlin.test.assertIs
 import snowballr.ProjectOuterClass.Project as GrpcProject
@@ -82,7 +82,7 @@ class UpdateProjectTest : ProjectServiceTest() {
             val user = DataBuilder.createExampleUser()
             val project = DataBuilder.createExampleProject()
 
-            val updatedProject = project.copy(status = ProjectStatus.PROJECT_STATUS_DELETED)
+            val updatedProject = project.copy(status = ProjectStatus.DELETED)
             val request = getRequest(updatedProject, listOf("project.status"))
 
             mockCurrentUser(user)
@@ -95,7 +95,7 @@ class UpdateProjectTest : ProjectServiceTest() {
     @Test
     fun `When a user updates a deleted project, then a FailedPreconditionException is thrown`() = runTest {
         val user = DataBuilder.createExampleUser()
-        val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_DELETED)
+        val project = DataBuilder.createExampleProject(status = ProjectStatus.DELETED)
 
         val updatedProject = project.copy(name = "Updated Name")
         val request = getRequest(updatedProject, listOf("project.name"))
@@ -111,9 +111,9 @@ class UpdateProjectTest : ProjectServiceTest() {
     fun `When a user updates an archived project (not only status), then a FailedPreconditionException is thrown`() =
         runTest {
             val user = DataBuilder.createExampleUser()
-            val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ARCHIVED)
+            val project = DataBuilder.createExampleProject(status = ProjectStatus.ARCHIVED)
 
-            val updatedProject = project.copy(name = "Updated Name", status = ProjectStatus.PROJECT_STATUS_ACTIVE)
+            val updatedProject = project.copy(name = "Updated Name", status = ProjectStatus.ACTIVE)
             val request = getRequest(updatedProject, listOf("project.name", "project.status"))
 
             mockCurrentUser(user)
@@ -124,13 +124,12 @@ class UpdateProjectTest : ProjectServiceTest() {
         }
 
     @ParameterizedTest
-    @ValueSource(strings = ["PROJECT_STATUS_ACTIVE", "PROJECT_STATUS_ACTIVE_LOCKED"])
+    @EnumSource(ProjectStatus::class, names = ["ACTIVE", "ACTIVE_LOCKED"])
     fun `When a user updates an archived project (only active status), then the correct values are returned`(
-        statusName: String,
+        status: ProjectStatus,
     ) = runTest {
-        val status = ProjectStatus.valueOf(statusName)
         val user = DataBuilder.createExampleUser()
-        val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ARCHIVED)
+        val project = DataBuilder.createExampleProject(status = ProjectStatus.ARCHIVED)
 
         val updatedProject = project.copy(status = status)
         val request = getRequest(updatedProject, listOf("project.status"))
@@ -139,7 +138,7 @@ class UpdateProjectTest : ProjectServiceTest() {
         coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectRepoMock.isProjectLocked(project.id) } returns
-            (updatedProject.status == ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
+            (updatedProject.status == ProjectStatus.ACTIVE_LOCKED)
         coEvery { projectRepoMock.updateProject(request) } returns updatedProject
 
         val result = service.updateProject(request)
@@ -151,9 +150,9 @@ class UpdateProjectTest : ProjectServiceTest() {
     fun `When a user updates an archived project (only archived status), then the correct values are returned`() =
         runTest {
             val user = DataBuilder.createExampleUser()
-            val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ARCHIVED)
+            val project = DataBuilder.createExampleProject(status = ProjectStatus.ARCHIVED)
 
-            val updatedProject = project.copy(status = ProjectStatus.PROJECT_STATUS_ARCHIVED)
+            val updatedProject = project.copy(status = ProjectStatus.ARCHIVED)
             val request = getRequest(updatedProject, listOf("project.status"))
 
             mockCurrentUser(user)
@@ -170,9 +169,9 @@ class UpdateProjectTest : ProjectServiceTest() {
     fun `When a user updates an archived project (only unsupported status), then a FailedPreconditionException is thrown`() =
         runTest {
             val user = DataBuilder.createExampleUser()
-            val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ARCHIVED)
+            val project = DataBuilder.createExampleProject(status = ProjectStatus.ARCHIVED)
 
-            val updatedProject = project.copy(status = ProjectStatus.PROJECT_STATUS_UNSPECIFIED)
+            val updatedProject = project.copy(status = ProjectStatus.CLEARED)
             val request = getRequest(updatedProject, listOf("project.status"))
 
             mockCurrentUser(user)
@@ -186,7 +185,7 @@ class UpdateProjectTest : ProjectServiceTest() {
     fun `When a user updates an active locked project (project settings), then a FailedPreconditionException is thrown`() =
         runTest {
             val user = DataBuilder.createExampleUser()
-            val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
+            val project = DataBuilder.createExampleProject(status = ProjectStatus.ACTIVE_LOCKED)
 
             val updatedProject = project.copy(reviewMaybeAllowed = false)
             val request = getRequest(updatedProject, listOf("project.settings.review_maybe_allowed"))
@@ -202,7 +201,7 @@ class UpdateProjectTest : ProjectServiceTest() {
     fun `When a user updates an active locked project (not project settings), then the correct values are returned`() =
         runTest {
             val user = DataBuilder.createExampleUser()
-            val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
+            val project = DataBuilder.createExampleProject(status = ProjectStatus.ACTIVE_LOCKED)
 
             val updatedProject = project.copy(name = "Updated Name")
             val request = getRequest(updatedProject, listOf("project.name"))
@@ -221,7 +220,7 @@ class UpdateProjectTest : ProjectServiceTest() {
     @Test
     fun `When a user updates an active project, then the correct values are returned`() = runTest {
         val user = DataBuilder.createExampleUser()
-        val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ACTIVE)
+        val project = DataBuilder.createExampleProject(status = ProjectStatus.ACTIVE)
 
         val updatedProject = project.copy(name = "Updated Name")
         val request = getRequest(updatedProject, listOf("project.name"))
@@ -238,15 +237,14 @@ class UpdateProjectTest : ProjectServiceTest() {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = ["PROJECT_STATUS_UNSPECIFIED", "UNRECOGNIZED"])
+    @EnumSource(ProjectStatus::class, names = ["CLEARED"])
     fun `When a user updates a project with unsupported status, then an IllegalStateException is thrown`(
-        statusName: String,
+        status: ProjectStatus,
     ) = runTest {
-        val status = ProjectStatus.valueOf(statusName)
         val user = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject(status = status)
 
-        val updatedProject = project.copy(name = "Updated Name", status = ProjectStatus.PROJECT_STATUS_ACTIVE)
+        val updatedProject = project.copy(name = "Updated Name", status = ProjectStatus.ACTIVE)
         val request = getRequest(updatedProject, listOf("project.name"))
 
         mockCurrentUser(user)

@@ -12,6 +12,9 @@ import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.access.rules.checkFor
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
+import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
+import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.failedprecondition.EntityNotActiveException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
@@ -21,9 +24,6 @@ import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadEx
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedUpdateException
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
-import snowballr.ProjectOuterClass.MemberRole
-import snowballr.ProjectOuterClass.ProjectStatus
-import snowballr.UserOuterClass.UserRole
 import java.util.UUID
 
 class ProjectAccessCheckerTest {
@@ -51,7 +51,7 @@ class ProjectAccessCheckerTest {
                 val projectId = UUID.randomUUID()
                 val project = DataBuilder.createExampleProject(
                     id = projectId,
-                    status = ProjectStatus.PROJECT_STATUS_DELETED,
+                    status = ProjectStatus.DELETED,
                 )
 
                 coEvery { projectRepo.getProjectById(projectId) } returns Result.success(project)
@@ -61,11 +61,11 @@ class ProjectAccessCheckerTest {
 
         @Test
         fun `When the project is deleted and the user is a server admin, then access is allowed`() = runTest {
-            val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+            val user = DataBuilder.createExampleUser(role = UserRole.ADMIN)
             val projectId = UUID.randomUUID()
             val project = DataBuilder.createExampleProject(
                 id = projectId,
-                status = ProjectStatus.PROJECT_STATUS_DELETED,
+                status = ProjectStatus.DELETED,
             )
 
             coEvery { projectRepo.getProjectById(projectId) } returns Result.success(project)
@@ -89,7 +89,7 @@ class ProjectAccessCheckerTest {
         @Test
         fun `When the project exists and the user is a server admin but not a member, then access is allowed`() =
             runTest {
-                val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+                val user = DataBuilder.createExampleUser(role = UserRole.ADMIN)
                 val projectId = UUID.randomUUID()
                 val project = DataBuilder.createExampleProject(id = projectId)
 
@@ -124,7 +124,7 @@ class ProjectAccessCheckerTest {
 
         @Test
         fun `When the current user is a server admin, then access is allowed`() = runTest {
-            val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+            val user = DataBuilder.createExampleUser(role = UserRole.ADMIN)
             val targetUserId = UUID.randomUUID()
 
             assertDoesNotThrow { accessChecker.isAllowedToReadUserProjects(user, targetUserId) }
@@ -143,7 +143,7 @@ class ProjectAccessCheckerTest {
     inner class IsAllowedToReadAllProjects {
         @Test
         fun `When the current user is a server admin, then access is allowed`() = runTest {
-            val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+            val user = DataBuilder.createExampleUser(role = UserRole.ADMIN)
 
             assertDoesNotThrow { accessChecker.isAllowedToReadAllProjects(user) }
         }
@@ -165,7 +165,7 @@ class ProjectAccessCheckerTest {
             val projectAdmin = DataBuilder.createExampleProjectMember(
                 userId = user.id,
                 projectId = projectId,
-                role = MemberRole.MEMBER_ROLE_ADMIN,
+                role = MemberRole.ADMIN,
             )
 
             coEvery { projectMemberRepo.getAllProjectAdmins(projectId) } returns listOf(projectAdmin)
@@ -182,11 +182,11 @@ class ProjectAccessCheckerTest {
             val projectAdmin = DataBuilder.createExampleProjectMember(
                 userId = user.id,
                 projectId = projectId,
-                role = MemberRole.MEMBER_ROLE_ADMIN,
+                role = MemberRole.ADMIN,
             )
             val otherAdmin = DataBuilder.createExampleProjectMember(
                 projectId = projectId,
-                role = MemberRole.MEMBER_ROLE_ADMIN,
+                role = MemberRole.ADMIN,
             )
 
             coEvery { projectMemberRepo.getAllProjectAdmins(projectId) } returns listOf(projectAdmin, otherAdmin)
@@ -200,7 +200,7 @@ class ProjectAccessCheckerTest {
             val projectId = UUID.randomUUID()
             val otherAdmin = DataBuilder.createExampleProjectMember(
                 projectId = projectId,
-                role = MemberRole.MEMBER_ROLE_ADMIN,
+                role = MemberRole.ADMIN,
             )
 
             coEvery { projectMemberRepo.getAllProjectAdmins(projectId) } returns listOf(otherAdmin)
@@ -228,7 +228,7 @@ class ProjectAccessCheckerTest {
             val projectAdmin = DataBuilder.createExampleProjectMember(
                 userId = user.id,
                 projectId = projectId,
-                role = MemberRole.MEMBER_ROLE_ADMIN,
+                role = MemberRole.ADMIN,
             )
 
             coEvery { projectMemberRepo.getAllProjectAdmins(projectId) } returns listOf(projectAdmin)
@@ -238,7 +238,7 @@ class ProjectAccessCheckerTest {
 
         @Test
         fun `When the user is a server admin but not a project admin, then access is allowed`() = runTest {
-            val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+            val user = DataBuilder.createExampleUser(role = UserRole.ADMIN)
             val projectId = UUID.randomUUID()
 
             coEvery { projectMemberRepo.getAllProjectAdmins(projectId) } returns emptyList()
@@ -303,7 +303,7 @@ class ProjectAccessCheckerTest {
                 val projectId = UUID.randomUUID()
                 val project = DataBuilder.createExampleProject(
                     id = projectId,
-                    status = ProjectStatus.PROJECT_STATUS_DELETED,
+                    status = ProjectStatus.DELETED,
                 )
 
                 coEvery { projectRepo.getProjectById(projectId) } returns Result.success(project)
@@ -313,11 +313,11 @@ class ProjectAccessCheckerTest {
 
         @Test
         fun `When the project is deleted and the user is a server admin, then the check passes`() = runTest {
-            val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+            val user = DataBuilder.createExampleUser(role = UserRole.ADMIN)
             val projectId = UUID.randomUUID()
             val project = DataBuilder.createExampleProject(
                 id = projectId,
-                status = ProjectStatus.PROJECT_STATUS_DELETED,
+                status = ProjectStatus.DELETED,
             )
 
             coEvery { projectRepo.getProjectById(projectId) } returns Result.success(project)
@@ -344,7 +344,7 @@ class ProjectAccessCheckerTest {
             val projectId = UUID.randomUUID()
             val project = DataBuilder.createExampleProject(
                 id = projectId,
-                status = ProjectStatus.PROJECT_STATUS_ACTIVE,
+                status = ProjectStatus.ACTIVE,
             )
 
             coEvery { projectRepo.getProjectById(projectId) } returns Result.success(project)
@@ -358,7 +358,7 @@ class ProjectAccessCheckerTest {
             val projectId = UUID.randomUUID()
             val project = DataBuilder.createExampleProject(
                 id = projectId,
-                status = ProjectStatus.PROJECT_STATUS_DELETED,
+                status = ProjectStatus.DELETED,
             )
 
             coEvery { projectRepo.getProjectById(projectId) } returns Result.success(project)
@@ -376,7 +376,7 @@ class ProjectAccessCheckerTest {
             val projectAdmin = DataBuilder.createExampleProjectMember(
                 userId = user.id,
                 projectId = projectId,
-                role = MemberRole.MEMBER_ROLE_ADMIN,
+                role = MemberRole.ADMIN,
             )
 
             coEvery { projectMemberRepo.getAllProjectAdmins(projectId) } returns listOf(projectAdmin)
@@ -388,7 +388,7 @@ class ProjectAccessCheckerTest {
 
         @Test
         fun `When the user is a server admin but not a project admin, then the check passes`() = runTest {
-            val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+            val user = DataBuilder.createExampleUser(role = UserRole.ADMIN)
             val projectId = UUID.randomUUID()
 
             coEvery { projectMemberRepo.getAllProjectAdmins(projectId) } returns emptyList()

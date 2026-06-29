@@ -14,8 +14,9 @@ import org.jetbrains.exposed.v1.jdbc.update
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.PaperNavigationDirection
-import se.uulm.snowballr.backend.model.dto.ProjectPaper
-import se.uulm.snowballr.backend.model.dto.ProjectPaperWithPaper
+import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
+import se.uulm.snowballr.backend.model.dto.projectpaper.ProjectPaper
+import se.uulm.snowballr.backend.model.dto.projectpaper.ProjectPaperWithPaper
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectPaperNotFoundException
@@ -32,7 +33,6 @@ import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.table.association.toProjectPaper
 import se.uulm.snowballr.backend.table.association.toProjectPaperWithPaper
-import snowballr.ProjectOuterClass.PaperDecision
 import java.sql.Connection
 import java.util.UUID
 import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
@@ -277,7 +277,7 @@ class ProjectPaperTableRepo(
                     it[ProjectPaperTable.projectId] = projectId
                     it[ProjectPaperTable.localPaperId] = localPaperId
                     it[stage] = request.stage
-                    it[decision] = PaperDecision.PAPER_DECISION_UNREVIEWED
+                    it[decision] = PaperDecision.UNREVIEWED
                     it[createdBy] = userId
                 }
         }
@@ -290,8 +290,8 @@ class ProjectPaperTableRepo(
         } else {
             val fullyReviewedPapersCount = ProjectPaperTable.selectAll().where {
                 val paperReviewedOp =
-                    (ProjectPaperTable.decision eq PaperDecision.PAPER_DECISION_ACCEPTED) or
-                        (ProjectPaperTable.decision eq PaperDecision.PAPER_DECISION_DECLINED)
+                    (ProjectPaperTable.decision eq PaperDecision.ACCEPTED) or
+                        (ProjectPaperTable.decision eq PaperDecision.DECLINED)
 
                 paperReviewedOp and (ProjectPaperTable.projectId eq projectId)
             }.count()

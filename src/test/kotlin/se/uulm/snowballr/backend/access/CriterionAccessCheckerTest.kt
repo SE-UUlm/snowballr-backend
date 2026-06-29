@@ -12,11 +12,11 @@ import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.access.rules.AccessRule
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
+import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedUpdateException
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
-import snowballr.ProjectOuterClass.MemberRole
-import snowballr.UserOuterClass.UserRole
 import java.util.UUID
 
 class CriterionAccessCheckerTest {
@@ -96,7 +96,7 @@ class CriterionAccessCheckerTest {
 
         @Test
         fun `When the user is a server admin, then access is allowed`() = runTest {
-            val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+            val user = DataBuilder.createExampleUser(role = UserRole.ADMIN)
             val projectId = UUID.randomUUID()
             val criterion = DataBuilder.createExampleProjectCriterion(projectId = projectId)
 
@@ -144,7 +144,7 @@ class CriterionAccessCheckerTest {
             val projectAdmin = DataBuilder.createExampleProjectMember(
                 userId = user.id,
                 projectId = projectId,
-                role = MemberRole.MEMBER_ROLE_ADMIN,
+                role = MemberRole.ADMIN,
             )
             val criterion = DataBuilder.createExampleProjectCriterion(projectId = projectId)
 
@@ -161,7 +161,7 @@ class CriterionAccessCheckerTest {
             val projectAdmin = DataBuilder.createExampleProjectMember(
                 userId = user.id,
                 projectId = projectId,
-                role = MemberRole.MEMBER_ROLE_ADMIN,
+                role = MemberRole.ADMIN,
             )
             val criterion = DataBuilder.createExampleProjectCriterion(projectId = projectId)
 
@@ -173,7 +173,7 @@ class CriterionAccessCheckerTest {
 
         @Test
         fun `When the user is a server admin, then access is allowed`() = runTest {
-            val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+            val user = DataBuilder.createExampleUser(role = UserRole.ADMIN)
             val criterion = DataBuilder.createExampleUserCriterion(createdBy = user.id)
 
             assertDoesNotThrow { accessChecker.isAllowedToUpdateCriterion(user, criterion) }

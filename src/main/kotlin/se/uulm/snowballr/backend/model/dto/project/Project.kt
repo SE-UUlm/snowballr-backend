@@ -1,10 +1,9 @@
-package se.uulm.snowballr.backend.model.dto
+package se.uulm.snowballr.backend.model.dto.project
 
 import se.uulm.snowballr.backend.model.fetcher.FetcherMap
 import se.uulm.snowballr.backend.table.ProjectTable
 import snowballr.Fetcher.FetcherOptions
 import snowballr.ProjectOuterClass
-import snowballr.ProjectOuterClass.ProjectStatus
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -18,9 +17,9 @@ data class Project(
     val currentStage: Long,
     val maxStage: Long,
     val similarityThreshold: Float,
-    val snowballingType: ProjectOuterClass.SnowballingType,
+    val snowballingType: SnowballingType,
     val reviewMaybeAllowed: Boolean,
-    val reviewDecisionMatrix: ProjectOuterClass.ReviewDecisionMatrix,
+    val reviewDecisionMatrix: ReviewDecisionMatrix,
     val fetchers: FetcherMap,
     val currentStageStartedAt: OffsetDateTime,
     val createdAt: OffsetDateTime,
@@ -41,8 +40,8 @@ fun Project.toGrpcProject(): ProjectOuterClass.Project {
         ProjectOuterClass.Project.Settings
             .newBuilder()
             .setSimilarityThreshold(this.similarityThreshold)
-            .setDecisionMatrix(this.reviewDecisionMatrix)
-            .setSnowballingType(this.snowballingType)
+            .setDecisionMatrix(this.reviewDecisionMatrix.toGrpc())
+            .setSnowballingType(this.snowballingType.toGrpc())
             .setReviewMaybeAllowed(this.reviewMaybeAllowed)
             .putAllFetchers(
                 this.fetchers.mapValues {
@@ -58,7 +57,7 @@ fun Project.toGrpcProject(): ProjectOuterClass.Project {
         .newBuilder()
         .setId(this.id.toString())
         .setName(this.name)
-        .setStatus(this.status)
+        .setStatus(this.status.toGrpc())
         .setCurrentStage(this.currentStage)
         .setMaxStage(this.maxStage)
         .setSettings(settings)
@@ -77,15 +76,13 @@ fun List<Project>.toGrpcProjects(): ProjectOuterClass.Project.List {
 /**
  * Checks whether the project is active.
  *
- * A project is considered active if its status is either [ProjectStatus.PROJECT_STATUS_ACTIVE] or
- * [ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED].
+ * A project is considered active if its status is either [ProjectStatus.ACTIVE] or [ProjectStatus.ACTIVE_LOCKED].
  */
-fun Project.isActive() = this.status == ProjectStatus.PROJECT_STATUS_ACTIVE ||
-    this.status == ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED
+fun Project.isActive() = this.status == ProjectStatus.ACTIVE || this.status == ProjectStatus.ACTIVE_LOCKED
 
 /**
  * Checks whether the project is deleted.
  *
- * A project is considered deleted if its status is [ProjectStatus.PROJECT_STATUS_DELETED].
+ * A project is considered deleted if its status is [ProjectStatus.DELETED].
  */
-fun Project.isDeleted() = this.status == ProjectStatus.PROJECT_STATUS_DELETED
+fun Project.isDeleted() = this.status == ProjectStatus.DELETED

@@ -6,7 +6,16 @@ import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import se.uulm.snowballr.backend.db.IDatabase
-import se.uulm.snowballr.backend.model.dto.Author
+import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
+import se.uulm.snowballr.backend.model.dto.paper.Author
+import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
+import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
+import se.uulm.snowballr.backend.model.dto.project.SnowballingType
+import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
+import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
+import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
+import se.uulm.snowballr.backend.model.dto.user.UserRole
+import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.fetcher.FetcherMap
 import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.InvitationTokenTable
@@ -19,15 +28,6 @@ import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.table.association.ReviewHasCriterionTable
 import se.uulm.snowballr.backend.table.association.toProjectMember
-import snowballr.CriterionOuterClass.CriterionCategory
-import snowballr.ProjectOuterClass.MemberRole
-import snowballr.ProjectOuterClass.PaperDecision
-import snowballr.ProjectOuterClass.ProjectStatus
-import snowballr.ProjectOuterClass.ReviewDecisionMatrix
-import snowballr.ProjectOuterClass.SnowballingType
-import snowballr.ReviewOuterClass.ReviewDecision
-import snowballr.UserOuterClass.UserRole
-import snowballr.UserOuterClass.UserStatus
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -47,8 +47,8 @@ object RepositoryHelper {
         firstName: String = "Test",
         lastName: String = "User",
         passwordHash: String = "passwordHash",
-        role: UserRole = UserRole.USER_ROLE_DEFAULT,
-        status: UserStatus = UserStatus.USER_STATUS_ACTIVE,
+        role: UserRole = UserRole.DEFAULT,
+        status: UserStatus = UserStatus.ACTIVE,
         deletedAt: OffsetDateTime? = null,
     ) = db.query {
         UserTable
@@ -74,7 +74,7 @@ object RepositoryHelper {
         ProjectMemberTable.insertAndGet(ResultRow::toProjectMember) {
             it[ProjectMemberTable.userId] = userId
             it[ProjectMemberTable.projectId] = projectId
-            it[role] = MemberRole.MEMBER_ROLE_DEFAULT
+            it[role] = MemberRole.DEFAULT
         }
     }
 
@@ -125,13 +125,13 @@ object RepositoryHelper {
      */
     suspend fun insertProjectAndGetId(
         name: String = "Test Project",
-        status: ProjectStatus = ProjectStatus.PROJECT_STATUS_ACTIVE,
+        status: ProjectStatus = ProjectStatus.ACTIVE,
         currentStage: Long = 0,
         maxStage: Long = 0,
         similarityThreshold: Float = 0F,
-        snowballingType: SnowballingType = SnowballingType.SNOWBALLING_TYPE_BOTH,
+        snowballingType: SnowballingType = SnowballingType.BOTH,
         reviewMaybeAllowed: Boolean = true,
-        reviewDecisionMatrix: ReviewDecisionMatrix = ReviewDecisionMatrix.getDefaultInstance(),
+        reviewDecisionMatrix: ReviewDecisionMatrix = ReviewDecisionMatrix(1, emptyList()),
         fetcherApis: FetcherMap = emptyMap(),
         createdBy: UUID,
         deletedAt: OffsetDateTime? = null,
@@ -162,7 +162,7 @@ object RepositoryHelper {
         projectId: UUID,
         localPaperId: Long = 0,
         stage: Long = 0,
-        decision: PaperDecision = PaperDecision.PAPER_DECISION_ACCEPTED,
+        decision: PaperDecision = PaperDecision.ACCEPTED,
         createdBy: UUID,
     ): UUID = db.query {
         ProjectPaperTable.insertAndGetId {
@@ -183,7 +183,7 @@ object RepositoryHelper {
     suspend fun insertReviewAndGetId(
         projectPaperId: UUID,
         userId: UUID,
-        decision: ReviewDecision = ReviewDecision.REVIEW_DECISION_ACCEPTED,
+        decision: ReviewDecision = ReviewDecision.ACCEPTED,
     ): UUID = db.query {
         ReviewTable.insertAndGetId {
             it[ReviewTable.projectPaperId] = projectPaperId
@@ -201,7 +201,7 @@ object RepositoryHelper {
         tag: String = "Test Tag",
         name: String = "Test Criterion",
         description: String = "Test Description",
-        category: CriterionCategory = CriterionCategory.CRITERION_CATEGORY_EXCLUSION,
+        category: CriterionCategory = CriterionCategory.EXCLUSION,
         projectId: UUID? = null,
         createdBy: UUID,
     ): UUID = db.query {

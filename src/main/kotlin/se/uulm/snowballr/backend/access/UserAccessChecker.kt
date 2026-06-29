@@ -15,7 +15,7 @@ import se.uulm.snowballr.backend.access.rules.orElse
 import se.uulm.snowballr.backend.access.rules.orElseThrow
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.UserIdentifierType
-import se.uulm.snowballr.backend.model.dto.User
+import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.failedprecondition.EntityNotActiveException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundByEmailException

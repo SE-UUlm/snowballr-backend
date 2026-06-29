@@ -2,7 +2,7 @@ package se.uulm.snowballr.backend.model.export
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import snowballr.CriterionOuterClass.CriterionCategory
+import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 
 @Serializable
 data class CriterionExport(

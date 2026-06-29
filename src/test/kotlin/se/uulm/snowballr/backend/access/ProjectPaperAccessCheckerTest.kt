@@ -10,8 +10,8 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.access.rules.AccessRule
 import se.uulm.snowballr.backend.model.AccessType
+import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.exception.failedprecondition.EntityNotActiveException
-import snowballr.ProjectOuterClass.ProjectStatus
 import java.util.UUID
 
 class ProjectPaperAccessCheckerTest {
@@ -27,7 +27,7 @@ class ProjectPaperAccessCheckerTest {
         @Test
         fun `When isProjectOrServerAdmin allows access and the project is active, then access is allowed`() = runTest {
             val user = DataBuilder.createExampleUser()
-            val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ACTIVE)
+            val project = DataBuilder.createExampleProject(status = ProjectStatus.ACTIVE)
             val projectResult = Result.success(project)
 
             every { projectAccessChecker.isProjectOrServerAdmin(AccessType.CREATE) } returns successAccessRule
@@ -38,7 +38,7 @@ class ProjectPaperAccessCheckerTest {
         @Test
         fun `When isProjectOrServerAdmin denies access, then access is denied`() = runTest {
             val user = DataBuilder.createExampleUser()
-            val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ACTIVE)
+            val project = DataBuilder.createExampleProject(status = ProjectStatus.ACTIVE)
             val projectResult = Result.success(project)
 
             every { projectAccessChecker.isProjectOrServerAdmin(AccessType.CREATE) } returns failureAccessRule
@@ -52,7 +52,7 @@ class ProjectPaperAccessCheckerTest {
         fun `When isProjectOrServerAdmin allows access but the project is not active, then access is denied`() =
             runTest {
                 val user = DataBuilder.createExampleUser()
-                val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ARCHIVED)
+                val project = DataBuilder.createExampleProject(status = ProjectStatus.ARCHIVED)
                 val projectResult = Result.success(project)
 
                 every { projectAccessChecker.isProjectOrServerAdmin(AccessType.CREATE) } returns successAccessRule

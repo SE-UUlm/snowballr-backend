@@ -7,8 +7,11 @@ import se.uulm.snowballr.backend.fetcher.IFetcherManager
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.dto.toGrpcProject
-import se.uulm.snowballr.backend.model.dto.toGrpcProjects
+import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
+import se.uulm.snowballr.backend.model.dto.project.toGrpcProject
+import se.uulm.snowballr.backend.model.dto.project.toGrpcProjects
+import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
+import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.notfound.StageNotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
@@ -19,9 +22,7 @@ import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
-import snowballr.ProjectOuterClass.MemberRole
-import snowballr.ProjectOuterClass.PaperDecision
-import snowballr.ProjectOuterClass.ProjectStatus
+import snowballr.ProjectOuterClass
 import snowballr.copy
 import java.util.UUID
 import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
@@ -130,7 +131,7 @@ class ProjectService(
                 .setTag(criterion.tag)
                 .setName(criterion.name)
                 .setDescription(criterion.description)
-                .setCategory(criterion.category)
+                .setCategory(criterion.category.toGrpc())
                 .setProjectId(project.id.toString())
                 .build()
 
@@ -138,7 +139,7 @@ class ProjectService(
         }
 
         projectMemberRepo.addUserToProject(currentUser.id, project.id)
-        projectMemberRepo.updateProjectMemberRole(project.id, currentUser.id, MemberRole.MEMBER_ROLE_ADMIN)
+        projectMemberRepo.updateProjectMemberRole(project.id, currentUser.id, MemberRole.ADMIN)
 
         project.toGrpcProject()
     }
@@ -151,14 +152,14 @@ class ProjectService(
 
     override suspend fun getAllProjectsForUser(userId: UUID): GrpcProject.List = getAllProjectsForUserAndStatus(
         userId,
-        setOf(ProjectStatus.PROJECT_STATUS_ACTIVE, ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED),
+        setOf(ProjectStatus.ACTIVE, ProjectStatus.ACTIVE_LOCKED),
     )
 
     override suspend fun getAllArchivedProjectsForUser(userId: UUID): GrpcProject.List =
-        getAllProjectsForUserAndStatus(userId, setOf(ProjectStatus.PROJECT_STATUS_ARCHIVED))
+        getAllProjectsForUserAndStatus(userId, setOf(ProjectStatus.ARCHIVED))
 
     override suspend fun getAllDeletedProjectsForUser(userId: UUID): GrpcProject.List =
-        getAllProjectsForUserAndStatus(userId, setOf(ProjectStatus.PROJECT_STATUS_DELETED))
+        getAllProjectsForUserAndStatus(userId, setOf(ProjectStatus.DELETED))
 
     override suspend fun updateProject(request: GrpcProject.Update): GrpcProject = withUser(userRepo) { currentUser ->
         val projectId = parseUUID(request.project.id, EntityType.PROJECT)
@@ -283,22 +284,22 @@ class ProjectService(
     @Suppress("ThrowsCount")
     private fun validateProjectUpdate(
         currentStatus: ProjectStatus,
-        requestedStatus: ProjectStatus,
+        requestedStatus: ProjectOuterClass.ProjectStatus,
         fieldMask: List<String>,
     ) {
         val isStatusUpdate = fieldMask.contains("project.status")
-        require(!(isStatusUpdate && requestedStatus == ProjectStatus.PROJECT_STATUS_DELETED)) {
+        require(!(isStatusUpdate && requestedStatus == ProjectOuterClass.ProjectStatus.PROJECT_STATUS_DELETED)) {
             "The project status cannot be set to DELETED via the update method. Use SoftDeleteProject instead."
         }
 
         when (currentStatus) {
-            ProjectStatus.PROJECT_STATUS_DELETED -> {
+            ProjectStatus.DELETED -> {
                 throw FailedPreconditionException(
                     "The project has been deleted and can therefore not be updated anymore.",
                 )
             }
 
-            ProjectStatus.PROJECT_STATUS_ARCHIVED -> {
+            ProjectStatus.ARCHIVED -> {
                 val isOnlyStatusUpdate = fieldMask.size == 1 && isStatusUpdate
                 if (!isOnlyStatusUpdate) {
                     throw FailedPreconditionException(
@@ -307,9 +308,9 @@ class ProjectService(
                 }
 
                 if (
-                    requestedStatus != ProjectStatus.PROJECT_STATUS_ACTIVE &&
-                    requestedStatus != ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED &&
-                    requestedStatus != ProjectStatus.PROJECT_STATUS_ARCHIVED
+                    requestedStatus != ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE &&
+                    requestedStatus != ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED &&
+                    requestedStatus != ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ARCHIVED
                 ) {
                     throw FailedPreconditionException(
                         "An archived project can only be unarchived by setting its status to ACTIVE or ACTIVE_LOCKED.",
@@ -317,7 +318,7 @@ class ProjectService(
                 }
             }
 
-            ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED -> {
+            ProjectStatus.ACTIVE_LOCKED -> {
                 // all project settings are SLR settings
                 val isChangingSettings = fieldMask.any { it.startsWith("project.settings.") }
                 if (isChangingSettings) {
@@ -327,12 +328,11 @@ class ProjectService(
                 }
             }
 
-            ProjectStatus.PROJECT_STATUS_ACTIVE -> {
+            ProjectStatus.ACTIVE -> {
                 // no restrictions
             }
 
-            ProjectStatus.PROJECT_STATUS_UNSPECIFIED,
-            ProjectStatus.UNRECOGNIZED,
+            ProjectStatus.CLEARED,
             -> {
                 error("Project is an unspecified status: $currentStatus")
             }
@@ -352,18 +352,18 @@ class ProjectService(
      */
     private suspend fun determineEffectiveProjectStatus(
         projectId: UUID,
-        requestedStatus: ProjectStatus,
-    ): ProjectStatus {
-        if (requestedStatus != ProjectStatus.PROJECT_STATUS_ACTIVE &&
-            requestedStatus != ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED
+        requestedStatus: ProjectOuterClass.ProjectStatus,
+    ): ProjectOuterClass.ProjectStatus {
+        if (requestedStatus != ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE &&
+            requestedStatus != ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED
         ) {
             return requestedStatus
         }
 
         return if (repo.isProjectLocked(projectId)) {
-            ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED
+            ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED
         } else {
-            ProjectStatus.PROJECT_STATUS_ACTIVE
+            ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE
         }
     }
 
@@ -385,15 +385,15 @@ class ProjectService(
 
         fun createStatistic(decision: PaperDecision): GrpcProjectDecisionStatistics.Statistic =
             GrpcProjectDecisionStatistics.Statistic.newBuilder()
-                .setDecision(decision)
+                .setDecision(decision.toGrpc())
                 .setCount(counts[decision] ?: 0)
                 .build()
 
         return listOf(
-            PaperDecision.PAPER_DECISION_ACCEPTED,
-            PaperDecision.PAPER_DECISION_DECLINED,
-            PaperDecision.PAPER_DECISION_UNREVIEWED,
-            PaperDecision.PAPER_DECISION_IN_REVIEW,
+            PaperDecision.ACCEPTED,
+            PaperDecision.DECLINED,
+            PaperDecision.UNREVIEWED,
+            PaperDecision.IN_REVIEW,
         ).map(::createStatistic)
     }
 

@@ -1,6 +1,6 @@
 package se.uulm.snowballr.backend.model.exception.notfound
 
-import se.uulm.snowballr.backend.model.dto.Project
+import se.uulm.snowballr.backend.model.dto.project.Project
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 
 /**

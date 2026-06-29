@@ -2,8 +2,8 @@ package se.uulm.snowballr.backend.service.paper
 
 import io.mockk.mockk
 import org.junit.jupiter.api.Assertions.assertEquals
-import se.uulm.snowballr.backend.model.dto.Author
-import se.uulm.snowballr.backend.model.dto.Paper
+import se.uulm.snowballr.backend.model.dto.paper.Author
+import se.uulm.snowballr.backend.model.dto.paper.Paper
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
 import se.uulm.snowballr.backend.service.BaseServiceTest

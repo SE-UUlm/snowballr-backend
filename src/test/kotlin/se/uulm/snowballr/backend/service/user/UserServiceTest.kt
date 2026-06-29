@@ -8,8 +8,8 @@ import se.uulm.snowballr.backend.access.IUserAccessChecker
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.mail.IEmailManager
-import se.uulm.snowballr.backend.model.dto.User
-import se.uulm.snowballr.backend.model.dto.UserSettings
+import se.uulm.snowballr.backend.model.dto.user.User
+import se.uulm.snowballr.backend.model.dto.user.UserSettings
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
@@ -70,12 +70,12 @@ sealed class UserServiceTest : BaseServiceTest {
         assertEquals(expected.isReviewModeEnabled, actual.reviewMode)
         assertEquals(expected.criteriaIds.map { it.toString() }, actual.defaultCriteria.criteriaList.map { it.id })
         assertEquals(expected.similarityThreshold, actual.defaultProjectSettings.similarityThreshold)
-        assertEquals(expected.decisionMatrix, actual.defaultProjectSettings.decisionMatrix)
+        assertEquals(expected.decisionMatrix.toGrpc(), actual.defaultProjectSettings.decisionMatrix)
         assertEquals(
             expected.fetchers,
             actual.defaultProjectSettings.fetchersMap.mapValues { options -> options.value.optionsMap },
         )
-        assertEquals(expected.snowballingType, actual.defaultProjectSettings.snowballingType)
+        assertEquals(expected.snowballingType.toGrpc(), actual.defaultProjectSettings.snowballingType)
         assertEquals(expected.reviewMaybeAllowed, actual.defaultProjectSettings.reviewMaybeAllowed)
     }
 }

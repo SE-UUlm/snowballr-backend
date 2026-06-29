@@ -7,7 +7,7 @@ import se.uulm.snowballr.backend.access.rules.forProperty
 import se.uulm.snowballr.backend.access.rules.isSameUserById
 import se.uulm.snowballr.backend.access.rules.orElse
 import se.uulm.snowballr.backend.model.AccessType
-import se.uulm.snowballr.backend.model.dto.User
+import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedDeleteException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedUpdateException

@@ -6,7 +6,7 @@ import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
-import se.uulm.snowballr.backend.model.dto.Paper
+import se.uulm.snowballr.backend.model.dto.paper.Paper
 import se.uulm.snowballr.backend.repository.doesEntityExist
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.association.ReadingListTable

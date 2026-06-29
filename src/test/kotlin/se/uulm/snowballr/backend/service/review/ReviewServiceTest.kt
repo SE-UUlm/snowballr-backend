@@ -7,8 +7,8 @@ import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.access.IReviewAccessChecker
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.fetcher.IFetcherOrchestrator
-import se.uulm.snowballr.backend.model.dto.Review
-import se.uulm.snowballr.backend.model.dto.User
+import se.uulm.snowballr.backend.model.dto.review.Review
+import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IReviewTableRepo
@@ -71,6 +71,6 @@ sealed class ReviewServiceTest : BaseServiceTest {
 
     protected fun assertReviewEquality(expected: Review, actual: ReviewOuterClass.Review) {
         assertEquals(expected.userId.toString(), actual.userId)
-        assertEquals(expected.decision, actual.decision)
+        assertEquals(expected.decision.toGrpc(), actual.decision)
     }
 }

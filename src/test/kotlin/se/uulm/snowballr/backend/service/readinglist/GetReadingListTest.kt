@@ -6,7 +6,7 @@ import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import se.uulm.snowballr.backend.DataBuilder
-import se.uulm.snowballr.backend.model.dto.toGrpcPaper
+import se.uulm.snowballr.backend.model.dto.paper.toGrpcPaper
 
 class GetReadingListTest : ReadingListServiceTest() {
     @Test

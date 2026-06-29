@@ -41,7 +41,7 @@ import se.uulm.snowballr.backend.mail.EmailManager
 import se.uulm.snowballr.backend.mail.IEmailManager
 import se.uulm.snowballr.backend.mailServiceDeps
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.dto.User
+import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.RepositoryHelper

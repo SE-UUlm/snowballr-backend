@@ -9,10 +9,10 @@ import se.uulm.snowballr.backend.formatting.daysToHumanReadable
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.mail.IEmailManager
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.dto.getFullName
-import se.uulm.snowballr.backend.model.dto.isActiveAndConfirmed
-import se.uulm.snowballr.backend.model.dto.toGrpcUser
-import se.uulm.snowballr.backend.model.dto.toGrpcUsers
+import se.uulm.snowballr.backend.model.dto.user.getFullName
+import se.uulm.snowballr.backend.model.dto.user.isActiveAndConfirmed
+import se.uulm.snowballr.backend.model.dto.user.toGrpcUser
+import se.uulm.snowballr.backend.model.dto.user.toGrpcUsers
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.NotFoundException

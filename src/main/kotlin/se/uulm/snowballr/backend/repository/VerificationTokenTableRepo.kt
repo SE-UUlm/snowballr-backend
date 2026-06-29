@@ -7,7 +7,7 @@ import org.jetbrains.exposed.v1.core.lessEq
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.env.EnvReader
-import se.uulm.snowballr.backend.model.dto.VerificationToken
+import se.uulm.snowballr.backend.model.dto.user.VerificationToken
 import se.uulm.snowballr.backend.model.exception.notfound.VerificationTokenNotFoundException
 import se.uulm.snowballr.backend.table.VerificationTokenTable
 import se.uulm.snowballr.backend.table.toVerificationToken

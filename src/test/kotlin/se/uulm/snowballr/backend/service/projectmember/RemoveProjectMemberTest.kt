@@ -8,8 +8,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
+import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
-import snowballr.UserOuterClass.UserStatus
 import java.util.UUID
 import snowballr.ProjectOuterClass.Project.Member as GrpcProjectMember
 
@@ -24,7 +24,7 @@ class RemoveProjectMemberTest : ProjectMemberServiceTest() {
     @Test
     fun `When a user removes a project member, then the member is successfully deleted`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
-        val userToRemove = DataBuilder.createExampleUser(email = userEmail, status = UserStatus.USER_STATUS_ACTIVE)
+        val userToRemove = DataBuilder.createExampleUser(email = userEmail, status = UserStatus.ACTIVE)
         val project = DataBuilder.createExampleProject()
         val projectMember1 = DataBuilder.createExampleProjectMember(projectId = project.id, userId = userToRemove.id)
         val projectMember2 = DataBuilder.createExampleProjectMember(projectId = project.id, userId = UUID.randomUUID())
@@ -63,7 +63,7 @@ class RemoveProjectMemberTest : ProjectMemberServiceTest() {
     @Test
     fun `When a user removes a non-project member, then nothing happens`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
-        val userToRemove = DataBuilder.createExampleUser(email = userEmail, status = UserStatus.USER_STATUS_ACTIVE)
+        val userToRemove = DataBuilder.createExampleUser(email = userEmail, status = UserStatus.ACTIVE)
         val project = DataBuilder.createExampleProject()
 
         mockCurrentUser(currentUser)
@@ -81,7 +81,7 @@ class RemoveProjectMemberTest : ProjectMemberServiceTest() {
     @Test
     fun `When a user removes a user of a non-existent project, then a ProjectNotFoundException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
-        val userToRemove = DataBuilder.createExampleUser(email = userEmail, status = UserStatus.USER_STATUS_ACTIVE)
+        val userToRemove = DataBuilder.createExampleUser(email = userEmail, status = UserStatus.ACTIVE)
         val project = DataBuilder.createExampleProject()
 
         mockCurrentUser(currentUser)
@@ -105,7 +105,7 @@ class RemoveProjectMemberTest : ProjectMemberServiceTest() {
     @Test
     fun `When a user removes the last project member, then the project is soft-deleted`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
-        val userToRemove = DataBuilder.createExampleUser(email = userEmail, status = UserStatus.USER_STATUS_ACTIVE)
+        val userToRemove = DataBuilder.createExampleUser(email = userEmail, status = UserStatus.ACTIVE)
         val project = DataBuilder.createExampleProject()
         val projectMember1 = DataBuilder.createExampleProjectMember(projectId = project.id, userId = userToRemove.id)
 

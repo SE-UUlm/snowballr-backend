@@ -1,9 +1,7 @@
-package se.uulm.snowballr.backend.model.dto
+package se.uulm.snowballr.backend.model.dto.user
 
 import se.uulm.snowballr.backend.table.UserTable
 import snowballr.UserOuterClass
-import snowballr.UserOuterClass.UserRole
-import snowballr.UserOuterClass.UserStatus
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -31,8 +29,8 @@ fun User.toGrpcUser(): UserOuterClass.User = UserOuterClass.User
     .setEmail(this.email)
     .setFirstName(this.firstName)
     .setLastName(this.lastName)
-    .setRole(this.role)
-    .setStatus(this.status)
+    .setRole(this.role.toGrpc())
+    .setStatus(this.status.toGrpc())
     .build()
 
 /**
@@ -47,25 +45,24 @@ fun List<User>.toGrpcUsers(): UserOuterClass.User.List {
 /**
  * Checks whether the user is a server admin.
  *
- * A user is considered a server admin if their role is set to [UserRole.USER_ROLE_ADMIN].
+ * A user is considered a server admin if their role is set to [UserRole.ADMIN].
  */
-fun User.isServerAdmin() = this.role == UserRole.USER_ROLE_ADMIN
+fun User.isServerAdmin() = this.role == UserRole.ADMIN
 
 /**
  * Checks whether the user is active and confirmed.
  *
- * A user is considered active and confirmed if their status is set to [UserStatus.USER_STATUS_ACTIVE].
- * The status [UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED] does count as active, but not as confirmed.
+ * A user is considered active and confirmed if their status is set to [UserStatus.ACTIVE].
+ * The status [UserStatus.ACTIVE_UNCONFIRMED] does count as active, but not as confirmed.
  */
-fun User.isActiveAndConfirmed() = this.status == UserStatus.USER_STATUS_ACTIVE
+fun User.isActiveAndConfirmed() = this.status == UserStatus.ACTIVE
 
 /**
  * Checks whether the user is active.
  *
- * A user is considered active if their status is either [UserStatus.USER_STATUS_ACTIVE] or
- * [UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED].
+ * A user is considered active if their status is either [UserStatus.ACTIVE] or [UserStatus.ACTIVE_UNCONFIRMED].
  */
-fun User.isActive() = this.isActiveAndConfirmed() || this.status == UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED
+fun User.isActive() = this.isActiveAndConfirmed() || this.status == UserStatus.ACTIVE_UNCONFIRMED
 
 /**
  * Returns the full name of the user by concatenating the first name and last name.

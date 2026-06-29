@@ -10,10 +10,10 @@ import se.uulm.snowballr.backend.access.rules.orElse
 import se.uulm.snowballr.backend.access.rules.orElseThrow
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.dto.User
-import se.uulm.snowballr.backend.model.dto.isActive
-import se.uulm.snowballr.backend.model.dto.isDeleted
-import se.uulm.snowballr.backend.model.dto.isServerAdmin
+import se.uulm.snowballr.backend.model.dto.project.isActive
+import se.uulm.snowballr.backend.model.dto.project.isDeleted
+import se.uulm.snowballr.backend.model.dto.user.User
+import se.uulm.snowballr.backend.model.dto.user.isServerAdmin
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.UnauthorizedException
 import se.uulm.snowballr.backend.model.exception.failedprecondition.EntityNotActiveException

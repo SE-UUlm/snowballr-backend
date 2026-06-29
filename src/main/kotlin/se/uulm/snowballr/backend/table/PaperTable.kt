@@ -5,8 +5,8 @@ import org.jetbrains.exposed.v1.core.ReferenceOption
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.dao.id.java.UUIDTable
 import org.jetbrains.exposed.v1.json.json
-import se.uulm.snowballr.backend.model.dto.Author
-import se.uulm.snowballr.backend.model.dto.Paper
+import se.uulm.snowballr.backend.model.dto.paper.Author
+import se.uulm.snowballr.backend.model.dto.paper.Paper
 import java.time.OffsetDateTime
 
 /**

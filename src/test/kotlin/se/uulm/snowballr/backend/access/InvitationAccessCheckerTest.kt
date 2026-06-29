@@ -10,8 +10,8 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.model.AccessType
+import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.exception.failedprecondition.EntityNotActiveException
-import snowballr.ProjectOuterClass.ProjectStatus
 
 class InvitationAccessCheckerTest {
     private val projectAccessChecker = mockk<IProjectAccessChecker>()
@@ -23,7 +23,7 @@ class InvitationAccessCheckerTest {
         @Test
         fun `When isProjectOrServerAdmin allows access and the project is active, then access is allowed`() = runTest {
             val user = DataBuilder.createExampleUser()
-            val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ACTIVE)
+            val project = DataBuilder.createExampleProject(status = ProjectStatus.ACTIVE)
             val projectResult = Result.success(project)
 
             coJustRun { projectAccessChecker.isProjectOrServerAdmin(user, project.id, AccessType.READ) }
@@ -34,7 +34,7 @@ class InvitationAccessCheckerTest {
         @Test
         fun `When isProjectOrServerAdmin denies access, then access is denied`() = runTest {
             val user = DataBuilder.createExampleUser()
-            val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ACTIVE)
+            val project = DataBuilder.createExampleProject(status = ProjectStatus.ACTIVE)
             val projectResult = Result.success(project)
 
             coEvery {
@@ -50,7 +50,7 @@ class InvitationAccessCheckerTest {
         fun `When isProjectOrServerAdmin allows access, but the project is inactive, then access is allowed`() =
             runTest {
                 val user = DataBuilder.createExampleUser()
-                val project = DataBuilder.createExampleProject(status = ProjectStatus.PROJECT_STATUS_ARCHIVED)
+                val project = DataBuilder.createExampleProject(status = ProjectStatus.ARCHIVED)
                 val projectResult = Result.success(project)
 
                 coJustRun { projectAccessChecker.isProjectOrServerAdmin(user, project.id, AccessType.READ) }

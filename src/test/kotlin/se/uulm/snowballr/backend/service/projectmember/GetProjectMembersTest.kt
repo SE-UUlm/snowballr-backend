@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.model.dto.ProjectMemberWithUser
+import se.uulm.snowballr.backend.model.dto.projectmember.ProjectMemberWithUser
 import java.util.UUID
 import kotlin.test.assertEquals
 

@@ -20,19 +20,16 @@ import org.jetbrains.exposed.v1.jdbc.update
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.IdentifierType
-import se.uulm.snowballr.backend.model.dto.User
-import se.uulm.snowballr.backend.model.dto.UserSettings
+import se.uulm.snowballr.backend.model.dto.user.User
+import se.uulm.snowballr.backend.model.dto.user.UserRole
+import se.uulm.snowballr.backend.model.dto.user.UserSettings
+import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.toUser
 import se.uulm.snowballr.backend.table.toUserSettings
 import snowballr.Authentication
-import snowballr.ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_UNSPECIFIED
-import snowballr.UserOuterClass.UserRole
-import snowballr.UserOuterClass.UserRole.USER_ROLE_UNSPECIFIED
-import snowballr.UserOuterClass.UserStatus
-import snowballr.UserOuterClass.UserStatus.USER_STATUS_UNSPECIFIED
 import java.time.OffsetDateTime
 import java.util.UUID
 import snowballr.UserOuterClass.User as GrpcUser
@@ -120,7 +117,7 @@ interface IUserTableRepo {
 
     /**
      * Performs a soft-delete meaning the user with the given [id] is not removed from the database, but only the
-     * status is set to [UserStatus.USER_STATUS_DELETED].
+     * status is set to [UserStatus.DELETED].
      */
     suspend fun softDeleteUser(id: UUID)
 
@@ -209,7 +206,7 @@ class UserTableRepo(
     private suspend fun getUserIdsToClear(thresholdDate: OffsetDateTime): List<UUID> = db.query {
         UserTable.selectAll()
             .where {
-                (UserTable.status eq UserStatus.USER_STATUS_DELETED).and(UserTable.deletedAt lessEq thresholdDate)
+                (UserTable.status eq UserStatus.DELETED).and(UserTable.deletedAt lessEq thresholdDate)
             }
             .map { it[UserTable.id].value }
     }
@@ -273,7 +270,7 @@ class UserTableRepo(
                         similarity($lastNameCol, ?) AS sim_last_name,
                         similarity($emailCol, ?) AS sim_email
                     FROM $userTable
-                    WHERE $statusCol IN (${UserStatus.USER_STATUS_ACTIVE.ordinal}, ${UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED.ordinal})
+                    WHERE $statusCol IN (${UserStatus.ACTIVE.ordinal}, ${UserStatus.ACTIVE_UNCONFIRMED.ordinal})
                       $excludeUsersClause
                 )
                 SELECT *
@@ -299,8 +296,8 @@ class UserTableRepo(
             it[firstName] = request.firstName
             it[lastName] = request.lastName
             it[UserTable.passwordHash] = passwordHash
-            it[role] = UserRole.USER_ROLE_DEFAULT
-            it[status] = UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED
+            it[role] = UserRole.DEFAULT
+            it[status] = UserStatus.ACTIVE_UNCONFIRMED
         }
     }
 
@@ -314,8 +311,8 @@ class UserTableRepo(
                     "user.email" -> it[email] = request.user.email
                     "user.first_name" -> it[firstName] = request.user.firstName
                     "user.last_name" -> it[lastName] = request.user.lastName
-                    "user.role" -> it[role] = request.user.role
-                    "user.status" -> it[status] = request.user.status
+                    "user.role" -> it[role] = UserRole.fromGrpc(request.user.role)
+                    "user.status" -> it[status] = UserStatus.fromGrpc(request.user.status)
                 }
             }
 
@@ -326,7 +323,7 @@ class UserTableRepo(
     override suspend fun softDeleteUser(id: UUID) {
         db.query {
             UserTable.update({ UserTable.id eq id }) {
-                it[status] = UserStatus.USER_STATUS_DELETED
+                it[status] = UserStatus.DELETED
                 it[deletedAt] = OffsetDateTime.now()
             }
         }
@@ -344,14 +341,10 @@ class UserTableRepo(
             it[firstName] = ""
             it[lastName] = ""
             it[passwordHash] = ""
-            it[role] = USER_ROLE_UNSPECIFIED
-            it[status] = USER_STATUS_UNSPECIFIED
-
+            it[role] = UserRole.DEFAULT
+            it[status] = UserStatus.CLEARED
             it[criteriaIds] = emptyList()
-
             it[fetchers] = emptyMap()
-            it[snowballingType] = SNOWBALLING_TYPE_UNSPECIFIED
-
             it[modifiedAt] = OffsetDateTime.now()
         }
 
@@ -362,7 +355,7 @@ class UserTableRepo(
         UserTable
             .selectAll()
             .where {
-                (UserTable.status eq USER_STATUS_UNSPECIFIED).and(UserTable.deletedAt.isNotNull())
+                (UserTable.status eq UserStatus.CLEARED).and(UserTable.deletedAt.isNotNull())
             }
             .map { it[UserTable.id].value }
     }

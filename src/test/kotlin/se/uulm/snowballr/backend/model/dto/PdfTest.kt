@@ -1,6 +1,7 @@
 package se.uulm.snowballr.backend.model.dto
 
 import org.junit.jupiter.api.Test
+import se.uulm.snowballr.backend.model.dto.paper.Pdf
 import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

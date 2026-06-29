@@ -6,8 +6,8 @@ import io.mockk.mockk
 import se.uulm.snowballr.backend.access.ICriterionAccessChecker
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.auth.GrpcContext
-import se.uulm.snowballr.backend.model.dto.Criterion
-import se.uulm.snowballr.backend.model.dto.User
+import se.uulm.snowballr.backend.model.dto.criterion.Criterion
+import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.service.BaseServiceTest
@@ -53,6 +53,6 @@ sealed class CriterionServiceTest : BaseServiceTest {
         assertEquals(expected.tag, actual.tag)
         assertEquals(expected.name, actual.name)
         assertEquals(expected.description, actual.description)
-        assertEquals(expected.category, actual.category)
+        assertEquals(expected.category.toGrpc(), actual.category)
     }
 }

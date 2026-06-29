@@ -6,8 +6,8 @@ import io.mockk.mockk
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.fetcher.IFetcherManager
-import se.uulm.snowballr.backend.model.dto.Project
-import se.uulm.snowballr.backend.model.dto.User
+import se.uulm.snowballr.backend.model.dto.project.Project
+import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
@@ -67,13 +67,13 @@ sealed class ProjectServiceTest : BaseServiceTest {
 
     protected fun assertProjectEquality(expected: Project, actual: ProjectOuterClass.Project) {
         assertEquals(expected.name, actual.name)
-        assertEquals(expected.status, actual.status)
+        assertEquals(expected.status.toGrpc(), actual.status)
         assertEquals(expected.currentStage, actual.currentStage)
         assertEquals(expected.maxStage, actual.maxStage)
         assertEquals(expected.similarityThreshold, actual.settings.similarityThreshold)
-        assertEquals(expected.snowballingType, actual.settings.snowballingType)
+        assertEquals(expected.snowballingType.toGrpc(), actual.settings.snowballingType)
         assertEquals(expected.reviewMaybeAllowed, actual.settings.reviewMaybeAllowed)
-        assertEquals(expected.reviewDecisionMatrix, actual.settings.decisionMatrix)
+        assertEquals(expected.reviewDecisionMatrix.toGrpc(), actual.settings.decisionMatrix)
         assertEquals(
             expected.fetchers,
             actual.settings.fetchersMap.mapValues { options -> options.value.optionsMap.mapValues { it.toString() } },

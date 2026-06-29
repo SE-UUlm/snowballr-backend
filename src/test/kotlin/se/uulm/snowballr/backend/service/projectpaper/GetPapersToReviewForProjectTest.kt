@@ -9,8 +9,8 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.model.dto.ProjectPaperWithPaper
-import snowballr.ProjectOuterClass.PaperDecision
+import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
+import se.uulm.snowballr.backend.model.dto.projectpaper.ProjectPaperWithPaper
 import java.util.UUID
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -24,12 +24,12 @@ class GetPapersToReviewForProjectTest : ProjectPaperServiceTest() {
         val projectPaperAlreadyDecided = DataBuilder.createExampleProjectPaper(
             projectId = project.id,
             paperId = paper.id,
-            decision = PaperDecision.PAPER_DECISION_ACCEPTED,
+            decision = PaperDecision.ACCEPTED,
         )
         val projectPaperNotAlreadyDecided = DataBuilder.createExampleProjectPaper(
             projectId = project.id,
             paperId = paper.id,
-            decision = PaperDecision.PAPER_DECISION_UNREVIEWED,
+            decision = PaperDecision.UNREVIEWED,
         )
         val projectPaperWithPaper1 = ProjectPaperWithPaper(projectPaperAlreadyDecided, paper)
         val projectPaperWithPaper2 = ProjectPaperWithPaper(projectPaperNotAlreadyDecided, paper)
@@ -69,12 +69,12 @@ class GetPapersToReviewForProjectTest : ProjectPaperServiceTest() {
             val projectPaperWithCurrentUserReview = DataBuilder.createExampleProjectPaper(
                 projectId = project.id,
                 paperId = paper.id,
-                decision = PaperDecision.PAPER_DECISION_UNREVIEWED,
+                decision = PaperDecision.UNREVIEWED,
             )
             val projectPaperWithoutCurrentUserReview = DataBuilder.createExampleProjectPaper(
                 projectId = project.id,
                 paperId = paper.id,
-                decision = PaperDecision.PAPER_DECISION_UNREVIEWED,
+                decision = PaperDecision.UNREVIEWED,
             )
             val projectPaperWithPaper1 = ProjectPaperWithPaper(projectPaperWithCurrentUserReview, paper)
             val projectPaperWithPaper2 = ProjectPaperWithPaper(projectPaperWithoutCurrentUserReview, paper)
@@ -119,7 +119,7 @@ class GetPapersToReviewForProjectTest : ProjectPaperServiceTest() {
         val projectPaper = DataBuilder.createExampleProjectPaper(
             projectId = project.id,
             paperId = paper.id,
-            decision = PaperDecision.PAPER_DECISION_UNREVIEWED,
+            decision = PaperDecision.UNREVIEWED,
         )
         val projectPaperWithPaper = ProjectPaperWithPaper(projectPaper, paper)
 

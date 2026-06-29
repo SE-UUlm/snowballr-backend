@@ -12,11 +12,11 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.model.dto.Project
+import se.uulm.snowballr.backend.model.dto.project.Project
+import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundByEmailException
 import snowballr.ProjectOuterClass
-import snowballr.ProjectOuterClass.MemberRole
 import java.util.UUID
 import kotlin.reflect.KFunction
 
@@ -39,7 +39,7 @@ class InviteUserToProjectTest : InvitationServiceTest() {
         val projectAdmin = DataBuilder.createExampleProjectMember(
             projectId = project.id,
             userId = currentUser.id,
-            role = MemberRole.MEMBER_ROLE_ADMIN,
+            role = MemberRole.ADMIN,
         )
         val projectAdminWithUser = DataBuilder.createExampleProjectMemberWithUser(projectAdmin, currentUser)
 

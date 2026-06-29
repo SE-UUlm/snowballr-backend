@@ -8,19 +8,17 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
+import org.junit.jupiter.params.provider.EnumSource
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.fetcher.FetcherOrchestrator
-import se.uulm.snowballr.backend.model.dto.Project
-import se.uulm.snowballr.backend.model.dto.toFetcherPaper
-import se.uulm.snowballr.backend.model.dto.toGrpcPaperRequest
+import se.uulm.snowballr.backend.model.dto.paper.toFetcherPaper
+import se.uulm.snowballr.backend.model.dto.paper.toGrpcPaperRequest
+import se.uulm.snowballr.backend.model.dto.project.Project
+import se.uulm.snowballr.backend.model.dto.project.SnowballingType
 import se.uulm.snowballr.backend.model.exception.FetcherException
 import se.uulm.snowballr.backend.model.fetcher.FetcherEnqueueJob
-import se.uulm.snowballr.backend.model.isBackwardOrBoth
-import se.uulm.snowballr.backend.model.isForwardOrBoth
 import se.uulm.snowballr.backend.repository.UNIQUE_CONSTRAINT_VIOLATION_SQL_STATE
-import se.uulm.snowballr.backend.utils.GrpcEnumSourceTest
-import snowballr.ProjectOuterClass.SnowballingType
 import java.sql.SQLException
 import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 
@@ -86,7 +84,7 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
     @Nested
     inner class RunFetching {
         @ParameterizedTest
-        @GrpcEnumSourceTest(SnowballingType::class, excludes = ["SNOWBALLING_TYPE_UNSPECIFIED"])
+        @EnumSource(SnowballingType::class)
         fun `When fetching fails for all fetchers, then no papers are created or added`(type: SnowballingType) =
             runOrchestratorTest { orchestrator ->
                 val job = DataBuilder.createExampleFetcherEnqueueJob()
@@ -112,17 +110,17 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
 
                 orchestrator.enqueueTestJob(job, project)
 
-                if (type == SnowballingType.SNOWBALLING_TYPE_FORWARD) {
+                if (type == SnowballingType.FORWARD) {
                     coVerify(exactly = 0) { fetcherManagerMock.fetchBackwardReferences(any(), any(), any()) }
                 }
-                if (type == SnowballingType.SNOWBALLING_TYPE_BACKWARD) {
+                if (type == SnowballingType.BACKWARD) {
                     coVerify(exactly = 0) { fetcherManagerMock.fetchForwardReferences(any(), any(), any()) }
                 }
                 assertPaperCreationFailure()
             }
 
         @ParameterizedTest
-        @GrpcEnumSourceTest(SnowballingType::class, excludes = ["SNOWBALLING_TYPE_UNSPECIFIED"])
+        @EnumSource(SnowballingType::class)
         fun `When fetching fails for one fetcher, then other fetchers still produce results`(type: SnowballingType) =
             runOrchestratorTest { orchestrator ->
                 val job = DataBuilder.createExampleFetcherEnqueueJob()
@@ -164,10 +162,10 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
 
                 orchestrator.enqueueTestJob(job, project)
 
-                if (type == SnowballingType.SNOWBALLING_TYPE_FORWARD) {
+                if (type == SnowballingType.FORWARD) {
                     coVerify(exactly = 0) { fetcherManagerMock.fetchBackwardReferences(any(), any(), any()) }
                 }
-                if (type == SnowballingType.SNOWBALLING_TYPE_BACKWARD) {
+                if (type == SnowballingType.BACKWARD) {
                     coVerify(exactly = 0) { fetcherManagerMock.fetchForwardReferences(any(), any(), any()) }
                 }
                 assertPaperCreationFailure()

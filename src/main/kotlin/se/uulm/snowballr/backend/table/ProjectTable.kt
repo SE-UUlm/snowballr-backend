@@ -5,14 +5,14 @@ import org.jetbrains.exposed.v1.core.ReferenceOption
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.dao.id.java.UUIDTable
 import org.jetbrains.exposed.v1.datetime.timestampWithTimeZone
-import se.uulm.snowballr.backend.model.dto.Project
+import se.uulm.snowballr.backend.model.dto.project.Project
+import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
+import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
+import se.uulm.snowballr.backend.model.dto.project.SnowballingType
+import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
+import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.fetcher.FetcherMap
 import se.uulm.snowballr.backend.table.columntypes.obfuscatedJson
-import snowballr.ProjectOuterClass.PaperDecision
-import snowballr.ProjectOuterClass.ProjectStatus
-import snowballr.ProjectOuterClass.ReviewDecisionMatrix
-import snowballr.ProjectOuterClass.SnowballingType
-import snowballr.ReviewOuterClass.ReviewDecision
 import java.time.OffsetDateTime
 
 /**
@@ -26,8 +26,7 @@ import java.time.OffsetDateTime
  * - [similarityThreshold]: Represents the similarity threshold of the project as a [Float].
  * - [snowballingType]: Represents the type of snowballing used by the project as an enumeration value from
  * [SnowballingType].
- * - [reviewMaybeAllowed]: Represents whether the project allows reviews with a [ReviewDecision.REVIEW_DECISION_MAYBE]
- * as a [Boolean].
+ * - [reviewMaybeAllowed]: Represents whether the project allows reviews with a [ReviewDecision.MAYBE] as a [Boolean].
  * - [reviewDecisionMatrixBinary]: Represents the decision matrix on how the [PaperDecision] for a paper should be
  * determined as a [ByteArray].
  * - [fetchers]: Represents the fetchers used by the project as a JSON object mapping the fetcher names to their

@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.model.dto.User
+import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateUserException
 import snowballr.Authentication

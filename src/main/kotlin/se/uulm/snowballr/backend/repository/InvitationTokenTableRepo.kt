@@ -8,7 +8,7 @@ import org.jetbrains.exposed.v1.core.lessEq
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.env.EnvReader
-import se.uulm.snowballr.backend.model.dto.InvitationToken
+import se.uulm.snowballr.backend.model.dto.projectmember.InvitationToken
 import se.uulm.snowballr.backend.model.exception.notfound.InvitationTokenNotFoundException
 import se.uulm.snowballr.backend.table.InvitationTokenTable
 import se.uulm.snowballr.backend.table.toInvitationToken

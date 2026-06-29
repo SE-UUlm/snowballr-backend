@@ -8,7 +8,7 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.model.dto.Project
+import se.uulm.snowballr.backend.model.dto.project.Project
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateProjectPaperException
 import se.uulm.snowballr.backend.model.exception.invalidargument.StageOutOfRangeException
 import java.util.UUID

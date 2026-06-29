@@ -10,11 +10,12 @@ import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.mail.IEmailManager
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.UserIdentifierType
-import se.uulm.snowballr.backend.model.dto.User
-import se.uulm.snowballr.backend.model.dto.toGrpcCriteria
-import se.uulm.snowballr.backend.model.dto.toGrpcUser
-import se.uulm.snowballr.backend.model.dto.toGrpcUserSettings
-import se.uulm.snowballr.backend.model.dto.toGrpcUsers
+import se.uulm.snowballr.backend.model.dto.criterion.toGrpcCriteria
+import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
+import se.uulm.snowballr.backend.model.dto.user.User
+import se.uulm.snowballr.backend.model.dto.user.toGrpcUser
+import se.uulm.snowballr.backend.model.dto.user.toGrpcUserSettings
+import se.uulm.snowballr.backend.model.dto.user.toGrpcUsers
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateUserException
 import se.uulm.snowballr.backend.model.parseUUID
@@ -23,7 +24,6 @@ import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.IVerificationTokenTableRepo
 import snowballr.Authentication
-import snowballr.ProjectOuterClass.ProjectStatus
 import java.util.UUID
 import snowballr.UserOuterClass.User as GrpcUser
 import snowballr.UserSettingsOuterClass.UserSettings as GrpcUserSettings
@@ -181,9 +181,9 @@ class UserService(
         val projectsOfTargetUser = projectRepo.getUserProjects(
             targetUser.id,
             setOf(
-                ProjectStatus.PROJECT_STATUS_ACTIVE,
-                ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED,
-                ProjectStatus.PROJECT_STATUS_ARCHIVED,
+                ProjectStatus.ACTIVE,
+                ProjectStatus.ACTIVE_LOCKED,
+                ProjectStatus.ARCHIVED,
             ),
         )
         projectsOfTargetUser.forEach { project ->

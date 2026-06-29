@@ -4,7 +4,7 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import se.uulm.snowballr.backend.auth.GrpcContext
-import se.uulm.snowballr.backend.model.dto.User
+import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
