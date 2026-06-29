@@ -7,7 +7,7 @@ This page lists tools that assist the development process of this repository.
     * [Configuration](#configuration)
     * [Subcommands](#subcommands)
       * [list](#list)
-      * [options](#options)
+      * [info](#info)
       * [search](#search)
       * [forwards](#forwards)
       * [backwards](#backwards)
@@ -35,6 +35,9 @@ Make sure to call it from an active Python environment (>= 3.13, see
 
 ```bash
 uv run tools/fetcher-cli/cli.py <subcommand> <args>
+
+# when using just, prefer
+just fetcher-cli <subcommand> <args>
 ```
 
 ### Configuration
@@ -58,6 +61,8 @@ command:
 
 ```bash
 uv run tools/fetcher-cli/cli.py init-config
+# or
+just fetcher-cli init-config
 ```
 
 This will create a configuration object for each existing fetcher.
@@ -78,18 +83,22 @@ Example:
 
 ```bash
 uv run tools/fetcher-cli/cli.py list
+# or
+just fetcher-cli list
 ```
 
-#### options
+#### info
 
-Represents `getAvailableOptions`.
-
-This will return all available options for a specific fetcher.
+Shows a fetcher's information: its name, description and links, followed by its
+options schema. For each option the table lists whether it is required or secret,
+whether it is configured in `config.json` and its (effective) value.
 
 Example:
 
 ```bash
-uv run tools/fetcher-cli/cli.py options ExampleFetcher
+uv run tools/fetcher-cli/cli.py info ExampleFetcher
+# or
+just fetcher-cli info ExampleFetcher
 ```
 
 #### search
@@ -102,6 +111,8 @@ Example:
 
 ```bash
 uv run tools/fetcher-cli/cli.py search ExampleFetcher Snowballing
+# or
+just fetcher-cli search ExampleFetcher Snowballing
 ```
 
 #### forwards
@@ -117,6 +128,8 @@ Example:
 
 ```bash
 uv run tools/fetcher-cli/cli.py forwards ExampleFetcher tools/fetcher-cli/paper.json
+# or
+just fetcher-cli forwards ExampleFetcher tools/fetcher-cli/paper.json
 ```
 
 #### backwards
@@ -132,6 +145,8 @@ Example:
 
 ```bash
 uv run tools/fetcher-cli/cli.py backwards ExampleFetcher tools/fetcher-cli/paper.json
+# or
+just fetcher-cli backwards ExampleFetcher tools/fetcher-cli/paper.json
 ```
 
 #### init-config

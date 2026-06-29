@@ -38,8 +38,43 @@ class Paper(JSONWizard):
     fetcher_metadata: dict[str, str] = field(default_factory=dict)
 
 
+@dataclass(unsafe_hash=True)
+class Link(JSONWizard):
+    class _(JSONWizard.Meta):
+        key_transform_with_load = "SNAKE"
+        key_transform_with_dump = "SNAKE"
+
+    label: str = ""
+    url: str = ""
+
+
+@dataclass(unsafe_hash=True)
+class FetcherOptionsSchema(JSONWizard):
+    class _(JSONWizard.Meta):
+        key_transform_with_load = "SNAKE"
+        key_transform_with_dump = "SNAKE"
+
+    name: str = ""
+    description: str = ""
+    required: bool = False
+    is_secret: bool = False
+    default_value: Optional[str] = None
+
+
+@dataclass(unsafe_hash=True)
+class FetcherInformation(JSONWizard):
+    class _(JSONWizard.Meta):
+        key_transform_with_load = "SNAKE"
+        key_transform_with_dump = "SNAKE"
+
+    name: str = ""
+    description: str = ""
+    links: list[Link] = field(default_factory=list)
+    options_schema: dict[str, FetcherOptionsSchema] = field(default_factory=dict)
+
+
 class EventType(StrEnum):
-    OPTIONS = "options"
+    INFO = "info"
     QUERY = "query"
     FORWARDS = "forwards"
     BACKWARDS = "backwards"
@@ -67,8 +102,16 @@ def _read_stdin_payload() -> dict:
     return json.loads(payload)
 
 
+def _apply_defaults(options: Options, schema: dict[str, FetcherOptionsSchema]) -> Options:
+    result = dict(options)
+    for key, option_schema in schema.items():
+        if (key not in result or result[key] == "") and option_schema.default_value is not None:
+            result[key] = option_schema.default_value
+    return result
+
+
 def fetcher_plugin(
-    options: dict[str, str],
+    information: FetcherInformation,
     query: QueryFn,
     forwards: ReferenceFn,
     backwards: ReferenceFn,
@@ -81,8 +124,8 @@ def fetcher_plugin(
     payload = _read_stdin_payload()
 
     match sys.argv[1]:
-        case EventType.OPTIONS:
-            print(json.dumps(options))
+        case EventType.INFO:
+            print(information.to_json())
 
         case EventType.QUERY:
             if payload:
@@ -97,6 +140,7 @@ def fetcher_plugin(
                 print("python fetcher.py query <SEARCH_QUERY> <OPTIONS>", file=sys.stderr)
                 exit(1)
 
+            options_arg = _apply_defaults(options_arg, information.options_schema)
             result = query(query_arg, options_arg)
             print(Paper.list_to_json(result))
 
@@ -113,6 +157,7 @@ def fetcher_plugin(
                 print("python fetcher.py forwards <PAPER> <OPTIONS>", file=sys.stderr)
                 exit(1)
 
+            options_arg = _apply_defaults(options_arg, information.options_schema)
             result = forwards(paper_arg, options_arg)
             print(Paper.list_to_json(result))
 
@@ -129,6 +174,7 @@ def fetcher_plugin(
                 print("python fetcher.py backwards <PAPER> <OPTIONS>", file=sys.stderr)
                 exit(1)
 
+            options_arg = _apply_defaults(options_arg, information.options_schema)
             result = backwards(paper_arg, options_arg)
             print(Paper.list_to_json(result))
 
@@ -172,9 +218,9 @@ def request_with_retry(
 
     The request has a timeout of 10 seconds.
 
-    The maximum number of attempts is 5 and the maximum timeout between requests is 60 seconds.
+    The maximum number of attempts is 10 and the maximum timeout between requests is 60 seconds.
     """
-    max_attempts = 5
+    max_attempts = 10
     max_timeout = 60
 
     for n in range(max_attempts):

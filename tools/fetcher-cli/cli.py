@@ -161,20 +161,56 @@ def cmd_list(_args):
         print(f"  {name}")
 
 
-def cmd_options(args):
+def cmd_info(args):
     fetcher = args.fetcher
-    schema: dict[str, str] = json.loads(run_fetcher(fetcher, "options"))
+    info: dict = json.loads(run_fetcher(fetcher, "info"))
     fetcher_config = get_options_for(fetcher)
 
-    if not CONFIG_FILE.exists():
-        print("Hint: no config.json found. Run 'init-config' to create one.\n")
+    print(f"Name:        {info.get('name', fetcher)}")
+    print(f"Description: {info.get('description', '')}")
+    links = info.get("links", [])
+    if links:
+        print("Links:")
+        for link in links:
+            print(f"  {link.get('label', '')}: {link.get('url', '')}")
 
-    print(f"Options for '{fetcher}':")
-    print(f"  {'Key':<28} {'Description':<42} Configured")
-    print(f"  {'-' * 28} {'-' * 42} {'-' * 10}")
-    for key, description in schema.items():
-        configured = "yes" if key in fetcher_config else "no"
-        print(f"  {key:<28} {description:<42} {configured}")
+    options_schema: dict[str, dict] = info.get("options_schema", {})
+    if not options_schema:
+        print("\nNo configurable options.")
+        return
+
+    if not CONFIG_FILE.exists():
+        print("\nHint: no config.json found. Run 'init-config' to create one.")
+
+    print("\nOptions:")
+    print(f"  {'Key':<28} {'Description':<36} {'Req':<5} {'Secret':<7} {'Configured':<12} Value")
+    print(f"  {'-' * 28} {'-' * 36} {'-' * 5} {'-' * 7} {'-' * 12} {'-' * 20}")
+    for key, schema in options_schema.items():
+        description = truncate(schema.get("description", ""), 36)
+        is_required = schema.get("required", False)
+        is_secret = schema.get("is_secret", False)
+        required = "yes" if is_required else "no"
+        secret = "yes" if is_secret else "no"
+        value = fetcher_config.get(key)
+        default_value = schema.get("default_value")
+        if value:
+            configured = "yes"
+        elif key not in fetcher_config:
+            configured = "no"
+        else:
+            configured = "<empty>" if is_required else "no"
+        if is_secret and value:
+            display_value = "***"
+        elif value:
+            display_value = value
+        elif default_value is not None:
+            display_value = f"{default_value} (default)"
+        else:
+            display_value = ""
+        print(
+            f"  {key:<28} {description:<36} {required:<5} {secret:<7} {configured:<12} "
+            f"{display_value}"
+        )
 
 
 def cmd_init_config(args):
@@ -192,8 +228,9 @@ def cmd_init_config(args):
 
     config = {}
     for fetcher in fetchers:
-        schema: dict[str, str] = json.loads(run_fetcher(fetcher, "options"))
-        config[fetcher] = {key: "" for key in schema}
+        info: dict = json.loads(run_fetcher(fetcher, "info"))
+        options_schema = info.get("options_schema", {})
+        config[fetcher] = {key: "" for key in options_schema}
 
     with open(CONFIG_FILE, "w") as f:
         json.dump(config, f, indent=2)
@@ -239,7 +276,7 @@ def main():
 
     sub.add_parser("list", help="List all available fetchers.")
 
-    p_opts = sub.add_parser("options", help="Show a fetcher's options and their config status.")
+    p_opts = sub.add_parser("info", help="Show a fetcher's information and options.")
     p_opts.add_argument("fetcher", help="Fetcher name.")
 
     p_search = sub.add_parser("search", help="Search for papers.")
@@ -263,7 +300,7 @@ def main():
     args = parser.parse_args()
     {
         "list": cmd_list,
-        "options": cmd_options,
+        "info": cmd_info,
         "search": cmd_search,
         "forwards": lambda a: cmd_references(a, "forwards"),
         "backwards": lambda a: cmd_references(a, "backwards"),

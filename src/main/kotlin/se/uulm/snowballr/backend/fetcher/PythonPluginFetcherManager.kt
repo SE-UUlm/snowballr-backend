@@ -4,6 +4,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerializationException
@@ -13,8 +14,11 @@ import se.uulm.snowballr.backend.model.exception.FetcherException
 import se.uulm.snowballr.backend.model.exception.UnauthorizedFetcherPathException
 import se.uulm.snowballr.backend.model.exception.notfound.FetcherNotFoundException
 import se.uulm.snowballr.backend.model.fetcher.FetcherAction
+import se.uulm.snowballr.backend.model.fetcher.FetcherInformation
 import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
 import se.uulm.snowballr.backend.model.fetcher.ProcessResult
+import se.uulm.snowballr.backend.model.fetcher.toGrpc
+import snowballr.Fetcher
 import java.io.IOException
 import java.io.InputStream
 import java.nio.file.Files
@@ -72,14 +76,13 @@ class PythonPluginFetcherManager(
         }
     }
 
-    override fun getAvailableFetchers(): Set<String> = root.listDirectoryEntries()
-        .filter { it.extension == "py" }
-        .map { it.nameWithoutExtension }
-        .toSet()
-
-    override suspend fun getAvailableOptions(fetcher: String): Map<String, String> {
-        val action = FetcherAction.OPTIONS
-        return executeFetcher(fetcher, action, action.payload())
+    override suspend fun getAvailableFetchers(): Set<Fetcher.FetcherInformation> = coroutineScope {
+        root.listDirectoryEntries()
+            .filter { it.extension == "py" }
+            .map { async { retrieveFetcherInformation(it.nameWithoutExtension) } }
+            .awaitAll()
+            .filterNotNull()
+            .toSet()
     }
 
     override suspend fun searchPapers(
@@ -122,7 +125,7 @@ class PythonPluginFetcherManager(
     }
 
     /**
-     * Executes the python script of a given fetcher with the given command
+     * Executes the Python script of a given fetcher with the given command
      * line arguments. The output of the fetcher (which should constrain itself
      * to a single line) is then returned.
      *
@@ -284,5 +287,17 @@ class PythonPluginFetcherManager(
         Json.decodeFromString<T>(input)
     } catch (exception: SerializationException) {
         throw FetcherException("Fetcher '$fetcher' returned invalid JSON.", exception)
+    }
+
+    private suspend fun retrieveFetcherInformation(fetcherFileName: String): Fetcher.FetcherInformation? {
+        val action = FetcherAction.INFO
+
+        return try {
+            val info = executeFetcher<FetcherInformation>(fetcherFileName, action, action.payload())
+            info.toGrpc(fetcherFileName)
+        } catch (e: FetcherException) {
+            logger.warn(e) { "Skipping plugin: $fetcherFileName" }
+            null
+        }
     }
 }

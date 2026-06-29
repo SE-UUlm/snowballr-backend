@@ -11,8 +11,8 @@ import kotlinx.serialization.json.Json
 enum class FetcherAction(
     val command: String,
 ) {
-    /** Returns the fetcher's available option definitions. */
-    OPTIONS("options") {
+    /** Returns the fetcher's information. */
+    INFO("info") {
         override fun payload(): String = ""
     },
 

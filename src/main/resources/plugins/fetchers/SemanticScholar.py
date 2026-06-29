@@ -3,6 +3,9 @@ from typing import Any, Optional
 
 from snowballr import (
     Author,
+    FetcherInformation,
+    FetcherOptionsSchema,
+    Link,
     Paper,
     fetcher_plugin,
     paginate_with_retry,
@@ -10,10 +13,34 @@ from snowballr import (
     safe_get,
 )
 
+fetcher_information = FetcherInformation(
+    name="Semantic Scholar",
+    description=(
+        "Semantic Scholar is a free, AI-powered academic search engine by the Allen Institute for "
+        "AI, indexing over 214 million papers and 2.49 billion citations across all research "
+        "fields. Supports paper search, forward references (papers that cite a paper), "
+        "and backward references (papers cited by a paper).\n\n"
+        "Without an API key, requests share a public pool (1,000 req/s total). "
+        "With an API key, each user gets 1 dedicated request per second.\n\n"
+        "Note: Some information that is displayed on the Semantic Scholar Website, such as the "
+        "abstract or the references may be elided in the information provided by the fetcher."
+    ),
+    links=[
+        Link("Homepage", "https://www.semanticscholar.org/"),
+        Link("Request API Key", "https://www.semanticscholar.org/product/api#api-key-form"),
+    ],
+    options_schema={
+        "API_KEY": FetcherOptionsSchema(
+            name="API Key",
+            description="Semantic Scholar API key",
+            required=False,
+            is_secret=True,
+        )
+    },
+)
+
 id_metadata_key: str = "SemanticScholarId"
 corpus_id_metadata_key: str = "SemanticScholarCorpusId"
-
-fetcher_options = {"API_KEY": "SemanticScholar API key"}
 
 base_url = "https://api.semanticscholar.org/graph/v1"
 fields = "corpusId,title,externalIds,abstract,publicationDate,year,venue,publicationTypes,authors"
@@ -144,8 +171,8 @@ def external_id_from_response(res) -> Optional[str]:
 
 
 fetcher_plugin(
-    fetcher_options,
-    search_papers,
-    forward_references,
-    backward_references,
+    information=fetcher_information,
+    query=search_papers,
+    forwards=forward_references,
+    backwards=backward_references,
 )

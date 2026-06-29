@@ -150,7 +150,7 @@ existing docs over restating them here. If you must summarize, keep it short and
 
 - Run subcommand: `uv run ./tools/fetcher-cli/cli.py <subcommand> <args>` (wiki/Tools.md)
 - Init config: `uv run ./tools/fetcher-cli/cli.py init-config` — creates `tools/fetcher-cli/config.json` with per-fetcher config stubs
-- Subcommands: `list`, `options`, `search`, `forwards`, `backwards`
+- Subcommands: `list`, `info`, `search`, `forwards`, `backwards`
 - Output saved to `tools/fetcher-cli/output/`
 
 ## Style, checks, and tests

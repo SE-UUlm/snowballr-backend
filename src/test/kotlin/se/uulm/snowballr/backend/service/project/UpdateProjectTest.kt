@@ -3,7 +3,9 @@ package se.uulm.snowballr.backend.service.project
 import com.google.protobuf.util.FieldMaskUtil
 import io.mockk.coEvery
 import io.mockk.coJustRun
+import io.mockk.slot
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
@@ -14,7 +16,10 @@ import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.toGrpcProject
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
+import snowballr.Fetcher
 import snowballr.ProjectOuterClass.ProjectStatus
+import kotlin.test.assertContains
+import kotlin.test.assertIs
 import snowballr.ProjectOuterClass.Project as GrpcProject
 
 class UpdateProjectTest : ProjectServiceTest() {
@@ -250,4 +255,117 @@ class UpdateProjectTest : ProjectServiceTest() {
 
         assertThrows<IllegalStateException> { service.updateProject(request) }
     }
+
+    @Test
+    fun `When a user updates the fetchers of a project, then the fetchers are sanitized`() = runTest {
+        val user = DataBuilder.createExampleUser()
+        val project = DataBuilder.createExampleProject(fetchers = emptyMap())
+        val availableFetchers = setOf(
+            Fetcher.FetcherInformation.newBuilder()
+                .setId("existent-fetcher")
+                .putAllOptionsSchema(
+                    mapOf(
+                        "existent-option" to Fetcher.FetcherOptionSchema.getDefaultInstance(),
+                    ),
+                )
+                .build(),
+        )
+
+        val fetchers = mapOf(
+            "existent-fetcher" to mapOf(
+                "existent-option" to "foo",
+                "non-existent-option" to "bar",
+            ),
+            "non-existent-fetcher" to emptyMap(),
+        )
+        val updatedProject = project.copy(fetchers = fetchers)
+        val request = getRequest(updatedProject, listOf("project.settings.fetchers"))
+
+        mockCurrentUser(user)
+        coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
+        coEvery { projectRepoMock.isProjectLocked(project.id) } returns false
+        coEvery { fetcherManagerMock.getAvailableFetchers() } returns availableFetchers
+        val finalRequest = slot<GrpcProject.Update>()
+        coEvery { projectRepoMock.updateProject(capture(finalRequest)) } returns updatedProject
+
+        service.updateProject(request)
+
+        val sanitizedRequest = finalRequest.captured
+
+        val updatedFetchers = sanitizedRequest.project.settings.fetchersMap
+        assertContains(updatedFetchers.keys, "existent-fetcher")
+        assertFalse(updatedFetchers.containsKey("non-existent-fetcher"))
+
+        val existentFetcher = updatedFetchers["existent-fetcher"]
+        assertIs<Fetcher.FetcherOptions>(existentFetcher)
+        assertContains(existentFetcher.optionsMap.keys, "existent-option")
+        assertFalse(existentFetcher.optionsMap.containsKey("non-existent-option"))
+    }
+
+    @Test
+    fun `When a user updates the fetchers of a project and doesn't include a required option, then a FailedPreconditionException is thrown`() =
+        runTest {
+            val user = DataBuilder.createExampleUser()
+            val project = DataBuilder.createExampleProject(fetchers = emptyMap())
+            val requiredOption = Fetcher.FetcherOptionSchema.newBuilder().setRequired(true).build()
+            val availableFetchers = setOf(
+                Fetcher.FetcherInformation.newBuilder()
+                    .setId("fetcher")
+                    .putAllOptionsSchema(
+                        mapOf(
+                            "option1" to requiredOption,
+                        ),
+                    )
+                    .build(),
+            )
+
+            val fetchers = mapOf(
+                "fetcher" to emptyMap<String, String>(),
+            )
+            val updatedProject = project.copy(fetchers = fetchers)
+            val request = getRequest(updatedProject, listOf("project.settings.fetchers"))
+
+            mockCurrentUser(user)
+            coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
+            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
+            coEvery { projectRepoMock.isProjectLocked(project.id) } returns false
+            coEvery { fetcherManagerMock.getAvailableFetchers() } returns availableFetchers
+
+            assertThrows<FailedPreconditionException> { service.updateProject(request) }
+        }
+
+    @Test
+    fun `When a user updates the fetchers of a project and keeps a required option empty, then a FailedPreconditionException is thrown`() =
+        runTest {
+            val user = DataBuilder.createExampleUser()
+            val project = DataBuilder.createExampleProject(fetchers = emptyMap())
+            val requiredOption = Fetcher.FetcherOptionSchema.newBuilder().setRequired(true).build()
+            val availableFetchers = setOf(
+                Fetcher.FetcherInformation.newBuilder()
+                    .setId("fetcher")
+                    .putAllOptionsSchema(
+                        mapOf(
+                            "option1" to requiredOption,
+                        ),
+                    )
+                    .build(),
+            )
+
+            val fetchers = mapOf(
+                "fetcher" to mapOf(
+                    "option1" to "",
+                ),
+            )
+            val updatedProject = project.copy(fetchers = fetchers)
+            val request = getRequest(updatedProject, listOf("project.settings.fetchers"))
+
+            mockCurrentUser(user)
+            coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
+            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
+            coEvery { projectRepoMock.isProjectLocked(project.id) } returns false
+            coEvery { fetcherManagerMock.getAvailableFetchers() } returns availableFetchers
+
+            assertThrows<FailedPreconditionException> { service.updateProject(request) }
+        }
 }

@@ -5,6 +5,7 @@ import io.mockk.every
 import io.mockk.mockk
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.auth.GrpcContext
+import se.uulm.snowballr.backend.fetcher.IFetcherManager
 import se.uulm.snowballr.backend.model.dto.Project
 import se.uulm.snowballr.backend.model.dto.User
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
@@ -30,6 +31,7 @@ sealed class ProjectServiceTest : BaseServiceTest {
     val criterionRepoMock = mockk<ICriterionTableRepo>()
     val invitationTokenRepoMock = mockk<IInvitationTokenTableRepo>()
     val projectAccessCheckerMock = mockk<IProjectAccessChecker>()
+    val fetcherManagerMock = mockk<IFetcherManager>()
 
     private val allMocks = arrayOf(
         projectRepoMock,
@@ -39,6 +41,7 @@ sealed class ProjectServiceTest : BaseServiceTest {
         criterionRepoMock,
         invitationTokenRepoMock,
         projectAccessCheckerMock,
+        fetcherManagerMock,
     )
 
     val service = ProjectService(
@@ -49,6 +52,7 @@ sealed class ProjectServiceTest : BaseServiceTest {
         criterionRepo = criterionRepoMock,
         invitationTokenRepo = invitationTokenRepoMock,
         accessChecker = projectAccessCheckerMock,
+        fetcherManager = fetcherManagerMock,
     )
 
     override fun getAllMocks(): Array<Any> = allMocks
