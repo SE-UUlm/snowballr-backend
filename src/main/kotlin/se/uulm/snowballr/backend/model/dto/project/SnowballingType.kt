@@ -18,47 +18,46 @@ enum class SnowballingType {
     /**
      * All forward references are fetched.
      */
-    SNOWBALLING_TYPE_FORWARD,
+    FORWARD,
 
     /**
      * All backward references are fetched.
      */
-    SNOWBALLING_TYPE_BACKWARD,
+    BACKWARD,
 
     /**
      * All forward and backward references are fetched.
      */
-    SNOWBALLING_TYPE_BOTH,
+    BOTH,
 
     ;
 
     companion object {
         fun fromGrpc(type: ProjectOuterClass.SnowballingType): SnowballingType = when (type) {
-            ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_FORWARD -> SNOWBALLING_TYPE_FORWARD
-            ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_BACKWARD -> SNOWBALLING_TYPE_BACKWARD
-            ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_BOTH -> SNOWBALLING_TYPE_BOTH
+            ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_FORWARD -> FORWARD
+            ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_BACKWARD -> BACKWARD
+            ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_BOTH -> BOTH
             ProjectOuterClass.SnowballingType.UNRECOGNIZED,
             ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_UNSPECIFIED,
             ->
                 @Suppress("UseCheckOrError")
-                throw IllegalStateException("Invalid convertion")
+                throw IllegalStateException("Invalid conversion")
         }
     }
 
     fun toGrpc(): ProjectOuterClass.SnowballingType = when (this) {
-        SNOWBALLING_TYPE_FORWARD -> ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_FORWARD
-        SNOWBALLING_TYPE_BACKWARD -> ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_BACKWARD
-        SNOWBALLING_TYPE_BOTH -> ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_BOTH
+        FORWARD -> ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_FORWARD
+        BACKWARD -> ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_BACKWARD
+        BOTH -> ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_BOTH
     }
 
     /**
-     * Returns true if this [SnowballingType] is [SNOWBALLING_TYPE_BACKWARD] or [SNOWBALLING_TYPE_BOTH];
-     * otherwise false.
+     * Returns true if this [SnowballingType] is [BACKWARD] or [BOTH]; otherwise false.
      */
-    fun isBackwardOrBoth() = this == SNOWBALLING_TYPE_BACKWARD || this == SNOWBALLING_TYPE_BOTH
+    fun isBackwardOrBoth() = this == BACKWARD || this == BOTH
 
     /**
-     * Returns true if this [SnowballingType] is [SNOWBALLING_TYPE_FORWARD] or [SNOWBALLING_TYPE_BOTH]; otherwise false.
+     * Returns true if this [SnowballingType] is [FORWARD] or [BOTH]; otherwise false.
      */
-    fun isForwardOrBoth() = this == SNOWBALLING_TYPE_FORWARD || this == SNOWBALLING_TYPE_BOTH
+    fun isForwardOrBoth() = this == FORWARD || this == BOTH
 }

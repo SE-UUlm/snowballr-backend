@@ -57,7 +57,7 @@ class VerifyEmailTest : AuthenticationServiceTest() {
     @Test
     fun `When a valid token is provided and all operations succeed, then the token is successfully deleted afterwards`() =
         runTest {
-            val user = DataBuilder.createExampleUser(status = UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED)
+            val user = DataBuilder.createExampleUser(status = UserStatus.ACTIVE_UNCONFIRMED)
             val token = DataBuilder.createExampleVerificationToken(userId = user.id)
             val request = Authentication.VerifyEmailRequest.newBuilder().setToken(token.token).build()
             val userUpdateSlot = slot<GrpcUser.Update>()

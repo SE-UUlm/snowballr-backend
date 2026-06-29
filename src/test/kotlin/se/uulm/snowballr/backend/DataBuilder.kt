@@ -40,11 +40,11 @@ object DataBuilder {
     fun createExampleProject(
         id: UUID = UUID.randomUUID(),
         name: String = "Test Project",
-        status: ProjectStatus = ProjectStatus.PROJECT_STATUS_ACTIVE,
+        status: ProjectStatus = ProjectStatus.ACTIVE,
         currentStage: Long = 0,
         maxStage: Long = 0,
         similarityThreshold: Float = 0.5F,
-        snowballingType: SnowballingType = SnowballingType.SNOWBALLING_TYPE_BOTH,
+        snowballingType: SnowballingType = SnowballingType.BOTH,
         reviewMaybeAllowed: Boolean = true,
         reviewDecisionMatrix: ReviewDecisionMatrix = ReviewDecisionMatrix(1, emptyList()),
         fetchers: FetcherMap = emptyMap(),
@@ -84,7 +84,7 @@ object DataBuilder {
         tag: String = "Test Tag",
         name: String = "Test Criterion",
         description: String = "Test Description",
-        category: CriterionCategory = CriterionCategory.CRITERION_CATEGORY_INCLUSION,
+        category: CriterionCategory = CriterionCategory.INCLUSION,
         projectId: UUID = UUID.randomUUID(),
         createdAt: OffsetDateTime = OffsetDateTime.now(),
         createdBy: UUID = UUID.randomUUID(),
@@ -104,7 +104,7 @@ object DataBuilder {
         tag: String = "Test Tag",
         name: String = "Test Criterion",
         description: String = "Test Description",
-        category: CriterionCategory = CriterionCategory.CRITERION_CATEGORY_INCLUSION,
+        category: CriterionCategory = CriterionCategory.INCLUSION,
         createdAt: OffsetDateTime = OffsetDateTime.now(),
         createdBy: UUID = UUID.randomUUID(),
     ) = Criterion.UserCriterion(
@@ -122,8 +122,8 @@ object DataBuilder {
         email: String = "test.email@example.com",
         firstName: String = "Test",
         lastName: String = "User",
-        role: UserRole = UserRole.USER_ROLE_DEFAULT,
-        status: UserStatus = UserStatus.USER_STATUS_ACTIVE,
+        role: UserRole = UserRole.DEFAULT,
+        status: UserStatus = UserStatus.ACTIVE,
         createdAt: OffsetDateTime = OffsetDateTime.now(),
         modifiedAt: OffsetDateTime? = null,
         deletedAt: OffsetDateTime? = null,
@@ -142,7 +142,7 @@ object DataBuilder {
     fun createExampleProjectMember(
         projectId: UUID = UUID.randomUUID(),
         userId: UUID = UUID.randomUUID(),
-        role: MemberRole = MemberRole.MEMBER_ROLE_DEFAULT,
+        role: MemberRole = MemberRole.DEFAULT,
         createdAt: OffsetDateTime = OffsetDateTime.now(),
         modifiedAt: OffsetDateTime? = null,
     ) = ProjectMember(
@@ -160,7 +160,7 @@ object DataBuilder {
         similarityThreshold: Float = 0.5f,
         decisionMatrix: ReviewDecisionMatrix = ReviewDecisionMatrix(1, emptyList()),
         fetchers: FetcherMap = emptyMap(),
-        snowballingType: SnowballingType = SnowballingType.SNOWBALLING_TYPE_BOTH,
+        snowballingType: SnowballingType = SnowballingType.BOTH,
         reviewMaybeAllowed: Boolean = false,
     ) = UserSettings(
         areHotkeysShown = showHotkeys,
@@ -211,7 +211,7 @@ object DataBuilder {
         projectId: UUID = UUID.randomUUID(),
         localPaperId: Long = 0,
         stage: Long = 0,
-        decision: PaperDecision = PaperDecision.PAPER_DECISION_ACCEPTED,
+        decision: PaperDecision = PaperDecision.ACCEPTED,
         createdAt: OffsetDateTime = OffsetDateTime.now(),
         createdBy: UUID = UUID.randomUUID(),
         modifiedAt: OffsetDateTime? = null,
@@ -238,7 +238,7 @@ object DataBuilder {
         id: UUID = UUID.randomUUID(),
         projectPaperId: UUID = UUID.randomUUID(),
         userId: UUID = UUID.randomUUID(),
-        decision: ReviewDecision = ReviewDecision.REVIEW_DECISION_ACCEPTED,
+        decision: ReviewDecision = ReviewDecision.ACCEPTED,
         createdAt: OffsetDateTime = OffsetDateTime.now(),
         modifiedAt: OffsetDateTime? = null,
     ) = Review(
@@ -277,21 +277,21 @@ object DataBuilder {
     )
 
     private val ACCEPT_DECLINE_PATTERN = patternOf(
-        ReviewDecision.REVIEW_DECISION_ACCEPTED to 1,
-        ReviewDecision.REVIEW_DECISION_DECLINED to 1,
-        result = PaperDecision.PAPER_DECISION_IN_REVIEW,
+        ReviewDecision.ACCEPTED to 1,
+        ReviewDecision.DECLINED to 1,
+        result = PaperDecision.IN_REVIEW,
     )
     private val ACCEPT_ANY_PATTERN = patternOf(
-        ReviewDecision.REVIEW_DECISION_ACCEPTED to 1,
-        result = PaperDecision.PAPER_DECISION_ACCEPTED,
+        ReviewDecision.ACCEPTED to 1,
+        result = PaperDecision.ACCEPTED,
     )
     private val DECLINE_ANY_PATTERN = patternOf(
-        ReviewDecision.REVIEW_DECISION_DECLINED to 1,
-        result = PaperDecision.PAPER_DECISION_DECLINED,
+        ReviewDecision.DECLINED to 1,
+        result = PaperDecision.DECLINED,
     )
     private val MAYBE_MAYBE_PATTERN = patternOf(
-        ReviewDecision.REVIEW_DECISION_MAYBE to 2,
-        result = PaperDecision.PAPER_DECISION_IN_REVIEW,
+        ReviewDecision.MAYBE to 2,
+        result = PaperDecision.IN_REVIEW,
     )
 
     fun createExampleReviewDecisionMatrix(

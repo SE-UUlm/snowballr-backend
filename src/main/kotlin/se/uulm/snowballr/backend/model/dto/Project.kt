@@ -79,15 +79,13 @@ fun List<Project>.toGrpcProjects(): ProjectOuterClass.Project.List {
 /**
  * Checks whether the project is active.
  *
- * A project is considered active if its status is either [ProjectStatus.PROJECT_STATUS_ACTIVE] or
- * [ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED].
+ * A project is considered active if its status is either [ProjectStatus.ACTIVE] or [ProjectStatus.ACTIVE_LOCKED].
  */
-fun Project.isActive() = this.status == ProjectStatus.PROJECT_STATUS_ACTIVE ||
-    this.status == ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED
+fun Project.isActive() = this.status == ProjectStatus.ACTIVE || this.status == ProjectStatus.ACTIVE_LOCKED
 
 /**
  * Checks whether the project is deleted.
  *
- * A project is considered deleted if its status is [ProjectStatus.PROJECT_STATUS_DELETED].
+ * A project is considered deleted if its status is [ProjectStatus.DELETED].
  */
-fun Project.isDeleted() = this.status == ProjectStatus.PROJECT_STATUS_DELETED
+fun Project.isDeleted() = this.status == ProjectStatus.DELETED

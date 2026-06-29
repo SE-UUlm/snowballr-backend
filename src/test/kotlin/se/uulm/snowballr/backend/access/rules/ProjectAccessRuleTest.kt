@@ -16,8 +16,8 @@ class ProjectAccessRuleTest {
     companion object {
         @JvmStatic
         fun activeStatuses() = listOf(
-            ProjectStatus.PROJECT_STATUS_ACTIVE,
-            ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED,
+            ProjectStatus.ACTIVE,
+            ProjectStatus.ACTIVE_LOCKED,
         )
 
         @JvmStatic

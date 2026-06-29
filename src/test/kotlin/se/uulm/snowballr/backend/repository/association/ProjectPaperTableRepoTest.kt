@@ -51,7 +51,7 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
                 assertEquals(paperId, projectPaper.paperId)
                 assertEquals(0, projectPaper.localPaperId)
                 assertEquals(0, projectPaper.stage)
-                assertEquals(PaperDecision.PAPER_DECISION_ACCEPTED, projectPaper.decision)
+                assertEquals(PaperDecision.ACCEPTED, projectPaper.decision)
                 assertEquals(testUserId, projectPaper.createdBy)
             }
 
@@ -105,7 +105,7 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
                 assertEquals(paperId, projectPaper.paperId)
                 assertEquals(0, projectPaper.localPaperId)
                 assertEquals(0, projectPaper.stage)
-                assertEquals(PaperDecision.PAPER_DECISION_ACCEPTED, projectPaper.decision)
+                assertEquals(PaperDecision.ACCEPTED, projectPaper.decision)
                 assertEquals(testUserId, projectPaper.createdBy)
             }
     }
@@ -353,7 +353,7 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
                 assertEquals(projectId, projectPaper.projectId)
                 assertEquals(0, projectPaper.localPaperId)
                 assertEquals(0, projectPaper.stage)
-                assertEquals(PaperDecision.PAPER_DECISION_UNREVIEWED, projectPaper.decision)
+                assertEquals(PaperDecision.UNREVIEWED, projectPaper.decision)
                 assertEquals(testUserId, projectPaper.createdBy)
             }
 
@@ -475,25 +475,25 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
                 paperId1,
                 projectId,
                 createdBy = testUserId,
-                decision = PaperDecision.PAPER_DECISION_UNREVIEWED,
+                decision = PaperDecision.UNREVIEWED,
             )
             insertProjectPaperAndGetId(
                 paperId2,
                 projectId,
                 createdBy = testUserId,
-                decision = PaperDecision.PAPER_DECISION_IN_REVIEW,
+                decision = PaperDecision.IN_REVIEW,
             )
             insertProjectPaperAndGetId(
                 paperId3,
                 projectId,
                 createdBy = testUserId,
-                decision = PaperDecision.PAPER_DECISION_DECLINED,
+                decision = PaperDecision.DECLINED,
             )
             insertProjectPaperAndGetId(
                 paperId4,
                 projectId,
                 createdBy = testUserId,
-                decision = PaperDecision.PAPER_DECISION_ACCEPTED,
+                decision = PaperDecision.ACCEPTED,
             )
 
             assertEquals(0.5f, repo.getProjectProgress(projectId))
@@ -503,10 +503,10 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
     companion object {
         @JvmStatic
         fun reviewDecisionProgressCases(): List<Arguments> = listOf(
-            Arguments.of(PaperDecision.PAPER_DECISION_UNREVIEWED, 0.0f),
-            Arguments.of(PaperDecision.PAPER_DECISION_IN_REVIEW, 0.0f),
-            Arguments.of(PaperDecision.PAPER_DECISION_ACCEPTED, 1.0f),
-            Arguments.of(PaperDecision.PAPER_DECISION_DECLINED, 1.0f),
+            Arguments.of(PaperDecision.UNREVIEWED, 0.0f),
+            Arguments.of(PaperDecision.IN_REVIEW, 0.0f),
+            Arguments.of(PaperDecision.ACCEPTED, 1.0f),
+            Arguments.of(PaperDecision.DECLINED, 1.0f),
         )
     }
 
@@ -519,14 +519,14 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
             val projectPaperId = insertProjectPaperAndGetId(
                 paperId,
                 projectId,
-                decision = PaperDecision.PAPER_DECISION_IN_REVIEW,
+                decision = PaperDecision.IN_REVIEW,
                 createdBy = testUserId,
             )
 
-            repo.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_ACCEPTED)
+            repo.updateProjectPaperDecision(projectPaperId, PaperDecision.ACCEPTED)
 
             val projectPaper = assertResultSuccess(repo.getProjectPaperById(projectPaperId))
-            assertEquals(PaperDecision.PAPER_DECISION_ACCEPTED, projectPaper.decision)
+            assertEquals(PaperDecision.ACCEPTED, projectPaper.decision)
         }
     }
 

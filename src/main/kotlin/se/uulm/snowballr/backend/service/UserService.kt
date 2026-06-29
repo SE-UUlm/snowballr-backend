@@ -181,9 +181,9 @@ class UserService(
         val projectsOfTargetUser = projectRepo.getUserProjects(
             targetUser.id,
             setOf(
-                ProjectStatus.PROJECT_STATUS_ACTIVE,
-                ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED,
-                ProjectStatus.PROJECT_STATUS_ARCHIVED,
+                ProjectStatus.ACTIVE,
+                ProjectStatus.ACTIVE_LOCKED,
+                ProjectStatus.ARCHIVED,
             ),
         )
         projectsOfTargetUser.forEach { project ->

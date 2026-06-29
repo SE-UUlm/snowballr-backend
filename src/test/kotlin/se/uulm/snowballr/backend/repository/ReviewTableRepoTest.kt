@@ -58,7 +58,7 @@ class ReviewTableRepoTest : RepositoryTest(
             assertEquals(reviewId, review.id)
             assertEquals(projectPaperId, review.projectPaperId)
             assertEquals(testUserId, review.userId)
-            assertEquals(ReviewDecision.REVIEW_DECISION_ACCEPTED, review.decision)
+            assertEquals(ReviewDecision.ACCEPTED, review.decision)
         }
 
         @Test
@@ -216,7 +216,7 @@ class ReviewTableRepoTest : RepositoryTest(
     inner class CreateReview {
         private fun createReviewRequest(projectPaperId: UUID) = Review.Create.newBuilder()
             .setProjectPaperId(projectPaperId.toString())
-            .setDecision(ReviewDecision.REVIEW_DECISION_ACCEPTED.toGrpc())
+            .setDecision(ReviewDecision.ACCEPTED.toGrpc())
 
         @Test
         fun `When a review is created, then the correct review is returned`() = runTest {
@@ -229,7 +229,7 @@ class ReviewTableRepoTest : RepositoryTest(
             val review = repo.createReview(createReviewRequest(projectPaperId).build(), userId)
 
             assertEquals(projectPaperId, review.projectPaperId)
-            assertEquals(ReviewDecision.REVIEW_DECISION_ACCEPTED, review.decision)
+            assertEquals(ReviewDecision.ACCEPTED, review.decision)
             assertEquals(userId, review.userId)
         }
 

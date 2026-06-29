@@ -9,40 +9,40 @@ enum class UserStatus {
     /**
      * User is registered, but has not yet verified their email address.
      */
-    USER_STATUS_ACTIVE_UNCONFIRMED,
+    ACTIVE_UNCONFIRMED,
 
     /**
      * User is registered and has confirmed their email address.
      */
-    USER_STATUS_ACTIVE,
+    ACTIVE,
 
     /**
      * User has requested the deletion of their account.
      */
-    USER_STATUS_DELETED,
+    DELETED,
 
     /**
      * User data has been cleared after the user has been soft-deleted.
      */
-    USER_STATUS_CLEARED,
+    CLEARED,
 
     ;
 
     companion object {
         fun fromGrpc(status: UserOuterClass.UserStatus): UserStatus = when (status) {
-            UserOuterClass.UserStatus.USER_STATUS_ACTIVE -> USER_STATUS_ACTIVE
-            UserOuterClass.UserStatus.USER_STATUS_DELETED -> USER_STATUS_DELETED
-            UserOuterClass.UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED -> USER_STATUS_ACTIVE_UNCONFIRMED
+            UserOuterClass.UserStatus.USER_STATUS_ACTIVE -> ACTIVE
+            UserOuterClass.UserStatus.USER_STATUS_DELETED -> DELETED
+            UserOuterClass.UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED -> ACTIVE_UNCONFIRMED
             UserOuterClass.UserStatus.UNRECOGNIZED, UserOuterClass.UserStatus.USER_STATUS_UNSPECIFIED ->
                 @Suppress("UseCheckOrError")
-                throw IllegalStateException("Invalid convertion")
+                throw IllegalStateException("Invalid conversion")
         }
     }
 
     fun toGrpc() = when (this) {
-        USER_STATUS_ACTIVE_UNCONFIRMED -> UserOuterClass.UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED
-        USER_STATUS_ACTIVE -> UserOuterClass.UserStatus.USER_STATUS_ACTIVE
-        USER_STATUS_DELETED -> UserOuterClass.UserStatus.USER_STATUS_DELETED
-        USER_STATUS_CLEARED -> UserOuterClass.UserStatus.USER_STATUS_UNSPECIFIED
+        ACTIVE_UNCONFIRMED -> UserOuterClass.UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED
+        ACTIVE -> UserOuterClass.UserStatus.USER_STATUS_ACTIVE
+        DELETED -> UserOuterClass.UserStatus.USER_STATUS_DELETED
+        CLEARED -> UserOuterClass.UserStatus.USER_STATUS_UNSPECIFIED
     }
 }

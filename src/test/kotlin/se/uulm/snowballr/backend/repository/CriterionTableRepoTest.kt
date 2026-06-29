@@ -58,7 +58,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
             assertEquals("Test Tag", criterion.tag)
             assertEquals("Test Criterion", criterion.name)
             assertEquals("Test Description", criterion.description)
-            assertEquals(CriterionCategory.CRITERION_CATEGORY_EXCLUSION, criterion.category)
+            assertEquals(CriterionCategory.EXCLUSION, criterion.category)
             assertEquals(projectId, criterion.projectId)
         }
 
@@ -129,7 +129,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                         .setTag("Test Tag")
                         .setName("Test Criterion")
                         .setDescription("Test Description")
-                        .setCategory(CriterionCategory.CRITERION_CATEGORY_EXCLUSION.toGrpc())
+                        .setCategory(CriterionCategory.EXCLUSION.toGrpc())
                         .setProjectId(UUID.randomUUID().toString())
                         .build()
 
@@ -146,7 +146,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                     .setTag("Test Tag")
                     .setName("Test Criterion")
                     .setDescription("Test Description")
-                    .setCategory(CriterionCategory.CRITERION_CATEGORY_EXCLUSION.toGrpc())
+                    .setCategory(CriterionCategory.EXCLUSION.toGrpc())
                     .setProjectId(projectId.toString())
                     .build()
 
@@ -187,7 +187,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                     .setTag("Test Tag")
                     .setName("Test Criterion")
                     .setDescription("Test Description")
-                    .setCategory(CriterionCategory.CRITERION_CATEGORY_EXCLUSION.toGrpc())
+                    .setCategory(CriterionCategory.EXCLUSION.toGrpc())
 
                 val userCriterionRequest = baseRequestBuilder.build()
                 val projectCriterionRequest = baseRequestBuilder
@@ -218,7 +218,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                     .setTag("Test Tag")
                     .setName("Test Criterion")
                     .setDescription("Test Description")
-                    .setCategory(CriterionCategory.CRITERION_CATEGORY_EXCLUSION.toGrpc())
+                    .setCategory(CriterionCategory.EXCLUSION.toGrpc())
 
                 val userCriterionRequest = baseRequestBuilder.build()
                 val projectCriterionRequest = baseRequestBuilder
@@ -241,7 +241,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                     .setTag("Test Tag")
                     .setName("Test Criterion")
                     .setDescription("Test Description")
-                    .setCategory(CriterionCategory.CRITERION_CATEGORY_EXCLUSION.toGrpc())
+                    .setCategory(CriterionCategory.EXCLUSION.toGrpc())
 
                 val userCriterionRequest = baseRequestBuilder.build()
 
@@ -271,7 +271,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                 .setTag("Test Tag")
                 .setName("Test Criterion")
                 .setDescription("Test Description")
-                .setCategory(CriterionCategory.CRITERION_CATEGORY_EXCLUSION.toGrpc())
+                .setCategory(CriterionCategory.EXCLUSION.toGrpc())
 
             val userCriterionRequest = baseRequestBuilder.build()
 
@@ -299,7 +299,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                 .setTag("Updated Tag")
                 .setName("Updated Criterion")
                 .setDescription("Updated Description")
-                .setCategory(CriterionCategory.CRITERION_CATEGORY_INCLUSION.toGrpc())
+                .setCategory(CriterionCategory.INCLUSION.toGrpc())
                 .build()
 
             val request = GrpcCriterion.Update.newBuilder()
@@ -325,9 +325,9 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                 assertEquals("Test Description", updatedCriterion.description)
             }
             if ("criterion.category" in fieldMask) {
-                assertEquals(CriterionCategory.CRITERION_CATEGORY_INCLUSION, updatedCriterion.category)
+                assertEquals(CriterionCategory.INCLUSION, updatedCriterion.category)
             } else {
-                assertEquals(CriterionCategory.CRITERION_CATEGORY_EXCLUSION, updatedCriterion.category)
+                assertEquals(CriterionCategory.EXCLUSION, updatedCriterion.category)
             }
         }
     }
@@ -385,7 +385,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                     .setTag("Test Tag")
                     .setName("Test Criterion")
                     .setDescription("Test Description")
-                    .setCategory(CriterionCategory.CRITERION_CATEGORY_EXCLUSION.toGrpc())
+                    .setCategory(CriterionCategory.EXCLUSION.toGrpc())
 
                 val userCriterionRequest = baseRequestBuilder.build()
                 val projectCriterionRequest1 = baseRequestBuilder

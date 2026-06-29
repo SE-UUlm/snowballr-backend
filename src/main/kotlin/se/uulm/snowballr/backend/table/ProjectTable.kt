@@ -26,8 +26,7 @@ import java.time.OffsetDateTime
  * - [similarityThreshold]: Represents the similarity threshold of the project as a [Float].
  * - [snowballingType]: Represents the type of snowballing used by the project as an enumeration value from
  * [SnowballingType].
- * - [reviewMaybeAllowed]: Represents whether the project allows reviews with a [ReviewDecision.REVIEW_DECISION_MAYBE]
- * as a [Boolean].
+ * - [reviewMaybeAllowed]: Represents whether the project allows reviews with a [ReviewDecision.MAYBE] as a [Boolean].
  * - [reviewDecisionMatrixBinary]: Represents the decision matrix on how the [PaperDecision] for a paper should be
  * determined as a [ByteArray].
  * - [fetchers]: Represents the fetchers used by the project as a JSON object mapping the fetcher names to their

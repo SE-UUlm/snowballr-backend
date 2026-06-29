@@ -83,18 +83,18 @@ interface IProjectTableRepo {
      *
      * @param userId The unique identifier of the user whose associated projects are to be fetched.
      * @param statusFilters (optional) Set of filters to specify which project status the fetched projects should have.
-     * By default, [ProjectStatus.PROJECT_STATUS_ACTIVE] and [ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED] are used,
-     * which includes both active and active-locked projects, i.e., projects where settings cannot be changed anymore.
-     * If set to another value (e.g., [ProjectStatus.PROJECT_STATUS_DELETED]), only projects
-     * matching one of the statuses (e.g., deleted) will be returned.
+     * By default, [ProjectStatus.ACTIVE] and [ProjectStatus.ACTIVE_LOCKED] are used, which includes both active and
+     * active-locked projects, i.e., projects where settings cannot be changed anymore.
+     * If set to another value (e.g., [ProjectStatus.DELETED]), only projects matching one of the statuses
+     * (e.g., deleted) will be returned.
      *
      * @return A list of [Project] objects matching the specified filters where the given user is member of.
      */
     suspend fun getUserProjects(
         userId: UUID,
         statusFilters: Set<ProjectStatus> = setOf(
-            ProjectStatus.PROJECT_STATUS_ACTIVE,
-            ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED,
+            ProjectStatus.ACTIVE,
+            ProjectStatus.ACTIVE_LOCKED,
         ),
     ): List<Project>
 
@@ -119,8 +119,8 @@ interface IProjectTableRepo {
      * is associated with this project.
      *
      * **Note:** This functions returns `true` or `false` regardless of the project's current state.
-     * However, the result is only meaningful if the project is in an active state
-     * (i.e., [ProjectStatus.PROJECT_STATUS_ACTIVE] or [ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED]).
+     * However, the result is only meaningful if the project is in an active state (i.e., [ProjectStatus.ACTIVE] or
+     * [ProjectStatus.ACTIVE_LOCKED]).
      *
      * @param projectId The ID of the project to check for locked status.
      * @return `true` if the project is locked, `false` otherwise.
@@ -129,7 +129,7 @@ interface IProjectTableRepo {
 
     /**
      * Performs a soft-delete of the project with the given [projectId], i.e., does not remove the
-     * project from the database but marks it as deleted by setting the status to [ProjectStatus.PROJECT_STATUS_DELETED].
+     * project from the database but marks it as deleted by setting the status to [ProjectStatus.DELETED].
      */
     suspend fun softDeleteProject(projectId: UUID)
 
@@ -182,7 +182,7 @@ class ProjectTableRepo(
         db.query {
             ProjectTable.insertAndGet(ResultRow::toProject) {
                 it[name] = request.name
-                it[status] = ProjectStatus.PROJECT_STATUS_ACTIVE
+                it[status] = ProjectStatus.ACTIVE
                 it[currentStage] = 0
                 it[maxStage] = 0
                 it[similarityThreshold] = userSettings.similarityThreshold
@@ -196,8 +196,7 @@ class ProjectTableRepo(
 
     override suspend fun getAllProjects(): List<Project> = db.query {
         ProjectTable.getEntities(ResultRow::toProject) {
-            (ProjectTable.status eq ProjectStatus.PROJECT_STATUS_ACTIVE) or
-                (ProjectTable.status eq ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
+            (ProjectTable.status eq ProjectStatus.ACTIVE) or (ProjectTable.status eq ProjectStatus.ACTIVE_LOCKED)
         }
     }
 
@@ -247,7 +246,7 @@ class ProjectTableRepo(
     override suspend fun softDeleteProject(projectId: UUID) {
         db.query {
             ProjectTable.update({ ProjectTable.id eq projectId }) {
-                it[status] = ProjectStatus.PROJECT_STATUS_DELETED
+                it[status] = ProjectStatus.DELETED
                 it[deletedAt] = OffsetDateTime.now()
             }
         }
@@ -256,12 +255,11 @@ class ProjectTableRepo(
     override suspend fun clearSoftDeletedProjects(thresholdDate: OffsetDateTime) = db.query {
         val clearedProjects = ProjectTable.update(
             {
-                (ProjectTable.status eq ProjectStatus.PROJECT_STATUS_DELETED)
-                    .and(ProjectTable.deletedAt lessEq thresholdDate)
+                (ProjectTable.status eq ProjectStatus.DELETED).and(ProjectTable.deletedAt lessEq thresholdDate)
             },
         ) {
             it[name] = ""
-            it[status] = ProjectStatus.PROJECT_STATUS_CLEARED
+            it[status] = ProjectStatus.CLEARED
             it[fetchers] = emptyMap()
             it[similarityThreshold] = 0f
             it[fetchers] = emptyMap()
@@ -309,9 +307,7 @@ class ProjectTableRepo(
         ProjectTable
             .selectAll()
             .where {
-                (ProjectTable.status eq ProjectStatus.PROJECT_STATUS_CLEARED).and(
-                    ProjectTable.deletedAt.isNotNull(),
-                )
+                (ProjectTable.status eq ProjectStatus.CLEARED).and(ProjectTable.deletedAt.isNotNull())
             }
             .map { it[ProjectTable.id].value }
     }

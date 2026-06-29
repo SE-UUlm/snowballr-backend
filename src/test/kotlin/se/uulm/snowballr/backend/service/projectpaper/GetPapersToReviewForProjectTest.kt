@@ -24,12 +24,12 @@ class GetPapersToReviewForProjectTest : ProjectPaperServiceTest() {
         val projectPaperAlreadyDecided = DataBuilder.createExampleProjectPaper(
             projectId = project.id,
             paperId = paper.id,
-            decision = PaperDecision.PAPER_DECISION_ACCEPTED,
+            decision = PaperDecision.ACCEPTED,
         )
         val projectPaperNotAlreadyDecided = DataBuilder.createExampleProjectPaper(
             projectId = project.id,
             paperId = paper.id,
-            decision = PaperDecision.PAPER_DECISION_UNREVIEWED,
+            decision = PaperDecision.UNREVIEWED,
         )
         val projectPaperWithPaper1 = ProjectPaperWithPaper(projectPaperAlreadyDecided, paper)
         val projectPaperWithPaper2 = ProjectPaperWithPaper(projectPaperNotAlreadyDecided, paper)
@@ -69,12 +69,12 @@ class GetPapersToReviewForProjectTest : ProjectPaperServiceTest() {
             val projectPaperWithCurrentUserReview = DataBuilder.createExampleProjectPaper(
                 projectId = project.id,
                 paperId = paper.id,
-                decision = PaperDecision.PAPER_DECISION_UNREVIEWED,
+                decision = PaperDecision.UNREVIEWED,
             )
             val projectPaperWithoutCurrentUserReview = DataBuilder.createExampleProjectPaper(
                 projectId = project.id,
                 paperId = paper.id,
-                decision = PaperDecision.PAPER_DECISION_UNREVIEWED,
+                decision = PaperDecision.UNREVIEWED,
             )
             val projectPaperWithPaper1 = ProjectPaperWithPaper(projectPaperWithCurrentUserReview, paper)
             val projectPaperWithPaper2 = ProjectPaperWithPaper(projectPaperWithoutCurrentUserReview, paper)
@@ -119,7 +119,7 @@ class GetPapersToReviewForProjectTest : ProjectPaperServiceTest() {
         val projectPaper = DataBuilder.createExampleProjectPaper(
             projectId = project.id,
             paperId = paper.id,
-            decision = PaperDecision.PAPER_DECISION_UNREVIEWED,
+            decision = PaperDecision.UNREVIEWED,
         )
         val projectPaperWithPaper = ProjectPaperWithPaper(projectPaper, paper)
 

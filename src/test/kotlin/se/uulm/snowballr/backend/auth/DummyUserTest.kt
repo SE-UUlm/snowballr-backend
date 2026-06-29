@@ -34,7 +34,7 @@ class DummyUserTest {
             "DummyUser.passwordHash does not match DummyUser.password",
         )
 
-        assertEquals(UserRole.USER_ROLE_ADMIN, DummyUser.role)
-        assertEquals(UserStatus.USER_STATUS_ACTIVE, DummyUser.status)
+        assertEquals(UserRole.ADMIN, DummyUser.role)
+        assertEquals(UserStatus.ACTIVE, DummyUser.status)
     }
 }

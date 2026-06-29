@@ -37,7 +37,7 @@ class CreateReviewTest : ReviewServiceTest() {
     private val userId = UUID.randomUUID()
     private val project = DataBuilder.createExampleProject(reviewDecisionMatrix = createExampleReviewDecisionMatrix())
     private val projectPaperId = UUID.randomUUID()
-    private val decision = ReviewDecision.REVIEW_DECISION_ACCEPTED
+    private val decision = ReviewDecision.ACCEPTED
     private val defaultCriterion = UUID.randomUUID()
     private val selectedCriteriaIds = listOf<UUID>(defaultCriterion)
 
@@ -57,7 +57,7 @@ class CreateReviewTest : ReviewServiceTest() {
         .setProject(
             GrpcProject.newBuilder()
                 .setId(projectId.toString())
-                .setStatus(ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED.toGrpc())
+                .setStatus(ProjectStatus.ACTIVE_LOCKED.toGrpc())
                 .build(),
         )
         .setMask(FieldMaskUtil.fromString("project.status"))
@@ -66,8 +66,8 @@ class CreateReviewTest : ReviewServiceTest() {
     @Suppress("LongParameterList", "ReturnCount", "LongMethod")
     private fun mockCreateReview(
         project: Project = this.project,
-        initialPaperDecision: PaperDecision = PaperDecision.PAPER_DECISION_UNREVIEWED,
-        updatedPaperDecision: PaperDecision = PaperDecision.PAPER_DECISION_IN_REVIEW,
+        initialPaperDecision: PaperDecision = PaperDecision.UNREVIEWED,
+        updatedPaperDecision: PaperDecision = PaperDecision.IN_REVIEW,
         existingReviews: List<Review> = emptyList(),
         stopBefore: KFunction<*>? = null,
         failAt: KFunction<*>? = null,
@@ -130,10 +130,10 @@ class CreateReviewTest : ReviewServiceTest() {
         } returns selectedCriteriaIds
         coEvery { criterionRepoMock.getAllProjectCriteria(project.id) } returns emptyList()
         coJustRun { projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, updatedPaperDecision) }
-        if (project.status != ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED) {
+        if (project.status != ProjectStatus.ACTIVE_LOCKED) {
             coJustRun { projectRepoMock.updateProject(getUpdateProjectStatusRequest(project.id)) }
         }
-        if (updatedPaperDecision == PaperDecision.PAPER_DECISION_ACCEPTED) {
+        if (updatedPaperDecision == PaperDecision.ACCEPTED) {
             coJustRun { fetcherOrchestratorMock.enqueue(FetcherEnqueueJob(projectPaper, currentUser.id)) }
         }
     }
@@ -179,7 +179,7 @@ class CreateReviewTest : ReviewServiceTest() {
     @Test
     fun `When the project paper is already finally decided, then a FailedPreconditionException is thrown`() = runTest {
         mockCreateReview(
-            initialPaperDecision = PaperDecision.PAPER_DECISION_ACCEPTED,
+            initialPaperDecision = PaperDecision.ACCEPTED,
             stopBefore = reviewRepoMock::createReview,
         )
 
@@ -197,14 +197,14 @@ class CreateReviewTest : ReviewServiceTest() {
             )
             mockCreateReview(
                 existingReviews = listOf(reviewByAnotherUser),
-                initialPaperDecision = PaperDecision.PAPER_DECISION_IN_REVIEW,
-                updatedPaperDecision = PaperDecision.PAPER_DECISION_ACCEPTED,
+                initialPaperDecision = PaperDecision.IN_REVIEW,
+                updatedPaperDecision = PaperDecision.ACCEPTED,
             )
 
             service.createReview(validCreateReviewRequest.build())
 
             coVerify(exactly = 1) {
-                projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_ACCEPTED)
+                projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.ACCEPTED)
             }
         }
 
@@ -213,24 +213,24 @@ class CreateReviewTest : ReviewServiceTest() {
         runTest {
             val firstReview = DataBuilder.createExampleReview(
                 projectPaperId = projectPaperId,
-                decision = ReviewDecision.REVIEW_DECISION_MAYBE,
+                decision = ReviewDecision.MAYBE,
                 userId = UUID.randomUUID(),
             )
             val secondReview = DataBuilder.createExampleReview(
                 projectPaperId = projectPaperId,
-                decision = ReviewDecision.REVIEW_DECISION_MAYBE,
+                decision = ReviewDecision.MAYBE,
                 userId = UUID.randomUUID(),
             )
             mockCreateReview(
                 existingReviews = listOf(firstReview, secondReview),
-                initialPaperDecision = PaperDecision.PAPER_DECISION_IN_REVIEW,
-                updatedPaperDecision = PaperDecision.PAPER_DECISION_ACCEPTED,
+                initialPaperDecision = PaperDecision.IN_REVIEW,
+                updatedPaperDecision = PaperDecision.ACCEPTED,
             )
 
             service.createReview(validCreateReviewRequest.build())
 
             coVerify(exactly = 1) {
-                projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_ACCEPTED)
+                projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.ACCEPTED)
             }
         }
 
@@ -238,10 +238,10 @@ class CreateReviewTest : ReviewServiceTest() {
     fun `When no matching pattern could be found in the decision matrix, then the default paper decision is PAPER_DECISION_IN_REVIEW`() =
         runTest {
             val declinePattern = DecisionMatrixPattern(
-                decision = PaperDecision.PAPER_DECISION_DECLINED,
+                decision = PaperDecision.DECLINED,
                 entries = listOf(
                     DecisionMatrixPatternEntry(
-                        decision = ReviewDecision.REVIEW_DECISION_DECLINED,
+                        decision = ReviewDecision.DECLINED,
                         count = 1,
                     ),
                 ),
@@ -258,7 +258,7 @@ class CreateReviewTest : ReviewServiceTest() {
             coVerify(exactly = 1) {
                 projectPaperRepoMock.updateProjectPaperDecision(
                     projectPaperId,
-                    PaperDecision.PAPER_DECISION_IN_REVIEW,
+                    PaperDecision.IN_REVIEW,
                 )
             }
         }
@@ -267,18 +267,18 @@ class CreateReviewTest : ReviewServiceTest() {
     fun `When a declining review decision is justified with a hard exclusion criterion, then the paper decision is instantly PAPER_DECISION_DECLINED`() =
         runTest {
             val exclusionCriterion = DataBuilder.createExampleProjectCriterion(
-                category = CriterionCategory.CRITERION_CATEGORY_EXCLUSION,
+                category = CriterionCategory.EXCLUSION,
             )
             val hardExclusionCriterion = DataBuilder.createExampleProjectCriterion(
-                category = CriterionCategory.CRITERION_CATEGORY_HARD_EXCLUSION,
+                category = CriterionCategory.HARD_EXCLUSION,
             )
             val review = DataBuilder.createExampleReview(
                 projectPaperId = projectPaperId,
-                decision = ReviewDecision.REVIEW_DECISION_DECLINED,
+                decision = ReviewDecision.DECLINED,
                 userId = userId,
             )
             val createReviewRequest = validCreateReviewRequest
-                .setDecision(ReviewDecision.REVIEW_DECISION_DECLINED.toGrpc())
+                .setDecision(ReviewDecision.DECLINED.toGrpc())
                 .addAllSelectedCriteriaIds(
                     listOf(exclusionCriterion.id.toString(), hardExclusionCriterion.id.toString()),
                 )
@@ -293,14 +293,14 @@ class CreateReviewTest : ReviewServiceTest() {
                 criterionRepoMock.getAllProjectCriteria(project.id)
             } returns listOf(exclusionCriterion, hardExclusionCriterion)
             coJustRun {
-                projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_DECLINED)
+                projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.DECLINED)
             }
             coJustRun { projectRepoMock.updateProject(getUpdateProjectStatusRequest(project.id)) }
 
             service.createReview(createReviewRequest)
 
             coVerify(exactly = 1) {
-                projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_DECLINED)
+                projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.DECLINED)
             }
         }
 
@@ -312,22 +312,22 @@ class CreateReviewTest : ReviewServiceTest() {
             )
             val firstReview = DataBuilder.createExampleReview(
                 projectPaperId = projectPaperId,
-                decision = ReviewDecision.REVIEW_DECISION_MAYBE,
+                decision = ReviewDecision.MAYBE,
                 userId = UUID.randomUUID(),
             )
             val secondReview = DataBuilder.createExampleReview(
                 projectPaperId = projectPaperId,
-                decision = ReviewDecision.REVIEW_DECISION_ACCEPTED,
+                decision = ReviewDecision.ACCEPTED,
                 userId = UUID.randomUUID(),
             )
             val declineReview = DataBuilder.createExampleReview(
                 projectPaperId = projectPaperId,
-                decision = ReviewDecision.REVIEW_DECISION_DECLINED,
+                decision = ReviewDecision.DECLINED,
                 userId = userId,
             )
             val createReviewRequest = ReviewOuterClass.Review.Create.newBuilder()
                 .setProjectPaperId(projectPaperId.toString())
-                .setDecision(ReviewDecision.REVIEW_DECISION_DECLINED.toGrpc())
+                .setDecision(ReviewDecision.DECLINED.toGrpc())
                 .addAllSelectedCriteriaIds(selectedCriteriaIds.map(UUID::toString))
                 .build()
 
@@ -342,13 +342,13 @@ class CreateReviewTest : ReviewServiceTest() {
             } returns selectedCriteriaIds
             coEvery { criterionRepoMock.getAllProjectCriteria(project.id) } returns emptyList()
             coJustRun {
-                projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_DECLINED)
+                projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.DECLINED)
             }
             coJustRun { projectRepoMock.updateProject(getUpdateProjectStatusRequest(project.id)) }
 
             service.createReview(createReviewRequest)
             coVerify(exactly = 1) {
-                projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_DECLINED)
+                projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.DECLINED)
             }
         }
 
@@ -356,16 +356,16 @@ class CreateReviewTest : ReviewServiceTest() {
     fun `When hard exclusion criterion is selected but review is REVIEW_DECISION_ACCEPTED, then normal decision matrix is used`() =
         runTest {
             val hardExclusionCriterion = DataBuilder.createExampleProjectCriterion(
-                category = CriterionCategory.CRITERION_CATEGORY_HARD_EXCLUSION,
+                category = CriterionCategory.HARD_EXCLUSION,
             )
             val acceptedReview = DataBuilder.createExampleReview(
                 projectPaperId = projectPaperId,
-                decision = ReviewDecision.REVIEW_DECISION_ACCEPTED,
+                decision = ReviewDecision.ACCEPTED,
                 userId = userId,
             )
             val createReviewRequest = ReviewOuterClass.Review.Create.newBuilder()
                 .setProjectPaperId(projectPaperId.toString())
-                .setDecision(ReviewDecision.REVIEW_DECISION_ACCEPTED.toGrpc())
+                .setDecision(ReviewDecision.ACCEPTED.toGrpc())
                 .addAllSelectedCriteriaIds(selectedCriteriaIds.map(UUID::toString))
                 .addSelectedCriteriaIds(hardExclusionCriterion.id.toString())
                 .build()
@@ -377,22 +377,22 @@ class CreateReviewTest : ReviewServiceTest() {
             } returns listOf(defaultCriterion, hardExclusionCriterion.id)
             coEvery { criterionRepoMock.getAllProjectCriteria(project.id) } returns listOf(hardExclusionCriterion)
             coJustRun {
-                projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_IN_REVIEW)
+                projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.IN_REVIEW)
             }
             coJustRun { projectRepoMock.updateProject(getUpdateProjectStatusRequest(project.id)) }
 
             service.createReview(createReviewRequest)
             coVerify(exactly = 1) {
-                projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_IN_REVIEW)
+                projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.IN_REVIEW)
             }
         }
 
     @Test
     fun `When the project has already status ACTIVE_LOCKED, then the status is not updated again`() = runTest {
-        val project = project.copy(status = ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
+        val project = project.copy(status = ProjectStatus.ACTIVE_LOCKED)
         val createReviewRequest = ReviewOuterClass.Review.Create.newBuilder()
             .setProjectPaperId(projectPaperId.toString())
-            .setDecision(ReviewDecision.REVIEW_DECISION_ACCEPTED.toGrpc())
+            .setDecision(ReviewDecision.ACCEPTED.toGrpc())
             .addAllSelectedCriteriaIds(selectedCriteriaIds.map(UUID::toString))
             .build()
 

@@ -9,50 +9,50 @@ enum class ProjectStatus {
     /**
      * Project is active and fully editable, including settings.
      */
-    PROJECT_STATUS_ACTIVE,
+    ACTIVE,
 
     /**
      * Project is active, but SLR settings can no longer be changed.
      * This state is reached as soon as the first review has been submitted.
      */
-    PROJECT_STATUS_ACTIVE_LOCKED,
+    ACTIVE_LOCKED,
 
     /**
      * Project is read-only and no longer actively used.
      */
-    PROJECT_STATUS_ARCHIVED,
+    ARCHIVED,
 
     /**
      * Project is marked for deletion.
      */
-    PROJECT_STATUS_DELETED,
+    DELETED,
 
     /**
      * Project data has been cleared after the project has been soft-deleted.
      */
-    PROJECT_STATUS_CLEARED,
+    CLEARED,
 
     ;
 
     companion object {
         fun fromGrpc(status: ProjectOuterClass.ProjectStatus): ProjectStatus = when (status) {
-            ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE -> PROJECT_STATUS_ACTIVE
-            ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ARCHIVED -> PROJECT_STATUS_ARCHIVED
-            ProjectOuterClass.ProjectStatus.PROJECT_STATUS_DELETED -> PROJECT_STATUS_DELETED
-            ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED -> PROJECT_STATUS_ACTIVE_LOCKED
+            ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE -> ACTIVE
+            ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ARCHIVED -> ARCHIVED
+            ProjectOuterClass.ProjectStatus.PROJECT_STATUS_DELETED -> DELETED
+            ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED -> ACTIVE_LOCKED
             ProjectOuterClass.ProjectStatus.UNRECOGNIZED,
             ProjectOuterClass.ProjectStatus.PROJECT_STATUS_UNSPECIFIED,
             ->
                 @Suppress("UseCheckOrError")
-                throw IllegalStateException("Invalid convertion")
+                throw IllegalStateException("Invalid conversion")
         }
     }
 
     fun toGrpc() = when (this) {
-        PROJECT_STATUS_ACTIVE -> ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE
-        PROJECT_STATUS_ACTIVE_LOCKED -> ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED
-        PROJECT_STATUS_ARCHIVED -> ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ARCHIVED
-        PROJECT_STATUS_DELETED -> ProjectOuterClass.ProjectStatus.PROJECT_STATUS_DELETED
-        PROJECT_STATUS_CLEARED -> ProjectOuterClass.ProjectStatus.PROJECT_STATUS_UNSPECIFIED
+        ACTIVE -> ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE
+        ACTIVE_LOCKED -> ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED
+        ARCHIVED -> ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ARCHIVED
+        DELETED -> ProjectOuterClass.ProjectStatus.PROJECT_STATUS_DELETED
+        CLEARED -> ProjectOuterClass.ProjectStatus.PROJECT_STATUS_UNSPECIFIED
     }
 }

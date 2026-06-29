@@ -96,7 +96,7 @@ class CriterionAccessCheckerTest {
 
         @Test
         fun `When the user is a server admin, then access is allowed`() = runTest {
-            val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+            val user = DataBuilder.createExampleUser(role = UserRole.ADMIN)
             val projectId = UUID.randomUUID()
             val criterion = DataBuilder.createExampleProjectCriterion(projectId = projectId)
 
@@ -144,7 +144,7 @@ class CriterionAccessCheckerTest {
             val projectAdmin = DataBuilder.createExampleProjectMember(
                 userId = user.id,
                 projectId = projectId,
-                role = MemberRole.MEMBER_ROLE_ADMIN,
+                role = MemberRole.ADMIN,
             )
             val criterion = DataBuilder.createExampleProjectCriterion(projectId = projectId)
 
@@ -161,7 +161,7 @@ class CriterionAccessCheckerTest {
             val projectAdmin = DataBuilder.createExampleProjectMember(
                 userId = user.id,
                 projectId = projectId,
-                role = MemberRole.MEMBER_ROLE_ADMIN,
+                role = MemberRole.ADMIN,
             )
             val criterion = DataBuilder.createExampleProjectCriterion(projectId = projectId)
 
@@ -173,7 +173,7 @@ class CriterionAccessCheckerTest {
 
         @Test
         fun `When the user is a server admin, then access is allowed`() = runTest {
-            val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+            val user = DataBuilder.createExampleUser(role = UserRole.ADMIN)
             val criterion = DataBuilder.createExampleUserCriterion(createdBy = user.id)
 
             assertDoesNotThrow { accessChecker.isAllowedToUpdateCriterion(user, criterion) }

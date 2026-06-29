@@ -17,8 +17,8 @@ class UserAccessRuleTest {
     companion object {
         @JvmStatic
         fun activeStatuses(): List<UserStatus> = listOf(
-            UserStatus.USER_STATUS_ACTIVE,
-            UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED,
+            UserStatus.ACTIVE,
+            UserStatus.ACTIVE_UNCONFIRMED,
         )
 
         @JvmStatic
@@ -29,7 +29,7 @@ class UserAccessRuleTest {
     inner class IsServerAdmin {
         @Test
         fun `When the requester is a server admin, then no exception is thrown`() = runTest {
-            val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+            val user = DataBuilder.createExampleUser(role = UserRole.ADMIN)
 
             assertDoesNotThrow { isServerAdmin().checkFor(user) }
         }
@@ -65,7 +65,7 @@ class UserAccessRuleTest {
     inner class IsServerAdminOrSameUser {
         @Test
         fun `When the requester is a server admin, then no exception is thrown`() = runTest {
-            val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+            val user = DataBuilder.createExampleUser(role = UserRole.ADMIN)
             val otherUserId = UUID.randomUUID()
 
             assertDoesNotThrow { isServerAdminOrSameUser().checkFor(user, otherUserId) }
@@ -117,7 +117,7 @@ class UserAccessRuleTest {
         fun `When the requester is a server admin and the target is inactive, then no exception is thrown`(
             status: UserStatus,
         ) = runTest {
-            val requester = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+            val requester = DataBuilder.createExampleUser(role = UserRole.ADMIN)
             val target = DataBuilder.createExampleUser(status = status)
 
             assertDoesNotThrow { isServerAdminOrTargetUserActive().checkFor(requester, target) }
@@ -159,7 +159,7 @@ class UserAccessRuleTest {
         @Test
         fun `When the target user is a server admin, then an AccessRuleCheckFailedException is thrown`() = runTest {
             val requester = DataBuilder.createExampleUser()
-            val target = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+            val target = DataBuilder.createExampleUser(role = UserRole.ADMIN)
 
             assertThrows<AccessRuleCheckFailedException> { isTargetUserNotAdmin().checkFor(requester, target) }
         }

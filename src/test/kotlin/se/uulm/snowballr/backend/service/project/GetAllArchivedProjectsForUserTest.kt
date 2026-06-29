@@ -11,7 +11,7 @@ import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import kotlin.test.assertEquals
 
 class GetAllArchivedProjectsForUserTest : ProjectServiceTest() {
-    private val statusFilters = setOf(ProjectStatus.PROJECT_STATUS_ARCHIVED)
+    private val statusFilters = setOf(ProjectStatus.ARCHIVED)
 
     @Test
     fun `When retrieving the requested user fails, then a TestSpecificException is thrown`() = runTest {

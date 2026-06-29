@@ -110,10 +110,10 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
 
                 orchestrator.enqueueTestJob(job, project)
 
-                if (type == SnowballingType.SNOWBALLING_TYPE_FORWARD) {
+                if (type == SnowballingType.FORWARD) {
                     coVerify(exactly = 0) { fetcherManagerMock.fetchBackwardReferences(any(), any(), any()) }
                 }
-                if (type == SnowballingType.SNOWBALLING_TYPE_BACKWARD) {
+                if (type == SnowballingType.BACKWARD) {
                     coVerify(exactly = 0) { fetcherManagerMock.fetchForwardReferences(any(), any(), any()) }
                 }
                 assertPaperCreationFailure()
@@ -162,10 +162,10 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
 
                 orchestrator.enqueueTestJob(job, project)
 
-                if (type == SnowballingType.SNOWBALLING_TYPE_FORWARD) {
+                if (type == SnowballingType.FORWARD) {
                     coVerify(exactly = 0) { fetcherManagerMock.fetchBackwardReferences(any(), any(), any()) }
                 }
-                if (type == SnowballingType.SNOWBALLING_TYPE_BACKWARD) {
+                if (type == SnowballingType.BACKWARD) {
                     coVerify(exactly = 0) { fetcherManagerMock.fetchForwardReferences(any(), any(), any()) }
                 }
                 assertPaperCreationFailure()

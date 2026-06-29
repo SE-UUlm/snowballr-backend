@@ -9,36 +9,36 @@ enum class ReviewDecision {
     /**
      * The reviewer declined the paper.
      */
-    REVIEW_DECISION_DECLINED,
+    DECLINED,
 
     /**
      * The reviewer was not sure in their decision.
      */
-    REVIEW_DECISION_MAYBE,
+    MAYBE,
 
     /**
      * The reviewer accepted the paper.
      */
-    REVIEW_DECISION_ACCEPTED,
+    ACCEPTED,
 
     ;
 
     companion object {
         fun fromGrpc(decision: ReviewOuterClass.ReviewDecision): ReviewDecision = when (decision) {
-            ReviewOuterClass.ReviewDecision.REVIEW_DECISION_DECLINED -> REVIEW_DECISION_DECLINED
-            ReviewOuterClass.ReviewDecision.REVIEW_DECISION_MAYBE -> REVIEW_DECISION_MAYBE
-            ReviewOuterClass.ReviewDecision.REVIEW_DECISION_ACCEPTED -> REVIEW_DECISION_ACCEPTED
+            ReviewOuterClass.ReviewDecision.REVIEW_DECISION_DECLINED -> DECLINED
+            ReviewOuterClass.ReviewDecision.REVIEW_DECISION_MAYBE -> MAYBE
+            ReviewOuterClass.ReviewDecision.REVIEW_DECISION_ACCEPTED -> ACCEPTED
             ReviewOuterClass.ReviewDecision.UNRECOGNIZED,
             ReviewOuterClass.ReviewDecision.REVIEW_DECISION_UNSPECIFIED,
             ->
                 @Suppress("UseCheckOrError")
-                throw IllegalStateException("Invalid convertion")
+                throw IllegalStateException("Invalid conversion")
         }
     }
 
     fun toGrpc() = when (this) {
-        REVIEW_DECISION_DECLINED -> ReviewOuterClass.ReviewDecision.REVIEW_DECISION_DECLINED
-        REVIEW_DECISION_MAYBE -> ReviewOuterClass.ReviewDecision.REVIEW_DECISION_MAYBE
-        REVIEW_DECISION_ACCEPTED -> ReviewOuterClass.ReviewDecision.REVIEW_DECISION_ACCEPTED
+        DECLINED -> ReviewOuterClass.ReviewDecision.REVIEW_DECISION_DECLINED
+        MAYBE -> ReviewOuterClass.ReviewDecision.REVIEW_DECISION_MAYBE
+        ACCEPTED -> ReviewOuterClass.ReviewDecision.REVIEW_DECISION_ACCEPTED
     }
 }

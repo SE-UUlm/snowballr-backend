@@ -11,7 +11,7 @@ import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import kotlin.test.assertEquals
 
 class GetAllDeletedProjectsForUserTest : ProjectServiceTest() {
-    private val statusFilters = setOf(ProjectStatus.PROJECT_STATUS_DELETED)
+    private val statusFilters = setOf(ProjectStatus.DELETED)
 
     @Test
     fun `When retrieving the requested user fails, then a TestSpecificException is thrown`() = runTest {

@@ -72,7 +72,7 @@ class AuthenticationService(
         val user = repo.getUserById(verificationToken.userId).getOrThrow()
 
         // Update the user's status to active
-        val updatedUser = user.copy(status = UserStatus.USER_STATUS_ACTIVE)
+        val updatedUser = user.copy(status = UserStatus.ACTIVE)
         val userUpdate = GrpcUser.Update.newBuilder()
             .setUser(updatedUser.toGrpcUser())
             .setMask(FieldMask.newBuilder().addPaths("user.status").build())

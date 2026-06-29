@@ -117,7 +117,7 @@ interface IUserTableRepo {
 
     /**
      * Performs a soft-delete meaning the user with the given [id] is not removed from the database, but only the
-     * status is set to [UserStatus.USER_STATUS_DELETED].
+     * status is set to [UserStatus.DELETED].
      */
     suspend fun softDeleteUser(id: UUID)
 
@@ -206,7 +206,7 @@ class UserTableRepo(
     private suspend fun getUserIdsToClear(thresholdDate: OffsetDateTime): List<UUID> = db.query {
         UserTable.selectAll()
             .where {
-                (UserTable.status eq UserStatus.USER_STATUS_DELETED).and(UserTable.deletedAt lessEq thresholdDate)
+                (UserTable.status eq UserStatus.DELETED).and(UserTable.deletedAt lessEq thresholdDate)
             }
             .map { it[UserTable.id].value }
     }
@@ -270,7 +270,7 @@ class UserTableRepo(
                         similarity($lastNameCol, ?) AS sim_last_name,
                         similarity($emailCol, ?) AS sim_email
                     FROM $userTable
-                    WHERE $statusCol IN (${UserStatus.USER_STATUS_ACTIVE.ordinal}, ${UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED.ordinal})
+                    WHERE $statusCol IN (${UserStatus.ACTIVE.ordinal}, ${UserStatus.ACTIVE_UNCONFIRMED.ordinal})
                       $excludeUsersClause
                 )
                 SELECT *
@@ -296,8 +296,8 @@ class UserTableRepo(
             it[firstName] = request.firstName
             it[lastName] = request.lastName
             it[UserTable.passwordHash] = passwordHash
-            it[role] = UserRole.USER_ROLE_DEFAULT
-            it[status] = UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED
+            it[role] = UserRole.DEFAULT
+            it[status] = UserStatus.ACTIVE_UNCONFIRMED
         }
     }
 
@@ -323,7 +323,7 @@ class UserTableRepo(
     override suspend fun softDeleteUser(id: UUID) {
         db.query {
             UserTable.update({ UserTable.id eq id }) {
-                it[status] = UserStatus.USER_STATUS_DELETED
+                it[status] = UserStatus.DELETED
                 it[deletedAt] = OffsetDateTime.now()
             }
         }
@@ -341,8 +341,8 @@ class UserTableRepo(
             it[firstName] = ""
             it[lastName] = ""
             it[passwordHash] = ""
-            it[role] = UserRole.USER_ROLE_DEFAULT
-            it[status] = UserStatus.USER_STATUS_CLEARED
+            it[role] = UserRole.DEFAULT
+            it[status] = UserStatus.CLEARED
             it[criteriaIds] = emptyList()
             it[fetchers] = emptyMap()
             it[modifiedAt] = OffsetDateTime.now()
@@ -355,7 +355,7 @@ class UserTableRepo(
         UserTable
             .selectAll()
             .where {
-                (UserTable.status eq UserStatus.USER_STATUS_CLEARED).and(UserTable.deletedAt.isNotNull())
+                (UserTable.status eq UserStatus.CLEARED).and(UserTable.deletedAt.isNotNull())
             }
             .map { it[UserTable.id].value }
     }

@@ -18,11 +18,11 @@ class GetPendingInvitationsForProjectTest : InvitationServiceTest() {
     @Test
     fun `When a user requests the pending invitations for a project and has access, then the correct values are returned`() =
         runTest {
-            val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+            val currentUser = DataBuilder.createExampleUser(role = UserRole.ADMIN)
             val project = DataBuilder.createExampleProject()
             val registeredUser = DataBuilder.createExampleUser(
                 email = "registered@example.com",
-                status = UserStatus.USER_STATUS_ACTIVE,
+                status = UserStatus.ACTIVE,
             )
             val invitationTokenForRegisteredUser = DataBuilder.createExampleInvitationToken(
                 projectId = project.id,
@@ -50,7 +50,7 @@ class GetPendingInvitationsForProjectTest : InvitationServiceTest() {
             val project = DataBuilder.createExampleProject()
             val registeredUser = DataBuilder.createExampleUser(
                 email = "registered@example.com",
-                status = UserStatus.USER_STATUS_ACTIVE,
+                status = UserStatus.ACTIVE,
             )
             val invitationTokenForRegisteredUser = DataBuilder.createExampleInvitationToken(
                 projectId = project.id,

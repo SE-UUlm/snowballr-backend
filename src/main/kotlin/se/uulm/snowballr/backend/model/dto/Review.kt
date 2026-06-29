@@ -43,13 +43,13 @@ fun List<Review>.toGrpcReviews(reviewSelectedCriteriaMap: Map<Review, List<Strin
 /**
  * Checks whether the review accepts the paper.
  *
- * A review is considered to accept the paper if its decision is set to [ReviewDecision.REVIEW_DECISION_ACCEPTED].
+ * A review is considered to accept the paper if its decision is set to [ReviewDecision.ACCEPTED].
  */
-fun Review.doesAcceptPaper() = this.decision == ReviewDecision.REVIEW_DECISION_ACCEPTED
+fun Review.doesAcceptPaper() = this.decision == ReviewDecision.ACCEPTED
 
 /**
  * Checks whether the review declines the paper.
  *
- * A review is considered to decline the paper if its decision is set to [ReviewDecision.REVIEW_DECISION_DECLINED].
+ * A review is considered to decline the paper if its decision is set to [ReviewDecision.DECLINED].
  */
-fun Review.doesDeclinePaper() = this.decision == ReviewDecision.REVIEW_DECISION_DECLINED
+fun Review.doesDeclinePaper() = this.decision == ReviewDecision.DECLINED

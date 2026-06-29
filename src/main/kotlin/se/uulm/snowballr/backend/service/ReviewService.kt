@@ -132,16 +132,16 @@ class ReviewService(
         val hasSelectedExclusionCriterion = hasSelectedHardExclusionCriterion(project.id, selectedCriteriaIds)
 
         val decision = if (hasSelectedExclusionCriterion && review.doesDeclinePaper()) {
-            PaperDecision.PAPER_DECISION_DECLINED
+            PaperDecision.DECLINED
         } else {
             determinePaperDecision(reviewsForProjectPaper + review, project.reviewDecisionMatrix)
         }
         projectPaperRepo.updateProjectPaperDecision(projectPaperId, decision)
 
-        if (project.status != ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED) {
+        if (project.status != ProjectStatus.ACTIVE_LOCKED) {
             setProjectStatusActiveLocked(project.id)
         }
-        if (decision === PaperDecision.PAPER_DECISION_ACCEPTED) {
+        if (decision === PaperDecision.ACCEPTED) {
             fetcherOrchestrator.enqueue(FetcherEnqueueJob(projectPaper, currentUser.id))
         }
 
@@ -150,7 +150,7 @@ class ReviewService(
 
     private suspend fun hasSelectedHardExclusionCriterion(projectId: UUID, selectedCriteriaIds: List<UUID>): Boolean {
         val hardExclusionCriteria = criterionRepo.getAllProjectCriteria(projectId)
-            .filter { criterion -> criterion.category == CriterionCategory.CRITERION_CATEGORY_HARD_EXCLUSION }
+            .filter { criterion -> criterion.category == CriterionCategory.HARD_EXCLUSION }
             .map { criterion -> criterion.id }
 
         return selectedCriteriaIds.any { id -> hardExclusionCriteria.contains(id) }
@@ -161,16 +161,15 @@ class ReviewService(
      *
      * This function follows the following decision process:
      * - If the number of reviews is below the required threshold (as defined in the decision matrix),
-     *   the paper remains with [PaperDecision.PAPER_DECISION_IN_REVIEW].
+     *   the paper remains with [PaperDecision.IN_REVIEW].
      * - Once the expected number of reviews is reached, the function attempts to match the current review distribution
      *   against the configured decision matrix patterns. If a matching pattern is found (order-sensitive),
      *   its associated final decision is returned.
-     * - If no matrix pattern matches, the default decision is [PaperDecision.PAPER_DECISION_IN_REVIEW]
-     * - If the required number of reviews were not enough to determine a final decision
-     *   [PaperDecision.PAPER_DECISION_ACCEPTED] or [PaperDecision.PAPER_DECISION_DECLINED]), the latest review
-     *   (assumed to be the deciding one) determines final decision. The paper is then only set to
-     *   [PaperDecision.PAPER_DECISION_ACCEPTED] in case the latest review was [ReviewDecision.REVIEW_DECISION_ACCEPTED];
-     *   otherwise, it is set to [PaperDecision.PAPER_DECISION_DECLINED].
+     * - If no matrix pattern matches, the default decision is [PaperDecision.IN_REVIEW]
+     * - If the required number of reviews were not enough to determine a final decision [PaperDecision.ACCEPTED] or
+     *   [PaperDecision.DECLINED]), the latest review (assumed to be the deciding one) determines final decision. The
+     *   paper is then only set to [PaperDecision.ACCEPTED] in case the latest review was [ReviewDecision.ACCEPTED];
+     *   otherwise, it is set to [PaperDecision.DECLINED].
      *
      * @param reviews List of reviews to be considered for the final paper decision. The latest review is assumed to be the last one in the list.
      * @param decisionMatrix Decision matrix of the project, where the project paper is in, that can be used to define
@@ -179,7 +178,7 @@ class ReviewService(
      */
     private fun determinePaperDecision(reviews: List<Review>, decisionMatrix: ReviewDecisionMatrix): PaperDecision {
         if (reviews.size < decisionMatrix.numberOfReviewers) {
-            return PaperDecision.PAPER_DECISION_IN_REVIEW
+            return PaperDecision.IN_REVIEW
         }
         if (reviews.size == decisionMatrix.numberOfReviewers) {
             val counts = reviews.groupingBy { it.decision }.eachCount()
@@ -193,14 +192,14 @@ class ReviewService(
                 }
             }
 
-            return PaperDecision.PAPER_DECISION_IN_REVIEW
+            return PaperDecision.IN_REVIEW
         }
 
         val decidingReview = reviews.last()
         return if (decidingReview.doesAcceptPaper()) {
-            PaperDecision.PAPER_DECISION_ACCEPTED
+            PaperDecision.ACCEPTED
         } else {
-            PaperDecision.PAPER_DECISION_DECLINED
+            PaperDecision.DECLINED
         }
     }
 
@@ -209,7 +208,7 @@ class ReviewService(
             .setProject(
                 ProjectOuterClass.Project.newBuilder()
                     .setId(projectId.toString())
-                    .setStatus(ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED.toGrpc())
+                    .setStatus(ProjectStatus.ACTIVE_LOCKED.toGrpc())
                     .build(),
             )
             .setMask(FieldMaskUtil.fromString("project.status"))

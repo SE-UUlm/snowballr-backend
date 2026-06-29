@@ -11,7 +11,7 @@ import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import kotlin.test.assertEquals
 
 class GetAllProjectsForUserTest : ProjectServiceTest() {
-    private val statusFilters = setOf(ProjectStatus.PROJECT_STATUS_ACTIVE, ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
+    private val statusFilters = setOf(ProjectStatus.ACTIVE, ProjectStatus.ACTIVE_LOCKED)
 
     @Test
     fun `When retrieving the requested user fails, then a TestSpecificException is thrown`() = runTest {

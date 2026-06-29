@@ -53,7 +53,7 @@ class ExportProjectTest : ExportServiceTest() {
 
     @Test
     fun `When a user exports a project, but has no access, then a TestSpecificException is thrown`() = runTest {
-        val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
+        val user = DataBuilder.createExampleUser(role = UserRole.DEFAULT)
         val project = DataBuilder.createExampleProject()
         val request = getExampleRequest().copy { id = project.id.toString() }
 
@@ -67,7 +67,7 @@ class ExportProjectTest : ExportServiceTest() {
 
     @Test
     fun `When retrieving the project fails, then a TestSpecificException is thrown`() = runTest {
-        val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
+        val user = DataBuilder.createExampleUser(role = UserRole.DEFAULT)
         val project = DataBuilder.createExampleProject()
         val request = getExampleRequest().copy { id = project.id.toString() }
 

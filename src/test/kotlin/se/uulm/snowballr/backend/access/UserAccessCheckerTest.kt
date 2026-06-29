@@ -31,8 +31,8 @@ class UserAccessCheckerTest {
     companion object {
         @JvmStatic
         fun activeStatuses(): List<UserStatus> = listOf(
-            UserStatus.USER_STATUS_ACTIVE,
-            UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED,
+            UserStatus.ACTIVE,
+            UserStatus.ACTIVE_UNCONFIRMED,
         )
 
         @JvmStatic
@@ -56,7 +56,7 @@ class UserAccessCheckerTest {
         @MethodSource("se.uulm.snowballr.backend.access.UserAccessCheckerTest#inactiveStatuses")
         fun `When the user is a server admin and the target is not active, then access is allowed`(status: UserStatus) =
             runTest {
-                val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN, status = status)
+                val currentUser = DataBuilder.createExampleUser(role = UserRole.ADMIN, status = status)
                 val targetUser = DataBuilder.createExampleUser()
 
                 assertDoesNotThrow {
@@ -138,7 +138,7 @@ class UserAccessCheckerTest {
     inner class IsAllowedToReadAllUsers {
         @Test
         fun `When the user is a server admin, then access is allowed`() = runTest {
-            val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+            val user = DataBuilder.createExampleUser(role = UserRole.ADMIN)
 
             assertDoesNotThrow { accessChecker.isAllowedToReadAllUsers(user) }
         }
@@ -166,7 +166,7 @@ class UserAccessCheckerTest {
         @MethodSource("se.uulm.snowballr.backend.access.UserAccessCheckerTest#activeStatuses")
         fun `When the user is a server admin and the target is active, then access is allowed`(status: UserStatus) =
             runTest {
-                val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+                val currentUser = DataBuilder.createExampleUser(role = UserRole.ADMIN)
                 val targetUser = DataBuilder.createExampleUser(status = status)
 
                 assertDoesNotThrow { accessChecker.isAllowedToUpdateUser(currentUser, targetUser) }
@@ -177,7 +177,7 @@ class UserAccessCheckerTest {
         fun `When the user is a server admin but the target is not active, then an EntityNotActiveException is thrown`(
             status: UserStatus,
         ) = runTest {
-            val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+            val currentUser = DataBuilder.createExampleUser(role = UserRole.ADMIN)
             val targetUser = DataBuilder.createExampleUser(status = status)
 
             assertThrows<EntityNotActiveException> { accessChecker.isAllowedToUpdateUser(currentUser, targetUser) }
@@ -185,7 +185,7 @@ class UserAccessCheckerTest {
 
         @Test
         fun `When the user is neither the same user nor a server admin, then access is denied`() = runTest {
-            val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
+            val currentUser = DataBuilder.createExampleUser(role = UserRole.DEFAULT)
             val targetUser = DataBuilder.createExampleUser()
 
             assertThrows<UnauthorizedUpdateException> { accessChecker.isAllowedToUpdateUser(currentUser, targetUser) }
@@ -196,7 +196,7 @@ class UserAccessCheckerTest {
     inner class IsAllowedToUpdateUserRole {
         @Test
         fun `When the user is a server admin, then access is allowed`() = runTest {
-            val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+            val user = DataBuilder.createExampleUser(role = UserRole.ADMIN)
             val targetUserId = DataBuilder.createExampleUser().id
 
             assertDoesNotThrow { accessChecker.isAllowedToUpdateUserRole(user, targetUserId) }
@@ -204,7 +204,7 @@ class UserAccessCheckerTest {
 
         @Test
         fun `When the user is not a server admin, then access is denied`() = runTest {
-            val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
+            val currentUser = DataBuilder.createExampleUser(role = UserRole.DEFAULT)
             val targetUserId = DataBuilder.createExampleUser().id
 
             assertThrows<UnauthorizedUpdateException> {
@@ -217,22 +217,22 @@ class UserAccessCheckerTest {
     inner class IsAllowedToDeleteUser {
         @Test
         fun `When the user deletes themselves and is not an admin, then access is allowed`() = runTest {
-            val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
+            val user = DataBuilder.createExampleUser(role = UserRole.DEFAULT)
 
             assertDoesNotThrow { accessChecker.isAllowedToDeleteUser(user, user) }
         }
 
         @Test
         fun `When the user deletes themselves and is a server admin, then access is allowed`() = runTest {
-            val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+            val user = DataBuilder.createExampleUser(role = UserRole.ADMIN)
 
             assertDoesNotThrow { accessChecker.isAllowedToDeleteUser(user, user) }
         }
 
         @Test
         fun `When a server admin deletes a non-admin user, then access is allowed`() = runTest {
-            val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-            val targetUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
+            val currentUser = DataBuilder.createExampleUser(role = UserRole.ADMIN)
+            val targetUser = DataBuilder.createExampleUser(role = UserRole.DEFAULT)
 
             assertDoesNotThrow { accessChecker.isAllowedToDeleteUser(currentUser, targetUser) }
         }
@@ -240,8 +240,8 @@ class UserAccessCheckerTest {
         @Test
         fun `When a server admin tries to delete another server admin, then a FailedPreconditionException is thrown`() =
             runTest {
-                val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-                val targetUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+                val currentUser = DataBuilder.createExampleUser(role = UserRole.ADMIN)
+                val targetUser = DataBuilder.createExampleUser(role = UserRole.ADMIN)
 
                 assertThrows<FailedPreconditionException> {
                     accessChecker.isAllowedToDeleteUser(currentUser, targetUser)
@@ -250,7 +250,7 @@ class UserAccessCheckerTest {
 
         @Test
         fun `When the user is neither the same user nor a server admin, then access is denied`() = runTest {
-            val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
+            val currentUser = DataBuilder.createExampleUser(role = UserRole.DEFAULT)
             val targetUser = DataBuilder.createExampleUser()
 
             assertThrows<UnauthorizedReadException> { accessChecker.isAllowedToDeleteUser(currentUser, targetUser) }

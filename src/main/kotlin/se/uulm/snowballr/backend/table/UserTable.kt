@@ -26,21 +26,21 @@ fun patternOf(vararg decisions: Pair<ReviewDecision, Int>, result: PaperDecision
 
 private const val REQUIRED_REVIEWERS = 2
 private val ACCEPT_DECLINE_PATTERN = patternOf(
-    ReviewDecision.REVIEW_DECISION_ACCEPTED to 1,
-    ReviewDecision.REVIEW_DECISION_DECLINED to 1,
-    result = PaperDecision.PAPER_DECISION_IN_REVIEW,
+    ReviewDecision.ACCEPTED to 1,
+    ReviewDecision.DECLINED to 1,
+    result = PaperDecision.IN_REVIEW,
 )
 private val ACCEPT_ANY_PATTERN = patternOf(
-    ReviewDecision.REVIEW_DECISION_ACCEPTED to 1,
-    result = PaperDecision.PAPER_DECISION_ACCEPTED,
+    ReviewDecision.ACCEPTED to 1,
+    result = PaperDecision.ACCEPTED,
 )
 private val DECLINE_ANY_PATTERN = patternOf(
-    ReviewDecision.REVIEW_DECISION_DECLINED to 1,
-    result = PaperDecision.PAPER_DECISION_DECLINED,
+    ReviewDecision.DECLINED to 1,
+    result = PaperDecision.DECLINED,
 )
 private val MAYBE_MAYBE_PATTERN = patternOf(
-    ReviewDecision.REVIEW_DECISION_MAYBE to REQUIRED_REVIEWERS,
-    result = PaperDecision.PAPER_DECISION_IN_REVIEW,
+    ReviewDecision.MAYBE to REQUIRED_REVIEWERS,
+    result = PaperDecision.IN_REVIEW,
 )
 
 private const val ARE_HOTKEYS_SHOWN_DEFAULT = true
@@ -69,7 +69,7 @@ private val DECISION_MATRIX_DEFAULT: ByteArray = ReviewDecisionMatrix(
     ),
 ).toByteArray()
 private val FETCHERS_DEFAULT: FetcherMap = emptyMap()
-private val SNOWBALLING_TYPE_DEFAULT = SnowballingType.SNOWBALLING_TYPE_BOTH
+private val SNOWBALLING_TYPE_DEFAULT = SnowballingType.BOTH
 private const val REVIEW_MAYBE_ALLOWED_DEFAULT = true
 
 /**

@@ -33,7 +33,7 @@ class ReviewAccessCheckerTest {
             val projectId = UUID.randomUUID()
             val project = DataBuilder.createExampleProject(
                 id = projectId,
-                status = ProjectStatus.PROJECT_STATUS_ACTIVE,
+                status = ProjectStatus.ACTIVE,
             )
 
             coJustRun { projectAccessChecker.isAllowedToReadProject(user, projectId) }
@@ -47,7 +47,7 @@ class ReviewAccessCheckerTest {
             val projectId = UUID.randomUUID()
             val project = DataBuilder.createExampleProject(
                 id = projectId,
-                status = ProjectStatus.PROJECT_STATUS_ACTIVE,
+                status = ProjectStatus.ACTIVE,
             )
 
             coEvery { projectAccessChecker.isAllowedToReadProject(user, projectId) } throws TestSpecificException()
@@ -63,7 +63,7 @@ class ReviewAccessCheckerTest {
             val projectId = UUID.randomUUID()
             val project = DataBuilder.createExampleProject(
                 id = projectId,
-                status = ProjectStatus.PROJECT_STATUS_DELETED,
+                status = ProjectStatus.DELETED,
             )
 
             coJustRun { projectAccessChecker.isAllowedToReadProject(user, projectId) }
@@ -91,7 +91,7 @@ class ReviewAccessCheckerTest {
 
         @Test
         fun `When the user is a server admin but not a project member, then access is allowed`() = runTest {
-            val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+            val user = DataBuilder.createExampleUser(role = UserRole.ADMIN)
             val projectId = UUID.randomUUID()
             val projectPaper = DataBuilder.createExampleProjectPaper(projectId = projectId)
             val review = DataBuilder.createExampleReview(projectPaperId = projectPaper.id)
@@ -104,7 +104,7 @@ class ReviewAccessCheckerTest {
 
         @Test
         fun `When the project paper is not found and the user is a server admin, then access is allowed`() = runTest {
-            val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+            val user = DataBuilder.createExampleUser(role = UserRole.ADMIN)
             val projectPaperId = UUID.randomUUID()
             val review = DataBuilder.createExampleReview(projectPaperId = projectPaperId)
 

@@ -19,6 +19,6 @@ data class ProjectMember(
 /**
  * Checks whether the project member is a project admin.
  *
- * A project member is considered a project admin if their role is set to [MemberRole.MEMBER_ROLE_ADMIN].
+ * A project member is considered a project admin if their role is set to [MemberRole.ADMIN].
  */
-fun ProjectMember.isProjectAdmin() = this.role == MemberRole.MEMBER_ROLE_ADMIN
+fun ProjectMember.isProjectAdmin() = this.role == MemberRole.ADMIN

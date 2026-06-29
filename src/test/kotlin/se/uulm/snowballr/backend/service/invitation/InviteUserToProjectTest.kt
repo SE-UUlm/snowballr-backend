@@ -39,7 +39,7 @@ class InviteUserToProjectTest : InvitationServiceTest() {
         val projectAdmin = DataBuilder.createExampleProjectMember(
             projectId = project.id,
             userId = currentUser.id,
-            role = MemberRole.MEMBER_ROLE_ADMIN,
+            role = MemberRole.ADMIN,
         )
         val projectAdminWithUser = DataBuilder.createExampleProjectMemberWithUser(projectAdmin, currentUser)
 

@@ -121,10 +121,10 @@ class GetDecisionStatisticsForStageTest : ProjectServiceTest() {
         val stage = 0L
 
         val paperCountsByDecision = mapOf(
-            PaperDecision.PAPER_DECISION_ACCEPTED to 1,
-            PaperDecision.PAPER_DECISION_DECLINED to 2,
-            PaperDecision.PAPER_DECISION_IN_REVIEW to 3,
-            PaperDecision.PAPER_DECISION_UNREVIEWED to 4,
+            PaperDecision.ACCEPTED to 1,
+            PaperDecision.DECLINED to 2,
+            PaperDecision.IN_REVIEW to 3,
+            PaperDecision.UNREVIEWED to 4,
         )
 
         val projectPapers = paperCountsByDecision.flatMap { (decision, count) ->
@@ -141,12 +141,12 @@ class GetDecisionStatisticsForStageTest : ProjectServiceTest() {
             DataBuilder.createExampleProjectPaper(
                 projectId = project.id,
                 stage = stage + 1,
-                decision = PaperDecision.PAPER_DECISION_ACCEPTED,
+                decision = PaperDecision.ACCEPTED,
             ),
             DataBuilder.createExampleProjectPaper(
                 projectId = project.id,
                 stage = stage + 1,
-                decision = PaperDecision.PAPER_DECISION_DECLINED,
+                decision = PaperDecision.DECLINED,
             ),
         )
 

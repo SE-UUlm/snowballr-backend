@@ -16,7 +16,7 @@ import java.util.UUID
 import snowballr.ProjectOuterClass.Project.Member as GrpcProjectMember
 
 class UpdateProjectMemberRoleTest : ProjectMemberServiceTest() {
-    private fun getRequest(userId: UUID, projectId: UUID, newRole: MemberRole = MemberRole.MEMBER_ROLE_ADMIN) =
+    private fun getRequest(userId: UUID, projectId: UUID, newRole: MemberRole = MemberRole.ADMIN) =
         GrpcProjectMember.Update
             .newBuilder()
             .setProjectId(projectId.toString())
@@ -78,9 +78,9 @@ class UpdateProjectMemberRoleTest : ProjectMemberServiceTest() {
         val currentUser = createExampleUser()
         val user = createExampleUser()
         val project = DataBuilder.createExampleProject()
-        val projectMember = DataBuilder.createExampleProjectMember(role = MemberRole.MEMBER_ROLE_ADMIN)
+        val projectMember = DataBuilder.createExampleProjectMember(role = MemberRole.ADMIN)
 
-        val request = getRequest(user.id, project.id, MemberRole.MEMBER_ROLE_DEFAULT)
+        val request = getRequest(user.id, project.id, MemberRole.DEFAULT)
 
         mockCurrentUser(currentUser)
         coJustRun { projectMemberAccessCheckerMock.isAllowedToUpdateMemberRole(currentUser, project.id) }
@@ -100,9 +100,9 @@ class UpdateProjectMemberRoleTest : ProjectMemberServiceTest() {
         val currentUser = createExampleUser()
         val user = createExampleUser()
         val project = DataBuilder.createExampleProject()
-        val projectMember = DataBuilder.createExampleProjectMember(role = MemberRole.MEMBER_ROLE_ADMIN)
+        val projectMember = DataBuilder.createExampleProjectMember(role = MemberRole.ADMIN)
 
-        val request = getRequest(user.id, project.id, MemberRole.MEMBER_ROLE_ADMIN)
+        val request = getRequest(user.id, project.id, MemberRole.ADMIN)
 
         mockCurrentUser(currentUser)
         coJustRun { projectMemberAccessCheckerMock.isAllowedToUpdateMemberRole(currentUser, project.id) }
@@ -111,7 +111,7 @@ class UpdateProjectMemberRoleTest : ProjectMemberServiceTest() {
             projectMemberRepoMock.getProjectMemberByComposedId(project.id, user.id)
         } returns Result.success(projectMember)
         coEvery {
-            projectMemberRepoMock.updateProjectMemberRole(project.id, user.id, MemberRole.MEMBER_ROLE_ADMIN)
+            projectMemberRepoMock.updateProjectMemberRole(project.id, user.id, MemberRole.ADMIN)
         } returns projectMember
 
         service.updateProjectMemberRole(request)
@@ -124,9 +124,9 @@ class UpdateProjectMemberRoleTest : ProjectMemberServiceTest() {
         val currentUser = createExampleUser()
         val user = createExampleUser()
         val project = DataBuilder.createExampleProject()
-        val projectMember = DataBuilder.createExampleProjectMember(role = MemberRole.MEMBER_ROLE_DEFAULT)
+        val projectMember = DataBuilder.createExampleProjectMember(role = MemberRole.DEFAULT)
 
-        val request = getRequest(user.id, project.id, MemberRole.MEMBER_ROLE_ADMIN)
+        val request = getRequest(user.id, project.id, MemberRole.ADMIN)
 
         mockCurrentUser(currentUser)
         coJustRun { projectMemberAccessCheckerMock.isAllowedToUpdateMemberRole(currentUser, project.id) }
@@ -135,7 +135,7 @@ class UpdateProjectMemberRoleTest : ProjectMemberServiceTest() {
             projectMemberRepoMock.getProjectMemberByComposedId(project.id, user.id)
         } returns Result.success(projectMember)
         coEvery {
-            projectMemberRepoMock.updateProjectMemberRole(project.id, user.id, MemberRole.MEMBER_ROLE_ADMIN)
+            projectMemberRepoMock.updateProjectMemberRole(project.id, user.id, MemberRole.ADMIN)
         } returns projectMember
 
         service.updateProjectMemberRole(request)

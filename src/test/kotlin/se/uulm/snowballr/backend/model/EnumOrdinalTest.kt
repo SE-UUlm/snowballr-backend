@@ -24,10 +24,10 @@ class EnumOrdinalTest {
         for (value in UserStatus.entries) {
             val expectedOrdinal =
                 when (value) {
-                    UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED -> 0
-                    UserStatus.USER_STATUS_ACTIVE -> 1
-                    UserStatus.USER_STATUS_DELETED -> 2
-                    UserStatus.USER_STATUS_CLEARED -> 3
+                    UserStatus.ACTIVE_UNCONFIRMED -> 0
+                    UserStatus.ACTIVE -> 1
+                    UserStatus.DELETED -> 2
+                    UserStatus.CLEARED -> 3
                 }
 
             assertEquals(expectedOrdinal, value.ordinal)
@@ -39,8 +39,8 @@ class EnumOrdinalTest {
         for (value in UserRole.entries) {
             val expectedOrdinal =
                 when (value) {
-                    UserRole.USER_ROLE_DEFAULT -> 0
-                    UserRole.USER_ROLE_ADMIN -> 1
+                    UserRole.DEFAULT -> 0
+                    UserRole.ADMIN -> 1
                 }
 
             assertEquals(expectedOrdinal, value.ordinal)
@@ -52,11 +52,11 @@ class EnumOrdinalTest {
         for (value in ProjectStatus.entries) {
             val expectedOrdinal =
                 when (value) {
-                    ProjectStatus.PROJECT_STATUS_ACTIVE -> 0
-                    ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED -> 1
-                    ProjectStatus.PROJECT_STATUS_ARCHIVED -> 2
-                    ProjectStatus.PROJECT_STATUS_DELETED -> 3
-                    ProjectStatus.PROJECT_STATUS_CLEARED -> 4
+                    ProjectStatus.ACTIVE -> 0
+                    ProjectStatus.ACTIVE_LOCKED -> 1
+                    ProjectStatus.ARCHIVED -> 2
+                    ProjectStatus.DELETED -> 3
+                    ProjectStatus.CLEARED -> 4
                 }
 
             assertEquals(expectedOrdinal, value.ordinal)
@@ -68,9 +68,9 @@ class EnumOrdinalTest {
         for (value in SnowballingType.entries) {
             val expectedOrdinal =
                 when (value) {
-                    SnowballingType.SNOWBALLING_TYPE_FORWARD -> 0
-                    SnowballingType.SNOWBALLING_TYPE_BACKWARD -> 1
-                    SnowballingType.SNOWBALLING_TYPE_BOTH -> 2
+                    SnowballingType.FORWARD -> 0
+                    SnowballingType.BACKWARD -> 1
+                    SnowballingType.BOTH -> 2
                 }
 
             assertEquals(expectedOrdinal, value.ordinal)
@@ -82,9 +82,9 @@ class EnumOrdinalTest {
         for (value in CriterionCategory.entries) {
             val expectedOrdinal =
                 when (value) {
-                    CriterionCategory.CRITERION_CATEGORY_INCLUSION -> 0
-                    CriterionCategory.CRITERION_CATEGORY_EXCLUSION -> 1
-                    CriterionCategory.CRITERION_CATEGORY_HARD_EXCLUSION -> 2
+                    CriterionCategory.INCLUSION -> 0
+                    CriterionCategory.EXCLUSION -> 1
+                    CriterionCategory.HARD_EXCLUSION -> 2
                 }
 
             assertEquals(expectedOrdinal, value.ordinal)
@@ -96,9 +96,9 @@ class EnumOrdinalTest {
         for (value in ReviewDecision.entries) {
             val expectedOrdinal =
                 when (value) {
-                    ReviewDecision.REVIEW_DECISION_DECLINED -> 0
-                    ReviewDecision.REVIEW_DECISION_MAYBE -> 1
-                    ReviewDecision.REVIEW_DECISION_ACCEPTED -> 2
+                    ReviewDecision.DECLINED -> 0
+                    ReviewDecision.MAYBE -> 1
+                    ReviewDecision.ACCEPTED -> 2
                 }
 
             assertEquals(expectedOrdinal, value.ordinal)
@@ -110,10 +110,10 @@ class EnumOrdinalTest {
         for (value in PaperDecision.entries) {
             val expectedOrdinal =
                 when (value) {
-                    PaperDecision.PAPER_DECISION_UNREVIEWED -> 0
-                    PaperDecision.PAPER_DECISION_IN_REVIEW -> 1
-                    PaperDecision.PAPER_DECISION_DECLINED -> 2
-                    PaperDecision.PAPER_DECISION_ACCEPTED -> 3
+                    PaperDecision.UNREVIEWED -> 0
+                    PaperDecision.IN_REVIEW -> 1
+                    PaperDecision.DECLINED -> 2
+                    PaperDecision.ACCEPTED -> 3
                 }
 
             assertEquals(expectedOrdinal, value.ordinal)
@@ -125,8 +125,8 @@ class EnumOrdinalTest {
         for (value in MemberRole.entries) {
             val expectedOrdinal =
                 when (value) {
-                    MemberRole.MEMBER_ROLE_DEFAULT -> 0
-                    MemberRole.MEMBER_ROLE_ADMIN -> 1
+                    MemberRole.DEFAULT -> 0
+                    MemberRole.ADMIN -> 1
                 }
 
             assertEquals(expectedOrdinal, value.ordinal)

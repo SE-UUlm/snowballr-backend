@@ -85,7 +85,7 @@ class ProjectMemberService(
             }
 
             val newRole = MemberRole.fromGrpc(request.newRole)
-            if (member.isProjectAdmin() && newRole != MemberRole.MEMBER_ROLE_ADMIN) {
+            if (member.isProjectAdmin() && newRole != MemberRole.ADMIN) {
                 projectAccessChecker.isNotLastProjectAdmin(user, projectId, "Cannot demote the user")
             }
 

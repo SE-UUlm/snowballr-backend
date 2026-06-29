@@ -65,8 +65,8 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
             assertEquals("test.user@example.com", user.email)
             assertEquals("Test", user.firstName)
             assertEquals("User", user.lastName)
-            assertEquals(UserRole.USER_ROLE_DEFAULT, user.role)
-            assertEquals(UserStatus.USER_STATUS_ACTIVE, user.status)
+            assertEquals(UserRole.DEFAULT, user.role)
+            assertEquals(UserStatus.ACTIVE, user.status)
         }
 
         @Test
@@ -91,8 +91,8 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
                 assertEquals("test.user@example.com", user.email)
                 assertEquals("Test", user.firstName)
                 assertEquals("User", user.lastName)
-                assertEquals(UserRole.USER_ROLE_DEFAULT, user.role)
-                assertEquals(UserStatus.USER_STATUS_ACTIVE, user.status)
+                assertEquals(UserRole.DEFAULT, user.role)
+                assertEquals(UserStatus.ACTIVE, user.status)
             }
 
         @Test
@@ -183,8 +183,8 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
             assertEquals("alice.smith@example.com", user.email)
             assertEquals("Alice", user.firstName)
             assertEquals("Smith", user.lastName)
-            assertEquals(UserRole.USER_ROLE_DEFAULT, user.role)
-            assertEquals(UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED, user.status)
+            assertEquals(UserRole.DEFAULT, user.role)
+            assertEquals(UserStatus.ACTIVE_UNCONFIRMED, user.status)
         }
 
         @Test
@@ -247,8 +247,8 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
                 .setEmail("updated.user@example.com")
                 .setFirstName("John")
                 .setLastName("Doe")
-                .setRole(UserRole.USER_ROLE_ADMIN.toGrpc())
-                .setStatus(UserStatus.USER_STATUS_DELETED.toGrpc())
+                .setRole(UserRole.ADMIN.toGrpc())
+                .setStatus(UserStatus.DELETED.toGrpc())
                 .build()
 
             val request = User.Update.newBuilder()
@@ -274,14 +274,14 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
                 assertEquals("User", updatedUser.lastName)
             }
             if ("user.role" in fieldMask) {
-                assertEquals(UserRole.USER_ROLE_ADMIN, updatedUser.role)
+                assertEquals(UserRole.ADMIN, updatedUser.role)
             } else {
-                assertEquals(UserRole.USER_ROLE_DEFAULT, updatedUser.role)
+                assertEquals(UserRole.DEFAULT, updatedUser.role)
             }
             if ("user.status" in fieldMask) {
-                assertEquals(UserStatus.USER_STATUS_DELETED, updatedUser.status)
+                assertEquals(UserStatus.DELETED, updatedUser.status)
             } else {
-                assertEquals(UserStatus.USER_STATUS_ACTIVE, updatedUser.status)
+                assertEquals(UserStatus.ACTIVE, updatedUser.status)
             }
         }
 
@@ -317,7 +317,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
             val after = OffsetDateTime.now()
             val deletedUser = repo.getUserById(userId1).getOrThrow()
 
-            assertEquals(UserStatus.USER_STATUS_DELETED, deletedUser.status)
+            assertEquals(UserStatus.DELETED, deletedUser.status)
             assertThat(deletedUser.deletedAt).isBetweenWithDelta(before, after)
         }
 
@@ -331,25 +331,25 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
     inner class ClearSoftDeletedUsers {
         @Test
         fun `When no soft-deleted users exist, then no users are cleared`() = runTest {
-            val userId = insertUserAndGetId(status = UserStatus.USER_STATUS_ACTIVE)
+            val userId = insertUserAndGetId(status = UserStatus.ACTIVE)
 
             repo.clearSoftDeletedUsers(defaultThresholdDate)
 
             val user = assertResultSuccess(repo.getUserById(userId))
-            assertEquals(UserStatus.USER_STATUS_ACTIVE, user.status)
+            assertEquals(UserStatus.ACTIVE, user.status)
             assertNull(user.deletedAt)
         }
 
         @Test
         fun `When soft-deleted users exist but their threshold date is not reached, then no users are cleared`() =
             runTest {
-                val userId = insertUserAndGetId(status = UserStatus.USER_STATUS_ACTIVE)
+                val userId = insertUserAndGetId(status = UserStatus.ACTIVE)
                 repo.softDeleteUser(userId)
 
                 repo.clearSoftDeletedUsers(defaultThresholdDate)
 
                 val user = assertResultSuccess(repo.getUserById(userId))
-                assertEquals(UserStatus.USER_STATUS_DELETED, user.status)
+                assertEquals(UserStatus.DELETED, user.status)
                 assertNotNull(user.deletedAt)
                 assertThat(user.deletedAt).isAfter(defaultThresholdDate)
                 assertThat(user.firstName).isNotEmpty()
@@ -361,24 +361,24 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
                 // Manually "soft-delete" user to set the `deletedAt` date
                 val userId1 = insertUserAndGetId(
                     email = "user1@test.de",
-                    status = UserStatus.USER_STATUS_DELETED,
+                    status = UserStatus.DELETED,
                     deletedAt = defaultThresholdDate.minusDays(1),
                 )
-                val userId2 = insertUserAndGetId(email = "user2@test.de", status = UserStatus.USER_STATUS_ACTIVE)
+                val userId2 = insertUserAndGetId(email = "user2@test.de", status = UserStatus.ACTIVE)
                 val criteria1 = RepositoryHelper.insertCriterionAndGetId(createdBy = userId1)
                 val criteria2 = RepositoryHelper.insertCriterionAndGetId(createdBy = userId2)
 
                 repo.clearSoftDeletedUsers(defaultThresholdDate)
 
                 val user1 = assertResultSuccess(repo.getUserById(userId1))
-                assertEquals(UserStatus.USER_STATUS_CLEARED, user1.status)
+                assertEquals(UserStatus.CLEARED, user1.status)
                 assertNotNull(user1.deletedAt)
                 assertThat(user1.deletedAt).isBefore(defaultThresholdDate)
                 assertThat(user1.firstName).isEmpty()
                 assertResultSuccess(criterionTableRepo.getCriterionById(criteria1))
 
                 val user2 = assertResultSuccess(repo.getUserById(userId2))
-                assertEquals(UserStatus.USER_STATUS_ACTIVE, user2.status)
+                assertEquals(UserStatus.ACTIVE, user2.status)
                 assertNull(user2.deletedAt)
                 assertThat(user2.firstName).isNotEmpty()
                 assertResultSuccess(criterionTableRepo.getCriterionById(criteria2))
@@ -399,10 +399,10 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
             // Manually "soft-delete" user to set the `deletedAt` date
             val userId1 = insertUserAndGetId(
                 email = "user1@test.de",
-                status = UserStatus.USER_STATUS_DELETED,
+                status = UserStatus.DELETED,
                 deletedAt = defaultThresholdDate.minusDays(1),
             )
-            insertUserAndGetId(email = "user2@test.de", status = UserStatus.USER_STATUS_ACTIVE)
+            insertUserAndGetId(email = "user2@test.de", status = UserStatus.ACTIVE)
             repo.clearSoftDeletedUsers(defaultThresholdDate)
 
             val userIdsToDelete = repo.getUserIdsToDelete()
@@ -417,20 +417,20 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
         @Test
         fun `When no cleared users exist that have reached their threshold date to be cleared, then no users are hard-deleted`() =
             runTest {
-                val userId1 = insertUserAndGetId(email = "user1@test.de", status = UserStatus.USER_STATUS_ACTIVE)
-                val userId2 = insertUserAndGetId(email = "user2@test.de", status = UserStatus.USER_STATUS_ACTIVE)
+                val userId1 = insertUserAndGetId(email = "user1@test.de", status = UserStatus.ACTIVE)
+                val userId2 = insertUserAndGetId(email = "user2@test.de", status = UserStatus.ACTIVE)
                 repo.softDeleteUser(userId1)
                 val usersToDelete = repo.getUserIdsToDelete()
 
                 repo.hardDeleteClearedUsers(usersToDelete)
 
                 val user1 = assertResultSuccess(repo.getUserById(userId1))
-                assertEquals(UserStatus.USER_STATUS_DELETED, user1.status)
+                assertEquals(UserStatus.DELETED, user1.status)
                 assertNotNull(user1.deletedAt)
                 assertThat(user1.firstName).isNotEmpty()
 
                 val user2 = assertResultSuccess(repo.getUserById(userId2))
-                assertEquals(UserStatus.USER_STATUS_ACTIVE, user2.status)
+                assertEquals(UserStatus.ACTIVE, user2.status)
                 assertNull(user2.deletedAt)
                 assertThat(user2.firstName).isNotEmpty()
             }
@@ -441,10 +441,10 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
                 // Manually "soft-delete" user to set the `deletedAt` date
                 val userId1 = insertUserAndGetId(
                     email = "user1@test.de",
-                    status = UserStatus.USER_STATUS_DELETED,
+                    status = UserStatus.DELETED,
                     deletedAt = defaultThresholdDate.minusDays(1),
                 )
-                val userId2 = insertUserAndGetId(email = "user2@test.de", status = UserStatus.USER_STATUS_ACTIVE)
+                val userId2 = insertUserAndGetId(email = "user2@test.de", status = UserStatus.ACTIVE)
                 repo.clearSoftDeletedUsers(defaultThresholdDate)
                 val usersToDelete = repo.getUserIdsToDelete()
 
@@ -453,7 +453,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
                 assertResultFailure<NotFoundException>(repo.getUserById(userId1))
 
                 val user2 = assertResultSuccess(repo.getUserById(userId2))
-                assertEquals(UserStatus.USER_STATUS_ACTIVE, user2.status)
+                assertEquals(UserStatus.ACTIVE, user2.status)
                 assertNull(user2.deletedAt)
                 assertThat(user2.firstName).isNotEmpty()
             }
@@ -462,7 +462,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
         fun `When a cleared user exists that is still referenced, then this user is not hard-deleted`() = runTest {
             // Manually "soft-delete" user to set the `deletedAt` date
             val userId = insertUserAndGetId(
-                status = UserStatus.USER_STATUS_DELETED,
+                status = UserStatus.DELETED,
                 deletedAt = defaultThresholdDate.minusDays(1),
             )
             insertProjectAndGetId(createdBy = userId)
@@ -472,7 +472,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
             repo.hardDeleteClearedUsers(usersToDelete)
 
             val user = assertResultSuccess(repo.getUserById(userId))
-            assertEquals(UserStatus.USER_STATUS_CLEARED, user.status)
+            assertEquals(UserStatus.CLEARED, user.status)
             assertNotNull(user.deletedAt)
             assertThat(user.deletedAt).isBefore(defaultThresholdDate)
             assertThat(user.firstName).isEmpty()
@@ -539,7 +539,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
                 userSettings.decisionMatrix.toByteArray(),
             )
             assertThat(userSettings.fetchers).isEmpty()
-            assertEquals(SnowballingType.SNOWBALLING_TYPE_BOTH, userSettings.snowballingType)
+            assertEquals(SnowballingType.BOTH, userSettings.snowballingType)
             assertTrue(userSettings.reviewMaybeAllowed)
         }
 
@@ -566,7 +566,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
 
         @Test
         fun `When a deleted user is matching the search query, then this user is not returned`() = runTest {
-            insertUserAndGetId(firstName = "john", lastName = "doe", status = UserStatus.USER_STATUS_DELETED)
+            insertUserAndGetId(firstName = "john", lastName = "doe", status = UserStatus.DELETED)
 
             val matchingUsers = repo.getUsersMatchingSearchQuery("john", emptySet())
 

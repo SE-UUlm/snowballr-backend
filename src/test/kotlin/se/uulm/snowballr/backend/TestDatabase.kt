@@ -126,8 +126,8 @@ class TestDatabase : IDatabase {
                 it[firstName] = "Test"
                 it[lastName] = "User"
                 it[passwordHash] = "hashedPassword"
-                it[role] = UserRole.USER_ROLE_ADMIN
-                it[status] = UserStatus.USER_STATUS_ACTIVE
+                it[role] = UserRole.ADMIN
+                it[status] = UserStatus.ACTIVE
             }
         return userId.value
     }

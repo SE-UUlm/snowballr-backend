@@ -21,8 +21,8 @@ object DummyUser {
     var lastName: String = "Smith"
     var password: String = "VALIDPassword__1234"
     var passwordHash: String = PasswordUtils.hashPassword(password)
-    var role: UserRole = UserRole.USER_ROLE_ADMIN
-    var status: UserStatus = UserStatus.USER_STATUS_ACTIVE
+    var role: UserRole = UserRole.ADMIN
+    var status: UserStatus = UserStatus.ACTIVE
 
     // user settings
     var areHotkeysShown: Boolean = true

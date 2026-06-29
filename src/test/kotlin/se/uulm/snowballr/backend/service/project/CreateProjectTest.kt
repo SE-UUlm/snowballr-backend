@@ -19,19 +19,19 @@ class CreateProjectTest : ProjectServiceTest() {
     private fun getExampleRequest() = GrpcProject.Create.getDefaultInstance()
 
     private fun mockProjectAdminCreation(project: Project, user: User) {
-        val projectMember = DataBuilder.createExampleProjectMember(project.id, user.id, MemberRole.MEMBER_ROLE_DEFAULT)
-        val projectAdmin = DataBuilder.createExampleProjectMember(project.id, user.id, MemberRole.MEMBER_ROLE_ADMIN)
+        val projectMember = DataBuilder.createExampleProjectMember(project.id, user.id, MemberRole.DEFAULT)
+        val projectAdmin = DataBuilder.createExampleProjectMember(project.id, user.id, MemberRole.ADMIN)
 
         coEvery { projectMemberRepoMock.addUserToProject(user.id, project.id) } returns projectMember
         coEvery {
-            projectMemberRepoMock.updateProjectMemberRole(project.id, user.id, MemberRole.MEMBER_ROLE_ADMIN)
+            projectMemberRepoMock.updateProjectMemberRole(project.id, user.id, MemberRole.ADMIN)
         } returns projectAdmin
     }
 
     @Test
     fun `When a project is correctly created, then the created project has the correct values`() = runTest {
         val project = DataBuilder.createExampleProject()
-        val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
+        val user = DataBuilder.createExampleUser(role = UserRole.DEFAULT)
         val userSettings = DataBuilder.createExampleUserSettings()
 
         mockCurrentUser(user)
@@ -47,7 +47,7 @@ class CreateProjectTest : ProjectServiceTest() {
         coVerify(exactly = 0) { criterionRepoMock.createCriterion(any(), user.id) }
         coVerify(exactly = 1) { projectMemberRepoMock.addUserToProject(user.id, project.id) }
         coVerify(exactly = 1) {
-            projectMemberRepoMock.updateProjectMemberRole(project.id, user.id, MemberRole.MEMBER_ROLE_ADMIN)
+            projectMemberRepoMock.updateProjectMemberRole(project.id, user.id, MemberRole.ADMIN)
         }
     }
 
@@ -55,7 +55,7 @@ class CreateProjectTest : ProjectServiceTest() {
     fun `When a project is correctly created and the user has default criteria, then the created project has the correct values`() =
         runTest {
             val project = DataBuilder.createExampleProject()
-            val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
+            val user = DataBuilder.createExampleUser(role = UserRole.DEFAULT)
             val criterion = DataBuilder.createExampleProjectCriterion()
             val userSettings = DataBuilder.createExampleUserSettings(criteriaIds = listOf(criterion.id))
             val criteriaIdsSlot = slot<List<UUID>>()

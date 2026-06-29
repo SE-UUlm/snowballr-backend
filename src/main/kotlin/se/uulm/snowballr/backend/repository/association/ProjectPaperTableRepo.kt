@@ -277,7 +277,7 @@ class ProjectPaperTableRepo(
                     it[ProjectPaperTable.projectId] = projectId
                     it[ProjectPaperTable.localPaperId] = localPaperId
                     it[stage] = request.stage
-                    it[decision] = PaperDecision.PAPER_DECISION_UNREVIEWED
+                    it[decision] = PaperDecision.UNREVIEWED
                     it[createdBy] = userId
                 }
         }
@@ -290,8 +290,8 @@ class ProjectPaperTableRepo(
         } else {
             val fullyReviewedPapersCount = ProjectPaperTable.selectAll().where {
                 val paperReviewedOp =
-                    (ProjectPaperTable.decision eq PaperDecision.PAPER_DECISION_ACCEPTED) or
-                        (ProjectPaperTable.decision eq PaperDecision.PAPER_DECISION_DECLINED)
+                    (ProjectPaperTable.decision eq PaperDecision.ACCEPTED) or
+                        (ProjectPaperTable.decision eq PaperDecision.DECLINED)
 
                 paperReviewedOp and (ProjectPaperTable.projectId eq projectId)
             }.count()

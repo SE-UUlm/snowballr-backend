@@ -47,7 +47,7 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
         if (addDeletedUser) {
             val deletedUser = insertUserAndGetId(
                 email = "deleted.user@example.com",
-                status = UserStatus.USER_STATUS_DELETED,
+                status = UserStatus.DELETED,
             )
             members += assignUserToProject(deletedUser, projectId)
         }
@@ -240,9 +240,9 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
 
                 members.forEach { member ->
                     val actualMember = repo.getProjectMemberByComposedId(projectId, member.userId).getOrThrow()
-                    assertEquals(MemberRole.MEMBER_ROLE_DEFAULT, actualMember.role)
+                    assertEquals(MemberRole.DEFAULT, actualMember.role)
 
-                    repo.updateProjectMemberRole(projectId, actualMember.userId, MemberRole.MEMBER_ROLE_ADMIN)
+                    repo.updateProjectMemberRole(projectId, actualMember.userId, MemberRole.ADMIN)
                 }
 
                 val projectAdmins = repo.getAllProjectAdmins(projectId)
@@ -250,7 +250,7 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
                 projectAdmins.forEachIndexed { index, admin ->
                     assertEquals(projectId, admin.projectId)
                     assertEquals(members[index].userId, admin.userId)
-                    assertEquals(MemberRole.MEMBER_ROLE_ADMIN, admin.role)
+                    assertEquals(MemberRole.ADMIN, admin.role)
                 }
             }
 
@@ -260,13 +260,13 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
                 val (projectId, members) = setupProject(1)
                 members.forEach { member ->
                     val actualMember = repo.getProjectMemberByComposedId(projectId, member.userId).getOrThrow()
-                    assertEquals(MemberRole.MEMBER_ROLE_DEFAULT, actualMember.role)
+                    assertEquals(MemberRole.DEFAULT, actualMember.role)
                 }
 
                 val projectAdmin = repo.updateProjectMemberRole(
                     projectId,
                     members.first().userId,
-                    MemberRole.MEMBER_ROLE_ADMIN,
+                    MemberRole.ADMIN,
                 )
 
                 val projectAdmins = repo.getAllProjectAdmins(projectId)
@@ -284,12 +284,12 @@ class ProjectMemberTableRepoTest : RepositoryTest(arrayOf(ProjectTable, ProjectM
                 val projectAdmin = repo.updateProjectMemberRole(
                     projectId,
                     members[0].userId,
-                    MemberRole.MEMBER_ROLE_ADMIN,
+                    MemberRole.ADMIN,
                 )
                 val deletedAdmin = repo.updateProjectMemberRole(
                     projectId,
                     members[1].userId,
-                    MemberRole.MEMBER_ROLE_ADMIN,
+                    MemberRole.ADMIN,
                 )
 
                 val projectAdmins = repo.getAllProjectAdmins(projectId)

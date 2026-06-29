@@ -139,7 +139,7 @@ class ProjectService(
         }
 
         projectMemberRepo.addUserToProject(currentUser.id, project.id)
-        projectMemberRepo.updateProjectMemberRole(project.id, currentUser.id, MemberRole.MEMBER_ROLE_ADMIN)
+        projectMemberRepo.updateProjectMemberRole(project.id, currentUser.id, MemberRole.ADMIN)
 
         project.toGrpcProject()
     }
@@ -152,14 +152,14 @@ class ProjectService(
 
     override suspend fun getAllProjectsForUser(userId: UUID): GrpcProject.List = getAllProjectsForUserAndStatus(
         userId,
-        setOf(ProjectStatus.PROJECT_STATUS_ACTIVE, ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED),
+        setOf(ProjectStatus.ACTIVE, ProjectStatus.ACTIVE_LOCKED),
     )
 
     override suspend fun getAllArchivedProjectsForUser(userId: UUID): GrpcProject.List =
-        getAllProjectsForUserAndStatus(userId, setOf(ProjectStatus.PROJECT_STATUS_ARCHIVED))
+        getAllProjectsForUserAndStatus(userId, setOf(ProjectStatus.ARCHIVED))
 
     override suspend fun getAllDeletedProjectsForUser(userId: UUID): GrpcProject.List =
-        getAllProjectsForUserAndStatus(userId, setOf(ProjectStatus.PROJECT_STATUS_DELETED))
+        getAllProjectsForUserAndStatus(userId, setOf(ProjectStatus.DELETED))
 
     override suspend fun updateProject(request: GrpcProject.Update): GrpcProject = withUser(userRepo) { currentUser ->
         val projectId = parseUUID(request.project.id, EntityType.PROJECT)
@@ -293,13 +293,13 @@ class ProjectService(
         }
 
         when (currentStatus) {
-            ProjectStatus.PROJECT_STATUS_DELETED -> {
+            ProjectStatus.DELETED -> {
                 throw FailedPreconditionException(
                     "The project has been deleted and can therefore not be updated anymore.",
                 )
             }
 
-            ProjectStatus.PROJECT_STATUS_ARCHIVED -> {
+            ProjectStatus.ARCHIVED -> {
                 val isOnlyStatusUpdate = fieldMask.size == 1 && isStatusUpdate
                 if (!isOnlyStatusUpdate) {
                     throw FailedPreconditionException(
@@ -318,7 +318,7 @@ class ProjectService(
                 }
             }
 
-            ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED -> {
+            ProjectStatus.ACTIVE_LOCKED -> {
                 // all project settings are SLR settings
                 val isChangingSettings = fieldMask.any { it.startsWith("project.settings.") }
                 if (isChangingSettings) {
@@ -328,11 +328,11 @@ class ProjectService(
                 }
             }
 
-            ProjectStatus.PROJECT_STATUS_ACTIVE -> {
+            ProjectStatus.ACTIVE -> {
                 // no restrictions
             }
 
-            ProjectStatus.PROJECT_STATUS_CLEARED,
+            ProjectStatus.CLEARED,
             -> {
                 error("Project is an unspecified status: $currentStatus")
             }
@@ -390,10 +390,10 @@ class ProjectService(
                 .build()
 
         return listOf(
-            PaperDecision.PAPER_DECISION_ACCEPTED,
-            PaperDecision.PAPER_DECISION_DECLINED,
-            PaperDecision.PAPER_DECISION_UNREVIEWED,
-            PaperDecision.PAPER_DECISION_IN_REVIEW,
+            PaperDecision.ACCEPTED,
+            PaperDecision.DECLINED,
+            PaperDecision.UNREVIEWED,
+            PaperDecision.IN_REVIEW,
         ).map(::createStatistic)
     }
 
