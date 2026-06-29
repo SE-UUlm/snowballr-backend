@@ -4,8 +4,8 @@ import se.uulm.snowballr.backend.access.ICriterionAccessChecker
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.dto.criterion.Criterion
-import se.uulm.snowballr.backend.model.incoming.CreateCriterionRequest
-import se.uulm.snowballr.backend.model.incoming.UpdateCriterionRequest
+import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
+import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import java.util.UUID

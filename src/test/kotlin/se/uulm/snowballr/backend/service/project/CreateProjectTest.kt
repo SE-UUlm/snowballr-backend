@@ -11,7 +11,7 @@ import se.uulm.snowballr.backend.model.dto.project.Project
 import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
 import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.dto.user.UserRole
-import se.uulm.snowballr.backend.model.incoming.CreateCriterionRequest
+import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import java.util.UUID
 import snowballr.ProjectOuterClass.Project as GrpcProject
 

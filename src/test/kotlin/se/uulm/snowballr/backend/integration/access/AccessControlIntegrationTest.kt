@@ -10,8 +10,8 @@ import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 import se.uulm.snowballr.backend.model.exception.UnauthorizedException
-import se.uulm.snowballr.backend.model.incoming.CreateCriterionRequest
-import se.uulm.snowballr.backend.model.incoming.UpdateCriterionRequest
+import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
+import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.model.parseUUID
 import snowballr.ProjectOuterClass.MemberRole
 import snowballr.ProjectOuterClass.Project

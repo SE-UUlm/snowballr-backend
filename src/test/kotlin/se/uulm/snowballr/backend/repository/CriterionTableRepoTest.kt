@@ -15,8 +15,8 @@ import se.uulm.snowballr.backend.model.dto.criterion.Criterion.ProjectCriterion
 import se.uulm.snowballr.backend.model.dto.criterion.Criterion.UserCriterion
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 import se.uulm.snowballr.backend.model.exception.NotFoundException
-import se.uulm.snowballr.backend.model.incoming.CreateCriterionRequest
-import se.uulm.snowballr.backend.model.incoming.UpdateCriterionRequest
+import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
+import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertCriterionAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertUserAndGetId

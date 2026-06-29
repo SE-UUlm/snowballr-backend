@@ -8,7 +8,7 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
-import se.uulm.snowballr.backend.model.incoming.CreateCriterionRequest
+import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import java.util.UUID
 
 class CreateCriterionTest : CriterionServiceTest() {

@@ -11,8 +11,8 @@ import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.criterion.Criterion
 import se.uulm.snowballr.backend.model.exception.NotFoundException
-import se.uulm.snowballr.backend.model.incoming.CreateCriterionRequest
-import se.uulm.snowballr.backend.model.incoming.UpdateCriterionRequest
+import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
+import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.toCriterion
 import se.uulm.snowballr.backend.table.toProjectCriterion
