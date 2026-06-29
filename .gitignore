@@ -61,3 +61,6 @@ db-data
 /tools/fetcher-cli/output/*
 !/tools/fetcher-cli/output/.gitkeep
 /src/main/resources/plugins/fetchers/lib/__pycache__/
+
+### AI ###
+.claude/worktrees/
