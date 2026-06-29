@@ -71,8 +71,8 @@ class CookieManager(
     override fun buildAuthCookieString(name: String, value: String?): String? {
         val ttl =
             when (name) {
-                GrpcContext.ACCESS_TOKEN_COOKIE_NAME -> resolveTokenTTL(value) { jwtManager.getAccessTokenTTL() }
-                GrpcContext.REFRESH_TOKEN_COOKIE_NAME -> resolveTokenTTL(value) { jwtManager.getRefreshTokenTTL() }
+                ACCESS_TOKEN_COOKIE_NAME -> resolveTokenTTL(value) { jwtManager.getAccessTokenTTL() }
+                REFRESH_TOKEN_COOKIE_NAME -> resolveTokenTTL(value) { jwtManager.getRefreshTokenTTL() }
                 else -> return null // Not a recognized authentication cookie.
             }
 
