@@ -23,6 +23,8 @@ import se.uulm.snowballr.backend.grpc.interceptor.loggingInterceptor
 import se.uulm.snowballr.backend.grpc.interceptor.validationInterceptor
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
+import se.uulm.snowballr.backend.model.dto.criterion.toGrpcCriteria
+import se.uulm.snowballr.backend.model.dto.criterion.toGrpcCriterion
 import se.uulm.snowballr.backend.model.incoming.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.scheduler.SchedulerManager
@@ -373,10 +375,10 @@ class SnowballRServer(
         }
 
         override suspend fun getCriterionById(request: Base.Id): CriterionOuterClass.Criterion =
-            criterionService.getCriterionById(parseCriterionId(request))
+            criterionService.getCriterionById(parseCriterionId(request)).toGrpcCriterion()
 
         override suspend fun getAllCriteriaForProject(request: Base.Id): CriterionOuterClass.Criterion.List =
-            criterionService.getAllCriteriaForProject(parseProjectId(request))
+            criterionService.getAllCriteriaForProject(parseProjectId(request)).toGrpcCriteria()
 
         override suspend fun createCriterion(
             request: CriterionOuterClass.Criterion.Create,
@@ -395,12 +397,12 @@ class SnowballRServer(
                     category = CriterionCategory.fromGrpc(request.category),
                     projectId = projectId,
                 ),
-            )
+            ).toGrpcCriterion()
         }
 
         override suspend fun updateCriterion(
             request: CriterionOuterClass.Criterion.Update,
-        ): CriterionOuterClass.Criterion = criterionService.updateCriterion(request)
+        ): CriterionOuterClass.Criterion = criterionService.updateCriterion(request).toGrpcCriterion()
 
         override suspend fun deleteCriterion(request: Base.Id): Base.Nothing = super.deleteCriterion(request)
 

@@ -4,8 +4,7 @@ import se.uulm.snowballr.backend.access.ICriterionAccessChecker
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.dto.criterion.toGrpcCriteria
-import se.uulm.snowballr.backend.model.dto.criterion.toGrpcCriterion
+import se.uulm.snowballr.backend.model.dto.criterion.Criterion
 import se.uulm.snowballr.backend.model.incoming.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
@@ -17,22 +16,22 @@ interface ICriterionService {
     /**
      * Service implementation of [SnowballRService.getCriterionById].
      */
-    suspend fun getCriterionById(criterionId: UUID): GrpcCriterion
+    suspend fun getCriterionById(criterionId: UUID): Criterion
 
     /**
      * Service implementation of [SnowballRService.createCriterion].
      */
-    suspend fun createCriterion(request: CreateCriterionRequest): GrpcCriterion
+    suspend fun createCriterion(request: CreateCriterionRequest): Criterion
 
     /**
      * Service implementation of [SnowballRService.updateCriterion].
      */
-    suspend fun updateCriterion(request: GrpcCriterion.Update): GrpcCriterion
+    suspend fun updateCriterion(request: GrpcCriterion.Update): Criterion
 
     /**
      * Service implementation of [SnowballRService.getAllCriteriaForProject].
      */
-    suspend fun getAllCriteriaForProject(projectId: UUID): GrpcCriterion.List
+    suspend fun getAllCriteriaForProject(projectId: UUID): List<Criterion.ProjectCriterion>
 }
 
 /**
@@ -57,37 +56,36 @@ class CriterionService(
     private val accessChecker: ICriterionAccessChecker,
     private val projectAccessChecker: IProjectAccessChecker,
 ) : ICriterionService {
-    override suspend fun getCriterionById(criterionId: UUID): GrpcCriterion = withUser(userRepo) { currentUser ->
+    override suspend fun getCriterionById(criterionId: UUID): Criterion = withUser(userRepo) { currentUser ->
         val criterion = repo.getCriterionById(criterionId).getOrThrow()
 
         accessChecker.isAllowedToReadCriterion(currentUser, criterion)
 
-        criterion.toGrpcCriterion()
+        criterion
     }
 
-    override suspend fun createCriterion(request: CreateCriterionRequest): GrpcCriterion =
+    override suspend fun createCriterion(request: CreateCriterionRequest): Criterion =
         withUser(userRepo) { currentUser ->
             if (request.projectId != null) {
                 accessChecker.isAllowedToCreateProjectCriterion(currentUser, request.projectId)
             }
 
-            repo.createCriterion(request, currentUser.id).toGrpcCriterion()
+            repo.createCriterion(request, currentUser.id)
         }
 
-    override suspend fun updateCriterion(request: GrpcCriterion.Update): GrpcCriterion =
-        withUser(userRepo) { currentUser ->
-            val criterionId = parseUUID(request.criterion.id, EntityType.CRITERION)
-            val criterion = repo.getCriterionById(criterionId).getOrThrow()
+    override suspend fun updateCriterion(request: GrpcCriterion.Update): Criterion = withUser(userRepo) { currentUser ->
+        val criterionId = parseUUID(request.criterion.id, EntityType.CRITERION)
+        val criterion = repo.getCriterionById(criterionId).getOrThrow()
 
-            accessChecker.isAllowedToUpdateCriterion(currentUser, criterion)
+        accessChecker.isAllowedToUpdateCriterion(currentUser, criterion)
 
-            repo.updateCriterion(request).toGrpcCriterion()
-        }
+        repo.updateCriterion(request)
+    }
 
-    override suspend fun getAllCriteriaForProject(projectId: UUID): GrpcCriterion.List =
+    override suspend fun getAllCriteriaForProject(projectId: UUID): List<Criterion.ProjectCriterion> =
         withUser(userRepo) { currentUser ->
             projectAccessChecker.isAllowedToReadProject(currentUser, projectId)
 
-            repo.getAllProjectCriteria(projectId).toGrpcCriteria()
+            repo.getAllProjectCriteria(projectId)
         }
 }

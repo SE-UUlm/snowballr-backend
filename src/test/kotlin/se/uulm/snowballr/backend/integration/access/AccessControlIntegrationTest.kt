@@ -9,6 +9,7 @@ import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
+import se.uulm.snowballr.backend.model.dto.criterion.toGrpcCriterion
 import se.uulm.snowballr.backend.model.exception.UnauthorizedException
 import se.uulm.snowballr.backend.model.incoming.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.parseUUID
@@ -99,7 +100,7 @@ class AccessControlIntegrationTest : IntegrationTest() {
             )
 
             val request = Criterion.Update.newBuilder()
-                .setCriterion(criterion.toBuilder().setName("Hijacked").build())
+                .setCriterion(criterion.toGrpcCriterion().toBuilder().setName("Hijacked").build())
                 .setMask(FieldMaskUtil.fromStringList(listOf("criterion.name")))
                 .build()
 

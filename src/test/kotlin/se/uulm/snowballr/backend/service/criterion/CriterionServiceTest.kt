@@ -13,7 +13,6 @@ import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.service.BaseServiceTest
 import se.uulm.snowballr.backend.service.CriterionService
 import se.uulm.snowballr.backend.service.withUser
-import snowballr.CriterionOuterClass
 import kotlin.test.assertEquals
 
 /**
@@ -49,10 +48,10 @@ sealed class CriterionServiceTest : BaseServiceTest {
         coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
     }
 
-    protected fun assertCriterionEquality(expected: Criterion, actual: CriterionOuterClass.Criterion) {
+    protected fun assertCriterionEquality(expected: Criterion, actual: Criterion) {
         assertEquals(expected.tag, actual.tag)
         assertEquals(expected.name, actual.name)
         assertEquals(expected.description, actual.description)
-        assertEquals(expected.category.toGrpc(), actual.category)
+        assertEquals(expected.category, actual.category)
     }
 }

@@ -34,8 +34,8 @@ class GetAllCriteriaForProjectTest : CriterionServiceTest() {
 
         val result = service.getAllCriteriaForProject(project.id)
 
-        assertEquals(1, result.criteriaCount)
-        val resultElement = result.criteriaList.first()
+        assertEquals(1, result.size)
+        val resultElement = result.first()
         assertCriterionEquality(criterion, resultElement)
     }
 }
