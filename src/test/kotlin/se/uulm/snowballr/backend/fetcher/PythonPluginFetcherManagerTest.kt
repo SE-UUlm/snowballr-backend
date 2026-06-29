@@ -85,6 +85,26 @@ class PythonPluginFetcherManagerTest {
         }
 
     @Test
+    fun `When a fetcher is queried with invalid FetcherInformation, then it is filtered out`() = runTest {
+        writeFetcher(
+            "custom_fetcher",
+            """
+            import json
+            import sys
+            if sys.argv[1] == "info":
+                # missing links and options_schema
+                print(json.dumps({"name": "custom_fetcher", "description": "test"}))
+            else:
+                print(json.dumps([]))
+            """.trimIndent(),
+        )
+
+        val availableFetchers = fetcherManager.getAvailableFetchers().map { it.id }
+
+        assertThat(availableFetchers).doesNotContain("custom_fetcher")
+    }
+
+    @Test
     fun `When a fetcher exits successfully with information output, then information is returned`() = runTest {
         writeFetcher(
             "information_fetcher",

@@ -67,9 +67,9 @@ class FetcherInformation(JSONWizard):
         key_transform_with_load = "SNAKE"
         key_transform_with_dump = "SNAKE"
 
-    name: str
-    description: str
-    links: list[Link]
+    name: str = ""
+    description: str = ""
+    links: list[Link] = field(default_factory=list)
     options_schema: dict[str, FetcherOptionsSchema] = field(default_factory=dict)
 
 

@@ -60,6 +60,8 @@ If not already existing, a `config.json` can be created using the following
 command:
 
 ```bash
+uv run tools/fetcher-cli/cli.py init-config
+# or
 just fetcher-cli init-config
 ```
 
@@ -80,6 +82,8 @@ This will list all existing fetchers. There are no additional arguments.
 Example:
 
 ```bash
+uv run tools/fetcher-cli/cli.py list
+# or
 just fetcher-cli list
 ```
 
@@ -92,6 +96,8 @@ whether it is configured in `config.json` and its (effective) value.
 Example:
 
 ```bash
+uv run tools/fetcher-cli/cli.py info ExampleFetcher
+# or
 just fetcher-cli info ExampleFetcher
 ```
 
@@ -104,6 +110,8 @@ This will use the specified fetcher to search papers using the specified query.
 Example:
 
 ```bash
+uv run tools/fetcher-cli/cli.py search ExampleFetcher Snowballing
+# or
 just fetcher-cli search ExampleFetcher Snowballing
 ```
 
@@ -119,6 +127,8 @@ The paper can be either provided as JSON string or as path to JSON file.
 Example:
 
 ```bash
+uv run tools/fetcher-cli/cli.py forwards ExampleFetcher tools/fetcher-cli/paper.json
+# or
 just fetcher-cli forwards ExampleFetcher tools/fetcher-cli/paper.json
 ```
 
@@ -134,6 +144,8 @@ The paper can be either provided as JSON string or as path to JSON file.
 Example:
 
 ```bash
+uv run tools/fetcher-cli/cli.py backwards ExampleFetcher tools/fetcher-cli/paper.json
+# or
 just fetcher-cli backwards ExampleFetcher tools/fetcher-cli/paper.json
 ```
 
