@@ -13,6 +13,7 @@ import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.criterion.Criterion
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 import se.uulm.snowballr.backend.model.exception.NotFoundException
+import se.uulm.snowballr.backend.model.incoming.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.toCriterion
@@ -44,7 +45,7 @@ interface ICriterionTableRepo {
      * @param userId The ID of the user creating the criterion.
      * @return The created [Criterion] object representing the newly created criterion.
      */
-    suspend fun createCriterion(request: GrpcCriterion.Create, userId: UUID): Criterion
+    suspend fun createCriterion(request: CreateCriterionRequest, userId: UUID): Criterion
 
     /**
      * Retrieves all criteria associated with a specific user.
@@ -119,19 +120,13 @@ class CriterionTableRepo(
         getEntityByKeyAsResult(::getCriterionByIdOrNull, EntityType.CRITERION, id)
     }
 
-    override suspend fun createCriterion(request: GrpcCriterion.Create, userId: UUID): Criterion = db.query {
-        val projectId = if (request.projectId.isNotEmpty()) {
-            parseUUID(request.projectId, EntityType.PROJECT)
-        } else {
-            null
-        }
-
+    override suspend fun createCriterion(request: CreateCriterionRequest, userId: UUID): Criterion = db.query {
         CriterionTable.insertAndGet(ResultRow::toCriterion) {
             it[tag] = request.tag
             it[name] = request.name
             it[description] = request.description
-            it[category] = CriterionCategory.fromGrpc(request.category)
-            it[this.projectId] = projectId
+            it[category] = request.category
+            it[projectId] = request.projectId
             it[createdBy] = userId
         }
     }

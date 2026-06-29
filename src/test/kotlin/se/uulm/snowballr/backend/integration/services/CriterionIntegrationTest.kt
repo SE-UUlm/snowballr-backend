@@ -6,9 +6,11 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
+import se.uulm.snowballr.backend.model.incoming.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.parseUUID
+import snowballr.CriterionOuterClass
 import snowballr.CriterionOuterClass.Criterion
-import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass.Project
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -17,13 +19,13 @@ class CriterionIntegrationTest : IntegrationTest() {
     private suspend fun createProjectAndCriterion(criterionName: String = "Test Criterion"): Pair<Project, Criterion> {
         val project = projectService.createProject(Project.Create.newBuilder().setName("Test Project").build())
         val criterion = criterionService.createCriterion(
-            Criterion.Create.newBuilder()
-                .setName(criterionName)
-                .setTag("TC")
-                .setDescription("A test criterion")
-                .setCategory(CriterionCategory.CRITERION_CATEGORY_INCLUSION)
-                .setProjectId(project.id)
-                .build(),
+            CreateCriterionRequest(
+                tag = "TC",
+                name = criterionName,
+                description = "A test criterion",
+                category = CriterionCategory.INCLUSION,
+                projectId = parseUUID(project.id, EntityType.PROJECT),
+            ),
         )
         return project to criterion
     }
@@ -58,22 +60,22 @@ class CriterionIntegrationTest : IntegrationTest() {
             val projectId = parseUUID(project.id, EntityType.PROJECT)
 
             criterionService.createCriterion(
-                Criterion.Create.newBuilder()
-                    .setName("Criterion One")
-                    .setTag("C1")
-                    .setDescription("First")
-                    .setCategory(CriterionCategory.CRITERION_CATEGORY_INCLUSION)
-                    .setProjectId(project.id)
-                    .build(),
+                CreateCriterionRequest(
+                    tag = "C1",
+                    name = "Criterion One",
+                    description = "First",
+                    category = CriterionCategory.INCLUSION,
+                    projectId = projectId,
+                ),
             )
             criterionService.createCriterion(
-                Criterion.Create.newBuilder()
-                    .setName("Criterion Two")
-                    .setTag("C2")
-                    .setDescription("Second")
-                    .setCategory(CriterionCategory.CRITERION_CATEGORY_EXCLUSION)
-                    .setProjectId(project.id)
-                    .build(),
+                CreateCriterionRequest(
+                    tag = "C2",
+                    name = "Criterion Two",
+                    description = "Second",
+                    category = CriterionCategory.EXCLUSION,
+                    projectId = projectId,
+                ),
             )
 
             val criteria = criterionService.getAllCriteriaForProject(projectId)
@@ -111,7 +113,7 @@ class CriterionIntegrationTest : IntegrationTest() {
             val criterionId = parseUUID(criterion.id, EntityType.CRITERION)
 
             val updatedCriterion = criterion.toBuilder()
-                .setCategory(CriterionCategory.CRITERION_CATEGORY_HARD_EXCLUSION)
+                .setCategory(CriterionOuterClass.CriterionCategory.CRITERION_CATEGORY_HARD_EXCLUSION)
                 .build()
             val request = Criterion.Update.newBuilder()
                 .setCriterion(updatedCriterion)
@@ -121,7 +123,7 @@ class CriterionIntegrationTest : IntegrationTest() {
             criterionService.updateCriterion(request)
 
             val fetched = criterionService.getCriterionById(criterionId)
-            assertEquals(CriterionCategory.CRITERION_CATEGORY_HARD_EXCLUSION, fetched.category)
+            assertEquals(CriterionOuterClass.CriterionCategory.CRITERION_CATEGORY_HARD_EXCLUSION, fetched.category)
         }
     }
 }

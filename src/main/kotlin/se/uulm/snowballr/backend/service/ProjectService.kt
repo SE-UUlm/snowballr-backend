@@ -15,6 +15,7 @@ import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.notfound.StageNotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
+import se.uulm.snowballr.backend.model.incoming.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
@@ -25,7 +26,6 @@ import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import snowballr.ProjectOuterClass
 import snowballr.copy
 import java.util.UUID
-import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
 import snowballr.Fetcher.FetcherOptions as GrpcFetcherOptions
 import snowballr.ProjectOuterClass.Project as GrpcProject
 import snowballr.ProjectOuterClass.Project.Information.DecisionStatistics as GrpcProjectDecisionStatistics
@@ -126,16 +126,15 @@ class ProjectService(
 
         // Additionally, clone user default criteria into the project as project criteria and add creator as project member
         for (criterion in userDefaultCriteria) {
-            val criterionRequest = GrpcCriterion.Create
-                .newBuilder()
-                .setTag(criterion.tag)
-                .setName(criterion.name)
-                .setDescription(criterion.description)
-                .setCategory(criterion.category.toGrpc())
-                .setProjectId(project.id.toString())
-                .build()
+            val createCriterionRequest = CreateCriterionRequest(
+                tag = criterion.tag,
+                name = criterion.name,
+                description = criterion.description,
+                category = criterion.category,
+                projectId = project.id,
+            )
 
-            criterionRepo.createCriterion(criterionRequest, currentUser.id)
+            criterionRepo.createCriterion(createCriterionRequest, currentUser.id)
         }
 
         projectMemberRepo.addUserToProject(currentUser.id, project.id)

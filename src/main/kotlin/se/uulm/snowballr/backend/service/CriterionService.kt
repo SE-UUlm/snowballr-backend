@@ -6,6 +6,7 @@ import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.criterion.toGrpcCriteria
 import se.uulm.snowballr.backend.model.dto.criterion.toGrpcCriterion
+import se.uulm.snowballr.backend.model.incoming.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
@@ -21,7 +22,7 @@ interface ICriterionService {
     /**
      * Service implementation of [SnowballRService.createCriterion].
      */
-    suspend fun createCriterion(request: GrpcCriterion.Create): GrpcCriterion
+    suspend fun createCriterion(request: CreateCriterionRequest): GrpcCriterion
 
     /**
      * Service implementation of [SnowballRService.updateCriterion].
@@ -64,12 +65,10 @@ class CriterionService(
         criterion.toGrpcCriterion()
     }
 
-    override suspend fun createCriterion(request: GrpcCriterion.Create): GrpcCriterion =
+    override suspend fun createCriterion(request: CreateCriterionRequest): GrpcCriterion =
         withUser(userRepo) { currentUser ->
-            if (request.projectId.isNotEmpty()) {
-                val projectId = parseUUID(request.projectId, EntityType.PROJECT)
-
-                accessChecker.isAllowedToCreateProjectCriterion(currentUser, projectId)
+            if (request.projectId != null) {
+                accessChecker.isAllowedToCreateProjectCriterion(currentUser, request.projectId)
             }
 
             repo.createCriterion(request, currentUser.id).toGrpcCriterion()

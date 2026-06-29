@@ -7,28 +7,26 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import snowballr.CriterionOuterClass.CriterionCategory
-import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
+import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
+import se.uulm.snowballr.backend.model.incoming.CreateCriterionRequest
+import java.util.UUID
 
 class CreateCriterionTest : CriterionServiceTest() {
-    private fun getProjectCriterionRequest(projectId: String): GrpcCriterion.Create {
-        return GrpcCriterion.Create.newBuilder()
-            .setTag("Tag")
-            .setName("Criterion")
-            .setDescription("Description")
-            .setCategory(CriterionCategory.CRITERION_CATEGORY_EXCLUSION)
-            .setProjectId(projectId)
-            .build()
-    }
+    private fun getProjectCriterionRequest(projectId: UUID) = CreateCriterionRequest(
+        tag = "Tag",
+        name = "Criterion",
+        description = "Description",
+        category = CriterionCategory.EXCLUSION,
+        projectId = projectId,
+    )
 
-    private fun getUserCriterionRequest(): GrpcCriterion.Create {
-        return GrpcCriterion.Create.newBuilder()
-            .setTag("Tag")
-            .setName("Criterion")
-            .setDescription("Description")
-            .setCategory(CriterionCategory.CRITERION_CATEGORY_EXCLUSION)
-            .build()
-    }
+    private fun getUserCriterionRequest() = CreateCriterionRequest(
+        tag = "Tag",
+        name = "Criterion",
+        description = "Description",
+        category = CriterionCategory.EXCLUSION,
+        projectId = null,
+    )
 
     @Test
     fun `When a user creates a project criterion and has access, then the created criterion has the correct values`() =
@@ -37,7 +35,7 @@ class CreateCriterionTest : CriterionServiceTest() {
             val project = DataBuilder.createExampleProject()
 
             val criterion = DataBuilder.createExampleProjectCriterion(projectId = project.id)
-            val request = getProjectCriterionRequest(project.id.toString())
+            val request = getProjectCriterionRequest(project.id)
 
             mockCurrentUser(user)
             coJustRun { criterionAccessCheckerMock.isAllowedToCreateProjectCriterion(user, project.id) }
@@ -54,7 +52,7 @@ class CreateCriterionTest : CriterionServiceTest() {
             val user = DataBuilder.createExampleUser()
             val project = DataBuilder.createExampleProject()
 
-            val request = getProjectCriterionRequest(project.id.toString())
+            val request = getProjectCriterionRequest(project.id)
 
             mockCurrentUser(user)
             coEvery {

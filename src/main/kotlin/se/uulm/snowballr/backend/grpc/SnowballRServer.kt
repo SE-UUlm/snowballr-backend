@@ -21,6 +21,10 @@ import se.uulm.snowballr.backend.grpc.interceptor.authenticationInterceptor
 import se.uulm.snowballr.backend.grpc.interceptor.exceptionInterceptor
 import se.uulm.snowballr.backend.grpc.interceptor.loggingInterceptor
 import se.uulm.snowballr.backend.grpc.interceptor.validationInterceptor
+import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
+import se.uulm.snowballr.backend.model.incoming.CreateCriterionRequest
+import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.scheduler.SchedulerManager
 import se.uulm.snowballr.backend.service.IAuthenticationService
 import se.uulm.snowballr.backend.service.ICriterionService
@@ -376,7 +380,23 @@ class SnowballRServer(
 
         override suspend fun createCriterion(
             request: CriterionOuterClass.Criterion.Create,
-        ): CriterionOuterClass.Criterion = criterionService.createCriterion(request)
+        ): CriterionOuterClass.Criterion {
+            val projectId = if (request.projectId.isNotEmpty()) {
+                parseUUID(request.projectId, EntityType.PROJECT)
+            } else {
+                null
+            }
+
+            return criterionService.createCriterion(
+                CreateCriterionRequest(
+                    tag = request.tag,
+                    name = request.name,
+                    description = request.description,
+                    category = CriterionCategory.fromGrpc(request.category),
+                    projectId = projectId,
+                ),
+            )
+        }
 
         override suspend fun updateCriterion(
             request: CriterionOuterClass.Criterion.Update,
