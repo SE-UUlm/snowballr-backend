@@ -1,6 +1,5 @@
 package se.uulm.snowballr.backend.service
 
-import com.google.protobuf.FieldMask
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.auth.IJwtManager
 import se.uulm.snowballr.backend.auth.PasswordUtils
@@ -8,17 +7,16 @@ import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.dto.user.isActiveAndConfirmed
-import se.uulm.snowballr.backend.model.dto.user.toGrpcUser
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.UnauthenticatedException
 import se.uulm.snowballr.backend.model.exception.failedprecondition.EntityNotActiveException
 import se.uulm.snowballr.backend.model.exception.invalidargument.IncorrectOldPasswordException
 import se.uulm.snowballr.backend.model.exception.notfound.VerificationTokenNotFoundException
+import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.IVerificationTokenTableRepo
 import snowballr.Authentication
 import java.time.OffsetDateTime
-import snowballr.UserOuterClass.User as GrpcUser
 
 interface IAuthenticationService {
     /**
@@ -73,11 +71,15 @@ class AuthenticationService(
 
         // Update the user's status to active
         val updatedUser = user.copy(status = UserStatus.ACTIVE)
-        val userUpdate = GrpcUser.Update.newBuilder()
-            .setUser(updatedUser.toGrpcUser())
-            .setMask(FieldMask.newBuilder().addPaths("user.status").build())
-            .build()
-        repo.updateUser(userUpdate)
+        val userUpdate = UpdateUserRequest(
+            userId = updatedUser.id,
+            firstName = updatedUser.firstName,
+            lastName = updatedUser.lastName,
+            email = updatedUser.email,
+            role = updatedUser.role,
+            status = updatedUser.status,
+        )
+        repo.updateUser(userUpdate, listOf("user.status"))
 
         // Remove the verification token after successful verification
         verificationTokenRepo.deleteVerificationToken(request.token)

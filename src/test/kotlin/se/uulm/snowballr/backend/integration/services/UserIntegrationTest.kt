@@ -1,6 +1,5 @@
 package se.uulm.snowballr.backend.integration.services
 
-import com.google.protobuf.FieldMask
 import io.mockk.coEvery
 import io.mockk.coJustRun
 import io.mockk.slot
@@ -12,17 +11,18 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.dto.user.UserRole
+import se.uulm.snowballr.backend.model.dto.user.UserStatus.Companion.fromGrpc
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateUserException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadAllException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedUpdateException
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
+import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
 import se.uulm.snowballr.backend.model.parseUUID
 import snowballr.Authentication
-import snowballr.UserOuterClass.UserRole
 import snowballr.UserOuterClass.UserStatus
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import snowballr.UserOuterClass.User as GrpcUser
 
 class UserIntegrationTest : IntegrationTest() {
     @Nested
@@ -108,12 +108,16 @@ class UserIntegrationTest : IntegrationTest() {
             val currentUser = userService.getCurrentUser()
             val newFirstName = "UpdatedFirstName"
 
-            val request = GrpcUser.Update.newBuilder()
-                .setUser(GrpcUser.newBuilder().setId(currentUser.id).setFirstName(newFirstName))
-                .setMask(FieldMask.newBuilder().addPaths("user.first_name"))
-                .build()
+            val request = UpdateUserRequest(
+                userId = parseUUID(currentUser.id, EntityType.USER),
+                firstName = newFirstName,
+                lastName = currentUser.lastName,
+                email = currentUser.email,
+                role = UserRole.fromGrpc(currentUser.role),
+                status = fromGrpc(currentUser.status),
+            )
 
-            val updatedUser = userService.updateUser(request)
+            val updatedUser = userService.updateUser(request, listOf("user.first_name"))
 
             assertEquals(newFirstName, updatedUser.firstName)
         }
@@ -123,12 +127,16 @@ class UserIntegrationTest : IntegrationTest() {
             val otherUser = addUser(DataBuilder.createExampleUser(email = "other.user@example.com"))
             val newFirstName = "AdminUpdatedName"
 
-            val request = GrpcUser.Update.newBuilder()
-                .setUser(GrpcUser.newBuilder().setId(otherUser.id).setFirstName(newFirstName))
-                .setMask(FieldMask.newBuilder().addPaths("user.first_name"))
-                .build()
+            val request = UpdateUserRequest(
+                userId = parseUUID(otherUser.id, EntityType.USER),
+                firstName = newFirstName,
+                lastName = otherUser.lastName,
+                email = otherUser.email,
+                role = UserRole.fromGrpc(otherUser.role),
+                status = fromGrpc(otherUser.status),
+            )
 
-            val updatedUser = userService.updateUser(request)
+            val updatedUser = userService.updateUser(request, listOf("user.first_name"))
 
             assertEquals(newFirstName, updatedUser.firstName)
         }
@@ -139,13 +147,17 @@ class UserIntegrationTest : IntegrationTest() {
                 val nonAdminUser = addUser(DataBuilder.createExampleUser(email = "non.admin@example.com"))
                 val nonAdminUserId = parseUUID(nonAdminUser.id, EntityType.USER)
 
-                val request = GrpcUser.Update.newBuilder()
-                    .setUser(GrpcUser.newBuilder().setId(nonAdminUser.id).setRole(UserRole.USER_ROLE_ADMIN))
-                    .setMask(FieldMask.newBuilder().addPaths("user.role"))
-                    .build()
+                val request = UpdateUserRequest(
+                    userId = parseUUID(nonAdminUser.id, EntityType.USER),
+                    firstName = nonAdminUser.firstName,
+                    lastName = nonAdminUser.lastName,
+                    email = nonAdminUser.email,
+                    role = UserRole.ADMIN,
+                    status = fromGrpc(nonAdminUser.status),
+                )
 
                 actAsUser(nonAdminUserId) {
-                    assertThrows<UnauthorizedUpdateException> { userService.updateUser(request) }
+                    assertThrows<UnauthorizedUpdateException> { userService.updateUser(request, listOf("user.role")) }
                 }
             }
 
@@ -155,12 +167,16 @@ class UserIntegrationTest : IntegrationTest() {
                 val existingUser = addUser(DataBuilder.createExampleUser(email = "existing@example.com"))
                 val currentUser = userService.getCurrentUser()
 
-                val request = GrpcUser.Update.newBuilder()
-                    .setUser(GrpcUser.newBuilder().setId(currentUser.id).setEmail(existingUser.email))
-                    .setMask(FieldMask.newBuilder().addPaths("user.email"))
-                    .build()
+                val request = UpdateUserRequest(
+                    userId = parseUUID(currentUser.id, EntityType.USER),
+                    firstName = existingUser.firstName,
+                    lastName = existingUser.lastName,
+                    email = existingUser.email,
+                    role = UserRole.fromGrpc(existingUser.role),
+                    status = fromGrpc(existingUser.status),
+                )
 
-                assertThrows<DuplicateUserException> { userService.updateUser(request) }
+                assertThrows<DuplicateUserException> { userService.updateUser(request, listOf("user.email")) }
             }
     }
 

@@ -8,7 +8,6 @@ import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.formatting.daysToHumanReadable
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.mail.IEmailManager
-import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.UserIdentifierType
 import se.uulm.snowballr.backend.model.dto.criterion.toGrpcCriteria
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
@@ -19,7 +18,7 @@ import se.uulm.snowballr.backend.model.dto.user.toGrpcUsers
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateUserException
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
-import se.uulm.snowballr.backend.model.parseUUID
+import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
@@ -52,7 +51,7 @@ interface IUserService {
     /**
      * Service implementation of [SnowballRService.updateUser].
      */
-    suspend fun updateUser(request: GrpcUser.Update): GrpcUser
+    suspend fun updateUser(request: UpdateUserRequest, paths: List<String>): GrpcUser
 
     /**
      * Service implementation of [SnowballRService.softDeleteUser].
@@ -153,24 +152,24 @@ class UserService(
         emailManager.sendVerificationEmail(user.email, data)
     }
 
-    override suspend fun updateUser(request: GrpcUser.Update): GrpcUser = withUser(userRepo) { currentUser ->
-        val targetUserId = parseUUID(request.user.id, EntityType.USER)
-        val targetUser = userRepo.getUserById(targetUserId).getOrThrow()
+    override suspend fun updateUser(request: UpdateUserRequest, paths: List<String>): GrpcUser =
+        withUser(userRepo) { currentUser ->
+            val targetUser = userRepo.getUserById(request.userId).getOrThrow()
 
-        accessChecker.isAllowedToUpdateUser(currentUser, targetUser)
+            accessChecker.isAllowedToUpdateUser(currentUser, targetUser)
 
-        // If the role is changed, the requesting user must be a server admin.
-        if (request.mask.pathsList.contains("user.role")) {
-            accessChecker.isAllowedToUpdateUserRole(currentUser, targetUserId)
+            // If the role is changed, the requesting user must be a server admin.
+            if (paths.contains("user.role")) {
+                accessChecker.isAllowedToUpdateUserRole(currentUser, request.userId)
+            }
+
+            // If the email is changed, there must not yet exist an account with that email address.
+            if (paths.contains("user.email") && userRepo.doesUserExistByEmail(request.email)) {
+                throw DuplicateUserException(request.email)
+            }
+
+            userRepo.updateUser(request, paths).toGrpcUser()
         }
-
-        // If the email is changed, there must not yet exist an account with that email address.
-        if (request.mask.pathsList.contains("user.email") && userRepo.doesUserExistByEmail(request.user.email)) {
-            throw DuplicateUserException(request.user.email)
-        }
-
-        userRepo.updateUser(request).toGrpcUser()
-    }
 
     override suspend fun softDeleteUser(userId: UUID) = withUser(userRepo) { currentUser ->
         val targetUser = userRepo.getUserById(userId).getOrThrow()

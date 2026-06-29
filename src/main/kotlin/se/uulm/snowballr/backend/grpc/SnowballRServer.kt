@@ -26,9 +26,12 @@ import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 import se.uulm.snowballr.backend.model.dto.criterion.toGrpcCriteria
 import se.uulm.snowballr.backend.model.dto.criterion.toGrpcCriterion
+import se.uulm.snowballr.backend.model.dto.user.UserRole
+import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
+import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.scheduler.SchedulerManager
 import se.uulm.snowballr.backend.service.IAuthenticationService
@@ -265,7 +268,17 @@ class SnowballRServer(
             userService.getUserByEmail(request.email)
 
         override suspend fun updateUser(request: UserOuterClass.User.Update): UserOuterClass.User =
-            userService.updateUser(request)
+            userService.updateUser(
+                UpdateUserRequest(
+                    userId = parseUUID(request.user.id, EntityType.USER),
+                    firstName = request.user.firstName,
+                    lastName = request.user.lastName,
+                    email = request.user.email,
+                    role = UserRole.fromGrpc(request.user.role),
+                    status = UserStatus.fromGrpc(request.user.status),
+                ),
+                FieldMaskUtil.normalize(request.mask).pathsList,
+            )
 
         override suspend fun softDeleteUser(request: Base.Id) = returnNothing {
             userService.softDeleteUser(parseUserId(request))
