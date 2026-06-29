@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.grpc
 
+import com.google.protobuf.util.FieldMaskUtil
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.grpc.Server
 import io.grpc.ServerBuilder
@@ -26,6 +27,7 @@ import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 import se.uulm.snowballr.backend.model.dto.criterion.toGrpcCriteria
 import se.uulm.snowballr.backend.model.dto.criterion.toGrpcCriterion
 import se.uulm.snowballr.backend.model.incoming.CreateCriterionRequest
+import se.uulm.snowballr.backend.model.incoming.UpdateCriterionRequest
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.scheduler.SchedulerManager
 import se.uulm.snowballr.backend.service.IAuthenticationService
@@ -402,7 +404,16 @@ class SnowballRServer(
 
         override suspend fun updateCriterion(
             request: CriterionOuterClass.Criterion.Update,
-        ): CriterionOuterClass.Criterion = criterionService.updateCriterion(request).toGrpcCriterion()
+        ): CriterionOuterClass.Criterion = criterionService.updateCriterion(
+            UpdateCriterionRequest(
+                criterionId = parseUUID(request.criterion.id, EntityType.CRITERION),
+                tag = request.criterion.tag,
+                name = request.criterion.name,
+                description = request.criterion.description,
+                category = CriterionCategory.fromGrpc(request.criterion.category),
+            ),
+            FieldMaskUtil.normalize(request.mask).pathsList,
+        ).toGrpcCriterion()
 
         override suspend fun deleteCriterion(request: Base.Id): Base.Nothing = super.deleteCriterion(request)
 

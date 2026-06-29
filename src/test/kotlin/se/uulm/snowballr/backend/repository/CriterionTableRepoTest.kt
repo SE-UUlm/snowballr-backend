@@ -1,6 +1,5 @@
 package se.uulm.snowballr.backend.repository
 
-import com.google.protobuf.util.FieldMaskUtil
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -15,9 +14,9 @@ import se.uulm.snowballr.backend.model.dto.criterion.Criterion
 import se.uulm.snowballr.backend.model.dto.criterion.Criterion.ProjectCriterion
 import se.uulm.snowballr.backend.model.dto.criterion.Criterion.UserCriterion
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
-import se.uulm.snowballr.backend.model.dto.criterion.toGrpcCriterion
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.incoming.CreateCriterionRequest
+import se.uulm.snowballr.backend.model.incoming.UpdateCriterionRequest
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertCriterionAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertUserAndGetId
@@ -29,7 +28,6 @@ import se.uulm.snowballr.backend.utils.assertResultSuccess
 import java.sql.SQLException
 import java.util.UUID
 import kotlin.test.assertIs
-import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
 
 class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTable), true) {
     private val repo = CriterionTableRepo(db)
@@ -277,21 +275,16 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
         ) = runTest {
             val projectId = insertProjectAndGetId(createdBy = testUserId)
             val criterionId = insertCriterionAndGetId(projectId = projectId, createdBy = testUserId)
-            val originalCriterion = repo.getCriterionById(criterionId).getOrThrow()
+            repo.getCriterionById(criterionId).getOrThrow()
+            val request = UpdateCriterionRequest(
+                criterionId = criterionId,
+                tag = "Updated Tag",
+                name = "Updated Criterion",
+                description = "Updated Description",
+                category = CriterionCategory.INCLUSION,
+            )
 
-            val updatedCriterionDetails = originalCriterion.toGrpcCriterion().toBuilder()
-                .setTag("Updated Tag")
-                .setName("Updated Criterion")
-                .setDescription("Updated Description")
-                .setCategory(CriterionCategory.INCLUSION.toGrpc())
-                .build()
-
-            val request = GrpcCriterion.Update.newBuilder()
-                .setCriterion(updatedCriterionDetails)
-                .setMask(FieldMaskUtil.fromStringList(fieldMask))
-                .build()
-
-            val updatedCriterion = repo.updateCriterion(request)
+            val updatedCriterion = repo.updateCriterion(request, fieldMask)
 
             if ("criterion.tag" in fieldMask) {
                 assertEquals("Updated Tag", updatedCriterion.tag)

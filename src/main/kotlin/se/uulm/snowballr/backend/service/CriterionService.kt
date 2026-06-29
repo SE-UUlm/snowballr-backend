@@ -3,14 +3,12 @@ package se.uulm.snowballr.backend.service
 import se.uulm.snowballr.backend.access.ICriterionAccessChecker
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
-import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.criterion.Criterion
 import se.uulm.snowballr.backend.model.incoming.CreateCriterionRequest
-import se.uulm.snowballr.backend.model.parseUUID
+import se.uulm.snowballr.backend.model.incoming.UpdateCriterionRequest
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import java.util.UUID
-import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
 
 interface ICriterionService {
     /**
@@ -26,7 +24,7 @@ interface ICriterionService {
     /**
      * Service implementation of [SnowballRService.updateCriterion].
      */
-    suspend fun updateCriterion(request: GrpcCriterion.Update): Criterion
+    suspend fun updateCriterion(request: UpdateCriterionRequest, paths: List<String>): Criterion
 
     /**
      * Service implementation of [SnowballRService.getAllCriteriaForProject].
@@ -73,14 +71,14 @@ class CriterionService(
             repo.createCriterion(request, currentUser.id)
         }
 
-    override suspend fun updateCriterion(request: GrpcCriterion.Update): Criterion = withUser(userRepo) { currentUser ->
-        val criterionId = parseUUID(request.criterion.id, EntityType.CRITERION)
-        val criterion = repo.getCriterionById(criterionId).getOrThrow()
+    override suspend fun updateCriterion(request: UpdateCriterionRequest, paths: List<String>): Criterion =
+        withUser(userRepo) { currentUser ->
+            val criterion = repo.getCriterionById(request.criterionId).getOrThrow()
 
-        accessChecker.isAllowedToUpdateCriterion(currentUser, criterion)
+            accessChecker.isAllowedToUpdateCriterion(currentUser, criterion)
 
-        repo.updateCriterion(request)
-    }
+            repo.updateCriterion(request, paths)
+        }
 
     override suspend fun getAllCriteriaForProject(projectId: UUID): List<Criterion.ProjectCriterion> =
         withUser(userRepo) { currentUser ->

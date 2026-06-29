@@ -1,6 +1,5 @@
 package se.uulm.snowballr.backend.integration.services
 
-import com.google.protobuf.util.FieldMaskUtil
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -8,10 +7,9 @@ import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.criterion.Criterion
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
-import se.uulm.snowballr.backend.model.dto.criterion.toGrpcCriterion
 import se.uulm.snowballr.backend.model.incoming.CreateCriterionRequest
+import se.uulm.snowballr.backend.model.incoming.UpdateCriterionRequest
 import se.uulm.snowballr.backend.model.parseUUID
-import snowballr.CriterionOuterClass
 import snowballr.ProjectOuterClass.Project
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -93,15 +91,15 @@ class CriterionIntegrationTest : IntegrationTest() {
         @Test
         fun `When a criterion's name is updated, then the updated name is persisted`() = runTest {
             val (_, criterion) = createProjectAndCriterion("Old Name")
+            val request = UpdateCriterionRequest(
+                criterionId = criterion.id,
+                tag = criterion.tag,
+                name = "New Name",
+                description = criterion.description,
+                category = criterion.category,
+            )
 
-            val updatedCriterion = criterion.copy(name = "New Name")
-            val request = CriterionOuterClass.Criterion.Update.newBuilder()
-                .setCriterion(updatedCriterion.toGrpcCriterion())
-                .setMask(FieldMaskUtil.fromStringList(listOf("criterion.name")))
-                .build()
-
-            val result = criterionService.updateCriterion(request)
-
+            val result = criterionService.updateCriterion(request, listOf("criterion.name"))
             assertEquals("New Name", result.name)
 
             val fetched = criterionService.getCriterionById(criterion.id)
@@ -111,14 +109,15 @@ class CriterionIntegrationTest : IntegrationTest() {
         @Test
         fun `When a criterion's category is updated, then the updated category is persisted`() = runTest {
             val (_, criterion) = createProjectAndCriterion()
+            val request = UpdateCriterionRequest(
+                criterionId = criterion.id,
+                tag = criterion.tag,
+                name = criterion.name,
+                description = criterion.description,
+                category = CriterionCategory.HARD_EXCLUSION,
+            )
 
-            val updatedCriterion = criterion.copy(category = CriterionCategory.HARD_EXCLUSION)
-            val request = CriterionOuterClass.Criterion.Update.newBuilder()
-                .setCriterion(updatedCriterion.toGrpcCriterion())
-                .setMask(FieldMaskUtil.fromStringList(listOf("criterion.category")))
-                .build()
-
-            criterionService.updateCriterion(request)
+            criterionService.updateCriterion(request, listOf("criterion.category"))
 
             val fetched = criterionService.getCriterionById(criterion.id)
             assertEquals(CriterionCategory.HARD_EXCLUSION, fetched.category)
