@@ -22,6 +22,7 @@ import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.dto.user.toGrpcUser
 import se.uulm.snowballr.backend.model.exception.NotFoundException
+import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertUserAndGetId
 import se.uulm.snowballr.backend.table.CriterionTable
@@ -29,7 +30,6 @@ import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.utils.assertResultFailure
 import se.uulm.snowballr.backend.utils.assertResultSuccess
-import snowballr.Authentication
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
 import snowballr.UserOuterClass.User
 import java.sql.SQLException
@@ -169,14 +169,12 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
     inner class CreateUser {
         @Test
         fun `When a user is created, then the user is returned`() = runTest {
-            val request =
-                Authentication.RegisterRequest
-                    .newBuilder()
-                    .setEmail("alice.smith@example.com")
-                    .setFirstName("Alice")
-                    .setLastName("Smith")
-                    .setPassword("AAbb__00")
-                    .build()
+            val request = RegisterRequest(
+                firstName = "Alice",
+                lastName = "Smith",
+                email = "alice.smith@example.com",
+                password = "AAbb__00",
+            )
 
             val user = repo.createUser(request, "hashedPassword")
 
@@ -189,14 +187,12 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
 
         @Test
         fun `When a user with an existent email is created, then an SQLException is thrown`() = runTest {
-            val request =
-                Authentication.RegisterRequest
-                    .newBuilder()
-                    .setEmail("alice.smith@example.com")
-                    .setFirstName("Alice")
-                    .setLastName("Smith")
-                    .setPassword("AAbb__00")
-                    .build()
+            val request = RegisterRequest(
+                firstName = "Alice",
+                lastName = "Smith",
+                email = "alice.smith@example.com",
+                password = "AAbb__00",
+            )
 
             repo.createUser(request, "hashedPassword")
 
@@ -207,25 +203,21 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
 
         @Test
         fun `When two users with different emails are created, then they have different IDs`() = runTest {
-            val request1 =
-                Authentication.RegisterRequest
-                    .newBuilder()
-                    .setEmail("alice.smith@example.com")
-                    .setFirstName("Alice")
-                    .setLastName("Smith")
-                    .setPassword("AAbb__00")
-                    .build()
+            val request1 = RegisterRequest(
+                firstName = "Alice",
+                lastName = "Smith",
+                email = "alice.smith@example.com",
+                password = "AAbb__00",
+            )
 
             val user1 = repo.createUser(request1, "hashedPassword1")
 
-            val request2 =
-                Authentication.RegisterRequest
-                    .newBuilder()
-                    .setEmail("john.smith@example.com")
-                    .setFirstName("John")
-                    .setLastName("Smith")
-                    .setPassword("BBaa__00")
-                    .build()
+            val request2 = RegisterRequest(
+                firstName = "John",
+                lastName = "Smith",
+                email = "john.smith@example.com",
+                password = "BBaa__00",
+            )
 
             val user2 = repo.createUser(request2, "hashedPassword2")
 

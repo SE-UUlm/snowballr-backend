@@ -15,6 +15,7 @@ import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateUserException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadAllException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedUpdateException
+import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import se.uulm.snowballr.backend.model.parseUUID
 import snowballr.Authentication
 import snowballr.UserOuterClass.UserRole
@@ -35,12 +36,12 @@ class UserIntegrationTest : IntegrationTest() {
             coJustRun { emailManagerMock.sendVerificationEmail(any(), any()) }
 
             userService.register(
-                Authentication.RegisterRequest.newBuilder()
-                    .setFirstName(newUser.firstName)
-                    .setLastName(newUser.lastName)
-                    .setEmail(newUser.email)
-                    .setPassword("SecureP@ssw0rd!")
-                    .build(),
+                RegisterRequest(
+                    firstName = newUser.firstName,
+                    lastName = newUser.lastName,
+                    email = newUser.email,
+                    password = "SecureP@ssw0rd!",
+                ),
             )
 
             val unverifiedUser = userService.getUserByEmail(newUser.email)

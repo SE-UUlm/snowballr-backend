@@ -18,12 +18,12 @@ import se.uulm.snowballr.backend.model.dto.user.toGrpcUserSettings
 import se.uulm.snowballr.backend.model.dto.user.toGrpcUsers
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateUserException
+import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.IVerificationTokenTableRepo
-import snowballr.Authentication
 import java.util.UUID
 import snowballr.UserOuterClass.User as GrpcUser
 import snowballr.UserSettingsOuterClass.UserSettings as GrpcUserSettings
@@ -47,7 +47,7 @@ interface IUserService {
     /**
      * Service implementation of [SnowballRService.register].
      */
-    suspend fun register(request: Authentication.RegisterRequest)
+    suspend fun register(request: RegisterRequest)
 
     /**
      * Service implementation of [SnowballRService.updateUser].
@@ -128,7 +128,7 @@ class UserService(
         userRepo.getAllUsers().toGrpcUsers()
     }
 
-    override suspend fun register(request: Authentication.RegisterRequest) {
+    override suspend fun register(request: RegisterRequest) {
         // Check whether a user with the given email already exists
         if (userRepo.doesUserExistByEmail(request.email)) {
             throw DuplicateUserException(request.email)

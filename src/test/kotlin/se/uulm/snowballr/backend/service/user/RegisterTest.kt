@@ -14,22 +14,20 @@ import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateUserException
-import snowballr.Authentication
+import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 
 class RegisterTest : UserServiceTest() {
-    private fun getExampleRequest(user: User) = Authentication.RegisterRequest.newBuilder()
-        .setEmail(user.email)
-        .setFirstName(user.firstName)
-        .setLastName(user.lastName)
-        .setPassword("VALIDPassword__1234")
-        .build()
+    private fun getExampleRequest(user: User) = RegisterRequest(
+        firstName = user.firstName,
+        lastName = user.lastName,
+        email = user.email,
+        password = "VALIDPassword__1234",
+    )
 
     @Test
     fun `When a user with the given email already exists, then a DuplicateUserException is thrown`() = runTest {
         val existentEmail = "existent-email"
-        val request = Authentication.RegisterRequest.newBuilder()
-            .setEmail(existentEmail)
-            .build()
+        val request = getExampleRequest(DataBuilder.createExampleUser()).copy(email = existentEmail)
 
         coEvery { userRepoMock.doesUserExistByEmail(existentEmail) } returns true
 

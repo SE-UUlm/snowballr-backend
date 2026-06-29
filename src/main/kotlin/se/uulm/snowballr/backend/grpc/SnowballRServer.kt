@@ -28,6 +28,7 @@ import se.uulm.snowballr.backend.model.dto.criterion.toGrpcCriteria
 import se.uulm.snowballr.backend.model.dto.criterion.toGrpcCriterion
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
+import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.scheduler.SchedulerManager
 import se.uulm.snowballr.backend.service.IAuthenticationService
@@ -213,7 +214,14 @@ class SnowballRServer(
             fetcherService.getAvailableFetchers()
 
         override suspend fun register(request: Authentication.RegisterRequest) = returnNothing {
-            userService.register(request)
+            userService.register(
+                RegisterRequest(
+                    firstName = request.firstName,
+                    lastName = request.lastName,
+                    email = request.email,
+                    password = request.password,
+                ),
+            )
         }
 
         override suspend fun verifyEmail(request: Authentication.VerifyEmailRequest) = returnNothing {

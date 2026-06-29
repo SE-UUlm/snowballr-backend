@@ -25,11 +25,11 @@ import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.dto.user.UserSettings
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.exception.NotFoundException
+import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.toUser
 import se.uulm.snowballr.backend.table.toUserSettings
-import snowballr.Authentication
 import java.time.OffsetDateTime
 import java.util.UUID
 import snowballr.UserOuterClass.User as GrpcUser
@@ -100,7 +100,7 @@ interface IUserTableRepo {
      * @param passwordHash The hashed password for the user.
      * @return The created [User] object representing the newly registered user.
      */
-    suspend fun createUser(request: Authentication.RegisterRequest, passwordHash: String): User
+    suspend fun createUser(request: RegisterRequest, passwordHash: String): User
 
     /**
      * Updates an existent user in the database with the provided new information.
@@ -290,7 +290,7 @@ class UserTableRepo(
             matchingUsers.orEmpty()
         }
 
-    override suspend fun createUser(request: Authentication.RegisterRequest, passwordHash: String): User = db.query {
+    override suspend fun createUser(request: RegisterRequest, passwordHash: String): User = db.query {
         UserTable.insertAndGet(ResultRow::toUser) {
             it[email] = request.email
             it[firstName] = request.firstName

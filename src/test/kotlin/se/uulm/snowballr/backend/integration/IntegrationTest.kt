@@ -43,6 +43,7 @@ import se.uulm.snowballr.backend.mailServiceDeps
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.email.EmailData
+import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.RepositoryHelper
 import se.uulm.snowballr.backend.repositoryLayerDeps
@@ -191,12 +192,12 @@ open class IntegrationTest : KoinTest {
         coJustRun { emailManagerMock.sendVerificationEmail(any(), verificationData) }
 
         // Register user
-        val registerUserRequest = Authentication.RegisterRequest.newBuilder()
-            .setFirstName(user.firstName)
-            .setLastName(user.lastName)
-            .setEmail(user.email)
-            .setPassword("SecureP@ssw0rd!")
-            .build()
+        val registerUserRequest = RegisterRequest(
+            firstName = user.firstName,
+            lastName = user.lastName,
+            email = user.email,
+            password = "SecureP@ssw0rd!",
+        )
         userService.register(registerUserRequest)
 
         // Verify the user's email
