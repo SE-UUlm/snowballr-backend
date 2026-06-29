@@ -16,7 +16,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.isBetweenWithDelta
-import se.uulm.snowballr.backend.model.dto.toGrpcPaper
+import se.uulm.snowballr.backend.model.dto.paper.toGrpcPaper
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.PaperNotFoundException
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertPaperAndGetId

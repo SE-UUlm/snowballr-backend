@@ -11,11 +11,11 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
-import se.uulm.snowballr.backend.model.dto.Criterion
-import se.uulm.snowballr.backend.model.dto.Criterion.ProjectCriterion
-import se.uulm.snowballr.backend.model.dto.Criterion.UserCriterion
+import se.uulm.snowballr.backend.model.dto.criterion.Criterion
+import se.uulm.snowballr.backend.model.dto.criterion.Criterion.ProjectCriterion
+import se.uulm.snowballr.backend.model.dto.criterion.Criterion.UserCriterion
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
-import se.uulm.snowballr.backend.model.dto.toGrpcCriterion
+import se.uulm.snowballr.backend.model.dto.criterion.toGrpcCriterion
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertCriterionAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectAndGetId

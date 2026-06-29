@@ -1,8 +1,8 @@
 package se.uulm.snowballr.backend.access.rules
 
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.dto.Project
-import se.uulm.snowballr.backend.model.dto.isActive
+import se.uulm.snowballr.backend.model.dto.project.Project
+import se.uulm.snowballr.backend.model.dto.project.isActive
 import se.uulm.snowballr.backend.model.exception.failedprecondition.EntityNotActiveException
 import javax.annotation.CheckReturnValue
 

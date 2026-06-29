@@ -2,8 +2,8 @@ package se.uulm.snowballr.backend.model.fetcher
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import se.uulm.snowballr.backend.model.dto.Author
-import se.uulm.snowballr.backend.model.dto.PaperData
+import se.uulm.snowballr.backend.model.dto.paper.Author
+import se.uulm.snowballr.backend.model.dto.paper.PaperData
 
 /**
  * Represents a paper fetched from an external source. Also, a serializable implementation of [PaperData].

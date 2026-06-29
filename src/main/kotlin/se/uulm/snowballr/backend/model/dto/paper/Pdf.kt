@@ -1,4 +1,4 @@
-package se.uulm.snowballr.backend.model.dto
+package se.uulm.snowballr.backend.model.dto.paper
 
 import se.uulm.snowballr.backend.table.PdfTable
 import java.util.UUID

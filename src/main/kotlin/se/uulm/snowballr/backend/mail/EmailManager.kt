@@ -55,7 +55,7 @@ interface IEmailManager {
  * The [EmailManager] class provides functionality to send emails using an SMTP mailer.
  *
  * This class implements the [IEmailManager] and is responsible for:
- * - Initializing the underlying SMTP mailer with configuration values from [se.uulm.snowballr.backend.env.EnvReader].
+ * - Initializing the underlying SMTP mailer with configuration values from [EnvReader].
  * - Sending invitation emails to new users.
  * - Sending account verification emails to registered users.
  *

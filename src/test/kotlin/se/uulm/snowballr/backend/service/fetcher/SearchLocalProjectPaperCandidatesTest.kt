@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.model.dto.Project
+import se.uulm.snowballr.backend.model.dto.project.Project
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper

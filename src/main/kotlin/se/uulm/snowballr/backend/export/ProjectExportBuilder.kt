@@ -1,12 +1,12 @@
 package se.uulm.snowballr.backend.export
 
-import se.uulm.snowballr.backend.model.dto.Criterion
-import se.uulm.snowballr.backend.model.dto.Paper
-import se.uulm.snowballr.backend.model.dto.Project
-import se.uulm.snowballr.backend.model.dto.ProjectMemberWithUser
-import se.uulm.snowballr.backend.model.dto.ProjectPaperFull
-import se.uulm.snowballr.backend.model.dto.ReviewWithSelectedCriteriaIds
+import se.uulm.snowballr.backend.model.dto.criterion.Criterion
+import se.uulm.snowballr.backend.model.dto.paper.Paper
+import se.uulm.snowballr.backend.model.dto.project.Project
+import se.uulm.snowballr.backend.model.dto.projectmember.ProjectMemberWithUser
 import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
+import se.uulm.snowballr.backend.model.dto.projectpaper.ProjectPaperFull
+import se.uulm.snowballr.backend.model.dto.review.ReviewWithSelectedCriteriaIds
 import se.uulm.snowballr.backend.model.export.CriterionExport
 import se.uulm.snowballr.backend.model.export.PaperExport
 import se.uulm.snowballr.backend.model.export.PaperReviewExport

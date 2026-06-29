@@ -1,9 +1,9 @@
 package se.uulm.snowballr.backend.service
 
 import se.uulm.snowballr.backend.auth.GrpcContext
-import se.uulm.snowballr.backend.model.dto.Paper
-import se.uulm.snowballr.backend.model.dto.User
-import se.uulm.snowballr.backend.model.dto.toGrpcPaper
+import se.uulm.snowballr.backend.model.dto.paper.Paper
+import se.uulm.snowballr.backend.model.dto.paper.toGrpcPaper
+import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.ICitationTableRepo

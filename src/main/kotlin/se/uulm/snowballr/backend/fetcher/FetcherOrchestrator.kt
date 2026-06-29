@@ -9,9 +9,9 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
-import se.uulm.snowballr.backend.model.dto.Paper
-import se.uulm.snowballr.backend.model.dto.toFetcherPaper
-import se.uulm.snowballr.backend.model.dto.toGrpcPaperRequest
+import se.uulm.snowballr.backend.model.dto.paper.Paper
+import se.uulm.snowballr.backend.model.dto.paper.toFetcherPaper
+import se.uulm.snowballr.backend.model.dto.paper.toGrpcPaperRequest
 import se.uulm.snowballr.backend.model.exception.FetcherException
 import se.uulm.snowballr.backend.model.fetcher.FetcherEnqueueJob
 import se.uulm.snowballr.backend.model.fetcher.FetcherMap

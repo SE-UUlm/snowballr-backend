@@ -12,10 +12,10 @@ import org.junit.jupiter.params.provider.EnumSource
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.fetcher.FetcherOrchestrator
-import se.uulm.snowballr.backend.model.dto.Project
+import se.uulm.snowballr.backend.model.dto.paper.toFetcherPaper
+import se.uulm.snowballr.backend.model.dto.paper.toGrpcPaperRequest
+import se.uulm.snowballr.backend.model.dto.project.Project
 import se.uulm.snowballr.backend.model.dto.project.SnowballingType
-import se.uulm.snowballr.backend.model.dto.toFetcherPaper
-import se.uulm.snowballr.backend.model.dto.toGrpcPaperRequest
 import se.uulm.snowballr.backend.model.exception.FetcherException
 import se.uulm.snowballr.backend.model.fetcher.FetcherEnqueueJob
 import se.uulm.snowballr.backend.repository.UNIQUE_CONSTRAINT_VIOLATION_SQL_STATE

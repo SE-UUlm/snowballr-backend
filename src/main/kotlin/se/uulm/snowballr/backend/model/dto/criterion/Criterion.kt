@@ -1,6 +1,5 @@
-package se.uulm.snowballr.backend.model.dto
+package se.uulm.snowballr.backend.model.dto.criterion
 
-import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 import se.uulm.snowballr.backend.table.CriterionTable
 import snowballr.CriterionOuterClass
 import java.time.OffsetDateTime

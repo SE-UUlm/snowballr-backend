@@ -1,6 +1,5 @@
-package se.uulm.snowballr.backend.model.dto
+package se.uulm.snowballr.backend.model.dto.projectpaper
 
-import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import java.time.OffsetDateTime
 import java.util.UUID

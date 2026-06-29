@@ -1,4 +1,4 @@
-package se.uulm.snowballr.backend.model.dto
+package se.uulm.snowballr.backend.model.dto.paper
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

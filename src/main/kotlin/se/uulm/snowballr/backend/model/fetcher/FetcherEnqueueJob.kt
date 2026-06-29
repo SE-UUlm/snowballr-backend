@@ -1,6 +1,6 @@
 package se.uulm.snowballr.backend.model.fetcher
 
-import se.uulm.snowballr.backend.model.dto.ProjectPaper
+import se.uulm.snowballr.backend.model.dto.projectpaper.ProjectPaper
 import java.util.UUID
 
 /**

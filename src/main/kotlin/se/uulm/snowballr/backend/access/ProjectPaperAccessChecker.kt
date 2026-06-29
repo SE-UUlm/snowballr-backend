@@ -3,8 +3,8 @@ package se.uulm.snowballr.backend.access
 import se.uulm.snowballr.backend.access.rules.checkFor
 import se.uulm.snowballr.backend.access.rules.isProjectActive
 import se.uulm.snowballr.backend.model.AccessType
-import se.uulm.snowballr.backend.model.dto.Project
-import se.uulm.snowballr.backend.model.dto.User
+import se.uulm.snowballr.backend.model.dto.project.Project
+import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.exception.failedprecondition.EntityNotActiveException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedCreateException
 import java.util.UUID

@@ -4,11 +4,11 @@ import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.access.IProjectMemberAccessChecker
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.dto.InvitationToken
-import se.uulm.snowballr.backend.model.dto.User
-import se.uulm.snowballr.backend.model.dto.isProjectAdmin
+import se.uulm.snowballr.backend.model.dto.projectmember.InvitationToken
 import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
-import se.uulm.snowballr.backend.model.dto.toGrpcProjectMembers
+import se.uulm.snowballr.backend.model.dto.projectmember.isProjectAdmin
+import se.uulm.snowballr.backend.model.dto.projectmember.toGrpcProjectMembers
+import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException

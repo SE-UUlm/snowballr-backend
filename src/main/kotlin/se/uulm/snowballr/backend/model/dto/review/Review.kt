@@ -1,6 +1,5 @@
-package se.uulm.snowballr.backend.model.dto
+package se.uulm.snowballr.backend.model.dto.review
 
-import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.table.ReviewTable
 import snowballr.ReviewOuterClass
 import java.time.OffsetDateTime

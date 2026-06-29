@@ -1,8 +1,8 @@
 package se.uulm.snowballr.backend.access.rules
 
-import se.uulm.snowballr.backend.model.dto.User
-import se.uulm.snowballr.backend.model.dto.isActive
-import se.uulm.snowballr.backend.model.dto.isServerAdmin
+import se.uulm.snowballr.backend.model.dto.user.User
+import se.uulm.snowballr.backend.model.dto.user.isActive
+import se.uulm.snowballr.backend.model.dto.user.isServerAdmin
 import java.util.UUID
 import javax.annotation.CheckReturnValue
 

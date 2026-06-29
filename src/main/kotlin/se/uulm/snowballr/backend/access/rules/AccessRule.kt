@@ -1,6 +1,6 @@
 package se.uulm.snowballr.backend.access.rules
 
-import se.uulm.snowballr.backend.model.dto.User
+import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.exception.SnowballRException
 import se.uulm.snowballr.backend.model.exception.internal.AccessRuleCheckFailedException
 import java.util.UUID

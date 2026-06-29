@@ -1,7 +1,5 @@
-package se.uulm.snowballr.backend.model.dto
+package se.uulm.snowballr.backend.model.dto.user
 
-import se.uulm.snowballr.backend.model.dto.user.UserRole
-import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.table.UserTable
 import snowballr.UserOuterClass
 import java.time.OffsetDateTime

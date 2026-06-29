@@ -1,5 +1,7 @@
-package se.uulm.snowballr.backend.model.dto
+package se.uulm.snowballr.backend.model.dto.projectmember
 
+import se.uulm.snowballr.backend.model.dto.user.User
+import se.uulm.snowballr.backend.model.dto.user.toGrpcUser
 import snowballr.ProjectOuterClass
 
 /**

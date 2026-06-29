@@ -6,7 +6,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
-import se.uulm.snowballr.backend.model.dto.toGrpcPaper
+import se.uulm.snowballr.backend.model.dto.paper.toGrpcPaper
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicatePaperException
 import snowballr.PaperOuterClass
 import java.util.UUID

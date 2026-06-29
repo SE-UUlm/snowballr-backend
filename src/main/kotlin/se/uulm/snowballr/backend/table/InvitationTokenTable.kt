@@ -4,7 +4,7 @@ import org.jetbrains.exposed.v1.core.ReferenceOption
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.dao.id.java.UUIDTable
 import org.jetbrains.exposed.v1.datetime.timestampWithTimeZone
-import se.uulm.snowballr.backend.model.dto.InvitationToken
+import se.uulm.snowballr.backend.model.dto.projectmember.InvitationToken
 import java.time.OffsetDateTime
 
 /**

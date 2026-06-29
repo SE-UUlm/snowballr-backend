@@ -1,9 +1,9 @@
 package se.uulm.snowballr.backend.export
 
-import se.uulm.snowballr.backend.model.dto.Criterion
-import se.uulm.snowballr.backend.model.dto.Project
-import se.uulm.snowballr.backend.model.dto.ProjectMemberWithUser
-import se.uulm.snowballr.backend.model.dto.ProjectPaperFull
+import se.uulm.snowballr.backend.model.dto.criterion.Criterion
+import se.uulm.snowballr.backend.model.dto.project.Project
+import se.uulm.snowballr.backend.model.dto.projectmember.ProjectMemberWithUser
+import se.uulm.snowballr.backend.model.dto.projectpaper.ProjectPaperFull
 import se.uulm.snowballr.backend.model.export.ExportFormat
 import se.uulm.snowballr.backend.model.export.FileExport
 import java.time.LocalDateTime

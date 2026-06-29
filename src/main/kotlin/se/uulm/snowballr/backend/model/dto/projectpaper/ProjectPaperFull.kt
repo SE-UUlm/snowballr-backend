@@ -1,4 +1,7 @@
-package se.uulm.snowballr.backend.model.dto
+package se.uulm.snowballr.backend.model.dto.projectpaper
+
+import se.uulm.snowballr.backend.model.dto.paper.Paper
+import se.uulm.snowballr.backend.model.dto.review.ReviewWithSelectedCriteriaIds
 
 /**
  * DTO representing a project paper along with its associated paper and reviews with selected criteria.

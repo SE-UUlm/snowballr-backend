@@ -10,12 +10,12 @@ import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.mail.IEmailManager
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.UserIdentifierType
-import se.uulm.snowballr.backend.model.dto.User
+import se.uulm.snowballr.backend.model.dto.criterion.toGrpcCriteria
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
-import se.uulm.snowballr.backend.model.dto.toGrpcCriteria
-import se.uulm.snowballr.backend.model.dto.toGrpcUser
-import se.uulm.snowballr.backend.model.dto.toGrpcUserSettings
-import se.uulm.snowballr.backend.model.dto.toGrpcUsers
+import se.uulm.snowballr.backend.model.dto.user.User
+import se.uulm.snowballr.backend.model.dto.user.toGrpcUser
+import se.uulm.snowballr.backend.model.dto.user.toGrpcUserSettings
+import se.uulm.snowballr.backend.model.dto.user.toGrpcUsers
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateUserException
 import se.uulm.snowballr.backend.model.parseUUID

@@ -3,7 +3,7 @@ package se.uulm.snowballr.backend.table
 import org.jetbrains.exposed.v1.core.ReferenceOption
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.dao.id.java.UUIDTable
-import se.uulm.snowballr.backend.model.dto.Criterion
+import se.uulm.snowballr.backend.model.dto.criterion.Criterion
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 import java.time.OffsetDateTime
 

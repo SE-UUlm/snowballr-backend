@@ -1,4 +1,4 @@
-package se.uulm.snowballr.backend.model.dto
+package se.uulm.snowballr.backend.model.dto.projectmember
 
 import java.time.OffsetDateTime
 import java.util.UUID
