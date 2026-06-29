@@ -6,20 +6,19 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import se.uulm.snowballr.backend.DataBuilder
-import se.uulm.snowballr.backend.GrpcTestContextExtension
-import se.uulm.snowballr.backend.auth.GrpcContext
+import se.uulm.snowballr.backend.auth.ACCESS_TOKEN_COOKIE_NAME
 import se.uulm.snowballr.backend.auth.PasswordUtils
+import se.uulm.snowballr.backend.auth.REFRESH_TOKEN_COOKIE_NAME
+import se.uulm.snowballr.backend.context.RequestContext
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.exception.UnauthenticatedException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundByEmailException
 import se.uulm.snowballr.backend.model.incoming.authentication.LoginRequest
 import se.uulm.snowballr.backend.model.jwt.JwtAuthTokens
 
-@ExtendWith(GrpcTestContextExtension::class)
 class LoginTest : AuthenticationServiceTest() {
     @Test
     fun `When a user provides an invalid email, then an UnauthenticatedException is thrown`() = runTest {
@@ -93,9 +92,7 @@ class LoginTest : AuthenticationServiceTest() {
     }
 
     @Test
-    fun `When an active user provides valid credentials, then the user is logged in successfully`(
-        cookiesMap: MutableMap<String, String?>,
-    ) = runTest {
+    fun `When an active user provides valid credentials, then the user is logged in successfully`() = runTest {
         val testUser = DataBuilder.createExampleUser(status = UserStatus.ACTIVE)
         val userPassword = "AAbb__00"
         val passwordHash = PasswordUtils.hashPassword(userPassword)
@@ -109,7 +106,8 @@ class LoginTest : AuthenticationServiceTest() {
 
         service.login(request)
 
-        assertEquals(tokens.accessToken, cookiesMap[GrpcContext.ACCESS_TOKEN_COOKIE_NAME])
-        assertEquals(tokens.refreshToken, cookiesMap[GrpcContext.REFRESH_TOKEN_COOKIE_NAME])
+        val cookies = RequestContext.current().cookies
+        assertEquals(tokens.accessToken, cookies[ACCESS_TOKEN_COOKIE_NAME])
+        assertEquals(tokens.refreshToken, cookies[REFRESH_TOKEN_COOKIE_NAME])
     }
 }

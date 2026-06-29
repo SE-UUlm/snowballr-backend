@@ -8,9 +8,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
-import org.junit.jupiter.api.extension.ExtendWith
 import se.uulm.snowballr.backend.DataBuilder
-import se.uulm.snowballr.backend.GrpcTestContextExtension
 import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.UnauthenticatedException
@@ -19,7 +17,6 @@ import se.uulm.snowballr.backend.model.incoming.authentication.ChangePasswordReq
 import se.uulm.snowballr.backend.model.incoming.authentication.LoginRequest
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 
-@ExtendWith(GrpcTestContextExtension::class)
 class AuthenticationIntegrationTest : IntegrationTest() {
     @Nested
     inner class Login {
