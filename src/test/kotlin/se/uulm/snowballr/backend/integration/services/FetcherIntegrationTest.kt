@@ -8,13 +8,14 @@ import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.exception.UnauthorizedException
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
+import java.util.UUID
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 
 class FetcherIntegrationTest : IntegrationTest() {
-    private fun searchQuery(projectId: String, query: String) = GrpcProjectPaper.SearchQuery.newBuilder()
-        .setProjectId(projectId)
+    private fun searchQuery(projectId: UUID, query: String) = GrpcProjectPaper.SearchQuery.newBuilder()
+        .setProjectId(projectId.toString())
         .setQuery(query)
         .build()
 

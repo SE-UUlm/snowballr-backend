@@ -6,16 +6,12 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
-import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
-import se.uulm.snowballr.backend.model.dto.project.SnowballingType
+import se.uulm.snowballr.backend.model.dto.project.Project
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
-import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectSettingRequest
 import se.uulm.snowballr.backend.model.parseUUID
 import snowballr.ProjectOuterClass.PaperDecision
-import snowballr.ProjectOuterClass.Project
 import snowballr.ReviewOuterClass.ReviewDecision
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -25,36 +21,22 @@ import snowballr.ReviewOuterClass.Review as GrpcReview
 class ReviewIntegrationTest : IntegrationTest() {
     private suspend fun setupProjectAndPaper(): Pair<Project, GrpcProjectPaper> {
         var project = projectService.createProject(CreateProjectRequest(name = "Review Test Project"))
-
         val paper = createPaper()
-
         val projectPaper = projectPaperService.addPaperToProject(
             GrpcProjectPaper.Add.newBuilder()
-                .setProjectId(project.id)
+                .setProjectId(project.id.toString())
                 .setPaperId(paper.id)
                 .setStage(0)
                 .build(),
         )
 
-        val modifiedProject = project.toBuilder().setSettings(
-            project.settings.toBuilder().setDecisionMatrix(
-                project.settings.decisionMatrix.toBuilder()
-                    .setNumberOfReviewers(1)
-                    .build(),
-            ).build(),
-        ).build()
-        val projectUpdate = UpdateProjectRequest(
-            projectId = parseUUID(modifiedProject.id, EntityType.PROJECT),
-            name = modifiedProject.name,
-            status = ProjectStatus.fromGrpc(modifiedProject.status),
-            settings = UpdateProjectSettingRequest(
-                similarityThreshold = modifiedProject.settings.similarityThreshold,
-                snowballingType = SnowballingType.fromGrpc(modifiedProject.settings.snowballingType),
-                reviewMaybeAllowed = modifiedProject.settings.reviewMaybeAllowed,
-                fetchers = modifiedProject.settings.fetchersMap.mapValues { it.value.optionsMap },
-                decisionMatrix = ReviewDecisionMatrix.fromGrpc(modifiedProject.settings.decisionMatrix),
+        val modifiedProject = project.copy(
+            reviewDecisionMatrix = project.reviewDecisionMatrix.copy(
+                numberOfReviewers = 1,
             ),
         )
+        val projectUpdate = UpdateProjectRequest.fromProject(modifiedProject)
+
         project = projectService.updateProject(
             projectUpdate,
             setOf("project.settings.decision_matrix.number_of_reviewers"),
@@ -151,21 +133,8 @@ class ReviewIntegrationTest : IntegrationTest() {
                     .build(),
             )
 
-            val updateRequest = UpdateProjectRequest(
-                projectId = parseUUID(project.id, EntityType.PROJECT),
-                name = "",
-                status = ProjectStatus.ACTIVE_LOCKED,
-                settings = UpdateProjectSettingRequest(
-                    similarityThreshold = 0F,
-                    snowballingType = SnowballingType.BOTH,
-                    reviewMaybeAllowed = true,
-                    fetchers = emptyMap(),
-                    decisionMatrix = ReviewDecisionMatrix(
-                        numberOfReviewers = 1,
-                        patterns = emptyList(),
-                    ),
-                ),
-            )
+            val updatedProject = project.copy(reviewMaybeAllowed = true)
+            val updateRequest = UpdateProjectRequest.fromProject(updatedProject)
 
             assertThrows<FailedPreconditionException> {
                 projectService.updateProject(updateRequest, setOf("project.settings.review_maybe_allowed"))
@@ -178,9 +147,9 @@ class ReviewIntegrationTest : IntegrationTest() {
         @Test
         fun `When a paper is added to a project, then it appears in the project's paper list`() = runTest {
             val (project, projectPaper) = setupProjectAndPaper()
-            val projectId = parseUUID(project.id, EntityType.PROJECT)
 
-            val papers = projectPaperService.getAllProjectPapersForProject(projectId)
+            val papers = projectPaperService.getAllProjectPapersForProject(project.id)
+
             assertTrue(papers.projectPapersList.any { it.id == projectPaper.id })
         }
 

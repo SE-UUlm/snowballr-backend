@@ -30,6 +30,8 @@ import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPattern
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
 import se.uulm.snowballr.backend.model.dto.project.SnowballingType
+import se.uulm.snowballr.backend.model.dto.project.toGrpcProject
+import se.uulm.snowballr.backend.model.dto.project.toGrpcProjects
 import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.dto.user.toGrpcUser
@@ -361,28 +363,28 @@ class SnowballRServer(
         }
 
         override suspend fun getAllProjects(request: Base.Nothing): ProjectOuterClass.Project.List =
-            projectService.getAllProjects()
+            projectService.getAllProjects().toGrpcProjects()
 
         override suspend fun getAllDeletedProjects(request: Base.Nothing): ProjectOuterClass.Project.List =
             super.getAllDeletedProjects(request)
 
         override suspend fun getAllDeletedProjectsForUser(request: Base.Id): ProjectOuterClass.Project.List =
-            projectService.getAllDeletedProjectsForUser(parseUserId(request))
+            projectService.getAllDeletedProjectsForUser(parseUserId(request)).toGrpcProjects()
 
         override suspend fun getAllArchivedProjects(request: Base.Nothing): ProjectOuterClass.Project.List =
             super.getAllArchivedProjects(request)
 
         override suspend fun getAllProjectsForUser(request: Base.Id): ProjectOuterClass.Project.List =
-            projectService.getAllProjectsForUser(parseUserId(request))
+            projectService.getAllProjectsForUser(parseUserId(request)).toGrpcProjects()
 
         override suspend fun getAllArchivedProjectsForUser(request: Base.Id): ProjectOuterClass.Project.List =
-            projectService.getAllArchivedProjectsForUser(parseUserId(request))
+            projectService.getAllArchivedProjectsForUser(parseUserId(request)).toGrpcProjects()
 
         override suspend fun createProject(request: ProjectOuterClass.Project.Create): ProjectOuterClass.Project =
-            projectService.createProject(CreateProjectRequest(name = request.name))
+            projectService.createProject(CreateProjectRequest(name = request.name)).toGrpcProject()
 
         override suspend fun getProjectById(request: Base.Id): ProjectOuterClass.Project =
-            projectService.getProjectById(parseProjectId(request))
+            projectService.getProjectById(parseProjectId(request)).toGrpcProject()
 
         override suspend fun updateProject(request: ProjectOuterClass.Project.Update): ProjectOuterClass.Project =
             projectService.updateProject(
@@ -403,7 +405,7 @@ class SnowballRServer(
                     ),
                 ),
                 FieldMaskUtil.normalize(request.mask).pathsList.toSet(),
-            )
+            ).toGrpcProject()
 
         override suspend fun getAvailableExportFormats(request: Base.Nothing): Export.AvailableExportFormatsResponse =
             exportService.getAvailableExportFormats()

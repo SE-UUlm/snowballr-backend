@@ -4,14 +4,12 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import se.uulm.snowballr.backend.integration.IntegrationTest
-import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.criterion.Criterion
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
+import se.uulm.snowballr.backend.model.dto.project.Project
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
-import se.uulm.snowballr.backend.model.parseUUID
-import snowballr.ProjectOuterClass.Project
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -26,7 +24,7 @@ class CriterionIntegrationTest : IntegrationTest() {
                 name = criterionName,
                 description = "A test criterion",
                 category = CriterionCategory.INCLUSION,
-                projectId = parseUUID(project.id, EntityType.PROJECT),
+                projectId = project.id,
             ),
         ) as Criterion.ProjectCriterion
         return project to criterion
@@ -37,9 +35,8 @@ class CriterionIntegrationTest : IntegrationTest() {
         @Test
         fun `When a criterion is created for a project, then it appears in the project's criteria list`() = runTest {
             val (project, criterion) = createProjectAndCriterion("New Criterion")
-            val projectId = parseUUID(project.id, EntityType.PROJECT)
 
-            val criteria = criterionService.getAllCriteriaForProject(projectId)
+            val criteria = criterionService.getAllCriteriaForProject(project.id)
 
             assertTrue(criteria.any { it.id == criterion.id })
         }
@@ -57,7 +54,6 @@ class CriterionIntegrationTest : IntegrationTest() {
         @Test
         fun `When multiple criteria are created for a project, then all appear in the criteria list`() = runTest {
             val project = projectService.createProject(CreateProjectRequest(name = "Multi Criteria Project"))
-            val projectId = parseUUID(project.id, EntityType.PROJECT)
 
             criterionService.createCriterion(
                 CreateCriterionRequest(
@@ -65,7 +61,7 @@ class CriterionIntegrationTest : IntegrationTest() {
                     name = "Criterion One",
                     description = "First",
                     category = CriterionCategory.INCLUSION,
-                    projectId = projectId,
+                    projectId = project.id,
                 ),
             )
             criterionService.createCriterion(
@@ -74,11 +70,11 @@ class CriterionIntegrationTest : IntegrationTest() {
                     name = "Criterion Two",
                     description = "Second",
                     category = CriterionCategory.EXCLUSION,
-                    projectId = projectId,
+                    projectId = project.id,
                 ),
             )
 
-            val criteria = criterionService.getAllCriteriaForProject(projectId)
+            val criteria = criterionService.getAllCriteriaForProject(project.id)
             val names = criteria.map { it.name }
 
             assertTrue(names.contains("Criterion One"))

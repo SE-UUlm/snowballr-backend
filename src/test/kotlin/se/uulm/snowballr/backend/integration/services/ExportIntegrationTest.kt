@@ -35,7 +35,7 @@ class ExportIntegrationTest : IntegrationTest() {
 
             val response = exportService.exportProject(
                 ExportRequest.newBuilder()
-                    .setId(project.id)
+                    .setId(project.id.toString())
                     .setFormat("JSON")
                     .build(),
             )
@@ -50,7 +50,7 @@ class ExportIntegrationTest : IntegrationTest() {
 
             val response = exportService.exportProject(
                 ExportRequest.newBuilder()
-                    .setId(project.id)
+                    .setId(project.id.toString())
                     .setFormat("JSON")
                     .build(),
             )

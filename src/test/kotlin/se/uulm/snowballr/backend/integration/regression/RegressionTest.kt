@@ -7,9 +7,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.integration.IntegrationTest
-import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
-import se.uulm.snowballr.backend.model.parseUUID
 import snowballr.ProjectOuterClass.Project
 import snowballr.UserOuterClass.UserStatus
 import kotlin.test.assertEquals
@@ -30,8 +28,7 @@ class RegressionTest : IntegrationTest() {
             // Invite the other user to the project
             inviteUserToProject(project, otherUser)
 
-            val id = parseUUID(project.id, EntityType.PROJECT)
-            var pendingInvitations = invitationService.getPendingInvitationsForProject(id).usersList
+            var pendingInvitations = invitationService.getPendingInvitationsForProject(project.id).usersList
             assertEquals(1, pendingInvitations.size)
             assertEquals(otherUser.email, pendingInvitations[0].email)
             assertEquals(otherUser.firstName, pendingInvitations[0].firstName)
@@ -40,12 +37,12 @@ class RegressionTest : IntegrationTest() {
 
             // Remove the other user's invitation from the project
             val removeInvitationRequest = Project.Member.Remove.newBuilder()
-                .setProjectId(project.id)
+                .setProjectId(project.id.toString())
                 .setUserEmail(otherUser.email)
                 .build()
             projectMemberService.removeProjectMember(removeInvitationRequest)
 
-            pendingInvitations = invitationService.getPendingInvitationsForProject(id).usersList
+            pendingInvitations = invitationService.getPendingInvitationsForProject(project.id).usersList
             assertEquals(0, pendingInvitations.size)
         }
 
@@ -65,7 +62,7 @@ class RegressionTest : IntegrationTest() {
                 async {
                     projectPaperService.addPaperToProject(
                         GrpcProjectPaper.Add.newBuilder()
-                            .setProjectId(project.id)
+                            .setProjectId(project.id.toString())
                             .setPaperId(it.id)
                             .setStage(0)
                             .build(),
@@ -81,7 +78,7 @@ class RegressionTest : IntegrationTest() {
                 // If several papers have the same local ID this would throw
                 projectPaperService.getProjectPaperByRelativeId(
                     GrpcProjectPaper.Get.newBuilder()
-                        .setProjectId(project.id)
+                        .setProjectId(project.id.toString())
                         .setRelativeProjectPaperId(projectPaper.localId)
                         .build(),
                 )

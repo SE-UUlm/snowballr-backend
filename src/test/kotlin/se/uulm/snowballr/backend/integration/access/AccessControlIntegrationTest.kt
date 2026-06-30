@@ -6,21 +6,15 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.integration.IntegrationTest
-import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
-import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
-import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
-import se.uulm.snowballr.backend.model.dto.project.SnowballingType
+import se.uulm.snowballr.backend.model.dto.project.Project
 import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.exception.UnauthorizedException
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
-import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectSettingRequest
-import se.uulm.snowballr.backend.model.parseUUID
 import snowballr.ProjectOuterClass.MemberRole
-import snowballr.ProjectOuterClass.Project
 import snowballr.ProjectOuterClass.Project.Member as GrpcProjectMember
 import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 
@@ -37,11 +31,10 @@ class AccessControlIntegrationTest : IntegrationTest() {
         @Test
         fun `When a non-member tries to read a project, then access is denied`() = runTest {
             val project = projectService.createProject(CreateProjectRequest(name = "Private Project"))
-            val projectId = parseUUID(project.id, EntityType.PROJECT)
             val outsider = addUser(DataBuilder.createExampleUser(email = "outsider@example.com"))
 
             actAsUser(outsider.id) {
-                assertThrows<UnauthorizedException> { projectService.getProjectById(projectId) }
+                assertThrows<UnauthorizedException> { projectService.getProjectById(project.id) }
             }
         }
 
@@ -49,18 +42,7 @@ class AccessControlIntegrationTest : IntegrationTest() {
         fun `When a non-admin member tries to update a project, then access is denied`() = runTest {
             val (project, member) = setupProjectWithMember()
 
-            val request = UpdateProjectRequest(
-                projectId = parseUUID(project.id, EntityType.PROJECT),
-                name = project.name,
-                status = ProjectStatus.fromGrpc(project.status),
-                settings = UpdateProjectSettingRequest(
-                    similarityThreshold = project.settings.similarityThreshold,
-                    snowballingType = SnowballingType.fromGrpc(project.settings.snowballingType),
-                    reviewMaybeAllowed = project.settings.reviewMaybeAllowed,
-                    fetchers = project.settings.fetchersMap.mapValues { it.value.optionsMap },
-                    decisionMatrix = ReviewDecisionMatrix.fromGrpc(project.settings.decisionMatrix),
-                ),
-            )
+            val request = UpdateProjectRequest.fromProject(project)
 
             actAsUser(member.id) {
                 assertThrows<UnauthorizedException> { projectService.updateProject(request, setOf("project.name")) }
@@ -70,10 +52,9 @@ class AccessControlIntegrationTest : IntegrationTest() {
         @Test
         fun `When a non-admin member tries to delete a project, then access is denied`() = runTest {
             val (project, member) = setupProjectWithMember()
-            val projectId = parseUUID(project.id, EntityType.PROJECT)
 
             actAsUser(member.id) {
-                assertThrows<UnauthorizedException> { projectService.softDeleteProject(projectId) }
+                assertThrows<UnauthorizedException> { projectService.softDeleteProject(project.id) }
             }
         }
     }
@@ -89,7 +70,7 @@ class AccessControlIntegrationTest : IntegrationTest() {
                 name = "Blocked Criterion",
                 description = "Should not be created",
                 category = CriterionCategory.INCLUSION,
-                projectId = parseUUID(project.id, EntityType.PROJECT),
+                projectId = project.id,
             )
 
             actAsUser(member.id) {
@@ -107,7 +88,7 @@ class AccessControlIntegrationTest : IntegrationTest() {
                     name = "Admin Criterion",
                     description = "Created by admin",
                     category = CriterionCategory.INCLUSION,
-                    projectId = parseUUID(project.id, EntityType.PROJECT),
+                    projectId = project.id,
                 ),
             )
 
@@ -135,7 +116,7 @@ class AccessControlIntegrationTest : IntegrationTest() {
             val paper = createPaper()
 
             val request = GrpcProjectPaper.Add.newBuilder()
-                .setProjectId(project.id)
+                .setProjectId(project.id.toString())
                 .setPaperId(paper.id)
                 .setStage(0)
                 .build()
@@ -153,7 +134,7 @@ class AccessControlIntegrationTest : IntegrationTest() {
             val (project, member) = setupProjectWithMember()
 
             val request = GrpcProjectMember.Invite.newBuilder()
-                .setProjectId(project.id)
+                .setProjectId(project.id.toString())
                 .setUserEmail("uninvited@example.com")
                 .build()
 
@@ -172,7 +153,7 @@ class AccessControlIntegrationTest : IntegrationTest() {
             inviteUserToProject(project, secondMember, acceptInvitation = true)
 
             val request = GrpcProjectMember.Update.newBuilder()
-                .setProjectId(project.id)
+                .setProjectId(project.id.toString())
                 .setUserId(secondMember.id.toString())
                 .setNewRole(MemberRole.MEMBER_ROLE_ADMIN)
                 .build()
@@ -189,7 +170,7 @@ class AccessControlIntegrationTest : IntegrationTest() {
             inviteUserToProject(project, secondMember, acceptInvitation = true)
 
             val request = GrpcProjectMember.Remove.newBuilder()
-                .setProjectId(project.id)
+                .setProjectId(project.id.toString())
                 .setUserEmail(secondMember.email)
                 .build()
 

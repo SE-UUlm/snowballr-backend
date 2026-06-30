@@ -8,13 +8,11 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.integration.IntegrationTest
-import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.fetcher.FetcherInformationWithId
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
-import se.uulm.snowballr.backend.model.parseUUID
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -27,9 +25,8 @@ class ProjectIntegrationTest : IntegrationTest() {
         @Test
         fun `When a user creates a project, then it can be retrieved by ID`() = runTest {
             val project = projectService.createProject(CreateProjectRequest(name = "My Project"))
-            val projectId = parseUUID(project.id, EntityType.PROJECT)
 
-            val fetched = projectService.getProjectById(projectId)
+            val fetched = projectService.getProjectById(project.id)
 
             assertEquals("My Project", fetched.name)
             assertEquals(project.id, fetched.id)
@@ -41,7 +38,7 @@ class ProjectIntegrationTest : IntegrationTest() {
 
             val userProjects = projectService.getAllProjectsForUser(testUserId)
 
-            assertTrue(userProjects.projectsList.any { it.name == "Listed Project" })
+            assertTrue(userProjects.any { it.name == "Listed Project" })
         }
 
         @Test
@@ -50,7 +47,7 @@ class ProjectIntegrationTest : IntegrationTest() {
             projectService.createProject(CreateProjectRequest(name = "Project Beta"))
 
             val userProjects = projectService.getAllProjectsForUser(testUserId)
-            val names = userProjects.projectsList.map { it.name }
+            val names = userProjects.map { it.name }
 
             assertTrue(names.contains("Project Alpha"))
             assertTrue(names.contains("Project Beta"))
@@ -62,19 +59,15 @@ class ProjectIntegrationTest : IntegrationTest() {
         @Test
         fun `When an admin updates a project's name, then the updated name is persisted`() = runTest {
             val project = projectService.createProject(CreateProjectRequest(name = "Original Name"))
-            val projectId = parseUUID(project.id, EntityType.PROJECT)
 
-            val updatedProject = DataBuilder.createExampleProject(
-                id = parseUUID(project.id, EntityType.PROJECT),
-                name = "Updated Name",
-            )
+            val updatedProject = project.copy(name = "Updated Name")
             val request = UpdateProjectRequest.fromProject(updatedProject)
 
             val result = projectService.updateProject(request, setOf("project.name"))
 
             assertEquals("Updated Name", result.name)
 
-            val fetched = projectService.getProjectById(projectId)
+            val fetched = projectService.getProjectById(project.id)
             assertEquals("Updated Name", fetched.name)
         }
 
@@ -82,32 +75,26 @@ class ProjectIntegrationTest : IntegrationTest() {
         fun `When a project is archived, then it no longer appears in the active projects list`() = runTest {
             val project = projectService.createProject(CreateProjectRequest(name = "To Archive"))
 
-            val updatedProject = DataBuilder.createExampleProject(
-                id = parseUUID(project.id, EntityType.PROJECT),
-                status = ProjectStatus.ARCHIVED,
-            )
+            val updatedProject = project.copy(status = ProjectStatus.ARCHIVED)
             val request = UpdateProjectRequest.fromProject(updatedProject)
 
             projectService.updateProject(request, setOf("project.status"))
 
             val activeProjects = projectService.getAllProjectsForUser(testUserId)
-            assertFalse(activeProjects.projectsList.any { it.id == project.id })
+            assertFalse(activeProjects.any { it.id == project.id })
         }
 
         @Test
         fun `When a project is archived, then it appears in the archived projects list`() = runTest {
             val project = projectService.createProject(CreateProjectRequest(name = "Archived Project"))
 
-            val updatedProject = DataBuilder.createExampleProject(
-                id = parseUUID(project.id, EntityType.PROJECT),
-                status = ProjectStatus.ARCHIVED,
-            )
+            val updatedProject = project.copy(status = ProjectStatus.ARCHIVED)
             val request = UpdateProjectRequest.fromProject(updatedProject)
 
             projectService.updateProject(request, setOf("project.status"))
 
             val archivedProjects = projectService.getAllArchivedProjectsForUser(testUserId)
-            assertTrue(archivedProjects.projectsList.any { it.id == project.id })
+            assertTrue(archivedProjects.any { it.id == project.id })
         }
 
         @Test
@@ -127,8 +114,7 @@ class ProjectIntegrationTest : IntegrationTest() {
                 )
                 coEvery { fetcherManagerMock.getAvailableFetchers() } returns availableFetchers
 
-                val updatedProject = DataBuilder.createExampleProject(
-                    id = parseUUID(project.id, EntityType.PROJECT),
+                val updatedProject = project.copy(
                     fetchers = mapOf(
                         "existent-fetcher" to mapOf(
                             "existent-option" to "value1",
@@ -141,12 +127,12 @@ class ProjectIntegrationTest : IntegrationTest() {
 
                 val result = projectService.updateProject(request, setOf("project.settings.fetchers"))
 
-                val fetchersMap = result.settings.fetchersMap
+                val fetchersMap = result.fetchers
                 assertContains(fetchersMap.keys, "existent-fetcher")
                 assertFalse(fetchersMap.containsKey("non-existent-fetcher"))
                 val sanitizedOptions = assertNotNull(fetchersMap["existent-fetcher"])
-                assertContains(sanitizedOptions.optionsMap.keys, "existent-option")
-                assertFalse(sanitizedOptions.optionsMap.containsKey("non-existent-option"))
+                assertContains(sanitizedOptions.keys, "existent-option")
+                assertFalse(sanitizedOptions.containsKey("non-existent-option"))
             }
 
         @Test
@@ -168,8 +154,7 @@ class ProjectIntegrationTest : IntegrationTest() {
                 )
                 coEvery { fetcherManagerMock.getAvailableFetchers() } returns availableFetchers
 
-                val updatedProject = DataBuilder.createExampleProject(
-                    id = parseUUID(project.id, EntityType.PROJECT),
+                val updatedProject = project.copy(
                     fetchers = mapOf(
                         "fetcher" to mapOf("option1" to "value"),
                     ),
@@ -187,31 +172,28 @@ class ProjectIntegrationTest : IntegrationTest() {
         @Test
         fun `When an admin soft-deletes a project, then the operation succeeds`() = runTest {
             val project = projectService.createProject(CreateProjectRequest(name = "To Delete"))
-            val projectId = parseUUID(project.id, EntityType.PROJECT)
 
-            assertDoesNotThrow { projectService.softDeleteProject(projectId) }
+            assertDoesNotThrow { projectService.softDeleteProject(project.id) }
         }
 
         @Test
         fun `When a project is soft-deleted, then it no longer appears in the active projects list`() = runTest {
             val project = projectService.createProject(CreateProjectRequest(name = "Deleted Project"))
-            val projectId = parseUUID(project.id, EntityType.PROJECT)
 
-            projectService.softDeleteProject(projectId)
+            projectService.softDeleteProject(project.id)
 
             val activeProjects = projectService.getAllProjectsForUser(testUserId)
-            assertFalse(activeProjects.projectsList.any { it.id == project.id })
+            assertFalse(activeProjects.any { it.id == project.id })
         }
 
         @Test
         fun `When a project is soft-deleted, then it appears in the deleted projects list`() = runTest {
             val project = projectService.createProject(CreateProjectRequest(name = "Soft Deleted"))
-            val projectId = parseUUID(project.id, EntityType.PROJECT)
 
-            projectService.softDeleteProject(projectId)
+            projectService.softDeleteProject(project.id)
 
             val deletedProjects = projectService.getAllDeletedProjectsForUser(testUserId)
-            assertTrue(deletedProjects.projectsList.any { it.id == project.id })
+            assertTrue(deletedProjects.any { it.id == project.id })
         }
     }
 }

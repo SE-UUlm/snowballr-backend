@@ -7,9 +7,8 @@ import se.uulm.snowballr.backend.fetcher.IFetcherManager
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.dto.project.Project
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
-import se.uulm.snowballr.backend.model.dto.project.toGrpcProject
-import se.uulm.snowballr.backend.model.dto.project.toGrpcProjects
 import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
 import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
@@ -36,37 +35,37 @@ interface IProjectService {
     /**
      * Service implementation of [SnowballRService.getProjectById].
      */
-    suspend fun getProjectById(projectId: UUID): GrpcProject
+    suspend fun getProjectById(projectId: UUID): Project
 
     /**
      * Service implementation of [SnowballRService.createProject].
      */
-    suspend fun createProject(request: CreateProjectRequest): GrpcProject
+    suspend fun createProject(request: CreateProjectRequest): Project
 
     /**
      * Service implementation of [SnowballRService.getAllProjects].
      */
-    suspend fun getAllProjects(): GrpcProject.List
+    suspend fun getAllProjects(): List<Project>
 
     /**
      * Service implementation of [SnowballRService.getAllProjectsForUser].
      */
-    suspend fun getAllProjectsForUser(userId: UUID): GrpcProject.List
+    suspend fun getAllProjectsForUser(userId: UUID): List<Project>
 
     /**
      * Service implementation of [SnowballRService.getAllArchivedProjectsForUser].
      */
-    suspend fun getAllArchivedProjectsForUser(userId: UUID): GrpcProject.List
+    suspend fun getAllArchivedProjectsForUser(userId: UUID): List<Project>
 
     /**
      * Service implementation of [SnowballRService.getAllDeletedProjectsForUser].
      */
-    suspend fun getAllDeletedProjectsForUser(userId: UUID): GrpcProject.List
+    suspend fun getAllDeletedProjectsForUser(userId: UUID): List<Project>
 
     /**
      * Service implementation of [SnowballRService.updateProject].
      */
-    suspend fun updateProject(request: UpdateProjectRequest, paths: Set<String>): GrpcProject
+    suspend fun updateProject(request: UpdateProjectRequest, paths: Set<String>): Project
 
     /**
      * Service implementation of [SnowballRService.getProjectInformation].
@@ -111,13 +110,13 @@ class ProjectService(
     private val accessChecker: IProjectAccessChecker,
     private val fetcherManager: IFetcherManager,
 ) : IProjectService {
-    override suspend fun getProjectById(projectId: UUID): GrpcProject = withUser(userRepo) { currentUser ->
+    override suspend fun getProjectById(projectId: UUID): Project = withUser(userRepo) { currentUser ->
         accessChecker.isAllowedToReadProject(currentUser, projectId)
 
-        repo.getProjectById(projectId).getOrThrow().toGrpcProject()
+        repo.getProjectById(projectId).getOrThrow()
     }
 
-    override suspend fun createProject(request: CreateProjectRequest): GrpcProject = withUser(userRepo) { currentUser ->
+    override suspend fun createProject(request: CreateProjectRequest): Project = withUser(userRepo) { currentUser ->
         val userSettings = userRepo.getUserSettings(currentUser.id).getOrThrow()
         val userDefaultCriteria = criterionRepo.getCriteriaByIds(userSettings.criteriaIds)
 
@@ -139,27 +138,27 @@ class ProjectService(
         projectMemberRepo.addUserToProject(currentUser.id, project.id)
         projectMemberRepo.updateProjectMemberRole(project.id, currentUser.id, MemberRole.ADMIN)
 
-        project.toGrpcProject()
+        project
     }
 
-    override suspend fun getAllProjects(): GrpcProject.List = withUser(userRepo) { currentUser ->
+    override suspend fun getAllProjects(): List<Project> = withUser(userRepo) { currentUser ->
         accessChecker.isAllowedToReadAllProjects(currentUser)
 
-        repo.getAllProjects().toGrpcProjects()
+        repo.getAllProjects()
     }
 
-    override suspend fun getAllProjectsForUser(userId: UUID): GrpcProject.List = getAllProjectsForUserAndStatus(
+    override suspend fun getAllProjectsForUser(userId: UUID): List<Project> = getAllProjectsForUserAndStatus(
         userId,
         setOf(ProjectStatus.ACTIVE, ProjectStatus.ACTIVE_LOCKED),
     )
 
-    override suspend fun getAllArchivedProjectsForUser(userId: UUID): GrpcProject.List =
+    override suspend fun getAllArchivedProjectsForUser(userId: UUID): List<Project> =
         getAllProjectsForUserAndStatus(userId, setOf(ProjectStatus.ARCHIVED))
 
-    override suspend fun getAllDeletedProjectsForUser(userId: UUID): GrpcProject.List =
+    override suspend fun getAllDeletedProjectsForUser(userId: UUID): List<Project> =
         getAllProjectsForUserAndStatus(userId, setOf(ProjectStatus.DELETED))
 
-    override suspend fun updateProject(request: UpdateProjectRequest, paths: Set<String>): GrpcProject =
+    override suspend fun updateProject(request: UpdateProjectRequest, paths: Set<String>): Project =
         withUser(userRepo) { currentUser ->
             accessChecker.isProjectOrServerAdmin(currentUser, request.projectId, AccessType.UPDATE)
 
@@ -177,7 +176,7 @@ class ProjectService(
                 finalRequest = finalRequest.copy(settings = finalRequest.settings.copy(fetchers = sanitizedFetchersMap))
             }
 
-            repo.updateProject(finalRequest, paths).toGrpcProject()
+            repo.updateProject(finalRequest, paths)
         }
 
     override suspend fun getProjectInformation(request: GrpcProject.Information.Get): GrpcProject.Information =
@@ -243,13 +242,13 @@ class ProjectService(
         invitationTokenRepo.deleteInvitationTokensForProject(projectId)
     }
 
-    private suspend fun getAllProjectsForUserAndStatus(userId: UUID, statuses: Set<ProjectStatus>): GrpcProject.List =
+    private suspend fun getAllProjectsForUserAndStatus(userId: UUID, statuses: Set<ProjectStatus>): List<Project> =
         withUser(userRepo) { currentUser ->
             userRepo.getUserById(userId).getOrThrow()
 
             accessChecker.isAllowedToReadUserProjects(currentUser, userId)
 
-            repo.getUserProjects(userId, statuses).toGrpcProjects()
+            repo.getUserProjects(userId, statuses)
         }
 
     /**

@@ -40,6 +40,7 @@ import se.uulm.snowballr.backend.fetcher.IFetcherOrchestrator
 import se.uulm.snowballr.backend.mail.EmailManager
 import se.uulm.snowballr.backend.mail.IEmailManager
 import se.uulm.snowballr.backend.mailServiceDeps
+import se.uulm.snowballr.backend.model.dto.project.Project
 import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
@@ -215,7 +216,7 @@ open class IntegrationTest : KoinTest {
      * @param acceptInvitation Whether the invitation should be accepted after being sent. If true, the user will be
      * added to the project.
      */
-    protected suspend fun inviteUserToProject(project: GrpcProject, user: User, acceptInvitation: Boolean = false) {
+    protected suspend fun inviteUserToProject(project: Project, user: User, acceptInvitation: Boolean = false) {
         val invitationToken = inviteHelper(project, user.firstName, user.email)
 
         if (acceptInvitation) {
@@ -233,7 +234,7 @@ open class IntegrationTest : KoinTest {
      * @param project The project to which the user should be invited to.
      * @param email The email of the user that should be invited to the passed project.
      */
-    protected suspend fun inviteEmailToProject(project: GrpcProject, email: String) {
+    protected suspend fun inviteEmailToProject(project: Project, email: String) {
         inviteHelper(project, "User", email)
     }
 
@@ -250,7 +251,7 @@ open class IntegrationTest : KoinTest {
     }
 
     private suspend fun inviteHelper(
-        project: GrpcProject,
+        project: Project,
         inviteeFirstName: String,
         inviteeEmail: String,
     ): CapturingSlot<String> {
@@ -263,7 +264,7 @@ open class IntegrationTest : KoinTest {
         coJustRun { emailManagerMock.sendAcceptProjectInvitationEmail(any(), invitationData) }
 
         val inviteUserRequest = GrpcProject.Member.Invite.newBuilder()
-            .setProjectId(project.id)
+            .setProjectId(project.id.toString())
             .setUserEmail(inviteeEmail)
             .build()
         invitationService.inviteUserToProject(inviteUserRequest)
@@ -274,9 +275,9 @@ open class IntegrationTest : KoinTest {
     /**
      * Adds the [paper] to the [project] in stage 0.
      */
-    protected suspend fun addToProject(project: GrpcProject, paper: GrpcPaper) = projectPaperService.addPaperToProject(
+    protected suspend fun addToProject(project: Project, paper: GrpcPaper) = projectPaperService.addPaperToProject(
         GrpcProjectPaper.Add.newBuilder()
-            .setProjectId(project.id)
+            .setProjectId(project.id.toString())
             .setPaperId(paper.id)
             .setStage(0)
             .build(),
