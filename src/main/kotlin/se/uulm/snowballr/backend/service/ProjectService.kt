@@ -16,9 +16,9 @@ import se.uulm.snowballr.backend.model.fetcher.FetcherOptions
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
-import se.uulm.snowballr.backend.model.outgoing.ProjectDecisionCount
-import se.uulm.snowballr.backend.model.outgoing.ProjectDecisionStatistics
-import se.uulm.snowballr.backend.model.outgoing.ProjectInformation
+import se.uulm.snowballr.backend.model.outgoing.project.ProjectDecisionCount
+import se.uulm.snowballr.backend.model.outgoing.project.ProjectDecisionStatistics
+import se.uulm.snowballr.backend.model.outgoing.project.ProjectInformation
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo

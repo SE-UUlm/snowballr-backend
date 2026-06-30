@@ -1,4 +1,4 @@
-package se.uulm.snowballr.backend.model.outgoing
+package se.uulm.snowballr.backend.model.outgoing.project
 
 import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import snowballr.ProjectOuterClass

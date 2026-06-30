@@ -45,7 +45,7 @@ import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectSettingRequest
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
-import se.uulm.snowballr.backend.model.outgoing.toGrpc
+import se.uulm.snowballr.backend.model.outgoing.project.toGrpc
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.scheduler.SchedulerManager
 import se.uulm.snowballr.backend.service.IAuthenticationService
