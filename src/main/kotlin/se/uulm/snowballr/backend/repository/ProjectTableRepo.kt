@@ -1,6 +1,5 @@
 package se.uulm.snowballr.backend.repository
 
-import com.google.protobuf.util.FieldMaskUtil
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.exposed.v1.core.JoinType
 import org.jetbrains.exposed.v1.core.ResultRow
@@ -19,16 +18,15 @@ import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.update
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPattern
 import se.uulm.snowballr.backend.model.dto.project.Project
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
-import se.uulm.snowballr.backend.model.dto.project.SnowballingType
 import se.uulm.snowballr.backend.model.dto.projectpaper.ProjectPaper
 import se.uulm.snowballr.backend.model.dto.review.Review
 import se.uulm.snowballr.backend.model.dto.user.UserSettings
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
-import se.uulm.snowballr.backend.model.parseUUID
+import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
+import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectSettingRequest
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.ReviewTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
@@ -36,7 +34,6 @@ import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.table.toProject
 import java.time.OffsetDateTime
 import java.util.UUID
-import snowballr.ProjectOuterClass.Project as GrpcProject
 
 private val logger = KotlinLogging.logger { }
 
@@ -101,17 +98,12 @@ interface IProjectTableRepo {
 
     /**
      * Updates an existent project in the database with the provided new information.
-     * The following fields can be updated:
-     * - name
-     * - status
-     * - similarity_threshold
-     * - snowballing_type
-     * - review_maybe_allowed
      *
      * @param request The update request containing the new project details, such as the new name.
+     * @param paths The field mask paths that should be updated.
      * @return The updated [Project] object reflecting the changes from the [request].
      */
-    suspend fun updateProject(request: GrpcProject.Update): Project
+    suspend fun updateProject(request: UpdateProjectRequest, paths: Set<String>): Project
 
     /**
      * Checks if the project with the given [projectId] is locked.
@@ -220,19 +212,16 @@ class ProjectTableRepo(
             .map { it.toProject() }
     }
 
-    override suspend fun updateProject(request: GrpcProject.Update): Project = db.query {
-        val projectId = parseUUID(request.project.id, EntityType.PROJECT)
-        val fieldMaskPaths = FieldMaskUtil.normalize(request.mask).pathsList.toSet()
+    override suspend fun updateProject(request: UpdateProjectRequest, paths: Set<String>): Project = db.query {
+        val isUpdatingDecisionMatrix = isUpdatingDecisionMatrix(paths)
+        val project = if (isUpdatingDecisionMatrix) getProjectByIdOrNull(request.projectId) else null
 
-        val isUpdatingDecisionMatrix = isUpdatingDecisionMatrix(fieldMaskPaths)
-        val project = if (isUpdatingDecisionMatrix) getProjectByIdOrNull(projectId) else null
-
-        ProjectTable.updateByIdAndGet(projectId, ResultRow::toProject) {
-            it.applyProjectStatusUpdate(request.project, fieldMaskPaths)
-            it.applyProjectNameUpdate(request.project, fieldMaskPaths)
-            it.applySlrProjectUpdates(request.project.settings, fieldMaskPaths)
+        ProjectTable.updateByIdAndGet(request.projectId, ResultRow::toProject) {
+            it.applyProjectStatusUpdate(request, paths)
+            it.applyProjectNameUpdate(request, paths)
+            it.applySlrProjectUpdates(request.settings, paths)
             if (isUpdatingDecisionMatrix && project != null) {
-                it.applyDecisionMatrixUpdate(project, request.project.settings, fieldMaskPaths)
+                it.applyDecisionMatrixUpdate(project, request.settings, paths)
             }
             it[modifiedAt] = OffsetDateTime.now()
         }
@@ -332,31 +321,30 @@ class ProjectTableRepo(
         }
     }
 
-    private fun UpdateStatement.applyProjectNameUpdate(project: GrpcProject, paths: Set<String>) {
+    private fun UpdateStatement.applyProjectNameUpdate(project: UpdateProjectRequest, paths: Set<String>) {
         if ("project.name" in paths) {
             this[ProjectTable.name] = project.name
         }
     }
 
-    private fun UpdateStatement.applyProjectStatusUpdate(project: GrpcProject, paths: Set<String>) {
+    private fun UpdateStatement.applyProjectStatusUpdate(project: UpdateProjectRequest, paths: Set<String>) {
         if ("project.status" in paths) {
-            this[ProjectTable.status] = ProjectStatus.fromGrpc(project.status)
+            this[ProjectTable.status] = project.status
         }
     }
 
-    private fun UpdateStatement.applySlrProjectUpdates(settings: GrpcProject.Settings, paths: Set<String>) {
+    private fun UpdateStatement.applySlrProjectUpdates(settings: UpdateProjectSettingRequest, paths: Set<String>) {
         if ("project.settings.similarity_threshold" in paths) {
             this[ProjectTable.similarityThreshold] = settings.similarityThreshold
         }
         if ("project.settings.snowballing_type" in paths) {
-            this[ProjectTable.snowballingType] = SnowballingType.fromGrpc(settings.snowballingType)
+            this[ProjectTable.snowballingType] = settings.snowballingType
         }
         if ("project.settings.review_maybe_allowed" in paths) {
             this[ProjectTable.reviewMaybeAllowed] = settings.reviewMaybeAllowed
         }
         if ("project.settings.fetchers" in paths) {
-            val fetcherMap = settings.fetchersMap.mapValues { (_, value) -> value.optionsMap }
-            this[ProjectTable.fetchers] = fetcherMap
+            this[ProjectTable.fetchers] = settings.fetchers
         }
     }
 
@@ -365,17 +353,15 @@ class ProjectTableRepo(
 
     private fun UpdateStatement.applyDecisionMatrixUpdate(
         project: Project,
-        settings: GrpcProject.Settings,
+        settings: UpdateProjectSettingRequest,
         paths: Set<String>,
     ) {
         var decisionMatrix = project.reviewDecisionMatrix
         if ("project.settings.decision_matrix.number_of_reviewers" in paths) {
-            decisionMatrix = decisionMatrix
-                .copy(numberOfReviewers = settings.decisionMatrix.numberOfReviewers)
+            decisionMatrix = decisionMatrix.copy(numberOfReviewers = settings.decisionMatrix.numberOfReviewers)
         }
         if ("project.settings.decision_matrix.patterns" in paths) {
-            decisionMatrix = decisionMatrix
-                .copy(patterns = settings.decisionMatrix.patternsList.map { DecisionMatrixPattern.fromGrpc(it) })
+            decisionMatrix = decisionMatrix.copy(patterns = settings.decisionMatrix.patterns)
         }
         this[ProjectTable.reviewDecisionMatrixBinary] = decisionMatrix.toByteArray()
     }

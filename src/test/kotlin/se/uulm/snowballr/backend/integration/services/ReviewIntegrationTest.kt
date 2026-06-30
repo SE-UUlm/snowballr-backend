@@ -1,14 +1,18 @@
 package se.uulm.snowballr.backend.integration.services
 
-import com.google.protobuf.FieldMask
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
+import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
+import se.uulm.snowballr.backend.model.dto.project.SnowballingType
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
+import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
+import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectSettingRequest
 import se.uulm.snowballr.backend.model.parseUUID
 import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ProjectOuterClass.Project
@@ -39,11 +43,22 @@ class ReviewIntegrationTest : IntegrationTest() {
                     .build(),
             ).build(),
         ).build()
-        val projectUpdate = Project.Update.newBuilder()
-            .setProject(modifiedProject)
-            .setMask(FieldMask.newBuilder().addPaths("project.settings.decision_matrix.number_of_reviewers"))
-            .build()
-        project = projectService.updateProject(projectUpdate)
+        val projectUpdate = UpdateProjectRequest(
+            projectId = parseUUID(modifiedProject.id, EntityType.PROJECT),
+            name = modifiedProject.name,
+            status = ProjectStatus.fromGrpc(modifiedProject.status),
+            settings = UpdateProjectSettingRequest(
+                similarityThreshold = modifiedProject.settings.similarityThreshold,
+                snowballingType = SnowballingType.fromGrpc(modifiedProject.settings.snowballingType),
+                reviewMaybeAllowed = modifiedProject.settings.reviewMaybeAllowed,
+                fetchers = modifiedProject.settings.fetchersMap.mapValues { it.value.optionsMap },
+                decisionMatrix = ReviewDecisionMatrix.fromGrpc(modifiedProject.settings.decisionMatrix),
+            ),
+        )
+        project = projectService.updateProject(
+            projectUpdate,
+            setOf("project.settings.decision_matrix.number_of_reviewers"),
+        )
 
         return project to projectPaper
     }
@@ -136,22 +151,24 @@ class ReviewIntegrationTest : IntegrationTest() {
                     .build(),
             )
 
-            val updateRequest = Project.Update.newBuilder()
-                .setProject(
-                    Project.newBuilder()
-                        .setId(project.id)
-                        .setSettings(
-                            Project.Settings.newBuilder()
-                                .setReviewMaybeAllowed(true)
-                                .build(),
-                        )
-                        .build(),
-                )
-                .setMask(FieldMask.newBuilder().addPaths("project.settings.review_maybe_allowed"))
-                .build()
+            val updateRequest = UpdateProjectRequest(
+                projectId = parseUUID(project.id, EntityType.PROJECT),
+                name = "",
+                status = ProjectStatus.ACTIVE_LOCKED,
+                settings = UpdateProjectSettingRequest(
+                    similarityThreshold = 0F,
+                    snowballingType = SnowballingType.BOTH,
+                    reviewMaybeAllowed = true,
+                    fetchers = emptyMap(),
+                    decisionMatrix = ReviewDecisionMatrix(
+                        numberOfReviewers = 1,
+                        patterns = emptyList(),
+                    ),
+                ),
+            )
 
             assertThrows<FailedPreconditionException> {
-                projectService.updateProject(updateRequest)
+                projectService.updateProject(updateRequest, setOf("project.settings.review_maybe_allowed"))
             }
         }
     }

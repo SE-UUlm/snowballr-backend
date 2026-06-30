@@ -26,8 +26,11 @@ import se.uulm.snowballr.backend.model.dto.user.UserSettings
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.dto.user.VerificationToken
 import se.uulm.snowballr.backend.model.fetcher.FetcherEnqueueJob
+import se.uulm.snowballr.backend.model.fetcher.FetcherInformation
 import se.uulm.snowballr.backend.model.fetcher.FetcherMap
+import se.uulm.snowballr.backend.model.fetcher.FetcherOptionsSchema
 import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
+import se.uulm.snowballr.backend.model.fetcher.Link
 import se.uulm.snowballr.backend.table.patternOf
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -369,5 +372,31 @@ object DataBuilder {
         publicationName = publicationName,
         authors = authors,
         fetcherMetadata = fetcherMetadata,
+    )
+
+    fun createExampleFetcherInformation(
+        name: String = "Fetcher",
+        description: String = "Description",
+        links: List<Link> = emptyList(),
+        optionSchema: Map<String, FetcherOptionsSchema> = emptyMap(),
+    ) = FetcherInformation(
+        name = name,
+        description = description,
+        links = links,
+        optionsSchema = optionSchema,
+    )
+
+    fun createExampleFetcherOptionsSchema(
+        name: String = "Option",
+        description: String = "Description",
+        isRequired: Boolean = false,
+        isSecret: Boolean = false,
+        defaultValue: String? = null,
+    ) = FetcherOptionsSchema(
+        name = name,
+        description = description,
+        isRequired = isRequired,
+        isSecret = isSecret,
+        defaultValue = defaultValue,
     )
 }

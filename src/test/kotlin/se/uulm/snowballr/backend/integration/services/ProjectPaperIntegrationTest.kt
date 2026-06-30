@@ -1,6 +1,5 @@
 package se.uulm.snowballr.backend.integration.services
 
-import com.google.protobuf.util.FieldMaskUtil
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -8,11 +7,16 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
+import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
+import se.uulm.snowballr.backend.model.dto.project.SnowballingType
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateProjectPaperException
 import se.uulm.snowballr.backend.model.exception.invalidargument.StageOutOfRangeException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedCreateException
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
+import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
+import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectSettingRequest
 import se.uulm.snowballr.backend.model.parseUUID
 import snowballr.ProjectOuterClass.Project
 import snowballr.ReviewOuterClass.ReviewDecision
@@ -44,10 +48,19 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
             ).build()
 
         return projectService.updateProject(
-            Project.Update.newBuilder()
-                .setProject(projectUpdate)
-                .setMask(FieldMaskUtil.fromStringList(listOf("project.settings.decision_matrix.number_of_reviewers")))
-                .build(),
+            UpdateProjectRequest(
+                projectId = parseUUID(projectUpdate.id, EntityType.PROJECT),
+                name = projectUpdate.name,
+                status = ProjectStatus.fromGrpc(projectUpdate.status),
+                settings = UpdateProjectSettingRequest(
+                    similarityThreshold = projectUpdate.settings.similarityThreshold,
+                    snowballingType = SnowballingType.fromGrpc(projectUpdate.settings.snowballingType),
+                    reviewMaybeAllowed = projectUpdate.settings.reviewMaybeAllowed,
+                    fetchers = projectUpdate.settings.fetchersMap.mapValues { it.value.optionsMap },
+                    decisionMatrix = ReviewDecisionMatrix.fromGrpc(projectUpdate.settings.decisionMatrix),
+                ),
+            ),
+            setOf("project.settings.decision_matrix.number_of_reviewers"),
         )
     }
 

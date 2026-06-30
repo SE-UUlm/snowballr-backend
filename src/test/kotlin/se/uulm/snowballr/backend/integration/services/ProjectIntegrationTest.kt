@@ -1,20 +1,20 @@
 package se.uulm.snowballr.backend.integration.services
 
-import com.google.protobuf.util.FieldMaskUtil
 import io.mockk.coEvery
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
+import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
+import se.uulm.snowballr.backend.model.fetcher.FetcherInformationWithId
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
+import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import se.uulm.snowballr.backend.model.parseUUID
-import snowballr.Fetcher
-import snowballr.ProjectOuterClass.Project
-import snowballr.ProjectOuterClass.ProjectStatus
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -64,13 +64,13 @@ class ProjectIntegrationTest : IntegrationTest() {
             val project = projectService.createProject(CreateProjectRequest(name = "Original Name"))
             val projectId = parseUUID(project.id, EntityType.PROJECT)
 
-            val updatedProject = Project.newBuilder().setId(project.id).setName("Updated Name").build()
-            val request = Project.Update.newBuilder()
-                .setProject(updatedProject)
-                .setMask(FieldMaskUtil.fromStringList(listOf("project.name")))
-                .build()
+            val updatedProject = DataBuilder.createExampleProject(
+                id = parseUUID(project.id, EntityType.PROJECT),
+                name = "Updated Name",
+            )
+            val request = UpdateProjectRequest.fromProject(updatedProject)
 
-            val result = projectService.updateProject(request)
+            val result = projectService.updateProject(request, setOf("project.name"))
 
             assertEquals("Updated Name", result.name)
 
@@ -82,16 +82,13 @@ class ProjectIntegrationTest : IntegrationTest() {
         fun `When a project is archived, then it no longer appears in the active projects list`() = runTest {
             val project = projectService.createProject(CreateProjectRequest(name = "To Archive"))
 
-            val updatedProject = Project.newBuilder()
-                .setId(project.id)
-                .setStatus(ProjectStatus.PROJECT_STATUS_ARCHIVED)
-                .build()
-            val request = Project.Update.newBuilder()
-                .setProject(updatedProject)
-                .setMask(FieldMaskUtil.fromStringList(listOf("project.status")))
-                .build()
+            val updatedProject = DataBuilder.createExampleProject(
+                id = parseUUID(project.id, EntityType.PROJECT),
+                status = ProjectStatus.ARCHIVED,
+            )
+            val request = UpdateProjectRequest.fromProject(updatedProject)
 
-            projectService.updateProject(request)
+            projectService.updateProject(request, setOf("project.status"))
 
             val activeProjects = projectService.getAllProjectsForUser(testUserId)
             assertFalse(activeProjects.projectsList.any { it.id == project.id })
@@ -101,16 +98,13 @@ class ProjectIntegrationTest : IntegrationTest() {
         fun `When a project is archived, then it appears in the archived projects list`() = runTest {
             val project = projectService.createProject(CreateProjectRequest(name = "Archived Project"))
 
-            val updatedProject = Project.newBuilder()
-                .setId(project.id)
-                .setStatus(ProjectStatus.PROJECT_STATUS_ARCHIVED)
-                .build()
-            val request = Project.Update.newBuilder()
-                .setProject(updatedProject)
-                .setMask(FieldMaskUtil.fromStringList(listOf("project.status")))
-                .build()
+            val updatedProject = DataBuilder.createExampleProject(
+                id = parseUUID(project.id, EntityType.PROJECT),
+                status = ProjectStatus.ARCHIVED,
+            )
+            val request = UpdateProjectRequest.fromProject(updatedProject)
 
-            projectService.updateProject(request)
+            projectService.updateProject(request, setOf("project.status"))
 
             val archivedProjects = projectService.getAllArchivedProjectsForUser(testUserId)
             assertTrue(archivedProjects.projectsList.any { it.id == project.id })
@@ -122,27 +116,30 @@ class ProjectIntegrationTest : IntegrationTest() {
                 val project = projectService.createProject(CreateProjectRequest(name = "Fetcher Project"))
 
                 val availableFetchers = setOf(
-                    Fetcher.FetcherInformation.newBuilder()
-                        .setId("existent-fetcher")
-                        .putOptionsSchema("existent-option", Fetcher.FetcherOptionSchema.getDefaultInstance())
-                        .build(),
+                    FetcherInformationWithId(
+                        id = "existent-fetcher",
+                        information = DataBuilder.createExampleFetcherInformation(
+                            optionSchema = mapOf(
+                                "existent-option" to DataBuilder.createExampleFetcherOptionsSchema(),
+                            ),
+                        ),
+                    ),
                 )
                 coEvery { fetcherManagerMock.getAvailableFetchers() } returns availableFetchers
 
-                val fetcherOptions = Fetcher.FetcherOptions.newBuilder()
-                    .putOptions("existent-option", "value1")
-                    .putOptions("non-existent-option", "value2")
-                    .build()
-                val settings = Project.Settings.newBuilder()
-                    .putFetchers("existent-fetcher", fetcherOptions)
-                    .putFetchers("non-existent-fetcher", Fetcher.FetcherOptions.getDefaultInstance())
-                    .build()
-                val request = Project.Update.newBuilder()
-                    .setProject(Project.newBuilder().setId(project.id).setSettings(settings).build())
-                    .setMask(FieldMaskUtil.fromStringList(listOf("project.settings.fetchers")))
-                    .build()
+                val updatedProject = DataBuilder.createExampleProject(
+                    id = parseUUID(project.id, EntityType.PROJECT),
+                    fetchers = mapOf(
+                        "existent-fetcher" to mapOf(
+                            "existent-option" to "value1",
+                            "non-existent-option" to "value2",
+                        ),
+                        "non-existent-fetcher" to emptyMap(),
+                    ),
+                )
+                val request = UpdateProjectRequest.fromProject(updatedProject)
 
-                val result = projectService.updateProject(request)
+                val result = projectService.updateProject(request, setOf("project.settings.fetchers"))
 
                 val fetchersMap = result.settings.fetchersMap
                 assertContains(fetchersMap.keys, "existent-fetcher")
@@ -157,28 +154,31 @@ class ProjectIntegrationTest : IntegrationTest() {
             runTest {
                 val project = projectService.createProject(CreateProjectRequest(name = "Required Option Project"))
 
-                val requiredOption = Fetcher.FetcherOptionSchema.newBuilder().setRequired(true).build()
+                val requiredOption = DataBuilder.createExampleFetcherOptionsSchema(isRequired = true)
                 val availableFetchers = setOf(
-                    Fetcher.FetcherInformation.newBuilder()
-                        .setId("fetcher")
-                        .putOptionsSchema("option1", requiredOption)
-                        .putOptionsSchema("option2", requiredOption)
-                        .build(),
+                    FetcherInformationWithId(
+                        id = "fetcher",
+                        information = DataBuilder.createExampleFetcherInformation(
+                            optionSchema = mapOf(
+                                "option1" to requiredOption,
+                                "option2" to requiredOption,
+                            ),
+                        ),
+                    ),
                 )
                 coEvery { fetcherManagerMock.getAvailableFetchers() } returns availableFetchers
 
-                val fetcherOptions = Fetcher.FetcherOptions.newBuilder()
-                    .putOptions("option1", "value")
-                    .build()
-                val settings = Project.Settings.newBuilder()
-                    .putFetchers("fetcher", fetcherOptions)
-                    .build()
-                val request = Project.Update.newBuilder()
-                    .setProject(Project.newBuilder().setId(project.id).setSettings(settings).build())
-                    .setMask(FieldMaskUtil.fromStringList(listOf("project.settings.fetchers")))
-                    .build()
+                val updatedProject = DataBuilder.createExampleProject(
+                    id = parseUUID(project.id, EntityType.PROJECT),
+                    fetchers = mapOf(
+                        "fetcher" to mapOf("option1" to "value"),
+                    ),
+                )
+                val request = UpdateProjectRequest.fromProject(updatedProject)
 
-                assertThrows<FailedPreconditionException> { projectService.updateProject(request) }
+                assertThrows<FailedPreconditionException> {
+                    projectService.updateProject(request, setOf("project.settings.fetchers"))
+                }
             }
     }
 

@@ -1,6 +1,5 @@
 package se.uulm.snowballr.backend.service.project
 
-import com.google.protobuf.util.FieldMaskUtil
 import io.mockk.coEvery
 import io.mockk.coJustRun
 import io.mockk.slot
@@ -15,19 +14,15 @@ import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.dto.project.Project
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
-import se.uulm.snowballr.backend.model.dto.project.toGrpcProject
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
-import snowballr.Fetcher
+import se.uulm.snowballr.backend.model.fetcher.FetcherInformationWithId
+import se.uulm.snowballr.backend.model.fetcher.FetcherOptions
+import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import kotlin.test.assertContains
 import kotlin.test.assertIs
-import snowballr.ProjectOuterClass.Project as GrpcProject
 
 class UpdateProjectTest : ProjectServiceTest() {
-    private fun getRequest(project: Project, paths: List<String>? = null) = GrpcProject.Update
-        .newBuilder()
-        .setProject(project.toGrpcProject())
-        .also { if (paths != null) it.setMask(FieldMaskUtil.fromStringList(paths)) }
-        .build()
+    private fun getRequest(project: Project) = UpdateProjectRequest.fromProject(project)
 
     @Test
     fun `When a user updates a project, but has no access, then a TestSpecificException is thrown`() = runTest {
@@ -41,7 +36,7 @@ class UpdateProjectTest : ProjectServiceTest() {
             projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE)
         } throws TestSpecificException()
 
-        assertThrows<TestSpecificException> { service.updateProject(request) }
+        assertThrows<TestSpecificException> { service.updateProject(request, emptySet()) }
     }
 
     @Test
@@ -55,7 +50,7 @@ class UpdateProjectTest : ProjectServiceTest() {
         coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { service.updateProject(request) }
+        assertThrows<TestSpecificException> { service.updateProject(request, emptySet()) }
     }
 
     @Test
@@ -69,9 +64,9 @@ class UpdateProjectTest : ProjectServiceTest() {
         coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectRepoMock.isProjectLocked(project.id) } returns false
-        coEvery { projectRepoMock.updateProject(request) } returns project
+        coEvery { projectRepoMock.updateProject(request, emptySet()) } returns project
 
-        val result = service.updateProject(request)
+        val result = service.updateProject(request, emptySet())
 
         assertProjectEquality(project, result)
     }
@@ -83,13 +78,13 @@ class UpdateProjectTest : ProjectServiceTest() {
             val project = DataBuilder.createExampleProject()
 
             val updatedProject = project.copy(status = ProjectStatus.DELETED)
-            val request = getRequest(updatedProject, listOf("project.status"))
+            val request = getRequest(updatedProject)
 
             mockCurrentUser(user)
             coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
-            assertThrows<IllegalArgumentException> { service.updateProject(request) }
+            assertThrows<IllegalArgumentException> { service.updateProject(request, setOf("project.status")) }
         }
 
     @Test
@@ -98,13 +93,13 @@ class UpdateProjectTest : ProjectServiceTest() {
         val project = DataBuilder.createExampleProject(status = ProjectStatus.DELETED)
 
         val updatedProject = project.copy(name = "Updated Name")
-        val request = getRequest(updatedProject, listOf("project.name"))
+        val request = getRequest(updatedProject)
 
         mockCurrentUser(user)
         coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
-        assertThrows<FailedPreconditionException> { service.updateProject(request) }
+        assertThrows<FailedPreconditionException> { service.updateProject(request, setOf("project.name")) }
     }
 
     @Test
@@ -114,13 +109,15 @@ class UpdateProjectTest : ProjectServiceTest() {
             val project = DataBuilder.createExampleProject(status = ProjectStatus.ARCHIVED)
 
             val updatedProject = project.copy(name = "Updated Name", status = ProjectStatus.ACTIVE)
-            val request = getRequest(updatedProject, listOf("project.name", "project.status"))
+            val request = getRequest(updatedProject)
 
             mockCurrentUser(user)
             coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
-            assertThrows<FailedPreconditionException> { service.updateProject(request) }
+            assertThrows<FailedPreconditionException> {
+                service.updateProject(request, setOf("project.name", "project.status"))
+            }
         }
 
     @ParameterizedTest
@@ -132,16 +129,16 @@ class UpdateProjectTest : ProjectServiceTest() {
         val project = DataBuilder.createExampleProject(status = ProjectStatus.ARCHIVED)
 
         val updatedProject = project.copy(status = status)
-        val request = getRequest(updatedProject, listOf("project.status"))
+        val request = getRequest(updatedProject)
 
         mockCurrentUser(user)
         coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectRepoMock.isProjectLocked(project.id) } returns
             (updatedProject.status == ProjectStatus.ACTIVE_LOCKED)
-        coEvery { projectRepoMock.updateProject(request) } returns updatedProject
+        coEvery { projectRepoMock.updateProject(request, setOf("project.status")) } returns updatedProject
 
-        val result = service.updateProject(request)
+        val result = service.updateProject(request, setOf("project.status"))
 
         assertProjectEquality(updatedProject, result)
     }
@@ -153,14 +150,14 @@ class UpdateProjectTest : ProjectServiceTest() {
             val project = DataBuilder.createExampleProject(status = ProjectStatus.ARCHIVED)
 
             val updatedProject = project.copy(status = ProjectStatus.ARCHIVED)
-            val request = getRequest(updatedProject, listOf("project.status"))
+            val request = getRequest(updatedProject)
 
             mockCurrentUser(user)
             coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-            coEvery { projectRepoMock.updateProject(request) } returns updatedProject
+            coEvery { projectRepoMock.updateProject(request, setOf("project.status")) } returns updatedProject
 
-            val result = service.updateProject(request)
+            val result = service.updateProject(request, setOf("project.status"))
 
             assertProjectEquality(updatedProject, result)
         }
@@ -172,13 +169,13 @@ class UpdateProjectTest : ProjectServiceTest() {
             val project = DataBuilder.createExampleProject(status = ProjectStatus.ARCHIVED)
 
             val updatedProject = project.copy(status = ProjectStatus.CLEARED)
-            val request = getRequest(updatedProject, listOf("project.status"))
+            val request = getRequest(updatedProject)
 
             mockCurrentUser(user)
             coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
-            assertThrows<FailedPreconditionException> { service.updateProject(request) }
+            assertThrows<FailedPreconditionException> { service.updateProject(request, setOf("project.status")) }
         }
 
     @Test
@@ -188,13 +185,15 @@ class UpdateProjectTest : ProjectServiceTest() {
             val project = DataBuilder.createExampleProject(status = ProjectStatus.ACTIVE_LOCKED)
 
             val updatedProject = project.copy(reviewMaybeAllowed = false)
-            val request = getRequest(updatedProject, listOf("project.settings.review_maybe_allowed"))
+            val request = getRequest(updatedProject)
 
             mockCurrentUser(user)
             coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
-            assertThrows<FailedPreconditionException> { service.updateProject(request) }
+            assertThrows<FailedPreconditionException> {
+                service.updateProject(request, setOf("project.settings.review_maybe_allowed"))
+            }
         }
 
     @Test
@@ -204,15 +203,15 @@ class UpdateProjectTest : ProjectServiceTest() {
             val project = DataBuilder.createExampleProject(status = ProjectStatus.ACTIVE_LOCKED)
 
             val updatedProject = project.copy(name = "Updated Name")
-            val request = getRequest(updatedProject, listOf("project.name"))
+            val request = getRequest(updatedProject)
 
             mockCurrentUser(user)
             coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
             coEvery { projectRepoMock.isProjectLocked(project.id) } returns true
-            coEvery { projectRepoMock.updateProject(request) } returns updatedProject
+            coEvery { projectRepoMock.updateProject(request, setOf("project.name")) } returns updatedProject
 
-            val result = service.updateProject(request)
+            val result = service.updateProject(request, setOf("project.name"))
 
             assertProjectEquality(updatedProject, result)
         }
@@ -223,15 +222,15 @@ class UpdateProjectTest : ProjectServiceTest() {
         val project = DataBuilder.createExampleProject(status = ProjectStatus.ACTIVE)
 
         val updatedProject = project.copy(name = "Updated Name")
-        val request = getRequest(updatedProject, listOf("project.name"))
+        val request = getRequest(updatedProject)
 
         mockCurrentUser(user)
         coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectRepoMock.isProjectLocked(project.id) } returns false
-        coEvery { projectRepoMock.updateProject(request) } returns updatedProject
+        coEvery { projectRepoMock.updateProject(request, setOf("project.name")) } returns updatedProject
 
-        val result = service.updateProject(request)
+        val result = service.updateProject(request, setOf("project.name"))
 
         assertProjectEquality(updatedProject, result)
     }
@@ -245,13 +244,13 @@ class UpdateProjectTest : ProjectServiceTest() {
         val project = DataBuilder.createExampleProject(status = status)
 
         val updatedProject = project.copy(name = "Updated Name", status = ProjectStatus.ACTIVE)
-        val request = getRequest(updatedProject, listOf("project.name"))
+        val request = getRequest(updatedProject)
 
         mockCurrentUser(user)
         coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
-        assertThrows<IllegalStateException> { service.updateProject(request) }
+        assertThrows<IllegalStateException> { service.updateProject(request, setOf("project.name")) }
     }
 
     @Test
@@ -259,14 +258,14 @@ class UpdateProjectTest : ProjectServiceTest() {
         val user = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject(fetchers = emptyMap())
         val availableFetchers = setOf(
-            Fetcher.FetcherInformation.newBuilder()
-                .setId("existent-fetcher")
-                .putAllOptionsSchema(
-                    mapOf(
-                        "existent-option" to Fetcher.FetcherOptionSchema.getDefaultInstance(),
+            FetcherInformationWithId(
+                id = "existent-fetcher",
+                information = DataBuilder.createExampleFetcherInformation(
+                    optionSchema = mapOf(
+                        "existent-option" to DataBuilder.createExampleFetcherOptionsSchema(),
                     ),
-                )
-                .build(),
+                ),
+            ),
         )
 
         val fetchers = mapOf(
@@ -277,28 +276,30 @@ class UpdateProjectTest : ProjectServiceTest() {
             "non-existent-fetcher" to emptyMap(),
         )
         val updatedProject = project.copy(fetchers = fetchers)
-        val request = getRequest(updatedProject, listOf("project.settings.fetchers"))
+        val request = getRequest(updatedProject)
 
         mockCurrentUser(user)
         coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectRepoMock.isProjectLocked(project.id) } returns false
         coEvery { fetcherManagerMock.getAvailableFetchers() } returns availableFetchers
-        val finalRequest = slot<GrpcProject.Update>()
-        coEvery { projectRepoMock.updateProject(capture(finalRequest)) } returns updatedProject
+        val finalRequest = slot<UpdateProjectRequest>()
+        coEvery {
+            projectRepoMock.updateProject(capture(finalRequest), setOf("project.settings.fetchers"))
+        } returns updatedProject
 
-        service.updateProject(request)
+        service.updateProject(request, setOf("project.settings.fetchers"))
 
         val sanitizedRequest = finalRequest.captured
 
-        val updatedFetchers = sanitizedRequest.project.settings.fetchersMap
+        val updatedFetchers = sanitizedRequest.settings.fetchers
         assertContains(updatedFetchers.keys, "existent-fetcher")
         assertFalse(updatedFetchers.containsKey("non-existent-fetcher"))
 
         val existentFetcher = updatedFetchers["existent-fetcher"]
-        assertIs<Fetcher.FetcherOptions>(existentFetcher)
-        assertContains(existentFetcher.optionsMap.keys, "existent-option")
-        assertFalse(existentFetcher.optionsMap.containsKey("non-existent-option"))
+        assertIs<FetcherOptions>(existentFetcher)
+        assertContains(existentFetcher.keys, "existent-option")
+        assertFalse(existentFetcher.containsKey("non-existent-option"))
     }
 
     @Test
@@ -306,23 +307,22 @@ class UpdateProjectTest : ProjectServiceTest() {
         runTest {
             val user = DataBuilder.createExampleUser()
             val project = DataBuilder.createExampleProject(fetchers = emptyMap())
-            val requiredOption = Fetcher.FetcherOptionSchema.newBuilder().setRequired(true).build()
             val availableFetchers = setOf(
-                Fetcher.FetcherInformation.newBuilder()
-                    .setId("fetcher")
-                    .putAllOptionsSchema(
-                        mapOf(
-                            "option1" to requiredOption,
+                FetcherInformationWithId(
+                    id = "fetcher",
+                    information = DataBuilder.createExampleFetcherInformation(
+                        optionSchema = mapOf(
+                            "option1" to DataBuilder.createExampleFetcherOptionsSchema(isRequired = true),
                         ),
-                    )
-                    .build(),
+                    ),
+                ),
             )
 
             val fetchers = mapOf(
                 "fetcher" to emptyMap<String, String>(),
             )
             val updatedProject = project.copy(fetchers = fetchers)
-            val request = getRequest(updatedProject, listOf("project.settings.fetchers"))
+            val request = getRequest(updatedProject)
 
             mockCurrentUser(user)
             coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
@@ -330,7 +330,9 @@ class UpdateProjectTest : ProjectServiceTest() {
             coEvery { projectRepoMock.isProjectLocked(project.id) } returns false
             coEvery { fetcherManagerMock.getAvailableFetchers() } returns availableFetchers
 
-            assertThrows<FailedPreconditionException> { service.updateProject(request) }
+            assertThrows<FailedPreconditionException> {
+                service.updateProject(request, setOf("project.settings.fetchers"))
+            }
         }
 
     @Test
@@ -338,16 +340,15 @@ class UpdateProjectTest : ProjectServiceTest() {
         runTest {
             val user = DataBuilder.createExampleUser()
             val project = DataBuilder.createExampleProject(fetchers = emptyMap())
-            val requiredOption = Fetcher.FetcherOptionSchema.newBuilder().setRequired(true).build()
             val availableFetchers = setOf(
-                Fetcher.FetcherInformation.newBuilder()
-                    .setId("fetcher")
-                    .putAllOptionsSchema(
-                        mapOf(
-                            "option1" to requiredOption,
+                FetcherInformationWithId(
+                    id = "fetcher",
+                    information = DataBuilder.createExampleFetcherInformation(
+                        optionSchema = mapOf(
+                            "option1" to DataBuilder.createExampleFetcherOptionsSchema(isRequired = true),
                         ),
-                    )
-                    .build(),
+                    ),
+                ),
             )
 
             val fetchers = mapOf(
@@ -356,7 +357,7 @@ class UpdateProjectTest : ProjectServiceTest() {
                 ),
             )
             val updatedProject = project.copy(fetchers = fetchers)
-            val request = getRequest(updatedProject, listOf("project.settings.fetchers"))
+            val request = getRequest(updatedProject)
 
             mockCurrentUser(user)
             coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
@@ -364,6 +365,8 @@ class UpdateProjectTest : ProjectServiceTest() {
             coEvery { projectRepoMock.isProjectLocked(project.id) } returns false
             coEvery { fetcherManagerMock.getAvailableFetchers() } returns availableFetchers
 
-            assertThrows<FailedPreconditionException> { service.updateProject(request) }
+            assertThrows<FailedPreconditionException> {
+                service.updateProject(request, setOf("project.settings.fetchers"))
+            }
         }
 }

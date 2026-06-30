@@ -1,6 +1,5 @@
 package se.uulm.snowballr.backend.integration.access
 
-import com.google.protobuf.util.FieldMaskUtil
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -9,11 +8,16 @@ import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
+import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
+import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
+import se.uulm.snowballr.backend.model.dto.project.SnowballingType
 import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.exception.UnauthorizedException
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
+import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
+import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectSettingRequest
 import se.uulm.snowballr.backend.model.parseUUID
 import snowballr.ProjectOuterClass.MemberRole
 import snowballr.ProjectOuterClass.Project
@@ -45,13 +49,21 @@ class AccessControlIntegrationTest : IntegrationTest() {
         fun `When a non-admin member tries to update a project, then access is denied`() = runTest {
             val (project, member) = setupProjectWithMember()
 
-            val request = Project.Update.newBuilder()
-                .setProject(project.toBuilder().setName("Hijacked Name").build())
-                .setMask(FieldMaskUtil.fromStringList(listOf("project.name")))
-                .build()
+            val request = UpdateProjectRequest(
+                projectId = parseUUID(project.id, EntityType.PROJECT),
+                name = project.name,
+                status = ProjectStatus.fromGrpc(project.status),
+                settings = UpdateProjectSettingRequest(
+                    similarityThreshold = project.settings.similarityThreshold,
+                    snowballingType = SnowballingType.fromGrpc(project.settings.snowballingType),
+                    reviewMaybeAllowed = project.settings.reviewMaybeAllowed,
+                    fetchers = project.settings.fetchersMap.mapValues { it.value.optionsMap },
+                    decisionMatrix = ReviewDecisionMatrix.fromGrpc(project.settings.decisionMatrix),
+                ),
+            )
 
             actAsUser(member.id) {
-                assertThrows<UnauthorizedException> { projectService.updateProject(request) }
+                assertThrows<UnauthorizedException> { projectService.updateProject(request, setOf("project.name")) }
             }
         }
 

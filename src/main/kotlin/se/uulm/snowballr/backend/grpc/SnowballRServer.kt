@@ -26,14 +26,21 @@ import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 import se.uulm.snowballr.backend.model.dto.criterion.toGrpcCriteria
 import se.uulm.snowballr.backend.model.dto.criterion.toGrpcCriterion
+import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPattern
+import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
+import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
+import se.uulm.snowballr.backend.model.dto.project.SnowballingType
 import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.dto.user.toGrpcUser
 import se.uulm.snowballr.backend.model.dto.user.toGrpcUserSettings
 import se.uulm.snowballr.backend.model.dto.user.toGrpcUsers
+import se.uulm.snowballr.backend.model.fetcher.toGrpc
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
+import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
+import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectSettingRequest
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
 import se.uulm.snowballr.backend.model.parseUUID
@@ -54,7 +61,7 @@ import snowballr.Authentication
 import snowballr.Base
 import snowballr.CriterionOuterClass
 import snowballr.Export
-import snowballr.Fetcher
+import snowballr.Fetcher.AvailableFetchers
 import snowballr.PaperOuterClass
 import snowballr.ProjectOuterClass
 import snowballr.ReviewOuterClass
@@ -217,8 +224,10 @@ class SnowballRServer(
         private val reviewService: IReviewService by inject()
         private val userService: IUserService by inject()
 
-        override suspend fun getAvailableFetchers(request: Base.Nothing): Fetcher.AvailableFetchers =
-            fetcherService.getAvailableFetchers()
+        override suspend fun getAvailableFetchers(request: Base.Nothing): AvailableFetchers = AvailableFetchers
+            .newBuilder()
+            .addAllFetchers(fetcherService.getAvailableFetchers().map { it.toGrpc() })
+            .build()
 
         override suspend fun register(request: Authentication.RegisterRequest) = returnNothing {
             userService.register(
@@ -376,7 +385,25 @@ class SnowballRServer(
             projectService.getProjectById(parseProjectId(request))
 
         override suspend fun updateProject(request: ProjectOuterClass.Project.Update): ProjectOuterClass.Project =
-            projectService.updateProject(request)
+            projectService.updateProject(
+                UpdateProjectRequest(
+                    projectId = parseUUID(request.project.id, EntityType.PROJECT),
+                    name = request.project.name,
+                    status = ProjectStatus.fromGrpc(request.project.status),
+                    settings = UpdateProjectSettingRequest(
+                        similarityThreshold = request.project.settings.similarityThreshold,
+                        snowballingType = SnowballingType.fromGrpc(request.project.settings.snowballingType),
+                        reviewMaybeAllowed = request.project.settings.reviewMaybeAllowed,
+                        fetchers = request.project.settings.fetchersMap.mapValues { it.value.optionsMap },
+                        decisionMatrix = ReviewDecisionMatrix(
+                            numberOfReviewers = request.project.settings.decisionMatrix.numberOfReviewers,
+                            patterns = request.project.settings.decisionMatrix.patternsList
+                                .map { DecisionMatrixPattern.fromGrpc(it) },
+                        ),
+                    ),
+                ),
+                FieldMaskUtil.normalize(request.mask).pathsList.toSet(),
+            )
 
         override suspend fun getAvailableExportFormats(request: Base.Nothing): Export.AvailableExportFormatsResponse =
             exportService.getAvailableExportFormats()

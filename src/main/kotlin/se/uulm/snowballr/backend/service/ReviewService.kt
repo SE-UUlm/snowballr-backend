@@ -1,6 +1,5 @@
 package se.uulm.snowballr.backend.service
 
-import com.google.protobuf.util.FieldMaskUtil
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.access.IReviewAccessChecker
 import se.uulm.snowballr.backend.fetcher.IFetcherOrchestrator
@@ -9,6 +8,7 @@ import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
+import se.uulm.snowballr.backend.model.dto.project.SnowballingType
 import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.dto.projectpaper.hasFinalDecision
 import se.uulm.snowballr.backend.model.dto.review.Review
@@ -20,6 +20,8 @@ import se.uulm.snowballr.backend.model.dto.review.toGrpcReviews
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.alreadyexists.DuplicateReviewException
 import se.uulm.snowballr.backend.model.fetcher.FetcherEnqueueJob
+import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
+import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectSettingRequest
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
@@ -27,7 +29,6 @@ import se.uulm.snowballr.backend.repository.IReviewTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.IReviewHasCriterionTableRepo
-import snowballr.ProjectOuterClass
 import java.util.UUID
 import snowballr.ReviewOuterClass.Review as GrpcReview
 
@@ -204,15 +205,22 @@ class ReviewService(
     }
 
     private suspend fun setProjectStatusActiveLocked(projectId: UUID) {
-        val request = ProjectOuterClass.Project.Update.newBuilder()
-            .setProject(
-                ProjectOuterClass.Project.newBuilder()
-                    .setId(projectId.toString())
-                    .setStatus(ProjectStatus.ACTIVE_LOCKED.toGrpc())
-                    .build(),
-            )
-            .setMask(FieldMaskUtil.fromString("project.status"))
-            .build()
-        projectRepo.updateProject(request)
+        val request = UpdateProjectRequest(
+            projectId = projectId,
+            name = "",
+            status = ProjectStatus.ACTIVE_LOCKED,
+            settings = UpdateProjectSettingRequest(
+                similarityThreshold = 0F,
+                snowballingType = SnowballingType.BOTH,
+                reviewMaybeAllowed = false,
+                fetchers = emptyMap(),
+                decisionMatrix = ReviewDecisionMatrix(
+                    numberOfReviewers = 1,
+                    patterns = emptyList(),
+                ),
+            ),
+        )
+
+        projectRepo.updateProject(request, setOf("project.status"))
     }
 }
