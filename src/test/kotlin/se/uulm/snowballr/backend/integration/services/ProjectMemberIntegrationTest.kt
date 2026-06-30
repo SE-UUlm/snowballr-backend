@@ -6,9 +6,9 @@ import org.junit.jupiter.api.Test
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.parseUUID
 import snowballr.ProjectOuterClass.MemberRole
-import snowballr.ProjectOuterClass.Project
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -19,7 +19,7 @@ class ProjectMemberIntegrationTest : IntegrationTest() {
     inner class InviteAndAccept {
         @Test
         fun `When a user accepts a project invitation, then they appear as a project member`() = runTest {
-            val project = projectService.createProject(Project.Create.newBuilder().setName("Test Project").build())
+            val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
             val otherUser = addUser(DataBuilder.createExampleUser(email = "other.user@example.com"))
             val projectId = parseUUID(project.id, EntityType.PROJECT)
 
@@ -32,7 +32,7 @@ class ProjectMemberIntegrationTest : IntegrationTest() {
         @Test
         fun `When a user who is already a member is invited again, then the invitation is silently ignored`() =
             runTest {
-                val project = projectService.createProject(Project.Create.newBuilder().setName("Test Project").build())
+                val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
                 val otherUser = addUser(DataBuilder.createExampleUser(email = "other.user@example.com"))
                 val projectId = parseUUID(project.id, EntityType.PROJECT)
 
@@ -55,7 +55,7 @@ class ProjectMemberIntegrationTest : IntegrationTest() {
     inner class RemoveMember {
         @Test
         fun `When an admin removes a project member, then the user no longer appears in the members list`() = runTest {
-            val project = projectService.createProject(Project.Create.newBuilder().setName("Test Project").build())
+            val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
             val otherUser = addUser(DataBuilder.createExampleUser(email = "other.user@example.com"))
             val projectId = parseUUID(project.id, EntityType.PROJECT)
 
@@ -75,7 +75,7 @@ class ProjectMemberIntegrationTest : IntegrationTest() {
         @Test
         fun `When a member removes themselves from a project, then they no longer appear in the members list`() =
             runTest {
-                val project = projectService.createProject(Project.Create.newBuilder().setName("Test Project").build())
+                val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
                 val otherUser = addUser(DataBuilder.createExampleUser(email = "other.user@example.com"))
                 val projectId = parseUUID(project.id, EntityType.PROJECT)
 
@@ -99,7 +99,7 @@ class ProjectMemberIntegrationTest : IntegrationTest() {
     inner class UpdateMemberRole {
         @Test
         fun `When an admin promotes a member to project admin, then their role is updated`() = runTest {
-            val project = projectService.createProject(Project.Create.newBuilder().setName("Test Project").build())
+            val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
             val otherUser = addUser(DataBuilder.createExampleUser(email = "other.user@example.com"))
             val projectId = parseUUID(project.id, EntityType.PROJECT)
 
@@ -120,7 +120,7 @@ class ProjectMemberIntegrationTest : IntegrationTest() {
 
         @Test
         fun `When an admin demotes a project admin to member, then their role is updated`() = runTest {
-            val project = projectService.createProject(Project.Create.newBuilder().setName("Test Project").build())
+            val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
             val otherUser = addUser(DataBuilder.createExampleUser(email = "other.user@example.com"))
             val projectId = parseUUID(project.id, EntityType.PROJECT)
 

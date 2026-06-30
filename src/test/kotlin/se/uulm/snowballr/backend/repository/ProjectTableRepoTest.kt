@@ -28,6 +28,7 @@ import se.uulm.snowballr.backend.model.dto.project.SnowballingType
 import se.uulm.snowballr.backend.model.dto.project.toGrpcProject
 import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.exception.NotFoundException
+import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.repository.RepositoryHelper.assignUserToProject
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertPaperAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectAndGetId
@@ -136,8 +137,9 @@ class ProjectTableRepoTest :
         @Test
         fun `When a project is created, then the passed values are correctly assigned`() = runTest {
             val userSettings = DataBuilder.createExampleUserSettings()
-            val projectBuilder = Project.Create.newBuilder().setName("Test Project").build()
-            val project = repo.createProject(projectBuilder, testUserId, userSettings)
+            val request = CreateProjectRequest(name = "Test Project")
+
+            val project = repo.createProject(request, testUserId, userSettings)
 
             assertEquals("Test Project", project.name)
             assertEquals(ProjectStatus.ACTIVE, project.status)
@@ -154,17 +156,19 @@ class ProjectTableRepoTest :
         @Test
         fun `When two projects are created, then they have different IDs`() = runTest {
             val userSettings = DataBuilder.createExampleUserSettings()
-            val project = Project.Create.newBuilder().setName("Test Project 1").build()
-            val projectId1 = repo.createProject(project, testUserId, userSettings)
-            val projectId2 = repo.createProject(project, testUserId, userSettings)
+            val request = CreateProjectRequest(name = "Test Project 1")
+
+            val projectId1 = repo.createProject(request, testUserId, userSettings)
+            val projectId2 = repo.createProject(request, testUserId, userSettings)
             assertNotEquals(projectId2, projectId1)
         }
 
         @Test
         fun `When a project is created, but the assigned user doesn't exist, then an SQLException is thrown`() =
             runTest {
-                val request = Project.Create.newBuilder().setName("Test Project").build()
+                val request = CreateProjectRequest(name = "Test Project")
                 val userSettings = DataBuilder.createExampleUserSettings()
+
                 assertThrows<SQLException> { repo.createProject(request, UUID.randomUUID(), userSettings) }
             }
     }

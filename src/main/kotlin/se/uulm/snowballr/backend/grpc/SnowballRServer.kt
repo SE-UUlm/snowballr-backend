@@ -33,6 +33,7 @@ import se.uulm.snowballr.backend.model.dto.user.toGrpcUserSettings
 import se.uulm.snowballr.backend.model.dto.user.toGrpcUsers
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
+import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
 import se.uulm.snowballr.backend.model.parseUUID
@@ -369,7 +370,7 @@ class SnowballRServer(
             projectService.getAllArchivedProjectsForUser(parseUserId(request))
 
         override suspend fun createProject(request: ProjectOuterClass.Project.Create): ProjectOuterClass.Project =
-            projectService.createProject(request)
+            projectService.createProject(CreateProjectRequest(name = request.name))
 
         override suspend fun getProjectById(request: Base.Id): ProjectOuterClass.Project =
             projectService.getProjectById(parseProjectId(request))

@@ -12,6 +12,7 @@ import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateProjectPaperException
 import se.uulm.snowballr.backend.model.exception.invalidargument.StageOutOfRangeException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedCreateException
+import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.parseUUID
 import snowballr.ProjectOuterClass.Project
 import snowballr.ReviewOuterClass.ReviewDecision
@@ -55,7 +56,7 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
         @Test
         fun `When the same paper is added to a project twice, then a DuplicateProjectPaperException is thrown`() =
             runTest {
-                val project = projectService.createProject(Project.Create.newBuilder().setName("Test Project").build())
+                val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
                 val paper = createPaper()
 
                 addToProject(project, paper)
@@ -65,7 +66,7 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
 
         @Test
         fun `When a paper is added with a stage above maxStage, then a StageOutOfRangeException is thrown`() = runTest {
-            val project = projectService.createProject(Project.Create.newBuilder().setName("Test Project").build())
+            val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
             val paper = createPaper()
 
             assertThrows<StageOutOfRangeException> {
@@ -81,7 +82,7 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
 
         @Test
         fun `When a non-admin project member tries to add a paper, then access is denied`() = runTest {
-            val project = projectService.createProject(Project.Create.newBuilder().setName("Test Project").build())
+            val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
             val otherUser = addUser(DataBuilder.createExampleUser(email = "member.user@example.com"))
 
             inviteUserToProject(project, otherUser, acceptInvitation = true)
@@ -98,7 +99,7 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
     inner class GetProjectPaperByRelativeId {
         @Test
         fun `When a paper is added to a project, then it can be retrieved by its relative ID`() = runTest {
-            val project = projectService.createProject(Project.Create.newBuilder().setName("Test Project").build())
+            val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
             val added = addToProject(project, createPaper())
 
             val fetched = projectPaperService.getProjectPaperByRelativeId(
@@ -113,7 +114,7 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
 
         @Test
         fun `When multiple papers are added, then each can be retrieved by its own relative ID`() = runTest {
-            val project = projectService.createProject(Project.Create.newBuilder().setName("Test Project").build())
+            val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
             val ppA = addToProject(project, createPaper("A"))
             val ppB = addToProject(project, createPaper("B"))
 
@@ -139,7 +140,7 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
     inner class GetPapersToReviewForProject {
         @Test
         fun `When no papers have been added, then the papers-to-review list is empty`() = runTest {
-            val project = projectService.createProject(Project.Create.newBuilder().setName("Test Project").build())
+            val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
             val projectId = parseUUID(project.id, EntityType.PROJECT)
 
             val toReview = projectPaperService.getPapersToReviewForProject(projectId)
@@ -149,7 +150,7 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
 
         @Test
         fun `When a paper has not been reviewed, then it appears in the papers-to-review list`() = runTest {
-            val project = projectService.createProject(Project.Create.newBuilder().setName("Test Project").build())
+            val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
             val projectId = parseUUID(project.id, EntityType.PROJECT)
             val pp = addToProject(project, createPaper())
 
@@ -160,7 +161,7 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
 
         @Test
         fun `When the current user has reviewed a paper, then it no longer appears in the to-review list`() = runTest {
-            val project = projectService.createProject(Project.Create.newBuilder().setName("Test Project").build())
+            val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
             val projectId = parseUUID(project.id, EntityType.PROJECT)
             val pp = addToProject(project, createPaper())
 
@@ -174,7 +175,7 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
         @Test
         fun `When another reviewer gives a paper a final decision, then it does not appear in the to-review list`() =
             runTest {
-                var project = projectService.createProject(Project.Create.newBuilder().setName("Test Project").build())
+                var project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
                 val projectId = parseUUID(project.id, EntityType.PROJECT)
                 project = setNumberOfRequiredReviewers(project, 1)
                 val otherUser = addUser(DataBuilder.createExampleUser(email = "other.reviewer@example.com"))
@@ -195,7 +196,7 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
         @Test
         fun `When one of two papers is reviewed, then only the unreviewed paper appears in the to-review list`() =
             runTest {
-                val project = projectService.createProject(Project.Create.newBuilder().setName("Test Project").build())
+                val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
                 val projectId = parseUUID(project.id, EntityType.PROJECT)
                 val ppA = addToProject(project, createPaper("A"))
                 val ppB = addToProject(project, createPaper("B"))
@@ -214,7 +215,7 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
         @Test
         fun `When three papers are added, then getNextPaper returns the paper immediately after the given one`() =
             runTest {
-                val project = projectService.createProject(Project.Create.newBuilder().setName("Test Project").build())
+                val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
                 val ppA = addToProject(project, createPaper("A"))
                 val ppB = addToProject(project, createPaper("B"))
                 addToProject(project, createPaper("C"))
@@ -228,7 +229,7 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
         @Test
         fun `When three papers are added, then getPreviousPaper returns the paper immediately before the given one`() =
             runTest {
-                val project = projectService.createProject(Project.Create.newBuilder().setName("Test Project").build())
+                val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
                 addToProject(project, createPaper("A"))
                 val ppB = addToProject(project, createPaper("B"))
                 val ppC = addToProject(project, createPaper("C"))
@@ -241,7 +242,7 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
 
         @Test
         fun `When there is no next paper, then getNextPaper throws a FailedPreconditionException`() = runTest {
-            val project = projectService.createProject(Project.Create.newBuilder().setName("Test Project").build())
+            val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
             val ppA = addToProject(project, createPaper())
             val ppAId = parseUUID(ppA.id, EntityType.PROJECT_PAPER)
 
@@ -250,7 +251,7 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
 
         @Test
         fun `When there is no previous paper, then getPreviousPaper throws a FailedPreconditionException`() = runTest {
-            val project = projectService.createProject(Project.Create.newBuilder().setName("Test Project").build())
+            val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
             val ppA = addToProject(project, createPaper())
             val ppAId = parseUUID(ppA.id, EntityType.PROJECT_PAPER)
 
@@ -262,7 +263,7 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
     inner class GetNextPaperToReview {
         @Test
         fun `When there are subsequent unreviewed papers, then getNextPaperToReview returns one of them`() = runTest {
-            val project = projectService.createProject(Project.Create.newBuilder().setName("Test Project").build())
+            val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
             val ppA = addToProject(project, createPaper("A"))
             val ppB = addToProject(project, createPaper("B"))
             val ppAId = parseUUID(ppA.id, EntityType.PROJECT_PAPER)
@@ -275,7 +276,7 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
         @Test
         fun `When there are no subsequent papers, then getNextPaperToReview throws FailedPreconditionException`() =
             runTest {
-                val project = projectService.createProject(Project.Create.newBuilder().setName("Test Project").build())
+                val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
                 val ppA = addToProject(project, createPaper())
                 val ppAId = parseUUID(ppA.id, EntityType.PROJECT_PAPER)
 
@@ -285,7 +286,7 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
         @Test
         fun `When the current user has already reviewed all subsequent papers, then getNextPaperToReview throws FailedPreconditionException`() =
             runTest {
-                val project = projectService.createProject(Project.Create.newBuilder().setName("Test Project").build())
+                val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
                 val ppA = addToProject(project, createPaper("A"))
                 val ppB = addToProject(project, createPaper("B"))
                 val ppAId = parseUUID(ppA.id, EntityType.PROJECT_PAPER)

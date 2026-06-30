@@ -10,6 +10,7 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
+import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.parseUUID
 import snowballr.Fetcher
 import snowballr.ProjectOuterClass.Project
@@ -25,7 +26,7 @@ class ProjectIntegrationTest : IntegrationTest() {
     inner class CreateAndRead {
         @Test
         fun `When a user creates a project, then it can be retrieved by ID`() = runTest {
-            val project = projectService.createProject(Project.Create.newBuilder().setName("My Project").build())
+            val project = projectService.createProject(CreateProjectRequest(name = "My Project"))
             val projectId = parseUUID(project.id, EntityType.PROJECT)
 
             val fetched = projectService.getProjectById(projectId)
@@ -36,7 +37,7 @@ class ProjectIntegrationTest : IntegrationTest() {
 
         @Test
         fun `When a user creates a project, then it appears in their active projects list`() = runTest {
-            projectService.createProject(Project.Create.newBuilder().setName("Listed Project").build())
+            projectService.createProject(CreateProjectRequest(name = "Listed Project"))
 
             val userProjects = projectService.getAllProjectsForUser(testUserId)
 
@@ -45,8 +46,8 @@ class ProjectIntegrationTest : IntegrationTest() {
 
         @Test
         fun `When a user creates multiple projects, then all of them appear in the active projects list`() = runTest {
-            projectService.createProject(Project.Create.newBuilder().setName("Project Alpha").build())
-            projectService.createProject(Project.Create.newBuilder().setName("Project Beta").build())
+            projectService.createProject(CreateProjectRequest(name = "Project Alpha"))
+            projectService.createProject(CreateProjectRequest(name = "Project Beta"))
 
             val userProjects = projectService.getAllProjectsForUser(testUserId)
             val names = userProjects.projectsList.map { it.name }
@@ -60,7 +61,7 @@ class ProjectIntegrationTest : IntegrationTest() {
     inner class UpdateProject {
         @Test
         fun `When an admin updates a project's name, then the updated name is persisted`() = runTest {
-            val project = projectService.createProject(Project.Create.newBuilder().setName("Original Name").build())
+            val project = projectService.createProject(CreateProjectRequest(name = "Original Name"))
             val projectId = parseUUID(project.id, EntityType.PROJECT)
 
             val updatedProject = Project.newBuilder().setId(project.id).setName("Updated Name").build()
@@ -79,7 +80,7 @@ class ProjectIntegrationTest : IntegrationTest() {
 
         @Test
         fun `When a project is archived, then it no longer appears in the active projects list`() = runTest {
-            val project = projectService.createProject(Project.Create.newBuilder().setName("To Archive").build())
+            val project = projectService.createProject(CreateProjectRequest(name = "To Archive"))
 
             val updatedProject = Project.newBuilder()
                 .setId(project.id)
@@ -98,7 +99,7 @@ class ProjectIntegrationTest : IntegrationTest() {
 
         @Test
         fun `When a project is archived, then it appears in the archived projects list`() = runTest {
-            val project = projectService.createProject(Project.Create.newBuilder().setName("Archived Project").build())
+            val project = projectService.createProject(CreateProjectRequest(name = "Archived Project"))
 
             val updatedProject = Project.newBuilder()
                 .setId(project.id)
@@ -118,9 +119,7 @@ class ProjectIntegrationTest : IntegrationTest() {
         @Test
         fun `When a user updates the fetchers of a project, then non-existent fetchers and options are removed`() =
             runTest {
-                val project = projectService.createProject(
-                    Project.Create.newBuilder().setName("Fetcher Project").build(),
-                )
+                val project = projectService.createProject(CreateProjectRequest(name = "Fetcher Project"))
 
                 val availableFetchers = setOf(
                     Fetcher.FetcherInformation.newBuilder()
@@ -156,9 +155,7 @@ class ProjectIntegrationTest : IntegrationTest() {
         @Test
         fun `When a user updates the fetchers of a project and a required option is missing, then a FailedPreconditionException is thrown`() =
             runTest {
-                val project = projectService.createProject(
-                    Project.Create.newBuilder().setName("Required Option Project").build(),
-                )
+                val project = projectService.createProject(CreateProjectRequest(name = "Required Option Project"))
 
                 val requiredOption = Fetcher.FetcherOptionSchema.newBuilder().setRequired(true).build()
                 val availableFetchers = setOf(
@@ -189,7 +186,7 @@ class ProjectIntegrationTest : IntegrationTest() {
     inner class DeleteProject {
         @Test
         fun `When an admin soft-deletes a project, then the operation succeeds`() = runTest {
-            val project = projectService.createProject(Project.Create.newBuilder().setName("To Delete").build())
+            val project = projectService.createProject(CreateProjectRequest(name = "To Delete"))
             val projectId = parseUUID(project.id, EntityType.PROJECT)
 
             assertDoesNotThrow { projectService.softDeleteProject(projectId) }
@@ -197,7 +194,7 @@ class ProjectIntegrationTest : IntegrationTest() {
 
         @Test
         fun `When a project is soft-deleted, then it no longer appears in the active projects list`() = runTest {
-            val project = projectService.createProject(Project.Create.newBuilder().setName("Deleted Project").build())
+            val project = projectService.createProject(CreateProjectRequest(name = "Deleted Project"))
             val projectId = parseUUID(project.id, EntityType.PROJECT)
 
             projectService.softDeleteProject(projectId)
@@ -208,7 +205,7 @@ class ProjectIntegrationTest : IntegrationTest() {
 
         @Test
         fun `When a project is soft-deleted, then it appears in the deleted projects list`() = runTest {
-            val project = projectService.createProject(Project.Create.newBuilder().setName("Soft Deleted").build())
+            val project = projectService.createProject(CreateProjectRequest(name = "Soft Deleted"))
             val projectId = parseUUID(project.id, EntityType.PROJECT)
 
             projectService.softDeleteProject(projectId)

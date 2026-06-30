@@ -9,6 +9,7 @@ import se.uulm.snowballr.backend.model.dto.criterion.Criterion
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
+import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.parseUUID
 import snowballr.ProjectOuterClass.Project
 import kotlin.test.assertEquals
@@ -18,7 +19,7 @@ class CriterionIntegrationTest : IntegrationTest() {
     private suspend fun createProjectAndCriterion(
         criterionName: String = "Test Criterion",
     ): Pair<Project, Criterion.ProjectCriterion> {
-        val project = projectService.createProject(Project.Create.newBuilder().setName("Test Project").build())
+        val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
         val criterion = criterionService.createCriterion(
             CreateCriterionRequest(
                 tag = "TC",
@@ -55,8 +56,7 @@ class CriterionIntegrationTest : IntegrationTest() {
 
         @Test
         fun `When multiple criteria are created for a project, then all appear in the criteria list`() = runTest {
-            val project =
-                projectService.createProject(Project.Create.newBuilder().setName("Multi Criteria Project").build())
+            val project = projectService.createProject(CreateProjectRequest(name = "Multi Criteria Project"))
             val projectId = parseUUID(project.id, EntityType.PROJECT)
 
             criterionService.createCriterion(

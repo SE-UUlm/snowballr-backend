@@ -12,11 +12,11 @@ import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
 import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
+import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import java.util.UUID
-import snowballr.ProjectOuterClass.Project as GrpcProject
 
 class CreateProjectTest : ProjectServiceTest() {
-    private fun getExampleRequest() = GrpcProject.Create.getDefaultInstance()
+    private fun getExampleRequest() = CreateProjectRequest(name = "Test Project")
 
     private fun mockProjectAdminCreation(project: Project, user: User) {
         val projectMember = DataBuilder.createExampleProjectMember(project.id, user.id, MemberRole.DEFAULT)

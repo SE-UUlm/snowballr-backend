@@ -16,6 +16,7 @@ import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.notfound.StageNotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
+import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
@@ -40,7 +41,7 @@ interface IProjectService {
     /**
      * Service implementation of [SnowballRService.createProject].
      */
-    suspend fun createProject(request: GrpcProject.Create): GrpcProject
+    suspend fun createProject(request: CreateProjectRequest): GrpcProject
 
     /**
      * Service implementation of [SnowballRService.getAllProjects].
@@ -118,7 +119,7 @@ class ProjectService(
         repo.getProjectById(projectId).getOrThrow().toGrpcProject()
     }
 
-    override suspend fun createProject(request: GrpcProject.Create): GrpcProject = withUser(userRepo) { currentUser ->
+    override suspend fun createProject(request: CreateProjectRequest): GrpcProject = withUser(userRepo) { currentUser ->
         val userSettings = userRepo.getUserSettings(currentUser.id).getOrThrow()
         val userDefaultCriteria = criterionRepo.getCriteriaByIds(userSettings.criteriaIds)
 

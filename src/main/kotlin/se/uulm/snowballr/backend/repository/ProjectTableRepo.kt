@@ -27,6 +27,7 @@ import se.uulm.snowballr.backend.model.dto.projectpaper.ProjectPaper
 import se.uulm.snowballr.backend.model.dto.review.Review
 import se.uulm.snowballr.backend.model.dto.user.UserSettings
 import se.uulm.snowballr.backend.model.exception.NotFoundException
+import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.ReviewTable
@@ -68,7 +69,7 @@ interface IProjectTableRepo {
      * relevant preferences.
      * @return The created [Project] object representing the newly created project.
      */
-    suspend fun createProject(request: GrpcProject.Create, userId: UUID, userSettings: UserSettings): Project
+    suspend fun createProject(request: CreateProjectRequest, userId: UUID, userSettings: UserSettings): Project
 
     /**
      * Returns all active projects stored in the database.
@@ -178,21 +179,24 @@ class ProjectTableRepo(
         ProjectTable.doesEntityExistById(id)
     }
 
-    override suspend fun createProject(request: GrpcProject.Create, userId: UUID, userSettings: UserSettings): Project =
-        db.query {
-            ProjectTable.insertAndGet(ResultRow::toProject) {
-                it[name] = request.name
-                it[status] = ProjectStatus.ACTIVE
-                it[currentStage] = 0
-                it[maxStage] = 0
-                it[similarityThreshold] = userSettings.similarityThreshold
-                it[snowballingType] = userSettings.snowballingType
-                it[reviewMaybeAllowed] = userSettings.reviewMaybeAllowed
-                it[reviewDecisionMatrixBinary] = userSettings.decisionMatrix.toByteArray()
-                it[fetchers] = emptyMap()
-                it[createdBy] = userId
-            }
+    override suspend fun createProject(
+        request: CreateProjectRequest,
+        userId: UUID,
+        userSettings: UserSettings,
+    ): Project = db.query {
+        ProjectTable.insertAndGet(ResultRow::toProject) {
+            it[name] = request.name
+            it[status] = ProjectStatus.ACTIVE
+            it[currentStage] = 0
+            it[maxStage] = 0
+            it[similarityThreshold] = userSettings.similarityThreshold
+            it[snowballingType] = userSettings.snowballingType
+            it[reviewMaybeAllowed] = userSettings.reviewMaybeAllowed
+            it[reviewDecisionMatrixBinary] = userSettings.decisionMatrix.toByteArray()
+            it[fetchers] = emptyMap()
+            it[createdBy] = userId
         }
+    }
 
     override suspend fun getAllProjects(): List<Project> = db.query {
         ProjectTable.getEntities(ResultRow::toProject) {

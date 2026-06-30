@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.parseUUID
 import snowballr.ProjectOuterClass.Project
 import kotlin.test.assertEquals
@@ -18,7 +19,7 @@ class InvitationIntegrationTest : IntegrationTest() {
         @Test
         fun `When a user is invited but has not accepted, then they appear in the pending invitations list`() =
             runTest {
-                val project = projectService.createProject(Project.Create.newBuilder().setName("Test Project").build())
+                val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
                 val projectId = parseUUID(project.id, EntityType.PROJECT)
                 val inviteeEmail = "pending.user@example.com"
 
@@ -31,7 +32,7 @@ class InvitationIntegrationTest : IntegrationTest() {
         @Test
         fun `When an invited user accepts their invitation, then they no longer appear in the pending list`() =
             runTest {
-                val project = projectService.createProject(Project.Create.newBuilder().setName("Test Project").build())
+                val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
                 val projectId = parseUUID(project.id, EntityType.PROJECT)
                 val otherUser = addUser(DataBuilder.createExampleUser(email = "accepting.user@example.com"))
 
@@ -43,7 +44,7 @@ class InvitationIntegrationTest : IntegrationTest() {
 
         @Test
         fun `When no users have been invited, then the pending invitations list is empty`() = runTest {
-            val project = projectService.createProject(Project.Create.newBuilder().setName("Test Project").build())
+            val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
             val projectId = parseUUID(project.id, EntityType.PROJECT)
 
             val pending = invitationService.getPendingInvitationsForProject(projectId)
@@ -53,7 +54,7 @@ class InvitationIntegrationTest : IntegrationTest() {
         @Test
         fun `When a user is invited a second time while already pending, then the pending list has only one entry`() =
             runTest {
-                val project = projectService.createProject(Project.Create.newBuilder().setName("Test Project").build())
+                val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
                 val projectId = parseUUID(project.id, EntityType.PROJECT)
                 val inviteeEmail = "double.invite@example.com"
 
@@ -77,7 +78,7 @@ class InvitationIntegrationTest : IntegrationTest() {
         @Test
         fun `When the search query is too short, then an empty candidate list is returned`() = runTest {
             addUser(DataBuilder.createExampleUser(email = "searchable.user@example.com"))
-            val project = projectService.createProject(Project.Create.newBuilder().setName("Test Project").build())
+            val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
 
             val candidates = invitationService.getInviteCandidates(
                 Project.InviteCandidatesRequest.newBuilder()
@@ -92,7 +93,7 @@ class InvitationIntegrationTest : IntegrationTest() {
         @Test
         fun `When the search query matches a registered user, then that user is returned as a candidate`() = runTest {
             val otherUser = addUser(DataBuilder.createExampleUser(email = "findable.candidate@example.com"))
-            val project = projectService.createProject(Project.Create.newBuilder().setName("Test Project").build())
+            val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
 
             val candidates = invitationService.getInviteCandidates(
                 Project.InviteCandidatesRequest.newBuilder()
@@ -107,7 +108,7 @@ class InvitationIntegrationTest : IntegrationTest() {
         @Test
         fun `When a user is already a project member, then they are excluded from invite candidates`() = runTest {
             val otherUser = addUser(DataBuilder.createExampleUser(email = "already.member@example.com"))
-            val project = projectService.createProject(Project.Create.newBuilder().setName("Test Project").build())
+            val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
 
             inviteUserToProject(project, otherUser, acceptInvitation = true)
 
@@ -124,7 +125,7 @@ class InvitationIntegrationTest : IntegrationTest() {
         @Test
         fun `When a user has a pending invitation, then they are excluded from invite candidates`() = runTest {
             val otherUser = addUser(DataBuilder.createExampleUser(email = "pending.candidate@example.com"))
-            val project = projectService.createProject(Project.Create.newBuilder().setName("Test Project").build())
+            val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
 
             inviteUserToProject(project, otherUser)
 

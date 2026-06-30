@@ -13,6 +13,7 @@ import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.exception.UnauthorizedException
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
+import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.parseUUID
 import snowballr.ProjectOuterClass.MemberRole
 import snowballr.ProjectOuterClass.Project
@@ -21,7 +22,7 @@ import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 
 class AccessControlIntegrationTest : IntegrationTest() {
     private suspend fun setupProjectWithMember(): Pair<Project, User> {
-        val project = projectService.createProject(Project.Create.newBuilder().setName("Test Project").build())
+        val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
         val member = addUser(DataBuilder.createExampleUser(email = "member@example.com"))
         inviteUserToProject(project, member, acceptInvitation = true)
         return project to member
@@ -31,7 +32,7 @@ class AccessControlIntegrationTest : IntegrationTest() {
     inner class ProjectAccess {
         @Test
         fun `When a non-member tries to read a project, then access is denied`() = runTest {
-            val project = projectService.createProject(Project.Create.newBuilder().setName("Private Project").build())
+            val project = projectService.createProject(CreateProjectRequest(name = "Private Project"))
             val projectId = parseUUID(project.id, EntityType.PROJECT)
             val outsider = addUser(DataBuilder.createExampleUser(email = "outsider@example.com"))
 

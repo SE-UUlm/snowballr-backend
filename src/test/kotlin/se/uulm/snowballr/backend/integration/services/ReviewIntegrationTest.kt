@@ -8,6 +8,7 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
+import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.parseUUID
 import snowballr.ProjectOuterClass.PaperDecision
 import snowballr.ProjectOuterClass.Project
@@ -19,7 +20,7 @@ import snowballr.ReviewOuterClass.Review as GrpcReview
 
 class ReviewIntegrationTest : IntegrationTest() {
     private suspend fun setupProjectAndPaper(): Pair<Project, GrpcProjectPaper> {
-        var project = projectService.createProject(Project.Create.newBuilder().setName("Review Test Project").build())
+        var project = projectService.createProject(CreateProjectRequest(name = "Review Test Project"))
 
         val paper = createPaper()
 

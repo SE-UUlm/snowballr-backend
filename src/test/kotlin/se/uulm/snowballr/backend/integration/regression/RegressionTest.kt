@@ -8,6 +8,7 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.parseUUID
 import snowballr.ProjectOuterClass.Project
 import snowballr.UserOuterClass.UserStatus
@@ -20,9 +21,7 @@ class RegressionTest : IntegrationTest() {
     fun `When the invitation of an existing user is removed from a project, then the invitation token is removed`() =
         runTest {
             // Create a project
-            val createProjectRequest = Project.Create.newBuilder()
-                .setName("Test Project")
-                .build()
+            val createProjectRequest = CreateProjectRequest(name = "Test Project")
             val project = projectService.createProject(createProjectRequest)
 
             // Register another user to invite
@@ -54,7 +53,7 @@ class RegressionTest : IntegrationTest() {
     fun `When multiple papers are added to the project concurrently, then they all have a different local ID`() =
         runTest {
             val numberOfPapers = 10
-            val project = projectService.createProject(Project.Create.newBuilder().setName("Test Project").build())
+            val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
             val papers = mutableSetOf<GrpcPaper>()
             for (i in 1..numberOfPapers) {
                 val builder = GrpcPaper.newBuilder()
