@@ -1,7 +1,5 @@
 package se.uulm.snowballr.backend.service
 
-import com.google.protobuf.timestamp
-import com.google.protobuf.util.FieldMaskUtil
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.fetcher.IFetcherManager
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
@@ -19,6 +17,7 @@ import se.uulm.snowballr.backend.model.fetcher.FetcherOptions
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
+import se.uulm.snowballr.backend.model.outgoing.ProjectInformation
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
@@ -26,8 +25,8 @@ import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
+import java.time.OffsetDateTime
 import java.util.UUID
-import snowballr.ProjectOuterClass.Project as GrpcProject
 import snowballr.ProjectOuterClass.Project.Information.DecisionStatistics as GrpcProjectDecisionStatistics
 
 @Suppress("ComplexInterface")
@@ -70,7 +69,7 @@ interface IProjectService {
     /**
      * Service implementation of [SnowballRService.getProjectInformation].
      */
-    suspend fun getProjectInformation(request: GrpcProject.Information.Get): GrpcProject.Information
+    suspend fun getProjectInformation(projectId: UUID, paths: List<String>): ProjectInformation
 
     /**
      * Service implementation of [SnowballRService.getDecisionStatisticsForStage].
@@ -179,35 +178,33 @@ class ProjectService(
             repo.updateProject(finalRequest, paths)
         }
 
-    override suspend fun getProjectInformation(request: GrpcProject.Information.Get): GrpcProject.Information =
+    override suspend fun getProjectInformation(projectId: UUID, paths: List<String>): ProjectInformation =
         withUser(userRepo) { currentUser ->
-            val projectId = parseUUID(request.projectId, EntityType.PROJECT)
-
             accessChecker.isAllowedToReadProject(currentUser, projectId)
 
             val project = repo.getProjectById(projectId).getOrThrow()
-            val progress = projectPaperRepo.getProjectProgress(projectId)
-            val builder = GrpcProject.Information.newBuilder()
-            val has = if (request.hasMask() && request.mask.pathsList.isNotEmpty()) {
-                val fieldMaskPaths = FieldMaskUtil.normalize(request.mask).pathsList.toSet();
-                { path: String -> path in fieldMaskPaths }
+            var info = ProjectInformation(0F, OffsetDateTime.MIN, OffsetDateTime.MIN)
+
+            val has = if (paths.isNotEmpty()) {
+                { path: String -> path in paths }
             } else {
                 { _ -> true }
             }
 
             if (has("project_progress")) {
-                builder.setProjectProgress(progress)
+                val progress = projectPaperRepo.getProjectProgress(projectId)
+                info = info.copy(progress = progress)
             }
 
             if (has("creation_date")) {
-                builder.setCreationDate(timestamp { seconds = project.createdAt.toEpochSecond() })
+                info = info.copy(creationDate = project.createdAt)
             }
 
             if (has("last_stage_started")) {
-                builder.setLastStageStarted(timestamp { seconds = project.currentStageStartedAt.toEpochSecond() })
+                info = info.copy(lastStageStarted = project.currentStageStartedAt)
             }
 
-            builder.build()
+            info
         }
 
     override suspend fun getDecisionStatisticsForStage(
