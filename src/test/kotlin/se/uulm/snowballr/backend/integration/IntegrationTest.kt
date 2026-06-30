@@ -40,11 +40,9 @@ import se.uulm.snowballr.backend.fetcher.IFetcherOrchestrator
 import se.uulm.snowballr.backend.mail.EmailManager
 import se.uulm.snowballr.backend.mail.IEmailManager
 import se.uulm.snowballr.backend.mailServiceDeps
-import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
-import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.RepositoryHelper
 import se.uulm.snowballr.backend.repositoryLayerDeps
 import se.uulm.snowballr.backend.service.IAuthenticationService
@@ -65,7 +63,6 @@ import java.util.UUID
 import snowballr.PaperOuterClass.Paper as GrpcPaper
 import snowballr.ProjectOuterClass.Project as GrpcProject
 import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
-import snowballr.UserOuterClass.User as GrpcUser
 
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
 @Tag("integration")
@@ -183,7 +180,7 @@ open class IntegrationTest : KoinTest {
      * @param user The user data to register with. The email must be unique, otherwise the registration will fail.
      * @return The registered user.
      */
-    protected suspend fun addUser(user: User): GrpcUser {
+    protected suspend fun addUser(user: User): User {
         val verificationToken = slot<String>()
         val link = "https://example.com/verify"
         coEvery { emailManagerMock.createVerificationLink(capture(verificationToken)) } returns link
@@ -218,7 +215,7 @@ open class IntegrationTest : KoinTest {
      * @param acceptInvitation Whether the invitation should be accepted after being sent. If true, the user will be
      * added to the project.
      */
-    protected suspend fun inviteUserToProject(project: GrpcProject, user: GrpcUser, acceptInvitation: Boolean = false) {
+    protected suspend fun inviteUserToProject(project: GrpcProject, user: User, acceptInvitation: Boolean = false) {
         val invitationToken = inviteHelper(project, user.firstName, user.email)
 
         if (acceptInvitation) {
@@ -251,16 +248,6 @@ open class IntegrationTest : KoinTest {
         block()
         every { GrpcContext.getUserIdFromContext() } returns testUserId
     }
-
-    /**
-     * Runs code as another user. This enables making requests as another user to test external events.
-     *
-     * @param userId The ID of the user that should execute the requests in [block].
-     * @param block The code that is executed on behalf of the user with the passed [userId].
-     */
-    @Suppress("RedundantSuspendModifier", "RedundantSuppression")
-    protected suspend fun actAsUser(userId: String, block: suspend () -> Unit) =
-        actAsUser(parseUUID(userId, EntityType.USER), block)
 
     private suspend fun inviteHelper(
         project: GrpcProject,

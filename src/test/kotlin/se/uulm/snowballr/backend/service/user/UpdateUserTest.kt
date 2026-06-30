@@ -101,7 +101,7 @@ class UpdateUserTest : UserServiceTest() {
 
         val updatedUser = service.updateUser(request, listOf("user.email"))
 
-        assertEquals(otherUser.id.toString(), updatedUser.id)
+        assertEquals(otherUser.id, updatedUser.id)
         assertEquals(otherUser.email, updatedUser.email)
     }
 
@@ -121,11 +121,11 @@ class UpdateUserTest : UserServiceTest() {
 
         val updatedUser = service.updateUser(request, paths)
 
-        assertEquals(otherUser.id.toString(), updatedUser.id)
+        assertEquals(otherUser.id, updatedUser.id)
         assertEquals(otherUser.firstName, updatedUser.firstName)
         assertEquals(otherUser.lastName, updatedUser.lastName)
-        assertEquals(otherUser.role.toGrpc(), updatedUser.role)
-        assertEquals(otherUser.status.toGrpc(), updatedUser.status)
+        assertEquals(otherUser.role, updatedUser.role)
+        assertEquals(otherUser.status, updatedUser.status)
     }
 
     @Test

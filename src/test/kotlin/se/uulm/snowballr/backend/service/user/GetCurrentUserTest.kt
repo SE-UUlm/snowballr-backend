@@ -14,6 +14,6 @@ class GetCurrentUserTest : UserServiceTest() {
 
         val result = service.getCurrentUser()
 
-        assertEquals(user.id.toString(), result.id)
+        assertEquals(user.id, result.id)
     }
 }

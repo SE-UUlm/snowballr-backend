@@ -10,17 +10,14 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.integration.IntegrationTest
-import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.user.UserRole
-import se.uulm.snowballr.backend.model.dto.user.UserStatus.Companion.fromGrpc
+import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateUserException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadAllException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedUpdateException
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
-import se.uulm.snowballr.backend.model.parseUUID
 import snowballr.Authentication
-import snowballr.UserOuterClass.UserStatus
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -45,7 +42,7 @@ class UserIntegrationTest : IntegrationTest() {
             )
 
             val unverifiedUser = userService.getUserByEmail(newUser.email)
-            assertEquals(UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED, unverifiedUser.status)
+            assertEquals(UserStatus.ACTIVE_UNCONFIRMED, unverifiedUser.status)
 
             authenticationService.verifyEmail(
                 Authentication.VerifyEmailRequest.newBuilder()
@@ -54,7 +51,7 @@ class UserIntegrationTest : IntegrationTest() {
             )
 
             val verifiedUser = userService.getUserByEmail(newUser.email)
-            assertEquals(UserStatus.USER_STATUS_ACTIVE, verifiedUser.status)
+            assertEquals(UserStatus.ACTIVE, verifiedUser.status)
         }
     }
 
@@ -64,15 +61,14 @@ class UserIntegrationTest : IntegrationTest() {
         fun `When the current user requests their own data, then their data is returned`() = runTest {
             val currentUser = userService.getCurrentUser()
 
-            assertEquals(testUserId.toString(), currentUser.id)
+            assertEquals(testUserId, currentUser.id)
         }
 
         @Test
         fun `When an admin requests another user by ID, then the user's data is returned`() = runTest {
             val otherUser = addUser(DataBuilder.createExampleUser(email = "other.user@example.com"))
-            val otherUserId = parseUUID(otherUser.id, EntityType.USER)
 
-            val fetchedUser = userService.getUserById(otherUserId)
+            val fetchedUser = userService.getUserById(otherUser.id)
 
             assertEquals(otherUser.id, fetchedUser.id)
             assertEquals(otherUser.email, fetchedUser.email)
@@ -83,19 +79,18 @@ class UserIntegrationTest : IntegrationTest() {
             val otherUser = addUser(DataBuilder.createExampleUser(email = "other.user@example.com"))
 
             val allUsers = userService.getAllUsers()
-            val userIds = allUsers.usersList.map { it.id }
+            val userIds = allUsers.map { it.id }
 
-            assertEquals(2, allUsers.usersList.size)
-            assertTrue(userIds.contains(testUserId.toString()))
+            assertEquals(2, allUsers.size)
+            assertTrue(userIds.contains(testUserId))
             assertTrue(userIds.contains(otherUser.id))
         }
 
         @Test
         fun `When a non-admin requests all users, then access is denied`() = runTest {
             val otherUser = addUser(DataBuilder.createExampleUser(email = "other.user@example.com"))
-            val otherUserId = parseUUID(otherUser.id, EntityType.USER)
 
-            actAsUser(otherUserId) {
+            actAsUser(otherUser.id) {
                 assertThrows<UnauthorizedReadAllException> { userService.getAllUsers() }
             }
         }
@@ -109,12 +104,12 @@ class UserIntegrationTest : IntegrationTest() {
             val newFirstName = "UpdatedFirstName"
 
             val request = UpdateUserRequest(
-                userId = parseUUID(currentUser.id, EntityType.USER),
+                userId = currentUser.id,
                 firstName = newFirstName,
                 lastName = currentUser.lastName,
                 email = currentUser.email,
-                role = UserRole.fromGrpc(currentUser.role),
-                status = fromGrpc(currentUser.status),
+                role = currentUser.role,
+                status = currentUser.status,
             )
 
             val updatedUser = userService.updateUser(request, listOf("user.first_name"))
@@ -128,12 +123,12 @@ class UserIntegrationTest : IntegrationTest() {
             val newFirstName = "AdminUpdatedName"
 
             val request = UpdateUserRequest(
-                userId = parseUUID(otherUser.id, EntityType.USER),
+                userId = otherUser.id,
                 firstName = newFirstName,
                 lastName = otherUser.lastName,
                 email = otherUser.email,
-                role = UserRole.fromGrpc(otherUser.role),
-                status = fromGrpc(otherUser.status),
+                role = otherUser.role,
+                status = otherUser.status,
             )
 
             val updatedUser = userService.updateUser(request, listOf("user.first_name"))
@@ -145,18 +140,17 @@ class UserIntegrationTest : IntegrationTest() {
         fun `When a non-admin user tries to escalate their own role, then an UnauthorizedUpdateException is thrown`() =
             runTest {
                 val nonAdminUser = addUser(DataBuilder.createExampleUser(email = "non.admin@example.com"))
-                val nonAdminUserId = parseUUID(nonAdminUser.id, EntityType.USER)
 
                 val request = UpdateUserRequest(
-                    userId = parseUUID(nonAdminUser.id, EntityType.USER),
+                    userId = nonAdminUser.id,
                     firstName = nonAdminUser.firstName,
                     lastName = nonAdminUser.lastName,
                     email = nonAdminUser.email,
                     role = UserRole.ADMIN,
-                    status = fromGrpc(nonAdminUser.status),
+                    status = nonAdminUser.status,
                 )
 
-                actAsUser(nonAdminUserId) {
+                actAsUser(nonAdminUser.id) {
                     assertThrows<UnauthorizedUpdateException> { userService.updateUser(request, listOf("user.role")) }
                 }
             }
@@ -168,12 +162,12 @@ class UserIntegrationTest : IntegrationTest() {
                 val currentUser = userService.getCurrentUser()
 
                 val request = UpdateUserRequest(
-                    userId = parseUUID(currentUser.id, EntityType.USER),
+                    userId = currentUser.id,
                     firstName = existingUser.firstName,
                     lastName = existingUser.lastName,
                     email = existingUser.email,
-                    role = UserRole.fromGrpc(existingUser.role),
-                    status = fromGrpc(existingUser.status),
+                    role = existingUser.role,
+                    status = existingUser.status,
                 )
 
                 assertThrows<DuplicateUserException> { userService.updateUser(request, listOf("user.email")) }
@@ -185,18 +179,16 @@ class UserIntegrationTest : IntegrationTest() {
         @Test
         fun `When an admin soft-deletes a non-admin user, then the operation succeeds`() = runTest {
             val otherUser = addUser(DataBuilder.createExampleUser(email = "other.user@example.com"))
-            val otherUserId = parseUUID(otherUser.id, EntityType.USER)
 
-            assertDoesNotThrow { userService.softDeleteUser(otherUserId) }
+            assertDoesNotThrow { userService.softDeleteUser(otherUser.id) }
         }
 
         @Test
         fun `When a user soft-deletes themselves, then the operation succeeds`() = runTest {
             val otherUser = addUser(DataBuilder.createExampleUser(email = "other.user@example.com"))
-            val otherUserId = parseUUID(otherUser.id, EntityType.USER)
 
-            actAsUser(otherUserId) {
-                assertDoesNotThrow { userService.softDeleteUser(otherUserId) }
+            actAsUser(otherUser.id) {
+                assertDoesNotThrow { userService.softDeleteUser(otherUser.id) }
             }
         }
     }

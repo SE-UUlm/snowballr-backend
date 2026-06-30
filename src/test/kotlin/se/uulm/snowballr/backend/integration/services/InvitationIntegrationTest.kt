@@ -101,7 +101,7 @@ class InvitationIntegrationTest : IntegrationTest() {
                     .build(),
             )
 
-            assertTrue(candidates.usersList.any { it.id == otherUser.id })
+            assertTrue(candidates.usersList.any { it.id == otherUser.id.toString() })
         }
 
         @Test
@@ -118,7 +118,7 @@ class InvitationIntegrationTest : IntegrationTest() {
                     .build(),
             )
 
-            assertFalse(candidates.usersList.any { it.id == otherUser.id })
+            assertFalse(candidates.usersList.any { it.id == otherUser.id.toString() })
         }
 
         @Test
@@ -135,7 +135,7 @@ class InvitationIntegrationTest : IntegrationTest() {
                     .build(),
             )
 
-            assertFalse(candidates.usersList.any { it.id == otherUser.id })
+            assertFalse(candidates.usersList.any { it.id == otherUser.id.toString() })
         }
     }
 }

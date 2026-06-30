@@ -28,6 +28,8 @@ import se.uulm.snowballr.backend.model.dto.criterion.toGrpcCriteria
 import se.uulm.snowballr.backend.model.dto.criterion.toGrpcCriterion
 import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
+import se.uulm.snowballr.backend.model.dto.user.toGrpcUser
+import se.uulm.snowballr.backend.model.dto.user.toGrpcUsers
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
@@ -257,15 +259,17 @@ class SnowballRServer(
             authenticationService.changePassword(request)
         }
 
-        override suspend fun getAllUsers(request: Base.Nothing): UserOuterClass.User.List = userService.getAllUsers()
+        override suspend fun getAllUsers(request: Base.Nothing): UserOuterClass.User.List =
+            userService.getAllUsers().toGrpcUsers()
 
-        override suspend fun getCurrentUser(request: Base.Nothing): UserOuterClass.User = userService.getCurrentUser()
+        override suspend fun getCurrentUser(request: Base.Nothing): UserOuterClass.User =
+            userService.getCurrentUser().toGrpcUser()
 
         override suspend fun getUserById(request: Base.Id): UserOuterClass.User =
-            userService.getUserById(parseUserId(request))
+            userService.getUserById(parseUserId(request)).toGrpcUser()
 
         override suspend fun getUserByEmail(request: Base.Email): UserOuterClass.User =
-            userService.getUserByEmail(request.email)
+            userService.getUserByEmail(request.email).toGrpcUser()
 
         override suspend fun updateUser(request: UserOuterClass.User.Update): UserOuterClass.User =
             userService.updateUser(
@@ -278,7 +282,7 @@ class SnowballRServer(
                     status = UserStatus.fromGrpc(request.user.status),
                 ),
                 FieldMaskUtil.normalize(request.mask).pathsList,
-            )
+            ).toGrpcUser()
 
         override suspend fun softDeleteUser(request: Base.Id) = returnNothing {
             userService.softDeleteUser(parseUserId(request))

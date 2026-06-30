@@ -21,7 +21,7 @@ class GetUserByIdTest : UserServiceTest() {
 
         val requestedUser = service.getUserById(currentUser.id)
 
-        assertEquals(currentUser.id.toString(), requestedUser.id)
+        assertEquals(currentUser.id, requestedUser.id)
 
         // Should not call userRepoMock.getUserById(requestedUserId) again because it's self-request
         // First time is for injecting current user into session
@@ -64,6 +64,6 @@ class GetUserByIdTest : UserServiceTest() {
 
         val result = service.getUserById(requestedUser.id)
 
-        kotlin.test.assertEquals(requestedUser.id.toString(), result.id)
+        assertEquals(requestedUser.id, result.id)
     }
 }

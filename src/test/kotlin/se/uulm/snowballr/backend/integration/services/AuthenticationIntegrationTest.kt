@@ -17,7 +17,6 @@ import se.uulm.snowballr.backend.model.exception.UnauthenticatedException
 import se.uulm.snowballr.backend.model.exception.invalidargument.IncorrectOldPasswordException
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import snowballr.Authentication
-import java.util.UUID
 
 @ExtendWith(GrpcTestContextExtension::class)
 class AuthenticationIntegrationTest : IntegrationTest() {
@@ -146,7 +145,7 @@ class AuthenticationIntegrationTest : IntegrationTest() {
         @Test
         fun `When a non-active user tries to change the password, then changing fails`() = runTest {
             val user = addUser(DataBuilder.createExampleUser(email = "change.password.deleted@example.com"))
-            userService.softDeleteUser(UUID.fromString(user.id))
+            userService.softDeleteUser(user.id)
 
             actAsUser(user.id) {
                 assertThrows<FailedPreconditionException> {

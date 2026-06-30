@@ -26,7 +26,7 @@ class ProjectMemberIntegrationTest : IntegrationTest() {
             inviteUserToProject(project, otherUser, acceptInvitation = true)
 
             val members = projectMemberService.getProjectMembers(projectId)
-            assertTrue(members.membersList.any { it.user.id == otherUser.id })
+            assertTrue(members.membersList.any { it.user.id == otherUser.id.toString() })
         }
 
         @Test
@@ -69,7 +69,7 @@ class ProjectMemberIntegrationTest : IntegrationTest() {
             )
 
             val members = projectMemberService.getProjectMembers(projectId)
-            assertFalse(members.membersList.any { it.user.id == otherUser.id })
+            assertFalse(members.membersList.any { it.user.id == otherUser.id.toString() })
         }
 
         @Test
@@ -91,7 +91,7 @@ class ProjectMemberIntegrationTest : IntegrationTest() {
                 }
 
                 val members = projectMemberService.getProjectMembers(projectId)
-                assertFalse(members.membersList.any { it.user.id == otherUser.id })
+                assertFalse(members.membersList.any { it.user.id == otherUser.id.toString() })
             }
     }
 
@@ -108,13 +108,13 @@ class ProjectMemberIntegrationTest : IntegrationTest() {
             projectMemberService.updateProjectMemberRole(
                 GrpcProjectMember.Update.newBuilder()
                     .setProjectId(project.id)
-                    .setUserId(otherUser.id)
+                    .setUserId(otherUser.id.toString())
                     .setNewRole(MemberRole.MEMBER_ROLE_ADMIN)
                     .build(),
             )
 
             val members = projectMemberService.getProjectMembers(projectId)
-            val updatedMember = members.membersList.find { it.user.id == otherUser.id }
+            val updatedMember = members.membersList.find { it.user.id == otherUser.id.toString() }
             assertEquals(MemberRole.MEMBER_ROLE_ADMIN, updatedMember?.role)
         }
 
@@ -130,7 +130,7 @@ class ProjectMemberIntegrationTest : IntegrationTest() {
             projectMemberService.updateProjectMemberRole(
                 GrpcProjectMember.Update.newBuilder()
                     .setProjectId(project.id)
-                    .setUserId(otherUser.id)
+                    .setUserId(otherUser.id.toString())
                     .setNewRole(MemberRole.MEMBER_ROLE_ADMIN)
                     .build(),
             )
@@ -139,13 +139,13 @@ class ProjectMemberIntegrationTest : IntegrationTest() {
             projectMemberService.updateProjectMemberRole(
                 GrpcProjectMember.Update.newBuilder()
                     .setProjectId(project.id)
-                    .setUserId(otherUser.id)
+                    .setUserId(otherUser.id.toString())
                     .setNewRole(MemberRole.MEMBER_ROLE_DEFAULT)
                     .build(),
             )
 
             val members = projectMemberService.getProjectMembers(projectId)
-            val demotedMember = members.membersList.find { it.user.id == otherUser.id }
+            val demotedMember = members.membersList.find { it.user.id == otherUser.id.toString() }
             assertEquals(MemberRole.MEMBER_ROLE_DEFAULT, demotedMember?.role)
         }
     }

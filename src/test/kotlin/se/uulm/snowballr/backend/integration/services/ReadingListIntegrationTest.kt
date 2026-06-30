@@ -106,13 +106,12 @@ class ReadingListIntegrationTest : IntegrationTest() {
         fun `When a paper is added to one user's reading list, then it does not appear in another user's reading list`() =
             runTest {
                 val otherUser = addUser(DataBuilder.createExampleUser(email = "other.user@example.com"))
-                val otherUserId = parseUUID(otherUser.id, EntityType.USER)
                 val paper = createPaper()
                 val paperId = parseUUID(paper.id, EntityType.PAPER)
 
                 readingListService.addPaperToReadingList(paperId)
 
-                actAsUser(otherUserId) {
+                actAsUser(otherUser.id) {
                     val otherReadingList = readingListService.getReadingList()
                     assertFalse(otherReadingList.papersList.any { it.id == paper.id })
                 }
