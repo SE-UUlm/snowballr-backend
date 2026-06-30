@@ -54,8 +54,8 @@ object ProjectPaperTable : UUIDTable("project_paper") {
         uniqueIndex(paperId, projectId)
     }
 
-    val localPaperId = long("local_paper_id")
-    val stage = long("stage")
+    val localPaperId = integer("local_paper_id")
+    val stage = integer("stage")
     val decision = enumeration<PaperDecision>("decision")
 
     // Metadata

@@ -300,7 +300,7 @@ class FetcherOrchestrator(
     private suspend fun runAddingPapersToProject(job: FetcherProcessingJob, creationResults: PaperCreationResults) {
         val baseRequest = GrpcProjectPaper.Add.newBuilder()
             .setProjectId(job.projectId.toString())
-            .setStage(job.targetStage)
+            .setStage(job.targetStage.toLong())
 
         val filteredRefs = mutableListOf<Paper>()
         for (createdRef in creationResults.allRefs) {

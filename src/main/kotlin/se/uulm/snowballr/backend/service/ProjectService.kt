@@ -4,7 +4,6 @@ import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.fetcher.IFetcherManager
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.AccessType
-import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.project.Project
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
@@ -17,8 +16,9 @@ import se.uulm.snowballr.backend.model.fetcher.FetcherOptions
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
+import se.uulm.snowballr.backend.model.outgoing.ProjectDecisionCount
+import se.uulm.snowballr.backend.model.outgoing.ProjectDecisionStatistics
 import se.uulm.snowballr.backend.model.outgoing.ProjectInformation
-import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
@@ -27,7 +27,6 @@ import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import java.time.OffsetDateTime
 import java.util.UUID
-import snowballr.ProjectOuterClass.Project.Information.DecisionStatistics as GrpcProjectDecisionStatistics
 
 @Suppress("ComplexInterface")
 interface IProjectService {
@@ -74,7 +73,7 @@ interface IProjectService {
     /**
      * Service implementation of [SnowballRService.getDecisionStatisticsForStage].
      */
-    suspend fun getDecisionStatisticsForStage(request: GrpcProjectDecisionStatistics.Get): GrpcProjectDecisionStatistics
+    suspend fun getDecisionStatisticsForStage(projectId: UUID, stage: Int): ProjectDecisionStatistics
 
     /**
      * Service implementation of [SnowballRService.softDeleteProject].
@@ -207,26 +206,19 @@ class ProjectService(
             info
         }
 
-    override suspend fun getDecisionStatisticsForStage(
-        request: GrpcProjectDecisionStatistics.Get,
-    ): GrpcProjectDecisionStatistics = withUser(userRepo) { currentUser ->
-        val projectId = parseUUID(request.projectId, EntityType.PROJECT)
+    override suspend fun getDecisionStatisticsForStage(projectId: UUID, stage: Int): ProjectDecisionStatistics =
+        withUser(userRepo) { currentUser ->
+            accessChecker.isAllowedToReadProject(currentUser, projectId)
 
-        accessChecker.isAllowedToReadProject(currentUser, projectId)
+            val project = repo.getProjectById(projectId).getOrThrow()
+            val maxStage = project.maxStage
 
-        val project = repo.getProjectById(projectId).getOrThrow()
-        val maxStage = project.maxStage
+            if (stage > maxStage) {
+                throw StageNotFoundException(stage)
+            }
 
-        if (request.stage > maxStage) {
-            throw StageNotFoundException(request.stage)
+            ProjectDecisionStatistics(statistics = createStatistics(projectId, stage))
         }
-
-        val statistics = createStatistics(projectId, request.stage)
-        GrpcProjectDecisionStatistics
-            .newBuilder()
-            .addAllStatistics(statistics)
-            .build()
-    }
 
     override suspend fun softDeleteProject(projectId: UUID) = withUser(userRepo) { currentUser ->
         accessChecker.isProjectOrServerAdmin(currentUser, projectId, AccessType.DELETE)
@@ -345,26 +337,21 @@ class ProjectService(
     }
 
     /**
-     * Creates a list of [GrpcProjectDecisionStatistics.Statistic] objects for the given [stage]
-     * in the project with the ID [projectId].
+     * Creates a list of [ProjectDecisionCount] objects for the given [stage] in the project with the ID [projectId].
      *
      * @param projectId The ID of the project for which the statistics should be created.
      * @param stage The stage for which the statistics should be created.
-     * @return A list of [GrpcProjectDecisionStatistics.Statistic] objects.
+     * @return A list of [ProjectDecisionCount] objects.
      */
-    private suspend fun createStatistics(projectId: UUID, stage: Long): List<GrpcProjectDecisionStatistics.Statistic> {
+    private suspend fun createStatistics(projectId: UUID, stage: Int): List<ProjectDecisionCount> {
         val counts = projectPaperRepo.getAllProjectPapersForProject(projectId)
             .asSequence()
             .filter { it.stage == stage }
             .groupingBy { it.decision }
             .eachCount()
-            .mapValues { it.value.toLong() }
+            .mapValues { it.value }
 
-        fun createStatistic(decision: PaperDecision): GrpcProjectDecisionStatistics.Statistic =
-            GrpcProjectDecisionStatistics.Statistic.newBuilder()
-                .setDecision(decision.toGrpc())
-                .setCount(counts[decision] ?: 0)
-                .build()
+        fun createStatistic(decision: PaperDecision) = ProjectDecisionCount(decision, counts[decision] ?: 0)
 
         return listOf(
             PaperDecision.ACCEPTED,

@@ -145,7 +145,7 @@ interface IProjectTableRepo {
      * If the max stage of the project is lower than [stage] then the project value is updated; otherwise nothing
      * happens.
      */
-    suspend fun updateMaxStageIfExceeded(projectId: UUID, stage: Long)
+    suspend fun updateMaxStageIfExceeded(projectId: UUID, stage: Int)
 }
 
 /**
@@ -283,7 +283,7 @@ class ProjectTableRepo(
         }
     }
 
-    override suspend fun updateMaxStageIfExceeded(projectId: UUID, stage: Long) {
+    override suspend fun updateMaxStageIfExceeded(projectId: UUID, stage: Int) {
         db.query {
             ProjectTable.update({ (ProjectTable.id eq projectId) and (ProjectTable.maxStage less stage) }) {
                 it[ProjectTable.maxStage] = stage

@@ -10,7 +10,7 @@ data class FetcherProcessingJob(
     val projectId: UUID,
     val fetchers: FetcherMap,
     val snowballingType: SnowballingType,
-    val targetStage: Long,
+    val targetStage: Int,
     val paperId: UUID,
     val triggeringUserId: UUID,
 )

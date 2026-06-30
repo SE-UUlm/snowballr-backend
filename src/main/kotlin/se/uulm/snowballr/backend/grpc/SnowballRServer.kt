@@ -429,8 +429,10 @@ class SnowballRServer(
 
         override suspend fun getDecisionStatisticsForStage(
             request: ProjectOuterClass.Project.Information.DecisionStatistics.Get,
-        ): ProjectOuterClass.Project.Information.DecisionStatistics =
-            projectService.getDecisionStatisticsForStage(request)
+        ): ProjectOuterClass.Project.Information.DecisionStatistics = projectService.getDecisionStatisticsForStage(
+            projectId = parseUUID(request.projectId, EntityType.PROJECT),
+            stage = request.stage.toInt(),
+        ).toGrpc()
 
         override suspend fun updateProjectMemberRole(request: ProjectOuterClass.Project.Member.Update) = returnNothing {
             projectMemberService.updateProjectMemberRole(request)

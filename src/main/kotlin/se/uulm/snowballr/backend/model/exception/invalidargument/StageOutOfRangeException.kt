@@ -9,6 +9,6 @@ import se.uulm.snowballr.backend.model.exception.InvalidArgumentException
  * @param maxStage The maximum value of the stages allowed.
  */
 class StageOutOfRangeException(
-    stage: Long,
-    maxStage: Long,
+    stage: Int,
+    maxStage: Int,
 ) : InvalidArgumentException("The stage $stage is not in the valid range from 0 to $maxStage.")

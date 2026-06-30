@@ -61,7 +61,7 @@ class ProjectExportBuilder(
             modifiedAt = modifiedAt?.toString().orEmpty(),
         )
 
-    private fun List<ProjectPaperFull>.toPapersExportByStage(): Map<Long, List<PaperExport>> =
+    private fun List<ProjectPaperFull>.toPapersExportByStage(): Map<Int, List<PaperExport>> =
         this.groupBy { it.projectPaper.stage }.mapValues { entry ->
             entry.value.map { it.toPaperExport() }
         }
@@ -81,7 +81,7 @@ class ProjectExportBuilder(
         return PaperReviewExport(reviewerId, review.decision, selectedCriteriaIdsAsStrings)
     }
 
-    private fun Map<Long, List<PaperExport>>.toProjectStagesExport(): List<ProjectStageExport> =
+    private fun Map<Int, List<PaperExport>>.toProjectStagesExport(): List<ProjectStageExport> =
         this.map { (stage, papers) ->
             ProjectStageExport(id = "$stage", papers = papers)
         }

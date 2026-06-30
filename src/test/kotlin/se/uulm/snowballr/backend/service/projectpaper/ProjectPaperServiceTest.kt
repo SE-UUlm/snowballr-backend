@@ -72,7 +72,7 @@ sealed class ProjectPaperServiceTest : BaseServiceTest {
     protected fun assertProjectPaperEquality(expected: ProjectPaper, actual: ProjectOuterClass.Project.Paper) {
         assertEquals(expected.paperId.toString(), actual.paper.id)
         assertEquals(expected.localPaperId.toString(), actual.localId)
-        assertEquals(expected.stage, actual.stage)
+        assertEquals(expected.stage.toLong(), actual.stage)
         assertEquals(expected.decision.toGrpc(), actual.decision)
     }
 }

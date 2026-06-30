@@ -9,32 +9,21 @@ import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.exception.notfound.StageNotFoundException
-import java.util.UUID
 import kotlin.test.assertEquals
-import snowballr.ProjectOuterClass.Project.Information as GrpcProjectInformation
 
 class GetDecisionStatisticsForStageTest : ProjectServiceTest() {
-    private fun getRequest() = GrpcProjectInformation.DecisionStatistics.Get
-        .newBuilder()
-        .setProjectId(UUID.randomUUID().toString())
-        .setStage(0)
-
     @Test
     fun `When a user retrieves the decision statistics and has access, then the correct values are returned`() =
         runTest {
             val user = DataBuilder.createExampleUser()
             val project = DataBuilder.createExampleProject()
 
-            val request = getRequest()
-                .setProjectId(project.id.toString())
-                .build()
-
             mockCurrentUser(user)
             coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
             coEvery { projectPaperRepoMock.getAllProjectPapersForProject(project.id) } returns emptyList()
 
-            val result = service.getDecisionStatisticsForStage(request).statisticsList
+            val result = service.getDecisionStatisticsForStage(project.id, 0).statistics
 
             assertEquals(4, result.size)
             for (statistic in result) {
@@ -48,14 +37,10 @@ class GetDecisionStatisticsForStageTest : ProjectServiceTest() {
             val user = DataBuilder.createExampleUser()
             val project = DataBuilder.createExampleProject()
 
-            val request = getRequest()
-                .setProjectId(project.id.toString())
-                .build()
-
             mockCurrentUser(user)
             coEvery { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) } throws TestSpecificException()
 
-            assertThrows<TestSpecificException> { service.getDecisionStatisticsForStage(request) }
+            assertThrows<TestSpecificException> { service.getDecisionStatisticsForStage(project.id, 0) }
         }
 
     @Test
@@ -63,15 +48,11 @@ class GetDecisionStatisticsForStageTest : ProjectServiceTest() {
         val user = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject()
 
-        val request = getRequest()
-            .setProjectId(project.id.toString())
-            .build()
-
         mockCurrentUser(user)
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { service.getDecisionStatisticsForStage(request) }
+        assertThrows<TestSpecificException> { service.getDecisionStatisticsForStage(project.id, 0) }
     }
 
     @Test
@@ -79,16 +60,13 @@ class GetDecisionStatisticsForStageTest : ProjectServiceTest() {
         val user = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject(maxStage = 1)
 
-        val request = getRequest()
-            .setProjectId(project.id.toString())
-            .setStage(project.maxStage + 1) // Request the first invalid stage
-            .build()
+        val stage = project.maxStage + 1 // Request the first invalid stage
 
         mockCurrentUser(user)
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
-        assertThrows<StageNotFoundException> { service.getDecisionStatisticsForStage(request) }
+        assertThrows<StageNotFoundException> { service.getDecisionStatisticsForStage(project.id, stage) }
     }
 
     @Test
@@ -96,17 +74,14 @@ class GetDecisionStatisticsForStageTest : ProjectServiceTest() {
         val user = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject(maxStage = 1)
 
-        val request = getRequest()
-            .setProjectId(project.id.toString())
-            .setStage(project.maxStage) // Request the last valid stage
-            .build()
+        val stage = project.maxStage // Request the last valid stage
 
         mockCurrentUser(user)
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectPaperRepoMock.getAllProjectPapersForProject(project.id) } returns emptyList()
 
-        val result = service.getDecisionStatisticsForStage(request).statisticsList
+        val result = service.getDecisionStatisticsForStage(project.id, stage).statistics
 
         assertEquals(4, result.size)
         for (statistic in result) {
@@ -118,7 +93,7 @@ class GetDecisionStatisticsForStageTest : ProjectServiceTest() {
     fun `When a valid stage is requested, then the correct statistics are returned`() = runTest {
         val user = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject(maxStage = 1)
-        val stage = 0L
+        val stage = 0
 
         val paperCountsByDecision = mapOf(
             PaperDecision.ACCEPTED to 1,
@@ -150,23 +125,18 @@ class GetDecisionStatisticsForStageTest : ProjectServiceTest() {
             ),
         )
 
-        val request = getRequest()
-            .setProjectId(project.id.toString())
-            .setStage(stage)
-            .build()
-
         mockCurrentUser(user)
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectPaperRepoMock.getAllProjectPapersForProject(project.id) } returns
             projectPapers + papersInOtherStage
 
-        val statistics = service.getDecisionStatisticsForStage(request)
+        val statistics = service.getDecisionStatisticsForStage(project.id, stage)
 
-        val statsByDecision = statistics.statisticsList.associateBy { it.decision }
+        val statsByDecision = statistics.statistics.associateBy { it.decision }
         paperCountsByDecision.forEach { (decision, expectedCount) ->
-            val actual = statsByDecision[decision.toGrpc()]?.count ?: -1
-            assertEquals(expectedCount, actual.toInt())
+            val actual = statsByDecision[decision]?.count ?: -1
+            assertEquals(expectedCount, actual)
         }
     }
 }

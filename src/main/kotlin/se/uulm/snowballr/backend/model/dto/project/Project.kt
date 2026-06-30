@@ -14,8 +14,8 @@ data class Project(
     val id: UUID,
     val name: String,
     val status: ProjectStatus,
-    val currentStage: Long,
-    val maxStage: Long,
+    val currentStage: Int,
+    val maxStage: Int,
     val similarityThreshold: Float,
     val snowballingType: SnowballingType,
     val reviewMaybeAllowed: Boolean,
@@ -58,8 +58,8 @@ fun Project.toGrpcProject(): ProjectOuterClass.Project {
         .setId(this.id.toString())
         .setName(this.name)
         .setStatus(this.status.toGrpc())
-        .setCurrentStage(this.currentStage)
-        .setMaxStage(this.maxStage)
+        .setCurrentStage(this.currentStage.toLong())
+        .setMaxStage(this.maxStage.toLong())
         .setSettings(settings)
         .build()
 }

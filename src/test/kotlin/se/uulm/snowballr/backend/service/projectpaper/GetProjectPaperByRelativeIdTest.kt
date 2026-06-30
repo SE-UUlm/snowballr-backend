@@ -13,7 +13,7 @@ import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class GetProjectPaperByRelativeIdTest : ProjectPaperServiceTest() {
-    private fun getRequest(projectId: UUID, relativeId: Long = -1) = GrpcProjectPaper.Get
+    private fun getRequest(projectId: UUID, relativeId: Int = -1) = GrpcProjectPaper.Get
         .newBuilder()
         .setProjectId(projectId.toString())
         .setRelativeProjectPaperId(relativeId.toString())
@@ -23,7 +23,7 @@ class GetProjectPaperByRelativeIdTest : ProjectPaperServiceTest() {
     fun `When a user request the project paper and has access, then the correct values are returned`() = runTest {
         val user = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject()
-        val relativeId = 1L
+        val relativeId = 1
         val paper = DataBuilder.createExamplePaper()
         val projectPaper = DataBuilder.createExampleProjectPaper(paperId = paper.id)
 
@@ -63,7 +63,7 @@ class GetProjectPaperByRelativeIdTest : ProjectPaperServiceTest() {
     fun `When retrieving the relative paper fails, then a TestSpecificException is thrown`() = runTest {
         val user = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject()
-        val relativeId = 2L
+        val relativeId = 2
 
         val request = getRequest(project.id, relativeId)
 

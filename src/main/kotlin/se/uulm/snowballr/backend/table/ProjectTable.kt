@@ -45,8 +45,8 @@ import java.time.OffsetDateTime
 object ProjectTable : UUIDTable("project") {
     val name = text("name")
     val status = enumeration<ProjectStatus>("status")
-    val currentStage = long("current_stage")
-    val maxStage = long("max_stage")
+    val currentStage = integer("current_stage")
+    val maxStage = integer("max_stage")
     val similarityThreshold = float("similarity_threshold")
     val snowballingType = enumeration<SnowballingType>("snowballing_type")
     val reviewMaybeAllowed = bool("review_maybe_allowed")
