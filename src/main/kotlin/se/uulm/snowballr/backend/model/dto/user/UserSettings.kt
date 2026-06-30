@@ -3,10 +3,6 @@ package se.uulm.snowballr.backend.model.dto.user
 import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
 import se.uulm.snowballr.backend.model.dto.project.SnowballingType
 import se.uulm.snowballr.backend.model.fetcher.FetcherMap
-import snowballr.CriterionOuterClass
-import snowballr.Fetcher.FetcherOptions
-import snowballr.ProjectOuterClass
-import snowballr.UserSettingsOuterClass
 import java.util.UUID
 
 data class UserSettings(
@@ -19,31 +15,3 @@ data class UserSettings(
     val snowballingType: SnowballingType,
     val reviewMaybeAllowed: Boolean,
 )
-
-/**
- * Creates a [UserSettingsOuterClass.UserSettings] from this [UserSettings].
- */
-fun UserSettings.toGrpcUserSettings(
-    criteria: CriterionOuterClass.Criterion.List,
-): UserSettingsOuterClass.UserSettings = UserSettingsOuterClass.UserSettings
-    .newBuilder()
-    .setShowHotkeys(this.areHotkeysShown)
-    .setReviewMode(this.isReviewModeEnabled)
-    .setDefaultCriteria(criteria)
-    .setDefaultProjectSettings(
-        ProjectOuterClass.Project.Settings.newBuilder()
-            .setSimilarityThreshold(this.similarityThreshold)
-            .setDecisionMatrix(this.decisionMatrix.toGrpc())
-            .putAllFetchers(
-                this.fetchers.mapValues {
-                    FetcherOptions
-                        .newBuilder()
-                        .putAllOptions(it.value)
-                        .build()
-                },
-            )
-            .setSnowballingType(this.snowballingType.toGrpc())
-            .setReviewMaybeAllowed(this.reviewMaybeAllowed)
-            .build(),
-    )
-    .build()

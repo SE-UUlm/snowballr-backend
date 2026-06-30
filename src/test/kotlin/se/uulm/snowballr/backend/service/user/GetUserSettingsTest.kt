@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
+import kotlin.test.assertEquals
 
 class GetUserSettingsTest : UserServiceTest() {
     @Test
@@ -30,7 +31,8 @@ class GetUserSettingsTest : UserServiceTest() {
 
             val result = service.getUserSettings()
 
-            assertUserSettingsEquality(userSettings, result)
+            assertUserSettingsEquality(userSettings, result.settings)
+            assertEquals(emptyList(), result.criteria)
         }
 
     @Test
@@ -46,6 +48,7 @@ class GetUserSettingsTest : UserServiceTest() {
 
             val result = service.getUserSettings()
 
-            assertUserSettingsEquality(userSettings, result)
+            assertUserSettingsEquality(userSettings, result.settings)
+            assertEquals(listOf(criterion), result.criteria)
         }
 }

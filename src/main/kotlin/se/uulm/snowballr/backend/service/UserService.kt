@@ -9,10 +9,9 @@ import se.uulm.snowballr.backend.formatting.daysToHumanReadable
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.mail.IEmailManager
 import se.uulm.snowballr.backend.model.UserIdentifierType
-import se.uulm.snowballr.backend.model.dto.criterion.toGrpcCriteria
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.user.User
-import se.uulm.snowballr.backend.model.dto.user.toGrpcUserSettings
+import se.uulm.snowballr.backend.model.dto.user.UserSettingsWithCriteria
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateUserException
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
@@ -22,7 +21,6 @@ import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.IVerificationTokenTableRepo
 import java.util.UUID
-import snowballr.UserSettingsOuterClass.UserSettings as GrpcUserSettings
 
 interface IUserService {
     /**
@@ -58,7 +56,7 @@ interface IUserService {
     /**
      * Service implementation of [SnowballRService.getUserSettings].
      */
-    suspend fun getUserSettings(): GrpcUserSettings
+    suspend fun getUserSettings(): UserSettingsWithCriteria
 
     /**
      * Service implementation of [SnowballRService.getCurrentUser].
@@ -191,10 +189,10 @@ class UserService(
 
     override suspend fun getCurrentUser(): User = withUser(userRepo) { it }
 
-    override suspend fun getUserSettings(): GrpcUserSettings = withUser(userRepo) { currentUser ->
+    override suspend fun getUserSettings(): UserSettingsWithCriteria = withUser(userRepo) { currentUser ->
         val userSettings = userRepo.getUserSettings(currentUser.id).getOrThrow()
         val defaultUserCriteria = criterionRepo.getCriteriaByIds(userSettings.criteriaIds)
 
-        userSettings.toGrpcUserSettings(defaultUserCriteria.toGrpcCriteria())
+        UserSettingsWithCriteria(userSettings, defaultUserCriteria)
     }
 }

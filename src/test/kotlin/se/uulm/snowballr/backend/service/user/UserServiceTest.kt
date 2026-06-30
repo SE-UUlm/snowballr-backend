@@ -17,7 +17,6 @@ import se.uulm.snowballr.backend.repository.IVerificationTokenTableRepo
 import se.uulm.snowballr.backend.service.BaseServiceTest
 import se.uulm.snowballr.backend.service.UserService
 import se.uulm.snowballr.backend.service.withUser
-import snowballr.UserSettingsOuterClass
 import kotlin.test.assertEquals
 
 /**
@@ -65,17 +64,14 @@ sealed class UserServiceTest : BaseServiceTest {
         coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
     }
 
-    protected fun assertUserSettingsEquality(expected: UserSettings, actual: UserSettingsOuterClass.UserSettings) {
-        assertEquals(expected.areHotkeysShown, actual.showHotkeys)
-        assertEquals(expected.isReviewModeEnabled, actual.reviewMode)
-        assertEquals(expected.criteriaIds.map { it.toString() }, actual.defaultCriteria.criteriaList.map { it.id })
-        assertEquals(expected.similarityThreshold, actual.defaultProjectSettings.similarityThreshold)
-        assertEquals(expected.decisionMatrix.toGrpc(), actual.defaultProjectSettings.decisionMatrix)
-        assertEquals(
-            expected.fetchers,
-            actual.defaultProjectSettings.fetchersMap.mapValues { options -> options.value.optionsMap },
-        )
-        assertEquals(expected.snowballingType.toGrpc(), actual.defaultProjectSettings.snowballingType)
-        assertEquals(expected.reviewMaybeAllowed, actual.defaultProjectSettings.reviewMaybeAllowed)
+    protected fun assertUserSettingsEquality(expected: UserSettings, actual: UserSettings) {
+        assertEquals(expected.areHotkeysShown, actual.areHotkeysShown)
+        assertEquals(expected.isReviewModeEnabled, actual.isReviewModeEnabled)
+        assertEquals(expected.criteriaIds, actual.criteriaIds)
+        assertEquals(expected.similarityThreshold, actual.similarityThreshold)
+        assertEquals(expected.decisionMatrix, actual.decisionMatrix)
+        assertEquals(expected.fetchers, actual.fetchers)
+        assertEquals(expected.snowballingType, actual.snowballingType)
+        assertEquals(expected.reviewMaybeAllowed, actual.reviewMaybeAllowed)
     }
 }
