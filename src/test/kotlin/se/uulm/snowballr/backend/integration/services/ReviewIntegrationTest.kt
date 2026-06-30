@@ -7,12 +7,12 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.project.Project
+import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import se.uulm.snowballr.backend.model.parseUUID
 import snowballr.ProjectOuterClass.PaperDecision
-import snowballr.ReviewOuterClass.ReviewDecision
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
@@ -55,12 +55,12 @@ class ReviewIntegrationTest : IntegrationTest() {
             reviewService.createReview(
                 GrpcReview.Create.newBuilder()
                     .setProjectPaperId(projectPaper.id)
-                    .setDecision(ReviewDecision.REVIEW_DECISION_ACCEPTED)
+                    .setDecision(ReviewDecision.ACCEPTED.toGrpc())
                     .build(),
             )
 
             val reviews = reviewService.getAllReviewsForProjectPaper(projectPaperId)
-            assertTrue(reviews.reviewsList.isNotEmpty())
+            assertTrue(reviews.isNotEmpty())
         }
 
         @Test
@@ -70,15 +70,14 @@ class ReviewIntegrationTest : IntegrationTest() {
             val review = reviewService.createReview(
                 GrpcReview.Create.newBuilder()
                     .setProjectPaperId(projectPaper.id)
-                    .setDecision(ReviewDecision.REVIEW_DECISION_DECLINED)
+                    .setDecision(ReviewDecision.DECLINED.toGrpc())
                     .build(),
             )
-            val reviewId = parseUUID(review.id, EntityType.REVIEW)
 
-            val fetched = reviewService.getReviewById(reviewId)
+            val fetched = reviewService.getReviewById(review.id)
 
             assertEquals(review.id, fetched.id)
-            assertEquals(ReviewDecision.REVIEW_DECISION_DECLINED, fetched.decision)
+            assertEquals(ReviewDecision.DECLINED, fetched.decision)
         }
 
         @Test
@@ -89,7 +88,7 @@ class ReviewIntegrationTest : IntegrationTest() {
             reviewService.createReview(
                 GrpcReview.Create.newBuilder()
                     .setProjectPaperId(projectPaper.id)
-                    .setDecision(ReviewDecision.REVIEW_DECISION_ACCEPTED)
+                    .setDecision(ReviewDecision.ACCEPTED.toGrpc())
                     .build(),
             )
 
@@ -105,7 +104,7 @@ class ReviewIntegrationTest : IntegrationTest() {
             reviewService.createReview(
                 GrpcReview.Create.newBuilder()
                     .setProjectPaperId(projectPaper.id)
-                    .setDecision(ReviewDecision.REVIEW_DECISION_DECLINED)
+                    .setDecision(ReviewDecision.DECLINED.toGrpc())
                     .build(),
             )
 
@@ -129,7 +128,7 @@ class ReviewIntegrationTest : IntegrationTest() {
             reviewService.createReview(
                 GrpcReview.Create.newBuilder()
                     .setProjectPaperId(projectPaper.id)
-                    .setDecision(ReviewDecision.REVIEW_DECISION_ACCEPTED)
+                    .setDecision(ReviewDecision.ACCEPTED.toGrpc())
                     .build(),
             )
 

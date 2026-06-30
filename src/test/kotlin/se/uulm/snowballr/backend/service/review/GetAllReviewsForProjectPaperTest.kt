@@ -28,13 +28,13 @@ class GetAllReviewsForProjectPaperTest : ReviewServiceTest() {
             reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(review.id)
         } returns selectedCriteriaIds
 
-        val reviews = service.getAllReviewsForProjectPaper(projectPaper.id).reviewsList
+        val reviews = service.getAllReviewsForProjectPaper(projectPaper.id)
 
         assertEquals(1, reviews.size)
-        assertEquals(review.id.toString(), reviews[0].id)
-        assertEquals(1, reviews[0].selectedCriteriaIdsCount)
-        val selectedCriterionId = reviews[0].selectedCriteriaIdsList[0]
-        assertEquals(selectedCriteriaIds[0].toString(), selectedCriterionId)
+        assertEquals(review.id, reviews[0].id)
+        assertEquals(1, reviews[0].selectedCriteriaIds.size)
+        val selectedCriterionId = reviews[0].selectedCriteriaIds[0]
+        assertEquals(selectedCriteriaIds[0], selectedCriterionId)
         assertReviewEquality(review, reviews[0])
     }
 

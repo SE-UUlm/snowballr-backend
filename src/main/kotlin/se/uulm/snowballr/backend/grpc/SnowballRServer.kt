@@ -46,6 +46,8 @@ import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectSettingRequ
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
 import se.uulm.snowballr.backend.model.outgoing.project.toGrpc
+import se.uulm.snowballr.backend.model.outgoing.review.toGrpc
+import se.uulm.snowballr.backend.model.outgoing.review.toGrpcReviews
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.scheduler.SchedulerManager
 import se.uulm.snowballr.backend.service.IAuthenticationService
@@ -501,13 +503,13 @@ class SnowballRServer(
             super.removePaperFromProject(request)
 
         override suspend fun getReviewById(request: Base.Id): ReviewOuterClass.Review =
-            reviewService.getReviewById(parseReviewId(request))
+            reviewService.getReviewById(parseReviewId(request)).toGrpc()
 
         override suspend fun getAllReviewsForProjectPaper(request: Base.Id): ReviewOuterClass.Review.List =
-            reviewService.getAllReviewsForProjectPaper(parseProjectPaperId(request))
+            reviewService.getAllReviewsForProjectPaper(parseProjectPaperId(request)).toGrpcReviews()
 
         override suspend fun createReview(request: ReviewOuterClass.Review.Create): ReviewOuterClass.Review =
-            reviewService.createReview(request)
+            reviewService.createReview(request).toGrpc()
 
         override suspend fun updateReview(request: ReviewOuterClass.Review.Update): ReviewOuterClass.Review =
             super.updateReview(request)

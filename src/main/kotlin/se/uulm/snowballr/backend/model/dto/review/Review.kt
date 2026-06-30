@@ -25,20 +25,6 @@ fun Review.toGrpcReview(selectedCriteriaIds: List<String>): ReviewOuterClass.Rev
     .addAllSelectedCriteriaIds(selectedCriteriaIds)
     .build()
 
-fun List<Review>.toGrpcReviews(reviewSelectedCriteriaMap: Map<Review, List<String>>): ReviewOuterClass.Review.List =
-    ReviewOuterClass.Review.List
-        .newBuilder()
-        .addAllReviews(
-            this.map { review ->
-                val selectedCriteria = reviewSelectedCriteriaMap[review].orEmpty()
-
-                review.toGrpcReview(
-                    selectedCriteria,
-                )
-            },
-        )
-        .build()
-
 /**
  * Checks whether the review accepts the paper.
  *

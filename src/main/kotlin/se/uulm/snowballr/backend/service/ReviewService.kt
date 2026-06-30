@@ -15,13 +15,12 @@ import se.uulm.snowballr.backend.model.dto.review.Review
 import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.dto.review.doesAcceptPaper
 import se.uulm.snowballr.backend.model.dto.review.doesDeclinePaper
-import se.uulm.snowballr.backend.model.dto.review.toGrpcReview
-import se.uulm.snowballr.backend.model.dto.review.toGrpcReviews
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.alreadyexists.DuplicateReviewException
 import se.uulm.snowballr.backend.model.fetcher.FetcherEnqueueJob
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectSettingRequest
+import se.uulm.snowballr.backend.model.outgoing.review.ReviewResponse
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
@@ -36,17 +35,17 @@ interface IReviewService {
     /**
      * Service implementation of [SnowballRService.getReviewById].
      */
-    suspend fun getReviewById(reviewId: UUID): GrpcReview
+    suspend fun getReviewById(reviewId: UUID): ReviewResponse
 
     /**
      * Service implementation of [SnowballRService.getAllReviewsForProjectPaper].
      */
-    suspend fun getAllReviewsForProjectPaper(projectPaperId: UUID): GrpcReview.List
+    suspend fun getAllReviewsForProjectPaper(projectPaperId: UUID): List<ReviewResponse>
 
     /**
      * Service implementation of [SnowballRService.createReview].
      */
-    suspend fun createReview(request: GrpcReview.Create): GrpcReview
+    suspend fun createReview(request: GrpcReview.Create): ReviewResponse
 }
 
 /**
@@ -81,32 +80,33 @@ class ReviewService(
     private val projectAccessChecker: IProjectAccessChecker,
     private val fetcherOrchestrator: IFetcherOrchestrator,
 ) : IReviewService {
-    override suspend fun getReviewById(reviewId: UUID): GrpcReview = withUser(userRepo) { currentUser ->
+    override suspend fun getReviewById(reviewId: UUID): ReviewResponse = withUser(userRepo) { currentUser ->
         val review = repo.getReviewById(reviewId).getOrThrow()
 
         accessChecker.isAllowedToReadReview(currentUser, review)
 
         val selectedCriteriaIds = reviewHasCriterionRepo.getSelectedCriteriaIdsForReviewById(reviewId)
-        review.toGrpcReview(selectedCriteriaIds.map(UUID::toString))
+
+        ReviewResponse.fromReviewAndIds(review, selectedCriteriaIds)
     }
 
-    override suspend fun getAllReviewsForProjectPaper(projectPaperId: UUID): GrpcReview.List =
+    override suspend fun getAllReviewsForProjectPaper(projectPaperId: UUID): List<ReviewResponse> =
         withUser(userRepo) { currentUser ->
             val projectPaper = projectPaperRepo.getProjectPaperById(projectPaperId).getOrThrow()
 
             projectAccessChecker.isAllowedToReadProject(currentUser, projectPaper.projectId)
 
             val reviews = repo.getAllReviewsForProjectPaper(projectPaperId)
-            val reviewSelectedCriteriaMap = mutableMapOf<Review, List<String>>()
+            val reviewSelectedCriteriaMap = mutableMapOf<Review, List<UUID>>()
             for (review in reviews) {
                 reviewSelectedCriteriaMap[review] = reviewHasCriterionRepo
-                    .getSelectedCriteriaIdsForReviewById(review.id).map(UUID::toString)
+                    .getSelectedCriteriaIdsForReviewById(review.id)
             }
 
-            reviews.toGrpcReviews(reviewSelectedCriteriaMap)
+            reviews.map { ReviewResponse.fromReviewAndIds(it, reviewSelectedCriteriaMap[it].orEmpty()) }
         }
 
-    override suspend fun createReview(request: GrpcReview.Create): GrpcReview = withUser(userRepo) { currentUser ->
+    override suspend fun createReview(request: GrpcReview.Create): ReviewResponse = withUser(userRepo) { currentUser ->
         val projectPaperId = parseUUID(request.projectPaperId, EntityType.PROJECT_PAPER)
         val projectPaper = projectPaperRepo.getProjectPaperById(projectPaperId).getOrThrow()
 
@@ -146,7 +146,7 @@ class ReviewService(
             fetcherOrchestrator.enqueue(FetcherEnqueueJob(projectPaper, currentUser.id))
         }
 
-        review.toGrpcReview(selectedCriteriaIds.map(UUID::toString))
+        ReviewResponse.fromReviewAndIds(review, selectedCriteriaIds)
     }
 
     private suspend fun hasSelectedHardExclusionCriterion(projectId: UUID, selectedCriteriaIds: List<UUID>): Boolean {

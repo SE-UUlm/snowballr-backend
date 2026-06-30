@@ -9,6 +9,7 @@ import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.fetcher.IFetcherOrchestrator
 import se.uulm.snowballr.backend.model.dto.review.Review
 import se.uulm.snowballr.backend.model.dto.user.User
+import se.uulm.snowballr.backend.model.outgoing.review.ReviewResponse
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IReviewTableRepo
@@ -18,7 +19,6 @@ import se.uulm.snowballr.backend.repository.association.IReviewHasCriterionTable
 import se.uulm.snowballr.backend.service.BaseServiceTest
 import se.uulm.snowballr.backend.service.ReviewService
 import se.uulm.snowballr.backend.service.withUser
-import snowballr.ReviewOuterClass
 import kotlin.test.assertEquals
 
 /**
@@ -69,8 +69,8 @@ sealed class ReviewServiceTest : BaseServiceTest {
         coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
     }
 
-    protected fun assertReviewEquality(expected: Review, actual: ReviewOuterClass.Review) {
-        assertEquals(expected.userId.toString(), actual.userId)
-        assertEquals(expected.decision.toGrpc(), actual.decision)
+    protected fun assertReviewEquality(expected: Review, actual: ReviewResponse) {
+        assertEquals(expected.userId, actual.userId)
+        assertEquals(expected.decision, actual.decision)
     }
 }

@@ -163,9 +163,9 @@ class CreateReviewTest : ReviewServiceTest() {
 
         val review = service.createReview(validCreateReviewRequest.build())
 
-        assertEquals(userId.toString(), review.userId)
-        assertEquals(decision.toGrpc(), review.decision)
-        assertEquals(selectedCriteriaIds.map { it.toString() }, review.selectedCriteriaIdsList)
+        assertEquals(userId, review.userId)
+        assertEquals(decision, review.decision)
+        assertEquals(selectedCriteriaIds, review.selectedCriteriaIds)
 
         coVerify(exactly = 1) {
             projectRepoMock.updateProject(getUpdateProjectStatusRequest(project.id), setOf("project.status"))

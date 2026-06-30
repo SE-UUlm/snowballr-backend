@@ -28,10 +28,10 @@ class GetReviewByIdTest : ReviewServiceTest() {
 
         val reviewResult = service.getReviewById(review.id)
 
-        assertEquals(review.id.toString(), reviewResult.id)
-        assertEquals(1, reviewResult.selectedCriteriaIdsCount)
-        val selectedCriterionId = reviewResult.selectedCriteriaIdsList[0]
-        assertEquals(selectedCriteriaIds[0].toString(), selectedCriterionId)
+        assertEquals(review.id, reviewResult.id)
+        assertEquals(1, reviewResult.selectedCriteriaIds.size)
+        val selectedCriterionId = reviewResult.selectedCriteriaIds[0]
+        assertEquals(selectedCriteriaIds[0], selectedCriterionId)
         assertReviewEquality(review, reviewResult)
     }
 
