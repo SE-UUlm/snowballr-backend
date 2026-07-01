@@ -11,7 +11,6 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import se.uulm.snowballr.backend.model.dto.paper.Paper
 import se.uulm.snowballr.backend.model.dto.paper.toFetcherPaper
-import se.uulm.snowballr.backend.model.dto.paper.toGrpcPaperRequest
 import se.uulm.snowballr.backend.model.exception.FetcherException
 import se.uulm.snowballr.backend.model.fetcher.FetcherEnqueueJob
 import se.uulm.snowballr.backend.model.fetcher.FetcherMap
@@ -20,6 +19,7 @@ import se.uulm.snowballr.backend.model.fetcher.FetcherProcessingJob
 import se.uulm.snowballr.backend.model.fetcher.FetchingDirection
 import se.uulm.snowballr.backend.model.fetcher.FetchingResults
 import se.uulm.snowballr.backend.model.fetcher.PaperCreationResults
+import se.uulm.snowballr.backend.model.incoming.paper.CreatePaperRequest
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
@@ -237,7 +237,7 @@ class FetcherOrchestrator(
             }
 
             try {
-                createdPaperRefs += paperRepo.createPaper(ref.toGrpcPaperRequest())
+                createdPaperRefs += paperRepo.createPaper(CreatePaperRequest.fromFetcherPaper(ref))
             } catch (ex: SQLException) {
                 logger.error(ex) { "Failed to create paper for fetched paper: ${ex.message ?: "<empty>"}" }
             }

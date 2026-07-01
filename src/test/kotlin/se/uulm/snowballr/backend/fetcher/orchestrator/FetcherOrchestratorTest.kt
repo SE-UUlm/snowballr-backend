@@ -17,9 +17,9 @@ import se.uulm.snowballr.backend.fetcher.FetcherOrchestrator
 import se.uulm.snowballr.backend.fetcher.IFetcherManager
 import se.uulm.snowballr.backend.model.dto.paper.Paper
 import se.uulm.snowballr.backend.model.dto.paper.toFetcherPaper
-import se.uulm.snowballr.backend.model.dto.paper.toGrpcPaperRequest
 import se.uulm.snowballr.backend.model.fetcher.FetcherEnqueueJob
 import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
+import se.uulm.snowballr.backend.model.incoming.paper.CreatePaperRequest
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
@@ -125,13 +125,13 @@ sealed class FetcherOrchestratorTest {
         for (backwardRef in backwardRefs) {
             val backwardFetcherRef = backwardRef.toFetcherPaper()
             coEvery {
-                paperRepoMock.createPaper(backwardFetcherRef.toGrpcPaperRequest())
+                paperRepoMock.createPaper(CreatePaperRequest.fromFetcherPaper(backwardFetcherRef))
             } returns backwardRef
         }
         for (forwardRef in forwardRefs) {
             val forwardFetcherRef = forwardRef.toFetcherPaper()
             coEvery {
-                paperRepoMock.createPaper(forwardFetcherRef.toGrpcPaperRequest())
+                paperRepoMock.createPaper(CreatePaperRequest.fromFetcherPaper(forwardFetcherRef))
             } returns forwardRef
         }
     }

@@ -16,16 +16,17 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.isBetweenWithDelta
+import se.uulm.snowballr.backend.model.dto.paper.Author
 import se.uulm.snowballr.backend.model.dto.paper.toGrpcPaper
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.PaperNotFoundException
+import se.uulm.snowballr.backend.model.incoming.paper.CreatePaperRequest
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertPaperAndGetId
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.utils.assertResultFailure
 import se.uulm.snowballr.backend.utils.assertResultSuccess
-import snowballr.PaperOuterClass.Author
+import snowballr.PaperOuterClass
 import snowballr.PaperOuterClass.Paper
-import snowballr.author
 import java.sql.SQLException
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -144,23 +145,17 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
 
     @Nested
     inner class CreatePaper {
-        fun getExamplePaperRequest(externalId: String = "ExternalId"): Paper = Paper.newBuilder()
-            .setExternalId(externalId)
-            .setTitle("Title")
-            .setAbstrakt("Abstract")
-            .setYear(2025)
-            .setPublisher("Publisher")
-            .setPublicationName("PublicationName")
-            .setPublicationType("PublicationType")
-            .addAllAuthors(
-                listOf(
-                    author {
-                        firstName = "FirstName"
-                        lastName = "LastName"
-                    },
-                ),
-            )
-            .build()
+        fun getExamplePaperRequest(externalId: String? = "ExternalId") = CreatePaperRequest(
+            title = "Title",
+            externalId = externalId,
+            abstract = "Abstract",
+            year = 2025,
+            publisher = "Publisher",
+            publicationName = "PublicationName",
+            publicationType = "PublicationType",
+            authors = listOf(Author("FirstName", "LastName")),
+            fetcherMetadata = emptyMap(),
+        )
 
         @Test
         fun `When a paper is created, then the created paper is returned`() = runTest {
@@ -201,13 +196,23 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
             }
 
         @Test
-        fun `When a paper is created with an empty external ID, then the paper is created with a null external ID`() =
+        fun `When a paper is created with a null external ID, then the paper is created with a null external ID`() =
+            runTest {
+                val request = getExamplePaperRequest(externalId = null)
+
+                val createdPaper = repo.createPaper(request)
+
+                assertNull(createdPaper.externalId)
+            }
+
+        @Test
+        fun `When a paper is created with an empty external ID, then the paper is created with an empty external ID`() =
             runTest {
                 val request = getExamplePaperRequest(externalId = "")
 
                 val createdPaper = repo.createPaper(request)
 
-                assertNull(createdPaper.externalId)
+                assertEquals("", createdPaper.externalId)
             }
 
         @Test
@@ -216,10 +221,7 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
                 "id" to UUID.randomUUID().toString(),
                 "foo" to "bar",
             )
-            val request = getExamplePaperRequest()
-                .toBuilder()
-                .putAllFetcherMetadata(metadata)
-                .build()
+            val request = getExamplePaperRequest().copy(fetcherMetadata = metadata)
 
             val createdPaper = repo.createPaper(request)
 
@@ -253,7 +255,7 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
                 .setPublicationType("Updated PublicationType")
                 .addAllAuthors(
                     listOf(
-                        Author.newBuilder()
+                        PaperOuterClass.Author.newBuilder()
                             .setFirstName("UpdatedFirstName")
                             .setLastName("UpdatedLastName")
                             .build(),

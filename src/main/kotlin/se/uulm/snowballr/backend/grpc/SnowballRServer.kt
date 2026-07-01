@@ -26,6 +26,7 @@ import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 import se.uulm.snowballr.backend.model.dto.criterion.toGrpcCriteria
 import se.uulm.snowballr.backend.model.dto.criterion.toGrpcCriterion
+import se.uulm.snowballr.backend.model.dto.paper.Author
 import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPattern
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
@@ -41,6 +42,7 @@ import se.uulm.snowballr.backend.model.dto.user.toGrpcUsers
 import se.uulm.snowballr.backend.model.fetcher.toGrpc
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
+import se.uulm.snowballr.backend.model.incoming.paper.CreatePaperRequest
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectSettingRequest
@@ -537,7 +539,19 @@ class SnowballRServer(
         ): PaperOuterClass.Paper.List = fetcherService.searchFetcherProjectPaperCandidates(request).toGrpc()
 
         override suspend fun createPaper(request: PaperOuterClass.Paper): PaperOuterClass.Paper =
-            paperService.createPaper(request).toGrpc()
+            paperService.createPaper(
+                CreatePaperRequest(
+                    title = request.title,
+                    externalId = request.externalId,
+                    abstract = request.abstrakt,
+                    year = request.year,
+                    publisher = request.publisher,
+                    publicationName = request.publicationName,
+                    publicationType = request.publicationType,
+                    authors = request.authorsList.map { Author(it.firstName, it.lastName) },
+                    fetcherMetadata = request.fetcherMetadataMap,
+                ),
+            ).toGrpc()
 
         override suspend fun updatePaper(request: PaperOuterClass.Paper.Update): PaperOuterClass.Paper =
             paperService.updatePaper(request).toGrpc()

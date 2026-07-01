@@ -43,6 +43,7 @@ import se.uulm.snowballr.backend.mailServiceDeps
 import se.uulm.snowballr.backend.model.dto.project.Project
 import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.email.EmailData
+import se.uulm.snowballr.backend.model.incoming.paper.CreatePaperRequest
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import se.uulm.snowballr.backend.model.outgoing.paper.PaperResponse
 import se.uulm.snowballr.backend.repository.RepositoryHelper
@@ -62,7 +63,6 @@ import se.uulm.snowballr.backend.service.IUserService
 import se.uulm.snowballr.backend.serviceLayerDeps
 import snowballr.Authentication
 import java.util.UUID
-import snowballr.PaperOuterClass.Paper as GrpcPaper
 import snowballr.ProjectOuterClass.Project as GrpcProject
 import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 
@@ -165,15 +165,18 @@ open class IntegrationTest : KoinTest {
      * @param externalId The external ID of the created paper. Defaults to null.
      */
     protected suspend fun createPaper(title: String = "Test Paper", externalId: String? = null): PaperResponse {
-        val builder = GrpcPaper.newBuilder()
-            .setTitle(title)
-            .setAbstrakt("Abstract text")
-            .setYear(2024)
-            .setPublisher("Publisher")
-            .setPublicationType("Journal")
-            .setPublicationName("Journal Name")
-        if (externalId != null) builder.setExternalId(externalId)
-        return paperService.createPaper(builder.build())
+        val request = CreatePaperRequest(
+            title = title,
+            externalId = externalId,
+            abstract = "Abstract text",
+            year = 2024,
+            publisher = "Publisher",
+            publicationType = "Journal",
+            publicationName = "Journal Name",
+            authors = emptyList(),
+            fetcherMetadata = emptyMap(),
+        )
+        return paperService.createPaper(request)
     }
 
     /**

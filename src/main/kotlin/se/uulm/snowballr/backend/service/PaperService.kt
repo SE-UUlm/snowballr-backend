@@ -5,6 +5,7 @@ import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.paper.Paper
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicatePaperException
+import se.uulm.snowballr.backend.model.incoming.paper.CreatePaperRequest
 import se.uulm.snowballr.backend.model.outgoing.paper.PaperResponse
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
@@ -36,7 +37,7 @@ interface IPaperService {
     /**
      * Service implementation of [SnowballRService.createPaper].
      */
-    suspend fun createPaper(request: GrpcPaper): PaperResponse
+    suspend fun createPaper(request: CreatePaperRequest): PaperResponse
 }
 
 /**
@@ -76,8 +77,8 @@ class PaperService(
         return repo.updatePaper(request).toPaperResponse()
     }
 
-    override suspend fun createPaper(request: GrpcPaper): PaperResponse {
-        if (request.externalId.isNotEmpty() && repo.doesPaperExistByExternalId(request.externalId)) {
+    override suspend fun createPaper(request: CreatePaperRequest): PaperResponse {
+        if (request.externalId != null && repo.doesPaperExistByExternalId(request.externalId)) {
             throw DuplicatePaperException(request.externalId)
         }
 
