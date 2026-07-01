@@ -5,21 +5,20 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.integration.IntegrationTest
-import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.project.Project
+import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.review.CreateReviewRequest
-import se.uulm.snowballr.backend.model.parseUUID
-import snowballr.ProjectOuterClass.PaperDecision
+import se.uulm.snowballr.backend.model.outgoing.projectpaper.ProjectPaperResponse
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 
 class ReviewIntegrationTest : IntegrationTest() {
-    private suspend fun setupProjectAndPaper(): Pair<Project, GrpcProjectPaper> {
+    private suspend fun setupProjectAndPaper(): Pair<Project, ProjectPaperResponse> {
         var project = projectService.createProject(CreateProjectRequest(name = "Review Test Project"))
         val paper = createPaper()
         val projectPaper = projectPaperService.addPaperToProject(
@@ -50,17 +49,16 @@ class ReviewIntegrationTest : IntegrationTest() {
         @Test
         fun `When a review is created, then it appears in the reviews list for the project paper`() = runTest {
             val (_, projectPaper) = setupProjectAndPaper()
-            val projectPaperId = parseUUID(projectPaper.id, EntityType.PROJECT_PAPER)
 
             reviewService.createReview(
                 CreateReviewRequest(
-                    projectPaperId = parseUUID(projectPaper.id, EntityType.PROJECT_PAPER),
+                    projectPaperId = projectPaper.id,
                     decision = ReviewDecision.ACCEPTED,
                     selectedCriteriaIds = emptyList(),
                 ),
             )
 
-            val reviews = reviewService.getAllReviewsForProjectPaper(projectPaperId)
+            val reviews = reviewService.getAllReviewsForProjectPaper(projectPaper.id)
             assertTrue(reviews.isNotEmpty())
         }
 
@@ -70,7 +68,7 @@ class ReviewIntegrationTest : IntegrationTest() {
 
             val review = reviewService.createReview(
                 CreateReviewRequest(
-                    projectPaperId = parseUUID(projectPaper.id, EntityType.PROJECT_PAPER),
+                    projectPaperId = projectPaper.id,
                     decision = ReviewDecision.DECLINED,
                     selectedCriteriaIds = emptyList(),
                 ),
@@ -85,44 +83,41 @@ class ReviewIntegrationTest : IntegrationTest() {
         @Test
         fun `When an accepted review is created, then the paper decision is updated to accepted`() = runTest {
             val (_, projectPaper) = setupProjectAndPaper()
-            val projectPaperId = parseUUID(projectPaper.id, EntityType.PROJECT_PAPER)
 
             reviewService.createReview(
                 CreateReviewRequest(
-                    projectPaperId = parseUUID(projectPaper.id, EntityType.PROJECT_PAPER),
+                    projectPaperId = projectPaper.id,
                     decision = ReviewDecision.ACCEPTED,
                     selectedCriteriaIds = emptyList(),
                 ),
             )
 
-            val updatedProjectPaper = projectPaperService.getProjectPaperById(projectPaperId)
-            assertEquals(PaperDecision.PAPER_DECISION_ACCEPTED, updatedProjectPaper.decision)
+            val updatedProjectPaper = projectPaperService.getProjectPaperById(projectPaper.id)
+            assertEquals(PaperDecision.ACCEPTED, updatedProjectPaper.decision)
         }
 
         @Test
         fun `When a declined review is created, then the paper decision is updated to declined`() = runTest {
             val (_, projectPaper) = setupProjectAndPaper()
-            val projectPaperId = parseUUID(projectPaper.id, EntityType.PROJECT_PAPER)
 
             reviewService.createReview(
                 CreateReviewRequest(
-                    projectPaperId = parseUUID(projectPaper.id, EntityType.PROJECT_PAPER),
+                    projectPaperId = projectPaper.id,
                     decision = ReviewDecision.DECLINED,
                     selectedCriteriaIds = emptyList(),
                 ),
             )
 
-            val updatedProjectPaper = projectPaperService.getProjectPaperById(projectPaperId)
-            assertEquals(PaperDecision.PAPER_DECISION_DECLINED, updatedProjectPaper.decision)
+            val updatedProjectPaper = projectPaperService.getProjectPaperById(projectPaper.id)
+            assertEquals(PaperDecision.DECLINED, updatedProjectPaper.decision)
         }
 
         @Test
         fun `When a paper is added to a project, then it initially has an unreviewed decision`() = runTest {
             val (_, projectPaper) = setupProjectAndPaper()
-            val projectPaperId = parseUUID(projectPaper.id, EntityType.PROJECT_PAPER)
 
-            val fetchedProjectPaper = projectPaperService.getProjectPaperById(projectPaperId)
-            assertEquals(PaperDecision.PAPER_DECISION_UNREVIEWED, fetchedProjectPaper.decision)
+            val fetchedProjectPaper = projectPaperService.getProjectPaperById(projectPaper.id)
+            assertEquals(PaperDecision.UNREVIEWED, fetchedProjectPaper.decision)
         }
 
         @Test
@@ -131,7 +126,7 @@ class ReviewIntegrationTest : IntegrationTest() {
 
             reviewService.createReview(
                 CreateReviewRequest(
-                    projectPaperId = parseUUID(projectPaper.id, EntityType.PROJECT_PAPER),
+                    projectPaperId = projectPaper.id,
                     decision = ReviewDecision.ACCEPTED,
                     selectedCriteriaIds = emptyList(),
                 ),
@@ -154,15 +149,14 @@ class ReviewIntegrationTest : IntegrationTest() {
 
             val papers = projectPaperService.getAllProjectPapersForProject(project.id)
 
-            assertTrue(papers.projectPapersList.any { it.id == projectPaper.id })
+            assertTrue(papers.any { it.id == projectPaper.id })
         }
 
         @Test
         fun `When a paper is added to a project, then it can be retrieved by its project paper ID`() = runTest {
             val (_, projectPaper) = setupProjectAndPaper()
-            val projectPaperId = parseUUID(projectPaper.id, EntityType.PROJECT_PAPER)
 
-            val fetched = projectPaperService.getProjectPaperById(projectPaperId)
+            val fetched = projectPaperService.getProjectPaperById(projectPaper.id)
             assertEquals(projectPaper.id, fetched.id)
         }
     }

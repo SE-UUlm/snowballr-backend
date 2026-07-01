@@ -56,20 +56,20 @@ class AddPaperToProjectTest : ProjectPaperServiceTest() {
 
             val addedProjectPaper = service.addPaperToProject(request)
 
-            assertEquals(2, addedProjectPaper.reviewsCount)
-            val review0 = addedProjectPaper.getReviews(0)
-            val review1 = addedProjectPaper.getReviews(1)
-            assertEquals(review0.id, reviews[0].id.toString())
-            assertEquals(review1.id, reviews[1].id.toString())
+            assertEquals(2, addedProjectPaper.reviews.size)
+            val review0 = addedProjectPaper.reviews[0]
+            val review1 = addedProjectPaper.reviews[1]
+            assertEquals(review0.id, reviews[0].id)
+            assertEquals(review1.id, reviews[1].id)
 
-            val criteriaIdsReview0 = review0.selectedCriteriaIdsList
-            val criteriaIdsReview1 = review1.selectedCriteriaIdsList
+            val criteriaIdsReview0 = review0.selectedCriteriaIds
+            val criteriaIdsReview1 = review1.selectedCriteriaIds
             assertEquals(2, criteriaIdsReview0.size)
             assertEquals(2, criteriaIdsReview1.size)
-            assertEquals(criteriaIds0[0].toString(), criteriaIdsReview0[0].toString())
-            assertEquals(criteriaIds0[1].toString(), criteriaIdsReview0[1].toString())
-            assertEquals(criteriaIds1[0].toString(), criteriaIdsReview1[0].toString())
-            assertEquals(criteriaIds1[1].toString(), criteriaIdsReview1[1].toString())
+            assertEquals(criteriaIds0[0], criteriaIdsReview0[0])
+            assertEquals(criteriaIds0[1], criteriaIdsReview0[1])
+            assertEquals(criteriaIds1[0], criteriaIdsReview1[0])
+            assertEquals(criteriaIds1[1], criteriaIdsReview1[1])
         }
 
     @Test

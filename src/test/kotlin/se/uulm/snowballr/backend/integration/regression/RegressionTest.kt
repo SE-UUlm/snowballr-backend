@@ -72,7 +72,7 @@ class RegressionTest : IntegrationTest() {
                 }
             }.awaitAll()
 
-            val localIds = projectPapers.map { it.localId }.distinct()
+            val localIds = projectPapers.map { it.localPaperId }.distinct()
             assertEquals(numberOfPapers, localIds.size)
 
             val projectPaper = projectPapers.first()
@@ -81,7 +81,7 @@ class RegressionTest : IntegrationTest() {
                 projectPaperService.getProjectPaperByRelativeId(
                     GrpcProjectPaper.Get.newBuilder()
                         .setProjectId(project.id.toString())
-                        .setRelativeProjectPaperId(projectPaper.localId)
+                        .setRelativeProjectPaperId(projectPaper.localPaperId.toString())
                         .build(),
                 )
             }

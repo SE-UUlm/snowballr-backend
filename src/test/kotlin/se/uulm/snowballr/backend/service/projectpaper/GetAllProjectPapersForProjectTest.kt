@@ -61,39 +61,39 @@ class GetAllProjectPapersForProjectTest : ProjectPaperServiceTest() {
                 reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(projectPaper1Review1.id)
             } returns listOf(criterion0.id, criterion2.id)
 
-            val projectPapers = service.getAllProjectPapersForProject(project.id).projectPapersList
+            val projectPapers = service.getAllProjectPapersForProject(project.id)
 
             assertEquals(2, projectPapers.size)
-            assertEquals(projectPaper0.projectPaper.id.toString(), projectPapers[0].id)
-            assertEquals(projectPaper1.projectPaper.id.toString(), projectPapers[1].id)
+            assertEquals(projectPaper0.projectPaper.id, projectPapers[0].id)
+            assertEquals(projectPaper1.projectPaper.id, projectPapers[1].id)
             val projectPaper0Result = projectPapers[0]
             val projectPaper1Result = projectPapers[1]
-            val backwardRefs0 = projectPaper0Result.paper.backwardReferencedIdsList
-            val backwardRefs1 = projectPaper1Result.paper.backwardReferencedIdsList
+            val backwardRefs0 = projectPaper0Result.paper.backwardReferencedIds
+            val backwardRefs1 = projectPaper1Result.paper.backwardReferencedIds
             assertEquals(projectPaper0Refs.size, backwardRefs0.size)
             assertEquals(projectPaper1Refs.size, backwardRefs1.size)
-            projectPaper0Refs.forEach { refId -> assertContains(backwardRefs0, refId.toString()) }
-            projectPaper1Refs.forEach { refId -> assertContains(backwardRefs1, refId.toString()) }
-            val reviews0 = projectPaper0Result.reviewsList
-            val reviews1 = projectPaper1Result.reviewsList
+            projectPaper0Refs.forEach { refId -> assertContains(backwardRefs0, refId) }
+            projectPaper1Refs.forEach { refId -> assertContains(backwardRefs1, refId) }
+            val reviews0 = projectPaper0Result.reviews
+            val reviews1 = projectPaper1Result.reviews
             assertEquals(2, reviews0.size)
             assertEquals(2, reviews1.size)
-            val review0CriterionIds0 = reviews0[0].selectedCriteriaIdsList
-            val review0CriterionIds1 = reviews0[1].selectedCriteriaIdsList
-            val review1CriterionIds0 = reviews1[0].selectedCriteriaIdsList
-            val review1CriterionIds1 = reviews1[1].selectedCriteriaIdsList
+            val review0CriterionIds0 = reviews0[0].selectedCriteriaIds
+            val review0CriterionIds1 = reviews0[1].selectedCriteriaIds
+            val review1CriterionIds0 = reviews1[0].selectedCriteriaIds
+            val review1CriterionIds1 = reviews1[1].selectedCriteriaIds
             assertEquals(2, review0CriterionIds0.size)
             assertEquals(2, review0CriterionIds1.size)
             assertEquals(2, review1CriterionIds0.size)
             assertEquals(2, review1CriterionIds1.size)
-            assertContains(review0CriterionIds0, criterion0.id.toString())
-            assertContains(review0CriterionIds0, criterion1.id.toString())
-            assertContains(review0CriterionIds1, criterion2.id.toString())
-            assertContains(review0CriterionIds1, criterion1.id.toString())
-            assertContains(review1CriterionIds0, criterion2.id.toString())
-            assertContains(review1CriterionIds0, criterion0.id.toString())
-            assertContains(review1CriterionIds1, criterion0.id.toString())
-            assertContains(review1CriterionIds1, criterion2.id.toString())
+            assertContains(review0CriterionIds0, criterion0.id)
+            assertContains(review0CriterionIds0, criterion1.id)
+            assertContains(review0CriterionIds1, criterion2.id)
+            assertContains(review0CriterionIds1, criterion1.id)
+            assertContains(review1CriterionIds0, criterion2.id)
+            assertContains(review1CriterionIds0, criterion0.id)
+            assertContains(review1CriterionIds1, criterion0.id)
+            assertContains(review1CriterionIds1, criterion2.id)
         }
 
     @Test

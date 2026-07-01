@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.integration.IntegrationTest
-import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.project.Project
 import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
@@ -16,17 +15,17 @@ import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedCreate
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.review.CreateReviewRequest
-import se.uulm.snowballr.backend.model.parseUUID
+import se.uulm.snowballr.backend.model.outgoing.projectpaper.ProjectPaperResponse
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 
 class ProjectPaperIntegrationTest : IntegrationTest() {
-    private suspend fun reviewPaper(projectPaper: GrpcProjectPaper, decision: ReviewDecision) =
+    private suspend fun reviewPaper(projectPaper: ProjectPaperResponse, decision: ReviewDecision) =
         reviewService.createReview(
             CreateReviewRequest(
-                projectPaperId = parseUUID(projectPaper.id, EntityType.PROJECT_PAPER),
+                projectPaperId = projectPaper.id,
                 decision = decision,
                 selectedCriteriaIds = emptyList(),
             ),
@@ -97,7 +96,7 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
             val fetched = projectPaperService.getProjectPaperByRelativeId(
                 GrpcProjectPaper.Get.newBuilder()
                     .setProjectId(project.id.toString())
-                    .setRelativeProjectPaperId(added.localId)
+                    .setRelativeProjectPaperId(added.localPaperId.toString())
                     .build(),
             )
 
@@ -113,13 +112,13 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
             val fetchedA = projectPaperService.getProjectPaperByRelativeId(
                 GrpcProjectPaper.Get.newBuilder()
                     .setProjectId(project.id.toString())
-                    .setRelativeProjectPaperId(ppA.localId)
+                    .setRelativeProjectPaperId(ppA.localPaperId.toString())
                     .build(),
             )
             val fetchedB = projectPaperService.getProjectPaperByRelativeId(
                 GrpcProjectPaper.Get.newBuilder()
                     .setProjectId(project.id.toString())
-                    .setRelativeProjectPaperId(ppB.localId)
+                    .setRelativeProjectPaperId(ppB.localPaperId.toString())
                     .build(),
             )
 
@@ -136,7 +135,7 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
 
             val toReview = projectPaperService.getPapersToReviewForProject(project.id)
 
-            assertTrue(toReview.projectPapersList.isEmpty())
+            assertTrue(toReview.isEmpty())
         }
 
         @Test
@@ -146,7 +145,7 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
 
             val toReview = projectPaperService.getPapersToReviewForProject(project.id)
 
-            assertTrue(toReview.projectPapersList.any { it.id == pp.id })
+            assertTrue(toReview.any { it.id == pp.id })
         }
 
         @Test
@@ -158,7 +157,7 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
 
             val toReview = projectPaperService.getPapersToReviewForProject(project.id)
 
-            assertFalse(toReview.projectPapersList.any { it.id == pp.id })
+            assertFalse(toReview.any { it.id == pp.id })
         }
 
         @Test
@@ -178,7 +177,7 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
 
                 val toReview = projectPaperService.getPapersToReviewForProject(project.id)
 
-                assertFalse(toReview.projectPapersList.any { it.id == pp.id })
+                assertFalse(toReview.any { it.id == pp.id })
             }
 
         @Test
@@ -192,8 +191,8 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
 
                 val toReview = projectPaperService.getPapersToReviewForProject(project.id)
 
-                assertFalse(toReview.projectPapersList.any { it.id == ppA.id })
-                assertTrue(toReview.projectPapersList.any { it.id == ppB.id })
+                assertFalse(toReview.any { it.id == ppA.id })
+                assertTrue(toReview.any { it.id == ppB.id })
             }
     }
 
@@ -206,9 +205,8 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
                 val ppA = addToProject(project, createPaper("A"))
                 val ppB = addToProject(project, createPaper("B"))
                 addToProject(project, createPaper("C"))
-                val ppAId = parseUUID(ppA.id, EntityType.PROJECT_PAPER)
 
-                val next = projectPaperService.getNextPaper(ppAId)
+                val next = projectPaperService.getNextPaper(ppA.id)
 
                 assertEquals(ppB.id, next.id)
             }
@@ -220,9 +218,8 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
                 addToProject(project, createPaper("A"))
                 val ppB = addToProject(project, createPaper("B"))
                 val ppC = addToProject(project, createPaper("C"))
-                val ppCId = parseUUID(ppC.id, EntityType.PROJECT_PAPER)
 
-                val previous = projectPaperService.getPreviousPaper(ppCId)
+                val previous = projectPaperService.getPreviousPaper(ppC.id)
 
                 assertEquals(ppB.id, previous.id)
             }
@@ -231,18 +228,16 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
         fun `When there is no next paper, then getNextPaper throws a FailedPreconditionException`() = runTest {
             val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
             val ppA = addToProject(project, createPaper())
-            val ppAId = parseUUID(ppA.id, EntityType.PROJECT_PAPER)
 
-            assertThrows<FailedPreconditionException> { projectPaperService.getNextPaper(ppAId) }
+            assertThrows<FailedPreconditionException> { projectPaperService.getNextPaper(ppA.id) }
         }
 
         @Test
         fun `When there is no previous paper, then getPreviousPaper throws a FailedPreconditionException`() = runTest {
             val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
             val ppA = addToProject(project, createPaper())
-            val ppAId = parseUUID(ppA.id, EntityType.PROJECT_PAPER)
 
-            assertThrows<FailedPreconditionException> { projectPaperService.getPreviousPaper(ppAId) }
+            assertThrows<FailedPreconditionException> { projectPaperService.getPreviousPaper(ppA.id) }
         }
     }
 
@@ -253,9 +248,8 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
             val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
             val ppA = addToProject(project, createPaper("A"))
             val ppB = addToProject(project, createPaper("B"))
-            val ppAId = parseUUID(ppA.id, EntityType.PROJECT_PAPER)
 
-            val next = projectPaperService.getNextPaperToReview(ppAId)
+            val next = projectPaperService.getNextPaperToReview(ppA.id)
 
             assertEquals(ppB.id, next.id)
         }
@@ -265,9 +259,8 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
             runTest {
                 val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
                 val ppA = addToProject(project, createPaper())
-                val ppAId = parseUUID(ppA.id, EntityType.PROJECT_PAPER)
 
-                assertThrows<FailedPreconditionException> { projectPaperService.getNextPaperToReview(ppAId) }
+                assertThrows<FailedPreconditionException> { projectPaperService.getNextPaperToReview(ppA.id) }
             }
 
         @Test
@@ -276,11 +269,10 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
                 val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
                 val ppA = addToProject(project, createPaper("A"))
                 val ppB = addToProject(project, createPaper("B"))
-                val ppAId = parseUUID(ppA.id, EntityType.PROJECT_PAPER)
 
                 reviewPaper(ppB, ReviewDecision.ACCEPTED)
 
-                assertThrows<FailedPreconditionException> { projectPaperService.getNextPaperToReview(ppAId) }
+                assertThrows<FailedPreconditionException> { projectPaperService.getNextPaperToReview(ppA.id) }
             }
     }
 }

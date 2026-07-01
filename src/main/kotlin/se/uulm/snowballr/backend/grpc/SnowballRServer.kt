@@ -52,6 +52,7 @@ import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
 import se.uulm.snowballr.backend.model.outgoing.paper.toGrpc
 import se.uulm.snowballr.backend.model.outgoing.project.toGrpc
+import se.uulm.snowballr.backend.model.outgoing.projectpaper.toGrpc
 import se.uulm.snowballr.backend.model.outgoing.review.toGrpc
 import se.uulm.snowballr.backend.model.outgoing.review.toGrpcReviews
 import se.uulm.snowballr.backend.model.parseUUID
@@ -316,16 +317,16 @@ class SnowballRServer(
             super.getAllPapersToReview(request)
 
         override suspend fun getPapersToReviewForProject(request: Base.Id): ProjectOuterClass.Project.Paper.List =
-            projectPaperService.getPapersToReviewForProject(parseProjectId(request))
+            projectPaperService.getPapersToReviewForProject(parseProjectId(request)).toGrpc()
 
         override suspend fun getNextPaper(request: Base.Id): ProjectOuterClass.Project.Paper =
-            projectPaperService.getNextPaper(parseProjectPaperId(request))
+            projectPaperService.getNextPaper(parseProjectPaperId(request)).toGrpc()
 
         override suspend fun getNextPaperToReview(request: Base.Id): ProjectOuterClass.Project.Paper =
-            projectPaperService.getNextPaperToReview(parseProjectPaperId(request))
+            projectPaperService.getNextPaperToReview(parseProjectPaperId(request)).toGrpc()
 
         override suspend fun getPreviousPaper(request: Base.Id): ProjectOuterClass.Project.Paper =
-            projectPaperService.getPreviousPaper(parseProjectPaperId(request))
+            projectPaperService.getPreviousPaper(parseProjectPaperId(request)).toGrpc()
 
         override suspend fun getUserSettings(request: Base.Nothing): UserSettingsOuterClass.UserSettings =
             userService.getUserSettings().toGrpcUserSettings()
@@ -488,18 +489,18 @@ class SnowballRServer(
         override suspend fun deleteCriterion(request: Base.Id): Base.Nothing = super.deleteCriterion(request)
 
         override suspend fun getProjectPaperById(request: Base.Id): ProjectOuterClass.Project.Paper =
-            projectPaperService.getProjectPaperById(parseProjectPaperId(request))
+            projectPaperService.getProjectPaperById(parseProjectPaperId(request)).toGrpc()
 
         override suspend fun getProjectPaperByRelativeId(
             request: ProjectOuterClass.Project.Paper.Get,
-        ): ProjectOuterClass.Project.Paper = projectPaperService.getProjectPaperByRelativeId(request)
+        ): ProjectOuterClass.Project.Paper = projectPaperService.getProjectPaperByRelativeId(request).toGrpc()
 
         override suspend fun getAllProjectPapersForProject(request: Base.Id): ProjectOuterClass.Project.Paper.List =
-            projectPaperService.getAllProjectPapersForProject(parseProjectId(request))
+            projectPaperService.getAllProjectPapersForProject(parseProjectId(request)).toGrpc()
 
         override suspend fun addPaperToProject(
             request: ProjectOuterClass.Project.Paper.Add,
-        ): ProjectOuterClass.Project.Paper = projectPaperService.addPaperToProject(request)
+        ): ProjectOuterClass.Project.Paper = projectPaperService.addPaperToProject(request).toGrpc()
 
         override suspend fun updateProjectPaper(
             request: ProjectOuterClass.Project.Paper.Update,
