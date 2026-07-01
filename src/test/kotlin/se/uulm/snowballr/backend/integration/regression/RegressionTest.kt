@@ -8,6 +8,7 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
+import se.uulm.snowballr.backend.model.outgoing.paper.PaperResponse
 import snowballr.ProjectOuterClass.Project
 import snowballr.UserOuterClass.UserStatus
 import kotlin.test.assertEquals
@@ -51,7 +52,7 @@ class RegressionTest : IntegrationTest() {
         runTest {
             val numberOfPapers = 10
             val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
-            val papers = mutableSetOf<GrpcPaper>()
+            val papers = mutableSetOf<PaperResponse>()
             for (i in 1..numberOfPapers) {
                 val builder = GrpcPaper.newBuilder()
                     .setTitle("Paper $i")
@@ -63,7 +64,7 @@ class RegressionTest : IntegrationTest() {
                     projectPaperService.addPaperToProject(
                         GrpcProjectPaper.Add.newBuilder()
                             .setProjectId(project.id.toString())
-                            .setPaperId(it.id)
+                            .setPaperId(it.id.toString())
                             .setStage(0)
                             .build(),
                     )

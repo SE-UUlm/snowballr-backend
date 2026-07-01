@@ -117,7 +117,7 @@ class AccessControlIntegrationTest : IntegrationTest() {
 
             val request = GrpcProjectPaper.Add.newBuilder()
                 .setProjectId(project.id.toString())
-                .setPaperId(paper.id)
+                .setPaperId(paper.id.toString())
                 .setStage(0)
                 .build()
 

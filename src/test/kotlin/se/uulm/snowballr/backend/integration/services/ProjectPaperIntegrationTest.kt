@@ -65,7 +65,7 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
                 projectPaperService.addPaperToProject(
                     GrpcProjectPaper.Add.newBuilder()
                         .setProjectId(project.id.toString())
-                        .setPaperId(paper.id)
+                        .setPaperId(paper.id.toString())
                         .setStage(1) // maxStage is 0 by default
                         .build(),
                 )

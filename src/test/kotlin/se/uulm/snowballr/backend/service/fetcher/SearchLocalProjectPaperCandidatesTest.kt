@@ -32,11 +32,11 @@ class SearchLocalProjectPaperCandidatesTest : FetcherServiceTest() {
         coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, fooPaper.id) } returns false
         coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, barPaper.id) } returns false
 
-        val papers = service.searchLocalProjectPaperCandidates(request).papersList
+        val papers = service.searchLocalProjectPaperCandidates(request)
 
         assertEquals(2, papers.size)
-        assertTrue(papers.any { p -> p.id == fooPaper.id.toString() })
-        assertTrue(papers.any { p -> p.id == barPaper.id.toString() })
+        assertTrue(papers.any { p -> p.id == fooPaper.id })
+        assertTrue(papers.any { p -> p.id == barPaper.id })
     }
 
     @Test
@@ -65,7 +65,7 @@ class SearchLocalProjectPaperCandidatesTest : FetcherServiceTest() {
         coEvery { paperRepoMock.getPapersBySearchQuery(request.query) } returns listOf(fooPaper)
         coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, fooPaper.id) } returns true
 
-        val papers = service.searchLocalProjectPaperCandidates(request).papersList
+        val papers = service.searchLocalProjectPaperCandidates(request)
 
         assertEquals(0, papers.size)
     }

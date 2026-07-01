@@ -44,6 +44,7 @@ import se.uulm.snowballr.backend.model.dto.project.Project
 import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
+import se.uulm.snowballr.backend.model.outgoing.paper.PaperResponse
 import se.uulm.snowballr.backend.repository.RepositoryHelper
 import se.uulm.snowballr.backend.repositoryLayerDeps
 import se.uulm.snowballr.backend.service.IAuthenticationService
@@ -163,7 +164,7 @@ open class IntegrationTest : KoinTest {
      * @param title The title of the created paper. Defaults to "Test Paper".
      * @param externalId The external ID of the created paper. Defaults to null.
      */
-    protected suspend fun createPaper(title: String = "Test Paper", externalId: String? = null): GrpcPaper {
+    protected suspend fun createPaper(title: String = "Test Paper", externalId: String? = null): PaperResponse {
         val builder = GrpcPaper.newBuilder()
             .setTitle(title)
             .setAbstrakt("Abstract text")
@@ -275,10 +276,10 @@ open class IntegrationTest : KoinTest {
     /**
      * Adds the [paper] to the [project] in stage 0.
      */
-    protected suspend fun addToProject(project: Project, paper: GrpcPaper) = projectPaperService.addPaperToProject(
+    protected suspend fun addToProject(project: Project, paper: PaperResponse) = projectPaperService.addPaperToProject(
         GrpcProjectPaper.Add.newBuilder()
             .setProjectId(project.id.toString())
-            .setPaperId(paper.id)
+            .setPaperId(paper.id.toString())
             .setStage(0)
             .build(),
     )

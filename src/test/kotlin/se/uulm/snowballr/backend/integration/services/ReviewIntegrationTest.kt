@@ -25,7 +25,7 @@ class ReviewIntegrationTest : IntegrationTest() {
         val projectPaper = projectPaperService.addPaperToProject(
             GrpcProjectPaper.Add.newBuilder()
                 .setProjectId(project.id.toString())
-                .setPaperId(paper.id)
+                .setPaperId(paper.id.toString())
                 .setStage(0)
                 .build(),
         )

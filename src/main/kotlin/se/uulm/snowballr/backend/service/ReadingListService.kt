@@ -1,19 +1,18 @@
 package se.uulm.snowballr.backend.service
 
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
-import se.uulm.snowballr.backend.model.dto.paper.toGrpcPapers
+import se.uulm.snowballr.backend.model.outgoing.paper.PaperResponse
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
 import se.uulm.snowballr.backend.repository.association.IReadingListTableRepo
 import java.util.UUID
-import snowballr.PaperOuterClass.Paper as GrpcPaper
 
 interface IReadingListService {
     /**
      * Service implementation of [SnowballRService.getReadingList].
      */
-    suspend fun getReadingList(): GrpcPaper.List
+    suspend fun getReadingList(): List<PaperResponse>
 
     /**
      * Service implementation of [SnowballRService.isPaperOnReadingList].
@@ -50,12 +49,8 @@ class ReadingListService(
     private val citationRepo: ICitationTableRepo,
     private val repo: IReadingListTableRepo,
 ) : IReadingListService {
-    override suspend fun getReadingList(): GrpcPaper.List = withUser(userRepo) { currentUser ->
-        val papers = repo.getAllReadingListEntries(currentUser.id).map { paper ->
-            paper.toGrpcPaperWithAuthorsAndBackwardReferences(citationRepo)
-        }
-
-        papers.toGrpcPapers()
+    override suspend fun getReadingList(): List<PaperResponse> = withUser(userRepo) { currentUser ->
+        repo.getAllReadingListEntries(currentUser.id).map { it.toPaperResponse(citationRepo) }
     }
 
     override suspend fun isPaperOnReadingList(paperId: UUID): Boolean = withUser(userRepo) { currentUser ->

@@ -4,6 +4,8 @@ import io.mockk.coEvery
 import io.mockk.coJustRun
 import io.mockk.coVerify
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
@@ -11,8 +13,6 @@ import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.dto.paper.toFetcherPaper
 import se.uulm.snowballr.backend.model.dto.project.Project
 import se.uulm.snowballr.backend.model.exception.FetcherException
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 
 class SearchFetcherProjectPaperCandidatesTest : FetcherServiceTest() {
@@ -46,11 +46,11 @@ class SearchFetcherProjectPaperCandidatesTest : FetcherServiceTest() {
         coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, fooPaper.id) } returns false
         coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, barPaper.id) } returns false
 
-        val papers = service.searchFetcherProjectPaperCandidates(request).papersList
+        val papers = service.searchFetcherProjectPaperCandidates(request)
 
         assertEquals(2, papers.size)
-        assertTrue(papers.any { p -> p.id == fooPaper.id.toString() })
-        assertTrue(papers.any { p -> p.id == barPaper.id.toString() })
+        assertTrue(papers.any { p -> p.id == fooPaper.id })
+        assertTrue(papers.any { p -> p.id == barPaper.id })
     }
 
     @Test
@@ -106,10 +106,10 @@ class SearchFetcherProjectPaperCandidatesTest : FetcherServiceTest() {
         coEvery { paperRepoMock.getPapersByExternalIds(listOf("fooId")) } returns listOf(fooPaper)
         coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, fooPaper.id) } returns false
 
-        val papers = service.searchFetcherProjectPaperCandidates(request).papersList
+        val papers = service.searchFetcherProjectPaperCandidates(request)
 
         assertEquals(1, papers.size)
-        assertEquals(papers[0].id, fooPaper.id.toString())
+        assertEquals(fooPaper.id, papers[0].id)
     }
 
     @Test
@@ -129,7 +129,7 @@ class SearchFetcherProjectPaperCandidatesTest : FetcherServiceTest() {
         coEvery { paperRepoMock.getPapersByExternalIds(listOf("fooId")) } returns listOf(fooPaper)
         coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, fooPaper.id) } returns true
 
-        val papers = service.searchFetcherProjectPaperCandidates(request).papersList
+        val papers = service.searchFetcherProjectPaperCandidates(request)
 
         assertEquals(0, papers.size)
     }
@@ -150,11 +150,11 @@ class SearchFetcherProjectPaperCandidatesTest : FetcherServiceTest() {
         coEvery { fetcherManagerMock.searchPapers("foo", request.query, any()) } returns setOf(fooFetcherPaper)
         coEvery { paperRepoMock.getPapersByExternalIds(listOf("fooId")) } returns emptyList()
 
-        val papers = service.searchFetcherProjectPaperCandidates(request).papersList
+        val papers = service.searchFetcherProjectPaperCandidates(request)
 
         assertEquals(1, papers.size)
-        assertEquals(papers[0].title, fooPaper.title)
-        assertEquals(papers[0].id, "")
+        assertEquals(fooPaper.title, papers[0].title)
+        assertEquals(null, papers[0].id)
         coVerify(exactly = 0) { projectPaperRepoMock.doesProjectPaperExist(any(), any()) }
     }
 
@@ -175,11 +175,11 @@ class SearchFetcherProjectPaperCandidatesTest : FetcherServiceTest() {
             coEvery { fetcherManagerMock.searchPapers("foo", request.query, any()) } returns setOf(fooFetcherPaper)
             coEvery { paperRepoMock.getPapersByExternalIds(emptyList()) } returns emptyList()
 
-            val papers = service.searchFetcherProjectPaperCandidates(request).papersList
+            val papers = service.searchFetcherProjectPaperCandidates(request)
 
             assertEquals(1, papers.size)
-            assertEquals(papers[0].title, fooPaper.title)
-            assertEquals(papers[0].id, "")
+            assertEquals(fooPaper.title, papers[0].title)
+            assertEquals(null, papers[0].id)
             coVerify(exactly = 0) { paperRepoMock.getPaperByExternalId(any()) }
             coVerify(exactly = 0) { projectPaperRepoMock.doesProjectPaperExist(any(), any()) }
         }

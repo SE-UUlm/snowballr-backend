@@ -6,9 +6,8 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.integration.IntegrationTest
-import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicatePaperException
-import se.uulm.snowballr.backend.model.parseUUID
+import se.uulm.snowballr.backend.model.outgoing.paper.toGrpc
 import snowballr.PaperOuterClass.Paper
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -19,9 +18,8 @@ class PaperIntegrationTest : IntegrationTest() {
         @Test
         fun `When a paper is created, then it can be retrieved by ID`() = runTest {
             val paper = createPaper("My Paper")
-            val paperId = parseUUID(paper.id, EntityType.PAPER)
 
-            val fetched = paperService.getPaperById(paperId)
+            val fetched = paperService.getPaperById(paper.id)
 
             assertEquals(paper.id, fetched.id)
             assertEquals("My Paper", fetched.title)
@@ -50,10 +48,9 @@ class PaperIntegrationTest : IntegrationTest() {
         @Test
         fun `When a paper's title is updated, then the updated title is persisted`() = runTest {
             val paper = createPaper("Original Title")
-            val paperId = parseUUID(paper.id, EntityType.PAPER)
 
             val request = Paper.Update.newBuilder()
-                .setPaper(paper.toBuilder().setTitle("Updated Title").build())
+                .setPaper(paper.toGrpc().toBuilder().setTitle("Updated Title").build())
                 .setMask(FieldMaskUtil.fromStringList(listOf("paper.title")))
                 .build()
 
@@ -61,23 +58,22 @@ class PaperIntegrationTest : IntegrationTest() {
 
             assertEquals("Updated Title", result.title)
 
-            val fetched = paperService.getPaperById(paperId)
+            val fetched = paperService.getPaperById(paper.id)
             assertEquals("Updated Title", fetched.title)
         }
 
         @Test
         fun `When a paper's year is updated, then the updated year is persisted`() = runTest {
             val paper = createPaper()
-            val paperId = parseUUID(paper.id, EntityType.PAPER)
 
             val request = Paper.Update.newBuilder()
-                .setPaper(paper.toBuilder().setYear(2000).build())
+                .setPaper(paper.toGrpc().toBuilder().setYear(2000).build())
                 .setMask(FieldMaskUtil.fromStringList(listOf("paper.year")))
                 .build()
 
             paperService.updatePaper(request)
 
-            val fetched = paperService.getPaperById(paperId)
+            val fetched = paperService.getPaperById(paper.id)
             assertEquals(2000, fetched.year)
         }
 
@@ -87,7 +83,7 @@ class PaperIntegrationTest : IntegrationTest() {
             val other = createPaper(externalId = "other-id")
 
             val request = Paper.Update.newBuilder()
-                .setPaper(other.toBuilder().setExternalId("taken-id").build())
+                .setPaper(other.toGrpc().toBuilder().setExternalId("taken-id").build())
                 .setMask(FieldMaskUtil.fromStringList(listOf("paper.external_id")))
                 .build()
 

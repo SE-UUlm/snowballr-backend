@@ -3,9 +3,9 @@ package se.uulm.snowballr.backend.service
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.paper.Paper
-import se.uulm.snowballr.backend.model.dto.paper.toGrpcPapers
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicatePaperException
+import se.uulm.snowballr.backend.model.outgoing.paper.PaperResponse
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
@@ -16,27 +16,27 @@ interface IPaperService {
     /**
      * Service implementation of [SnowballRService.getPaperById].
      */
-    suspend fun getPaperById(paperId: UUID): GrpcPaper
+    suspend fun getPaperById(paperId: UUID): PaperResponse
 
     /**
      * Service implementation of [SnowballRService.getBackwardReferencedPapers].
      */
-    suspend fun getBackwardReferencedPapers(paperId: UUID): GrpcPaper.List
+    suspend fun getBackwardReferencedPapers(paperId: UUID): List<PaperResponse>
 
     /**
      * Service implementation of [SnowballRService.getForwardReferencedPapers].
      */
-    suspend fun getForwardReferencedPapers(paperId: UUID): GrpcPaper.List
+    suspend fun getForwardReferencedPapers(paperId: UUID): List<PaperResponse>
 
     /**
      * Service implementation of [SnowballRService.updatePaper].
      */
-    suspend fun updatePaper(request: GrpcPaper.Update): GrpcPaper
+    suspend fun updatePaper(request: GrpcPaper.Update): PaperResponse
 
     /**
      * Service implementation of [SnowballRService.createPaper].
      */
-    suspend fun createPaper(request: GrpcPaper): GrpcPaper
+    suspend fun createPaper(request: GrpcPaper): PaperResponse
 }
 
 /**
@@ -53,19 +53,15 @@ class PaperService(
     private val repo: IPaperTableRepo,
     private val citationRepo: ICitationTableRepo,
 ) : IPaperService {
-    override suspend fun getPaperById(paperId: UUID): GrpcPaper {
-        val paper = repo.getPaperById(paperId).getOrThrow()
+    override suspend fun getPaperById(paperId: UUID) = repo.getPaperById(paperId).getOrThrow().toPaperResponse()
 
-        return paper.toGrpcPaper()
-    }
-
-    override suspend fun getBackwardReferencedPapers(paperId: UUID): GrpcPaper.List =
+    override suspend fun getBackwardReferencedPapers(paperId: UUID): List<PaperResponse> =
         getReferencePapers(paperId, citationRepo::getBackwardsReferencedPaperIdsOfPaperById)
 
-    override suspend fun getForwardReferencedPapers(paperId: UUID): GrpcPaper.List =
+    override suspend fun getForwardReferencedPapers(paperId: UUID): List<PaperResponse> =
         getReferencePapers(paperId, citationRepo::getForwardReferencedPaperIdsOfPaperById)
 
-    override suspend fun updatePaper(request: GrpcPaper.Update): GrpcPaper {
+    override suspend fun updatePaper(request: GrpcPaper.Update): PaperResponse {
         val paperId = parseUUID(request.paper.id, EntityType.PAPER)
 
         repo.ensurePaperExists(paperId)
@@ -77,37 +73,35 @@ class PaperService(
             }
         }
 
-        return repo.updatePaper(request).toGrpcPaper()
+        return repo.updatePaper(request).toPaperResponse()
     }
 
-    override suspend fun createPaper(request: GrpcPaper): GrpcPaper {
+    override suspend fun createPaper(request: GrpcPaper): PaperResponse {
         if (request.externalId.isNotEmpty() && repo.doesPaperExistByExternalId(request.externalId)) {
             throw DuplicatePaperException(request.externalId)
         }
 
-        return repo.createPaper(request).toGrpcPaper()
+        return repo.createPaper(request).toPaperResponse()
     }
 
     /**
      * Retrieves a list of reference papers based on the provided paper ID and a specified function for fetching
      * references. This method ensures the validity of the paper ID and retrieves the associated metadata for each
-     * reference paper, including authors and backward references.
+     * reference paper, including backward references.
      *
      * @param paperId The ID of the paper for which references are to be retrieved.
      * @param function A function that takes a paper ID and returns a list of UUIDs of the references.
-     * @return A list of gRPC-compatible paper objects containing reference information.
+     * @return A list of paper objects containing reference information.
      * @throws NotFoundException If the paper specified in the request does not exist.
      */
-    private suspend fun getReferencePapers(paperId: UUID, function: suspend (UUID) -> List<UUID>): GrpcPaper.List {
+    private suspend fun getReferencePapers(paperId: UUID, function: suspend (UUID) -> List<UUID>): List<PaperResponse> {
         repo.ensurePaperExists(paperId)
 
         val referenceIds = function.invoke(paperId)
-        val papers = referenceIds.map {
-            val referencedPaper = repo.getPaperById(it).getOrThrow()
-            referencedPaper.toGrpcPaper()
-        }
-        return papers.toGrpcPapers()
+        val papers = referenceIds.map { getPaperById(it) }
+
+        return papers
     }
 
-    private suspend fun Paper.toGrpcPaper(): GrpcPaper = this.toGrpcPaperWithAuthorsAndBackwardReferences(citationRepo)
+    private suspend fun Paper.toPaperResponse(): PaperResponse = this.toPaperResponse(citationRepo)
 }
