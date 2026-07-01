@@ -1,6 +1,5 @@
 package se.uulm.snowballr.backend.repository
 
-import com.google.protobuf.util.FieldMaskUtil
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -17,16 +16,14 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.isBetweenWithDelta
 import se.uulm.snowballr.backend.model.dto.paper.Author
-import se.uulm.snowballr.backend.model.dto.paper.toGrpcPaper
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.PaperNotFoundException
 import se.uulm.snowballr.backend.model.incoming.paper.CreatePaperRequest
+import se.uulm.snowballr.backend.model.incoming.paper.UpdatePaperRequest
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertPaperAndGetId
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.utils.assertResultFailure
 import se.uulm.snowballr.backend.utils.assertResultSuccess
-import snowballr.PaperOuterClass
-import snowballr.PaperOuterClass.Paper
 import java.sql.SQLException
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -245,31 +242,20 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
             val paperId = insertPaperAndGetId(externalId = externalId)
             val paper = repo.getPaperById(paperId).getOrThrow()
 
-            val updatedPaperDetails = paper.toGrpcPaper(emptyList()).toBuilder()
-                .setExternalId("updated-external-id")
-                .setTitle("Updated Title")
-                .setAbstrakt("Updated Abstract")
-                .setYear(paper.year - 10)
-                .setPublisher("Updated Publisher")
-                .setPublicationName("Updated PublicationName")
-                .setPublicationType("Updated PublicationType")
-                .addAllAuthors(
-                    listOf(
-                        PaperOuterClass.Author.newBuilder()
-                            .setFirstName("UpdatedFirstName")
-                            .setLastName("UpdatedLastName")
-                            .build(),
-                    ),
-                )
-                .build()
-
-            val request = Paper.Update.newBuilder()
-                .setPaper(updatedPaperDetails)
-                .setMask(FieldMaskUtil.fromStringList(fieldMask))
-                .build()
+            val updatedPaperDetails = paper.copy(
+                title = "Updated Title",
+                externalId = "updated-external-id",
+                abstract = "Updated Abstract",
+                year = paper.year - 10,
+                publisher = "Updated Publisher",
+                publicationName = "Updated PublicationName",
+                publicationType = "Updated PublicationType",
+                authors = listOf(Author("UpdatedFirstName", "UpdatedLastName")),
+            )
+            val request = UpdatePaperRequest.fromPaper(updatedPaperDetails)
 
             val start = OffsetDateTime.now()
-            val updatedPaper = repo.updatePaper(request)
+            val updatedPaper = repo.updatePaper(request, fieldMask)
             val end = OffsetDateTime.now()
 
             if ("paper.external_id" in fieldMask) {
@@ -322,13 +308,9 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable), false) {
         fun `When a paper is updated with an empty field mask, then nothing is updated`() = runTest {
             val paperId = insertPaperAndGetId()
             val paper = repo.getPaperById(paperId).getOrThrow()
+            val request = UpdatePaperRequest.fromPaper(paper)
 
-            val request = Paper.Update.newBuilder()
-                .setPaper(paper.toGrpcPaper(emptyList()))
-                .setMask(FieldMaskUtil.fromStringList(emptyList()))
-                .build()
-
-            val updatedPaper = repo.updatePaper(request)
+            val updatedPaper = repo.updatePaper(request, emptyList())
 
             assertThat(updatedPaper).isEqualTo(paper)
             assertThat(updatedPaper.modifiedAt).isNull()

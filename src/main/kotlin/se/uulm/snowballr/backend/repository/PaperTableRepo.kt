@@ -1,6 +1,5 @@
 package se.uulm.snowballr.backend.repository
 
-import com.google.protobuf.util.FieldMaskUtil
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.TextColumnType
 import org.jetbrains.exposed.v1.core.eq
@@ -11,17 +10,14 @@ import org.jetbrains.exposed.v1.jdbc.statements.jdbc.JdbcResult
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.paper.Paper
-import se.uulm.snowballr.backend.model.dto.paper.toAuthor
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.PaperNotFoundException
 import se.uulm.snowballr.backend.model.incoming.paper.CreatePaperRequest
-import se.uulm.snowballr.backend.model.parseUUID
+import se.uulm.snowballr.backend.model.incoming.paper.UpdatePaperRequest
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.toPaper
 import java.time.OffsetDateTime
 import java.util.UUID
-import snowballr.PaperOuterClass.Author as GrpcAuthor
-import snowballr.PaperOuterClass.Paper as GrpcPaper
 
 /**
  * Defines an interface for repository operations related to the [PaperTable].
@@ -61,17 +57,8 @@ interface IPaperTableRepo {
 
     /**
      * Updates an existing paper in the database with the provided new values.
-     * The following fields can be updated:
-     * - [GrpcPaper.externalId_]
-     * - [GrpcPaper.title_]
-     * - [GrpcPaper.abstrakt_]
-     * - [GrpcPaper.year_]
-     * - [GrpcPaper.publisher_]
-     * - [GrpcPaper.publicationName_]
-     * - [GrpcPaper.publicationType_]
-     * - [GrpcPaper.authors_]
      */
-    suspend fun updatePaper(request: GrpcPaper.Update): Paper
+    suspend fun updatePaper(request: UpdatePaperRequest, paths: List<String>): Paper
 
     /**
      * Retrieves a list of papers whose title partially or fully match the [query].
@@ -150,25 +137,22 @@ class PaperTableRepo(
         }
     }
 
-    override suspend fun updatePaper(request: GrpcPaper.Update): Paper = db.query {
-        val paperId = parseUUID(request.paper.id, EntityType.PAPER)
-        val fieldMask = FieldMaskUtil.normalize(request.mask)
-
-        if (fieldMask.pathsList.isEmpty()) {
-            return@query getPaperById(paperId).getOrThrow()
+    override suspend fun updatePaper(request: UpdatePaperRequest, paths: List<String>): Paper = db.query {
+        if (paths.isEmpty()) {
+            return@query getPaperById(request.paperId).getOrThrow()
         }
 
-        PaperTable.updateByIdAndGet(paperId, ResultRow::toPaper) {
-            for (field in fieldMask.pathsList) {
+        PaperTable.updateByIdAndGet(request.paperId, ResultRow::toPaper) {
+            for (field in paths) {
                 when (field) {
-                    "paper.external_id" -> it[externalId] = request.paper.externalId
-                    "paper.title" -> it[title] = request.paper.title
-                    "paper.abstrakt" -> it[abstract] = request.paper.abstrakt
-                    "paper.year" -> it[year] = request.paper.year
-                    "paper.publisher" -> it[publisher] = request.paper.publisher
-                    "paper.publication_name" -> it[publicationName] = request.paper.publicationName
-                    "paper.publication_type" -> it[publicationType] = request.paper.publicationType
-                    "paper.authors" -> it[authors] = request.paper.authorsList.map(GrpcAuthor::toAuthor)
+                    "paper.title" -> it[title] = request.title
+                    "paper.external_id" -> it[externalId] = request.externalId
+                    "paper.abstrakt" -> it[abstract] = request.abstract
+                    "paper.year" -> it[year] = request.year
+                    "paper.publisher" -> it[publisher] = request.publisher
+                    "paper.publication_name" -> it[publicationName] = request.publicationName
+                    "paper.publication_type" -> it[publicationType] = request.publicationType
+                    "paper.authors" -> it[authors] = request.authors
                 }
             }
 

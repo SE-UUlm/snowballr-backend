@@ -43,6 +43,7 @@ import se.uulm.snowballr.backend.model.fetcher.toGrpc
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.paper.CreatePaperRequest
+import se.uulm.snowballr.backend.model.incoming.paper.UpdatePaperRequest
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectSettingRequest
@@ -554,7 +555,20 @@ class SnowballRServer(
             ).toGrpc()
 
         override suspend fun updatePaper(request: PaperOuterClass.Paper.Update): PaperOuterClass.Paper =
-            paperService.updatePaper(request).toGrpc()
+            paperService.updatePaper(
+                UpdatePaperRequest(
+                    paperId = parseUUID(request.paper.id, EntityType.PAPER),
+                    title = request.paper.title,
+                    externalId = request.paper.externalId,
+                    abstract = request.paper.abstrakt,
+                    year = request.paper.year,
+                    publisher = request.paper.publisher,
+                    publicationName = request.paper.publicationName,
+                    publicationType = request.paper.publicationType,
+                    authors = request.paper.authorsList.map { Author(it.firstName, it.lastName) },
+                ),
+                FieldMaskUtil.normalize(request.mask).pathsList,
+            ).toGrpc()
 
         override suspend fun getForwardReferencedPapers(request: Base.Id): PaperOuterClass.Paper.List =
             paperService.getForwardReferencedPapers(parsePaperId(request)).toGrpc()
