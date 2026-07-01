@@ -20,7 +20,6 @@ import se.uulm.snowballr.backend.model.fetcher.FetcherEnqueueJob
 import se.uulm.snowballr.backend.model.incoming.paper.CreatePaperRequest
 import se.uulm.snowballr.backend.repository.UNIQUE_CONSTRAINT_VIOLATION_SQL_STATE
 import java.sql.SQLException
-import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
@@ -416,27 +415,27 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
                 val backwardRef = DataBuilder.createExamplePaper(title = "Back", externalId = null)
                 val forwardRef = DataBuilder.createExamplePaper(title = "For", externalId = null)
                 val targetStage = job.projectPaper.stage + 1
-                val baseRequest = GrpcProjectPaper.Add.newBuilder()
-                    .setProjectId(project.id.toString())
-                    .setStage(targetStage.toLong())
-                val backwardRequest = baseRequest.setPaperId(backwardRef.id.toString()).build()
-                val forwardRequest = baseRequest.setPaperId(forwardRef.id.toString()).build()
 
                 mockRunPaperCitation(job, setOf(backwardRef), setOf(forwardRef))
                 coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, backwardRef.id) } returns false
                 coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, forwardRef.id) } returns false
                 coJustRun { projectRepoMock.updateMaxStageIfExceeded(project.id, targetStage) }
                 coEvery {
-                    projectPaperRepoMock.addPaperToProject(backwardRequest, job.triggeringUserId)
+                    projectPaperRepoMock.addPaperToProject(
+                        project.id,
+                        backwardRef.id,
+                        targetStage,
+                        job.triggeringUserId,
+                    )
                 } throws SQLException("Adding backward paper to project failed")
                 coEvery {
-                    projectPaperRepoMock.addPaperToProject(forwardRequest, job.triggeringUserId)
+                    projectPaperRepoMock.addPaperToProject(project.id, forwardRef.id, targetStage, job.triggeringUserId)
                 } throws SQLException("Adding forward paper to project failed")
 
                 orchestrator.enqueueTestJob(job, project)
 
                 // Only the two failure calls were made
-                coVerify(exactly = 2) { projectPaperRepoMock.addPaperToProject(any(), any()) }
+                coVerify(exactly = 2) { projectPaperRepoMock.addPaperToProject(any(), any(), any(), any()) }
             }
 
         @Test
@@ -447,23 +446,27 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
                 val backwardRef = DataBuilder.createExamplePaper(title = "Back", externalId = null)
                 val forwardRef = DataBuilder.createExamplePaper(title = "For", externalId = null)
                 val targetStage = job.projectPaper.stage + 1
-                val baseRequest = GrpcProjectPaper.Add.newBuilder()
-                    .setProjectId(project.id.toString())
-                    .setStage(targetStage.toLong())
-                val backwardRequest = baseRequest.setPaperId(backwardRef.id.toString()).build()
-                val forwardRequest = baseRequest.setPaperId(forwardRef.id.toString()).build()
 
                 mockRunPaperCitation(job, setOf(backwardRef), setOf(forwardRef))
                 coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, backwardRef.id) } returns false
                 coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, forwardRef.id) } returns false
                 coJustRun { projectRepoMock.updateMaxStageIfExceeded(project.id, targetStage) }
-                coJustRun { projectPaperRepoMock.addPaperToProject(backwardRequest, job.triggeringUserId) }
-                coJustRun { projectPaperRepoMock.addPaperToProject(forwardRequest, job.triggeringUserId) }
+                coJustRun {
+                    projectPaperRepoMock.addPaperToProject(
+                        project.id,
+                        backwardRef.id,
+                        targetStage,
+                        job.triggeringUserId,
+                    )
+                }
+                coJustRun {
+                    projectPaperRepoMock.addPaperToProject(project.id, forwardRef.id, targetStage, job.triggeringUserId)
+                }
 
                 orchestrator.enqueueTestJob(job, project)
 
                 // Two successful calls were made
-                coVerify(exactly = 2) { projectPaperRepoMock.addPaperToProject(any(), any()) }
+                coVerify(exactly = 2) { projectPaperRepoMock.addPaperToProject(any(), any(), any(), any()) }
             }
     }
 }

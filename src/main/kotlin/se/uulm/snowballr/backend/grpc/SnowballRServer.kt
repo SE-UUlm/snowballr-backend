@@ -500,7 +500,11 @@ class SnowballRServer(
 
         override suspend fun addPaperToProject(
             request: ProjectOuterClass.Project.Paper.Add,
-        ): ProjectOuterClass.Project.Paper = projectPaperService.addPaperToProject(request).toGrpc()
+        ): ProjectOuterClass.Project.Paper = projectPaperService.addPaperToProject(
+            projectId = parseUUID(request.projectId, EntityType.PROJECT),
+            paperId = parseUUID(request.paperId, EntityType.PAPER),
+            stage = request.stage.toInt(),
+        ).toGrpc()
 
         override suspend fun updateProjectPaper(
             request: ProjectOuterClass.Project.Paper.Update,

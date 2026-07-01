@@ -20,7 +20,6 @@ import se.uulm.snowballr.backend.model.dto.projectpaper.ProjectPaperWithPaper
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectPaperNotFoundException
-import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.doesEntityExist
 import se.uulm.snowballr.backend.repository.getEntities
 import se.uulm.snowballr.backend.repository.getEntityByIdOrNull
@@ -35,7 +34,6 @@ import se.uulm.snowballr.backend.table.association.toProjectPaper
 import se.uulm.snowballr.backend.table.association.toProjectPaperWithPaper
 import java.sql.Connection
 import java.util.UUID
-import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 
 /**
  * Defines an interface for repository operations related to the [ProjectPaperTable].
@@ -118,13 +116,14 @@ interface IProjectPaperTableRepo {
      * entry, linking the provided paper and project. The local paper ID of the new [ProjectPaper] gets increased by 1,
      * depending on the maximum local paper ID of the current papers in the project.
      *
-     * @param request The request object containing the information necessary to add the paper
-     *                to the project, such as the paper and project IDs.
+     * @param projectId The ID of the project to which the paper should be added
+     * @param paperId The ID of the paper to be added to the project
+     * @param stage The stage to which the paper should be added
      * @param userId The unique identifier of the user performing the operation.
      * @return The created [ProjectPaper] object representing the association between the paper
      *         and the project.
      */
-    suspend fun addPaperToProject(request: GrpcProjectPaper.Add, userId: UUID): ProjectPaper
+    suspend fun addPaperToProject(projectId: UUID, paperId: UUID, stage: Int, userId: UUID): ProjectPaper
 
     /**
      * Calculates and returns the progress of a project as a float value between 0.0 and 1.0.
@@ -257,11 +256,8 @@ class ProjectPaperTableRepo(
      * with a higher local paper ID. The second transaction unblocks after lock is removed and then sees fresh snapshot
      * from first transaction.
      */
-    override suspend fun addPaperToProject(request: GrpcProjectPaper.Add, userId: UUID): ProjectPaper =
+    override suspend fun addPaperToProject(projectId: UUID, paperId: UUID, stage: Int, userId: UUID): ProjectPaper =
         db.query(transactionIsolation = Connection.TRANSACTION_READ_COMMITTED) {
-            val paperId = parseUUID(request.paperId, EntityType.PAPER)
-            val projectId = parseUUID(request.projectId, EntityType.PROJECT)
-
             // Lock the project row so that concurrent calls for the same project block here and then re-read MAX with a
             // fresh snapshot after the previous transaction commits.
             ProjectTable.selectAll()
@@ -276,7 +272,7 @@ class ProjectPaperTableRepo(
                     it[ProjectPaperTable.paperId] = paperId
                     it[ProjectPaperTable.projectId] = projectId
                     it[ProjectPaperTable.localPaperId] = localPaperId
-                    it[stage] = request.stage.toInt()
+                    it[ProjectPaperTable.stage] = stage
                     it[decision] = PaperDecision.UNREVIEWED
                     it[createdBy] = userId
                 }

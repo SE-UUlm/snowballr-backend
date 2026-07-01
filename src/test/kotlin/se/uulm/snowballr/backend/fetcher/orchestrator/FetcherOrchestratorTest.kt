@@ -97,7 +97,7 @@ sealed class FetcherOrchestratorTest {
     }
 
     protected fun assertAddingPapersToProjectFailure() {
-        coVerify(exactly = 0) { projectPaperRepoMock.addPaperToProject(any(), any()) }
+        coVerify(exactly = 0) { projectPaperRepoMock.addPaperToProject(any(), any(), any(), any()) }
     }
 
     protected fun mockRunFetching(

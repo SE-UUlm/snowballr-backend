@@ -62,13 +62,7 @@ class RegressionTest : IntegrationTest() {
 
             val projectPapers = papers.map {
                 async {
-                    projectPaperService.addPaperToProject(
-                        GrpcProjectPaper.Add.newBuilder()
-                            .setProjectId(project.id.toString())
-                            .setPaperId(it.id.toString())
-                            .setStage(0)
-                            .build(),
-                    )
+                    projectPaperService.addPaperToProject(project.id, it.id, 0)
                 }
             }.awaitAll()
 

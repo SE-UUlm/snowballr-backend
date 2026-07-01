@@ -64,7 +64,6 @@ import se.uulm.snowballr.backend.serviceLayerDeps
 import snowballr.Authentication
 import java.util.UUID
 import snowballr.ProjectOuterClass.Project as GrpcProject
-import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
 @Tag("integration")
@@ -279,11 +278,6 @@ open class IntegrationTest : KoinTest {
     /**
      * Adds the [paper] to the [project] in stage 0.
      */
-    protected suspend fun addToProject(project: Project, paper: PaperResponse) = projectPaperService.addPaperToProject(
-        GrpcProjectPaper.Add.newBuilder()
-            .setProjectId(project.id.toString())
-            .setPaperId(paper.id.toString())
-            .setStage(0)
-            .build(),
-    )
+    protected suspend fun addToProject(project: Project, paper: PaperResponse) =
+        projectPaperService.addPaperToProject(project.id, paper.id, 0)
 }

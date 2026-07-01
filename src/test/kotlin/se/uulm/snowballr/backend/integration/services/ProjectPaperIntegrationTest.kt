@@ -61,13 +61,7 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
             val paper = createPaper()
 
             assertThrows<StageOutOfRangeException> {
-                projectPaperService.addPaperToProject(
-                    GrpcProjectPaper.Add.newBuilder()
-                        .setProjectId(project.id.toString())
-                        .setPaperId(paper.id.toString())
-                        .setStage(1) // maxStage is 0 by default
-                        .build(),
-                )
+                projectPaperService.addPaperToProject(project.id, paper.id, 1) // maxStage is 0 by default
             }
         }
 

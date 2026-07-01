@@ -16,7 +16,6 @@ import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import snowballr.ProjectOuterClass.MemberRole
 import snowballr.ProjectOuterClass.Project.Member as GrpcProjectMember
-import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 
 class AccessControlIntegrationTest : IntegrationTest() {
     private suspend fun setupProjectWithMember(): Pair<Project, User> {
@@ -115,14 +114,8 @@ class AccessControlIntegrationTest : IntegrationTest() {
             val (project, member) = setupProjectWithMember()
             val paper = createPaper()
 
-            val request = GrpcProjectPaper.Add.newBuilder()
-                .setProjectId(project.id.toString())
-                .setPaperId(paper.id.toString())
-                .setStage(0)
-                .build()
-
             actAsUser(member.id) {
-                assertThrows<UnauthorizedException> { projectPaperService.addPaperToProject(request) }
+                assertThrows<UnauthorizedException> { projectPaperService.addPaperToProject(project.id, paper.id, 0) }
             }
         }
     }

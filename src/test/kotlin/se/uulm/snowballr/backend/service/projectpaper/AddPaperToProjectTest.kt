@@ -13,16 +13,9 @@ import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateP
 import se.uulm.snowballr.backend.model.exception.invalidargument.StageOutOfRangeException
 import java.util.UUID
 import kotlin.test.assertEquals
-import snowballr.ProjectOuterClass.Project as GrpcProject
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class AddPaperToProjectTest : ProjectPaperServiceTest() {
-    private fun getRequest(projectId: UUID, paperId: UUID, stage: Long = 0) = GrpcProject.Paper.Add.newBuilder()
-        .setProjectId(projectId.toString())
-        .setPaperId(paperId.toString())
-        .setStage(stage)
-        .build()
-
     @Test
     fun `When a user adds a paper to a project and has access, then the created project paper has the correct values`() =
         runTest {
@@ -37,14 +30,12 @@ class AddPaperToProjectTest : ProjectPaperServiceTest() {
             val criteriaIds0 = listOf(UUID.randomUUID(), UUID.randomUUID())
             val criteriaIds1 = listOf(UUID.randomUUID(), UUID.randomUUID())
 
-            val request = getRequest(project.id, paper.id)
-
             mockCurrentUser(user)
             coJustRun { projectPaperAccessCheckerMock.isAllowedToAddPaperToProject(user, project.id, projectResult) }
             coEvery { projectRepoMock.getProjectById(project.id) } returns projectResult
             coEvery { paperRepoMock.getPaperById(paper.id) } returns Result.success(paper)
             coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, paper.id) } returns false
-            coEvery { projectPaperRepoMock.addPaperToProject(request, user.id) } returns projectPaper
+            coEvery { projectPaperRepoMock.addPaperToProject(project.id, paper.id, 0, user.id) } returns projectPaper
             coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id) } returns backwardReferences
             coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper.id) } returns reviews
             coEvery {
@@ -54,7 +45,7 @@ class AddPaperToProjectTest : ProjectPaperServiceTest() {
                 reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(reviews[1].id)
             } returns criteriaIds1
 
-            val addedProjectPaper = service.addPaperToProject(request)
+            val addedProjectPaper = service.addPaperToProject(project.id, paper.id, 0)
 
             assertEquals(2, addedProjectPaper.reviews.size)
             val review0 = addedProjectPaper.reviews[0]
@@ -79,15 +70,13 @@ class AddPaperToProjectTest : ProjectPaperServiceTest() {
         val projectResult = Result.success(project)
         val paper = DataBuilder.createExamplePaper()
 
-        val request = getRequest(project.id, paper.id)
-
         mockCurrentUser(user)
         coEvery {
             projectPaperAccessCheckerMock.isAllowedToAddPaperToProject(user, project.id, projectResult)
         } throws TestSpecificException()
         coEvery { projectRepoMock.getProjectById(project.id) } returns projectResult
 
-        assertThrows<TestSpecificException> { service.addPaperToProject(request) }
+        assertThrows<TestSpecificException> { service.addPaperToProject(project.id, paper.id, 0) }
     }
 
     @Test
@@ -97,13 +86,11 @@ class AddPaperToProjectTest : ProjectPaperServiceTest() {
         val projectResult = Result.failure<Project>(TestSpecificException())
         val paper = DataBuilder.createExamplePaper()
 
-        val request = getRequest(project.id, paper.id)
-
         mockCurrentUser(user)
         coJustRun { projectPaperAccessCheckerMock.isAllowedToAddPaperToProject(user, project.id, projectResult) }
         coEvery { projectRepoMock.getProjectById(project.id) } returns projectResult
 
-        assertThrows<TestSpecificException> { service.addPaperToProject(request) }
+        assertThrows<TestSpecificException> { service.addPaperToProject(project.id, paper.id, 0) }
     }
 
     @Test
@@ -113,14 +100,12 @@ class AddPaperToProjectTest : ProjectPaperServiceTest() {
         val projectResult = Result.success(project)
         val paper = DataBuilder.createExamplePaper()
 
-        val request = getRequest(project.id, paper.id)
-
         mockCurrentUser(user)
         coJustRun { projectPaperAccessCheckerMock.isAllowedToAddPaperToProject(user, project.id, projectResult) }
         coEvery { projectRepoMock.getProjectById(project.id) } returns projectResult
         coEvery { paperRepoMock.getPaperById(paper.id) } throws TestSpecificException()
 
-        assertThrows<TestSpecificException> { service.addPaperToProject(request) }
+        assertThrows<TestSpecificException> { service.addPaperToProject(project.id, paper.id, 0) }
     }
 
     @Test
@@ -130,15 +115,13 @@ class AddPaperToProjectTest : ProjectPaperServiceTest() {
         val projectResult = Result.success(project)
         val paper = DataBuilder.createExamplePaper()
 
-        val request = getRequest(project.id, paper.id)
-
         mockCurrentUser(user)
         coJustRun { projectPaperAccessCheckerMock.isAllowedToAddPaperToProject(user, project.id, projectResult) }
         coEvery { projectRepoMock.getProjectById(project.id) } returns projectResult
         coEvery { paperRepoMock.getPaperById(paper.id) } returns Result.success(paper)
         coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, paper.id) } returns true
 
-        assertThrows<DuplicateProjectPaperException> { service.addPaperToProject(request) }
+        assertThrows<DuplicateProjectPaperException> { service.addPaperToProject(project.id, paper.id, 0) }
     }
 
     @Test
@@ -149,15 +132,13 @@ class AddPaperToProjectTest : ProjectPaperServiceTest() {
             val projectResult = Result.success(project)
             val paper = DataBuilder.createExamplePaper()
 
-            val request = getRequest(project.id, paper.id, stage = 1)
-
             mockCurrentUser(user)
             coJustRun { projectPaperAccessCheckerMock.isAllowedToAddPaperToProject(user, project.id, projectResult) }
             coEvery { projectRepoMock.getProjectById(project.id) } returns projectResult
             coEvery { paperRepoMock.getPaperById(paper.id) } returns Result.success(paper)
             coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, paper.id) } returns false
 
-            assertThrows<StageOutOfRangeException> { service.addPaperToProject(request) }
+            assertThrows<StageOutOfRangeException> { service.addPaperToProject(project.id, paper.id, 1) }
         }
 
     @Test
@@ -167,14 +148,12 @@ class AddPaperToProjectTest : ProjectPaperServiceTest() {
         val projectResult = Result.success(project)
         val paper = DataBuilder.createExamplePaper()
 
-        val request = getRequest(project.id, paper.id, stage = -1)
-
         mockCurrentUser(user)
         coJustRun { projectPaperAccessCheckerMock.isAllowedToAddPaperToProject(user, project.id, projectResult) }
         coEvery { projectRepoMock.getProjectById(project.id) } returns projectResult
         coEvery { paperRepoMock.getPaperById(paper.id) } returns Result.success(paper)
         coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, paper.id) } returns false
 
-        assertThrows<StageOutOfRangeException> { service.addPaperToProject(request) }
+        assertThrows<StageOutOfRangeException> { service.addPaperToProject(project.id, paper.id, -1) }
     }
 }

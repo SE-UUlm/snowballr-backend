@@ -56,7 +56,7 @@ interface IProjectPaperService {
     /**
      * Service implementation of [SnowballRService.addPaperToProject].
      */
-    suspend fun addPaperToProject(request: GrpcProjectPaper.Add): ProjectPaperResponse
+    suspend fun addPaperToProject(projectId: UUID, paperId: UUID, stage: Int): ProjectPaperResponse
 
     /**
      * Service implementation of [SnowballRService.getNextPaper].
@@ -142,11 +142,8 @@ class ProjectPaperService(
         return getProjectPapers(projectId, predicate)
     }
 
-    override suspend fun addPaperToProject(request: GrpcProjectPaper.Add): ProjectPaperResponse =
+    override suspend fun addPaperToProject(projectId: UUID, paperId: UUID, stage: Int): ProjectPaperResponse =
         withUser(userRepo) { currentUser ->
-            val projectId = parseUUID(request.projectId, EntityType.PROJECT)
-            val paperId = parseUUID(request.paperId, EntityType.PAPER)
-
             val projectResult = projectRepo.getProjectById(projectId)
             accessChecker.isAllowedToAddPaperToProject(currentUser, projectId, projectResult)
             val project = projectResult.getOrThrow()
@@ -156,11 +153,11 @@ class ProjectPaperService(
                 throw DuplicateProjectPaperException(projectId, paperId)
             }
 
-            if (request.stage !in 0..project.maxStage) {
-                throw StageOutOfRangeException(request.stage.toInt(), project.maxStage)
+            if (stage !in 0..project.maxStage) {
+                throw StageOutOfRangeException(stage, project.maxStage)
             }
 
-            val projectPaper = repo.addPaperToProject(request, currentUser.id)
+            val projectPaper = repo.addPaperToProject(projectId, paperId, stage, currentUser.id)
 
             projectPaper.toProjectPaperResponse(paper)
         }

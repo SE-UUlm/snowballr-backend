@@ -15,19 +15,12 @@ import se.uulm.snowballr.backend.model.incoming.review.CreateReviewRequest
 import se.uulm.snowballr.backend.model.outgoing.projectpaper.ProjectPaperResponse
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 
 class ReviewIntegrationTest : IntegrationTest() {
     private suspend fun setupProjectAndPaper(): Pair<Project, ProjectPaperResponse> {
         var project = projectService.createProject(CreateProjectRequest(name = "Review Test Project"))
         val paper = createPaper()
-        val projectPaper = projectPaperService.addPaperToProject(
-            GrpcProjectPaper.Add.newBuilder()
-                .setProjectId(project.id.toString())
-                .setPaperId(paper.id.toString())
-                .setStage(0)
-                .build(),
-        )
+        val projectPaper = projectPaperService.addPaperToProject(project.id, paper.id, 0)
 
         val modifiedProject = project.copy(
             reviewDecisionMatrix = project.reviewDecisionMatrix.copy(
