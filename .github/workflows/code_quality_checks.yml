@@ -53,7 +53,7 @@ jobs:
 
             - name: Add coverage to PR
               if: failure() || success()
-              uses: madrapps/jacoco-report@v1.7.2
+              uses: madrapps/jacoco-report@v1.8.0
               with:
                   paths: ${{ github.workspace }}/build/coverageXml/report.xml
                   token: ${{ secrets.GITHUB_TOKEN }}
