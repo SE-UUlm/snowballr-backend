@@ -28,7 +28,7 @@ import se.uulm.snowballr.backend.model.exception.alreadyexists.DuplicateReviewEx
 import se.uulm.snowballr.backend.model.fetcher.FetcherEnqueueJob
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectSettingRequest
-import snowballr.ReviewOuterClass
+import se.uulm.snowballr.backend.model.incoming.review.CreateReviewRequest
 import java.util.UUID
 import java.util.stream.Stream
 import kotlin.reflect.KFunction
@@ -43,11 +43,11 @@ class CreateReviewTest : ReviewServiceTest() {
     private val defaultCriterion = UUID.randomUUID()
     private val selectedCriteriaIds = listOf<UUID>(defaultCriterion)
 
-    private val validCreateReviewRequest: ReviewOuterClass.Review.Create.Builder =
-        ReviewOuterClass.Review.Create.newBuilder()
-            .setProjectPaperId(projectPaperId.toString())
-            .setDecision(decision.toGrpc())
-            .addAllSelectedCriteriaIds(selectedCriteriaIds.map(UUID::toString))
+    private val validCreateReviewRequest = CreateReviewRequest(
+        projectPaperId = projectPaperId,
+        decision = decision,
+        selectedCriteriaIds = selectedCriteriaIds,
+    )
 
     fun failingFunctions(): Stream<Arguments?> = Stream.of(
         Arguments.of(projectPaperRepoMock::getProjectPaperById),
@@ -131,7 +131,7 @@ class CreateReviewTest : ReviewServiceTest() {
             return
         }
         coEvery {
-            reviewRepoMock.createReview(validCreateReviewRequest.build(), currentUser.id)
+            reviewRepoMock.createReview(validCreateReviewRequest, currentUser.id)
         } returns review
         coEvery {
             reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(review.id)
@@ -153,7 +153,7 @@ class CreateReviewTest : ReviewServiceTest() {
     fun `When a repo call fails, then a TestSpecificException is thrown`(failAt: KFunction<*>) = runTest {
         mockCreateReview(failAt = failAt)
 
-        assertThrows<TestSpecificException> { service.createReview(validCreateReviewRequest.build()) }
+        assertThrows<TestSpecificException> { service.createReview(validCreateReviewRequest) }
         coVerify(exactly = 0) { reviewRepoMock.createReview(any(), any()) }
     }
 
@@ -161,7 +161,7 @@ class CreateReviewTest : ReviewServiceTest() {
     fun `When a user creates a review and has access, then the created review has the correct values`() = runTest {
         mockCreateReview()
 
-        val review = service.createReview(validCreateReviewRequest.build())
+        val review = service.createReview(validCreateReviewRequest)
 
         assertEquals(userId, review.userId)
         assertEquals(decision, review.decision)
@@ -182,7 +182,7 @@ class CreateReviewTest : ReviewServiceTest() {
         mockCreateReview(stopBefore = reviewRepoMock::getAllReviewsForProjectPaper)
         coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaperId) } returns listOf(firstReview)
 
-        assertThrows<DuplicateReviewException> { service.createReview(validCreateReviewRequest.build()) }
+        assertThrows<DuplicateReviewException> { service.createReview(validCreateReviewRequest) }
         coVerify(exactly = 0) { reviewRepoMock.createReview(any(), any()) }
     }
 
@@ -193,7 +193,7 @@ class CreateReviewTest : ReviewServiceTest() {
             stopBefore = reviewRepoMock::createReview,
         )
 
-        assertThrows<FailedPreconditionException> { service.createReview(validCreateReviewRequest.build()) }
+        assertThrows<FailedPreconditionException> { service.createReview(validCreateReviewRequest) }
         coVerify(exactly = 0) { reviewRepoMock.createReview(any(), any()) }
     }
 
@@ -211,7 +211,7 @@ class CreateReviewTest : ReviewServiceTest() {
                 updatedPaperDecision = PaperDecision.ACCEPTED,
             )
 
-            service.createReview(validCreateReviewRequest.build())
+            service.createReview(validCreateReviewRequest)
 
             coVerify(exactly = 1) {
                 projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.ACCEPTED)
@@ -237,7 +237,7 @@ class CreateReviewTest : ReviewServiceTest() {
                 updatedPaperDecision = PaperDecision.ACCEPTED,
             )
 
-            service.createReview(validCreateReviewRequest.build())
+            service.createReview(validCreateReviewRequest)
 
             coVerify(exactly = 1) {
                 projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.ACCEPTED)
@@ -264,7 +264,7 @@ class CreateReviewTest : ReviewServiceTest() {
             )
             mockCreateReview(project = project)
 
-            service.createReview(validCreateReviewRequest.build())
+            service.createReview(validCreateReviewRequest)
             coVerify(exactly = 1) {
                 projectPaperRepoMock.updateProjectPaperDecision(
                     projectPaperId,
@@ -287,12 +287,10 @@ class CreateReviewTest : ReviewServiceTest() {
                 decision = ReviewDecision.DECLINED,
                 userId = userId,
             )
-            val createReviewRequest = validCreateReviewRequest
-                .setDecision(ReviewDecision.DECLINED.toGrpc())
-                .addAllSelectedCriteriaIds(
-                    listOf(exclusionCriterion.id.toString(), hardExclusionCriterion.id.toString()),
-                )
-                .build()
+            val createReviewRequest = validCreateReviewRequest.copy(
+                decision = ReviewDecision.DECLINED,
+                selectedCriteriaIds = listOf(exclusionCriterion.id, hardExclusionCriterion.id),
+            )
 
             mockCreateReview(stopBefore = reviewRepoMock::createReview)
             coEvery { reviewRepoMock.createReview(createReviewRequest, userId) } returns review
@@ -337,11 +335,7 @@ class CreateReviewTest : ReviewServiceTest() {
                 decision = ReviewDecision.DECLINED,
                 userId = userId,
             )
-            val createReviewRequest = ReviewOuterClass.Review.Create.newBuilder()
-                .setProjectPaperId(projectPaperId.toString())
-                .setDecision(ReviewDecision.DECLINED.toGrpc())
-                .addAllSelectedCriteriaIds(selectedCriteriaIds.map(UUID::toString))
-                .build()
+            val createReviewRequest = validCreateReviewRequest.copy(decision = ReviewDecision.DECLINED)
 
             mockCreateReview(
                 project = project,
@@ -377,12 +371,10 @@ class CreateReviewTest : ReviewServiceTest() {
                 decision = ReviewDecision.ACCEPTED,
                 userId = userId,
             )
-            val createReviewRequest = ReviewOuterClass.Review.Create.newBuilder()
-                .setProjectPaperId(projectPaperId.toString())
-                .setDecision(ReviewDecision.ACCEPTED.toGrpc())
-                .addAllSelectedCriteriaIds(selectedCriteriaIds.map(UUID::toString))
-                .addSelectedCriteriaIds(hardExclusionCriterion.id.toString())
-                .build()
+            val createReviewRequest = validCreateReviewRequest.copy(
+                decision = ReviewDecision.ACCEPTED,
+                selectedCriteriaIds = selectedCriteriaIds + listOf(hardExclusionCriterion.id),
+            )
 
             mockCreateReview(stopBefore = reviewRepoMock::createReview)
             coEvery { reviewRepoMock.createReview(createReviewRequest, userId) } returns acceptedReview
@@ -406,11 +398,7 @@ class CreateReviewTest : ReviewServiceTest() {
     @Test
     fun `When the project has already status ACTIVE_LOCKED, then the status is not updated again`() = runTest {
         val project = project.copy(status = ProjectStatus.ACTIVE_LOCKED)
-        val createReviewRequest = ReviewOuterClass.Review.Create.newBuilder()
-            .setProjectPaperId(projectPaperId.toString())
-            .setDecision(ReviewDecision.ACCEPTED.toGrpc())
-            .addAllSelectedCriteriaIds(selectedCriteriaIds.map(UUID::toString))
-            .build()
+        val createReviewRequest = validCreateReviewRequest.copy(decision = ReviewDecision.ACCEPTED)
 
         mockCreateReview(project)
 

@@ -4,7 +4,6 @@ import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.access.IReviewAccessChecker
 import se.uulm.snowballr.backend.fetcher.IFetcherOrchestrator
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
-import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
@@ -20,8 +19,8 @@ import se.uulm.snowballr.backend.model.exception.alreadyexists.DuplicateReviewEx
 import se.uulm.snowballr.backend.model.fetcher.FetcherEnqueueJob
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectSettingRequest
+import se.uulm.snowballr.backend.model.incoming.review.CreateReviewRequest
 import se.uulm.snowballr.backend.model.outgoing.review.ReviewResponse
-import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IReviewTableRepo
@@ -29,7 +28,6 @@ import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.IReviewHasCriterionTableRepo
 import java.util.UUID
-import snowballr.ReviewOuterClass.Review as GrpcReview
 
 interface IReviewService {
     /**
@@ -45,7 +43,7 @@ interface IReviewService {
     /**
      * Service implementation of [SnowballRService.createReview].
      */
-    suspend fun createReview(request: GrpcReview.Create): ReviewResponse
+    suspend fun createReview(request: CreateReviewRequest): ReviewResponse
 }
 
 /**
@@ -106,48 +104,48 @@ class ReviewService(
             reviews.map { ReviewResponse.fromReviewAndIds(it, reviewSelectedCriteriaMap[it].orEmpty()) }
         }
 
-    override suspend fun createReview(request: GrpcReview.Create): ReviewResponse = withUser(userRepo) { currentUser ->
-        val projectPaperId = parseUUID(request.projectPaperId, EntityType.PROJECT_PAPER)
-        val projectPaper = projectPaperRepo.getProjectPaperById(projectPaperId).getOrThrow()
+    override suspend fun createReview(request: CreateReviewRequest): ReviewResponse =
+        withUser(userRepo) { currentUser ->
+            val projectPaper = projectPaperRepo.getProjectPaperById(request.projectPaperId).getOrThrow()
 
-        val projectResult = projectRepo.getProjectById(projectPaper.projectId)
-        accessChecker.isAllowedToCreateReview(currentUser, projectPaper.projectId, projectResult)
-        val project = projectResult.getOrThrow()
+            val projectResult = projectRepo.getProjectById(projectPaper.projectId)
+            accessChecker.isAllowedToCreateReview(currentUser, projectPaper.projectId, projectResult)
+            val project = projectResult.getOrThrow()
 
-        val reviewsForProjectPaper = repo.getAllReviewsForProjectPaper(projectPaperId)
-        val hasUserAlreadyReviewed = reviewsForProjectPaper.any { review -> review.userId == currentUser.id }
-        if (hasUserAlreadyReviewed) {
-            throw DuplicateReviewException(projectPaperId, currentUser.id)
+            val reviewsForProjectPaper = repo.getAllReviewsForProjectPaper(request.projectPaperId)
+            val hasUserAlreadyReviewed = reviewsForProjectPaper.any { review -> review.userId == currentUser.id }
+            if (hasUserAlreadyReviewed) {
+                throw DuplicateReviewException(request.projectPaperId, currentUser.id)
+            }
+
+            if (projectPaper.hasFinalDecision()) {
+                throw FailedPreconditionException(
+                    "The project paper must be either unreviewed or still in review. " +
+                        "Finally decided project papers cannot be reviewed anymore.",
+                )
+            }
+
+            val review = repo.createReview(request, currentUser.id)
+            val selectedCriteriaIds = reviewHasCriterionRepo.getSelectedCriteriaIdsForReviewById(review.id)
+
+            val hasSelectedExclusionCriterion = hasSelectedHardExclusionCriterion(project.id, selectedCriteriaIds)
+
+            val decision = if (hasSelectedExclusionCriterion && review.doesDeclinePaper()) {
+                PaperDecision.DECLINED
+            } else {
+                determinePaperDecision(reviewsForProjectPaper + review, project.reviewDecisionMatrix)
+            }
+            projectPaperRepo.updateProjectPaperDecision(request.projectPaperId, decision)
+
+            if (project.status != ProjectStatus.ACTIVE_LOCKED) {
+                setProjectStatusActiveLocked(project.id)
+            }
+            if (decision === PaperDecision.ACCEPTED) {
+                fetcherOrchestrator.enqueue(FetcherEnqueueJob(projectPaper, currentUser.id))
+            }
+
+            ReviewResponse.fromReviewAndIds(review, selectedCriteriaIds)
         }
-
-        if (projectPaper.hasFinalDecision()) {
-            throw FailedPreconditionException(
-                "The project paper must be either unreviewed or still in review. " +
-                    "Finally decided project papers cannot be reviewed anymore.",
-            )
-        }
-
-        val review = repo.createReview(request, currentUser.id)
-        val selectedCriteriaIds = reviewHasCriterionRepo.getSelectedCriteriaIdsForReviewById(review.id)
-
-        val hasSelectedExclusionCriterion = hasSelectedHardExclusionCriterion(project.id, selectedCriteriaIds)
-
-        val decision = if (hasSelectedExclusionCriterion && review.doesDeclinePaper()) {
-            PaperDecision.DECLINED
-        } else {
-            determinePaperDecision(reviewsForProjectPaper + review, project.reviewDecisionMatrix)
-        }
-        projectPaperRepo.updateProjectPaperDecision(projectPaperId, decision)
-
-        if (project.status != ProjectStatus.ACTIVE_LOCKED) {
-            setProjectStatusActiveLocked(project.id)
-        }
-        if (decision === PaperDecision.ACCEPTED) {
-            fetcherOrchestrator.enqueue(FetcherEnqueueJob(projectPaper, currentUser.id))
-        }
-
-        ReviewResponse.fromReviewAndIds(review, selectedCriteriaIds)
-    }
 
     private suspend fun hasSelectedHardExclusionCriterion(projectId: UUID, selectedCriteriaIds: List<UUID>): Boolean {
         val hardExclusionCriteria = criterionRepo.getAllProjectCriteria(projectId)

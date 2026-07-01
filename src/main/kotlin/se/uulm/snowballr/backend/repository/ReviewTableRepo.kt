@@ -3,20 +3,18 @@ package se.uulm.snowballr.backend.repository
 import org.jetbrains.exposed.v1.core.JoinType
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.eq
-import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.batchInsert
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.review.Review
-import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.dto.review.ReviewWithSelectedCriteriaIds
 import se.uulm.snowballr.backend.model.exception.NotFoundException
-import se.uulm.snowballr.backend.model.parseUUID
+import se.uulm.snowballr.backend.model.incoming.review.CreateReviewRequest
 import se.uulm.snowballr.backend.table.ReviewTable
 import se.uulm.snowballr.backend.table.association.ReviewHasCriterionTable
 import se.uulm.snowballr.backend.table.toReview
 import java.util.UUID
-import snowballr.ReviewOuterClass.Review as GrpcReview
 
 /**
  * Defines an interface for repository operations related to the [Review].
@@ -59,7 +57,7 @@ interface IReviewTableRepo {
      * @param userId The ID of the user who created the review.
      * @return The created [Review] object representing the newly created review.
      */
-    suspend fun createReview(request: GrpcReview.Create, userId: UUID): Review
+    suspend fun createReview(request: CreateReviewRequest, userId: UUID): Review
 }
 
 /**
@@ -104,20 +102,16 @@ class ReviewTableRepo(
             }
     }
 
-    override suspend fun createReview(request: GrpcReview.Create, userId: UUID): Review = db.query {
-        val projectPaperId = parseUUID(request.projectPaperId, EntityType.PROJECT_PAPER)
-
+    override suspend fun createReview(request: CreateReviewRequest, userId: UUID): Review = db.query {
         val review = ReviewTable.insertAndGet(ResultRow::toReview) {
-            it[ReviewTable.projectPaperId] = projectPaperId
+            it[projectPaperId] = request.projectPaperId
             it[ReviewTable.userId] = userId
-            it[decision] = ReviewDecision.fromGrpc(request.decision)
+            it[decision] = request.decision
         }
 
-        request.selectedCriteriaIdsList.forEach { criterionId ->
-            ReviewHasCriterionTable.insert {
-                it[this.reviewId] = review.id
-                it[this.criterionId] = parseUUID(criterionId, EntityType.CRITERION)
-            }
+        ReviewHasCriterionTable.batchInsert(request.selectedCriteriaIds) { criterionId ->
+            this[ReviewHasCriterionTable.reviewId] = review.id
+            this[ReviewHasCriterionTable.criterionId] = criterionId
         }
 
         review

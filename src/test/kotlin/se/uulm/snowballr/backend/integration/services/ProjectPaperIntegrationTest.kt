@@ -15,20 +15,21 @@ import se.uulm.snowballr.backend.model.exception.invalidargument.StageOutOfRange
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedCreateException
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
+import se.uulm.snowballr.backend.model.incoming.review.CreateReviewRequest
 import se.uulm.snowballr.backend.model.parseUUID
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
-import snowballr.ReviewOuterClass.Review as GrpcReview
 
 class ProjectPaperIntegrationTest : IntegrationTest() {
     private suspend fun reviewPaper(projectPaper: GrpcProjectPaper, decision: ReviewDecision) =
         reviewService.createReview(
-            GrpcReview.Create.newBuilder()
-                .setProjectPaperId(projectPaper.id)
-                .setDecision(decision.toGrpc())
-                .build(),
+            CreateReviewRequest(
+                projectPaperId = parseUUID(projectPaper.id, EntityType.PROJECT_PAPER),
+                decision = decision,
+                selectedCriteriaIds = emptyList(),
+            ),
         )
 
     private suspend fun setNumberOfRequiredReviewers(project: Project, numberOfReviewers: Int): Project {

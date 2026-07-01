@@ -32,6 +32,7 @@ import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
 import se.uulm.snowballr.backend.model.dto.project.SnowballingType
 import se.uulm.snowballr.backend.model.dto.project.toGrpcProject
 import se.uulm.snowballr.backend.model.dto.project.toGrpcProjects
+import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.dto.user.toGrpcUser
@@ -43,6 +44,7 @@ import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectSettingRequest
+import se.uulm.snowballr.backend.model.incoming.review.CreateReviewRequest
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
 import se.uulm.snowballr.backend.model.outgoing.project.toGrpc
@@ -509,7 +511,13 @@ class SnowballRServer(
             reviewService.getAllReviewsForProjectPaper(parseProjectPaperId(request)).toGrpcReviews()
 
         override suspend fun createReview(request: ReviewOuterClass.Review.Create): ReviewOuterClass.Review =
-            reviewService.createReview(request).toGrpc()
+            reviewService.createReview(
+                CreateReviewRequest(
+                    projectPaperId = parseUUID(request.projectPaperId, EntityType.PROJECT_PAPER),
+                    decision = ReviewDecision.fromGrpc(request.decision),
+                    selectedCriteriaIds = request.selectedCriteriaIdsList.map { parseUUID(it, EntityType.CRITERION) },
+                ),
+            ).toGrpc()
 
         override suspend fun updateReview(request: ReviewOuterClass.Review.Update): ReviewOuterClass.Review =
             super.updateReview(request)
