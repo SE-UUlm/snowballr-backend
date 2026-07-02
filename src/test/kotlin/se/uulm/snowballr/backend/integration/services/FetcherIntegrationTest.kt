@@ -8,24 +8,17 @@ import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.exception.UnauthorizedException
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
-import java.util.UUID
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
-import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 
 class FetcherIntegrationTest : IntegrationTest() {
-    private fun searchQuery(projectId: UUID, query: String) = GrpcProjectPaper.SearchQuery.newBuilder()
-        .setProjectId(projectId.toString())
-        .setQuery(query)
-        .build()
-
     @Nested
     inner class SearchLocalProjectPaperCandidates {
         @Test
         fun `When no papers exist, then the result is empty`() = runTest {
             val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
 
-            val result = fetcherService.searchLocalProjectPaperCandidates(searchQuery(project.id, "Something about IT"))
+            val result = fetcherService.searchLocalProjectPaperCandidates(project.id, "Something about IT")
 
             assertTrue(result.isEmpty())
         }
@@ -35,7 +28,7 @@ class FetcherIntegrationTest : IntegrationTest() {
             val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
             val paper = createPaper("Something about IT")
 
-            val result = fetcherService.searchLocalProjectPaperCandidates(searchQuery(project.id, "Something about IT"))
+            val result = fetcherService.searchLocalProjectPaperCandidates(project.id, "Something about IT")
 
             assertTrue(result.any { it.id == paper.id })
         }
@@ -46,7 +39,7 @@ class FetcherIntegrationTest : IntegrationTest() {
             val paper = createPaper("Something about IT")
             addToProject(project, paper)
 
-            val result = fetcherService.searchLocalProjectPaperCandidates(searchQuery(project.id, "Something about IT"))
+            val result = fetcherService.searchLocalProjectPaperCandidates(project.id, "Something about IT")
 
             assertFalse(result.any { it.id == paper.id })
         }
@@ -60,7 +53,7 @@ class FetcherIntegrationTest : IntegrationTest() {
                 addToProject(project, inProject)
 
                 val result =
-                    fetcherService.searchLocalProjectPaperCandidates(searchQuery(project.id, "Something about"))
+                    fetcherService.searchLocalProjectPaperCandidates(project.id, "Something about")
 
                 assertFalse(result.any { it.id == inProject.id })
                 assertTrue(result.any { it.id == notInProject.id })
@@ -73,7 +66,7 @@ class FetcherIntegrationTest : IntegrationTest() {
 
             actAsUser(outsider.id) {
                 assertThrows<UnauthorizedException> {
-                    fetcherService.searchLocalProjectPaperCandidates(searchQuery(project.id, "Something about IT"))
+                    fetcherService.searchLocalProjectPaperCandidates(project.id, "Something about IT")
                 }
             }
         }

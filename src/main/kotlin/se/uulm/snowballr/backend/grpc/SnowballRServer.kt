@@ -560,11 +560,17 @@ class SnowballRServer(
 
         override suspend fun searchLocalProjectPaperCandidates(
             request: ProjectOuterClass.Project.Paper.SearchQuery,
-        ): PaperOuterClass.Paper.List = fetcherService.searchLocalProjectPaperCandidates(request).toGrpc()
+        ): PaperOuterClass.Paper.List = fetcherService.searchLocalProjectPaperCandidates(
+            projectId = parseUUID(request.projectId, EntityType.PROJECT),
+            query = request.query,
+        ).toGrpc()
 
         override suspend fun searchFetcherProjectPaperCandidates(
             request: ProjectOuterClass.Project.Paper.SearchQuery,
-        ): PaperOuterClass.Paper.List = fetcherService.searchFetcherProjectPaperCandidates(request).toGrpc()
+        ): PaperOuterClass.Paper.List = fetcherService.searchFetcherProjectPaperCandidates(
+            projectId = parseUUID(request.projectId, EntityType.PROJECT),
+            query = request.query,
+        ).toGrpc()
 
         override suspend fun createPaper(request: PaperOuterClass.Paper): PaperOuterClass.Paper =
             paperService.createPaper(

@@ -13,13 +13,8 @@ import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.dto.paper.toFetcherPaper
 import se.uulm.snowballr.backend.model.dto.project.Project
 import se.uulm.snowballr.backend.model.exception.FetcherException
-import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 
 class SearchFetcherProjectPaperCandidatesTest : FetcherServiceTest() {
-    fun getExampleRequest(project: Project): GrpcProjectPaper.SearchQuery = GrpcProjectPaper.SearchQuery.newBuilder()
-        .setProjectId(project.id.toString())
-        .build()
-
     @Test
     fun `When a user searches papers and has access, then the correct values are returned`() = runTest {
         val user = DataBuilder.createExampleUser()
@@ -35,18 +30,16 @@ class SearchFetcherProjectPaperCandidatesTest : FetcherServiceTest() {
         val barPaper = DataBuilder.createExamplePaper(externalId = "barId")
         val barFetcherPaper = barPaper.toFetcherPaper()
 
-        val request = getExampleRequest(project)
-
         mockCurrentUser(user)
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
         coEvery { projectRepoMock.getProjectById(project.id) } returns projectResult
-        coEvery { fetcherManagerMock.searchPapers("foo", request.query, any()) } returns setOf(fooFetcherPaper)
-        coEvery { fetcherManagerMock.searchPapers("bar", request.query, any()) } returns setOf(barFetcherPaper)
+        coEvery { fetcherManagerMock.searchPapers("foo", "exampleQuery", any()) } returns setOf(fooFetcherPaper)
+        coEvery { fetcherManagerMock.searchPapers("bar", "exampleQuery", any()) } returns setOf(barFetcherPaper)
         coEvery { paperRepoMock.getPapersByExternalIds(listOf("fooId", "barId")) } returns listOf(fooPaper, barPaper)
         coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, fooPaper.id) } returns false
         coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, barPaper.id) } returns false
 
-        val papers = service.searchFetcherProjectPaperCandidates(request)
+        val papers = service.searchFetcherProjectPaperCandidates(project.id, "exampleQuery")
 
         assertEquals(2, papers.size)
         assertTrue(papers.any { p -> p.id == fooPaper.id })
@@ -58,12 +51,10 @@ class SearchFetcherProjectPaperCandidatesTest : FetcherServiceTest() {
         val user = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject()
 
-        val request = getExampleRequest(project)
-
         mockCurrentUser(user)
         coEvery { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) } throws TestSpecificException()
 
-        assertThrows<TestSpecificException> { service.searchFetcherProjectPaperCandidates(request) }
+        assertThrows<TestSpecificException> { service.searchFetcherProjectPaperCandidates(project.id, "exampleQuery") }
     }
 
     @Test
@@ -72,13 +63,11 @@ class SearchFetcherProjectPaperCandidatesTest : FetcherServiceTest() {
         val project = DataBuilder.createExampleProject()
         val projectResult = Result.failure<Project>(TestSpecificException())
 
-        val request = getExampleRequest(project)
-
         mockCurrentUser(user)
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
         coEvery { projectRepoMock.getProjectById(project.id) } returns projectResult
 
-        assertThrows<TestSpecificException> { service.searchFetcherProjectPaperCandidates(request) }
+        assertThrows<TestSpecificException> { service.searchFetcherProjectPaperCandidates(project.id, "exampleQuery") }
     }
 
     @Test
@@ -94,19 +83,17 @@ class SearchFetcherProjectPaperCandidatesTest : FetcherServiceTest() {
         val fooPaper = DataBuilder.createExamplePaper(externalId = "fooId")
         val fooFetcherPaper = fooPaper.toFetcherPaper()
 
-        val request = getExampleRequest(project)
-
         mockCurrentUser(user)
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
         coEvery { projectRepoMock.getProjectById(project.id) } returns projectResult
-        coEvery { fetcherManagerMock.searchPapers("foo", request.query, any()) } returns setOf(fooFetcherPaper)
+        coEvery { fetcherManagerMock.searchPapers("foo", "exampleQuery", any()) } returns setOf(fooFetcherPaper)
         coEvery {
-            fetcherManagerMock.searchPapers("bar", request.query, any())
+            fetcherManagerMock.searchPapers("bar", "exampleQuery", any())
         } throws FetcherException("Failed to search bar papers")
         coEvery { paperRepoMock.getPapersByExternalIds(listOf("fooId")) } returns listOf(fooPaper)
         coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, fooPaper.id) } returns false
 
-        val papers = service.searchFetcherProjectPaperCandidates(request)
+        val papers = service.searchFetcherProjectPaperCandidates(project.id, "exampleQuery")
 
         assertEquals(1, papers.size)
         assertEquals(fooPaper.id, papers[0].id)
@@ -120,16 +107,14 @@ class SearchFetcherProjectPaperCandidatesTest : FetcherServiceTest() {
         val fooPaper = DataBuilder.createExamplePaper(externalId = "fooId")
         val fooFetcherPaper = fooPaper.toFetcherPaper()
 
-        val request = getExampleRequest(project)
-
         mockCurrentUser(user)
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
         coEvery { projectRepoMock.getProjectById(project.id) } returns projectResult
-        coEvery { fetcherManagerMock.searchPapers("foo", request.query, any()) } returns setOf(fooFetcherPaper)
+        coEvery { fetcherManagerMock.searchPapers("foo", "exampleQuery", any()) } returns setOf(fooFetcherPaper)
         coEvery { paperRepoMock.getPapersByExternalIds(listOf("fooId")) } returns listOf(fooPaper)
         coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, fooPaper.id) } returns true
 
-        val papers = service.searchFetcherProjectPaperCandidates(request)
+        val papers = service.searchFetcherProjectPaperCandidates(project.id, "exampleQuery")
 
         assertEquals(0, papers.size)
     }
@@ -142,15 +127,13 @@ class SearchFetcherProjectPaperCandidatesTest : FetcherServiceTest() {
         val fooPaper = DataBuilder.createExamplePaper(externalId = "fooId")
         val fooFetcherPaper = fooPaper.toFetcherPaper()
 
-        val request = getExampleRequest(project)
-
         mockCurrentUser(user)
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
         coEvery { projectRepoMock.getProjectById(project.id) } returns projectResult
-        coEvery { fetcherManagerMock.searchPapers("foo", request.query, any()) } returns setOf(fooFetcherPaper)
+        coEvery { fetcherManagerMock.searchPapers("foo", "exampleQuery", any()) } returns setOf(fooFetcherPaper)
         coEvery { paperRepoMock.getPapersByExternalIds(listOf("fooId")) } returns emptyList()
 
-        val papers = service.searchFetcherProjectPaperCandidates(request)
+        val papers = service.searchFetcherProjectPaperCandidates(project.id, "exampleQuery")
 
         assertEquals(1, papers.size)
         assertEquals(fooPaper.title, papers[0].title)
@@ -167,15 +150,13 @@ class SearchFetcherProjectPaperCandidatesTest : FetcherServiceTest() {
             val fooPaper = DataBuilder.createExamplePaper(externalId = null)
             val fooFetcherPaper = fooPaper.toFetcherPaper()
 
-            val request = getExampleRequest(project)
-
             mockCurrentUser(user)
             coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
             coEvery { projectRepoMock.getProjectById(project.id) } returns projectResult
-            coEvery { fetcherManagerMock.searchPapers("foo", request.query, any()) } returns setOf(fooFetcherPaper)
+            coEvery { fetcherManagerMock.searchPapers("foo", "exampleQuery", any()) } returns setOf(fooFetcherPaper)
             coEvery { paperRepoMock.getPapersByExternalIds(emptyList()) } returns emptyList()
 
-            val papers = service.searchFetcherProjectPaperCandidates(request)
+            val papers = service.searchFetcherProjectPaperCandidates(project.id, "exampleQuery")
 
             assertEquals(1, papers.size)
             assertEquals(fooPaper.title, papers[0].title)
