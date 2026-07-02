@@ -7,10 +7,10 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.integration.IntegrationTest
+import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.incoming.paper.CreatePaperRequest
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.outgoing.paper.PaperResponse
-import snowballr.UserOuterClass.UserStatus
 import kotlin.test.assertEquals
 
 class RegressionTest : IntegrationTest() {
@@ -27,17 +27,17 @@ class RegressionTest : IntegrationTest() {
             // Invite the other user to the project
             inviteUserToProject(project, otherUser)
 
-            var pendingInvitations = invitationService.getPendingInvitationsForProject(project.id).usersList
+            var pendingInvitations = invitationService.getPendingInvitationsForProject(project.id)
             assertEquals(1, pendingInvitations.size)
             assertEquals(otherUser.email, pendingInvitations[0].email)
             assertEquals(otherUser.firstName, pendingInvitations[0].firstName)
             assertEquals(otherUser.lastName, pendingInvitations[0].lastName)
-            assertEquals(UserStatus.USER_STATUS_ACTIVE, pendingInvitations[0].status)
+            assertEquals(UserStatus.ACTIVE, pendingInvitations[0].status)
 
             // Remove the other user's invitation from the project
             projectMemberService.removeProjectMember(project.id, otherUser.email)
 
-            pendingInvitations = invitationService.getPendingInvitationsForProject(project.id).usersList
+            pendingInvitations = invitationService.getPendingInvitationsForProject(project.id)
             assertEquals(0, pendingInvitations.size)
         }
 

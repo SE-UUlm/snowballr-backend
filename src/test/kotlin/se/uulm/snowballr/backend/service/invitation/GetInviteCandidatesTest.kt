@@ -56,7 +56,7 @@ class GetInviteCandidatesTest : InvitationServiceTest() {
         val shortGetInviteCandidatesRequest = validGetInviteCandidatesRequestBuilder.setQuery("jo")
 
         val candidates = service.getInviteCandidates(shortGetInviteCandidatesRequest.build())
-        assertThat(candidates.usersList).isEmpty()
+        assertThat(candidates).isEmpty()
     }
 
     @Test
@@ -87,8 +87,8 @@ class GetInviteCandidatesTest : InvitationServiceTest() {
             mockGetInviteCandidates()
 
             val inviteCandidates = service.getInviteCandidates(validGetInviteCandidatesRequestBuilder.build())
-            assertThat(inviteCandidates.usersList).hasSize(1)
-            assertNull(inviteCandidates.usersList.find { it.email == requestingUserEmail })
+            assertThat(inviteCandidates).hasSize(1)
+            assertNull(inviteCandidates.find { it.email == requestingUserEmail })
         }
 
     @Test
@@ -98,7 +98,7 @@ class GetInviteCandidatesTest : InvitationServiceTest() {
             mockGetInviteCandidates(projectMembers = listOf(projectMember))
 
             val inviteCandidates = service.getInviteCandidates(validGetInviteCandidatesRequestBuilder.build())
-            assertNull(inviteCandidates.usersList.find { it.email == projectMember.email })
+            assertNull(inviteCandidates.find { it.email == projectMember.email })
         }
 
     @Test
@@ -108,6 +108,6 @@ class GetInviteCandidatesTest : InvitationServiceTest() {
             mockGetInviteCandidates(invitees = listOf(invitee))
 
             val inviteCandidates = service.getInviteCandidates(validGetInviteCandidatesRequestBuilder.build())
-            assertNull(inviteCandidates.usersList.find { it.email == invitee.email })
+            assertNull(inviteCandidates.find { it.email == invitee.email })
         }
 }

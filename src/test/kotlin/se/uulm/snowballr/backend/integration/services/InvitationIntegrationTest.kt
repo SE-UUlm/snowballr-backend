@@ -23,7 +23,7 @@ class InvitationIntegrationTest : IntegrationTest() {
                 inviteEmailToProject(project, inviteeEmail)
 
                 val pending = invitationService.getPendingInvitationsForProject(project.id)
-                assertTrue(pending.usersList.any { it.email == inviteeEmail })
+                assertTrue(pending.any { it.email == inviteeEmail })
             }
 
         @Test
@@ -35,7 +35,7 @@ class InvitationIntegrationTest : IntegrationTest() {
                 inviteUserToProject(project, otherUser, acceptInvitation = true)
 
                 val pending = invitationService.getPendingInvitationsForProject(project.id)
-                assertFalse(pending.usersList.any { it.email == otherUser.email })
+                assertFalse(pending.any { it.email == otherUser.email })
             }
 
         @Test
@@ -43,7 +43,7 @@ class InvitationIntegrationTest : IntegrationTest() {
             val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
 
             val pending = invitationService.getPendingInvitationsForProject(project.id)
-            assertTrue(pending.usersList.isEmpty())
+            assertTrue(pending.isEmpty())
         }
 
         @Test
@@ -63,7 +63,7 @@ class InvitationIntegrationTest : IntegrationTest() {
                 )
 
                 val pending = invitationService.getPendingInvitationsForProject(project.id)
-                assertEquals(1, pending.usersList.count { it.email == inviteeEmail })
+                assertEquals(1, pending.count { it.email == inviteeEmail })
             }
     }
 
@@ -81,7 +81,7 @@ class InvitationIntegrationTest : IntegrationTest() {
                     .build(),
             )
 
-            assertTrue(candidates.usersList.isEmpty())
+            assertTrue(candidates.isEmpty())
         }
 
         @Test
@@ -96,7 +96,7 @@ class InvitationIntegrationTest : IntegrationTest() {
                     .build(),
             )
 
-            assertTrue(candidates.usersList.any { it.id == otherUser.id.toString() })
+            assertTrue(candidates.any { it.id == otherUser.id })
         }
 
         @Test
@@ -113,7 +113,7 @@ class InvitationIntegrationTest : IntegrationTest() {
                     .build(),
             )
 
-            assertFalse(candidates.usersList.any { it.id == otherUser.id.toString() })
+            assertFalse(candidates.any { it.id == otherUser.id })
         }
 
         @Test
@@ -130,7 +130,7 @@ class InvitationIntegrationTest : IntegrationTest() {
                     .build(),
             )
 
-            assertFalse(candidates.usersList.any { it.id == otherUser.id.toString() })
+            assertFalse(candidates.any { it.id == otherUser.id })
         }
     }
 }

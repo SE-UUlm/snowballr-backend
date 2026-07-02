@@ -53,6 +53,7 @@ import se.uulm.snowballr.backend.model.incoming.projectmember.UpdateProjectMembe
 import se.uulm.snowballr.backend.model.incoming.review.CreateReviewRequest
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
+import se.uulm.snowballr.backend.model.outgoing.invitation.toGrpc
 import se.uulm.snowballr.backend.model.outgoing.paper.toGrpc
 import se.uulm.snowballr.backend.model.outgoing.project.toGrpc
 import se.uulm.snowballr.backend.model.outgoing.projectpaper.toGrpc
@@ -355,7 +356,7 @@ class SnowballRServer(
 
         override suspend fun getInviteCandidates(
             request: ProjectOuterClass.Project.InviteCandidatesRequest,
-        ): UserOuterClass.User.List = invitationService.getInviteCandidates(request)
+        ): UserOuterClass.User.List = invitationService.getInviteCandidates(request).toGrpcUsers()
 
         override suspend fun inviteUserToProject(request: ProjectOuterClass.Project.Member.Invite) = returnNothing {
             invitationService.inviteUserToProject(request)
@@ -366,7 +367,7 @@ class SnowballRServer(
         }
 
         override suspend fun getPendingInvitationsForProject(request: Base.Id): UserOuterClass.User.List =
-            invitationService.getPendingInvitationsForProject(parseProjectId(request))
+            invitationService.getPendingInvitationsForProject(parseProjectId(request)).toGrpc()
 
         override suspend fun getProjectMembers(request: Base.Id): ProjectOuterClass.Project.Member.List =
             projectMemberService.getProjectMembers(parseProjectId(request)).toGrpcProjectMembers()
