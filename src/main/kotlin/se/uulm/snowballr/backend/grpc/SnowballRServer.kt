@@ -33,6 +33,7 @@ import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
 import se.uulm.snowballr.backend.model.dto.project.SnowballingType
 import se.uulm.snowballr.backend.model.dto.project.toGrpcProject
 import se.uulm.snowballr.backend.model.dto.project.toGrpcProjects
+import se.uulm.snowballr.backend.model.dto.projectmember.toGrpcProjectMembers
 import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
@@ -366,7 +367,7 @@ class SnowballRServer(
             invitationService.getPendingInvitationsForProject(parseProjectId(request))
 
         override suspend fun getProjectMembers(request: Base.Id): ProjectOuterClass.Project.Member.List =
-            projectMemberService.getProjectMembers(parseProjectId(request))
+            projectMemberService.getProjectMembers(parseProjectId(request)).toGrpcProjectMembers()
 
         override suspend fun removeProjectMember(request: ProjectOuterClass.Project.Member.Remove) = returnNothing {
             projectMemberService.removeProjectMember(request)

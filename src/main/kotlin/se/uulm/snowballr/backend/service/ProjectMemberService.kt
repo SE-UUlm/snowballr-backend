@@ -6,8 +6,8 @@ import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.projectmember.InvitationToken
 import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
+import se.uulm.snowballr.backend.model.dto.projectmember.ProjectMemberWithUser
 import se.uulm.snowballr.backend.model.dto.projectmember.isProjectAdmin
-import se.uulm.snowballr.backend.model.dto.projectmember.toGrpcProjectMembers
 import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.NotFoundException
@@ -24,7 +24,7 @@ interface IProjectMemberService {
     /**
      * Service implementation of [SnowballRService.getProjectMembers].
      */
-    suspend fun getProjectMembers(projectId: UUID): GrpcProjectMember.List
+    suspend fun getProjectMembers(projectId: UUID): List<ProjectMemberWithUser>
 
     /**
      * Service implementation of [SnowballRService.updateProjectMemberRole].
@@ -59,12 +59,11 @@ class ProjectMemberService(
     private val accessChecker: IProjectMemberAccessChecker,
     private val projectAccessChecker: IProjectAccessChecker,
 ) : IProjectMemberService {
-    override suspend fun getProjectMembers(projectId: UUID): GrpcProjectMember.List =
+    override suspend fun getProjectMembers(projectId: UUID): List<ProjectMemberWithUser> =
         withUser(userRepo) { currentUser ->
             projectAccessChecker.isAllowedToReadProject(currentUser, projectId)
 
-            val projectMembersWithUsers = repo.getProjectMembersWithUsers(projectId)
-            projectMembersWithUsers.toGrpcProjectMembers()
+            repo.getProjectMembersWithUsers(projectId)
         }
 
     override suspend fun updateProjectMemberRole(request: GrpcProjectMember.Update) {

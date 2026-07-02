@@ -25,9 +25,9 @@ class GetProjectMembersTest : ProjectMemberServiceTest() {
 
         val projectMembers = service.getProjectMembers(project.id)
 
-        assertEquals(1, projectMembers.membersCount)
-        val actualProjectMember = projectMembers.membersList.first()
-        assertEquals(projectMember.userId.toString(), actualProjectMember.user.id)
+        assertEquals(1, projectMembers.size)
+        val actualProjectMember = projectMembers.first()
+        assertEquals(projectMember.userId, actualProjectMember.user.id)
     }
 
     @Test

@@ -5,8 +5,8 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.integration.IntegrationTest
+import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
-import snowballr.ProjectOuterClass.MemberRole
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -23,7 +23,7 @@ class ProjectMemberIntegrationTest : IntegrationTest() {
             inviteUserToProject(project, otherUser, acceptInvitation = true)
 
             val members = projectMemberService.getProjectMembers(project.id)
-            assertTrue(members.membersList.any { it.user.id == otherUser.id.toString() })
+            assertTrue(members.any { it.user.id == otherUser.id })
         }
 
         @Test
@@ -43,7 +43,7 @@ class ProjectMemberIntegrationTest : IntegrationTest() {
                 )
 
                 val members = projectMemberService.getProjectMembers(project.id)
-                assertEquals(2, members.membersList.size) // creator + other user, no duplicate
+                assertEquals(2, members.size) // creator + other user, no duplicate
             }
     }
 
@@ -64,7 +64,7 @@ class ProjectMemberIntegrationTest : IntegrationTest() {
             )
 
             val members = projectMemberService.getProjectMembers(project.id)
-            assertFalse(members.membersList.any { it.user.id == otherUser.id.toString() })
+            assertFalse(members.any { it.user.id == otherUser.id })
         }
 
         @Test
@@ -85,7 +85,7 @@ class ProjectMemberIntegrationTest : IntegrationTest() {
                 }
 
                 val members = projectMemberService.getProjectMembers(project.id)
-                assertFalse(members.membersList.any { it.user.id == otherUser.id.toString() })
+                assertFalse(members.any { it.user.id == otherUser.id })
             }
     }
 
@@ -102,13 +102,13 @@ class ProjectMemberIntegrationTest : IntegrationTest() {
                 GrpcProjectMember.Update.newBuilder()
                     .setProjectId(project.id.toString())
                     .setUserId(otherUser.id.toString())
-                    .setNewRole(MemberRole.MEMBER_ROLE_ADMIN)
+                    .setNewRole(MemberRole.ADMIN.toGrpc())
                     .build(),
             )
 
             val members = projectMemberService.getProjectMembers(project.id)
-            val updatedMember = members.membersList.find { it.user.id == otherUser.id.toString() }
-            assertEquals(MemberRole.MEMBER_ROLE_ADMIN, updatedMember?.role)
+            val updatedMember = members.first { it.user.id == otherUser.id }
+            assertEquals(MemberRole.ADMIN, updatedMember.projectMember.role)
         }
 
         @Test
@@ -123,7 +123,7 @@ class ProjectMemberIntegrationTest : IntegrationTest() {
                 GrpcProjectMember.Update.newBuilder()
                     .setProjectId(project.id.toString())
                     .setUserId(otherUser.id.toString())
-                    .setNewRole(MemberRole.MEMBER_ROLE_ADMIN)
+                    .setNewRole(MemberRole.ADMIN.toGrpc())
                     .build(),
             )
 
@@ -132,13 +132,13 @@ class ProjectMemberIntegrationTest : IntegrationTest() {
                 GrpcProjectMember.Update.newBuilder()
                     .setProjectId(project.id.toString())
                     .setUserId(otherUser.id.toString())
-                    .setNewRole(MemberRole.MEMBER_ROLE_DEFAULT)
+                    .setNewRole(MemberRole.DEFAULT.toGrpc())
                     .build(),
             )
 
             val members = projectMemberService.getProjectMembers(project.id)
-            val demotedMember = members.membersList.find { it.user.id == otherUser.id.toString() }
-            assertEquals(MemberRole.MEMBER_ROLE_DEFAULT, demotedMember?.role)
+            val demotedMember = members.first { it.user.id == otherUser.id }
+            assertEquals(MemberRole.DEFAULT, demotedMember.projectMember.role)
         }
     }
 }
