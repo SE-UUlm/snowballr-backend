@@ -363,7 +363,7 @@ class SnowballRServer(
         }
 
         override suspend fun acceptProjectInvitation(request: ProjectOuterClass.Project.Member.Accept) = returnNothing {
-            invitationService.acceptProjectInvitation(request)
+            invitationService.acceptProjectInvitation(request.token)
         }
 
         override suspend fun getPendingInvitationsForProject(request: Base.Id): UserOuterClass.User.List =

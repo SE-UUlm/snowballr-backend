@@ -44,7 +44,7 @@ interface IInvitationService {
     /**
      * Service implementation of [SnowballRService.acceptProjectInvitation].
      */
-    suspend fun acceptProjectInvitation(request: GrpcProject.Member.Accept)
+    suspend fun acceptProjectInvitation(token: String)
 
     /**
      * Service implementation of [SnowballRService.getPendingInvitationsForProject].
@@ -153,8 +153,8 @@ class InvitationService(
         emailManager.sendAcceptProjectInvitationEmail(request.userEmail, data)
     }
 
-    override suspend fun acceptProjectInvitation(request: GrpcProject.Member.Accept) {
-        val invitationToken = invitationTokenRepo.getInvitationTokenByValue(request.token).getOrThrow()
+    override suspend fun acceptProjectInvitation(token: String) {
+        val invitationToken = invitationTokenRepo.getInvitationTokenByValue(token).getOrThrow()
 
         // Check if the token has expired
         if (OffsetDateTime.now().isAfter(invitationToken.expiresAt)) {

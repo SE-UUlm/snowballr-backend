@@ -223,10 +223,7 @@ open class IntegrationTest : KoinTest {
         val invitationToken = inviteHelper(project, user.firstName, user.email)
 
         if (acceptInvitation) {
-            val acceptRequest = GrpcProject.Member.Accept.newBuilder()
-                .setToken(invitationToken.captured)
-                .build()
-            invitationService.acceptProjectInvitation(acceptRequest)
+            invitationService.acceptProjectInvitation(invitationToken.captured)
         }
     }
 
