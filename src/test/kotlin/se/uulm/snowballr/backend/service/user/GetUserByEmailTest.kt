@@ -20,7 +20,7 @@ class GetUserByEmailTest : UserServiceTest() {
 
         val requestedUser = service.getUserByEmail(currentUser.email)
 
-        assertEquals(currentUser.id.toString(), requestedUser.id)
+        assertEquals(currentUser.id, requestedUser.id)
         coVerify(exactly = 0) { userRepoMock.getUserByEmail(currentUser.email) }
     }
 

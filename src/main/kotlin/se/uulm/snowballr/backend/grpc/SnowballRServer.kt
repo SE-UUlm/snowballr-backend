@@ -26,8 +26,15 @@ import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 import se.uulm.snowballr.backend.model.dto.criterion.toGrpcCriteria
 import se.uulm.snowballr.backend.model.dto.criterion.toGrpcCriterion
+import se.uulm.snowballr.backend.model.dto.user.UserRole
+import se.uulm.snowballr.backend.model.dto.user.UserStatus
+import se.uulm.snowballr.backend.model.dto.user.toGrpcUser
+import se.uulm.snowballr.backend.model.dto.user.toGrpcUserSettings
+import se.uulm.snowballr.backend.model.dto.user.toGrpcUsers
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
+import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
+import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.scheduler.SchedulerManager
 import se.uulm.snowballr.backend.service.IAuthenticationService
@@ -213,7 +220,14 @@ class SnowballRServer(
             fetcherService.getAvailableFetchers()
 
         override suspend fun register(request: Authentication.RegisterRequest) = returnNothing {
-            userService.register(request)
+            userService.register(
+                RegisterRequest(
+                    firstName = request.firstName,
+                    lastName = request.lastName,
+                    email = request.email,
+                    password = request.password,
+                ),
+            )
         }
 
         override suspend fun verifyEmail(request: Authentication.VerifyEmailRequest) = returnNothing {
@@ -246,18 +260,30 @@ class SnowballRServer(
             authenticationService.changePassword(request)
         }
 
-        override suspend fun getAllUsers(request: Base.Nothing): UserOuterClass.User.List = userService.getAllUsers()
+        override suspend fun getAllUsers(request: Base.Nothing): UserOuterClass.User.List =
+            userService.getAllUsers().toGrpcUsers()
 
-        override suspend fun getCurrentUser(request: Base.Nothing): UserOuterClass.User = userService.getCurrentUser()
+        override suspend fun getCurrentUser(request: Base.Nothing): UserOuterClass.User =
+            userService.getCurrentUser().toGrpcUser()
 
         override suspend fun getUserById(request: Base.Id): UserOuterClass.User =
-            userService.getUserById(parseUserId(request))
+            userService.getUserById(parseUserId(request)).toGrpcUser()
 
         override suspend fun getUserByEmail(request: Base.Email): UserOuterClass.User =
-            userService.getUserByEmail(request.email)
+            userService.getUserByEmail(request.email).toGrpcUser()
 
         override suspend fun updateUser(request: UserOuterClass.User.Update): UserOuterClass.User =
-            userService.updateUser(request)
+            userService.updateUser(
+                UpdateUserRequest(
+                    userId = parseUUID(request.user.id, EntityType.USER),
+                    firstName = request.user.firstName,
+                    lastName = request.user.lastName,
+                    email = request.user.email,
+                    role = UserRole.fromGrpc(request.user.role),
+                    status = UserStatus.fromGrpc(request.user.status),
+                ),
+                FieldMaskUtil.normalize(request.mask).pathsList,
+            ).toGrpcUser()
 
         override suspend fun softDeleteUser(request: Base.Id) = returnNothing {
             userService.softDeleteUser(parseUserId(request))
@@ -281,7 +307,7 @@ class SnowballRServer(
             projectPaperService.getPreviousPaper(parseProjectPaperId(request))
 
         override suspend fun getUserSettings(request: Base.Nothing): UserSettingsOuterClass.UserSettings =
-            userService.getUserSettings()
+            userService.getUserSettings().toGrpcUserSettings()
 
         override suspend fun updateUserSettings(
             request: UserSettingsOuterClass.UserSettings.Update,

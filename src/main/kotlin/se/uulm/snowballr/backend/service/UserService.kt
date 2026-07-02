@@ -8,51 +8,45 @@ import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.formatting.daysToHumanReadable
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.mail.IEmailManager
-import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.UserIdentifierType
-import se.uulm.snowballr.backend.model.dto.criterion.toGrpcCriteria
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.user.User
-import se.uulm.snowballr.backend.model.dto.user.toGrpcUser
-import se.uulm.snowballr.backend.model.dto.user.toGrpcUserSettings
-import se.uulm.snowballr.backend.model.dto.user.toGrpcUsers
+import se.uulm.snowballr.backend.model.dto.user.UserSettingsWithCriteria
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateUserException
-import se.uulm.snowballr.backend.model.parseUUID
+import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
+import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.IVerificationTokenTableRepo
-import snowballr.Authentication
 import java.util.UUID
-import snowballr.UserOuterClass.User as GrpcUser
-import snowballr.UserSettingsOuterClass.UserSettings as GrpcUserSettings
 
 interface IUserService {
     /**
      * Service implementation of [SnowballRService.getUserById].
      */
-    suspend fun getUserById(userId: UUID): GrpcUser
+    suspend fun getUserById(userId: UUID): User
 
     /**
      * Service implementation of [SnowballRService.getUserByEmail].
      */
-    suspend fun getUserByEmail(email: String): GrpcUser
+    suspend fun getUserByEmail(email: String): User
 
     /**
      * Service implementation of [SnowballRService.getAllUsers].
      */
-    suspend fun getAllUsers(): GrpcUser.List
+    suspend fun getAllUsers(): List<User>
 
     /**
      * Service implementation of [SnowballRService.register].
      */
-    suspend fun register(request: Authentication.RegisterRequest)
+    suspend fun register(request: RegisterRequest)
 
     /**
      * Service implementation of [SnowballRService.updateUser].
      */
-    suspend fun updateUser(request: GrpcUser.Update): GrpcUser
+    suspend fun updateUser(request: UpdateUserRequest, paths: List<String>): User
 
     /**
      * Service implementation of [SnowballRService.softDeleteUser].
@@ -62,12 +56,12 @@ interface IUserService {
     /**
      * Service implementation of [SnowballRService.getUserSettings].
      */
-    suspend fun getUserSettings(): GrpcUserSettings
+    suspend fun getUserSettings(): UserSettingsWithCriteria
 
     /**
      * Service implementation of [SnowballRService.getCurrentUser].
      */
-    suspend fun getCurrentUser(): GrpcUser
+    suspend fun getCurrentUser(): User
 }
 
 /**
@@ -101,34 +95,34 @@ class UserService(
         private const val VERIFICATION_TOKEN_LENGTH = 48
     }
 
-    override suspend fun getUserById(userId: UUID): GrpcUser = withUser(userRepo) { currentUser ->
-        if (currentUser.id == userId) return@withUser currentUser.toGrpcUser()
+    override suspend fun getUserById(userId: UUID): User = withUser(userRepo) { currentUser ->
+        if (currentUser.id == userId) return@withUser currentUser
 
         val targetUser = userRepo.getUserById(userId).getOrThrow()
 
         accessChecker.isAllowedToReadUser(currentUser, targetUser, UserIdentifierType.ID)
 
-        targetUser.toGrpcUser()
+        targetUser
     }
 
-    override suspend fun getUserByEmail(email: String): GrpcUser = withUser(userRepo) { currentUser ->
-        if (currentUser.email == email) return@withUser currentUser.toGrpcUser()
+    override suspend fun getUserByEmail(email: String): User = withUser(userRepo) { currentUser ->
+        if (currentUser.email == email) return@withUser currentUser
 
         // We have to request the user first to get the ID for the access checks
         val targetUser = userRepo.getUserByEmail(email).getOrThrow()
 
         accessChecker.isAllowedToReadUser(currentUser, targetUser, UserIdentifierType.EMAIL)
 
-        targetUser.toGrpcUser()
+        targetUser
     }
 
-    override suspend fun getAllUsers(): GrpcUser.List = withUser(userRepo) { currentUser ->
+    override suspend fun getAllUsers(): List<User> = withUser(userRepo) { currentUser ->
         accessChecker.isAllowedToReadAllUsers(currentUser)
 
-        userRepo.getAllUsers().toGrpcUsers()
+        userRepo.getAllUsers()
     }
 
-    override suspend fun register(request: Authentication.RegisterRequest) {
+    override suspend fun register(request: RegisterRequest) {
         // Check whether a user with the given email already exists
         if (userRepo.doesUserExistByEmail(request.email)) {
             throw DuplicateUserException(request.email)
@@ -153,24 +147,24 @@ class UserService(
         emailManager.sendVerificationEmail(user.email, data)
     }
 
-    override suspend fun updateUser(request: GrpcUser.Update): GrpcUser = withUser(userRepo) { currentUser ->
-        val targetUserId = parseUUID(request.user.id, EntityType.USER)
-        val targetUser = userRepo.getUserById(targetUserId).getOrThrow()
+    override suspend fun updateUser(request: UpdateUserRequest, paths: List<String>): User =
+        withUser(userRepo) { currentUser ->
+            val targetUser = userRepo.getUserById(request.userId).getOrThrow()
 
-        accessChecker.isAllowedToUpdateUser(currentUser, targetUser)
+            accessChecker.isAllowedToUpdateUser(currentUser, targetUser)
 
-        // If the role is changed, the requesting user must be a server admin.
-        if (request.mask.pathsList.contains("user.role")) {
-            accessChecker.isAllowedToUpdateUserRole(currentUser, targetUserId)
+            // If the role is changed, the requesting user must be a server admin.
+            if (paths.contains("user.role")) {
+                accessChecker.isAllowedToUpdateUserRole(currentUser, request.userId)
+            }
+
+            // If the email is changed, there must not yet exist an account with that email address.
+            if (paths.contains("user.email") && userRepo.doesUserExistByEmail(request.email)) {
+                throw DuplicateUserException(request.email)
+            }
+
+            userRepo.updateUser(request, paths)
         }
-
-        // If the email is changed, there must not yet exist an account with that email address.
-        if (request.mask.pathsList.contains("user.email") && userRepo.doesUserExistByEmail(request.user.email)) {
-            throw DuplicateUserException(request.user.email)
-        }
-
-        userRepo.updateUser(request).toGrpcUser()
-    }
 
     override suspend fun softDeleteUser(userId: UUID) = withUser(userRepo) { currentUser ->
         val targetUser = userRepo.getUserById(userId).getOrThrow()
@@ -193,12 +187,12 @@ class UserService(
         userRepo.softDeleteUser(targetUser.id)
     }
 
-    override suspend fun getCurrentUser(): GrpcUser = withUser(userRepo, User::toGrpcUser)
+    override suspend fun getCurrentUser(): User = withUser(userRepo) { it }
 
-    override suspend fun getUserSettings(): GrpcUserSettings = withUser(userRepo) { currentUser ->
+    override suspend fun getUserSettings(): UserSettingsWithCriteria = withUser(userRepo) { currentUser ->
         val userSettings = userRepo.getUserSettings(currentUser.id).getOrThrow()
         val defaultUserCriteria = criterionRepo.getCriteriaByIds(userSettings.criteriaIds)
 
-        userSettings.toGrpcUserSettings(defaultUserCriteria.toGrpcCriteria())
+        UserSettingsWithCriteria(userSettings, defaultUserCriteria)
     }
 }

@@ -15,8 +15,8 @@ import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.UnauthenticatedException
 import se.uulm.snowballr.backend.model.exception.invalidargument.IncorrectOldPasswordException
+import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import snowballr.Authentication
-import java.util.UUID
 
 @ExtendWith(GrpcTestContextExtension::class)
 class AuthenticationIntegrationTest : IntegrationTest() {
@@ -70,12 +70,12 @@ class AuthenticationIntegrationTest : IntegrationTest() {
 
             val newUser = DataBuilder.createExampleUser(email = "unverified.user@example.com")
             userService.register(
-                Authentication.RegisterRequest.newBuilder()
-                    .setFirstName(newUser.firstName)
-                    .setLastName(newUser.lastName)
-                    .setEmail(newUser.email)
-                    .setPassword("SecureP@ssw0rd!")
-                    .build(),
+                RegisterRequest(
+                    firstName = newUser.firstName,
+                    lastName = newUser.lastName,
+                    email = newUser.email,
+                    password = "SecureP@ssw0rd!",
+                ),
             )
 
             assertThrows<UnauthenticatedException> {
@@ -145,7 +145,7 @@ class AuthenticationIntegrationTest : IntegrationTest() {
         @Test
         fun `When a non-active user tries to change the password, then changing fails`() = runTest {
             val user = addUser(DataBuilder.createExampleUser(email = "change.password.deleted@example.com"))
-            userService.softDeleteUser(UUID.fromString(user.id))
+            userService.softDeleteUser(user.id)
 
             actAsUser(user.id) {
                 assertThrows<FailedPreconditionException> {

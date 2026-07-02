@@ -1,6 +1,5 @@
 package se.uulm.snowballr.backend.repository
 
-import com.google.protobuf.util.FieldMaskUtil
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.TextColumnType
@@ -25,14 +24,13 @@ import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.dto.user.UserSettings
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.exception.NotFoundException
-import se.uulm.snowballr.backend.model.parseUUID
+import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
+import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
 import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.toUser
 import se.uulm.snowballr.backend.table.toUserSettings
-import snowballr.Authentication
 import java.time.OffsetDateTime
 import java.util.UUID
-import snowballr.UserOuterClass.User as GrpcUser
 
 private val logger = KotlinLogging.logger { }
 
@@ -100,20 +98,16 @@ interface IUserTableRepo {
      * @param passwordHash The hashed password for the user.
      * @return The created [User] object representing the newly registered user.
      */
-    suspend fun createUser(request: Authentication.RegisterRequest, passwordHash: String): User
+    suspend fun createUser(request: RegisterRequest, passwordHash: String): User
 
     /**
      * Updates an existent user in the database with the provided new information.
-     * The following fields can be updated:
-     * - first name
-     * - last name
-     * - email
-     * - role
      *
      * @param request The update request containing the new user details, such as the new first name.
+     * @param paths The field mask paths that should be updated.
      * @return The updated [User] object reflecting the changes from the [request].
      */
-    suspend fun updateUser(request: GrpcUser.Update): User
+    suspend fun updateUser(request: UpdateUserRequest, paths: List<String>): User
 
     /**
      * Performs a soft-delete meaning the user with the given [id] is not removed from the database, but only the
@@ -290,7 +284,7 @@ class UserTableRepo(
             matchingUsers.orEmpty()
         }
 
-    override suspend fun createUser(request: Authentication.RegisterRequest, passwordHash: String): User = db.query {
+    override suspend fun createUser(request: RegisterRequest, passwordHash: String): User = db.query {
         UserTable.insertAndGet(ResultRow::toUser) {
             it[email] = request.email
             it[firstName] = request.firstName
@@ -301,18 +295,15 @@ class UserTableRepo(
         }
     }
 
-    override suspend fun updateUser(request: GrpcUser.Update): User = db.query {
-        val userId = parseUUID(request.user.id, EntityType.USER)
-        val fieldMask = FieldMaskUtil.normalize(request.mask)
-
-        UserTable.updateByIdAndGet(userId, ResultRow::toUser) {
-            for (field in fieldMask.pathsList) {
+    override suspend fun updateUser(request: UpdateUserRequest, paths: List<String>): User = db.query {
+        UserTable.updateByIdAndGet(request.userId, ResultRow::toUser) {
+            for (field in paths) {
                 when (field) {
-                    "user.email" -> it[email] = request.user.email
-                    "user.first_name" -> it[firstName] = request.user.firstName
-                    "user.last_name" -> it[lastName] = request.user.lastName
-                    "user.role" -> it[role] = UserRole.fromGrpc(request.user.role)
-                    "user.status" -> it[status] = UserStatus.fromGrpc(request.user.status)
+                    "user.email" -> it[email] = request.email
+                    "user.first_name" -> it[firstName] = request.firstName
+                    "user.last_name" -> it[lastName] = request.lastName
+                    "user.role" -> it[role] = request.role
+                    "user.status" -> it[status] = request.status
                 }
             }
 

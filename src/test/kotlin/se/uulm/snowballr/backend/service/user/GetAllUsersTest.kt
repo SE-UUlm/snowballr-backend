@@ -22,9 +22,9 @@ class GetAllUsersTest : UserServiceTest() {
 
         val allUsers = service.getAllUsers()
 
-        assertEquals(2, allUsers.usersCount)
-        assertEquals(currentUser.id.toString(), allUsers.usersList[0].id)
-        assertEquals(otherUser.id.toString(), allUsers.usersList[1].id)
+        assertEquals(2, allUsers.size)
+        assertEquals(currentUser.id, allUsers[0].id)
+        assertEquals(otherUser.id, allUsers[1].id)
     }
 
     @Test

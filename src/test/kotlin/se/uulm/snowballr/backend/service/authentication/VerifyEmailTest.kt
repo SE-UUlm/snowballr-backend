@@ -11,9 +11,9 @@ import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.exception.notfound.VerificationTokenNotFoundException
+import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
 import snowballr.Authentication
 import java.time.OffsetDateTime
-import snowballr.UserOuterClass.User as GrpcUser
 
 class VerifyEmailTest : AuthenticationServiceTest() {
     @Test
@@ -60,11 +60,11 @@ class VerifyEmailTest : AuthenticationServiceTest() {
             val user = DataBuilder.createExampleUser(status = UserStatus.ACTIVE_UNCONFIRMED)
             val token = DataBuilder.createExampleVerificationToken(userId = user.id)
             val request = Authentication.VerifyEmailRequest.newBuilder().setToken(token.token).build()
-            val userUpdateSlot = slot<GrpcUser.Update>()
+            val userUpdateSlot = slot<UpdateUserRequest>()
 
             coEvery { verificationTokenRepoMock.getVerificationTokenByValue(token.token) } returns Result.success(token)
             coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
-            coEvery { userRepoMock.updateUser(capture(userUpdateSlot)) } returns user
+            coEvery { userRepoMock.updateUser(capture(userUpdateSlot), any()) } returns user
             coJustRun { verificationTokenRepoMock.deleteVerificationToken(token.token) }
 
             service.verifyEmail(request)

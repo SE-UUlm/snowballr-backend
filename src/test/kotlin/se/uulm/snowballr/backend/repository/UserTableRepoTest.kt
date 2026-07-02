@@ -1,6 +1,5 @@
 package se.uulm.snowballr.backend.repository
 
-import com.google.protobuf.util.FieldMaskUtil
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -20,8 +19,9 @@ import se.uulm.snowballr.backend.isBetweenWithDelta
 import se.uulm.snowballr.backend.model.dto.project.SnowballingType
 import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
-import se.uulm.snowballr.backend.model.dto.user.toGrpcUser
 import se.uulm.snowballr.backend.model.exception.NotFoundException
+import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
+import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertUserAndGetId
 import se.uulm.snowballr.backend.table.CriterionTable
@@ -29,9 +29,7 @@ import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.utils.assertResultFailure
 import se.uulm.snowballr.backend.utils.assertResultSuccess
-import snowballr.Authentication
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
-import snowballr.UserOuterClass.User
 import java.sql.SQLException
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -169,14 +167,12 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
     inner class CreateUser {
         @Test
         fun `When a user is created, then the user is returned`() = runTest {
-            val request =
-                Authentication.RegisterRequest
-                    .newBuilder()
-                    .setEmail("alice.smith@example.com")
-                    .setFirstName("Alice")
-                    .setLastName("Smith")
-                    .setPassword("AAbb__00")
-                    .build()
+            val request = RegisterRequest(
+                firstName = "Alice",
+                lastName = "Smith",
+                email = "alice.smith@example.com",
+                password = "AAbb__00",
+            )
 
             val user = repo.createUser(request, "hashedPassword")
 
@@ -189,14 +185,12 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
 
         @Test
         fun `When a user with an existent email is created, then an SQLException is thrown`() = runTest {
-            val request =
-                Authentication.RegisterRequest
-                    .newBuilder()
-                    .setEmail("alice.smith@example.com")
-                    .setFirstName("Alice")
-                    .setLastName("Smith")
-                    .setPassword("AAbb__00")
-                    .build()
+            val request = RegisterRequest(
+                firstName = "Alice",
+                lastName = "Smith",
+                email = "alice.smith@example.com",
+                password = "AAbb__00",
+            )
 
             repo.createUser(request, "hashedPassword")
 
@@ -207,25 +201,21 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
 
         @Test
         fun `When two users with different emails are created, then they have different IDs`() = runTest {
-            val request1 =
-                Authentication.RegisterRequest
-                    .newBuilder()
-                    .setEmail("alice.smith@example.com")
-                    .setFirstName("Alice")
-                    .setLastName("Smith")
-                    .setPassword("AAbb__00")
-                    .build()
+            val request1 = RegisterRequest(
+                firstName = "Alice",
+                lastName = "Smith",
+                email = "alice.smith@example.com",
+                password = "AAbb__00",
+            )
 
             val user1 = repo.createUser(request1, "hashedPassword1")
 
-            val request2 =
-                Authentication.RegisterRequest
-                    .newBuilder()
-                    .setEmail("john.smith@example.com")
-                    .setFirstName("John")
-                    .setLastName("Smith")
-                    .setPassword("BBaa__00")
-                    .build()
+            val request2 = RegisterRequest(
+                firstName = "John",
+                lastName = "Smith",
+                email = "john.smith@example.com",
+                password = "BBaa__00",
+            )
 
             val user2 = repo.createUser(request2, "hashedPassword2")
 
@@ -242,21 +232,16 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
         ) = runTest {
             val userId = insertUserAndGetId(email = "test.user@example.com")
             val originalUser = repo.getUserById(userId).getOrThrow()
+            val request = UpdateUserRequest(
+                userId = originalUser.id,
+                firstName = "John",
+                lastName = "Doe",
+                email = "updated.user@example.com",
+                role = UserRole.ADMIN,
+                status = UserStatus.DELETED,
+            )
 
-            val updatedUserDetails = originalUser.toGrpcUser().toBuilder()
-                .setEmail("updated.user@example.com")
-                .setFirstName("John")
-                .setLastName("Doe")
-                .setRole(UserRole.ADMIN.toGrpc())
-                .setStatus(UserStatus.DELETED.toGrpc())
-                .build()
-
-            val request = User.Update.newBuilder()
-                .setUser(updatedUserDetails)
-                .setMask(FieldMaskUtil.fromStringList(fieldMask))
-                .build()
-
-            val updatedUser = repo.updateUser(request)
+            val updatedUser = repo.updateUser(request, fieldMask)
 
             if ("user.email" in fieldMask) {
                 assertEquals("updated.user@example.com", updatedUser.email)
@@ -290,17 +275,19 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
             insertUserAndGetId(email = "alice.smith@example.com")
 
             val user2Id = insertUserAndGetId(email = "bob.smith@example.com")
-            val user2Builder = repo.getUserById(user2Id).getOrThrow().toGrpcUser().toBuilder()
+            val user2 = repo.getUserById(user2Id).getOrThrow()
 
-            val updateRequest =
-                User.Update
-                    .newBuilder()
-                    .setUser(user2Builder.setEmail("alice.smith@example.com").build())
-                    .setMask(FieldMaskUtil.fromString("user.email"))
-                    .build()
+            val updateRequest = UpdateUserRequest(
+                userId = user2.id,
+                firstName = user2.firstName,
+                lastName = user2.lastName,
+                email = "alice.smith@example.com",
+                role = user2.role,
+                status = user2.status,
+            )
 
             assertThrows<SQLException> {
-                repo.updateUser(updateRequest)
+                repo.updateUser(updateRequest, listOf("user.email"))
             }
         }
     }

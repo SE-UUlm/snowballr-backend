@@ -3,8 +3,6 @@ package se.uulm.snowballr.backend.integration
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import se.uulm.snowballr.backend.DataBuilder
-import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.parseUUID
 import kotlin.test.assertEquals
 
 class BaseIntegrationTest : IntegrationTest() {
@@ -18,9 +16,8 @@ class BaseIntegrationTest : IntegrationTest() {
             email = "john.doe@example.com",
         )
         val otherUser = addUser(otherUserData)
-        val otherUserId = parseUUID(otherUser.id, EntityType.USER)
 
-        actAsUser(otherUserId) {
+        actAsUser(otherUser.id) {
             val otherCurrentUser = userService.getCurrentUser()
             assertEquals(otherUser.id, otherCurrentUser.id)
         }
