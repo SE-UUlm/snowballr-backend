@@ -44,6 +44,8 @@ import se.uulm.snowballr.backend.model.dto.user.toGrpcUsers
 import se.uulm.snowballr.backend.model.export.ExportFormat
 import se.uulm.snowballr.backend.model.export.toGrpc
 import se.uulm.snowballr.backend.model.fetcher.toGrpc
+import se.uulm.snowballr.backend.model.incoming.authentication.ChangePasswordRequest
+import se.uulm.snowballr.backend.model.incoming.authentication.LoginRequest
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.paper.CreatePaperRequest
@@ -259,11 +261,11 @@ class SnowballRServer(
         }
 
         override suspend fun verifyEmail(request: Authentication.VerifyEmailRequest) = returnNothing {
-            authenticationService.verifyEmail(request)
+            authenticationService.verifyEmail(request.token)
         }
 
         override suspend fun login(request: Authentication.LoginRequest) = returnNothing {
-            authenticationService.login(request)
+            authenticationService.login(LoginRequest(email = request.email, password = request.password))
         }
 
         override suspend fun logout(request: Base.Nothing) = returnNothing {
@@ -285,7 +287,12 @@ class SnowballRServer(
             super.resetPassword(request)
 
         override suspend fun changePassword(request: Authentication.PasswordChangeRequest) = returnNothing {
-            authenticationService.changePassword(request)
+            authenticationService.changePassword(
+                ChangePasswordRequest(
+                    oldPassword = request.oldPassword,
+                    newPassword = request.newPassword,
+                ),
+            )
         }
 
         override suspend fun getAllUsers(request: Base.Nothing): UserOuterClass.User.List =

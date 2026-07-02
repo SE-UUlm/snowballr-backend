@@ -16,15 +16,15 @@ import se.uulm.snowballr.backend.auth.PasswordUtils
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.exception.UnauthenticatedException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundByEmailException
+import se.uulm.snowballr.backend.model.incoming.authentication.LoginRequest
 import se.uulm.snowballr.backend.model.jwt.JwtAuthTokens
-import snowballr.Authentication.LoginRequest
 
 @ExtendWith(GrpcTestContextExtension::class)
 class LoginTest : AuthenticationServiceTest() {
     @Test
     fun `When a user provides an invalid email, then an UnauthenticatedException is thrown`() = runTest {
         val email = "wrongEmail"
-        val request = LoginRequest.newBuilder().setEmail(email).build()
+        val request = LoginRequest(email = email, password = "")
 
         val exception = UserNotFoundByEmailException("wrongEmail")
         coEvery { userRepoMock.getUserByEmail(email) } returns Result.failure(exception)
@@ -36,10 +36,7 @@ class LoginTest : AuthenticationServiceTest() {
     fun `When a user with an unconfirmed email tries to log in, then an UnauthenticatedException is thrown`() =
         runTest {
             val testUser = DataBuilder.createExampleUser(status = UserStatus.ACTIVE_UNCONFIRMED)
-            val request = LoginRequest.newBuilder()
-                .setEmail(testUser.email)
-                .setPassword("anyPassword")
-                .build()
+            val request = LoginRequest(email = testUser.email, password = "anyPassword")
 
             coEvery { userRepoMock.getUserByEmail(testUser.email) } returns Result.success(testUser)
 
@@ -49,10 +46,7 @@ class LoginTest : AuthenticationServiceTest() {
     @Test
     fun `When a deleted user tries to log in, then an UnauthenticatedException is thrown`() = runTest {
         val testUser = DataBuilder.createExampleUser(status = UserStatus.DELETED)
-        val request = LoginRequest.newBuilder()
-            .setEmail(testUser.email)
-            .setPassword("anyPassword")
-            .build()
+        val request = LoginRequest(email = testUser.email, password = "anyPassword")
 
         coEvery { userRepoMock.getUserByEmail(testUser.email) } returns Result.success(testUser)
 
@@ -65,11 +59,7 @@ class LoginTest : AuthenticationServiceTest() {
         status: UserStatus,
     ) = runTest {
         val testUser = DataBuilder.createExampleUser(status = status)
-        val request = LoginRequest.newBuilder()
-            .setEmail(testUser.email)
-            .setPassword("anyPassword")
-            .build()
-
+        val request = LoginRequest(email = testUser.email, password = "anyPassword")
         coEvery { userRepoMock.getUserByEmail(testUser.email) } returns Result.success(testUser)
 
         assertThrows<UnauthenticatedException> { service.login(request) }
@@ -79,10 +69,7 @@ class LoginTest : AuthenticationServiceTest() {
     fun `When the password hash cannot be retrieved, then an UnauthenticatedException is thrown`() = runTest {
         val testUser = DataBuilder.createExampleUser(status = UserStatus.ACTIVE)
 
-        val request = LoginRequest.newBuilder()
-            .setEmail(testUser.email)
-            .setPassword("anyPassword")
-            .build()
+        val request = LoginRequest(email = testUser.email, password = "anyPassword")
 
         coEvery { userRepoMock.getUserByEmail(testUser.email) } returns Result.success(testUser)
         val exception = UserNotFoundByEmailException(testUser.email)
@@ -97,10 +84,7 @@ class LoginTest : AuthenticationServiceTest() {
         val userPassword = "AAbb__00"
         val passwordHash = PasswordUtils.hashPassword(userPassword)
 
-        val request = LoginRequest.newBuilder()
-            .setEmail(testUser.email)
-            .setPassword("wrongPassword")
-            .build()
+        val request = LoginRequest(email = testUser.email, password = "wrongPassword")
 
         coEvery { userRepoMock.getUserByEmail(testUser.email) } returns Result.success(testUser)
         coEvery { userRepoMock.getPasswordHashByEmail(testUser.email) } returns Result.success(passwordHash)
@@ -117,10 +101,7 @@ class LoginTest : AuthenticationServiceTest() {
         val passwordHash = PasswordUtils.hashPassword(userPassword)
         val tokens = JwtAuthTokens("accessToken", "refreshToken")
 
-        val request = LoginRequest.newBuilder()
-            .setEmail(testUser.email)
-            .setPassword(userPassword)
-            .build()
+        val request = LoginRequest(email = testUser.email, password = userPassword)
 
         coEvery { userRepoMock.getUserByEmail(testUser.email) } returns Result.success(testUser)
         coEvery { userRepoMock.getPasswordHashByEmail(testUser.email) } returns Result.success(passwordHash)

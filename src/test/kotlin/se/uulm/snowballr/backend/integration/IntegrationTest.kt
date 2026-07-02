@@ -61,7 +61,6 @@ import se.uulm.snowballr.backend.service.IReadingListService
 import se.uulm.snowballr.backend.service.IReviewService
 import se.uulm.snowballr.backend.service.IUserService
 import se.uulm.snowballr.backend.serviceLayerDeps
-import snowballr.Authentication
 import java.util.UUID
 
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
@@ -201,10 +200,7 @@ open class IntegrationTest : KoinTest {
         userService.register(registerUserRequest)
 
         // Verify the user's email
-        val verifyEmailRequest = Authentication.VerifyEmailRequest.newBuilder()
-            .setToken(verificationToken.captured)
-            .build()
-        authenticationService.verifyEmail(verifyEmailRequest)
+        authenticationService.verifyEmail(verificationToken.captured)
 
         // Retrieve the user to ensure it was added successfully
         return userService.getUserByEmail(user.email)
