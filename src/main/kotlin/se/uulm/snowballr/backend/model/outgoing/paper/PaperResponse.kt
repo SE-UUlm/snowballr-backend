@@ -2,9 +2,7 @@ package se.uulm.snowballr.backend.model.outgoing.paper
 
 import se.uulm.snowballr.backend.model.dto.paper.Author
 import se.uulm.snowballr.backend.model.dto.paper.Paper
-import se.uulm.snowballr.backend.model.dto.paper.toGrpc
 import se.uulm.snowballr.backend.model.fetcher.FetcherMetadata
-import snowballr.PaperOuterClass
 import java.util.UUID
 
 data class PaperResponse(
@@ -36,21 +34,3 @@ data class PaperResponse(
         )
     }
 }
-
-fun PaperResponse.toGrpc(): PaperOuterClass.Paper = PaperOuterClass.Paper.newBuilder()
-    .setId(id.toString())
-    .setExternalId(externalId.orEmpty())
-    .setTitle(title)
-    .setAbstrakt(abstract)
-    .setYear(year)
-    .setPublisher(publisher)
-    .setPublicationName(publicationName)
-    .setPublicationType(publicationType)
-    .addAllAuthors(authors.toGrpc())
-    .putAllFetcherMetadata(fetcherMetadata)
-    .addAllBackwardReferencedIds(backwardReferencedIds.map { it.toString() })
-    .build()
-
-fun List<PaperResponse>.toGrpc(): PaperOuterClass.Paper.List = PaperOuterClass.Paper.List.newBuilder()
-    .addAllPapers(this.map { it.toGrpc() })
-    .build()

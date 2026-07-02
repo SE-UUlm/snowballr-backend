@@ -2,8 +2,6 @@ package se.uulm.snowballr.backend.model.dto.project
 
 import se.uulm.snowballr.backend.model.fetcher.FetcherMap
 import se.uulm.snowballr.backend.table.ProjectTable
-import snowballr.Fetcher.FetcherOptions
-import snowballr.ProjectOuterClass
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -31,47 +29,6 @@ data class Project(
     val archivedAt: OffsetDateTime?,
     val archivedBy: UUID?,
 )
-
-/**
- * Creates a [ProjectOuterClass.Project] from this [Project].
- */
-fun Project.toGrpc(): ProjectOuterClass.Project {
-    val settings =
-        ProjectOuterClass.Project.Settings
-            .newBuilder()
-            .setSimilarityThreshold(this.similarityThreshold)
-            .setDecisionMatrix(this.reviewDecisionMatrix.toGrpc())
-            .setSnowballingType(this.snowballingType.toGrpc())
-            .setReviewMaybeAllowed(this.reviewMaybeAllowed)
-            .putAllFetchers(
-                this.fetchers.mapValues {
-                    FetcherOptions
-                        .newBuilder()
-                        .putAllOptions(it.value)
-                        .build()
-                },
-            )
-            .build()
-
-    return ProjectOuterClass.Project
-        .newBuilder()
-        .setId(this.id.toString())
-        .setName(this.name)
-        .setStatus(this.status.toGrpc())
-        .setCurrentStage(this.currentStage.toLong())
-        .setMaxStage(this.maxStage.toLong())
-        .setSettings(settings)
-        .build()
-}
-
-/**
- * Creates a list of [ProjectOuterClass.Project]s from this list of [Project]s.
- */
-fun List<Project>.toGrpc(): ProjectOuterClass.Project.List {
-    val builder = ProjectOuterClass.Project.List.newBuilder()
-    this.forEach { builder.addProjects(it.toGrpc()) }
-    return builder.build()
-}
 
 /**
  * Checks whether the project is active.

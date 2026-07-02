@@ -1,7 +1,6 @@
 package se.uulm.snowballr.backend.model.dto.criterion
 
 import se.uulm.snowballr.backend.table.CriterionTable
-import snowballr.CriterionOuterClass
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -43,25 +42,4 @@ sealed interface Criterion {
         override val createdAt: OffsetDateTime,
         override val createdBy: UUID,
     ) : Criterion
-}
-
-/**
- * Creates a [CriterionOuterClass.Criterion] from this [Criterion].
- */
-fun Criterion.toGrpc(): CriterionOuterClass.Criterion = CriterionOuterClass.Criterion
-    .newBuilder()
-    .setId(this.id.toString())
-    .setTag(this.tag)
-    .setName(this.name)
-    .setDescription(this.description)
-    .setCategory(this.category.toGrpc())
-    .build()
-
-/**
- * Creates a list of [CriterionOuterClass.Criterion]s from this list of [Criterion]s.
- */
-fun List<Criterion>.toGrpc(): CriterionOuterClass.Criterion.List {
-    val builder = CriterionOuterClass.Criterion.List.newBuilder()
-    this.forEach { builder.addCriteria(it.toGrpc()) }
-    return builder.build()
 }

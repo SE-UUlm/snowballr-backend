@@ -1,7 +1,6 @@
 package se.uulm.snowballr.backend.model.dto.paper
 
 import se.uulm.snowballr.backend.model.fetcher.FetcherMetadata
-import snowballr.paper
 
 interface PaperData {
     val title: String

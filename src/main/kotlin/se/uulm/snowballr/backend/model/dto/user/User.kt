@@ -1,7 +1,6 @@
 package se.uulm.snowballr.backend.model.dto.user
 
 import se.uulm.snowballr.backend.table.UserTable
-import snowballr.UserOuterClass
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -19,28 +18,6 @@ data class User(
     val modifiedAt: OffsetDateTime?,
     val deletedAt: OffsetDateTime?,
 )
-
-/**
- * Creates a [UserOuterClass.User] from this [User].
- */
-fun User.toGrpc(): UserOuterClass.User = UserOuterClass.User
-    .newBuilder()
-    .setId(this.id.toString())
-    .setEmail(this.email)
-    .setFirstName(this.firstName)
-    .setLastName(this.lastName)
-    .setRole(this.role.toGrpc())
-    .setStatus(this.status.toGrpc())
-    .build()
-
-/**
- * Creates a list of [UserOuterClass.User]s from this list of [User]s.
- */
-fun List<User>.toGrpc(): UserOuterClass.User.List {
-    val builder = UserOuterClass.User.List.newBuilder()
-    this.forEach { builder.addUsers(it.toGrpc()) }
-    return builder.build()
-}
 
 /**
  * Checks whether the user is a server admin.

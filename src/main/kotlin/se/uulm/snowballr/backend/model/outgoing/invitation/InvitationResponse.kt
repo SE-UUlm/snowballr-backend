@@ -3,7 +3,6 @@ package se.uulm.snowballr.backend.model.outgoing.invitation
 import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
-import snowballr.UserOuterClass
 import java.util.UUID
 
 data class InvitationResponse(
@@ -34,16 +33,3 @@ data class InvitationResponse(
         )
     }
 }
-
-fun InvitationResponse.toGrpc(): UserOuterClass.User = UserOuterClass.User.newBuilder()
-    .setId(userId?.toString().orEmpty())
-    .setEmail(email)
-    .setFirstName(firstName)
-    .setLastName(lastName)
-    .setRole(role.toGrpc())
-    .setStatus(status.toGrpc())
-    .build()
-
-fun List<InvitationResponse>.toGrpc(): UserOuterClass.User.List = UserOuterClass.User.List.newBuilder()
-    .addAllUsers(this.map { it.toGrpc() })
-    .build()

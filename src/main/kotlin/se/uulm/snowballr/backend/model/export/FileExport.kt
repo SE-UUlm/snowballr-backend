@@ -1,8 +1,5 @@
 package se.uulm.snowballr.backend.model.export
 
-import com.google.protobuf.kotlin.toByteString
-import snowballr.Export
-
 /**
  * Data class that represents a file that has been exported.
  */
@@ -26,8 +23,3 @@ data class FileExport(
         return result
     }
 }
-
-fun FileExport.toGrpc(): Export.ExportResponse = Export.ExportResponse.newBuilder()
-    .setData(data.toByteString())
-    .setFileName(filename)
-    .build()

@@ -3,7 +3,6 @@ package se.uulm.snowballr.backend.model.dto.paper
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import se.uulm.snowballr.backend.table.PaperTable
-import snowballr.PaperOuterClass.Author as GrpcAuthor
 
 /**
  * Author DTO of [PaperTable].
@@ -15,16 +14,3 @@ data class Author(
     @SerialName("last_name")
     val lastName: String,
 )
-
-/**
- * Creates a [GrpcAuthor] from this [Author].
- */
-fun Author.toGrpc(): GrpcAuthor = GrpcAuthor.newBuilder()
-    .setFirstName(firstName)
-    .setLastName(lastName)
-    .build()
-
-/**
- * Creates a list of [GrpcAuthor] from this list of [Author].
- */
-fun List<Author>.toGrpc(): List<GrpcAuthor> = this.map(Author::toGrpc)

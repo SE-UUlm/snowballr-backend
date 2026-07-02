@@ -24,22 +24,16 @@ import se.uulm.snowballr.backend.grpc.interceptor.loggingInterceptor
 import se.uulm.snowballr.backend.grpc.interceptor.validationInterceptor
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
-import se.uulm.snowballr.backend.model.dto.criterion.toGrpc
 import se.uulm.snowballr.backend.model.dto.paper.Author
 import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPattern
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
 import se.uulm.snowballr.backend.model.dto.project.SnowballingType
-import se.uulm.snowballr.backend.model.dto.project.toGrpc
 import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
-import se.uulm.snowballr.backend.model.dto.projectmember.toGrpc
 import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
-import se.uulm.snowballr.backend.model.dto.user.toGrpc
 import se.uulm.snowballr.backend.model.export.ExportFormat
-import se.uulm.snowballr.backend.model.export.toGrpc
-import se.uulm.snowballr.backend.model.fetcher.toGrpc
 import se.uulm.snowballr.backend.model.incoming.authentication.ChangePasswordRequest
 import se.uulm.snowballr.backend.model.incoming.authentication.LoginRequest
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
@@ -53,12 +47,6 @@ import se.uulm.snowballr.backend.model.incoming.projectmember.UpdateProjectMembe
 import se.uulm.snowballr.backend.model.incoming.review.CreateReviewRequest
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
-import se.uulm.snowballr.backend.model.outgoing.invitation.toGrpc
-import se.uulm.snowballr.backend.model.outgoing.paper.toGrpc
-import se.uulm.snowballr.backend.model.outgoing.project.toGrpc
-import se.uulm.snowballr.backend.model.outgoing.projectpaper.toGrpc
-import se.uulm.snowballr.backend.model.outgoing.review.toGrpc
-import se.uulm.snowballr.backend.model.outgoing.review.toGrpcReviews
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.scheduler.SchedulerManager
 import se.uulm.snowballr.backend.service.IAuthenticationService
@@ -547,7 +535,7 @@ class SnowballRServer(
             reviewService.getReviewById(parseReviewId(request)).toGrpc()
 
         override suspend fun getAllReviewsForProjectPaper(request: Base.Id): ReviewOuterClass.Review.List =
-            reviewService.getAllReviewsForProjectPaper(parseProjectPaperId(request)).toGrpcReviews()
+            reviewService.getAllReviewsForProjectPaper(parseProjectPaperId(request)).toGrpc()
 
         override suspend fun createReview(request: ReviewOuterClass.Review.Create): ReviewOuterClass.Review =
             reviewService.createReview(
