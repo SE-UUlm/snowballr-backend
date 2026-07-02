@@ -9,7 +9,6 @@ import org.junit.jupiter.api.assertNull
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.model.dto.projectmember.ProjectMemberWithUser
 import se.uulm.snowballr.backend.model.dto.user.User
-import snowballr.ProjectOuterClass.Project.InviteCandidatesRequest
 import java.util.UUID
 import kotlin.reflect.KFunction
 
@@ -17,9 +16,6 @@ class GetInviteCandidatesTest : InvitationServiceTest() {
     private val requestingUserEmail = "test.user@example.com"
     private val searchQuery = "john"
     private val projectId = UUID.randomUUID()
-    private val validGetInviteCandidatesRequestBuilder = InviteCandidatesRequest.newBuilder()
-        .setQuery(searchQuery)
-        .setProjectId(projectId.toString())
 
     private fun mockGetInviteCandidates(
         projectMembers: List<User> = emptyList(),
@@ -53,31 +49,15 @@ class GetInviteCandidatesTest : InvitationServiceTest() {
     fun `When the search query is too short, then an empty list is returned`() = runTest {
         mockGetInviteCandidates(stopBefore = projectMemberRepoMock::getProjectMembersWithUsers)
 
-        val shortGetInviteCandidatesRequest = validGetInviteCandidatesRequestBuilder.setQuery("jo")
-
-        val candidates = service.getInviteCandidates(shortGetInviteCandidatesRequest.build())
+        val candidates = service.getInviteCandidates(projectId, "jo")
         assertThat(candidates).isEmpty()
-    }
-
-    @Test
-    fun `When parsing the project id fails, then only a warning is logged`() = runTest {
-        mockGetInviteCandidates(stopBefore = projectMemberRepoMock::getProjectMembersWithUsers)
-        coEvery {
-            userRepoMock.getUsersMatchingSearchQuery(searchQuery, any())
-        } returns emptyList()
-
-        val requestWithInvalidProjectId = validGetInviteCandidatesRequestBuilder.setProjectId("invalid-uuid")
-
-        service.getInviteCandidates(requestWithInvalidProjectId.build())
-        coVerify(exactly = 0) { projectMemberRepoMock.getProjectMembersWithUsers(any()) }
-        coVerify(exactly = 0) { invitationTokenRepoMock.getActiveInvitationTokensForProject(any()) }
     }
 
     @Test
     fun `When no project members exist, then no users except for the current user are excluded`() = runTest {
         mockGetInviteCandidates()
 
-        service.getInviteCandidates(validGetInviteCandidatesRequestBuilder.build())
+        service.getInviteCandidates(projectId, searchQuery)
         coVerify(exactly = 1) { userRepoMock.getUsersMatchingSearchQuery(searchQuery, setOf(requestingUserEmail)) }
     }
 
@@ -86,7 +66,7 @@ class GetInviteCandidatesTest : InvitationServiceTest() {
         runTest {
             mockGetInviteCandidates()
 
-            val inviteCandidates = service.getInviteCandidates(validGetInviteCandidatesRequestBuilder.build())
+            val inviteCandidates = service.getInviteCandidates(projectId, searchQuery)
             assertThat(inviteCandidates).hasSize(1)
             assertNull(inviteCandidates.find { it.email == requestingUserEmail })
         }
@@ -97,7 +77,7 @@ class GetInviteCandidatesTest : InvitationServiceTest() {
             val projectMember = DataBuilder.createExampleUser(email = "project.member@example.com")
             mockGetInviteCandidates(projectMembers = listOf(projectMember))
 
-            val inviteCandidates = service.getInviteCandidates(validGetInviteCandidatesRequestBuilder.build())
+            val inviteCandidates = service.getInviteCandidates(projectId, searchQuery)
             assertNull(inviteCandidates.find { it.email == projectMember.email })
         }
 
@@ -107,7 +87,7 @@ class GetInviteCandidatesTest : InvitationServiceTest() {
             val invitee = DataBuilder.createExampleUser(email = "invited.user@example.com")
             mockGetInviteCandidates(invitees = listOf(invitee))
 
-            val inviteCandidates = service.getInviteCandidates(validGetInviteCandidatesRequestBuilder.build())
+            val inviteCandidates = service.getInviteCandidates(projectId, searchQuery)
             assertNull(inviteCandidates.find { it.email == invitee.email })
         }
 }

@@ -356,7 +356,10 @@ class SnowballRServer(
 
         override suspend fun getInviteCandidates(
             request: ProjectOuterClass.Project.InviteCandidatesRequest,
-        ): UserOuterClass.User.List = invitationService.getInviteCandidates(request).toGrpcUsers()
+        ): UserOuterClass.User.List = invitationService.getInviteCandidates(
+            projectId = parseUUID(request.projectId, EntityType.PROJECT),
+            query = request.query,
+        ).toGrpcUsers()
 
         override suspend fun inviteUserToProject(request: ProjectOuterClass.Project.Member.Invite) = returnNothing {
             invitationService.inviteUserToProject(

@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Test
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
-import snowballr.ProjectOuterClass.Project
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -69,12 +68,7 @@ class InvitationIntegrationTest : IntegrationTest() {
             addUser(DataBuilder.createExampleUser(email = "searchable.user@example.com"))
             val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
 
-            val candidates = invitationService.getInviteCandidates(
-                Project.InviteCandidatesRequest.newBuilder()
-                    .setQuery("ab")
-                    .setProjectId(project.id.toString())
-                    .build(),
-            )
+            val candidates = invitationService.getInviteCandidates(project.id, "ab")
 
             assertTrue(candidates.isEmpty())
         }
@@ -84,12 +78,7 @@ class InvitationIntegrationTest : IntegrationTest() {
             val otherUser = addUser(DataBuilder.createExampleUser(email = "findable.candidate@example.com"))
             val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
 
-            val candidates = invitationService.getInviteCandidates(
-                Project.InviteCandidatesRequest.newBuilder()
-                    .setQuery(otherUser.email.take(6))
-                    .setProjectId(project.id.toString())
-                    .build(),
-            )
+            val candidates = invitationService.getInviteCandidates(project.id, otherUser.email.take(6))
 
             assertTrue(candidates.any { it.id == otherUser.id })
         }
@@ -101,12 +90,7 @@ class InvitationIntegrationTest : IntegrationTest() {
 
             inviteUserToProject(project, otherUser, acceptInvitation = true)
 
-            val candidates = invitationService.getInviteCandidates(
-                Project.InviteCandidatesRequest.newBuilder()
-                    .setQuery(otherUser.email.take(6))
-                    .setProjectId(project.id.toString())
-                    .build(),
-            )
+            val candidates = invitationService.getInviteCandidates(project.id, otherUser.email.take(6))
 
             assertFalse(candidates.any { it.id == otherUser.id })
         }
@@ -118,12 +102,7 @@ class InvitationIntegrationTest : IntegrationTest() {
 
             inviteUserToProject(project, otherUser)
 
-            val candidates = invitationService.getInviteCandidates(
-                Project.InviteCandidatesRequest.newBuilder()
-                    .setQuery(otherUser.email.take(7))
-                    .setProjectId(project.id.toString())
-                    .build(),
-            )
+            val candidates = invitationService.getInviteCandidates(project.id, otherUser.email.take(7))
 
             assertFalse(candidates.any { it.id == otherUser.id })
         }
