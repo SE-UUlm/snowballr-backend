@@ -1,11 +1,12 @@
 package se.uulm.snowballr.backend.service
 
-import com.google.protobuf.kotlin.toByteString
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.export.ProjectExportManager
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.projectpaper.toProjectPaperFull
+import se.uulm.snowballr.backend.model.export.ExportFormat
+import se.uulm.snowballr.backend.model.export.FileExport
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
@@ -13,21 +14,18 @@ import se.uulm.snowballr.backend.repository.IReviewTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
-import snowballr.Export.AvailableExportFormatsResponse
 import snowballr.Export.ExportRequest
-import snowballr.Export.ExportResponse
-import snowballr.exportResponse
 
 interface IExportService {
     /**
      * Service implementation of [SnowballRService.getAvailableExportFormats].
      */
-    suspend fun getAvailableExportFormats(): AvailableExportFormatsResponse
+    suspend fun getAvailableExportFormats(): Set<ExportFormat>
 
     /**
      * Service implementation of [SnowballRService.exportProject].
      */
-    suspend fun exportProject(request: ExportRequest): ExportResponse
+    suspend fun exportProject(request: ExportRequest): FileExport
 }
 
 /**
@@ -55,12 +53,9 @@ class ExportService(
     private val userRepo: IUserTableRepo,
     private val projectAccessChecker: IProjectAccessChecker,
 ) : IExportService {
-    override suspend fun getAvailableExportFormats(): AvailableExportFormatsResponse =
-        AvailableExportFormatsResponse.newBuilder()
-            .addAllFormats(ProjectExportManager.getSupportedFormats().map { it.toString() })
-            .build()
+    override suspend fun getAvailableExportFormats(): Set<ExportFormat> = ProjectExportManager.getSupportedFormats()
 
-    override suspend fun exportProject(request: ExportRequest): ExportResponse = withUser(userRepo) { currentUser ->
+    override suspend fun exportProject(request: ExportRequest): FileExport = withUser(userRepo) { currentUser ->
         val format = ProjectExportManager.getSupportedFormats().first { it.toString() == request.format }
         val projectId = parseUUID(request.id, EntityType.PROJECT)
 
@@ -76,11 +71,6 @@ class ExportService(
             }
         val projectCriteria = criterionRepo.getAllProjectCriteria(projectId)
 
-        val fileExport =
-            ProjectExportManager.exportProject(format, project, projectMembers, projectPapers, projectCriteria)
-        exportResponse {
-            data = fileExport.data.toByteString()
-            fileName = fileExport.filename
-        }
+        ProjectExportManager.exportProject(format, project, projectMembers, projectPapers, projectCriteria)
     }
 }

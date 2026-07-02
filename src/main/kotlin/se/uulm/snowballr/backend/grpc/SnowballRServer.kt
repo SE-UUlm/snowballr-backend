@@ -41,6 +41,7 @@ import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.dto.user.toGrpcUser
 import se.uulm.snowballr.backend.model.dto.user.toGrpcUserSettings
 import se.uulm.snowballr.backend.model.dto.user.toGrpcUsers
+import se.uulm.snowballr.backend.model.export.toGrpc
 import se.uulm.snowballr.backend.model.fetcher.toGrpc
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
@@ -431,10 +432,10 @@ class SnowballRServer(
             ).toGrpcProject()
 
         override suspend fun getAvailableExportFormats(request: Base.Nothing): Export.AvailableExportFormatsResponse =
-            exportService.getAvailableExportFormats()
+            exportService.getAvailableExportFormats().toGrpc()
 
         override suspend fun exportProject(request: Export.ExportRequest): Export.ExportResponse =
-            exportService.exportProject(request)
+            exportService.exportProject(request).toGrpc()
 
         override suspend fun softDeleteProject(request: Base.Id) = returnNothing {
             projectService.softDeleteProject(parseProjectId(request))

@@ -47,8 +47,8 @@ class ExportProjectTest : ExportServiceTest() {
 
         val result = service.exportProject(request)
 
-        assertEquals("test.json", result.fileName)
-        assertEquals(ByteArray(0).toList(), result.data.toByteArray().toList())
+        assertEquals("test.json", result.filename)
+        assertEquals(ByteArray(0).toList(), result.data.toList())
     }
 
     @Test
