@@ -63,7 +63,6 @@ import se.uulm.snowballr.backend.service.IUserService
 import se.uulm.snowballr.backend.serviceLayerDeps
 import snowballr.Authentication
 import java.util.UUID
-import snowballr.ProjectOuterClass.Project as GrpcProject
 
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
 @Tag("integration")
@@ -263,11 +262,7 @@ open class IntegrationTest : KoinTest {
             EmailData.AcceptProjectInvitation(inviteeFirstName, "Test User", project.name, link, "in 7 days")
         coJustRun { emailManagerMock.sendAcceptProjectInvitationEmail(any(), invitationData) }
 
-        val inviteUserRequest = GrpcProject.Member.Invite.newBuilder()
-            .setProjectId(project.id.toString())
-            .setUserEmail(inviteeEmail)
-            .build()
-        invitationService.inviteUserToProject(inviteUserRequest)
+        invitationService.inviteUserToProject(project.id, inviteeEmail)
 
         return invitationToken
     }

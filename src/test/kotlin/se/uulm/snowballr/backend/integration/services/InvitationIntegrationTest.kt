@@ -55,12 +55,7 @@ class InvitationIntegrationTest : IntegrationTest() {
                 inviteEmailToProject(project, inviteeEmail)
 
                 // Second invite for already-pending user: service short-circuits without sending another email
-                invitationService.inviteUserToProject(
-                    Project.Member.Invite.newBuilder()
-                        .setProjectId(project.id.toString())
-                        .setUserEmail(inviteeEmail)
-                        .build(),
-                )
+                invitationService.inviteUserToProject(project.id, inviteeEmail)
 
                 val pending = invitationService.getPendingInvitationsForProject(project.id)
                 assertEquals(1, pending.count { it.email == inviteeEmail })

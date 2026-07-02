@@ -11,7 +11,6 @@ import se.uulm.snowballr.backend.model.incoming.projectmember.UpdateProjectMembe
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
-import snowballr.ProjectOuterClass.Project.Member as GrpcProjectMember
 
 class ProjectMemberIntegrationTest : IntegrationTest() {
     @Nested
@@ -36,12 +35,7 @@ class ProjectMemberIntegrationTest : IntegrationTest() {
                 inviteUserToProject(project, otherUser, acceptInvitation = true)
 
                 // Second invite for an already-accepted member: service short-circuits without sending email
-                invitationService.inviteUserToProject(
-                    GrpcProjectMember.Invite.newBuilder()
-                        .setProjectId(project.id.toString())
-                        .setUserEmail(otherUser.email)
-                        .build(),
-                )
+                invitationService.inviteUserToProject(project.id, otherUser.email)
 
                 val members = projectMemberService.getProjectMembers(project.id)
                 assertEquals(2, members.size) // creator + other user, no duplicate

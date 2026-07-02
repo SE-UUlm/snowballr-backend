@@ -16,7 +16,6 @@ import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.projectmember.UpdateProjectMemberRoleRequest
-import snowballr.ProjectOuterClass.Project.Member as GrpcProjectMember
 
 class AccessControlIntegrationTest : IntegrationTest() {
     private suspend fun setupProjectWithMember(): Pair<Project, User> {
@@ -127,13 +126,10 @@ class AccessControlIntegrationTest : IntegrationTest() {
         fun `When a non-admin member tries to invite a user to a project, then access is denied`() = runTest {
             val (project, member) = setupProjectWithMember()
 
-            val request = GrpcProjectMember.Invite.newBuilder()
-                .setProjectId(project.id.toString())
-                .setUserEmail("uninvited@example.com")
-                .build()
-
             actAsUser(member.id) {
-                assertThrows<UnauthorizedException> { invitationService.inviteUserToProject(request) }
+                assertThrows<UnauthorizedException> {
+                    invitationService.inviteUserToProject(project.id, "uninvited@exmaple.com")
+                }
             }
         }
     }
