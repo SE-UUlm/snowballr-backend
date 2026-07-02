@@ -1,6 +1,5 @@
 package se.uulm.snowballr.backend.service.criterion
 
-import com.google.protobuf.util.FieldMaskUtil
 import io.mockk.coEvery
 import io.mockk.coJustRun
 import kotlinx.coroutines.test.runTest
@@ -9,20 +8,23 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.dto.criterion.Criterion
-import se.uulm.snowballr.backend.model.dto.criterion.toGrpcCriterion
-import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
+import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 
 class UpdateCriterionTest : CriterionServiceTest() {
-    private fun getExampleRequest(criterion: Criterion): GrpcCriterion.Update {
-        val updateFieldMask = FieldMaskUtil.fromStringList(
-            listOf("tag", "name", "description", "category"),
-        )
+    private val allPaths = listOf(
+        "criterion.tag",
+        "criterion.name",
+        "criterion.description",
+        "criterion.category",
+    )
 
-        return GrpcCriterion.Update.newBuilder()
-            .setCriterion(criterion.toGrpcCriterion())
-            .setMask(updateFieldMask)
-            .build()
-    }
+    private fun getExampleRequest(criterion: Criterion) = UpdateCriterionRequest(
+        criterionId = criterion.id,
+        tag = criterion.tag,
+        name = criterion.name,
+        description = criterion.description,
+        category = criterion.category,
+    )
 
     @Test
     fun `When retrieving the criterion fails, then the a TestSpecificException is thrown`() = runTest {
@@ -34,7 +36,7 @@ class UpdateCriterionTest : CriterionServiceTest() {
         mockCurrentUser(user)
         coEvery { criterionRepoMock.getCriterionById(criterion.id) } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { service.updateCriterion(request) }
+        assertThrows<TestSpecificException> { service.updateCriterion(request, allPaths) }
     }
 
     @Test
@@ -50,7 +52,7 @@ class UpdateCriterionTest : CriterionServiceTest() {
             criterionAccessCheckerMock.isAllowedToUpdateCriterion(user, criterion)
         } throws TestSpecificException()
 
-        assertThrows<TestSpecificException> { service.updateCriterion(request) }
+        assertThrows<TestSpecificException> { service.updateCriterion(request, allPaths) }
     }
 
     @Test
@@ -63,9 +65,9 @@ class UpdateCriterionTest : CriterionServiceTest() {
         mockCurrentUser(user)
         coEvery { criterionRepoMock.getCriterionById(criterion.id) } returns Result.success(criterion)
         coJustRun { criterionAccessCheckerMock.isAllowedToUpdateCriterion(user, criterion) }
-        coEvery { criterionRepoMock.updateCriterion(request) } returns criterion
+        coEvery { criterionRepoMock.updateCriterion(request, allPaths) } returns criterion
 
-        val result = service.updateCriterion(request)
+        val result = service.updateCriterion(request, allPaths)
 
         assertCriterionEquality(criterion, result)
     }

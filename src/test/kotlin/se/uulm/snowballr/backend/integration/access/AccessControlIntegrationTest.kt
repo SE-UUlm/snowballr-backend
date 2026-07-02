@@ -8,10 +8,11 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 import se.uulm.snowballr.backend.model.exception.UnauthorizedException
+import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
+import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.model.parseUUID
-import snowballr.CriterionOuterClass.Criterion
-import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass.MemberRole
 import snowballr.ProjectOuterClass.Project
 import snowballr.ProjectOuterClass.Project.Member as GrpcProjectMember
@@ -70,13 +71,13 @@ class AccessControlIntegrationTest : IntegrationTest() {
         fun `When a non-admin member tries to create a criterion, then access is denied`() = runTest {
             val (project, member) = setupProjectWithMember()
 
-            val request = Criterion.Create.newBuilder()
-                .setProjectId(project.id)
-                .setName("Blocked Criterion")
-                .setTag("BC")
-                .setDescription("Should not be created")
-                .setCategory(CriterionCategory.CRITERION_CATEGORY_INCLUSION)
-                .build()
+            val request = CreateCriterionRequest(
+                tag = "BC",
+                name = "Blocked Criterion",
+                description = "Should not be created",
+                category = CriterionCategory.INCLUSION,
+                projectId = parseUUID(project.id, EntityType.PROJECT),
+            )
 
             actAsUser(member.id) {
                 assertThrows<UnauthorizedException> { criterionService.createCriterion(request) }
@@ -88,22 +89,27 @@ class AccessControlIntegrationTest : IntegrationTest() {
             val (project, member) = setupProjectWithMember()
 
             val criterion = criterionService.createCriterion(
-                Criterion.Create.newBuilder()
-                    .setProjectId(project.id)
-                    .setName("Admin Criterion")
-                    .setTag("AC")
-                    .setDescription("Created by admin")
-                    .setCategory(CriterionCategory.CRITERION_CATEGORY_INCLUSION)
-                    .build(),
+                CreateCriterionRequest(
+                    tag = "AC",
+                    name = "Admin Criterion",
+                    description = "Created by admin",
+                    category = CriterionCategory.INCLUSION,
+                    projectId = parseUUID(project.id, EntityType.PROJECT),
+                ),
             )
 
-            val request = Criterion.Update.newBuilder()
-                .setCriterion(criterion.toBuilder().setName("Hijacked").build())
-                .setMask(FieldMaskUtil.fromStringList(listOf("criterion.name")))
-                .build()
+            val request = UpdateCriterionRequest(
+                criterion.id,
+                criterion.tag,
+                "Hijacked",
+                criterion.description,
+                criterion.category,
+            )
 
             actAsUser(member.id) {
-                assertThrows<UnauthorizedException> { criterionService.updateCriterion(request) }
+                assertThrows<UnauthorizedException> {
+                    criterionService.updateCriterion(request, listOf("criterion.name"))
+                }
             }
         }
     }

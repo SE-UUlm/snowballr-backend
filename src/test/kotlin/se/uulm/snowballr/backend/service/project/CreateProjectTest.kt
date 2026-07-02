@@ -11,8 +11,8 @@ import se.uulm.snowballr.backend.model.dto.project.Project
 import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
 import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.dto.user.UserRole
+import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import java.util.UUID
-import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
 import snowballr.ProjectOuterClass.Project as GrpcProject
 
 class CreateProjectTest : ProjectServiceTest() {
@@ -60,13 +60,13 @@ class CreateProjectTest : ProjectServiceTest() {
             val userSettings = DataBuilder.createExampleUserSettings(criteriaIds = listOf(criterion.id))
             val criteriaIdsSlot = slot<List<UUID>>()
 
-            val criterionCreateRequest = GrpcCriterion.Create.newBuilder()
-                .setProjectId(project.id.toString())
-                .setTag(criterion.tag)
-                .setName(criterion.name)
-                .setDescription(criterion.description)
-                .setCategory(criterion.category.toGrpc())
-                .build()
+            val criterionCreateRequest = CreateCriterionRequest(
+                tag = criterion.tag,
+                name = criterion.name,
+                description = criterion.description,
+                category = criterion.category,
+                projectId = project.id,
+            )
 
             mockCurrentUser(user)
             coEvery { userRepoMock.getUserSettings(user.id) } returns Result.success(userSettings)

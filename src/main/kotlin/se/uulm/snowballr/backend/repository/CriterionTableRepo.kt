@@ -1,6 +1,5 @@
 package se.uulm.snowballr.backend.repository
 
-import com.google.protobuf.util.FieldMaskUtil
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.and
@@ -11,15 +10,14 @@ import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.criterion.Criterion
-import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 import se.uulm.snowballr.backend.model.exception.NotFoundException
-import se.uulm.snowballr.backend.model.parseUUID
+import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
+import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.toCriterion
 import se.uulm.snowballr.backend.table.toProjectCriterion
 import se.uulm.snowballr.backend.table.toUserCriterion
 import java.util.UUID
-import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
 
 private val logger = KotlinLogging.logger {}
 
@@ -44,7 +42,7 @@ interface ICriterionTableRepo {
      * @param userId The ID of the user creating the criterion.
      * @return The created [Criterion] object representing the newly created criterion.
      */
-    suspend fun createCriterion(request: GrpcCriterion.Create, userId: UUID): Criterion
+    suspend fun createCriterion(request: CreateCriterionRequest, userId: UUID): Criterion
 
     /**
      * Retrieves all criteria associated with a specific user.
@@ -56,16 +54,12 @@ interface ICriterionTableRepo {
 
     /**
      * Updates an existent criterion in the database with the provided new information.
-     * The following fields can be updated:
-     * - tag
-     * - name
-     * - description
-     * - category
      *
      * @param request The update request containing the new criterion details, such as the new name.
+     * @param paths The field mask paths that should be updated.
      * @return The updated [Criterion] object reflecting the changes from the [request].
      */
-    suspend fun updateCriterion(request: GrpcCriterion.Update): Criterion
+    suspend fun updateCriterion(request: UpdateCriterionRequest, paths: List<String>): Criterion
 
     /**
      * Deletes a list of criteria from the database based on their IDs.
@@ -96,7 +90,7 @@ interface ICriterionTableRepo {
      * @param projectId The unique identifier of the project for which the criteria are being retrieved.
      * @return A list of [Criterion] objects associated with the given project.
      */
-    suspend fun getAllProjectCriteria(projectId: UUID): List<Criterion>
+    suspend fun getAllProjectCriteria(projectId: UUID): List<Criterion.ProjectCriterion>
 }
 
 /**
@@ -119,34 +113,25 @@ class CriterionTableRepo(
         getEntityByKeyAsResult(::getCriterionByIdOrNull, EntityType.CRITERION, id)
     }
 
-    override suspend fun createCriterion(request: GrpcCriterion.Create, userId: UUID): Criterion = db.query {
-        val projectId = if (request.projectId.isNotEmpty()) {
-            parseUUID(request.projectId, EntityType.PROJECT)
-        } else {
-            null
-        }
-
+    override suspend fun createCriterion(request: CreateCriterionRequest, userId: UUID): Criterion = db.query {
         CriterionTable.insertAndGet(ResultRow::toCriterion) {
             it[tag] = request.tag
             it[name] = request.name
             it[description] = request.description
-            it[category] = CriterionCategory.fromGrpc(request.category)
-            it[this.projectId] = projectId
+            it[category] = request.category
+            it[projectId] = request.projectId
             it[createdBy] = userId
         }
     }
 
-    override suspend fun updateCriterion(request: GrpcCriterion.Update): Criterion = db.query {
-        val criterionId = parseUUID(request.criterion.id, EntityType.CRITERION)
-        val fieldMask = FieldMaskUtil.normalize(request.mask)
-
-        CriterionTable.updateByIdAndGet(criterionId, ResultRow::toCriterion) {
-            for (field in fieldMask.pathsList) {
+    override suspend fun updateCriterion(request: UpdateCriterionRequest, paths: List<String>): Criterion = db.query {
+        CriterionTable.updateByIdAndGet(request.criterionId, ResultRow::toCriterion) {
+            for (field in paths) {
                 when (field) {
-                    "criterion.tag" -> it[tag] = request.criterion.tag
-                    "criterion.name" -> it[name] = request.criterion.name
-                    "criterion.description" -> it[description] = request.criterion.description
-                    "criterion.category" -> it[category] = CriterionCategory.fromGrpc(request.criterion.category)
+                    "criterion.tag" -> it[tag] = request.tag
+                    "criterion.name" -> it[name] = request.name
+                    "criterion.description" -> it[description] = request.description
+                    "criterion.category" -> it[category] = request.category
                 }
             }
         }
@@ -180,7 +165,7 @@ class CriterionTableRepo(
         }
     }
 
-    override suspend fun getAllProjectCriteria(projectId: UUID): List<Criterion> = db.query {
+    override suspend fun getAllProjectCriteria(projectId: UUID): List<Criterion.ProjectCriterion> = db.query {
         CriterionTable.getEntities(ResultRow::toProjectCriterion) {
             CriterionTable.projectId eq projectId
         }

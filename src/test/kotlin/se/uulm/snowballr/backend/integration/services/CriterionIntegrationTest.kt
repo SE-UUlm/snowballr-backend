@@ -1,30 +1,33 @@
 package se.uulm.snowballr.backend.integration.services
 
-import com.google.protobuf.util.FieldMaskUtil
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.dto.criterion.Criterion
+import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
+import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
+import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.model.parseUUID
-import snowballr.CriterionOuterClass.Criterion
-import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass.Project
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class CriterionIntegrationTest : IntegrationTest() {
-    private suspend fun createProjectAndCriterion(criterionName: String = "Test Criterion"): Pair<Project, Criterion> {
+    private suspend fun createProjectAndCriterion(
+        criterionName: String = "Test Criterion",
+    ): Pair<Project, Criterion.ProjectCriterion> {
         val project = projectService.createProject(Project.Create.newBuilder().setName("Test Project").build())
         val criterion = criterionService.createCriterion(
-            Criterion.Create.newBuilder()
-                .setName(criterionName)
-                .setTag("TC")
-                .setDescription("A test criterion")
-                .setCategory(CriterionCategory.CRITERION_CATEGORY_INCLUSION)
-                .setProjectId(project.id)
-                .build(),
-        )
+            CreateCriterionRequest(
+                tag = "TC",
+                name = criterionName,
+                description = "A test criterion",
+                category = CriterionCategory.INCLUSION,
+                projectId = parseUUID(project.id, EntityType.PROJECT),
+            ),
+        ) as Criterion.ProjectCriterion
         return project to criterion
     }
 
@@ -37,15 +40,14 @@ class CriterionIntegrationTest : IntegrationTest() {
 
             val criteria = criterionService.getAllCriteriaForProject(projectId)
 
-            assertTrue(criteria.criteriaList.any { it.id == criterion.id })
+            assertTrue(criteria.any { it.id == criterion.id })
         }
 
         @Test
         fun `When a criterion is created for a project, then it can be retrieved by ID`() = runTest {
             val (_, criterion) = createProjectAndCriterion("Fetched Criterion")
-            val criterionId = parseUUID(criterion.id, EntityType.CRITERION)
 
-            val fetched = criterionService.getCriterionById(criterionId)
+            val fetched = criterionService.getCriterionById(criterion.id)
 
             assertEquals(criterion.id, fetched.id)
             assertEquals("Fetched Criterion", fetched.name)
@@ -58,26 +60,26 @@ class CriterionIntegrationTest : IntegrationTest() {
             val projectId = parseUUID(project.id, EntityType.PROJECT)
 
             criterionService.createCriterion(
-                Criterion.Create.newBuilder()
-                    .setName("Criterion One")
-                    .setTag("C1")
-                    .setDescription("First")
-                    .setCategory(CriterionCategory.CRITERION_CATEGORY_INCLUSION)
-                    .setProjectId(project.id)
-                    .build(),
+                CreateCriterionRequest(
+                    tag = "C1",
+                    name = "Criterion One",
+                    description = "First",
+                    category = CriterionCategory.INCLUSION,
+                    projectId = projectId,
+                ),
             )
             criterionService.createCriterion(
-                Criterion.Create.newBuilder()
-                    .setName("Criterion Two")
-                    .setTag("C2")
-                    .setDescription("Second")
-                    .setCategory(CriterionCategory.CRITERION_CATEGORY_EXCLUSION)
-                    .setProjectId(project.id)
-                    .build(),
+                CreateCriterionRequest(
+                    tag = "C2",
+                    name = "Criterion Two",
+                    description = "Second",
+                    category = CriterionCategory.EXCLUSION,
+                    projectId = projectId,
+                ),
             )
 
             val criteria = criterionService.getAllCriteriaForProject(projectId)
-            val names = criteria.criteriaList.map { it.name }
+            val names = criteria.map { it.name }
 
             assertTrue(names.contains("Criterion One"))
             assertTrue(names.contains("Criterion Two"))
@@ -89,39 +91,36 @@ class CriterionIntegrationTest : IntegrationTest() {
         @Test
         fun `When a criterion's name is updated, then the updated name is persisted`() = runTest {
             val (_, criterion) = createProjectAndCriterion("Old Name")
-            val criterionId = parseUUID(criterion.id, EntityType.CRITERION)
+            val request = UpdateCriterionRequest(
+                criterionId = criterion.id,
+                tag = criterion.tag,
+                name = "New Name",
+                description = criterion.description,
+                category = criterion.category,
+            )
 
-            val updatedCriterion = criterion.toBuilder().setName("New Name").build()
-            val request = Criterion.Update.newBuilder()
-                .setCriterion(updatedCriterion)
-                .setMask(FieldMaskUtil.fromStringList(listOf("criterion.name")))
-                .build()
-
-            val result = criterionService.updateCriterion(request)
-
+            val result = criterionService.updateCriterion(request, listOf("criterion.name"))
             assertEquals("New Name", result.name)
 
-            val fetched = criterionService.getCriterionById(criterionId)
+            val fetched = criterionService.getCriterionById(criterion.id)
             assertEquals("New Name", fetched.name)
         }
 
         @Test
         fun `When a criterion's category is updated, then the updated category is persisted`() = runTest {
             val (_, criterion) = createProjectAndCriterion()
-            val criterionId = parseUUID(criterion.id, EntityType.CRITERION)
+            val request = UpdateCriterionRequest(
+                criterionId = criterion.id,
+                tag = criterion.tag,
+                name = criterion.name,
+                description = criterion.description,
+                category = CriterionCategory.HARD_EXCLUSION,
+            )
 
-            val updatedCriterion = criterion.toBuilder()
-                .setCategory(CriterionCategory.CRITERION_CATEGORY_HARD_EXCLUSION)
-                .build()
-            val request = Criterion.Update.newBuilder()
-                .setCriterion(updatedCriterion)
-                .setMask(FieldMaskUtil.fromStringList(listOf("criterion.category")))
-                .build()
+            criterionService.updateCriterion(request, listOf("criterion.category"))
 
-            criterionService.updateCriterion(request)
-
-            val fetched = criterionService.getCriterionById(criterionId)
-            assertEquals(CriterionCategory.CRITERION_CATEGORY_HARD_EXCLUSION, fetched.category)
+            val fetched = criterionService.getCriterionById(criterion.id)
+            assertEquals(CriterionCategory.HARD_EXCLUSION, fetched.category)
         }
     }
 }

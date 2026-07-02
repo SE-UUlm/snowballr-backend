@@ -3,35 +3,33 @@ package se.uulm.snowballr.backend.service
 import se.uulm.snowballr.backend.access.ICriterionAccessChecker
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
-import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.dto.criterion.toGrpcCriteria
-import se.uulm.snowballr.backend.model.dto.criterion.toGrpcCriterion
-import se.uulm.snowballr.backend.model.parseUUID
+import se.uulm.snowballr.backend.model.dto.criterion.Criterion
+import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
+import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import java.util.UUID
-import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
 
 interface ICriterionService {
     /**
      * Service implementation of [SnowballRService.getCriterionById].
      */
-    suspend fun getCriterionById(criterionId: UUID): GrpcCriterion
+    suspend fun getCriterionById(criterionId: UUID): Criterion
 
     /**
      * Service implementation of [SnowballRService.createCriterion].
      */
-    suspend fun createCriterion(request: GrpcCriterion.Create): GrpcCriterion
+    suspend fun createCriterion(request: CreateCriterionRequest): Criterion
 
     /**
      * Service implementation of [SnowballRService.updateCriterion].
      */
-    suspend fun updateCriterion(request: GrpcCriterion.Update): GrpcCriterion
+    suspend fun updateCriterion(request: UpdateCriterionRequest, paths: List<String>): Criterion
 
     /**
      * Service implementation of [SnowballRService.getAllCriteriaForProject].
      */
-    suspend fun getAllCriteriaForProject(projectId: UUID): GrpcCriterion.List
+    suspend fun getAllCriteriaForProject(projectId: UUID): List<Criterion.ProjectCriterion>
 }
 
 /**
@@ -56,39 +54,36 @@ class CriterionService(
     private val accessChecker: ICriterionAccessChecker,
     private val projectAccessChecker: IProjectAccessChecker,
 ) : ICriterionService {
-    override suspend fun getCriterionById(criterionId: UUID): GrpcCriterion = withUser(userRepo) { currentUser ->
+    override suspend fun getCriterionById(criterionId: UUID): Criterion = withUser(userRepo) { currentUser ->
         val criterion = repo.getCriterionById(criterionId).getOrThrow()
 
         accessChecker.isAllowedToReadCriterion(currentUser, criterion)
 
-        criterion.toGrpcCriterion()
+        criterion
     }
 
-    override suspend fun createCriterion(request: GrpcCriterion.Create): GrpcCriterion =
+    override suspend fun createCriterion(request: CreateCriterionRequest): Criterion =
         withUser(userRepo) { currentUser ->
-            if (request.projectId.isNotEmpty()) {
-                val projectId = parseUUID(request.projectId, EntityType.PROJECT)
-
-                accessChecker.isAllowedToCreateProjectCriterion(currentUser, projectId)
+            if (request.projectId != null) {
+                accessChecker.isAllowedToCreateProjectCriterion(currentUser, request.projectId)
             }
 
-            repo.createCriterion(request, currentUser.id).toGrpcCriterion()
+            repo.createCriterion(request, currentUser.id)
         }
 
-    override suspend fun updateCriterion(request: GrpcCriterion.Update): GrpcCriterion =
+    override suspend fun updateCriterion(request: UpdateCriterionRequest, paths: List<String>): Criterion =
         withUser(userRepo) { currentUser ->
-            val criterionId = parseUUID(request.criterion.id, EntityType.CRITERION)
-            val criterion = repo.getCriterionById(criterionId).getOrThrow()
+            val criterion = repo.getCriterionById(request.criterionId).getOrThrow()
 
             accessChecker.isAllowedToUpdateCriterion(currentUser, criterion)
 
-            repo.updateCriterion(request).toGrpcCriterion()
+            repo.updateCriterion(request, paths)
         }
 
-    override suspend fun getAllCriteriaForProject(projectId: UUID): GrpcCriterion.List =
+    override suspend fun getAllCriteriaForProject(projectId: UUID): List<Criterion.ProjectCriterion> =
         withUser(userRepo) { currentUser ->
             projectAccessChecker.isAllowedToReadProject(currentUser, projectId)
 
-            repo.getAllProjectCriteria(projectId).toGrpcCriteria()
+            repo.getAllProjectCriteria(projectId)
         }
 }
