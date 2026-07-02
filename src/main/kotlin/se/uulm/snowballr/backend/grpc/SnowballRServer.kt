@@ -33,6 +33,7 @@ import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
 import se.uulm.snowballr.backend.model.dto.project.SnowballingType
 import se.uulm.snowballr.backend.model.dto.project.toGrpcProject
 import se.uulm.snowballr.backend.model.dto.project.toGrpcProjects
+import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
 import se.uulm.snowballr.backend.model.dto.projectmember.toGrpcProjectMembers
 import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.dto.user.UserRole
@@ -48,6 +49,7 @@ import se.uulm.snowballr.backend.model.incoming.paper.UpdatePaperRequest
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectSettingRequest
+import se.uulm.snowballr.backend.model.incoming.projectmember.UpdateProjectMemberRoleRequest
 import se.uulm.snowballr.backend.model.incoming.review.CreateReviewRequest
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
@@ -448,7 +450,13 @@ class SnowballRServer(
         ).toGrpc()
 
         override suspend fun updateProjectMemberRole(request: ProjectOuterClass.Project.Member.Update) = returnNothing {
-            projectMemberService.updateProjectMemberRole(request)
+            projectMemberService.updateProjectMemberRole(
+                UpdateProjectMemberRoleRequest(
+                    projectId = parseUUID(request.projectId, EntityType.PROJECT),
+                    userId = parseUUID(request.userId, EntityType.USER),
+                    newRole = MemberRole.fromGrpc(request.newRole),
+                ),
+            )
         }
 
         override suspend fun getCriterionById(request: Base.Id): CriterionOuterClass.Criterion =

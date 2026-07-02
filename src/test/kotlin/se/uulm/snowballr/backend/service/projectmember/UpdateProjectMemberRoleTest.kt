@@ -12,17 +12,12 @@ import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectMemberNotFoundException
+import se.uulm.snowballr.backend.model.incoming.projectmember.UpdateProjectMemberRoleRequest
 import java.util.UUID
-import snowballr.ProjectOuterClass.Project.Member as GrpcProjectMember
 
 class UpdateProjectMemberRoleTest : ProjectMemberServiceTest() {
     private fun getRequest(userId: UUID, projectId: UUID, newRole: MemberRole = MemberRole.ADMIN) =
-        GrpcProjectMember.Update
-            .newBuilder()
-            .setProjectId(projectId.toString())
-            .setUserId(userId.toString())
-            .setNewRole(newRole.toGrpc())
-            .build()
+        UpdateProjectMemberRoleRequest(projectId = projectId, userId = userId, newRole = newRole)
 
     @Test
     fun `When a user updates a member role, but has no access, then a TestSpecificException is thrown`() = runTest {

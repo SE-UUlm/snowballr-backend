@@ -8,13 +8,14 @@ import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 import se.uulm.snowballr.backend.model.dto.project.Project
+import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
 import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.exception.UnauthorizedException
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
-import snowballr.ProjectOuterClass.MemberRole
+import se.uulm.snowballr.backend.model.incoming.projectmember.UpdateProjectMemberRoleRequest
 import snowballr.ProjectOuterClass.Project.Member as GrpcProjectMember
 
 class AccessControlIntegrationTest : IntegrationTest() {
@@ -145,11 +146,11 @@ class AccessControlIntegrationTest : IntegrationTest() {
             val secondMember = addUser(DataBuilder.createExampleUser(email = "second.member@example.com"))
             inviteUserToProject(project, secondMember, acceptInvitation = true)
 
-            val request = GrpcProjectMember.Update.newBuilder()
-                .setProjectId(project.id.toString())
-                .setUserId(secondMember.id.toString())
-                .setNewRole(MemberRole.MEMBER_ROLE_ADMIN)
-                .build()
+            val request = UpdateProjectMemberRoleRequest(
+                projectId = project.id,
+                userId = secondMember.id,
+                newRole = MemberRole.ADMIN,
+            )
 
             actAsUser(member.id) {
                 assertThrows<UnauthorizedException> { projectMemberService.updateProjectMemberRole(request) }

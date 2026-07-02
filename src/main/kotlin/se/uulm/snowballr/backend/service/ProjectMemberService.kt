@@ -3,7 +3,6 @@ package se.uulm.snowballr.backend.service
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.access.IProjectMemberAccessChecker
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
-import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.projectmember.InvitationToken
 import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
 import se.uulm.snowballr.backend.model.dto.projectmember.ProjectMemberWithUser
@@ -12,13 +11,12 @@ import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
-import se.uulm.snowballr.backend.model.parseUUID
+import se.uulm.snowballr.backend.model.incoming.projectmember.UpdateProjectMemberRoleRequest
 import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import java.util.UUID
-import snowballr.ProjectOuterClass.Project.Member as GrpcProjectMember
 
 interface IProjectMemberService {
     /**
@@ -29,7 +27,7 @@ interface IProjectMemberService {
     /**
      * Service implementation of [SnowballRService.updateProjectMemberRole].
      */
-    suspend fun updateProjectMemberRole(request: GrpcProjectMember.Update)
+    suspend fun updateProjectMemberRole(request: UpdateProjectMemberRoleRequest)
 
     /**
      * Service implementation of [SnowballRService.removeProjectMember].
@@ -66,29 +64,25 @@ class ProjectMemberService(
             repo.getProjectMembersWithUsers(projectId)
         }
 
-    override suspend fun updateProjectMemberRole(request: GrpcProjectMember.Update) {
+    override suspend fun updateProjectMemberRole(request: UpdateProjectMemberRoleRequest) {
         withUser(userRepo) { currentUser ->
-            val projectId = parseUUID(request.projectId, EntityType.PROJECT)
-            val userId = parseUUID(request.userId, EntityType.USER)
+            accessChecker.isAllowedToUpdateMemberRole(currentUser, request.projectId)
 
-            accessChecker.isAllowedToUpdateMemberRole(currentUser, projectId)
-
-            val user = userRepo.getUserById(userId).getOrThrow()
+            val user = userRepo.getUserById(request.userId).getOrThrow()
 
             val member = try {
-                repo.getProjectMemberByComposedId(projectId, userId).getOrThrow()
+                repo.getProjectMemberByComposedId(request.projectId, request.userId).getOrThrow()
             } catch (_: NotFoundException) {
                 throw FailedPreconditionException(
-                    "User with ID '$userId' is not a member of project with ID '$projectId'.",
+                    "User with ID '${request.userId}' is not a member of project with ID '${request.projectId}'.",
                 )
             }
 
-            val newRole = MemberRole.fromGrpc(request.newRole)
-            if (member.isProjectAdmin() && newRole != MemberRole.ADMIN) {
-                projectAccessChecker.isNotLastProjectAdmin(user, projectId, "Cannot demote the user")
+            if (member.isProjectAdmin() && request.newRole != MemberRole.ADMIN) {
+                projectAccessChecker.isNotLastProjectAdmin(user, request.projectId, "Cannot demote the user")
             }
 
-            repo.updateProjectMemberRole(projectId, userId, newRole)
+            repo.updateProjectMemberRole(request.projectId, request.userId, request.newRole)
         }
     }
 

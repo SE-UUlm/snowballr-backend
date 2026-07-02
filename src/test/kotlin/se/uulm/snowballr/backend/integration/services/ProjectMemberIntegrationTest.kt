@@ -7,6 +7,7 @@ import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
+import se.uulm.snowballr.backend.model.incoming.projectmember.UpdateProjectMemberRoleRequest
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -89,11 +90,11 @@ class ProjectMemberIntegrationTest : IntegrationTest() {
             inviteUserToProject(project, otherUser, acceptInvitation = true)
 
             projectMemberService.updateProjectMemberRole(
-                GrpcProjectMember.Update.newBuilder()
-                    .setProjectId(project.id.toString())
-                    .setUserId(otherUser.id.toString())
-                    .setNewRole(MemberRole.ADMIN.toGrpc())
-                    .build(),
+                UpdateProjectMemberRoleRequest(
+                    projectId = project.id,
+                    userId = otherUser.id,
+                    newRole = MemberRole.ADMIN,
+                ),
             )
 
             val members = projectMemberService.getProjectMembers(project.id)
@@ -110,20 +111,20 @@ class ProjectMemberIntegrationTest : IntegrationTest() {
 
             // Promote first
             projectMemberService.updateProjectMemberRole(
-                GrpcProjectMember.Update.newBuilder()
-                    .setProjectId(project.id.toString())
-                    .setUserId(otherUser.id.toString())
-                    .setNewRole(MemberRole.ADMIN.toGrpc())
-                    .build(),
+                UpdateProjectMemberRoleRequest(
+                    projectId = project.id,
+                    userId = otherUser.id,
+                    newRole = MemberRole.ADMIN,
+                ),
             )
 
             // Then demote — still valid because testUser (creator) remains an admin
             projectMemberService.updateProjectMemberRole(
-                GrpcProjectMember.Update.newBuilder()
-                    .setProjectId(project.id.toString())
-                    .setUserId(otherUser.id.toString())
-                    .setNewRole(MemberRole.DEFAULT.toGrpc())
-                    .build(),
+                UpdateProjectMemberRoleRequest(
+                    projectId = project.id,
+                    userId = otherUser.id,
+                    newRole = MemberRole.DEFAULT,
+                ),
             )
 
             val members = projectMemberService.getProjectMembers(project.id)
