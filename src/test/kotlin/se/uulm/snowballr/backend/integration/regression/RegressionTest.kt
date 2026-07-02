@@ -13,7 +13,6 @@ import se.uulm.snowballr.backend.model.outgoing.paper.PaperResponse
 import snowballr.ProjectOuterClass.Project
 import snowballr.UserOuterClass.UserStatus
 import kotlin.test.assertEquals
-import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 
 class RegressionTest : IntegrationTest() {
     @Test
@@ -72,12 +71,7 @@ class RegressionTest : IntegrationTest() {
             val projectPaper = projectPapers.first()
             assertDoesNotThrow {
                 // If several papers have the same local ID this would throw
-                projectPaperService.getProjectPaperByRelativeId(
-                    GrpcProjectPaper.Get.newBuilder()
-                        .setProjectId(project.id.toString())
-                        .setRelativeProjectPaperId(projectPaper.localPaperId.toString())
-                        .build(),
-                )
+                projectPaperService.getProjectPaperByRelativeId(project.id, projectPaper.localPaperId)
             }
         }
 }

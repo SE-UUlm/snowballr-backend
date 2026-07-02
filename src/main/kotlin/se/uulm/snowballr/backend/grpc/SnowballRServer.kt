@@ -493,7 +493,10 @@ class SnowballRServer(
 
         override suspend fun getProjectPaperByRelativeId(
             request: ProjectOuterClass.Project.Paper.Get,
-        ): ProjectOuterClass.Project.Paper = projectPaperService.getProjectPaperByRelativeId(request).toGrpc()
+        ): ProjectOuterClass.Project.Paper = projectPaperService.getProjectPaperByRelativeId(
+            projectId = parseUUID(request.projectId, EntityType.PROJECT),
+            relativeId = request.relativeProjectPaperId.toInt(),
+        ).toGrpc()
 
         override suspend fun getAllProjectPapersForProject(request: Base.Id): ProjectOuterClass.Project.Paper.List =
             projectPaperService.getAllProjectPapersForProject(parseProjectId(request)).toGrpc()

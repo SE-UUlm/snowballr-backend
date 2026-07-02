@@ -19,7 +19,6 @@ import se.uulm.snowballr.backend.model.outgoing.projectpaper.ProjectPaperRespons
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
-import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 
 class ProjectPaperIntegrationTest : IntegrationTest() {
     private suspend fun reviewPaper(projectPaper: ProjectPaperResponse, decision: ReviewDecision) =
@@ -87,12 +86,7 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
             val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
             val added = addToProject(project, createPaper())
 
-            val fetched = projectPaperService.getProjectPaperByRelativeId(
-                GrpcProjectPaper.Get.newBuilder()
-                    .setProjectId(project.id.toString())
-                    .setRelativeProjectPaperId(added.localPaperId.toString())
-                    .build(),
-            )
+            val fetched = projectPaperService.getProjectPaperByRelativeId(project.id, added.localPaperId)
 
             assertEquals(added.id, fetched.id)
         }
@@ -103,18 +97,8 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
             val ppA = addToProject(project, createPaper("A"))
             val ppB = addToProject(project, createPaper("B"))
 
-            val fetchedA = projectPaperService.getProjectPaperByRelativeId(
-                GrpcProjectPaper.Get.newBuilder()
-                    .setProjectId(project.id.toString())
-                    .setRelativeProjectPaperId(ppA.localPaperId.toString())
-                    .build(),
-            )
-            val fetchedB = projectPaperService.getProjectPaperByRelativeId(
-                GrpcProjectPaper.Get.newBuilder()
-                    .setProjectId(project.id.toString())
-                    .setRelativeProjectPaperId(ppB.localPaperId.toString())
-                    .build(),
-            )
+            val fetchedA = projectPaperService.getProjectPaperByRelativeId(project.id, ppA.localPaperId)
+            val fetchedB = projectPaperService.getProjectPaperByRelativeId(project.id, ppB.localPaperId)
 
             assertEquals(ppA.id, fetchedA.id)
             assertEquals(ppB.id, fetchedB.id)

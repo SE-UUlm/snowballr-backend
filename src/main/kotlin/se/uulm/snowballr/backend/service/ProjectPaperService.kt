@@ -3,7 +3,6 @@ package se.uulm.snowballr.backend.service
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.access.IProjectPaperAccessChecker
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
-import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.PaperNavigationDirection
 import se.uulm.snowballr.backend.model.dto.paper.Paper
 import se.uulm.snowballr.backend.model.dto.project.Project
@@ -20,7 +19,6 @@ import se.uulm.snowballr.backend.model.exception.invalidargument.InvalidUUIDExce
 import se.uulm.snowballr.backend.model.exception.invalidargument.StageOutOfRangeException
 import se.uulm.snowballr.backend.model.outgoing.projectpaper.ProjectPaperResponse
 import se.uulm.snowballr.backend.model.outgoing.review.ReviewResponse
-import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IReviewTableRepo
@@ -29,8 +27,6 @@ import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.IReviewHasCriterionTableRepo
 import java.util.UUID
-import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
-import snowballr.ReviewOuterClass.Review as GrpcReview
 
 interface IProjectPaperService {
     /**
@@ -41,7 +37,7 @@ interface IProjectPaperService {
     /**
      * Service implementation of [SnowballRService.getProjectPaperByRelativeId].
      */
-    suspend fun getProjectPaperByRelativeId(request: GrpcProjectPaper.Get): ProjectPaperResponse
+    suspend fun getProjectPaperByRelativeId(projectId: UUID, relativeId: Int): ProjectPaperResponse
 
     /**
      * Service implementation of [SnowballRService.getAllProjectPapersForProject].
@@ -116,13 +112,10 @@ class ProjectPaperService(
             projectPaper.toProjectPaperResponse()
         }
 
-    override suspend fun getProjectPaperByRelativeId(request: GrpcProjectPaper.Get): ProjectPaperResponse =
+    override suspend fun getProjectPaperByRelativeId(projectId: UUID, relativeId: Int): ProjectPaperResponse =
         withUser(userRepo) { currentUser ->
-            val projectId = parseUUID(request.projectId, EntityType.PROJECT)
-
             projectAccessChecker.isAllowedToReadProject(currentUser, projectId)
 
-            val relativeId = request.relativeProjectPaperId.toInt()
             val projectPaper = repo.getProjectPaperByRelativeId(projectId, relativeId).getOrThrow()
 
             projectPaper.toProjectPaperResponse()
@@ -225,11 +218,10 @@ class ProjectPaperService(
      * based on custom criteria.
      *
      * @param projectId The ID of the [Project] for which [ProjectPaper]s are to be retrieved.
-     * @param predicate An optional lambda function that takes a [ProjectPaperWithPaper], a map of [GrpcReview], and a
-     * user ID. This function should return a boolean value to filter the [ProjectPaperWithPaper]s. If null, no
+     * @param predicate An optional lambda function that takes a [ProjectPaperWithPaper], a map of [ReviewResponse],
+     * and a user ID. This function should return a boolean value to filter the [ProjectPaperWithPaper]s. If null, no
      * filtering is applied.
-     * @return A list of [GrpcProjectPaper] including associated metadata such as authors, backward references, and
-     * reviews.
+     * @return A list of [ProjectPaperResponse] including associated metadata such as backward references, and reviews.
      * @throws UnauthorizedException If the user does not have the required access to the project.
      */
     private suspend fun getProjectPapers(

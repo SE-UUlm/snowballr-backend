@@ -8,17 +8,9 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import java.util.UUID
-import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class GetProjectPaperByRelativeIdTest : ProjectPaperServiceTest() {
-    private fun getRequest(projectId: UUID, relativeId: Int = -1) = GrpcProjectPaper.Get
-        .newBuilder()
-        .setProjectId(projectId.toString())
-        .setRelativeProjectPaperId(relativeId.toString())
-        .build()
-
     @Test
     fun `When a user request the project paper and has access, then the correct values are returned`() = runTest {
         val user = DataBuilder.createExampleUser()
@@ -26,8 +18,6 @@ class GetProjectPaperByRelativeIdTest : ProjectPaperServiceTest() {
         val relativeId = 1
         val paper = DataBuilder.createExamplePaper()
         val projectPaper = DataBuilder.createExampleProjectPaper(paperId = paper.id)
-
-        val request = getRequest(project.id, relativeId)
 
         mockCurrentUser(user)
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
@@ -38,7 +28,7 @@ class GetProjectPaperByRelativeIdTest : ProjectPaperServiceTest() {
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id) } returns emptyList()
         coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper.id) } returns emptyList()
 
-        val result = service.getProjectPaperByRelativeId(request)
+        val result = service.getProjectPaperByRelativeId(project.id, relativeId)
 
         assertProjectPaperEquality(projectPaper, result)
     }
@@ -49,14 +39,12 @@ class GetProjectPaperByRelativeIdTest : ProjectPaperServiceTest() {
             val user = DataBuilder.createExampleUser()
             val project = DataBuilder.createExampleProject()
 
-            val request = getRequest(project.id)
-
             mockCurrentUser(user)
             coEvery {
                 projectAccessCheckerMock.isAllowedToReadProject(user, project.id)
             } throws TestSpecificException()
 
-            assertThrows<TestSpecificException> { service.getProjectPaperByRelativeId(request) }
+            assertThrows<TestSpecificException> { service.getProjectPaperByRelativeId(project.id, -1) }
         }
 
     @Test
@@ -65,14 +53,12 @@ class GetProjectPaperByRelativeIdTest : ProjectPaperServiceTest() {
         val project = DataBuilder.createExampleProject()
         val relativeId = 2
 
-        val request = getRequest(project.id, relativeId)
-
         mockCurrentUser(user)
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
         coEvery {
             projectPaperRepoMock.getProjectPaperByRelativeId(project.id, relativeId)
         } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { service.getProjectPaperByRelativeId(request) }
+        assertThrows<TestSpecificException> { service.getProjectPaperByRelativeId(project.id, relativeId) }
     }
 }
