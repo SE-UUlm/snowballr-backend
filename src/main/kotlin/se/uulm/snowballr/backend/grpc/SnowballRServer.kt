@@ -24,23 +24,19 @@ import se.uulm.snowballr.backend.grpc.interceptor.loggingInterceptor
 import se.uulm.snowballr.backend.grpc.interceptor.validationInterceptor
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
-import se.uulm.snowballr.backend.model.dto.criterion.toGrpcCriteria
-import se.uulm.snowballr.backend.model.dto.criterion.toGrpcCriterion
+import se.uulm.snowballr.backend.model.dto.criterion.toGrpc
 import se.uulm.snowballr.backend.model.dto.paper.Author
 import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPattern
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
 import se.uulm.snowballr.backend.model.dto.project.SnowballingType
-import se.uulm.snowballr.backend.model.dto.project.toGrpcProject
-import se.uulm.snowballr.backend.model.dto.project.toGrpcProjects
+import se.uulm.snowballr.backend.model.dto.project.toGrpc
 import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
-import se.uulm.snowballr.backend.model.dto.projectmember.toGrpcProjectMembers
+import se.uulm.snowballr.backend.model.dto.projectmember.toGrpc
 import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
-import se.uulm.snowballr.backend.model.dto.user.toGrpcUser
-import se.uulm.snowballr.backend.model.dto.user.toGrpcUserSettings
-import se.uulm.snowballr.backend.model.dto.user.toGrpcUsers
+import se.uulm.snowballr.backend.model.dto.user.toGrpc
 import se.uulm.snowballr.backend.model.export.ExportFormat
 import se.uulm.snowballr.backend.model.export.toGrpc
 import se.uulm.snowballr.backend.model.fetcher.toGrpc
@@ -296,16 +292,16 @@ class SnowballRServer(
         }
 
         override suspend fun getAllUsers(request: Base.Nothing): UserOuterClass.User.List =
-            userService.getAllUsers().toGrpcUsers()
+            userService.getAllUsers().toGrpc()
 
         override suspend fun getCurrentUser(request: Base.Nothing): UserOuterClass.User =
-            userService.getCurrentUser().toGrpcUser()
+            userService.getCurrentUser().toGrpc()
 
         override suspend fun getUserById(request: Base.Id): UserOuterClass.User =
-            userService.getUserById(parseUserId(request)).toGrpcUser()
+            userService.getUserById(parseUserId(request)).toGrpc()
 
         override suspend fun getUserByEmail(request: Base.Email): UserOuterClass.User =
-            userService.getUserByEmail(request.email).toGrpcUser()
+            userService.getUserByEmail(request.email).toGrpc()
 
         override suspend fun updateUser(request: UserOuterClass.User.Update): UserOuterClass.User =
             userService.updateUser(
@@ -318,7 +314,7 @@ class SnowballRServer(
                     status = UserStatus.fromGrpc(request.user.status),
                 ),
                 FieldMaskUtil.normalize(request.mask).pathsList,
-            ).toGrpcUser()
+            ).toGrpc()
 
         override suspend fun softDeleteUser(request: Base.Id) = returnNothing {
             userService.softDeleteUser(parseUserId(request))
@@ -342,7 +338,7 @@ class SnowballRServer(
             projectPaperService.getPreviousPaper(parseProjectPaperId(request)).toGrpc()
 
         override suspend fun getUserSettings(request: Base.Nothing): UserSettingsOuterClass.UserSettings =
-            userService.getUserSettings().toGrpcUserSettings()
+            userService.getUserSettings().toGrpc()
 
         override suspend fun updateUserSettings(
             request: UserSettingsOuterClass.UserSettings.Update,
@@ -368,7 +364,7 @@ class SnowballRServer(
         ): UserOuterClass.User.List = invitationService.getInviteCandidates(
             projectId = runCatching { parseUUID(request.projectId, EntityType.PROJECT) }.getOrDefault(null),
             query = request.query,
-        ).toGrpcUsers()
+        ).toGrpc()
 
         override suspend fun inviteUserToProject(request: ProjectOuterClass.Project.Member.Invite) = returnNothing {
             invitationService.inviteUserToProject(
@@ -385,7 +381,7 @@ class SnowballRServer(
             invitationService.getPendingInvitationsForProject(parseProjectId(request)).toGrpc()
 
         override suspend fun getProjectMembers(request: Base.Id): ProjectOuterClass.Project.Member.List =
-            projectMemberService.getProjectMembers(parseProjectId(request)).toGrpcProjectMembers()
+            projectMemberService.getProjectMembers(parseProjectId(request)).toGrpc()
 
         override suspend fun removeProjectMember(request: ProjectOuterClass.Project.Member.Remove) = returnNothing {
             projectMemberService.removeProjectMember(
@@ -395,28 +391,28 @@ class SnowballRServer(
         }
 
         override suspend fun getAllProjects(request: Base.Nothing): ProjectOuterClass.Project.List =
-            projectService.getAllProjects().toGrpcProjects()
+            projectService.getAllProjects().toGrpc()
 
         override suspend fun getAllDeletedProjects(request: Base.Nothing): ProjectOuterClass.Project.List =
             super.getAllDeletedProjects(request)
 
         override suspend fun getAllDeletedProjectsForUser(request: Base.Id): ProjectOuterClass.Project.List =
-            projectService.getAllDeletedProjectsForUser(parseUserId(request)).toGrpcProjects()
+            projectService.getAllDeletedProjectsForUser(parseUserId(request)).toGrpc()
 
         override suspend fun getAllArchivedProjects(request: Base.Nothing): ProjectOuterClass.Project.List =
             super.getAllArchivedProjects(request)
 
         override suspend fun getAllProjectsForUser(request: Base.Id): ProjectOuterClass.Project.List =
-            projectService.getAllProjectsForUser(parseUserId(request)).toGrpcProjects()
+            projectService.getAllProjectsForUser(parseUserId(request)).toGrpc()
 
         override suspend fun getAllArchivedProjectsForUser(request: Base.Id): ProjectOuterClass.Project.List =
-            projectService.getAllArchivedProjectsForUser(parseUserId(request)).toGrpcProjects()
+            projectService.getAllArchivedProjectsForUser(parseUserId(request)).toGrpc()
 
         override suspend fun createProject(request: ProjectOuterClass.Project.Create): ProjectOuterClass.Project =
-            projectService.createProject(CreateProjectRequest(name = request.name)).toGrpcProject()
+            projectService.createProject(CreateProjectRequest(name = request.name)).toGrpc()
 
         override suspend fun getProjectById(request: Base.Id): ProjectOuterClass.Project =
-            projectService.getProjectById(parseProjectId(request)).toGrpcProject()
+            projectService.getProjectById(parseProjectId(request)).toGrpc()
 
         override suspend fun updateProject(request: ProjectOuterClass.Project.Update): ProjectOuterClass.Project =
             projectService.updateProject(
@@ -437,7 +433,7 @@ class SnowballRServer(
                     ),
                 ),
                 FieldMaskUtil.normalize(request.mask).pathsList.toSet(),
-            ).toGrpcProject()
+            ).toGrpc()
 
         override suspend fun getAvailableExportFormats(request: Base.Nothing): Export.AvailableExportFormatsResponse =
             exportService.getAvailableExportFormats().toGrpc()
@@ -479,10 +475,10 @@ class SnowballRServer(
         }
 
         override suspend fun getCriterionById(request: Base.Id): CriterionOuterClass.Criterion =
-            criterionService.getCriterionById(parseCriterionId(request)).toGrpcCriterion()
+            criterionService.getCriterionById(parseCriterionId(request)).toGrpc()
 
         override suspend fun getAllCriteriaForProject(request: Base.Id): CriterionOuterClass.Criterion.List =
-            criterionService.getAllCriteriaForProject(parseProjectId(request)).toGrpcCriteria()
+            criterionService.getAllCriteriaForProject(parseProjectId(request)).toGrpc()
 
         override suspend fun createCriterion(
             request: CriterionOuterClass.Criterion.Create,
@@ -501,7 +497,7 @@ class SnowballRServer(
                     category = CriterionCategory.fromGrpc(request.category),
                     projectId = projectId,
                 ),
-            ).toGrpcCriterion()
+            ).toGrpc()
         }
 
         override suspend fun updateCriterion(
@@ -515,7 +511,7 @@ class SnowballRServer(
                 category = CriterionCategory.fromGrpc(request.criterion.category),
             ),
             FieldMaskUtil.normalize(request.mask).pathsList,
-        ).toGrpcCriterion()
+        ).toGrpc()
 
         override suspend fun deleteCriterion(request: Base.Id): Base.Nothing = super.deleteCriterion(request)
 

@@ -1,7 +1,6 @@
 package se.uulm.snowballr.backend.model.dto.review
 
 import se.uulm.snowballr.backend.table.ReviewTable
-import snowballr.ReviewOuterClass
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -16,14 +15,6 @@ data class Review(
     val createdAt: OffsetDateTime,
     val modifiedAt: OffsetDateTime?,
 )
-
-fun Review.toGrpcReview(selectedCriteriaIds: List<String>): ReviewOuterClass.Review = ReviewOuterClass.Review
-    .newBuilder()
-    .setId(id.toString())
-    .setUserId(userId.toString())
-    .setDecision(decision.toGrpc())
-    .addAllSelectedCriteriaIds(selectedCriteriaIds)
-    .build()
 
 /**
  * Checks whether the review accepts the paper.

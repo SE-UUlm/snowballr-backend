@@ -48,7 +48,7 @@ sealed interface Criterion {
 /**
  * Creates a [CriterionOuterClass.Criterion] from this [Criterion].
  */
-fun Criterion.toGrpcCriterion(): CriterionOuterClass.Criterion = CriterionOuterClass.Criterion
+fun Criterion.toGrpc(): CriterionOuterClass.Criterion = CriterionOuterClass.Criterion
     .newBuilder()
     .setId(this.id.toString())
     .setTag(this.tag)
@@ -60,8 +60,8 @@ fun Criterion.toGrpcCriterion(): CriterionOuterClass.Criterion = CriterionOuterC
 /**
  * Creates a list of [CriterionOuterClass.Criterion]s from this list of [Criterion]s.
  */
-fun List<Criterion>.toGrpcCriteria(): CriterionOuterClass.Criterion.List {
+fun List<Criterion>.toGrpc(): CriterionOuterClass.Criterion.List {
     val builder = CriterionOuterClass.Criterion.List.newBuilder()
-    this.forEach { builder.addCriteria(it.toGrpcCriterion()) }
+    this.forEach { builder.addCriteria(it.toGrpc()) }
     return builder.build()
 }

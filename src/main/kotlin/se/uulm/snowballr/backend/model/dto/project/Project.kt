@@ -35,7 +35,7 @@ data class Project(
 /**
  * Creates a [ProjectOuterClass.Project] from this [Project].
  */
-fun Project.toGrpcProject(): ProjectOuterClass.Project {
+fun Project.toGrpc(): ProjectOuterClass.Project {
     val settings =
         ProjectOuterClass.Project.Settings
             .newBuilder()
@@ -67,9 +67,9 @@ fun Project.toGrpcProject(): ProjectOuterClass.Project {
 /**
  * Creates a list of [ProjectOuterClass.Project]s from this list of [Project]s.
  */
-fun List<Project>.toGrpcProjects(): ProjectOuterClass.Project.List {
+fun List<Project>.toGrpc(): ProjectOuterClass.Project.List {
     val builder = ProjectOuterClass.Project.List.newBuilder()
-    this.forEach { builder.addProjects(it.toGrpcProject()) }
+    this.forEach { builder.addProjects(it.toGrpc()) }
     return builder.build()
 }
 

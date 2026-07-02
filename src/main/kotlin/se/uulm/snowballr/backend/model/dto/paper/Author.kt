@@ -19,7 +19,7 @@ data class Author(
 /**
  * Creates a [GrpcAuthor] from this [Author].
  */
-fun Author.toGrpcAuthor(): GrpcAuthor = GrpcAuthor.newBuilder()
+fun Author.toGrpc(): GrpcAuthor = GrpcAuthor.newBuilder()
     .setFirstName(firstName)
     .setLastName(lastName)
     .build()
@@ -27,4 +27,4 @@ fun Author.toGrpcAuthor(): GrpcAuthor = GrpcAuthor.newBuilder()
 /**
  * Creates a list of [GrpcAuthor] from this list of [Author].
  */
-fun List<Author>.toGrpcAuthors(): List<GrpcAuthor> = this.map(Author::toGrpcAuthor)
+fun List<Author>.toGrpc(): List<GrpcAuthor> = this.map(Author::toGrpc)

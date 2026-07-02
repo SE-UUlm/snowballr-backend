@@ -23,7 +23,7 @@ data class User(
 /**
  * Creates a [UserOuterClass.User] from this [User].
  */
-fun User.toGrpcUser(): UserOuterClass.User = UserOuterClass.User
+fun User.toGrpc(): UserOuterClass.User = UserOuterClass.User
     .newBuilder()
     .setId(this.id.toString())
     .setEmail(this.email)
@@ -36,9 +36,9 @@ fun User.toGrpcUser(): UserOuterClass.User = UserOuterClass.User
 /**
  * Creates a list of [UserOuterClass.User]s from this list of [User]s.
  */
-fun List<User>.toGrpcUsers(): UserOuterClass.User.List {
+fun List<User>.toGrpc(): UserOuterClass.User.List {
     val builder = UserOuterClass.User.List.newBuilder()
-    this.forEach { builder.addUsers(it.toGrpcUser()) }
+    this.forEach { builder.addUsers(it.toGrpc()) }
     return builder.build()
 }
 

@@ -1,7 +1,7 @@
 package se.uulm.snowballr.backend.model.dto.projectmember
 
 import se.uulm.snowballr.backend.model.dto.user.User
-import se.uulm.snowballr.backend.model.dto.user.toGrpcUser
+import se.uulm.snowballr.backend.model.dto.user.toGrpc
 import snowballr.ProjectOuterClass
 
 /**
@@ -27,10 +27,10 @@ data class ProjectMemberWithUser(
  *
  * @return an instance of [ProjectOuterClass.Project.Member] with the role and user fields populated.
  */
-fun ProjectMemberWithUser.toGrpcProjectMember(): ProjectOuterClass.Project.Member = ProjectOuterClass.Project.Member
+fun ProjectMemberWithUser.toGrpc(): ProjectOuterClass.Project.Member = ProjectOuterClass.Project.Member
     .newBuilder()
     .setRole(this.projectMember.role.toGrpc())
-    .setUser(this.user.toGrpcUser())
+    .setUser(this.user.toGrpc())
     .build()
 
 /**
@@ -38,8 +38,7 @@ fun ProjectMemberWithUser.toGrpcProjectMember(): ProjectOuterClass.Project.Membe
  *
  * @return A [ProjectOuterClass.Project.Member.List] containing the gRPC representation of the project members.
  */
-fun List<ProjectMemberWithUser>.toGrpcProjectMembers(): ProjectOuterClass.Project.Member.List =
-    ProjectOuterClass.Project.Member.List
-        .newBuilder()
-        .addAllMembers(this.map { it.toGrpcProjectMember() })
-        .build()
+fun List<ProjectMemberWithUser>.toGrpc(): ProjectOuterClass.Project.Member.List = ProjectOuterClass.Project.Member.List
+    .newBuilder()
+    .addAllMembers(this.map { it.toGrpc() })
+    .build()
