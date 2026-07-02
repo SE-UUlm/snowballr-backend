@@ -34,7 +34,7 @@ interface IProjectMemberService {
     /**
      * Service implementation of [SnowballRService.removeProjectMember].
      */
-    suspend fun removeProjectMember(request: GrpcProjectMember.Remove)
+    suspend fun removeProjectMember(projectId: UUID, userEmail: String)
 }
 
 /**
@@ -92,15 +92,14 @@ class ProjectMemberService(
         }
     }
 
-    override suspend fun removeProjectMember(request: GrpcProjectMember.Remove) = withUser(userRepo) { currentUser ->
-        val projectId = parseUUID(request.projectId, EntityType.PROJECT)
+    override suspend fun removeProjectMember(projectId: UUID, userEmail: String) = withUser(userRepo) { currentUser ->
         val invitationToken =
-            invitationTokenRepo.getInvitationTokenByEmailAndProjectId(request.userEmail, projectId).getOrNull()
+            invitationTokenRepo.getInvitationTokenByEmailAndProjectId(userEmail, projectId).getOrNull()
 
         if (invitationToken != null) {
             removeProjectMemberInvitation(currentUser, projectId, invitationToken)
         } else {
-            val requestedUser = userRepo.getUserByEmail(request.userEmail).getOrThrow()
+            val requestedUser = userRepo.getUserByEmail(userEmail).getOrThrow()
             removeProjectMemberUser(currentUser, requestedUser, projectId)
         }
     }

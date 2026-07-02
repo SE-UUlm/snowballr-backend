@@ -162,13 +162,10 @@ class AccessControlIntegrationTest : IntegrationTest() {
             val secondMember = addUser(DataBuilder.createExampleUser(email = "second.member@example.com"))
             inviteUserToProject(project, secondMember, acceptInvitation = true)
 
-            val request = GrpcProjectMember.Remove.newBuilder()
-                .setProjectId(project.id.toString())
-                .setUserEmail(secondMember.email)
-                .build()
-
             actAsUser(member.id) {
-                assertThrows<UnauthorizedException> { projectMemberService.removeProjectMember(request) }
+                assertThrows<UnauthorizedException> {
+                    projectMemberService.removeProjectMember(project.id, secondMember.email)
+                }
             }
         }
     }

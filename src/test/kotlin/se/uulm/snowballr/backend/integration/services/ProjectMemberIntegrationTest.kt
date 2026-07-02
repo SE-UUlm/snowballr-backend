@@ -56,12 +56,7 @@ class ProjectMemberIntegrationTest : IntegrationTest() {
 
             inviteUserToProject(project, otherUser, acceptInvitation = true)
 
-            projectMemberService.removeProjectMember(
-                GrpcProjectMember.Remove.newBuilder()
-                    .setProjectId(project.id.toString())
-                    .setUserEmail(otherUser.email)
-                    .build(),
-            )
+            projectMemberService.removeProjectMember(project.id, otherUser.email)
 
             val members = projectMemberService.getProjectMembers(project.id)
             assertFalse(members.any { it.user.id == otherUser.id })
@@ -76,12 +71,7 @@ class ProjectMemberIntegrationTest : IntegrationTest() {
                 inviteUserToProject(project, otherUser, acceptInvitation = true)
 
                 actAsUser(otherUser.id) {
-                    projectMemberService.removeProjectMember(
-                        GrpcProjectMember.Remove.newBuilder()
-                            .setProjectId(project.id.toString())
-                            .setUserEmail(otherUser.email)
-                            .build(),
-                    )
+                    projectMemberService.removeProjectMember(project.id, otherUser.email)
                 }
 
                 val members = projectMemberService.getProjectMembers(project.id)

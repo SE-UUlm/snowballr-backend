@@ -370,7 +370,10 @@ class SnowballRServer(
             projectMemberService.getProjectMembers(parseProjectId(request)).toGrpcProjectMembers()
 
         override suspend fun removeProjectMember(request: ProjectOuterClass.Project.Member.Remove) = returnNothing {
-            projectMemberService.removeProjectMember(request)
+            projectMemberService.removeProjectMember(
+                projectId = parseUUID(request.projectId, EntityType.PROJECT),
+                userEmail = request.userEmail,
+            )
         }
 
         override suspend fun getAllProjects(request: Base.Nothing): ProjectOuterClass.Project.List =

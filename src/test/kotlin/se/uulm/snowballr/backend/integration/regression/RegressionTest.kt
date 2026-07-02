@@ -10,7 +10,6 @@ import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.incoming.paper.CreatePaperRequest
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.outgoing.paper.PaperResponse
-import snowballr.ProjectOuterClass.Project
 import snowballr.UserOuterClass.UserStatus
 import kotlin.test.assertEquals
 
@@ -36,11 +35,7 @@ class RegressionTest : IntegrationTest() {
             assertEquals(UserStatus.USER_STATUS_ACTIVE, pendingInvitations[0].status)
 
             // Remove the other user's invitation from the project
-            val removeInvitationRequest = Project.Member.Remove.newBuilder()
-                .setProjectId(project.id.toString())
-                .setUserEmail(otherUser.email)
-                .build()
-            projectMemberService.removeProjectMember(removeInvitationRequest)
+            projectMemberService.removeProjectMember(project.id, otherUser.email)
 
             pendingInvitations = invitationService.getPendingInvitationsForProject(project.id).usersList
             assertEquals(0, pendingInvitations.size)
