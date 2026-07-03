@@ -65,7 +65,7 @@ class RequestContext(
     }
 
     override fun restoreThreadContext(context: CoroutineContext, oldState: RequestContext?) {
-        threadLocal.set(oldState)
+        if (oldState == null) threadLocal.remove() else threadLocal.set(oldState)
     }
 
     companion object Key : CoroutineContext.Key<RequestContext> {
@@ -97,7 +97,7 @@ class RequestContext(
          * Restores [previous] as the context bound to the current thread (or clears it when `null`).
          */
         fun unbind(previous: RequestContext? = null) {
-            threadLocal.set(previous)
+            if (previous == null) threadLocal.remove() else threadLocal.set(previous)
         }
 
         /**
