@@ -5,6 +5,7 @@ import se.uulm.snowballr.backend.model.exception.internal.missingcontext.Missing
 import se.uulm.snowballr.backend.model.exception.internal.missingcontext.MissingUserIdException
 import snowballr.Authentication.AuthenticationStatus
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
 
@@ -27,7 +28,7 @@ class RequestContext(
     var userId: UUID? = null,
     var authStatus: AuthenticationStatus = AuthenticationStatus.AUTHENTICATION_STATUS_UNSPECIFIED,
 ) : AbstractCoroutineContextElement(RequestContext), ThreadContextElement<RequestContext?> {
-    private val cookiesToSet: MutableMap<String, String?> = mutableMapOf()
+    private val cookiesToSet: MutableMap<String, String?> = ConcurrentHashMap()
 
     /**
      * Read-only view of the cookies queued to be written to the response. A `null` value signals that
