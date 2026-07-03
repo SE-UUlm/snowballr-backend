@@ -20,15 +20,20 @@ import se.uulm.snowballr.backend.context.RequestContext
 interface BaseServiceTest {
     @BeforeEach
     fun setUpTest() {
-        RequestContext.bind(RequestContext())
+        previousContext.set(RequestContext.bind(RequestContext()))
     }
 
     @AfterEach
     fun tearDownTest() {
-        RequestContext.unbind()
+        RequestContext.unbind(previousContext.get())
+        previousContext.remove()
         checkUnnecessaryStub(*getAllMocks())
         clearAllMocks()
     }
 
     fun getAllMocks(): Array<Any>
+
+    companion object {
+        private val previousContext = ThreadLocal<RequestContext?>()
+    }
 }
