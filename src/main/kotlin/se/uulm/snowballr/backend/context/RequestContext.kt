@@ -25,9 +25,13 @@ import kotlin.coroutines.CoroutineContext
  * Reads happen through [current]/[currentOrNull].
  */
 class RequestContext(
-    var userId: UUID? = null,
-    var authStatus: AuthenticationStatus = AuthenticationStatus.AUTHENTICATION_STATUS_UNSPECIFIED,
+    userId: UUID? = null,
+    authStatus: AuthenticationStatus = AuthenticationStatus.AUTHENTICATION_STATUS_UNSPECIFIED,
 ) : AbstractCoroutineContextElement(RequestContext), ThreadContextElement<RequestContext?> {
+    var userId: UUID? = userId
+        internal set
+    var authStatus: AuthenticationStatus = authStatus
+        internal set
     private val cookiesToSet: MutableMap<String, String?> = ConcurrentHashMap()
 
     /**
