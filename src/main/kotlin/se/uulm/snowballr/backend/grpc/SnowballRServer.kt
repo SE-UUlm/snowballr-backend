@@ -144,7 +144,9 @@ class SnowballRServer(
             // Interceptors in reverse order of execution
             .intercept(exceptionInterceptor)
             .intercept(validationInterceptor)
-            // Installs the RequestContext (built by the authentication interceptor) into the service coroutine.
+            // Must appear AFTER authenticationInterceptor in this list — gRPC reverses .intercept() order,
+            // so this runs second. It reads REQUEST_CONTEXT_KEY written by auth and installs the
+            // RequestContext into the service coroutine context.
             .intercept(requestContextCoroutineInterceptor)
             .intercept(authenticationInterceptor)
             .intercept(loggingInterceptor)
