@@ -5,7 +5,9 @@ import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.TextColumnType
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.greaterEq
 import org.jetbrains.exposed.v1.core.inList
+import org.jetbrains.exposed.v1.core.lessEq
 import org.jetbrains.exposed.v1.core.or
 import org.jetbrains.exposed.v1.core.statements.StatementType
 import org.jetbrains.exposed.v1.jdbc.batchInsert
@@ -20,6 +22,7 @@ import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.paper.Paper
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.PaperNotFoundException
+import se.uulm.snowballr.backend.model.fetcher.FetcherMetadata
 import se.uulm.snowballr.backend.model.incoming.paper.CreatePaperRequest
 import se.uulm.snowballr.backend.model.incoming.paper.UpdatePaperRequest
 import se.uulm.snowballr.backend.table.PaperTable
@@ -79,6 +82,18 @@ interface IPaperTableRepo {
      * Retrieves all papers that have one or more external ID(s) that matches at least one external ID in [externalIds].
      */
     suspend fun getPapersByExternalIds(externalIds: List<ExternalId>): List<Paper>
+
+    /**
+     * Retrieves all papers whose publication year is within [tolerance] years of [year].
+     */
+    suspend fun getPapersByYear(year: Int, tolerance: Int): List<Paper>
+
+    /**
+     * Updates only the fetcher metadata column of the paper with the given [id].
+     *
+     * Does not modify [PaperTable.modifiedAt] — this is a system-internal operation, not a user edit.
+     */
+    suspend fun updateFetcherMetadata(id: UUID, metadata: FetcherMetadata)
 }
 
 /**
@@ -90,6 +105,7 @@ interface IPaperTableRepo {
  *
  * @param db The database abstraction used for executing queries within a transaction.
  */
+@Suppress("TooManyFunctions")
 class PaperTableRepo(
     private val db: IDatabase,
 ) : IPaperTableRepo {
@@ -223,6 +239,16 @@ class PaperTableRepo(
         if (externalIds.isEmpty()) return@query emptyList()
 
         getPapersWhere(where = { externalIdsWhereOp(externalIds) })
+    }
+
+    override suspend fun getPapersByYear(year: Int, tolerance: Int): List<Paper> = db.query {
+        getPapersWhere { (PaperTable.year greaterEq year - tolerance) and (PaperTable.year lessEq year + tolerance) }
+    }
+
+    override suspend fun updateFetcherMetadata(id: UUID, metadata: FetcherMetadata): Unit = db.query {
+        PaperTable.update({ PaperTable.id eq id }) {
+            it[fetcherMetadata] = metadata
+        }
     }
 
     /**

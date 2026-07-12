@@ -367,4 +367,89 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable, PaperHasExternalId
             assertEquals(0, papers.size)
         }
     }
+
+    @Nested
+    inner class GetPapersByYear {
+        @Test
+        fun `When a paper's year exactly matches, then the paper is returned`() = runTest {
+            val paperId = insertPaperAndGetId(year = 2020)
+
+            val papers = repo.getPapersByYear(2020, tolerance = 0)
+
+            assertThat(papers.map { it.id }).containsExactly(paperId)
+        }
+
+        @Test
+        fun `When a paper's year is within the tolerance, then the paper is returned`() = runTest {
+            val paperId = insertPaperAndGetId(year = 2018)
+
+            val papers = repo.getPapersByYear(2020, tolerance = 2)
+
+            assertThat(papers.map { it.id }).containsExactly(paperId)
+        }
+
+        @Test
+        fun `When a paper's year is outside the tolerance, then the paper is not returned`() = runTest {
+            insertPaperAndGetId(year = 2015)
+
+            val papers = repo.getPapersByYear(2020, tolerance = 2)
+
+            assertEquals(0, papers.size)
+        }
+
+        @Test
+        fun `When multiple papers are within the tolerance, then all of them are returned`() = runTest {
+            val paper1 = insertPaperAndGetId(year = 2019)
+            val paper2 = insertPaperAndGetId(year = 2020)
+            val paper3 = insertPaperAndGetId(year = 2021)
+            insertPaperAndGetId(year = 1990)
+
+            val papers = repo.getPapersByYear(2020, tolerance = 1)
+
+            assertThat(papers.map { it.id }).containsExactlyInAnyOrder(paper1, paper2, paper3)
+        }
+
+        @Test
+        fun `When no paper matches the year, then an empty list is returned`() = runTest {
+            insertPaperAndGetId(year = 2020)
+
+            val papers = repo.getPapersByYear(1990, tolerance = 0)
+
+            assertEquals(0, papers.size)
+        }
+    }
+
+    @Nested
+    inner class UpdateFetcherMetadata {
+        @Test
+        fun `When fetcher metadata is updated, then the stored metadata is replaced`() = runTest {
+            val paperId = insertPaperAndGetId(fetcherMetadata = mapOf("old" to "value"))
+            val newMetadata = mapOf("id" to "123", "foo" to "bar")
+
+            repo.updateFetcherMetadata(paperId, newMetadata)
+
+            val paper = repo.getPaperById(paperId).getOrThrow()
+            assertEquals(newMetadata, paper.fetcherMetadata)
+        }
+
+        @Test
+        fun `When fetcher metadata is updated, then modifiedAt is not changed`() = runTest {
+            val paperId = insertPaperAndGetId()
+
+            repo.updateFetcherMetadata(paperId, mapOf("id" to "123"))
+
+            val paper = repo.getPaperById(paperId).getOrThrow()
+            assertNull(paper.modifiedAt)
+        }
+
+        @Test
+        fun `When fetcher metadata is updated with an empty map, then the metadata is cleared`() = runTest {
+            val paperId = insertPaperAndGetId(fetcherMetadata = mapOf("old" to "value"))
+
+            repo.updateFetcherMetadata(paperId, emptyMap())
+
+            val paper = repo.getPaperById(paperId).getOrThrow()
+            assertThat(paper.fetcherMetadata).isEmpty()
+        }
+    }
 }
