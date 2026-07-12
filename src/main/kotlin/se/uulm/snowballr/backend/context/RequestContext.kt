@@ -4,10 +4,12 @@ import kotlinx.coroutines.ThreadContextElement
 import se.uulm.snowballr.backend.model.exception.internal.missingcontext.MissingRequestContextException
 import se.uulm.snowballr.backend.model.exception.internal.missingcontext.MissingUserIdException
 import snowballr.Authentication.AuthenticationStatus
+import java.util.Optional
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
+import kotlin.jvm.optionals.getOrNull
 
 /**
  * Transport-agnostic, request-scoped context carrying the authenticated identity, the authentication
@@ -32,14 +34,14 @@ class RequestContext(
         internal set
     var authStatus: AuthenticationStatus = authStatus
         internal set
-    private val cookiesToSet: MutableMap<String, String?> = ConcurrentHashMap()
+    private val cookiesToSet: MutableMap<String, Optional<String>> = ConcurrentHashMap()
 
     /**
      * Read-only view of the cookies queued to be written to the response. A `null` value signals that
      * the corresponding cookie should be expired.
      */
     val cookies: Map<String, String?>
-        get() = cookiesToSet
+        get() = cookiesToSet.mapValues { it.value.getOrNull() }
 
     /**
      * Returns the authenticated user's ID.
@@ -55,7 +57,7 @@ class RequestContext(
      * @param value The cookie value, or `null`/empty to signal that the cookie should be expired.
      */
     fun queueCookie(name: String, value: String?) {
-        cookiesToSet[name] = value
+        cookiesToSet[name] = Optional.ofNullable(value)
     }
 
     override fun updateThreadContext(context: CoroutineContext): RequestContext? {
