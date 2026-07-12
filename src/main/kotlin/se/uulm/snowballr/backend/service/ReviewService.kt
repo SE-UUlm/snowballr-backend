@@ -94,14 +94,8 @@ class ReviewService(
 
             projectAccessChecker.isAllowedToReadProject(currentUser, projectPaper.projectId)
 
-            val reviews = repo.getAllReviewsForProjectPaper(projectPaperId)
-            val reviewSelectedCriteriaMap = mutableMapOf<Review, List<UUID>>()
-            for (review in reviews) {
-                reviewSelectedCriteriaMap[review] = reviewHasCriterionRepo
-                    .getSelectedCriteriaIdsForReviewById(review.id)
-            }
-
-            reviews.map { ReviewResponse.fromReviewAndIds(it, reviewSelectedCriteriaMap[it].orEmpty()) }
+            repo.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaperId)
+                .map { ReviewResponse.fromReviewWithSelectedCriteriaIds(it) }
         }
 
     override suspend fun createReview(request: CreateReviewRequest): ReviewResponse =

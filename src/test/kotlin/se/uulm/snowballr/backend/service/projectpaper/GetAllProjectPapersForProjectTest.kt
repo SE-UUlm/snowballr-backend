@@ -4,7 +4,6 @@ import io.mockk.coEvery
 import io.mockk.coJustRun
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
@@ -12,7 +11,6 @@ import java.util.UUID
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class GetAllProjectPapersForProjectTest : ProjectPaperServiceTest() {
     @Test
     @Suppress("LongMethod")
@@ -20,18 +18,26 @@ class GetAllProjectPapersForProjectTest : ProjectPaperServiceTest() {
         runTest {
             val user = DataBuilder.createExampleUser()
             val project = DataBuilder.createExampleProject()
-            val projectPaper0 = DataBuilder.createExampleProjectPaperWithPaper()
-            val projectPaper0Refs = listOf(UUID.randomUUID(), UUID.randomUUID())
-            val projectPaper0Review0 = DataBuilder.createExampleReview()
-            val projectPaper0Review1 = DataBuilder.createExampleReview()
-            val projectPaper1 = DataBuilder.createExampleProjectPaperWithPaper()
-            val projectPaper1Refs = listOf(UUID.randomUUID(), UUID.randomUUID())
-            val projectPaper1Review0 = DataBuilder.createExampleReview()
-            val projectPaper1Review1 = DataBuilder.createExampleReview()
-            val projectPapersWithPapers = listOf(projectPaper0, projectPaper1)
             val criterion0 = DataBuilder.createExampleProjectCriterion()
             val criterion1 = DataBuilder.createExampleProjectCriterion()
             val criterion2 = DataBuilder.createExampleProjectCriterion()
+            val projectPaper0 = DataBuilder.createExampleProjectPaperWithPaper()
+            val projectPaper0Refs = listOf(UUID.randomUUID(), UUID.randomUUID())
+            val projectPaper0Review0 = DataBuilder.createExampleReviewWithSelectedCriteriaIds(
+                selectedCriteriaIds = listOf(criterion0.id, criterion1.id),
+            )
+            val projectPaper0Review1 = DataBuilder.createExampleReviewWithSelectedCriteriaIds(
+                selectedCriteriaIds = listOf(criterion2.id, criterion1.id),
+            )
+            val projectPaper1 = DataBuilder.createExampleProjectPaperWithPaper()
+            val projectPaper1Refs = listOf(UUID.randomUUID(), UUID.randomUUID())
+            val projectPaper1Review0 = DataBuilder.createExampleReviewWithSelectedCriteriaIds(
+                selectedCriteriaIds = listOf(criterion2.id, criterion0.id),
+            )
+            val projectPaper1Review1 = DataBuilder.createExampleReviewWithSelectedCriteriaIds(
+                selectedCriteriaIds = listOf(criterion0.id, criterion2.id),
+            )
+            val projectPapersWithPapers = listOf(projectPaper0, projectPaper1)
 
             mockCurrentUser(user)
             coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
@@ -43,23 +49,11 @@ class GetAllProjectPapersForProjectTest : ProjectPaperServiceTest() {
                 citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(projectPaper1.paper.id)
             } returns projectPaper1Refs
             coEvery {
-                reviewRepoMock.getAllReviewsForProjectPaper(projectPaper0.projectPaper.id)
+                reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaper0.projectPaper.id)
             } returns listOf(projectPaper0Review0, projectPaper0Review1)
             coEvery {
-                reviewRepoMock.getAllReviewsForProjectPaper(projectPaper1.projectPaper.id)
+                reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaper1.projectPaper.id)
             } returns listOf(projectPaper1Review0, projectPaper1Review1)
-            coEvery {
-                reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(projectPaper0Review0.id)
-            } returns listOf(criterion0.id, criterion1.id)
-            coEvery {
-                reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(projectPaper0Review1.id)
-            } returns listOf(criterion2.id, criterion1.id)
-            coEvery {
-                reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(projectPaper1Review0.id)
-            } returns listOf(criterion2.id, criterion0.id)
-            coEvery {
-                reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(projectPaper1Review1.id)
-            } returns listOf(criterion0.id, criterion2.id)
 
             val projectPapers = service.getAllProjectPapersForProject(project.id)
 

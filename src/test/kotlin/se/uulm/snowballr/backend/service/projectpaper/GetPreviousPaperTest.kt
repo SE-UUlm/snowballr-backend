@@ -35,7 +35,9 @@ class GetPreviousPaperTest : ProjectPaperServiceTest() {
             } returns Result.success(previousProjectPaper)
             coEvery { paperRepoMock.getPaperById(previousProjectPaper.paperId) } returns Result.success(otherPaper)
             coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(otherPaper.id) } returns emptyList()
-            coEvery { reviewRepoMock.getAllReviewsForProjectPaper(previousProjectPaper.id) } returns emptyList()
+            coEvery {
+                reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(previousProjectPaper.id)
+            } returns emptyList()
 
             val previousPaper = service.getPreviousPaper(projectPaper.id)
 

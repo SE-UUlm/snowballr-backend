@@ -25,7 +25,6 @@ import se.uulm.snowballr.backend.repository.IReviewTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
-import se.uulm.snowballr.backend.repository.association.IReviewHasCriterionTableRepo
 import java.util.UUID
 
 interface IProjectPaperService {
@@ -87,7 +86,6 @@ private typealias ProjectPaperFilter =
  * @param paperRepo The repository responsible for managing persistence operations for papers.
  * @param citationTableRepo The repository responsible for managing persistence operations for the citation relation.
  * @param reviewTableRepo The repository responsible for managing persistence operations for the reviews
- * @param reviewHasCriterionTableRepo The repository responsible for managing persistence operations for the review has
  * @param accessChecker Interface for checking access permissions for project papers based on defined rules.
  * @param projectAccessChecker Interface for checking access permissions for projects based on defined rules.
  */
@@ -99,7 +97,6 @@ class ProjectPaperService(
     private val paperRepo: IPaperTableRepo,
     private val citationTableRepo: ICitationTableRepo,
     private val reviewTableRepo: IReviewTableRepo,
-    private val reviewHasCriterionTableRepo: IReviewHasCriterionTableRepo,
     private val accessChecker: IProjectPaperAccessChecker,
     private val projectAccessChecker: IProjectAccessChecker,
 ) : IProjectPaperService {
@@ -195,12 +192,8 @@ class ProjectPaperService(
         val paper = associatedPaper ?: paperRepo.getPaperById(paperId).getOrThrow()
         val paperResponse = paper.toPaperResponse(citationTableRepo)
 
-        val reviews = reviewTableRepo
-            .getAllReviewsForProjectPaper(id)
-            .map {
-                val selectedCriteriaIds = reviewHasCriterionTableRepo.getSelectedCriteriaIdsForReviewById(it.id)
-                ReviewResponse.fromReviewAndIds(it, selectedCriteriaIds)
-            }
+        val reviews = reviewTableRepo.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(id)
+            .map { ReviewResponse.fromReviewWithSelectedCriteriaIds(it) }
 
         return ProjectPaperResponse(
             id = this.id,
@@ -238,11 +231,8 @@ class ProjectPaperService(
             val paper = projectPaper.paper
             paperBackwardReferencesMap[paper] = citationTableRepo.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
             projectPaperReviewsMap[projectPaper.projectPaper] = reviewTableRepo
-                .getAllReviewsForProjectPaper(projectPaper.projectPaper.id)
-                .map {
-                    val selectedCriteriaIds = reviewHasCriterionTableRepo.getSelectedCriteriaIdsForReviewById(it.id)
-                    ReviewResponse.fromReviewAndIds(it, selectedCriteriaIds)
-                }
+                .getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaper.projectPaper.id)
+                .map { ReviewResponse.fromReviewWithSelectedCriteriaIds(it) }
         }
 
         projectPapersWithPapers = predicate?.let { pred ->

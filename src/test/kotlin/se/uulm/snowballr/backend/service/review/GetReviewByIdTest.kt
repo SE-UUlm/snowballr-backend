@@ -4,14 +4,12 @@ import io.mockk.coEvery
 import io.mockk.coJustRun
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import java.util.UUID
 import kotlin.test.assertEquals
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class GetReviewByIdTest : ReviewServiceTest() {
     @Test
     fun `When a user requests a review and has access, then the correct values are returned`() = runTest {

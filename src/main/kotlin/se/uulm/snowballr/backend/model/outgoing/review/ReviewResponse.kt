@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.model.outgoing.review
 
 import se.uulm.snowballr.backend.model.dto.review.Review
 import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
+import se.uulm.snowballr.backend.model.dto.review.ReviewWithSelectedCriteriaIds
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -24,5 +25,8 @@ data class ReviewResponse(
             modifiedAt = review.modifiedAt,
             selectedCriteriaIds = selectedCriteriaIds,
         )
+
+        fun fromReviewWithSelectedCriteriaIds(review: ReviewWithSelectedCriteriaIds) =
+            fromReviewAndIds(review.review, review.selectedCriteriaIds)
     }
 }

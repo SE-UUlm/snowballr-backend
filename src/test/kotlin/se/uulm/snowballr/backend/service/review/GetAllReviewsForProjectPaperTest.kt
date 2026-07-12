@@ -4,38 +4,35 @@ import io.mockk.coEvery
 import io.mockk.coJustRun
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import java.util.UUID
 import kotlin.test.assertEquals
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class GetAllReviewsForProjectPaperTest : ReviewServiceTest() {
     @Test
     fun `When a user requests all reviews and has access, then the correct values are returned`() = runTest {
         val user = DataBuilder.createExampleUser()
         val projectPaper = DataBuilder.createExampleProjectPaper()
-        val review = DataBuilder.createExampleReview()
         val selectedCriteriaIds = listOf(UUID.randomUUID())
+        val review = DataBuilder.createExampleReviewWithSelectedCriteriaIds(selectedCriteriaIds = selectedCriteriaIds)
 
         mockCurrentUser(user)
         coEvery { projectPaperRepoMock.getProjectPaperById(projectPaper.id) } returns Result.success(projectPaper)
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, projectPaper.projectId) }
-        coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper.id) } returns listOf(review)
         coEvery {
-            reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(review.id)
-        } returns selectedCriteriaIds
+            reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaper.id)
+        } returns listOf(review)
 
         val reviews = service.getAllReviewsForProjectPaper(projectPaper.id)
 
         assertEquals(1, reviews.size)
-        assertEquals(review.id, reviews[0].id)
+        assertEquals(review.review.id, reviews[0].id)
         assertEquals(1, reviews[0].selectedCriteriaIds.size)
         val selectedCriterionId = reviews[0].selectedCriteriaIds[0]
         assertEquals(selectedCriteriaIds[0], selectedCriterionId)
-        assertReviewEquality(review, reviews[0])
+        assertReviewEquality(review.review, reviews[0])
     }
 
     @Test
