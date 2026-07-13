@@ -7,7 +7,6 @@ import io.mockk.coEvery
 import io.mockk.coJustRun
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkObject
 import io.mockk.slot
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -27,11 +26,11 @@ import se.uulm.snowballr.backend.TestDatabase
 import se.uulm.snowballr.backend.accessCheckerDeps
 import se.uulm.snowballr.backend.auth.AuthenticationManager
 import se.uulm.snowballr.backend.auth.CookieManager
-import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.auth.IAuthenticationManager
 import se.uulm.snowballr.backend.auth.ICookieManager
 import se.uulm.snowballr.backend.auth.IJwtManager
 import se.uulm.snowballr.backend.auth.JwtManager
+import se.uulm.snowballr.backend.context.RequestContext
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.env.Env
 import se.uulm.snowballr.backend.env.EnvReader
@@ -140,12 +139,12 @@ open class IntegrationTest : KoinTest {
         }
 
         db.setUpTest(needsTestUser = true) { testUserId = it }
-        mockkObject(GrpcContext)
-        every { GrpcContext.getUserIdFromContext() } returns testUserId
+        RequestContext.bind(RequestContext(userId = testUserId))
     }
 
     @AfterEach
     fun tearDownTest() {
+        RequestContext.unbind()
         db.tearDownTest()
         checkUnnecessaryStub(*allMocks)
         clearAllMocks()
@@ -240,9 +239,9 @@ open class IntegrationTest : KoinTest {
      * @param block The code that is executed on behalf of the user with the passed [userId].
      */
     protected suspend fun actAsUser(userId: UUID, block: suspend () -> Unit) {
-        every { GrpcContext.getUserIdFromContext() } returns userId
+        RequestContext.current().userId = userId
         block()
-        every { GrpcContext.getUserIdFromContext() } returns testUserId
+        RequestContext.current().userId = testUserId
     }
 
     private suspend fun inviteHelper(

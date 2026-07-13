@@ -3,21 +3,21 @@ package se.uulm.snowballr.backend.service.authentication
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import se.uulm.snowballr.backend.GrpcTestContextExtension
-import se.uulm.snowballr.backend.auth.GrpcContext
+import se.uulm.snowballr.backend.auth.ACCESS_TOKEN_COOKIE_NAME
+import se.uulm.snowballr.backend.auth.REFRESH_TOKEN_COOKIE_NAME
+import se.uulm.snowballr.backend.auth.setAuthCookies
+import se.uulm.snowballr.backend.context.RequestContext
 
-@ExtendWith(GrpcTestContextExtension::class)
 class LogoutTest : AuthenticationServiceTest() {
     @Test
-    fun `When a user logs out, then the access and refresh token are cleared`(cookiesMap: MutableMap<String, String>) =
-        runTest {
-            // Simulate setting cookies via login
-            GrpcContext.setAuthCookiesInContext("testAccessToken", "testRefreshToken")
+    fun `When a user logs out, then the access and refresh token are cleared`() = runTest {
+        // Simulate setting cookies via login
+        RequestContext.current().setAuthCookies("testAccessToken", "testRefreshToken")
 
-            service.logout()
+        service.logout()
 
-            assertEquals("", cookiesMap[GrpcContext.ACCESS_TOKEN_COOKIE_NAME])
-            assertEquals("", cookiesMap[GrpcContext.REFRESH_TOKEN_COOKIE_NAME])
-        }
+        val cookies = RequestContext.current().cookies
+        assertEquals("", cookies[ACCESS_TOKEN_COOKIE_NAME])
+        assertEquals("", cookies[REFRESH_TOKEN_COOKIE_NAME])
+    }
 }

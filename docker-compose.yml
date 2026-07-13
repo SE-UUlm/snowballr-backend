@@ -65,6 +65,7 @@ services:
             - --allow_all_origins # Crucial for local dev where frontend is on different origin
             - --run_tls_server=false # Don't require TLS
             - --server_http_debug_port=${WEB_PORT:-8081} # Proxy listens on this port inside the container
+            - --backend_max_call_recv_msg_size=10485760 # Increase max message size to 10MB
         depends_on:
             backend-local:
                 condition: service_healthy
@@ -118,6 +119,7 @@ services:
             - --allow_all_origins # Crucial for local dev where frontend is on different origin
             - --run_tls_server=false # Don't require TLS
             - --server_http_debug_port=${WEB_PORT:-8081} # Proxy listens on this port inside the container
+            - --backend_max_call_recv_msg_size=10485760 # Increase max message size to 10MB
         depends_on:
             backend-registry:
                 condition: service_healthy
@@ -170,3 +172,4 @@ services:
             - --allow_all_origins # Crucial for local dev where frontend is on different origin
             - --run_tls_server=false # Don't require TLS
             - --server_http_debug_port=${WEB_PORT:-8081} # Proxy listens on this port inside the container
+            - --backend_max_call_recv_msg_size=10485760 # Increase max message size to 10MB

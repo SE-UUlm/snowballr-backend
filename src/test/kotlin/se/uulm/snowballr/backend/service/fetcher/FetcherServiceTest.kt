@@ -1,10 +1,9 @@
 package se.uulm.snowballr.backend.service.fetcher
 
 import io.mockk.coEvery
-import io.mockk.every
 import io.mockk.mockk
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
-import se.uulm.snowballr.backend.auth.GrpcContext
+import se.uulm.snowballr.backend.context.RequestContext
 import se.uulm.snowballr.backend.fetcher.IFetcherManager
 import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
@@ -50,7 +49,7 @@ sealed class FetcherServiceTest : BaseServiceTest {
      * Mock the current user that is passed through the [withUser] helper.
      */
     protected fun mockCurrentUser(currentUser: User) {
-        every { GrpcContext.getUserIdFromContext() } returns currentUser.id
+        RequestContext.current().userId = currentUser.id
         coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
     }
 }

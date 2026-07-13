@@ -1,8 +1,9 @@
 package se.uulm.snowballr.backend.service
 
-import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.auth.IJwtManager
 import se.uulm.snowballr.backend.auth.PasswordUtils
+import se.uulm.snowballr.backend.auth.setAuthCookies
+import se.uulm.snowballr.backend.context.RequestContext
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
@@ -87,7 +88,7 @@ class AuthenticationService(
     }
 
     override suspend fun logout() {
-        GrpcContext.setAuthCookiesInContext("", "")
+        RequestContext.current().setAuthCookies("", "")
     }
 
     @Suppress("ThrowsCount")
@@ -117,7 +118,7 @@ class AuthenticationService(
 
         // Generate JWT tokens
         val (accessToken, refreshToken) = jwtManager.generateAuthTokens(user.id)
-        GrpcContext.setAuthCookiesInContext(accessToken, refreshToken)
+        RequestContext.current().setAuthCookies(accessToken, refreshToken)
     }
 
     override suspend fun changePassword(request: ChangePasswordRequest) = withUser(repo) { currentUser ->

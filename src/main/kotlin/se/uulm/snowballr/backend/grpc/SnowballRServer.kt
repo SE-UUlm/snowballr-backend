@@ -9,7 +9,7 @@ import io.grpc.protobuf.services.HealthStatusManager
 import io.grpc.protobuf.services.ProtoReflectionService
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
-import se.uulm.snowballr.backend.auth.GrpcContext
+import se.uulm.snowballr.backend.context.RequestContext
 import se.uulm.snowballr.backend.grpc.GrpcHelpers.parseCriterionId
 import se.uulm.snowballr.backend.grpc.GrpcHelpers.parsePaperId
 import se.uulm.snowballr.backend.grpc.GrpcHelpers.parseProjectId
@@ -21,6 +21,7 @@ import se.uulm.snowballr.backend.grpc.GrpcHelpers.returnNothing
 import se.uulm.snowballr.backend.grpc.interceptor.authenticationInterceptor
 import se.uulm.snowballr.backend.grpc.interceptor.exceptionInterceptor
 import se.uulm.snowballr.backend.grpc.interceptor.loggingInterceptor
+import se.uulm.snowballr.backend.grpc.interceptor.requestContextCoroutineInterceptor
 import se.uulm.snowballr.backend.grpc.interceptor.validationInterceptor
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
@@ -143,6 +144,10 @@ class SnowballRServer(
             // Interceptors in reverse order of execution
             .intercept(exceptionInterceptor)
             .intercept(validationInterceptor)
+            // Must appear AFTER authenticationInterceptor in this list — gRPC reverses .intercept() order,
+            // so this runs second. It reads REQUEST_CONTEXT_KEY written by auth and installs the
+            // RequestContext into the service coroutine context.
+            .intercept(requestContextCoroutineInterceptor)
             .intercept(authenticationInterceptor)
             .intercept(loggingInterceptor)
             // Services
@@ -259,7 +264,7 @@ class SnowballRServer(
         override suspend fun getAuthenticationStatus(
             request: Base.Nothing,
         ): Authentication.AuthenticationStatusResponse = Authentication.AuthenticationStatusResponse.newBuilder()
-            .setAuthenticationStatus(GrpcContext.getAuthenticationStatusFromContext()).build()
+            .setAuthenticationStatus(RequestContext.current().authStatus).build()
 
         /** Renew Session is handled in the [authenticationInterceptor]. */
         override suspend fun renewSession(request: Base.Nothing): Base.Nothing = Base.Nothing.getDefaultInstance()

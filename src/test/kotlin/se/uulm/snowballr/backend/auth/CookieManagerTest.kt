@@ -70,10 +70,10 @@ class CookieManagerTest {
     inner class BuildAuthCookieString {
         @Test
         fun `When building auth cookie for access token with value, then correct cookie string is returned`() {
-            val cookie = cookieManager.buildAuthCookieString(GrpcContext.ACCESS_TOKEN_COOKIE_NAME, "token123")
+            val cookie = cookieManager.buildAuthCookieString(ACCESS_TOKEN_COOKIE_NAME, "token123")
 
             assertNotNull(cookie)
-            assertThat(cookie).contains("${GrpcContext.ACCESS_TOKEN_COOKIE_NAME}=token123")
+            assertThat(cookie).contains("${ACCESS_TOKEN_COOKIE_NAME}=token123")
             assertThat(cookie).contains("Max-Age=${JwtManager.ACCESS_TOKEN_EXPIRATION_MS}")
             assertThat(cookie).contains("SameSite=Strict")
             assertThat(cookie).contains("HttpOnly")
@@ -82,19 +82,19 @@ class CookieManagerTest {
 
         @Test
         fun `When building auth cookie for access token with null value, then cookie expires immediately`() {
-            val cookie = cookieManager.buildAuthCookieString(GrpcContext.ACCESS_TOKEN_COOKIE_NAME, null)
+            val cookie = cookieManager.buildAuthCookieString(ACCESS_TOKEN_COOKIE_NAME, null)
 
             assertNotNull(cookie)
-            assertThat(cookie).contains("${GrpcContext.ACCESS_TOKEN_COOKIE_NAME}=")
+            assertThat(cookie).contains("${ACCESS_TOKEN_COOKIE_NAME}=")
             assertThat(cookie).contains("Max-Age=0")
         }
 
         @Test
         fun `When building auth cookie for refresh token with value, then correct cookie string is returned`() {
-            val cookie = cookieManager.buildAuthCookieString(GrpcContext.REFRESH_TOKEN_COOKIE_NAME, "refresh456")
+            val cookie = cookieManager.buildAuthCookieString(REFRESH_TOKEN_COOKIE_NAME, "refresh456")
 
             assertNotNull(cookie)
-            assertThat(cookie).contains("${GrpcContext.REFRESH_TOKEN_COOKIE_NAME}=refresh456")
+            assertThat(cookie).contains("${REFRESH_TOKEN_COOKIE_NAME}=refresh456")
             assertThat(cookie).contains("Max-Age=${JwtManager.REFRESH_TOKEN_EXPIRATION_MS}")
             assertThat(cookie).contains("SameSite=Strict")
             assertThat(cookie).contains("HttpOnly")
@@ -103,10 +103,10 @@ class CookieManagerTest {
 
         @Test
         fun `When building auth cookie for refresh token with empty value, then cookie expires immediately`() {
-            val cookie = cookieManager.buildAuthCookieString(GrpcContext.REFRESH_TOKEN_COOKIE_NAME, "")
+            val cookie = cookieManager.buildAuthCookieString(REFRESH_TOKEN_COOKIE_NAME, "")
 
             assertNotNull(cookie)
-            assertThat(cookie).contains("${GrpcContext.REFRESH_TOKEN_COOKIE_NAME}=")
+            assertThat(cookie).contains("${REFRESH_TOKEN_COOKIE_NAME}=")
             assertThat(cookie).contains("Max-Age=0")
         }
 
@@ -120,7 +120,7 @@ class CookieManagerTest {
         @Test
         fun `When the frontend base url starts with http(colon), then secure defaults to false`() {
             val cookieManager = CookieManager(jwtManagerMock, createEnvReader("http://"))
-            val cookie = cookieManager.buildAuthCookieString(GrpcContext.REFRESH_TOKEN_COOKIE_NAME, "value")
+            val cookie = cookieManager.buildAuthCookieString(REFRESH_TOKEN_COOKIE_NAME, "value")
 
             assertNotNull(cookie)
             assertThat(cookie).doesNotContain("Secure")
@@ -129,7 +129,7 @@ class CookieManagerTest {
         @Test
         fun `When the frontend base url starts with https(colon), then secure defaults to true`() {
             val cookieManager = CookieManager(jwtManagerMock, createEnvReader("https://"))
-            val cookie = cookieManager.buildAuthCookieString(GrpcContext.REFRESH_TOKEN_COOKIE_NAME, "value")
+            val cookie = cookieManager.buildAuthCookieString(REFRESH_TOKEN_COOKIE_NAME, "value")
 
             assertNotNull(cookie)
             assertThat(cookie).contains("Secure")
