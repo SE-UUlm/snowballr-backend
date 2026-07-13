@@ -5,7 +5,6 @@ import io.mockk.coJustRun
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
@@ -13,7 +12,6 @@ import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.dto.projectpaper.ProjectPaperWithPaper
 import java.util.UUID
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class GetPapersToReviewForProjectTest : ProjectPaperServiceTest() {
     @Test
     fun `When the project papers to review are requested, then only the undecided papers are returned`() = runTest {
@@ -33,7 +31,10 @@ class GetPapersToReviewForProjectTest : ProjectPaperServiceTest() {
         )
         val projectPaperWithPaper1 = ProjectPaperWithPaper(projectPaperAlreadyDecided, paper)
         val projectPaperWithPaper2 = ProjectPaperWithPaper(projectPaperNotAlreadyDecided, paper)
-        val review = DataBuilder.createExampleReview(userId = UUID.randomUUID())
+        val review = DataBuilder.createExampleReviewWithSelectedCriteriaIds(
+            review = DataBuilder.createExampleReview(userId = UUID.randomUUID()),
+            selectedCriteriaIds = listOf(UUID.randomUUID()),
+        )
 
         mockCurrentUser(currentUser)
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id) }
@@ -44,16 +45,14 @@ class GetPapersToReviewForProjectTest : ProjectPaperServiceTest() {
             citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
         } returns listOf(UUID.randomUUID())
         coEvery {
-            reviewRepoMock.getAllReviewsForProjectPaper(projectPaperAlreadyDecided.id)
+            reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaperAlreadyDecided.id)
         } returns listOf(review)
         coEvery {
-            reviewRepoMock.getAllReviewsForProjectPaper(projectPaperNotAlreadyDecided.id)
+            reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaperNotAlreadyDecided.id)
         } returns listOf(review)
-        coEvery {
-            reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(review.id)
-        } returns listOf(UUID.randomUUID())
 
         val projectPapers = service.getPapersToReviewForProject(project.id)
+
         assertThat(projectPapers).hasSize(1)
         assertThat(projectPapers).anyMatch { it.id == projectPaperNotAlreadyDecided.id }
         assertThat(projectPapers).noneMatch { it.id == projectPaperAlreadyDecided.id }
@@ -78,8 +77,14 @@ class GetPapersToReviewForProjectTest : ProjectPaperServiceTest() {
             )
             val projectPaperWithPaper1 = ProjectPaperWithPaper(projectPaperWithCurrentUserReview, paper)
             val projectPaperWithPaper2 = ProjectPaperWithPaper(projectPaperWithoutCurrentUserReview, paper)
-            val reviewByCurrentUser = DataBuilder.createExampleReview(userId = currentUser.id)
-            val reviewByOtherUser = DataBuilder.createExampleReview(userId = UUID.randomUUID())
+            val reviewByCurrentUser = DataBuilder.createExampleReviewWithSelectedCriteriaIds(
+                review = DataBuilder.createExampleReview(userId = currentUser.id),
+                selectedCriteriaIds = listOf(UUID.randomUUID()),
+            )
+            val reviewByOtherUser = DataBuilder.createExampleReviewWithSelectedCriteriaIds(
+                review = DataBuilder.createExampleReview(userId = UUID.randomUUID()),
+                selectedCriteriaIds = listOf(UUID.randomUUID()),
+            )
 
             mockCurrentUser(currentUser)
             coJustRun { projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id) }
@@ -90,19 +95,16 @@ class GetPapersToReviewForProjectTest : ProjectPaperServiceTest() {
                 citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
             } returns listOf(UUID.randomUUID())
             coEvery {
-                reviewRepoMock.getAllReviewsForProjectPaper(projectPaperWithCurrentUserReview.id)
+                reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaperWithCurrentUserReview.id)
             } returns listOf(reviewByCurrentUser)
             coEvery {
-                reviewRepoMock.getAllReviewsForProjectPaper(projectPaperWithoutCurrentUserReview.id)
+                reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(
+                    projectPaperWithoutCurrentUserReview.id,
+                )
             } returns listOf(reviewByOtherUser)
-            coEvery {
-                reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(reviewByCurrentUser.id)
-            } returns listOf(UUID.randomUUID())
-            coEvery {
-                reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(reviewByOtherUser.id)
-            } returns listOf(UUID.randomUUID())
 
             val projectPapers = service.getPapersToReviewForProject(project.id)
+
             assertThat(projectPapers).hasSize(1)
             assertThat(projectPapers).anyMatch { it.id == projectPaperWithoutCurrentUserReview.id }
             assertThat(projectPapers).noneMatch { it.id == projectPaperWithCurrentUserReview.id }
@@ -125,9 +127,12 @@ class GetPapersToReviewForProjectTest : ProjectPaperServiceTest() {
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id) }
         coEvery { projectPaperRepoMock.getAllProjectPapersWithPapers(project.id) } returns listOf(projectPaperWithPaper)
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id) } returns emptyList()
-        coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper.id) } returns emptyList()
+        coEvery {
+            reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaper.id)
+        } returns emptyList()
 
         val result = service.getPapersToReviewForProject(project.id)
+
         assertThat(result).hasSize(1)
         assertThat(result.first().id).isEqualTo(projectPaper.id)
     }

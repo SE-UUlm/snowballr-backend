@@ -45,7 +45,9 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
         } returns listOf(review)
         coEvery { paperRepoMock.getPaperById(nextProjectPaper.paperId) } returns Result.success(otherPaper)
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(otherPaper.id) } returns emptyList()
-        coEvery { reviewRepoMock.getAllReviewsForProjectPaper(nextProjectPaper.id) } returns emptyList()
+        coEvery {
+            reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(nextProjectPaper.id)
+        } returns emptyList()
 
         val result = service.getNextPaperToReview(projectPaper.id)
 
@@ -160,13 +162,20 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
 
             coEvery { paperRepoMock.getPaperById(paper2.id) } returns Result.success(paper2)
             coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper2.id) } returns emptyList()
+            coEvery {
+                reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaper2.id)
+            } returns emptyList()
 
             service.getNextPaperToReview(currentProjectPaper.id)
             coVerify(exactly = 1) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper1.id) }
-            coVerify(exactly = 2) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper2.id) }
+            coVerify(exactly = 1) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper2.id) }
+            coVerify(exactly = 1) {
+                reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaper2.id)
+            }
         }
 
     @Test
+    @Suppress("LongMethod")
     fun `When a user requests the next project paper, then the project papers are sorted correctly`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject()
@@ -221,11 +230,15 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
 
         coEvery { paperRepoMock.getPaperById(paper3.id) } returns Result.success(paper3)
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper3.id) } returns emptyList()
+        coEvery {
+            reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaper3.id)
+        } returns emptyList()
 
         service.getNextPaperToReview(currentProjectPaper.id)
         coVerify(exactly = 1) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper1.id) }
         coVerify(exactly = 1) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper2.id) }
-        coVerify(exactly = 2) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper3.id) }
+        coVerify(exactly = 1) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper3.id) }
+        coVerify(exactly = 1) { reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaper3.id) }
     }
 
     @Test
@@ -274,10 +287,16 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
 
             coEvery { paperRepoMock.getPaperById(paper2.id) } returns Result.success(paper2)
             coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper2.id) } returns emptyList()
+            coEvery {
+                reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaper2.id)
+            } returns emptyList()
 
             service.getNextPaperToReview(currentProjectPaper.id)
             coVerify(exactly = 1) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper1.id) }
-            coVerify(exactly = 2) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper2.id) }
+            coVerify(exactly = 1) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper2.id) }
+            coVerify(exactly = 1) {
+                reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaper2.id)
+            }
         }
 
     @Test
@@ -323,13 +342,19 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
             } returns listOf(projectPaper1, projectPaper2)
             coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper1.id) } returns emptyList()
             coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper2.id) } returns emptyList()
+            coEvery {
+                reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaper1.id)
+            } returns emptyList()
 
             coEvery { paperRepoMock.getPaperById(paper1.id) } returns Result.success(paper1)
 
             coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper1.id) } returns emptyList()
 
             service.getNextPaperToReview(currentProjectPaper.id)
-            coVerify(exactly = 2) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper1.id) }
+            coVerify(exactly = 1) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper1.id) }
             coVerify(exactly = 1) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper2.id) }
+            coVerify(exactly = 1) {
+                reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaper1.id)
+            }
         }
 }

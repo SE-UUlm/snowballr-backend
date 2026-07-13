@@ -4,12 +4,10 @@ import io.mockk.coEvery
 import io.mockk.coJustRun
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class GetProjectPaperByIdTest : ProjectPaperServiceTest() {
     @Test
     fun `When a user requests a project paper and has access, then the correct values are returned`() = runTest {
@@ -22,7 +20,9 @@ class GetProjectPaperByIdTest : ProjectPaperServiceTest() {
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, projectPaper.projectId) }
         coEvery { paperRepoMock.getPaperById(paper.id) } returns Result.success(paper)
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id) } returns emptyList()
-        coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper.id) } returns emptyList()
+        coEvery {
+            reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaper.id)
+        } returns emptyList()
 
         val result = service.getProjectPaperById(projectPaper.id)
 

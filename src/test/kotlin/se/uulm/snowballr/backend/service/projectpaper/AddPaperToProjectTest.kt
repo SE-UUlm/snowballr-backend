@@ -4,7 +4,6 @@ import io.mockk.coEvery
 import io.mockk.coJustRun
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
@@ -14,7 +13,6 @@ import se.uulm.snowballr.backend.model.exception.invalidargument.StageOutOfRange
 import java.util.UUID
 import kotlin.test.assertEquals
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class AddPaperToProjectTest : ProjectPaperServiceTest() {
     @Test
     fun `When a user adds a paper to a project and has access, then the created project paper has the correct values`() =
@@ -26,9 +24,12 @@ class AddPaperToProjectTest : ProjectPaperServiceTest() {
             val projectPaper = DataBuilder.createExampleProjectPaper(projectId = project.id, paperId = paper.id)
 
             val backwardReferences = listOf(UUID.randomUUID(), UUID.randomUUID())
-            val reviews = listOf(DataBuilder.createExampleReview(), DataBuilder.createExampleReview())
             val criteriaIds0 = listOf(UUID.randomUUID(), UUID.randomUUID())
             val criteriaIds1 = listOf(UUID.randomUUID(), UUID.randomUUID())
+            val reviews = listOf(
+                DataBuilder.createExampleReviewWithSelectedCriteriaIds(selectedCriteriaIds = criteriaIds0),
+                DataBuilder.createExampleReviewWithSelectedCriteriaIds(selectedCriteriaIds = criteriaIds1),
+            )
 
             mockCurrentUser(user)
             coJustRun { projectPaperAccessCheckerMock.isAllowedToAddPaperToProject(user, project.id, projectResult) }
@@ -37,21 +38,17 @@ class AddPaperToProjectTest : ProjectPaperServiceTest() {
             coEvery { projectPaperRepoMock.doesProjectPaperExist(project.id, paper.id) } returns false
             coEvery { projectPaperRepoMock.addPaperToProject(project.id, paper.id, 0, user.id) } returns projectPaper
             coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id) } returns backwardReferences
-            coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper.id) } returns reviews
             coEvery {
-                reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(reviews[0].id)
-            } returns criteriaIds0
-            coEvery {
-                reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(reviews[1].id)
-            } returns criteriaIds1
+                reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaper.id)
+            } returns reviews
 
             val addedProjectPaper = service.addPaperToProject(project.id, paper.id, 0)
 
             assertEquals(2, addedProjectPaper.reviews.size)
             val review0 = addedProjectPaper.reviews[0]
             val review1 = addedProjectPaper.reviews[1]
-            assertEquals(review0.id, reviews[0].id)
-            assertEquals(review1.id, reviews[1].id)
+            assertEquals(review0.id, reviews[0].review.id)
+            assertEquals(review1.id, reviews[1].review.id)
 
             val criteriaIdsReview0 = review0.selectedCriteriaIds
             val criteriaIdsReview1 = review1.selectedCriteriaIds

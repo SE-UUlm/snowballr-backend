@@ -15,7 +15,6 @@ import se.uulm.snowballr.backend.repository.IReviewTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
-import se.uulm.snowballr.backend.repository.association.IReviewHasCriterionTableRepo
 import se.uulm.snowballr.backend.service.BaseServiceTest
 import se.uulm.snowballr.backend.service.ProjectPaperService
 import se.uulm.snowballr.backend.service.withUser
@@ -30,7 +29,6 @@ sealed class ProjectPaperServiceTest : BaseServiceTest {
     val paperRepoMock = mockk<IPaperTableRepo>()
     val citationRepoMock = mockk<ICitationTableRepo>()
     val reviewRepoMock = mockk<IReviewTableRepo>()
-    val reviewHasCriterionRepoMock = mockk<IReviewHasCriterionTableRepo>()
     val projectPaperAccessCheckerMock = mockk<IProjectPaperAccessChecker>()
     val projectAccessCheckerMock = mockk<IProjectAccessChecker>()
 
@@ -41,7 +39,6 @@ sealed class ProjectPaperServiceTest : BaseServiceTest {
         paperRepoMock,
         citationRepoMock,
         reviewRepoMock,
-        reviewHasCriterionRepoMock,
         projectPaperAccessCheckerMock,
         projectAccessCheckerMock,
     )
@@ -53,7 +50,6 @@ sealed class ProjectPaperServiceTest : BaseServiceTest {
         projectRepo = projectRepoMock,
         citationTableRepo = citationRepoMock,
         reviewTableRepo = reviewRepoMock,
-        reviewHasCriterionTableRepo = reviewHasCriterionRepoMock,
         accessChecker = projectPaperAccessCheckerMock,
         projectAccessChecker = projectAccessCheckerMock,
     )
