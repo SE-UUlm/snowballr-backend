@@ -38,14 +38,6 @@ fun Paper.toGrpcPaper(backwardReferencedIdsList: List<String>): GrpcPaper = this
     .build()
 
 /**
- * Converts a list of [GrpcPaper] objects into a [GrpcPaper.List].
- */
-fun List<GrpcPaper>.toGrpcPapers(): GrpcPaper.List = GrpcPaper.List
-    .newBuilder()
-    .addAllPapers(this)
-    .build()
-
-/**
  * Creates a [FetcherPaper] from this [Paper].
  */
 fun Paper.toFetcherPaper(): FetcherPaper = FetcherPaper(

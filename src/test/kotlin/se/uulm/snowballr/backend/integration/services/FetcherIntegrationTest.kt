@@ -27,7 +27,7 @@ class FetcherIntegrationTest : IntegrationTest() {
 
             val result = fetcherService.searchLocalProjectPaperCandidates(searchQuery(project.id, "Something about IT"))
 
-            assertTrue(result.papersList.isEmpty())
+            assertTrue(result.isEmpty())
         }
 
         @Test
@@ -37,7 +37,7 @@ class FetcherIntegrationTest : IntegrationTest() {
 
             val result = fetcherService.searchLocalProjectPaperCandidates(searchQuery(project.id, "Something about IT"))
 
-            assertTrue(result.papersList.any { it.id == paper.id })
+            assertTrue(result.any { it.id == paper.id })
         }
 
         @Test
@@ -48,7 +48,7 @@ class FetcherIntegrationTest : IntegrationTest() {
 
             val result = fetcherService.searchLocalProjectPaperCandidates(searchQuery(project.id, "Something about IT"))
 
-            assertFalse(result.papersList.any { it.id == paper.id })
+            assertFalse(result.any { it.id == paper.id })
         }
 
         @Test
@@ -62,8 +62,8 @@ class FetcherIntegrationTest : IntegrationTest() {
                 val result =
                     fetcherService.searchLocalProjectPaperCandidates(searchQuery(project.id, "Something about"))
 
-                assertFalse(result.papersList.any { it.id == inProject.id })
-                assertTrue(result.papersList.any { it.id == notInProject.id })
+                assertFalse(result.any { it.id == inProject.id })
+                assertTrue(result.any { it.id == notInProject.id })
             }
 
         @Test

@@ -26,6 +26,7 @@ import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 import se.uulm.snowballr.backend.model.dto.criterion.toGrpcCriteria
 import se.uulm.snowballr.backend.model.dto.criterion.toGrpcCriterion
+import se.uulm.snowballr.backend.model.dto.paper.Author
 import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPattern
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
@@ -41,12 +42,15 @@ import se.uulm.snowballr.backend.model.dto.user.toGrpcUsers
 import se.uulm.snowballr.backend.model.fetcher.toGrpc
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
+import se.uulm.snowballr.backend.model.incoming.paper.CreatePaperRequest
+import se.uulm.snowballr.backend.model.incoming.paper.UpdatePaperRequest
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectSettingRequest
 import se.uulm.snowballr.backend.model.incoming.review.CreateReviewRequest
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
+import se.uulm.snowballr.backend.model.outgoing.paper.toGrpc
 import se.uulm.snowballr.backend.model.outgoing.project.toGrpc
 import se.uulm.snowballr.backend.model.outgoing.review.toGrpc
 import se.uulm.snowballr.backend.model.outgoing.review.toGrpcReviews
@@ -331,7 +335,7 @@ class SnowballRServer(
         ): UserSettingsOuterClass.UserSettings = super.updateUserSettings(request)
 
         override suspend fun getReadingList(request: Base.Nothing): PaperOuterClass.Paper.List =
-            readingListService.getReadingList()
+            readingListService.getReadingList().toGrpc()
 
         override suspend fun isPaperOnReadingList(request: Base.Id) = returnBoolValue {
             readingListService.isPaperOnReadingList(parsePaperId(request))
@@ -525,27 +529,52 @@ class SnowballRServer(
         override suspend fun deleteReview(request: Base.Id): Base.Nothing = super.deleteReview(request)
 
         override suspend fun getPaperById(request: Base.Id): PaperOuterClass.Paper =
-            paperService.getPaperById(parsePaperId(request))
+            paperService.getPaperById(parsePaperId(request)).toGrpc()
 
         override suspend fun searchLocalProjectPaperCandidates(
             request: ProjectOuterClass.Project.Paper.SearchQuery,
-        ): PaperOuterClass.Paper.List = fetcherService.searchLocalProjectPaperCandidates(request)
+        ): PaperOuterClass.Paper.List = fetcherService.searchLocalProjectPaperCandidates(request).toGrpc()
 
         override suspend fun searchFetcherProjectPaperCandidates(
             request: ProjectOuterClass.Project.Paper.SearchQuery,
-        ): PaperOuterClass.Paper.List = fetcherService.searchFetcherProjectPaperCandidates(request)
+        ): PaperOuterClass.Paper.List = fetcherService.searchFetcherProjectPaperCandidates(request).toGrpc()
 
         override suspend fun createPaper(request: PaperOuterClass.Paper): PaperOuterClass.Paper =
-            paperService.createPaper(request)
+            paperService.createPaper(
+                CreatePaperRequest(
+                    title = request.title,
+                    externalId = request.externalId,
+                    abstract = request.abstrakt,
+                    year = request.year,
+                    publisher = request.publisher,
+                    publicationName = request.publicationName,
+                    publicationType = request.publicationType,
+                    authors = request.authorsList.map { Author(it.firstName, it.lastName) },
+                    fetcherMetadata = request.fetcherMetadataMap,
+                ),
+            ).toGrpc()
 
         override suspend fun updatePaper(request: PaperOuterClass.Paper.Update): PaperOuterClass.Paper =
-            paperService.updatePaper(request)
+            paperService.updatePaper(
+                UpdatePaperRequest(
+                    paperId = parseUUID(request.paper.id, EntityType.PAPER),
+                    title = request.paper.title,
+                    externalId = request.paper.externalId,
+                    abstract = request.paper.abstrakt,
+                    year = request.paper.year,
+                    publisher = request.paper.publisher,
+                    publicationName = request.paper.publicationName,
+                    publicationType = request.paper.publicationType,
+                    authors = request.paper.authorsList.map { Author(it.firstName, it.lastName) },
+                ),
+                FieldMaskUtil.normalize(request.mask).pathsList,
+            ).toGrpc()
 
         override suspend fun getForwardReferencedPapers(request: Base.Id): PaperOuterClass.Paper.List =
-            paperService.getForwardReferencedPapers(parsePaperId(request))
+            paperService.getForwardReferencedPapers(parsePaperId(request)).toGrpc()
 
         override suspend fun getBackwardReferencedPapers(request: Base.Id): PaperOuterClass.Paper.List =
-            paperService.getBackwardReferencedPapers(parsePaperId(request))
+            paperService.getBackwardReferencedPapers(parsePaperId(request)).toGrpc()
 
         override suspend fun getPaperPdf(request: Base.Id): Base.Blob = super.getPaperPdf(request)
 

@@ -59,8 +59,8 @@ class GetForwardReferencedPapersTest : PaperServiceTest() {
 
             val result = service.getForwardReferencedPapers(paper.id)
 
-            assertEquals(1, result.papersCount)
-            val resultElement = result.papersList.first()
+            assertEquals(1, result.size)
+            val resultElement = result.first()
             assertPaperEquality(citingPaper, resultElement)
         }
 }

@@ -7,11 +7,12 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.integration.IntegrationTest
+import se.uulm.snowballr.backend.model.incoming.paper.CreatePaperRequest
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
+import se.uulm.snowballr.backend.model.outgoing.paper.PaperResponse
 import snowballr.ProjectOuterClass.Project
 import snowballr.UserOuterClass.UserStatus
 import kotlin.test.assertEquals
-import snowballr.PaperOuterClass.Paper as GrpcPaper
 import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 
 class RegressionTest : IntegrationTest() {
@@ -51,11 +52,12 @@ class RegressionTest : IntegrationTest() {
         runTest {
             val numberOfPapers = 10
             val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
-            val papers = mutableSetOf<GrpcPaper>()
+            val papers = mutableSetOf<PaperResponse>()
             for (i in 1..numberOfPapers) {
-                val builder = GrpcPaper.newBuilder()
-                    .setTitle("Paper $i")
-                papers += paperService.createPaper(builder.build())
+                val request = CreatePaperRequest.fromPaper(
+                    DataBuilder.createExamplePaper(title = "Paper $i", externalId = "External ID $i"),
+                )
+                papers += paperService.createPaper(request)
             }
 
             val projectPapers = papers.map {
@@ -63,7 +65,7 @@ class RegressionTest : IntegrationTest() {
                     projectPaperService.addPaperToProject(
                         GrpcProjectPaper.Add.newBuilder()
                             .setProjectId(project.id.toString())
-                            .setPaperId(it.id)
+                            .setPaperId(it.id.toString())
                             .setStage(0)
                             .build(),
                     )

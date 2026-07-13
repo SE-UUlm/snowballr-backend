@@ -13,11 +13,11 @@ import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.fetcher.FetcherOrchestrator
 import se.uulm.snowballr.backend.model.dto.paper.toFetcherPaper
-import se.uulm.snowballr.backend.model.dto.paper.toGrpcPaperRequest
 import se.uulm.snowballr.backend.model.dto.project.Project
 import se.uulm.snowballr.backend.model.dto.project.SnowballingType
 import se.uulm.snowballr.backend.model.exception.FetcherException
 import se.uulm.snowballr.backend.model.fetcher.FetcherEnqueueJob
+import se.uulm.snowballr.backend.model.incoming.paper.CreatePaperRequest
 import se.uulm.snowballr.backend.repository.UNIQUE_CONSTRAINT_VIOLATION_SQL_STATE
 import java.sql.SQLException
 import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
@@ -228,10 +228,10 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
                     } returns Result.failure(TestSpecificException())
                 }
                 coEvery {
-                    paperRepoMock.createPaper(backwardFetcherRef.toGrpcPaperRequest())
+                    paperRepoMock.createPaper(CreatePaperRequest.fromFetcherPaper(backwardFetcherRef))
                 } returns backwardRef
                 coEvery {
-                    paperRepoMock.createPaper(forwardFetcherRef.toGrpcPaperRequest())
+                    paperRepoMock.createPaper(CreatePaperRequest.fromFetcherPaper(forwardFetcherRef))
                 } returns forwardRef
 
                 // Stop at adding papers to project
@@ -249,10 +249,10 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
 
                 assertAddingPapersToProjectFailure()
                 coVerify(exactly = 1) {
-                    paperRepoMock.createPaper(backwardFetcherRef.toGrpcPaperRequest())
+                    paperRepoMock.createPaper(CreatePaperRequest.fromFetcherPaper(backwardFetcherRef))
                 }
                 coVerify(exactly = 1) {
-                    paperRepoMock.createPaper(forwardFetcherRef.toGrpcPaperRequest())
+                    paperRepoMock.createPaper(CreatePaperRequest.fromFetcherPaper(forwardFetcherRef))
                 }
             }
 
@@ -267,10 +267,10 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
 
             mockRunFetching(job, setOf(backwardFetcherRef), setOf(forwardFetcherRef))
             coEvery {
-                paperRepoMock.createPaper(backwardFetcherRef.toGrpcPaperRequest())
+                paperRepoMock.createPaper(CreatePaperRequest.fromFetcherPaper(backwardFetcherRef))
             } throws SQLException("Creating backward paper failed")
             coEvery {
-                paperRepoMock.createPaper(forwardFetcherRef.toGrpcPaperRequest())
+                paperRepoMock.createPaper(CreatePaperRequest.fromFetcherPaper(forwardFetcherRef))
             } throws SQLException("Creating forward paper failed")
 
             orchestrator.enqueueTestJob(job, project)

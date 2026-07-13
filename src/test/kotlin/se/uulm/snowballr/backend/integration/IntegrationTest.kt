@@ -43,7 +43,9 @@ import se.uulm.snowballr.backend.mailServiceDeps
 import se.uulm.snowballr.backend.model.dto.project.Project
 import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.email.EmailData
+import se.uulm.snowballr.backend.model.incoming.paper.CreatePaperRequest
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
+import se.uulm.snowballr.backend.model.outgoing.paper.PaperResponse
 import se.uulm.snowballr.backend.repository.RepositoryHelper
 import se.uulm.snowballr.backend.repositoryLayerDeps
 import se.uulm.snowballr.backend.service.IAuthenticationService
@@ -61,7 +63,6 @@ import se.uulm.snowballr.backend.service.IUserService
 import se.uulm.snowballr.backend.serviceLayerDeps
 import snowballr.Authentication
 import java.util.UUID
-import snowballr.PaperOuterClass.Paper as GrpcPaper
 import snowballr.ProjectOuterClass.Project as GrpcProject
 import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 
@@ -163,16 +164,19 @@ open class IntegrationTest : KoinTest {
      * @param title The title of the created paper. Defaults to "Test Paper".
      * @param externalId The external ID of the created paper. Defaults to null.
      */
-    protected suspend fun createPaper(title: String = "Test Paper", externalId: String? = null): GrpcPaper {
-        val builder = GrpcPaper.newBuilder()
-            .setTitle(title)
-            .setAbstrakt("Abstract text")
-            .setYear(2024)
-            .setPublisher("Publisher")
-            .setPublicationType("Journal")
-            .setPublicationName("Journal Name")
-        if (externalId != null) builder.setExternalId(externalId)
-        return paperService.createPaper(builder.build())
+    protected suspend fun createPaper(title: String = "Test Paper", externalId: String? = null): PaperResponse {
+        val request = CreatePaperRequest(
+            title = title,
+            externalId = externalId,
+            abstract = "Abstract text",
+            year = 2024,
+            publisher = "Publisher",
+            publicationType = "Journal",
+            publicationName = "Journal Name",
+            authors = emptyList(),
+            fetcherMetadata = emptyMap(),
+        )
+        return paperService.createPaper(request)
     }
 
     /**
@@ -275,10 +279,10 @@ open class IntegrationTest : KoinTest {
     /**
      * Adds the [paper] to the [project] in stage 0.
      */
-    protected suspend fun addToProject(project: Project, paper: GrpcPaper) = projectPaperService.addPaperToProject(
+    protected suspend fun addToProject(project: Project, paper: PaperResponse) = projectPaperService.addPaperToProject(
         GrpcProjectPaper.Add.newBuilder()
             .setProjectId(project.id.toString())
-            .setPaperId(paper.id)
+            .setPaperId(paper.id.toString())
             .setStage(0)
             .build(),
     )

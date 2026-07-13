@@ -6,7 +6,7 @@ import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import se.uulm.snowballr.backend.DataBuilder
-import se.uulm.snowballr.backend.model.dto.paper.toGrpcPaper
+import se.uulm.snowballr.backend.model.outgoing.paper.PaperResponse
 
 class GetReadingListTest : ReadingListServiceTest() {
     @Test
@@ -22,9 +22,9 @@ class GetReadingListTest : ReadingListServiceTest() {
             coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper1.id) } returns emptyList()
             coEvery { readingListRepoMock.getAllReadingListEntries(user.id) } returns listOf(paper1, paper2)
 
-            assertThat(service.getReadingList().papersList).containsExactlyInAnyOrder(
-                paper1.toGrpcPaper(emptyList()),
-                paper2.toGrpcPaper(listOf(paper1.id.toString())),
+            assertThat(service.getReadingList()).containsExactlyInAnyOrder(
+                PaperResponse.fromPaper(paper1, emptyList()),
+                PaperResponse.fromPaper(paper2, listOf(paper1.id)),
             )
             coVerify(exactly = 1) { readingListRepoMock.getAllReadingListEntries(user.id) }
         }
@@ -36,7 +36,8 @@ class GetReadingListTest : ReadingListServiceTest() {
         mockCurrentUser(user)
         coEvery { readingListRepoMock.getAllReadingListEntries(user.id) } returns emptyList()
 
-        val papers = service.getReadingList().papersList
+        val papers = service.getReadingList()
+
         assertThat(papers).isEmpty()
         coVerify(exactly = 1) { readingListRepoMock.getAllReadingListEntries(user.id) }
         coVerify(exactly = 0) { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(any()) }

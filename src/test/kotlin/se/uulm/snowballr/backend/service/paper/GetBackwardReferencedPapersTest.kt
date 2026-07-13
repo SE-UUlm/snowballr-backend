@@ -58,8 +58,8 @@ class GetBackwardReferencedPapersTest : PaperServiceTest() {
 
             val result = service.getBackwardReferencedPapers(paper.id)
 
-            assertEquals(1, result.papersCount)
-            val resultElement = result.papersList.first()
+            assertEquals(1, result.size)
+            val resultElement = result.first()
             assertPaperEquality(referencedPaper, resultElement)
         }
 }
