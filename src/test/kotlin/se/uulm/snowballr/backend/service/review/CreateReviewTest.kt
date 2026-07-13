@@ -1,6 +1,5 @@
 package se.uulm.snowballr.backend.service.review
 
-import com.google.protobuf.util.FieldMaskUtil
 import io.mockk.coEvery
 import io.mockk.coJustRun
 import io.mockk.coVerify
@@ -19,18 +18,21 @@ import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPattern
 import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPatternEntry
 import se.uulm.snowballr.backend.model.dto.project.Project
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
+import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
+import se.uulm.snowballr.backend.model.dto.project.SnowballingType
 import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.dto.review.Review
 import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.alreadyexists.DuplicateReviewException
 import se.uulm.snowballr.backend.model.fetcher.FetcherEnqueueJob
+import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
+import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectSettingRequest
 import snowballr.ReviewOuterClass
 import java.util.UUID
 import java.util.stream.Stream
 import kotlin.reflect.KFunction
 import kotlin.test.assertEquals
-import snowballr.ProjectOuterClass.Project as GrpcProject
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CreateReviewTest : ReviewServiceTest() {
@@ -53,15 +55,21 @@ class CreateReviewTest : ReviewServiceTest() {
         Arguments.of(projectRepoMock::getProjectById),
     )
 
-    fun getUpdateProjectStatusRequest(projectId: UUID): GrpcProject.Update = GrpcProject.Update.newBuilder()
-        .setProject(
-            GrpcProject.newBuilder()
-                .setId(projectId.toString())
-                .setStatus(ProjectStatus.ACTIVE_LOCKED.toGrpc())
-                .build(),
-        )
-        .setMask(FieldMaskUtil.fromString("project.status"))
-        .build()
+    fun getUpdateProjectStatusRequest(projectId: UUID): UpdateProjectRequest = UpdateProjectRequest(
+        projectId = projectId,
+        status = ProjectStatus.ACTIVE_LOCKED,
+        name = "",
+        settings = UpdateProjectSettingRequest(
+            similarityThreshold = 0F,
+            snowballingType = SnowballingType.BOTH,
+            reviewMaybeAllowed = false,
+            fetchers = emptyMap(),
+            decisionMatrix = ReviewDecisionMatrix(
+                numberOfReviewers = 1,
+                patterns = emptyList(),
+            ),
+        ),
+    )
 
     @Suppress("LongParameterList", "ReturnCount", "LongMethod")
     private fun mockCreateReview(
@@ -131,7 +139,9 @@ class CreateReviewTest : ReviewServiceTest() {
         coEvery { criterionRepoMock.getAllProjectCriteria(project.id) } returns emptyList()
         coJustRun { projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, updatedPaperDecision) }
         if (project.status != ProjectStatus.ACTIVE_LOCKED) {
-            coJustRun { projectRepoMock.updateProject(getUpdateProjectStatusRequest(project.id)) }
+            coJustRun {
+                projectRepoMock.updateProject(getUpdateProjectStatusRequest(project.id), setOf("project.status"))
+            }
         }
         if (updatedPaperDecision == PaperDecision.ACCEPTED) {
             coJustRun { fetcherOrchestratorMock.enqueue(FetcherEnqueueJob(projectPaper, currentUser.id)) }
@@ -158,7 +168,7 @@ class CreateReviewTest : ReviewServiceTest() {
         assertEquals(selectedCriteriaIds.map { it.toString() }, review.selectedCriteriaIdsList)
 
         coVerify(exactly = 1) {
-            projectRepoMock.updateProject(getUpdateProjectStatusRequest(project.id))
+            projectRepoMock.updateProject(getUpdateProjectStatusRequest(project.id), setOf("project.status"))
         }
     }
 
@@ -295,7 +305,9 @@ class CreateReviewTest : ReviewServiceTest() {
             coJustRun {
                 projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.DECLINED)
             }
-            coJustRun { projectRepoMock.updateProject(getUpdateProjectStatusRequest(project.id)) }
+            coJustRun {
+                projectRepoMock.updateProject(getUpdateProjectStatusRequest(project.id), setOf("project.status"))
+            }
 
             service.createReview(createReviewRequest)
 
@@ -344,7 +356,9 @@ class CreateReviewTest : ReviewServiceTest() {
             coJustRun {
                 projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.DECLINED)
             }
-            coJustRun { projectRepoMock.updateProject(getUpdateProjectStatusRequest(project.id)) }
+            coJustRun {
+                projectRepoMock.updateProject(getUpdateProjectStatusRequest(project.id), setOf("project.status"))
+            }
 
             service.createReview(createReviewRequest)
             coVerify(exactly = 1) {
@@ -379,7 +393,9 @@ class CreateReviewTest : ReviewServiceTest() {
             coJustRun {
                 projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.IN_REVIEW)
             }
-            coJustRun { projectRepoMock.updateProject(getUpdateProjectStatusRequest(project.id)) }
+            coJustRun {
+                projectRepoMock.updateProject(getUpdateProjectStatusRequest(project.id), setOf("project.status"))
+            }
 
             service.createReview(createReviewRequest)
             coVerify(exactly = 1) {
@@ -400,8 +416,6 @@ class CreateReviewTest : ReviewServiceTest() {
 
         service.createReview(createReviewRequest)
 
-        coVerify(exactly = 0) {
-            projectRepoMock.updateProject(any())
-        }
+        coVerify(exactly = 0) { projectRepoMock.updateProject(any(), any()) }
     }
 }

@@ -62,7 +62,7 @@ class NotFoundExceptionTest {
 
         @Test
         fun `When creating a ProjectPaperNotFoundException, then the message is correctly formatted`() {
-            val localId = 123L
+            val localId = 123
             val exception = ProjectPaperNotFoundException(localId, testId)
 
             assertEquals(

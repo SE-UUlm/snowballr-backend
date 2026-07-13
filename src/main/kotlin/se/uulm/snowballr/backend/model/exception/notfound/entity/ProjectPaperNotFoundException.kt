@@ -12,7 +12,7 @@ import java.util.UUID
  * @param projectId The ID of the project in which the project paper could not be found.
  */
 open class ProjectPaperNotFoundException(
-    localProjectPaperId: Long,
+    localProjectPaperId: Int,
     projectId: UUID,
 ) : EntityNotFoundException(
     EntityType.PROJECT_PAPER,

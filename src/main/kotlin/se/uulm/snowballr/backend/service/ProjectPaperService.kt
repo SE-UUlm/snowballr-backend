@@ -122,7 +122,7 @@ class ProjectPaperService(
 
             projectAccessChecker.isAllowedToReadProject(currentUser, projectId)
 
-            val relativeId = request.relativeProjectPaperId.toLong()
+            val relativeId = request.relativeProjectPaperId.toInt()
             val projectPaper = repo.getProjectPaperByRelativeId(projectId, relativeId).getOrThrow()
 
             projectPaper.toGrpcProjectPaperWithData()
@@ -157,7 +157,7 @@ class ProjectPaperService(
             }
 
             if (request.stage !in 0..project.maxStage) {
-                throw StageOutOfRangeException(request.stage, project.maxStage)
+                throw StageOutOfRangeException(request.stage.toInt(), project.maxStage)
             }
 
             val projectPaper = repo.addPaperToProject(request, currentUser.id)

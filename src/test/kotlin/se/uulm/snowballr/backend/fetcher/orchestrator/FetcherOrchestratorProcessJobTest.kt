@@ -418,7 +418,7 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
                 val targetStage = job.projectPaper.stage + 1
                 val baseRequest = GrpcProjectPaper.Add.newBuilder()
                     .setProjectId(project.id.toString())
-                    .setStage(targetStage)
+                    .setStage(targetStage.toLong())
                 val backwardRequest = baseRequest.setPaperId(backwardRef.id.toString()).build()
                 val forwardRequest = baseRequest.setPaperId(forwardRef.id.toString()).build()
 
@@ -449,7 +449,7 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
                 val targetStage = job.projectPaper.stage + 1
                 val baseRequest = GrpcProjectPaper.Add.newBuilder()
                     .setProjectId(project.id.toString())
-                    .setStage(targetStage)
+                    .setStage(targetStage.toLong())
                 val backwardRequest = baseRequest.setPaperId(backwardRef.id.toString()).build()
                 val forwardRequest = baseRequest.setPaperId(forwardRef.id.toString()).build()
 

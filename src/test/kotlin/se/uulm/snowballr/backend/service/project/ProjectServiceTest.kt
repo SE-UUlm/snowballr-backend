@@ -17,7 +17,6 @@ import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import se.uulm.snowballr.backend.service.BaseServiceTest
 import se.uulm.snowballr.backend.service.ProjectService
 import se.uulm.snowballr.backend.service.withUser
-import snowballr.ProjectOuterClass
 import kotlin.test.assertEquals
 
 /**
@@ -65,18 +64,15 @@ sealed class ProjectServiceTest : BaseServiceTest {
         coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
     }
 
-    protected fun assertProjectEquality(expected: Project, actual: ProjectOuterClass.Project) {
+    protected fun assertProjectEquality(expected: Project, actual: Project) {
         assertEquals(expected.name, actual.name)
-        assertEquals(expected.status.toGrpc(), actual.status)
+        assertEquals(expected.status, actual.status)
         assertEquals(expected.currentStage, actual.currentStage)
         assertEquals(expected.maxStage, actual.maxStage)
-        assertEquals(expected.similarityThreshold, actual.settings.similarityThreshold)
-        assertEquals(expected.snowballingType.toGrpc(), actual.settings.snowballingType)
-        assertEquals(expected.reviewMaybeAllowed, actual.settings.reviewMaybeAllowed)
-        assertEquals(expected.reviewDecisionMatrix.toGrpc(), actual.settings.decisionMatrix)
-        assertEquals(
-            expected.fetchers,
-            actual.settings.fetchersMap.mapValues { options -> options.value.optionsMap.mapValues { it.toString() } },
-        )
+        assertEquals(expected.similarityThreshold, actual.similarityThreshold)
+        assertEquals(expected.snowballingType, actual.snowballingType)
+        assertEquals(expected.reviewMaybeAllowed, actual.reviewMaybeAllowed)
+        assertEquals(expected.reviewDecisionMatrix, actual.reviewDecisionMatrix)
+        assertEquals(expected.fetchers, actual.fetchers)
     }
 }

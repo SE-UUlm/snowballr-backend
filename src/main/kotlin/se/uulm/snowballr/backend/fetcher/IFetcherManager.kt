@@ -1,7 +1,7 @@
 package se.uulm.snowballr.backend.fetcher
 
+import se.uulm.snowballr.backend.model.fetcher.FetcherInformationWithId
 import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
-import snowballr.Fetcher
 
 /**
  * Delegate requests to multiple fetchers using their names.
@@ -10,7 +10,7 @@ interface IFetcherManager {
     /**
      * Get the information of all registered fetchers.
      */
-    suspend fun getAvailableFetchers(): Set<Fetcher.FetcherInformation>
+    suspend fun getAvailableFetchers(): Set<FetcherInformationWithId>
 
     /**
      * Search for papers using a search query.

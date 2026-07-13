@@ -1,6 +1,5 @@
 package se.uulm.snowballr.backend.repository
 
-import com.google.protobuf.util.FieldMaskUtil
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.exposed.v1.core.ReferenceOption
@@ -25,9 +24,11 @@ import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPattern
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
 import se.uulm.snowballr.backend.model.dto.project.SnowballingType
-import se.uulm.snowballr.backend.model.dto.project.toGrpcProject
 import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.exception.NotFoundException
+import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
+import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
+import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectSettingRequest
 import se.uulm.snowballr.backend.repository.RepositoryHelper.assignUserToProject
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertPaperAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectAndGetId
@@ -42,8 +43,6 @@ import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.utils.assertResultFailure
 import se.uulm.snowballr.backend.utils.assertResultSuccess
-import snowballr.Fetcher.FetcherOptions
-import snowballr.ProjectOuterClass.Project
 import java.sql.SQLException
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -136,8 +135,9 @@ class ProjectTableRepoTest :
         @Test
         fun `When a project is created, then the passed values are correctly assigned`() = runTest {
             val userSettings = DataBuilder.createExampleUserSettings()
-            val projectBuilder = Project.Create.newBuilder().setName("Test Project").build()
-            val project = repo.createProject(projectBuilder, testUserId, userSettings)
+            val request = CreateProjectRequest(name = "Test Project")
+
+            val project = repo.createProject(request, testUserId, userSettings)
 
             assertEquals("Test Project", project.name)
             assertEquals(ProjectStatus.ACTIVE, project.status)
@@ -154,17 +154,19 @@ class ProjectTableRepoTest :
         @Test
         fun `When two projects are created, then they have different IDs`() = runTest {
             val userSettings = DataBuilder.createExampleUserSettings()
-            val project = Project.Create.newBuilder().setName("Test Project 1").build()
-            val projectId1 = repo.createProject(project, testUserId, userSettings)
-            val projectId2 = repo.createProject(project, testUserId, userSettings)
+            val request = CreateProjectRequest(name = "Test Project 1")
+
+            val projectId1 = repo.createProject(request, testUserId, userSettings)
+            val projectId2 = repo.createProject(request, testUserId, userSettings)
             assertNotEquals(projectId2, projectId1)
         }
 
         @Test
         fun `When a project is created, but the assigned user doesn't exist, then an SQLException is thrown`() =
             runTest {
-                val request = Project.Create.newBuilder().setName("Test Project").build()
+                val request = CreateProjectRequest(name = "Test Project")
                 val userSettings = DataBuilder.createExampleUserSettings()
+
                 assertThrows<SQLException> { repo.createProject(request, UUID.randomUUID(), userSettings) }
             }
     }
@@ -214,36 +216,27 @@ class ProjectTableRepoTest :
             val projectId = insertProjectAndGetId(name = "Test Project", originalStatus, createdBy = testUserId)
             val originalProject = repo.getProjectById(projectId).getOrThrow()
 
-            val updatedProjectDetails = originalProject.toGrpcProject().toBuilder()
-                .setName("Updated Project")
-                .setStatus(ProjectStatus.ARCHIVED.toGrpc())
-                .setSettings(
-                    Project.Settings.newBuilder()
-                        .setSimilarityThreshold(1F)
-                        .setSnowballingType(SnowballingType.FORWARD.toGrpc())
-                        .setReviewMaybeAllowed(false)
-                        .putFetchers(
-                            "test fetcher",
-                            FetcherOptions.newBuilder()
-                                .putOptions("Opt1", "Val1")
-                                .build(),
-                        )
-                        .setDecisionMatrix(
-                            ReviewDecisionMatrix(
-                                numberOfReviewers = 2,
-                                patterns = emptyList(),
-                            ).toGrpc(),
-                        )
-                        .build(),
-                )
-                .build()
+            val request = UpdateProjectRequest(
+                projectId = originalProject.id,
+                name = "Updated Project",
+                status = ProjectStatus.ARCHIVED,
+                settings = UpdateProjectSettingRequest(
+                    similarityThreshold = 1F,
+                    snowballingType = SnowballingType.FORWARD,
+                    reviewMaybeAllowed = false,
+                    fetchers = mapOf(
+                        "test fetcher" to mapOf(
+                            "Opt1" to "Val1",
+                        ),
+                    ),
+                    decisionMatrix = ReviewDecisionMatrix(
+                        numberOfReviewers = 2,
+                        patterns = emptyList(),
+                    ),
+                ),
+            )
 
-            val request = Project.Update.newBuilder()
-                .setProject(updatedProjectDetails)
-                .setMask(FieldMaskUtil.fromStringList(fieldMask))
-                .build()
-
-            val updatedProject = repo.updateProject(request)
+            val updatedProject = repo.updateProject(request, fieldMask.toSet())
 
             if ("project.name" in fieldMask) {
                 assertEquals("Updated Project", updatedProject.name)
@@ -308,20 +301,20 @@ class ProjectTableRepoTest :
                 numberOfReviewers = 9,
                 patterns = listOf(DecisionMatrixPattern(PaperDecision.DECLINED, emptyList())),
             )
-            val request = Project.Update.newBuilder()
-                .setProject(
-                    originalProject.toGrpcProject().toBuilder()
-                        .setSettings(
-                            originalProject.toGrpcProject().settings.toBuilder()
-                                .setDecisionMatrix(updatedDecisionMatrix.toGrpc())
-                                .build(),
-                        )
-                        .build(),
-                )
-                .setMask(FieldMaskUtil.fromStringList(listOf("project.settings.decision_matrix.patterns")))
-                .build()
+            val request = UpdateProjectRequest(
+                projectId = originalProject.id,
+                name = originalProject.name,
+                status = originalProject.status,
+                settings = UpdateProjectSettingRequest(
+                    similarityThreshold = originalProject.similarityThreshold,
+                    snowballingType = originalProject.snowballingType,
+                    reviewMaybeAllowed = originalProject.reviewMaybeAllowed,
+                    fetchers = originalProject.fetchers,
+                    decisionMatrix = updatedDecisionMatrix,
+                ),
+            )
 
-            val updatedProject = repo.updateProject(request)
+            val updatedProject = repo.updateProject(request, setOf("project.settings.decision_matrix.patterns"))
 
             assertEquals(3, updatedProject.reviewDecisionMatrix.numberOfReviewers)
             assertEquals(1, updatedProject.reviewDecisionMatrix.patterns.size)
@@ -331,31 +324,25 @@ class ProjectTableRepoTest :
         @Test
         fun `When updating decision matrix on a non existing project, then NoSuchElementException is thrown`() =
             runTest {
-                val request = Project.Update.newBuilder()
-                    .setProject(
-                        Project.newBuilder()
-                            .setId(UUID.randomUUID().toString())
-                            .setName("Missing Project")
-                            .setSettings(
-                                Project.Settings.newBuilder()
-                                    .setDecisionMatrix(
-                                        ReviewDecisionMatrix(
-                                            numberOfReviewers = 2,
-                                            patterns = emptyList(),
-                                        ).toGrpc(),
-                                    )
-                                    .build(),
-                            )
-                            .build(),
-                    )
-                    .setMask(
-                        FieldMaskUtil.fromStringList(
-                            listOf("project.settings.decision_matrix.number_of_reviewers"),
+                val request = UpdateProjectRequest(
+                    projectId = UUID.randomUUID(),
+                    name = "Missing Project",
+                    status = ProjectStatus.ACTIVE,
+                    settings = UpdateProjectSettingRequest(
+                        similarityThreshold = 1F,
+                        snowballingType = SnowballingType.BOTH,
+                        reviewMaybeAllowed = false,
+                        fetchers = emptyMap(),
+                        decisionMatrix = ReviewDecisionMatrix(
+                            numberOfReviewers = 2,
+                            patterns = emptyList(),
                         ),
-                    )
-                    .build()
+                    ),
+                )
 
-                assertThrows<NoSuchElementException> { repo.updateProject(request) }
+                assertThrows<NoSuchElementException> {
+                    repo.updateProject(request, setOf("project.settings.decision_matrix.number_of_reviewers"))
+                }
             }
     }
 

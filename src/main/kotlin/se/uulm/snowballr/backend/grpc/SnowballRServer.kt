@@ -26,15 +26,26 @@ import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 import se.uulm.snowballr.backend.model.dto.criterion.toGrpcCriteria
 import se.uulm.snowballr.backend.model.dto.criterion.toGrpcCriterion
+import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPattern
+import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
+import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
+import se.uulm.snowballr.backend.model.dto.project.SnowballingType
+import se.uulm.snowballr.backend.model.dto.project.toGrpcProject
+import se.uulm.snowballr.backend.model.dto.project.toGrpcProjects
 import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.dto.user.toGrpcUser
 import se.uulm.snowballr.backend.model.dto.user.toGrpcUserSettings
 import se.uulm.snowballr.backend.model.dto.user.toGrpcUsers
+import se.uulm.snowballr.backend.model.fetcher.toGrpc
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
+import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
+import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
+import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectSettingRequest
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
+import se.uulm.snowballr.backend.model.outgoing.project.toGrpc
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.scheduler.SchedulerManager
 import se.uulm.snowballr.backend.service.IAuthenticationService
@@ -53,7 +64,7 @@ import snowballr.Authentication
 import snowballr.Base
 import snowballr.CriterionOuterClass
 import snowballr.Export
-import snowballr.Fetcher
+import snowballr.Fetcher.AvailableFetchers
 import snowballr.PaperOuterClass
 import snowballr.ProjectOuterClass
 import snowballr.ReviewOuterClass
@@ -216,8 +227,10 @@ class SnowballRServer(
         private val reviewService: IReviewService by inject()
         private val userService: IUserService by inject()
 
-        override suspend fun getAvailableFetchers(request: Base.Nothing): Fetcher.AvailableFetchers =
-            fetcherService.getAvailableFetchers()
+        override suspend fun getAvailableFetchers(request: Base.Nothing): AvailableFetchers = AvailableFetchers
+            .newBuilder()
+            .addAllFetchers(fetcherService.getAvailableFetchers().map { it.toGrpc() })
+            .build()
 
         override suspend fun register(request: Authentication.RegisterRequest) = returnNothing {
             userService.register(
@@ -351,31 +364,49 @@ class SnowballRServer(
         }
 
         override suspend fun getAllProjects(request: Base.Nothing): ProjectOuterClass.Project.List =
-            projectService.getAllProjects()
+            projectService.getAllProjects().toGrpcProjects()
 
         override suspend fun getAllDeletedProjects(request: Base.Nothing): ProjectOuterClass.Project.List =
             super.getAllDeletedProjects(request)
 
         override suspend fun getAllDeletedProjectsForUser(request: Base.Id): ProjectOuterClass.Project.List =
-            projectService.getAllDeletedProjectsForUser(parseUserId(request))
+            projectService.getAllDeletedProjectsForUser(parseUserId(request)).toGrpcProjects()
 
         override suspend fun getAllArchivedProjects(request: Base.Nothing): ProjectOuterClass.Project.List =
             super.getAllArchivedProjects(request)
 
         override suspend fun getAllProjectsForUser(request: Base.Id): ProjectOuterClass.Project.List =
-            projectService.getAllProjectsForUser(parseUserId(request))
+            projectService.getAllProjectsForUser(parseUserId(request)).toGrpcProjects()
 
         override suspend fun getAllArchivedProjectsForUser(request: Base.Id): ProjectOuterClass.Project.List =
-            projectService.getAllArchivedProjectsForUser(parseUserId(request))
+            projectService.getAllArchivedProjectsForUser(parseUserId(request)).toGrpcProjects()
 
         override suspend fun createProject(request: ProjectOuterClass.Project.Create): ProjectOuterClass.Project =
-            projectService.createProject(request)
+            projectService.createProject(CreateProjectRequest(name = request.name)).toGrpcProject()
 
         override suspend fun getProjectById(request: Base.Id): ProjectOuterClass.Project =
-            projectService.getProjectById(parseProjectId(request))
+            projectService.getProjectById(parseProjectId(request)).toGrpcProject()
 
         override suspend fun updateProject(request: ProjectOuterClass.Project.Update): ProjectOuterClass.Project =
-            projectService.updateProject(request)
+            projectService.updateProject(
+                UpdateProjectRequest(
+                    projectId = parseUUID(request.project.id, EntityType.PROJECT),
+                    name = request.project.name,
+                    status = ProjectStatus.fromGrpc(request.project.status),
+                    settings = UpdateProjectSettingRequest(
+                        similarityThreshold = request.project.settings.similarityThreshold,
+                        snowballingType = SnowballingType.fromGrpc(request.project.settings.snowballingType),
+                        reviewMaybeAllowed = request.project.settings.reviewMaybeAllowed,
+                        fetchers = request.project.settings.fetchersMap.mapValues { it.value.optionsMap },
+                        decisionMatrix = ReviewDecisionMatrix(
+                            numberOfReviewers = request.project.settings.decisionMatrix.numberOfReviewers,
+                            patterns = request.project.settings.decisionMatrix.patternsList
+                                .map { DecisionMatrixPattern.fromGrpc(it) },
+                        ),
+                    ),
+                ),
+                FieldMaskUtil.normalize(request.mask).pathsList.toSet(),
+            ).toGrpcProject()
 
         override suspend fun getAvailableExportFormats(request: Base.Nothing): Export.AvailableExportFormatsResponse =
             exportService.getAvailableExportFormats()
@@ -391,12 +422,17 @@ class SnowballRServer(
 
         override suspend fun getProjectInformation(
             request: ProjectOuterClass.Project.Information.Get,
-        ): ProjectOuterClass.Project.Information = projectService.getProjectInformation(request)
+        ): ProjectOuterClass.Project.Information = projectService.getProjectInformation(
+            projectId = parseUUID(request.projectId, EntityType.PROJECT),
+            paths = FieldMaskUtil.normalize(request.mask).pathsList,
+        ).toGrpc()
 
         override suspend fun getDecisionStatisticsForStage(
             request: ProjectOuterClass.Project.Information.DecisionStatistics.Get,
-        ): ProjectOuterClass.Project.Information.DecisionStatistics =
-            projectService.getDecisionStatisticsForStage(request)
+        ): ProjectOuterClass.Project.Information.DecisionStatistics = projectService.getDecisionStatisticsForStage(
+            projectId = parseUUID(request.projectId, EntityType.PROJECT),
+            stage = request.stage.toInt(),
+        ).toGrpc()
 
         override suspend fun updateProjectMemberRole(request: ProjectOuterClass.Project.Member.Update) = returnNothing {
             projectMemberService.updateProjectMemberRole(request)

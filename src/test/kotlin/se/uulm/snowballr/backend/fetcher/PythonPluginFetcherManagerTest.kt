@@ -119,13 +119,13 @@ class PythonPluginFetcherManagerTest {
             """.trimIndent(),
         )
 
-        val result = fetcherManager.getAvailableFetchers().first { it.name == "test" }
+        val result = fetcherManager.getAvailableFetchers().first { it.id == "information_fetcher" }
 
         assertEquals("information_fetcher", result.id)
-        assertEquals("test", result.name)
-        assertEquals("desc", result.description)
-        assertEquals(emptyList(), result.linksList)
-        assertEquals(emptyMap(), result.optionsSchemaMap)
+        assertEquals("test", result.information.name)
+        assertEquals("desc", result.information.description)
+        assertEquals(emptyList(), result.information.links)
+        assertEquals(emptyMap(), result.information.optionsSchema)
     }
 
     @Test

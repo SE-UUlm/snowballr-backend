@@ -63,7 +63,7 @@ interface IProjectPaperTableRepo {
      * @param relativeId The local paper ID of the project paper in the project.
      * @return The [ProjectPaper] matching the given project ID and relative ID.
      */
-    suspend fun getProjectPaperByRelativeId(projectId: UUID, relativeId: Long): Result<ProjectPaper>
+    suspend fun getProjectPaperByRelativeId(projectId: UUID, relativeId: Int): Result<ProjectPaper>
 
     /**
      * Checks if a project paper exists in a project, based on the provided paper ID.
@@ -94,7 +94,7 @@ interface IProjectPaperTableRepo {
      */
     suspend fun getAdjacentPaper(
         projectId: UUID,
-        localPaperId: Long,
+        localPaperId: Int,
         direction: PaperNavigationDirection,
     ): Result<ProjectPaper>
 
@@ -149,7 +149,7 @@ interface IProjectPaperTableRepo {
      * @param stage The stage of the papers that should be considered when retrieving later project papers.
      * @return A list of subsequent [ProjectPaper] instances meeting the specified criteria.
      */
-    suspend fun getSubsequentProjectPapers(projectId: UUID, localPaperId: Long, stage: Long): List<ProjectPaper>
+    suspend fun getSubsequentProjectPapers(projectId: UUID, localPaperId: Int, stage: Int): List<ProjectPaper>
 
     /**
      * Updates the decision of a project paper.
@@ -182,18 +182,18 @@ class ProjectPaperTableRepo(
      * returns 0.
      *
      * @param projectId The unique identifier of the project for which the next local paper ID is to be generated.
-     * @return The next available local paper ID as a [Long].
+     * @return The next available local paper ID as a [Int].
      */
-    private fun getNextLocalIdForProject(projectId: UUID): Long = ProjectPaperTable
+    private fun getNextLocalIdForProject(projectId: UUID): Int = ProjectPaperTable
         .selectAll()
         .where { ProjectPaperTable.projectId eq projectId }
         .maxOfOrNull { it[ProjectPaperTable.localPaperId] }
         ?.plus(1)
-        ?: 0L
+        ?: 0
 
     override suspend fun getAdjacentPaper(
         projectId: UUID,
-        localPaperId: Long,
+        localPaperId: Int,
         direction: PaperNavigationDirection,
     ): Result<ProjectPaper> = db.query {
         val isNext = direction == PaperNavigationDirection.NEXT
@@ -220,7 +220,7 @@ class ProjectPaperTableRepo(
         getEntityByKeyAsResult(::getProjectPaperByIdOrNull, EntityType.PROJECT_PAPER, id)
     }
 
-    override suspend fun getProjectPaperByRelativeId(projectId: UUID, relativeId: Long): Result<ProjectPaper> =
+    override suspend fun getProjectPaperByRelativeId(projectId: UUID, relativeId: Int): Result<ProjectPaper> =
         db.query {
             val projectPaper = ProjectPaperTable.getEntityOrNull(ResultRow::toProjectPaper) {
                 (ProjectPaperTable.projectId eq projectId) and (ProjectPaperTable.localPaperId eq relativeId)
@@ -276,7 +276,7 @@ class ProjectPaperTableRepo(
                     it[ProjectPaperTable.paperId] = paperId
                     it[ProjectPaperTable.projectId] = projectId
                     it[ProjectPaperTable.localPaperId] = localPaperId
-                    it[stage] = request.stage
+                    it[stage] = request.stage.toInt()
                     it[decision] = PaperDecision.UNREVIEWED
                     it[createdBy] = userId
                 }
@@ -308,8 +308,8 @@ class ProjectPaperTableRepo(
 
     override suspend fun getSubsequentProjectPapers(
         projectId: UUID,
-        localPaperId: Long,
-        stage: Long,
+        localPaperId: Int,
+        stage: Int,
     ): List<ProjectPaper> = db.query {
         val sameStageButGreaterLocalIdOp =
             (ProjectPaperTable.stage eq stage) and (ProjectPaperTable.localPaperId greater localPaperId)

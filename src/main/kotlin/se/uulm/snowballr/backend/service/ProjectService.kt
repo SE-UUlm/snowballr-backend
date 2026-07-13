@@ -1,81 +1,79 @@
 package se.uulm.snowballr.backend.service
 
-import com.google.protobuf.timestamp
-import com.google.protobuf.util.FieldMaskUtil
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.fetcher.IFetcherManager
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.AccessType
-import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.dto.project.Project
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
-import se.uulm.snowballr.backend.model.dto.project.toGrpcProject
-import se.uulm.snowballr.backend.model.dto.project.toGrpcProjects
 import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
 import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.notfound.StageNotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
+import se.uulm.snowballr.backend.model.fetcher.FetcherMap
+import se.uulm.snowballr.backend.model.fetcher.FetcherOptions
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
-import se.uulm.snowballr.backend.model.parseUUID
+import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
+import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
+import se.uulm.snowballr.backend.model.outgoing.project.ProjectDecisionCount
+import se.uulm.snowballr.backend.model.outgoing.project.ProjectDecisionStatistics
+import se.uulm.snowballr.backend.model.outgoing.project.ProjectInformation
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
-import snowballr.ProjectOuterClass
-import snowballr.copy
+import java.time.OffsetDateTime
 import java.util.UUID
-import snowballr.Fetcher.FetcherOptions as GrpcFetcherOptions
-import snowballr.ProjectOuterClass.Project as GrpcProject
-import snowballr.ProjectOuterClass.Project.Information.DecisionStatistics as GrpcProjectDecisionStatistics
 
 @Suppress("ComplexInterface")
 interface IProjectService {
     /**
      * Service implementation of [SnowballRService.getProjectById].
      */
-    suspend fun getProjectById(projectId: UUID): GrpcProject
+    suspend fun getProjectById(projectId: UUID): Project
 
     /**
      * Service implementation of [SnowballRService.createProject].
      */
-    suspend fun createProject(request: GrpcProject.Create): GrpcProject
+    suspend fun createProject(request: CreateProjectRequest): Project
 
     /**
      * Service implementation of [SnowballRService.getAllProjects].
      */
-    suspend fun getAllProjects(): GrpcProject.List
+    suspend fun getAllProjects(): List<Project>
 
     /**
      * Service implementation of [SnowballRService.getAllProjectsForUser].
      */
-    suspend fun getAllProjectsForUser(userId: UUID): GrpcProject.List
+    suspend fun getAllProjectsForUser(userId: UUID): List<Project>
 
     /**
      * Service implementation of [SnowballRService.getAllArchivedProjectsForUser].
      */
-    suspend fun getAllArchivedProjectsForUser(userId: UUID): GrpcProject.List
+    suspend fun getAllArchivedProjectsForUser(userId: UUID): List<Project>
 
     /**
      * Service implementation of [SnowballRService.getAllDeletedProjectsForUser].
      */
-    suspend fun getAllDeletedProjectsForUser(userId: UUID): GrpcProject.List
+    suspend fun getAllDeletedProjectsForUser(userId: UUID): List<Project>
 
     /**
      * Service implementation of [SnowballRService.updateProject].
      */
-    suspend fun updateProject(request: GrpcProject.Update): GrpcProject
+    suspend fun updateProject(request: UpdateProjectRequest, paths: Set<String>): Project
 
     /**
      * Service implementation of [SnowballRService.getProjectInformation].
      */
-    suspend fun getProjectInformation(request: GrpcProject.Information.Get): GrpcProject.Information
+    suspend fun getProjectInformation(projectId: UUID, paths: List<String>): ProjectInformation
 
     /**
      * Service implementation of [SnowballRService.getDecisionStatisticsForStage].
      */
-    suspend fun getDecisionStatisticsForStage(request: GrpcProjectDecisionStatistics.Get): GrpcProjectDecisionStatistics
+    suspend fun getDecisionStatisticsForStage(projectId: UUID, stage: Int): ProjectDecisionStatistics
 
     /**
      * Service implementation of [SnowballRService.softDeleteProject].
@@ -110,15 +108,13 @@ class ProjectService(
     private val accessChecker: IProjectAccessChecker,
     private val fetcherManager: IFetcherManager,
 ) : IProjectService {
-    typealias GrpcFetcherMap = Map<String, GrpcFetcherOptions>
-
-    override suspend fun getProjectById(projectId: UUID): GrpcProject = withUser(userRepo) { currentUser ->
+    override suspend fun getProjectById(projectId: UUID): Project = withUser(userRepo) { currentUser ->
         accessChecker.isAllowedToReadProject(currentUser, projectId)
 
-        repo.getProjectById(projectId).getOrThrow().toGrpcProject()
+        repo.getProjectById(projectId).getOrThrow()
     }
 
-    override suspend fun createProject(request: GrpcProject.Create): GrpcProject = withUser(userRepo) { currentUser ->
+    override suspend fun createProject(request: CreateProjectRequest): Project = withUser(userRepo) { currentUser ->
         val userSettings = userRepo.getUserSettings(currentUser.id).getOrThrow()
         val userDefaultCriteria = criterionRepo.getCriteriaByIds(userSettings.criteriaIds)
 
@@ -140,113 +136,89 @@ class ProjectService(
         projectMemberRepo.addUserToProject(currentUser.id, project.id)
         projectMemberRepo.updateProjectMemberRole(project.id, currentUser.id, MemberRole.ADMIN)
 
-        project.toGrpcProject()
+        project
     }
 
-    override suspend fun getAllProjects(): GrpcProject.List = withUser(userRepo) { currentUser ->
+    override suspend fun getAllProjects(): List<Project> = withUser(userRepo) { currentUser ->
         accessChecker.isAllowedToReadAllProjects(currentUser)
 
-        repo.getAllProjects().toGrpcProjects()
+        repo.getAllProjects()
     }
 
-    override suspend fun getAllProjectsForUser(userId: UUID): GrpcProject.List = getAllProjectsForUserAndStatus(
+    override suspend fun getAllProjectsForUser(userId: UUID): List<Project> = getAllProjectsForUserAndStatus(
         userId,
         setOf(ProjectStatus.ACTIVE, ProjectStatus.ACTIVE_LOCKED),
     )
 
-    override suspend fun getAllArchivedProjectsForUser(userId: UUID): GrpcProject.List =
+    override suspend fun getAllArchivedProjectsForUser(userId: UUID): List<Project> =
         getAllProjectsForUserAndStatus(userId, setOf(ProjectStatus.ARCHIVED))
 
-    override suspend fun getAllDeletedProjectsForUser(userId: UUID): GrpcProject.List =
+    override suspend fun getAllDeletedProjectsForUser(userId: UUID): List<Project> =
         getAllProjectsForUserAndStatus(userId, setOf(ProjectStatus.DELETED))
 
-    override suspend fun updateProject(request: GrpcProject.Update): GrpcProject = withUser(userRepo) { currentUser ->
-        val projectId = parseUUID(request.project.id, EntityType.PROJECT)
-
-        accessChecker.isProjectOrServerAdmin(currentUser, projectId, AccessType.UPDATE)
-
-        val project = repo.getProjectById(projectId).getOrThrow()
-        val currentStatus = project.status
-
-        val fieldMask = FieldMaskUtil.normalize(request.mask).pathsList
-        val requestedStatus = request.project.status
-
-        validateProjectUpdate(currentStatus, requestedStatus, fieldMask)
-
-        val finalStatus = determineEffectiveProjectStatus(projectId, requestedStatus)
-        var finalRequest = request.copy {
-            this.project = request.project.copy {
-                this.status = finalStatus
-            }
-        }
-
-        if (fieldMask.contains("project.settings.fetchers")) {
-            val sanitizedFetchersMap = sanitizeFetchersMap(finalRequest.project.settings.fetchersMap)
-
-            finalRequest = finalRequest.copy {
-                this.project = this.project.copy {
-                    this.settings = this.settings.toBuilder()
-                        .clearFetchers()
-                        .putAllFetchers(sanitizedFetchersMap)
-                        .build()
-                }
-            }
-        }
-
-        repo.updateProject(finalRequest).toGrpcProject()
-    }
-
-    override suspend fun getProjectInformation(request: GrpcProject.Information.Get): GrpcProject.Information =
+    override suspend fun updateProject(request: UpdateProjectRequest, paths: Set<String>): Project =
         withUser(userRepo) { currentUser ->
-            val projectId = parseUUID(request.projectId, EntityType.PROJECT)
+            accessChecker.isProjectOrServerAdmin(currentUser, request.projectId, AccessType.UPDATE)
 
+            val project = repo.getProjectById(request.projectId).getOrThrow()
+            val currentStatus = project.status
+
+            validateProjectUpdate(currentStatus, request.status, paths)
+
+            val finalStatus = determineEffectiveProjectStatus(request.projectId, request.status)
+            var finalRequest = request.copy(status = finalStatus)
+
+            if (paths.contains("project.settings.fetchers")) {
+                val sanitizedFetchersMap = sanitizeFetchersMap(finalRequest.settings.fetchers)
+
+                finalRequest = finalRequest.copy(settings = finalRequest.settings.copy(fetchers = sanitizedFetchersMap))
+            }
+
+            repo.updateProject(finalRequest, paths)
+        }
+
+    override suspend fun getProjectInformation(projectId: UUID, paths: List<String>): ProjectInformation =
+        withUser(userRepo) { currentUser ->
             accessChecker.isAllowedToReadProject(currentUser, projectId)
 
             val project = repo.getProjectById(projectId).getOrThrow()
-            val progress = projectPaperRepo.getProjectProgress(projectId)
-            val builder = GrpcProject.Information.newBuilder()
-            val has = if (request.hasMask() && request.mask.pathsList.isNotEmpty()) {
-                val fieldMaskPaths = FieldMaskUtil.normalize(request.mask).pathsList.toSet();
-                { path: String -> path in fieldMaskPaths }
+            var info = ProjectInformation(0F, OffsetDateTime.MIN, OffsetDateTime.MIN)
+
+            val has = if (paths.isNotEmpty()) {
+                { path: String -> path in paths }
             } else {
                 { _ -> true }
             }
 
             if (has("project_progress")) {
-                builder.setProjectProgress(progress)
+                val progress = projectPaperRepo.getProjectProgress(projectId)
+                info = info.copy(progress = progress)
             }
 
             if (has("creation_date")) {
-                builder.setCreationDate(timestamp { seconds = project.createdAt.toEpochSecond() })
+                info = info.copy(creationDate = project.createdAt)
             }
 
             if (has("last_stage_started")) {
-                builder.setLastStageStarted(timestamp { seconds = project.currentStageStartedAt.toEpochSecond() })
+                info = info.copy(lastStageStarted = project.currentStageStartedAt)
             }
 
-            builder.build()
+            info
         }
 
-    override suspend fun getDecisionStatisticsForStage(
-        request: GrpcProjectDecisionStatistics.Get,
-    ): GrpcProjectDecisionStatistics = withUser(userRepo) { currentUser ->
-        val projectId = parseUUID(request.projectId, EntityType.PROJECT)
+    override suspend fun getDecisionStatisticsForStage(projectId: UUID, stage: Int): ProjectDecisionStatistics =
+        withUser(userRepo) { currentUser ->
+            accessChecker.isAllowedToReadProject(currentUser, projectId)
 
-        accessChecker.isAllowedToReadProject(currentUser, projectId)
+            val project = repo.getProjectById(projectId).getOrThrow()
+            val maxStage = project.maxStage
 
-        val project = repo.getProjectById(projectId).getOrThrow()
-        val maxStage = project.maxStage
+            if (stage > maxStage) {
+                throw StageNotFoundException(stage)
+            }
 
-        if (request.stage > maxStage) {
-            throw StageNotFoundException(request.stage)
+            ProjectDecisionStatistics(statistics = createStatistics(projectId, stage))
         }
-
-        val statistics = createStatistics(projectId, request.stage)
-        GrpcProjectDecisionStatistics
-            .newBuilder()
-            .addAllStatistics(statistics)
-            .build()
-    }
 
     override suspend fun softDeleteProject(projectId: UUID) = withUser(userRepo) { currentUser ->
         accessChecker.isProjectOrServerAdmin(currentUser, projectId, AccessType.DELETE)
@@ -259,35 +231,35 @@ class ProjectService(
         invitationTokenRepo.deleteInvitationTokensForProject(projectId)
     }
 
-    private suspend fun getAllProjectsForUserAndStatus(userId: UUID, statuses: Set<ProjectStatus>): GrpcProject.List =
+    private suspend fun getAllProjectsForUserAndStatus(userId: UUID, statuses: Set<ProjectStatus>): List<Project> =
         withUser(userRepo) { currentUser ->
             userRepo.getUserById(userId).getOrThrow()
 
             accessChecker.isAllowedToReadUserProjects(currentUser, userId)
 
-            repo.getUserProjects(userId, statuses).toGrpcProjects()
+            repo.getUserProjects(userId, statuses)
         }
 
     /**
      * Validates the update of a project based on the current status and the requested status.
      *
-     * If the project is `PROJECT_STATUS_DELETED`, nothing can be updated.
-     * If the project is `PROJECT_STATUS_ARCHIVED`, only the status can be updated (back to an active project).
-     * If the project is `PROJECT_STATUS_ACTIVE`, then everything can be updated.
-     * If the project is `PROJECT_STATUS_ACTIVE_LOCKED`, then everything except the slr settings can be updated.
+     * If the project status is `DELETED`, nothing can be updated.
+     * If the project status is `ARCHIVED`, only the status can be updated (back to an active project).
+     * If the project status is `ACTIVE`, then everything can be updated.
+     * If the project status is `ACTIVE_LOCKED`, then everything except the slr settings can be updated.
      *
-     * In addition, the status can never be set to `PROJECT_STATUS_DELETED` via the update method.
+     * In addition, the status can never be set to `DELETED` via the update method.
      *
      * @throws FailedPreconditionException if the update fails for any reason.
      */
     @Suppress("ThrowsCount")
     private fun validateProjectUpdate(
         currentStatus: ProjectStatus,
-        requestedStatus: ProjectOuterClass.ProjectStatus,
-        fieldMask: List<String>,
+        requestedStatus: ProjectStatus,
+        paths: Set<String>,
     ) {
-        val isStatusUpdate = fieldMask.contains("project.status")
-        require(!(isStatusUpdate && requestedStatus == ProjectOuterClass.ProjectStatus.PROJECT_STATUS_DELETED)) {
+        val isStatusUpdate = paths.contains("project.status")
+        require(!(isStatusUpdate && requestedStatus == ProjectStatus.DELETED)) {
             "The project status cannot be set to DELETED via the update method. Use SoftDeleteProject instead."
         }
 
@@ -299,7 +271,7 @@ class ProjectService(
             }
 
             ProjectStatus.ARCHIVED -> {
-                val isOnlyStatusUpdate = fieldMask.size == 1 && isStatusUpdate
+                val isOnlyStatusUpdate = paths.size == 1 && isStatusUpdate
                 if (!isOnlyStatusUpdate) {
                     throw FailedPreconditionException(
                         "The project is archived and therefore only the 'status' field can be updated.",
@@ -307,9 +279,9 @@ class ProjectService(
                 }
 
                 if (
-                    requestedStatus != ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE &&
-                    requestedStatus != ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED &&
-                    requestedStatus != ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ARCHIVED
+                    requestedStatus != ProjectStatus.ACTIVE &&
+                    requestedStatus != ProjectStatus.ACTIVE_LOCKED &&
+                    requestedStatus != ProjectStatus.ARCHIVED
                 ) {
                     throw FailedPreconditionException(
                         "An archived project can only be unarchived by setting its status to ACTIVE or ACTIVE_LOCKED.",
@@ -319,7 +291,7 @@ class ProjectService(
 
             ProjectStatus.ACTIVE_LOCKED -> {
                 // all project settings are SLR settings
-                val isChangingSettings = fieldMask.any { it.startsWith("project.settings.") }
+                val isChangingSettings = paths.any { it.startsWith("project.settings.") }
                 if (isChangingSettings) {
                     throw FailedPreconditionException(
                         "The project is locked and therefore no SLR settings can be modified.",
@@ -351,42 +323,35 @@ class ProjectService(
      */
     private suspend fun determineEffectiveProjectStatus(
         projectId: UUID,
-        requestedStatus: ProjectOuterClass.ProjectStatus,
-    ): ProjectOuterClass.ProjectStatus {
-        if (requestedStatus != ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE &&
-            requestedStatus != ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED
-        ) {
+        requestedStatus: ProjectStatus,
+    ): ProjectStatus {
+        if (requestedStatus != ProjectStatus.ACTIVE && requestedStatus != ProjectStatus.ACTIVE_LOCKED) {
             return requestedStatus
         }
 
         return if (repo.isProjectLocked(projectId)) {
-            ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED
+            ProjectStatus.ACTIVE_LOCKED
         } else {
-            ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE
+            ProjectStatus.ACTIVE
         }
     }
 
     /**
-     * Creates a list of [GrpcProjectDecisionStatistics.Statistic] objects for the given [stage]
-     * in the project with the ID [projectId].
+     * Creates a list of [ProjectDecisionCount] objects for the given [stage] in the project with the ID [projectId].
      *
      * @param projectId The ID of the project for which the statistics should be created.
      * @param stage The stage for which the statistics should be created.
-     * @return A list of [GrpcProjectDecisionStatistics.Statistic] objects.
+     * @return A list of [ProjectDecisionCount] objects.
      */
-    private suspend fun createStatistics(projectId: UUID, stage: Long): List<GrpcProjectDecisionStatistics.Statistic> {
+    private suspend fun createStatistics(projectId: UUID, stage: Int): List<ProjectDecisionCount> {
         val counts = projectPaperRepo.getAllProjectPapersForProject(projectId)
             .asSequence()
             .filter { it.stage == stage }
             .groupingBy { it.decision }
             .eachCount()
-            .mapValues { it.value.toLong() }
+            .mapValues { it.value }
 
-        fun createStatistic(decision: PaperDecision): GrpcProjectDecisionStatistics.Statistic =
-            GrpcProjectDecisionStatistics.Statistic.newBuilder()
-                .setDecision(decision.toGrpc())
-                .setCount(counts[decision] ?: 0)
-                .build()
+        fun createStatistic(decision: PaperDecision) = ProjectDecisionCount(decision, counts[decision] ?: 0)
 
         return listOf(
             PaperDecision.ACCEPTED,
@@ -405,19 +370,19 @@ class ProjectService(
      *
      * This enables that no non-existent fetcher or non-existent fetcher option is stored in the database.
      */
-    private suspend fun sanitizeFetchersMap(fetchers: GrpcFetcherMap): GrpcFetcherMap {
-        val sanitizedFetchersMap = mutableMapOf<String, GrpcFetcherOptions>()
+    private suspend fun sanitizeFetchersMap(fetchers: FetcherMap): FetcherMap {
+        val sanitizedFetchersMap = mutableMapOf<String, FetcherOptions>()
         val availableFetchers = fetcherManager.getAvailableFetchers()
 
         val fetcherIndex = availableFetchers.associateBy { it.id }
         for ((fetcher, options) in fetchers) {
-            val info = fetcherIndex[fetcher] ?: continue
+            val info = fetcherIndex[fetcher]?.information ?: continue
 
             // Filter out non-existent options
-            val availableOptions = info.optionsSchemaMap
-            val sanitizedOptions = options.optionsMap.filter { availableOptions.containsKey(it.key) }
+            val availableOptions = info.optionsSchema
+            val sanitizedOptions = options.filter { availableOptions.containsKey(it.key) }
 
-            val requiredOptions = availableOptions.filter { it.value.required }
+            val requiredOptions = availableOptions.filter { it.value.isRequired }
             val missingRequiredOptions = requiredOptions.keys
                 .filter { !sanitizedOptions.containsKey(it) || sanitizedOptions[it].isNullOrEmpty() }
             if (missingRequiredOptions.isNotEmpty()) {
@@ -426,9 +391,7 @@ class ProjectService(
                 )
             }
 
-            sanitizedFetchersMap[fetcher] = GrpcFetcherOptions.newBuilder()
-                .putAllOptions(sanitizedOptions)
-                .build()
+            sanitizedFetchersMap[fetcher] = sanitizedOptions
         }
 
         return sanitizedFetchersMap

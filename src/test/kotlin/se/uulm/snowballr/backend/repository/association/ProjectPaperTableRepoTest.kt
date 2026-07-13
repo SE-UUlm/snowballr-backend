@@ -84,7 +84,7 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
             runTest {
                 val projectId = insertProjectAndGetId(createdBy = testUserId)
 
-                val result = repo.getProjectPaperByRelativeId(projectId, Random.nextLong())
+                val result = repo.getProjectPaperByRelativeId(projectId, Random.nextInt())
 
                 assertResultFailure<ProjectPaperNotFoundException>(result)
             }

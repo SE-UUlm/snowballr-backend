@@ -7,8 +7,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.integration.IntegrationTest
-import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.parseUUID
+import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import snowballr.ProjectOuterClass.Project
 import snowballr.UserOuterClass.UserStatus
 import kotlin.test.assertEquals
@@ -20,9 +19,7 @@ class RegressionTest : IntegrationTest() {
     fun `When the invitation of an existing user is removed from a project, then the invitation token is removed`() =
         runTest {
             // Create a project
-            val createProjectRequest = Project.Create.newBuilder()
-                .setName("Test Project")
-                .build()
+            val createProjectRequest = CreateProjectRequest(name = "Test Project")
             val project = projectService.createProject(createProjectRequest)
 
             // Register another user to invite
@@ -31,8 +28,7 @@ class RegressionTest : IntegrationTest() {
             // Invite the other user to the project
             inviteUserToProject(project, otherUser)
 
-            val id = parseUUID(project.id, EntityType.PROJECT)
-            var pendingInvitations = invitationService.getPendingInvitationsForProject(id).usersList
+            var pendingInvitations = invitationService.getPendingInvitationsForProject(project.id).usersList
             assertEquals(1, pendingInvitations.size)
             assertEquals(otherUser.email, pendingInvitations[0].email)
             assertEquals(otherUser.firstName, pendingInvitations[0].firstName)
@@ -41,12 +37,12 @@ class RegressionTest : IntegrationTest() {
 
             // Remove the other user's invitation from the project
             val removeInvitationRequest = Project.Member.Remove.newBuilder()
-                .setProjectId(project.id)
+                .setProjectId(project.id.toString())
                 .setUserEmail(otherUser.email)
                 .build()
             projectMemberService.removeProjectMember(removeInvitationRequest)
 
-            pendingInvitations = invitationService.getPendingInvitationsForProject(id).usersList
+            pendingInvitations = invitationService.getPendingInvitationsForProject(project.id).usersList
             assertEquals(0, pendingInvitations.size)
         }
 
@@ -54,7 +50,7 @@ class RegressionTest : IntegrationTest() {
     fun `When multiple papers are added to the project concurrently, then they all have a different local ID`() =
         runTest {
             val numberOfPapers = 10
-            val project = projectService.createProject(Project.Create.newBuilder().setName("Test Project").build())
+            val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
             val papers = mutableSetOf<GrpcPaper>()
             for (i in 1..numberOfPapers) {
                 val builder = GrpcPaper.newBuilder()
@@ -66,7 +62,7 @@ class RegressionTest : IntegrationTest() {
                 async {
                     projectPaperService.addPaperToProject(
                         GrpcProjectPaper.Add.newBuilder()
-                            .setProjectId(project.id)
+                            .setProjectId(project.id.toString())
                             .setPaperId(it.id)
                             .setStage(0)
                             .build(),
@@ -82,7 +78,7 @@ class RegressionTest : IntegrationTest() {
                 // If several papers have the same local ID this would throw
                 projectPaperService.getProjectPaperByRelativeId(
                     GrpcProjectPaper.Get.newBuilder()
-                        .setProjectId(project.id)
+                        .setProjectId(project.id.toString())
                         .setRelativeProjectPaperId(projectPaper.localId)
                         .build(),
                 )

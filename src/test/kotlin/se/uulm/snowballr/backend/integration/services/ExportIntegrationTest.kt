@@ -4,8 +4,8 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import se.uulm.snowballr.backend.integration.IntegrationTest
+import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import snowballr.Export.ExportRequest
-import snowballr.ProjectOuterClass.Project
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -31,11 +31,11 @@ class ExportIntegrationTest : IntegrationTest() {
     inner class ExportProject {
         @Test
         fun `When a project is exported as JSON, then the response contains non-empty data`() = runTest {
-            val project = projectService.createProject(Project.Create.newBuilder().setName("Export Project").build())
+            val project = projectService.createProject(CreateProjectRequest(name = "Export Project"))
 
             val response = exportService.exportProject(
                 ExportRequest.newBuilder()
-                    .setId(project.id)
+                    .setId(project.id.toString())
                     .setFormat("JSON")
                     .build(),
             )
@@ -46,11 +46,11 @@ class ExportIntegrationTest : IntegrationTest() {
 
         @Test
         fun `When a project is exported, then the file name reflects the project name`() = runTest {
-            val project = projectService.createProject(Project.Create.newBuilder().setName("Named Export").build())
+            val project = projectService.createProject(CreateProjectRequest(name = "Named Export"))
 
             val response = exportService.exportProject(
                 ExportRequest.newBuilder()
-                    .setId(project.id)
+                    .setId(project.id.toString())
                     .setFormat("JSON")
                     .build(),
             )

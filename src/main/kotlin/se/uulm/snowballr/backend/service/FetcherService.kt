@@ -9,13 +9,13 @@ import se.uulm.snowballr.backend.model.dto.paper.Paper
 import se.uulm.snowballr.backend.model.dto.paper.toGrpcPaper
 import se.uulm.snowballr.backend.model.dto.paper.toGrpcPaperRequest
 import se.uulm.snowballr.backend.model.exception.FetcherException
+import se.uulm.snowballr.backend.model.fetcher.FetcherInformationWithId
 import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
-import snowballr.Fetcher.AvailableFetchers
 import java.util.UUID
 import snowballr.PaperOuterClass.Paper as GrpcPaper
 import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
@@ -26,7 +26,7 @@ interface IFetcherService {
     /**
      * Service implementation of [SnowballRService.getAvailableFetchers].
      */
-    suspend fun getAvailableFetchers(): AvailableFetchers
+    suspend fun getAvailableFetchers(): Set<FetcherInformationWithId>
 
     /**
      * Service implementation of [SnowballRService.searchLocalProjectPaperCandidates].
@@ -57,10 +57,7 @@ class FetcherService(
     private val paperRepo: IPaperTableRepo,
     private val projectPaperRepo: IProjectPaperTableRepo,
 ) : IFetcherService {
-    override suspend fun getAvailableFetchers(): AvailableFetchers = AvailableFetchers
-        .newBuilder()
-        .addAllFetchers(fetcherManager.getAvailableFetchers())
-        .build()
+    override suspend fun getAvailableFetchers(): Set<FetcherInformationWithId> = fetcherManager.getAvailableFetchers()
 
     override suspend fun searchLocalProjectPaperCandidates(request: GrpcProjectPaper.SearchQuery): GrpcPaper.List =
         withUser(userRepo) { currentUser ->

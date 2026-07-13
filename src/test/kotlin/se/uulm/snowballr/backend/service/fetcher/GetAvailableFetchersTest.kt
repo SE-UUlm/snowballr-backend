@@ -4,44 +4,47 @@ import io.mockk.coEvery
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import snowballr.Base
-import snowballr.Fetcher
+import se.uulm.snowballr.backend.model.fetcher.FetcherInformation
+import se.uulm.snowballr.backend.model.fetcher.FetcherInformationWithId
+import se.uulm.snowballr.backend.model.fetcher.FetcherOptionsSchema
+import se.uulm.snowballr.backend.model.fetcher.Link
 
 class GetAvailableFetchersTest : FetcherServiceTest() {
     @Test
     fun `When the fetcherManager has fetchers registered, then the FetcherService returns them properly`() = runTest {
-        val links = listOf(
-            Base.Link.newBuilder()
-                .setLabel("Homepage")
-                .setUrl("https://example.com/")
-                .build(),
-        )
+        val links = listOf(Link("HomePage", "https://example.com/"))
         val optionsSchema = mapOf(
-            "API_KEY" to Fetcher.FetcherOptionSchema.newBuilder()
-                .setDescription("Test API key")
-                .setRequired(true)
-                .setIsSecret(true)
-                .build(),
-            "QUERY_LIMIT" to Fetcher.FetcherOptionSchema.newBuilder()
-                .setDescription("Limit of query result")
-                .setRequired(false)
-                .setIsSecret(false)
-                .setDefaultValue("25")
-                .build(),
+            "API_KEY" to FetcherOptionsSchema(
+                name = "ApiKey",
+                description = "Test API key",
+                isRequired = true,
+                isSecret = true,
+                defaultValue = null,
+            ),
+            "QUERY_LIMIT" to FetcherOptionsSchema(
+                name = "QueryLimit",
+                description = "Limit of query result",
+                isRequired = false,
+                isSecret = false,
+                defaultValue = "25",
+            ),
         )
 
         val fetchers = setOf(
-            Fetcher.FetcherInformation.newBuilder()
-                .setId("test")
-                .setName("Test Fetcher")
-                .addAllLinks(links)
-                .putAllOptionsSchema(optionsSchema)
-                .build(),
+            FetcherInformationWithId(
+                id = "test",
+                information = FetcherInformation(
+                    name = "Test Fetcher",
+                    description = "",
+                    links = links,
+                    optionsSchema = optionsSchema,
+                ),
+            ),
         )
 
         coEvery { fetcherManagerMock.getAvailableFetchers() } returns fetchers
 
-        val result = service.getAvailableFetchers().fetchersList.toSet()
+        val result = service.getAvailableFetchers()
 
         assertEquals(fetchers, result)
     }

@@ -53,8 +53,8 @@ class GetAllDeletedProjectsForUserTest : ProjectServiceTest() {
 
             val result = service.getAllDeletedProjectsForUser(requestedUser.id)
 
-            assertEquals(1, result.projectsCount)
-            val resultElement = result.projectsList.first()
+            assertEquals(1, result.size)
+            val resultElement = result.first()
             assertProjectEquality(project, resultElement)
         }
 }

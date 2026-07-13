@@ -15,10 +15,9 @@ import se.uulm.snowballr.backend.model.exception.UnauthorizedFetcherPathExceptio
 import se.uulm.snowballr.backend.model.exception.notfound.FetcherNotFoundException
 import se.uulm.snowballr.backend.model.fetcher.FetcherAction
 import se.uulm.snowballr.backend.model.fetcher.FetcherInformation
+import se.uulm.snowballr.backend.model.fetcher.FetcherInformationWithId
 import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
 import se.uulm.snowballr.backend.model.fetcher.ProcessResult
-import se.uulm.snowballr.backend.model.fetcher.toGrpc
-import snowballr.Fetcher
 import java.io.IOException
 import java.io.InputStream
 import java.nio.file.Files
@@ -76,7 +75,7 @@ class PythonPluginFetcherManager(
         }
     }
 
-    override suspend fun getAvailableFetchers(): Set<Fetcher.FetcherInformation> = coroutineScope {
+    override suspend fun getAvailableFetchers(): Set<FetcherInformationWithId> = coroutineScope {
         root.listDirectoryEntries()
             .filter { it.extension == "py" }
             .map { async { retrieveFetcherInformation(it.nameWithoutExtension) } }
@@ -289,12 +288,12 @@ class PythonPluginFetcherManager(
         throw FetcherException("Fetcher '$fetcher' returned invalid JSON.", exception)
     }
 
-    private suspend fun retrieveFetcherInformation(fetcherFileName: String): Fetcher.FetcherInformation? {
+    private suspend fun retrieveFetcherInformation(fetcherFileName: String): FetcherInformationWithId? {
         val action = FetcherAction.INFO
 
         return try {
             val info = executeFetcher<FetcherInformation>(fetcherFileName, action, action.payload())
-            info.toGrpc(fetcherFileName)
+            FetcherInformationWithId(id = fetcherFileName, information = info)
         } catch (e: FetcherException) {
             logger.warn(e) { "Skipping plugin: $fetcherFileName" }
             null

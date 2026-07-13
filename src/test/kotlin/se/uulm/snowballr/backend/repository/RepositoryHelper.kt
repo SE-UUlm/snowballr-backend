@@ -126,8 +126,8 @@ object RepositoryHelper {
     suspend fun insertProjectAndGetId(
         name: String = "Test Project",
         status: ProjectStatus = ProjectStatus.ACTIVE,
-        currentStage: Long = 0,
-        maxStage: Long = 0,
+        currentStage: Int = 0,
+        maxStage: Int = 0,
         similarityThreshold: Float = 0F,
         snowballingType: SnowballingType = SnowballingType.BOTH,
         reviewMaybeAllowed: Boolean = true,
@@ -160,8 +160,8 @@ object RepositoryHelper {
     suspend fun insertProjectPaperAndGetId(
         paperId: UUID,
         projectId: UUID,
-        localPaperId: Long = 0,
-        stage: Long = 0,
+        localPaperId: Int = 0,
+        stage: Int = 0,
         decision: PaperDecision = PaperDecision.ACCEPTED,
         createdBy: UUID,
     ): UUID = db.query {
