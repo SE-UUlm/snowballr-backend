@@ -6,6 +6,7 @@ package se.uulm.snowballr.backend.arch
 
 import com.tngtech.archunit.base.DescribedPredicate.not
 import com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage
+import com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAnyPackage
 import com.tngtech.archunit.core.domain.JavaClasses
 import com.tngtech.archunit.core.importer.ImportOption
 import com.tngtech.archunit.junit.AnalyzeClasses
@@ -15,6 +16,7 @@ import com.tngtech.archunit.lang.conditions.ArchConditions.haveNameMatching
 import com.tngtech.archunit.lang.conditions.ArchConditions.haveSimpleName
 import com.tngtech.archunit.lang.conditions.ArchConditions.haveSimpleNameEndingWith
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes
+import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses
 import com.tngtech.archunit.library.Architectures
 import com.tngtech.archunit.library.Architectures.layeredArchitecture
 import com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices
@@ -147,6 +149,19 @@ private class StructureRules {
             .matching("$BASE_PACKAGE.(*)..")
             .should()
             .beFreeOfCycles()
+            .check(classes)
+    }
+
+    @ArchTest
+    fun `When a class is in the base package, then it should not access the generated gRPC code`(classes: JavaClasses) {
+        noClasses()
+            .that()
+            .resideInAPackage("$BASE_PACKAGE..")
+            .and(not(resideInAnyPackage("$BASE_PACKAGE.grpc..", "$BASE_PACKAGE.validation..")))
+            .should()
+            .dependOnClassesThat()
+            .resideInAPackage("snowballr..")
+            .because("Only the gRPC and validation layers may access the generated gRPC code")
             .check(classes)
     }
 }
