@@ -26,7 +26,7 @@ interface IInvitationService {
     /**
      * Service implementation of [SnowballRService.getInviteCandidates].
      */
-    suspend fun getInviteCandidates(projectId: UUID, query: String): List<User>
+    suspend fun getInviteCandidates(projectId: UUID?, query: String): List<User>
 
     /**
      * Service implementation of [SnowballRService.inviteUserToProject].
@@ -75,7 +75,7 @@ class InvitationService(
         private const val MINIMUM_LENGTH_OF_SEARCH_QUERY = 3
     }
 
-    override suspend fun getInviteCandidates(projectId: UUID, query: String): List<User> =
+    override suspend fun getInviteCandidates(projectId: UUID?, query: String): List<User> =
         withUser(userRepo) { currentUser ->
             val searchQuery = query.trim()
 
@@ -85,11 +85,13 @@ class InvitationService(
             }
 
             val excludedUsersFromSearch = mutableSetOf(currentUser.email)
-            val projectMembers = projectMemberRepo.getProjectMembersWithUsers(projectId)
-            excludedUsersFromSearch += projectMembers.map { it.user.email }
+            if (projectId != null) {
+                val projectMembers = projectMemberRepo.getProjectMembersWithUsers(projectId)
+                excludedUsersFromSearch += projectMembers.map { it.user.email }
 
-            val invitedMembers = invitationTokenRepo.getActiveInvitationTokensForProject(projectId)
-            excludedUsersFromSearch += invitedMembers.map { it.email }
+                val invitedMembers = invitationTokenRepo.getActiveInvitationTokensForProject(projectId)
+                excludedUsersFromSearch += invitedMembers.map { it.email }
+            }
 
             userRepo.getUsersMatchingSearchQuery(searchQuery, excludedUsersFromSearch)
         }

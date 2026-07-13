@@ -54,6 +54,18 @@ class GetInviteCandidatesTest : InvitationServiceTest() {
     }
 
     @Test
+    fun `When a null project ID is passed, then project members and invitation are not excluded from the candidates`() =
+        runTest {
+            mockGetInviteCandidates(stopBefore = projectMemberRepoMock::getProjectMembersWithUsers)
+            coEvery { userRepoMock.getUsersMatchingSearchQuery(searchQuery, any()) } returns emptyList()
+
+            service.getInviteCandidates(null, searchQuery)
+
+            coVerify(exactly = 0) { projectMemberRepoMock.getProjectMembersWithUsers(any()) }
+            coVerify(exactly = 0) { invitationTokenRepoMock.getActiveInvitationTokensForProject(any()) }
+        }
+
+    @Test
     fun `When no project members exist, then no users except for the current user are excluded`() = runTest {
         mockGetInviteCandidates()
 
