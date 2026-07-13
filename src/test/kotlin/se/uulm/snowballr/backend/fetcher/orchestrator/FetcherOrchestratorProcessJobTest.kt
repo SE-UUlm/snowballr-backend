@@ -96,12 +96,12 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
                 val fetcherPaper = paper.toFetcherPaper()
 
                 coEvery { paperRepoMock.getPaperById(job.projectPaper.paperId) } returns Result.success(paper)
-                if (type.isBackwardOrBoth()) {
+                if (type.isBackwardOrBoth) {
                     coEvery {
                         fetcherManagerMock.fetchBackwardReferences(fetcherName, fetcherPaper, emptyMap())
                     } throws FetcherException("backward fetching failed")
                 }
-                if (type.isForwardOrBoth()) {
+                if (type.isForwardOrBoth) {
                     coEvery {
                         fetcherManagerMock.fetchForwardReferences(fetcherName, fetcherPaper, emptyMap())
                     } throws FetcherException("forward fetching failed")
@@ -137,7 +137,7 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
                 val fetchedPaper = DataBuilder.createExampleFetcherPaper()
 
                 coEvery { paperRepoMock.getPaperById(job.projectPaper.paperId) } returns Result.success(paper)
-                if (type.isBackwardOrBoth()) {
+                if (type.isBackwardOrBoth) {
                     coEvery {
                         fetcherManagerMock.fetchBackwardReferences(fetcher1Name, fetcherPaper, emptyMap())
                     } throws FetcherException("backward fetching failed")
@@ -145,7 +145,7 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
                         fetcherManagerMock.fetchBackwardReferences(fetcher2Name, fetcherPaper, emptyMap())
                     } returns setOf(fetchedPaper)
                 }
-                if (type.isForwardOrBoth()) {
+                if (type.isForwardOrBoth) {
                     coEvery {
                         fetcherManagerMock.fetchForwardReferences(fetcher1Name, fetcherPaper, emptyMap())
                     } throws FetcherException("forward fetching failed")

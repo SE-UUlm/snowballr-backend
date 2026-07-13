@@ -33,10 +33,10 @@ enum class SnowballingType {
     /**
      * Returns true if this [SnowballingType] is [BACKWARD] or [BOTH]; otherwise false.
      */
-    fun isBackwardOrBoth() = this == BACKWARD || this == BOTH
+    val isBackwardOrBoth get() = this == BACKWARD || this == BOTH
 
     /**
      * Returns true if this [SnowballingType] is [FORWARD] or [BOTH]; otherwise false.
      */
-    fun isForwardOrBoth() = this == FORWARD || this == BOTH
+    val isForwardOrBoth get() = this == FORWARD || this == BOTH
 }

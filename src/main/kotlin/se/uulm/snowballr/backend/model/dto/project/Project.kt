@@ -28,18 +28,18 @@ data class Project(
     val deletedBy: UUID?,
     val archivedAt: OffsetDateTime?,
     val archivedBy: UUID?,
-)
+) {
+    /**
+     * Checks whether the project is active.
+     *
+     * A project is considered active if its status is either [ProjectStatus.ACTIVE] or [ProjectStatus.ACTIVE_LOCKED].
+     */
+    val isActive get() = this.status == ProjectStatus.ACTIVE || this.status == ProjectStatus.ACTIVE_LOCKED
 
-/**
- * Checks whether the project is active.
- *
- * A project is considered active if its status is either [ProjectStatus.ACTIVE] or [ProjectStatus.ACTIVE_LOCKED].
- */
-fun Project.isActive() = this.status == ProjectStatus.ACTIVE || this.status == ProjectStatus.ACTIVE_LOCKED
-
-/**
- * Checks whether the project is deleted.
- *
- * A project is considered deleted if its status is [ProjectStatus.DELETED].
- */
-fun Project.isDeleted() = this.status == ProjectStatus.DELETED
+    /**
+     * Checks whether the project is deleted.
+     *
+     * A project is considered deleted if its status is [ProjectStatus.DELETED].
+     */
+    val isDeleted get() = this.status == ProjectStatus.DELETED
+}

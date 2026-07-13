@@ -14,18 +14,18 @@ data class Review(
     val decision: ReviewDecision,
     val createdAt: OffsetDateTime,
     val modifiedAt: OffsetDateTime?,
-)
+) {
+    /**
+     * Checks whether the review accepts the paper.
+     *
+     * A review is considered to accept the paper if its decision is set to [ReviewDecision.ACCEPTED].
+     */
+    val doesAcceptPaper get() = this.decision == ReviewDecision.ACCEPTED
 
-/**
- * Checks whether the review accepts the paper.
- *
- * A review is considered to accept the paper if its decision is set to [ReviewDecision.ACCEPTED].
- */
-fun Review.doesAcceptPaper() = this.decision == ReviewDecision.ACCEPTED
-
-/**
- * Checks whether the review declines the paper.
- *
- * A review is considered to decline the paper if its decision is set to [ReviewDecision.DECLINED].
- */
-fun Review.doesDeclinePaper() = this.decision == ReviewDecision.DECLINED
+    /**
+     * Checks whether the review declines the paper.
+     *
+     * A review is considered to decline the paper if its decision is set to [ReviewDecision.DECLINED].
+     */
+    val doesDeclinePaper get() = this.decision == ReviewDecision.DECLINED
+}

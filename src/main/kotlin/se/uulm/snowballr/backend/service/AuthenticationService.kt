@@ -7,7 +7,6 @@ import se.uulm.snowballr.backend.context.RequestContext
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
-import se.uulm.snowballr.backend.model.dto.user.isActiveAndConfirmed
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.UnauthenticatedException
 import se.uulm.snowballr.backend.model.exception.failedprecondition.EntityNotActiveException
@@ -101,7 +100,7 @@ class AuthenticationService(
                 throw UnauthenticatedException()
             }
 
-        if (!user.isActiveAndConfirmed()) {
+        if (!user.isActiveAndConfirmed) {
             throw UnauthenticatedException()
         }
 
@@ -122,7 +121,7 @@ class AuthenticationService(
     }
 
     override suspend fun changePassword(request: ChangePasswordRequest) = withUser(repo) { currentUser ->
-        if (!currentUser.isActiveAndConfirmed()) {
+        if (!currentUser.isActiveAndConfirmed) {
             throw EntityNotActiveException(EntityType.USER, currentUser.id)
         }
 

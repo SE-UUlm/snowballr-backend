@@ -6,7 +6,6 @@ import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.dto.projectmember.InvitationToken
 import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
 import se.uulm.snowballr.backend.model.dto.projectmember.ProjectMemberWithUser
-import se.uulm.snowballr.backend.model.dto.projectmember.isProjectAdmin
 import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.NotFoundException
@@ -78,7 +77,7 @@ class ProjectMemberService(
                 )
             }
 
-            if (member.isProjectAdmin() && request.newRole != MemberRole.ADMIN) {
+            if (member.isProjectAdmin && request.newRole != MemberRole.ADMIN) {
                 projectAccessChecker.isNotLastProjectAdmin(user, request.projectId, "Cannot demote the user")
             }
 
