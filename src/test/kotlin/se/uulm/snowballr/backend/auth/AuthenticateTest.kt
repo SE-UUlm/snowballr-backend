@@ -9,8 +9,8 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertNull
 import se.uulm.snowballr.backend.context.RequestContext
+import se.uulm.snowballr.backend.model.auth.AuthenticationStatus
 import se.uulm.snowballr.backend.model.jwt.ParsedJwtAuthClaims
-import snowballr.Authentication
 import java.util.Date
 import java.util.UUID
 
@@ -28,10 +28,7 @@ class AuthenticateTest {
 
         assertTrue(result.isSuccess)
         assertEquals(parsedClaims, result.getOrNull())
-        assertEquals(
-            Authentication.AuthenticationStatus.AUTHENTICATION_STATUS_AUTHENTICATED,
-            requestContext.authStatus,
-        )
+        assertEquals(AuthenticationStatus.AUTHENTICATED, requestContext.authStatus)
     }
 
     @Test
@@ -51,10 +48,7 @@ class AuthenticateTest {
 
         assertTrue(result.isSuccess)
         assertEquals(parsedRefreshClaims, result.getOrNull())
-        assertEquals(
-            Authentication.AuthenticationStatus.AUTHENTICATION_STATUS_ACCESS_TOKEN_EXPIRED,
-            requestContext.authStatus,
-        )
+        assertEquals(AuthenticationStatus.ACCESS_TOKEN_EXPIRED, requestContext.authStatus)
         assertEquals("newAccessToken", requestContext.cookies[ACCESS_TOKEN_COOKIE_NAME])
     }
 
@@ -69,10 +63,7 @@ class AuthenticateTest {
 
         assertTrue(result.isSuccess)
         assertEquals(parsedRefreshClaims, result.getOrNull())
-        assertEquals(
-            Authentication.AuthenticationStatus.AUTHENTICATION_STATUS_ACCESS_TOKEN_EXPIRED,
-            requestContext.authStatus,
-        )
+        assertEquals(AuthenticationStatus.ACCESS_TOKEN_EXPIRED, requestContext.authStatus)
         assertThat(requestContext.cookies).isEmpty()
     }
 
@@ -86,10 +77,7 @@ class AuthenticateTest {
             authenticationManager.authenticate("invalidAccessToken", "invalidRefreshToken", false, requestContext)
 
         assertTrue(result.isFailure)
-        assertEquals(
-            Authentication.AuthenticationStatus.AUTHENTICATION_STATUS_UNAUTHENTICATED,
-            requestContext.authStatus,
-        )
+        assertEquals(AuthenticationStatus.UNAUTHENTICATED, requestContext.authStatus)
         assertNull(requestContext.cookies[ACCESS_TOKEN_COOKIE_NAME])
         assertNull(requestContext.cookies[REFRESH_TOKEN_COOKIE_NAME])
     }
@@ -102,10 +90,7 @@ class AuthenticateTest {
         val result = authenticationManager.authenticate("invalidAccessToken", null, false, requestContext)
 
         assertTrue(result.isFailure)
-        assertEquals(
-            Authentication.AuthenticationStatus.AUTHENTICATION_STATUS_UNAUTHENTICATED,
-            requestContext.authStatus,
-        )
+        assertEquals(AuthenticationStatus.UNAUTHENTICATED, requestContext.authStatus)
         assertNull(requestContext.cookies[ACCESS_TOKEN_COOKIE_NAME])
         assertNull(requestContext.cookies[REFRESH_TOKEN_COOKIE_NAME])
     }
@@ -120,10 +105,7 @@ class AuthenticateTest {
             authenticationManager.authenticate("invalidAccessToken", "invalidRefreshToken", true, requestContext)
 
         assertTrue(result.isFailure)
-        assertEquals(
-            Authentication.AuthenticationStatus.AUTHENTICATION_STATUS_UNAUTHENTICATED,
-            requestContext.authStatus,
-        )
+        assertEquals(AuthenticationStatus.UNAUTHENTICATED, requestContext.authStatus)
         assertThat(requestContext.cookies).isEmpty()
     }
 }

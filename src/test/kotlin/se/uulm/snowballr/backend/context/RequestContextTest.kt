@@ -11,9 +11,9 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.auth.ACCESS_TOKEN_COOKIE_NAME
 import se.uulm.snowballr.backend.auth.REFRESH_TOKEN_COOKIE_NAME
 import se.uulm.snowballr.backend.auth.setAuthCookies
+import se.uulm.snowballr.backend.model.auth.AuthenticationStatus
 import se.uulm.snowballr.backend.model.exception.internal.missingcontext.MissingRequestContextException
 import se.uulm.snowballr.backend.model.exception.internal.missingcontext.MissingUserIdException
-import snowballr.Authentication.AuthenticationStatus
 import java.util.UUID
 
 class RequestContextTest {
@@ -67,14 +67,14 @@ class RequestContextTest {
     @Nested
     inner class AuthStatus {
         @Test
-        fun `When no status is set, then it defaults to unspecified`() {
-            assertEquals(AuthenticationStatus.AUTHENTICATION_STATUS_UNSPECIFIED, RequestContext().authStatus)
+        fun `When no status is set, then it defaults to UNAUTHENTICATED`() {
+            assertEquals(AuthenticationStatus.UNAUTHENTICATED, RequestContext().authStatus)
         }
 
         @Test
         fun `When a status is set, then it is returned`() {
-            val context = RequestContext(authStatus = AuthenticationStatus.AUTHENTICATION_STATUS_AUTHENTICATED)
-            assertEquals(AuthenticationStatus.AUTHENTICATION_STATUS_AUTHENTICATED, context.authStatus)
+            val context = RequestContext(authStatus = AuthenticationStatus.AUTHENTICATED)
+            assertEquals(AuthenticationStatus.AUTHENTICATED, context.authStatus)
         }
     }
 

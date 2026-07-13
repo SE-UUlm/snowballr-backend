@@ -264,7 +264,7 @@ class SnowballRServer(
         override suspend fun getAuthenticationStatus(
             request: Base.Nothing,
         ): Authentication.AuthenticationStatusResponse = Authentication.AuthenticationStatusResponse.newBuilder()
-            .setAuthenticationStatus(RequestContext.current().authStatus).build()
+            .setAuthenticationStatus(RequestContext.current().authStatus.toGrpc()).build()
 
         /** Renew Session is handled in the [authenticationInterceptor]. */
         override suspend fun renewSession(request: Base.Nothing): Base.Nothing = Base.Nothing.getDefaultInstance()
