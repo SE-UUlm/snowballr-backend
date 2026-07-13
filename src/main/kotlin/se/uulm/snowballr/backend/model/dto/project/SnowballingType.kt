@@ -1,7 +1,5 @@
 package se.uulm.snowballr.backend.model.dto.project
 
-import snowballr.ProjectOuterClass
-
 /**
  * The type of snowballing, according to Wohlin (2014).
  *
@@ -31,25 +29,6 @@ enum class SnowballingType {
     BOTH,
 
     ;
-
-    companion object {
-        fun fromGrpc(type: ProjectOuterClass.SnowballingType): SnowballingType = when (type) {
-            ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_FORWARD -> FORWARD
-            ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_BACKWARD -> BACKWARD
-            ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_BOTH -> BOTH
-            ProjectOuterClass.SnowballingType.UNRECOGNIZED,
-            ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_UNSPECIFIED,
-            ->
-                @Suppress("UseCheckOrError")
-                throw IllegalStateException("Invalid conversion")
-        }
-    }
-
-    fun toGrpc(): ProjectOuterClass.SnowballingType = when (this) {
-        FORWARD -> ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_FORWARD
-        BACKWARD -> ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_BACKWARD
-        BOTH -> ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_BOTH
-    }
 
     /**
      * Returns true if this [SnowballingType] is [BACKWARD] or [BOTH]; otherwise false.
