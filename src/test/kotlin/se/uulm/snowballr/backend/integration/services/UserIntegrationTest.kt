@@ -17,7 +17,6 @@ import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadAl
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedUpdateException
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
-import snowballr.Authentication
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -44,11 +43,7 @@ class UserIntegrationTest : IntegrationTest() {
             val unverifiedUser = userService.getUserByEmail(newUser.email)
             assertEquals(UserStatus.ACTIVE_UNCONFIRMED, unverifiedUser.status)
 
-            authenticationService.verifyEmail(
-                Authentication.VerifyEmailRequest.newBuilder()
-                    .setToken(tokenSlot.captured)
-                    .build(),
-            )
+            authenticationService.verifyEmail(tokenSlot.captured)
 
             val verifiedUser = userService.getUserByEmail(newUser.email)
             assertEquals(UserStatus.ACTIVE, verifiedUser.status)

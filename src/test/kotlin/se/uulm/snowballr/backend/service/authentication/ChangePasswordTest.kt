@@ -14,16 +14,13 @@ import se.uulm.snowballr.backend.auth.PasswordUtils
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.invalidargument.IncorrectOldPasswordException
-import snowballr.Authentication
+import se.uulm.snowballr.backend.model.incoming.authentication.ChangePasswordRequest
 
 class ChangePasswordTest : AuthenticationServiceTest() {
     @Test
     fun `When the current user is not active, then a FailedPreconditionException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(status = UserStatus.DELETED)
-        val request = Authentication.PasswordChangeRequest.newBuilder()
-            .setOldPassword("AAbb__00")
-            .setNewPassword("CCdd__11")
-            .build()
+        val request = ChangePasswordRequest("AAbb__00", "CCdd__11")
 
         mockCurrentUser(currentUser)
 
@@ -33,10 +30,7 @@ class ChangePasswordTest : AuthenticationServiceTest() {
     @Test
     fun `When getPasswordHashByEmail returns a failure, then an exception is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(status = UserStatus.ACTIVE)
-        val request = Authentication.PasswordChangeRequest.newBuilder()
-            .setOldPassword("AAbb__00")
-            .setNewPassword("CCdd__11")
-            .build()
+        val request = ChangePasswordRequest("AAbb__00", "CCdd__11")
 
         mockCurrentUser(currentUser)
         coEvery { userRepoMock.getPasswordHashByEmail(currentUser.email) } returns
@@ -48,10 +42,7 @@ class ChangePasswordTest : AuthenticationServiceTest() {
     @Test
     fun `When the provided old password is incorrect, then an InvalidOldPasswordException is thrown`() = runTest {
         val currentUser = DataBuilder.createExampleUser(status = UserStatus.ACTIVE)
-        val request = Authentication.PasswordChangeRequest.newBuilder()
-            .setOldPassword("wrong-password")
-            .setNewPassword("CCdd__11")
-            .build()
+        val request = ChangePasswordRequest("wrong-password", "CCdd__11")
         val storedPasswordHash = PasswordUtils.hashPassword("AAbb__00")
 
         mockCurrentUser(currentUser)
@@ -65,10 +56,7 @@ class ChangePasswordTest : AuthenticationServiceTest() {
         val currentUser = DataBuilder.createExampleUser(status = UserStatus.ACTIVE)
         val oldPassword = "AAbb__00"
         val newPassword = "CCdd__11"
-        val request = Authentication.PasswordChangeRequest.newBuilder()
-            .setOldPassword(oldPassword)
-            .setNewPassword(newPassword)
-            .build()
+        val request = ChangePasswordRequest("AAbb__00", "CCdd__11")
         val storedPasswordHash = PasswordUtils.hashPassword(oldPassword)
 
         val passwordHashSlot = slot<String>()

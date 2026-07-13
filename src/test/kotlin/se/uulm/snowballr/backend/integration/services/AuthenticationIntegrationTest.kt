@@ -15,8 +15,9 @@ import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.UnauthenticatedException
 import se.uulm.snowballr.backend.model.exception.invalidargument.IncorrectOldPasswordException
+import se.uulm.snowballr.backend.model.incoming.authentication.ChangePasswordRequest
+import se.uulm.snowballr.backend.model.incoming.authentication.LoginRequest
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
-import snowballr.Authentication
 
 @ExtendWith(GrpcTestContextExtension::class)
 class AuthenticationIntegrationTest : IntegrationTest() {
@@ -27,12 +28,7 @@ class AuthenticationIntegrationTest : IntegrationTest() {
             val user = addUser(DataBuilder.createExampleUser(email = "login.user@example.com"))
 
             assertDoesNotThrow {
-                authenticationService.login(
-                    Authentication.LoginRequest.newBuilder()
-                        .setEmail(user.email)
-                        .setPassword("SecureP@ssw0rd!")
-                        .build(),
-                )
+                authenticationService.login(LoginRequest(user.email, "SecureP@ssw0rd!"))
             }
         }
 
@@ -41,24 +37,14 @@ class AuthenticationIntegrationTest : IntegrationTest() {
             val user = addUser(DataBuilder.createExampleUser(email = "wrong.pass@example.com"))
 
             assertThrows<UnauthenticatedException> {
-                authenticationService.login(
-                    Authentication.LoginRequest.newBuilder()
-                        .setEmail(user.email)
-                        .setPassword("WrongP@ssw0rd!")
-                        .build(),
-                )
+                authenticationService.login(LoginRequest(user.email, "WrongP@ssw0rd!"))
             }
         }
 
         @Test
         fun `When a login is attempted with a non-existent email, then login fails`() = runTest {
             assertThrows<UnauthenticatedException> {
-                authenticationService.login(
-                    Authentication.LoginRequest.newBuilder()
-                        .setEmail("ghost@example.com")
-                        .setPassword("AnyP@ssw0rd!")
-                        .build(),
-                )
+                authenticationService.login(LoginRequest("ghost@example.com", "AnyP@ssw0rd!"))
             }
         }
 
@@ -79,12 +65,7 @@ class AuthenticationIntegrationTest : IntegrationTest() {
             )
 
             assertThrows<UnauthenticatedException> {
-                authenticationService.login(
-                    Authentication.LoginRequest.newBuilder()
-                        .setEmail(newUser.email)
-                        .setPassword("SecureP@ssw0rd!")
-                        .build(),
-                )
+                authenticationService.login(LoginRequest(newUser.email, "SecureP@ssw0rd!"))
             }
         }
     }
@@ -94,12 +75,7 @@ class AuthenticationIntegrationTest : IntegrationTest() {
         @Test
         fun `When a logged-in user logs out, then logout succeeds`() = runTest {
             val user = addUser(DataBuilder.createExampleUser(email = "logout.user@example.com"))
-            authenticationService.login(
-                Authentication.LoginRequest.newBuilder()
-                    .setEmail(user.email)
-                    .setPassword("SecureP@ssw0rd!")
-                    .build(),
-            )
+            authenticationService.login(LoginRequest(user.email, "SecureP@ssw0rd!"))
 
             assertDoesNotThrow { authenticationService.logout() }
         }
@@ -115,30 +91,15 @@ class AuthenticationIntegrationTest : IntegrationTest() {
 
             actAsUser(user.id) {
                 assertDoesNotThrow {
-                    authenticationService.changePassword(
-                        Authentication.PasswordChangeRequest.newBuilder()
-                            .setOldPassword(oldPassword)
-                            .setNewPassword(newPassword)
-                            .build(),
-                    )
+                    authenticationService.changePassword(ChangePasswordRequest(oldPassword, newPassword))
                 }
             }
 
             assertThrows<UnauthenticatedException> {
-                authenticationService.login(
-                    Authentication.LoginRequest.newBuilder()
-                        .setEmail(user.email)
-                        .setPassword(oldPassword)
-                        .build(),
-                )
+                authenticationService.login(LoginRequest(user.email, oldPassword))
             }
             assertDoesNotThrow {
-                authenticationService.login(
-                    Authentication.LoginRequest.newBuilder()
-                        .setEmail(user.email)
-                        .setPassword(newPassword)
-                        .build(),
-                )
+                authenticationService.login(LoginRequest(user.email, newPassword))
             }
         }
 
@@ -149,12 +110,7 @@ class AuthenticationIntegrationTest : IntegrationTest() {
 
             actAsUser(user.id) {
                 assertThrows<FailedPreconditionException> {
-                    authenticationService.changePassword(
-                        Authentication.PasswordChangeRequest.newBuilder()
-                            .setOldPassword("SecureP@ssw0rd!")
-                            .setNewPassword("NewP@ssw0rd!!22")
-                            .build(),
-                    )
+                    authenticationService.changePassword(ChangePasswordRequest("SecureP@ssw0rd!", "NewP@ssw0rd!!22"))
                 }
             }
         }
@@ -165,12 +121,7 @@ class AuthenticationIntegrationTest : IntegrationTest() {
 
             actAsUser(user.id) {
                 assertThrows<IncorrectOldPasswordException> {
-                    authenticationService.changePassword(
-                        Authentication.PasswordChangeRequest.newBuilder()
-                            .setOldPassword("wrong-password")
-                            .setNewPassword("NewP@ssw0rd!!22")
-                            .build(),
-                    )
+                    authenticationService.changePassword(ChangePasswordRequest("wrong-password", "NewP@ssw0rd!!22"))
                 }
             }
         }

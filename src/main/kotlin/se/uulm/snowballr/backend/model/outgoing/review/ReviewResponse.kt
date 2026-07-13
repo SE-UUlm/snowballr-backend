@@ -2,7 +2,6 @@ package se.uulm.snowballr.backend.model.outgoing.review
 
 import se.uulm.snowballr.backend.model.dto.review.Review
 import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
-import snowballr.ReviewOuterClass
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -27,16 +26,3 @@ data class ReviewResponse(
         )
     }
 }
-
-fun ReviewResponse.toGrpc(): ReviewOuterClass.Review = ReviewOuterClass.Review
-    .newBuilder()
-    .setId(id.toString())
-    .setUserId(userId.toString())
-    .setDecision(decision.toGrpc())
-    .addAllSelectedCriteriaIds(selectedCriteriaIds.map { it.toString() })
-    .build()
-
-fun List<ReviewResponse>.toGrpcReviews(): ReviewOuterClass.Review.List = ReviewOuterClass.Review.List
-    .newBuilder()
-    .addAllReviews(this.map { it.toGrpc() })
-    .build()

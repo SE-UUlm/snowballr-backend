@@ -12,17 +12,18 @@ import se.uulm.snowballr.backend.model.exception.UnauthenticatedException
 import se.uulm.snowballr.backend.model.exception.failedprecondition.EntityNotActiveException
 import se.uulm.snowballr.backend.model.exception.invalidargument.IncorrectOldPasswordException
 import se.uulm.snowballr.backend.model.exception.notfound.VerificationTokenNotFoundException
+import se.uulm.snowballr.backend.model.incoming.authentication.ChangePasswordRequest
+import se.uulm.snowballr.backend.model.incoming.authentication.LoginRequest
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.IVerificationTokenTableRepo
-import snowballr.Authentication
 import java.time.OffsetDateTime
 
 interface IAuthenticationService {
     /**
      * Service implementation of [SnowballRService.verifyEmail].
      */
-    suspend fun verifyEmail(request: Authentication.VerifyEmailRequest)
+    suspend fun verifyEmail(token: String)
 
     /**
      * Service implementation of [SnowballRService.logout].
@@ -32,12 +33,12 @@ interface IAuthenticationService {
     /**
      * Service implementation of [SnowballRService.login].
      */
-    suspend fun login(request: Authentication.LoginRequest)
+    suspend fun login(request: LoginRequest)
 
     /**
      * Service implementation of [SnowballRService.changePassword].
      */
-    suspend fun changePassword(request: Authentication.PasswordChangeRequest)
+    suspend fun changePassword(request: ChangePasswordRequest)
 }
 
 /**
@@ -57,12 +58,12 @@ class AuthenticationService(
     private val verificationTokenRepo: IVerificationTokenTableRepo,
     private val jwtManager: IJwtManager,
 ) : IAuthenticationService {
-    override suspend fun verifyEmail(request: Authentication.VerifyEmailRequest) {
-        val verificationToken = verificationTokenRepo.getVerificationTokenByValue(request.token).getOrThrow()
+    override suspend fun verifyEmail(token: String) {
+        val verificationToken = verificationTokenRepo.getVerificationTokenByValue(token).getOrThrow()
 
         // Check if the token has expired
         if (OffsetDateTime.now().isAfter(verificationToken.expiresAt)) {
-            verificationTokenRepo.deleteVerificationToken(request.token)
+            verificationTokenRepo.deleteVerificationToken(token)
             throw VerificationTokenNotFoundException()
         }
 
@@ -82,7 +83,7 @@ class AuthenticationService(
         repo.updateUser(userUpdate, listOf("user.status"))
 
         // Remove the verification token after successful verification
-        verificationTokenRepo.deleteVerificationToken(request.token)
+        verificationTokenRepo.deleteVerificationToken(token)
     }
 
     override suspend fun logout() {
@@ -90,7 +91,7 @@ class AuthenticationService(
     }
 
     @Suppress("ThrowsCount")
-    override suspend fun login(request: Authentication.LoginRequest) {
+    override suspend fun login(request: LoginRequest) {
         // Check whether a user with the given email exists
         val user =
             try {
@@ -119,7 +120,7 @@ class AuthenticationService(
         GrpcContext.setAuthCookiesInContext(accessToken, refreshToken)
     }
 
-    override suspend fun changePassword(request: Authentication.PasswordChangeRequest) = withUser(repo) { currentUser ->
+    override suspend fun changePassword(request: ChangePasswordRequest) = withUser(repo) { currentUser ->
         if (!currentUser.isActiveAndConfirmed()) {
             throw EntityNotActiveException(EntityType.USER, currentUser.id)
         }

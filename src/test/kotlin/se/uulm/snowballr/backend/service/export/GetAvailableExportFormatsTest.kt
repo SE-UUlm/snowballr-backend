@@ -16,6 +16,6 @@ class GetAvailableExportFormatsTest : ExportServiceTest() {
 
         val formats = service.getAvailableExportFormats()
 
-        assertEquals(ExportFormat.entries.map { it.toString() }.toSet(), formats.formatsList.toSet())
+        assertEquals(ExportFormat.entries.toSet(), formats)
     }
 }

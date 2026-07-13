@@ -29,7 +29,6 @@ import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.utils.assertResultFailure
 import se.uulm.snowballr.backend.utils.assertResultSuccess
-import snowballr.ProjectOuterClass.ReviewDecisionMatrix
 import java.sql.SQLException
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -521,10 +520,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
             assertThat(userSettings.criteriaIds).isEmpty()
             assertEquals(0F, userSettings.similarityThreshold)
             assertEquals(2, userSettings.decisionMatrix.numberOfReviewers)
-            assertNotEquals(
-                ReviewDecisionMatrix.getDefaultInstance().toByteArray(),
-                userSettings.decisionMatrix.toByteArray(),
-            )
+            assertNotEquals(ByteArray(0), userSettings.decisionMatrix.toByteArray())
             assertThat(userSettings.fetchers).isEmpty()
             assertEquals(SnowballingType.BOTH, userSettings.snowballingType)
             assertTrue(userSettings.reviewMaybeAllowed)

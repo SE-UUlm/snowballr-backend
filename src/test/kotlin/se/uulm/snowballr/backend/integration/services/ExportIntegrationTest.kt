@@ -4,8 +4,8 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import se.uulm.snowballr.backend.integration.IntegrationTest
+import se.uulm.snowballr.backend.model.export.ExportFormat
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
-import snowballr.Export.ExportRequest
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -16,14 +16,14 @@ class ExportIntegrationTest : IntegrationTest() {
         fun `When available export formats are requested, then JSON is included`() = runTest {
             val response = exportService.getAvailableExportFormats()
 
-            assertTrue(response.formatsList.contains("JSON"))
+            assertTrue(response.contains(ExportFormat.JSON))
         }
 
         @Test
         fun `When available export formats are requested, then the list is not empty`() = runTest {
             val response = exportService.getAvailableExportFormats()
 
-            assertFalse(response.formatsList.isEmpty())
+            assertFalse(response.isEmpty())
         }
     }
 
@@ -33,29 +33,19 @@ class ExportIntegrationTest : IntegrationTest() {
         fun `When a project is exported as JSON, then the response contains non-empty data`() = runTest {
             val project = projectService.createProject(CreateProjectRequest(name = "Export Project"))
 
-            val response = exportService.exportProject(
-                ExportRequest.newBuilder()
-                    .setId(project.id.toString())
-                    .setFormat("JSON")
-                    .build(),
-            )
+            val response = exportService.exportProject(project.id, ExportFormat.JSON)
 
-            assertFalse(response.data.isEmpty)
-            assertFalse(response.fileName.isEmpty())
+            assertFalse(response.data.isEmpty())
+            assertFalse(response.filename.isEmpty())
         }
 
         @Test
         fun `When a project is exported, then the file name reflects the project name`() = runTest {
             val project = projectService.createProject(CreateProjectRequest(name = "Named Export"))
 
-            val response = exportService.exportProject(
-                ExportRequest.newBuilder()
-                    .setId(project.id.toString())
-                    .setFormat("JSON")
-                    .build(),
-            )
+            val response = exportService.exportProject(project.id, ExportFormat.JSON)
 
-            assertTrue(response.fileName.isNotBlank())
+            assertTrue(response.filename.isNotBlank())
         }
     }
 }

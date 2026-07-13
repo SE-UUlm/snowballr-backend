@@ -13,22 +13,16 @@ import se.uulm.snowballr.backend.export.ProjectExportManager
 import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.export.ExportFormat
 import se.uulm.snowballr.backend.model.export.FileExport
-import snowballr.copy
-import snowballr.exportRequest
 import java.util.UUID
 import kotlin.test.assertEquals
 
 class ExportProjectTest : ExportServiceTest() {
-    fun getExampleRequest() = exportRequest {
-        id = UUID.randomUUID().toString()
-        format = ExportFormat.JSON.toString()
-    }
+    private val testFormat = ExportFormat.JSON
 
     @Test
     fun `When a user exports a project and has access, then the result has the correct values`() = runTest {
         val user = DataBuilder.createExampleUser()
         val projectId = UUID.randomUUID()
-        val request = getExampleRequest().copy { id = projectId.toString() }
 
         mockCurrentUser(user)
         mockkObject(ProjectExportManager)
@@ -45,31 +39,29 @@ class ExportProjectTest : ExportServiceTest() {
             ProjectExportManager.exportProject(any(), any(), any(), any(), any())
         } returns FileExport(ByteArray(0), "test.json")
 
-        val result = service.exportProject(request)
+        val result = service.exportProject(projectId, testFormat)
 
-        assertEquals("test.json", result.fileName)
-        assertEquals(ByteArray(0).toList(), result.data.toByteArray().toList())
+        assertEquals("test.json", result.filename)
+        assertEquals(ByteArray(0).toList(), result.data.toList())
     }
 
     @Test
     fun `When a user exports a project, but has no access, then a TestSpecificException is thrown`() = runTest {
         val user = DataBuilder.createExampleUser(role = UserRole.DEFAULT)
         val project = DataBuilder.createExampleProject()
-        val request = getExampleRequest().copy { id = project.id.toString() }
 
         mockCurrentUser(user)
         mockkObject(ProjectExportManager)
         every { ProjectExportManager.getSupportedFormats() } returns setOf(ExportFormat.JSON)
         coEvery { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) } throws TestSpecificException()
 
-        assertThrows<TestSpecificException> { service.exportProject(request) }
+        assertThrows<TestSpecificException> { service.exportProject(project.id, testFormat) }
     }
 
     @Test
     fun `When retrieving the project fails, then a TestSpecificException is thrown`() = runTest {
         val user = DataBuilder.createExampleUser(role = UserRole.DEFAULT)
         val project = DataBuilder.createExampleProject()
-        val request = getExampleRequest().copy { id = project.id.toString() }
 
         mockCurrentUser(user)
         mockkObject(ProjectExportManager)
@@ -77,6 +69,6 @@ class ExportProjectTest : ExportServiceTest() {
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { service.exportProject(request) }
+        assertThrows<TestSpecificException> { service.exportProject(project.id, testFormat) }
     }
 }

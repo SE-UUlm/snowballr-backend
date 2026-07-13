@@ -5,7 +5,6 @@ import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
 import se.uulm.snowballr.backend.table.PaperTable
 import java.time.OffsetDateTime
 import java.util.UUID
-import snowballr.PaperOuterClass.Paper as GrpcPaper
 
 /**
  * DTO of [PaperTable].
@@ -26,16 +25,6 @@ data class Paper(
     val modifiedAt: OffsetDateTime?,
     val modifiedBy: UUID?,
 ) : PaperData
-
-/**
- * Creates a [GrpcPaper] from this [Paper].
- */
-fun Paper.toGrpcPaper(backwardReferencedIdsList: List<String>): GrpcPaper = this.toGrpcPaperRequest()
-    .toBuilder()
-    .setId(id.toString())
-    .setHasPdf(pdfId != null)
-    .addAllBackwardReferencedIds(backwardReferencedIdsList)
-    .build()
 
 /**
  * Creates a [FetcherPaper] from this [Paper].

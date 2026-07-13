@@ -1,8 +1,6 @@
 package se.uulm.snowballr.backend.model.dto.projectmember
 
 import se.uulm.snowballr.backend.model.dto.user.User
-import se.uulm.snowballr.backend.model.dto.user.toGrpcUser
-import snowballr.ProjectOuterClass
 
 /**
  * Represents a data transfer object that combines information about a project member
@@ -21,25 +19,3 @@ data class ProjectMemberWithUser(
     val projectMember: ProjectMember,
     val user: User,
 )
-
-/**
- * Converts this instance of [ProjectMemberWithUser] to a [ProjectOuterClass.Project.Member].
- *
- * @return an instance of [ProjectOuterClass.Project.Member] with the role and user fields populated.
- */
-fun ProjectMemberWithUser.toGrpcProjectMember(): ProjectOuterClass.Project.Member = ProjectOuterClass.Project.Member
-    .newBuilder()
-    .setRole(this.projectMember.role.toGrpc())
-    .setUser(this.user.toGrpcUser())
-    .build()
-
-/**
- * Converts a list of [ProjectMemberWithUser] objects into a gRPC list of project members.
- *
- * @return A [ProjectOuterClass.Project.Member.List] containing the gRPC representation of the project members.
- */
-fun List<ProjectMemberWithUser>.toGrpcProjectMembers(): ProjectOuterClass.Project.Member.List =
-    ProjectOuterClass.Project.Member.List
-        .newBuilder()
-        .addAllMembers(this.map { it.toGrpcProjectMember() })
-        .build()

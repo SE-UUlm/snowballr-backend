@@ -12,20 +12,18 @@ import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.exception.notfound.VerificationTokenNotFoundException
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
-import snowballr.Authentication
 import java.time.OffsetDateTime
 
 class VerifyEmailTest : AuthenticationServiceTest() {
     @Test
     fun `When the verification token is not found, then a VerificationTokenNotFoundException is thrown`() = runTest {
         val token = "non-existent-token"
-        val request = Authentication.VerifyEmailRequest.newBuilder().setToken(token).build()
 
         coEvery { verificationTokenRepoMock.getVerificationTokenByValue(token) } returns Result.failure(
             VerificationTokenNotFoundException(),
         )
 
-        assertThrows<VerificationTokenNotFoundException> { service.verifyEmail(request) }
+        assertThrows<VerificationTokenNotFoundException> { service.verifyEmail(token) }
     }
 
     @Test
@@ -33,25 +31,23 @@ class VerifyEmailTest : AuthenticationServiceTest() {
         val expiredToken = DataBuilder.createExampleVerificationToken(
             expiresAt = OffsetDateTime.now().minusMinutes(1),
         )
-        val request = Authentication.VerifyEmailRequest.newBuilder().setToken(expiredToken.token).build()
 
         coEvery { verificationTokenRepoMock.getVerificationTokenByValue(expiredToken.token) } returns Result.success(
             expiredToken,
         )
         coJustRun { verificationTokenRepoMock.deleteVerificationToken(expiredToken.token) }
 
-        assertThrows<VerificationTokenNotFoundException> { service.verifyEmail(request) }
+        assertThrows<VerificationTokenNotFoundException> { service.verifyEmail(expiredToken.token) }
     }
 
     @Test
     fun `When the user associated with the token is not found, then a TestSpecificException is thrown`() = runTest {
         val token = DataBuilder.createExampleVerificationToken()
-        val request = Authentication.VerifyEmailRequest.newBuilder().setToken(token.token).build()
 
         coEvery { verificationTokenRepoMock.getVerificationTokenByValue(token.token) } returns Result.success(token)
         coEvery { userRepoMock.getUserById(token.userId) } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { service.verifyEmail(request) }
+        assertThrows<TestSpecificException> { service.verifyEmail(token.token) }
     }
 
     @Test
@@ -59,7 +55,6 @@ class VerifyEmailTest : AuthenticationServiceTest() {
         runTest {
             val user = DataBuilder.createExampleUser(status = UserStatus.ACTIVE_UNCONFIRMED)
             val token = DataBuilder.createExampleVerificationToken(userId = user.id)
-            val request = Authentication.VerifyEmailRequest.newBuilder().setToken(token.token).build()
             val userUpdateSlot = slot<UpdateUserRequest>()
 
             coEvery { verificationTokenRepoMock.getVerificationTokenByValue(token.token) } returns Result.success(token)
@@ -67,7 +62,7 @@ class VerifyEmailTest : AuthenticationServiceTest() {
             coEvery { userRepoMock.updateUser(capture(userUpdateSlot), any()) } returns user
             coJustRun { verificationTokenRepoMock.deleteVerificationToken(token.token) }
 
-            service.verifyEmail(request)
+            service.verifyEmail(token.token)
 
             coVerify(exactly = 1) {
                 verificationTokenRepoMock.deleteVerificationToken(token.token)

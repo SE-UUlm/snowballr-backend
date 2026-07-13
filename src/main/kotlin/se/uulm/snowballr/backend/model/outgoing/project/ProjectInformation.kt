@@ -1,7 +1,5 @@
 package se.uulm.snowballr.backend.model.outgoing.project
 
-import com.google.protobuf.timestamp
-import snowballr.ProjectOuterClass
 import java.time.OffsetDateTime
 
 data class ProjectInformation(
@@ -18,10 +16,3 @@ data class ProjectInformation(
      */
     val lastStageStarted: OffsetDateTime,
 )
-
-fun ProjectInformation.toGrpc(): ProjectOuterClass.Project.Information =
-    ProjectOuterClass.Project.Information.newBuilder()
-        .setProjectProgress(progress)
-        .setCreationDate(timestamp { seconds = creationDate.toEpochSecond() })
-        .setLastStageStarted(timestamp { seconds = lastStageStarted.toEpochSecond() })
-        .build()
