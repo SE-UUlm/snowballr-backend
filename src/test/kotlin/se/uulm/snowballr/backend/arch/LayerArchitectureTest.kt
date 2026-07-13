@@ -15,6 +15,7 @@ import com.tngtech.archunit.lang.conditions.ArchConditions.haveNameMatching
 import com.tngtech.archunit.lang.conditions.ArchConditions.haveSimpleName
 import com.tngtech.archunit.lang.conditions.ArchConditions.haveSimpleNameEndingWith
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes
+import com.tngtech.archunit.library.Architectures
 import com.tngtech.archunit.library.Architectures.layeredArchitecture
 import com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices
 import com.tngtech.archunit.library.metrics.ArchitectureMetrics
@@ -36,59 +37,76 @@ class LayerArchitectureTest {
 }
 
 private class StructureRules {
+    companion object {
+        // Layer names
+        private const val MAIN = "Main"
+        private const val VALIDATION = "Input Validation"
+        private const val GRPC = "gRPC Server"
+        private const val SERVICE = "Service"
+        private const val ACCESS = "Access"
+        private const val REPO = "Repository"
+        private const val TABLE = "Table"
+        private const val DB = "DB"
+        private const val SCHEDULER = "Scheduler"
+        private const val FETCHER = "Fetcher"
+    }
+
+    private fun Architectures.LayeredArchitecture.snowballRLayers() = this
+        // Main layer: Main.kt and Module.kt
+        .layer(MAIN)
+        .definedBy(BASE_PACKAGE)
+        // Input validation layer
+        .layer(VALIDATION)
+        .definedBy("$BASE_PACKAGE.validation..")
+        // gRPC Server layer including the interceptors
+        .layer(GRPC)
+        .definedBy("$BASE_PACKAGE.grpc..")
+        // Service layer
+        .layer(SERVICE)
+        .definedBy("$BASE_PACKAGE.service..")
+        // Access Checkers
+        .layer(ACCESS)
+        .definedBy("$BASE_PACKAGE.access..")
+        // Repository layer
+        .layer(REPO)
+        .definedBy("$BASE_PACKAGE.repository..")
+        // Table layer
+        .layer(TABLE)
+        .definedBy("$BASE_PACKAGE.table..")
+        // DB layer
+        .layer(DB)
+        .definedBy("$BASE_PACKAGE.db..")
+        // Scheduler / Cron Jobs
+        .layer(SCHEDULER)
+        .definedBy("$BASE_PACKAGE.scheduler..")
+        // Fetcher
+        .layer(FETCHER)
+        .definedBy("$BASE_PACKAGE.fetcher..")
+
     @ArchTest
     fun `When the layer architecture is violated, then this test should fail (all deps)`(classes: JavaClasses) {
         layeredArchitecture()
             .consideringAllDependencies()
-            // Main layer: Main.kt and Module.kt
-            .layer("Main")
-            .definedBy(BASE_PACKAGE)
-            // Input validation layer
-            .layer("Input Validation")
-            .definedBy("$BASE_PACKAGE.validation..")
-            // gRPC Server layer including the interceptors
-            .layer("gRPC Server")
-            .definedBy("$BASE_PACKAGE.grpc..")
-            // Service layer
-            .layer("Service")
-            .definedBy("$BASE_PACKAGE.service..")
-            // Access Checkers
-            .layer("Access")
-            .definedBy("$BASE_PACKAGE.access..")
-            // Repository layer
-            .layer("Repository")
-            .definedBy("$BASE_PACKAGE.repository..")
-            // Table layer
-            .layer("Table")
-            .definedBy("$BASE_PACKAGE.table..")
-            // DB layer
-            .layer("DB")
-            .definedBy("$BASE_PACKAGE.db..")
-            // Scheduler / Cron Jobs
-            .layer("Scheduler")
-            .definedBy("$BASE_PACKAGE.scheduler..")
-            // Fetcher
-            .layer("Fetcher")
-            .definedBy("$BASE_PACKAGE.fetcher..")
+            .snowballRLayers()
             // Checks
-            .whereLayer("Input Validation")
-            .mayOnlyBeAccessedByLayers("gRPC Server")
-            .whereLayer("gRPC Server")
-            .mayOnlyBeAccessedByLayers("Main")
-            .whereLayer("Service")
-            .mayOnlyBeAccessedByLayers("gRPC Server", "Main")
-            .whereLayer("Access")
-            .mayOnlyBeAccessedByLayers("Service", "Main")
-            .whereLayer("Repository")
-            .mayOnlyBeAccessedByLayers("Service", "Access", "Scheduler", "Main", "Fetcher")
-            .whereLayer("Table")
-            .mayOnlyBeAccessedByLayers("Repository", "DB")
-            .whereLayer("DB")
-            .mayOnlyBeAccessedByLayers("Main", "Repository")
-            .whereLayer("Scheduler")
-            .mayOnlyBeAccessedByLayers("gRPC Server", "Main")
-            .whereLayer("Fetcher")
-            .mayOnlyBeAccessedByLayers("Main", "Service")
+            .whereLayer(VALIDATION)
+            .mayOnlyBeAccessedByLayers(GRPC)
+            .whereLayer(GRPC)
+            .mayOnlyBeAccessedByLayers(MAIN)
+            .whereLayer(SERVICE)
+            .mayOnlyBeAccessedByLayers(GRPC, MAIN)
+            .whereLayer(ACCESS)
+            .mayOnlyBeAccessedByLayers(SERVICE, MAIN)
+            .whereLayer(REPO)
+            .mayOnlyBeAccessedByLayers(SERVICE, ACCESS, SCHEDULER, MAIN, FETCHER)
+            .whereLayer(TABLE)
+            .mayOnlyBeAccessedByLayers(REPO, DB)
+            .whereLayer(DB)
+            .mayOnlyBeAccessedByLayers(MAIN, REPO)
+            .whereLayer(SCHEDULER)
+            .mayOnlyBeAccessedByLayers(GRPC, MAIN)
+            .whereLayer(FETCHER)
+            .mayOnlyBeAccessedByLayers(MAIN, SERVICE)
             .check(classes)
     }
 
@@ -96,59 +114,30 @@ private class StructureRules {
     fun `When the layer architecture is violated, then this test should fail (only layer deps)`(classes: JavaClasses) {
         layeredArchitecture()
             .consideringOnlyDependenciesInLayers()
-            // Main layer: Main.kt and Module.kt
-            .layer("Main")
-            .definedBy(BASE_PACKAGE)
-            // Input validation layer
-            .layer("Input Validation")
-            .definedBy("$BASE_PACKAGE.validation..")
-            // gRPC Server layer including the interceptors
-            .layer("gRPC Server")
-            .definedBy("$BASE_PACKAGE.grpc..")
-            // Service layer
-            .layer("Service")
-            .definedBy("$BASE_PACKAGE.service..")
-            // Access Checkers
-            .layer("Access")
-            .definedBy("$BASE_PACKAGE.access..")
-            // Repository layer
-            .layer("Repository")
-            .definedBy("$BASE_PACKAGE.repository..")
-            // Table layer
-            .layer("Table")
-            .definedBy("$BASE_PACKAGE.table..")
-            // DB layer
-            .layer("DB")
-            .definedBy("$BASE_PACKAGE.db..")
-            // Scheduler / Cron Jobs
-            .layer("Scheduler")
-            .definedBy("$BASE_PACKAGE.scheduler..")
-            // Fetcher
-            .layer("Fetcher")
-            .definedBy("$BASE_PACKAGE.fetcher..")
+            .snowballRLayers()
             // Checks
-            .whereLayer("Main")
+            .whereLayer(MAIN)
             .mayNotBeAccessedByAnyLayer()
-            .whereLayer("Main")
-            .mayOnlyAccessLayers("gRPC Server", "Service", "Access", "Repository", "DB", "Scheduler", "Fetcher")
-            .whereLayer("Input Validation")
+            .whereLayer(MAIN)
+            .mayOnlyAccessLayers(GRPC, SERVICE, ACCESS, REPO, DB, SCHEDULER, FETCHER)
+            .whereLayer(VALIDATION)
             .mayNotAccessAnyLayer()
-            .whereLayer("gRPC Server")
-            .mayOnlyAccessLayers("Service", "Input Validation", "Scheduler")
-            .whereLayer("Service")
-            .mayOnlyAccessLayers("Repository", "Access", "Fetcher")
-            .whereLayer("Access")
-            .mayOnlyAccessLayers("Repository")
-            .whereLayer("Repository")
-            .mayOnlyAccessLayers("Table", "DB")
-            .whereLayer("Table")
+            .whereLayer(GRPC)
+            .mayOnlyAccessLayers(SERVICE, VALIDATION, SCHEDULER)
+            .whereLayer(SERVICE)
+            .mayOnlyAccessLayers(REPO, ACCESS, FETCHER)
+            .whereLayer(ACCESS)
+            .mayOnlyAccessLayers(REPO)
+            .whereLayer(REPO)
+            .mayOnlyAccessLayers(TABLE, DB)
+            .whereLayer(TABLE)
             .mayNotAccessAnyLayer()
-            .whereLayer("DB")
-            .mayOnlyAccessLayers("Table")
-            .whereLayer("Scheduler")
-            .mayOnlyAccessLayers("Repository")
-            .whereLayer("Fetcher")
-            .mayOnlyAccessLayers("Repository")
+            .whereLayer(DB)
+            .mayOnlyAccessLayers(TABLE)
+            .whereLayer(SCHEDULER)
+            .mayOnlyAccessLayers(REPO)
+            .whereLayer(FETCHER)
+            .mayOnlyAccessLayers(REPO)
             .check(classes)
     }
 
