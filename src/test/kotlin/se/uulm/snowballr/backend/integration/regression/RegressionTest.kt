@@ -7,13 +7,11 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.integration.IntegrationTest
+import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.incoming.paper.CreatePaperRequest
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.outgoing.paper.PaperResponse
-import snowballr.ProjectOuterClass.Project
-import snowballr.UserOuterClass.UserStatus
 import kotlin.test.assertEquals
-import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 
 class RegressionTest : IntegrationTest() {
     @Test
@@ -29,21 +27,17 @@ class RegressionTest : IntegrationTest() {
             // Invite the other user to the project
             inviteUserToProject(project, otherUser)
 
-            var pendingInvitations = invitationService.getPendingInvitationsForProject(project.id).usersList
+            var pendingInvitations = invitationService.getPendingInvitationsForProject(project.id)
             assertEquals(1, pendingInvitations.size)
             assertEquals(otherUser.email, pendingInvitations[0].email)
             assertEquals(otherUser.firstName, pendingInvitations[0].firstName)
             assertEquals(otherUser.lastName, pendingInvitations[0].lastName)
-            assertEquals(UserStatus.USER_STATUS_ACTIVE, pendingInvitations[0].status)
+            assertEquals(UserStatus.ACTIVE, pendingInvitations[0].status)
 
             // Remove the other user's invitation from the project
-            val removeInvitationRequest = Project.Member.Remove.newBuilder()
-                .setProjectId(project.id.toString())
-                .setUserEmail(otherUser.email)
-                .build()
-            projectMemberService.removeProjectMember(removeInvitationRequest)
+            projectMemberService.removeProjectMember(project.id, otherUser.email)
 
-            pendingInvitations = invitationService.getPendingInvitationsForProject(project.id).usersList
+            pendingInvitations = invitationService.getPendingInvitationsForProject(project.id)
             assertEquals(0, pendingInvitations.size)
         }
 
@@ -62,28 +56,17 @@ class RegressionTest : IntegrationTest() {
 
             val projectPapers = papers.map {
                 async {
-                    projectPaperService.addPaperToProject(
-                        GrpcProjectPaper.Add.newBuilder()
-                            .setProjectId(project.id.toString())
-                            .setPaperId(it.id.toString())
-                            .setStage(0)
-                            .build(),
-                    )
+                    projectPaperService.addPaperToProject(project.id, it.id, 0)
                 }
             }.awaitAll()
 
-            val localIds = projectPapers.map { it.localId }.distinct()
+            val localIds = projectPapers.map { it.localPaperId }.distinct()
             assertEquals(numberOfPapers, localIds.size)
 
             val projectPaper = projectPapers.first()
             assertDoesNotThrow {
                 // If several papers have the same local ID this would throw
-                projectPaperService.getProjectPaperByRelativeId(
-                    GrpcProjectPaper.Get.newBuilder()
-                        .setProjectId(project.id.toString())
-                        .setRelativeProjectPaperId(projectPaper.localId)
-                        .build(),
-                )
+                projectPaperService.getProjectPaperByRelativeId(project.id, projectPaper.localPaperId)
             }
         }
 }

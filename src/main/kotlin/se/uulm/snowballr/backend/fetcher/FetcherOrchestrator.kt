@@ -27,7 +27,6 @@ import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import se.uulm.snowballr.backend.repository.isUniqueConstraintViolation
 import java.sql.SQLException
 import java.util.UUID
-import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 
 private val logger = KotlinLogging.logger { }
 
@@ -298,10 +297,6 @@ class FetcherOrchestrator(
      * to the project is a reference of a paper in an earlier stage.
      */
     private suspend fun runAddingPapersToProject(job: FetcherProcessingJob, creationResults: PaperCreationResults) {
-        val baseRequest = GrpcProjectPaper.Add.newBuilder()
-            .setProjectId(job.projectId.toString())
-            .setStage(job.targetStage.toLong())
-
         val filteredRefs = mutableListOf<Paper>()
         for (createdRef in creationResults.allRefs) {
             val doesAlreadyExist = projectPaperRepo.doesProjectPaperExist(job.projectId, createdRef.id)
@@ -325,8 +320,7 @@ class FetcherOrchestrator(
 
         for (ref in filteredRefs) {
             try {
-                val request = baseRequest.setPaperId(ref.id.toString()).build()
-                projectPaperRepo.addPaperToProject(request, job.triggeringUserId)
+                projectPaperRepo.addPaperToProject(job.projectId, ref.id, job.targetStage, job.triggeringUserId)
             } catch (ex: SQLException) {
                 logger.error(ex) {
                     "Failed to add paper ${ref.id} to project ${job.projectId} in stage ${job.targetStage}: " +

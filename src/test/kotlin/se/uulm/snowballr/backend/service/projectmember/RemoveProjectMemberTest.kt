@@ -11,15 +11,9 @@ import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
 import java.util.UUID
-import snowballr.ProjectOuterClass.Project.Member as GrpcProjectMember
 
 class RemoveProjectMemberTest : ProjectMemberServiceTest() {
     private val userEmail = "user@example.com"
-
-    private fun getExampleRequest(projectId: UUID = UUID.randomUUID()) = GrpcProjectMember.Remove.newBuilder()
-        .setProjectId(projectId.toString())
-        .setUserEmail(userEmail)
-        .build()
 
     @Test
     fun `When a user removes a project member, then the member is successfully deleted`() = runTest {
@@ -41,7 +35,7 @@ class RemoveProjectMemberTest : ProjectMemberServiceTest() {
         coJustRun { projectAccessCheckerMock.isNotLastProjectAdmin(userToRemove, project.id, any()) }
         coJustRun { projectMemberRepoMock.removeProjectMember(project.id, userToRemove.id) }
 
-        service.removeProjectMember(getExampleRequest(project.id))
+        service.removeProjectMember(project.id, userEmail)
 
         coVerify(exactly = 1) { projectMemberRepoMock.removeProjectMember(project.id, userToRemove.id) }
     }
@@ -57,7 +51,7 @@ class RemoveProjectMemberTest : ProjectMemberServiceTest() {
         } returns Result.failure(TestSpecificException())
         coEvery { userRepoMock.getUserByEmail(userEmail) } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { service.removeProjectMember(getExampleRequest(project.id)) }
+        assertThrows<TestSpecificException> { service.removeProjectMember(project.id, userEmail) }
     }
 
     @Test
@@ -73,7 +67,7 @@ class RemoveProjectMemberTest : ProjectMemberServiceTest() {
         coEvery { userRepoMock.getUserByEmail(userEmail) } returns Result.success(userToRemove)
         coEvery { projectMemberRepoMock.isProjectMember(project.id, userToRemove.id) } returns false
 
-        service.removeProjectMember(getExampleRequest(project.id))
+        service.removeProjectMember(project.id, userEmail)
 
         coVerify(exactly = 0) { projectMemberRepoMock.removeProjectMember(project.id, userToRemove.id) }
     }
@@ -90,16 +84,10 @@ class RemoveProjectMemberTest : ProjectMemberServiceTest() {
         } returns Result.failure(TestSpecificException())
         coEvery { userRepoMock.getUserByEmail(userEmail) } returns Result.success(userToRemove)
         coEvery { projectMemberRepoMock.isProjectMember(project.id, userToRemove.id) } returns true
-        coJustRun {
-            projectMemberAccessCheckerMock.isAllowedToRemoveMember(
-                currentUser,
-                userToRemove.id,
-                project.id,
-            )
-        }
+        coJustRun { projectMemberAccessCheckerMock.isAllowedToRemoveMember(currentUser, userToRemove.id, project.id) }
         coEvery { projectRepoMock.doesProjectExistById(project.id) } returns false
 
-        assertThrows<ProjectNotFoundException> { service.removeProjectMember(getExampleRequest(project.id)) }
+        assertThrows<ProjectNotFoundException> { service.removeProjectMember(project.id, userEmail) }
     }
 
     @Test
@@ -121,7 +109,7 @@ class RemoveProjectMemberTest : ProjectMemberServiceTest() {
         coJustRun { projectRepoMock.softDeleteProject(project.id) }
         coJustRun { projectMemberRepoMock.removeProjectMember(project.id, userToRemove.id) }
 
-        service.removeProjectMember(getExampleRequest(project.id))
+        service.removeProjectMember(project.id, userEmail)
 
         coVerify(exactly = 1) { projectRepoMock.softDeleteProject(project.id) }
         coVerify(exactly = 1) { projectMemberRepoMock.removeProjectMember(project.id, userToRemove.id) }
@@ -140,7 +128,7 @@ class RemoveProjectMemberTest : ProjectMemberServiceTest() {
         coJustRun { projectMemberAccessCheckerMock.isAllowedToRemoveInvitation(currentUser, project.id) }
         coJustRun { invitationTokenRepoMock.deleteInvitationToken(invitationToken.token) }
 
-        service.removeProjectMember(getExampleRequest(project.id))
+        service.removeProjectMember(project.id, userEmail)
 
         coVerify(exactly = 1) { invitationTokenRepoMock.deleteInvitationToken(invitationToken.token) }
     }
@@ -159,6 +147,6 @@ class RemoveProjectMemberTest : ProjectMemberServiceTest() {
             projectMemberAccessCheckerMock.isAllowedToRemoveInvitation(currentUser, project.id)
         } throws TestSpecificException()
 
-        assertThrows<TestSpecificException> { service.removeProjectMember(getExampleRequest(project.id)) }
+        assertThrows<TestSpecificException> { service.removeProjectMember(project.id, userEmail) }
     }
 }

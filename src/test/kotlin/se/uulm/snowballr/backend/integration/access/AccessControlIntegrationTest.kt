@@ -8,15 +8,14 @@ import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 import se.uulm.snowballr.backend.model.dto.project.Project
+import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
 import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.exception.UnauthorizedException
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
-import snowballr.ProjectOuterClass.MemberRole
-import snowballr.ProjectOuterClass.Project.Member as GrpcProjectMember
-import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
+import se.uulm.snowballr.backend.model.incoming.projectmember.UpdateProjectMemberRoleRequest
 
 class AccessControlIntegrationTest : IntegrationTest() {
     private suspend fun setupProjectWithMember(): Pair<Project, User> {
@@ -115,14 +114,8 @@ class AccessControlIntegrationTest : IntegrationTest() {
             val (project, member) = setupProjectWithMember()
             val paper = createPaper()
 
-            val request = GrpcProjectPaper.Add.newBuilder()
-                .setProjectId(project.id.toString())
-                .setPaperId(paper.id.toString())
-                .setStage(0)
-                .build()
-
             actAsUser(member.id) {
-                assertThrows<UnauthorizedException> { projectPaperService.addPaperToProject(request) }
+                assertThrows<UnauthorizedException> { projectPaperService.addPaperToProject(project.id, paper.id, 0) }
             }
         }
     }
@@ -133,13 +126,10 @@ class AccessControlIntegrationTest : IntegrationTest() {
         fun `When a non-admin member tries to invite a user to a project, then access is denied`() = runTest {
             val (project, member) = setupProjectWithMember()
 
-            val request = GrpcProjectMember.Invite.newBuilder()
-                .setProjectId(project.id.toString())
-                .setUserEmail("uninvited@example.com")
-                .build()
-
             actAsUser(member.id) {
-                assertThrows<UnauthorizedException> { invitationService.inviteUserToProject(request) }
+                assertThrows<UnauthorizedException> {
+                    invitationService.inviteUserToProject(project.id, "uninvited@exmaple.com")
+                }
             }
         }
     }
@@ -152,11 +142,11 @@ class AccessControlIntegrationTest : IntegrationTest() {
             val secondMember = addUser(DataBuilder.createExampleUser(email = "second.member@example.com"))
             inviteUserToProject(project, secondMember, acceptInvitation = true)
 
-            val request = GrpcProjectMember.Update.newBuilder()
-                .setProjectId(project.id.toString())
-                .setUserId(secondMember.id.toString())
-                .setNewRole(MemberRole.MEMBER_ROLE_ADMIN)
-                .build()
+            val request = UpdateProjectMemberRoleRequest(
+                projectId = project.id,
+                userId = secondMember.id,
+                newRole = MemberRole.ADMIN,
+            )
 
             actAsUser(member.id) {
                 assertThrows<UnauthorizedException> { projectMemberService.updateProjectMemberRole(request) }
@@ -169,13 +159,10 @@ class AccessControlIntegrationTest : IntegrationTest() {
             val secondMember = addUser(DataBuilder.createExampleUser(email = "second.member@example.com"))
             inviteUserToProject(project, secondMember, acceptInvitation = true)
 
-            val request = GrpcProjectMember.Remove.newBuilder()
-                .setProjectId(project.id.toString())
-                .setUserEmail(secondMember.email)
-                .build()
-
             actAsUser(member.id) {
-                assertThrows<UnauthorizedException> { projectMemberService.removeProjectMember(request) }
+                assertThrows<UnauthorizedException> {
+                    projectMemberService.removeProjectMember(project.id, secondMember.email)
+                }
             }
         }
     }

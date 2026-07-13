@@ -63,8 +63,6 @@ import se.uulm.snowballr.backend.service.IUserService
 import se.uulm.snowballr.backend.serviceLayerDeps
 import snowballr.Authentication
 import java.util.UUID
-import snowballr.ProjectOuterClass.Project as GrpcProject
-import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
 @Tag("integration")
@@ -224,10 +222,7 @@ open class IntegrationTest : KoinTest {
         val invitationToken = inviteHelper(project, user.firstName, user.email)
 
         if (acceptInvitation) {
-            val acceptRequest = GrpcProject.Member.Accept.newBuilder()
-                .setToken(invitationToken.captured)
-                .build()
-            invitationService.acceptProjectInvitation(acceptRequest)
+            invitationService.acceptProjectInvitation(invitationToken.captured)
         }
     }
 
@@ -267,11 +262,7 @@ open class IntegrationTest : KoinTest {
             EmailData.AcceptProjectInvitation(inviteeFirstName, "Test User", project.name, link, "in 7 days")
         coJustRun { emailManagerMock.sendAcceptProjectInvitationEmail(any(), invitationData) }
 
-        val inviteUserRequest = GrpcProject.Member.Invite.newBuilder()
-            .setProjectId(project.id.toString())
-            .setUserEmail(inviteeEmail)
-            .build()
-        invitationService.inviteUserToProject(inviteUserRequest)
+        invitationService.inviteUserToProject(project.id, inviteeEmail)
 
         return invitationToken
     }
@@ -279,11 +270,6 @@ open class IntegrationTest : KoinTest {
     /**
      * Adds the [paper] to the [project] in stage 0.
      */
-    protected suspend fun addToProject(project: Project, paper: PaperResponse) = projectPaperService.addPaperToProject(
-        GrpcProjectPaper.Add.newBuilder()
-            .setProjectId(project.id.toString())
-            .setPaperId(paper.id.toString())
-            .setStage(0)
-            .build(),
-    )
+    protected suspend fun addToProject(project: Project, paper: PaperResponse) =
+        projectPaperService.addPaperToProject(project.id, paper.id, 0)
 }

@@ -9,6 +9,7 @@ import se.uulm.snowballr.backend.access.IProjectPaperAccessChecker
 import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.model.dto.projectpaper.ProjectPaper
 import se.uulm.snowballr.backend.model.dto.user.User
+import se.uulm.snowballr.backend.model.outgoing.projectpaper.ProjectPaperResponse
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IReviewTableRepo
@@ -19,7 +20,6 @@ import se.uulm.snowballr.backend.repository.association.IReviewHasCriterionTable
 import se.uulm.snowballr.backend.service.BaseServiceTest
 import se.uulm.snowballr.backend.service.ProjectPaperService
 import se.uulm.snowballr.backend.service.withUser
-import snowballr.ProjectOuterClass
 
 /**
  * Base test class for [ProjectPaperService].
@@ -69,10 +69,10 @@ sealed class ProjectPaperServiceTest : BaseServiceTest {
         coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
     }
 
-    protected fun assertProjectPaperEquality(expected: ProjectPaper, actual: ProjectOuterClass.Project.Paper) {
-        assertEquals(expected.paperId.toString(), actual.paper.id)
-        assertEquals(expected.localPaperId.toString(), actual.localId)
-        assertEquals(expected.stage.toLong(), actual.stage)
-        assertEquals(expected.decision.toGrpc(), actual.decision)
+    protected fun assertProjectPaperEquality(expected: ProjectPaper, actual: ProjectPaperResponse) {
+        assertEquals(expected.paperId, actual.paper.id)
+        assertEquals(expected.localPaperId, actual.localPaperId)
+        assertEquals(expected.stage, actual.stage)
+        assertEquals(expected.decision, actual.decision)
     }
 }

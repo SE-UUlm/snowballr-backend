@@ -12,7 +12,6 @@ import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundByEmailException
-import snowballr.UserOuterClass
 
 class GetPendingInvitationsForProjectTest : InvitationServiceTest() {
     @Test
@@ -38,8 +37,8 @@ class GetPendingInvitationsForProjectTest : InvitationServiceTest() {
 
             val result = service.getPendingInvitationsForProject(project.id)
 
-            assertEquals(1, result.usersCount)
-            val resultElement = result.usersList.first()
+            assertEquals(1, result.size)
+            val resultElement = result.first()
             assertEquals(registeredUser.email, resultElement.email)
         }
 
@@ -74,20 +73,20 @@ class GetPendingInvitationsForProjectTest : InvitationServiceTest() {
 
             val pendingInvitations = service.getPendingInvitationsForProject(project.id)
 
-            val invitationForRegisteredUser = pendingInvitations.usersList.find { it.email == registeredUser.email }
-            val invitationForNotRegisteredUser = pendingInvitations.usersList.find { it.email == notRegisteredEmail }
-            assertEquals(2, pendingInvitations.usersList.size)
+            val invitationForRegisteredUser = pendingInvitations.find { it.email == registeredUser.email }
+            val invitationForNotRegisteredUser = pendingInvitations.find { it.email == notRegisteredEmail }
+            assertEquals(2, pendingInvitations.size)
             assertNotNull(invitationForRegisteredUser)
             assertNotNull(invitationForNotRegisteredUser)
 
             // Registered user should have user details
-            assertEquals(registeredUser.id.toString(), invitationForRegisteredUser?.id)
-            assertEquals(UserOuterClass.UserStatus.USER_STATUS_ACTIVE, invitationForRegisteredUser?.status)
+            assertEquals(registeredUser.id, invitationForRegisteredUser?.userId)
+            assertEquals(UserStatus.ACTIVE, invitationForRegisteredUser?.status)
             assertEquals(registeredUser.firstName, invitationForRegisteredUser?.firstName)
 
             // Not registered user should not have user details
-            assertEquals("", invitationForNotRegisteredUser?.id)
-            assertEquals(UserOuterClass.UserStatus.USER_STATUS_UNSPECIFIED, invitationForNotRegisteredUser?.status)
+            assertEquals(null, invitationForNotRegisteredUser?.userId)
+            assertEquals(UserStatus.ACTIVE_UNCONFIRMED, invitationForNotRegisteredUser?.status)
             assertEquals("", invitationForNotRegisteredUser?.firstName)
         }
 

@@ -33,6 +33,8 @@ import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
 import se.uulm.snowballr.backend.model.dto.project.SnowballingType
 import se.uulm.snowballr.backend.model.dto.project.toGrpcProject
 import se.uulm.snowballr.backend.model.dto.project.toGrpcProjects
+import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
+import se.uulm.snowballr.backend.model.dto.projectmember.toGrpcProjectMembers
 import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
@@ -47,11 +49,14 @@ import se.uulm.snowballr.backend.model.incoming.paper.UpdatePaperRequest
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectSettingRequest
+import se.uulm.snowballr.backend.model.incoming.projectmember.UpdateProjectMemberRoleRequest
 import se.uulm.snowballr.backend.model.incoming.review.CreateReviewRequest
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
+import se.uulm.snowballr.backend.model.outgoing.invitation.toGrpc
 import se.uulm.snowballr.backend.model.outgoing.paper.toGrpc
 import se.uulm.snowballr.backend.model.outgoing.project.toGrpc
+import se.uulm.snowballr.backend.model.outgoing.projectpaper.toGrpc
 import se.uulm.snowballr.backend.model.outgoing.review.toGrpc
 import se.uulm.snowballr.backend.model.outgoing.review.toGrpcReviews
 import se.uulm.snowballr.backend.model.parseUUID
@@ -316,16 +321,16 @@ class SnowballRServer(
             super.getAllPapersToReview(request)
 
         override suspend fun getPapersToReviewForProject(request: Base.Id): ProjectOuterClass.Project.Paper.List =
-            projectPaperService.getPapersToReviewForProject(parseProjectId(request))
+            projectPaperService.getPapersToReviewForProject(parseProjectId(request)).toGrpc()
 
         override suspend fun getNextPaper(request: Base.Id): ProjectOuterClass.Project.Paper =
-            projectPaperService.getNextPaper(parseProjectPaperId(request))
+            projectPaperService.getNextPaper(parseProjectPaperId(request)).toGrpc()
 
         override suspend fun getNextPaperToReview(request: Base.Id): ProjectOuterClass.Project.Paper =
-            projectPaperService.getNextPaperToReview(parseProjectPaperId(request))
+            projectPaperService.getNextPaperToReview(parseProjectPaperId(request)).toGrpc()
 
         override suspend fun getPreviousPaper(request: Base.Id): ProjectOuterClass.Project.Paper =
-            projectPaperService.getPreviousPaper(parseProjectPaperId(request))
+            projectPaperService.getPreviousPaper(parseProjectPaperId(request)).toGrpc()
 
         override suspend fun getUserSettings(request: Base.Nothing): UserSettingsOuterClass.UserSettings =
             userService.getUserSettings().toGrpcUserSettings()
@@ -351,24 +356,33 @@ class SnowballRServer(
 
         override suspend fun getInviteCandidates(
             request: ProjectOuterClass.Project.InviteCandidatesRequest,
-        ): UserOuterClass.User.List = invitationService.getInviteCandidates(request)
+        ): UserOuterClass.User.List = invitationService.getInviteCandidates(
+            projectId = runCatching { parseUUID(request.projectId, EntityType.PROJECT) }.getOrDefault(null),
+            query = request.query,
+        ).toGrpcUsers()
 
         override suspend fun inviteUserToProject(request: ProjectOuterClass.Project.Member.Invite) = returnNothing {
-            invitationService.inviteUserToProject(request)
+            invitationService.inviteUserToProject(
+                projectId = parseUUID(request.projectId, EntityType.PROJECT),
+                userEmail = request.userEmail,
+            )
         }
 
         override suspend fun acceptProjectInvitation(request: ProjectOuterClass.Project.Member.Accept) = returnNothing {
-            invitationService.acceptProjectInvitation(request)
+            invitationService.acceptProjectInvitation(request.token)
         }
 
         override suspend fun getPendingInvitationsForProject(request: Base.Id): UserOuterClass.User.List =
-            invitationService.getPendingInvitationsForProject(parseProjectId(request))
+            invitationService.getPendingInvitationsForProject(parseProjectId(request)).toGrpc()
 
         override suspend fun getProjectMembers(request: Base.Id): ProjectOuterClass.Project.Member.List =
-            projectMemberService.getProjectMembers(parseProjectId(request))
+            projectMemberService.getProjectMembers(parseProjectId(request)).toGrpcProjectMembers()
 
         override suspend fun removeProjectMember(request: ProjectOuterClass.Project.Member.Remove) = returnNothing {
-            projectMemberService.removeProjectMember(request)
+            projectMemberService.removeProjectMember(
+                projectId = parseUUID(request.projectId, EntityType.PROJECT),
+                userEmail = request.userEmail,
+            )
         }
 
         override suspend fun getAllProjects(request: Base.Nothing): ProjectOuterClass.Project.List =
@@ -443,7 +457,13 @@ class SnowballRServer(
         ).toGrpc()
 
         override suspend fun updateProjectMemberRole(request: ProjectOuterClass.Project.Member.Update) = returnNothing {
-            projectMemberService.updateProjectMemberRole(request)
+            projectMemberService.updateProjectMemberRole(
+                UpdateProjectMemberRoleRequest(
+                    projectId = parseUUID(request.projectId, EntityType.PROJECT),
+                    userId = parseUUID(request.userId, EntityType.USER),
+                    newRole = MemberRole.fromGrpc(request.newRole),
+                ),
+            )
         }
 
         override suspend fun getCriterionById(request: Base.Id): CriterionOuterClass.Criterion =
@@ -488,18 +508,25 @@ class SnowballRServer(
         override suspend fun deleteCriterion(request: Base.Id): Base.Nothing = super.deleteCriterion(request)
 
         override suspend fun getProjectPaperById(request: Base.Id): ProjectOuterClass.Project.Paper =
-            projectPaperService.getProjectPaperById(parseProjectPaperId(request))
+            projectPaperService.getProjectPaperById(parseProjectPaperId(request)).toGrpc()
 
         override suspend fun getProjectPaperByRelativeId(
             request: ProjectOuterClass.Project.Paper.Get,
-        ): ProjectOuterClass.Project.Paper = projectPaperService.getProjectPaperByRelativeId(request)
+        ): ProjectOuterClass.Project.Paper = projectPaperService.getProjectPaperByRelativeId(
+            projectId = parseUUID(request.projectId, EntityType.PROJECT),
+            relativeId = request.relativeProjectPaperId.toInt(),
+        ).toGrpc()
 
         override suspend fun getAllProjectPapersForProject(request: Base.Id): ProjectOuterClass.Project.Paper.List =
-            projectPaperService.getAllProjectPapersForProject(parseProjectId(request))
+            projectPaperService.getAllProjectPapersForProject(parseProjectId(request)).toGrpc()
 
         override suspend fun addPaperToProject(
             request: ProjectOuterClass.Project.Paper.Add,
-        ): ProjectOuterClass.Project.Paper = projectPaperService.addPaperToProject(request)
+        ): ProjectOuterClass.Project.Paper = projectPaperService.addPaperToProject(
+            projectId = parseUUID(request.projectId, EntityType.PROJECT),
+            paperId = parseUUID(request.paperId, EntityType.PAPER),
+            stage = request.stage.toInt(),
+        ).toGrpc()
 
         override suspend fun updateProjectPaper(
             request: ProjectOuterClass.Project.Paper.Update,
@@ -533,11 +560,17 @@ class SnowballRServer(
 
         override suspend fun searchLocalProjectPaperCandidates(
             request: ProjectOuterClass.Project.Paper.SearchQuery,
-        ): PaperOuterClass.Paper.List = fetcherService.searchLocalProjectPaperCandidates(request).toGrpc()
+        ): PaperOuterClass.Paper.List = fetcherService.searchLocalProjectPaperCandidates(
+            projectId = parseUUID(request.projectId, EntityType.PROJECT),
+            query = request.query,
+        ).toGrpc()
 
         override suspend fun searchFetcherProjectPaperCandidates(
             request: ProjectOuterClass.Project.Paper.SearchQuery,
-        ): PaperOuterClass.Paper.List = fetcherService.searchFetcherProjectPaperCandidates(request).toGrpc()
+        ): PaperOuterClass.Paper.List = fetcherService.searchFetcherProjectPaperCandidates(
+            projectId = parseUUID(request.projectId, EntityType.PROJECT),
+            query = request.query,
+        ).toGrpc()
 
         override suspend fun createPaper(request: PaperOuterClass.Paper): PaperOuterClass.Paper =
             paperService.createPaper(

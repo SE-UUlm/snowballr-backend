@@ -54,9 +54,9 @@ class GetPapersToReviewForProjectTest : ProjectPaperServiceTest() {
         } returns listOf(UUID.randomUUID())
 
         val projectPapers = service.getPapersToReviewForProject(project.id)
-        assertThat(projectPapers.projectPapersList).hasSize(1)
-        assertThat(projectPapers.projectPapersList).anyMatch { it.id == projectPaperNotAlreadyDecided.id.toString() }
-        assertThat(projectPapers.projectPapersList).noneMatch { it.id == projectPaperAlreadyDecided.id.toString() }
+        assertThat(projectPapers).hasSize(1)
+        assertThat(projectPapers).anyMatch { it.id == projectPaperNotAlreadyDecided.id }
+        assertThat(projectPapers).noneMatch { it.id == projectPaperAlreadyDecided.id }
     }
 
     @Test
@@ -103,11 +103,9 @@ class GetPapersToReviewForProjectTest : ProjectPaperServiceTest() {
             } returns listOf(UUID.randomUUID())
 
             val projectPapers = service.getPapersToReviewForProject(project.id)
-            assertThat(projectPapers.projectPapersList).hasSize(1)
-            assertThat(projectPapers.projectPapersList)
-                .anyMatch { it.id == projectPaperWithoutCurrentUserReview.id.toString() }
-            assertThat(projectPapers.projectPapersList)
-                .noneMatch { it.id == projectPaperWithCurrentUserReview.id.toString() }
+            assertThat(projectPapers).hasSize(1)
+            assertThat(projectPapers).anyMatch { it.id == projectPaperWithoutCurrentUserReview.id }
+            assertThat(projectPapers).noneMatch { it.id == projectPaperWithCurrentUserReview.id }
         }
 
     @Test
@@ -130,8 +128,8 @@ class GetPapersToReviewForProjectTest : ProjectPaperServiceTest() {
         coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper.id) } returns emptyList()
 
         val result = service.getPapersToReviewForProject(project.id)
-        assertThat(result.projectPapersList).hasSize(1)
-        assertThat(result.projectPapersList.first().id).isEqualTo(projectPaper.id.toString())
+        assertThat(result).hasSize(1)
+        assertThat(result.first().id).isEqualTo(projectPaper.id)
     }
 
     @Test

@@ -1,6 +1,5 @@
 package se.uulm.snowballr.backend.service
 
-import io.github.oshai.kotlinlogging.KotlinLogging
 import io.viascom.nanoid.NanoId
 import se.uulm.snowballr.backend.access.IInvitationAccessChecker
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
@@ -8,50 +7,41 @@ import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.formatting.daysToHumanReadable
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.mail.IEmailManager
-import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.dto.user.getFullName
 import se.uulm.snowballr.backend.model.dto.user.isActiveAndConfirmed
-import se.uulm.snowballr.backend.model.dto.user.toGrpcUser
-import se.uulm.snowballr.backend.model.dto.user.toGrpcUsers
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.NotFoundException
-import se.uulm.snowballr.backend.model.exception.invalidargument.InvalidUUIDException
 import se.uulm.snowballr.backend.model.exception.notfound.InvitationTokenNotFoundException
-import se.uulm.snowballr.backend.model.parseUUID
+import se.uulm.snowballr.backend.model.outgoing.invitation.InvitationResponse
 import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
-import snowballr.ProjectOuterClass.Project
-import snowballr.UserOuterClass.User
 import java.time.OffsetDateTime
 import java.util.UUID
-import snowballr.ProjectOuterClass.Project as GrpcProject
-import snowballr.UserOuterClass.User as GrpcUser
-
-val Logger = KotlinLogging.logger { }
 
 interface IInvitationService {
     /**
      * Service implementation of [SnowballRService.getInviteCandidates].
      */
-    suspend fun getInviteCandidates(request: Project.InviteCandidatesRequest): GrpcUser.List
+    suspend fun getInviteCandidates(projectId: UUID?, query: String): List<User>
 
     /**
      * Service implementation of [SnowballRService.inviteUserToProject].
      */
-    suspend fun inviteUserToProject(request: GrpcProject.Member.Invite)
+    suspend fun inviteUserToProject(projectId: UUID, userEmail: String)
 
     /**
      * Service implementation of [SnowballRService.acceptProjectInvitation].
      */
-    suspend fun acceptProjectInvitation(request: GrpcProject.Member.Accept)
+    suspend fun acceptProjectInvitation(token: String)
 
     /**
      * Service implementation of [SnowballRService.getPendingInvitationsForProject].
      */
-    suspend fun getPendingInvitationsForProject(projectId: UUID): GrpcUser.List
+    suspend fun getPendingInvitationsForProject(projectId: UUID): List<InvitationResponse>
 }
 
 /**
@@ -85,59 +75,53 @@ class InvitationService(
         private const val MINIMUM_LENGTH_OF_SEARCH_QUERY = 3
     }
 
-    override suspend fun getInviteCandidates(request: Project.InviteCandidatesRequest): GrpcUser.List =
+    override suspend fun getInviteCandidates(projectId: UUID?, query: String): List<User> =
         withUser(userRepo) { currentUser ->
-            val searchQuery = request.query.trim()
+            val searchQuery = query.trim()
 
             // Check whether the search query is too short, i.e., 3 or fewer characters long
             if (searchQuery.length < MINIMUM_LENGTH_OF_SEARCH_QUERY) {
-                return@withUser GrpcUser.List.getDefaultInstance()
+                return@withUser emptyList()
             }
 
             val excludedUsersFromSearch = mutableSetOf(currentUser.email)
-            try {
-                val projectId = parseUUID(request.projectId, EntityType.PROJECT)
+            if (projectId != null) {
                 val projectMembers = projectMemberRepo.getProjectMembersWithUsers(projectId)
                 excludedUsersFromSearch += projectMembers.map { it.user.email }
 
                 val invitedMembers = invitationTokenRepo.getActiveInvitationTokensForProject(projectId)
                 excludedUsersFromSearch += invitedMembers.map { it.email }
-            } catch (_: InvalidUUIDException) {
-                Logger.warn { "Invalid project ID in invite candidates request: ${request.projectId}" }
             }
 
-            val candidates = userRepo.getUsersMatchingSearchQuery(searchQuery, excludedUsersFromSearch)
-            candidates.toGrpcUsers()
+            userRepo.getUsersMatchingSearchQuery(searchQuery, excludedUsersFromSearch)
         }
 
-    override suspend fun inviteUserToProject(request: GrpcProject.Member.Invite) = withUser(userRepo) { currentUser ->
-        val projectId = parseUUID(request.projectId, EntityType.PROJECT)
-
+    override suspend fun inviteUserToProject(projectId: UUID, userEmail: String) = withUser(userRepo) { currentUser ->
         val projectResult = projectRepo.getProjectById(projectId)
         accessChecker.isAllowedToInviteUserToProject(currentUser, projectId, projectResult)
         val project = projectResult.getOrThrow()
 
         // Check if the user is already a member
         val projectMembers = projectMemberRepo.getProjectMembersWithUsers(projectId)
-        val doesAlreadyExists = projectMembers.any { it.user.email == request.userEmail }
+        val doesAlreadyExists = projectMembers.any { it.user.email == userEmail }
         if (doesAlreadyExists) {
             return@withUser
         }
 
         // Check if the user is already invited
         val isAlreadyInvited =
-            invitationTokenRepo.getInvitationTokenByEmailAndProjectId(request.userEmail, projectId).isSuccess
+            invitationTokenRepo.getInvitationTokenByEmailAndProjectId(userEmail, projectId).isSuccess
         if (isAlreadyInvited) {
             return@withUser
         }
 
         // Generate and save invitation token
         val invitationToken = NanoId.generate(INVITATION_TOKEN_LENGTH)
-        invitationTokenRepo.saveInvitationToken(request.userEmail, projectId, invitationToken)
+        invitationTokenRepo.saveInvitationToken(userEmail, projectId, invitationToken)
 
         // Get first name of user if exists
         val userFirstName = try {
-            userRepo.getUserByEmail(request.userEmail).getOrThrow().firstName
+            userRepo.getUserByEmail(userEmail).getOrThrow().firstName
         } catch (_: NotFoundException) {
             "User"
         }
@@ -153,11 +137,11 @@ class InvitationService(
             invitationLink,
             daysToHumanReadable(expirationTimeInDays),
         )
-        emailManager.sendAcceptProjectInvitationEmail(request.userEmail, data)
+        emailManager.sendAcceptProjectInvitationEmail(userEmail, data)
     }
 
-    override suspend fun acceptProjectInvitation(request: GrpcProject.Member.Accept) {
-        val invitationToken = invitationTokenRepo.getInvitationTokenByValue(request.token).getOrThrow()
+    override suspend fun acceptProjectInvitation(token: String) {
+        val invitationToken = invitationTokenRepo.getInvitationTokenByValue(token).getOrThrow()
 
         // Check if the token has expired
         if (OffsetDateTime.now().isAfter(invitationToken.expiresAt)) {
@@ -185,7 +169,7 @@ class InvitationService(
         invitationTokenRepo.deleteInvitationToken(invitationToken.token)
     }
 
-    override suspend fun getPendingInvitationsForProject(projectId: UUID): GrpcUser.List =
+    override suspend fun getPendingInvitationsForProject(projectId: UUID): List<InvitationResponse> =
         withUser(userRepo) { currentUser ->
             projectAccessChecker.isAllowedToReadProject(currentUser, projectId)
 
@@ -193,12 +177,13 @@ class InvitationService(
 
             val invitees = tokens.map { token ->
                 try {
-                    userRepo.getUserByEmail(token.email).getOrThrow().toGrpcUser()
+                    val user = userRepo.getUserByEmail(token.email).getOrThrow()
+                    InvitationResponse.fromUser(user)
                 } catch (_: NotFoundException) {
-                    User.newBuilder().setEmail(token.email).build()
+                    InvitationResponse.fromEmail(token.email)
                 }
             }
 
-            User.List.newBuilder().addAllUsers(invitees).build()
+            invitees
         }
 }

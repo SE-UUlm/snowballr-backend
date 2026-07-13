@@ -4,20 +4,17 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.fetcher.IFetcherManager
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
-import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.paper.Paper
 import se.uulm.snowballr.backend.model.exception.FetcherException
 import se.uulm.snowballr.backend.model.fetcher.FetcherInformationWithId
 import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
 import se.uulm.snowballr.backend.model.outgoing.paper.FetcherPaperResponse
 import se.uulm.snowballr.backend.model.outgoing.paper.PaperResponse
-import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import java.util.UUID
-import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 
 private val logger = KotlinLogging.logger { }
 
@@ -30,12 +27,12 @@ interface IFetcherService {
     /**
      * Service implementation of [SnowballRService.searchLocalProjectPaperCandidates].
      */
-    suspend fun searchLocalProjectPaperCandidates(request: GrpcProjectPaper.SearchQuery): List<PaperResponse>
+    suspend fun searchLocalProjectPaperCandidates(projectId: UUID, query: String): List<PaperResponse>
 
     /**
      * Service implementation of [SnowballRService.searchFetcherProjectPaperCandidates].
      */
-    suspend fun searchFetcherProjectPaperCandidates(request: GrpcProjectPaper.SearchQuery): List<FetcherPaperResponse>
+    suspend fun searchFetcherProjectPaperCandidates(projectId: UUID, query: String): List<FetcherPaperResponse>
 }
 
 /**
@@ -58,14 +55,12 @@ class FetcherService(
 ) : IFetcherService {
     override suspend fun getAvailableFetchers(): Set<FetcherInformationWithId> = fetcherManager.getAvailableFetchers()
 
-    override suspend fun searchLocalProjectPaperCandidates(request: GrpcProjectPaper.SearchQuery): List<PaperResponse> =
+    override suspend fun searchLocalProjectPaperCandidates(projectId: UUID, query: String): List<PaperResponse> =
         withUser(userRepo) { currentUser ->
-            val projectId = parseUUID(request.projectId, EntityType.PROJECT)
-
             projectAccessChecker.isAllowedToReadProject(currentUser, projectId)
 
-            val matchingPapers = paperRepo.getPapersBySearchQuery(request.query)
-            logger.debug { "Found ${matchingPapers.size} papers for query '${request.query}'" }
+            val matchingPapers = paperRepo.getPapersBySearchQuery(query)
+            logger.debug { "Found ${matchingPapers.size} papers for query '$query'" }
 
             val filteredPapers = filterPapersNotInProject(projectId, matchingPapers)
             logger.debug {
@@ -77,24 +72,23 @@ class FetcherService(
         }
 
     override suspend fun searchFetcherProjectPaperCandidates(
-        request: GrpcProjectPaper.SearchQuery,
+        projectId: UUID,
+        query: String,
     ): List<FetcherPaperResponse> = withUser(userRepo) { currentUser ->
-        val projectId = parseUUID(request.projectId, EntityType.PROJECT)
-
         projectAccessChecker.isAllowedToReadProject(currentUser, projectId)
         val project = projectRepo.getProjectById(projectId).getOrThrow()
 
         val papers = mutableSetOf<FetcherPaper>()
         for ((fetcher, options) in project.fetchers) {
             try {
-                papers += fetcherManager.searchPapers(fetcher, request.query, options)
+                papers += fetcherManager.searchPapers(fetcher, query, options)
             } catch (e: FetcherException) {
                 logger.error(e) {
                     "Failed to search fetcher papers for fetcher '$fetcher': ${e.message ?: "<empty>"}"
                 }
             }
         }
-        logger.debug { "Found ${papers.size} papers for query '${request.query}'" }
+        logger.debug { "Found ${papers.size} papers for query '$query'" }
 
         val filteredPapers = filterExistingFetcherPapers(projectId, papers)
         logger.debug {

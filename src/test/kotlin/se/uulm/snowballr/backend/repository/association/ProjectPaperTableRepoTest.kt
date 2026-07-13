@@ -25,7 +25,6 @@ import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.utils.assertResultFailure
 import se.uulm.snowballr.backend.utils.assertResultSuccess
-import snowballr.ProjectOuterClass.Project
 import java.util.UUID
 import kotlin.random.Random
 
@@ -341,13 +340,8 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
             runTest {
                 val paperId = insertPaperAndGetId()
                 val projectId = insertProjectAndGetId(createdBy = testUserId)
-                val request = Project.Paper.Add.newBuilder()
-                    .setPaperId(paperId.toString())
-                    .setProjectId(projectId.toString())
-                    .setStage(0)
-                    .build()
 
-                val projectPaper = repo.addPaperToProject(request, testUserId)
+                val projectPaper = repo.addPaperToProject(projectId, paperId, 0, testUserId)
 
                 assertEquals(paperId, projectPaper.paperId)
                 assertEquals(projectId, projectPaper.projectId)
@@ -362,21 +356,10 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
             runTest {
                 val paperId1 = insertPaperAndGetId()
                 val projectId = insertProjectAndGetId(createdBy = testUserId)
-                val request1 = Project.Paper.Add.newBuilder()
-                    .setPaperId(paperId1.toString())
-                    .setProjectId(projectId.toString())
-                    .setStage(0)
-                    .build()
-
                 val paperId2 = insertPaperAndGetId()
-                val request2 = Project.Paper.Add.newBuilder()
-                    .setPaperId(paperId2.toString())
-                    .setProjectId(projectId.toString())
-                    .setStage(0)
-                    .build()
 
-                repo.addPaperToProject(request1, testUserId)
-                val projectPaper2 = repo.addPaperToProject(request2, testUserId)
+                repo.addPaperToProject(projectId, paperId1, 0, testUserId)
+                val projectPaper2 = repo.addPaperToProject(projectId, paperId2, 0, testUserId)
 
                 assertEquals(1, projectPaper2.localPaperId)
             }
@@ -386,22 +369,12 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
             runTest {
                 val paperId1 = insertPaperAndGetId()
                 val projectId1 = insertProjectAndGetId(createdBy = testUserId)
-                val request1 = Project.Paper.Add.newBuilder()
-                    .setPaperId(paperId1.toString())
-                    .setProjectId(projectId1.toString())
-                    .setStage(0)
-                    .build()
 
                 val paperId2 = insertPaperAndGetId()
                 val projectId2 = insertProjectAndGetId(createdBy = testUserId)
-                val request2 = Project.Paper.Add.newBuilder()
-                    .setPaperId(paperId2.toString())
-                    .setProjectId(projectId2.toString())
-                    .setStage(0)
-                    .build()
 
-                val projectPaper1 = repo.addPaperToProject(request1, testUserId)
-                val projectPaper2 = repo.addPaperToProject(request2, testUserId)
+                val projectPaper1 = repo.addPaperToProject(projectId1, paperId1, 0, testUserId)
+                val projectPaper2 = repo.addPaperToProject(projectId2, paperId2, 0, testUserId)
 
                 assertEquals(0, projectPaper1.localPaperId)
                 assertEquals(0, projectPaper2.localPaperId)
@@ -428,13 +401,8 @@ class ProjectPaperTableRepoTest : RepositoryTest(arrayOf(ProjectPaperTable, Proj
                 )
 
                 val paperIdToAdd = insertPaperAndGetId()
-                val request = Project.Paper.Add.newBuilder()
-                    .setPaperId(paperIdToAdd.toString())
-                    .setProjectId(projectId.toString())
-                    .setStage(0)
-                    .build()
 
-                val projectPaper = repo.addPaperToProject(request, testUserId)
+                val projectPaper = repo.addPaperToProject(projectId, paperIdToAdd, 0, testUserId)
 
                 assertEquals(6, projectPaper.localPaperId)
             }
