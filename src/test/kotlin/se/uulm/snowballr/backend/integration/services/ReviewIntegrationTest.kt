@@ -7,16 +7,16 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.project.Project
+import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
+import se.uulm.snowballr.backend.model.incoming.review.CreateReviewRequest
 import se.uulm.snowballr.backend.model.parseUUID
 import snowballr.ProjectOuterClass.PaperDecision
-import snowballr.ReviewOuterClass.ReviewDecision
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
-import snowballr.ReviewOuterClass.Review as GrpcReview
 
 class ReviewIntegrationTest : IntegrationTest() {
     private suspend fun setupProjectAndPaper(): Pair<Project, GrpcProjectPaper> {
@@ -53,14 +53,15 @@ class ReviewIntegrationTest : IntegrationTest() {
             val projectPaperId = parseUUID(projectPaper.id, EntityType.PROJECT_PAPER)
 
             reviewService.createReview(
-                GrpcReview.Create.newBuilder()
-                    .setProjectPaperId(projectPaper.id)
-                    .setDecision(ReviewDecision.REVIEW_DECISION_ACCEPTED)
-                    .build(),
+                CreateReviewRequest(
+                    projectPaperId = parseUUID(projectPaper.id, EntityType.PROJECT_PAPER),
+                    decision = ReviewDecision.ACCEPTED,
+                    selectedCriteriaIds = emptyList(),
+                ),
             )
 
             val reviews = reviewService.getAllReviewsForProjectPaper(projectPaperId)
-            assertTrue(reviews.reviewsList.isNotEmpty())
+            assertTrue(reviews.isNotEmpty())
         }
 
         @Test
@@ -68,17 +69,17 @@ class ReviewIntegrationTest : IntegrationTest() {
             val (_, projectPaper) = setupProjectAndPaper()
 
             val review = reviewService.createReview(
-                GrpcReview.Create.newBuilder()
-                    .setProjectPaperId(projectPaper.id)
-                    .setDecision(ReviewDecision.REVIEW_DECISION_DECLINED)
-                    .build(),
+                CreateReviewRequest(
+                    projectPaperId = parseUUID(projectPaper.id, EntityType.PROJECT_PAPER),
+                    decision = ReviewDecision.DECLINED,
+                    selectedCriteriaIds = emptyList(),
+                ),
             )
-            val reviewId = parseUUID(review.id, EntityType.REVIEW)
 
-            val fetched = reviewService.getReviewById(reviewId)
+            val fetched = reviewService.getReviewById(review.id)
 
             assertEquals(review.id, fetched.id)
-            assertEquals(ReviewDecision.REVIEW_DECISION_DECLINED, fetched.decision)
+            assertEquals(ReviewDecision.DECLINED, fetched.decision)
         }
 
         @Test
@@ -87,10 +88,11 @@ class ReviewIntegrationTest : IntegrationTest() {
             val projectPaperId = parseUUID(projectPaper.id, EntityType.PROJECT_PAPER)
 
             reviewService.createReview(
-                GrpcReview.Create.newBuilder()
-                    .setProjectPaperId(projectPaper.id)
-                    .setDecision(ReviewDecision.REVIEW_DECISION_ACCEPTED)
-                    .build(),
+                CreateReviewRequest(
+                    projectPaperId = parseUUID(projectPaper.id, EntityType.PROJECT_PAPER),
+                    decision = ReviewDecision.ACCEPTED,
+                    selectedCriteriaIds = emptyList(),
+                ),
             )
 
             val updatedProjectPaper = projectPaperService.getProjectPaperById(projectPaperId)
@@ -103,10 +105,11 @@ class ReviewIntegrationTest : IntegrationTest() {
             val projectPaperId = parseUUID(projectPaper.id, EntityType.PROJECT_PAPER)
 
             reviewService.createReview(
-                GrpcReview.Create.newBuilder()
-                    .setProjectPaperId(projectPaper.id)
-                    .setDecision(ReviewDecision.REVIEW_DECISION_DECLINED)
-                    .build(),
+                CreateReviewRequest(
+                    projectPaperId = parseUUID(projectPaper.id, EntityType.PROJECT_PAPER),
+                    decision = ReviewDecision.DECLINED,
+                    selectedCriteriaIds = emptyList(),
+                ),
             )
 
             val updatedProjectPaper = projectPaperService.getProjectPaperById(projectPaperId)
@@ -127,10 +130,11 @@ class ReviewIntegrationTest : IntegrationTest() {
             val (project, projectPaper) = setupProjectAndPaper()
 
             reviewService.createReview(
-                GrpcReview.Create.newBuilder()
-                    .setProjectPaperId(projectPaper.id)
-                    .setDecision(ReviewDecision.REVIEW_DECISION_ACCEPTED)
-                    .build(),
+                CreateReviewRequest(
+                    projectPaperId = parseUUID(projectPaper.id, EntityType.PROJECT_PAPER),
+                    decision = ReviewDecision.ACCEPTED,
+                    selectedCriteriaIds = emptyList(),
+                ),
             )
 
             val updatedProject = project.copy(reviewMaybeAllowed = true)
