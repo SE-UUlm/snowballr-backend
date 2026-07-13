@@ -155,13 +155,13 @@ class FetcherOrchestrator(
      * fetched by calling the [fetcherManager].
      */
     private suspend fun runFetching(job: FetcherProcessingJob, paper: Paper): FetchingResults {
-        val backwardReferences = if (job.snowballingType.isBackwardOrBoth()) {
+        val backwardReferences = if (job.snowballingType.isBackwardOrBoth) {
             fetch(job.fetchers, paper, FetchingDirection.BACKWARD)
         } else {
             emptySet()
         }
 
-        val forwardReferences = if (job.snowballingType.isForwardOrBoth()) {
+        val forwardReferences = if (job.snowballingType.isForwardOrBoth) {
             fetch(job.fetchers, paper, FetchingDirection.FORWARD)
         } else {
             emptySet()

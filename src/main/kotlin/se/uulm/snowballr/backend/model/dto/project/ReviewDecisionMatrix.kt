@@ -1,6 +1,8 @@
 package se.uulm.snowballr.backend.model.dto.project
 
-import snowballr.ProjectOuterClass
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 
 /**
  * Matrix containing the paper decision based on reviews made for a paper.
@@ -8,24 +10,17 @@ import snowballr.ProjectOuterClass
  * This matrix defines how a paper is decided based on its reviews.
  * For this to work, the entries need to be unique and the patterns exhaustive.
  */
+@Serializable
 data class ReviewDecisionMatrix(
+    @SerialName("number_of_reviewers")
     val numberOfReviewers: Int,
+    @SerialName("patterns")
     val patterns: List<DecisionMatrixPattern>,
 ) {
     companion object {
-        fun fromGrpc(decisionMatrix: ProjectOuterClass.ReviewDecisionMatrix) = ReviewDecisionMatrix(
-            numberOfReviewers = decisionMatrix.numberOfReviewers,
-            patterns = decisionMatrix.patternsList.map { DecisionMatrixPattern.fromGrpc(it) },
-        )
-
         fun parseFrom(bytes: ByteArray): ReviewDecisionMatrix =
-            fromGrpc(ProjectOuterClass.ReviewDecisionMatrix.parseFrom(bytes))
+            Json.decodeFromString<ReviewDecisionMatrix>(bytes.decodeToString())
     }
 
-    fun toGrpc(): ProjectOuterClass.ReviewDecisionMatrix = ProjectOuterClass.ReviewDecisionMatrix.newBuilder()
-        .setNumberOfReviewers(numberOfReviewers)
-        .addAllPatterns(patterns.map { it.toGrpc() })
-        .build()
-
-    fun toByteArray(): ByteArray = toGrpc().toByteArray()
+    fun toByteArray(): ByteArray = Json.encodeToString(this).toByteArray()
 }

@@ -8,8 +8,6 @@ import se.uulm.snowballr.backend.formatting.daysToHumanReadable
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.mail.IEmailManager
 import se.uulm.snowballr.backend.model.dto.user.User
-import se.uulm.snowballr.backend.model.dto.user.getFullName
-import se.uulm.snowballr.backend.model.dto.user.isActiveAndConfirmed
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.NotFoundException
@@ -127,7 +125,7 @@ class InvitationService(
         }
 
         // Send invitation email
-        val inviterName = currentUser.getFullName()
+        val inviterName = currentUser.fullName
         val invitationLink = emailManager.createAcceptProjectInvitationLink(invitationToken)
         val expirationTimeInDays = envReader.env.lifetime.invitationTokenLifeTimeInDays
         val data = EmailData.AcceptProjectInvitation(
@@ -156,7 +154,7 @@ class InvitationService(
             throw FailedPreconditionException("The user with the email ${invitationToken.email} is not registered.")
         }
 
-        if (!user.isActiveAndConfirmed()) {
+        if (!user.isActiveAndConfirmed) {
             throw FailedPreconditionException(
                 "The user with the email ${invitationToken.email} has not verified their email address.",
             )

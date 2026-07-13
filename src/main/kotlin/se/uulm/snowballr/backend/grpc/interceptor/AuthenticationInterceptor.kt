@@ -19,7 +19,7 @@ import se.uulm.snowballr.backend.auth.REFRESH_TOKEN_COOKIE_NAME
 import se.uulm.snowballr.backend.context.RequestContext
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.model.auth.AuthRequestState
-import snowballr.Authentication.AuthenticationStatus
+import se.uulm.snowballr.backend.model.auth.AuthenticationStatus
 import snowballr.SnowballRGrpcKt
 import io.grpc.reflection.v1.ServerReflectionGrpc as ServerReflectionV1Grpc
 import io.grpc.reflection.v1alpha.ServerReflectionGrpc as ServerReflectionV1AlphaGrpc
@@ -109,7 +109,7 @@ val authenticationInterceptor: ServerInterceptor =
          */
         private fun <ReqT> emptyListener(): ServerCall.Listener<ReqT?> = object : ServerCall.Listener<ReqT?>() {}
 
-        override fun <ReqT : Any?, RespT : Any?> interceptCall(
+        override fun <ReqT, RespT> interceptCall(
             call: ServerCall<ReqT?, RespT?>?,
             headers: Metadata?,
             next: ServerCallHandler<ReqT?, RespT?>?,
@@ -177,7 +177,7 @@ val authenticationInterceptor: ServerInterceptor =
          * @param methodName The full method name being called, used to determine if the call should proceed.
          * @return A [ServerCall.Listener] that will handle the call, or an empty listener if authentication fails.
          */
-        private fun <ReqT : Any?, RespT : Any?> handleAuthentication(
+        private fun <ReqT, RespT> handleAuthentication(
             authState: AuthRequestState<ReqT, RespT>,
             requestContext: RequestContext,
             skipRefresh: Boolean,
@@ -221,7 +221,7 @@ val authenticationInterceptor: ServerInterceptor =
          * @param requestContext The per-call [RequestContext] to populate with the dummy user.
          * @return A [ServerCall.Listener] that will handle the call, or an empty listener if the method is not allowed.
          */
-        private fun <ReqT : Any?, RespT : Any?> proceedWithDummyUser(
+        private fun <ReqT, RespT> proceedWithDummyUser(
             authState: AuthRequestState<ReqT, RespT>,
             requestContext: RequestContext,
         ): ServerCall.Listener<ReqT?>? {
@@ -236,7 +236,7 @@ val authenticationInterceptor: ServerInterceptor =
             }
 
             requestContext.userId = DummyUser.id
-            requestContext.authStatus = AuthenticationStatus.AUTHENTICATION_STATUS_AUTHENTICATED
+            requestContext.authStatus = AuthenticationStatus.AUTHENTICATED
             return authState.next?.startCall(authState.call, authState.headers)
         }
     }

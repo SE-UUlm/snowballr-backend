@@ -18,20 +18,20 @@ data class ProjectPaper(
     val createdBy: UUID,
     val modifiedAt: OffsetDateTime?,
     val modifiedBy: UUID?,
-)
+) {
+    /**
+     * Checks whether this [ProjectPaper] has a final decision.
+     *
+     * A [ProjectPaper] is considered to have a final decision if its decision is set to [PaperDecision.ACCEPTED] or
+     * [PaperDecision.DECLINED].
+     */
+    val hasFinalDecision get() = this.decision == PaperDecision.ACCEPTED || this.decision == PaperDecision.DECLINED
 
-/**
- * Checks whether this [ProjectPaper] has a final decision.
- *
- * A [ProjectPaper] is considered to have a final decision if its decision is set to [PaperDecision.ACCEPTED] or
- * [PaperDecision.DECLINED].
- */
-fun ProjectPaper.hasFinalDecision() = this.decision == PaperDecision.ACCEPTED || this.decision == PaperDecision.DECLINED
-
-/**
- * Checks whether this [ProjectPaper] has no final decision yet.
- *
- * A [ProjectPaper] is considered to have no final decision if its decision is set to [PaperDecision.UNREVIEWED] or
- * [PaperDecision.IN_REVIEW].
- */
-fun ProjectPaper.hasNoFinalDecision() = !this.hasFinalDecision()
+    /**
+     * Checks whether this [ProjectPaper] has no final decision yet.
+     *
+     * A [ProjectPaper] is considered to have no final decision if its decision is set to [PaperDecision.UNREVIEWED] or
+     * [PaperDecision.IN_REVIEW].
+     */
+    val hasNoFinalDecision get() = !this.hasFinalDecision
+}

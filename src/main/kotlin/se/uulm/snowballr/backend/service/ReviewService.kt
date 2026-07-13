@@ -9,11 +9,8 @@ import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
 import se.uulm.snowballr.backend.model.dto.project.SnowballingType
 import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
-import se.uulm.snowballr.backend.model.dto.projectpaper.hasFinalDecision
 import se.uulm.snowballr.backend.model.dto.review.Review
 import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
-import se.uulm.snowballr.backend.model.dto.review.doesAcceptPaper
-import se.uulm.snowballr.backend.model.dto.review.doesDeclinePaper
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.alreadyexists.DuplicateReviewException
 import se.uulm.snowballr.backend.model.fetcher.FetcherEnqueueJob
@@ -112,7 +109,7 @@ class ReviewService(
                 throw DuplicateReviewException(request.projectPaperId, currentUser.id)
             }
 
-            if (projectPaper.hasFinalDecision()) {
+            if (projectPaper.hasFinalDecision) {
                 throw FailedPreconditionException(
                     "The project paper must be either unreviewed or still in review. " +
                         "Finally decided project papers cannot be reviewed anymore.",
@@ -124,7 +121,7 @@ class ReviewService(
 
             val hasSelectedExclusionCriterion = hasSelectedHardExclusionCriterion(project.id, selectedCriteriaIds)
 
-            val decision = if (hasSelectedExclusionCriterion && review.doesDeclinePaper()) {
+            val decision = if (hasSelectedExclusionCriterion && review.doesDeclinePaper) {
                 PaperDecision.DECLINED
             } else {
                 determinePaperDecision(reviewsForProjectPaper + review, project.reviewDecisionMatrix)
@@ -189,7 +186,7 @@ class ReviewService(
         }
 
         val decidingReview = reviews.last()
-        return if (decidingReview.doesAcceptPaper()) {
+        return if (decidingReview.doesAcceptPaper) {
             PaperDecision.ACCEPTED
         } else {
             PaperDecision.DECLINED

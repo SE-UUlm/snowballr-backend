@@ -4,12 +4,24 @@ package se.uulm.snowballr.backend.grpc
 
 import com.google.protobuf.kotlin.toByteString
 import com.google.protobuf.timestamp
+import se.uulm.snowballr.backend.model.auth.AuthenticationStatus
 import se.uulm.snowballr.backend.model.dto.criterion.Criterion
+import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 import se.uulm.snowballr.backend.model.dto.paper.Author
+import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPattern
+import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPatternEntry
 import se.uulm.snowballr.backend.model.dto.project.Project
+import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
+import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
+import se.uulm.snowballr.backend.model.dto.project.SnowballingType
+import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
 import se.uulm.snowballr.backend.model.dto.projectmember.ProjectMemberWithUser
+import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
+import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.dto.user.User
+import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.dto.user.UserSettingsWithCriteria
+import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.export.ExportFormat
 import se.uulm.snowballr.backend.model.export.FileExport
 import se.uulm.snowballr.backend.model.fetcher.FetcherInformation
@@ -24,6 +36,7 @@ import se.uulm.snowballr.backend.model.outgoing.project.ProjectDecisionStatistic
 import se.uulm.snowballr.backend.model.outgoing.project.ProjectInformation
 import se.uulm.snowballr.backend.model.outgoing.projectpaper.ProjectPaperResponse
 import se.uulm.snowballr.backend.model.outgoing.review.ReviewResponse
+import snowballr.Authentication
 import snowballr.Base
 import snowballr.CriterionOuterClass
 import snowballr.Export
@@ -275,3 +288,79 @@ fun Set<ExportFormat>.toGrpc(): Export.AvailableExportFormatsResponse = Export.A
     .newBuilder()
     .addAllFormats(this.map { it.toString() })
     .build()
+
+fun CriterionCategory.toGrpc() = when (this) {
+    CriterionCategory.INCLUSION -> CriterionOuterClass.CriterionCategory.CRITERION_CATEGORY_INCLUSION
+    CriterionCategory.EXCLUSION -> CriterionOuterClass.CriterionCategory.CRITERION_CATEGORY_EXCLUSION
+    CriterionCategory.HARD_EXCLUSION -> CriterionOuterClass.CriterionCategory.CRITERION_CATEGORY_HARD_EXCLUSION
+}
+
+fun DecisionMatrixPattern.toGrpc(): ProjectOuterClass.ReviewDecisionMatrix.Pattern =
+    ProjectOuterClass.ReviewDecisionMatrix.Pattern.newBuilder()
+        .setDecision(decision.toGrpc())
+        .addAllEntries(entries.map { it.toGrpc() })
+        .build()
+
+fun DecisionMatrixPatternEntry.toGrpc(): ProjectOuterClass.ReviewDecisionMatrix.Pattern.Entry =
+    ProjectOuterClass.ReviewDecisionMatrix.Pattern.Entry.newBuilder()
+        .setReviewDecision(decision.toGrpc())
+        .setCount(count.toLong())
+        .build()
+
+fun ReviewDecisionMatrix.toGrpc(): ProjectOuterClass.ReviewDecisionMatrix =
+    ProjectOuterClass.ReviewDecisionMatrix.newBuilder()
+        .setNumberOfReviewers(numberOfReviewers)
+        .addAllPatterns(patterns.map { it.toGrpc() })
+        .build()
+
+fun ProjectStatus.toGrpc() = when (this) {
+    ProjectStatus.ACTIVE -> ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE
+    ProjectStatus.ACTIVE_LOCKED -> ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED
+    ProjectStatus.ARCHIVED -> ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ARCHIVED
+    ProjectStatus.DELETED -> ProjectOuterClass.ProjectStatus.PROJECT_STATUS_DELETED
+    ProjectStatus.CLEARED -> ProjectOuterClass.ProjectStatus.PROJECT_STATUS_UNSPECIFIED
+}
+
+fun SnowballingType.toGrpc(): ProjectOuterClass.SnowballingType = when (this) {
+    SnowballingType.FORWARD -> ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_FORWARD
+    SnowballingType.BACKWARD -> ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_BACKWARD
+    SnowballingType.BOTH -> ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_BOTH
+}
+
+fun MemberRole.toGrpc() = when (this) {
+    MemberRole.DEFAULT -> ProjectOuterClass.MemberRole.MEMBER_ROLE_DEFAULT
+    MemberRole.ADMIN -> ProjectOuterClass.MemberRole.MEMBER_ROLE_ADMIN
+}
+
+fun PaperDecision.toGrpc(): ProjectOuterClass.PaperDecision = when (this) {
+    PaperDecision.UNREVIEWED -> ProjectOuterClass.PaperDecision.PAPER_DECISION_UNREVIEWED
+    PaperDecision.IN_REVIEW -> ProjectOuterClass.PaperDecision.PAPER_DECISION_IN_REVIEW
+    PaperDecision.DECLINED -> ProjectOuterClass.PaperDecision.PAPER_DECISION_DECLINED
+    PaperDecision.ACCEPTED -> ProjectOuterClass.PaperDecision.PAPER_DECISION_ACCEPTED
+}
+
+fun ReviewDecision.toGrpc() = when (this) {
+    ReviewDecision.DECLINED -> ReviewOuterClass.ReviewDecision.REVIEW_DECISION_DECLINED
+    ReviewDecision.MAYBE -> ReviewOuterClass.ReviewDecision.REVIEW_DECISION_MAYBE
+    ReviewDecision.ACCEPTED -> ReviewOuterClass.ReviewDecision.REVIEW_DECISION_ACCEPTED
+}
+
+fun UserRole.toGrpc() = when (this) {
+    UserRole.DEFAULT -> UserOuterClass.UserRole.USER_ROLE_DEFAULT
+    UserRole.ADMIN -> UserOuterClass.UserRole.USER_ROLE_ADMIN
+}
+
+fun UserStatus.toGrpc() = when (this) {
+    UserStatus.ACTIVE_UNCONFIRMED -> UserOuterClass.UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED
+    UserStatus.ACTIVE -> UserOuterClass.UserStatus.USER_STATUS_ACTIVE
+    UserStatus.DELETED -> UserOuterClass.UserStatus.USER_STATUS_DELETED
+    UserStatus.CLEARED -> UserOuterClass.UserStatus.USER_STATUS_UNSPECIFIED
+}
+
+fun AuthenticationStatus.toGrpc() = when (this) {
+    AuthenticationStatus.UNAUTHENTICATED -> Authentication.AuthenticationStatus.AUTHENTICATION_STATUS_UNAUTHENTICATED
+    AuthenticationStatus.ACCESS_TOKEN_EXPIRED ->
+        Authentication.AuthenticationStatus.AUTHENTICATION_STATUS_ACCESS_TOKEN_EXPIRED
+
+    AuthenticationStatus.AUTHENTICATED -> Authentication.AuthenticationStatus.AUTHENTICATION_STATUS_AUTHENTICATED
+}

@@ -1,8 +1,6 @@
 package se.uulm.snowballr.backend.access.rules
 
 import se.uulm.snowballr.backend.model.dto.user.User
-import se.uulm.snowballr.backend.model.dto.user.isActive
-import se.uulm.snowballr.backend.model.dto.user.isServerAdmin
 import java.util.UUID
 import javax.annotation.CheckReturnValue
 
@@ -10,7 +8,7 @@ import javax.annotation.CheckReturnValue
  * Check whether the requesting user is a server admin.
  */
 @CheckReturnValue
-fun isServerAdmin() = AccessRule<Unit> { requester, _ -> requester.isServerAdmin() }
+fun isServerAdmin() = AccessRule<Unit> { requester, _ -> requester.isServerAdmin }
 
 /**
  * Check whether the requesting user and the target user are the same by checking whether they have the same user ID.
@@ -28,7 +26,7 @@ fun isServerAdminOrSameUser() = isServerAdmin().forTarget<UUID>().orElse(isSameU
  * Check whether the target user is active (according to [User.isActive]).
  */
 @CheckReturnValue
-fun isTargetUserActive() = AccessRule<User> { _, target -> target.isActive() }
+fun isTargetUserActive() = AccessRule<User> { _, target -> target.isActive }
 
 /**
  * Check whether the requester is a server admin (according to [isServerAdmin]) **OR** the target user is active
@@ -41,4 +39,4 @@ fun isServerAdminOrTargetUserActive() = isServerAdmin().forTarget<User>().orElse
  * Check whether the target user is not a server admin (according to [User.isServerAdmin]).
  */
 @CheckReturnValue
-fun isTargetUserNotAdmin() = AccessRule<User> { _, target -> !target.isServerAdmin() }
+fun isTargetUserNotAdmin() = AccessRule<User> { _, target -> !target.isServerAdmin }

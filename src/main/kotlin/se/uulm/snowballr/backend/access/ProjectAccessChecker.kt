@@ -10,10 +10,7 @@ import se.uulm.snowballr.backend.access.rules.orElse
 import se.uulm.snowballr.backend.access.rules.orElseThrow
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.dto.project.isActive
-import se.uulm.snowballr.backend.model.dto.project.isDeleted
 import se.uulm.snowballr.backend.model.dto.user.User
-import se.uulm.snowballr.backend.model.dto.user.isServerAdmin
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.UnauthorizedException
 import se.uulm.snowballr.backend.model.exception.failedprecondition.EntityNotActiveException
@@ -175,12 +172,12 @@ class ProjectAccessChecker(
 
     override fun isProjectExistent() = AccessRule<UUID> { user, projectId ->
         val project = projectRepo.getProjectById(projectId).getOrNull()
-        project != null && (!project.isDeleted() || user.isServerAdmin())
+        project != null && (!project.isDeleted || user.isServerAdmin)
     }.orElseThrow { _, projectId -> ProjectNotFoundException(projectId) }
 
     override fun isProjectActiveById() = AccessRule<UUID> { _, projectId ->
         val project = projectRepo.getProjectById(projectId).getOrNull()
-        project != null && project.isActive()
+        project != null && project.isActive
     }.orElseThrow { _, projectId -> EntityNotActiveException(EntityType.PROJECT, projectId) }
 
     override fun isProjectOrServerAdmin(accessType: AccessType, entityType: EntityType) = isProjectAdmin()

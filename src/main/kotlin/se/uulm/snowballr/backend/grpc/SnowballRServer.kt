@@ -24,16 +24,7 @@ import se.uulm.snowballr.backend.grpc.interceptor.loggingInterceptor
 import se.uulm.snowballr.backend.grpc.interceptor.requestContextCoroutineInterceptor
 import se.uulm.snowballr.backend.grpc.interceptor.validationInterceptor
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 import se.uulm.snowballr.backend.model.dto.paper.Author
-import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPattern
-import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
-import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
-import se.uulm.snowballr.backend.model.dto.project.SnowballingType
-import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
-import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
-import se.uulm.snowballr.backend.model.dto.user.UserRole
-import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.export.ExportFormat
 import se.uulm.snowballr.backend.model.incoming.authentication.ChangePasswordRequest
 import se.uulm.snowballr.backend.model.incoming.authentication.LoginRequest
@@ -264,7 +255,7 @@ class SnowballRServer(
         override suspend fun getAuthenticationStatus(
             request: Base.Nothing,
         ): Authentication.AuthenticationStatusResponse = Authentication.AuthenticationStatusResponse.newBuilder()
-            .setAuthenticationStatus(RequestContext.current().authStatus).build()
+            .setAuthenticationStatus(RequestContext.current().authStatus.toGrpc()).build()
 
         /** Renew Session is handled in the [authenticationInterceptor]. */
         override suspend fun renewSession(request: Base.Nothing): Base.Nothing = Base.Nothing.getDefaultInstance()
@@ -303,8 +294,8 @@ class SnowballRServer(
                     firstName = request.user.firstName,
                     lastName = request.user.lastName,
                     email = request.user.email,
-                    role = UserRole.fromGrpc(request.user.role),
-                    status = UserStatus.fromGrpc(request.user.status),
+                    role = userRoleFromGrpc(request.user.role),
+                    status = userStatusFromGrpc(request.user.status),
                 ),
                 FieldMaskUtil.normalize(request.mask).pathsList,
             ).toGrpc()
@@ -412,17 +403,13 @@ class SnowballRServer(
                 UpdateProjectRequest(
                     projectId = parseUUID(request.project.id, EntityType.PROJECT),
                     name = request.project.name,
-                    status = ProjectStatus.fromGrpc(request.project.status),
+                    status = projectStatusFromGrpc(request.project.status),
                     settings = UpdateProjectSettingRequest(
                         similarityThreshold = request.project.settings.similarityThreshold,
-                        snowballingType = SnowballingType.fromGrpc(request.project.settings.snowballingType),
+                        snowballingType = snowballingTypeFromGrpc(request.project.settings.snowballingType),
                         reviewMaybeAllowed = request.project.settings.reviewMaybeAllowed,
                         fetchers = request.project.settings.fetchersMap.mapValues { it.value.optionsMap },
-                        decisionMatrix = ReviewDecisionMatrix(
-                            numberOfReviewers = request.project.settings.decisionMatrix.numberOfReviewers,
-                            patterns = request.project.settings.decisionMatrix.patternsList
-                                .map { DecisionMatrixPattern.fromGrpc(it) },
-                        ),
+                        decisionMatrix = reviewDecisionMatrixFromGrpc(request.project.settings.decisionMatrix),
                     ),
                 ),
                 FieldMaskUtil.normalize(request.mask).pathsList.toSet(),
@@ -462,7 +449,7 @@ class SnowballRServer(
                 UpdateProjectMemberRoleRequest(
                     projectId = parseUUID(request.projectId, EntityType.PROJECT),
                     userId = parseUUID(request.userId, EntityType.USER),
-                    newRole = MemberRole.fromGrpc(request.newRole),
+                    newRole = memberRoleFromGrpc(request.newRole),
                 ),
             )
         }
@@ -487,7 +474,7 @@ class SnowballRServer(
                     tag = request.tag,
                     name = request.name,
                     description = request.description,
-                    category = CriterionCategory.fromGrpc(request.category),
+                    category = criterionCategoryFromGrpc(request.category),
                     projectId = projectId,
                 ),
             ).toGrpc()
@@ -501,7 +488,7 @@ class SnowballRServer(
                 tag = request.criterion.tag,
                 name = request.criterion.name,
                 description = request.criterion.description,
-                category = CriterionCategory.fromGrpc(request.criterion.category),
+                category = criterionCategoryFromGrpc(request.criterion.category),
             ),
             FieldMaskUtil.normalize(request.mask).pathsList,
         ).toGrpc()
@@ -546,7 +533,7 @@ class SnowballRServer(
             reviewService.createReview(
                 CreateReviewRequest(
                     projectPaperId = parseUUID(request.projectPaperId, EntityType.PROJECT_PAPER),
-                    decision = ReviewDecision.fromGrpc(request.decision),
+                    decision = reviewDecisionFromGrpc(request.decision),
                     selectedCriteriaIds = request.selectedCriteriaIdsList.map { parseUUID(it, EntityType.CRITERION) },
                 ),
             ).toGrpc()

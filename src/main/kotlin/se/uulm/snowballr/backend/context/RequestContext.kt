@@ -1,9 +1,9 @@
 package se.uulm.snowballr.backend.context
 
 import kotlinx.coroutines.ThreadContextElement
+import se.uulm.snowballr.backend.model.auth.AuthenticationStatus
 import se.uulm.snowballr.backend.model.exception.internal.missingcontext.MissingRequestContextException
 import se.uulm.snowballr.backend.model.exception.internal.missingcontext.MissingUserIdException
-import snowballr.Authentication.AuthenticationStatus
 import java.util.Optional
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
@@ -28,7 +28,7 @@ import kotlin.jvm.optionals.getOrNull
  */
 class RequestContext(
     userId: UUID? = null,
-    authStatus: AuthenticationStatus = AuthenticationStatus.AUTHENTICATION_STATUS_UNSPECIFIED,
+    authStatus: AuthenticationStatus = AuthenticationStatus.UNAUTHENTICATED,
 ) : AbstractCoroutineContextElement(RequestContext), ThreadContextElement<RequestContext?> {
     @Volatile
     var userId: UUID? = userId

@@ -3,8 +3,8 @@ package se.uulm.snowballr.backend.auth
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.jsonwebtoken.JwtException
 import se.uulm.snowballr.backend.context.RequestContext
+import se.uulm.snowballr.backend.model.auth.AuthenticationStatus
 import se.uulm.snowballr.backend.model.jwt.ParsedJwtAuthClaims
-import snowballr.Authentication
 
 private val logger = KotlinLogging.logger {}
 
@@ -52,14 +52,13 @@ class AuthenticationManager(private val jwtManager: IJwtManager) : IAuthenticati
         }
 
         val (status, result) = if (parsedAccessTokenResult.isSuccess) {
-            Authentication.AuthenticationStatus.AUTHENTICATION_STATUS_AUTHENTICATED to parsedAccessTokenResult
+            AuthenticationStatus.AUTHENTICATED to parsedAccessTokenResult
         } else {
             val refreshResult = attemptTokenRefresh(refreshToken, skipRefresh, requestContext)
             if (refreshResult.isSuccess) {
-                Authentication.AuthenticationStatus.AUTHENTICATION_STATUS_ACCESS_TOKEN_EXPIRED to refreshResult
+                AuthenticationStatus.ACCESS_TOKEN_EXPIRED to refreshResult
             } else {
-                Authentication.AuthenticationStatus.AUTHENTICATION_STATUS_UNAUTHENTICATED to Result
-                    .failure(JwtException("Authentication failed"))
+                AuthenticationStatus.UNAUTHENTICATED to Result.failure(JwtException("Authentication failed"))
             }
         }
 
