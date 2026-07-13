@@ -30,8 +30,11 @@ class RequestContext(
     userId: UUID? = null,
     authStatus: AuthenticationStatus = AuthenticationStatus.AUTHENTICATION_STATUS_UNSPECIFIED,
 ) : AbstractCoroutineContextElement(RequestContext), ThreadContextElement<RequestContext?> {
+    @Volatile
     var userId: UUID? = userId
         internal set
+
+    @Volatile
     var authStatus: AuthenticationStatus = authStatus
         internal set
     private val cookiesToSet: MutableMap<String, Optional<String>> = ConcurrentHashMap()
