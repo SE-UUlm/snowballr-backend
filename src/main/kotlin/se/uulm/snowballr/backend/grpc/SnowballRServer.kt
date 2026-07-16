@@ -6,7 +6,7 @@ import io.grpc.Server
 import io.grpc.ServerBuilder
 import io.grpc.health.v1.HealthCheckResponse.ServingStatus
 import io.grpc.protobuf.services.HealthStatusManager
-import io.grpc.protobuf.services.ProtoReflectionService
+import io.grpc.protobuf.services.ProtoReflectionServiceV1
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import se.uulm.snowballr.backend.context.RequestContext
@@ -104,10 +104,10 @@ class SnowballRServer(
      * for debugging, development, and command-line tools that interact with gRPC servers without requiring
      * precompiled service definitions.
      *
-     * **Note:** ProtoReflectionServiceV1 does not work - calls are not registered by the server.
+     * Serves the `grpc.reflection.v1` protocol only. Clients that only speak the deprecated `v1alpha`
+     * protocol are not supported.
      */
-    @Suppress("Deprecated")
-    private val reflectionService = ProtoReflectionService.newInstance()
+    private val reflectionService = ProtoReflectionServiceV1.newInstance()
 
     /**
      * Manages the scheduling of tasks in the application.
