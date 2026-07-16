@@ -79,7 +79,7 @@ class PaperIntegrationTest : IntegrationTest() {
             val other = createPaper(externalIds = listOf(otherExternalId))
             val request = UpdatePaperRequest.fromPaperResponse(other).copy(externalIds = listOf(externalId))
 
-            assertThrows<DuplicatePaperException> { paperService.updatePaper(request, listOf("paper.external_id")) }
+            assertThrows<DuplicatePaperException> { paperService.updatePaper(request, listOf("paper.external_ids")) }
         }
     }
 }
