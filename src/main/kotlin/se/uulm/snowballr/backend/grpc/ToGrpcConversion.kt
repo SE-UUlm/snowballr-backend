@@ -369,5 +369,6 @@ fun AuthenticationStatus.toGrpc() = when (this) {
 fun ExternalId.toGrpc(): PaperOuterClass.Paper.ExternalId = PaperOuterClass.Paper.ExternalId
     .newBuilder()
     .setType(type.name)
+    .setDisplayType(type.displayName)
     .setValue(value)
     .build()
