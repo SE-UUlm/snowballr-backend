@@ -112,10 +112,10 @@ def _get_references(
 def _construct_paper_id(paper: Paper) -> Optional[str]:
     metadata = paper.fetcher_metadata
 
-    if (s2_id := metadata[id_metadata_key]) is not None:
+    if (s2_id := metadata.get(id_metadata_key)) is not None:
         return s2_id
 
-    if (s2_corpus_id := metadata[corpus_id_metadata_key]) is not None:
+    if (s2_corpus_id := metadata.get(corpus_id_metadata_key)) is not None:
         return f"CorpusId:{s2_corpus_id}"
 
     ext_id_map = {ext.type: ext.value for ext in paper.external_ids}
@@ -203,7 +203,11 @@ def _external_ids_from_response(res) -> list[ExternalId]:
         "DBLP": "DBLP",
     }
 
-    return [ExternalId(id_type, res[key]) for key, id_type in key_mapping.items() if key in res]
+    return [
+        ExternalId(id_type, res[key])
+        for key, id_type in key_mapping.items()
+        if key in res and res[key] is not None
+    ]
 
 
 fetcher_plugin(

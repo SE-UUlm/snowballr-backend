@@ -63,7 +63,7 @@ class PaperService(
     override suspend fun updatePaper(request: UpdatePaperRequest, paths: List<String>): PaperResponse {
         repo.ensurePaperExists(request.paperId)
 
-        if (request.externalIds.isNotEmpty()) {
+        if (paths.contains("paper.external_ids") && request.externalIds.isNotEmpty()) {
             val existingPaper = repo.getPaperByExternalIds(request.externalIds).getOrNull()
             if (existingPaper != null && existingPaper.id != request.paperId) {
                 throw DuplicatePaperException(request.externalIds)

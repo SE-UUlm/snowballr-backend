@@ -1,6 +1,8 @@
 package se.uulm.snowballr.backend.repository
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.exposed.v1.core.JoinType
+import org.jetbrains.exposed.v1.core.Op
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.TextColumnType
 import org.jetbrains.exposed.v1.core.and
@@ -30,6 +32,8 @@ import se.uulm.snowballr.backend.table.association.toExternalIdPair
 import se.uulm.snowballr.backend.table.toPaper
 import java.time.OffsetDateTime
 import java.util.UUID
+
+private val logger = KotlinLogging.logger { }
 
 /**
  * Defines an interface for repository operations related to the [PaperTable].
@@ -141,7 +145,7 @@ class PaperTableRepo(
      */
     private fun externalIdsWhereOp(externalIds: List<ExternalId>) = externalIds.map {
         (PaperHasExternalIdTable.type eq it.type) and (PaperHasExternalIdTable.value eq it.value)
-    }.reduce { acc, value -> acc or value }
+    }.fold<Op<Boolean>, Op<Boolean>>(Op.FALSE) { acc, value -> acc or value }
 
     private fun getPaperIdsFromExternalIds(externalIds: List<ExternalId>): List<UUID> =
         PaperHasExternalIdTable.selectAll()
@@ -149,9 +153,16 @@ class PaperTableRepo(
             .map { it[PaperHasExternalIdTable.paperId].value }
 
     private fun getPaperByExternalIdsOrNull(externalIds: List<ExternalId>): Paper? {
-        val paperId = getPaperIdsFromExternalIds(externalIds).firstOrNull() ?: return null
+        val paperIds = getPaperIdsFromExternalIds(externalIds).toSet()
 
-        return getPaperByIdOrNull(paperId)
+        if (paperIds.isEmpty()) return null
+
+        if (paperIds.size > 1) {
+            logger.error { "Retrieved more than one paper ID ($paperIds) for external IDs: $externalIds" }
+            return null
+        }
+
+        return getPaperByIdOrNull(paperIds.first())
     }
 
     override suspend fun getPaperById(id: UUID): Result<Paper> = db.query {
@@ -190,12 +201,7 @@ class PaperTableRepo(
             it[createdAt] = OffsetDateTime.now()
         }.value
 
-        // Batch insert external IDs separately
-        PaperHasExternalIdTable.batchInsert(request.externalIds) {
-            this[PaperHasExternalIdTable.paperId] = paperId
-            this[PaperHasExternalIdTable.type] = it.type
-            this[PaperHasExternalIdTable.value] = it.value
-        }
+        insertExternalIds(paperId, request.externalIds)
 
         getPaperById(paperId).getOrThrow()
     }
@@ -223,12 +229,7 @@ class PaperTableRepo(
 
         if (paths.contains("paper.external_ids")) {
             PaperHasExternalIdTable.deleteWhere { PaperHasExternalIdTable.paperId eq paperId }
-
-            PaperHasExternalIdTable.batchInsert(request.externalIds) {
-                this[PaperHasExternalIdTable.paperId] = request.paperId
-                this[PaperHasExternalIdTable.type] = it.type
-                this[PaperHasExternalIdTable.value] = it.value
-            }
+            insertExternalIds(request.paperId, request.externalIds)
         }
 
         getPaperById(request.paperId).getOrThrow()
@@ -298,7 +299,7 @@ class PaperTableRepo(
     private fun List<ResultRow>.toPaperWithExternalIds(): Paper {
         val externalIds = filter { it.getOrNull(PaperHasExternalIdTable.type) != null }
             .map(ResultRow::toExternalId)
-        return first().toPaper().copy(externalIds = externalIds)
+        return first().toPaper(externalIds)
     }
 
     /**
@@ -308,5 +309,13 @@ class PaperTableRepo(
      * @return A list of [Paper] objects extracted from the result set.
      */
     private fun extractPaperRows(result: JdbcResult): List<Paper> =
-        extractTableRows(result, PaperTable, ResultRow::toPaper)
+        extractTableRows(result, PaperTable) { it.toPaper(emptyList()) }
+
+    private fun insertExternalIds(paperId: UUID, externalIds: List<ExternalId>) {
+        PaperHasExternalIdTable.batchInsert(externalIds) {
+            this[PaperHasExternalIdTable.paperId] = paperId
+            this[PaperHasExternalIdTable.type] = it.type
+            this[PaperHasExternalIdTable.value] = it.value
+        }
+    }
 }

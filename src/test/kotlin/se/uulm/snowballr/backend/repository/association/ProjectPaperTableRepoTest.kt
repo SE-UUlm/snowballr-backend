@@ -16,6 +16,7 @@ import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectPaperNotFoundException
 import se.uulm.snowballr.backend.repository.PaperTableRepo
+import se.uulm.snowballr.backend.repository.RepositoryHelper.insertExternalId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertPaperAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectPaperAndGetId
@@ -301,16 +302,19 @@ class ProjectPaperTableRepoTest :
             runTest {
                 val projectId = insertProjectAndGetId(createdBy = testUserId)
                 val paperId = insertPaperAndGetId()
+                val externalId = insertExternalId(paperId)
                 val projectPaperId =
                     insertProjectPaperAndGetId(paperId = paperId, projectId = projectId, createdBy = testUserId)
-                val projectPaper = repo.getProjectPaperById(projectPaperId).getOrThrow()
 
-                val paper = paperRepo.getPaperById(paperId).getOrThrow()
                 val projectPapers = repo.getAllProjectPapersWithPapers(projectId)
+                val projectPaper = repo.getProjectPaperById(projectPaperId).getOrThrow()
+                val paper = paperRepo.getPaperById(paperId).getOrThrow()
 
                 assertThat(projectPapers).hasSize(1)
-                assertThat(projectPapers).anyMatch { it.projectPaper == projectPaper }
-                assertThat(projectPapers).anyMatch { it.paper == paper }
+                val projectPaperWithPaper = projectPapers.first()
+                assertEquals(projectPaper, projectPaperWithPaper.projectPaper)
+                assertEquals(paper, projectPaperWithPaper.paper)
+                assertEquals(externalId, projectPaperWithPaper.paper.externalIds.single())
             }
 
         @Test

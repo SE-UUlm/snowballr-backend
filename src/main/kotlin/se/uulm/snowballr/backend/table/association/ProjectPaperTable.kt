@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.table.association
 import org.jetbrains.exposed.v1.core.ReferenceOption
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.dao.id.java.UUIDTable
+import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.dto.projectpaper.ProjectPaper
 import se.uulm.snowballr.backend.model.dto.projectpaper.ProjectPaperWithPaper
@@ -85,7 +86,7 @@ fun ResultRow.toProjectPaper() = ProjectPaper(
 /**
  * Creates a [ProjectPaperWithPaper] from this [ResultRow].
  */
-fun ResultRow.toProjectPaperWithPaper() = ProjectPaperWithPaper(
+fun ResultRow.toProjectPaperWithPaper(externalIds: List<ExternalId>) = ProjectPaperWithPaper(
     projectPaper = toProjectPaper(),
-    paper = toPaper(),
+    paper = toPaper(externalIds),
 )

@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import se.uulm.snowballr.backend.repository.PaperTableRepo
+import se.uulm.snowballr.backend.repository.RepositoryHelper.insertExternalId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertPaperAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertUserAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryTest
@@ -16,6 +17,7 @@ import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.association.PaperHasExternalIdTable
 import se.uulm.snowballr.backend.table.association.ReadingListTable
 import java.util.UUID
+import kotlin.test.assertEquals
 
 class ReadingListTableRepoTest :
     RepositoryTest(arrayOf(UserTable, PaperTable, ReadingListTable, PaperHasExternalIdTable), false) {
@@ -175,5 +177,20 @@ class ReadingListTableRepoTest :
             runTest {
                 assertThat(repo.getAllReadingListEntries(UUID.randomUUID())).isEmpty()
             }
+
+        @Test
+        fun `When a reading list paper is retrieved, then it also contains its external IDs`() = runTest {
+            val paperId = insertPaperAndGetId()
+            val externalId = insertExternalId(paperId)
+            val userId = insertUserAndGetId("test.user@example.com")
+            repo.createReadingListEntry(userId, paperId)
+
+            val entries = repo.getAllReadingListEntries(userId)
+
+            assertEquals(1, entries.size)
+            val entry = entries.first()
+            assertEquals(paperId, entry.id)
+            assertEquals(externalId, entry.externalIds.single())
+        }
     }
 }

@@ -105,6 +105,18 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable, PaperHasExternalId
 
             assertResultFailure<NotFoundException>(result)
         }
+
+        @Test
+        fun `When several papers are found, then a failed result with a NotFoundException is returned`() = runTest {
+            val paperId1 = insertPaperAndGetId()
+            val paperId2 = insertPaperAndGetId()
+            val externalId1 = insertExternalId(paperId1, value = "value1")
+            val externalId2 = insertExternalId(paperId2, value = "value2")
+
+            val result = repo.getPaperByExternalIds(listOf(externalId1, externalId2))
+
+            assertResultFailure<NotFoundException>(result)
+        }
     }
 
     @Nested
