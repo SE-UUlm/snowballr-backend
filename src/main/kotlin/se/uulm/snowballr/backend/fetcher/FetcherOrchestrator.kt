@@ -306,6 +306,7 @@ class FetcherOrchestrator(
      */
     private suspend fun runAddingPapersToProject(job: FetcherProcessingJob, creationResults: PaperCreationResults) {
         val filteredRefs = mutableListOf<Paper>()
+        // TODO: don't use creation result, re-fetch all refs to also include existing refs
         for (createdRef in creationResults.allRefs) {
             val doesAlreadyExist = projectPaperRepo.doesProjectPaperExist(job.projectId, createdRef.id)
             if (doesAlreadyExist) {

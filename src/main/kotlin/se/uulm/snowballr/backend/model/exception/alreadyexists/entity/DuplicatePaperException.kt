@@ -10,10 +10,11 @@ import se.uulm.snowballr.backend.model.exception.alreadyexists.DuplicateEntityEx
  *
  * @param externalIds The external IDs of the already existent paper.
  */
+@Suppress("SpreadOperator")
 class DuplicatePaperException(
     externalIds: List<ExternalId>,
 ) : DuplicateEntityException(
     EntityType.PAPER,
-    *arrayOf(externalIds),
+    *externalIds.toTypedArray(),
     identifierType = IdentifierType.EXTERNAL_ID,
 )

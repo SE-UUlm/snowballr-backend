@@ -19,7 +19,7 @@ class AlreadyExistsExceptionTest {
             val exception = DuplicatePaperException(listOf(ExternalId(ExternalIdType.DOI, "foo/bar")))
 
             assertEquals(
-                "Paper with external ID '[ExternalId(type=DOI, value=foo/bar)]' already exists.",
+                "Paper with external ID 'ExternalId(type=DOI, value=foo/bar)' already exists.",
                 exception.message,
             )
         }

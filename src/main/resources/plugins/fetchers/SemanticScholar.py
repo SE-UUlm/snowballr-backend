@@ -129,6 +129,7 @@ def _construct_paper_id(paper: Paper) -> Optional[str]:
         "MEDLINE": "PMID:",
         "PUB_MED_CENTRAL": "PMCID:",
         "URL": "URL:",
+        # DBLP is not available as paper ID
     }
 
     for ex_type, prefix in key_mapping.items():

@@ -9,9 +9,9 @@ import org.jetbrains.exposed.v1.jdbc.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.dto.paper.Paper
 import se.uulm.snowballr.backend.repository.doesEntityExist
+import se.uulm.snowballr.backend.repository.joinPaperHasExternalId
 import se.uulm.snowballr.backend.repository.toPaperWithExternalIds
 import se.uulm.snowballr.backend.table.PaperTable
-import se.uulm.snowballr.backend.table.association.PaperHasExternalIdTable
 import se.uulm.snowballr.backend.table.association.ReadingListTable
 import java.util.UUID
 
@@ -90,12 +90,7 @@ class ReadingListTableRepo(
                 onColumn = PaperTable.id,
                 otherColumn = ReadingListTable.paperId,
             )
-            .join(
-                PaperHasExternalIdTable,
-                JoinType.LEFT,
-                onColumn = PaperTable.id,
-                otherColumn = PaperHasExternalIdTable.paperId,
-            )
+            .joinPaperHasExternalId()
             .selectAll()
             .where { ReadingListTable.userId eq userId }
             .groupBy { it[PaperTable.id].value }

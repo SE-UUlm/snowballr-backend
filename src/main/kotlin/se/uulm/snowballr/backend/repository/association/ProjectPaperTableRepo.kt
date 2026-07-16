@@ -26,11 +26,11 @@ import se.uulm.snowballr.backend.repository.getEntityByIdOrNull
 import se.uulm.snowballr.backend.repository.getEntityByKeyAsResult
 import se.uulm.snowballr.backend.repository.getEntityOrNull
 import se.uulm.snowballr.backend.repository.insertAndGet
+import se.uulm.snowballr.backend.repository.joinPaperHasExternalId
 import se.uulm.snowballr.backend.repository.toProjectPaperWithExternalIds
 import se.uulm.snowballr.backend.repository.wrapAsResult
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.ProjectTable
-import se.uulm.snowballr.backend.table.association.PaperHasExternalIdTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.table.association.toProjectPaper
 import java.sql.Connection
@@ -247,12 +247,7 @@ class ProjectPaperTableRepo(
                 onColumn = PaperTable.id,
                 otherColumn = ProjectPaperTable.paperId,
             )
-            .join(
-                PaperHasExternalIdTable,
-                JoinType.LEFT,
-                onColumn = PaperTable.id,
-                otherColumn = PaperHasExternalIdTable.paperId,
-            )
+            .joinPaperHasExternalId()
             .selectAll()
             .where { ProjectPaperTable.projectId eq projectId }
             .groupBy { it[PaperTable.id].value }

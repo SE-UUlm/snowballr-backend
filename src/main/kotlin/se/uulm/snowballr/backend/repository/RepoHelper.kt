@@ -1,5 +1,7 @@
 package se.uulm.snowballr.backend.repository
 
+import org.jetbrains.exposed.v1.core.ColumnSet
+import org.jetbrains.exposed.v1.core.JoinType
 import org.jetbrains.exposed.v1.core.Op
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.Table
@@ -166,3 +168,11 @@ fun List<ResultRow>.toProjectPaperWithExternalIds() = first().toProjectPaperWith
 private fun List<ResultRow>.toExternalIds(): List<ExternalId> =
     filter { it.getOrNull(PaperHasExternalIdTable.type) != null }
         .map(ResultRow::toExternalId)
+
+fun ColumnSet.joinPaperHasExternalId() = this
+    .join(
+        PaperHasExternalIdTable,
+        JoinType.LEFT,
+        onColumn = PaperTable.id,
+        otherColumn = PaperHasExternalIdTable.paperId,
+    )

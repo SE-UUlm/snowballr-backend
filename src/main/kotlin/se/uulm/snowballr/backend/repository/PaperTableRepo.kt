@@ -1,6 +1,5 @@
 package se.uulm.snowballr.backend.repository
 
-import org.jetbrains.exposed.v1.core.JoinType
 import org.jetbrains.exposed.v1.core.Op
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.TextColumnType
@@ -101,12 +100,7 @@ class PaperTableRepo(
 
     private fun getPaperByIdOrNull(id: UUID): Paper? {
         val rows = PaperTable
-            .join(
-                PaperHasExternalIdTable,
-                JoinType.LEFT,
-                onColumn = PaperTable.id,
-                otherColumn = PaperHasExternalIdTable.paperId,
-            )
+            .joinPaperHasExternalId()
             .selectAll()
             .where { PaperTable.id eq id }
             .toList()
@@ -190,7 +184,7 @@ class PaperTableRepo(
         }
 
         if (paths.contains("paper.external_ids")) {
-            PaperHasExternalIdTable.deleteWhere { PaperHasExternalIdTable.paperId eq paperId }
+            PaperHasExternalIdTable.deleteWhere { PaperHasExternalIdTable.paperId eq request.paperId }
             insertExternalIds(request.paperId, request.externalIds)
         }
 
@@ -239,12 +233,7 @@ class PaperTableRepo(
         if (paperIds.isEmpty()) return@query emptyList()
 
         PaperTable
-            .join(
-                PaperHasExternalIdTable,
-                JoinType.LEFT,
-                onColumn = PaperTable.id,
-                otherColumn = PaperHasExternalIdTable.paperId,
-            )
+            .joinPaperHasExternalId()
             .selectAll()
             .where { PaperTable.id inList paperIds }
             .groupBy { it[PaperTable.id].value }
