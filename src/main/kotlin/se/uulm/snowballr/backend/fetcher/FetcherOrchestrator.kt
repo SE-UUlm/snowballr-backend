@@ -227,10 +227,18 @@ class FetcherOrchestrator(
         for (ref in refs) {
             if (ref.externalIds.isNotEmpty()) {
                 // TODO: replace with check for whole paper data by similarity not only external ID
-                val result = paperRepo.getPaperByExternalIds(ref.externalIds)
-                if (result.isSuccess) {
+                val existingPapers = paperRepo.getPapersByExternalIds(ref.externalIds)
+
+                if (existingPapers.isNotEmpty()) {
+                    if (existingPapers.size > 1) {
+                        logger.error {
+                            "External IDs of fetcher paper (${ref.externalIds}) refer to many existing papers: " +
+                                "$existingPapers"
+                        }
+                    }
+
                     // TODO: merge data
-                    createdPaperRefs += result.getOrThrow()
+                    createdPaperRefs += existingPapers
                     continue
                 }
             }

@@ -79,47 +79,6 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable, PaperHasExternalId
     }
 
     @Nested
-    inner class GetPaperByExternalIds {
-        @Test
-        fun `When a paper is found, then a successful result with the correct paper is returned`() = runTest {
-            val paperId = insertPaperAndGetId()
-            val externalId = insertExternalId(paperId)
-
-            val paper = assertResultSuccess(repo.getPaperByExternalIds(listOf(externalId)))
-
-            with(paper) {
-                assertEquals("Title", title)
-                assertEquals(listOf(externalId), externalIds)
-                assertEquals("Abstract", abstract)
-                assertEquals(2025, year)
-                assertEquals("Publisher", publisher)
-                assertEquals("PublicationType", publicationType)
-                assertEquals("PublicationName", publicationName)
-                assertThat(fetcherMetadata).isEmpty()
-            }
-        }
-
-        @Test
-        fun `When a paper is not found, then a failed result with a NotFoundException is returned`() = runTest {
-            val result = repo.getPaperByExternalIds(listOf(DataBuilder.createExampleExternalId()))
-
-            assertResultFailure<NotFoundException>(result)
-        }
-
-        @Test
-        fun `When several papers are found, then a failed result with a NotFoundException is returned`() = runTest {
-            val paperId1 = insertPaperAndGetId()
-            val paperId2 = insertPaperAndGetId()
-            val externalId1 = insertExternalId(paperId1, value = "value1")
-            val externalId2 = insertExternalId(paperId2, value = "value2")
-
-            val result = repo.getPaperByExternalIds(listOf(externalId1, externalId2))
-
-            assertResultFailure<NotFoundException>(result)
-        }
-    }
-
-    @Nested
     inner class EnsurePaperExists {
         @Test
         fun `When a paper with the given ID exists, then no exception is thrown`() = runTest {
@@ -406,25 +365,6 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable, PaperHasExternalId
             val papers = repo.getPapersByExternalIds(emptyList())
 
             assertEquals(0, papers.size)
-        }
-
-        @Test
-        fun `When compared to getPaperByExternalIds, then the same result is returned`() = runTest {
-            val paper1 = insertPaperAndGetId()
-            val externalId1 = insertExternalId(paper1, value = "doi123")
-            val paper2 = insertPaperAndGetId()
-            val externalId2 = insertExternalId(paper2, value = "doi456")
-            val paper3 = insertPaperAndGetId()
-            val externalId3 = insertExternalId(paper3, value = "doi789")
-
-            val papers1 = repo.getPapersByExternalIds(listOf(externalId1, externalId2, externalId3))
-            val papers2 = listOf(
-                repo.getPaperByExternalIds(listOf(externalId1)),
-                repo.getPaperByExternalIds(listOf(externalId2)),
-                repo.getPaperByExternalIds(listOf(externalId3)),
-            ).mapNotNull { it.getOrNull() }
-
-            assertEquals(papers1, papers2)
         }
     }
 }

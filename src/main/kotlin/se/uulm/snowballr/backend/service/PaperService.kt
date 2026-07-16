@@ -64,8 +64,10 @@ class PaperService(
         repo.ensurePaperExists(request.paperId)
 
         if (paths.contains("paper.external_ids") && request.externalIds.isNotEmpty()) {
-            val existingPaper = repo.getPaperByExternalIds(request.externalIds).getOrNull()
-            if (existingPaper != null && existingPaper.id != request.paperId) {
+            val existingPapers = repo.getPapersByExternalIds(request.externalIds)
+
+            val hasSingleNotMatchingPaper = existingPapers.size == 1 && existingPapers[0].id != request.paperId
+            if (existingPapers.size > 1 || hasSingleNotMatchingPaper) {
                 throw DuplicatePaperException(request.externalIds)
             }
         }

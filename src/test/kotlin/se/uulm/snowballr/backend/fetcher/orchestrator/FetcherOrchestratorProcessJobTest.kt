@@ -167,7 +167,7 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
 
                 // Stop at paper creation
                 coEvery {
-                    paperRepoMock.getPaperByExternalIds(fetchedPaper.externalIds)
+                    paperRepoMock.getPapersByExternalIds(fetchedPaper.externalIds)
                 } throws TestSpecificException()
 
                 orchestrator.enqueueTestJob(job, project)
@@ -198,11 +198,11 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
 
                 mockRunFetching(job, setOf(backwardRef.toFetcherPaper()), setOf(forwardRef.toFetcherPaper()))
                 coEvery {
-                    paperRepoMock.getPaperByExternalIds(backwardRef.externalIds)
-                } returns Result.success(backwardRef)
+                    paperRepoMock.getPapersByExternalIds(backwardRef.externalIds)
+                } returns listOf(backwardRef)
                 coEvery {
-                    paperRepoMock.getPaperByExternalIds(forwardRef.externalIds)
-                } returns Result.success(forwardRef)
+                    paperRepoMock.getPapersByExternalIds(forwardRef.externalIds)
+                } returns listOf(forwardRef)
 
                 // Stop at paper citation
                 coEvery {
@@ -237,11 +237,11 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
                 mockRunFetching(job, setOf(backwardFetcherRef), setOf(forwardFetcherRef))
                 if (externalIds.isNotEmpty()) {
                     coEvery {
-                        paperRepoMock.getPaperByExternalIds(backwardRef.externalIds)
-                    } returns Result.failure(TestSpecificException())
+                        paperRepoMock.getPapersByExternalIds(backwardRef.externalIds)
+                    } returns emptyList()
                     coEvery {
-                        paperRepoMock.getPaperByExternalIds(forwardRef.externalIds)
-                    } returns Result.failure(TestSpecificException())
+                        paperRepoMock.getPapersByExternalIds(forwardRef.externalIds)
+                    } returns emptyList()
                 }
                 coEvery {
                     paperRepoMock.createPaper(CreatePaperRequest.fromFetcherPaper(backwardFetcherRef))

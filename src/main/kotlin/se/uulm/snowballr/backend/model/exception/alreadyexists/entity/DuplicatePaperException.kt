@@ -14,6 +14,6 @@ class DuplicatePaperException(
     externalIds: List<ExternalId>,
 ) : DuplicateEntityException(
     EntityType.PAPER,
-    externalIds,
+    *arrayOf(externalIds),
     identifierType = IdentifierType.EXTERNAL_ID,
 )

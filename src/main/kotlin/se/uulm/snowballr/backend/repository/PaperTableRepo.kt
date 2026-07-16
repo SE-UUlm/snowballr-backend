@@ -1,6 +1,5 @@
 package se.uulm.snowballr.backend.repository
 
-import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.exposed.v1.core.JoinType
 import org.jetbrains.exposed.v1.core.Op
 import org.jetbrains.exposed.v1.core.ResultRow
@@ -18,7 +17,6 @@ import org.jetbrains.exposed.v1.jdbc.statements.jdbc.JdbcResult
 import org.jetbrains.exposed.v1.jdbc.update
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.IdentifierType
 import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.paper.Paper
 import se.uulm.snowballr.backend.model.exception.NotFoundException
@@ -33,8 +31,6 @@ import se.uulm.snowballr.backend.table.toPaper
 import java.time.OffsetDateTime
 import java.util.UUID
 
-private val logger = KotlinLogging.logger { }
-
 /**
  * Defines an interface for repository operations related to the [PaperTable].
  *
@@ -47,12 +43,6 @@ interface IPaperTableRepo {
      * doesn't exist.
      */
     suspend fun getPaperById(id: UUID): Result<Paper>
-
-    /**
-     * Returns a [Result] containing the paper by its external IDs or a [NotFoundException] if the paper with the
-     * passed [externalIds] doesn't exist.
-     */
-    suspend fun getPaperByExternalIds(externalIds: List<ExternalId>): Result<Paper>
 
     /**
      * Ensures that the paper exists with the passed [id].
@@ -89,11 +79,6 @@ interface IPaperTableRepo {
 
     /**
      * Retrieves all papers that have one or more external ID(s) that matches at least one external ID in [externalIds].
-     *
-     * This returns the same as for calling [getPaperByExternalIds] for each external ID and then filtering out each
-     * [Result.failure].
-     *
-     * Prefer this method when calling [getPaperByExternalIds] inside a loop.
      */
     suspend fun getPapersByExternalIds(externalIds: List<ExternalId>): List<Paper>
 }
@@ -152,30 +137,8 @@ class PaperTableRepo(
             .where { externalIdsWhereOp(externalIds) }
             .map { it[PaperHasExternalIdTable.paperId].value }
 
-    private fun getPaperByExternalIdsOrNull(externalIds: List<ExternalId>): Paper? {
-        val paperIds = getPaperIdsFromExternalIds(externalIds).toSet()
-
-        if (paperIds.isEmpty()) return null
-
-        if (paperIds.size > 1) {
-            logger.error { "Retrieved more than one paper ID ($paperIds) for external IDs: $externalIds" }
-            return null
-        }
-
-        return getPaperByIdOrNull(paperIds.first())
-    }
-
     override suspend fun getPaperById(id: UUID): Result<Paper> = db.query {
         getEntityByKeyAsResult(::getPaperByIdOrNull, EntityType.PAPER, id)
-    }
-
-    override suspend fun getPaperByExternalIds(externalIds: List<ExternalId>): Result<Paper> = db.query {
-        getEntityByKeyAsResult(
-            ::getPaperByExternalIdsOrNull,
-            EntityType.PAPER,
-            externalIds,
-            identifierType = IdentifierType.EXTERNAL_ID,
-        )
     }
 
     override suspend fun ensurePaperExists(id: UUID) = db.query {
