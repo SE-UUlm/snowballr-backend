@@ -12,6 +12,14 @@ import org.jetbrains.exposed.v1.core.statements.UpdateStatement
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.update
+import se.uulm.snowballr.backend.model.dto.paper.ExternalId
+import se.uulm.snowballr.backend.model.dto.paper.Paper
+import se.uulm.snowballr.backend.model.dto.projectpaper.ProjectPaperWithPaper
+import se.uulm.snowballr.backend.table.PaperTable
+import se.uulm.snowballr.backend.table.association.PaperHasExternalIdTable
+import se.uulm.snowballr.backend.table.association.toExternalId
+import se.uulm.snowballr.backend.table.association.toProjectPaperWithPaper
+import se.uulm.snowballr.backend.table.toPaper
 import java.util.UUID
 
 /**
@@ -137,3 +145,24 @@ fun <Key : Any, T : IdTable<Key>, EntT : Any> T.updateByIdAndGet(
     mapper: (ResultRow) -> EntT,
     body: T.(UpdateStatement) -> Unit,
 ): EntT = this.updateAndGet(mapper, { this@updateByIdAndGet.id eq id }, body)
+
+/**
+ * Converts a list of joined [ResultRow]s (all belonging to the same paper) into a [Paper] with its external IDs.
+ *
+ * Rows come from a LEFT JOIN of [PaperTable] and [PaperHasExternalIdTable], so rows where the paper has no
+ * external IDs will have NULL in the [PaperHasExternalIdTable] columns.
+ */
+fun List<ResultRow>.toPaperWithExternalIds() = first().toPaper(toExternalIds())
+
+/**
+ * Converts a list of joined [ResultRow]s (all belonging to the same paper) into a [ProjectPaperWithPaper] with its
+ * external IDs.
+ *
+ * Rows come from a LEFT JOIN of [PaperTable] and [PaperHasExternalIdTable], so rows where the paper has no
+ * external IDs will have NULL in the [PaperHasExternalIdTable] columns.
+ */
+fun List<ResultRow>.toProjectPaperWithExternalIds() = first().toProjectPaperWithPaper(toExternalIds())
+
+private fun List<ResultRow>.toExternalIds(): List<ExternalId> =
+    filter { it.getOrNull(PaperHasExternalIdTable.type) != null }
+        .map(ResultRow::toExternalId)

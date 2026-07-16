@@ -14,7 +14,6 @@ import org.jetbrains.exposed.v1.jdbc.update
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.PaperNavigationDirection
-import se.uulm.snowballr.backend.model.dto.paper.Paper
 import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.dto.projectpaper.ProjectPaper
 import se.uulm.snowballr.backend.model.dto.projectpaper.ProjectPaperWithPaper
@@ -27,14 +26,13 @@ import se.uulm.snowballr.backend.repository.getEntityByIdOrNull
 import se.uulm.snowballr.backend.repository.getEntityByKeyAsResult
 import se.uulm.snowballr.backend.repository.getEntityOrNull
 import se.uulm.snowballr.backend.repository.insertAndGet
+import se.uulm.snowballr.backend.repository.toProjectPaperWithExternalIds
 import se.uulm.snowballr.backend.repository.wrapAsResult
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.association.PaperHasExternalIdTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
-import se.uulm.snowballr.backend.table.association.toExternalId
 import se.uulm.snowballr.backend.table.association.toProjectPaper
-import se.uulm.snowballr.backend.table.association.toProjectPaperWithPaper
 import java.sql.Connection
 import java.util.UUID
 
@@ -259,7 +257,7 @@ class ProjectPaperTableRepo(
             .where { ProjectPaperTable.projectId eq projectId }
             .groupBy { it[PaperTable.id].value }
             .values
-            .map { rows -> rows.toProjectPaperWithExternalIds() }
+            .map { it.toProjectPaperWithExternalIds() }
     }
 
     /**
@@ -327,17 +325,5 @@ class ProjectPaperTableRepo(
                 (ProjectPaperTable.projectId eq projectId) and (sameStageButGreaterLocalIdOp or greaterStageOp)
             }
             .map { it.toProjectPaper() }
-    }
-
-    /**
-     * Converts a list of joined [ResultRow]s (all belonging to the same paper) into a [Paper] with its external IDs.
-     *
-     * Rows come from a LEFT JOIN of [PaperTable] and [PaperHasExternalIdTable], so rows where the paper has no
-     * external IDs will have NULL in the [PaperHasExternalIdTable] columns.
-     */
-    private fun List<ResultRow>.toProjectPaperWithExternalIds(): ProjectPaperWithPaper {
-        val externalIds = filter { it.getOrNull(PaperHasExternalIdTable.type) != null }
-            .map(ResultRow::toExternalId)
-        return first().toProjectPaperWithPaper(externalIds)
     }
 }

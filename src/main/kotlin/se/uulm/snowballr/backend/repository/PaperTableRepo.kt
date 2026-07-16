@@ -25,7 +25,6 @@ import se.uulm.snowballr.backend.model.incoming.paper.CreatePaperRequest
 import se.uulm.snowballr.backend.model.incoming.paper.UpdatePaperRequest
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.association.PaperHasExternalIdTable
-import se.uulm.snowballr.backend.table.association.toExternalId
 import se.uulm.snowballr.backend.table.association.toExternalIdPair
 import se.uulm.snowballr.backend.table.toPaper
 import java.time.OffsetDateTime
@@ -251,18 +250,6 @@ class PaperTableRepo(
             .groupBy { it[PaperTable.id].value }
             .values
             .map { rows -> rows.toPaperWithExternalIds() }
-    }
-
-    /**
-     * Converts a list of joined [ResultRow]s (all belonging to the same paper) into a [Paper] with its external IDs.
-     *
-     * Rows come from a LEFT JOIN of [PaperTable] and [PaperHasExternalIdTable], so rows where the paper has no
-     * external IDs will have NULL in the [PaperHasExternalIdTable] columns.
-     */
-    private fun List<ResultRow>.toPaperWithExternalIds(): Paper {
-        val externalIds = filter { it.getOrNull(PaperHasExternalIdTable.type) != null }
-            .map(ResultRow::toExternalId)
-        return first().toPaper(externalIds)
     }
 
     /**
