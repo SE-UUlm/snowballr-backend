@@ -15,6 +15,7 @@ import se.uulm.snowballr.backend.fetcher.FetcherOrchestrator
 import se.uulm.snowballr.backend.fetcher.IFetcherOrchestrator
 import se.uulm.snowballr.backend.grpc.SnowballRServer
 import se.uulm.snowballr.backend.rest.startRestServer
+import se.uulm.snowballr.backend.scheduler.SchedulerManager
 
 private val logger = KotlinLogging.logger {}
 
@@ -32,6 +33,7 @@ fun main() {
 
     initializeFetcherOrchestrator()
     addDbShutdownHook()
+    initializeSchedulerManager()
 
     // Create and run the server
     val server = SnowballRServer(env.http.port)
@@ -78,6 +80,16 @@ private fun addDbShutdownHook() {
         Thread {
             db.close()
             logger.info { "Closed database connection" }
+        },
+    )
+}
+
+private fun initializeSchedulerManager() {
+    val schedulerManager = SchedulerManager()
+    schedulerManager.start()
+    Runtime.getRuntime().addShutdownHook(
+        Thread {
+            schedulerManager.stop()
         },
     )
 }
