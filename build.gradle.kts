@@ -167,6 +167,7 @@ tasks.test {
     dependsOn("syncFetcherPythonDeps")
     useJUnitPlatform {
         excludeTags("integration")
+        excludeTags("openapi")
     }
     reports.html.required.set(true)
     reports.html.outputLocation.set(layout.buildDirectory.dir("testReportHtml"))
@@ -187,6 +188,19 @@ tasks.register<Test>("integrationTest") {
     classpath = sourceSets["test"].runtimeClasspath
     reports.html.required.set(true)
     reports.html.outputLocation.set(layout.buildDirectory.dir("integrationTestReportHtml"))
+    reports.junitXml.required.set(false)
+}
+
+tasks.register<Test>("createApiSpec") {
+    dependsOn("syncFetcherPythonDeps")
+    useJUnitPlatform {
+        includeTags("openapi")
+    }
+    description = "Runs the OpenAPI spec generation"
+    group = "build"
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    reports.html.required.set(false)
     reports.junitXml.required.set(false)
 }
 
