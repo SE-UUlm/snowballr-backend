@@ -98,17 +98,16 @@ class PaperTableRepo(
         private const val MINIMUM_SIMILARITY_SCORE = 0.2
     }
 
-    private fun getPaperByIdOrNull(id: UUID): Paper? {
-        val rows = PaperTable
+    private fun getPapersWhere(where: () -> Op<Boolean>) =
+        PaperTable
             .joinPaperHasExternalId()
             .selectAll()
-            .where { PaperTable.id eq id }
-            .toList()
+            .where(where)
+            .groupBy { it[PaperTable.id].value }
+            .values
+            .map { rows -> rows.toPaperWithExternalIds() }
 
-        if (rows.isEmpty()) return null
-
-        return rows.toPaperWithExternalIds()
-    }
+    private fun getPaperByIdOrNull(id: UUID): Paper? = getPapersWhere(where = { PaperTable.id eq id }).singleOrNull()
 
     /**
      * Creates a where clause to find a paper that has any of the passed [externalIds].
@@ -124,11 +123,6 @@ class PaperTableRepo(
     private fun externalIdsWhereOp(externalIds: List<ExternalId>) = externalIds.map {
         (PaperHasExternalIdTable.type eq it.type) and (PaperHasExternalIdTable.value eq it.value)
     }.fold<Op<Boolean>, Op<Boolean>>(Op.FALSE) { acc, value -> acc or value }
-
-    private fun getPaperIdsFromExternalIds(externalIds: List<ExternalId>): List<UUID> =
-        PaperHasExternalIdTable.selectAll()
-            .where { externalIdsWhereOp(externalIds) }
-            .map { it[PaperHasExternalIdTable.paperId].value }
 
     override suspend fun getPaperById(id: UUID): Result<Paper> = db.query {
         getEntityByKeyAsResult(::getPaperByIdOrNull, EntityType.PAPER, id)
@@ -228,17 +222,7 @@ class PaperTableRepo(
     override suspend fun getPapersByExternalIds(externalIds: List<ExternalId>): List<Paper> = db.query {
         if (externalIds.isEmpty()) return@query emptyList()
 
-        val paperIds = getPaperIdsFromExternalIds(externalIds).distinct()
-
-        if (paperIds.isEmpty()) return@query emptyList()
-
-        PaperTable
-            .joinPaperHasExternalId()
-            .selectAll()
-            .where { PaperTable.id inList paperIds }
-            .groupBy { it[PaperTable.id].value }
-            .values
-            .map { rows -> rows.toPaperWithExternalIds() }
+        getPapersWhere(where = { externalIdsWhereOp(externalIds) })
     }
 
     /**
