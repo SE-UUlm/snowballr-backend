@@ -18,8 +18,8 @@ detekt = "2.0.0-alpha.3"
 kotlinx-kover = "0.9.8"
 protobuf = "0.10.0"
 grpc-kotlin = "1.5.0"
-grpc = "1.82.1"
-protobuf-kotlin = "4.35.1"
+grpc = "1.80.0"
+protobuf-kotlin = "4.34.2"
 shadow-jar = "9.4.2"
 archunit = "1.4.2"
 password4j = "1.8.4"
@@ -34,6 +34,9 @@ git-versioning = "6.4.4"
 undercouch-download = "5.7.0"
 sonarqube = "7.3.0.8198"
 ben-manes-versions = "0.54.0"
+spring-boot = "4.1.0"
+spring-dep-man = "1.1.7"
+springdoc = "3.0.3"
 
 [libraries]
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
@@ -62,6 +65,7 @@ nanoid = { module = "io.viascom.nanoid:nanoid", version.ref = "nanoid" }
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
 junit-platform = { module = "org.junit.platform:junit-platform-launcher" }
+kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit5" }
 
 hikaricp = { module = "com.zaxxer:HikariCP", version.ref = "hikari-cp" }
 
@@ -95,6 +99,12 @@ greenmail-junit5 = { module = "com.icegreen:greenmail-junit5", version.ref = "gr
 handlebars = { module = "com.github.jknack:handlebars", version.ref = "handlebars" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization-json" }
 
+spring-boot-starter = { module = "org.springframework.boot:spring-boot-starter-webmvc" }
+spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web" }
+kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect" }
+spring-doc = { module = "org.springdoc:springdoc-openapi-starter-webmvc-ui", version.ref = "springdoc" }
+spring-boot-test= { module = "org.springframework.boot:spring-boot-starter-webmvc-test" }
+
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 detekt = { id = "dev.detekt", version.ref = "detekt" }
@@ -106,3 +116,6 @@ git-versioning = { id = "me.qoomon.git-versioning", version.ref = "git-versionin
 undercouch-download = { id = "de.undercouch.download", version.ref = "undercouch-download" }
 sonarqube = { id = "org.sonarqube", version.ref = "sonarqube" }
 ben-manes-versions = { id = "com.github.ben-manes.versions", version.ref = "ben-manes-versions" }
+spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
+spring-framework-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
+spring-dep-management = { id = "io.spring.dependency-management", version.ref = "spring-dep-man" }
