@@ -9,6 +9,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
+import se.uulm.snowballr.backend.matching.IPaperMatcher
 import se.uulm.snowballr.backend.model.dto.paper.Paper
 import se.uulm.snowballr.backend.model.dto.paper.toFetcherPaper
 import se.uulm.snowballr.backend.model.exception.FetcherException
@@ -53,12 +54,14 @@ interface IFetcherOrchestrator {
     suspend fun enqueue(job: FetcherEnqueueJob)
 }
 
+@Suppress("LongParameterList")
 class FetcherOrchestrator(
     private val fetcherManager: IFetcherManager,
     private val projectRepo: IProjectTableRepo,
     private val paperRepo: IPaperTableRepo,
     private val citationRepo: ICitationTableRepo,
     private val projectPaperRepo: IProjectPaperTableRepo,
+    private val paperMatcher: IPaperMatcher,
     dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : IFetcherOrchestrator {
     private val queue = Channel<FetcherProcessingJob>(Channel.UNLIMITED)
@@ -115,6 +118,7 @@ class FetcherOrchestrator(
             targetStage = job.projectPaper.stage + 1,
             paperId = job.projectPaper.paperId,
             triggeringUserId = job.triggeringUserId,
+            similarityThreshold = project.similarityThreshold,
         )
 
         val result = queue.trySend(processingJob)
@@ -135,11 +139,9 @@ class FetcherOrchestrator(
 
         val fetchingResults = runFetching(job, paper)
 
-        // TODO: paper filtering/merging
-        // fetching from multiple fetchers will probably return the same papers from different fetchers
-        // first merge fetched papers then merge with existing paper in DB (if existent)
+        val dedupResults = runDeduplication(fetchingResults, job)
 
-        val creationResults = runPaperCreation(fetchingResults)
+        val creationResults = runPaperCreation(dedupResults, job)
 
         runPaperCitation(job.paperId, creationResults)
 
@@ -202,55 +204,88 @@ class FetcherOrchestrator(
     }
 
     /**
+     * Deduplicates the results from the fetching part of the processing job.
+     */
+    private fun runDeduplication(results: FetchingResults, job: FetcherProcessingJob): FetchingResults {
+        val dedupedBackward = paperMatcher.deduplicatePapers(results.backwardRefs, job.similarityThreshold)
+        val dedupedForward = paperMatcher.deduplicatePapers(results.forwardRefs, job.similarityThreshold)
+
+        return FetchingResults(dedupedBackward, dedupedForward)
+    }
+
+    /**
      * Runs the paper creation part of the job processing.
      *
      * For both sets in [results] the paper data is stored in the DB if not already existent.
      */
-    private suspend fun runPaperCreation(results: FetchingResults): PaperCreationResults {
-        val createdBackwardRefs = createRefs(results.backwardRefs)
+    private suspend fun runPaperCreation(results: FetchingResults, job: FetcherProcessingJob): PaperCreationResults {
+        val createdBackwardRefs = createRefs(results.backwardRefs, job.similarityThreshold)
         logger.info { "Created ${createdBackwardRefs.size} backward referenced papers" }
-        val createdForwardRefs = createRefs(results.forwardRefs)
+        val createdForwardRefs = createRefs(results.forwardRefs, job.similarityThreshold)
         logger.info { "Created ${createdForwardRefs.size} forward referenced papers" }
 
         return PaperCreationResults(createdBackwardRefs, createdForwardRefs)
     }
 
     /**
-     * Creates a DB paper for each of the [FetcherPaper]s in [refs].
-     *
-     * If a paper already exists in the DB, no paper is added and the existent paper is retrieved and added to the
-     * result set.
+     * Resolves each [FetcherPaper] in [refs] against the DB:
+     * 1. External-ID fast path — if an exact match exists, merge metadata and reuse it.
+     * 2. Year-filtered similarity fallback — if a similar paper is found, merge metadata and reuse it.
+     * 3. No match — create a new paper.
      */
-    private suspend fun createRefs(refs: Set<FetcherPaper>): Set<Paper> {
-        val createdPaperRefs = mutableSetOf<Paper>()
-
+    private suspend fun createRefs(refs: Set<FetcherPaper>, threshold: Float): Set<Paper> {
+        val result = mutableSetOf<Paper>()
         for (ref in refs) {
-            if (ref.externalIds.isNotEmpty()) {
-                // TODO: replace with check for whole paper data by similarity not only external ID
-                val existingPapers = paperRepo.getPapersByExternalIds(ref.externalIds)
+            val paper = resolveExistingPaper(ref, threshold) ?: createNewPaper(ref)
+            if (paper != null) result += paper
+        }
+        return result
+    }
 
-                if (existingPapers.isNotEmpty()) {
-                    if (existingPapers.size > 1) {
-                        logger.error {
-                            "External IDs of fetcher paper (${ref.externalIds}) refer to many existing papers: " +
-                                "$existingPapers"
-                        }
+    private suspend fun resolveExistingPaper(ref: FetcherPaper, threshold: Float): Paper? {
+        if (ref.externalIds.isNotEmpty()) {
+            val existingPapers = paperRepo.getPapersByExternalIds(ref.externalIds)
+
+            if (existingPapers.isNotEmpty()) {
+                if (existingPapers.size > 1) {
+                    logger.error {
+                        "Several papers existing for external IDs (${ref.externalIds}) of single fetcher paper"
                     }
-
-                    // TODO: merge data
-                    createdPaperRefs += existingPapers
-                    continue
                 }
-            }
 
-            try {
-                createdPaperRefs += paperRepo.createPaper(CreatePaperRequest.fromFetcherPaper(ref))
-            } catch (ex: SQLException) {
-                logger.error(ex) { "Failed to create paper for fetched paper: ${ex.message ?: "<empty>"}" }
+                val paper = existingPapers.first()
+                updateMetadataIfChanged(paper, ref)
+                return paper
             }
         }
 
-        return createdPaperRefs
+        val candidates = paperRepo.getPapersByYear(ref.year, tolerance = 1)
+        val match = if (candidates.isEmpty()) null else paperMatcher.findMatch(ref, candidates, threshold)
+        if (match != null) {
+            updateMetadataIfChanged(match, ref)
+            return match
+        }
+
+        return null
+    }
+
+    private suspend fun updateMetadataIfChanged(dbPaper: Paper, ref: FetcherPaper) {
+        val mergedMeta = paperMatcher.mergeMetadata(dbPaper, ref)
+        if (mergedMeta == dbPaper.fetcherMetadata) return
+        try {
+            paperRepo.updateFetcherMetadata(dbPaper.id, mergedMeta)
+        } catch (ex: SQLException) {
+            logger.error(ex) {
+                "Failed to update fetcher metadata for paper ${dbPaper.id}: ${ex.message ?: "<empty>"}"
+            }
+        }
+    }
+
+    private suspend fun createNewPaper(ref: FetcherPaper): Paper? = try {
+        paperRepo.createPaper(CreatePaperRequest.fromFetcherPaper(ref))
+    } catch (ex: SQLException) {
+        logger.error(ex) { "Failed to create paper for fetched paper: ${ex.message ?: "<empty>"}" }
+        null
     }
 
     /**

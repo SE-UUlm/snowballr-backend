@@ -51,6 +51,7 @@ private class StructureRules {
         private const val DB = "DB"
         private const val SCHEDULER = "Scheduler"
         private const val FETCHER = "Fetcher"
+        private const val MATCHING = "Matching"
     }
 
     private fun Architectures.LayeredArchitecture.snowballRLayers() = this
@@ -84,6 +85,9 @@ private class StructureRules {
         // Fetcher
         .layer(FETCHER)
         .definedBy("$BASE_PACKAGE.fetcher..")
+        // Paper Matching
+        .layer(MATCHING)
+        .definedBy("$BASE_PACKAGE.matching..")
 
     @ArchTest
     fun `When the layer architecture is violated, then this test should fail (all deps)`(classes: JavaClasses) {
@@ -109,6 +113,8 @@ private class StructureRules {
             .mayOnlyBeAccessedByLayers(GRPC, MAIN)
             .whereLayer(FETCHER)
             .mayOnlyBeAccessedByLayers(MAIN, SERVICE)
+            .whereLayer(MATCHING)
+            .mayOnlyBeAccessedByLayers(FETCHER, MAIN)
             .check(classes)
     }
 
@@ -121,7 +127,7 @@ private class StructureRules {
             .whereLayer(MAIN)
             .mayNotBeAccessedByAnyLayer()
             .whereLayer(MAIN)
-            .mayOnlyAccessLayers(GRPC, SERVICE, ACCESS, REPO, DB, SCHEDULER, FETCHER)
+            .mayOnlyAccessLayers(GRPC, SERVICE, ACCESS, REPO, DB, SCHEDULER, FETCHER, MATCHING)
             .whereLayer(VALIDATION)
             .mayNotAccessAnyLayer()
             .whereLayer(GRPC)
@@ -139,7 +145,9 @@ private class StructureRules {
             .whereLayer(SCHEDULER)
             .mayOnlyAccessLayers(REPO)
             .whereLayer(FETCHER)
-            .mayOnlyAccessLayers(REPO)
+            .mayOnlyAccessLayers(REPO, MATCHING)
+            .whereLayer(MATCHING)
+            .mayNotAccessAnyLayer()
             .check(classes)
     }
 

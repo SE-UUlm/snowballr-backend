@@ -39,6 +39,8 @@ import se.uulm.snowballr.backend.fetcher.PythonPluginFetcherManager
 import se.uulm.snowballr.backend.mail.EmailManager
 import se.uulm.snowballr.backend.mail.EmailTemplateManager
 import se.uulm.snowballr.backend.mail.IEmailManager
+import se.uulm.snowballr.backend.matching.IPaperMatcher
+import se.uulm.snowballr.backend.matching.PaperMatcher
 import se.uulm.snowballr.backend.repository.CriterionTableRepo
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
@@ -201,7 +203,17 @@ private fun Module.customServicesDeps() {
     singleOf(::CookieManager) { bind<ICookieManager>() }
     singleOf(::EmailManager) { bind<IEmailManager>() }
     singleOf(::AuthenticationManager) { bind<IAuthenticationManager>() }
-    single<IFetcherOrchestrator> { FetcherOrchestrator(get(), get(), get(), get(), get()) }
+    singleOf(::PaperMatcher) { bind<IPaperMatcher>() }
+    single<IFetcherOrchestrator> {
+        FetcherOrchestrator(
+            fetcherManager = get(),
+            projectRepo = get(),
+            paperRepo = get(),
+            citationRepo = get(),
+            projectPaperRepo = get(),
+            paperMatcher = get(),
+        )
+    }
 }
 
 /**

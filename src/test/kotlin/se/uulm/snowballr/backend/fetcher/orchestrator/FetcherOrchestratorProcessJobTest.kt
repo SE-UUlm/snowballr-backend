@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.fetcher.orchestrator
 import io.mockk.coEvery
 import io.mockk.coJustRun
 import io.mockk.coVerify
+import io.mockk.every
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -22,6 +23,7 @@ import se.uulm.snowballr.backend.model.fetcher.FetcherEnqueueJob
 import se.uulm.snowballr.backend.model.incoming.paper.CreatePaperRequest
 import se.uulm.snowballr.backend.repository.UNIQUE_CONSTRAINT_VIOLATION_SQL_STATE
 import java.sql.SQLException
+import java.util.UUID
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
@@ -165,7 +167,8 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
                     } returns setOf(fetchedPaper)
                 }
 
-                // Stop at paper creation
+                // Deduplication passes through; stop at paper creation via externalId lookup
+                every { paperMatcherMock.deduplicatePapers(any(), any()) } answers { firstArg() }
                 coEvery {
                     paperRepoMock.getPapersByExternalIds(fetchedPaper.externalIds)
                 } throws TestSpecificException()
@@ -185,7 +188,7 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
     @Nested
     inner class RunPaperCreation {
         @Test
-        fun `When fetched papers already exist, then they are not created again`() =
+        fun `When fetched papers already exist by external IDs, then they are not created again`() =
             runOrchestratorTest { orchestrator ->
                 val job = DataBuilder.createExampleFetcherEnqueueJob()
                 val project = DataBuilder.createExampleProject(fetchers = exampleFetchers)
@@ -196,13 +199,24 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
                     externalIds = listOf(ExternalId(ExternalIdType.DOI, "ForwardId")),
                 )
 
-                mockRunFetching(job, setOf(backwardRef.toFetcherPaper()), setOf(forwardRef.toFetcherPaper()))
+                val backwardFetcherRef = backwardRef.toFetcherPaper()
+                val forwardFetcherRef = forwardRef.toFetcherPaper()
+                mockRunFetching(job, setOf(backwardFetcherRef), setOf(forwardFetcherRef))
+                every {
+                    paperMatcherMock.deduplicatePapers(setOf(backwardFetcherRef), any())
+                } returns setOf(backwardFetcherRef)
+                every {
+                    paperMatcherMock.deduplicatePapers(setOf(forwardFetcherRef), any())
+                } returns setOf(forwardFetcherRef)
                 coEvery {
                     paperRepoMock.getPapersByExternalIds(backwardRef.externalIds)
                 } returns listOf(backwardRef)
                 coEvery {
                     paperRepoMock.getPapersByExternalIds(forwardRef.externalIds)
                 } returns listOf(forwardRef)
+                // fetcherMetadata is empty for both → merged equals DB metadata → no update needed
+                every { paperMatcherMock.mergeMetadata(backwardRef, backwardFetcherRef) } returns emptyMap()
+                every { paperMatcherMock.mergeMetadata(forwardRef, forwardFetcherRef) } returns emptyMap()
 
                 // Stop at paper citation
                 coEvery {
@@ -221,36 +235,38 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
                 assertAddingPapersToProjectFailure()
             }
 
-        @ParameterizedTest
-        @MethodSource(
-            "se.uulm.snowballr.backend.fetcher.orchestrator.FetcherOrchestratorProcessJobTest#exampleExternalIds",
-        )
-        fun `When fetched papers don't already exist, then they are created`(externalIds: List<ExternalId>) =
+        @Test
+        fun `When fetched papers already exist by similarity, then they are not created again`() =
             runOrchestratorTest { orchestrator ->
                 val job = DataBuilder.createExampleFetcherEnqueueJob()
                 val project = DataBuilder.createExampleProject(fetchers = exampleFetchers)
-                val backwardRef = DataBuilder.createExamplePaper(title = "Back", externalIds = externalIds)
-                val backwardFetcherRef = backwardRef.toFetcherPaper()
-                val forwardRef = DataBuilder.createExamplePaper(title = "For", externalIds = externalIds)
-                val forwardFetcherRef = forwardRef.toFetcherPaper()
+                val backwardRef = DataBuilder.createExamplePaper(title = "Backward Paper", year = 2012)
+                val forwardRef = DataBuilder.createExamplePaper(title = "Forward Paper", year = 2013)
+                val metadata = mapOf("foo" to "bar")
 
+                val backwardFetcherRef = backwardRef.toFetcherPaper()
+                val forwardFetcherRef = forwardRef.toFetcherPaper()
                 mockRunFetching(job, setOf(backwardFetcherRef), setOf(forwardFetcherRef))
-                if (externalIds.isNotEmpty()) {
-                    coEvery {
-                        paperRepoMock.getPapersByExternalIds(backwardRef.externalIds)
-                    } returns emptyList()
-                    coEvery {
-                        paperRepoMock.getPapersByExternalIds(forwardRef.externalIds)
-                    } returns emptyList()
-                }
+                every {
+                    paperMatcherMock.deduplicatePapers(setOf(backwardFetcherRef), any())
+                } returns setOf(backwardFetcherRef)
+                every {
+                    paperMatcherMock.deduplicatePapers(setOf(forwardFetcherRef), any())
+                } returns setOf(forwardFetcherRef)
+                coEvery { paperRepoMock.getPapersByYear(backwardFetcherRef.year, 1) } returns listOf(backwardRef)
+                coEvery { paperRepoMock.getPapersByYear(forwardFetcherRef.year, 1) } returns listOf(forwardRef)
                 coEvery {
-                    paperRepoMock.createPaper(CreatePaperRequest.fromFetcherPaper(backwardFetcherRef))
+                    paperMatcherMock.findMatch(backwardFetcherRef, listOf(backwardRef), project.similarityThreshold)
                 } returns backwardRef
                 coEvery {
-                    paperRepoMock.createPaper(CreatePaperRequest.fromFetcherPaper(forwardFetcherRef))
+                    paperMatcherMock.findMatch(forwardFetcherRef, listOf(forwardRef), project.similarityThreshold)
                 } returns forwardRef
+                every { paperMatcherMock.mergeMetadata(backwardRef, backwardFetcherRef) } returns metadata
+                every { paperMatcherMock.mergeMetadata(forwardRef, forwardFetcherRef) } returns metadata
+                coJustRun { paperRepoMock.updateFetcherMetadata(backwardRef.id, metadata) }
+                coJustRun { paperRepoMock.updateFetcherMetadata(forwardRef.id, metadata) }
 
-                // Stop at adding papers to project
+                // Stop at paper citation
                 coEvery {
                     citationRepoMock.addBackwardReferencedPaper(job.projectPaper.paperId, backwardRef.id)
                 } throws SQLException("Citing backwards failed")
@@ -263,14 +279,191 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
 
                 orchestrator.enqueueTestJob(job, project)
 
+                coVerify(exactly = 0) { paperRepoMock.createPaper(any()) }
                 assertAddingPapersToProjectFailure()
-                coVerify(exactly = 1) {
-                    paperRepoMock.createPaper(CreatePaperRequest.fromFetcherPaper(backwardFetcherRef))
-                }
-                coVerify(exactly = 1) {
-                    paperRepoMock.createPaper(CreatePaperRequest.fromFetcherPaper(forwardFetcherRef))
-                }
             }
+
+        @Test
+        fun `When fetched papers already exist by external IDs as multiple papers, then the first existence is used`() =
+            runOrchestratorTest { orchestrator ->
+                val job = DataBuilder.createExampleFetcherEnqueueJob()
+                val project = DataBuilder.createExampleProject(fetchers = exampleFetchers)
+                val backwardRef = DataBuilder.createExamplePaper(
+                    externalIds = listOf(ExternalId(ExternalIdType.DOI, "BackwardId")),
+                )
+                val backwardRef2 = backwardRef.copy(id = UUID.randomUUID())
+                val forwardRef = DataBuilder.createExamplePaper(
+                    externalIds = listOf(ExternalId(ExternalIdType.DOI, "ForwardId")),
+                )
+                val forwardRef2 = forwardRef.copy(id = UUID.randomUUID())
+
+                val backwardFetcherRef = backwardRef.toFetcherPaper()
+                val forwardFetcherRef = forwardRef.toFetcherPaper()
+                mockRunFetching(job, setOf(backwardFetcherRef), setOf(forwardFetcherRef))
+                every {
+                    paperMatcherMock.deduplicatePapers(setOf(backwardFetcherRef), any())
+                } returns setOf(backwardFetcherRef)
+                every {
+                    paperMatcherMock.deduplicatePapers(setOf(forwardFetcherRef), any())
+                } returns setOf(forwardFetcherRef)
+                coEvery {
+                    paperRepoMock.getPapersByExternalIds(backwardRef.externalIds)
+                } returns listOf(backwardRef, backwardRef2)
+                coEvery {
+                    paperRepoMock.getPapersByExternalIds(forwardRef.externalIds)
+                } returns listOf(forwardRef, forwardRef2)
+                // fetcherMetadata is empty for both → merged equals DB metadata → no update needed
+                every { paperMatcherMock.mergeMetadata(backwardRef, backwardFetcherRef) } returns emptyMap()
+                every { paperMatcherMock.mergeMetadata(forwardRef, forwardFetcherRef) } returns emptyMap()
+
+                // Stop at paper citation
+                coEvery {
+                    citationRepoMock.addBackwardReferencedPaper(job.projectPaper.paperId, backwardRef.id)
+                } throws SQLException("Citing backwards failed")
+                coEvery {
+                    citationRepoMock.addForwardReferencedPaper(job.projectPaper.paperId, forwardRef.id)
+                } throws SQLException("Citing forwards failed")
+                coEvery {
+                    projectPaperRepoMock.doesProjectPaperExist(project.id, backwardRef.id)
+                } throws TestSpecificException()
+
+                orchestrator.enqueueTestJob(job, project)
+
+                coVerify(exactly = 0) { paperRepoMock.createPaper(any()) }
+                coVerify(exactly = 0) { citationRepoMock.addBackwardReferencedPaper(any(), backwardRef2.id) }
+                coVerify(exactly = 0) { citationRepoMock.addForwardReferencedPaper(any(), forwardRef2.id) }
+                assertAddingPapersToProjectFailure()
+            }
+
+        @ParameterizedTest
+        @MethodSource(
+            "se.uulm.snowballr.backend.fetcher.orchestrator.FetcherOrchestratorProcessJobTest#exampleExternalIds",
+        )
+        fun `When fetched papers don't already exist by external ID, then they are created`(
+            externalIds: List<ExternalId>,
+        ) = runOrchestratorTest { orchestrator ->
+            val job = DataBuilder.createExampleFetcherEnqueueJob()
+            val project = DataBuilder.createExampleProject(fetchers = exampleFetchers)
+            val backwardRef = DataBuilder.createExamplePaper(title = "Back", externalIds = externalIds)
+            val backwardFetcherRef = backwardRef.toFetcherPaper()
+            val forwardRef = DataBuilder.createExamplePaper(title = "For", externalIds = externalIds)
+            val forwardFetcherRef = forwardRef.toFetcherPaper()
+
+            mockRunFetching(job, setOf(backwardFetcherRef), setOf(forwardFetcherRef))
+            every {
+                paperMatcherMock.deduplicatePapers(setOf(backwardFetcherRef), any())
+            } returns setOf(backwardFetcherRef)
+            every {
+                paperMatcherMock.deduplicatePapers(setOf(forwardFetcherRef), any())
+            } returns setOf(forwardFetcherRef)
+            if (externalIds.isNotEmpty()) {
+                coEvery {
+                    paperRepoMock.getPapersByExternalIds(backwardRef.externalIds)
+                } returns emptyList()
+                coEvery {
+                    paperRepoMock.getPapersByExternalIds(forwardRef.externalIds)
+                } returns emptyList()
+            }
+            coEvery { paperRepoMock.getPapersByYear(backwardRef.year, 1) } returns emptyList()
+            coEvery { paperRepoMock.getPapersByYear(forwardRef.year, 1) } returns emptyList()
+            coEvery {
+                paperRepoMock.createPaper(CreatePaperRequest.fromFetcherPaper(backwardFetcherRef))
+            } returns backwardRef
+            coEvery {
+                paperRepoMock.createPaper(CreatePaperRequest.fromFetcherPaper(forwardFetcherRef))
+            } returns forwardRef
+
+            // Stop at adding papers to project
+            coEvery {
+                citationRepoMock.addBackwardReferencedPaper(job.projectPaper.paperId, backwardRef.id)
+            } throws SQLException("Citing backwards failed")
+            coEvery {
+                citationRepoMock.addForwardReferencedPaper(job.projectPaper.paperId, forwardRef.id)
+            } throws SQLException("Citing forwards failed")
+            coEvery {
+                projectPaperRepoMock.doesProjectPaperExist(project.id, backwardRef.id)
+            } throws TestSpecificException()
+
+            orchestrator.enqueueTestJob(job, project)
+
+            assertAddingPapersToProjectFailure()
+            coVerify(exactly = 1) {
+                paperRepoMock.createPaper(CreatePaperRequest.fromFetcherPaper(backwardFetcherRef))
+            }
+            coVerify(exactly = 1) {
+                paperRepoMock.createPaper(CreatePaperRequest.fromFetcherPaper(forwardFetcherRef))
+            }
+        }
+
+        @ParameterizedTest
+        @MethodSource(
+            "se.uulm.snowballr.backend.fetcher.orchestrator.FetcherOrchestratorProcessJobTest#exampleExternalIds",
+        )
+        fun `When fetched papers don't already exist by similarity, then they are created`(
+            externalIds: List<ExternalId>,
+        ) = runOrchestratorTest { orchestrator ->
+            val job = DataBuilder.createExampleFetcherEnqueueJob()
+            val project = DataBuilder.createExampleProject(fetchers = exampleFetchers)
+            val backwardRef = DataBuilder.createExamplePaper(title = "Back", externalIds = externalIds)
+            val backwardFetcherRef = backwardRef.toFetcherPaper()
+            val forwardRef = DataBuilder.createExamplePaper(title = "For", externalIds = externalIds)
+            val forwardFetcherRef = forwardRef.toFetcherPaper()
+            val candidates = listOf(
+                DataBuilder.createExamplePaper(),
+                DataBuilder.createExamplePaper(),
+            )
+
+            mockRunFetching(job, setOf(backwardFetcherRef), setOf(forwardFetcherRef))
+            every {
+                paperMatcherMock.deduplicatePapers(setOf(backwardFetcherRef), any())
+            } returns setOf(backwardFetcherRef)
+            every {
+                paperMatcherMock.deduplicatePapers(setOf(forwardFetcherRef), any())
+            } returns setOf(forwardFetcherRef)
+            if (externalIds.isNotEmpty()) {
+                coEvery {
+                    paperRepoMock.getPapersByExternalIds(backwardRef.externalIds)
+                } returns emptyList()
+                coEvery {
+                    paperRepoMock.getPapersByExternalIds(forwardRef.externalIds)
+                } returns emptyList()
+            }
+            coEvery { paperRepoMock.getPapersByYear(backwardRef.year, 1) } returns candidates
+            coEvery {
+                paperMatcherMock.findMatch(backwardFetcherRef, candidates, project.similarityThreshold)
+            } returns null
+            coEvery { paperRepoMock.getPapersByYear(forwardRef.year, 1) } returns candidates
+            coEvery {
+                paperMatcherMock.findMatch(forwardFetcherRef, candidates, project.similarityThreshold)
+            } returns null
+            coEvery {
+                paperRepoMock.createPaper(CreatePaperRequest.fromFetcherPaper(backwardFetcherRef))
+            } returns backwardRef
+            coEvery {
+                paperRepoMock.createPaper(CreatePaperRequest.fromFetcherPaper(forwardFetcherRef))
+            } returns forwardRef
+
+            // Stop at adding papers to project
+            coEvery {
+                citationRepoMock.addBackwardReferencedPaper(job.projectPaper.paperId, backwardRef.id)
+            } throws SQLException("Citing backwards failed")
+            coEvery {
+                citationRepoMock.addForwardReferencedPaper(job.projectPaper.paperId, forwardRef.id)
+            } throws SQLException("Citing forwards failed")
+            coEvery {
+                projectPaperRepoMock.doesProjectPaperExist(project.id, backwardRef.id)
+            } throws TestSpecificException()
+
+            orchestrator.enqueueTestJob(job, project)
+
+            assertAddingPapersToProjectFailure()
+            coVerify(exactly = 1) {
+                paperRepoMock.createPaper(CreatePaperRequest.fromFetcherPaper(backwardFetcherRef))
+            }
+            coVerify(exactly = 1) {
+                paperRepoMock.createPaper(CreatePaperRequest.fromFetcherPaper(forwardFetcherRef))
+            }
+        }
 
         @Test
         fun `When creating the DB papers fails, then no citations are created`() = runOrchestratorTest { orchestrator ->
@@ -282,6 +475,14 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
             val forwardFetcherRef = forwardRef.toFetcherPaper()
 
             mockRunFetching(job, setOf(backwardFetcherRef), setOf(forwardFetcherRef))
+            every {
+                paperMatcherMock.deduplicatePapers(setOf(backwardFetcherRef), any())
+            } returns setOf(backwardFetcherRef)
+            every {
+                paperMatcherMock.deduplicatePapers(setOf(forwardFetcherRef), any())
+            } returns setOf(forwardFetcherRef)
+            coEvery { paperRepoMock.getPapersByYear(backwardFetcherRef.year, 1) } returns emptyList()
+            coEvery { paperRepoMock.getPapersByYear(forwardFetcherRef.year, 1) } returns emptyList()
             coEvery {
                 paperRepoMock.createPaper(CreatePaperRequest.fromFetcherPaper(backwardFetcherRef))
             } throws SQLException("Creating backward paper failed")

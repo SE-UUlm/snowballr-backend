@@ -114,14 +114,13 @@ class PaperTableRepo(
         private const val MINIMUM_SIMILARITY_SCORE = 0.2
     }
 
-    private fun getPapersWhere(where: () -> Op<Boolean>) =
-        PaperTable
-            .joinPaperHasExternalId()
-            .selectAll()
-            .where(where)
-            .groupBy { it[PaperTable.id].value }
-            .values
-            .map { rows -> rows.toPaperWithExternalIds() }
+    private fun getPapersWhere(where: () -> Op<Boolean>) = PaperTable
+        .joinPaperHasExternalId()
+        .selectAll()
+        .where(where)
+        .groupBy { it[PaperTable.id].value }
+        .values
+        .map { rows -> rows.toPaperWithExternalIds() }
 
     private fun getPaperByIdOrNull(id: UUID): Paper? = getPapersWhere(where = { PaperTable.id eq id }).singleOrNull()
 
