@@ -14,6 +14,7 @@ import se.uulm.snowballr.backend.env.EnvService
 import se.uulm.snowballr.backend.fetcher.FetcherOrchestrator
 import se.uulm.snowballr.backend.fetcher.IFetcherOrchestrator
 import se.uulm.snowballr.backend.grpc.SnowballRServer
+import se.uulm.snowballr.backend.rest.startRestServer
 
 private val logger = KotlinLogging.logger {}
 
@@ -35,6 +36,10 @@ fun main() {
     // Create and run the server
     val server = SnowballRServer(env.http.port)
     server.start()
+
+    startRestServer()
+
+    // Wait for gRPC server shutdown
     server.blockUntilShutdown()
 }
 
