@@ -22,6 +22,7 @@ plugins {
     alias(libs.plugins.spring)
     alias(libs.plugins.spring.framework.boot)
     alias(libs.plugins.spring.dep.management)
+    alias(libs.plugins.openapi.generator)
     application
 }
 
@@ -202,6 +203,32 @@ tasks.register<Test>("createApiSpec") {
     classpath = sourceSets["test"].runtimeClasspath
     reports.html.required.set(false)
     reports.junitXml.required.set(false)
+}
+
+// The committed OpenAPI spec (verified against the code by the `createApiSpec` task) is the single source of
+// truth for the generated frontend client. `openApiGenerate` turns it into a publishable TypeScript npm package.
+val committedApiSpec: RegularFile = layout.projectDirectory.file("api/openapi.json")
+
+openApiGenerate {
+    generatorName.set("typescript-fetch")
+    inputSpec.set(committedApiSpec.asFile.absolutePath)
+    outputDir.set(layout.buildDirectory.dir("generated/ts-client").map { it.asFile.absolutePath })
+    configOptions.set(
+        mapOf(
+            "npmName" to "snowballr-api",
+            "npmVersion" to project.version.toString(),
+            "supportsES6" to "true",
+            "withInterfaces" to "true",
+        ),
+    )
+}
+
+tasks.named("openApiGenerate") {
+    // Generate only from a spec that has been verified to match the code.
+    dependsOn("createApiSpec")
+    description = "Generates the TypeScript client from the committed OpenAPI spec"
+    group = "build"
+    inputs.file(committedApiSpec)
 }
 
 kover {

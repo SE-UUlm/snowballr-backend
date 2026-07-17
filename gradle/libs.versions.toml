@@ -37,6 +37,7 @@ ben-manes-versions = "0.54.0"
 spring-boot = "4.1.0"
 spring-dep-man = "1.1.7"
 springdoc = "3.0.3"
+openapi-generator = "7.14.0"
 
 [libraries]
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
@@ -119,3 +120,4 @@ ben-manes-versions = { id = "com.github.ben-manes.versions", version.ref = "ben-
 spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
 spring-framework-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
 spring-dep-management = { id = "io.spring.dependency-management", version.ref = "spring-dep-man" }
+openapi-generator = { id = "org.openapi.generator", version.ref = "openapi-generator" }
