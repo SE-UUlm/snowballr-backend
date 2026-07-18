@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.service.criterion
 
 import io.mockk.coEvery
 import io.mockk.mockk
+import org.junit.jupiter.api.Assertions.assertEquals
 import se.uulm.snowballr.backend.access.ICriterionAccessChecker
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.context.RequestContext
@@ -12,7 +13,6 @@ import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.service.BaseServiceTest
 import se.uulm.snowballr.backend.service.CriterionService
 import se.uulm.snowballr.backend.service.withUser
-import kotlin.test.assertEquals
 
 /**
  * Base test class for the [CriterionService].

@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.model.exception
 
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
@@ -16,7 +17,6 @@ import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadEx
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedSingleException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedUpdateException
 import java.util.UUID
-import kotlin.test.assertEquals
 
 class UnauthorizedExceptionTest {
     private val currentUserId = UUID.randomUUID()

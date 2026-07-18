@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertInstanceOf
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
@@ -27,7 +28,6 @@ import se.uulm.snowballr.backend.utils.assertResultFailure
 import se.uulm.snowballr.backend.utils.assertResultSuccess
 import java.sql.SQLException
 import java.util.UUID
-import kotlin.test.assertIs
 
 class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTable), true) {
     private val repo = CriterionTableRepo(db)
@@ -52,7 +52,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
             val result = repo.getCriterionById(criterionId)
 
             val criterion = assertResultSuccess(result)
-            assertIs<ProjectCriterion>(criterion)
+            assertInstanceOf<ProjectCriterion>(criterion)
             assertEquals(criterionId, criterion.id)
             assertEquals("Test Tag", criterion.tag)
             assertEquals("Test Criterion", criterion.name)
@@ -85,7 +85,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
 
                 val criterion = repo.createCriterion(request, testUserId)
 
-                assertIs<ProjectCriterion>(criterion)
+                assertInstanceOf<ProjectCriterion>(criterion)
                 assertEquals("Test Tag", criterion.tag)
                 assertEquals("Test Criterion", criterion.name)
                 assertEquals("Test Description", criterion.description)
@@ -107,7 +107,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
 
                 val criterion = repo.createCriterion(request, testUserId)
 
-                assertIs<UserCriterion>(criterion)
+                assertInstanceOf<UserCriterion>(criterion)
                 assertEquals("Test Tag", criterion.tag)
                 assertEquals("Test Criterion", criterion.name)
                 assertEquals("Test Description", criterion.description)

@@ -4,6 +4,8 @@ import io.mockk.coEvery
 import io.mockk.coJustRun
 import io.mockk.slot
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -17,8 +19,6 @@ import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadAl
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedUpdateException
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 class UserIntegrationTest : IntegrationTest() {
     @Nested

@@ -6,6 +6,7 @@ import io.mockk.slot
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertInstanceOf
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
@@ -19,7 +20,6 @@ import se.uulm.snowballr.backend.model.fetcher.FetcherInformationWithId
 import se.uulm.snowballr.backend.model.fetcher.FetcherOptions
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import kotlin.test.assertContains
-import kotlin.test.assertIs
 
 class UpdateProjectTest : ProjectServiceTest() {
     private fun getRequest(project: Project) = UpdateProjectRequest.fromProject(project)
@@ -297,7 +297,7 @@ class UpdateProjectTest : ProjectServiceTest() {
         assertFalse(updatedFetchers.containsKey("non-existent-fetcher"))
 
         val existentFetcher = updatedFetchers["existent-fetcher"]
-        assertIs<FetcherOptions>(existentFetcher)
+        assertInstanceOf<FetcherOptions>(existentFetcher)
         assertContains(existentFetcher.keys, "existent-option")
         assertFalse(existentFetcher.containsKey("non-existent-option"))
     }

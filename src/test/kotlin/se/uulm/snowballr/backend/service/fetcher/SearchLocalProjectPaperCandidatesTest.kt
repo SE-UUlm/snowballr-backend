@@ -3,12 +3,12 @@ package se.uulm.snowballr.backend.service.fetcher
 import io.mockk.coEvery
 import io.mockk.coJustRun
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 class SearchLocalProjectPaperCandidatesTest : FetcherServiceTest() {
     @Test

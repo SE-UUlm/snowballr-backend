@@ -1,8 +1,8 @@
 package se.uulm.snowballr.backend.model.exception.internal
 
 import io.grpc.Status
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import kotlin.test.assertEquals
 
 class AccessRuleCheckFailedExceptionTest {
     @Test

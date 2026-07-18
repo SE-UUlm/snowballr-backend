@@ -4,6 +4,7 @@ import io.mockk.coEvery
 import io.mockk.coJustRun
 import io.mockk.coVerify
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
@@ -32,7 +33,6 @@ import se.uulm.snowballr.backend.model.incoming.review.CreateReviewRequest
 import java.util.UUID
 import java.util.stream.Stream
 import kotlin.reflect.KFunction
-import kotlin.test.assertEquals
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CreateReviewTest : ReviewServiceTest() {

@@ -1,11 +1,11 @@
 package se.uulm.snowballr.backend.model.dto
 
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Test
 import se.uulm.snowballr.backend.model.dto.paper.Pdf
 import java.util.UUID
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNotEquals
 
 class PdfTest {
     @Test

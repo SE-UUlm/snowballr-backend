@@ -1,9 +1,9 @@
 package se.uulm.snowballr.backend.export
 
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import se.uulm.snowballr.backend.DataBuilder
 import java.util.UUID
-import kotlin.test.assertEquals
 
 class ProjectExportBuilderTest {
     @Test

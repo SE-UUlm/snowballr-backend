@@ -2,8 +2,8 @@ package se.uulm.snowballr.backend.fetcher
 
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import kotlin.test.assertEquals
 
 class ResourceBuilderTest {
     @Test

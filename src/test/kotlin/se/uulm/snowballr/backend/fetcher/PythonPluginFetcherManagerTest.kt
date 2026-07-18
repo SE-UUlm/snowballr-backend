@@ -6,6 +6,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -23,8 +25,6 @@ import kotlin.io.path.exists
 import kotlin.io.path.readText
 import kotlin.io.path.writeText
 import kotlin.jvm.optionals.getOrElse
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
 
 class PythonPluginFetcherManagerTest {
@@ -124,8 +124,8 @@ class PythonPluginFetcherManagerTest {
         assertEquals("information_fetcher", result.id)
         assertEquals("test", result.information.name)
         assertEquals("desc", result.information.description)
-        assertEquals(emptyList(), result.information.links)
-        assertEquals(emptyMap(), result.information.optionsSchema)
+        assertEquals(0, result.information.links.size)
+        assertEquals(0, result.information.optionsSchema.size)
     }
 
     @Test
@@ -328,7 +328,7 @@ class PythonPluginFetcherManagerTest {
 
         val options = fetcherManager.searchPapers("symlink_inside", "", emptyMap())
 
-        assertEquals(emptySet(), options)
+        assertEquals(0, options.size)
     }
 
     @Test
@@ -500,7 +500,7 @@ class PythonPluginFetcherManagerTest {
 
         val options = fetcherManager.searchPapers("warning_fetcher", "", emptyMap())
 
-        assertEquals(emptySet(), options)
+        assertEquals(0, options.size)
     }
 
     @Test
@@ -517,7 +517,7 @@ class PythonPluginFetcherManagerTest {
 
         val options = fetcherManager.searchPapers("multiline_fetcher", "", emptyMap())
 
-        assertEquals(emptySet(), options)
+        assertEquals(0, options.size)
     }
 
     @Test

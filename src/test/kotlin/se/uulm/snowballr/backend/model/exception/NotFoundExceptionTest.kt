@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.model.exception
 
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import se.uulm.snowballr.backend.model.EntityType
@@ -15,7 +16,6 @@ import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectPaperNot
 import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundByEmailException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.UserNotFoundException
 import java.util.UUID
-import kotlin.test.assertEquals
 
 class NotFoundExceptionTest {
     private val testId = UUID.randomUUID()

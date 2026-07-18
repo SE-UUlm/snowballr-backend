@@ -1,9 +1,9 @@
 package se.uulm.snowballr.backend.integration
 
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import se.uulm.snowballr.backend.DataBuilder
-import kotlin.test.assertEquals
 
 class BaseIntegrationTest : IntegrationTest() {
     @Test

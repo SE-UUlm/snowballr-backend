@@ -1,10 +1,10 @@
 package se.uulm.snowballr.backend.model.exception
 
 import io.grpc.Status
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.exception.invalidargument.InvalidUUIDException
-import kotlin.test.assertEquals
 
 class SnowballRExceptionTest {
     @Test

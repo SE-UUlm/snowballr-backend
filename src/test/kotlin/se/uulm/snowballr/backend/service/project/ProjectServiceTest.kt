@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.service.project
 
 import io.mockk.coEvery
 import io.mockk.mockk
+import org.junit.jupiter.api.Assertions.assertEquals
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.context.RequestContext
 import se.uulm.snowballr.backend.fetcher.IFetcherManager
@@ -16,7 +17,6 @@ import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import se.uulm.snowballr.backend.service.BaseServiceTest
 import se.uulm.snowballr.backend.service.ProjectService
 import se.uulm.snowballr.backend.service.withUser
-import kotlin.test.assertEquals
 
 /**
  * Base test class for the [ProjectService].

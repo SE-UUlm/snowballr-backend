@@ -1,6 +1,8 @@
 package se.uulm.snowballr.backend.integration.services
 
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import se.uulm.snowballr.backend.integration.IntegrationTest
@@ -10,8 +12,6 @@ import se.uulm.snowballr.backend.model.dto.project.Project
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 class CriterionIntegrationTest : IntegrationTest() {
     private suspend fun createProjectAndCriterion(

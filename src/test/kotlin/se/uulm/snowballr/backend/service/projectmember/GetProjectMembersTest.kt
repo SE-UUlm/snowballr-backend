@@ -3,13 +3,13 @@ package se.uulm.snowballr.backend.service.projectmember
 import io.mockk.coEvery
 import io.mockk.coJustRun
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.dto.projectmember.ProjectMemberWithUser
 import java.util.UUID
-import kotlin.test.assertEquals
 
 class GetProjectMembersTest : ProjectMemberServiceTest() {
     @Test

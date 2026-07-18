@@ -2,11 +2,11 @@ package se.uulm.snowballr.backend.service.user
 
 import io.mockk.coEvery
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import kotlin.test.assertEquals
 
 class GetUserSettingsTest : UserServiceTest() {
     @Test
@@ -32,7 +32,7 @@ class GetUserSettingsTest : UserServiceTest() {
             val result = service.getUserSettings()
 
             assertUserSettingsEquality(userSettings, result.settings)
-            assertEquals(emptyList(), result.criteria)
+            assertEquals(0, result.criteria.size)
         }
 
     @Test

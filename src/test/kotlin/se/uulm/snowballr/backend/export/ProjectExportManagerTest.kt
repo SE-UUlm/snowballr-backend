@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.export
 
 import kotlinx.serialization.json.Json
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
@@ -16,7 +17,6 @@ import se.uulm.snowballr.backend.model.export.ProjectExport
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 import java.util.UUID
-import kotlin.test.assertEquals
 
 class ProjectExportManagerTest {
     companion object {
