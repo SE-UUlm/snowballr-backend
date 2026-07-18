@@ -1,7 +1,7 @@
 package se.uulm.snowballr.backend.model.exception
 
-import io.grpc.Status
 import se.uulm.snowballr.backend.model.AccessType
+import se.uulm.snowballr.backend.model.Status
 import java.util.UUID
 
 /**
@@ -16,6 +16,6 @@ open class UnauthorizedException protected constructor(
     accessType: AccessType,
     accessedEntityMessage: String,
 ) : SnowballRException(
-    Status.PERMISSION_DENIED,
+    Status.FORBIDDEN,
     "User with ID '$currentUserId' is not authorized to $accessType $accessedEntityMessage",
 )

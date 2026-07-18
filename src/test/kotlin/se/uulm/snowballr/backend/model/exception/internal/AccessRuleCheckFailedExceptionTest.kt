@@ -1,8 +1,8 @@
 package se.uulm.snowballr.backend.model.exception.internal
 
-import io.grpc.Status
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import se.uulm.snowballr.backend.model.Status
 
 class AccessRuleCheckFailedExceptionTest {
     @Test
@@ -14,6 +14,6 @@ class AccessRuleCheckFailedExceptionTest {
                 "Please add a more specific exception to each path in the rule chain.",
             exception.message,
         )
-        assertEquals(Status.INTERNAL, exception.getGrpcStatus())
+        assertEquals(Status.INTERNAL, exception.getStatus())
     }
 }

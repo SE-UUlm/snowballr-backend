@@ -1,6 +1,6 @@
 package se.uulm.snowballr.backend.model.exception
 
-import io.grpc.Status
+import se.uulm.snowballr.backend.model.Status
 
 /**
  * Represents an exception that occurs when something could not be found.

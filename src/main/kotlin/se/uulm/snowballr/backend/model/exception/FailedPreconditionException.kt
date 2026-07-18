@@ -1,6 +1,6 @@
 package se.uulm.snowballr.backend.model.exception
 
-import io.grpc.Status
+import se.uulm.snowballr.backend.model.Status
 
 /**
  * Represents an exception that occurs when a call has the wrong preconditions.
@@ -9,4 +9,4 @@ import io.grpc.Status
  */
 open class FailedPreconditionException(
     description: String,
-) : SnowballRException(Status.FAILED_PRECONDITION, description)
+) : SnowballRException(Status.FORBIDDEN, description)
