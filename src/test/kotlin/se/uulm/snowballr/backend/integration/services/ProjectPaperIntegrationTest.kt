@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.integration.IntegrationTest
-import se.uulm.snowballr.backend.model.dto.project.Project
 import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateProjectPaperException
@@ -18,6 +17,7 @@ import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedCreate
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.review.CreateReviewRequest
+import se.uulm.snowballr.backend.model.outgoing.project.ProjectResponse
 import se.uulm.snowballr.backend.model.outgoing.projectpaper.ProjectPaperResponse
 
 class ProjectPaperIntegrationTest : IntegrationTest() {
@@ -30,13 +30,16 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
             ),
         )
 
-    private suspend fun setNumberOfRequiredReviewers(project: Project, numberOfReviewers: Int): Project {
+    private suspend fun setNumberOfRequiredReviewers(
+        project: ProjectResponse,
+        numberOfReviewers: Int,
+    ): ProjectResponse {
         val projectUpdate = project.copy(
             reviewDecisionMatrix = project.reviewDecisionMatrix.copy(numberOfReviewers = numberOfReviewers),
         )
 
         return projectService.updateProject(
-            UpdateProjectRequest.fromProject(projectUpdate),
+            UpdateProjectRequest.fromProjectResponse(projectUpdate),
             setOf("project.settings.decision_matrix.number_of_reviewers"),
         )
     }

@@ -39,12 +39,12 @@ import se.uulm.snowballr.backend.fetcher.IFetcherOrchestrator
 import se.uulm.snowballr.backend.mail.EmailManager
 import se.uulm.snowballr.backend.mail.IEmailManager
 import se.uulm.snowballr.backend.mailServiceDeps
-import se.uulm.snowballr.backend.model.dto.project.Project
 import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.incoming.paper.CreatePaperRequest
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import se.uulm.snowballr.backend.model.outgoing.paper.PaperResponse
+import se.uulm.snowballr.backend.model.outgoing.project.ProjectResponse
 import se.uulm.snowballr.backend.repository.RepositoryHelper
 import se.uulm.snowballr.backend.repositoryLayerDeps
 import se.uulm.snowballr.backend.service.IAuthenticationService
@@ -213,7 +213,7 @@ open class IntegrationTest : KoinTest {
      * @param acceptInvitation Whether the invitation should be accepted after being sent. If true, the user will be
      * added to the project.
      */
-    protected suspend fun inviteUserToProject(project: Project, user: User, acceptInvitation: Boolean = false) {
+    protected suspend fun inviteUserToProject(project: ProjectResponse, user: User, acceptInvitation: Boolean = false) {
         val invitationToken = inviteHelper(project, user.firstName, user.email)
 
         if (acceptInvitation) {
@@ -228,7 +228,7 @@ open class IntegrationTest : KoinTest {
      * @param project The project to which the user should be invited to.
      * @param email The email of the user that should be invited to the passed project.
      */
-    protected suspend fun inviteEmailToProject(project: Project, email: String) {
+    protected suspend fun inviteEmailToProject(project: ProjectResponse, email: String) {
         inviteHelper(project, "User", email)
     }
 
@@ -245,7 +245,7 @@ open class IntegrationTest : KoinTest {
     }
 
     private suspend fun inviteHelper(
-        project: Project,
+        project: ProjectResponse,
         inviteeFirstName: String,
         inviteeEmail: String,
     ): CapturingSlot<String> {
@@ -265,6 +265,6 @@ open class IntegrationTest : KoinTest {
     /**
      * Adds the [paper] to the [project] in stage 0.
      */
-    protected suspend fun addToProject(project: Project, paper: PaperResponse) =
+    protected suspend fun addToProject(project: ProjectResponse, paper: PaperResponse) =
         projectPaperService.addPaperToProject(project.id, paper.id, 0)
 }

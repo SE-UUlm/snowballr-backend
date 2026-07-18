@@ -61,7 +61,7 @@ class ProjectIntegrationTest : IntegrationTest() {
             val project = projectService.createProject(CreateProjectRequest(name = "Original Name"))
 
             val updatedProject = project.copy(name = "Updated Name")
-            val request = UpdateProjectRequest.fromProject(updatedProject)
+            val request = UpdateProjectRequest.fromProjectResponse(updatedProject)
 
             val result = projectService.updateProject(request, setOf("project.name"))
 
@@ -76,7 +76,7 @@ class ProjectIntegrationTest : IntegrationTest() {
             val project = projectService.createProject(CreateProjectRequest(name = "To Archive"))
 
             val updatedProject = project.copy(status = ProjectStatus.ARCHIVED)
-            val request = UpdateProjectRequest.fromProject(updatedProject)
+            val request = UpdateProjectRequest.fromProjectResponse(updatedProject)
 
             projectService.updateProject(request, setOf("project.status"))
 
@@ -89,7 +89,7 @@ class ProjectIntegrationTest : IntegrationTest() {
             val project = projectService.createProject(CreateProjectRequest(name = "Archived Project"))
 
             val updatedProject = project.copy(status = ProjectStatus.ARCHIVED)
-            val request = UpdateProjectRequest.fromProject(updatedProject)
+            val request = UpdateProjectRequest.fromProjectResponse(updatedProject)
 
             projectService.updateProject(request, setOf("project.status"))
 
@@ -123,7 +123,7 @@ class ProjectIntegrationTest : IntegrationTest() {
                         "non-existent-fetcher" to emptyMap(),
                     ),
                 )
-                val request = UpdateProjectRequest.fromProject(updatedProject)
+                val request = UpdateProjectRequest.fromProjectResponse(updatedProject)
 
                 val result = projectService.updateProject(request, setOf("project.settings.fetchers"))
 
@@ -160,7 +160,7 @@ class ProjectIntegrationTest : IntegrationTest() {
                         "fetcher" to mapOf("option1" to "value"),
                     ),
                 )
-                val request = UpdateProjectRequest.fromProject(updatedProject)
+                val request = UpdateProjectRequest.fromProjectResponse(updatedProject)
 
                 assertThrows<FailedPreconditionException> {
                     projectService.updateProject(request, setOf("project.settings.fetchers"))

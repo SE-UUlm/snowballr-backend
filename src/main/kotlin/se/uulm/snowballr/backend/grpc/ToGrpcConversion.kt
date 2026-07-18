@@ -10,7 +10,6 @@ import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 import se.uulm.snowballr.backend.model.dto.paper.Author
 import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPattern
 import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPatternEntry
-import se.uulm.snowballr.backend.model.dto.project.Project
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
 import se.uulm.snowballr.backend.model.dto.project.SnowballingType
@@ -34,6 +33,7 @@ import se.uulm.snowballr.backend.model.outgoing.paper.PaperResponse
 import se.uulm.snowballr.backend.model.outgoing.project.ProjectDecisionCount
 import se.uulm.snowballr.backend.model.outgoing.project.ProjectDecisionStatistics
 import se.uulm.snowballr.backend.model.outgoing.project.ProjectInformation
+import se.uulm.snowballr.backend.model.outgoing.project.ProjectResponse
 import se.uulm.snowballr.backend.model.outgoing.projectpaper.ProjectPaperResponse
 import se.uulm.snowballr.backend.model.outgoing.review.ReviewResponse
 import snowballr.Authentication
@@ -70,7 +70,7 @@ fun Author.toGrpc(): PaperOuterClass.Author = PaperOuterClass.Author.newBuilder(
 
 fun List<Author>.toGrpc(): List<PaperOuterClass.Author> = this.map(Author::toGrpc)
 
-fun Project.toGrpc(): ProjectOuterClass.Project {
+fun ProjectResponse.toGrpc(): ProjectOuterClass.Project {
     val settings =
         ProjectOuterClass.Project.Settings
             .newBuilder()
@@ -100,7 +100,7 @@ fun Project.toGrpc(): ProjectOuterClass.Project {
 }
 
 @JvmName("toGrpcProjectList")
-fun List<Project>.toGrpc(): ProjectOuterClass.Project.List {
+fun List<ProjectResponse>.toGrpc(): ProjectOuterClass.Project.List {
     val builder = ProjectOuterClass.Project.List.newBuilder()
     this.forEach { builder.addProjects(it.toGrpc()) }
     return builder.build()

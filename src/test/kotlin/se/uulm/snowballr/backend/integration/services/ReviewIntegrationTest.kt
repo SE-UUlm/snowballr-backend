@@ -7,17 +7,17 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.integration.IntegrationTest
-import se.uulm.snowballr.backend.model.dto.project.Project
 import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.review.CreateReviewRequest
+import se.uulm.snowballr.backend.model.outgoing.project.ProjectResponse
 import se.uulm.snowballr.backend.model.outgoing.projectpaper.ProjectPaperResponse
 
 class ReviewIntegrationTest : IntegrationTest() {
-    private suspend fun setupProjectAndPaper(): Pair<Project, ProjectPaperResponse> {
+    private suspend fun setupProjectAndPaper(): Pair<ProjectResponse, ProjectPaperResponse> {
         var project = projectService.createProject(CreateProjectRequest(name = "Review Test Project"))
         val paper = createPaper()
         val projectPaper = projectPaperService.addPaperToProject(project.id, paper.id, 0)
@@ -27,7 +27,7 @@ class ReviewIntegrationTest : IntegrationTest() {
                 numberOfReviewers = 1,
             ),
         )
-        val projectUpdate = UpdateProjectRequest.fromProject(modifiedProject)
+        val projectUpdate = UpdateProjectRequest.fromProjectResponse(modifiedProject)
 
         project = projectService.updateProject(
             projectUpdate,
@@ -126,7 +126,7 @@ class ReviewIntegrationTest : IntegrationTest() {
             )
 
             val updatedProject = project.copy(reviewMaybeAllowed = true)
-            val updateRequest = UpdateProjectRequest.fromProject(updatedProject)
+            val updateRequest = UpdateProjectRequest.fromProjectResponse(updatedProject)
 
             assertThrows<FailedPreconditionException> {
                 projectService.updateProject(updateRequest, setOf("project.settings.review_maybe_allowed"))
