@@ -906,12 +906,13 @@ style:
     ForbiddenImport:
         active: false
         forbiddenImports:
-            - value: 'kotlin.test.*'
-              reason: 'Use org.junit.jupiter.api.Assertions.* instead'
-            - value: 'org.junit.jupiter.api.Assertions.assertNotNull'
-              reason: 'Use org.junit.jupiter.api.assertNotNull instead'
+            -   reason: 'Use `org.junit.jupiter.api.Assertions.*` instead.'
+                value: 'kotlin.test.*'
+            -   reason: 'Use `org.junit.jupiter.api.assertNotNull` instead.'
+                value: 'org.junit.jupiter.api.Assertions.assertNotNull'
         allowedImports:
-            - 'kotlin.test.assertContains' # no alternative
+            # `kotlin.test.assertContains` has no JUnit equivalent.
+            - 'kotlin.test.assertContains'
     ForbiddenMethodCall:
         active: true
         methods:
