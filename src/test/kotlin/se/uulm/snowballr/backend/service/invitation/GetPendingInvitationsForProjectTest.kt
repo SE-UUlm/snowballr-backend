@@ -4,8 +4,8 @@ import io.mockk.coEvery
 import io.mockk.coJustRun
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertNotNull
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
@@ -80,14 +80,14 @@ class GetPendingInvitationsForProjectTest : InvitationServiceTest() {
             assertNotNull(invitationForNotRegisteredUser)
 
             // Registered user should have user details
-            assertEquals(registeredUser.id, invitationForRegisteredUser?.userId)
-            assertEquals(UserStatus.ACTIVE, invitationForRegisteredUser?.status)
-            assertEquals(registeredUser.firstName, invitationForRegisteredUser?.firstName)
+            assertEquals(registeredUser.id, invitationForRegisteredUser.userId)
+            assertEquals(UserStatus.ACTIVE, invitationForRegisteredUser.status)
+            assertEquals(registeredUser.firstName, invitationForRegisteredUser.firstName)
 
             // Not registered user should not have user details
-            assertEquals(null, invitationForNotRegisteredUser?.userId)
-            assertEquals(UserStatus.ACTIVE_UNCONFIRMED, invitationForNotRegisteredUser?.status)
-            assertEquals("", invitationForNotRegisteredUser?.firstName)
+            assertEquals(null, invitationForNotRegisteredUser.userId)
+            assertEquals(UserStatus.ACTIVE_UNCONFIRMED, invitationForNotRegisteredUser.status)
+            assertEquals("", invitationForNotRegisteredUser.firstName)
         }
 
     @Test

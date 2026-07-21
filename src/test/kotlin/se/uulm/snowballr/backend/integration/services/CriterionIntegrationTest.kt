@@ -1,22 +1,22 @@
 package se.uulm.snowballr.backend.integration.services
 
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.dto.criterion.Criterion
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
-import se.uulm.snowballr.backend.model.dto.project.Project
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
+import se.uulm.snowballr.backend.model.outgoing.project.ProjectResponse
 
 class CriterionIntegrationTest : IntegrationTest() {
     private suspend fun createProjectAndCriterion(
         criterionName: String = "Test Criterion",
-    ): Pair<Project, Criterion.ProjectCriterion> {
+    ): Pair<ProjectResponse, Criterion.ProjectCriterion> {
         val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
         val criterion = criterionService.createCriterion(
             CreateCriterionRequest(

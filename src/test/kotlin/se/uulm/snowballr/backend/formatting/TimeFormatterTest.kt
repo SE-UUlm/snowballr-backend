@@ -1,8 +1,8 @@
 package se.uulm.snowballr.backend.formatting
 
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import kotlin.test.assertEquals
 
 class TimeFormatterTest {
     @Nested

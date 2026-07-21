@@ -5,6 +5,7 @@ import io.mockk.coJustRun
 import io.mockk.every
 import io.mockk.mockkObject
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
@@ -14,7 +15,6 @@ import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.export.ExportFormat
 import se.uulm.snowballr.backend.model.export.FileExport
 import java.util.UUID
-import kotlin.test.assertEquals
 
 class ExportProjectTest : ExportServiceTest() {
     private val testFormat = ExportFormat.JSON

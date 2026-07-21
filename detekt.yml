@@ -904,9 +904,15 @@ style:
                 value: 'TODO:'
         allowedPatterns: ''
     ForbiddenImport:
-        active: false
-        forbiddenImports: [ ]
-        allowedImports: [ ]
+        active: true
+        forbiddenImports:
+            -   reason: 'Use `org.junit.jupiter.api.Assertions.*` instead.'
+                value: 'kotlin.test.*'
+            -   reason: 'Use `org.junit.jupiter.api.assertNotNull` instead.'
+                value: 'org.junit.jupiter.api.Assertions.assertNotNull'
+        allowedImports:
+            # `kotlin.test.assertContains` has no JUnit equivalent.
+            - 'kotlin.test.assertContains'
     ForbiddenMethodCall:
         active: true
         methods:

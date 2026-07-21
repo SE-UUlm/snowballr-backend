@@ -7,7 +7,6 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
-import se.uulm.snowballr.backend.model.dto.project.Project
 import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
 import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.exception.UnauthorizedException
@@ -16,9 +15,10 @@ import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.projectmember.UpdateProjectMemberRoleRequest
+import se.uulm.snowballr.backend.model.outgoing.project.ProjectResponse
 
 class AccessControlIntegrationTest : IntegrationTest() {
-    private suspend fun setupProjectWithMember(): Pair<Project, User> {
+    private suspend fun setupProjectWithMember(): Pair<ProjectResponse, User> {
         val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
         val member = addUser(DataBuilder.createExampleUser(email = "member@example.com"))
         inviteUserToProject(project, member, acceptInvitation = true)
@@ -41,7 +41,7 @@ class AccessControlIntegrationTest : IntegrationTest() {
         fun `When a non-admin member tries to update a project, then access is denied`() = runTest {
             val (project, member) = setupProjectWithMember()
 
-            val request = UpdateProjectRequest.fromProject(project)
+            val request = UpdateProjectRequest.fromProjectResponse(project)
 
             actAsUser(member.id) {
                 assertThrows<UnauthorizedException> { projectService.updateProject(request, setOf("project.name")) }

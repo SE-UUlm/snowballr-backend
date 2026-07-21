@@ -2,9 +2,13 @@ package se.uulm.snowballr.backend.integration.services
 
 import io.mockk.coEvery
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.assertNotNull
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.integration.IntegrationTest
@@ -14,10 +18,6 @@ import se.uulm.snowballr.backend.model.fetcher.FetcherInformationWithId
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import kotlin.test.assertContains
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 
 class ProjectIntegrationTest : IntegrationTest() {
     @Nested
@@ -61,7 +61,7 @@ class ProjectIntegrationTest : IntegrationTest() {
             val project = projectService.createProject(CreateProjectRequest(name = "Original Name"))
 
             val updatedProject = project.copy(name = "Updated Name")
-            val request = UpdateProjectRequest.fromProject(updatedProject)
+            val request = UpdateProjectRequest.fromProjectResponse(updatedProject)
 
             val result = projectService.updateProject(request, setOf("project.name"))
 
@@ -76,7 +76,7 @@ class ProjectIntegrationTest : IntegrationTest() {
             val project = projectService.createProject(CreateProjectRequest(name = "To Archive"))
 
             val updatedProject = project.copy(status = ProjectStatus.ARCHIVED)
-            val request = UpdateProjectRequest.fromProject(updatedProject)
+            val request = UpdateProjectRequest.fromProjectResponse(updatedProject)
 
             projectService.updateProject(request, setOf("project.status"))
 
@@ -89,7 +89,7 @@ class ProjectIntegrationTest : IntegrationTest() {
             val project = projectService.createProject(CreateProjectRequest(name = "Archived Project"))
 
             val updatedProject = project.copy(status = ProjectStatus.ARCHIVED)
-            val request = UpdateProjectRequest.fromProject(updatedProject)
+            val request = UpdateProjectRequest.fromProjectResponse(updatedProject)
 
             projectService.updateProject(request, setOf("project.status"))
 
@@ -123,14 +123,15 @@ class ProjectIntegrationTest : IntegrationTest() {
                         "non-existent-fetcher" to emptyMap(),
                     ),
                 )
-                val request = UpdateProjectRequest.fromProject(updatedProject)
+                val request = UpdateProjectRequest.fromProjectResponse(updatedProject)
 
                 val result = projectService.updateProject(request, setOf("project.settings.fetchers"))
 
                 val fetchersMap = result.fetchers
                 assertContains(fetchersMap.keys, "existent-fetcher")
                 assertFalse(fetchersMap.containsKey("non-existent-fetcher"))
-                val sanitizedOptions = assertNotNull(fetchersMap["existent-fetcher"])
+                val sanitizedOptions = fetchersMap["existent-fetcher"]
+                assertNotNull(sanitizedOptions)
                 assertContains(sanitizedOptions.keys, "existent-option")
                 assertFalse(sanitizedOptions.containsKey("non-existent-option"))
             }
@@ -159,7 +160,7 @@ class ProjectIntegrationTest : IntegrationTest() {
                         "fetcher" to mapOf("option1" to "value"),
                     ),
                 )
-                val request = UpdateProjectRequest.fromProject(updatedProject)
+                val request = UpdateProjectRequest.fromProjectResponse(updatedProject)
 
                 assertThrows<FailedPreconditionException> {
                     projectService.updateProject(request, setOf("project.settings.fetchers"))

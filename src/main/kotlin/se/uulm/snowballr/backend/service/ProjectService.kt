@@ -4,7 +4,6 @@ import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.fetcher.IFetcherManager
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.AccessType
-import se.uulm.snowballr.backend.model.dto.project.Project
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
 import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
@@ -19,6 +18,7 @@ import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import se.uulm.snowballr.backend.model.outgoing.project.ProjectDecisionCount
 import se.uulm.snowballr.backend.model.outgoing.project.ProjectDecisionStatistics
 import se.uulm.snowballr.backend.model.outgoing.project.ProjectInformation
+import se.uulm.snowballr.backend.model.outgoing.project.ProjectResponse
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
@@ -33,37 +33,37 @@ interface IProjectService {
     /**
      * Service implementation of [SnowballRService.getProjectById].
      */
-    suspend fun getProjectById(projectId: UUID): Project
+    suspend fun getProjectById(projectId: UUID): ProjectResponse
 
     /**
      * Service implementation of [SnowballRService.createProject].
      */
-    suspend fun createProject(request: CreateProjectRequest): Project
+    suspend fun createProject(request: CreateProjectRequest): ProjectResponse
 
     /**
      * Service implementation of [SnowballRService.getAllProjects].
      */
-    suspend fun getAllProjects(): List<Project>
+    suspend fun getAllProjects(): List<ProjectResponse>
 
     /**
      * Service implementation of [SnowballRService.getAllProjectsForUser].
      */
-    suspend fun getAllProjectsForUser(userId: UUID): List<Project>
+    suspend fun getAllProjectsForUser(userId: UUID): List<ProjectResponse>
 
     /**
      * Service implementation of [SnowballRService.getAllArchivedProjectsForUser].
      */
-    suspend fun getAllArchivedProjectsForUser(userId: UUID): List<Project>
+    suspend fun getAllArchivedProjectsForUser(userId: UUID): List<ProjectResponse>
 
     /**
      * Service implementation of [SnowballRService.getAllDeletedProjectsForUser].
      */
-    suspend fun getAllDeletedProjectsForUser(userId: UUID): List<Project>
+    suspend fun getAllDeletedProjectsForUser(userId: UUID): List<ProjectResponse>
 
     /**
      * Service implementation of [SnowballRService.updateProject].
      */
-    suspend fun updateProject(request: UpdateProjectRequest, paths: Set<String>): Project
+    suspend fun updateProject(request: UpdateProjectRequest, paths: Set<String>): ProjectResponse
 
     /**
      * Service implementation of [SnowballRService.getProjectInformation].
@@ -108,55 +108,57 @@ class ProjectService(
     private val accessChecker: IProjectAccessChecker,
     private val fetcherManager: IFetcherManager,
 ) : IProjectService {
-    override suspend fun getProjectById(projectId: UUID): Project = withUser(userRepo) { currentUser ->
+    override suspend fun getProjectById(projectId: UUID): ProjectResponse = withUser(userRepo) { currentUser ->
         accessChecker.isAllowedToReadProject(currentUser, projectId)
 
-        repo.getProjectById(projectId).getOrThrow()
+        val project = repo.getProjectById(projectId).getOrThrow()
+        ProjectResponse.fromProject(project)
     }
 
-    override suspend fun createProject(request: CreateProjectRequest): Project = withUser(userRepo) { currentUser ->
-        val userSettings = userRepo.getUserSettings(currentUser.id).getOrThrow()
-        val userDefaultCriteria = criterionRepo.getCriteriaByIds(userSettings.criteriaIds)
+    override suspend fun createProject(request: CreateProjectRequest): ProjectResponse =
+        withUser(userRepo) { currentUser ->
+            val userSettings = userRepo.getUserSettings(currentUser.id).getOrThrow()
+            val userDefaultCriteria = criterionRepo.getCriteriaByIds(userSettings.criteriaIds)
 
-        val project = repo.createProject(request, currentUser.id, userSettings)
+            val project = repo.createProject(request, currentUser.id, userSettings)
 
-        // Additionally, clone user default criteria into the project as project criteria and add creator as project member
-        for (criterion in userDefaultCriteria) {
-            val createCriterionRequest = CreateCriterionRequest(
-                tag = criterion.tag,
-                name = criterion.name,
-                description = criterion.description,
-                category = criterion.category,
-                projectId = project.id,
-            )
+            // Additionally, clone user default criteria into the project as project criteria and add creator as project member
+            for (criterion in userDefaultCriteria) {
+                val createCriterionRequest = CreateCriterionRequest(
+                    tag = criterion.tag,
+                    name = criterion.name,
+                    description = criterion.description,
+                    category = criterion.category,
+                    projectId = project.id,
+                )
 
-            criterionRepo.createCriterion(createCriterionRequest, currentUser.id)
+                criterionRepo.createCriterion(createCriterionRequest, currentUser.id)
+            }
+
+            projectMemberRepo.addUserToProject(currentUser.id, project.id)
+            projectMemberRepo.updateProjectMemberRole(project.id, currentUser.id, MemberRole.ADMIN)
+
+            ProjectResponse.fromProject(project)
         }
 
-        projectMemberRepo.addUserToProject(currentUser.id, project.id)
-        projectMemberRepo.updateProjectMemberRole(project.id, currentUser.id, MemberRole.ADMIN)
-
-        project
-    }
-
-    override suspend fun getAllProjects(): List<Project> = withUser(userRepo) { currentUser ->
+    override suspend fun getAllProjects(): List<ProjectResponse> = withUser(userRepo) { currentUser ->
         accessChecker.isAllowedToReadAllProjects(currentUser)
 
-        repo.getAllProjects()
+        repo.getAllProjects().map { ProjectResponse.fromProject(it) }
     }
 
-    override suspend fun getAllProjectsForUser(userId: UUID): List<Project> = getAllProjectsForUserAndStatus(
+    override suspend fun getAllProjectsForUser(userId: UUID): List<ProjectResponse> = getAllProjectsForUserAndStatus(
         userId,
         setOf(ProjectStatus.ACTIVE, ProjectStatus.ACTIVE_LOCKED),
     )
 
-    override suspend fun getAllArchivedProjectsForUser(userId: UUID): List<Project> =
+    override suspend fun getAllArchivedProjectsForUser(userId: UUID): List<ProjectResponse> =
         getAllProjectsForUserAndStatus(userId, setOf(ProjectStatus.ARCHIVED))
 
-    override suspend fun getAllDeletedProjectsForUser(userId: UUID): List<Project> =
+    override suspend fun getAllDeletedProjectsForUser(userId: UUID): List<ProjectResponse> =
         getAllProjectsForUserAndStatus(userId, setOf(ProjectStatus.DELETED))
 
-    override suspend fun updateProject(request: UpdateProjectRequest, paths: Set<String>): Project =
+    override suspend fun updateProject(request: UpdateProjectRequest, paths: Set<String>): ProjectResponse =
         withUser(userRepo) { currentUser ->
             accessChecker.isProjectOrServerAdmin(currentUser, request.projectId, AccessType.UPDATE)
 
@@ -174,7 +176,8 @@ class ProjectService(
                 finalRequest = finalRequest.copy(settings = finalRequest.settings.copy(fetchers = sanitizedFetchersMap))
             }
 
-            repo.updateProject(finalRequest, paths)
+            val updatedProject = repo.updateProject(finalRequest, paths)
+            ProjectResponse.fromProject(updatedProject)
         }
 
     override suspend fun getProjectInformation(projectId: UUID, paths: List<String>): ProjectInformation =
@@ -231,14 +234,16 @@ class ProjectService(
         invitationTokenRepo.deleteInvitationTokensForProject(projectId)
     }
 
-    private suspend fun getAllProjectsForUserAndStatus(userId: UUID, statuses: Set<ProjectStatus>): List<Project> =
-        withUser(userRepo) { currentUser ->
-            userRepo.getUserById(userId).getOrThrow()
+    private suspend fun getAllProjectsForUserAndStatus(
+        userId: UUID,
+        statuses: Set<ProjectStatus>,
+    ): List<ProjectResponse> = withUser(userRepo) { currentUser ->
+        userRepo.getUserById(userId).getOrThrow()
 
-            accessChecker.isAllowedToReadUserProjects(currentUser, userId)
+        accessChecker.isAllowedToReadUserProjects(currentUser, userId)
 
-            repo.getUserProjects(userId, statuses)
-        }
+        repo.getUserProjects(userId, statuses).map { ProjectResponse.fromProject(it) }
+    }
 
     /**
      * Validates the update of a project based on the current status and the requested status.

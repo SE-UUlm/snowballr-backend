@@ -4,9 +4,9 @@ import io.grpc.Metadata
 import io.grpc.ServerCall
 import io.grpc.ServerCallHandler
 import io.mockk.mockk
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNull
 
 class AuthRequestStateTest {
     @Test
@@ -26,7 +26,7 @@ class AuthRequestStateTest {
     fun `When optional values are null, then they remain null in the state`() {
         val call = mockk<ServerCall<String?, String?>>(relaxed = true)
 
-        val state = AuthRequestState<String, String>(call, null, null)
+        val state = AuthRequestState(call, null, null)
 
         assertEquals(call, state.call)
         assertNull(state.headers)

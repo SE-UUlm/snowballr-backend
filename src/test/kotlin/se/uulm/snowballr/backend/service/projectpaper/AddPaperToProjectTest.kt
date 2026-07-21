@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.service.projectpaper
 import io.mockk.coEvery
 import io.mockk.coJustRun
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
@@ -11,7 +12,6 @@ import se.uulm.snowballr.backend.model.dto.project.Project
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateProjectPaperException
 import se.uulm.snowballr.backend.model.exception.invalidargument.StageOutOfRangeException
 import java.util.UUID
-import kotlin.test.assertEquals
 
 class AddPaperToProjectTest : ProjectPaperServiceTest() {
     @Test

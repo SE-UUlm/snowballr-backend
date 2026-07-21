@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.repository.association
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.exposed.v1.jdbc.insert
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -13,7 +14,6 @@ import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.association.CitationTable
 import java.sql.SQLException
 import java.util.UUID
-import kotlin.test.assertTrue
 
 class CitationTableRepoTest : RepositoryTest(arrayOf(PaperTable, CitationTable), false) {
     private val repo = CitationTableRepo(db)

@@ -7,7 +7,15 @@ import io.grpc.ServerCall
 import io.grpc.ServerCallHandler
 import io.grpc.ServerInterceptor
 import io.grpc.Status
+import se.uulm.snowballr.backend.model.exception.AlreadyExistsException
+import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
+import se.uulm.snowballr.backend.model.exception.InternalException
+import se.uulm.snowballr.backend.model.exception.InvalidArgumentException
+import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.SnowballRException
+import se.uulm.snowballr.backend.model.exception.UnauthenticatedException
+import se.uulm.snowballr.backend.model.exception.UnauthorizedException
+import se.uulm.snowballr.backend.model.exception.UnauthorizedFetcherPathException
 
 private val logger = KotlinLogging.logger {}
 
@@ -21,7 +29,7 @@ private val logger = KotlinLogging.logger {}
  */
 val exceptionInterceptor =
     object : ServerInterceptor {
-        override fun <ReqT : Any?, RespT : Any?> interceptCall(
+        override fun <ReqT, RespT> interceptCall(
             call: ServerCall<ReqT?, RespT?>,
             headers: Metadata?,
             next: ServerCallHandler<ReqT?, RespT?>,
@@ -74,7 +82,16 @@ private class ExceptionCall<ReqT, RespT>(
      * The [SnowballRException]s are deliberately thrown in this application, e.g., when preconditions aren't met.
      */
     private fun getStatusForSnowballRException(exception: SnowballRException): Status {
-        val status = exception.getGrpcStatus().withDescription(exception.message).withCause(exception.cause)
+        val status = when (exception) {
+            is AlreadyExistsException -> Status.ALREADY_EXISTS
+            is FailedPreconditionException -> Status.FAILED_PRECONDITION
+            is InternalException -> Status.INTERNAL
+            is InvalidArgumentException -> Status.INVALID_ARGUMENT
+            is NotFoundException -> Status.NOT_FOUND
+            is UnauthenticatedException -> Status.UNAUTHENTICATED
+            is UnauthorizedException -> Status.PERMISSION_DENIED
+            is UnauthorizedFetcherPathException -> Status.INTERNAL
+        }.withDescription(exception.message).withCause(exception.cause)
 
         logger.debug {
             "gRPC call failed due to ${exception::class.qualifiedName ?: "<unknown class>"} with status: " +

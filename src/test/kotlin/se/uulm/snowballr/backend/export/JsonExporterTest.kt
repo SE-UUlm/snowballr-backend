@@ -1,13 +1,13 @@
 package se.uulm.snowballr.backend.export
 
 import kotlinx.serialization.json.Json
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.export.testdata.emptyProjectExport
 import se.uulm.snowballr.backend.export.testdata.fullProjectExport
 import se.uulm.snowballr.backend.model.export.ProjectExport
-import kotlin.test.assertEquals
 
 class JsonExporterTest {
     companion object {

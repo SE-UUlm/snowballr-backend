@@ -2,11 +2,13 @@ package se.uulm.snowballr.backend.service.project
 
 import io.mockk.coEvery
 import io.mockk.mockk
+import org.junit.jupiter.api.Assertions.assertEquals
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.context.RequestContext
 import se.uulm.snowballr.backend.fetcher.IFetcherManager
 import se.uulm.snowballr.backend.model.dto.project.Project
 import se.uulm.snowballr.backend.model.dto.user.User
+import se.uulm.snowballr.backend.model.outgoing.project.ProjectResponse
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
@@ -16,7 +18,6 @@ import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import se.uulm.snowballr.backend.service.BaseServiceTest
 import se.uulm.snowballr.backend.service.ProjectService
 import se.uulm.snowballr.backend.service.withUser
-import kotlin.test.assertEquals
 
 /**
  * Base test class for the [ProjectService].
@@ -63,7 +64,7 @@ sealed class ProjectServiceTest : BaseServiceTest {
         coEvery { userRepoMock.getUserById(currentUser.id) } returns Result.success(currentUser)
     }
 
-    protected fun assertProjectEquality(expected: Project, actual: Project) {
+    protected fun assertProjectEquality(expected: Project, actual: ProjectResponse) {
         assertEquals(expected.name, actual.name)
         assertEquals(expected.status, actual.status)
         assertEquals(expected.currentStage, actual.currentStage)

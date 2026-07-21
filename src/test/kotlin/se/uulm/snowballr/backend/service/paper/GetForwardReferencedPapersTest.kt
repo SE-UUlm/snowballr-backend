@@ -4,13 +4,13 @@ import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.just
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.PaperNotFoundException
 import java.util.UUID
-import kotlin.test.assertEquals
 
 class GetForwardReferencedPapersTest : PaperServiceTest() {
     @Test

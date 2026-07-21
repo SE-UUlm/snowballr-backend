@@ -1,6 +1,6 @@
 package se.uulm.snowballr.backend.model.exception
 
-import io.grpc.Status
+import se.uulm.snowballr.backend.model.Status
 
 /**
  * Represents an exception that occurs when something already exists.
@@ -8,6 +8,6 @@ import io.grpc.Status
 open class AlreadyExistsException protected constructor(
     message: String,
 ) : SnowballRException(
-    Status.ALREADY_EXISTS,
+    Status.BAD_REQUEST,
     message,
 )

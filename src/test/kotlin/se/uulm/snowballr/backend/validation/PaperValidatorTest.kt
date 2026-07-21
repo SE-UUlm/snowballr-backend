@@ -8,6 +8,7 @@ import `in`.rcard.assertj.arrowcore.EitherAssert
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertInstanceOf
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
@@ -32,7 +33,6 @@ import snowballr.PaperOuterClass.Paper
 import snowballr.author
 import java.time.LocalDate
 import java.util.UUID
-import kotlin.test.assertIs
 
 class PaperValidatorTest {
     companion object {
@@ -413,11 +413,11 @@ class PaperValidatorTest {
 
             val result = validateRequest(request)
 
-            assertIs<Either.Left<NonEmptyList<ValidationIssue>>>(result)
+            assertInstanceOf<Either.Left<NonEmptyList<ValidationIssue>>>(result)
             val issues = result.value.toList()
             assertThat(issues).hasSize(1)
             val compositeIssue = issues[0]
-            assertIs<CompositeIssue>(compositeIssue)
+            assertInstanceOf<CompositeIssue>(compositeIssue)
             assertThat("$compositeIssue").startsWith("Issues of author at index 0")
         }
 
