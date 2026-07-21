@@ -904,7 +904,7 @@ style:
                 value: 'TODO:'
         allowedPatterns: ''
     ForbiddenImport:
-        active: false
+        active: true
         forbiddenImports:
             -   reason: 'Use `org.junit.jupiter.api.Assertions.*` instead.'
                 value: 'kotlin.test.*'
