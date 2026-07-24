@@ -2,21 +2,25 @@ package se.uulm.snowballr.backend.repository.association
 
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import se.uulm.snowballr.backend.repository.PaperTableRepo
+import se.uulm.snowballr.backend.repository.RepositoryHelper.insertExternalId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertPaperAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertUserAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryTest
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.UserTable
+import se.uulm.snowballr.backend.table.association.PaperHasExternalIdTable
 import se.uulm.snowballr.backend.table.association.ReadingListTable
 import java.util.UUID
 
-class ReadingListTableRepoTest : RepositoryTest(arrayOf(UserTable, PaperTable, ReadingListTable), false) {
+class ReadingListTableRepoTest :
+    RepositoryTest(arrayOf(UserTable, PaperTable, ReadingListTable, PaperHasExternalIdTable), false) {
     private val repo = ReadingListTableRepo(db)
     private val paperRepo = PaperTableRepo(db)
 
@@ -152,8 +156,8 @@ class ReadingListTableRepoTest : RepositoryTest(arrayOf(UserTable, PaperTable, R
         @Test
         fun `When there are two papers on a user's reading list, then getAllReadingListEntries returns a list with those two papers`() =
             runTest {
-                val paperId1 = insertPaperAndGetId(externalId = "1")
-                val paperId2 = insertPaperAndGetId(externalId = "2")
+                val paperId1 = insertPaperAndGetId()
+                val paperId2 = insertPaperAndGetId()
                 val userId = insertUserAndGetId("test.user@example.com")
 
                 repo.createReadingListEntry(userId, paperId1)
@@ -173,5 +177,20 @@ class ReadingListTableRepoTest : RepositoryTest(arrayOf(UserTable, PaperTable, R
             runTest {
                 assertThat(repo.getAllReadingListEntries(UUID.randomUUID())).isEmpty()
             }
+
+        @Test
+        fun `When a reading list paper is retrieved, then it also contains its external IDs`() = runTest {
+            val paperId = insertPaperAndGetId()
+            val externalId = insertExternalId(paperId)
+            val userId = insertUserAndGetId("test.user@example.com")
+            repo.createReadingListEntry(userId, paperId)
+
+            val entries = repo.getAllReadingListEntries(userId)
+
+            assertEquals(1, entries.size)
+            val entry = entries.first()
+            assertEquals(paperId, entry.id)
+            assertEquals(externalId, entry.externalIds.single())
+        }
     }
 }

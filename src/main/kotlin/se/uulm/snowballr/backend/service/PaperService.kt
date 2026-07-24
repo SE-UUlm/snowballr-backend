@@ -63,10 +63,11 @@ class PaperService(
     override suspend fun updatePaper(request: UpdatePaperRequest, paths: List<String>): PaperResponse {
         repo.ensurePaperExists(request.paperId)
 
-        if (request.externalId != null) {
-            val existingPaper = repo.getPaperByExternalId(request.externalId).getOrNull()
-            if (existingPaper != null && existingPaper.id != request.paperId) {
-                throw DuplicatePaperException(request.externalId)
+        if (paths.contains("paper.external_ids") && request.externalIds.isNotEmpty()) {
+            val existingPapers = repo.getPapersByExternalIds(request.externalIds)
+
+            if (existingPapers.any { it.id != request.paperId }) {
+                throw DuplicatePaperException(request.externalIds)
             }
         }
 
@@ -74,8 +75,8 @@ class PaperService(
     }
 
     override suspend fun createPaper(request: CreatePaperRequest): PaperResponse {
-        if (request.externalId != null && repo.doesPaperExistByExternalId(request.externalId)) {
-            throw DuplicatePaperException(request.externalId)
+        if (request.externalIds.isNotEmpty() && repo.doesPaperExistByExternalIds(request.externalIds)) {
+            throw DuplicatePaperException(request.externalIds)
         }
 
         return repo.createPaper(request).toPaperResponse()

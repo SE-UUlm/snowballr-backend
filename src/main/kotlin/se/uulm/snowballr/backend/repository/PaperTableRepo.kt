@@ -1,20 +1,30 @@
 package se.uulm.snowballr.backend.repository
 
+import org.jetbrains.exposed.v1.core.Op
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.TextColumnType
+import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.inList
+import org.jetbrains.exposed.v1.core.or
 import org.jetbrains.exposed.v1.core.statements.StatementType
+import org.jetbrains.exposed.v1.jdbc.batchInsert
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
+import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.statements.jdbc.JdbcResult
+import org.jetbrains.exposed.v1.jdbc.update
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.paper.Paper
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.PaperNotFoundException
 import se.uulm.snowballr.backend.model.incoming.paper.CreatePaperRequest
 import se.uulm.snowballr.backend.model.incoming.paper.UpdatePaperRequest
 import se.uulm.snowballr.backend.table.PaperTable
+import se.uulm.snowballr.backend.table.association.PaperHasExternalIdTable
+import se.uulm.snowballr.backend.table.association.toExternalIdPair
 import se.uulm.snowballr.backend.table.toPaper
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -33,12 +43,6 @@ interface IPaperTableRepo {
     suspend fun getPaperById(id: UUID): Result<Paper>
 
     /**
-     * Returns a [Result] containing the paper by its external ID or a [NotFoundException] if the paper with the
-     * passed [externalId] doesn't exist.
-     */
-    suspend fun getPaperByExternalId(externalId: String): Result<Paper>
-
-    /**
      * Ensures that the paper exists with the passed [id].
      *
      * Throws a [PaperNotFoundException] if the paper is missing; otherwise does nothing.
@@ -46,9 +50,9 @@ interface IPaperTableRepo {
     suspend fun ensurePaperExists(id: UUID)
 
     /**
-     * Checks whether a paper with the passed [externalId] exists.
+     * Checks whether a paper with the passed [externalIds] exists.
      */
-    suspend fun doesPaperExistByExternalId(externalId: String): Boolean
+    suspend fun doesPaperExistByExternalIds(externalIds: List<ExternalId>): Boolean
 
     /**
      * Creates a new paper in the database with the provided values.
@@ -72,14 +76,9 @@ interface IPaperTableRepo {
     suspend fun getPapersBySearchQuery(query: String): List<Paper>
 
     /**
-     * Retrieves all papers that have an external ID that matches at least one external ID in [externalIds].
-     *
-     * This returns the same as for calling [getPaperByExternalId] for each external ID and then filtering out each
-     * [Result.failure].
-     *
-     * Prefer this method when calling [getPaperByExternalId] inside a loop.
+     * Retrieves all papers that have one or more external ID(s) that matches at least one external ID in [externalIds].
      */
-    suspend fun getPapersByExternalIds(externalIds: List<String>): List<Paper>
+    suspend fun getPapersByExternalIds(externalIds: List<ExternalId>): List<Paper>
 }
 
 /**
@@ -99,17 +98,40 @@ class PaperTableRepo(
         private const val MINIMUM_SIMILARITY_SCORE = 0.2
     }
 
-    private fun getPaperByIdOrNull(id: UUID): Paper? = PaperTable.getEntityByIdOrNull(id, ResultRow::toPaper)
+    private fun getPaperByIdOrNull(id: UUID): Paper? {
+        val rows = PaperTable
+            .joinPaperHasExternalId()
+            .selectAll()
+            .where { PaperTable.id eq id }
+            .toList()
 
-    private fun getPaperByExternalIdOrNull(externalId: String): Paper? =
-        PaperTable.getEntityOrNull(ResultRow::toPaper) { PaperTable.externalId eq externalId }
+        if (rows.isEmpty()) return null
+
+        return rows.toPaperWithExternalIds()
+    }
+
+    /**
+     * Creates a where clause to find a paper that has any of the passed [externalIds].
+     *
+     * Translates to:
+     * ```
+     *    (type == item[0].type and value == item[0].value)
+     * or (type == item[1].type and value == item[1].value)
+     * ...
+     * or (type == item[n-1].type and value == item[n-1].value)
+     * ```
+     */
+    private fun externalIdsWhereOp(externalIds: List<ExternalId>) = externalIds.map {
+        (PaperHasExternalIdTable.type eq it.type) and (PaperHasExternalIdTable.value eq it.value)
+    }.fold<Op<Boolean>, Op<Boolean>>(Op.FALSE) { acc, value -> acc or value }
+
+    private fun getPaperIdsFromExternalIds(externalIds: List<ExternalId>): List<UUID> =
+        PaperHasExternalIdTable.selectAll()
+            .where { externalIdsWhereOp(externalIds) }
+            .map { it[PaperHasExternalIdTable.paperId].value }
 
     override suspend fun getPaperById(id: UUID): Result<Paper> = db.query {
         getEntityByKeyAsResult(::getPaperByIdOrNull, EntityType.PAPER, id)
-    }
-
-    override suspend fun getPaperByExternalId(externalId: String): Result<Paper> = db.query {
-        getEntityByKeyAsResult(::getPaperByExternalIdOrNull, EntityType.PAPER, externalId)
     }
 
     override suspend fun ensurePaperExists(id: UUID) = db.query {
@@ -118,14 +140,13 @@ class PaperTableRepo(
         }
     }
 
-    override suspend fun doesPaperExistByExternalId(externalId: String): Boolean = db.query {
-        PaperTable.doesEntityExist { PaperTable.externalId eq externalId }
+    override suspend fun doesPaperExistByExternalIds(externalIds: List<ExternalId>): Boolean = db.query {
+        PaperHasExternalIdTable.doesEntityExist { externalIdsWhereOp(externalIds) }
     }
 
     override suspend fun createPaper(request: CreatePaperRequest): Paper = db.query {
-        PaperTable.insertAndGet(ResultRow::toPaper) {
+        val paperId = PaperTable.insertAndGetId {
             it[title] = request.title
-            it[externalId] = request.externalId
             it[abstract] = request.abstract
             it[year] = request.year
             it[publisher] = request.publisher
@@ -134,7 +155,11 @@ class PaperTableRepo(
             it[authors] = request.authors
             it[fetcherMetadata] = request.fetcherMetadata
             it[createdAt] = OffsetDateTime.now()
-        }
+        }.value
+
+        insertExternalIds(paperId, request.externalIds)
+
+        getPaperById(paperId).getOrThrow()
     }
 
     override suspend fun updatePaper(request: UpdatePaperRequest, paths: List<String>): Paper = db.query {
@@ -142,11 +167,10 @@ class PaperTableRepo(
             return@query getPaperById(request.paperId).getOrThrow()
         }
 
-        PaperTable.updateByIdAndGet(request.paperId, ResultRow::toPaper) {
+        PaperTable.update({ PaperTable.id eq request.paperId }) {
             for (field in paths) {
                 when (field) {
                     "paper.title" -> it[title] = request.title
-                    "paper.external_id" -> it[externalId] = request.externalId
                     "paper.abstrakt" -> it[abstract] = request.abstract
                     "paper.year" -> it[year] = request.year
                     "paper.publisher" -> it[publisher] = request.publisher
@@ -158,6 +182,13 @@ class PaperTableRepo(
 
             it[modifiedAt] = OffsetDateTime.now()
         }
+
+        if (paths.contains("paper.external_ids")) {
+            PaperHasExternalIdTable.deleteWhere { PaperHasExternalIdTable.paperId eq request.paperId }
+            insertExternalIds(request.paperId, request.externalIds)
+        }
+
+        getPaperById(request.paperId).getOrThrow()
     }
 
     override suspend fun getPapersBySearchQuery(query: String): List<Paper> = db.query {
@@ -182,17 +213,32 @@ class PaperTableRepo(
             args = listOf(TextColumnType() to query),
             explicitStatementType = StatementType.SELECT,
             transform = { extractPaperRows(JdbcResult(it)) },
-        )
+        ).orEmpty()
 
-        matchingPapers.orEmpty()
+        val paperIds = matchingPapers.map { it.id }
+        val paperExternalIds = PaperHasExternalIdTable.selectAll()
+            .where { PaperHasExternalIdTable.paperId inList paperIds }
+            .map(ResultRow::toExternalIdPair)
+            .groupBy { it.first } // group by paper ID
+            .mapValues { entry -> entry.value.map { it.second } }
+
+        matchingPapers.map { it.copy(externalIds = paperExternalIds[it.id].orEmpty()) }
     }
 
-    override suspend fun getPapersByExternalIds(externalIds: List<String>): List<Paper> = db.query {
+    override suspend fun getPapersByExternalIds(externalIds: List<ExternalId>): List<Paper> = db.query {
         if (externalIds.isEmpty()) return@query emptyList()
 
-        PaperTable.selectAll()
-            .where { PaperTable.externalId inList externalIds }
-            .map(ResultRow::toPaper)
+        val paperIds = getPaperIdsFromExternalIds(externalIds).distinct()
+
+        if (paperIds.isEmpty()) return@query emptyList()
+
+        PaperTable
+            .joinPaperHasExternalId()
+            .selectAll()
+            .where { PaperTable.id inList paperIds }
+            .groupBy { it[PaperTable.id].value }
+            .values
+            .map { rows -> rows.toPaperWithExternalIds() }
     }
 
     /**
@@ -202,5 +248,13 @@ class PaperTableRepo(
      * @return A list of [Paper] objects extracted from the result set.
      */
     private fun extractPaperRows(result: JdbcResult): List<Paper> =
-        extractTableRows(result, PaperTable, ResultRow::toPaper)
+        extractTableRows(result, PaperTable) { it.toPaper(emptyList()) }
+
+    private fun insertExternalIds(paperId: UUID, externalIds: List<ExternalId>) {
+        PaperHasExternalIdTable.batchInsert(externalIds) {
+            this[PaperHasExternalIdTable.paperId] = paperId
+            this[PaperHasExternalIdTable.type] = it.type
+            this[PaperHasExternalIdTable.value] = it.value
+        }
+    }
 }

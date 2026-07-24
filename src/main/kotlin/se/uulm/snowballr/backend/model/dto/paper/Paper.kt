@@ -12,7 +12,7 @@ import java.util.UUID
 data class Paper(
     val id: UUID,
     override val title: String,
-    override val externalId: String?,
+    override val externalIds: List<ExternalId>,
     override val abstract: String,
     override val year: Int,
     override val publisher: String,
@@ -31,7 +31,7 @@ data class Paper(
  */
 fun Paper.toFetcherPaper(): FetcherPaper = FetcherPaper(
     title = title,
-    externalId = externalId,
+    externalIds = externalIds,
     abstract = abstract,
     year = year,
     publisher = publisher,

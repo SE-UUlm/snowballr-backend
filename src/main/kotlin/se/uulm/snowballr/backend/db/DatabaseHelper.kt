@@ -12,6 +12,7 @@ import se.uulm.snowballr.backend.table.ReviewTable
 import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.VerificationTokenTable
 import se.uulm.snowballr.backend.table.association.CitationTable
+import se.uulm.snowballr.backend.table.association.PaperHasExternalIdTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.table.association.ReadingListTable
@@ -38,6 +39,7 @@ object DatabaseHelper {
         ProjectMemberTable,
         ReviewTable,
         ReviewHasCriterionTable,
+        PaperHasExternalIdTable,
     )
 
     /**

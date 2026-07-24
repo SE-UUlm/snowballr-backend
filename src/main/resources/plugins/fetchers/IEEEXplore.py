@@ -1,4 +1,12 @@
-from snowballr import Author, FetcherInformation, FetcherOptionsSchema, Link, Paper, fetcher_plugin
+from snowballr import (
+    Author,
+    ExternalId,
+    FetcherInformation,
+    FetcherOptionsSchema,
+    Link,
+    Paper,
+    fetcher_plugin,
+)
 from xploreapi import XPLORE
 
 fetcher_information = FetcherInformation(
@@ -75,11 +83,18 @@ def paper_from_response(res) -> Paper:
         for author in res.get("authors", {}).get("authors", [])
         if "full_name" in author
     ]
+
+    external_ids = []
+    doi = res.get("doi", None)
+    if doi is not None:
+        external_ids = [ExternalId("DOI", doi)]
+
     # Prefer publication year over insert year
     date = res.get("publication_year", int(res.get("insert_date", "0000")[:4]))
+
     return Paper(
         title=res.get("title", ""),
-        external_id=res.get("doi", None),
+        external_ids=external_ids,
         abstract=res.get("abstract", ""),
         year=date,
         publisher=res.get("publisher", ""),

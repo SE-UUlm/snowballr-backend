@@ -14,6 +14,8 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.env.Env
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.model.dto.paper.Author
+import se.uulm.snowballr.backend.model.dto.paper.ExternalId
+import se.uulm.snowballr.backend.model.dto.paper.ExternalIdType
 import se.uulm.snowballr.backend.model.exception.FetcherException
 import se.uulm.snowballr.backend.model.exception.UnauthorizedFetcherPathException
 import se.uulm.snowballr.backend.model.exception.notfound.FetcherNotFoundException
@@ -138,7 +140,7 @@ class PythonPluginFetcherManagerTest {
 
             paper = [{
                 "title": "Example title",
-                "external_id": "external-42",
+                "external_ids": [{"type": "DOI", "value": "external-42"}],
                 "abstract": "Example abstract",
                 "year": 2024,
                 "publisher": "Example publisher",
@@ -160,7 +162,7 @@ class PythonPluginFetcherManagerTest {
 
         val expectedPaper = FetcherPaper(
             title = "Example title",
-            externalId = "external-42",
+            externalIds = listOf(ExternalId(ExternalIdType.DOI, "external-42")),
             abstract = "Example abstract",
             year = 2024,
             publisher = "Example publisher",
@@ -198,7 +200,7 @@ class PythonPluginFetcherManagerTest {
 
             paper = [{
                 "title": "stdin title",
-                "external_id": "stdin-1",
+                "external_ids": [{"type": "DOI", "value": "stdin-1"}],
                 "abstract": "stdin abstract",
                 "year": 2024,
                 "publisher": "stdin publisher",
@@ -232,7 +234,7 @@ class PythonPluginFetcherManagerTest {
 
         val expectedPaper = FetcherPaper(
             title = "stdin title",
-            externalId = "stdin-1",
+            externalIds = listOf(ExternalId(ExternalIdType.DOI, "stdin-1")),
             abstract = "stdin abstract",
             year = 2024,
             publisher = "stdin publisher",

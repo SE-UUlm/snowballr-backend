@@ -8,6 +8,8 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
+import se.uulm.snowballr.backend.model.dto.paper.ExternalId
+import se.uulm.snowballr.backend.model.dto.paper.ExternalIdType
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicatePaperException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.PaperNotFoundException
 import se.uulm.snowballr.backend.model.incoming.paper.UpdatePaperRequest
@@ -21,7 +23,7 @@ class UpdatePaperTest : PaperServiceTest() {
             id = paperId,
             title = "Updated Title",
             abstract = "Updated Abstract",
-            externalId = "10.1000/updateddoi",
+            externalIds = listOf(ExternalId(ExternalIdType.DOI, "10.1000/updateddoi")),
             year = 2023,
         ),
     )
@@ -33,13 +35,14 @@ class UpdatePaperTest : PaperServiceTest() {
         val examplePaper = DataBuilder.createExamplePaper(id = paperId, authors = listOf(exampleAuthor))
 
         coEvery { paperRepoMock.ensurePaperExists(paperId) } just Runs
-        coEvery { paperRepoMock.getPaperByExternalId(request.externalId.orEmpty()) } returns Result.failure(Exception())
         coEvery { paperRepoMock.updatePaper(request, emptyList()) } returns examplePaper
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paperId) } returns emptyList()
 
         val result = service.updatePaper(request, emptyList())
 
         assertPaperEquality(examplePaper, result)
+
+        coVerify(exactly = 0) { paperRepoMock.getPapersByExternalIds(any()) }
     }
 
     @Test
@@ -56,19 +59,53 @@ class UpdatePaperTest : PaperServiceTest() {
     @Test
     fun `When a paper is updated with an external ID that already exists, then a DuplicateEntityException is thrown`() =
         runTest {
-            val externalId = "10.1000/existingdoi"
-            val request = getExampleRequest().copy(externalId = externalId)
+            val externalIds = listOf(ExternalId(ExternalIdType.DOI, "10.1000/existingdoi"))
+            val request = getExampleRequest().copy(externalIds = externalIds)
             val existingPaperWithSameExternalId = DataBuilder.createExamplePaper(
                 id = UUID.randomUUID(),
-                externalId = externalId,
+                externalIds = externalIds,
             )
 
             coEvery { paperRepoMock.ensurePaperExists(paperId) } just Runs
             coEvery {
-                paperRepoMock.getPaperByExternalId(externalId)
-            } returns Result.success(existingPaperWithSameExternalId)
+                paperRepoMock.getPapersByExternalIds(externalIds)
+            } returns listOf(existingPaperWithSameExternalId)
 
-            assertThrows<DuplicatePaperException> { service.updatePaper(request, emptyList()) }
+            assertThrows<DuplicatePaperException> { service.updatePaper(request, listOf("paper.external_ids")) }
+        }
+
+    @Test
+    fun `When a paper is updated with external IDs that already exist, then a DuplicateEntityException is thrown`() =
+        runTest {
+            val externalIds = listOf(
+                ExternalId(ExternalIdType.DOI, "10.1000/existingdoi"),
+                ExternalId(ExternalIdType.URL, "https://example.com"),
+            )
+            val request = getExampleRequest().copy(externalIds = externalIds)
+            val existingPapers = listOf(
+                DataBuilder.createExamplePaper(id = UUID.randomUUID(), externalIds = listOf(externalIds[0])),
+                DataBuilder.createExamplePaper(id = UUID.randomUUID(), externalIds = listOf(externalIds[1])),
+            )
+
+            coEvery { paperRepoMock.ensurePaperExists(paperId) } just Runs
+            coEvery { paperRepoMock.getPapersByExternalIds(externalIds) } returns existingPapers
+
+            assertThrows<DuplicatePaperException> { service.updatePaper(request, listOf("paper.external_ids")) }
+        }
+
+    @Test
+    fun `When a paper is updated with an external ID but the path doesn't contain the external IDs, then existing papers are not checked`() =
+        runTest {
+            val request = getExampleRequest().copy(externalIds = emptyList())
+            val examplePaper = DataBuilder.createExamplePaper(id = paperId)
+
+            coEvery { paperRepoMock.ensurePaperExists(paperId) } just Runs
+            coEvery { paperRepoMock.updatePaper(request, listOf("paper.external_ids")) } returns examplePaper
+            coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paperId) } returns emptyList()
+
+            service.updatePaper(request, listOf("paper.external_ids"))
+
+            coVerify(exactly = 0) { paperRepoMock.getPapersByExternalIds(any()) }
         }
 
     @Test
@@ -78,28 +115,30 @@ class UpdatePaperTest : PaperServiceTest() {
             val exampleAuthor = DataBuilder.createExampleAuthor()
             val existingPaperWithSameExternalId = DataBuilder.createExamplePaper(
                 id = paperId,
-                externalId = request.externalId,
+                externalIds = request.externalIds,
                 authors = listOf(exampleAuthor),
             )
 
             coEvery { paperRepoMock.ensurePaperExists(paperId) } just Runs
-            coEvery { paperRepoMock.getPaperByExternalId(request.externalId.orEmpty()) } returns
-                Result.success(existingPaperWithSameExternalId)
-            coEvery { paperRepoMock.updatePaper(request, emptyList()) } returns existingPaperWithSameExternalId
+            coEvery { paperRepoMock.getPapersByExternalIds(request.externalIds) } returns
+                listOf(existingPaperWithSameExternalId)
+            coEvery {
+                paperRepoMock.updatePaper(request, listOf("paper.external_ids"))
+            } returns existingPaperWithSameExternalId
             coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paperId) } returns emptyList()
 
-            val result = service.updatePaper(request, emptyList())
+            val result = service.updatePaper(request, listOf("paper.external_ids"))
 
             assertPaperEquality(existingPaperWithSameExternalId, result)
         }
 
     @Test
     fun `When a paper is updated without external ID, then duplicate lookup by external ID is skipped`() = runTest {
-        val request = getExampleRequest().copy(externalId = null)
+        val request = getExampleRequest().copy(externalIds = emptyList())
         val exampleAuthor = DataBuilder.createExampleAuthor()
         val updatedPaper = DataBuilder.createExamplePaper(
             id = paperId,
-            externalId = "",
+            externalIds = emptyList(),
             authors = listOf(exampleAuthor),
         )
 
@@ -108,6 +147,6 @@ class UpdatePaperTest : PaperServiceTest() {
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paperId) } returns emptyList()
 
         service.updatePaper(request, emptyList())
-        coVerify(exactly = 0) { paperRepoMock.getPaperByExternalId(any()) }
+        coVerify(exactly = 0) { paperRepoMock.getPapersByExternalIds(any()) }
     }
 }

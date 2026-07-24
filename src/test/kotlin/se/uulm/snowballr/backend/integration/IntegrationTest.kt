@@ -39,6 +39,7 @@ import se.uulm.snowballr.backend.fetcher.IFetcherOrchestrator
 import se.uulm.snowballr.backend.mail.EmailManager
 import se.uulm.snowballr.backend.mail.IEmailManager
 import se.uulm.snowballr.backend.mailServiceDeps
+import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.incoming.paper.CreatePaperRequest
@@ -158,12 +159,15 @@ open class IntegrationTest : KoinTest {
      * Creates a paper with the passed data.
      *
      * @param title The title of the created paper. Defaults to "Test Paper".
-     * @param externalId The external ID of the created paper. Defaults to null.
+     * @param externalIds The external ID of the created paper. Defaults to null.
      */
-    protected suspend fun createPaper(title: String = "Test Paper", externalId: String? = null): PaperResponse {
+    protected suspend fun createPaper(
+        title: String = "Test Paper",
+        externalIds: List<ExternalId> = emptyList(),
+    ): PaperResponse {
         val request = CreatePaperRequest(
             title = title,
-            externalId = externalId,
+            externalIds = externalIds,
             abstract = "Abstract text",
             year = 2024,
             publisher = "Publisher",

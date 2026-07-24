@@ -8,6 +8,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.integration.IntegrationTest
+import se.uulm.snowballr.backend.model.dto.paper.ExternalId
+import se.uulm.snowballr.backend.model.dto.paper.ExternalIdType
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.incoming.paper.CreatePaperRequest
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
@@ -49,7 +51,10 @@ class RegressionTest : IntegrationTest() {
             val papers = mutableSetOf<PaperResponse>()
             for (i in 1..numberOfPapers) {
                 val request = CreatePaperRequest.fromPaper(
-                    DataBuilder.createExamplePaper(title = "Paper $i", externalId = "External ID $i"),
+                    DataBuilder.createExamplePaper(
+                        title = "Paper $i",
+                        externalIds = listOf(ExternalId(ExternalIdType.URL, "External ID $i")),
+                    ),
                 )
                 papers += paperService.createPaper(request)
             }

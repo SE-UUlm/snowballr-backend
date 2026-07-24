@@ -1,6 +1,7 @@
 package se.uulm.snowballr.backend.model.incoming.paper
 
 import se.uulm.snowballr.backend.model.dto.paper.Author
+import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.paper.Paper
 import se.uulm.snowballr.backend.model.outgoing.paper.PaperResponse
 import java.util.UUID
@@ -8,7 +9,7 @@ import java.util.UUID
 data class UpdatePaperRequest(
     val paperId: UUID,
     val title: String,
-    val externalId: String?,
+    val externalIds: List<ExternalId>,
     val abstract: String,
     val year: Int,
     val publisher: String,
@@ -20,7 +21,7 @@ data class UpdatePaperRequest(
         fun fromPaper(paper: Paper) = UpdatePaperRequest(
             paperId = paper.id,
             title = paper.title,
-            externalId = paper.externalId,
+            externalIds = paper.externalIds,
             abstract = paper.abstract,
             year = paper.year,
             publisher = paper.publisher,
@@ -32,7 +33,7 @@ data class UpdatePaperRequest(
         fun fromPaperResponse(paper: PaperResponse) = UpdatePaperRequest(
             paperId = paper.id,
             title = paper.title,
-            externalId = paper.externalId,
+            externalIds = paper.externalIds,
             abstract = paper.abstract,
             year = paper.year,
             publisher = paper.publisher,

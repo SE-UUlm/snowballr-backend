@@ -89,7 +89,7 @@ class ProjectExportManagerTest {
                 DataBuilder.createExampleProjectPaperFull(
                     projectPaper = DataBuilder.createExampleProjectPaper(stage = 0),
                     paper = DataBuilder.createExamplePaper(
-                        externalId = null,
+                        externalIds = emptyList(),
                         createdAt = exampleDateTime,
                         modifiedAt = null,
                     ),
@@ -160,7 +160,7 @@ class ProjectExportManagerTest {
                 val paperInStage = projectPapers[stageIndex]
                 val paperExport = stageExport.papers[0]
                 assertEquals(paperInStage.paper.title, paperExport.title)
-                assertEquals(paperInStage.paper.externalId.orEmpty(), paperExport.externalId)
+                assertEquals(paperInStage.paper.externalIds, paperExport.externalIds)
                 assertEquals(paperInStage.paper.abstract, paperExport.abstract)
                 assertEquals(paperInStage.paper.year, paperExport.year)
                 assertEquals(paperInStage.paper.publisher, paperExport.publisher)

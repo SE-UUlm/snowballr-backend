@@ -225,12 +225,20 @@ class FetcherOrchestrator(
         val createdPaperRefs = mutableSetOf<Paper>()
 
         for (ref in refs) {
-            if (ref.externalId != null) {
+            if (ref.externalIds.isNotEmpty()) {
                 // TODO: replace with check for whole paper data by similarity not only external ID
-                val result = paperRepo.getPaperByExternalId(ref.externalId)
-                if (result.isSuccess) {
+                val existingPapers = paperRepo.getPapersByExternalIds(ref.externalIds)
+
+                if (existingPapers.isNotEmpty()) {
+                    if (existingPapers.size > 1) {
+                        logger.error {
+                            "External IDs of fetcher paper (${ref.externalIds}) refer to many existing papers: " +
+                                "$existingPapers"
+                        }
+                    }
+
                     // TODO: merge data
-                    createdPaperRefs += result.getOrThrow()
+                    createdPaperRefs += existingPapers
                     continue
                 }
             }
@@ -298,6 +306,7 @@ class FetcherOrchestrator(
      */
     private suspend fun runAddingPapersToProject(job: FetcherProcessingJob, creationResults: PaperCreationResults) {
         val filteredRefs = mutableListOf<Paper>()
+        // TODO: don't use creation result, re-fetch all refs to also include existing refs
         for (createdRef in creationResults.allRefs) {
             val doesAlreadyExist = projectPaperRepo.doesProjectPaperExist(job.projectId, createdRef.id)
             if (doesAlreadyExist) {

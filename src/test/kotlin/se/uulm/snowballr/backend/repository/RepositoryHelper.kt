@@ -8,6 +8,8 @@ import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 import se.uulm.snowballr.backend.model.dto.paper.Author
+import se.uulm.snowballr.backend.model.dto.paper.ExternalId
+import se.uulm.snowballr.backend.model.dto.paper.ExternalIdType
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
 import se.uulm.snowballr.backend.model.dto.project.SnowballingType
@@ -24,6 +26,7 @@ import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.ReviewTable
 import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.VerificationTokenTable
+import se.uulm.snowballr.backend.table.association.PaperHasExternalIdTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.table.association.ReviewHasCriterionTable
@@ -96,7 +99,6 @@ object RepositoryHelper {
      */
     suspend fun insertPaperAndGetId(
         title: String = "Title",
-        externalId: String = UUID.randomUUID().toString(),
         abstract: String = "Abstract",
         year: Int = 2025,
         publisher: String = "Publisher",
@@ -107,7 +109,6 @@ object RepositoryHelper {
     ): UUID = db.query {
         PaperTable.insertAndGetId {
             it[PaperTable.title] = title
-            it[PaperTable.externalId] = externalId
             it[PaperTable.abstract] = abstract
             it[PaperTable.year] = year
             it[PaperTable.publisher] = publisher
@@ -116,6 +117,27 @@ object RepositoryHelper {
             it[PaperTable.fetcherMetadata] = fetcherMetadata
             it[PaperTable.authors] = authors
         }.value
+    }
+
+    /**
+     * Creates an example external ID in the database with the specified properties.
+     */
+    suspend fun insertExternalId(
+        paperId: UUID,
+        type: ExternalIdType = ExternalIdType.DOI,
+        value: String = "10.1234/5678",
+    ): ExternalId {
+        val externalId = ExternalId(type, value)
+
+        db.query {
+            PaperHasExternalIdTable.insert {
+                it[PaperHasExternalIdTable.paperId] = paperId
+                it[PaperHasExternalIdTable.type] = type
+                it[PaperHasExternalIdTable.value] = value
+            }
+        }
+
+        return externalId
     }
 
     /**

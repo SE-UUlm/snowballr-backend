@@ -26,12 +26,13 @@ import se.uulm.snowballr.backend.repository.getEntityByIdOrNull
 import se.uulm.snowballr.backend.repository.getEntityByKeyAsResult
 import se.uulm.snowballr.backend.repository.getEntityOrNull
 import se.uulm.snowballr.backend.repository.insertAndGet
+import se.uulm.snowballr.backend.repository.joinPaperHasExternalId
+import se.uulm.snowballr.backend.repository.toProjectPaperWithExternalIds
 import se.uulm.snowballr.backend.repository.wrapAsResult
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.table.association.toProjectPaper
-import se.uulm.snowballr.backend.table.association.toProjectPaperWithPaper
 import java.sql.Connection
 import java.util.UUID
 
@@ -239,16 +240,19 @@ class ProjectPaperTableRepo(
     }
 
     override suspend fun getAllProjectPapersWithPapers(projectId: UUID): List<ProjectPaperWithPaper> = db.query {
-        ProjectPaperTable
+        PaperTable
             .join(
-                PaperTable,
+                ProjectPaperTable,
                 JoinType.INNER,
-                onColumn = ProjectPaperTable.paperId,
-                otherColumn = PaperTable.id,
+                onColumn = PaperTable.id,
+                otherColumn = ProjectPaperTable.paperId,
             )
+            .joinPaperHasExternalId()
             .selectAll()
             .where { ProjectPaperTable.projectId eq projectId }
-            .map { it.toProjectPaperWithPaper() }
+            .groupBy { it[PaperTable.id].value }
+            .values
+            .map { it.toProjectPaperWithExternalIds() }
     }
 
     /**

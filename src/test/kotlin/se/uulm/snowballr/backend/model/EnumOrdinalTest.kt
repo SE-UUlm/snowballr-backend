@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.model
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
+import se.uulm.snowballr.backend.model.dto.paper.ExternalIdType
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.project.SnowballingType
 import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
@@ -129,6 +130,26 @@ class EnumOrdinalTest {
                     MemberRole.ADMIN -> 1
                 }
 
+            assertEquals(expectedOrdinal, value.ordinal)
+        }
+    }
+
+    @Test
+    fun `When the ExternalIdType values are read, then they have the expected ordinal values`() {
+        for (value in ExternalIdType.entries) {
+            val expectedOrdinal =
+                when (value) {
+                    ExternalIdType.DOI -> 0
+                    ExternalIdType.ARXIV -> 1
+                    ExternalIdType.MAG -> 2
+                    ExternalIdType.ACL -> 3
+                    ExternalIdType.PUB_MED -> 4
+                    ExternalIdType.MEDLINE -> 5
+                    ExternalIdType.PUB_MED_CENTRAL -> 6
+                    ExternalIdType.DBLP -> 7
+                    ExternalIdType.SEMANTIC_SCHOLAR -> 8
+                    ExternalIdType.URL -> 9
+                }
             assertEquals(expectedOrdinal, value.ordinal)
         }
     }

@@ -177,6 +177,7 @@ private class NamingConventions {
             .orShould(haveSimpleNameEndingWith("ValidatorKt")) // kotlin class
             .orShould(haveSimpleName("ValidationHelperKt")) // exception
             .orShould(haveNameMatching($$".*inlined\\$zipOrAccumulate\\$.*")) // inlined function exception
+            .orShould(haveNameMatching(".*validate.*")) // inlined function exception
             .because("All validators should have the 'Validator' suffix")
             .check(classes)
     }

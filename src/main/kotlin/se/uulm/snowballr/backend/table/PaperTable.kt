@@ -6,6 +6,7 @@ import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.dao.id.java.UUIDTable
 import org.jetbrains.exposed.v1.json.json
 import se.uulm.snowballr.backend.model.dto.paper.Author
+import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.paper.Paper
 import java.time.OffsetDateTime
 
@@ -14,7 +15,6 @@ import java.time.OffsetDateTime
  *
  * Columns:
  * - [title]: Represents the title of the paper as a [String].
- * - [externalId]: Represents an optional unique external identifier of the paper as a nullable [String].
  * - [abstract]: Represents the abstract of the paper as a [String].
  * - [year]: Represents the publication year of the paper as an [Int].
  * - [publisher]: Represents the publisher of the paper as a nullable [String].
@@ -29,7 +29,6 @@ import java.time.OffsetDateTime
  */
 object PaperTable : UUIDTable("paper") {
     val title = text("title")
-    val externalId = text("external_id").uniqueIndex().nullable()
     val abstract = text("abstract")
     val year = integer("year")
     val publisher = text("publisher")
@@ -56,10 +55,10 @@ object PaperTable : UUIDTable("paper") {
 /**
  * Creates a [Paper] from this [ResultRow].
  */
-fun ResultRow.toPaper() = Paper(
+fun ResultRow.toPaper(externalIds: List<ExternalId>) = Paper(
     id = this[PaperTable.id].value,
     title = this[PaperTable.title],
-    externalId = this[PaperTable.externalId],
+    externalIds = externalIds,
     abstract = this[PaperTable.abstract],
     year = this[PaperTable.year],
     publisher = this[PaperTable.publisher],

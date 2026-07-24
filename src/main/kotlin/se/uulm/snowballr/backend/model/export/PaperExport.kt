@@ -2,14 +2,15 @@ package se.uulm.snowballr.backend.model.export
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 
 @Serializable
 data class PaperExport(
     @SerialName("title")
     val title: String,
-    @SerialName("external_id")
-    val externalId: String,
+    @SerialName("external_ids")
+    val externalIds: List<ExternalId>,
     @SerialName("abstract")
     val abstract: String,
     @SerialName("year")
