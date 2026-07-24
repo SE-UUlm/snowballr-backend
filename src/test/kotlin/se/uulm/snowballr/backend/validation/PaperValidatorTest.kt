@@ -252,11 +252,11 @@ class PaperValidatorTest {
 
             val result = validateRequest(request)
 
-            assertIs<Either.Left<NonEmptyList<ValidationIssue>>>(result)
+            assertInstanceOf<Either.Left<NonEmptyList<ValidationIssue>>>(result)
             val issues = result.value.toList()
             assertThat(issues).hasSize(1)
             val compositeIssue = issues[0]
-            assertIs<CompositeIssue>(compositeIssue)
+            assertInstanceOf<CompositeIssue>(compositeIssue)
             assertThat("$compositeIssue").startsWith("Issues of author at index 0")
         }
 
@@ -300,11 +300,11 @@ class PaperValidatorTest {
 
             val result = validateRequest(request)
 
-            assertIs<Either.Left<NonEmptyList<ValidationIssue>>>(result)
+            assertInstanceOf<Either.Left<NonEmptyList<ValidationIssue>>>(result)
             val issues = result.value.toList()
             assertThat(issues).hasSize(1)
             val compositeIssue = issues[0]
-            assertIs<CompositeIssue>(compositeIssue)
+            assertInstanceOf<CompositeIssue>(compositeIssue)
             assertThat("$compositeIssue").startsWith("Issues of external ID at index 0")
         }
     }
@@ -525,11 +525,11 @@ class PaperValidatorTest {
 
             val result = validateRequest(request)
 
-            assertIs<Either.Left<NonEmptyList<ValidationIssue>>>(result)
+            assertInstanceOf<Either.Left<NonEmptyList<ValidationIssue>>>(result)
             val issues = result.value.toList()
             assertThat(issues).hasSize(1)
             val compositeIssue = issues[0]
-            assertIs<CompositeIssue>(compositeIssue)
+            assertInstanceOf<CompositeIssue>(compositeIssue)
             assertThat("$compositeIssue").startsWith("Issues of external ID at index 0")
         }
     }

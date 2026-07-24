@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.repository.association
 
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
@@ -17,7 +18,6 @@ import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.association.PaperHasExternalIdTable
 import se.uulm.snowballr.backend.table.association.ReadingListTable
 import java.util.UUID
-import kotlin.test.assertEquals
 
 class ReadingListTableRepoTest :
     RepositoryTest(arrayOf(UserTable, PaperTable, ReadingListTable, PaperHasExternalIdTable), false) {

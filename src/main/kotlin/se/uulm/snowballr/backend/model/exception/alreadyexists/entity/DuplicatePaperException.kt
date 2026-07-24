@@ -15,6 +15,6 @@ class DuplicatePaperException(
     externalIds: List<ExternalId>,
 ) : DuplicateEntityException(
     EntityType.PAPER,
-    *externalIds.toTypedArray(),
+    *externalIds.map { "${it.type.displayName}:${it.value}" }.toTypedArray(),
     identifierType = IdentifierType.EXTERNAL_ID,
 )

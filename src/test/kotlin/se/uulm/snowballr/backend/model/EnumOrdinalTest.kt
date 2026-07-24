@@ -143,10 +143,10 @@ class EnumOrdinalTest {
                     ExternalIdType.ARXIV -> 1
                     ExternalIdType.MAG -> 2
                     ExternalIdType.ACL -> 3
-                    ExternalIdType.MEDLINE -> 5
                     ExternalIdType.PUB_MED -> 4
-                    ExternalIdType.DBLP -> 7
+                    ExternalIdType.MEDLINE -> 5
                     ExternalIdType.PUB_MED_CENTRAL -> 6
+                    ExternalIdType.DBLP -> 7
                     ExternalIdType.SEMANTIC_SCHOLAR -> 8
                     ExternalIdType.URL -> 9
                 }
