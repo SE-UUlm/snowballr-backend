@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.openapi
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
@@ -11,6 +12,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import se.uulm.snowballr.backend.openapi.OpenApiContractTest.Companion.COMMITTED_SPEC
 import se.uulm.snowballr.backend.rest.SnowballRApplication
 import java.io.File
 
@@ -34,9 +36,13 @@ class OpenApiContractTest(@Autowired private val mvc: MockMvc) {
 
         val committedSpec = File(COMMITTED_SPEC)
         committedSpec.parentFile.mkdirs()
-        committedSpec.writeText(generated)
 
-        assertTrue(committedSpec.exists())
+        val previous = committedSpec.takeIf { it.exists() }?.readText()
+        if (previous != generated) {
+            committedSpec.writeText(generated)
+        }
+
+        assertEquals(generated, committedSpec.readText())
         assertTrue(generated.isNotBlank())
     }
 
@@ -50,8 +56,8 @@ class OpenApiContractTest(@Autowired private val mvc: MockMvc) {
         .getContentAsString(Charsets.UTF_8)
 
     /**
-     * Normalizes the specification into a stable, diff-friendly form: object keys are sorted recursively and
-     * the result is pretty-printed with a fixed indentation, independent of springdoc's internal ordering.
+     * Normalizes the specification into a stable, diff-friendly form: the result is pretty-printed with a fixed
+     * indentation.
      */
     private fun canonicalize(raw: String): String =
         JSON.encodeToString(JsonElement.serializer(), JSON.parseToJsonElement(raw)) + "\n"
