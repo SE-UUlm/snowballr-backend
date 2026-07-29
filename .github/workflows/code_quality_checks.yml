@@ -186,3 +186,23 @@ jobs:
               env:
                   SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
                   SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+    ensure-openapi-spec-consistency:
+        name: Ensure OpenAPI spec consistency
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v7
+
+            - name: Setup Java and Gradle
+              uses: ./.github/workflows/setup-java-gradle/
+
+            - name: Setup Python and uv
+              uses: ./.github/workflows/setup-python-uv/
+
+            - name: Create the API specification
+              run: ./gradlew createApiSpec
+
+            # Test whether a diff exists after recreating the api spec
+            - name: Test API spec consistency
+              run: git diff --exit-code

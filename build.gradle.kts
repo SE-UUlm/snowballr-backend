@@ -19,6 +19,10 @@ plugins {
     alias(libs.plugins.undercouch.download)
     alias(libs.plugins.sonarqube)
     alias(libs.plugins.ben.manes.versions)
+    alias(libs.plugins.spring)
+    alias(libs.plugins.spring.framework.boot)
+    alias(libs.plugins.spring.dep.management)
+    alias(libs.plugins.openapi.generator)
     application
 }
 
@@ -84,6 +88,10 @@ dependencies {
     implementation(libs.simple.java.mail)
     implementation(libs.handlebars)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.spring.boot.starter)
+    implementation(libs.spring.boot.starter.web)
+    implementation(libs.kotlin.reflect)
+    implementation(libs.spring.doc)
 
     testImplementation(libs.koin.test)
     testImplementation(libs.testcontainers)
@@ -96,6 +104,8 @@ dependencies {
     testImplementation(libs.archunit)
     testImplementation(libs.archunit.junit5)
     testImplementation(libs.greenmail.junit5)
+    testImplementation(libs.kotlin.test.junit)
+    testImplementation(libs.spring.boot.test)
 
     runtimeOnly(libs.jjwt.impl)
     runtimeOnly(libs.jjwt.jackson)
@@ -107,6 +117,14 @@ dependencies {
 }
 
 kotlin {
+    compilerOptions {
+        freeCompilerArgs.addAll(
+            // Handle nullability annotations as strict
+            "-Xjsr305=strict",
+            // Annotations are applied to both the constructor parameter and the property (interop)
+            "-Xannotation-default-target=param-property"
+        )
+    }
     jvmToolchain(25)
 }
 
@@ -150,6 +168,7 @@ tasks.test {
     dependsOn("syncFetcherPythonDeps")
     useJUnitPlatform {
         excludeTags("integration")
+        excludeTags("openapi")
     }
     reports.html.required.set(true)
     reports.html.outputLocation.set(layout.buildDirectory.dir("testReportHtml"))
@@ -173,6 +192,45 @@ tasks.register<Test>("integrationTest") {
     reports.junitXml.required.set(false)
 }
 
+tasks.register<Test>("createApiSpec") {
+    dependsOn("syncFetcherPythonDeps")
+    useJUnitPlatform {
+        includeTags("openapi")
+    }
+    description = "Runs the OpenAPI spec generation"
+    group = "build"
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    reports.html.required.set(false)
+    reports.junitXml.required.set(false)
+}
+
+// The committed OpenAPI spec (verified against the code by the `createApiSpec` task) is the single source of
+// truth for the generated frontend client. `openApiGenerate` turns it into a publishable TypeScript npm package.
+val committedApiSpec: RegularFile = layout.projectDirectory.file("api/openapi.json")
+
+openApiGenerate {
+    generatorName.set("typescript-fetch")
+    inputSpec.set(committedApiSpec.asFile.absolutePath)
+    outputDir.set(layout.buildDirectory.dir("generated/ts-client").map { it.asFile.absolutePath })
+    configOptions.set(
+        mapOf(
+            "npmName" to "snowballr-api-client",
+            "npmVersion" to project.version.toString(),
+            "supportsES6" to "true",
+            "withInterfaces" to "true",
+        ),
+    )
+}
+
+tasks.named("openApiGenerate") {
+    // Generate only from a spec that has been verified to match the code.
+    dependsOn("createApiSpec")
+    description = "Generates the TypeScript client from the committed OpenAPI spec"
+    group = "build"
+    inputs.file(committedApiSpec)
+}
+
 kover {
     currentProject {
         instrumentation {
@@ -189,6 +247,7 @@ kover {
                     "se.uulm.snowballr.backend.env", // environment variables
                     "se.uulm.snowballr.backend.grpc", // grpc server implementation
                     "se.uulm.snowballr.backend.scheduler", // job scheduler
+                    "se.uulm.snowballr.backend.rest", // REST server implementation
                 )
                 classes(
                     "se.uulm.snowballr.backend.MainKt", // main entry point
@@ -242,12 +301,18 @@ detekt {
 }
 
 // https://github.com/grpc/grpc-kotlin/tree/master/compiler
+// Note: the Spring Boot Gradle plugin (ProtobufPluginAction) auto-registers a "grpc" (Java)
+// plugin locator as soon as it detects the protobuf plugin, so create()-ing our own here would
+// fail with "ExecutableLocator ... already exists". Its own version alignment for that locator
+// relies on resolving the runtimeClasspath configuration from inside another configuration's
+// dependency resolution, which comes back empty in this project, leaving the artifact version
+// unset. Reconfigure (not create) the existing locator with an explicit, pinned version instead.
 protobuf {
     protoc {
         artifact = "com.google.protobuf:protoc:${libs.versions.protobuf.kotlin.get()}"
     }
     plugins {
-        create("grpc") {
+        named("grpc") {
             artifact = "io.grpc:protoc-gen-grpc-java:${libs.versions.grpc.asProvider().get()}"
         }
         create("grpckt") {
@@ -257,7 +322,6 @@ protobuf {
     generateProtoTasks {
         all().forEach {
             it.plugins {
-                create("grpc")
                 create("grpckt")
             }
             it.builtins {
