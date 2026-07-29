@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.1" encoding="UTF-8" ?>
 <!DOCTYPE configuration>
 <configuration>
     <import class="ch.qos.logback.classic.encoder.PatternLayoutEncoder"/>
@@ -6,7 +6,11 @@
 
     <appender name="STDOUT" class="ConsoleAppender">
         <encoder class="PatternLayoutEncoder">
-            <pattern>[%d{YY-MM-dd HH:mm:ss.SSS}] %-5level [%thread{10}] %logger{36}%replace(%X{requestId}){'.+', ' [req=$0]'}%replace(%X{userId}){'.+', ' [user=$0]'}: %msg%n</pattern>
+            <!-- The MDC blocks colour themselves with raw ANSI escapes (&#27;) inside the replacement string: a
+                 colour converter wrapping or preceding %replace breaks pattern parsing, and colouring the whole
+                 block would emit escape codes on every line that carries no correlation IDs. Requires XML 1.1,
+                 which is why the declaration above is not 1.0. -->
+            <pattern>%cyan([%d{YY-MM-dd HH:mm:ss.SSS}]) %highlight(%-5level) %magenta([%thread{10}]) %logger{36}%replace(%X{requestId}){'.+', ' &#27;[36m[req=$0]&#27;[0;39m'}%replace(%X{userId}){'.+', ' &#27;[35m[user=$0]&#27;[0;39m'}: %msg%n</pattern>
         </encoder>
     </appender>
     <root level="debug">
