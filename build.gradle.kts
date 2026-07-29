@@ -30,7 +30,10 @@ sonar {
     properties {
         property("sonar.projectKey", "snowballr-backend")
         property("sonar.projectName", "SnowballR Backend")
-        property("sonar.coverage.jacoco.xmlReportPaths", layout.buildDirectory.file("coverageXml/report.xml").get().asFile.path)
+        property(
+            "sonar.coverage.jacoco.xmlReportPaths",
+            layout.buildDirectory.file("coverageXml/report.xml").get().asFile.path,
+        )
     }
 }
 
@@ -47,9 +50,21 @@ gitVersioning.apply {
         tag("v(?<version>\\d+\\.\\d+\\.\\d+)") {
             version = $$"${ref.version}"
         }
+        // Beta channel: rolling next-release preview published on every merge to develop.
+        branch("develop") {
+            version =
+                $$"${describe.tag.version.major}.${describe.tag.version.minor}.${describe.tag.version.patch.next}-beta.${commit.short}"
+        }
+        // Alpha channel: per-push preview for any other branch (e.g. feature branches backing an open PR). Must be
+        // listed after the "develop" branch matcher, since the first matching entry wins.
+        branch(".*") {
+            version =
+                $$"${describe.tag.version.major}.${describe.tag.version.minor}.${describe.tag.version.patch.next}-alpha.${commit.short}"
+        }
     }
 
-    // optional fallback configuration in case of no matching ref configuration
+    // optional fallback configuration in case of no matching ref configuration (e.g. detached HEAD without a
+    // matching branch, such as a checkout that isn't on a real branch ref)
     rev {
         version = $$"${commit}"
     }
@@ -122,7 +137,7 @@ kotlin {
             // Handle nullability annotations as strict
             "-Xjsr305=strict",
             // Annotations are applied to both the constructor parameter and the property (interop)
-            "-Xannotation-default-target=param-property"
+            "-Xannotation-default-target=param-property",
         )
     }
     jvmToolchain(25)
@@ -205,20 +220,26 @@ tasks.register<Test>("createApiSpec") {
     reports.junitXml.required.set(false)
 }
 
-// The committed OpenAPI spec (verified against the code by the `createApiSpec` task) is the single source of
-// truth for the generated frontend client. `openApiGenerate` turns it into a publishable TypeScript npm package.
+// The committed OpenAPI spec is the single source of truth for the generated frontend client.
+// `openApiGenerate` turns it into a publishable TypeScript npm package.
 val committedApiSpec: RegularFile = layout.projectDirectory.file("api/openapi.json")
+val tsClientDir: Provider<Directory> = layout.buildDirectory.dir("generated/ts-client")
 
 openApiGenerate {
     generatorName.set("typescript-fetch")
     inputSpec.set(committedApiSpec.asFile.absolutePath)
-    outputDir.set(layout.buildDirectory.dir("generated/ts-client").map { it.asFile.absolutePath })
+    outputDir.set(tsClientDir.map { it.asFile.absolutePath })
+    validateSpec.set(true)
+    gitUserId.set("SE-UUlm")
+    gitRepoId.set("snowballr-backend")
     configOptions.set(
         mapOf(
-            "npmName" to "snowballr-api-client",
+            "npmName" to "@se-uulm/snowballr-api-client",
             "npmVersion" to project.version.toString(),
+            "licenseName" to "GPL-3.0-or-later",
             "supportsES6" to "true",
             "withInterfaces" to "true",
+            "enumPropertyNaming" to "UPPERCASE",
         ),
     )
 }
@@ -229,6 +250,43 @@ tasks.named("openApiGenerate") {
     description = "Generates the TypeScript client from the committed OpenAPI spec"
     group = "build"
     inputs.file(committedApiSpec)
+}
+
+tasks.register<Exec>("buildTsClient") {
+    dependsOn("openApiGenerate")
+    description = "Installs npm dependencies for the generated TypeScript client and builds it"
+    group = "publishing"
+    workingDir = tsClientDir.get().asFile
+    commandLine("npm", "install")
+
+    fun copyToPackage(fileName: String) {
+        val sourceFile = layout.projectDirectory.file(fileName)
+        val targetFile = tsClientDir.get().asFile.resolve(fileName)
+
+        sourceFile.asFile.copyTo(targetFile, overwrite = true)
+    }
+
+    // Copy the license and changelog to the package to make it ready for publishing
+    doFirst {
+        copyToPackage("LICENSE")
+        copyToPackage("CHANGELOG.md")
+    }
+}
+
+tasks.register<Exec>("publishTsClient") {
+    dependsOn("buildTsClient")
+    description = "Publishes the generated TypeScript client to npm under the given -PnpmTag (alpha, beta, or latest)"
+    group = "publishing"
+    workingDir = tsClientDir.get().asFile
+
+    doFirst {
+        val npmTag = project.findProperty("npmTag") as String?
+        require(!npmTag.isNullOrBlank()) {
+            "publishTsClient requires -PnpmTag=<alpha|beta|latest> to be set explicitly; " +
+                "refusing to publish without an explicit tag."
+        }
+        commandLine("npm", "publish", "--access", "public", "--tag", npmTag)
+    }
 }
 
 kover {
