@@ -215,7 +215,7 @@ openApiGenerate {
     outputDir.set(layout.buildDirectory.dir("generated/ts-client").map { it.asFile.absolutePath })
     configOptions.set(
         mapOf(
-            "npmName" to "snowballr-api",
+            "npmName" to "snowballr-api-client",
             "npmVersion" to project.version.toString(),
             "supportsES6" to "true",
             "withInterfaces" to "true",
@@ -247,6 +247,7 @@ kover {
                     "se.uulm.snowballr.backend.env", // environment variables
                     "se.uulm.snowballr.backend.grpc", // grpc server implementation
                     "se.uulm.snowballr.backend.scheduler", // job scheduler
+                    "se.uulm.snowballr.backend.rest", // REST server implementation
                 )
                 classes(
                     "se.uulm.snowballr.backend.MainKt", // main entry point

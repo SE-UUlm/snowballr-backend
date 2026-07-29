@@ -200,5 +200,9 @@ jobs:
             - name: Setup Python and uv
               uses: ./.github/workflows/setup-python-uv/
 
-            - name: Run OpenAPI test
+            - name: Create the API specification
               run: ./gradlew createApiSpec
+
+            # Test whether a diff exists after recreating the api spec
+            - name: Test API spec consistency
+              run: git diff --exit-code
