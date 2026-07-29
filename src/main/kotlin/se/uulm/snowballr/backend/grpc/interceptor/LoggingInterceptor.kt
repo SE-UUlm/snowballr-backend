@@ -38,49 +38,45 @@ val loggingInterceptor =
             next: ServerCallHandler<ReqT?, RespT?>?,
         ): ServerCall.Listener<ReqT?>? {
             val requestId = RequestContext.generateRequestId()
+            val startTime = System.currentTimeMillis()
             val methodName = call?.run { methodDescriptor.fullMethodName } ?: "<unknown method>"
             val context = Context.current().withValue(REQUEST_ID_CONTEXT_KEY, requestId)
 
             return context.call {
                 withRequestIdMdc(requestId) { logger.debug { "Received call to $methodName" } }
                 val listener = next?.startCall(call, headers) ?: return@call null
-                RequestLoggingListener(listener, requestId, methodName)
+                RequestLoggingListener(listener, requestId, methodName, startTime)
             }
         }
     }
 
 /**
  * Wraps a [ServerCall.Listener] to log the call's duration once it completes or is cancelled, warning when
- * it exceeds [SLOW_CALL_THRESHOLD_MS]. Timing starts at [onHalfClose], the point where the grpc-kotlin
- * coroutine that runs the service method is launched.
+ * it exceeds [SLOW_CALL_THRESHOLD_MS].
+ *
+ * Timing starts when the call is intercepted, so the measured duration covers authentication and validation
+ * as well as the service method itself, and calls cancelled before the client half-closes are still logged.
  */
 private class RequestLoggingListener<ReqT>(
     delegate: ServerCall.Listener<ReqT>,
     private val requestId: String,
     private val methodName: String,
+    private val startTime: Long,
 ) : SimpleForwardingServerCallListener<ReqT>(delegate) {
-    private var halfCloseTime: Long = 0L
-
-    override fun onHalfClose() {
-        halfCloseTime = System.currentTimeMillis()
-        super.onHalfClose()
-    }
-
     override fun onComplete() {
         super.onComplete()
-        logDuration()
+        logDuration("completed")
     }
 
     override fun onCancel() {
         super.onCancel()
-        logDuration()
+        logDuration("cancelled")
     }
 
-    private fun logDuration() {
-        if (halfCloseTime == 0L) return
-        val durationMs = System.currentTimeMillis() - halfCloseTime
+    private fun logDuration(outcome: String) {
+        val durationMs = System.currentTimeMillis() - startTime
         withRequestIdMdc(requestId) {
-            logger.debug { "$methodName completed in ${durationMs}ms" }
+            logger.debug { "$methodName $outcome in ${durationMs}ms" }
             if (durationMs >= SLOW_CALL_THRESHOLD_MS) {
                 logger.warn { "Slow call: $methodName took ${durationMs}ms (threshold: ${SLOW_CALL_THRESHOLD_MS}ms)" }
             }
