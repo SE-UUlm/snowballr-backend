@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.service
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.access.IProjectMemberAccessChecker
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
@@ -16,6 +17,8 @@ import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import java.util.UUID
+
+private val logger = KotlinLogging.logger {}
 
 interface IProjectMemberService {
     /**
@@ -82,6 +85,9 @@ class ProjectMemberService(
             }
 
             repo.updateProjectMemberRole(request.projectId, request.userId, request.newRole)
+            logger.info {
+                "Role of user ${request.userId} in project ${request.projectId} updated to ${request.newRole}"
+            }
         }
     }
 
@@ -118,11 +124,13 @@ class ProjectMemberService(
         }
 
         repo.removeProjectMember(projectId, requestedUser.id)
+        logger.info { "User ${requestedUser.id} removed from project $projectId" }
     }
 
     private suspend fun removeProjectMemberInvitation(currentUser: User, projectId: UUID, token: InvitationToken) {
         accessChecker.isAllowedToRemoveInvitation(currentUser, projectId)
 
         invitationTokenRepo.deleteInvitationToken(token.token)
+        logger.info { "Pending invitation for ${token.email} to project $projectId revoked" }
     }
 }

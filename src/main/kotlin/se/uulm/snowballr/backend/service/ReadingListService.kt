@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.service
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.outgoing.paper.PaperResponse
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
@@ -7,6 +8,8 @@ import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
 import se.uulm.snowballr.backend.repository.association.IReadingListTableRepo
 import java.util.UUID
+
+private val logger = KotlinLogging.logger {}
 
 interface IReadingListService {
     /**
@@ -63,11 +66,13 @@ class ReadingListService(
         paperRepo.ensurePaperExists(paperId)
 
         repo.createReadingListEntry(currentUser.id, paperId)
+        logger.info { "Paper $paperId added to reading list" }
     }
 
     override suspend fun removePaperFromReadingList(paperId: UUID) = withUser(userRepo) { currentUser ->
         paperRepo.ensurePaperExists(paperId)
 
         repo.removeReadingListEntry(currentUser.id, paperId)
+        logger.info { "Paper $paperId removed from reading list" }
     }
 }

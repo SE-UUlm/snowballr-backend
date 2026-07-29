@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.service
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.export.ProjectExportManager
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
@@ -13,6 +14,8 @@ import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import java.util.UUID
+
+private val logger = KotlinLogging.logger {}
 
 interface IExportService {
     /**
@@ -67,6 +70,13 @@ class ExportService(
                 }
             val projectCriteria = criterionRepo.getAllProjectCriteria(projectId)
 
-            ProjectExportManager.exportProject(format, project, projectMembers, projectPapers, projectCriteria)
+            val export =
+                ProjectExportManager.exportProject(format, project, projectMembers, projectPapers, projectCriteria)
+            // Data egress: the export contains the personal data of every project member.
+            logger.info {
+                "Project $projectId exported as $format (${projectPapers.size} papers, " +
+                    "${projectMembers.size} members)"
+            }
+            export
         }
 }

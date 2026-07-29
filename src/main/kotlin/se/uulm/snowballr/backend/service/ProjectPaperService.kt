@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.service
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.access.IProjectPaperAccessChecker
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
@@ -26,6 +27,8 @@ import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import java.util.UUID
+
+private val logger = KotlinLogging.logger {}
 
 interface IProjectPaperService {
     /**
@@ -148,6 +151,7 @@ class ProjectPaperService(
             }
 
             val projectPaper = repo.addPaperToProject(projectId, paperId, stage, currentUser.id)
+            logger.info { "Paper $paperId added to project $projectId as ${projectPaper.id} in stage $stage" }
 
             projectPaper.toProjectPaperResponse(paper)
         }

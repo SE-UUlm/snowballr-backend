@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.service
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.access.IReviewAccessChecker
 import se.uulm.snowballr.backend.fetcher.IFetcherOrchestrator
@@ -25,6 +26,8 @@ import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.IReviewHasCriterionTableRepo
 import java.util.UUID
+
+private val logger = KotlinLogging.logger {}
 
 interface IReviewService {
     /**
@@ -135,6 +138,9 @@ class ReviewService(
                 fetcherOrchestrator.enqueue(FetcherEnqueueJob(projectPaper, currentUser.id))
             }
 
+            logger.info {
+                "Review ${review.id} created for project paper ${request.projectPaperId} (${review.decision})"
+            }
             ReviewResponse.fromReviewAndIds(review, selectedCriteriaIds)
         }
 

@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.service
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.fetcher.IFetcherManager
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
@@ -27,6 +28,8 @@ import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import java.time.OffsetDateTime
 import java.util.UUID
+
+private val logger = KotlinLogging.logger {}
 
 @Suppress("ComplexInterface")
 interface IProjectService {
@@ -138,6 +141,7 @@ class ProjectService(
             projectMemberRepo.addUserToProject(currentUser.id, project.id)
             projectMemberRepo.updateProjectMemberRole(project.id, currentUser.id, MemberRole.ADMIN)
 
+            logger.info { "Project '${project.name}' (${project.id}) created" }
             ProjectResponse.fromProject(project)
         }
 
@@ -177,6 +181,11 @@ class ProjectService(
             }
 
             val updatedProject = repo.updateProject(finalRequest, paths)
+            if (paths.contains("project.status") && currentStatus != finalStatus) {
+                logger.info { "Project ${request.projectId} status changed: $currentStatus -> $finalStatus" }
+            } else {
+                logger.info { "Project ${request.projectId} updated: ${paths.joinToString()}" }
+            }
             ProjectResponse.fromProject(updatedProject)
         }
 
@@ -232,6 +241,7 @@ class ProjectService(
 
         repo.softDeleteProject(projectId)
         invitationTokenRepo.deleteInvitationTokensForProject(projectId)
+        logger.info { "Project $projectId soft-deleted" }
     }
 
     private suspend fun getAllProjectsForUserAndStatus(
