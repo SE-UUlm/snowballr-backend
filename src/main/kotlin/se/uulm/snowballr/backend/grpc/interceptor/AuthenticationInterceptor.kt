@@ -129,7 +129,10 @@ val authenticationInterceptor: ServerInterceptor =
             }
 
             // The request context is mutated during authentication and handed to the coroutine via REQUEST_CONTEXT_KEY.
-            val requestContext = RequestContext()
+            // Reuse the request ID assigned by the loggingInterceptor so its logs and the service logs correlate.
+            val requestContext = REQUEST_ID_CONTEXT_KEY.get()
+                ?.let { RequestContext(requestId = it) }
+                ?: RequestContext()
             val forwardingCall = AuthForwardingCall(call, cookieManager, requestContext)
             val grpcContext = Context.current().withValue(REQUEST_CONTEXT_KEY, requestContext)
 

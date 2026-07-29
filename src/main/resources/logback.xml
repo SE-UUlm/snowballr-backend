@@ -6,7 +6,7 @@
 
     <appender name="STDOUT" class="ConsoleAppender">
         <encoder class="PatternLayoutEncoder">
-            <pattern>[%d{YY-MM-dd HH:mm:ss.SSS}] %-5level [%thread{10}] %logger{36}: %msg%n</pattern>
+            <pattern>[%d{YY-MM-dd HH:mm:ss.SSS}] %-5level [%thread{10}] %logger{36}%replace(%X{requestId}){'.+', ' [req=$0]'}%replace(%X{userId}){'.+', ' [user=$0]'}: %msg%n</pattern>
         </encoder>
     </appender>
     <root level="debug">

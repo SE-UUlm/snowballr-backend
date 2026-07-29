@@ -106,7 +106,7 @@ complexity:
             - 'with'
     LabeledExpression:
         active: true
-        ignoredLabels: [ 'query', 'withUser' ]
+        ignoredLabels: [ 'query', 'withUser', 'call' ]
     LargeClass:
         active: true
         allowedLines: 600
