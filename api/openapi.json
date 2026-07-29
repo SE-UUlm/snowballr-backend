@@ -15,7 +15,7 @@
         "/projects": {
             "get": {
                 "tags": [
-                    "project-controller"
+                    "projects-controller"
                 ],
                 "operationId": "getAllProjects",
                 "responses": {
@@ -36,7 +36,7 @@
             },
             "post": {
                 "tags": [
-                    "project-controller"
+                    "projects-controller"
                 ],
                 "operationId": "createProject",
                 "requestBody": {
@@ -66,7 +66,7 @@
         "/projects/{id}": {
             "get": {
                 "tags": [
-                    "project-controller"
+                    "projects-controller"
                 ],
                 "operationId": "getProject",
                 "parameters": [
@@ -95,7 +95,7 @@
             },
             "delete": {
                 "tags": [
-                    "project-controller"
+                    "projects-controller"
                 ],
                 "operationId": "deleteProject",
                 "parameters": [
@@ -222,62 +222,6 @@
                     "currentStageStartedAt": {
                         "type": "string",
                         "format": "date-time"
-                    },
-                    "createdAt": {
-                        "type": "string",
-                        "format": "date-time"
-                    },
-                    "createdBy": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "modifiedAt": {
-                        "type": [
-                            "string",
-                            "null"
-                        ],
-                        "format": "date-time"
-                    },
-                    "modifiedBy": {
-                        "type": [
-                            "string",
-                            "null"
-                        ],
-                        "format": "uuid"
-                    },
-                    "deletedAt": {
-                        "type": [
-                            "string",
-                            "null"
-                        ],
-                        "format": "date-time"
-                    },
-                    "deletedBy": {
-                        "type": [
-                            "string",
-                            "null"
-                        ],
-                        "format": "uuid"
-                    },
-                    "archivedAt": {
-                        "type": [
-                            "string",
-                            "null"
-                        ],
-                        "format": "date-time"
-                    },
-                    "archivedBy": {
-                        "type": [
-                            "string",
-                            "null"
-                        ],
-                        "format": "uuid"
-                    },
-                    "active": {
-                        "type": "boolean"
-                    },
-                    "deleted": {
-                        "type": "boolean"
                     }
                 }
             },

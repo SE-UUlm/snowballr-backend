@@ -18,7 +18,7 @@ import java.util.UUID
 
 @RestController
 @RequestMapping("/projects")
-class ProjectController {
+class ProjectsController {
     private val projects = mutableListOf(
         Project(
             id = UUID.randomUUID(),
