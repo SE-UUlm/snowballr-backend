@@ -2,11 +2,13 @@ package se.uulm.snowballr.backend.grpc.interceptor
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.grpc.Context
+import io.grpc.ForwardingServerCall.SimpleForwardingServerCall
 import io.grpc.ForwardingServerCallListener.SimpleForwardingServerCallListener
 import io.grpc.Metadata
 import io.grpc.ServerCall
 import io.grpc.ServerCallHandler
 import io.grpc.ServerInterceptor
+import io.grpc.Status
 import org.slf4j.MDC
 import se.uulm.snowballr.backend.context.RequestContext
 
@@ -23,7 +25,7 @@ internal val REQUEST_ID_CONTEXT_KEY: Context.Key<String> = Context.key("requestI
 
 /**
  * A [ServerInterceptor] that assigns a short random request ID to every gRPC call, logs the call entry and
- * completion, and warns about slow calls.
+ * its outcome (status and duration), and warns about slow calls.
  *
  * The request ID is placed on the gRPC [Context] (via [REQUEST_ID_CONTEXT_KEY]) so downstream interceptors
  * can adopt it, and mirrored into the SLF4J [MDC] around each log statement it emits so the `logback.xml`
@@ -44,8 +46,9 @@ val loggingInterceptor =
 
             return context.call {
                 withRequestIdMdc(requestId) { logger.debug { "Received call to $methodName" } }
-                val listener = next?.startCall(call, headers) ?: return@call null
-                RequestLoggingListener(listener, requestId, methodName, startTime)
+                val statusCall = call?.let { StatusCapturingCall(it) }
+                val listener = next?.startCall(statusCall ?: call, headers) ?: return@call null
+                RequestLoggingListener(listener, requestId, methodName, startTime, statusCall)
             }
         }
     }
@@ -62,25 +65,48 @@ private class RequestLoggingListener<ReqT>(
     private val requestId: String,
     private val methodName: String,
     private val startTime: Long,
+    private val statusCall: StatusCapturingCall<*, *>?,
 ) : SimpleForwardingServerCallListener<ReqT>(delegate) {
     override fun onComplete() {
         super.onComplete()
-        logDuration("completed")
+        logOutcome("completed")
     }
 
     override fun onCancel() {
         super.onCancel()
-        logDuration("cancelled")
+        logOutcome("cancelled")
     }
 
-    private fun logDuration(outcome: String) {
+    private fun logOutcome(outcome: String) {
         val durationMs = System.currentTimeMillis() - startTime
+        val statusCode = statusCall?.closedStatus?.code?.name ?: "<not closed>"
         withRequestIdMdc(requestId) {
-            logger.debug { "$methodName $outcome in ${durationMs}ms" }
+            logger.debug { "$methodName $outcome with $statusCode in ${durationMs}ms" }
             if (durationMs >= SLOW_CALL_THRESHOLD_MS) {
                 logger.warn { "Slow call: $methodName took ${durationMs}ms (threshold: ${SLOW_CALL_THRESHOLD_MS}ms)" }
             }
         }
+    }
+}
+
+/**
+ * Wraps a [ServerCall] to record the [Status] the call is eventually closed with, so that
+ * [RequestLoggingListener] can report it alongside the duration.
+ *
+ * This interceptor is the outermost one, so its wrapper is the last to see `close` and therefore observes
+ * the status after the [exceptionInterceptor] has mapped any exception onto it. The severity of a failed
+ * call is logged by that interceptor, so the outcome line here stays at `DEBUG` for every status.
+ */
+private class StatusCapturingCall<ReqT, RespT>(
+    delegate: ServerCall<ReqT, RespT>,
+) : SimpleForwardingServerCall<ReqT, RespT>(delegate) {
+    @Volatile
+    var closedStatus: Status? = null
+        private set
+
+    override fun close(status: Status?, trailers: Metadata?) {
+        closedStatus = status
+        super.close(status, trailers)
     }
 }
 
