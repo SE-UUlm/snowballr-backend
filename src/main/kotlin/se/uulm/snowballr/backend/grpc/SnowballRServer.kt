@@ -27,6 +27,10 @@ import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.paper.Author
 import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.paper.ExternalIdType
+import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
+import se.uulm.snowballr.backend.model.dto.project.SnowballingType
+import se.uulm.snowballr.backend.model.dto.user.UserRole
+import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.export.ExportFormat
 import se.uulm.snowballr.backend.model.incoming.authentication.ChangePasswordRequest
 import se.uulm.snowballr.backend.model.incoming.authentication.LoginRequest
@@ -289,18 +293,35 @@ class SnowballRServer(
         override suspend fun getUserByEmail(request: Base.Email): UserOuterClass.User =
             userService.getUserByEmail(request.email).toGrpc()
 
-        override suspend fun updateUser(request: UserOuterClass.User.Update): UserOuterClass.User =
-            userService.updateUser(
+        override suspend fun updateUser(request: UserOuterClass.User.Update): UserOuterClass.User {
+            val paths = FieldMaskUtil.normalize(request.mask).pathsList
+
+            val hasUnspecifiedRole = request.user.role == UserOuterClass.UserRole.USER_ROLE_UNSPECIFIED
+            val role = if (!paths.contains("user.role") && hasUnspecifiedRole) {
+                UserRole.DEFAULT
+            } else {
+                userRoleFromGrpc(request.user.role)
+            }
+
+            val hasUnspecifiedStatus = request.user.status == UserOuterClass.UserStatus.USER_STATUS_UNSPECIFIED
+            val status = if (!paths.contains("user.status") && hasUnspecifiedStatus) {
+                UserStatus.ACTIVE
+            } else {
+                userStatusFromGrpc(request.user.status)
+            }
+
+            return userService.updateUser(
                 UpdateUserRequest(
                     userId = parseUUID(request.user.id, EntityType.USER),
                     firstName = request.user.firstName,
                     lastName = request.user.lastName,
                     email = request.user.email,
-                    role = userRoleFromGrpc(request.user.role),
-                    status = userStatusFromGrpc(request.user.status),
+                    role = role,
+                    status = status,
                 ),
-                FieldMaskUtil.normalize(request.mask).pathsList,
+                paths,
             ).toGrpc()
+        }
 
         override suspend fun softDeleteUser(request: Base.Id) = returnNothing {
             userService.softDeleteUser(parseUserId(request))
@@ -400,22 +421,42 @@ class SnowballRServer(
         override suspend fun getProjectById(request: Base.Id): ProjectOuterClass.Project =
             projectService.getProjectById(parseProjectId(request)).toGrpc()
 
-        override suspend fun updateProject(request: ProjectOuterClass.Project.Update): ProjectOuterClass.Project =
-            projectService.updateProject(
+        override suspend fun updateProject(request: ProjectOuterClass.Project.Update): ProjectOuterClass.Project {
+            val paths = FieldMaskUtil.normalize(request.mask).pathsList.toSet()
+
+            val hasUnspecifiedStatus =
+                request.project.status == ProjectOuterClass.ProjectStatus.PROJECT_STATUS_UNSPECIFIED
+            val status = if (!paths.contains("project.status") && hasUnspecifiedStatus) {
+                ProjectStatus.ACTIVE
+            } else {
+                projectStatusFromGrpc(request.project.status)
+            }
+
+            val hasUnspecifiedSnowballingType = request.project.settings.snowballingType ==
+                ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_UNSPECIFIED
+            val snowballingType =
+                if (!paths.contains("project.settings.snowballing_type") && hasUnspecifiedSnowballingType) {
+                    SnowballingType.BOTH
+                } else {
+                    snowballingTypeFromGrpc(request.project.settings.snowballingType)
+                }
+
+            return projectService.updateProject(
                 UpdateProjectRequest(
                     projectId = parseUUID(request.project.id, EntityType.PROJECT),
                     name = request.project.name,
-                    status = projectStatusFromGrpc(request.project.status),
+                    status = status,
                     settings = UpdateProjectSettingRequest(
                         similarityThreshold = request.project.settings.similarityThreshold,
-                        snowballingType = snowballingTypeFromGrpc(request.project.settings.snowballingType),
+                        snowballingType = snowballingType,
                         reviewMaybeAllowed = request.project.settings.reviewMaybeAllowed,
                         fetchers = request.project.settings.fetchersMap.mapValues { it.value.optionsMap },
                         decisionMatrix = reviewDecisionMatrixFromGrpc(request.project.settings.decisionMatrix),
                     ),
                 ),
-                FieldMaskUtil.normalize(request.mask).pathsList.toSet(),
+                paths,
             ).toGrpc()
+        }
 
         override suspend fun getAvailableExportFormats(request: Base.Nothing): Export.AvailableExportFormatsResponse =
             exportService.getAvailableExportFormats().toGrpc()
