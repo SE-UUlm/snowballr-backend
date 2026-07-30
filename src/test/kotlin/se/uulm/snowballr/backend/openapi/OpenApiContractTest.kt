@@ -1,19 +1,33 @@
 package se.uulm.snowballr.backend.openapi
 
+import io.mockk.every
+import io.mockk.mockk
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
+import org.koin.core.context.startKoin
+import org.koin.core.context.stopKoin
+import org.koin.dsl.module
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import se.uulm.snowballr.backend.auth.IAuthenticationManager
+import se.uulm.snowballr.backend.auth.ICookieManager
+import se.uulm.snowballr.backend.auth.IJwtManager
+import se.uulm.snowballr.backend.env.Env
+import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.openapi.OpenApiContractTest.Companion.COMMITTED_SPEC
 import se.uulm.snowballr.backend.rest.SnowballRApplication
+import se.uulm.snowballr.backend.service.IAuthenticationService
+import se.uulm.snowballr.backend.service.IProjectService
 import java.io.File
 
 /**
@@ -24,7 +38,10 @@ import java.io.File
  * consumed by the OpenAPI TypeScript client generator).
  *
  * The full application context is deliberately pinned to [SnowballRApplication], whose component scan is
- * confined to the `rest` package, so the context is cheap to start and requires no database or Koin wiring.
+ * confined to the `rest` package, so the context is cheap to start. It still needs Koin running, though: `KoinBridge`
+ * exposes the Koin-backed services as Spring beans, and `SecurityConfig` requires them eagerly at startup. Rather
+ * than pulling in the real database-backed module, a minimal Koin module of mocks is started for the lifetime of
+ * this class - just enough to satisfy the bean wiring without touching a database.
  */
 @SpringBootTest(classes = [SnowballRApplication::class])
 @AutoConfigureMockMvc
@@ -64,7 +81,7 @@ class OpenApiContractTest(@Autowired private val mvc: MockMvc) {
 
     private companion object {
         /** Path the springdoc api-docs endpoint is served at (see `application.properties`). */
-        const val API_DOCS_PATH = "/api"
+        const val API_DOCS_PATH = "/api-docs"
 
         /** Committed specification the build is checked against. */
         const val COMMITTED_SPEC = "api/openapi.json"
@@ -73,5 +90,39 @@ class OpenApiContractTest(@Autowired private val mvc: MockMvc) {
             prettyPrint = true
             prettyPrintIndent = "    "
         }
+
+        /**
+         * Starts Koin with mocks before the Spring context is created, since `KoinBridge` and `SecurityConfig`
+         * resolve Koin-backed beans eagerly during context refresh. Auth bypass is stubbed on so the security
+         * filter never exercises [IAuthenticationManager] or [ICookieManager].
+         */
+        @JvmStatic
+        @BeforeAll
+        fun startTestKoin() {
+            val miscellaneous = mockk<Env.Miscellaneous>()
+            every { miscellaneous.authBypassEnabled } returns true
+
+            val env = mockk<Env>()
+            every { env.miscellaneous } returns miscellaneous
+
+            val envReader = mockk<EnvReader>()
+            every { envReader.env } returns env
+
+            startKoin {
+                modules(
+                    module {
+                        single<IProjectService> { mockk() }
+                        single<IAuthenticationService> { mockk() }
+                        single<IAuthenticationManager> { mockk() }
+                        single<ICookieManager> { mockk() }
+                        single<EnvReader> { envReader }
+                    },
+                )
+            }
+        }
+
+        @JvmStatic
+        @AfterAll
+        fun stopTestKoin() = stopKoin()
     }
 }
