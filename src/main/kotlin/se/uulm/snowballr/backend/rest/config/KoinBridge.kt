@@ -1,0 +1,32 @@
+package se.uulm.snowballr.backend.rest.config
+
+import org.koin.java.KoinJavaComponent.getKoin
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+import se.uulm.snowballr.backend.auth.IAuthenticationManager
+import se.uulm.snowballr.backend.auth.ICookieManager
+import se.uulm.snowballr.backend.auth.IJwtManager
+import se.uulm.snowballr.backend.env.EnvReader
+import se.uulm.snowballr.backend.service.IAuthenticationService
+import se.uulm.snowballr.backend.service.IProjectService
+
+/**
+ * Conversion layer from Koin to Beans.
+ */
+@Configuration
+class KoinBridge {
+    @Bean
+    fun projectService(): IProjectService = getKoin().get()
+
+    @Bean
+    fun authService(): IAuthenticationService = getKoin().get()
+
+    @Bean
+    fun authenticationManager(): IAuthenticationManager = getKoin().get()
+
+    @Bean
+    fun cookieManager(): ICookieManager = getKoin().get()
+
+    @Bean
+    fun envReader(): EnvReader = getKoin().get()
+}
