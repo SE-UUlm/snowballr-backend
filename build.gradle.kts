@@ -107,6 +107,8 @@ dependencies {
     implementation(libs.spring.boot.starter.web)
     implementation(libs.kotlin.reflect)
     implementation(libs.spring.doc)
+    implementation(libs.spring.boot.starter.security)
+    implementation(libs.spring.boot.starter.actuator)
 
     testImplementation(libs.koin.test)
     testImplementation(libs.testcontainers)
