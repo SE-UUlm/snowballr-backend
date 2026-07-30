@@ -273,22 +273,6 @@ tasks.register<Exec>("buildTsClient") {
     }
 }
 
-tasks.register<Exec>("publishTsClient") {
-    dependsOn("buildTsClient")
-    description = "Publishes the generated TypeScript client to npm under the given -PnpmTag (alpha, beta, or latest)"
-    group = "publishing"
-    workingDir = tsClientDir.get().asFile
-
-    doFirst {
-        val npmTag = project.findProperty("npmTag") as String?
-        require(!npmTag.isNullOrBlank()) {
-            "publishTsClient requires -PnpmTag=<alpha|beta|latest> to be set explicitly; " +
-                "refusing to publish without an explicit tag."
-        }
-        commandLine("npm", "publish", "--access", "public", "--tag", npmTag)
-    }
-}
-
 kover {
     currentProject {
         instrumentation {

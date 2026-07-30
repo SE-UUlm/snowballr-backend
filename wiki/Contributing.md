@@ -22,6 +22,7 @@ On this page, we explain how to contribute to the SnowballR backend project. We 
     * [Type Checking](#type-checking)
   * [Release procedure](#release-procedure)
   * [Use another API Version](#use-another-api-version)
+  * [TypeScript API Client](#typescript-api-client)
   * [Fetcher Orchestration Progress](#fetcher-orchestration-progress)
 <!-- TOC -->
 <!-- @formatter:on -->
@@ -357,6 +358,26 @@ To use another API version than the currently used one, go to the `build.gradle.
 `apiVersion` variable to the desired version. Make sure that the version exists in the
 [API repository](https://github.com/SE-UUlm/snowballr-api). After changing the version, recompile the code using
 `./gradlew compileKotlin`.
+
+## TypeScript API Client
+
+The backend generates a TypeScript client from the committed OpenAPI spec (`api/openapi.json`, see `openApiGenerate`
+in `build.gradle.kts`) and publishes it to npm as
+[`@se-uulm/snowballr-api-client`](https://www.npmjs.com/package/@se-uulm/snowballr-api-client). Three release channels
+(npm dist-tags) are published automatically by `.github/workflows/npm-publish.yml`, so in-progress backend changes
+can be tested from the frontend without waiting for a stable release:
+
+| Channel  | Published when                                        | Install with                                      |
+|----------|-------------------------------------------------------|---------------------------------------------------|
+| `alpha`  | Every push to a branch with an open PR into `develop` | `npm install @se-uulm/snowballr-api-client@alpha` |
+| `beta`   | Every merge to `develop`                              | `npm install @se-uulm/snowballr-api-client@beta`  |
+| `latest` | Every `vX.Y.Z` tag push (stable release)              | `npm install @se-uulm/snowballr-api-client`       |
+
+The alpha/beta version numbers (e.g. `0.1.1-alpha.a3f9c2e`) are produced by the `gitVersioning` configuration in
+`build.gradle.kts`: the patch version of the last `vX.Y.Z` tag is bumped by one and suffixed with the channel name and
+the short commit hash.
+
+To build the client locally, use the `buildTsClient` Gradle task.
 
 ## Fetcher Orchestration Progress
 

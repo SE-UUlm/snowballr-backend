@@ -1,0 +1,67 @@
+name: NPM Publish
+
+on:
+    pull_request:
+        branches: ["develop"]
+    push:
+        branches: ["develop"]
+        tags: ["v*.*.*"]
+
+jobs:
+    publish-alpha:
+        name: Publish alpha (PR preview)
+        if: github.event_name == 'pull_request'
+        runs-on: ubuntu-latest
+        permissions:
+            id-token: write # Required for OIDC
+            contents: read
+        steps:
+            - name: Checkout PR branch
+              uses: actions/checkout@v7
+              with:
+                  ref: ${{ github.head_ref }}
+                  fetch-depth: 0
+                  fetch-tags: true
+
+            - name: Publish NPM Package
+              uses: ./.github/workflows/publish-api-client
+              with:
+                  channel: alpha
+
+    publish-beta:
+        name: Publish beta (develop)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+        runs-on: ubuntu-latest
+        permissions:
+            id-token: write # Required for OIDC
+            contents: read
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v7
+              with:
+                  fetch-depth: 0
+                  fetch-tags: true
+
+            - name: Publish NPM Package
+              uses: ./.github/workflows/publish-api-client
+              with:
+                  channel: beta
+
+    publish-stable:
+        name: Publish stable (tag)
+        if: github.ref_type == 'tag'
+        runs-on: ubuntu-latest
+        permissions:
+            id-token: write # Required for OIDC
+            contents: read
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v7
+              with:
+                  fetch-depth: 0
+                  fetch-tags: true
+
+            - name: Publish NPM Package
+              uses: ./.github/workflows/publish-api-client
+              with:
+                  channel: latest
