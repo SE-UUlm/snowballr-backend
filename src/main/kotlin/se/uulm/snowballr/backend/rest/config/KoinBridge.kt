@@ -5,10 +5,10 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import se.uulm.snowballr.backend.auth.IAuthenticationManager
 import se.uulm.snowballr.backend.auth.ICookieManager
-import se.uulm.snowballr.backend.auth.IJwtManager
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.service.IAuthenticationService
 import se.uulm.snowballr.backend.service.IProjectService
+import se.uulm.snowballr.backend.service.IUserService
 
 /**
  * Conversion layer from Koin to Beans.
@@ -29,4 +29,7 @@ class KoinBridge {
 
     @Bean
     fun envReader(): EnvReader = getKoin().get()
+
+    @Bean
+    fun userService(): IUserService = getKoin().get()
 }
