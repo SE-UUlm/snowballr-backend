@@ -16,7 +16,7 @@ import se.uulm.snowballr.backend.service.IProjectService
 import java.util.UUID
 
 @RestController
-@RequestMapping("/projects")
+@RequestMapping(Routes.PROJECTS_ROUTE)
 class ProjectsController(val projectService: IProjectService) {
     @GetMapping
     fun getAllProjects(): List<ProjectResponse> = onRequest { projectService.getAllProjects() }
