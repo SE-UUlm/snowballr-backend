@@ -21,13 +21,13 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import se.uulm.snowballr.backend.auth.IAuthenticationManager
 import se.uulm.snowballr.backend.auth.ICookieManager
-import se.uulm.snowballr.backend.auth.IJwtManager
 import se.uulm.snowballr.backend.env.Env
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.openapi.OpenApiContractTest.Companion.COMMITTED_SPEC
 import se.uulm.snowballr.backend.rest.SnowballRApplication
 import se.uulm.snowballr.backend.service.IAuthenticationService
 import se.uulm.snowballr.backend.service.IProjectService
+import se.uulm.snowballr.backend.service.IUserService
 import java.io.File
 
 /**
@@ -116,6 +116,7 @@ class OpenApiContractTest(@Autowired private val mvc: MockMvc) {
                         single<IAuthenticationManager> { mockk() }
                         single<ICookieManager> { mockk() }
                         single<EnvReader> { envReader }
+                        single<IUserService> { mockk() }
                     },
                 )
             }
