@@ -32,11 +32,8 @@ jobs:
             - name: Checkout repository
               uses: actions/checkout@v7
 
-            - name: Setup Java and Gradle
-              uses: ./.github/workflows/setup-java-gradle/
-
-            - name: Setup Python and uv
-              uses: ./.github/workflows/setup-python-uv/
+            - name: Setup Application
+              uses: ./.github/workflows/setup-all/
 
             - name: Run tests and collect coverage
               run: ./gradlew test
@@ -75,11 +72,8 @@ jobs:
             - name: Checkout repository
               uses: actions/checkout@v7
 
-            - name: Setup Java and Gradle
-              uses: ./.github/workflows/setup-java-gradle/
-
-            - name: Setup Python and uv
-              uses: ./.github/workflows/setup-python-uv/
+            - name: Setup Application
+              uses: ./.github/workflows/setup-all/
 
             - name: Run integration tests
               run: ./gradlew integrationTest
@@ -194,11 +188,8 @@ jobs:
             - name: Checkout repository
               uses: actions/checkout@v7
 
-            - name: Setup Java and Gradle
-              uses: ./.github/workflows/setup-java-gradle/
-
-            - name: Setup Python and uv
-              uses: ./.github/workflows/setup-python-uv/
+            - name: Setup Application
+              uses: ./.github/workflows/setup-all/
 
             - name: Create the API specification
               run: ./gradlew createApiSpec

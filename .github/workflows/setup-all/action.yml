@@ -1,0 +1,10 @@
+name: Setup Java & Gradle and Python & UV
+description: Setup for Backend CI/CD pipeline
+runs:
+    using: composite
+    steps:
+        - name: Setup Java and Gradle
+          uses: ./.github/workflows/setup-java-gradle/
+
+        - name: Setup Python and UV
+          uses: ./.github/workflows/setup-python-uv/
