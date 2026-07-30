@@ -13,7 +13,7 @@ import se.uulm.snowballr.backend.rest.onRequest
 import se.uulm.snowballr.backend.service.IAuthenticationService
 
 @RestController
-@RequestMapping("/auth")
+@RequestMapping(Routes.AUTH_ROUTE)
 class AuthController(val authService: IAuthenticationService) {
     @PostMapping("/login")
     fun login(@RequestBody request: LoginRequest) = onRequest { authService.login(request) }
