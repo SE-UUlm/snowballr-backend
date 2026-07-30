@@ -1,6 +1,7 @@
 // Suppress the 'FunctionName' rule because it cannot detect that this is a test file.
 // Suppress the 'ForbiddenMethodCall' rule because we can use println here.
-@file:Suppress("FunctionName", "ForbiddenMethodCall")
+// Suppress the 'KotlinPrintToLogpoint' rule because we can use println here instead of Logpoints.
+@file:Suppress("FunctionName", "ForbiddenMethodCall", "KotlinPrintToLogpoint")
 
 package se.uulm.snowballr.backend.arch
 
@@ -52,6 +53,7 @@ private class StructureRules {
         private const val SCHEDULER = "Scheduler"
         private const val FETCHER = "Fetcher"
         private const val MATCHING = "Matching"
+        private const val REST = "REST API"
     }
 
     private fun Architectures.LayeredArchitecture.snowballRLayers() = this
@@ -88,6 +90,9 @@ private class StructureRules {
         // Paper Matching
         .layer(MATCHING)
         .definedBy("$BASE_PACKAGE.matching..")
+        // REST API
+        .layer(REST)
+        .definedBy("$BASE_PACKAGE.rest..")
 
     @ArchTest
     fun `When the layer architecture is violated, then this test should fail (all deps)`(classes: JavaClasses) {
@@ -95,12 +100,14 @@ private class StructureRules {
             .consideringAllDependencies()
             .snowballRLayers()
             // Checks
+            .whereLayer(MAIN)
+            .mayNotBeAccessedByAnyLayer()
             .whereLayer(VALIDATION)
             .mayOnlyBeAccessedByLayers(GRPC)
             .whereLayer(GRPC)
             .mayOnlyBeAccessedByLayers(MAIN)
             .whereLayer(SERVICE)
-            .mayOnlyBeAccessedByLayers(GRPC, MAIN)
+            .mayOnlyBeAccessedByLayers(GRPC, MAIN, REST)
             .whereLayer(ACCESS)
             .mayOnlyBeAccessedByLayers(SERVICE, MAIN)
             .whereLayer(REPO)
@@ -115,6 +122,8 @@ private class StructureRules {
             .mayOnlyBeAccessedByLayers(MAIN, SERVICE)
             .whereLayer(MATCHING)
             .mayOnlyBeAccessedByLayers(FETCHER, MAIN)
+            .whereLayer(REST)
+            .mayOnlyBeAccessedByLayers(MAIN)
             .check(classes)
     }
 
@@ -125,9 +134,7 @@ private class StructureRules {
             .snowballRLayers()
             // Checks
             .whereLayer(MAIN)
-            .mayNotBeAccessedByAnyLayer()
-            .whereLayer(MAIN)
-            .mayOnlyAccessLayers(GRPC, SERVICE, ACCESS, REPO, DB, SCHEDULER, FETCHER, MATCHING)
+            .mayOnlyAccessLayers(GRPC, SERVICE, ACCESS, REPO, DB, SCHEDULER, FETCHER, MATCHING, REST)
             .whereLayer(VALIDATION)
             .mayNotAccessAnyLayer()
             .whereLayer(GRPC)
@@ -148,6 +155,8 @@ private class StructureRules {
             .mayOnlyAccessLayers(REPO, MATCHING)
             .whereLayer(MATCHING)
             .mayNotAccessAnyLayer()
+            .whereLayer(REST)
+            .mayOnlyAccessLayers(SERVICE)
             .check(classes)
     }
 
