@@ -1,11 +1,11 @@
 package se.uulm.snowballr.backend.matching
 
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertNotNull
+import org.junit.jupiter.api.assertNull
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.model.dto.paper.Author
 import se.uulm.snowballr.backend.model.dto.paper.ExternalId
@@ -152,7 +152,7 @@ class PaperMatcherTest {
             val candidate = DataBuilder.createExamplePaper(title = "Deep Learning", year = 2020)
             val result = matcher.findMatch(fetched, listOf(candidate), 0.5f)
             assertNotNull(result)
-            assertEquals(candidate.id, result!!.id)
+            assertEquals(candidate.id, result.id)
         }
 
         @Test
@@ -167,7 +167,7 @@ class PaperMatcherTest {
             val poor = DataBuilder.createExamplePaper(title = "Machine Learning", year = 2020)
             val result = matcher.findMatch(fetched, listOf(poor, good), 0.5f)
             assertNotNull(result)
-            assertEquals(good.id, result!!.id)
+            assertEquals(good.id, result.id)
         }
     }
 

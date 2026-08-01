@@ -908,8 +908,11 @@ style:
         forbiddenImports:
             -   reason: 'Use `org.junit.jupiter.api.Assertions.*` instead.'
                 value: 'kotlin.test.*'
+            # assertNotNull and assertNull from `org.junit.jupiter.api` has better type inference
             -   reason: 'Use `org.junit.jupiter.api.assertNotNull` instead.'
                 value: 'org.junit.jupiter.api.Assertions.assertNotNull'
+            -   reason: 'Use `org.junit.jupiter.api.assertNull` instead.'
+                value: 'org.junit.jupiter.api.Assertions.assertNull'
         allowedImports:
             # `kotlin.test.assertContains` has no JUnit equivalent.
             - 'kotlin.test.assertContains'
