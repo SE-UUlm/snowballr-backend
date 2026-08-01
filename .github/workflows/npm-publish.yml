@@ -10,7 +10,8 @@ on:
 jobs:
     publish-alpha:
         name: Publish alpha (PR preview)
-        if: github.event_name == 'pull_request'
+        # We skip publishing when triggered by a Dependabot update
+        if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
         runs-on: ubuntu-latest
         permissions:
             id-token: write # Required for OIDC
@@ -30,7 +31,8 @@ jobs:
 
     publish-beta:
         name: Publish beta (develop)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+        # We skip publishing when triggered by a Dependabot update
+        if: github.event_name == 'push' && github.ref == 'refs/heads/develop' && github.actor != 'dependabot[bot]'
         runs-on: ubuntu-latest
         permissions:
             id-token: write # Required for OIDC
