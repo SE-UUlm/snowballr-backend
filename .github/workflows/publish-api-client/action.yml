@@ -20,6 +20,10 @@ runs:
           shell: bash
           run: ./gradlew buildTsClient
 
+        - name: Verify API consistency
+          shell: bash
+          run: git diff --exit-code
+
         - name: Publish NPM package
           shell: bash
           run: cd build/generated/ts-client && npm publish --access public --tag ${{ inputs.channel }}
