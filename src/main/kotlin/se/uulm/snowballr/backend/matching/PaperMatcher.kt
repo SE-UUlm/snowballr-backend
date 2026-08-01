@@ -65,16 +65,16 @@ interface IPaperMatcher {
     fun mergeMetadata(dbPaper: Paper, fetched: FetcherPaper): FetcherMetadata
 }
 
-class PaperMatcher : IPaperMatcher {
-    companion object {
-        private const val TITLE_WEIGHT = 0.6
-        private const val AUTHORS_WEIGHT = 0.3
-        private const val ABSTRACT_WEIGHT = 0.1
-    }
-
+/**
+ * The [IPaperMatcher] implementation.
+ *
+ * @param config The weight config that is used by [similarity] to determine how each component accounts to the overall
+ * similarity.
+ */
+class PaperMatcher(private val config: PaperMatchingConfig) : IPaperMatcher {
     override fun similarity(a: FetcherPaper, b: FetcherPaper): Double {
         if (haveSameExternalId(a, b)) return 1.0
-        if (abs(a.year - b.year) > 1) return 0.0
+        if (abs(a.year - b.year) > config.yearTolerance) return 0.0
 
         data class Component(val weight: Double, val score: Double)
 
@@ -82,7 +82,7 @@ class PaperMatcher : IPaperMatcher {
 
         components.add(
             Component(
-                weight = TITLE_WEIGHT,
+                weight = config.titleWeight,
                 score = Levenshtein.getNormalizedDistance(a.title.trim().lowercase(), b.title.trim().lowercase()),
             ),
         )
@@ -90,7 +90,7 @@ class PaperMatcher : IPaperMatcher {
         if (a.authors.isNotEmpty() && b.authors.isNotEmpty()) {
             components.add(
                 Component(
-                    weight = AUTHORS_WEIGHT,
+                    weight = config.authorsWeight,
                     score = jaccardSimilarity(
                         Tokenization.authorSetTokens(a.authors),
                         Tokenization.authorSetTokens(b.authors),
@@ -102,7 +102,7 @@ class PaperMatcher : IPaperMatcher {
         if (a.abstract.isNotBlank() && b.abstract.isNotBlank()) {
             components.add(
                 Component(
-                    weight = ABSTRACT_WEIGHT,
+                    weight = config.abstractWeight,
                     score = Levenshtein.getNormalizedDistance(
                         a.abstract.trim().lowercase(),
                         b.abstract.trim().lowercase(),

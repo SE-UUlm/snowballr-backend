@@ -14,7 +14,8 @@ import se.uulm.snowballr.backend.model.dto.paper.ExternalIdType
 private const val DELTA = 1e-9
 
 class PaperMatcherTest {
-    private val matcher = PaperMatcher()
+    private val defaultConfig = PaperMatchingConfig(1, 0.6, 0.3, 0.1)
+    private val matcher = PaperMatcher(defaultConfig)
 
     @Nested
     inner class Similarity {
@@ -37,14 +38,14 @@ class PaperMatcherTest {
         }
 
         @Test
-        fun `When years differ by more than 1, then similarity is 0`() {
+        fun `When years differ by more than the tolerance, then similarity is 0`() {
             val a = DataBuilder.createExampleFetcherPaper(year = 2000)
             val b = DataBuilder.createExampleFetcherPaper(year = 2002)
             assertEquals(0.0, matcher.similarity(a, b), DELTA)
         }
 
         @Test
-        fun `When years differ by exactly 1, then similarity is positive`() {
+        fun `When years differ by exactly the tolerance, then similarity is positive`() {
             val a = DataBuilder.createExampleFetcherPaper(year = 2000)
             val b = DataBuilder.createExampleFetcherPaper(year = 2001)
             assertTrue(matcher.similarity(a, b) > 0.0)
@@ -52,28 +53,64 @@ class PaperMatcherTest {
 
         @Test
         fun `When both author lists are empty, then authors component is dropped`() {
-            // Only title (no abstract, no authors): weight 0.6/0.6 = 1.0
-            val a = DataBuilder.createExampleFetcherPaper(title = "X", authors = emptyList())
-            val b = DataBuilder.createExampleFetcherPaper(title = "X", authors = emptyList())
-            assertEquals(1.0, matcher.similarity(a, b), DELTA)
+            val a1 = DataBuilder.createExampleFetcherPaper(
+                title = "Some random title",
+                authors = emptyList(),
+                abstract = "Some random abstract",
+            )
+            val b1 = a1.copy(title = a1.title.reversed(), abstract = a1.abstract.reversed())
+            val emptyResult = matcher.similarity(a1, b1)
+
+            val altMatcher = PaperMatcher(defaultConfig.copy(authorsWeight = 0.0))
+            val a2 = a1.copy(authors = listOf(Author("John", "Doe")))
+            val b2 = b1.copy(authors = listOf(Author("John", "Doe")))
+            val noWeightResult = altMatcher.similarity(a2, b2)
+
+            // Dropping authors is the same as not weighing their similarity
+            assertEquals(noWeightResult, emptyResult, DELTA)
         }
 
         @Test
         fun `When one abstract is blank, then abstract component is dropped`() {
-            // Title + Authors, no abstract; weights 0.6 + 0.3 = 0.9
-            val authors = listOf(Author("Alice", "Smith"))
-            val a = DataBuilder.createExampleFetcherPaper(title = "X", abstract = "Some text", authors = authors)
-            val b = DataBuilder.createExampleFetcherPaper(title = "X", abstract = "", authors = authors)
-            // abstract dropped; title=1.0 (weight 0.6/0.9) + authors=1.0 (weight 0.3/0.9) = 1.0
-            assertEquals(1.0, matcher.similarity(a, b), DELTA)
+            val authors1 = listOf(Author("John", "Doe"), Author("Jane", "Doe"))
+            val authors2 = authors1.map { Author(it.lastName.reversed(), it.firstName.reversed()) }
+            val a1 = DataBuilder.createExampleFetcherPaper(
+                title = "Some random title",
+                authors = authors1,
+                abstract = "Some random abstract",
+            )
+            val b1 = a1.copy(title = a1.title.reversed(), abstract = "", authors = authors2)
+            val emptyResult = matcher.similarity(a1, b1)
+
+            val altMatcher = PaperMatcher(defaultConfig.copy(abstractWeight = 0.0))
+            val a2 = a1.copy(abstract = "Paper Abstract")
+            val b2 = b1.copy(abstract = "Paper Abstract")
+            val noWeightResult = altMatcher.similarity(a2, b2)
+
+            // Dropping the abstract is the same as not weighing its similarity
+            assertEquals(noWeightResult, emptyResult, DELTA)
         }
 
         @Test
         fun `When both abstracts are blank, then only title and authors contribute`() {
-            val authors = listOf(Author("Bob", "Jones"))
-            val a = DataBuilder.createExampleFetcherPaper(title = "X", abstract = "", authors = authors)
-            val b = DataBuilder.createExampleFetcherPaper(title = "X", abstract = "", authors = authors)
-            assertEquals(1.0, matcher.similarity(a, b), DELTA)
+            val authors1 = listOf(Author("John", "Doe"), Author("Jane", "Doe"))
+            val authors2 = authors1.map { Author(it.lastName.reversed(), it.firstName.reversed()) }
+            val a1 = DataBuilder.createExampleFetcherPaper(
+                title = "Some random title",
+                authors = authors1,
+                abstract = "",
+            )
+            val b1 = a1.copy(title = a1.title.reversed(), authors = authors2)
+            val emptyResult = matcher.similarity(a1, b1)
+
+            val altMatcher = PaperMatcher(defaultConfig.copy(abstractWeight = 0.0))
+            val a2 = a1.copy(abstract = "Paper Abstract")
+            val b2 = b1.copy(abstract = "Paper Abstract")
+            val noWeightResult = altMatcher.similarity(a2, b2)
+
+            // Dropping the abstract is the same as not weighing its similarity
+            assertEquals(noWeightResult, emptyResult, DELTA)
+            assertTrue(emptyResult > 0 && noWeightResult > 0)
         }
 
         @Test
