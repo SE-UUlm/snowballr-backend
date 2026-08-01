@@ -13,6 +13,9 @@ jobs:
         steps:
             - name: Checkout repository
               uses: actions/checkout@v7
+              with:
+                  fetch-depth: 0
+                  fetch-tags: true
 
             - name: Setup Java and Gradle
               uses: ./.github/workflows/setup-java-gradle/
