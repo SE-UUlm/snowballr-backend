@@ -3,7 +3,7 @@
 ARG GRPC_HEALTH_PROBE_VERSION=v0.4.38
 
 # Stage 1: Build the application
-FROM gradle:9.5.1-jdk25-alpine AS build
+FROM gradle:9.6.1-jdk25-alpine AS build
 
 WORKDIR /app
 
